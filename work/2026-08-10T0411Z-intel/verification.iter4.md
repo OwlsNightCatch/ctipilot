@@ -1,0 +1,66 @@
+**Model:** Sonnet 5 (`claude-sonnet-5`)
+**Timestamps:** started_at=2026-08-10T06:26:23Z · ended_at=2026-08-10T06:39:50Z · duration_seconds=807
+
+## Verification report — 2026-08-10T0411Z-intel (iteration 4)
+
+Cold read focused on the five specific confirmations requested by the main agent (Retelit's two additions, the PAM quote repair, regression risk on the three-times-edited Retelit entry and four-times-edited run record, and run-record narrative accuracy), plus a store-wide automated sweep for the recurring truncated/altered-quote defect class across all 18 entries' `evidence[]`.
+
+### Unsupported / hallucinated facts
+
+- **F4 — `2026-08-10/pam-rootok-identity-shuffle-as-anti-forensics-xmrig`.** `techniques[]` carries `T1036.005` (Match Legitimate Resource Name or Location), and the run record's own ATT&CK note explains why: Group-IB's article cites `T1564.013` for the malware's "process masquerading via the custom `-h` flag, allowing it to spoof legitimate process names such as 'ssh'" (`groupib_pam_clean.txt` line 79), and `T1564.013` now resolves to "Bind Mounts" in the pinned ATT&CK v19.2 dataset, so `T1036.005` was substituted as the current, correct id for that same masquerading behaviour — a well-reasoned correction. But the entry's body never describes this behaviour at all. The body's five paragraphs cover initial access, `pam_rootok` identity-shuffling, cron persistence, log tampering, self-unlinking/fileless execution, and a detection/triage paragraph built entirely around the identity-shuffle telemetry — no mention of process-name spoofing, the `-h` flag, or a `ps`/`top`/`/proc/*/comm` mismatch anywhere. Per the frontmatter⇔body agreement rule, "every `techniques[]` id names a behavior the body actually describes" — this one does not; a reader has nothing in the prose to trace the id to, and a detection-relevant fact the source explicitly supports (spoofed process names, a concrete hunting hook) is silently absent from the triage paragraph.
+
+- **F4 — `2026-08-10/pam-rootok-identity-shuffle-as-anti-forensics-xmrig`.** The frontmatter `evidence[]` record for the persistence quote is still truncated: `"...the attackers ensured that if SOC analysts only remediated the root compromise, the botnet implant would simply regenerate from"` — it ends mid-clause on the preposition "from," missing "the shadowed accounts." Group-IB's actual sentence (`groupib_pam_clean.txt` line 26) reads "...would simply regenerate from the shadowed accounts." Iteration 3's F4 finding on this exact quote was fixed in the **body** — the body now correctly quotes the complete sentence ending "...regenerate from the shadowed accounts." — but the **frontmatter `evidence[]` record was never updated to match**, so the entry now carries two different lengths of the same quote, one complete and one still cut short exactly where the earlier defect cut it. A store-wide automated scan for quotes ending on a dangling preposition/article with no closing punctuation (run across all 18 entries' `evidence[]`) found this to be the only surviving instance of the defect class flagged for this run — every other entry's quotes end on complete clauses or nouns.
+
+- **F4 — `2026-08-10/wazuh-4-14-6-cluster-root-rce-preauth-authd-overflow`.** Two `evidence[]` quotes have backticks inserted around code-like substrings that do not appear at those positions in the cited source: `"...via the `V:` field of an enrollment message sent to `wazuh-authd` on TCP/1515 over anonymous SSL (default configuration: `use_password=no`, `ssl_verify_host=no`)."` and `"...it calls : `exec(<payload>)` as root."` The GHSA advisory (`clean/ghsa-4fvp-html.txt` line 937, `clean/ghsa-8c6v-html.txt` line 941) has the identical prose with no backticks: "The function is reachable pre-authentication via the V: field of an enrollment message sent to wazuh-authd on TCP/1515 over anonymous SSL (default configuration: use_password=no, ssl_verify_host=no)." and "...it calls : exec(<payload>) as root." This is cosmetic markdown decoration, not a meaning change or a dropped/added word, and no other entry in the run does this to an `evidence[]` field — but the frontmatter contract requires the quote to be "a contiguous verbatim substring... copyable from the page unchanged," and inserted backtick characters fail that literally. Low severity; flagged because this is exactly the defect class (quote fidelity) this iteration was asked to re-check, and a `grep -F` of the quote-as-written against the saved body would not have found a hit.
+
+- **F4 — `2026-08-10/retelit-qilin-italian-telco-cloud-operator-public-sector`.** The public-administration paragraph (added at iteration 3 to fix F8) describes the CERT-AGID warning recipients as "a university and research consortium that also acts as a certified digital-preservation provider, and **two regional digital-service providers**." The source names three organisations — Cineca, Lepida, InfoCamere (`retelit_stripped.txt` line 356) — and describes Lepida and InfoCamere only as providing "servizi Spid e Firma digitale" (SPID and digital-signature services), with no "regional" qualifier for either. Lepida genuinely is a regional body (Emilia-Romagna's own SPID identity provider). InfoCamere is not: it is the IT company of Italy's national Chambers-of-Commerce system, providing digital-signature and SPID services nationwide (confirmed via a live check — InfoCamere's own SPID/signature site offers no regional scoping, and it is documented as a national-level provider). Calling both "two regional digital-service providers" is an inserted characterisation the source does not make and that is factually wrong for one of the two named entities, and it understates the breadth of the seven-week-late warning the paragraph exists to describe. This is the only defect found in an otherwise well-executed pair of additions — see the Verdict discussion below for the two items that were specifically checked and held.
+
+- **F4 — run record, `2026-08-10T0411Z-intel.md`.** The out-of-window disclosure line reads: "NatJack, the Novee coding-agent CI research and the Linux bridge STP use-after-free all trace to 2026-08-06, outside both the 24 h and 72 h windows." This is wrong for two of the three items. NatJack's sources are dated `2026-08-06` (`natjack-nat-trust-assumption-attack-class-two-cves.md` frontmatter and body — confirmed). But `coding-agent-ci-harness-trust-boundary-shared-checkout.md`'s source (Novee Security) and `linux-bridge-stp-timer-uaf-no-cve-public-exploit.md`'s source (SSD Secure Disclosure) are both dated `2026-08-05` in frontmatter `sources[].date`, `event_date`, and the body's own inline citations — matching the run record's separate, correct statement elsewhere that "the category the alternative candidate would have taken, was used on 2026-08-05." The general point (all three are out-of-window, stretching the recency gate) still holds — 2026-08-05 is outside the 72 h window too — but the specific date attributed to all three is factually incorrect for two of them, in the same disclosure paragraph the verifier is explicitly told to scrutinise for honesty about the recency stretch.
+
+### Verdict
+
+**Confirmed working correctly (per the main agent's four specific asks):**
+
+1. **The two Retelit additions.** The contradiction paragraph (Retelit's "promptly informed" vs. the 6 August update's customer complaints) leaves both accounts standing and explicitly declines to adjudicate — verified against `retelit_stripped.txt` lines 381 and 427 (both quotes verbatim, correctly attributed). The public-administration paragraph correctly frames Cineca/Lepida/InfoCamere as recipients of a precautionary warning, not confirmed-impacted parties — verified against line 352 for the 30 July / CERT-AGID date and mechanism. The Italian quotes underlying both paragraphs check out verbatim against `retelit_raw.html`/`retelit_stripped.txt`. The one defect found (F4 above) is the "regional" characterisation, not the claim-tier discipline the main agent asked about.
+2. **PAM quote repair — incomplete.** The two quotes iteration 3 named ("...RAM)" and the persistence quote) are correctly restored in the **body**. Checking every double-quoted span in the entry (not just the two named) surfaced that the **frontmatter `evidence[]` record for the persistence quote was not updated to match** — see F4 above. This is the answer to the main agent's specific ask #2: the repair is not complete.
+3. **No regression found** in the six-times-edited Retelit entry or four-times-edited run record beyond the items listed above — the first-to-report reframing, the eight (now confirmed verbatim) Italian evidence quotes, the T1078/T1486 mechanism paragraph, and the eighteen-entries correction all hold.
+4. **Run-record narrative accuracy — mostly holds, one error found.** Counts verified independently from the files, not from the record's own prose: 18 entries (`ls entries/2026-08-10` = 18), 5 `update_of` entries (bindcloak, cve-33824, cve-66066, forescout, wp2root — matches), 6 action items across 18 entries with 12 carrying none (independently recomputed: 6 entries have exactly one action each, 12 have `actions: []`, matching `check_run.py`'s own count). The Retelit-reversal account and quote-fidelity history read accurately against the backlog file (`state/coverage_backlog.md`: 15 original rows = 14 published + 1 struck, plus Retelit opened-and-closed = 16th, plus 3 completeness-sweep items = 18 total, arithmetic confirmed). The one narrative error is the 2026-08-06 date misattributed to two 2026-08-05 items (F4 above).
+
+**Anything missed by prior iterations:** the T1036.005/masquerading gap in the PAM entry (F4 above) was not caught by iterations 1–3, all of which reviewed this entry for other reasons (quote fidelity, ATT&CK id validity) without checking whether every mapped id had corresponding body text — this is the kind of gap a fresh cold read is designed to catch. No other missed angle found: the store-wide quote-truncation sweep across all 18 entries turned up only the one surviving instance (finding #2 above); `check_run.py` still exits 0 with the same 4 pre-disclosed warnings; no new coverage gap identified beyond the one already open in `state/coverage_backlog.md` (1Password FLAWED study, correctly left open).
+
+**NEEDS_FIXES (truth: 5, editorial: 0, advisory: 0).** All five findings are quote- or fact-level and defensible against a source fetched or read in this iteration. Given the loop's convergence (21 → 2 → 6 → 5) and that none of these five findings inverts a claim's meaning or would mislead a reader on the story's substance, the main agent may judge these worth a final, tightly-scoped remediation pass (three one-line fixes: complete the truncated evidence-quote, drop or replace the "regional" claim, correct the run-record date, plus one editorial choice on the PAM entry — either add a masquerading sentence to the body or drop `T1036.005`) rather than a further open-ended review.
+
+### Findings summary (machine-readable)
+
+```yaml
+- code: F4
+  category: hallucinated-fact
+  section: intel
+  item: "2026-08-10/pam-rootok-identity-shuffle-as-anti-forensics-xmrig"
+  url_or_quote: "techniques: [T1199, T1556.003, T1685.006, T1053.003, T1027.011, T1036.005]"
+  summary: "T1036.005 (Match Legitimate Resource Name or Location) maps the source's process-masquerading behaviour (spoofed process names via -h flag) but the body never describes any masquerading behaviour; no body text supports the id."
+- code: F4
+  category: hallucinated-fact
+  section: intel
+  item: "2026-08-10/pam-rootok-identity-shuffle-as-anti-forensics-xmrig"
+  url_or_quote: "By distributing their malicious activities ... would simply regenerate from"
+  summary: "Frontmatter evidence[] quote still truncated at 'from', missing 'the shadowed accounts.' The body's copy of the same quote was correctly completed at iteration 3; the frontmatter record was not updated to match."
+- code: F4
+  category: hallucinated-fact
+  section: intel
+  item: "2026-08-10/wazuh-4-14-6-cluster-root-rce-preauth-authd-overflow"
+  url_or_quote: "via the `V:` field ... `use_password=no`, `ssl_verify_host=no` / it calls : `exec(<payload>)` as root"
+  summary: "Two evidence[] quotes have backticks inserted around code-like substrings not present in the cited GHSA advisory text at those positions (cosmetic markdown decoration inside a verbatim-quote field; no meaning change)."
+- code: F4
+  category: hallucinated-fact
+  section: intel
+  item: "2026-08-10/retelit-qilin-italian-telco-cloud-operator-public-sector"
+  url_or_quote: "two regional digital-service providers"
+  summary: "Characterises Lepida and InfoCamere as both regional; InfoCamere is a national Chambers-of-Commerce IT consortium, not regional, and the source does not use the word 'regional' for either."
+- code: F4
+  category: hallucinated-fact
+  section: run-record
+  item: null
+  url_or_quote: "NatJack, the Novee coding-agent CI research and the Linux bridge STP use-after-free all trace to 2026-08-06"
+  summary: "Wrong for two of three items: the Novee CI research and the Linux bridge STP entry are both sourced/event-dated 2026-08-05, not 2026-08-06; only NatJack is 2026-08-06."
+```

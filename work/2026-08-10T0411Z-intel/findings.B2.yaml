@@ -1,0 +1,627 @@
+domain: B2
+run_id: 2026-08-10T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-10T04:16:24Z
+ended_at: 2026-08-10T04:37:51Z
+duration_seconds: 1287
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 7
+  bridge_fetches: 11
+items:
+  - title: "GOLD EMBRACE / Interlock weaponise Volatility3 and WinPmem for offline credential extraction after a ClickFix foothold"
+    sources:
+      - { url: "https://www.sophos.com/en-us/blog/2608-volatility-interlock/", publisher: "Sophos X-Ops / Emergency Incident Response (EIR)", date: "2026-08-07", role: primary }
+      - { url: "https://www.sophos.com/en-us/threat-profiles/gold-embrace", publisher: "Sophos Counter Threat Unit (CTU) — threat profile", date: "2026-08-07", role: corroborating }
+    discovery_trace: "first seen at: state/coverage_backlog.md (surfaced by 2026-08-09T1315Z-audit) → primary: Sophos X-Ops, URL https://www.sophos.com/en-us/blog/2608-volatility-interlock/ → corroborating: Sophos CTU threat profile, URL https://www.sophos.com/en-us/threat-profiles/gold-embrace (re-fetched in full this run via python3 tools/fetch_source.py url for both pages; quotes below are literal-checked against the raw fetched body)"
+    summary: |
+      Sophos's Emergency Incident Response team investigated a March 2026 Interlock intrusion (published 2026-08-07)
+      in which the ransomware operator ran the legitimate memory-forensics tool Volatility3 and the legitimate
+      physical-memory acquisition tool WinPmem directly against a live endpoint to harvest credentials, in place of a
+      commodity dumper such as Mimikatz. On "Patient Zero" (a Defender-managed Windows 10 host that, per Sophos,
+      turned out not to be running any endpoint protection at all), the actor first captured a full physical-memory
+      image with `winpmem_mini_x64_rc2.exe mem.raw`, then ran Volatility3's Windows plugins offline against that
+      image: `vol.exe -f .\mem.raw windows.hashdump.Hashdump` (NTLM/LM hash and account extraction from the SAM/SYSTEM
+      hive structures resident in memory) and `vol.exe -f .\mem.raw windows.cachedump.Cachedump` (cached domain
+      credential extraction). Sophos states plainly that adversarial use of these tools "would leave similar traces"
+      to legitimate DFIR/security-assessment/malware-analysis use of the same commands, and that the only reason they
+      could call this one hostile is that "the customer knew of no legitimate Volatility3 use on their system" —
+      i.e. the discriminator is entirely environmental (was this authorized?), not technical (the artefact looks
+      identical either way).
+      Initial access was a ClickFix lure served from a compromised, otherwise-reputable web page reached via a ChatGPT
+      search result; the user pasted an attacker-supplied command into the Windows Run dialog, which used a
+      wildcard-obfuscated PowerShell invocation to pull a RAT payload and install it for persistence. Interlock then
+      spent roughly 26 hours moving from that single endpoint to full domain-controller compromise — including LDAP
+      domain-group discovery, a Kerberoasting SPN query, an NTLM-downgrade RDP logon to the DC using a compromised
+      domain-admin account, and node.exe-based persistence deployed via `schtasks.exe` under a name masquerading as a
+      Windows Defrag scheduled task — before dumping AWS credentials, adding new domain-admin accounts, tampering with
+      Defender, exfiltrating data, and locking the customer out of its hypervisors.
+      Sophos's own threat-profile page states the naming relationship without hedging: "GOLD EMBRACE is a financially
+      motivated cybercriminal threat group operating the Interlock double extortion ransomware, first observed in late
+      September 2024." GOLD EMBRACE is Sophos CTU's internal tracking designation for the same actor publicly known
+      as Interlock — not a distinct group and not a partner/affiliate relationship. Sophos separately notes Interlock
+      exploited CVE-2026-20131 (a critical Cisco Secure Firewall Management Center insecure-deserialization RCE,
+      publicly disclosed and KEV-listed in March 2026) roughly two weeks before Cisco's own disclosure — background
+      context on the actor's broader access-vector portfolio, not part of this finding's core Volatility3/WinPmem
+      tradecraft.
+    region_nexus: "direct — Sophos's own threat profile states GOLD EMBRACE/Interlock 'targets organizations across North America and Europe'"
+    primary_sector_nexus: "direct — sectors named are healthcare, government (public-sector), education and manufacturing"
+    sector: "healthcare, public-sector, education, manufacturing"
+    cves: ["CVE-2026-20131"]
+    techniques: [T1189, T1547.001, T1069.002, T1055.002, T1134.003, T1558.003, T1021.001, T1053.005, T1003.002, T1003.005]
+    affected_products: ["Volatility3", "WinPmem", "Cisco Secure Firewall Management Center Software"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:interlock", type: actor, name: "Interlock", aliases: ["GOLD EMBRACE"],
+          summary: "Financially motivated double-extortion ransomware group active since September 2024, tracked internally by Sophos CTU as GOLD EMBRACE; targets North American and European critical-infrastructure, healthcare, education and manufacturing organisations, runs its own 'Worldwide Secrets Blog' leak site, and has expanded to abusing legitimate DFIR memory-forensics tooling (Volatility3, WinPmem) for credential access (Sophos, 2026-08-07)." }
+      - { key: "malware:nodesnake", type: malware, name: "NodeSnake / Interlock RAT", aliases: ["Interlock RAT"],
+          summary: "Custom Node.js/PHP remote-access trojan used by the Interlock/GOLD EMBRACE ransomware group for initial persistence after ClickFix delivery; runs via node.exe launched from a scheduled task masquerading as a Windows Defrag task (Sophos, 2026-08-07)." }
+    relation_suggestions:
+      - { subject: "actor:interlock", object: "malware:nodesnake", basis: "Sophos CTU threat profile lists 'C2: InterlockRAT, NodeSnakeRAT (Node.js/PHP), Cobalt Strike, SystemBC' under GOLD EMBRACE's TTPs (Sophos, 2026-08-07)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "In March 2026, the Sophos Emergency Incident Response (EIR) team investigated an incident in which we observed the use of the legitimate IR memory analysis tool Volatility3 by the ransomware threat actor Interlock."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/2608-volatility-interlock/"
+      - quote: "Interlock, which Sophos Counter Threat Unit (CTU) researchers track as GOLD EMBRACE, emerged in September 2024."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/2608-volatility-interlock/"
+      - quote: "In a legitimate use scenario, use of this command could be expected as part of a DFIR investigation, a security assessment, or malware analysis. However, adversarial use of Volatility3 would leave similar traces. In this situation, the customer knew of no legitimate Volatility3 use on their system."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/2608-volatility-interlock/"
+      - quote: "We found evidence of credential dumping (including AWS credentials), access to sensitive files, addition of new domain-admin accounts, tampering with Defender on the endpoints, and more."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/2608-volatility-interlock/"
+      - quote: "GOLD EMBRACE is a financially motivated cybercriminal threat group operating the Interlock double extortion ransomware, first observed in late September 2024. The group targets organizations across North America and Europe, with victims from a range of sectors including healthcare, government, education, and manufacturing."
+        attribution: "Sophos Counter Threat Unit"
+        source_url: "https://www.sophos.com/en-us/threat-profiles/gold-embrace"
+    extended_notes: |
+      Full attack-chain diary (Sophos's own ATT&CK labels in brackets, from the article's "Diary of an attack chain"
+      section — the 26-hour initial-access-to-DC-compromise interval includes a deliberate 24-hour pause after Day 1
+      persistence before the actor resumed):
+      - Day 1, T+0s: end-user device reaches a compromised-but-reputable site via a ChatGPT search result for
+        Dynamics 365 content [T1189 Drive-by Compromise].
+      - T+5s: clipboard contents read via an API call (ClickFix fingerprint) "(that is, five seconds in)".
+      - T+13s: user pastes an attacker-supplied command into a Run dialog; a wildcard-obfuscated PowerShell path
+        invocation downloads a second-stage PowerShell script via curl from an attacker IP, installing a RAT to run
+        at startup.
+      - T+25m41s: malicious ASEP registry Run-key persistence installed [T1547.001].
+      - Day 2: LDAP domain-group enumeration [T1069.002].
+      - Day 2, T+37m29s (relative day counter resets per-day in the source): payload `zoom.txt` executed via a
+        trusted Microsoft process, labelled by Sophos as Process Injection: Portable Executable Injection
+        [T1055.002] — worth flagging to a verifier as an unusual pairing of PE-injection with a `.txt`-named
+        payload; Sophos does not elaborate on the injection mechanics beyond the ATT&CK label.
+      - T+58m22s: SPN query indicating a Kerberoasting attack, labelled by Sophos as Access Token Manipulation:
+        Make and Impersonate Token [T1134.003] — the behaviour described (TGS request against a valid TGT for a
+        privileged SPN) is textbook Kerberoasting [T1558.003], which we add as the more precise unambiguous mapping
+        alongside Sophos's own label.
+      - T+2h19m39s (Day into lateral movement): RDP lateral move to the domain controller using anonymous login
+        and an NTLM downgrade attack [T1021.001].
+      - Day 3: using a compromised domain-admin account, `schtasks.exe /create /sc DAILY /tn
+        \Microsoft\Windows\Defrag\ScheduledDefrags /tr "...\node-v22.11.0-win-x64\node.exe ...\debug.log" /st 23:30
+        /ru system` on a print server — persistence malware `debug.log` executed by a bundled Node.js runtime under a
+        scheduled-task name masquerading as a routine Windows Defrag job [T1053.005].
+      - Post-Day-3: AWS credential dumping, new domain-admin account creation, Defender tampering, data
+        exfiltration, hypervisor lockout/encryption.
+      Triage-relevant note the article makes explicitly: Sophos's own Application Control Policy includes
+      Volatility, and "customers can choose whether Volatility activity is or is not permitted on their managed
+      devices" — i.e. the vendor's own mitigation is allowlisting/environmental context, not signature detection,
+      because there is no way to distinguish the artefact itself from legitimate DFIR use.
+      windows.hashdump.Hashdump and windows.cachedump.Cachedump are both real, documented Volatility3 plugin names
+      (not obfuscated or renamed) — an organisation could hunt for these literal plugin-name strings appearing in
+      process command-line telemetry on hosts where no authorized DFIR/IR engagement is running, which is the
+      practical form of Sophos's "no legitimate use known" discriminator.
+      Cisco context (background only, not part of the core finding): "evidence shows Interlock was making use of the
+      CVE-2026-20131 Cisco zero-day a full two weeks before Cisco acknowledged it" — this CVE was already publicly
+      disclosed and KEV-listed in March 2026, well outside this run's window; carried here only as actor-profile
+      context, not as a fresh vulnerability item.
+
+  - title: "CrowdStrike catalogues 21 command-obfuscation techniques (six classes) viable inside VMware ESXi's minimal BusyBox ash shell"
+    sources:
+      - { url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-hunts-for-shell-command-obfuscation-vmware-esx/", publisher: "CrowdStrike", date: "2026-08-07", role: primary }
+    discovery_trace: "first seen at: state/coverage_backlog.md (surfaced by 2026-08-09T1315Z-audit) → primary: CrowdStrike, URL https://www.crowdstrike.com/en-us/blog/crowdstrike-hunts-for-shell-command-obfuscation-vmware-esx/ (re-fetched in full this run via python3 tools/fetch_source.py url; quotes below are literal-checked against the raw fetched body, including the full unabridged technique catalogue and CQL detection section)"
+    summary: |
+      CrowdStrike systematically tested command obfuscation against a real ESXi host (validated on "ESX 7.0.3
+      build-20036589 running the VMware-provided BusyBox at /usr/lib/vmware/busybox/bin/busybox, which enables the
+      awk GNU math extensions (xor, and, or)") and catalogued 21 distinct working techniques across six classes,
+      motivated by ESXi's status as ransomware's hypervisor-layer endgame ("Threat groups including SCATTERED
+      SPIDER, BlackBasta, Royal (aka BlackSuit), Akira, and the ESX-focused ransomware as a service (RaaS) platform
+      shinysp1d3r have demonstrated that once an adversary reaches the hypervisor layer, they can rapidly encrypt
+      virtual machines, disable logging, and cripple an entire data center").
+      The foundational insight, stated by CrowdStrike, is a parsing/execution gap: "ESX shell logs capture commands
+      during the parsing stage, before expansions occur" — so a shell-substitution obfuscated command executes
+      identically to its plaintext form but the log entry preserves only the obfuscated string, defeating any
+      keyword-based detection for the literal command name.
+      The six classes: (1) Escape Sequence Encoding — octal/hex character codes via printf, echo -e or ANSI-C
+      quoting; (2) Character Generation and String Manipulation — runtime character assembly via awk/Python, string
+      reversal, and (the most evasive variant) harvesting individual characters from existing environment variables
+      like $TERM/$SHELL so the command line contains no encoded content at all, only standard variable references;
+      (3) Invisible Unicode Character Injection — zero-width and Private-Use-Area Unicode codepoints (over 131,000
+      available in the most extreme variant) interleaved between visible command characters, stripped at runtime by
+      awk's gsub(); (4) Cryptographic Encoding — awk's arithmetic/bitwise primitives implement genuine ciphers:
+      bitwise XOR/OR with a fixed key, a Fibonacci-sequence keystream, an affine cipher, and a CBC-like cumulative
+      XOR chain where each character's decode depends on the previous one; (5) ESX Infrastructure-Keyed Obfuscation
+      — the most operationally significant class: decryption keys derived from the target host's own build number,
+      hostname length, or live infrastructure state (firewall status, VM count), so a captured payload only decodes
+      correctly on the intended host, plus a VMFS-steganography variant that writes an octal-encoded payload to a
+      hidden VMFS file bracketed by forged vmkernel syslog entries and self-deletes after execution; (6) Alternative
+      Encoding Systems — Morse code, binary strings, scientific-notation ASCII values, Caesar/ROT13 and
+      Quoted-Printable, none of which resemble numeric obfuscation at all.
+      CrowdStrike built regex-based CrowdStrike Query Language (CQL) detection patterns targeting the shared
+      syntactic primitives of each class (not the specific payloads), deployed as a Falcon Next-Gen SIEM correlation
+      rule against the vmware.esxi / esxi.shell telemetry source, and explicitly maps the technique set to "MITRE
+      ATT&CK T1027 (Obfuscated Files or Information), T1059.004 (Command and Scripting Interpreter: Unix Shell), and
+      T1140 (Deobfuscate/Decode Files or Information)".
+    region_nexus: "global — technique-class research; transferable to any ESXi estate, including European critical-infrastructure operators running VMware hypervisors"
+    primary_sector_nexus: "indirect — no specific sector named; applicability is to any organisation running VMware ESXi, which spans this deployment's full additional-sector list (energy, water, transport, healthcare, finance, telco)"
+    sector: ""
+    cves: []
+    techniques: [T1027, T1059.004, T1140]
+    affected_products: ["VMware ESXi"]
+    entity_keys: ["actor:akira", "actor:scattered-spider"]
+    new_entities:
+      - { key: "tool:shinysp1d3r", type: tool, name: "shinysp1d3r", aliases: [],
+          summary: "ESX-focused ransomware-as-a-service (RaaS) platform named by CrowdStrike as one of the recurring threat groups targeting the ESXi hypervisor layer in ransomware campaigns (CrowdStrike, 2026-08-07)." }
+      - { key: "actor:blackbasta", type: actor, name: "Black Basta", aliases: ["BlackBasta"],
+          summary: "Ransomware group named by CrowdStrike among recurring ESXi hypervisor-layer ransomware operators (CrowdStrike, 2026-08-07)." }
+      - { key: "actor:royal-blacksuit", type: actor, name: "Royal / BlackSuit", aliases: ["Royal", "BlackSuit"],
+          summary: "Ransomware group (Royal, rebranded as BlackSuit) named by CrowdStrike among recurring ESXi hypervisor-layer ransomware operators (CrowdStrike, 2026-08-07)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "VMware ESX systems are a recurring target in ransomware campaigns. Threat groups including SCATTERED SPIDER, BlackBasta, Royal (aka BlackSuit), Akira, and the ESX-focused ransomware as a service (RaaS) platform shinysp1d3r have demonstrated that once an adversary reaches the hypervisor layer, they can rapidly encrypt virtual machines, disable logging, and cripple an entire data center."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-hunts-for-shell-command-obfuscation-vmware-esx/"
+      - quote: "The critical insight is that ESX shell logs capture commands during the parsing stage, before expansions occur."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-hunts-for-shell-command-obfuscation-vmware-esx/"
+      - quote: "All techniques were validated on ESX 7.0.3 build-20036589 running the VMware-provided BusyBox at /usr/lib/vmware/busybox/bin/busybox, which enables the awk GNU math extensions (xor, and, or)."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-hunts-for-shell-command-obfuscation-vmware-esx/"
+      - quote: "The techniques covered map to MITRE ATT&CK T1027 (Obfuscated Files or Information), T1059.004 (Command and Scripting Interpreter: Unix Shell), and T1140 (Deobfuscate/Decode Files or Information)."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-hunts-for-shell-command-obfuscation-vmware-esx/"
+      - quote: "Any detection strategy that searches for the keyword \"esxcli\" would miss this command entirely."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-hunts-for-shell-command-obfuscation-vmware-esx/"
+    extended_notes: |
+      Why ash still supports this despite its minimal footprint (source's own explanation): "Despite BusyBox's
+      minimal footprint, it maintains POSIX compliance for core shell functionality. Command substitution, variable
+      expansion, escape sequence interpretation, and quoting mechanisms all function as expected. The awk utility,
+      available on all ESX versions, provides a particularly rich attack surface with string manipulation,
+      arithmetic, bitwise operations, and even system() for command execution." — i.e. awk (not the shell itself) is
+      the real obfuscation engine; bash-specific hardening/monitoring approaches built for Linux servers will miss
+      this because they don't expect a POSIX-minimal shell to have this much capability via a coreutils applet.
+      Baseline/normal activity CrowdStrike observed in production to calibrate false-positive risk: plaintext service
+      restarts (/etc/init.d/hostd restart), hardware tools (/opt/hp/tools/hponcfg), backup scripts (ghettoVCB.sh),
+      certificate renewal (/sbin/generate-certificates), NTP restarts, SSH-hardening audits (cat
+      /etc/ssh/sshd_config | grep -i AllowTcpForwarding), network diagnostics (esxcli network nic vlan stats get),
+      and VM config review (cat vm-config.vmx | grep CPU) — none of which resemble any of the six obfuscation
+      classes, which is the basis for treating the CQL patterns as low-false-positive against real ESXi shell
+      telemetry.
+      Detection log source and rule scope, stated precisely: "#Vendor=\"vmware\" #event.module=\"esxi\"
+      #event.dataset=\"esxi.shell\"" feeding a correlation rule template named "VMware - ESXi - Obfuscated Shell
+      Command Execution", one of "over 95 VMware correlation rule templates already available in Falcon Next-Gen
+      SIEM, spanning ESX and vCenter threat categories including authentication brute-force, SSH lateral movement,
+      ransomware attack chains, LOLBin abuse, syslog tampering, privilege escalation, guest VM manipulation, and
+      VMFS filesystem anomalies."
+      Detection strategy, stated precisely: "From the 21 validated techniques, we identified the syntactic primitives
+      that each category shares and built regex-based CQL detection patterns targeting those primitives" — i.e.
+      matching the mechanism class (e.g. `awk.*BEGIN.*printf.*%c.*[0-9]` for character generation,
+      `awk\s+.*\|\s*(?:\/bin\/)?(sh|bash)\b` for awk-constructed-command-piped-to-shell) rather than any specific
+      payload string, which is the property that should generalise to techniques CrowdStrike hasn't catalogued yet.
+      Most concerning class for a defender to prioritise: ESX Infrastructure-Keyed Obfuscation (class 5) — payloads
+      keyed to the host's own build number, hostname length, or live state (firewall-enabled AND VM-count
+      thresholds) cannot be decoded by static analysis or a sandbox because the decode depends on facts only the
+      real target host has; the VMFS+syslog steganography sub-variant additionally bracket-injects forged vmkernel
+      "Storage check" log lines around the actual execution and self-deletes the payload file afterward, so a
+      threat hunter reviewing syslog sees only routine-looking storage-check messages either side of the real event.
+      Behavioural discriminator for hunting (Triage-relevant): legitimate ESXi shell activity in CrowdStrike's own
+      baseline consists of plaintext, human-readable commands (see baseline list above); ANY command-substitution
+      syntax ($(...), backticks, ANSI-C $'...' quoting), awk invocation with BEGIN{printf "%c"...} character
+      generation, or awk output piped to sh/bash in ESXi shell telemetry is itself anomalous against that baseline —
+      administrators do not routinely write self-decoding awk one-liners.
+
+  - title: "BINDCLOAK — Zscaler details a modular C++ backdoor with RtlQueueWorkItem-masked reflective DLL loading, assessed high-confidence as an OctLurk variant, in an East-Asia-linked campaign now expanding to Middle East energy-sector government targets"
+    sources:
+      - { url: "https://www.zscaler.com/blogs/security-research/targeted-attack-government-entities-middle-east-part-2", publisher: "Zscaler ThreatLabz", date: "2026-08-03", role: primary }
+      - { url: "https://securelist.com/octlurk-silklurk-backdoors-central-asia/120840/", publisher: "Kaspersky GReAT", date: "2026-07-30", role: corroborating }
+    discovery_trace: "first seen at: state/coverage_backlog.md (surfaced by 2026-08-09T1315Z-audit) → primary: Zscaler ThreatLabz Part 2, URL https://www.zscaler.com/blogs/security-research/targeted-attack-government-entities-middle-east-part-2 → cross-referenced: Kaspersky GReAT OctLurk/SilkLurk report (already tracked in entities/registry.yaml as malware:octlurk / malware:silklurk / tool:lurkproxy, entry 2026-07-31/octlurk-silklurk-service-dll-plugin-backdoors-government) (re-fetched Zscaler Part 2 in full this run via python3 tools/fetch_source.py url; quotes below are literal-checked against the raw fetched body, including the full Technical Analysis, Threat Attribution and MITRE ATT&CK Framework sections)"
+    summary: |
+      This is Part 2 of Zscaler ThreatLabz's two-part series on an East-Asia-linked actor targeting Middle East
+      government entities (Part 1, already published in this store as
+      entries/2026-07-26/teleshim-bindcloak-volume-serial-keying-government-espionage.md, covered the TELESHIM
+      backdoor and MIXEDKEY loader). Part 2 is a full technical teardown of BINDCLOAK, the toolkit's third and final
+      stage: "BINDCLOAK is a 64-bit modular backdoor written in C++ that uses a complex message routing mechanism to
+      manage the C2 communication channel." It generates a 4-byte per-victim host identifier from the ASCII sum of
+      the computer name plus the volume serial number (continuing Part 1's environmental-keying theme), runs two
+      core built-in modules (a C2 module and a Command module, each identified by a fixed type ID) plus C2-delivered
+      plugin DLL modules, and supports 11 C2 commands grouped into token-collection (LogonUserW-based credential
+      capture and reuse via DuplicateTokenEx), module start/stop, plugin-module init/remove, and miscellaneous
+      commands (including a SetThreadExecutionState call to keep the infected host awake).
+      In-process evasion tradecraft: the plugin loader allocates PAGE_EXECUTE_READWRITE memory via VirtualAlloc and
+      reflectively loads a plugin DLL into it; when resolving that DLL's imports, "each DLL is loaded via
+      RtlQueueWorkItem with LoadLibraryW and the DLL name as arguments to evade EDRs since LoadLibraryW calls from
+      unbacked executable memory regions are considered highly suspicious by EDRs" — i.e. the suspicious
+      LoadLibraryW-from-unbacked-memory call is queued to execute on a worker-thread-pool thread rather than being
+      called directly from the loader's own thread context, breaking the direct-caller heuristic EDRs use to flag
+      that pattern. The loader also zeroes/overwrites DOS-header fields (e_cparhdr, e_minalloc) to store the DLL
+      size, hindering static PE-header-based detection of the staged plugin. C2 traffic uses two chained XOR passes
+      (a hardcoded 105-byte rolling key plus a per-message random 83-byte key sent in cleartext) over zlib-compressed
+      data, over TLS/TCP.
+      Attribution: "ThreatLabz assesses with high-confidence that BINDCLOAK is a variant of OctLurk" — the source's
+      own confidence language for this specific relationship, based on stated code overlap plus infrastructure
+      overlap (an identical SSL certificate serial/CN shared between BINDCLOAK's and OctLurk's C2 domains, shared
+      Tucows domain registration, Njalla nameservers, and a shared hosting ASN, corroborated by observed
+      post-compromise ping attempts to both families' C2 domains from the same intrusion). This is a distinct,
+      higher-confidence claim from Kaspersky's own medium-confidence assessment (already in this registry) that
+      OctLurk and SilkLurk share one unattributed Chinese-speaking operator — the two confidence levels must not be
+      conflated when composing the entry. Targeting: previously Central Asia (per Kaspersky, since early 2025); "the
+      new campaign we identified in July 2026 highlights a notable expansion of operations to target the Middle East
+      with a key focus on the energy vertical" — a direct hit against this deployment's energy sector-lens, even
+      though the named victims are outside Europe.
+    region_nexus: "indirect — victims are Middle East government/energy entities, not Europe; the tradecraft class (environmentally-keyed, EDR-evading implant) and the actor's demonstrated pivot into the energy vertical are directly transferable to this deployment's energy sector-lens"
+    primary_sector_nexus: "direct — government/public-sector targeting stated; energy named explicitly as the sector the campaign has expanded into"
+    sector: "public-sector, energy"
+    cves: []
+    techniques: [T1134.001, T1134.003, T1620, T1057, T1132.002, T1095]
+    affected_products: []
+    entity_keys: ["malware:teleshim", "tool:mixedkey", "malware:bindcloak", "malware:octlurk", "malware:silklurk", "tool:lurkproxy"]
+    new_entities: []
+    relation_suggestions:
+      - { subject: "malware:bindcloak", object: "malware:octlurk", basis: "\"ThreatLabz assesses with high-confidence that BINDCLOAK is a variant of OctLurk\" — high confidence, based on code overlap and SSL-certificate/registrar/nameserver/ASN infrastructure reuse plus shared post-compromise ping targets (Zscaler ThreatLabz, 2026-08-03)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-07-26/teleshim-bindcloak-volume-serial-keying-government-espionage"
+    evidence:
+      - quote: "ThreatLabz assesses with high-confidence that BINDCLOAK is a variant of OctLurk."
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/targeted-attack-government-entities-middle-east-part-2"
+      - quote: "When resolving imports, each DLL is loaded via RtlQueueWorkItem with LoadLibraryW and the DLL name as arguments to evade EDRs since LoadLibraryW calls from unbacked executable memory regions are considered highly suspicious by EDRs."
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/targeted-attack-government-entities-middle-east-part-2"
+      - quote: "the new campaign we identified in July 2026 highlights a notable expansion of operations to target the Middle East with a key focus on the energy vertical."
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/targeted-attack-government-entities-middle-east-part-2"
+      - quote: "the threat actor consistently reused the Tucows domain registrar to register C2 domains, as well as Njalla name servers, and infrastructure hosted on ASN 14956."
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/targeted-attack-government-entities-middle-east-part-2"
+      - quote: "BINDCLOAK is a 64-bit modular backdoor written in C++ that uses a complex message routing mechanism to manage the C2 communication channel."
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/targeted-attack-government-entities-middle-east-part-2"
+    extended_notes: |
+      Full MITRE ATT&CK table as published by Zscaler for BINDCLOAK specifically (distinct from Part 1's TELESHIM/
+      MIXEDKEY mapping already in the published entry): T1134.001 (Token Impersonation/Theft — "BINDCLOAK can
+      escalate privileges for modules by abusing collected user and process tokens"), T1134.003 (Make and
+      Impersonate Token — "BINDCLOAK can abuse user tokens collected from authenticated with provided credentials"),
+      T1620 (Reflective Code Loading — "BINDCLOAK loads plugin module DLLs via reflective DLL loading"), T1057
+      (Process Discovery — "BINDCLOAK collects information about running processes and associated user and token"),
+      T1132.002 (Non-Standard Encoding — "BINDCLOAK uses two layers of XOR encoding for C2 communication"), T1095
+      (Non-Application Layer Protocol — "BINDCLOAK uses TLS over TCP for C2 communication").
+      Host-identifier mechanism: "Adds up the ASCII values of all the wide characters of the computer name and adds
+      this sum to the volume serial number to generate a unique identifier for the host" via GetComputerNameW and
+      GetVolumeInformation for C:\ — a 4-byte ID embedded in every C2 message, not itself a decryption key (that role
+      belongs to the volume-serial-derived key documented for the BINDCLOAK payload in Part 1), but useful as a
+      detection/hunt correlator if extracted from memory during response.
+      Command taxonomy (11 total, source-named): Token commands — COLLECT_USER_TOKEN (LogonUserW-based credential
+      capture, 712-byte domain/username/password blob), CLEANUP_USER_TOKENS, GET_STATUS (WTSEnumerateProcessesW +
+      LookupAccountSidW + OpenProcessToken flag checks — reconnaissance for which processes' tokens are worth
+      stealing). General module commands — START_MODULE_WITH_USER_TOKEN / START_MODULE_WITH_PROCESS_TOKEN (via
+      DuplicateTokenEx with TOKEN_ASSIGN_PRIMARY), STOP_MODULE, REMOVE_MODULE. Plugin module commands —
+      INIT_PLUGIN_MODULE, REMOVE_PLUGIN_MODULE. Misc — SET_THREAD_EXECUTION_STATE, and one command (0x64570) whose
+      "intent or purpose... is currently unknown" per Zscaler itself — an honest stated gap worth carrying rather
+      than guessing at.
+      Beacon message parity with OctLurk, stated directly: "Information gathered from the host machine by BINDCLOAK
+      and the structure of the beacon message sent to the C2 server is the same as the OctLurk backdoor" and "This
+      C2 message encryption algorithm is the same as the one used by the OctLurk backdoor... Although this XOR key
+      is different from the key used in the OctLurk backdoor, there is a high-level of similarity between the keys"
+      — shared algorithm/structure with a swapped-but-similarly-styled key is itself part of the code-overlap basis
+      for the high-confidence variant call.
+      Zscaler's own coverage statement (no independent detection specifics beyond product-name signature):
+      "Win64.Backdoor.BINDCLOAK" and "Zscaler's multilayered cloud security platform detects indicators related to
+      this campaign at various levels" — thin as a defender takeaway; the RtlQueueWorkItem-masked LoadLibraryW
+      pattern and the reflective-loading DOS-header zeroing are the concrete hunt hooks this item should carry
+      instead (EDR telemetry for LoadLibraryW calls originating from work-item queue callbacks executing against
+      unbacked/RWX memory regions, and PE loaders whose DOS header fields don't match a normal on-disk file).
+
+  - title: "Group-IB: an XMRig botnet operator weaponises pam_rootok to impersonate low-privileged users as a deliberate forensic smokescreen, after trusted-third-party initial access"
+    sources:
+      - { url: "https://www.group-ib.com/blog/xmrig-covert-linux-pam-abuse/", publisher: "Group-IB (Digital Forensics & Incident Response team)", date: "2026-07-30", role: primary }
+    discovery_trace: "first seen at: state/coverage_backlog.md (surfaced by 2026-08-03T0110Z-weekly) → WebSearch (\"Group-IB pam_rootok anti-forensics blog\") → primary: Group-IB, URL https://www.group-ib.com/blog/xmrig-covert-linux-pam-abuse/ (fetched in full this run via python3 tools/fetch_source.py url — direct transport succeeded, no jina fallback needed; quotes below are literal-checked against the raw fetched body, including the full Technical Walkthrough and Recommendations sections)"
+    summary: |
+      Group-IB's DFIR team documents a May 2026 covert Monero-mining campaign (published 2026-07-30) whose defining
+      feature is not the miner itself but a deliberate anti-forensics use of Linux PAM. Initial access came through
+      "a trusted third-party relationship, allowing threat actors to traverse from a trusted environment into the
+      primary network undetected" using a standard user account, after which the actor escalated to root.
+      Rather than operating as root — which Group-IB notes "typically triggers high-severity alerts in any
+      organization's Security Operations Center (SOC)" — the actor "weaponized the Linux Pluggable Authentication
+      Modules (PAM) architecture. By abusing the pam_rootok policy, the attacker utilized the `su` command to
+      seamlessly assume the identities of multiple low-privileged users across the system without requiring their
+      passwords." pam_rootok is a legitimate PAM module option that, when configured, tells the `su` auth stack to
+      succeed automatically for a caller already running as root without prompting for the target user's password —
+      normally a convenience for root-initiated administrative su, here abused deliberately as a lateral/persistence
+      primitive rather than an intended admin shortcut. Because the su transitions look like normal
+      already-authenticated-as-root activity, the resulting authentication trail to a responder shows root
+      switching into a sequence of ordinary low-privileged accounts rather than any single obviously-compromised
+      identity — "By distributing their malicious activities and planting redundant cronjob persistence across
+      various unmonitored standard accounts, the attackers ensured that if SOC analysts only remediated the root
+      compromise, the botnet implant would simply regenerate from the shadowed accounts" (Group-IB's own
+      "hydra-like" characterisation).
+      Logging suppression compounds this: "By stopping core logging services and tampering with authentication logs,
+      the threat actor ensured that their initial privilege escalation and PAM manipulation left a minimal forensic
+      footprint on the disk, effectively blinding traditional file-based monitoring." The implant itself is a
+      customised, musl-libc-cross-compiled build of open-source XMRig 6.25.0 (hardcoded banner: "PRIVATE VERSION FOR
+      BOTNET") that self-unlinks immediately after establishing a /tmp/.lock execution mutex — "By deleting its own
+      binary file from the disk while the process remains active, the malware transitions into a fileless state,
+      running entirely from memory (RAM)" — plus process-name masquerading (a `-h` flag spoofs the name shown in
+      ps/top/proc/comm, e.g. as "ssh") and a Stratum-over-HTTP User-Agent disguised as "Java/Agent". Group-IB
+      explicitly maps the evasion set to "MITRE technique T1564.013 (Hide Artifacts)" as their own umbrella label;
+      per this pipeline's pinned ATT&CK dataset, T1564.013 currently resolves to the specific sub-technique "Bind
+      Mounts", which does not obviously match the self-unlinking/masquerading behaviour described — flagged below
+      for the composer rather than silently corrected, alongside a better-fitting unambiguous alternative mapping.
+      Binary campaign-tracking strings (XOR keys "I3F0" and "CLIENT") tie the sample to a "V25 (Generation 26)"
+      campaign family, per Group-IB's own reverse-engineering.
+    region_nexus: "global — no region stated by the source; the PAM anti-forensics technique is transferable to any Linux estate, including this deployment's own"
+    primary_sector_nexus: "indirect — no sector named; initial access via a trusted third-party relationship is the transferable supply-chain lesson"
+    sector: ""
+    cves: []
+    techniques: [T1199, T1556.003, T1685.006, T1053.003, T1027.011, T1036.005]
+    affected_products: ["Linux Pluggable Authentication Modules (PAM)"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:groupib-xmrig-pam-forensic-smokescreen", type: campaign, name: "V25 (Generation 26) XMRig / PAM anti-forensics campaign", aliases: ["V25 GEN-26"],
+          summary: "Covert Monero-mining campaign documented by Group-IB (published 2026-07-30, intrusion observed May 2026): initial access via a trusted third-party relationship, root escalation followed by pam_rootok abuse to impersonate multiple low-privileged accounts as a forensic smokescreen with redundant cron persistence, logging-service suppression and auth-log tampering, and a self-unlinking, process-masquerading, musl-libc XMRig 6.25.0 derivative tagged internally with the campaign IDs My-V25-GEN-26 / V25-GEN-26 (Group-IB DFIR, 2026-07-30)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Initial access was achieved by exploiting a trusted third-party relationship, highlighting critical supply chain risks."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/xmrig-covert-linux-pam-abuse/"
+      - quote: "the attacker weaponized the Linux Pluggable Authentication Modules (PAM) architecture. By abusing the pam_rootok policy, the attacker utilized the `su` command to seamlessly assume the identities of multiple low-privileged users across the system without requiring their passwords."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/xmrig-covert-linux-pam-abuse/"
+      - quote: "By distributing their malicious activities and planting redundant cronjob persistence across various unmonitored standard accounts, the attackers ensured that if SOC analysts only remediated the root compromise, the botnet implant would simply regenerate from the shadowed accounts."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/xmrig-covert-linux-pam-abuse/"
+      - quote: "By stopping core logging services and tampering with authentication logs, the threat actor ensured that their initial privilege escalation and PAM manipulation left a minimal forensic footprint on the disk, effectively blinding traditional file-based monitoring."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/xmrig-covert-linux-pam-abuse/"
+      - quote: "Immediately after establishing this mutex, the malware performs a self-unlink operation. By deleting its own binary file from the disk while the process remains active, the malware transitions into a fileless state, running entirely from memory (RAM)."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/xmrig-covert-linux-pam-abuse/"
+      - quote: "Alerts should be triggered immediately if root is observed rapidly transitioning into standard user accounts (USER_START events associated with pam_rootok)."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/xmrig-covert-linux-pam-abuse/"
+    extended_notes: |
+      ATT&CK mapping rationale (built by this sub-agent from the source's stated mechanics, cross-checked against
+      the pipeline's pinned attack/enterprise-attack.json): T1199 Trusted Relationship (source's own "trusted
+      third-party relationship" framing for initial access); T1556.003 Modify Authentication Process: Pluggable
+      Authentication Modules (the pam_rootok abuse itself — an unambiguous, precise fit not explicitly cited by
+      Group-IB but directly matching their described mechanism); T1685.006 Disable or Modify Tools: Clear Linux or
+      Mac System Logs (the log-suppression/auth-log-tampering behaviour — note the ATT&CK id Group-IB's own
+      readership might expect, T1070.002, is REVOKED in the current ATT&CK release and superseded by T1685.006,
+      which we use instead); T1053.003 Scheduled Task/Job: Cron (redundant cronjob persistence across shadowed
+      accounts); T1027.011 Obfuscated Files or Information: Fileless Storage (self-unlink into memory-resident
+      execution); T1036.005 Masquerading: Match Legitimate Resource Name or Location (the -h flag spoofing the
+      process name as "ssh" in ps/top/proc/comm). Group-IB's own cited id, T1564.013, is included above per the
+      source's explicit statement but flagged: in the pinned dataset it names "Bind Mounts" specifically, not a
+      generic "Hide Artifacts" — worth the composer either omitting it or keeping it as a source-attributed
+      citation with the mismatch noted, rather than treating it as this sub-agent's own confirmed mapping.
+      Detection/hunt hooks stated by Group-IB itself (Recommendations section): monitor /var/log/secure and
+      audit.log for "USER_START events associated with pam_rootok" where root rapidly transitions into standard
+      user accounts; treat unexplained stops/modifications of rsyslog/auditd as a signal and forward logs to an
+      external tamper-proof SIEM in real time; hunt for the transient /tmp/.lock mutex file as a memory-forensics
+      starting point once the on-disk binary has self-deleted.
+      Custom CLI surface (behavioural, not IOC): the implant replaces XMRig's standard argument parser with flags
+      including -lan (hardcoded LAN pool IP, bypassing DNS sinkholes), -h <name> (process masquerading), -c
+      (disables the implant's default auto-cron-install behaviour), -k (forces max hashrate, no CPU yielding), and
+      -dp (combined static-IP + custom-port shorthand) — the existence of a "disable auto-cronjob" flag confirms
+      cron-based self-installation is the implant's default behaviour, reinforcing the redundant-persistence design
+      intent described above.
+      Triage-relevant benign lookalike: root-to-standard-user `su` transitions are routine on any multi-admin Linux
+      estate (e.g. `su - appuser` for maintenance); the Group-IB-cited discriminator is not the su call itself but
+      its volume/pattern (rapid, repeated transitions into multiple, normally-unused or unmonitored standard
+      accounts, each followed by new cron entries) rather than an occasional single admin's own account.
+
+  - title: "CERT Intrinsec's coding-agent DFIR artefact map — OpenCode and OpenAI Codex leave prompt history, session logs and plaintext API-key/token credentials on disk in predictable locations"
+    sources:
+      - { url: "https://www.intrinsec.com/en/opencode-forensics/", publisher: "CERT Intrinsec", date: "2026-07-27", role: primary }
+      - { url: "https://www.intrinsec.com/en/ai-agents-digital-forensics-openai-codex-artifacts/", publisher: "CERT Intrinsec", date: "2026-07-31", role: primary }
+    discovery_trace: "first seen at: state/coverage_backlog.md (surfaced by 2026-08-03T0110Z-weekly) → WebSearch (\"CERT Intrinsec OpenCode forensic artefacts blog\"; \"CERT Intrinsec Codex forensic artefacts blog OpenAI\") → primary: CERT Intrinsec Part 1 (OpenCode), URL https://www.intrinsec.com/en/opencode-forensics/ → primary: CERT Intrinsec Part 2 (Codex), URL https://www.intrinsec.com/en/ai-agents-digital-forensics-openai-codex-artifacts/ (both fetched in full this run via python3 tools/fetch_source.py url; quotes below are literal-checked against the raw fetched body of each post)"
+    summary: |
+      CERT Intrinsec (Intrinsec's PRIS-qualified incident-response and digital-forensics team) opened an "AI Agents
+      X Digital Forensics" series (Part 3, on Claude Code, followed on 2026-08-07 but is outside this item's scope)
+      mapping where autonomous coding-agent CLIs leave forensic artefacts on disk — the same paths a responder needs
+      for evidence, and, read the other way, the same paths an attacker with any code-execution foothold on a
+      developer or CI workstation would target for credential collection (API keys and OAuth/session tokens sit
+      there in cleartext JSON).
+      OpenCode (Part 1, 2026-07-27; OpenCode is an open-source CLI/desktop/IDE-extension coding agent by Anomaly
+      Innovations Inc.): "A folder used for OpenCode configuration files can be found in: C:\Users\<user>\.config\
+      opencode on Windows. In this folder, the file opencode.json is forensically interesting because it stores
+      configuration for OpenCode" (external providers, plugins, MCP servers installed). Separately, "A folder used
+      by OpenCode to store cached data can be found in: C:\Users\<user>\.local\share\opencode on Windows," containing
+      auth.json ("This file contains authentication information such as API keys") and the SQLite database
+      opencode.db — "The most valuable artifact... storing sessions, messages, projects, workspaces, etc." Its
+      `session` table records per-session model provider, model id, token counts and creation/update timestamps; its
+      `part` table holds full message history, distinguishing model responses (a `time` field present) from user
+      prompts (no `time` field) by session_id.
+      OpenAI Codex CLI (Part 2, 2026-07-31): "All files related to Codex can be found in C:\Users\<user>\.codex\."
+      Sub-artefacts: history.jsonl ("The list of user prompts is stored in the file... It contains only user
+      messages and not the model response," recording session_id, a timestamp, and the prompt text); config.toml
+      (configuration); auth.json ("can be interesting in a digital forensics investigation as it contains
+      authentication information such as API keys, access tokens, etc."); models_cache.json (models list); a
+      skills\ folder (built-in and installed skills); and a sessions\ tree of per-session rollout-<timestamp>-
+      <id>.jsonl files recording user messages, agent responses, and (after every agent response) a token-usage
+      summary broken out by input/cached-input/output/reasoning-output tokens plus the model's context-window size.
+      Both posts are explicitly framed by Intrinsec as reconstruction tooling for investigators: "investigators can
+      decode these remnants to reconstruct the actions undertaken using such tools in modern forensic
+      investigations." Neither post states retention/rotation behaviour for these files (no log-rotation, size-cap,
+      or expiry statement was found in either post) — an explicit gap, not an assumption.
+    region_nexus: "global — tooling/artefact research, not tied to a region"
+    primary_sector_nexus: "indirect — applies to any organisation whose developers or CI pipelines run these coding-agent CLIs, including this deployment's own tooling"
+    sector: ""
+    cves: []
+    techniques: [T1552.001]
+    affected_products: ["OpenCode (Anomaly Innovations)", "OpenAI Codex CLI"]
+    entity_keys: []
+    new_entities:
+      - { key: "report:intrinsec-ai-agents-digital-forensics-series", type: report, name: "Intrinsec AI Agents X Digital Forensics series", aliases: [],
+          summary: "CERT Intrinsec forensic-artefact-mapping series for autonomous AI coding agents: Part 1 OpenCode (2026-07-27), Part 2 OpenAI Codex CLI (2026-07-31), Part 3 Claude Code (2026-08-07) — documents on-disk prompt-history, session-log and authentication-token (API key/access token) artefact locations for each agent (Intrinsec/CERT Intrinsec, 2026-07 to 2026-08)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A folder used for OpenCode configuration files can be found in: C:\\Users\\ \\.config\\opencode on Windows. In this folder, the file opencode.json is forensically interesting because it stores configuration for OpenCode."
+        attribution: "CERT Intrinsec"
+        source_url: "https://www.intrinsec.com/en/opencode-forensics/"
+      - quote: "The most valuable artifact is the opencode.db which is a SQLite database storing sessions, messages, projects, workspaces, etc."
+        attribution: "CERT Intrinsec"
+        source_url: "https://www.intrinsec.com/en/opencode-forensics/"
+      - quote: "This file contains authentication information such as API keys."
+        attribution: "CERT Intrinsec"
+        source_url: "https://www.intrinsec.com/en/opencode-forensics/"
+      - quote: "All files related to Codex can be found in C:\\Users\\ \\.codex\\ ."
+        attribution: "CERT Intrinsec"
+        source_url: "https://www.intrinsec.com/en/ai-agents-digital-forensics-openai-codex-artifacts/"
+      - quote: "The file C:\\Users\\ \\.codex\\auth.json can be interesting in a digital forensics investigation as it contains authentication information such as API keys, access tokens, etc."
+        attribution: "CERT Intrinsec"
+        source_url: "https://www.intrinsec.com/en/ai-agents-digital-forensics-openai-codex-artifacts/"
+      - quote: "The list of user prompts is stored in the file C:\\Users\\ \\.codex\\history.jsonl ."
+        attribution: "CERT Intrinsec"
+        source_url: "https://www.intrinsec.com/en/ai-agents-digital-forensics-openai-codex-artifacts/"
+    extended_notes: |
+      Content-quality note for the composer: both Intrinsec posts' published path strings render with the
+      per-user/per-date placeholder tokens missing — e.g. the live Codex page literally shows "C:\Users\
+      \.codex\sessions\ \ \<dd> \rollout- - .jsonl" instead of a filled-in template like
+      C:\Users\<username>\.codex\sessions\<year>\<month>\<day>\rollout-<timestamp>-<id>.jsonl. This sub-agent
+      verified byte-for-byte in the raw fetched HTML that the gaps are on the live page itself (the literal string
+      "<dd>" survives in the raw markup, most likely because Intrinsec's own markdown-to-HTML pipeline swallowed the
+      other angle-bracket placeholder tokens as if they were HTML tags) — this is a content defect on Intrinsec's
+      side, not a fetch/extraction artefact introduced by this run. The evidence quotes above preserve the gaps
+      exactly as published rather than filling them in, since we cannot state the missing subdirectory-naming
+      convention as source-confirmed fact; the general session/date-partitioned structure is inferred, not sourced,
+      and should be verified against the Codex CLI's own (open-source) session-writer code before being stated as
+      fact in the published entry.
+      OpenCode `part` table schema detail (source-stated, useful for a hunt/IR query template): if `data.kind ==
+      "text"` and a `time` field is present, the row is a model response with `data.text` (response text),
+      `data.time.start` / `data.time.end` (response bounds), `session_id`; if `data.kind == "text"` with no `time`
+      field, the row is the corresponding user message with `data.text` (user prompt) and `time_created`.
+      Codex `token_count` event schema (source-stated): under `payload.info`, `total_token_usage.{input_tokens,
+      cached_input_tokens, output_tokens, reasoning_output_tokens, total_tokens}` for the whole session and the
+      parallel `last_token_usage.*` fields for just the most recent response, plus `model_context_window` — useful
+      for an investigator estimating how much data an agent session actually processed/exfiltrated via model calls,
+      not just what commands it ran.
+      Series context not directly fetched this run (assignment scope was the two-part OpenCode/Codex series):
+      Intrinsec published a Part 3 on Claude Code forensics on 2026-08-07 (https://www.intrinsec.com/en/claude-code-forensics/)
+      — flagged here as a lead for a future run rather than researched, since it falls outside this item's assigned
+      two-part scope.
+      Credential-collection-target framing (this sub-agent's inference, clearly separated from Intrinsec's own
+      framing, which is exclusively investigator-facing): none of the three posts in the series discuss attacker
+      abuse of these artefacts — Intrinsec frames the entire series as forensic-reconstruction tooling for
+      responders. The "same directories are a credential collection target" framing in this item's title is the
+      logical implication (auth.json files store plaintext API keys/access tokens on disk, which any code-execution
+      foothold on the host could read) rather than a claim the source itself makes; the composer should attribute
+      this inference to this pipeline's own analysis, not to Intrinsec.
+
+  - title: "Intrinsec Enterprise LLM Threat Atlas — dual MITRE ATLAS+ATT&CK mapping ranks tool/agent abuse and supply-chain risk highest for enterprise LLM deployments"
+    sources:
+      - { url: "https://www.intrinsec.com/en/enterprise-llm-threat-atlas-real-world-incidents-research-cases-mitre-mappings/", publisher: "Intrinsec", date: "2026-07-30", role: primary }
+    discovery_trace: "first seen at: state/coverage_backlog.md (surfaced by 2026-08-03T0110Z-weekly) → WebSearch (\"Intrinsec Enterprise LLM Threat Atlas MITRE ATLAS\") → primary: Intrinsec, URL https://www.intrinsec.com/en/enterprise-llm-threat-atlas-real-world-incidents-research-cases-mitre-mappings/ (fetched in full this run via python3 tools/fetch_source.py url; the linked full-report PDF at https://www.intrinsec.com/wp-content/uploads/2026/07/TLP-CLEAR-20260730-LLM-Threat-Atlas-EN.pdf was downloaded successfully — HTTP 200, 46 pages — but could not be rendered to text in this environment (pdftoppm/poppler-utils unavailable); all facts below come from the landing-page body text, which was fetched and read in full)"
+    summary: |
+      Intrinsec's "Enterprise LLM Threat Atlas" (published 2026-07-30) is an architecture-agnostic threat model for
+      enterprise LLM deployments covering two deployment shapes: "Self-hosted/internal LLM applications (customer
+      owns app, infrastructure, integrations)" and "LLM functionality embedded into SaaS products (customer controls
+      configuration, access, and governance)." Its framing thesis: "The dominant near-term risk is not 'model
+      hacking' in isolation, but LLMs acting as a high-bandwidth interface to enterprise data and actions."
+      Six threat patterns are named as the most common/impactful: indirect prompt injection via RAG/copilot-retrieved
+      enterprise content; over-permissioned connectors/copilots enabling rapid post-compromise data discovery;
+      tool/agent abuse (the model triggering real-world actions — tickets, emails, sharing links, cloud operations —
+      without robust policy gating); RAG/knowledge-base poisoning; operational data leakage through logs/transcripts/
+      analytics; and supply-chain/platform risk in self-hosted stacks (models, containers, inference servers,
+      dependencies).
+      The stated risk ranking and its basis: "Tool/Agent abuse and supply-chain attacks seem to be the most important
+      current risks for enterprise LLM infrastructure. Indeed, it is in those two domains that we found the highest
+      number of public reports – either real-world incidents or research cases." This is Intrinsec's own editorial
+      count of public reporting volume, not a quantified figure (no specific count is given on the landing page —
+      the full PDF may quantify this but could not be rendered in this environment) and not a claim independently
+      verified elsewhere in this fetch.
+      Mapping methodology: "A ATLAS MITRE + ATT&CK MITRE mapping approach (ATLAS for AI-native techniques; ATT&CK for
+      the surrounding intrusion lifecycle)" — i.e. MITRE ATLAS covers the AI/ML-specific technique layer (prompt
+      injection, model manipulation, etc.) while ATT&CK Enterprise covers the conventional intrusion lifecycle
+      wrapped around it (initial access, persistence, exfiltration). The report also includes "a control baseline
+      (Prevent/Detect/Respond) for self-hosted and SaaS-embedded LLMs" and "a monitoring and incident response
+      appendix." No periodicity statement (annual/quarterly/volume/first-edition) appears anywhere in the fetched
+      landing-page text — this does not read as a recurring/dated series and should NOT be tagged "ANNUAL REPORT."
+    region_nexus: "global — architecture-agnostic threat model, not region-specific"
+    primary_sector_nexus: "indirect — applies to any organisation deploying enterprise LLM functionality, self-hosted or SaaS-embedded, including this deployment's own constituency"
+    sector: ""
+    cves: []
+    techniques: [T1195]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "report:intrinsec-enterprise-llm-threat-atlas", type: report, name: "Intrinsec Enterprise LLM Threat Atlas", aliases: [],
+          summary: "Architecture-agnostic threat model for enterprise LLM deployments (self-hosted and SaaS-embedded) using a dual MITRE ATLAS (AI-native techniques) + MITRE ATT&CK (surrounding intrusion lifecycle) mapping approach; ranks tool/agent abuse and supply-chain/platform risk as the most-reported current threat categories, and provides a Prevent/Detect/Respond control baseline plus a monitoring/incident-response appendix (Intrinsec, 2026-07-30). No periodicity stated; not confirmed as a recurring publication." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The dominant near-term risk is not \"model hacking\" in isolation, but LLMs acting as a high-bandwidth interface to enterprise data and actions."
+        attribution: "Intrinsec"
+        source_url: "https://www.intrinsec.com/en/enterprise-llm-threat-atlas-real-world-incidents-research-cases-mitre-mappings/"
+      - quote: "Tool/Agent abuse and supply-chain attacks seem to be the most important current risks for enterprise LLM infrastructure. Indeed, it is in those two domains that we found the highest number of public reports – either real-world incidents or research cases."
+        attribution: "Intrinsec"
+        source_url: "https://www.intrinsec.com/en/enterprise-llm-threat-atlas-real-world-incidents-research-cases-mitre-mappings/"
+      - quote: "A ATLAS MITRE + ATT&CK MITRE mapping approach (ATLAS for AI-native techniques; ATT&CK for the surrounding intrusion lifecycle)"
+        attribution: "Intrinsec"
+        source_url: "https://www.intrinsec.com/en/enterprise-llm-threat-atlas-real-world-incidents-research-cases-mitre-mappings/"
+      - quote: "Indirect prompt injection via enterprise content retrieved by RAG/copilots (malicious instructions embedded in documents/pages/emails)."
+        attribution: "Intrinsec"
+        source_url: "https://www.intrinsec.com/en/enterprise-llm-threat-atlas-real-world-incidents-research-cases-mitre-mappings/"
+      - quote: "Supply-chain and platform risks in self-hosted stacks (models, containers, inference servers, dependencies)."
+        attribution: "Intrinsec"
+        source_url: "https://www.intrinsec.com/en/enterprise-llm-threat-atlas-real-world-incidents-research-cases-mitre-mappings/"
+    extended_notes: |
+      RELEVANCE JUDGEMENT (per the assignment's explicit invitation to assess this against item 5): this item is
+      borderline for a highly-technical Tier 2/3 SOC audience and is flagged as such. Reasoning for the "does not
+      clearly clear the bar" side: the landing page (the only part of the source this run could read in full — the
+      46-page PDF that presumably contains case studies, the actual ATLAS/ATT&CK technique-id tables, and a
+      quantified count behind "highest number of public reports" could not be rendered in this environment) gives
+      six threat-pattern categories that are already widely known in the AI-security community (OWASP LLM Top 10,
+      MITRE ATLAS itself, multiple vendor AI red-team publications covered in this pipeline's own prior AI-security
+      entries) — there is no new vulnerable component, no new detection telemetry hook, no named incident/case
+      study, and no CVE in the fetched text. It reads as a methodology/reference document (the ATLAS+ATT&CK
+      dual-mapping approach) rather than fresh threat intelligence. Reasoning for the "still worth carrying" side:
+      the assignment states this ranking was independently corroborated by this pipeline's own incident record —
+      if the main agent can confirm that against specific tracked entries (tool/agent-abuse and supply-chain
+      incidents already in entries/ or entities/registry.yaml), that corroboration is itself the interesting,
+      publishable fact (an external dual-taxonomy threat model converging on the same top risk categories this
+      SOC's own tracked incidents show), which would justify a short "research" entry framed around the
+      corroboration rather than around the report as fresh intel. Recommendation: compose short if at all, lead with
+      the corroboration angle, and do not claim periodicity (no basis found) or a quantified report-count (none
+      given in the fetched text).
+      T1195 (Supply Chain Compromise) is offered as the only reasonably unambiguous ATT&CK Enterprise mapping
+      available from the fetched text (matching the "supply-chain and platform risks in self-hosted stacks" category)
+      — the report's actual ATLAS-technique-id mappings (which would cover prompt injection / tool abuse under
+      MITRE ATLAS's own AI-native taxonomy) are not in the pinned attack/enterprise-attack.json dataset (ATT&CK
+      Enterprise only) and were not visible in the landing-page text; they likely exist in the unread PDF body.
+
+watchlist_sweep:
+  duty: none
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "spawn message assigned no watchlist_duty for this domain (B2 coverage-backlog deep read); org profile also configures no product/supplier watchlists — sweep is a no-op per instructions."
+candidate_sources: []
+coverage_gaps:
+  - source_id: "intrinsec.com (LLM Threat Atlas full PDF)"
+    reason: "The 46-page PDF at https://www.intrinsec.com/wp-content/uploads/2026/07/TLP-CLEAR-20260730-LLM-Threat-Atlas-EN.pdf downloaded successfully (HTTP 200) but could not be rendered to text in this environment because pdftoppm/poppler-utils is not installed for the Read tool's PDF path. All item-6 facts are sourced from the landing page's full body text only, which was fetched and read completely. Not logged as a fetch_failures[] entry since the source itself was reachable (2xx) and the landing page carried the full technical description already extracted — this is a local-tool rendering gap, not a source-availability failure."

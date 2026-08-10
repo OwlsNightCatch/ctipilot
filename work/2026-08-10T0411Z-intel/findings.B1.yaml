@@ -1,0 +1,451 @@
+domain: B1
+run_id: 2026-08-10T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-10T04:15:54Z
+ended_at: 2026-08-10T04:38:03Z
+duration_seconds: 1329
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 6
+  bridge_fetches: 28
+
+items:
+
+  # ============================================================
+  # ITEM 1 — Wazuh 4.14.6 advisory cluster
+  # ============================================================
+  - title: "Wazuh 4.14.6 fixes a ten-CVE advisory cluster, including two cluster-protocol root-RCE chains that bypass the CVE-2026-25770 fix, a DAPI deserialization RCE, and a pre-auth stack overflow reachable from wazuh-authd"
+    sources:
+      - { url: "https://github.com/wazuh/wazuh/security/advisories/GHSA-3v57-hgvj-3vj2", publisher: "Wazuh (GitHub Security Advisory)", date: "2026-08-07", role: "primary" }
+      - { url: "https://github.com/wazuh/wazuh/security/advisories/GHSA-gh4h-fx78-q8xc", publisher: "Wazuh (GitHub Security Advisory)", date: "2026-08-06", role: "primary" }
+      - { url: "https://github.com/wazuh/wazuh/security/advisories/GHSA-8c6v-7g3w-prrq", publisher: "Wazuh (GitHub Security Advisory)", date: "2026-08-06", role: "primary" }
+      - { url: "https://github.com/wazuh/wazuh/security/advisories/GHSA-4fvp-jfc3-qr6r", publisher: "Wazuh (GitHub Security Advisory)", date: "2026-08-06", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2699", publisher: "BSI CERT-Bund (WID-SEC-2026-2699)", date: "2026-08-06", role: "corroborating" }
+    discovery_trace: "first seen at: state/coverage_backlog.md (2026-08-09T1315Z-audit entry, itself sourced from github.com/wazuh/wazuh/security/advisories index) → primary: each GHSA fetched individually via python3 tools/fetch_source.py url (jina-reader auto-fallback, github.com is egress-proxy-blocked direct) at https://github.com/wazuh/wazuh/security/advisories/GHSA-3v57-hgvj-3vj2 , https://github.com/wazuh/wazuh/security/advisories/GHSA-8c6v-7g3w-prrq , https://github.com/wazuh/wazuh/security/advisories/GHSA-4fvp-jfc3-qr6r , https://github.com/wazuh/wazuh/security/advisories/GHSA-gh4h-fx78-q8xc → corroboration: BSI WID-SEC-2026-2699 CSAF JSON via python3 tools/fetch_source.py bsi-csaf WID-SEC-2026-2699, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2699 (independently lists the same 10 CVE ids and the same 10 GHSA ids for this release) → cross-check attempted: NVD (https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=<id>) and MITRE CVE-record API (https://cveawg.mitre.org/api/cve/<id>) for all four ids — none of the four is yet published on either as of 2026-08-10T04:20Z (NVD totalResults:0; MITRE CVE_RECORD_DNE)."
+    summary: |
+      Wazuh shipped 4.14.6 on 2026-08-06/07 fixing ten CVEs, each disclosed as its own GitHub Security
+      Advisory; BSI's WID-SEC-2026-2699 (2026-08-06) independently lists the identical ten CVE ids and
+      the identical ten GHSA ids for the same release. This run fetched four flaw-specific GHSA pages
+      individually and read each CVE id directly off that record's own sidebar (not by list position),
+      then cross-checked each id against BSI's independently-published CVE list, where all four matched
+      verbatim: CVE-2026-49441 (GHSA-3v57-hgvj-3vj2, CVSS 3.1 9.1 Critical), CVE-2026-48024
+      (GHSA-gh4h-fx78-q8xc, CVSS 9.1 Critical), CVE-2026-44901 (GHSA-8c6v-7g3w-prrq, CVSS 8.4 High) and
+      CVE-2026-45798 (GHSA-4fvp-jfc3-qr6r, CVSS 7.5 High). None of the four is yet published on NVD or
+      resolves on MITRE's CVE-record API as of this run — GitHub's own per-advisory record plus BSI's
+      independent cross-listing is the strongest confirmation currently available; the pairing is not a
+      guess. CVE-2026-49441 and CVE-2026-48024 are both critical arbitrary-file-write-to-root-RCE
+      primitives in the cluster protocol's master-side file-receive path
+      (`DistributedAPI.process_files_from_worker`, framework/wazuh/core/cluster/master.py) and both
+      explicitly bypass the earlier fix for CVE-2026-25770 (v4.14.3's `_ALLOWED_PREFIXES` hardening)
+      through two different sibling code paths — the non-merged branch's unchecked
+      `cluster_item_key`→`file_path` mapping, and the merged/`unmerge_info` path's peer-controlled
+      header-line path traversal — either lets a cluster peer holding the shared Fernet key overwrite
+      `/var/ossec/etc/ossec.conf`, reaching root RCE via `wazuh-logcollector` on the next reload. CVE-2026-44901
+      is a deserialization RCE in the DAPI's `merge()` function (framework/wazuh/core/results.py): a
+      compromised worker sets `sort_casting=["exec"]` in its JSON response, and the master's unallowlisted
+      `getattr(builtins, type_)` resolution calls `exec()` on attacker-controlled data as root when a REST
+      request fans out across two or more cluster nodes (`nodes_list=worker,master`). CVE-2026-45798 is a
+      pre-authentication stack-buffer-overflow in `compare_wazuh_versions()` (src/shared/src/version_op.c),
+      reached via the `V:` field of an enrollment message to `wazuh-authd` on TCP/1515:
+      `strncpy(ver, version, 9)` into a 10-byte buffer never NUL-terminates a 9-byte input, and the OOB
+      `strchr`/`strtok` scans reliably crash the daemon; anonymous SSL (`ssl_verify_host=no`) and the
+      shipped default `allow_higher_versions=false` mean no credential is required. Affected range:
+      wazuh-manager >=4.0.0 (>=4.3.0 for CVE-2026-49441) through 4.14.5; all four — and the six other CVEs
+      in the same BSI cluster this run did not individually verify — are fixed in 4.14.6. All four are
+      researcher-disclosed (credited: moltenbit, TarPeg007, Mahmoud Bettouch with TrendAI's Zero Day
+      Initiative) with no exploitation reported.
+    region_nexus: "global; Wazuh is an open-source SIEM/XDR platform this constituency's own SOCs run"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: [CVE-2026-49441, CVE-2026-48024, CVE-2026-44901, CVE-2026-45798]
+    techniques: [T1210, T1068, T1190]
+    affected_products: ["Wazuh", "Wazuh manager"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: |
+          This is the same primary impact as CVE-2026-25770 (`Privilege Escalation to Root via Cluster Protocol File Write`, Critical 9.1) reached through a sibling code path in the same function. CVE-2026-25770 was patched on the file-receive side; the metadata-driven destination derivation in `process_files_from_worker` was not addressed.
+        attribution: "Wazuh (GitHub Security Advisory GHSA-3v57-hgvj-3vj2, CVE-2026-49441)"
+        source_url: "https://github.com/wazuh/wazuh/security/advisories/GHSA-3v57-hgvj-3vj2"
+      - quote: |
+          A compromised worker can set sort_casting=["exec"] and embed a Python payload inside affected_items. When the master merges responses from two or more nodes, it calls : `exec(<payload>)` as root.
+        attribution: "Wazuh (GitHub Security Advisory GHSA-8c6v-7g3w-prrq, CVE-2026-44901)"
+        source_url: "https://github.com/wazuh/wazuh/security/advisories/GHSA-8c6v-7g3w-prrq"
+      - quote: |
+          The function is reachable pre-authentication via the `V:` field of an enrollment message sent to `wazuh-authd` on TCP/1515 over anonymous SSL (default configuration: `use_password=no`, `ssl_verify_host=no`).
+        attribution: "Wazuh (GitHub Security Advisory GHSA-4fvp-jfc3-qr6r, CVE-2026-45798)"
+        source_url: "https://github.com/wazuh/wazuh/security/advisories/GHSA-4fvp-jfc3-qr6r"
+      - quote: |
+          A cluster peer holding the shared Fernet key can write arbitrary files anywhere the wazuh user has write access on the master, including /var/ossec/etc/ossec.conf.
+        attribution: "Wazuh (GitHub Security Advisory GHSA-gh4h-fx78-q8xc, CVE-2026-48024)"
+        source_url: "https://github.com/wazuh/wazuh/security/advisories/GHSA-gh4h-fx78-q8xc"
+    extended_notes: |
+      Per-CVE authority provenance (why each pairing is trusted): each CVE id was read directly off that
+      GHSA's own sidebar metadata panel (GitHub's per-advisory "CVE ID" field), which required forcing the
+      jina-reader HTML variant since the plain-markdown render of a GHSA page drops the sidebar entirely
+      (severity badge, affected/patched versions, CVE ID, CWE, credits) — `python3 tools/fetch_source.py
+      jina <url> html` surfaces it; `python3 tools/fetch_source.py url <url>` (markdown) does not. This is
+      an empirical finding worth folding into sources.json notes for any future GHSA-heavy run. OSV.dev
+      (`osv vuln <GHSA-id>`) returned HTTP 404 for all four ids — OSV has not yet mirrored this GHSA batch
+      as of 2026-08-10, so it was not usable as the cross-check the task suggested; BSI's independent CVE
+      list served that role instead. github.com/advisories/<id> (the GHSA *global* database page, distinct
+      from the repo-scoped advisory page) also 404s for all four — consistent with GitHub not yet having
+      promoted these into the global advisory database, which is itself consistent with NVD/MITRE not yet
+      carrying records for them.
+
+      Detection: for the cluster-protocol file-write pair (CVE-2026-49441/CVE-2026-48024), hunt for
+      cluster-peer sessions on TCP/1516 whose extra-valid sync payload targets `etc/ossec.conf`,
+      `etc/shared/`, or any path outside the peer's expected `queue/cluster/<peer>/` subtree — file-integrity
+      monitoring on `ossec.conf` mtime/hash plus a subsequent `wazuh-logcollector` restart is the strongest
+      practical detection anchor since the cluster wire protocol itself is rarely visible to conventional
+      IDS. For the DAPI deserialization RCE (CVE-2026-44901), any REST API request with `nodes_list`
+      containing more than one node is the necessary condition for `merge()` to fire — audit-log egress
+      showing cross-node DAPI fan-out correlated with an unexpected `exec`/`os.system` child process under
+      the wazuh-manager service account is the anchor; process-creation telemetry with parent
+      `wazuh-clusterd`/`wazuh-apid` spawning a shell is anomalous on a healthy cluster. For the pre-auth
+      strncpy overflow (CVE-2026-45798), repeated short-lived TCP/1515 connections immediately followed by
+      `wazuh-authd` restarts is the crash signature; this is the only one of the four reachable without any
+      credential or cluster-peer status at all.
+      Hardening: rotate/restrict the cluster Fernet key and place cluster traffic (TCP/1516) on a network
+      segment no untrusted host can reach — none of the file-write or deserialization bugs are reachable
+      without holding or spoofing that key; require `ssl_verify_host=yes` / mutual TLS on the registration
+      service and set `allow_higher_versions` deliberately rather than relying on the shipped default to
+      reduce the strncpy overflow's blast radius (it does not eliminate reachability, since the vulnerable
+      comparison fires regardless of that setting's value per the advisory's own code trace). Upgrade to
+      4.14.6 regardless — all ten CVEs in this cluster share that one fixed release.
+
+  # ============================================================
+  # ITEM 2 — WordPress Core XSS2Shell, CVE-2026-64638
+  # ============================================================
+  - title: "WordPress Core XSS2Shell (CVE-2026-64638): a wp_strip_all_tags()/wp_kses_post() parser disagreement on the login page chains through DOM clobbering and a JSONP/SOME callback into administrator RCE — patched same-day in 7.0.3, distinct from the tracked WP2Shell chain"
+    sources:
+      - { url: "https://wordpress.org/news/2026/08/wordpress-7-0-3-release/", publisher: "WordPress.org (official release announcement)", date: "2026-08-06", role: "primary" }
+      - { url: "https://github.com/WordPress/wordpress-develop/security/advisories/GHSA-52p2-r8wf-jcrf", publisher: "WordPress (GitHub Security Advisory)", date: "2026-08-07", role: "primary" }
+      - { url: "https://pwn.ai/blog/xss2shell", publisher: "pwn.ai (discovering researcher)", date: "2026-08-06", role: "primary" }
+    discovery_trace: "first seen at: state/coverage_backlog.md (2026-08-10T0110Z-weekly entry, itself sourced from pwn.ai and wordpress.org) → primary: WordPress's own release announcement fetched at https://wordpress.org/news/2026/08/wordpress-7-0-3-release/?output_format=md → pivot: WordPress's own GHSA advisory fetched via jina-reader (html) at https://github.com/WordPress/wordpress-develop/security/advisories/GHSA-52p2-r8wf-jcrf → pivot: discovering researcher's technical write-up at https://pwn.ai/blog/xss2shell → cross-check: NVD (https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-64638) and MITRE (https://cveawg.mitre.org/api/cve/CVE-2026-64638), both confirming CVE-2026-64638 published 2026-08-07 by assigner hackerone → dedup check: work/2026-08-10T0411Z-intel/prior_coverage.json grepped for wp2shell/wordpress/64638 — the tracked WP2Shell entry (2026-08-08/ncsc-ch-clickfix-wp2shell-etherhiding-vidar-swiss-websites, CVE-2026-63030/CVE-2026-60137) is a different CVE, different CNA, different vulnerable code path; no prior coverage of CVE-2026-64638 exists."
+    summary: |
+      CVE-2026-64638 (GHSA-52p2-r8wf-jcrf) is a pre-authentication reflected XSS on WordPress's login
+      screen, disclosed by pwn.ai and patched same-day in WordPress 7.0.3 (2026-08-06), with backports
+      across every maintained branch back to 4.7.34 — WordPress's own advisory lists 24 separate
+      affected/patched version-range pairs from 4.7.0-4.7.33 up to 7.0.0-7.0.2, rated High (CVSS 4.0 8.9,
+      vector AV:N/AC:H/AT:N/PR:N/UI:A/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H). The root cause is a parser
+      disagreement: `wp_signon()`'s failed-login error message runs the submitted username through
+      `sanitize_user()` → `wp_strip_all_tags()` (wrapping PHP's `strip_tags()`, which requires `<`
+      immediately followed by a letter to recognise a tag), but the error later reaches
+      `wp_admin_notice()` → `wp_kses_post()`, WordPress's own KSES tokenizer, which tolerates whitespace
+      between `<` and the tag name and treats `< area id=x>` as a live `<area>` element — the login page
+      ends up with real, attacker-specified DOM nodes that `wp_strip_all_tags()` had already certified as
+      inert text. Those injected nodes are then targeted by `user-profile.js` (loaded on the login page
+      only because it also serves the password-reset flow): a DOM-clobbered `ajaxurl` global turns a
+      `$.post()` call into a same-origin REST request, and because WordPress's REST JSONP callback regex
+      (`^[a-zA-Z0-9_.]+$`) permits property-chain traversal, the callback `window.opener.approve.click` (a
+      2022 Same-Origin-Method-Execution technique) clicks the Application-Password-authorization "approve"
+      button inside a genuinely logged-in administrator's own window once that administrator opens the
+      attacker's page — minting a valid Application Password for the attacker with no further interaction.
+      With that credential the attacker's script publishes a page exploiting the administrator's default
+      `unfiltered_html` capability, then uses the same Application Password to upload a plugin ZIP via
+      `/wp-admin/update.php?action=upload-plugin`; WordPress extracts it into `wp-content/plugins/` without
+      requiring activation, and any PHP inside is directly web-accessible and executed by the webserver.
+      The chain requires one social-engineered click by an authenticated administrator — WordPress's own
+      advisory states it "requires successful social engineering of and explicit interaction by the target
+      victim" — so it is not zero-click against the administrator, though the initial reflected XSS itself
+      needs no authentication at all. No exploitation reported; discovered 2026-07-26, reported to
+      WordPress 2026-07-27, patched and disclosed 2026-08-06/07 with a bounty paid. This is a technically
+      and causally distinct chain from the KEV-listed, actively-exploited-against-Swiss-sites WP2Shell
+      chain this pipeline already tracks (CVE-2026-63030/CVE-2026-60137, discovered by AssetNote via
+      GPT-5.6): different CNA-assigned CVE, different vulnerable code path (a REST-batch route-confusion →
+      pre-auth SQL injection → forged `WP_Post` chain, not a login-page sanitiser disagreement) — the
+      "2Shell" naming is coincidental branding from two unrelated research teams, not a shared root cause.
+    region_nexus: "global; WordPress Core is the most widely deployed public-sector CMS in this constituency"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: [CVE-2026-64638]
+    techniques: [T1190, T1204.001, T1098]
+    affected_products: ["WordPress Core", "WordPress"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:xss2shell", type: tool, name: "XSS2Shell", aliases: ["CVE-2026-64638 chain"],
+          summary: "pwn.ai's named pre-authentication reflected-XSS-to-RCE exploit chain against WordPress Core's login screen, chaining a wp_strip_all_tags()/wp_kses_post() parser disagreement, DOM clobbering and a Same-Origin-Method-Execution JSONP callback into administrator Application-Password theft and plugin-upload RCE; patched in WordPress 7.0.3 (pwn.ai, 2026-08-06)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: |
+          Pre-auth reflected cross-site scripting (XSS) on the login screen with potential to lead to PHP code execution reported by the team at pwn.ai.
+        attribution: "WordPress.org (official 7.0.3 release announcement)"
+        source_url: "https://wordpress.org/news/2026/08/wordpress-7-0-3-release/"
+      - quote: |
+          Via a specially crafted malicious third-party website hosted by an attacker, it is possible for this to be escalated to an RCE vulnerability with conditions outside of the attackers control. This requires successful social engineering of and explicit interaction by the target victim.
+        attribution: "WordPress (GitHub Security Advisory GHSA-52p2-r8wf-jcrf, CVE-2026-64638)"
+        source_url: "https://github.com/WordPress/wordpress-develop/security/advisories/GHSA-52p2-r8wf-jcrf"
+      - quote: |
+          WordPress validates the nonce (correct), checks the capability (administrator, correct), and extracts the ZIP into wp-content/plugins/. The plugin does not need to be activated. PHP files inside the extracted directory are directly accessible by URL and are as good as activated plugins since the web server will executes them.
+        attribution: "pwn.ai (Nigusu Kasahun, XSS2Shell write-up)"
+        source_url: "https://pwn.ai/blog/xss2shell"
+    extended_notes: |
+      Detection: the load-bearing telemetry class is web/application access logs on the login endpoint —
+      a `wp-login.php` POST whose `log` (username) parameter contains a literal `< ` (angle-bracket
+      followed by whitespace) is the discriminating artifact for the initial XSS delivery, since that
+      whitespace is exactly what defeats `wp_strip_all_tags()` while surviving `wp_kses_post()`; no
+      legitimate username contains that sequence. Downstream, an Application Password creation event
+      immediately following an `authorize-application.php` page view with no visible prior API-key
+      management session, plus a plugin-upload event (`/wp-admin/update.php?action=upload-plugin`) from the
+      same session shortly after, is the escalation signature — REST API audit logging (if enabled) showing
+      `_jsonp=` or `_envelope=1` query parameters on `rest_route=/` requests is a strong, low-noise hunt
+      query since legitimate WordPress REST clients rarely use either. Triage/benign-lookalike note: `<area>`,
+      `<div>`, `<button>` are legitimate KSES-post allowlist elements, so their mere presence in a rendered
+      admin notice is not itself anomalous — the discriminator is that these elements originate from the
+      login-page error path (an unauthenticated, pre-session context) rather than from authenticated content
+      editing.
+      Hardening: this is a same-day-patched vendor CVE with no interim mitigation offered beyond upgrading —
+      WordPress 7.0.3 (or the matching backport for the running branch) removes the parser disagreement.
+      Defense-in-depth for administrators who cannot patch immediately: disable Application Passwords
+      (`add_filter('wp_is_application_passwords_available', '__return_false')`) removes the credential-theft
+      step even if the XSS-to-click chain still fires, and training administrators not to open unsolicited
+      links while logged into wp-admin removes the required social-engineering step entirely.
+
+  # ============================================================
+  # ITEM 3 — FreeBSD CTL HA pre-auth remote kernel RCE
+  # ============================================================
+  - title: "FreeBSD CTL HA: three independent pre-auth remote kernel-RCE primitives on the unauthenticated cluster-failover TCP interconnect (port 999); FreeBSD documents the risk in the manpage rather than patching the protocol"
+    sources:
+      - { url: "https://blog.calif.io/p/the-taking-of-freebsd-one-two-three", publisher: "Calif (discovering/exploiting researcher)", date: "2026-08-06", role: "primary" }
+      - { url: "https://cgit.freebsd.org/src/commit/?id=3c8f8432", publisher: "FreeBSD Project (official src git repository, commit 3c8f8432)", date: "2026-08-05", role: "primary" }
+    discovery_trace: "first seen at: state/coverage_backlog.md (2026-08-09T1315Z-audit entry, re-verified again by a same-day earlier fire on 2026-08-10, itself sourced from blog.calif.io) → primary re-fetch this run: https://blog.calif.io/p/the-taking-of-freebsd-one-two-three via python3 tools/fetch_source.py url (saved to work/2026-08-10T0411Z-intel/b1-freebsd.txt) → independent corroboration located this run (not previously fetched by any earlier fire per the backlog note): FreeBSD's own official git commit at https://cgit.freebsd.org/src/commit/?id=3c8f8432 , located via WebSearch (\"FreeBSD ctl.4 manpage kern.cam.ctl.ha_peer 'no authentication mechanism' commit Mark Johnston\") then fetched directly — the commit message credits 'Ryan of Calif.io' as reporter and the manpage diff text matches the blog's quote verbatim, elevating this item from single- to multi-source."
+    summary: |
+      FreeBSD's CTL (CAM Target Layer) kernel subsystem — the iSCSI/SCSI storage-target driver, live on
+      TrueNAS Enterprise HA clusters and any FreeBSD host with `kern.cam.ctl.ha_peer` explicitly configured
+      — runs an unauthenticated High-Availability failover protocol on TCP/999 by default: "whatever
+      connects is trusted as the second controller." Researcher Calif (credited in FreeBSD's own commit as
+      "Ryan of Calif.io") reported three independent primitives behind that port in March-April 2026, each
+      independently sufficient for a root shell from network access alone. FreeBSD-One is an unchecked
+      raw-kernel-pointer dereference in HA DATA-channel messages, giving arbitrary kernel read/write
+      directly off the wire (trivial to weaponise since the GENERIC kernel ships without KASLR).
+      FreeBSD-Two abuses a second untrusted wire pointer (`original_sc`) in the DATAMOVE handler for a
+      write-only primitive that repoints a handler function pointer to pivot into FreeBSD-One's clean-write
+      path. FreeBSD-Three is a heap overflow in the DATAMOVE scatter-gather copy loop — an unchecked entry
+      count overflowing a fixed 64-byte heap buffer into the adjacent UMA slab object, requiring a full
+      slab-grooming heap exploit (overwrite a callback pointer, stack pivot, ROP, clear the NX bit). All
+      three finish with kernel shellcode calling `kproc_create`/`kern_execve` to spawn `/bin/sh` connected
+      back to the attacker, with the `ha_rx` kernel thread exiting cleanly so the box stays up — there is no
+      crash signature. FreeBSD declined a code fix: the project's own git commit (3c8f8432b6f6, authored by
+      Mark Johnston 2026-08-04, merged 2026-08-05, independently fetched and confirmed by this run at
+      cgit.freebsd.org) instead adds a `ctl.4` manpage warning; the maintainers' position, stated in their
+      own commit message, is that CTL HA is a private, by-design-trusted backchannel between two storage
+      controllers that was never supposed to be reachable from an untrusted network, so documentation is
+      the fix, not a bounds check. No CVE has been assigned by either FreeBSD or the researchers — this run
+      confirms that absence; none should be invented. CTL HA requires explicit administrator configuration
+      (`kern.cam.ctl.ha_peer` set) rather than shipping enabled on a stock FreeBSD install, but ships enabled
+      by product design on TrueNAS Enterprise HA clusters. Public, working exploit scripts for all three
+      primitives are published alongside the write-up; neither source states which specific FreeBSD release
+      branches were tested, only that the vulnerable manpage/feature dates at least to March 2017.
+    region_nexus: "global; FreeBSD-derived storage appliances (e.g. TrueNAS Enterprise HA) sit in critical-infrastructure estates"
+    primary_sector_nexus: "indirect"
+    sector: "energy, water, transport, healthcare, finance, telco, public-sector"
+    cves: []
+    techniques: [T1210]
+    affected_products: ["FreeBSD", "FreeBSD CTL (CAM Target Layer)", "TrueNAS Enterprise HA"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: |
+          Once it's on, the kernel listens on a TCP port (999 by default) for its peer, with no authentication. Whatever connects is trusted as the second controller.
+        attribution: "Calif (\"The Taking of FreeBSD One Two Three\")"
+        source_url: "https://blog.calif.io/p/the-taking-of-freebsd-one-two-three"
+      - quote: |
+          NOTE: HA must be configured only on trusted networks: there is no authentication mechanism built in to the implementation, and the HA protocol effectively permits remote code execution on the peer node.
+        attribution: "FreeBSD Project (ctl.4 manpage text, commit 3c8f8432, Mark Johnston)"
+        source_url: "https://cgit.freebsd.org/src/commit/?id=3c8f8432"
+      - quote: |
+          There is no authentication mechanism and the protocol itself embeds kernel pointers in the messages exchanged between HA hosts. This property (of CTL_MSG_DATAMOVE messages specifically), as well as insufficient validation of inbound messages, mean that anyone able to access a CTL HA port is able to remotely execute code on that host.
+        attribution: "FreeBSD Project (commit message, commit 3c8f8432, Mark Johnston)"
+        source_url: "https://cgit.freebsd.org/src/commit/?id=3c8f8432"
+    extended_notes: |
+      Detection: the load-bearing telemetry class is network flow/connection logs — any TCP connection to
+      port 999 (or whatever port `kern.cam.ctl.ha_peer` is configured to) from a source address other than
+      the configured HA peer is definitionally illegitimate, since the protocol has no authentication to
+      fall back on; this is a case where network segmentation visibility (a flow log or firewall deny/allow
+      rule keyed on port 999 with a two-host allowlist) is the only practical control, because the exploit
+      chain runs entirely in kernel context before any host-based EDR telemetry (process creation, etc.)
+      would fire. If a primitive succeeds, the eventual `/bin/sh` connect-back is a normal outbound
+      network-connection artifact, but the parent lineage will be anomalous (spawned via `kproc_create` from
+      kernel context rather than any expected userland parent) — host telemetry that can observe
+      process-parent anomalies at that resolution is uncommon outside kernel-level EDR/DTrace-based tooling.
+      Hardening: FreeBSD's own guidance is the only hardening lever that exists — place CTL HA's TCP port on
+      a network no untrusted host can reach (a dedicated, non-routable interconnect segment between the two
+      storage controllers only), and do not enable `kern.cam.ctl.ha_peer` unless HA failover is actually
+      required. For TrueNAS Enterprise HA deployments specifically, verify the HA interconnect ships on a
+      dedicated physical/VLAN segment per vendor deployment guidance rather than a shared management or
+      production network — there is no patch to apply instead.
+
+  # ============================================================
+  # ITEM 4 — wp2root (update_of tracked WP2Shell/NCSC-CH entry)
+  # ============================================================
+  - title: "wp2root: a PHP Serializable use-after-free plus the CISA KEV-listed 'Copy Fail' Linux kernel bug (CVE-2026-31431) turns wp2shell's sandboxed PHP execution into fileless native root, defeating disable_functions"
+    sources:
+      - { url: "https://blog.calif.io/p/the-wordpress-chain-massacre", publisher: "Calif (post-exploitation chain author)", date: "2026-08-05", role: "primary" }
+      - { url: "https://copy.fail/", publisher: "Theori / Xint Code (Copy Fail discloser)", date: "2026-04-29", role: "primary" }
+      - { url: "https://blog.calif.io/p/mad-bugs-finding-and-exploiting-a", publisher: "Calif (background: the PHP unserialize UAF bug class)", date: "2026-08-05", role: "corroborating" }
+    discovery_trace: "first seen at: state/coverage_backlog.md (2026-08-09T1315Z-audit entry, re-verified by a same-day earlier fire on 2026-08-10, itself sourced from blog.calif.io) → primary re-fetch this run: https://blog.calif.io/p/the-wordpress-chain-massacre via python3 tools/fetch_source.py url (saved to work/2026-08-10T0411Z-intel/b1-wp2root.txt) → pivot for the CVE-2026-31431 check the task required: https://copy.fail/ (Theori/Xint's own disclosure page) → cross-check: NVD (https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-31431) and MITRE (https://cveawg.mitre.org/api/cve/CVE-2026-31431), both PUBLISHED (assigner: Linux kernel CNA) — confirms the identifier resolves and matches the described crypto/algif_aead bug → additional check: python3 tools/fetch_source.py cisa-kev — CVE-2026-31431 present, dateAdded 2026-05-01 → additional check: FIRST.org EPSS API — CVE-2026-31431 epss=0.99907 (2026-08-09) → background pivot: https://blog.calif.io/p/mad-bugs-finding-and-exploiting-a for the PHP Serializable UAF bug-class history → dedup check: work/2026-08-10T0411Z-intel/prior_coverage.json confirms 2026-08-08/ncsc-ch-clickfix-wp2shell-etherhiding-vidar-swiss-websites (CVE-2026-63030/CVE-2026-60137) as the tracked entry this item updates."
+    summary: |
+      Calif's wp2root chain (2026-08-05) is a post-exploitation extension that starts where AssetNote's
+      wp2shell (WordPress Core pre-auth RCE, CVE-2026-63030/CVE-2026-60137 — the chain this pipeline
+      already tracks as actively exploited against Swiss websites per NCSC-CH's ClickFix/EtherHiding
+      advisory) hands an attacker sandboxed PHP execution, and turns it into fileless native root even
+      where `disable_functions` blocks `system()`/`exec()` and the filesystem is read-only. The escape from
+      PHP uses a use-after-free in PHP's legacy `Serializable` interface path (`zend_user_unserialize()`,
+      missing a `BG(serialize_lock)++` increment on a code path unpatched since PHP 5.1 shipped in 2005 —
+      the same bug class Calif profiled separately in "MAD Bugs," tracing back through Taoguang Chen's
+      2015-2017 SPL UAF CVEs): recursive `unserialize()` calls inside a `Serializable::unserialize()` body
+      share the outer parser's `var_hash` reference table, and a subsequent property-table resize frees a
+      bucket the outer parser still references, letting sprayed strings reclaim it as attacker-controlled
+      zvals. This specific bug carries no CVE — this run confirms that absence is consistent with PHP's own
+      August 2017 internals decision that `unserialize()` memory-corruption bugs are not treated as
+      CVE-worthy security issues; none should be invented for it. The resulting arbitrary read builds a
+      "self-resolving" ROP chain (no hardcoded offsets — it locates the PHP binary and its own gadgets from
+      the live process at exploit time) that either calls PHP's native `system` handler directly in machine
+      code — defeating `disable_functions`, which removes only the PHP-level name, not the underlying
+      handler — or launches a position-independent stager. That stager `memfd_create`s a second-stage ELF
+      helper, pins it at fd 197 (surviving `execve` because the memfd is not close-on-exec), and runs it via
+      `execveat(..., AT_EMPTY_PATH)` — nothing touches disk. The helper performs "Copy Fail" (CVE-2026-31431:
+      a logic flaw in `algif_aead`/`authencesn`, reachable via `AF_ALG` and `splice()`, that lets an
+      unprivileged local user overwrite the kernel's page-cache copy of a setuid-root binary such as
+      `/usr/bin/su` with a 4-byte write — defeating on-disk file-integrity monitoring since the file itself
+      is never modified): running the setuid binary then executes the attacker's cached-page stub as root,
+      which re-enters the helper via fd 197 for a full root shell. This run independently confirmed
+      CVE-2026-31431 resolves on both NVD and MITRE (Linux kernel CNA, CVSS 3.1 7.8 High, fixed by mainline
+      commit a664bf3d603d, reported 2026-03-23/patched 2026-04-01/disclosed 2026-04-29) — it is also CISA
+      KEV-listed since 2026-05-01 for confirmed active exploitation, independent of Calif's chain-building
+      exercise, and EPSS scores it 0.999 (99.97th percentile) as of 2026-08-09. Ships as a material update
+      on tracked, actively-exploited-against-Swiss-targets ground: the underlying kernel LPE this chain
+      relies on for its root step is itself under confirmed active exploitation, not merely a research
+      demonstration.
+    region_nexus: "global; directly extends a chain NCSC-CH has already confirmed compromising Swiss websites"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: [CVE-2026-31431]
+    techniques: [T1190, T1068, T1611]
+    affected_products: ["WordPress Core", "PHP", "Linux kernel"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:wp2root", type: tool, name: "wp2root", aliases: [],
+          summary: "Calif's post-exploitation chain that escalates AssetNote's wp2shell WordPress pre-auth RCE (sandboxed PHP execution) to fileless native Linux root, using a PHP Serializable use-after-free for native-code execution and the 'Copy Fail' Linux kernel bug (CVE-2026-31431) for the final privilege escalation, defeating disable_functions hardening (Calif, 2026-08-05)." }
+      - { key: "tool:wp2shell", type: tool, name: "wp2shell", aliases: [],
+          summary: "AssetNote's WordPress Core pre-authentication remote-code-execution chain (CVE-2026-63030/CVE-2026-60137), discovered with GPT-5.6 assistance; KEV-listed and actively exploited against, among others, Swiss websites per NCSC-CH's 2026-08-08 advisory." }
+    relation_suggestions:
+      - { subject: "tool:wp2root", object: "tool:wp2shell",
+          basis: "Calif: \"Today we walk through wp2root, our post-exploitation chain that begins where wp2shell ends\" (blog.calif.io, 2026-08-05)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-08/ncsc-ch-clickfix-wp2shell-etherhiding-vidar-swiss-websites"
+    evidence:
+      - quote: |
+          wp2shell drops you inside the PHP interpreter, and on a hardened host that interpreter is locked down. Dangerous functions like system() and exec() are switched off with disable_functions, the filesystem can be mounted read-only, and there may be nowhere to write a file.
+        attribution: "Calif (\"The WordPress Chain Massacre\")"
+        source_url: "https://blog.calif.io/p/the-wordpress-chain-massacre"
+      - quote: |
+          The first recovers the native system handler and calls it directly, in native code, even though disable_functions took away the PHP-level name.
+        attribution: "Calif (\"The WordPress Chain Massacre\")"
+        source_url: "https://blog.calif.io/p/the-wordpress-chain-massacre"
+      - quote: |
+          Copy Fail (CVE-2026-31431): a 732-byte Linux LPE — straight-line, no race, no per-distro offsets. Same Python script roots Ubuntu, Amazon Linux, RHEL, SUSE since 2017. Page-cache write bypasses on-disk file-integrity tools and crosses container boundaries.
+        attribution: "Theori / Xint Code (copy.fail)"
+        source_url: "https://copy.fail/"
+    extended_notes: |
+      CVE-2026-31431 provenance detail: NVD/MITRE record it as "crypto: algif_aead - Revert to operating
+      out-of-place," reverting 2017 commit 72548b093ee3 (the in-place AEAD optimization) except for
+      associated-data copying — this is the Linux kernel's own CNA-authored description and it matches
+      copy.fail's account exactly (mainline fix commit a664bf3d603d). CISA's KEV entry
+      (dateAdded 2026-05-01, dueDate 2026-05-15, "Linux Kernel Incorrect Resource Transfer Between Spheres
+      Vulnerability," CWE-669) references the same lore.kernel.org CVE announcement and the same Xint
+      write-up. `knownRansomwareCampaignUse` is "Unknown" in the KEV record — KEV listing confirms
+      exploitation observed, not a ransomware-specific link.
+      Detection: for the PHP-side escape, the discriminating telemetry class is PHP worker process behavior
+      — a PHP-FPM/mod_php worker process that opens an anonymous memfd and then calls `execveat` on it
+      (visible via process-creation telemetry with an argv/exe path resolving to `/proc/self/fd/<n>` or a
+      memfd-backed inode rather than a normal on-disk binary) is a strong, low-false-positive signal, since
+      legitimate WordPress/PHP workflows never spawn child processes this way. For Copy Fail specifically,
+      `lsof | grep AF_ALG` / `ss -xa` surfaces any process holding an AF_ALG socket, which is itself unusual
+      outside of the small set of applications the copy.fail advisory names (dm-crypt/LUKS, kTLS, IPsec use
+      the in-kernel crypto API directly and do not touch AF_ALG); a setuid-root binary executing anomalously
+      shortly after such a socket closes is the composite signature. Hardening: patch to a kernel including
+      mainline commit a664bf3d603d (most major distributions have shipped this since April/May 2026); where
+      patching is not immediately possible, disable the `algif_aead` module
+      (`echo "install algif_aead /bin/false" > /etc/modprobe.d/disable-algif.conf; rmmod algif_aead`) — the
+      discloser states this breaks nothing for dm-crypt/LUKS, kTLS, IPsec/XFRM, OpenSSL/GnuTLS/NSS default
+      builds, SSH, or kernel keyring crypto, all of which bypass AF_ALG entirely; for untrusted-workload
+      hosts (CI runners, multi-tenant containers), block AF_ALG socket creation via seccomp regardless of
+      patch state. Neither hardening step touches the PHP-side UAF, which remains reachable from any
+      pre-existing PHP code-execution foothold (wp2shell or otherwise) — the durable fix for that half is
+      keeping `disable_functions`/read-only filesystem hardening in place as defense-in-depth even though
+      this chain shows it is not a complete backstop, and treating any WordPress pre-auth RCE (including
+      wp2shell) as requiring full incident response rather than a plugin/theme cleanup, since post-exploitation
+      to root is demonstrated and does not require any additional vulnerability disclosure to execute today.
+
+cve_table:
+  - cve: CVE-2026-49441
+    product: "Wazuh manager"
+    cvss: "9.1 (CVSS 3.1, AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H)"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "4.14.6"
+    source: "https://github.com/wazuh/wazuh/security/advisories/GHSA-3v57-hgvj-3vj2 (CVE id read from GHSA sidebar; corroborated by BSI WID-SEC-2026-2699; not yet on NVD/MITRE as of 2026-08-10)"
+  - cve: CVE-2026-48024
+    product: "Wazuh manager"
+    cvss: "9.1 (CVSS 3.1, AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H)"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "4.14.6"
+    source: "https://github.com/wazuh/wazuh/security/advisories/GHSA-gh4h-fx78-q8xc (CVE id read from GHSA sidebar; corroborated by BSI WID-SEC-2026-2699; not yet on NVD/MITRE as of 2026-08-10)"
+  - cve: CVE-2026-44901
+    product: "Wazuh manager"
+    cvss: "8.4 (CVSS 3.1, AV:A/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H)"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "4.14.6"
+    source: "https://github.com/wazuh/wazuh/security/advisories/GHSA-8c6v-7g3w-prrq (CVE id read from GHSA sidebar; corroborated by BSI WID-SEC-2026-2699; not yet on NVD/MITRE as of 2026-08-10)"
+  - cve: CVE-2026-45798
+    product: "Wazuh manager"
+    cvss: "7.5 (CVSS 3.1, AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H)"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "4.14.6"
+    source: "https://github.com/wazuh/wazuh/security/advisories/GHSA-4fvp-jfc3-qr6r (CVE id read from GHSA sidebar; corroborated by BSI WID-SEC-2026-2699; not yet on NVD/MITRE as of 2026-08-10)"
+  - cve: CVE-2026-64638
+    product: "WordPress Core"
+    cvss: "8.9 (CVSS 4.0, AV:N/AC:H/AT:N/PR:N/UI:A/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H)"
+    epss: "0.00766 (52.1 percentile, 2026-08-09, FIRST.org)"
+    kev: false
+    exploited: false
+    patch: "7.0.3 (backported to 4.7.34, 4.8.29, 4.9.30, 5.0.26 ... every maintained branch back to 4.7)"
+    source: "https://github.com/WordPress/wordpress-develop/security/advisories/GHSA-52p2-r8wf-jcrf ; confirmed PUBLISHED on both NVD and MITRE (assigner: hackerone)"
+  - cve: CVE-2026-31431
+    product: "Linux kernel (crypto/algif_aead)"
+    cvss: "7.8 (CVSS 3.1, AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H)"
+    epss: "0.99907 (99.97 percentile, 2026-08-09, FIRST.org)"
+    kev: true
+    exploited: true
+    patch: "mainline commit a664bf3d603d; most major distributions shipping the fix since ~April/May 2026"
+    source: "confirmed PUBLISHED on both NVD and MITRE (assigner: Linux kernel CNA); CISA KEV dateAdded 2026-05-01 (https://www.cisa.gov/known-exploited-vulnerabilities-catalog); https://copy.fail/ (discloser)"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: "osv.dev"
+    reason: "osv vuln GHSA-<id> returned HTTP 404 for all four target Wazuh GHSA ids (GHSA-3v57-hgvj-3vj2, GHSA-8c6v-7g3w-prrq, GHSA-4fvp-jfc3-qr6r, GHSA-gh4h-fx78-q8xc) — OSV.dev has not yet mirrored this GHSA batch as of 2026-08-10. Used BSI's independent CSAF CVE list as the cross-check instead (national-CERT carve-out source, corroborating role)."
+  - source_id: "nvd.nist.gov / cveawg.mitre.org"
+    reason: "CVE-2026-49441, CVE-2026-44901, CVE-2026-45798, and CVE-2026-48024 (the four Wazuh flaws) do not yet resolve on NVD (totalResults:0) or MITRE's CVE-record API (CVE_RECORD_DNE) as of 2026-08-10T04:20Z — a public-registry propagation lag, not a sign the ids are wrong (BSI's independent CSAF list carries the identical ids)."

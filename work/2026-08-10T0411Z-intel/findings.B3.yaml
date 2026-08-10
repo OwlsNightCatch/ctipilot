@@ -1,0 +1,352 @@
+domain: B3
+run_id: 2026-08-10T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-10T04:16:58Z
+ended_at: 2026-08-10T04:35:28Z
+duration_seconds: 1110
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 5
+  bridge_fetches: 14
+items:
+
+  # ============================================================
+  # ITEM 1 — Żabka (Poland) supplier-account intrusion
+  # ============================================================
+  - title: "Żabka confirms unauthorized access via a compromised external service-provider account reaching Jira; the claimed pivot into GitLab and production is the sellers'/researchers' reconstruction, not the company's own confirmation"
+    sources:
+      - { url: "https://niebezpiecznik.pl/post/zabka-zhackowana-co-wycieklo/", publisher: "niebezpiecznik.pl", date: "2026-08-03", role: "primary" }
+      - { url: "https://sekurak.pl/potencjalny-wyciek-danych-z-zabki/", publisher: "sekurak.pl", date: "2026-08-03", role: "primary" }
+      - { url: "https://www.rmf.fm/styl-zycia/news,n1012527,zabka-wydala-komunikat-po-ataku-hakerskim-zapewniamy-ze.html", publisher: "RMF FM", date: "2026-08-04", role: "corroborating" }
+      - { url: "https://cyberdefence24.pl/cyberbezpieczenstwo/wycieki-danych/zabka-zhakowana-powazny-incydent-wyciekly-dane", publisher: "cyberdefence24.pl", date: "2026-08-03", role: "corroborating" }
+    discovery_trace: >-
+      first seen at: state/coverage_backlog.md (surfaced by 2026-08-09T1315Z-audit, citing sekurak.pl / niebezpiecznik.pl)
+      → re-fetch: WebSearch ("Żabka wyciek dane Jira GitLab dostawca dostęp")
+      → niebezpiecznik.pl, URL https://niebezpiecznik.pl/post/zabka-zhackowana-co-wycieklo/ (direct Q&A with Żabka's press office, received 22:20 same day)
+      → sekurak.pl, URL https://sekurak.pl/potencjalny-wyciek-danych-z-zabki/
+      → corroboration: WebSearch ("Żabka oświadczenie cyberbezpieczeństwo sierpień 2026 komunikat prasowy")
+      → RMF FM, URL https://www.rmf.fm/styl-zycia/news,n1012527,zabka-wydala-komunikat-po-ataku-hakerskim-zapewniamy-ze.html (same official statement, plus UODO/CBZC/CERT Polska notification detail)
+      → cyberdefence24.pl, URL https://cyberdefence24.pl/cyberbezpieczenstwo/wycieki-danych/zabka-zhakowana-powazny-incydent-wyciekly-dane
+    summary: |
+      Żabka, Poland's largest convenience-store franchise chain, has confirmed — in a same-day written statement its press office gave to niebezpiecznik.pl, reproduced in near-identical wording by sekurak.pl, RMF FM and cyberdefence24.pl — that it detected unauthorized access to "selected technical resources supporting information exchange between the franchisor and franchisees" at the end of the week before 2026-08-03. Żabka states the access occurred "through the use of an external service provider's account," was detected and immediately blocked per its security procedures, and that "to our current knowledge, the perpetrator gained access to the ticketing system [Jira]." Żabka states transaction data, consumer services and the "Żappka" loyalty-app data's confidentiality "remain unaffected," and that it has referred the matter to its own Data Protection Officer, to Poland's data-protection regulator (UODO) and to specialized law-enforcement agencies (per RMF FM, also to CERT Polska). Żabka explicitly declines to name the compromised supplier or comment on the perpetrator's identity ("we do not comment on details of the ongoing proceedings, including matters relating to the perpetrator").
+      What Żabka has NOT confirmed is the deeper technical scope. A seller on a cybercrime forum listed a data package for 5,000 EUR on 2026-08-02, and niebezpiecznik.pl frames its entire itemized breakdown of that listing explicitly as "if we are to believe the attacker" ("jeśli wierzyć atakującemu"): ~541,000 Jira issues across 48 projects (including partner-domain accounts from Accenture, Netguru, Onwelo, BlueSoft and Sygeon), 229,734 IT/service-desk tickets referencing internal systems (POS "Nowa Kasa", sales system ZSS, warehouse/ordering platforms Cyberstore and zMarket, SAP ERP+MDG, a Lotto integration), source code and IaC from 89 GitLab repositories (~11,700 files; Terraform, Kubernetes Helm charts, ArgoCD), and — separately claimed — live production access material: a single GitLab Personal Access Token the seller says was reused across all 89 repository dumps, Solace messaging-broker credentials, MongoDB admin passwords, hardcoded .env tokens, and Azure/AKS infrastructure mapping (16 production database clusters, Istio service mesh, SSH access patterns to individual store servers). Niebezpiecznik.pl's own editorial framing of the initial-access-to-lateral-movement mechanism is explicitly speculative — its own words are "we guess (Zgadujemy) that the attacker used information placed in Jira such as tokens/passwords/test accounts to get into subsequent systems" — not a confirmed forensic finding by either the outlet or the company. The attacker's access, per the leaked sample, extended to 2026-07-29, two days before Żabka's pending 100%-stake sale to Circle K/Couche-Tard was publicly announced; several outlets note the timing but no source confirms a link between the two events.
+    region_nexus: "Poland (EU) — direct"
+    primary_sector_nexus: "indirect"
+    sector: "retail; transferable to public-sector and any organization running Jira + GitLab with secrets embedded in tickets/pipelines"
+    cves: []
+    techniques: [T1078, T1213, T1213.003, T1552.001]
+    affected_products: ["Atlassian Jira (Żabka-hosted instance)", "GitLab (Żabka-hosted instance)"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:zabka-supplier-account-jira-gitlab-secrets-2026-07", type: incident, name: "Żabka supplier-account Jira/GitLab intrusion",
+          aliases: [],
+          summary: "Compromise of an external service-provider account granting access to Żabka's (Polish retail chain) Jira ticketing system; a criminal-forum seller separately claimed the ticket contents contained secrets (GitLab PAT, DB admin passwords, .env tokens) reaching 89 GitLab repositories and Azure/AKS production infrastructure. Żabka itself confirmed only the initial access vector and the Jira reach, not the claimed downstream scope (niebezpiecznik.pl / sekurak.pl, 2026-08-03)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: |
+          Pod koniec ubiegłego tygodnia wykryliśmy nieautoryzowany dostępu do wybranych zasobów technicznych wspierających wymianę informacji między franczyzodawcą a franczyzobiorcami. Do nieautoryzowanego dostępu doszło przy wykorzystaniu konta zewnętrznego dostawcy usług. Nieuprawniony dostęp został wykryty i niezwłocznie zablokowany zgodnie z obowiązującymi procedurami bezpieczeństwa.
+        attribution: "Żabka official statement, quoted by niebezpiecznik.pl (English: 'At the end of last week we detected unauthorized access to selected technical resources supporting information exchange between the franchisor and franchisees. The unauthorized access occurred through the use of an external service provider's account. The unauthorized access was detected and immediately blocked in accordance with applicable security procedures.')"
+        source_url: "https://niebezpiecznik.pl/post/zabka-zhackowana-co-wycieklo/"
+      - quote: |
+          Bezpieczeństwo danych transakcyjnych i usług konsumenckich, poufność danych aplikacji "Żappka" oraz działalność operacyjna pozostają nienaruszone. Zgodnie z naszą obecną wiedzą sprawca uzyskał dostęp do systemu kolejkowania zgłoszeń.
+        attribution: "Żabka official statement, quoted by niebezpiecznik.pl (English: 'The security of transactional data and consumer services, the confidentiality of the Żappka app data, and operational activities remain unaffected. To our current knowledge, the perpetrator gained access to the ticketing system.')"
+        source_url: "https://niebezpiecznik.pl/post/zabka-zhackowana-co-wycieklo/"
+      - quote: |
+          Nie komentujemy szczegółów trwającego postępowania, w tym kwestii dotyczącej sprawcy.
+        attribution: "Żabka official statement, quoted by niebezpiecznik.pl (English: 'We do not comment on details of the ongoing proceedings, including matters relating to the perpetrator.') — confirms the supplier/perpetrator is not named"
+        source_url: "https://niebezpiecznik.pl/post/zabka-zhackowana-co-wycieklo/"
+      - quote: |
+          Oto, co — jeśli wierzyć atakującemu — udało mu się wykraść z serwerów Żabki
+        attribution: "niebezpiecznik.pl's own framing (English: 'Here is what — if we are to believe the attacker — he managed to steal from Żabka's servers') introducing the itemized data-scope list; explicitly marks it as the attacker's unverified claim"
+        source_url: "https://niebezpiecznik.pl/post/zabka-zhackowana-co-wycieklo/"
+      - quote: |
+          Zgadujemy, że atakujący wykorzystał umieszczone w JIRZE informacje takie jak tokeny/hasła/konta testowe aby dostać się do kolejnych systemów.
+        attribution: "niebezpiecznik.pl's own analysis (English: 'We guess that the attacker used information placed in Jira such as tokens/passwords/test accounts to get into subsequent systems.') — the Jira-to-lateral-movement mechanism is the outlet's stated guess, not a confirmed finding"
+        source_url: "https://niebezpiecznik.pl/post/zabka-zhackowana-co-wycieklo/"
+    extended_notes: |
+      Sourcing precision matters here: three distinct claim tiers exist and must not be flattened into one. (1) Żabka's own confirmed facts: unauthorized access via a compromised external-provider account, reaching (at least) Jira, detected and blocked, transaction/Żappka data unaffected, regulator/law-enforcement notification made, supplier not named. (2) The criminal seller's claims about scope (541K tickets, 89 repos, production secrets) — relayed by niebezpiecznik.pl/sekurak.pl from the forum listing, explicitly framed by niebezpiecznik.pl as unverified attacker assertions. (3) The researchers' own inferred mechanism (Jira-embedded secrets pivoting into GitLab/production) — niebezpiecznik.pl's stated "guess," not a forensic confirmation by Żabka or the outlet. RMF FM (2026-08-04, 21:31) adds that Żabka notified the UODO (data-protection regulator), the CBZC (Central Bureau for Combating Cybercrime) and CERT Polska — this detail does not appear in the niebezpiecznik/sekurak Q&A but is independently reported by a second major Polish outlet quoting the same official statement, so treat it as corroborated. No Żabka investor-relations or corporate press-room URL was reachable during this run; all "official statement" material traces to the same press-office quote as relayed by four independent Polish outlets.
+
+  # ============================================================
+  # ITEM 2 — Connor Moucka (UNC5537) pleads guilty
+  # ============================================================
+  - title: "UNC5537's Connor “Judische” Moucka pleads guilty over the 2024 Snowflake-tenant mass-extortion campaign — DOJ confirms the plea, victim count and losses; Krebs supplies the MFA-absence and provider facts DOJ's own release omits"
+    sources:
+      - { url: "https://www.justice.gov/opa/pr/canadian-man-pleads-guilty-hacking-us-cloud-storage-provider-and-extorting-its-customers", publisher: "U.S. Department of Justice (Office of Public Affairs)", date: "2026-08-05", role: "primary" }
+      - { url: "https://krebsonsecurity.com/2026/08/canadian-man-pleads-guilty-in-snowflake-extortions/", publisher: "KrebsOnSecurity", date: "2026-08-06", role: "primary" }
+    discovery_trace: >-
+      first seen at: state/coverage_backlog.md (surfaced by 2026-08-10T0110Z-weekly)
+      → re-fetch: DOJ Office of Public Affairs, URL https://www.justice.gov/opa/pr/canadian-man-pleads-guilty-hacking-us-cloud-storage-provider-and-extorting-its-customers (primary, national carve-out authority for its own criminal case)
+      → cross-check: KrebsOnSecurity, URL https://krebsonsecurity.com/2026/08/canadian-man-pleads-guilty-in-snowflake-extortions/ (independent original reporting, names Snowflake, MFA fact, aliases, Wagenius)
+    summary: |
+      Connor Riley Moucka, 26, of Kitchener, Ontario, pleaded guilty on 2026-08-05 to a four-count federal indictment (computer fraud, wire fraud, aggravated identity theft, and a related conspiracy count) arising from a February–October 2024 hacking-and-extortion campaign. Mandiant tracks the cluster as UNC5537; Moucka's own operational aliases, per KrebsOnSecurity, were principally "Judische" and "Waifu." DOJ's press release states the conspiracy compromised "over 165 victim organizations," stole "billions of sensitive customer records," and that the conspirators personally profited by at least $495,000, with the co-conspirators collectively "receiving over $2.5 million in ransom payments" — DOJ states victim companies suffered "over $9.5 million in actual losses," a figure DOJ says excludes harm to those companies' own customers, "totaling at least 100 million individuals." DOJ names no specific victim provider anywhere in the release, describing it only as "a U.S.-based software-as-a-service company." Sentencing is scheduled for 2026-10-27; the aggravated-identity-theft count carries a mandatory minimum of two years, with a statutory maximum of 30 years on the remaining counts.
+      Two material facts the surfacing backlog item flagged as at-risk of misattribution are confirmed here by direct re-fetch: (1) the words "multi-factor," "MFA" and "Snowflake" do NOT appear anywhere in the DOJ release — that reporting is entirely KrebsOnSecurity's. Krebs states plainly: "The hackers targeted stolen credentials for Snowflake customer accounts that did not enforce multi-factor authentication," and separately that "Snowflake responded to the data thefts by increasing password complexity requirements and enforcing multi-factor authentication." (2) DOJ names no co-conspirators; Krebs identifies Cameron "Kiberphant0m" Wagenius, a U.S. Army soldier who pleaded guilty in July 2025 to extorting AT&T and Verizon and who is separately scheduled to be sentenced on 2026-09-03, and a third alleged (not yet convicted, per Krebs) co-conspirator, John Erin Binns ("IRDev"/"IntelSecrets"), tied to the 2021 T-Mobile breach and reported to have recently obtained Turkish citizenship after release from a Turkish prison. The entire access path described by both sources is credential-based against SaaS-tenant accounts that lacked MFA — no vulnerability in the provider's own systems is alleged by either source.
+    region_nexus: "global; Snowflake-hosted SaaS tenants worldwide, including enterprises with European/Swiss operations among the 165+ named victim organisations"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector; SaaS/cloud-data-platform tenants generally — the risk shape (stolen credentials against a shared platform with no tenant-side MFA) applies equally to any public-administration or CI operator on a shared SaaS data warehouse"
+    cves: []
+    techniques: [T1078.004, T1657]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:unc5537", type: actor, name: "UNC5537",
+          aliases: ["Judische", "Waifu"],
+          summary: "Mandiant-designated cluster for the 2024 mass credential-based extortion campaign against Snowflake customer tenants lacking MFA. Principal figure Connor Riley Moucka (aka Judische, Waifu), a Canadian national, pleaded guilty 2026-08-05 to four federal counts (computer fraud, wire fraud, aggravated identity theft, conspiracy) over the compromise of 165+ organizations, theft of billions of records, and $2.5M+ in ransom payments; sentencing 2026-10-27 (DOJ, 2026-08-05; KrebsOnSecurity, 2026-08-06)." }
+      - { key: "actor:cameron-wagenius", type: actor, name: "Cameron Wagenius",
+          aliases: ["Kiberphant0m"],
+          summary: "U.S. Army soldier and admitted co-conspirator in the 2024 Snowflake-tenant extortion campaign; pleaded guilty in July 2025 to extorting AT&T and Verizon for customer account data; sentencing scheduled 2026-09-03 (KrebsOnSecurity, 2026-08-06, citing DOJ)." }
+    relation_suggestions:
+      - { subject: "actor:unc5537", object: "actor:cameron-wagenius",
+          basis: "KrebsOnSecurity: 'One of Moucka's admitted co-conspirators is Cameron \"Kiberphant0m\" Wagenius' — both operated in the same 2024 Snowflake-tenant extortion campaign" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: |
+          the compromise of over 165 victim organizations, the theft of billions of sensitive customer records and the extortion of numerous victims
+        attribution: "U.S. Department of Justice, Office of Public Affairs"
+        source_url: "https://www.justice.gov/opa/pr/canadian-man-pleads-guilty-hacking-us-cloud-storage-provider-and-extorting-its-customers"
+      - quote: |
+          The conspirators profited from the scheme, receiving over $2.5 million in ransom payments.
+        attribution: "U.S. Department of Justice, Office of Public Affairs"
+        source_url: "https://www.justice.gov/opa/pr/canadian-man-pleads-guilty-hacking-us-cloud-storage-provider-and-extorting-its-customers"
+      - quote: |
+          The harm to the conspirators’ victims was much greater, with victim companies suffering over $9.5 million in actual losses — a number that does not include losses suffered by the companies’ customers, totaling at least 100 million individuals.
+        attribution: "U.S. Department of Justice, Office of Public Affairs"
+        source_url: "https://www.justice.gov/opa/pr/canadian-man-pleads-guilty-hacking-us-cloud-storage-provider-and-extorting-its-customers"
+      - quote: |
+          Moucka pleaded guilty to four counts of the indictment, including computer fraud, wire fraud, aggravated identity theft, and a related conspiracy. He is scheduled to be sentenced on Oct. 27 and faces a mandatory minimum penalty of two years in prison on the aggravated identity theft count and a maximum penalty of 30 years in prison on the remaining counts.
+        attribution: "U.S. Department of Justice, Office of Public Affairs"
+        source_url: "https://www.justice.gov/opa/pr/canadian-man-pleads-guilty-hacking-us-cloud-storage-provider-and-extorting-its-customers"
+      - quote: |
+          The hackers targeted stolen credentials for Snowflake customer accounts that did not enforce multi-factor authentication, and extorted or attempted to extort a host of well-known companies, including TicketMaster, Lending Tree, Advance Auto Parts and Neiman Marcus. Snowflake responded to the data thefts by increasing password complexity requirements and enforcing multi-factor authentication.
+        attribution: "KrebsOnSecurity — this MFA/Snowflake attribution does NOT appear in the DOJ release"
+        source_url: "https://krebsonsecurity.com/2026/08/canadian-man-pleads-guilty-in-snowflake-extortions/"
+      - quote: |
+          Moucka adopted new nicknames frequently — sometimes operating multiple identities concurrently — but two of his best-known monikers were “Judische” and “Waifu.”
+        attribution: "KrebsOnSecurity"
+        source_url: "https://krebsonsecurity.com/2026/08/canadian-man-pleads-guilty-in-snowflake-extortions/"
+      - quote: |
+          One of Moucka’s admitted co-conspirators is Cameron “Kiberphant0m” Wagenius, a U.S. Army soldier who pleaded guilty in July 2025 to extorting AT&T and Verizon for their customer account data.
+        attribution: "KrebsOnSecurity"
+        source_url: "https://krebsonsecurity.com/2026/08/canadian-man-pleads-guilty-in-snowflake-extortions/"
+      - quote: |
+          Wagenius is set to be sentenced on September 3, 2026.
+        attribution: "KrebsOnSecurity"
+        source_url: "https://krebsonsecurity.com/2026/08/canadian-man-pleads-guilty-in-snowflake-extortions/"
+    extended_notes: |
+      Registry check performed before drafting: grepped entities/registry.yaml for "unc5537", "UNC5537", "Judische", "Waifu", "Moucka", "Wagenius", "Snowflake" — zero matches anywhere in the file. No withdrawn/stale draft key was found still present; the registration proposed here is a clean net-new entry, not a duplicate of an existing key. Per-fact attribution table (source → fact): DOJ → victim count (165+), record scale ("billions"), ransom total ($2.5M+), personal proceeds ($495K), victim losses ($9.5M+), affected-individuals floor (100M), charges, plea terms, Oct. 27 sentencing date, does NOT name Snowflake or MFA, does NOT name Wagenius/Binns/Judische/Waifu. Krebs → Snowflake as the named provider, the MFA-non-enforcement fact and Snowflake's subsequent MFA/password-policy change, both aliases (Judische, Waifu), Wagenius's identity/alias/sentencing date, Binns's identity/aliases/Turkish-citizenship detail. Treat every fact per this split when composing — do not attribute the MFA fact to DOJ.
+
+  # ============================================================
+  # ITEM 3 — Rapid7 / CVE-2026-66066 Metasploit module
+  # ============================================================
+  - title: "Rapid7 ships a public Metasploit module and its own end-to-end reproduction of CVE-2026-66066 (Rails Active Storage libvips/libmatio chain) — its own weaponization, NOT a claim of observed in-the-wild exploitation"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/ra-kindarails2shell-technical-analysis-cve-2026-66066", publisher: "Rapid7", date: "2026-08-03", role: "primary" }
+      - { url: "https://www.rapid7.com/blog/post/etr-kindarails2shell-cve-2026-66066-critical-arbitrary-file-read-and-possible-remote-code-execution-in-ruby-on-rails/", publisher: "Rapid7 (Emergent Threat Response tracker)", date: "2026-07-30 (updated 2026-08-03)", role: "primary" }
+      - { url: "https://github.com/rails/rails/security/advisories/GHSA-xr9x-r78c-5hrm", publisher: "GitHub Security Advisory (Rails project)", date: "2026-07-31", role: "corroborating" }
+    discovery_trace: >-
+      first seen at: state/coverage_backlog.md (surfaced by 2026-08-09T1315Z-audit)
+      → re-fetch: Rapid7, URL https://www.rapid7.com/blog/post/ra-kindarails2shell-technical-analysis-cve-2026-66066 (technical-analysis post, 2026-08-03)
+      → pivot: Rapid7 ETR tracker, URL https://www.rapid7.com/blog/post/etr-kindarails2shell-cve-2026-66066-critical-arbitrary-file-read-and-possible-remote-code-execution-in-ruby-on-rails/ (the linked exploitation-status tracking post)
+      → corroboration: GitHub Security Advisory, URL https://github.com/rails/rails/security/advisories/GHSA-xr9x-r78c-5hrm ; NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-66066
+    summary: |
+      CORRECTION TO THE BACKLOG FRAMING: the backlog item describes this as "Rapid7 confirms active exploitation" — direct re-fetch of both Rapid7 posts, including a raw-body search for every occurrence of "wild", "exploited" and "scanning" across the full technical-analysis post, found ZERO claim of in-the-wild exploitation anywhere. Rapid7's own exploitation-status tracker states explicitly: "As of July 30, 2026, Rapid7 is not aware of exploitation in the wild." That tracker's only subsequent update (Update #1, 2026-07-31) records that Rails itself published technical details and forensic tooling early — not that attacker activity was observed. The 2026-08-03 technical-analysis post is Rapid7's OWN reproduction of the previously-withheld attack chain plus its own weaponization: "We reproduced the published chain against Rails 6.0.6.1, 6.1.7.10, 7.2.3.1, 8.0.5, and 8.1.3, and confirmed that patched 7.2.3.2, 8.0.5.1, and 8.1.3.1 targets block the crafted representation," and "Our Metasploit module follows the representation-based chain described above. It creates crafted direct-upload blobs, confirms the file read against /proc/version, recovers and validates Rails signing material, signs an ImageProcessing variation, and triggers either send/spawn for command payloads or send/eval for native Ruby payloads." No honeypot, scanning, or attacker-side telemetry is cited by either post.
+      The technical chain (per NVD and Rapid7, corroborating): Active Storage, when configured to use the Vips image processor for untrusted uploads, does not disable libvips operations marked unsafe for untrusted content. libvips selects its `matload` decoder purely from a file beginning with the string "MATLAB 5.0" — a genuine MAT 7.3 file instead begins "MATLAB 7.3 MAT-file" and fails this check, so a crafted file can pass itself off as a legitimate MAT/HDF5 container to libvips while carrying a MAT 7.3 version tag libmatio reads from bytes 124–125. libmatio then follows an HDF5 "External Storage" dataset reference containing an attacker-chosen file path and byte offset, copying arbitrary local file bytes into the MAT variable buffer; those bytes are returned to the requester rendered as PNG pixel data. Recovering Rails' `secret_key_base` or other signing material through this arbitrary-file-read primitive escalates to remote code execution without a Marshal deserialization gadget — Rapid7 states it validated the chain "against Rails 8.0.5 configured with config.active_support.message_serializer = :json," i.e. the RCE path works even against Rails' safer JSON-based session/message serializer. Affected: Active Storage < 7.2.3.2, >= 8.0 < 8.0.5.1, and >= 8.1 < 8.1.3.1 (matches NVD's fix-version statement exactly). CVSS v4.0 base score 9.5 (Critical) per NVD/GHSA.
+    region_nexus: "global; any Rails deployment accepting untrusted image uploads with libvips/Vips configured, including EU/CH public-sector web applications"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector and cross-sector — Ruby on Rails web applications using Active Storage with the Vips variant processor"
+    cves: [CVE-2026-66066]
+    techniques: [T1190]
+    affected_products: ["Ruby on Rails (Active Storage)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-02/cve-2026-66066-rails-attack-chain-public-forensic-tooling"
+    evidence:
+      - quote: |
+          As of July 30, 2026, Rapid7 is not aware of exploitation in the wild.
+        attribution: "Rapid7 (Emergent Threat Response tracker)"
+        source_url: "https://www.rapid7.com/blog/post/etr-kindarails2shell-cve-2026-66066-critical-arbitrary-file-read-and-possible-remote-code-execution-in-ruby-on-rails/"
+      - quote: |
+          We reproduced the published chain against Rails 6.0.6.1, 6.1.7.10, 7.2.3.1, 8.0.5, and 8.1.3, and confirmed that patched 7.2.3.2, 8.0.5.1, and 8.1.3.1 targets block the crafted representation.
+        attribution: "Rapid7 (technical-analysis post)"
+        source_url: "https://www.rapid7.com/blog/post/ra-kindarails2shell-technical-analysis-cve-2026-66066"
+      - quote: |
+          Our Metasploit module follows the representation-based chain described above. It creates crafted direct-upload blobs, confirms the file read against /proc/version, recovers and validates Rails signing material, signs an ImageProcessing variation, and triggers either send/spawn for command payloads or send/eval for native Ruby payloads.
+        attribution: "Rapid7 (technical-analysis post)"
+        source_url: "https://www.rapid7.com/blog/post/ra-kindarails2shell-technical-analysis-cve-2026-66066"
+      - quote: |
+          This RCE path does not depend on a Marshal object gadget. We validated it against Rails 8.0.5 configured with config.active_support.message_serializer = :json.
+        attribution: "Rapid7 (technical-analysis post)"
+        source_url: "https://www.rapid7.com/blog/post/ra-kindarails2shell-technical-analysis-cve-2026-66066"
+      - quote: |
+          Action Pack is a framework for handling and responding to web requests. In versions prior to 7.2.3.2, 8.0.5.1 and 8.1.3.1, Active Storage does not disable libvips operations marked unsafe for untrusted content, allowing a crafted upload to invoke such an operation.
+        attribution: "NVD (CVE-2026-66066 description, sourced from the GitHub Security Advisory)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-66066"
+    extended_notes: |
+      This is the single most important correction in this backlog batch: the surfacing fire's framing ("Rapid7 confirms active exploitation") is NOT supported by either Rapid7 source. Compose this as vendor-side weaponization (public Metasploit module + full reproduction across five Rails version lines) raising the imminent-exploitation risk — the CVE now has a public, automatable exploit chain and no authentication/user-interaction prerequisite — but do NOT state or imply confirmed attacker activity. Recommend priority "high" (consistent with the 2026-08-02 predecessor entry), not "critical", absent an ITW claim. Detection angle: application logs recording direct-upload blob creation followed immediately by a variant/representation request for the same blob within one session, especially where the uploaded content-type claims image/png but the byte-124-125 MAT-version field is non-zero; outbound reads of unexpected local paths (e.g., /proc/version) via the image-processing pipeline are a strong signal per Rapid7's own PoC methodology.
+
+  # ============================================================
+  # ITEM 4 — CVE-2026-33824 root cause (0patch / ikeext.dll)
+  # ============================================================
+  - title: "0patch's root-cause writeup: CVE-2026-33824 is a pre-authentication double free in ikeext.dll's IKEv2 fragment-reassembly path (IkeReinjectReassembledPacket), reachable on UDP 500/4500 against any host acting as an IKEv2 responder"
+    sources:
+      - { url: "https://0patch.com/blog/micropatches-released-for-windows-ike-service-extensions", publisher: "0patch (ACROS Security)", date: "2026-08-05", role: "primary — single-source for the root-cause analysis" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-33824", publisher: "Microsoft Security Response Center", date: "2026-04-14 (initial); revision current as fetched", role: "corroborating — confirms the CVE, CWE-415 Double Free classification, CVSS, affected products and patch date; does NOT corroborate 0patch's specific function-level (ikeext.dll / IkeReinjectReassembledPacket) analysis" }
+    discovery_trace: >-
+      first seen at: state/coverage_backlog.md (surfaced by 2026-08-10T0110Z-weekly)
+      → re-fetch: 0patch blog, URL https://0patch.com/blog/micropatches-released-for-windows-ike-service-extensions
+      → corroboration: MSRC structured record for CVE-2026-33824 (fetched via tools/fetch_source.py msrc cve CVE-2026-33824, human-facing page https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-33824 ) and the April 2026 MSRC CVRF release document (affected-products enumeration)
+      → verification: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-33824
+    summary: |
+      0patch (ACROS Security) published a root-cause analysis on 2026-08-05 stating CVE-2026-33824 is "a pre-authentication double free in ikeext.dll, the module behind the 'IKE and AuthIP IPsec Keying Modules' service, which runs as Local System inside a svchost.exe. The flaw is in function IkeReinjectReassembledPacket, on the IKEv2 fragment reassembly path. An unauthenticated attacker who can reach UDP 500/4500 on a host that acts as an IKEv2 responder can free the same heap block twice, resulting in potentially exploitable memory corruption." 0patch states it recreated a working proof-of-concept "from the official patch" (i.e., by diffing Microsoft's fix) in order to build micropatches for Windows versions that are past end-of-support and no longer receive official updates from Microsoft (its demonstration used "a vulnerable Windows 11 computer... [with] the IKEv2 responder enabled" attacked by a second host running the PoC).
+      Microsoft's own MSRC record (fetched directly via the structured API, since the human-facing page is a JS-only SPA that returns no content to a plain fetch) independently corroborates: the CVE was released 2026-04-14 as part of April 2026 Patch Tuesday, classified CWE-415 Double Free (matching 0patch's double-free claim, though MSRC does not name the specific function or DLL), CVSS 3.1 base score 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H — network vector, low complexity, no privileges or user interaction required), with "Exploited: No" and "Publicly Disclosed: No" recorded as of the fetched revision. Microsoft's own FAQ states: "An unauthenticated attacker could send specially crafted packets to a Windows machine with Internet Key Exchange (IKE) version 2 enabled, which could enable remote code execution" — confirming the flaw requires the host to have IKEv2 enabled/configured as a responder, not that every Windows host is reachable by default; Microsoft's stated mitigation (for those who cannot immediately patch) is to block inbound UDP 500/4500 for systems not using IKE, or restrict it to known peer addresses for systems that require it. The MSRC CVRF affected-products list (retrieved via the structured API) spans Windows Server 2016 through Windows Server 2025 and Windows 10 version 1607 through Windows 11 version 26H1 — i.e., essentially every supported Windows client and server release at the time of the April 2026 patch.
+      This directly closes the evidence gap flagged in this pipeline's tracked entry 2026-08-02/unit42-autonomous-campaign-confirmed-impact-was-understated, which recorded CVE-2026-33824 as one of four CVEs the autonomous-AI intrusion campaign actually exploited, described there only as "callbacks from three IKE VPN endpoints" with no root-cause detail.
+    region_nexus: "global; any Windows host configured as an IKEv2 VPN/IPsec responder, including EU/CH government and critical-infrastructure remote-access gateways"
+    primary_sector_nexus: "direct"
+    sector: "public-sector; energy; water; transport; healthcare; finance; telco — any Windows-based IKEv2 VPN/IPsec responder"
+    cves: [CVE-2026-33824]
+    techniques: [T1190, T1068]
+    affected_products: ["Windows Server 2016", "Windows Server 2019", "Windows Server 2022", "Windows Server 2025", "Windows 10 (versions 1607 through 22H2)", "Windows 11 (versions 21H2 through 26H1)"]
+    entity_keys: ["actor:knaithe-knyuan", "tool:hermes-ai-agent"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-02/unit42-autonomous-campaign-confirmed-impact-was-understated"
+    evidence:
+      - quote: |
+          This is a pre-authentication double free in ikeext.dll, the module behind the "IKE and AuthIP IPsec Keying Modules" service, which runs as Local System inside a svchost.exe. The flaw is in function IkeReinjectReassembledPacket, on the IKEv2 fragment reassembly path.
+        attribution: "0patch (ACROS Security)"
+        source_url: "https://0patch.com/blog/micropatches-released-for-windows-ike-service-extensions"
+      - quote: |
+          An unauthenticated attacker who can reach UDP 500/4500 on a host that acts as an IKEv2 responder can free the same heap block twice, resulting in potentially exploitable memory corruption.
+        attribution: "0patch (ACROS Security)"
+        source_url: "https://0patch.com/blog/micropatches-released-for-windows-ike-service-extensions"
+      - quote: |
+          We recreated a POC from the official patch, which allowed us to reproduce the issue and create patches
+        attribution: "0patch (ACROS Security)"
+        source_url: "https://0patch.com/blog/micropatches-released-for-windows-ike-service-extensions"
+      - quote: |
+          We'd like to thank Microsoft for finding this vulnerability and having it patched, which allowed us to create patches for Windows versions that are no longer receiving official updates from Microsoft.
+        attribution: "0patch (ACROS Security)"
+        source_url: "https://0patch.com/blog/micropatches-released-for-windows-ike-service-extensions"
+      - quote: |
+          Double free in Windows IKE Extension allows an unauthorized attacker to execute code over a network.
+        attribution: "Microsoft Security Response Center (MSRC), CVE-2026-33824 record"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-33824"
+      - quote: |
+          An unauthenticated attacker could send specially crafted packets to a Windows machine with Internet Key Exchange (IKE) version 2 enabled, which could enable remote code execution.
+        attribution: "Microsoft Security Response Center (MSRC), CVE-2026-33824 FAQ"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-33824"
+      - quote: |
+          Block inbound traffic on UDP ports 500 and 4500 for systems that do not use IKE. For systems that require IKE, configure firewall rules to allow inbound traffic on UDP ports 500 and 4500 only from known peer addresses.
+        attribution: "Microsoft Security Response Center (MSRC), CVE-2026-33824 mitigation guidance"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-33824"
+    extended_notes: |
+      Sourcing note (mandatory per the assignment): 0patch is neither the vendor (Microsoft) nor a national CERT, so no single-source carve-out applies to its root-cause claim (the specific function IkeReinjectReassembledPacket, the double-free-on-fragment-reassembly mechanism, and the "reachable when acting as an IKEv2 responder" framing). This item ships as single-source for that root-cause analysis specifically; Microsoft's own MSRC record independently corroborates the CVE's existence, its CWE-415 Double Free classification, the April 2026 patch date, CVSS score and the broad affected-products list, but does not corroborate 0patch's DLL/function-level detail. No exploitation was reported by either source at the time of the April 2026 patch; MSRC's "Exploited: No" field is the vendor's own assessment as fetched in this run, not an independent post-hoc study. The tracked-campaign nexus (2026-08-02/unit42-autonomous-campaign-confirmed-impact-was-understated, entities actor:knaithe-knyuan / tool:hermes-ai-agent) is carried forward as entity_keys since this item closes an evidence gap on that specific tracked incident, not because 0patch or MSRC themselves attribute exploitation to that actor — neither source makes any attribution claim.
+
+  # ============================================================
+  # ITEM 5 — Forescout water-sector Rockwell PLC census
+  # ============================================================
+  - title: "Forescout's own count: 4,407 internet-facing Rockwell PLCs found worldwide on 2026-08-03, 19 of 22 in already-attacked water-utility cities running CVE-2017-16740-susceptible firmware; CISA's Nick Andersen says exposed devices had no password or a default one"
+    sources:
+      - { url: "https://www.forescout.com/blog/ot-security-analysis-exposed-devices-attacked-in-us-water-systems/", publisher: "Forescout", date: "2026-08-05", role: "primary" }
+      - { url: "https://www.nextgov.com/cybersecurity/2026/08/cisa-still-finds-water-system-controls-exposed-online-amid-multistate-hacks/415266/", publisher: "Nextgov/FCW", date: "2026-08-06", role: "primary — direct quote of CISA's Nick Andersen at Black Hat" }
+      - { url: "https://thehackernews.com/2026/08/over-4400-rockwell-plcs-exposed-online.html", publisher: "The Hacker News", date: "2026-08-06", role: "corroborating" }
+    discovery_trace: >-
+      first seen at: state/coverage_backlog.md (surfaced by 2026-08-10T0110Z-weekly, citing thehackernews.com relay of Forescout, and nextgov.com relay of a CISA Black Hat briefing)
+      → WebSearch ("Forescout research Rockwell PLC 4407 exposed EtherNet/IP water utility") located the Forescout post directly
+      → re-fetch: Forescout, URL https://www.forescout.com/blog/ot-security-analysis-exposed-devices-attacked-in-us-water-systems/ (primary reached directly — the relay is no longer necessary)
+      → re-fetch: Nextgov/FCW, URL https://www.nextgov.com/cybersecurity/2026/08/cisa-still-finds-water-system-controls-exposed-online-amid-multistate-hacks/415266/ (primary reached directly for the CISA quote)
+      → corroboration: The Hacker News, URL https://thehackernews.com/2026/08/over-4400-rockwell-plcs-exposed-online.html
+    summary: |
+      Both figures the backlog item flagged as relayed were reached directly in this run — the relay outlets are corroboration, not the primary, going forward. Forescout's own blog post (2026-08-05) states it queried Shodan on 2026-08-03 and "returns 4,407 devices exposing port 44818" (the EtherNet/IP engineering protocol used by Rockwell Automation/Allen-Bradley controllers, including the MicroLogix 1100/1400 families the FBI/EPA advisory names for the water-utility campaign), with "the vast majority (65%) ... located in the U.S., followed by Canada (12%) and Spain (3%)" — 65% of 4,407 is consistent with the ~2,844 US figure the relay reporting cited. Forescout states: "We identified 22 located in cities targeted in the current campaign," and "Approximately 86% (19 of 22) hosts observed in the affected cities were susceptible to this CVE [CVE-2017-16740] based on firmware versions." Forescout explicitly caveats exploitation: "we cannot confirm these particular assets were compromised in this campaign." On the exposure mechanism, Forescout states "exposing EtherNet/IP to the internet creates an unauthenticated path" — standard-mode CIP over port 44818 accepts connections without authentication, letting a remote party identify a controller or, depending on device configuration, write settings to it. CVE-2017-16740 is a stack-based buffer overflow in Rockwell Automation Allen-Bradley MicroLogix 1400 Controllers Series B/C, firmware 21.002 and earlier, that "may allow remote code execution" (NVD); it is not itself confirmed as the campaign's entry point — Forescout frames it purely as a maintenance/patch-currency signal on already-exposed, already-targeted devices, not as the exploited vulnerability.
+      CISA Acting Director Nick Andersen, speaking on the sidelines of the Black Hat conference on 2026-08-06 (per Nextgov/FCW, which conducted the interview), said: "We're seeing things like [programmable logic controllers] that are open and accessible on the internet with either no password set or default password set," and, asked about actor attribution: "For us, we're not doing anything with attribution right now." Andersen's guidance to affected utilities was blunt: "Get your operational technology off the internet, set a password." Nextgov reports the wider campaign now spans "around 12 states," with "more than 30 community water systems in Minnesota" affected — consistent with this pipeline's already-tracked incident record.
+    region_nexus: "US-centric census (65% of the 4,407 devices); Forescout's own country breakdown includes Spain (3%) among the top three, and the maintenance signal (19 of 22 controllers in already-attacked cities running 2017-era firmware) is directly transferable to European operators of the same Rockwell/Allen-Bradley controller families"
+    primary_sector_nexus: "direct"
+    sector: "water; energy; critical-infrastructure OT — Rockwell Automation/Allen-Bradley programmable logic controllers"
+    cves: [CVE-2017-16740]
+    techniques: [T1078.001]
+    affected_products: ["Rockwell Automation/Allen-Bradley MicroLogix 1100", "Rockwell Automation/Allen-Bradley MicroLogix 1400"]
+    entity_keys: ["incident:minnesota-water-utilities-coordinated-cyberattack-2026-07"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-06/water-plc-lockouts-twelve-states-named-utility-confirms"
+    evidence:
+      - quote: |
+          Querying the Shodan search engine on August 3, 2026 returns 4,407 devices exposing port 44818.
+        attribution: "Forescout"
+        source_url: "https://www.forescout.com/blog/ot-security-analysis-exposed-devices-attacked-in-us-water-systems/"
+      - quote: |
+          The vast majority (65%) are located in the U.S., followed by Canada (12%) and Spain (3%).
+        attribution: "Forescout"
+        source_url: "https://www.forescout.com/blog/ot-security-analysis-exposed-devices-attacked-in-us-water-systems/"
+      - quote: |
+          We identified 22 located in cities targeted in the current campaign.
+        attribution: "Forescout"
+        source_url: "https://www.forescout.com/blog/ot-security-analysis-exposed-devices-attacked-in-us-water-systems/"
+      - quote: |
+          Approximately 86% (19 of 22) hosts observed in the affected cities were susceptible to this CVE based on firmware versions.
+        attribution: "Forescout"
+        source_url: "https://www.forescout.com/blog/ot-security-analysis-exposed-devices-attacked-in-us-water-systems/"
+      - quote: |
+          Exposing EtherNet/IP to the internet creates an unauthenticated path.
+        attribution: "Forescout"
+        source_url: "https://www.forescout.com/blog/ot-security-analysis-exposed-devices-attacked-in-us-water-systems/"
+      - quote: |
+          We cannot confirm these particular assets were compromised in this campaign.
+        attribution: "Forescout"
+        source_url: "https://www.forescout.com/blog/ot-security-analysis-exposed-devices-attacked-in-us-water-systems/"
+      - quote: |
+          We're seeing things like [programmable logic controllers] that are open and accessible on the internet with either no password set or default password set.
+        attribution: "Nick Andersen, CISA Acting Director, quoted by Nextgov/FCW at Black Hat 2026-08-06"
+        source_url: "https://www.nextgov.com/cybersecurity/2026/08/cisa-still-finds-water-system-controls-exposed-online-amid-multistate-hacks/415266/"
+      - quote: |
+          For us, we're not doing anything with attribution right now.
+        attribution: "Nick Andersen, CISA Acting Director, quoted by Nextgov/FCW"
+        source_url: "https://www.nextgov.com/cybersecurity/2026/08/cisa-still-finds-water-system-controls-exposed-online-amid-multistate-hacks/415266/"
+      - quote: |
+          Rockwell Automation Allen-Bradley MicroLogix 1400 Controllers, Series B and C Versions 21.002 and earlier. The stack-based buffer overflow vulnerability has been identified, which may allow remote code execution.
+        attribution: "NVD (CVE-2017-16740 description)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2017-16740"
+    extended_notes: |
+      Both primaries were reached directly in this run (Forescout's own blog; Nextgov/FCW's own Black Hat interview) — the relay attribution the backlog item flagged is no longer necessary, though The Hacker News is retained as corroborating. Keep the entry framed on the transferable maintenance datum (19 of 22 controllers in already-attacked cities on 8-plus-year-old firmware) rather than the US-specific device count, per the relevance framing given for this constituency. CVE-2017-16740 is explicitly NOT claimed by Forescout as the campaign's exploited vulnerability — it is a patch-currency/exposure signal on devices already in scope of the attacks, and the actual reported campaign mechanism (per the pipeline's existing tracked entries) is unauthenticated protocol access plus default/no credentials, not this specific 2017 buffer overflow. Do not conflate the two in composition.
+
+cve_table:
+  - cve: CVE-2026-66066
+    product: "Ruby on Rails Active Storage (libvips/libmatio format-confusion chain)"
+    cvss: "9.5 CRITICAL (CVSS v4.0 — GitHub Security Advisory GHSA-xr9x-r78c-5hrm / NVD)"
+    epss: null
+    kev: "not KEV-listed"
+    exploited: "No confirmed in-the-wild exploitation. Rapid7 ETR tracker: 'As of July 30, 2026, Rapid7 is not aware of exploitation in the wild.' The 2026-08-03 post documents Rapid7's OWN reproduction and a public Metasploit module release, not observed attacker activity."
+    patch: "7.2.3.2 / 8.0.5.1 / 8.1.3.1"
+    source: "GitHub Security Advisory GHSA-xr9x-r78c-5hrm; Rapid7 (ETR tracker + technical-analysis post); NVD"
+  - cve: CVE-2026-33824
+    product: "Windows IKE and AuthIP IPsec Keying Modules (ikeext.dll), IKEv2 fragment-reassembly path, function IkeReinjectReassembledPacket"
+    cvss: "9.8 CRITICAL (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H — MSRC)"
+    epss: null
+    kev: "not KEV-listed"
+    exploited: "No. MSRC record: Exploited=No, Publicly Disclosed=No (as fetched). 0patch's 2026-08-05 root-cause post makes no in-the-wild claim."
+    patch: "April 2026 Patch Tuesday cumulative update; MSRC CVRF affected-products list spans Windows Server 2016 through Server 2025 and Windows 10 v1607 through Windows 11 v26H1"
+    source: "Microsoft Security Response Center (vendor, authoritative for CVE existence/CVSS/patch date/CWE-415 classification); 0patch (single-source for the DLL/function-level root-cause analysis — no vendor or national-CERT corroboration of that specific detail)"
+  - cve: CVE-2017-16740
+    product: "Rockwell Automation/Allen-Bradley MicroLogix 1400 Controllers, Series B and C, firmware 21.002 and earlier"
+    cvss: "10.0 CVSSv2 / 7.5 CVSSv3.x (NVD)"
+    epss: null
+    kev: "not checked this run"
+    exploited: "Not linked to confirmed exploitation in the current water-utility campaign. Forescout uses it only as a firmware-currency/exposure signal (19 of 22 in-scope controllers ran susceptible firmware) and explicitly states it 'cannot confirm these particular assets were compromised.'"
+    patch: "vendor firmware update per Rockwell Automation advisory (historical, 2017)"
+    source: "NVD CVE-2017-16740; Forescout"
+
+candidate_sources: []
+
+coverage_gaps: []

@@ -1,0 +1,76 @@
+domain: S3
+run_id: 2026-08-10T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-10T04:15:01Z
+ended_at: 2026-08-10T04:24:40Z
+duration_seconds: 579
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 12
+  bridge_fetches: 22
+items: []
+candidate_sources: []
+coverage_gaps:
+  - source_id: prodaft
+    reason: "www.prodaft.com/reports (jina) returns HTTP 200 but the listing is the same frozen 'Smoke and Mirrors: Wazawaka' snapshot last verified 2026-08-07/2026-07-08 with no visible publish dates anywhere on the page — consistent with the source's already-documented recipe_note (stale upstream cache, not a transport failure). No in-window content extractable. Not treated as a fetch_failures entry per the source's own note (deliberately not demoted)."
+  - source_id: ssd-disclosure
+    reason: "Landing page (https://ssd-disclosure.com/) fetched cleanly via the jina reader and surfaced one item not seen in a prior run's listing ('Linux Bridge STP Timer Use-After-Free'), but BOTH the jina reader and the direct bridge hit a Cloudflare-style robot-challenge screen on the per-article URL (https://ssd-disclosure.com/linux-bridge-stp-timer-use-after-free/) — matches the documented 2026-08-09 regression note (landing OK, per-article anti-bot). Recovered via corroborating secondary press (gbhackers.com, cyberpress.org) which both carry article:published_time 2026-08-06 — outside this run's 72h developing window (cutoff ~2026-08-07T04:11Z), so the item was dropped on recency grounds, not held back by the transport gap. Not logged as fetch_failures because coverage was recovered and the drop reason is recency, not access."
+  - source_id: paradigm-shift-research
+    reason: "https://ps.tc/ (bridge) returns only the client-rendered SPA shell (a meta-refresh to pages/home.html, no post grid, no dates) — matches the source's long-standing documented recipe gap (no working listing path found in any prior run either). No transport error (200 response), so not a fetch_failures entry; this is an unresolved recipe gap that predates this run."
+  - source_id: sygnia
+    reason: "Direct WebFetch on https://www.sygnia.co/blog/ returned HTTP 403; recovered via the bridge (python3 tools/fetch_source.py url), which returned the full page and a post-slug listing. All 19 distinct post slugs recovered from the listing carry datePublished/article:published_time between 2026-02-08 and 2026-07-26 — none in-window. Not logged as fetch_failures (bridge recovered the content; the empty result is a genuine no-new-content outcome, not an access gap)."
+extended_notes: |
+  Exhaustive sweep of the full S3 slice (all rotation_priority and high_yield_majors
+  records) plus 12 targeted WebSearch queries (Black Hat USA 2026 / DEF CON 34 recaps,
+  OT/ICS 2026 research, identity-protocol-abuse research, endpoint-evasion research)
+  produced NO primary technical research item whose freshest available source clears
+  either the strict 24h window (2026-08-09/2026-08-10) or the 72h developing window
+  (cutoff ~2026-08-07T04:11Z).
+
+  This is a genuine lull, not a search failure: Black Hat USA 2026 briefings ran
+  2026-08-01 through 2026-08-06 and DEF CON 34 opened 2026-08-06, so the bulk of
+  this year's Black Hat/DEF CON research wave (Unit 42 ChainDrop, pass-the-passkey,
+  NOVA autonomous vuln discovery, direct-to-IP C2, Check Point workerd/Code Mode,
+  LiteLLM callback forgery, Elastic Claude Code reverse-tunnel telemetry, Talos AI
+  prompt-log research) had already published and was absorbed by this pipeline's
+  prior runs (all listed in the "already published" exclusion set for this spawn).
+  What remained clustered tightly on 2026-08-06 and has not been followed by any
+  in-window (post-2026-08-07T04:11Z) fresh development:
+    - NatJack (Synack Red Team / Malcolm Stagg, Black Hat 2026): a new NAT
+      trust-assumption attack class (TCP session hijack, DNS response poisoning,
+      port-mapping disclosure, NAT-table exhaustion DoS) with CVE-2026-56181
+      (Windows Hyper-V NAT) and CVE-2026-63913 (Linux netfilter conntrack) —
+      primary: https://go.synack.com/security-research/natjack (2026-08-06),
+      corroborated by https://www.csoonline.com/article/4206299/natjack-exploits-put-nat-security-assumptions-to-the-test-at-black-hat-2.html
+      (2026-08-06). High technical substance, but stale for this window — worth
+      a follow-up scan by tomorrow's S3 run if this pipeline has not yet published
+      it (checked entities/registry.yaml and prior_coverage.json: no match found,
+      so it appears to be an unabsorbed gap from an earlier run, not yet covered).
+    - 1Password Off-by-1 Labs "FLAWED" study on AI-generated vulnerability patches
+      (54% of 6,080 LLM-generated patches across 6 CVEs failed to fully remediate
+      or introduced new bugs) — primary:
+      https://1password.com/blog/why-ai-generated-patches-still-require-human-review
+      (2026-08-06). Same staleness issue.
+    - Novee Security's coding-agent CI/CD compromise research (single untrusted
+      GitHub issue -> RCE/secret exfiltration in Claude Code Action CVE-2026-54316,
+      Gemini CLI GHSA-wpqr-6v78-jr5g CVSS 10.0, OpenAI Codex AGENTS.md reload
+      persistence) — primary:
+      https://novee.security/blog/critical-flaws-in-anthropic-google-and-openais-coding-agents/
+      (2026-08-06). Same staleness issue; also thematically close to already-published
+      coding-agent items in the exclusion list, so may already be partially redundant.
+    - blog.calif.io "The Taking of FreeBSD One Two Three" (three pre-auth remote
+      kernel exploits behind one TCP port, FreeBSD documented rather than patched)
+      — https://blog.calif.io/p/the-taking-of-freebsd-one-two-three (2026-08-06).
+    - SSD Secure Disclosure "Linux Bridge STP Timer Use-After-Free" (kernel UAF in
+      net/bridge STP timer-arming path, found at TyphoonPWN 2026, fixed by commit
+      2a00517db8de4be7df3d483b215c5544fb30a191) — landing page dated implicitly
+      2026-08-06 per secondary press.
+  None of the above is included as an item because every corroborating source
+  traces to 2026-08-06, before the 72h developing-window cutoff, and no fresh
+  in-window follow-up was found for any of them. Flagging them here (not as
+  items) so the operator can decide whether an earlier run's window genuinely
+  missed them (a real coverage gap upstream of this run) versus a deliberate drop.
+  No ANNUAL REPORT-class periodic report published in-window was found; the only
+  candidate surfaced (Dragos "2026 OT Cybersecurity Year in Review") was confirmed
+  via WebSearch to have published 2026-02-17 — six months stale, not flagged.
