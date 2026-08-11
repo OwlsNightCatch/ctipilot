@@ -1,0 +1,109 @@
+domain: S3
+run_id: 2026-08-11T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-11T04:14:59Z
+ended_at: 2026-08-11T04:30:06Z
+duration_seconds: 907
+self_telemetry:
+  webfetch_calls: 24
+  websearch_calls: 15
+  bridge_fetches: 4
+items:
+  - title: "screensharingd's second pre-auth root bug: patch-diffed to a working exploit in four hours, and a silently-fixed sibling that never got a CVE"
+    sources:
+      - { url: "https://blog.calif.io/p/no-country-for-old-passwords", publisher: "Calif", date: "2026-08-10", role: primary }
+      - { url: "https://www.huntress.com/blog/macos-screen-sharing-rce-patched", publisher: "Huntress", date: "2026-08-07", role: corroborating }
+      - { url: "https://support.apple.com/en-us/148170", publisher: "Apple", date: "2026-08-06", role: corroborating }
+      - { url: "https://reverse.put.as/2026/07/29/its-a-pre-auth-stupid/", publisher: "fG! (reverse.put.as)", date: "2026-07-29", role: corroborating }
+    discovery_trace: >
+      first seen at: calif-codex source-slice record, feed URL https://blog.calif.io/feed →
+      primary: Calif blog post, URL https://blog.calif.io/p/no-country-for-old-passwords →
+      pivot: WebSearch ("Huntress \"Screen Sharing\" macOS pre-auth remote code execution blog") →
+      corroborating: Huntress technical analysis, URL https://www.huntress.com/blog/macos-screen-sharing-rce-patched →
+      background (already used in prior entry 2026-08-08/cve-2026-65400-macos-screen-sharing-auth-state-bypass):
+      Apple advisory, URL https://support.apple.com/en-us/148170, and fG!'s post, URL https://reverse.put.as/2026/07/29/its-a-pre-auth-stupid/
+    summary: |
+      Researcher Calif reverse-engineered Apple's 2026-08-06 emergency macOS 26.6.1 patch for
+      CVE-2026-65400 and had a working pre-authentication remote-root exploit against
+      screensharingd — the root-privileged daemon behind macOS Screen Sharing's Secure Remote
+      Password (SRP) authentication — within about four hours. Huntress's independent analysis of
+      the same patch (2026-08-07) pins the root cause precisely: the SRP frame-length validator
+      returns a stale success status left over from a prior read when handed an oversized frame,
+      so the authentication state machine treats an unauthenticated connection as authenticated
+      and the session proceeds in cleartext with arbitrary file read/write as root through the
+      daemon's file-copy helpers; disabling individual accounts or VNC password auth does not
+      block it. Calif's post adds a second, more serious dimension: screensharingd actually shipped
+      two independent pre-auth bugs. The first, found by researcher @osxreverser, needs no username
+      or password at all (a single wrong early-return in a length check hands back the success code
+      from a prior read) and was silently killed by Apple on 2026-07-27 in the same release that
+      patched three lesser bugs — including CVE-2026-43760, a post-auth flaw Bynario found through
+      GPT-5.5-assisted fuzzing — without a CVE, an advisory line, or a credit for the pre-auth
+      remote-root fix. Both bugs are pure logic errors (no memory corruption, no race, no crash) and
+      Calif reports both worked reliably on the first attempt once rebuilt from the binary diff.
+      osxreverser's own internet scan found roughly 40,000 Macs with Screen Sharing reachable from
+      the internet, concentrated in the US, with university and corporate hosts specifically flagged.
+    region_nexus: "global — Screen Sharing ships on every managed and unmanaged Mac; osxreverser's scan specifically flags exposed university and corporate hosts"
+    primary_sector_nexus: indirect
+    sector: [public-sector, education, healthcare, finance]
+    cves: [CVE-2026-65400]
+    techniques: [T1190, T1021.005]
+    affected_products: ["Apple macOS Tahoe", "Apple macOS Sequoia", "Apple macOS Sonoma"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-08/cve-2026-65400-macos-screen-sharing-auth-state-bypass"
+    evidence:
+      - quote: "If Screen Sharing is enabled, any network attacker can exploit the bug to log in as any account, without knowing the password."
+        attribution: "Calif"
+        source_url: "https://blog.calif.io/p/no-country-for-old-passwords"
+      - quote: "Both are logic bugs. There is no heap groom, no ASLR defeat, no race to win, no crash. Send one or two packets in the right order and the target Mac machine lets you in."
+        attribution: "Calif"
+        source_url: "https://blog.calif.io/p/no-country-for-old-passwords"
+      - quote: "The daemon's frame-length validator erroneously returns a stale success status, so the connection is treated as authed."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/macos-screen-sharing-rce-patched"
+      - quote: "Individual Screen Sharing properties, such as the removal of allowed user accounts or VNC password auth, do not affect this bug's success."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/macos-screen-sharing-rce-patched"
+    extended_notes: |
+      Huntress's detection guidance (2026-08-07) is the operationally useful addition the prior
+      entry lacked. Telemetry class: Apple's Endpoint Security screen-sharing-attach notification
+      (ES_EVENT_TYPE_NOTIFY_SCREENSHARING_ATTACH) — a legitimate authenticated session reports
+      authentication_type "RSA-SRP" (encrypted), while a session exploiting this bug reports the
+      weaker unencrypted "SRP" value, often paired with session_username "root" (disabled by
+      default) or a null username if the attacker enumerates a different local account to dodge
+      that specific discriminator. At the process layer, the exploited file-copy helper is
+      SSFileCopySender (path:
+      /System/Library/CoreServices/RemoteManagement/screensharingd.bundle/Contents/Support/SSFileCopySender.bundle/Contents/MacOS/SSFileCopySender,
+      and its SSFileCopyReceiver counterpart) — hunt for it launched with UID/GID 0:80, not a
+      legitimate combination during interactive Screen Sharing use. System Integrity Protection is
+      not a full mitigant: Huntress states it blocks only the cron-based persistence path reachable
+      through this bug, not LaunchDaemon or shell-startup-file persistence — a correction to the
+      2026-08-08 entry's more hopeful reading of fG!'s "it doesn't bypass SIP" remark, which was
+      about a different (file-download-only) primitive, not persistence generally. CVE-2026-43760
+      (Bynario, post-auth, already credited in Apple's 2026-07-27 advisory) and the still-uncredited
+      pre-07-27 bug are discussed by Calif only as context for how thoroughly screensharingd was
+      probed this cycle; neither changes the operational picture for CVE-2026-65400 itself. No
+      malicious in-the-wild exploitation is reported by any source — the four-hour patch-diff
+      turnaround is a research demonstration, not an observed attack, but it does establish that a
+      reliable weapon exists for any unpatched, internet-reachable host.
+    watchlist: null
+    borderline: false
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: prodaft
+    reason: "www.prodaft.com/reports still returns the same frozen, undated report-listing snapshot as prior runs (jina reader). Consistent with the existing source-list note; no in-window content extractable. Not re-flagged as a fresh failure."
+  - source_id: ssd-disclosure
+    reason: "Listing page https://ssd-disclosure.com/ returns a Cloudflare robot-challenge screen via both the jina reader and a direct fetch (--direct also 202/challenge) this run, so the documented 'direct works for article pages' recipe could not be exercised without a known article URL to target. WebSearch for fresh SSD Secure Disclosure advisories in-window returned nothing on-point."
+  - source_id: paradigm-shift-research
+    reason: "https://ps.tc/ still returns only the SPA shell (heading, no post grid, no dates) via bridge fetch, consistent with the existing note. No listing path found this run."
+  - source_id: mysites-guru
+    reason: "https://mysites.guru/blog/ renders a long undated post archive with no visible publication dates in the fetched output; cannot establish in-window status for any of its ~100+ listed posts. Consistent with existing note (anti-bot/rendering block on dates)."
+  - source_id: sans-newsbites
+    reason: "Latest confirmed issue (Volume XXVIII, Issue 58) published 2026-08-07, outside the 26h window; SANS's semiweekly cadence means the next issue likely lands after this run's cutoff. No in-window issue found via WebSearch."
+  - source_id: siemens-productcert-csaf
+    reason: "https://cert-portal.siemens.com/productcert/csaf/ still 403s (AccessDenied) via the bridge/jina fallback, consistent with the existing recurring note. No alternate Siemens ProductCERT listing path attempted successfully this run."

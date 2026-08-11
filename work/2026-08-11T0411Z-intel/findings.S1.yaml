@@ -1,0 +1,183 @@
+domain: S1
+run_id: 2026-08-11T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-11T04:14:27Z
+ended_at: 2026-08-11T04:29:38Z
+duration_seconds: 911
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 9
+  bridge_fetches: 22
+
+items:
+  - title: "#StopRansomware: Gunra ransomware-as-a-service exploits FortiOS auth-bypass chain, backdoors MFA, and ships a Linux encryptor with a recoverable-key flaw"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-222a", publisher: "CISA/FBI/DC3/NSA/USSS/KNPA (joint #StopRansomware advisory AA26-222A)", date: "2026-08-10", role: "primary" }
+      - { url: "https://therecord.media/ransomware-south-korea-fbi-gunra", publisher: "The Record (Recorded Future News)", date: "2026-08-10", role: "corroborating" }
+      - { url: "https://intel.breakglass.tech/post/gunra-ransomware-s-linux-variant-has-a-fatal-flaw-time-seeded-rand-makes-encrypted-files-recoverable-without-paying", publisher: "breakglass.tech (independent research)", date: "2026-03-12", role: "corroborating (background technical detail on the Linux PRNG weakness cited by the fresh advisory)" }
+    discovery_trace: "first seen at: cisa-advisories, URL https://www.cisa.gov/cybersecurity-advisories/all.xml (feed item '#StopRansomware: Gunra Ransomware') → primary: CISA AA26-222A, URL https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-222a → corroboration: The Record, URL https://therecord.media/ransomware-south-korea-fbi-gunra → background technical pivot: breakglass.tech, URL https://intel.breakglass.tech/post/gunra-ransomware-s-linux-variant-has-a-fatal-flaw-time-seeded-rand-makes-encrypted-files-recoverable-without-paying"
+    summary: |
+      FBI, CISA, DC3, NSA, USSS and South Korea's KNPA published a joint #StopRansomware advisory on Gunra, a double-extortion RaaS built on leaked Conti source code that emerged April 2025 and formalized an affiliate program (dark-web management panel, configurable builder, cross-platform lockers) in January 2026, also branding as "Golden Community." Victims span Americas, Europe, Middle East, Africa and APAC across healthcare, financial services, critical manufacturing, transportation, government services and facilities, and utilities. Initial access is primarily exploitation of known FortiOS/FortiProxy authentication-bypass vulnerabilities CVE-2024-55591 and CVE-2025-24472 (CWE-288) on internet-facing firewall/VPN appliances, creating a persistent super-user account named forticloud-sync with a hard-coded password via scheduled-task abuse; KNPA separately observed credential-exposure and SSH access-control weaknesses on VPN gateways used for initial access. Documented lateral movement uses Impacket's psexec.py/smbclient.py over SMB and stolen VDI sessions over RDP; credential access includes secretsdump.py against domain controllers for NTDS hash extraction enabling pass-the-hash/pass-the-ticket, SSL-VPN traffic sniffing to capture VDI login sessions, session-cookie hijacking, and — most notably — modification of a victim's VDI authentication-portal files so a Gunra-chosen one-time-password value always validates, creating a persistent MFA-bypass backdoor. Actors disable volume shadow copies via WMIC and have deleted backup/DR-site archives before encryption. The Windows encryptor uses ChaCha20+RSA-4096, renames files to .ENCRT, and writes ransom notes named R3ADM3.txt with 5-7 day Tor/qTox negotiation windows and demands starting in the tens of millions of USD. Defensively significant: the Linux ELF variant (.GNRA extension) seeds its ChaCha20 keystream with musl-libc rand() initialized by time(), collapsing the keyspace to roughly 256 candidate seeds per second of encryption — independent research (cited by the advisory) shows this lets responders brute-force the seed against a file with known plaintext and reconstruct keys from filesystem timestamps without paying, a weakness absent from the Windows build (which uses CryptGenRandom).
+    region_nexus: "global — advisory explicitly lists Europe among victim regions and names government services/facilities and utilities among targeted sectors, directly relevant to Swiss/EU public-sector and CI defenders"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, healthcare, finance, energy, transport"
+    cves: [CVE-2024-55591, CVE-2025-24472]
+    techniques: [T1190, T1078.001, T1078.002, T1133, T1098, T1021.001, T1021.002, T1003.003, T1550.002, T1550.003, T1540, T1556.006, T1555, T1070.003, T1685, T1622, T1083, T1049, T1560, T1530, T1005, T1114, T1105, T1572, T1567, T1048, T1486, T1490, T1047]
+    affected_products: ["Fortinet FortiOS", "Fortinet FortiProxy"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:gunra", type: actor, name: "Gunra", aliases: ["Golden Community"],
+          summary: "Double-extortion ransomware-as-a-service built on leaked Conti source code; emerged April 2025, formalized a dark-web RaaS affiliate program January 2026; joint FBI/CISA/NSA/USSS/KNPA advisory AA26-222A (2026-08-10) documents FortiOS exploitation for initial access, an MFA-bypass backdoor technique, and a cryptographically weak Linux encryptor." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Gunra ransomware appears to be based on, or significantly influenced by, the Conti ransomware source code leaked in 2022."
+        attribution: "CISA/FBI joint advisory AA26-222A"
+        source_url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-222a"
+      - quote: "Gunra actors modified authentication processing files on the corporate VDI authentication portal server to allow successful authentication when a specific, Gunra-designated one time password (OTP) value was entered, thereby enabling the continuous bypass of multi-factor authentication (MFA)"
+        attribution: "CISA/FBI joint advisory AA26-222A"
+        source_url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-222a"
+      - quote: "As of March 2026, researchers identified a weakness in the Gunra ransomware's Linux Executable and Linkable Format (ELF) variants (appended with .GNRA); the encryption keys use a weak pseudorandom number generator (PRNG) seeded with the predictable system srand(time(NULL))."
+        attribution: "CISA/FBI joint advisory AA26-222A"
+        source_url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-222a"
+      - quote: "The Linux variant uses rand() from musl-libc, seeded by time(). [This produces] roughly 256 possible seeds per second of encryption."
+        attribution: "breakglass.tech"
+        source_url: "https://intel.breakglass.tech/post/gunra-ransomware-s-linux-variant-has-a-fatal-flaw-time-seeded-rand-makes-encrypted-files-recoverable-without-paying"
+    extended_notes: |
+      Detection framing for defenders: the advisory itself supplies a strong benign-lookalike discriminator set — Gunra's late-night/early-morning (22:00-06:00) reconnaissance timing, use of common dual-use tooling (AnyDesk, MobaXterm, Google Remote Desktop, 7-Zip/WinRAR/RClone, Sliver) that requires baseline-vs-anomaly correlation rather than presence-alone alerting, and the specific account-manipulation pattern of an "unused" account having its mandatory-password-change flag cleared. The MFA-backdoor technique (modifying VDI auth-portal files to accept one fixed OTP) is a durable, config-integrity-monitoring detection target: file-integrity monitoring on VDI/SSO authentication-service binaries and config, plus alerting on any successful auth event where the presented OTP repeats across sessions/users, would catch this independent of the initial-access vector.
+    watchlist: []
+
+  - title: "Belgian eID browser extension (Connective/Nitro Software) let any website replay auth tokens, decrypt eID PINs, and drive-by-RCE via arbitrary DLL load — 146 days to fully patch"
+    sources:
+      - { url: "https://amibeingpwned.com/blog/8-in-10-banks-in-belgium", publisher: "James Arnott / Bay Area Labs (amibeingpwned.com)", date: "2026-08-07", role: "primary" }
+      - { url: "https://www.securityweek.com/critical-flaws-discovered-in-belgian-eid-software-used-by-2-million-people/", publisher: "SecurityWeek", date: "2026-08-10", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Belgium ten largest banks 60 government agencies vulnerability software August 2026\") → pivot: SecurityWeek, URL https://www.securityweek.com/critical-flaws-discovered-in-belgian-eid-software-used-by-2-million-people/ → primary: amibeingpwned.com researcher write-up, URL https://amibeingpwned.com/blog/8-in-10-banks-in-belgium"
+    summary: |
+      James Arnott (Bay Area Labs) disclosed, at DEF CON and in a technical write-up published 2026-08-07, three chained vulnerabilities in Connective, the browser-native-messaging signing extension built by Nitro Software Belgium — a Qualified Trust Service Provider on the eIDAS Trusted List used by 8 of Belgium's 10 largest banks and 60+ government agencies (CSAM.be, Doccle.be) to authenticate against the Belgian eID card and itsme digital identity, and to execute legally binding electronic signatures; SecurityWeek's 2026-08-10 report put the affected user base at roughly 2 million. First, the extension forwards native-messaging requests to its local host without the request's origin, so any web page can replay a previously issued activationToken and gain full access to the eID/Maestro card interface without any card interaction (CWE-863/CWE-347). Second, a pinToken returned to the calling web page bundles ciphertext and its own decryption key in one 48-byte base64 blob: bytes 0,2,4...30 form an AES-128 key, bytes 32+ are ciphertext, and a hardcoded IV (a6 a6 a6...) decrypts it to the plaintext PIN plus a TTL — letting any page that triggers a VERIFY_PIN dialog (with attacker-controlled dialog text for social engineering) recover the PIN and forge signing approvals (CWE-327/CWE-200). Third, the GET_READERS command accepts a library parameter with an unsanitized relative path (e.g. ..\..\..\..\Downloads\lib.dll), so a page that gets the user to download a polyglot file disguised with a .dlly extension (bypassing Chrome's .dll download warning) can have the native host load and execute an attacker-supplied DLL at user privilege — a drive-by RCE requiring only a site visit, no card present (CWE-426/CWE-94). Reported roughly January 2026, Nitro shipped a partial fix 2026-05-08 (remote origin validation only — RCE and pinToken paths still exploitable), researchers flagged the incomplete patch 2026-05-19, and a complete fix (library command disabled, pinToken cached server-side as a UUID) landed 2026-06-01 with origin checks fully enforced by 2026-07-22 — 146 days end to end. No CVE has been assigned.
+    region_nexus: "Belgium (EU member state) — national eID/itsme digital-identity infrastructure and 8 of the country's 10 largest banks plus 60+ government agencies"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance"
+    cves: []
+    techniques: [T1189, T1203, T1606, T1552]
+    affected_products: ["Connective Signing Extension (Nitro Software Belgium)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Any web page can just replay these tokens and get full access to the Connective system on the user's machine."
+        attribution: "James Arnott, Bay Area Labs (amibeingpwned.com)"
+        source_url: "https://amibeingpwned.com/blog/8-in-10-banks-in-belgium"
+      - quote: "Any web page can trigger a drive-by RCE by getting the native binary to load and run an attacker-supplied library."
+        attribution: "James Arnott, Bay Area Labs (amibeingpwned.com)"
+        source_url: "https://amibeingpwned.com/blog/8-in-10-banks-in-belgium"
+      - quote: "Having the PIN plus the ability to send commands to the card is the same thing as having the card in your hand."
+        attribution: "James Arnott, Bay Area Labs (amibeingpwned.com)"
+        source_url: "https://amibeingpwned.com/blog/8-in-10-banks-in-belgium"
+      - quote: "Nitro fully remediated the issues 146 days after the initial report and awarded a $200 bug bounty."
+        attribution: "James Arnott, Bay Area Labs (amibeingpwned.com), as reported by SecurityWeek"
+        source_url: "https://www.securityweek.com/critical-flaws-discovered-in-belgian-eid-software-used-by-2-million-people/"
+    extended_notes: |
+      No CVE and no vendor advisory URL was located for Connective/Nitro Software as of this run — the researcher's write-up and the vendor's own (undated, unlinked) trust-center page are the only vendor-side references found; check for a forthcoming Nitro Software or eIDAS-body advisory in a follow-up run. Detection angle for any org that has deployed or interacts with Connective/eID signing extensions from Belgian counterparties: native-messaging traffic from a browser extension to its host process should never originate from arbitrary web-page JavaScript without an origin check — this is a reusable red flag for any "eID/qualified-signature browser extension" architecture, not just this vendor, since the same missing-origin-check pattern recurs across smart-card/eID browser bridges generally. The 146-day full remediation timeline (with an incomplete interim patch that left two of three bugs live for another month) is itself a supply-chain-risk data point for any government/finance procurement process evaluating eIDAS Qualified Trust Service Providers.
+    watchlist: []
+
+  - title: "UPDATE — macOS Screen Sharing pre-auth remote root: independent researchers reproduce working exploits for CVE-2026-65400 and its uncredited sibling bug in four hours; ~40,000 hosts exposed"
+    sources:
+      - { url: "https://blog.calif.io/p/no-country-for-old-passwords", publisher: "Calif (calif.io)", date: "2026-08-10", role: "primary" }
+      - { url: "https://www.huntress.com/blog/macos-screen-sharing-rce-patched", publisher: "Huntress", date: "2026-08-07", role: "corroborating" }
+      - { url: "https://support.apple.com/en-us/148170", publisher: "Apple (vendor advisory, macOS 26.6.1/15.7.9/14.8.9)", date: "2026-08-06", role: "corroborating" }
+    discovery_trace: "first seen at: calif-codex, URL https://blog.calif.io/feed (item 'No Country for Old Passwords') → primary: calif.io, URL https://blog.calif.io/p/no-country-for-old-passwords → corroboration: Huntress, URL https://www.huntress.com/blog/macos-screen-sharing-rce-patched → corroboration: Apple vendor advisory, URL https://support.apple.com/en-us/148170"
+    novelty: "update-of:2026-08-08/cve-2026-65400-macos-screen-sharing-auth-state-bypass"
+    summary: |
+      The prior entry on CVE-2026-65400 covered only Apple's advisory text ("an attacker on the network may be able to authenticate to Screen Sharing without valid credentials," no exploitation reported). This is a material delta: independent research (calif.io, corroborated by Huntress) confirms the flaw is a pre-authentication remote-root primitive with working exploits reproduced within hours of patch release, publishes the root-cause mechanism for both the CVE'd bug and an uncredited sibling, and adds internet-exposure telemetry the original advisory did not carry. Root cause: screensharingd implements Secure Remote Password (SRP) authentication for the Remote Framebuffer (RFB) protocol; the frame-length validator on an oversized frame bails out early and returns a stale success value from a prior read, which the caller's state machine interprets as "auth step passed," letting the connection proceed as authenticated without SRP ever completing — sessions then run in cleartext with no cryptographic protection. Because screensharingd runs as root, this is a genuine pre-auth remote-root primitive, not merely an auth bypass into a low-privileged account: an attacker on the network can read/write arbitrary files as root and establish persistence via LaunchDaemon or shell-startup-file modification. A second, functionally distinct bug in the same source file (a single incorrect early return, discovered independently by researcher fG!/osxreverser, never reported to Apple, and apparently patched silently on 2026-07-27 in macOS 26.6 without ever receiving a CVE or being acknowledged in that advisory as pre-auth) requires only a valid account NAME — not a secret, since macOS displays usernames on its login window. Both bugs are pure logic flaws (no heap grooming, no ASLR defeat, no race): calif.io diffed the 26.6→26.6.1 and 26.5.2→26.6 binaries and had working exploits for each within roughly four hours. A prior researcher scan cited by calif.io found approximately 40,000 Macs with Screen Sharing reachable from the internet — concentrated in the US but including university networks and companies — and Huntress separately found "tens of thousands" of potentially vulnerable bare-metal Apple-device hosting instances via Censys, noting hosting providers still provisioning n-1 macOS images as base templates. NVD lists CVE-2026-65400 at CVSS 7.1; Apple's own advisory publishes no score. A related, less severe post-auth bug requiring the legacy VNC password (CVE-2026-43760, reported via an automated GPT-5.5-assisted workflow by Bynario) was fixed in the same 26.6 release on 2026-07-27.
+    region_nexus: "global — any internet-exposed macOS host with Screen Sharing enabled, unpatched (pre-26.6.1/15.7.9/14.8.9)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, education, finance, telco"
+    cves: [CVE-2026-65400, CVE-2026-43760]
+    techniques: [T1190, T1556, T1543]
+    affected_products: ["Apple macOS (Screen Sharing / screensharingd)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "If Screen Sharing is enabled, any network attacker can exploit the bug to log in as any account, without knowing the password."
+        attribution: "Calif (@calif_io)"
+        source_url: "https://blog.calif.io/p/no-country-for-old-passwords"
+      - quote: "screensharingd, the program answering those connections, runs as root ... an attacker did not stop at your account. They could breach every other account on the machine and install whatever they wanted."
+        attribution: "Calif (calif.io)"
+        source_url: "https://blog.calif.io/p/no-country-for-old-passwords"
+      - quote: "The daemon's frame-length validator erroneously returns a stale success status, so the connection is treated as authenticated."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/macos-screen-sharing-rce-patched"
+      - quote: "Session username root is a suspicious indicator, as this user on macOS is disabled by default, and few administrators would enable that user."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/macos-screen-sharing-rce-patched"
+    extended_notes: |
+      Triage discriminator directly from the sources: a successful Screen Sharing (RFB/VNC, TCP 5900 or Bonjour-discovered) authentication event logged for the "root" account is not a benign admin action — root is a disabled account on macOS by default, so any Screen Sharing session logon as root is a strong indicator of this exploit class rather than legitimate administration. Hardening lever is unambiguous and immediate: update to 26.6.1/15.7.9/14.8.9, or where Screen Sharing is not actively needed, disable it outright; where it must stay on, place it behind a VPN/firewall rule rather than exposing TCP 5900 or the Screen Sharing Bonjour service directly to the internet. Fleet operators (including any organization provisioning Mac minis/Studio for remote-admin use, a common pattern for lights-out infrastructure) should inventory Screen Sharing exposure now, since Huntress notes hosting providers were still shipping vulnerable n-1 images as of this report.
+    watchlist: []
+
+  - title: "Compromised maintainer GitHub credentials pushed RCE-via-postinstall into two React hook packages in May; disclosed three months later, never reached npm"
+    sources:
+      - { url: "https://github.com/dai-shi/use-reducer-async/security/advisories/GHSA-2786-p4vj-vx8x", publisher: "GitHub Security Advisory (dai-shi/use-reducer-async)", date: "2026-08-10", role: "primary" }
+      - { url: "https://github.com/dai-shi/use-context-selector/security/advisories/GHSA-7h6v-mwq6-jhm8", publisher: "GitHub Security Advisory (dai-shi/use-context-selector)", date: "2026-08-10", role: "primary" }
+    discovery_trace: "first seen at: enisa-euvd, discovery sweep of recent/criticals listing → EUVD-2026-55688 / EUVD-2026-55661 → primary: GitHub Security Advisory GHSA-2786-p4vj-vx8x, URL https://github.com/dai-shi/use-reducer-async/security/advisories/GHSA-2786-p4vj-vx8x, and GHSA-7h6v-mwq6-jhm8, URL https://github.com/dai-shi/use-context-selector/security/advisories/GHSA-7h6v-mwq6-jhm8"
+    summary: |
+      GitHub Security Advisories published 2026-08-10 (CVE-2026-48159 and CVE-2026-48158) disclose that between 2026-05-18 and 2026-05-19, the default branches of two React-hook utility packages maintained by the same developer (dai-shi, also known for Zustand/Jotai/Valtio, though this run found no evidence those other repositories were touched) contained malicious commits adding src/install.js, wired into the package.json postinstall hook. On npm install against an affected checkout, the script fetched a JavaScript payload from an attacker-controlled HTTPS endpoint (configurable via an environment variable), disabled TLS certificate verification, and eval'd the response with require available in scope — full RCE as the invoking user, with execution deliberately skipped on CI and cloud/serverless environments to target developer workstations specifically. Root cause per the advisory: the maintainer's own development machine was compromised, giving the attacker the maintainer's GitHub push credentials directly — no npm token or registry compromise was involved, and the malicious package versions were never published to npm. The commits were force-pushed away roughly 23 hours after introduction (detected ~8 hours in), so the practical blast radius is limited to anyone who ran npm install against a direct clone, fork, or SHA-pinned reference to the affected commit range during that window; both advisories note local clones, forks, and direct-SHA URLs may still retain the malicious commits today. The advisories were published three months after the incident closed, with no prior public disclosure found in this run.
+    region_nexus: "global (open-source npm/GitHub ecosystem)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: [CVE-2026-48159, CVE-2026-48158]
+    techniques: [T1195.002, T1552.001]
+    affected_products: ["use-reducer-async (npm/GitHub)", "use-context-selector (npm/GitHub)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The commits were removed by force-push, but local clones, forks, and direct-SHA URLs may still contain them, and npm install against an affected checkout will still execute the code today. The package was not published to npm."
+        attribution: "GitHub Security Advisory GHSA-2786-p4vj-vx8x (dai-shi/use-reducer-async)"
+        source_url: "https://github.com/dai-shi/use-reducer-async/security/advisories/GHSA-2786-p4vj-vx8x"
+      - quote: "A maintainer's development machine was compromised, giving the attacker access to that maintainer's GitHub credentials. The machine has been reinstalled and all GitHub and npm credentials rotated."
+        attribution: "GitHub Security Advisory GHSA-2786-p4vj-vx8x (dai-shi/use-reducer-async)"
+        source_url: "https://github.com/dai-shi/use-reducer-async/security/advisories/GHSA-2786-p4vj-vx8x"
+    extended_notes: |
+      Included as a technique-class example (compromised-maintainer-workstation-to-postinstall-RCE via GitHub push access, distinct from the more commonly reported compromised-npm-token pattern) rather than for current live risk — the incident closed in May 2026 and the affected packages were never on the npm registry, so the practical exposure window is long past for anyone not sitting on a stale direct-SHA dependency reference. No independent third-party research or news coverage of this specific incident was found in this run; flagging borderline given the age and narrow blast radius versus the genuine three-months-later fresh disclosure date.
+    watchlist: []
+    borderline: true
+    borderline_reason: "underlying compromise is 3 months old and fully contained (never published to npm, narrow ~23h exposure window); only the GHSA disclosure itself is fresh (2026-08-10) and single-sourced to the maintainer's own two advisories"
+
+cve_table:
+  - { cve: "CVE-2024-55591", product: "Fortinet FortiOS / FortiProxy", cvss: "9.8 (historical)", epss: "unknown", kev: "Yes (added 2025-01, historical — not this window)", exploited: "Yes — cited as Gunra initial-access vector in AA26-222A (2026-08-10)", patch: "see Fortinet FG-IR-24-535 (historical)", source: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-222a" }
+  - { cve: "CVE-2025-24472", product: "Fortinet FortiOS / FortiProxy", cvss: "8.1 (historical)", epss: "unknown", kev: "Yes (added 2025-01, historical — not this window)", exploited: "Yes — cited as Gunra initial-access vector in AA26-222A (2026-08-10)", patch: "see Fortinet advisory (historical)", source: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-222a" }
+  - { cve: "CVE-2026-65400", product: "Apple macOS (Screen Sharing / screensharingd)", cvss: "7.1 (NVD)", epss: "unknown", kev: "No", exploited: "Independent researcher PoC/working exploit reproduced (calif.io, Huntress); no confirmed in-the-wild campaign reported", patch: "macOS 26.6.1, Sequoia 15.7.9, Sonoma 14.8.9 (2026-08-06)", source: "https://support.apple.com/en-us/148170" }
+  - { cve: "CVE-2026-43760", product: "Apple macOS (Screen Sharing / legacy VNC auth)", cvss: "unknown", epss: "unknown", kev: "No", exploited: "Research-disclosed (post-auth, requires legacy VNC password)", patch: "macOS 26.6 (2026-07-27)", source: "https://www.huntress.com/blog/macos-screen-sharing-rce-patched" }
+  - { cve: "CVE-2026-48159", product: "use-reducer-async (npm/GitHub, dai-shi)", cvss: "Critical (GHSA severity, no CVSS vector published)", epss: "unknown", kev: "No", exploited: "Historical/contained — malicious commits force-pushed away 2026-05-19; package never published to npm", patch: "N/A — malicious commits removed; avoid direct-SHA references to the affected commit range", source: "https://github.com/dai-shi/use-reducer-async/security/advisories/GHSA-2786-p4vj-vx8x" }
+  - { cve: "CVE-2026-48158", product: "use-context-selector (npm/GitHub, dai-shi)", cvss: "Critical (GHSA severity, no CVSS vector published)", epss: "unknown", kev: "No", exploited: "Historical/contained — malicious commits force-pushed away 2026-05-19; package never published to npm", patch: "N/A — malicious commits removed; avoid direct-SHA references to the affected commit range", source: "https://github.com/dai-shi/use-context-selector/security/advisories/GHSA-7h6v-mwq6-jhm8" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured for this deployment — sweep is a no-op per spawn instructions"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "Listing page (https://ssd-disclosure.com/) returns a Cloudflare-style robot-challenge interstitial via both direct fetch (HTTP 202) and jina-reader fallback this run, despite the 2026-08-10 note that per-article pages fetch cleanly direct. WebSearch (site:ssd-disclosure.com 2026) surfaced only articles already covered or from before the window (newest on-point: a July 2026 vBulletin write-up already in prior_coverage). No in-window SSD-disclosure item found. Rotation priority remains unresolved for next run — recommend re-testing whether the listing challenge is time-of-day/rate-limit dependent."
+  - source_id: chrome-releases
+    reason: "Confirmed the flagged defect persists: python3 tools/fetch_source.py feed https://chromereleases.googleblog.com/feeds/posts/default returns method=jina, count=0 (empty) this run too. Direct GET of https://chromereleases.googleblog.com/ returns the Blogger HTML shell (post list not present in the fetched body — likely lazy-loaded/paginated). Recommend trying the Blogger legacy feed path https://chromereleases.googleblog.com/feeds/posts/default?alt=rss or a dated archive path (e.g. /2026/08/) in a follow-up run; not demoted per standing guidance."
+  - source_id: siemens-productcert-csaf
+    reason: "Confirmed persistent 403 on the CSAF directory (https://cert-portal.siemens.com/productcert/csaf/) via both direct and jina-reader transport this run, consistent with the 2026-08-02 note. No working alternative recipe found; not logged as a hard fetch_failures entry since this matches already-documented, non-actionable host behaviour rather than new information."
+  - source_id: mysites-guru
+    reason: "jina reader returned the Joomla/WordPress extension-vulnerability post listing (10 items) but without per-item publication dates in the extracted summary, so in-window status could not be confirmed for any item; none of the listed items (Fabrik, Gridbox, JCE, SP Page Builder, EasyStore, Regular Labs, PageBuilder CK, Events Booking) matched a CVE or product already flagged as trending this window, and none could be confirmed to fall inside the 26h window — excluded on recency-uncertainty grounds rather than included speculatively."
