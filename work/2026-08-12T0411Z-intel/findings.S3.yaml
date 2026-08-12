@@ -1,0 +1,209 @@
+domain: S3
+run_id: 2026-08-12T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-12T04:15:09Z
+ended_at: 2026-08-12T04:29:35Z
+duration_seconds: 866
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 7
+  bridge_fetches: 14
+items:
+  - title: "Lazarus's Operation Dream Job burns a zero-day in Windows AFD.sys (CVE-2026-68820) to deploy FudModule v3.1 against European defense-sector targets"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/shattering-the-dream-when-a-job-offer-becomes-a-zero-day-attack/", publisher: "Check Point Research", date: "2026-08-11", role: primary }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-68820", publisher: "Microsoft Security Response Center", date: "2026-08-11", role: corroborating }
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA Known Exploited Vulnerabilities Catalog", date: "2026-08-11", role: corroborating }
+    discovery_trace: >
+      first seen at: checkpoint-research, URL https://research.checkpoint.com/feed/ (RSS listing) →
+      drilled article https://research.checkpoint.com/2026/shattering-the-dream-when-a-job-offer-becomes-a-zero-day-attack/ →
+      primary: Check Point Research, URL https://research.checkpoint.com/2026/shattering-the-dream-when-a-job-offer-becomes-a-zero-day-attack/ →
+      corroboration: Microsoft MSRC vulnerability record, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-68820
+      (fetched via `tools/fetch_source.py msrc cve CVE-2026-68820` — vendor confirms "exploited": "Yes", CVSS 3.1 7.0) →
+      corroboration: CISA KEV catalog, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+      (fetched via `tools/fetch_source.py cisa-kev` — entry added 2026-08-11, due 2026-08-25).
+    summary: |
+      Check Point Research reports a 2026 wave of Lazarus Group's long-running Operation Dream Job, which it
+      attributes to the DPRK-nexus actor and describes as focused on the defense, aerospace and aviation
+      sectors, with confirmed targeting in Western Europe (France, Germany) and India. Check Point documents
+      two parallel infection chains behind fake recruiter job offers: a DLL-sideloading chain (a legitimate
+      signed PDF-viewer executable side-loads a malicious `libmupdf.dll` that decrypts and launches the
+      MISTPEN in-memory downloader), and a newer chain distributing "SecurityPDF" — a trojanized MuPDF-based
+      PDF viewer pushed from SEO-boosted websites impersonating the company Enveil — which decrypts and runs
+      an embedded payload from any opened PDF containing a hardcoded marker string, XOR-decrypted with a
+      single byte key.
+      According to Check Point, MISTPEN runs reconnaissance and screen-capture modules over the Microsoft
+      Graph API / OneDrive C2 channel, then loads an LPE module that negotiates a GOST-CBC session key via
+      Kyber/ML-KEM and deploys FudModule v3.1 — Lazarus's kernel-mode rootkit — which exploits
+      CVE-2026-68820, a zero-day use-after-free race condition in the Windows Ancillary Function Driver
+      (afd.sys) triggered when concurrent threads race on shared per-socket state, to obtain a kernel
+      read/write primitive and SYSTEM privileges. Microsoft's own advisory confirms the vulnerability
+      (CVSS 3.1 7.0, AV:L/AC:H/PR:L/UI:N — attack complexity is rated High specifically because exploitation
+      requires winning the race), lists it as actively exploited, and shipped a fix on the 11 August 2026
+      Patch Tuesday following Check Point's responsible disclosure (reported 28 Jul, CVE assigned 5 Aug);
+      CISA added it to the KEV catalog the same day with a 25 August 2026 federal remediation deadline.
+      Post-exploitation, FudModule v3.1 tears down ETW providers, process/thread/image-notify callbacks and
+      minifilters (Check Point notes 94 of its 95 hardcoded ETW-kill GUIDs match, in identical order, the
+      publicly documented FudModule v3 list from Gen Digital's 2024 analysis, behind a "completely
+      different" novel exploit chain), and adds a new Smart App Control tampering routine that zeroes
+      `VerifiedAndReputablePolicyState` via `NtSetSystemInformation` class `0xA4`. On the newer chain it
+      drops a previously undocumented modular backdoor Check Point names Troy (17 operator commands over
+      HTTP with a three-server failover list); the older chain drops the well-documented ForestTiger
+      backdoor via MISTPEN. Check Point reports that C2 for both backdoors, plus a new PHP relay web shell
+      it names RelayShell, runs through compromised Roundcube webmail, WordPress and PrestaShop servers —
+      Roundcube access obtained via leaked dark-web credentials combined with exploitation of the
+      already-public CVE-2025-49113 PHP deserialization bug — and that at least one compromised Western
+      European organization was itself repurposed to send further spear-phishing to additional targets.
+    region_nexus: "Explicit European targeting named by the source (France, Germany); a compromised Western European organization was repurposed as spear-phishing infrastructure against further targets worldwide. Defense/aerospace sector nexus is directly relevant to national-defense components of federal/cantonal government."
+    primary_sector_nexus: direct
+    sector: "public-sector, defense/aerospace industrial base"
+    cves: ["CVE-2026-68820", "CVE-2025-49113"]
+    techniques: [T1566.001, T1204.002, T1574.002, T1608.006, T1068, T1014, T1562.001, T1102.002, T1027, T1105, T1505.003, T1190, T1078, T1090.003, T1113, T1082]
+    affected_products: ["Microsoft Windows 11 (build 26100/24H2, build 26200/25H2) — Ancillary Function Driver for WinSock (afd.sys)", "Roundcube Webmail (versions vulnerable to CVE-2025-49113)"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:lazarus-group", type: actor, name: "Lazarus Group", aliases: ["APT38", "Hidden Cobra", "Diamond Sleet", "ZINC", "Guardians of Peace"], summary: "DPRK-nexus threat actor responsible for the long-running Operation Dream Job recruitment-lure campaign; Check Point attributes the 2026 wave (FudModule v3.1 / CVE-2026-68820 zero-day, Troy backdoor, RelayShell) to this actor (Check Point Research, 2026-08-11)." }
+      - { key: "campaign:operation-dream-job", type: campaign, name: "Operation Dream Job", aliases: [], summary: "Long-running Lazarus Group fake-job-offer recruitment campaign targeting defense/aerospace/aviation organizations; Check Point's 2026 wave used trojanized PDF viewers, a FudModule zero-day (CVE-2026-68820) and compromised Roundcube/WordPress/PrestaShop C2 infrastructure, with confirmed targets in France, Germany and India (Check Point Research, 2026-08-11)." }
+      - { key: "tool:fudmodule", type: tool, name: "FudModule", aliases: [], summary: "Lazarus Group's kernel-mode rootkit for EDR/telemetry blinding after privilege escalation; v3.1 (Aug 2026) exploits a novel zero-day use-after-free in Windows afd.sys (CVE-2026-68820) and adds Smart App Control tampering versus the 2024-documented v3 (Check Point Research, 2026-08-11)." }
+      - { key: "tool:mistpen", type: tool, name: "MISTPEN", aliases: [], summary: "Lazarus in-memory downloader using the Microsoft Graph API / OneDrive as a C2 channel to retrieve reconnaissance, screen-capture and privilege-escalation modules; first documented by Mandiant in 2024, reused in the 2026 Operation Dream Job wave (Check Point Research, 2026-08-11)." }
+      - { key: "tool:forest-tiger", type: tool, name: "ForestTiger", aliases: [], summary: "Well-documented Lazarus Group long-term-access backdoor, delivered as the final MISTPEN payload in the DLL-sideloading infection chain of the 2026 Operation Dream Job wave (Check Point Research, 2026-08-11)." }
+      - { key: "tool:troy-backdoor", type: tool, name: "Troy", aliases: [], summary: "Previously undocumented Lazarus Group modular 64-bit DLL backdoor with 17 operator commands over HTTP (three-server failover), delivered via the trojanized SecurityPDF MuPDF-based viewer; named from an embedded PDB path (Check Point Research, 2026-08-11)." }
+      - { key: "tool:relayshell", type: tool, name: "RelayShell", aliases: [], summary: "Previously undocumented Lazarus Group PHP web shell that relays operator commands to an infected endpoint through a file-based communication channel rather than executing commands directly, deployed on compromised Roundcube/WordPress/PrestaShop servers (Check Point Research, 2026-08-11)." }
+    relation_suggestions:
+      - { subject: "campaign:operation-dream-job", object: "actor:lazarus-group", basis: "Check Point: 'Operation Dream Job... is affiliated to DPRK-linked Lazarus group' (Check Point Research, 2026-08-11)" }
+      - { subject: "actor:lazarus-group", object: "tool:fudmodule", basis: "Check Point: the threat actor 'deployed a new version of FudModule, Lazarus' kernel-mode rootkit' (Check Point Research, 2026-08-11)" }
+      - { subject: "actor:lazarus-group", object: "tool:mistpen", basis: "Check Point attributes MISTPEN's use in this operation to the Lazarus-affiliated Operation Dream Job actor (Check Point Research, 2026-08-11)" }
+      - { subject: "actor:lazarus-group", object: "tool:forest-tiger", basis: "Check Point: ForestTiger is 'a well-documented malware family widely attributed to the Lazarus threat group' (Check Point Research, 2026-08-11)" }
+      - { subject: "actor:lazarus-group", object: "tool:troy-backdoor", basis: "Check Point: Troy is 'a newly identified modular remote access trojan in Lazarus' arsenal' (Check Point Research, 2026-08-11)" }
+      - { subject: "actor:lazarus-group", object: "tool:relayshell", basis: "Check Point attributes RelayShell's deployment to the same Lazarus-affiliated Operation Dream Job actor (Check Point Research, 2026-08-11)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "In the latest variant of the Operation Dream Job campaign, the threat actor distributed SecurityPDF, a modified PDF viewer designed to open attacker-crafted PDF documents and execute a new backdoor which we named Troy."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/shattering-the-dream-when-a-job-offer-becomes-a-zero-day-attack/"
+      - quote: "During the intrusion, the threat actor exploited CVE-2026-68820, a zero-day vulnerability in the Microsoft AFD.sys driver, to deploy a new version of FudModule, Lazarus' kernel-mode rootkit. Following Check Point Research responsible disclosure, Microsoft released a patch as part of their August Patch Tuesday updates."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/shattering-the-dream-when-a-job-offer-becomes-a-zero-day-attack/"
+      - quote: "A locally authenticated attacker could run a specially crafted application on an affected system to trigger a race condition. Successful exploitation could allow the attacker to gain SYSTEM privileges."
+        attribution: "Microsoft Security Response Center (CVE-2026-68820 FAQ)"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-68820"
+      - quote: "Microsoft Windows Ancillary Function Driver for WinSock contains a use-after-free vulnerability that allows an authorized attacker to elevate privileges locally."
+        attribution: "CISA Known Exploited Vulnerabilities Catalog"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+    extended_notes: |
+      Triage-relevant behavioral notes (all from Check Point's write-up, no IOCs reproduced here per
+      policy): the FudModule LPE stage produces a distinctive "telemetry blackout" signature — sudden,
+      near-simultaneous loss of process/thread/image-notify callback telemetry, ETW provider stop events
+      across a hardcoded GUID list, and minifilter unregistration by altitude band — that is anomalous
+      when it follows a non-security-vendor process (a PDF viewer, or a SYSTEM msiexec.exe spawned via the
+      documented services.exe two-hop) rather than a signed security-product uninstaller; that mismatch
+      between the triggering process and a legitimate AV/EDR removal is the discriminator Check Point's
+      analysis supports. MISTPEN's C2 rides the Microsoft Graph API / OneDrive, so the anchor for detection
+      is identity/cloud-audit telemetry (an unusual application/service principal authenticating to Graph
+      from an endpoint process that does not normally call it) rather than a network signature. RelayShell
+      is a web-server-side artifact: its "victim mode"/"operator mode" split and its file-based
+      (`<session_id><1|2>.log`) message-passing channel means it never directly executes attacker commands
+      through the web request itself, so web-log-based webshell detections tuned to look for command
+      execution in the request path may miss it — the tell is repeated small POSTs against a plausible
+      but non-standard file path (`.../public/js/...`-style) followed by `.ses`/`.log` file churn on the
+      web root, a pattern web-access-log and file-integrity monitoring can both surface. Hardening lever:
+      CVE-2026-68820 is patched in the 11 August 2026 cumulative update — prioritize per the CISA KEV
+      25 August 2026 remediation deadline; separately, any organization still running a Roundcube instance
+      unpatched against CVE-2025-49113 (fixed in 2025) should treat it as active C2-relay infrastructure
+      risk, not just a data-exposure risk, given this campaign's specific reuse of the flaw to plant
+      webshells rather than exfiltrate mail.
+      Cross-domain note: CVE-2026-68820 is also this run's August Patch Tuesday zero-day and may surface
+      independently via a vulnerability-kind S1 finding on the same CVE; this item is the actor/campaign
+      narrative (Lazarus TTPs, malware families, C2 infrastructure) behind that same patch and should be
+      composed as a threat/campaign entry cross-referencing the CVE rather than a duplicate vulnerability
+      entry. IOCs (hashes, C2 domains/IPs) published in the source are intentionally omitted here per
+      pipeline policy.
+  - title: "Project CAV3RN's espionage C2 adds a Google Apps Script relay with DNS-based channel selection — a fourth documented iteration of a legitimate-cloud-service C2 evasion technique"
+    sources:
+      - { url: "https://securelist.com/project-cav3rn-continues/120991/", publisher: "Kaspersky Securelist (GReAT)", date: "2026-08-11", role: primary }
+    discovery_trace: >
+      first seen at: kaspersky-securelist, URL https://securelist.com/ (listing) →
+      primary: Kaspersky Securelist (GReAT), URL https://securelist.com/project-cav3rn-continues/120991/ →
+      cross-check: WebSearch ("Securelist CAV3RN Google Apps Script C2") returned only derivative coverage
+      (a malware.news aggregator repost and a Czech-language machine-translated news item), both tracing
+      back to the same Securelist article — no independent second primary was found, so this item is
+      SINGLE-SOURCE.
+    summary: |
+      Kaspersky's GReAT team reports a further iteration of Project CAV3RN, a modular espionage framework
+      it has tracked since at least June 2026 against targets in Israel (Kaspersky attributes the framework
+      to the "Cavern" cluster it separately associates, at LOW confidence, with the Iran-nexus actor OilRig
+      — see entities tool:cavern-c2-framework / actor:oilrig, tracked in this pipeline since 2026-07-22).
+      The newly documented core finding is a C2 module (`GoogleService.dll`, compiled with .NET 8
+      NativeAOT) that queries DNS A-record responses to decide, per transaction, whether to communicate
+      over direct HTTPS or relay through a Google Apps Script deployment; Kaspersky states the DNS
+      infrastructure also validates and rotates the Apps Script deployment IDs used for the relay. The
+      module supports five internal commands (s_version, s_config, s_enLog, s_deLog, s_write) for
+      operational control. Kaspersky also documents a newly identified inter-component broker
+      (`rnp.dll`) that masquerades as the legitimate RNP OpenPGP library while coordinating the
+      framework's other DLL components: at startup it initializes a message dispatcher and scans the host
+      directory for additional DLLs, supporting runtime component upgrades without needing a fresh
+      delivery mechanism. Kaspersky frames this as a continuation of a technique trend for this cluster —
+      Outlook calendar events for C2 in an earlier iteration, now Google Apps Script — explicitly
+      abusing legitimate cloud services so that C2 traffic blends into normal enterprise network activity
+      and evades network-based detection tuned to attacker-registered infrastructure.
+    region_nexus: "Source-stated targeting is Israel; no direct Swiss/European nexus stated. The C2-evasion technique class (DNS-gated selection between direct and legitimate-cloud-service relay channels) is directly transferable to any defender's network-detection engineering, independent of region."
+    primary_sector_nexus: indirect
+    sector: "cross-sector (espionage tooling, no sector specificity stated by source)"
+    cves: []
+    techniques: [T1102.002, T1071.004, T1027, T1105]
+    affected_products: []
+    entity_keys: ["tool:cavern-c2-framework", "actor:oilrig"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-07-22/cavern-cav3rn-oilrig-attribution-dns-aaaa-c2-fallback"
+    evidence:
+      - quote: "Project CAV3RN is a modular espionage framework used against targets in Israel."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/project-cav3rn-continues/120991/"
+      - quote: "The main finding is a complex C2 module that uses DNS A-record responses to choose between direct HTTPS and a Google Apps Script relay for each transaction."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/project-cav3rn-continues/120991/"
+      - quote: "By abusing legitimate services — previously Outlook calendar events and now Google Apps Script — the framework blends its C2 traffic with normal network activity, complicating network-based detection."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/project-cav3rn-continues/120991/"
+    extended_notes: |
+      Detection-relevant angle: the discriminator here is not the destination (script.google.com is
+      legitimate Google infrastructure that most enterprise egress policies allow) but the DNS-selection
+      logic upstream of it — a host performing repeated A-record lookups against attacker-controlled
+      authoritative nameservers immediately before selecting between a direct-HTTPS and a
+      script.google.com-relayed connection is the pattern Kaspersky's analysis supports; this is a DNS
+      telemetry / passive-DNS correlation problem more than a web-proxy one. Flagged as `update-of` the
+      2026-07-22 entry that first covered this cluster's OilRig-association and DNS/AAAA C2 fallback
+      behavior, since Kaspersky explicitly frames this as a continuation of the same tracked framework;
+      the main agent should confirm whether an intermediate July article was already captured before
+      deciding whether this is a fresh entry or a delta note. Marked SINGLE-SOURCE — only Kaspersky has
+      published on this specific update; treat the OilRig association itself as still LOW-confidence per
+      Kaspersky's own prior caveat, not strengthened by this article.
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: paradigm-shift-research
+    reason: "ps.tc is a JS SPA; the site's own /pages/blog.html route rendered an 'Unavailable... taking an unexpected detour' placeholder (dated 2026-07-23) via the jina reader — no actual blog posts are reachable through the site's published blog route this run. Homepage content (fetched via jina) carries no research posts, only company/services copy."
+  - source_id: kommunaler-notbetrieb-de
+    reason: "Fetched successfully (WebFetch); freshest listed municipal-IT-outage item is 2026-07-24 (KRZN Niederrhein) — outside the 26h window. Checked, nothing in window."
+  - source_id: sygnia
+    reason: "Direct bridge fetch (`url`) returned only the WordPress page head/template (JS-rendered post list did not hydrate in the raw HTML); no article titles/dates recoverable this run."
+  - source_id: csa-labs
+    reason: "Direct bridge fetch returned only WordPress theme/CSS head content; the research listing itself is JS-rendered and did not appear in the raw HTML captured."
+  - source_id: ox-security
+    reason: "Direct bridge fetch returned a JS-bootstrap shell (WP Rocket lazy-load script) with no article content in the static HTML; would need the jina reader to hydrate, not attempted due to time budget after covering higher-priority essential/rotation sources."
+  - source_id: trendmicro-research
+    reason: "RSS feed fetch fell through to the jina reader (multiple pooled jina API keys reported HTTP 402 balance-exhausted before one succeeded) and returned 0 items — could not confirm whether this is a genuinely empty feed or a truncated fetch."
+  - source_id: zerodayinitiative
+    reason: "Checked; most recent post (11 Aug 2026, Patch Tuesday review) is a monthly vendor-patch roundup, not primary vulnerability research — no in-window ZDI-original disclosure found; this is S1-adjacent content in any case."
+  - source_id: watchtowr
+    reason: "RSS feed checked; freshest item is 2026-07-02 (Adobe ColdFusion APSB26-68) — well outside the 26h window. Checked, nothing in window."
+  - source_id: redcanary
+    reason: "RSS feed checked; freshest item is 2026-07-23 (Intelligence Insights: July 2026) — outside the 26h window. Checked, nothing in window."
+  - source_id: reliaquest
+    reason: "jina-reader fetch of the blog listing checked; freshest item is 2026-08-06 — outside the 26h window. Checked, nothing in window."

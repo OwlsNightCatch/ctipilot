@@ -1,0 +1,259 @@
+domain: S4
+run_id: 2026-08-12T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-12T04:15:25Z
+ended_at: 2026-08-12T04:30:40Z
+duration_seconds: 915
+self_telemetry:
+  webfetch_calls: 22
+  websearch_calls: 14
+  bridge_fetches: 9
+
+items:
+  - title: "N-able N-central authentication-bypass patch bypass turns MSPs into a ransomware supply chain — Storm-1175 deploys new StormEncryptor strain within hours of disclosure"
+    sources:
+      - { url: "https://therecord.media/china-hackers-ransomware-microsoft", publisher: "The Record (Recorded Future News)", date: "2026-08-10", role: primary }
+      - { url: "https://www.n-able.com/blog/n-central-security-update-august-6-2026", publisher: "N-able (vendor incident disclosure)", date: "2026-08-10", role: primary }
+      - { url: "https://www.huntress.com/blog/n-able-vulnerability-exploitation", publisher: "Huntress", date: "2026-08-03 (updated through 2026-08-06)", role: primary }
+      - { url: "https://thehackernews.com/2026/08/china-linked-hackers-deploy-new.html", publisher: "The Hacker News", date: "2026-08-10", role: corroborating }
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/04/06/storm-1175-focuses-gaze-on-vulnerable-web-facing-assets-in-high-tempo-medusa-ransomware-operations/", publisher: "Microsoft Security Blog", date: "2026-04-06", role: corroborating (actor background) }
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA KEV Catalog", date: "dateAdded 2026-08-03 (CVE-2026-18577) / 2026-08-04 (CVE-2026-18556)", role: corroborating }
+    discovery_trace: >
+      first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/news/security/ (listing, headline
+      "China-linked hackers turning popular cybersecurity tool into ransomware launchpad, Microsoft warns") →
+      WebSearch ("China-linked hackers turning popular cybersecurity tool into ransomware launchpad Microsoft
+      warns") → primary: The Record, URL https://therecord.media/china-hackers-ransomware-microsoft → pivot:
+      N-able's own incident-disclosure blog, URL https://www.n-able.com/blog/n-central-security-update-august-6-2026
+      → pivot: Huntress independent technical analysis, URL https://www.huntress.com/blog/n-able-vulnerability-exploitation
+      → corroboration: The Hacker News, URL https://thehackernews.com/2026/08/china-linked-hackers-deploy-new.html
+      → background: Microsoft's April 2026 Storm-1175/Medusa profile, URL https://www.microsoft.com/en-us/security/blog/2026/04/06/storm-1175-focuses-gaze-on-vulnerable-web-facing-assets-in-high-tempo-medusa-ransomware-operations/
+      → cross-check: CISA KEV catalog entries for CVE-2026-18556/CVE-2026-18577 (fetched via tools/fetch_source.py cisa-kev).
+    summary: |
+      N-able's own Adlumin MDR telemetry caught a threat actor exploiting a previously unknown, unauthenticated
+      remote-admin-access flaw in N-central (its RMM/PSA platform for MSPs) on 31 July 2026. N-able registered
+      CVE-2026-18556 and shipped Hotfix 1 (2026.3.1.7) on 2 August; continued monitoring on 6 August surfaced a
+      related attack path that bypassed Hotfix 1 — registered as CVE-2026-18577, a "patch bypass" per both N-able
+      and Huntress — and N-able shipped Hotfix 2 (2026.3.1.10) the same day. Both CVEs carry CWE-288 (authentication
+      bypass using an alternate path/channel) and are now in CISA's KEV catalog (added 2026-08-03/04, "knownRansomwareCampaignUse:
+      Unknown" — the KEV tag has not yet caught up with the ransomware reporting below). Per N-able's own account,
+      the attacker used the flaw to obtain remote administrative access without authentication, then abused
+      N-central's built-in "Take Control" feature to pivot into every managed endpoint reachable from the compromised
+      server, and registered Cloudflare tunnel services on those endpoints as a persistence mechanism that survived
+      revocation of N-central access itself. Microsoft Threat Intelligence separately reported that Storm-1175 — a
+      financially motivated actor Microsoft and other outlets describe as China-linked, previously known for
+      high-tempo Medusa ransomware campaigns exploiting N-day/zero-day flaws in internet-facing software (Mirth
+      Connect, ConnectWise ScreenConnect, JetBrains TeamCity, Fortinet FortiClient EMS, Fortra GoAnywhere) — began
+      deploying a new, previously undocumented ransomware strain, StormEncryptor, on 2 August: the same day Hotfix 1
+      and CVE-2026-18577 were registered, indicating the actor moved from disclosure to weaponisation within hours.
+      StormEncryptor is written in C++, appends the extension ".encrypted", and drops a ransom note named
+      "!!!README_FIRST!!!.txt" in every scanned directory. Post-compromise the group used AnyDesk and SimpleHelp
+      (legitimate RMM tools) for continued access, Advanced IP Scanner for network reconnaissance, and Mimikatz for
+      LSASS credential dumping, moving from initial access to encryption in days or, per Microsoft's characterisation
+      of the actor's historical tempo, as little as 24 hours. Huntress's independent telemetry (as of 3 August)
+      showed roughly 55.6% of reachable cloud-hosted N-central instances and 28.6% of self-hosted instances still
+      unpatched hours after disclosure, and documented reconnaissance targeting domain controllers as the priority
+      post-compromise objective. Named confirmed victim sectors are healthcare, professional services and finance
+      in Australia, the UK and the US; N-able states "a limited number of customers" were impacted and that it has
+      engaged each directly, but stresses its investigation is ongoing and that patching alone "does not remove a
+      threat actor who may already be present."
+    region_nexus: "global; N-central is deployed by MSPs serving European and Swiss public-sector and critical-infrastructure clients — the mechanism (one compromised RMM server cascades into every downstream managed endpoint) is the Kaseya-2021 supply-chain pattern replayed on a different platform"
+    primary_sector_nexus: "indirect (MSP/RMM supply chain touching all sectors, incl. public-sector clients of affected MSPs)"
+    sector: "public-sector, healthcare, finance, technology (MSP/RMM supply chain)"
+    cves: [CVE-2026-18556, CVE-2026-18577]
+    techniques: [T1190, T1219, T1003.001, T1046, T1572, T1486]
+    affected_products: ["N-able N-central"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:storm-1175", type: actor, name: "Storm-1175", aliases: [],
+          summary: "Financially motivated ransomware actor tracked by Microsoft since at least 2023, exploiting N-day and zero-day vulnerabilities in internet-facing enterprise software (Mirth Connect, ConnectWise ScreenConnect, JetBrains TeamCity, Fortinet FortiClient EMS, Fortra GoAnywhere) to deploy Medusa ransomware at high tempo (initial access to encryption within days, sometimes 24 hours — Microsoft Security Blog, 2026-04-06); reported by The Record and The Hacker News (2026-08-10) as China-linked and, per Microsoft Threat Intelligence, now deploying a new strain, StormEncryptor, after exploiting an N-able N-central authentication-bypass patch bypass (CVE-2026-18577)."
+      - { key: "tool:stormencryptor", type: tool, name: "StormEncryptor", aliases: [],
+          summary: "C++ ransomware payload first deployed by Storm-1175 on 2026-08-02; appends the '.encrypted' extension and drops a ransom note named '!!!README_FIRST!!!.txt' in every scanned directory (Microsoft Threat Intelligence via The Hacker News, 2026-08-10). Marks the actor's first observed departure from its long-standing Medusa RaaS tooling."
+    relation_suggestions:
+      - { subject: "actor:storm-1175", object: "tool:stormencryptor",
+          basis: "Microsoft Threat Intelligence: Storm-1175 began deploying the StormEncryptor ransomware strain on 2026-08-02, its first observed operation since April 2026 and a shift from its prior Medusa tooling (The Record / The Hacker News, 2026-08-10)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A threat actor exploited a vulnerability in N‑central that allowed remote administrative access without authentication."
+        attribution: "N-able"
+        source_url: "https://www.n-able.com/blog/n-central-security-update-august-6-2026"
+      - quote: "Applying Hotfix 2 closes the vulnerability that allowed attackers in, but it does not remove a threat actor who may already be present."
+        attribution: "N-able"
+        source_url: "https://www.n-able.com/blog/n-central-security-update-august-6-2026"
+      - quote: "an incomplete patch for CVE-2026-18556 allows for authentication bypass and account takeover in N-central Versions through 2026.3.1"
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/n-able-vulnerability-exploitation"
+      - quote: "Exploitation is active in the wild; a compromised N-central server can be used to run scripts, push tools, and open remote sessions across every downstream endpoint"
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/n-able-vulnerability-exploitation"
+      - quote: "StormEncryptor is written in C++ and appends the file name extension .encrypted to files it encrypts. It then drops a ransom note named !!!README_FIRST!!!.txt to every scanned directory."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://thehackernews.com/2026/08/china-linked-hackers-deploy-new.html"
+      - quote: "Storm-1175 rapidly moves from initial access to data exfiltration and deployment of Medusa ransomware, often within a few days and, in some cases, within 24 hours."
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/04/06/storm-1175-focuses-gaze-on-vulnerable-web-facing-assets-in-high-tempo-medusa-ransomware-operations/"
+    extended_notes: |
+      Timing note: N-able's own incident-disclosure post carries a "Published Time" metadata field of
+      2026-08-10T00:22:07+01:00 (i.e. shortly before this run's strict 26h window opens at 2026-08-11T02:11Z), and
+      The Record / The Hacker News pieces are also dated 2026-08-10. This is included under the run's
+      developing_window_hours: 72 allowance as a fast-moving, multi-day supply-chain incident (detection 31 Jul →
+      Hotfix 1 + CVE-2026-18556 on 2 Aug → StormEncryptor deployment same day → Hotfix 1 bypass + Hotfix 2 +
+      CVE-2026-18577 on 6 Aug → wide press coverage and CISA KEV addition by 10-11 Aug), not a single-day story
+      whose freshest coverage happens to sit just outside the tight window. No fresher (11-12 Aug) follow-on
+      reporting was found despite a targeted search; if the main agent's own window arithmetic disagrees, this item
+      should be held for the next run rather than dropped outright, since the underlying incident is still active
+      (N-able states its investigation "remains active and ongoing").
+      Detection/hunt hooks from Huntress: default remote-session account "mspsupport@n-able.com" / "MSP Support"
+      appearing in Take Control session logs; Windows Event IDs 4102, 8192, 8193 around session login/Take-Control
+      activity; log artefacts at C:\ProgramData\GetSupportService_N-Central\Logs\BASupSrvc_*.log.gz; reconnaissance
+      prioritising domain controllers before lateral movement. Benign-lookalike note: Take Control sessions are
+      routine MSP activity — the discriminator Huntress uses is the account identity (default/unfamiliar account
+      rather than a named technician) combined with immediate post-session process-listing/recon commands rather
+      than a ticket-linked support action.
+
+  - title: "German public heritage foundation running the Sachsenhausen and Ravensbrück memorial sites confirms ransomware attack across all seven sites — root cause undisclosed"
+    sources:
+      - { url: "https://www.stiftung-bg.de/presse/presseinformationen/42-26-die-stiftung-wurde-opfer-eines-ransomware-angriffs/", publisher: "Stiftung Brandenburgische Gedenkstätten (victim's own press release)", date: "2026-08-11", role: primary }
+      - { url: "https://www.heise.de/news/Brandenburg-Cyberangriff-legt-IT-System-der-Gedenkstaetten-lahm-11410695.html", publisher: "heise online", date: "2026-08-11", role: corroborating }
+    discovery_trace: >
+      first seen at: heise-security, URL https://www.heise.de/security/ (listing) → drilled to
+      https://www.heise.de/news/Brandenburg-Cyberangriff-legt-IT-System-der-Gedenkstaetten-lahm-11410695.html →
+      primary: the foundation's own press release, URL
+      https://www.stiftung-bg.de/presse/presseinformationen/42-26-die-stiftung-wurde-opfer-eines-ransomware-angriffs/
+      (linked from the heise article).
+    summary: |
+      The Stiftung Brandenburgische Gedenkstätten — a German public-law foundation, funded by the Brandenburg state
+      science/culture ministry and the federal government's culture-and-media commissioner, which operates seven
+      memorial sites including the Sachsenhausen and Ravensbrück former concentration-camp memorials — disclosed in
+      its own press release (No. 42/2026, dated 11 August) that it was hit by a ransomware attack detected on 5
+      August 2026. Attackers penetrated the internal IT systems, encrypted parts of the IT systems and data with
+      dedicated software, and left a ransom note demanding payment for decryption — the foundation states it "must
+      currently assume that data was downloaded by the attackers" before encryption. All seven memorial-site
+      locations and the central business office are affected; the foundation's IT department disconnected all
+      internet and network connections immediately and is rebuilding IT systems from scratch (rather than restoring
+      from potentially compromised backups) specifically to deny the attacker's re-entry, working with a BSI-recommended
+      external incident-response provider conducting forensic analysis. The foundation reported the incident to the
+      police (Zentrale Ansprechstelle Cybercrime at the Brandenburg state police) and filed a timely breach
+      notification with the Brandenburg state data-protection authority. No threat actor or ransomware family is
+      named in either the primary statement or heise's corroborating report, no leak-site listing has surfaced, and
+      neither source states an initial-access vector. Physical visits to the memorial sites continue unaffected;
+      booking delays for educational programmes are expected while systems are rebuilt.
+    region_nexus: "Germany (federal-culture-funded, state-of-Brandenburg public foundation) — direct home-region/EU public-sector nexus"
+    primary_sector_nexus: "direct (public-sector cultural/heritage institution funded by state and federal government)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1486]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:stiftung-brandenburgische-gedenkstaetten-ransomware-2026-08", type: incident,
+          name: "Stiftung Brandenburgische Gedenkstätten ransomware attack (August 2026)", aliases: [],
+          summary: "Ransomware attack detected 5 August 2026 against the German public foundation operating the Sachsenhausen and Ravensbrück memorial sites among seven locations; internal IT systems encrypted, data believed exfiltrated, no actor named, root cause undisclosed (Stiftung Brandenburgische Gedenkstätten press release, 2026-08-11)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Die Stiftung Brandenburgische Gedenkstätten ist Opfer eines sogenannten Ransomware-Angriffs geworden."
+        attribution: "Stiftung Brandenburgische Gedenkstätten (translation: 'The Foundation for Brandenburg Memorials has fallen victim to a so-called ransomware attack.')"
+        source_url: "https://www.stiftung-bg.de/presse/presseinformationen/42-26-die-stiftung-wurde-opfer-eines-ransomware-angriffs/"
+      - quote: "Nach aktuellem Stand muss davon ausgegangen werden, dass Daten von den Angreifern heruntergeladen wurden."
+        attribution: "Stiftung Brandenburgische Gedenkstätten (translation: 'Current assessment indicates that data was downloaded by the attackers.')"
+        source_url: "https://www.stiftung-bg.de/presse/presseinformationen/42-26-die-stiftung-wurde-opfer-eines-ransomware-angriffs/"
+      - quote: "Durch den schwerwiegenden Angriff professioneller IT-Kriminieller ist unser gesamtes IT-System derzeit außer Funktion."
+        attribution: "Axel Drecoll, Stiftungsdirektor (translation: 'Due to the serious attack by professional IT criminals, our entire IT system is currently non-functional.')"
+        source_url: "https://www.stiftung-bg.de/presse/presseinformationen/42-26-die-stiftung-wurde-opfer-eines-ransomware-angriffs/"
+    extended_notes: |
+      No access vector, no actor name, no leak-site claim as of this run — techniques[] is intentionally limited to
+      T1486 (Data Encrypted for Impact), which is the only ATT&CK-mappable behaviour the primary source actually
+      states; do not backfill T1190/T1566 or similar without a source. Defender takeaway: the foundation's decision
+      to fully rebuild rather than restore-and-trust is the notable operational signal — worth surfacing as the
+      hardening takeaway (assume persistence beyond the encrypted estate; rebuild critical identity/AD infrastructure
+      rather than restoring domain controllers from backup after ransomware with suspected data theft).
+
+  - title: "Wesco confirms a CRM data-exfiltration incident after ExfilSquad's claim — but disputes scope, finds no ransomware, as the group's leak-site list widens past government portals into private-sector Dynamics 365/CRM environments"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/wesco-confirms-security-incident-after-exfilsquad-claims-data-theft/", publisher: "BleepingComputer", date: "2026-08-11", role: primary }
+      - { url: "https://www.resecurity.com/blog/article/exfilsquad-targets-new-victims-shares-data-via-torrents", publisher: "Resecurity", date: "2026-08-07", role: corroborating }
+    discovery_trace: >
+      first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/news/security/ (listing) →
+      WebSearch ("Wesco confirms security incident ExfilSquad data theft") → primary:
+      https://www.bleepingcomputer.com/news/security/wesco-confirms-security-incident-after-exfilsquad-claims-data-theft/
+      → pivot for access-vector context: Resecurity's earlier ExfilSquad victim-list research, URL
+      https://www.resecurity.com/blog/article/exfilsquad-targets-new-victims-shares-data-via-torrents
+      (already covered by this pipeline's 2026-07-31 ExfilSquad/DfE/PNLD entry — this item reports the delta only).
+    summary: |
+      Wesco International — a Fortune-500 US industrial/electrical distributor (~21,000 employees) — confirmed to
+      BleepingComputer on 11 August that it is investigating a security incident after the extortion brand
+      ExfilSquad (already tracked by this pipeline for its confirmed July 2026 breach of the UK Department for
+      Education's public portals and the Police National Legal Database) claimed to have stolen 2.6 million records
+      from Wesco's cloud CRM environment — customer/employee PII, account and contact data, CRM user profiles,
+      business identifiers and authentication metadata. Wesco's own statement, via VP of Corporate Communications
+      Jennifer Sniderman, confirms a claim of "CRM data exfiltration by a third party" exists but disputes its
+      severity: the company says it found no evidence of ransomware or other malware on its IT systems, does not
+      believe payment-card, financial-account or other sensitive customer/employee data is at risk, and reports no
+      business disruption. This is the first ExfilSquad-claimed victim in this pipeline's tracking to give an
+      on-record statement that concedes an incident occurred while directly contesting the leak site's own scale and
+      severity framing — earlier confirmed cases (UK DfE, PNLD) were full government confirmations; most of
+      ExfilSquad's other ~13 claimed victims (Resecurity, 2026-08-07 — including Allstate, Frontier Airlines,
+      District of Columbia Public Schools, City of Houston, City of Atlanta and the Swedish/Nordic developer Bonava)
+      remain unconfirmed leak-site listings only. Resecurity's research ties ExfilSquad's mechanism to misconfigured
+      Microsoft Power Pages data tables with anonymous read/write access; Wesco is publicly known to use Microsoft
+      Dynamics 365, so researchers (per BleepingComputer's reporting) assess — without confirmation from Wesco
+      itself, which has not disclosed its own access vector — that the group's targeting has widened from
+      Power-Pages-portal misconfiguration specifically into the broader class of exposed Dynamics 365/Power Platform
+      CRM data surfaces.
+    region_nexus: "actor already confirmed targeting UK central government (DfE, Police National Legal Database); this delta shows the same actor's campaign widening into private-sector CRM/Dynamics 365 environments, a technology base equally present in European public-sector and CI operators"
+    primary_sector_nexus: "indirect (delta on an actor with a direct, already-confirmed UK-government nexus)"
+    sector: "public-sector, technology, industrial/distribution"
+    cves: []
+    techniques: [T1213]
+    affected_products: ["Microsoft Dynamics 365", "Microsoft Power Pages"]
+    entity_keys: [actor:exfilsquad, incident:uk-dfe-exfilsquad-breach-2026-07]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-07-31/exfilsquad-uk-department-for-education-pnld-breach"
+    evidence:
+      - quote: "We have worked with our cloud CRM vendor on the matter, and we do not believe that there is a risk to sensitive data."
+        attribution: "Jennifer Sniderman, Wesco VP Corporate Communications"
+        source_url: "https://www.bleepingcomputer.com/news/security/wesco-confirms-security-incident-after-exfilsquad-claims-data-theft/"
+      - quote: "found no evidence of ransomware or other malicious software on its IT systems"
+        attribution: "Wesco (per BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/wesco-confirms-security-incident-after-exfilsquad-claims-data-theft/"
+      - quote: "has targeted in the past improperly configured Microsoft Power Pages data tables"
+        attribution: "Resecurity / VenariX (per BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/wesco-confirms-security-incident-after-exfilsquad-claims-data-theft/"
+    extended_notes: |
+      Held to MEDIUM confidence because the access-vector claim (Dynamics 365) is a researcher inference from public
+      technology-stack information, not a Wesco-confirmed root cause, and Wesco directly disputes ExfilSquad's own
+      scale claim (2.6M records) without offering its own figure. Framed as an update on the tracked ExfilSquad
+      actor/campaign entity rather than a new incident entity, per the run's dedup instruction that this campaign
+      needs a genuine delta — the delta here is Wesco's on-record partial-confirmation/dispute posture and the
+      Dynamics-365-vs-Power-Pages technical widening, neither of which was in the original 2026-07-31 entry.
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "This deployment configures no supplier watchlist (config/org-profile.yaml has no supplier list) — the sweep is a no-op per the spawn instructions. General S4 coverage (ExfilSquad/Wesco, N-able/Storm-1175 MSP supply chain, Stiftung Brandenburgische Gedenkstätten) proceeded unaffected."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ico-uk
+    reason: "jina-fetched enforcement listing successfully (HTTP 200) but the most recent dated entry is 27 July 2026 — no in-window UK ICO enforcement action. Not a transport failure; genuinely quiet."
+  - source_id: cnil-fr
+    reason: "WebFetch of /en/news succeeded but the listing's most recent item is 22 July 2026 — no in-window CNIL news/sanction. Not a transport failure; genuinely quiet."
+  - source_id: ransom-isac
+    reason: "WebFetch of https://ransom-isac.org/blog/ returned HTTP 403 (bridge not retried — single attempt per policy); blog listing has no visible per-post dates so could not confirm freshness via the fetched title index (tools/fetch_source.py url) either. No in-window signal confirmed from this source this run."
+  - source_id: venarix
+    reason: "Bridge fetch of https://venarix.com/blog succeeded (HTTP 200) but returned only a static link index with no visible dates; spot-checked the Everest/SAP-SuccessFactors post and found it dated June 2025 (stale). No fresh in-window post identified from the listing."
+  - source_id: us-treasury-ofac
+    reason: "Bridge fetch of the recent-actions listing succeeded; newest dated sub-page found was 2026-08-07 (5 days before this run's window) — no in-window sanctions designation relevant to ransomware/extortion infrastructure."
+  - source_id: sec-disclosures-edgar
+    reason: "EDGAR full-text search for Item 1.05 8-Ks, 2026-08-01 through 2026-08-12, returned only 2 hits, neither actually flagging Item 1.05 (both were unrelated 8-Ks with items 1.01/5.02/9.01 that matched the search term incidentally) — no new material-cybersecurity-incident 8-K in window."

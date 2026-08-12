@@ -1,0 +1,203 @@
+domain: S1
+run_id: 2026-08-12T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-12T04:14:25Z
+ended_at: 2026-08-12T04:31:46Z
+duration_seconds: 1041
+self_telemetry:
+  webfetch_calls: 16
+  websearch_calls: 6
+  bridge_fetches: 28
+items:
+  - title: "SAP August 2026 Patch Day: unauthenticated CVSS 10.0 RCE in Commerce Cloud's Data Hub Adapter, plus critical MII and NetWeaver ABAP flaws"
+    sources:
+      - { url: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html", publisher: "SAP SE (Security Patch Day)", date: "2026-08-11", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12839", publisher: "NCSC Switzerland Cyber Security Hub", date: "2026-08-11", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0998/", publisher: "CERT-FR / ANSSI", date: "2026-08-11", role: "corroborating" }
+      - { url: "https://onapsis.com/blog/sap-security-patch-day-august-2026/", publisher: "Onapsis Research Labs", date: "2026-08-11", role: "corroborating" }
+      - { url: "https://www.securityweek.com/sap-patches-critical-code-injection-memory-corruption-vulnerabilities/", publisher: "SecurityWeek", date: "2026-08-11", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Patchday-SAP-Commerce-Cloud-komplett-kompromittierbar-11410169.html", publisher: "heise online", date: "2026-08-11", role: "corroborating" }
+      - { url: "https://www.csoonline.com/article/4208185/patch-tuesday-august-2026-a-zero-day-winsock-driver-hole-under-exploit-and-a-maximum-severity-sap-vulnerability.html", publisher: "CSO Online", date: "2026-08-11", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12839 (bridge `ncsc-csh recent 40`) → primary: SAP Security Patch Day, URL https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html → corroboration: CERT-FR CERTFR-2026-AVI-0998, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0998/ → technical depth: Onapsis Research Labs, URL https://onapsis.com/blog/sap-security-patch-day-august-2026/"
+    summary: |
+      SAP's August 2026 Security Patch Day (11 Aug) shipped 28 new/updated notes including four CRITICAL-rated CVEs. The most severe, CVE-2026-58231 (CVSS 10.0), is an improper-authorization flaw in SAP Commerce Cloud's Data Hub Adapter: an unauthenticated network attacker submits crafted data to the Data Hub import endpoint and achieves arbitrary code execution with no privileges or user interaction required. CVE-2026-44772 (CVSS 9.9) and CVE-2026-44758 (CVSS 9.1) are code-injection flaws in vulnerable servlets in SAP Manufacturing Integration and Intelligence (MII/XMII 15.4, 15.5) that let an attacker submit specially crafted input to execute arbitrary OS commands on the underlying host; -44772 needs only low privileges while -44758 needs higher privileges, accounting for the CVSS gap. CVE-2026-34265 (CVSS 9.8) is a memory-corruption bug from logical errors in DIAG-protocol parsing inside the core SAP NetWeaver/ABAP Platform kernel (KRNL64NUC/UC, KERNEL 7.22-9.19), exploitable pre-auth over the network to disclose sensitive information or crash the AS ABAP instance. Two further High-severity flaws round out the internet-facing exposure: CVE-2026-58243 (CVSS 8.8) in ABAP Developer Tools' SQL Console lets a low-privileged authenticated user run unauthorized database operations via host expressions in SQL statements, and CVE-2026-42945 (CVSS 8.1) is a buffer overflow in the NGINX component fronting Commerce Cloud public-cloud deployments, exploitable pre-auth via specially crafted requests. No party has reported active exploitation as of publication, but the unauthenticated, network-reachable, no-user-interaction profile on Commerce Cloud and the ABAP kernel matches the imminent-exploitation pattern seen in prior SAP zero-days. Patches are available for every listed CVE; Commerce Cloud fixes require a rebuild/redeploy of the affected release rather than a simple patch install.
+    region_nexus: "global; SAP ERP/Commerce Cloud/NetWeaver is heavily deployed across Swiss and EU federal, cantonal, and finance-sector back-office and e-commerce estates"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance"
+    cves: ["CVE-2026-58231", "CVE-2026-44772", "CVE-2026-44758", "CVE-2026-34265", "CVE-2026-58243", "CVE-2026-42945"]
+    techniques: ["T1190"]
+    affected_products: ["SAP Commerce Cloud", "SAP Manufacturing Integration and Intelligence", "SAP NetWeaver Application Server ABAP", "SAP ABAP Platform", "SAP ABAP Developer Tools"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An unauthenticated remote attacker with network access to an affected instance can submit crafted data to the Data Hub import endpoint, potentially leading to arbitrary code execution."
+        attribution: "SecurityWeek (citing SAP Security Note #3771065)"
+        source_url: "https://www.securityweek.com/sap-patches-critical-code-injection-memory-corruption-vulnerabilities/"
+      - quote: "Logical errors in DIAG protocol parsing allow an unauthenticated attacker to generate memory corruptions."
+        attribution: "Onapsis Research Labs"
+        source_url: "https://onapsis.com/blog/sap-security-patch-day-august-2026/"
+      - quote: "Successful exploitation could enable execution of arbitrary commands on the underlying host and impact resources beyond the vulnerable component."
+        attribution: "Onapsis Research Labs (on CVE-2026-44772/CVE-2026-44758, SAP MII)"
+        source_url: "https://onapsis.com/blog/sap-security-patch-day-august-2026/"
+    extended_notes: |
+      CERT-FR's advisory (CERTFR-2026-AVI-0998) lists the complete affected-version matrix across 15+ SAP components sharing this patch day, confirming Commerce Cloud (COM_CLOUD 2211, 2211-JDK21), NetWeaver/ABAP kernel versions from 7.22 through 9.19, and BusinessObjects BI as also receiving fixes in the same cycle. Given the CVSS 10.0 pre-auth profile on a component (Commerce Cloud) that is by definition internet-facing (public storefronts), this is a strong candidate for rapid scanning/exploitation attempts in the days following disclosure — track CISA KEV and ENISA EUVD for an exploitation-confirmed update.
+    borderline: false
+
+  - title: "Windows AFD.sys zero-day (CVE-2026-68820) exploited by Lazarus's Operation Dream Job to deploy the FudModule v3.1 kernel rootkit — one of three zero-days in August 2026 Patch Tuesday"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/shattering-the-dream-when-a-job-offer-becomes-a-zero-day-attack/", publisher: "Check Point Research", date: "2026-08-11", role: "primary" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-68820", publisher: "Microsoft MSRC", date: "2026-08-11", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/08/11/cisa-adds-three-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-08-11", role: "primary" }
+      - { url: "https://thehackernews.com/2026/08/microsoft-patches-398-flaws-including.html", publisher: "The Hacker News", date: "2026-08-11", role: "corroborating" }
+      - { url: "https://www.csoonline.com/article/4208185/patch-tuesday-august-2026-a-zero-day-winsock-driver-hole-under-exploit-and-a-maximum-severity-sap-vulnerability.html", publisher: "CSO Online", date: "2026-08-11", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/microsoft/microsoft-august-2026-patch-tuesday-fixes-400-flaws-3-zero-days/", publisher: "BleepingComputer", date: "2026-08-11", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/news-events/alerts/2026/08/11/cisa-adds-three-known-exploited-vulnerabilities-catalog (bridge `cisa-kev`) → pivot: MSRC OData record, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-68820 (bridge `msrc cve CVE-2026-68820`) → pivot: WebSearch (\"actively exploited vulnerability August 11 2026\") → primary: Check Point Research, URL https://research.checkpoint.com/2026/shattering-the-dream-when-a-job-offer-becomes-a-zero-day-attack/"
+    summary: |
+      Microsoft's August 2026 Patch Tuesday (11 Aug) fixed roughly 400 CVEs including three that carry action beyond the routine cycle. CVE-2026-68820 (CVSS 7.0, CWE-416 Use-After-Free) is Microsoft's sole "Exploitation Detected" entry this cycle: a race condition in the Windows Ancillary Function Driver for WinSock (afd.sys) lets a locally-authenticated attacker run a specially crafted application to win a timing race and gain SYSTEM privileges; Microsoft rates it "not publicly disclosed" prior to patch. Check Point Research's own write-up (published the same day) attributes in-the-wild exploitation to the DPRK-aligned Lazarus group's "Operation Dream Job" campaign against defense/aerospace-sector targets: victims receive fake job offers (impersonating firms including Lockheed Martin and Enveil) via LinkedIn (T1566.003), are lured into downloading an encrypted ZIP containing a trojanized MuPDF-based PDF viewer ("SecurityPDF") or a legitimate application abused for DLL side-loading, which drops the lightweight in-memory downloader MISTPEN (C2 over Microsoft Graph API/OneDrive). MISTPEN progressively loads reconnaissance and persistence modules before triggering CVE-2026-68820 for kernel-mode code execution and deploying FudModule v3.1, Lazarus's signature kernel-mode rootkit used to blind EDR/AV telemetry — the same driver family previously abused via CVE-2024-38193 in earlier Lazarus intrusions. Two further Patch Tuesday entries are publicly-disclosed-but-not-yet-exploited: CVE-2026-62832 (CVSS 7.8, "LegacyHive") is a TOCTOU symlink-confusion flaw in Windows User Profile Service letting a local attacker mount another user's registry hive and gain Administrator (0patch shipped an unofficial micropatch for this on 19 July, weeks before Microsoft's official fix); CVE-2026-72971 (CVSS 5.5) is a link-following tampering flaw in the Windows Container Isolation FS Filter Driver (unionfs.sys). Post-compromise infrastructure in the Check Point report also chains a Roundcube webmail RCE (CVE-2025-49113) and a PHP webshell ("RelayShell") on compromised WordPress sites as C2 relay nodes, ultimately delivering a new modular backdoor ("Troy") supporting 17 operator commands.
+    region_nexus: "global; Windows endpoints are ubiquitous across Swiss/EU federal, cantonal, and critical-infrastructure networks — Lazarus's Operation Dream Job specifically targets defense/aerospace organisations, a sector adjacent to several European government constituencies"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-68820", "CVE-2026-62832", "CVE-2026-72971"]
+    techniques: ["T1068", "T1014", "T1566.003", "T1204.002", "T1574.001", "T1102.002", "T1505.003"]
+    affected_products: ["Microsoft Windows", "Windows Ancillary Function Driver for WinSock", "Windows User Profile Service", "Windows Container Isolation FS Filter Driver"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:lazarus", type: actor, name: "Lazarus Group", aliases: ["APT38", "Hidden Cobra", "Zinc", "Diamond Sleet"],
+          summary: "DPRK (North Korea)-linked state threat actor; Check Point Research (2026-08-11) attributes exploitation of the CVE-2026-68820 Windows AFD.sys zero-day to Lazarus's Operation Dream Job campaign, deploying its FudModule kernel rootkit." }
+      - { key: "campaign:operation-dream-job", type: campaign, name: "Operation Dream Job", aliases: ["Contagious Interview overlap (disputed)"],
+          summary: "Long-running Lazarus (DPRK) fake job-offer social-engineering campaign targeting defense/aerospace-sector professionals via LinkedIn, delivering trojanized applications; Check Point's 2026-08-11 report documents its use of the CVE-2026-68820 zero-day and FudModule v3.1 rootkit." }
+      - { key: "tool:fudmodule", type: tool, name: "FudModule", aliases: ["FudModule rootkit"],
+          summary: "Lazarus's kernel-mode rootkit used to disable EDR/AV visibility post-privilege-escalation; version 3.1 was deployed via the CVE-2026-68820 afd.sys zero-day per Check Point Research (2026-08-11)." }
+      - { key: "malware:mistpen", type: malware, name: "MISTPEN", aliases: [],
+          summary: "Lightweight in-memory downloader used by Lazarus in Operation Dream Job, communicating via Microsoft Graph API and OneDrive to stage reconnaissance and persistence modules before privilege escalation (Check Point Research, 2026-08-11)." }
+    relation_suggestions:
+      - { subject: "actor:lazarus", object: "tool:fudmodule",
+          basis: "Check Point Research: \"the threat actor exploited CVE-2026-68820... to deploy a new version of FudModule, Lazarus' kernel-mode rootkit\" (2026-08-11)" }
+      - { subject: "actor:lazarus", object: "campaign:operation-dream-job",
+          basis: "Check Point Research attributes the job-offer-lure campaign delivering FudModule v3.1 to Lazarus's Operation Dream Job (2026-08-11)" }
+      - { subject: "campaign:operation-dream-job", object: "malware:mistpen",
+          basis: "Check Point Research: MISTPEN is the in-memory downloader used in the campaign's intrusion chain (2026-08-11)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "the threat actor exploited CVE-2026-68820, a zero-day vulnerability in the Microsoft AFD.sys driver, to deploy a new version of FudModule, Lazarus' kernel-mode rootkit."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/shattering-the-dream-when-a-job-offer-becomes-a-zero-day-attack/"
+      - quote: "Check Point Research says Lazarus used the zero-day in its Operation Dream Job campaign."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/08/microsoft-patches-398-flaws-including.html"
+      - quote: "A locally authenticated attacker could run a specially crafted application on an affected system to trigger a race condition. Successful exploitation could allow the attacker to gain SYSTEM privileges."
+        attribution: "Microsoft MSRC (CVE-2026-68820 FAQ)"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-68820"
+      - quote: "RelayShell primarily acts as a communication relay between the threat actor and an infected endpoint."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/shattering-the-dream-when-a-job-offer-becomes-a-zero-day-attack/"
+    extended_notes: |
+      afd.sys (Ancillary Function Driver for WinSock) has now been the vector for at least two Lazarus privilege-escalation zero-days: CVE-2024-38193 (patched August 2024, exploited to deploy an earlier FudModule variant, publicly analysed by Exodus Intelligence's "Windows Sockets: From Registered I/O to SYSTEM Privileges") and now CVE-2026-68820. Defenders with EDR telemetry on afd.sys-adjacent kernel callbacks or driver-load anomalies should treat repeated targeting of this driver family as a durable Lazarus TTP, not a one-off. CVE-2026-62832 ("LegacyHive") triage note: 0patch's unofficial micropatch (19 Jul 2026, https://0patch.com/blog/micropatches-available-for-legacyhive-windows-user-profile-service-elevation-of-p) pre-dates Microsoft's official fix by three weeks — estates that deployed the community patch were already covered.
+    borderline: false
+
+  - title: "Cisco Secure Firewall ASA/FTD Remote Access SSL VPN pre-auth denial-of-service under active exploitation (CVE-2026-20349)"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-asaftd-vpn-dos-dzv4mQFF", publisher: "Cisco PSIRT", date: "2026-08-11", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/cisco-warns-of-asa-and-ftd-vpn-flaw-exploited-to-crash-devices/", publisher: "BleepingComputer", date: "2026-08-11", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/news-events/alerts/2026/08/11/cisa-adds-three-known-exploited-vulnerabilities-catalog (bridge `cisa-kev`) → primary: Cisco PSIRT advisory, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-asaftd-vpn-dos-dzv4mQFF → corroboration: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/cisco-warns-of-asa-and-ftd-vpn-flaw-exploited-to-crash-devices/"
+    summary: |
+      Cisco disclosed CVE-2026-20349 (CVSS 8.6) on 11 August 2026 and states its PSIRT "became aware of active exploitation of this vulnerability" the same month. The flaw is insufficient error checking when the Remote Access SSL VPN service on Secure Firewall ASA and Secure Firewall Threat Defense (FTD) parses HTTP requests: an unauthenticated, remote attacker sends a single crafted HTTP request to the SSL VPN listener and forces the device to reload, producing a denial-of-service condition. Exploitation requires no authentication or user interaction and works whenever SSL listen sockets are enabled — i.e., on any device running IKEv2 Remote Access VPN with client services, SSL VPN, or Zero Trust Network Access. Affected releases are ASA 9.16, 9.18, 9.20, 9.22, 9.23, and 9.24, and FTD 7.0, 7.2, 7.4, 7.6, 7.7, and 10.0; Cisco Secure Firewall Management Center (FMC) is not affected. Cisco has released hot fixes (e.g., ASA 9.24.1.221, FTD 10.0.0.1-2) and states there are no workarounds — the only mitigation is upgrading. Cisco has not disclosed who is exploiting the flaw or which organizations are targeted; the bug was found both during Cisco's internal testing and independently reported by researcher Valerio Brussani. CISA added the CVE to its KEV catalog on 11 August 2026 with an unusually short remediation deadline (14 August).
+    region_nexus: "global; Cisco Secure Firewall ASA/FTD is a widely deployed VPN/perimeter gateway across Swiss and EU government, energy, healthcare, and finance-sector remote-access infrastructure"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, healthcare, finance, telco"
+    cves: ["CVE-2026-20349"]
+    techniques: ["T1499.004"]
+    affected_products: ["Cisco Secure Firewall Adaptive Security Appliance (ASA)", "Cisco Secure Firewall Threat Defense (FTD)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "In August 2026, the Cisco Product Security Incident Response Team (PSIRT) became aware of active exploitation of this vulnerability."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-asaftd-vpn-dos-dzv4mQFF"
+      - quote: "There are no workarounds that address this vulnerability."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-asaftd-vpn-dos-dzv4mQFF"
+      - quote: "The vulnerability can be exploited remotely without authentication or user interaction when SSL listen sockets are enabled."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/cisco-warns-of-asa-and-ftd-vpn-flaw-exploited-to-crash-devices/"
+    extended_notes: |
+      Cisco ASA/FTD has a multi-year history of being a preferred target for sophisticated, persistence-focused espionage actors (the ArcaneDoor campaign tracked since 2024 against separate CVEs); Cisco's advisory does not link CVE-2026-20349 exploitation to any named cluster, and this reporting does not assert that connection. Given the short KEV deadline and no available workaround, treat repeated unexplained reloads of internet-facing ASA/FTD VPN gateways as a hunt trigger pending patching.
+    borderline: false
+
+  - title: "Metabase's unauthenticated reset_password SQL-injection zero-day gets a CVE (CVE-2026-72898, CVSS 10.0) and lands on CISA's KEV catalog"
+    sources:
+      - { url: "https://github.com/metabase/metabase/security/advisories/GHSA-vwf4-m7j8-wcjf", publisher: "Metabase / GitHub Security Advisories", date: "2026-08-06", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/08/11/cisa-adds-three-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-08-11", role: "primary" }
+      - { url: "https://www.metabase.com/blog/security-update", publisher: "Metabase", date: "2026-08-06", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/news-events/alerts/2026/08/11/cisa-adds-three-known-exploited-vulnerabilities-catalog (bridge `cisa-kev`) → primary: GitHub Security Advisory GHSA-vwf4-m7j8-wcjf, URL https://github.com/metabase/metabase/security/advisories/GHSA-vwf4-m7j8-wcjf"
+    summary: |
+      This is a material update to the 2026-08-09 entry on Metabase's unauthenticated SQL-injection zero-day: at the time of that entry, Metabase had disclosed active exploitation via the `/api/session/reset_password` endpoint but "no CVE identifier has been assigned." That gap is now closed. GitHub Security Advisory GHSA-vwf4-m7j8-wcjf, published 6 August 2026, formally assigns CVE-2026-72898 with CVSS v3.1 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H) and states plainly: "Metabase has confirmed active exploitation of this vulnerability." Affected version ranges are now published precisely: >=x.58.0 <x.58.23, >=x.59.0 <x.59.20, >=x.60.0 <x.60.16, >=x.61.0 <x.61.10, >=x.62.0 <x.62.8, >=x.63.0 <x.63.3, fixed in x.58.24 / x.59.21 / x.60.17 / x.61.11 / x.62.9 / x.63.5 (OSS and EE builds both affected). CISA added CVE-2026-72898 to its KEV catalog on 11 August 2026 with a 14 August remediation deadline, formalising for federal-agency risk registers a vulnerability that a purely CVE-driven vulnerability-management process previously could not surface at all. The interim workaround remains blocking the `/api/session/reset_password` endpoint if immediate patching is not possible; Metabase's own remediation guidance additionally recommends revoking all active sessions (delete rows in `core_session`), auditing API keys and administrator accounts, and rotating credentials for every connected data source after patching.
+    region_nexus: "global; Metabase is a widely self-hosted open-source BI tool with adoption across public-sector analytics teams and finance-sector reporting pipelines"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-72898"]
+    techniques: ["T1190"]
+    affected_products: ["Metabase"]
+    entity_keys: ["incident:metabase-sqli-zeroday-2026-08"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-09/metabase-unauth-sqli-zeroday-exploited-framework-tally"
+    evidence:
+      - quote: "Metabase has confirmed active exploitation of this vulnerability. Please upgrade your Metabase instance ASAP."
+        attribution: "Metabase / GHSA-vwf4-m7j8-wcjf"
+        source_url: "https://github.com/metabase/metabase/security/advisories/GHSA-vwf4-m7j8-wcjf"
+      - quote: "This is a CRITICAL vulnerability that allows an unauthenticated remote attacker to inject arbitrary SQL into the Metabase application database, which can give them administrator access to the instance."
+        attribution: "Metabase / GHSA-vwf4-m7j8-wcjf"
+        source_url: "https://github.com/metabase/metabase/security/advisories/GHSA-vwf4-m7j8-wcjf"
+    extended_notes: |
+      Self-hosted instances that have not manually upgraded remain exposed regardless of this CVE assignment — the CVE/KEV listing changes visibility for CVE-driven patch tracking, not the underlying exposure window, which has existed since at least 3 August 2026 per the prior entry.
+    borderline: false
+
+cve_table:
+  - { cve: "CVE-2026-58231", product: "SAP Commerce Cloud (Data Hub Adapter)", cvss: "10.0", epss: "n/a", kev: false, exploited: "unknown", patch: "SAP Security Note 3771065 (rebuild/redeploy required)", source: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html" }
+  - { cve: "CVE-2026-44772", product: "SAP Manufacturing Integration and Intelligence", cvss: "9.9", epss: "n/a", kev: false, exploited: "unknown", patch: "SAP Security Note 3765948", source: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html" }
+  - { cve: "CVE-2026-44758", product: "SAP Manufacturing Integration and Intelligence", cvss: "9.1", epss: "n/a", kev: false, exploited: "unknown", patch: "SAP Security Note 3758900", source: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html" }
+  - { cve: "CVE-2026-34265", product: "SAP NetWeaver / ABAP Platform (AS ABAP kernel)", cvss: "9.8", epss: "n/a", kev: false, exploited: "unknown", patch: "SAP Security Note 3714806", source: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html" }
+  - { cve: "CVE-2026-58243", product: "SAP ABAP Developer Tools (SQL Console)", cvss: "8.8", epss: "n/a", kev: false, exploited: "unknown", patch: "SAP Security Note 3772411", source: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html" }
+  - { cve: "CVE-2026-42945", product: "SAP Commerce Cloud (NGINX component)", cvss: "8.1", epss: "n/a", kev: false, exploited: "unknown", patch: "SAP Security Note 3773203 (rebuild/redeploy)", source: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html" }
+  - { cve: "CVE-2026-68820", product: "Microsoft Windows (Ancillary Function Driver for WinSock, afd.sys)", cvss: "7.0", epss: "n/a", kev: true, exploited: "yes (Lazarus / Operation Dream Job, per Check Point Research)", patch: "August 2026 Patch Tuesday cumulative update", source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-68820" }
+  - { cve: "CVE-2026-62832", product: "Windows User Profile Service", cvss: "7.8", epss: "n/a", kev: false, exploited: "no (publicly disclosed pre-patch as \"LegacyHive\")", patch: "August 2026 Patch Tuesday cumulative update", source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-62832" }
+  - { cve: "CVE-2026-72971", product: "Windows Container Isolation FS Filter Driver (unionfs.sys)", cvss: "5.5", epss: "n/a", kev: false, exploited: "no (publicly disclosed)", patch: "August 2026 Patch Tuesday cumulative update", source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-72971" }
+  - { cve: "CVE-2026-20349", product: "Cisco Secure Firewall ASA / FTD (Remote Access SSL VPN service)", cvss: "8.6", epss: "n/a", kev: true, exploited: "yes (Cisco PSIRT confirmed, actor/target unnamed)", patch: "Hot fixes per Cisco advisory cisco-sa-asaftd-vpn-dos-dzv4mQFF", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-asaftd-vpn-dos-dzv4mQFF" }
+  - { cve: "CVE-2026-72898", product: "Metabase (reset_password endpoint)", cvss: "10.0", epss: "n/a", kev: true, exploited: "yes (Metabase confirmed)", patch: "0.58.24 / 0.59.21 / 0.60.17 / 0.61.11 / 0.62.9 / 0.63.5", source: "https://github.com/metabase/metabase/security/advisories/GHSA-vwf4-m7j8-wcjf" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "deployment configures no product watchlist — sweep is a no-op per spawn message instruction"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: siemens-productcert-csaf
+    reason: "cert-portal.siemens.com/productcert/csaf/ and /productcert/html/ssa-list.html both returned S3 AccessDenied (403) on direct fetch AND the jina reader fallback; WebFetch also 403'd. WebSearch found only stale (Feb-May 2026) Siemens advisories via a third-party aggregator (mallory.ai) — no in-window Siemens ProductCERT content confirmed for August 2026 patch day. CISA's ICS-advisories listing page returned only static filter chrome (JS-rendered results not visible to the bridge)."
+  - source_id: ssd-disclosure
+    reason: "[ROTATION PRIORITY] Reachable via bridge with jina fallback (advisories listing loaded). Most recent post is 2026-08-05 (Linux Bridge STP Timer UAF, TyphoonPWN 2026, no CVE yet) and next-most-recent is 2026-07-27 (vBulletin runMaths pre-auth RCE) — both outside the 26h window. No in-window items found."
+  - source_id: chrome-releases
+    reason: "[ROTATION PRIORITY] Reached via WebSearch + direct bridge fetch of the 2026-08-11 Stable Channel Update post. 5 High-severity use-after-free CVEs fixed (CVE-2026-19556 through -19560) with no exploitation-in-the-wild flag in the release notes — did not clear the imminent-exploitation bar for a standalone item and is not folded into another item."
+  - source_id: cert-pl
+    reason: "Most recent RSS item is 2026-08-10 14:55 (Magnolia CMS XSS); nothing published inside the 26h window at fetch time."
+  - source_id: cert-eu
+    reason: "Most recent advisory (2026-009, SharePoint) is dated 2026-07-23 with no fresh update inside the 26h window."
+  - source_id: ncsc-uk
+    reason: "Most recent items are guidance/blog posts (water-sector connectivity principles, 2026-08-11) with no vulnerability or exploitation content inside the window."

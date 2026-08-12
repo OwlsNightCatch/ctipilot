@@ -1,0 +1,267 @@
+**Model:** Opus 5 (`claude-opus-5`)
+**Timestamps:** started_at=2026-08-12T04:52:41Z · ended_at=2026-08-12T05:07:54Z · duration_seconds=913
+**Self-telemetry:** urls_checked=26 · webfetch_calls=3 · bridge_fetches=6 · curl_liveness_checks=9
+
+## Verification report — 2026-08-12T0411Z-intel (iteration 1)
+
+Read cold: all 10 new entries (frontmatter + body end to end), the run record, `prior_coverage.json`
+(164 records), `state/cves_seen.json`, the four findings YAMLs, the pinned ATT&CK v19.2 dataset and
+`sources/sources.json`.
+
+**What passed.** Every source URL on every entry resolves (HTTP 200, checked individually — no F1/F2).
+All 22 `evidence[]` quotes across the 10 entries are contiguous verbatim substrings of the cited page
+once the sources' own non-breaking spaces and curly apostrophes are normalised. All 42 `techniques[]`
+ids resolve to active, non-revoked techniques in the pinned v19.2 dataset. No IOCs anywhere (no hashes,
+IPs, attacker domains or rule code) — the CAV3RN entry in particular describes the DNS control plane
+without naming the domain. `actions[]` counts are 2/1/1/1/1/0/0/0/0/0: no padded list, no generic
+advice, five empty lists that are correctly empty (F18 clean apart from the two wording defects filed
+below as truth findings). No `watchlist_hit`, no `org_triage` block, and a `classification` block on
+every entry with in-vocabulary codes consistent with the sourcing shown — no F16/F17.
+Update-vs-new decisions check out: all five `update_of` targets exist (four in the 14-day index, the
+CAV3RN target at `entries/2026-07-22/`), each carries a genuine delta, and the deliberate non-update of
+ShieldBreak against the 2026-07-29 LegacyHive entry is correctly reasoned in the run record (different
+flaw, different product, shared persona only). Priority calibration is defensible: 6 `high`, 4
+`notable`, no `critical` — the absence of a `critical` is right (an LPE needing a foothold, a DoS with
+no C/I impact, and an UPDATE whose delta is CVE-identifier visibility rather than new exposure).
+Note for the record: the split is 6 high / 4 notable, not the 5/5 stated in the task framing.
+
+**Adversarial points raised in the spawn message.** (1) The Lazarus entry does NOT re-introduce
+observed-fact framing on the approach vector — it says "the exact method used to approach victims in
+this wave remains unclear, and only *assesses* ... that targets were likely approached through
+professional networking platforms or messaging apps", which tracks Check Point exactly and correctly
+omits LinkedIn as a named platform. Clean. (2) ShieldBreak's technical claims are attributed to the
+researcher throughout ("listed with", "Both of those are the researcher's own claims", "Treat the
+reliability figure and the server coverage as unverified") — `high` is defensible on a working public
+exploit for SYSTEM with no vendor fix; the one leak is in the action item (F10), plus the release-date
+framing (F7). (3) The CVE-2026-62832 / LegacyHive identification is carried as Rapid7's assessment in
+the title, summary, `sourcing_note` and body ("That is an assessment by a third party, not a vendor
+mapping") — clean, no finding. (4) The Storm-1175 recency exception and the single-source call both
+hold: the developing-story allowance is argued in the run record and the "many publishers of one
+assessment" reasoning is the conservative and correct read; `verification: single-source` +
+`sourcing_note` + a run-record single-source line are all present (no F12). The one improvement is
+F14. (6) Completeness is NOT clean — see F12.
+
+### Citation does not support the claim
+
+**F1** — `cve-2026-72898-metabase-sqli-cve-assigned-kev`
+
+- Quoted: The advisory bounds the exposure per release line — `>=0.58.0 <0.58.24`, `>=0.59.0 <0.59.21`, `>=0.60.0 <0.60.17`, `>=0.61.0 <0.61.11`, `>=0.62.0 <0.62.9` and `>=0.63.0 <0.63.5`
+- Finding: GHSA-vwf4-m7j8-wcjf "Affected versions" actually reads: ">= x.58.0, < x.58.23 / >= x.59.0, < x.59.20 / >= x.60.0, < x.60.16 / >= x.61.0, < x.61.10 / >= x.62.0, < x.62.8 / >= x.63.0, < x.63.3". Every one of the six upper bounds the entry attributes to the advisory (body AND cves[].affected) is the PATCHED version, not the advisory's affected boundary. The entry frames them as the advisory's own bounds ("The advisory bounds the exposure per release line") and the affected-version matrix is this UPDATE entry's stated delta. Verified by WebFetch of the GHSA page and against the run's own cached raw HTML (work/.../raw/metabase-ghsa.txt). Fix: quote the advisory's ranges verbatim, or present the six figures as fixed releases only.
+
+**F2** — `lazarus-operation-dream-job-cve-2026-68820-afd-fudmodule`
+
+- Quoted: CISA added it to the Known Exploited Vulnerabilities catalog on 2026-08-11 with a 25 August remediation date; Rapid7 notes the CVSS stayed at 7.0 largely because a stable exploit has to win the race ([Rapid7, 2026-08-11](https://www.rapid7.com/blog/post/em-patch-tuesday-august-2026/))
+- Finding: The KEV fact is true (KEV catalog 2026.08.11: CVE-2026-68820 dateAdded 2026-08-11, dueDate 2026-08-25) but no source on this entry supports it, and the trailing co-citation contradicts it: Rapid7 writes "CVE-2026-68820 isn't yet listed on CISA KEV, but it will be soon." Check Point never mentions KEV (zero hits for "KEV" / "Known Exploited" in the cached page). The same unsourced claim carries in the summary ("CISA added the CVE to its Known Exploited Vulnerabilities catalog the same day with a 25 August deadline"), in tags (cisa-kev) and in cves[].status. Fix: add https://www.cisa.gov/news-events/alerts/2026/08/11/cisa-adds-three-known-exploited-vulnerabilities-catalog as a corroborating source (verified live this iteration; it names CVE-2026-68820) exactly as the Cisco and Metabase entries already do.
+
+**F4** — `project-cav3rn-google-apps-script-c2-relay`
+
+- Quoted: Body: "The relay endpoint is gated on a custom client-identifier header — requests without it get a failure response". Triage: "Where an Apps Script relay is in play, the requests also carry a non-standard client-identifier header that ordinary browser or SDK traffic to that service does not."
+- Finding: Kaspersky attributes the header gate to the DIRECT HTTPS channel, not the relay: "When DNS selects Direct HTTPS, the module contacts the configured ad address, https://api.studiotikva[.]com/api/v1/update/check, without using the relay ... The endpoint expects the custom X-Client-Id header; requests without the expected header return {\"res\":\"failed\"} in its HTTP response." On the Apps Script path the identifier is a JSON body field the relay is instructed to forward upstream ({"k":"...","m":"GET","h":{"X-Client-Id":"AAAA000",...}}) inside a TLS POST to script.google.com — not an observable request header; the relay itself is gated on the "k" value (config comment: "Apps Script relay authentication key"). The Triage line therefore gives a defender a discriminator that does not exist on the traffic it names. Fix: attach the header gate to the direct-HTTPS channel and rewrite or drop the relay clause of the Triage line.
+
+**F6** — `sap-august-2026-cve-2026-58231-commerce-cloud-data-hub-rce`
+
+- Quoted: SAP's August 2026 Security Patch Day, published 2026-08-11, carries thirty-three notes of which five are HotNews and nine High Priority ([SAP SE, 2026-08-11](https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html); [Onapsis Research Labs, 2026-08-11](https://onapsis.com/blog/sap-security-patch-day-august-2026/))
+- Finding: Only Onapsis carries those figures ("SAP has published thirty-three new and updated SAP Security Notes in its August Patch Day, including five HotNews Notes and nine High Priority Notes"). The co-cited SAP page states something different: "On 11th of August 2026, SAP security patch day saw the release of 28 new security notes and 1 Github security advisory. There are 2 updates to previously released security notes" — 31 rows, of which 4 carry Priority "Critical" and 8 "High" (fetched and counted this iteration). The two vendor lists also differ on membership: SAP lists note 3727078 for CVE-2026-58233 while Onapsis lists 3773304 for the same CVE, and Onapsis adds notes 3747367 and 3732471 that SAP's page does not. Fix: attribute the count to Onapsis alone, or surface the discrepancy as a Contradiction line.
+
+**F7** — `shieldbreak-defender-rogueplanet-patch-bypass-no-fix`
+
+- Quoted: Body: "The day after Microsoft's August Patch Tuesday, the pseudonymous researcher Nightmare Eclipse published ShieldBreak". Headline: "Nightmare Eclipse drops a Defender privilege-escalation patch bypass the day after Patch Tuesday".
+- Finding: Neither cited source says "the day after". Cyber Kendra says only "The release follows Microsoft's August Patch Tuesday, which fixed 421 CVEs on August 11." Rapid7 — published 2026-08-11 and already covering the release — places it on Patch Tuesday itself: "Patch Tuesday watchers will have been wondering whether Nightmare Eclipse would continue the pattern of the past few months by dropping yet another zero-day vuln late on Patch Tuesday to maximize friction and inconvenience for Microsoft. Wonder no more, because the new entry on this growing list of headaches is ShieldBreak." The entry's own summary already hedges correctly ("published ShieldBreak on 2026-08-11/12"); carry that hedge into the headline and body.
+
+### Unsupported / hallucinated facts
+
+**F5** — `lazarus-operation-dream-job-cve-2026-68820-afd-fudmodule`
+
+- Quoted: affected_products: ["Microsoft Windows 11", "Microsoft Windows Server 2025", "Roundcube Webmail"]
+- Finding: No cited source names Windows Server 2025. Check Point confines the exploit to Windows 11: "we observed an explicit minimum-version check for Windows 11 build 26100 (24H2), with explicit support also for build 26200 (25H2)" and "this version only targets newer Windows builds 26100/26200, unlike the previous version that also targeted older ones". Zero hits for "Server 2025" in the Check Point page or the Rapid7 post; the cached MSRC record carries no product list. affected_products is a machine-matched field — remove the value or cite a source that names it.
+
+**F11** — `lazarus-operation-dream-job-cve-2026-68820-afd-fudmodule`
+
+- Quoted: actions[1]: "Hunt the estate's internet-facing Roundcube instances for a pre-2025 build vulnerable to CVE-2025-49113 and treat any hit as a candidate relay node"
+- Finding: No cited source gives a version boundary for CVE-2025-49113. Check Point says only "The majority of the Roundcube servers we analyzed were running versions vulnerable to CVE-2025-49113", and the entry's own cves[] record deliberately declines to give versions ("Roundcube Webmail versions vulnerable to the 2025 deserialization flaw"; fixed: "Roundcube releases from 2025 — see the vendor advisory"). "Pre-2025 build" is an invented boundary inside an operational hunt instruction and would wave through a 2025-dated vulnerable build. Fix: drop the version characterisation and point at the vendor advisory.
+
+### Analytical-link-as-fact
+
+**F3** — `wesco-exfilsquad-crm-confirmation-dispute`
+
+- Quoted: researchers cited in the reporting assess on that basis that the group's targeting has widened from Power Pages portal misconfiguration specifically into the broader class of exposed Dynamics 365 and Power Platform CRM data surfaces
+- Finding: The single cited source (BleepingComputer) makes no such assessment. It says only: "recent reports from researchers at cybersecurity companies Resecurity and VenariX examining ExfilSquad activity indicate that the threat actor has targeted in the past improperly configured Microsoft Power Pages data tables" and, as a separate sentence, "Wesco has not shared how the threat actor breached its network, but publicly available information indicates that Wesco may be using Microsoft Dynamics 365." No researcher is quoted joining the two, and nobody asserts a widened target surface. The same unsupported attribution drives the title ("the campaign's target surface widens beyond Power Pages portals") and the summary ("Researchers tie the campaign to ... and, in this case, assess a Dynamics 365 surface"). Fix: present it as the entry's own hypothesis or drop the widening framing.
+
+### Quantifier without source
+
+**F8** — `wesco-exfilsquad-crm-confirmation-dispute`
+
+- Quoted: Title: "UPDATE — the first ExfilSquad victim to answer on the record confirms a CRM data-exfiltration claim while disputing its scale". Body: "most of the roughly thirteen other claimed victims have said nothing at all and remain leak-site listings only".
+- Finding: (a) The title's "first ... to answer on the record" is contradicted by the entry's own body: "The UK Department for Education and the Police National Legal Database both issued full confirmations with corrected scope." The body's accurate qualifier ("its first victim to answer on the record IN PARTIAL TERMS") is missing from the title, which is the string the brief renders. (b) "roughly thirteen" appears in no cited source (zero hits for "thirteen" or "13" in the BleepingComputer article); it is a subtraction from prior coverage's "15 named victims" (2026-07-31 entry) and ships uncited with references[] empty.
+
+**F9** — `stiftung-brandenburgische-gedenkstaetten-ransomware`
+
+- Quoted: it trades weeks of outage for the certainty that restored domain infrastructure is not carrying the intruder's persistence
+- Finding: The cited primary states the opposite expectation and the entry omits it entirely: "Die Stiftung geht davon aus, dass die Systeme voraussichtlich in einigen Tagen wieder zur Verfuegung stehen werden" (the foundation expects the systems back in a few days); heise carries the same sentence. "Weeks" is the entry's own figure attached to this specific decision ("For a small public body that is an expensive call"). Fix: drop the quantifier, or carry the source's stated few-days estimate and make the generic tradeoff explicitly generic.
+
+**F10** — `shieldbreak-defender-rogueplanet-patch-bypass-no-fix`
+
+- Quoted: actions[0]: "... ThreatLocker found allowlisting blocked RoguePlanet by default, and it is the only control reported to work against this bug class while no patch exists."
+- Finding: Cyber Kendra says: "ThreatLocker found that application allowlisting blocked RoguePlanet by default, the strongest control available for this bug class." "Strongest available" is not "the only control reported to work". The body renders it correctly ("The strongest one reported for this bug class is application allowlisting"); the action item hardens it, and the action is what ships into the brief's aggregated Action Items.
+
+### Needs more research
+
+**F13** — `wesco-exfilsquad-crm-confirmation-dispute`
+
+- Quoted: https://www.bleepingcomputer.com/news/security/wesco-confirms-security-incident-after-exfilsquad-claims-data-theft/ — "After the hacker's deadline for the company to enter ransom payment negotiations expired, ExfilSquad published the data allegedly exfiltrated from Wesco's systems."
+- Finding: The cited source states the allegedly stolen data has already been published on the leak site; the entry never mentions it while devoting its whole delta to the confirm/dispute posture. For a reader triaging third-party exposure that is the operative fact (the data is out, not merely claimed), and it sharpens the "confirmed-but-disputed" calibration point the entry builds. Add it to the body.
+
+### Strengthen primary source
+
+**F14** — `n-able-n-central-storm-1175-stormencryptor`
+
+- Quoted: Storm-1175 background paragraph cited only to https://therecord.media/china-hackers-ransomware-microsoft
+- Finding: Microsoft's own Storm-1175 profile is the primary for that whole paragraph and is live (WebFetched this iteration, and already HTTP 200 in the run's own url-liveness ledger): https://www.microsoft.com/en-us/security/blog/2026/04/06/storm-1175-focuses-gaze-on-vulnerable-web-facing-assets-in-high-tempo-medusa-ransomware-operations/ — it carries "operates high-velocity ransomware campaigns that weaponize N-days", "We have also observed Storm-1175 leveraging zero-day exploits, in some cases a full week before public vulnerability disclosure", "rapidly moves from initial access to data exfiltration and deployment of Medusa ransomware, often within a few days and, in some cases, within 24 hours", and the sector/country list. Accuracy note if it is added: the Microsoft page does NOT call Storm-1175 China-linked — that attribution is The Record's, and the entry currently sources it correctly; keep the split. Adding it does not disturb the single-source status of the StormEncryptor assessment itself, which remains correctly flagged.
+
+### Missed angles
+
+**F12** — `Microsoft SharePoint Server pre-auth RCE chain — CVE-2026-63520 disclosed + public PoC for CVE-2026-55040`
+
+- Quoted: https://www.rapid7.com/blog/post/em-patch-tuesday-august-2026/ — "Today sees the publication of CVE-2026-63520, a high-severity remote code execution in Microsoft SharePoint ... this vulnerability is the second in a pair of exploits which, when chained together, comprise a critical unauthenticated remote code execution vulnerability in a vulnerable SharePoint server. Patches are available for SharePoint Server Subscription Edition, 2019, and 2016. Alongside today's coordinated disclosure of CVE-2026-63520, Rapid7 has now published a detailed technical analysis and proof-of-concept for CVE-2026-55040, the first vulnerability in the chain."
+- Finding: In-window (2026-08-11), inside a source this run cited on three entries and cached in full, and never surfaced anywhere: a public proof-of-concept now exists for CVE-2026-55040 — which this store already tracks (state/cves_seen.json first_seen 2026-07-15, "CVE-2026-55040 — Microsoft SharePoint Server: JWT authentication bypass, Pwn2Own chain (CVSS 9.1)") — chaining with newly disclosed CVE-2026-63520 (Rapid7 summary table: CVSS 8.1, "Exploitation More Likely") to unauthenticated RCE on on-prem SharePoint Server SE/2019/2016. CVE-2026-63520 appears in neither prior_coverage.json nor state/cves_seen.json, and the run record does not list it among the borderline drops. Constituency nexus is established by this brief's own last seven days: 2026-08-05 BIT/FOITT Swiss federal SharePoint breach and 2026-08-06 Canton Graubuenden SharePoint breach. It clears the run's own beyond-the-patch-cycle limb (public PoC, pre-auth chain, exposed edge application) at least as clearly as the ShieldBreak item the run added for exactly that reason. Suggested query: "Rapid7 CVE-2026-55040 SharePoint JWT authentication bypass proof-of-concept CVE-2026-63520 chain".
+
+### Editorial / less-is-more flags (advisory)
+
+**F15** — `sap-august-2026-cve-2026-58231-commerce-cloud-data-hub-rce`
+
+- Quoted: summary: "Four further HotNews notes cover code injection in SAP Manufacturing Integration and Intelligence (CVE-2026-44772, 9.9; CVE-2026-44758, 9.1) and an unauthenticated memory-corruption flaw in the NetWeaver AS ABAP kernel's DIAG protocol parser (CVE-2026-34265, 9.8)." — body: "Three further HotNews notes matter to different estates."
+- Finding: The summary says four further HotNews notes and then enumerates three CVEs; the body says three. Per Onapsis the fifth HotNews is note 3747367 / CVE-2026-44747 (a re-issued July note), which the entry never names. Align the two numbers or name the fourth.
+
+**F16** — `sap-august-2026-cve-2026-58231-commerce-cloud-data-hub-rce`
+
+- Quoted: affected_products: [..., "SAP ABAP Development Tools"]; body: "the SQL Console in SAP ABAP Development Tools"
+- Finding: Both cited sources call the product "SAP ABAP Developer Tools" — SAP note 3772411 title ("Privilege Escalation vulnerability in SAP ABAP Developer Tools", Product - SAP ABAP Developer Tools) and Onapsis ("patches a Privilege Escalation vulnerability in SAP ABAP Developer Tools. The SQL Console in SAP ABAP Developer Tools supported the use of host expressions..."). One-word drift in a machine-matched product field.
+
+**F17** — `runs/2026-08-12/2026-08-12T0411Z-intel.md — verification & coverage notes`
+
+- Quoted: "The main-agent deep read of the will-publish primaries contradicted several sub-agent claims"; "The research sub-agent had carried it as observed fact"; "one item no sub-agent returned"; "in both the sub-agent's attempts and the main agent's"; "the S2 sub-agent proposed swisscybersecurity-net as a new candidate source"
+- Finding: Workflow-internal vocabulary in published run-record prose (style check 12). The 2026-08-11 record contains zero such occurrences, so this is drift rather than settled convention. Reader-facing equivalents ("the research pass", "the composition review") carry the same meaning without exposing pipeline internals.
+
+### Verdict
+
+NEEDS_FIXES (truth: 11, editorial: 3, advisory: 3)
+
+Truth = F1–F11 (F1, F2, F4, F6, F7 claim-not-supported; F5, F11 hallucinated-fact; F3
+analytical-link-as-fact; F8, F9, F10 quantifier-without-source). Editorial = F12 (missed angle), F13
+(needs more research), F14 (strengthen primary source). Advisory = F15–F17.
+
+The two that matter most for a reader acting on the brief are **F1** (the Metabase entry's whole delta
+is an affected-version matrix that does not match the advisory it is attributed to) and **F12** (a
+public PoC for a SharePoint auth bypass this store already tracks, chaining to unauthenticated RCE on
+on-prem SharePoint, in a source the run cached and read, against a constituency that has disclosed two
+SharePoint compromises in the last seven days). **F3** and **F4** are the two places where the brief
+states a connection or a detection discriminator that its only source does not carry.
+
+
+### Findings summary (machine-readable)
+
+```yaml
+# Findings summary (machine-readable)
+- code: F1
+  category: claim-not-supported
+  section: trending-vulnerabilities
+  item: cve-2026-72898-metabase-sqli-cve-assigned-kev
+  url_or_quote: The advisory bounds the exposure per release line — `>=0.58.0 <0.58.24`, `>=0.59.0 <0.59.21`, `>=0.60.0 <0.60.17`, `>=0.61.0 <0.61.11`, `>=0.62.0 <0.62.9` and `>=0.63.0 <0.63.5`
+  summary: 'GHSA-vwf4-m7j8-wcjf "Affected versions" actually reads: ">= x.58.0, < x.58.23 / >= x.59.0, < x.59.20 / >= x.60.0, < x.60.16 / >= x.61.0, < x.61.10 / >= x.62.0, < x.62.8 / >= x.63.0, < x.63.3". Every one of the six upper bounds the entry attributes to the advisory (body AND cves[].affected) is the PATCHED version, not the advisory''s affected boundary. The entry frames them as the advisory''s own bounds ("The advisory bounds the exposure per release line") and the affected-version matrix is this UPDATE entry''s stated delta. Verified by WebFetch of the GHSA page and against the run''s own cached raw HTML (work/.../raw/metabase-ghsa.txt). Fix: quote the advisory''s ranges verbatim, or present the six figures as fixed releases only.'
+- code: F2
+  category: claim-not-supported
+  section: active-threats
+  item: lazarus-operation-dream-job-cve-2026-68820-afd-fudmodule
+  url_or_quote: CISA added it to the Known Exploited Vulnerabilities catalog on 2026-08-11 with a 25 August remediation date; Rapid7 notes the CVSS stayed at 7.0 largely because a stable exploit has to win the race ([Rapid7, 2026-08-11](https://www.rapid7.com/blog/post/em-patch-tuesday-august-2026/))
+  summary: 'The KEV fact is true (KEV catalog 2026.08.11: CVE-2026-68820 dateAdded 2026-08-11, dueDate 2026-08-25) but no source on this entry supports it, and the trailing co-citation contradicts it: Rapid7 writes "CVE-2026-68820 isn''t yet listed on CISA KEV, but it will be soon." Check Point never mentions KEV (zero hits for "KEV" / "Known Exploited" in the cached page). The same unsourced claim carries in the summary ("CISA added the CVE to its Known Exploited Vulnerabilities catalog the same day with a 25 August deadline"), in tags (cisa-kev) and in cves[].status. Fix: add https://www.cisa.gov/news-events/alerts/2026/08/11/cisa-adds-three-known-exploited-vulnerabilities-catalog as a corroborating source (verified live this iteration; it names CVE-2026-68820) exactly as the Cisco and Metabase entries already do.'
+- code: F3
+  category: analytical-link-as-fact
+  section: incidents
+  item: wesco-exfilsquad-crm-confirmation-dispute
+  url_or_quote: researchers cited in the reporting assess on that basis that the group's targeting has widened from Power Pages portal misconfiguration specifically into the broader class of exposed Dynamics 365 and Power Platform CRM data surfaces
+  summary: 'The single cited source (BleepingComputer) makes no such assessment. It says only: "recent reports from researchers at cybersecurity companies Resecurity and VenariX examining ExfilSquad activity indicate that the threat actor has targeted in the past improperly configured Microsoft Power Pages data tables" and, as a separate sentence, "Wesco has not shared how the threat actor breached its network, but publicly available information indicates that Wesco may be using Microsoft Dynamics 365." No researcher is quoted joining the two, and nobody asserts a widened target surface. The same unsupported attribution drives the title ("the campaign''s target surface widens beyond Power Pages portals") and the summary ("Researchers tie the campaign to ... and, in this case, assess a Dynamics 365 surface"). Fix: present it as the entry''s own hypothesis or drop the widening framing.'
+- code: F4
+  category: claim-not-supported
+  section: active-threats
+  item: project-cav3rn-google-apps-script-c2-relay
+  url_or_quote: 'Body: "The relay endpoint is gated on a custom client-identifier header — requests without it get a failure response". Triage: "Where an Apps Script relay is in play, the requests also carry a non-standard client-identifier header that ordinary browser or SDK traffic to that service does not."'
+  summary: 'Kaspersky attributes the header gate to the DIRECT HTTPS channel, not the relay: "When DNS selects Direct HTTPS, the module contacts the configured ad address, https://api.studiotikva[.]com/api/v1/update/check, without using the relay ... The endpoint expects the custom X-Client-Id header; requests without the expected header return {\"res\":\"failed\"} in its HTTP response." On the Apps Script path the identifier is a JSON body field the relay is instructed to forward upstream ({"k":"...","m":"GET","h":{"X-Client-Id":"AAAA000",...}}) inside a TLS POST to script.google.com — not an observable request header; the relay itself is gated on the "k" value (config comment: "Apps Script relay authentication key"). The Triage line therefore gives a defender a discriminator that does not exist on the traffic it names. Fix: attach the header gate to the direct-HTTPS channel and rewrite or drop the relay clause of the Triage line.'
+- code: F5
+  category: hallucinated-fact
+  section: active-threats
+  item: lazarus-operation-dream-job-cve-2026-68820-afd-fudmodule
+  url_or_quote: 'affected_products: ["Microsoft Windows 11", "Microsoft Windows Server 2025", "Roundcube Webmail"]'
+  summary: 'No cited source names Windows Server 2025. Check Point confines the exploit to Windows 11: "we observed an explicit minimum-version check for Windows 11 build 26100 (24H2), with explicit support also for build 26200 (25H2)" and "this version only targets newer Windows builds 26100/26200, unlike the previous version that also targeted older ones". Zero hits for "Server 2025" in the Check Point page or the Rapid7 post; the cached MSRC record carries no product list. affected_products is a machine-matched field — remove the value or cite a source that names it.'
+- code: F6
+  category: claim-not-supported
+  section: trending-vulnerabilities
+  item: sap-august-2026-cve-2026-58231-commerce-cloud-data-hub-rce
+  url_or_quote: SAP's August 2026 Security Patch Day, published 2026-08-11, carries thirty-three notes of which five are HotNews and nine High Priority ([SAP SE, 2026-08-11](https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html); [Onapsis Research Labs, 2026-08-11](https://onapsis.com/blog/sap-security-patch-day-august-2026/))
+  summary: 'Only Onapsis carries those figures ("SAP has published thirty-three new and updated SAP Security Notes in its August Patch Day, including five HotNews Notes and nine High Priority Notes"). The co-cited SAP page states something different: "On 11th of August 2026, SAP security patch day saw the release of 28 new security notes and 1 Github security advisory. There are 2 updates to previously released security notes" — 31 rows, of which 4 carry Priority "Critical" and 8 "High" (fetched and counted this iteration). The two vendor lists also differ on membership: SAP lists note 3727078 for CVE-2026-58233 while Onapsis lists 3773304 for the same CVE, and Onapsis adds notes 3747367 and 3732471 that SAP''s page does not. Fix: attribute the count to Onapsis alone, or surface the discrepancy as a Contradiction line.'
+- code: F7
+  category: claim-not-supported
+  section: trending-vulnerabilities
+  item: shieldbreak-defender-rogueplanet-patch-bypass-no-fix
+  url_or_quote: 'Body: "The day after Microsoft''s August Patch Tuesday, the pseudonymous researcher Nightmare Eclipse published ShieldBreak". Headline: "Nightmare Eclipse drops a Defender privilege-escalation patch bypass the day after Patch Tuesday".'
+  summary: 'Neither cited source says "the day after". Cyber Kendra says only "The release follows Microsoft''s August Patch Tuesday, which fixed 421 CVEs on August 11." Rapid7 — published 2026-08-11 and already covering the release — places it on Patch Tuesday itself: "Patch Tuesday watchers will have been wondering whether Nightmare Eclipse would continue the pattern of the past few months by dropping yet another zero-day vuln late on Patch Tuesday to maximize friction and inconvenience for Microsoft. Wonder no more, because the new entry on this growing list of headaches is ShieldBreak." The entry''s own summary already hedges correctly ("published ShieldBreak on 2026-08-11/12"); carry that hedge into the headline and body.'
+- code: F8
+  category: quantifier-without-source
+  section: incidents
+  item: wesco-exfilsquad-crm-confirmation-dispute
+  url_or_quote: 'Title: "UPDATE — the first ExfilSquad victim to answer on the record confirms a CRM data-exfiltration claim while disputing its scale". Body: "most of the roughly thirteen other claimed victims have said nothing at all and remain leak-site listings only".'
+  summary: '(a) The title''s "first ... to answer on the record" is contradicted by the entry''s own body: "The UK Department for Education and the Police National Legal Database both issued full confirmations with corrected scope." The body''s accurate qualifier ("its first victim to answer on the record IN PARTIAL TERMS") is missing from the title, which is the string the brief renders. (b) "roughly thirteen" appears in no cited source (zero hits for "thirteen" or "13" in the BleepingComputer article); it is a subtraction from prior coverage''s "15 named victims" (2026-07-31 entry) and ships uncited with references[] empty.'
+- code: F9
+  category: quantifier-without-source
+  section: incidents
+  item: stiftung-brandenburgische-gedenkstaetten-ransomware
+  url_or_quote: it trades weeks of outage for the certainty that restored domain infrastructure is not carrying the intruder's persistence
+  summary: 'The cited primary states the opposite expectation and the entry omits it entirely: "Die Stiftung geht davon aus, dass die Systeme voraussichtlich in einigen Tagen wieder zur Verfuegung stehen werden" (the foundation expects the systems back in a few days); heise carries the same sentence. "Weeks" is the entry''s own figure attached to this specific decision ("For a small public body that is an expensive call"). Fix: drop the quantifier, or carry the source''s stated few-days estimate and make the generic tradeoff explicitly generic.'
+- code: F10
+  category: quantifier-without-source
+  section: trending-vulnerabilities
+  item: shieldbreak-defender-rogueplanet-patch-bypass-no-fix
+  url_or_quote: 'actions[0]: "... ThreatLocker found allowlisting blocked RoguePlanet by default, and it is the only control reported to work against this bug class while no patch exists."'
+  summary: 'Cyber Kendra says: "ThreatLocker found that application allowlisting blocked RoguePlanet by default, the strongest control available for this bug class." "Strongest available" is not "the only control reported to work". The body renders it correctly ("The strongest one reported for this bug class is application allowlisting"); the action item hardens it, and the action is what ships into the brief''s aggregated Action Items.'
+- code: F11
+  category: hallucinated-fact
+  section: active-threats
+  item: lazarus-operation-dream-job-cve-2026-68820-afd-fudmodule
+  url_or_quote: 'actions[1]: "Hunt the estate''s internet-facing Roundcube instances for a pre-2025 build vulnerable to CVE-2025-49113 and treat any hit as a candidate relay node"'
+  summary: 'No cited source gives a version boundary for CVE-2025-49113. Check Point says only "The majority of the Roundcube servers we analyzed were running versions vulnerable to CVE-2025-49113", and the entry''s own cves[] record deliberately declines to give versions ("Roundcube Webmail versions vulnerable to the 2025 deserialization flaw"; fixed: "Roundcube releases from 2025 — see the vendor advisory"). "Pre-2025 build" is an invented boundary inside an operational hunt instruction and would wave through a 2025-dated vulnerable build. Fix: drop the version characterisation and point at the vendor advisory.'
+- code: F12
+  category: missed-angle
+  section: trending-vulnerabilities
+  item: Microsoft SharePoint Server pre-auth RCE chain — CVE-2026-63520 disclosed + public PoC for CVE-2026-55040
+  url_or_quote: https://www.rapid7.com/blog/post/em-patch-tuesday-august-2026/ — "Today sees the publication of CVE-2026-63520, a high-severity remote code execution in Microsoft SharePoint ... this vulnerability is the second in a pair of exploits which, when chained together, comprise a critical unauthenticated remote code execution vulnerability in a vulnerable SharePoint server. Patches are available for SharePoint Server Subscription Edition, 2019, and 2016. Alongside today's coordinated disclosure of CVE-2026-63520, Rapid7 has now published a detailed technical analysis and proof-of-concept for CVE-2026-55040, the first vulnerability in the chain."
+  summary: 'In-window (2026-08-11), inside a source this run cited on three entries and cached in full, and never surfaced anywhere: a public proof-of-concept now exists for CVE-2026-55040 — which this store already tracks (state/cves_seen.json first_seen 2026-07-15, "CVE-2026-55040 — Microsoft SharePoint Server: JWT authentication bypass, Pwn2Own chain (CVSS 9.1)") — chaining with newly disclosed CVE-2026-63520 (Rapid7 summary table: CVSS 8.1, "Exploitation More Likely") to unauthenticated RCE on on-prem SharePoint Server SE/2019/2016. CVE-2026-63520 appears in neither prior_coverage.json nor state/cves_seen.json, and the run record does not list it among the borderline drops. Constituency nexus is established by this brief''s own last seven days: 2026-08-05 BIT/FOITT Swiss federal SharePoint breach and 2026-08-06 Canton Graubuenden SharePoint breach. It clears the run''s own beyond-the-patch-cycle limb (public PoC, pre-auth chain, exposed edge application) at least as clearly as the ShieldBreak item the run added for exactly that reason. Suggested query: "Rapid7 CVE-2026-55040 SharePoint JWT authentication bypass proof-of-concept CVE-2026-63520 chain".'
+- code: F13
+  category: needs-more-research
+  section: incidents
+  item: wesco-exfilsquad-crm-confirmation-dispute
+  url_or_quote: https://www.bleepingcomputer.com/news/security/wesco-confirms-security-incident-after-exfilsquad-claims-data-theft/ — "After the hacker's deadline for the company to enter ransom payment negotiations expired, ExfilSquad published the data allegedly exfiltrated from Wesco's systems."
+  summary: The cited source states the allegedly stolen data has already been published on the leak site; the entry never mentions it while devoting its whole delta to the confirm/dispute posture. For a reader triaging third-party exposure that is the operative fact (the data is out, not merely claimed), and it sharpens the "confirmed-but-disputed" calibration point the entry builds. Add it to the body.
+- code: F14
+  category: strengthen-primary-source
+  section: active-threats
+  item: n-able-n-central-storm-1175-stormencryptor
+  url_or_quote: Storm-1175 background paragraph cited only to https://therecord.media/china-hackers-ransomware-microsoft
+  summary: 'Microsoft''s own Storm-1175 profile is the primary for that whole paragraph and is live (WebFetched this iteration, and already HTTP 200 in the run''s own url-liveness ledger): https://www.microsoft.com/en-us/security/blog/2026/04/06/storm-1175-focuses-gaze-on-vulnerable-web-facing-assets-in-high-tempo-medusa-ransomware-operations/ — it carries "operates high-velocity ransomware campaigns that weaponize N-days", "We have also observed Storm-1175 leveraging zero-day exploits, in some cases a full week before public vulnerability disclosure", "rapidly moves from initial access to data exfiltration and deployment of Medusa ransomware, often within a few days and, in some cases, within 24 hours", and the sector/country list. Accuracy note if it is added: the Microsoft page does NOT call Storm-1175 China-linked — that attribution is The Record''s, and the entry currently sources it correctly; keep the split. Adding it does not disturb the single-source status of the StormEncryptor assessment itself, which remains correctly flagged.'
+- code: F15
+  category: editorial-advisory
+  section: trending-vulnerabilities
+  item: sap-august-2026-cve-2026-58231-commerce-cloud-data-hub-rce
+  url_or_quote: 'summary: "Four further HotNews notes cover code injection in SAP Manufacturing Integration and Intelligence (CVE-2026-44772, 9.9; CVE-2026-44758, 9.1) and an unauthenticated memory-corruption flaw in the NetWeaver AS ABAP kernel''s DIAG protocol parser (CVE-2026-34265, 9.8)." — body: "Three further HotNews notes matter to different estates."'
+  summary: The summary says four further HotNews notes and then enumerates three CVEs; the body says three. Per Onapsis the fifth HotNews is note 3747367 / CVE-2026-44747 (a re-issued July note), which the entry never names. Align the two numbers or name the fourth.
+- code: F16
+  category: editorial-advisory
+  section: trending-vulnerabilities
+  item: sap-august-2026-cve-2026-58231-commerce-cloud-data-hub-rce
+  url_or_quote: 'affected_products: [..., "SAP ABAP Development Tools"]; body: "the SQL Console in SAP ABAP Development Tools"'
+  summary: Both cited sources call the product "SAP ABAP Developer Tools" — SAP note 3772411 title ("Privilege Escalation vulnerability in SAP ABAP Developer Tools", Product - SAP ABAP Developer Tools) and Onapsis ("patches a Privilege Escalation vulnerability in SAP ABAP Developer Tools. The SQL Console in SAP ABAP Developer Tools supported the use of host expressions..."). One-word drift in a machine-matched product field.
+- code: F17
+  category: editorial-advisory
+  section: run-record
+  item: runs/2026-08-12/2026-08-12T0411Z-intel.md — verification & coverage notes
+  url_or_quote: '"The main-agent deep read of the will-publish primaries contradicted several sub-agent claims"; "The research sub-agent had carried it as observed fact"; "one item no sub-agent returned"; "in both the sub-agent''s attempts and the main agent''s"; "the S2 sub-agent proposed swisscybersecurity-net as a new candidate source"'
+  summary: Workflow-internal vocabulary in published run-record prose (style check 12). The 2026-08-11 record contains zero such occurrences, so this is drift rather than settled convention. Reader-facing equivalents ("the research pass", "the composition review") carry the same meaning without exposing pipeline internals.
+```
