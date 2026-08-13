@@ -1,0 +1,115 @@
+domain: S3
+run_id: "2026-08-13T0412Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-08-13T04:15:38Z"
+ended_at: "2026-08-13T04:27:56Z"
+duration_seconds: 738
+self_telemetry:
+  webfetch_calls: 20
+  websearch_calls: 15
+  bridge_fetches: 24
+
+items:
+  - title: "Group-IB names WindRelay: a purpose-built NFC-relay Android malware paired with a personalized SpyNote RAT for live-call, dual-channel bank fraud"
+    sources:
+      - { url: "https://www.group-ib.com/blog/windrelay-nfc-spynote-rat-combo-fraud/", publisher: "Group-IB", date: "2026-08-12", role: "primary" }
+      - { url: "https://www.group-ib.com/blog/rss.xml", publisher: "Group-IB (blog feed)", date: "2026-08-12", role: "corroborating" }
+    discovery_trace: "first seen at: group-ib (source-list slice, rotation), URL https://www.group-ib.com/blog/rss.xml → primary: Group-IB, URL https://www.group-ib.com/blog/windrelay-nfc-spynote-rat-combo-fraud/ (no pivot needed — Group-IB is the originating research lab and the RSS entry links straight to its own full write-up)"
+    summary: |
+      Group-IB's Fraud Protection team documents a previously unseen Android NFC-relay malware
+      family it tracks as WindRelay, deployed together with a personalized build of the
+      commodity SpyNote RAT inside a live vishing call. The caller poses as a bank employee
+      reporting a card problem and keeps the victim on the phone for the entire intrusion rather
+      than relying on a one-time phishing link or SMS code. The victim is talked into sideloading
+      a SpyNote APK whose app label and package are compiled per-target with the victim's own
+      name — SpyNote's builder toolkit supports this personalization natively — which removes the
+      "unfamiliar app name" cue victims are trained to check. Once SpyNote's Accessibility Service
+      access is active, the operator uses it to silently sideload a second APK, WindRelay, without
+      any further victim interaction and without ever triggering screen-share detection. WindRelay
+      requests NFC (card-data capture at the moment of tap), INTERNET/ACCESS_NETWORK_STATE (live
+      exfiltration of the captured EMV exchange, including the transaction's one-time
+      authentication cryptogram, to a second device the fraudster controls that presents itself as
+      the card to a real POS terminal or ATM), READ_CONTACTS (further-victim discovery), an
+      unusual DUMP permission (device/security-tooling inspection), and custom self-defined
+      permissions to hinder security-tool interop. In the documented case the operator combined
+      two payout channels in one 13-minute call: a digital loan taken out through the RAT's
+      banking-app access, and a card-present cash-out via the NFC relay — a deliberate
+      dual-monetization pattern. Group-IB correlated 23 WindRelay samples uploaded to VirusTotal
+      between November 2025 and July 2026, using localized text and impersonated institutions
+      across Czechia, Slovakia and Slovenia, indicating a toolkit capable of dynamically compiling
+      per-victim builds rather than a single incident. This is a distinct technique/malware family
+      from the previously reported NFCGate/NGate and "Ghost Tap" NFC-relay tooling that has
+      circulated in Central/Eastern Europe since late 2023 — WindRelay is purpose-built rather than
+      a modified open-source relay tool, and its pairing with a RAT for silent, screen-share-free
+      installation is the novel element Group-IB highlights.
+    region_nexus: "Czechia, Slovakia, Slovenia (EU member states) — directly within the coverage focus's European remit; the same NFC-relay technique class has already spread across the wider Central/Eastern European region per cited ESET/Zimperium/Kaspersky telemetry, so it is a plausible near-term risk for Swiss and other European retail-banking constituents"
+    primary_sector_nexus: "indirect"
+    sector: "finance"
+    cves: []
+    techniques: [T1566.004, T1204.002, T1219, T1041]
+    affected_products: ["Android (sideloaded APK ecosystem)"]
+    entity_keys: []
+    new_entities:
+      - key: "malware:windrelay"
+        type: malware
+        name: "WindRelay"
+        aliases: []
+        summary: "Purpose-built Android NFC-relay malware first documented by Group-IB (2026-08-12), deployed alongside a personalized SpyNote RAT build to capture and relay live EMV contactless-card data for real-time card-present fraud; 23 samples on VirusTotal Nov 2025-Jul 2026 targeting Czechia, Slovakia and Slovenia."
+      - key: "malware:spynote"
+        type: malware
+        name: "SpyNote"
+        aliases: ["SpyNoteRAT"]
+        summary: "Long-running commodity Android remote access trojan distributed via a builder toolkit that lets an operator compile a per-victim APK with a custom app label, name and package before deployment; used by Group-IB's documented WindRelay-pairing fraud scheme (2026-08-12) to gain Accessibility-Service-based silent-install capability on victim devices."
+    relation_suggestions:
+      - { subject: "malware:windrelay", object: "malware:spynote",
+          basis: "Group-IB: SpyNote's Accessibility Service access is used by the operator to silently sideload WindRelay onto the same device mid-call, with no further victim action and no screen-sharing (Group-IB, 2026-08-12)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "A previously unseen NFC relay malware family, purpose-built to capture live card data via NFC and relay it out in real time."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/windrelay-nfc-spynote-rat-combo-fraud/"
+      - quote: "This NFC malware is deployed together with SpyNote, a known RAT. SpyNote's Accessibility Service access lets the fraudster sideload and activate the NFC app silently, with no screen sharing ever triggered."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/windrelay-nfc-spynote-rat-combo-fraud/"
+      - quote: "We identified 23 samples uploaded to VirusTotal between November 2025 and July 2026."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/windrelay-nfc-spynote-rat-combo-fraud/"
+    extended_notes: |
+      Single-source (Group-IB only; Admiralty-equivalent reliability B per sources.json, own
+      first-hand fraud-protection engagement plus VirusTotal-corroborated sample correlation —
+      no second independent lab has yet written this up, hence MEDIUM confidence / SINGLE-SOURCE-OTHER
+      rather than a national-CERT carve-out). Distinguish clearly in composition from the
+      well-covered NFCGate/NGate/"Ghost Tap" NFC-relay lineage (Kaspersky, ESET, Zimperium,
+      Group-IB's own prior "Ghost Tapped" Chinese-language report) — those are cited by Group-IB
+      itself only as background/context for the growth of the NFC-relay fraud category; WindRelay
+      is presented as a distinct, purpose-built family and the RAT-pairing/personalization/silent-
+      install chain is the actual finding. Detection angle for defenders: flag package-installer
+      (sideload) events during an active voice call session, Accessibility-Service grants followed
+      within minutes by a second sideload event with no user-visible screen-share, and NFC +
+      DUMP + custom self-defined permission combinations on a freshly sideloaded APK — each is
+      stated explicitly by Group-IB as a detection lever. No CVE (social-engineering + legitimate
+      Android sideload/Accessibility APIs abused, not a software vulnerability).
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: paradigm-shift-research
+    reason: "Bridge (python3 tools/fetch_source.py url https://ps.tc/) returns only the SPA shell (page heading, no post listing, no dates) — consistent with the source record's existing 2026-07-27 note. No working listing recipe found this run either; not re-attempted beyond one bridge call per per-source-timeout discipline."
+  - source_id: recordedfuture-insikt
+    reason: "https://www.recordedfuture.com/research/insikt-group is a static landing/mission page (Adobe AEM-rendered) with no dated article listing reachable via direct fetch or WebFetch — consistent with the existing 2026-08-04 RECIPE GAP note. No in-window items recoverable this run."
+  - source_id: gambit-security
+    reason: "https://gambit.security/news-resources is a Webflow SPA shell (site last-published banner dated Aug 10 2026, but no server-rendered post grid/dates reached via direct bridge fetch). Consistent with the existing note about the canonical gambit.security/blog-posts/<slug> path being mangled by the summariser; no listing recipe recovered this run."
+  - source_id: sans-ics
+    reason: "https://www.sans.org/blog/?focus-area=industrial-control-systems-ics is Algolia-search/JS-paginated (direct bridge fetch surfaced only numbered pagination links to web.prod.marketing.sans.services, no article titles/dates server-rendered). No in-window ICS items recoverable this run; recipe likely needs a discovered Algolia/API endpoint."
+  - source_id: csa-labs
+    reason: "Live and drillable (per existing note) but every research-note item checked this run (reasoning-trace-theft, npm-slopsquatting/Flooding-Dropper, Atlassian-Rovo-prompt-injection) traced back to primaries (arxiv/Simon Willison/Sonatype/Socket/PromptArmor/Varonis) all published 2026-08-05 through 2026-08-08 — outside this run's 26h window despite CSA's own note-page URLs carrying 2026-08-11/08-12 slugs. Confirms the existing C-reliability 're-reporting, not original research' assessment; no in-window original CSA content found."
+  - source_id: kela-cyber
+    reason: "https://www.kelacyber.com/blog/ direct fetch returned only site navigation (mega-menu links), no article listing with dates in the fetched body. Not re-attempted beyond one direct-bridge call."
+  - source_id: sygnia
+    reason: "https://www.sygnia.co/blog/ returned HTTP 403 on direct WebFetch this run (differs from the source record's 2026-07-31 'live and drillable' note — possible transient anti-bot change; not re-attempted beyond one call per per-source-timeout discipline). Worth a recipe re-check in a future run."
+
+watchlist_sweep:
+  duty: none

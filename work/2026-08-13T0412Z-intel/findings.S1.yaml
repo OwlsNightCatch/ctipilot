@@ -1,0 +1,168 @@
+domain: S1
+run_id: 2026-08-13T0412Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-13T04:15:17Z
+ended_at: 2026-08-13T04:26:17Z
+duration_seconds: 660
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 5
+  bridge_fetches: 28
+
+items:
+  - title: "VMware vCenter directory-traversal RCE (CVE-2026-59310) now under confirmed active exploitation — 361 victim IPs across 47 countries, reverse_ssh persistence"
+    sources:
+      - { url: "https://medium.com/@quirso_de/active-exploitation-of-cve-2026-59310-361-victim-ips-across-47-countries-9783187cc6ff", publisher: "QUIRSO GmbH", date: "2026-08-12", role: "primary" }
+      - { url: "https://thehackernews.com/2026/08/attackers-exploit-vmware-vcenter.html", publisher: "The Hacker News", date: "2026-08-12", role: "corroborating" }
+      - { url: "https://www.rapid7.com/blog/post/etr-critical-vmware-vcenter-vulnerabilities-allow-authentication-bypass-and-remote-code-execution-cve-2026-59309-cve-2026-59310/", publisher: "Rapid7", date: "2026-07-30 (orig.), referenced 2026-08-12", role: "corroborating" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12814", publisher: "NCSC Switzerland / GovCERT.ch (Cyber Security Hub)", date: "2026-08-12 (update)", role: "corroborating" }
+      - { url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017", publisher: "Broadcom (VMSA-2026-0006)", date: "2026-07-29", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12814 (12.08.2026 update note: 'Active exploitation of CVE-2026-59310 has been reported by Cyber Security company QUIRSO') -> primary: QUIRSO GmbH Medium post, URL https://medium.com/@quirso_de/active-exploitation-of-cve-2026-59310-361-victim-ips-across-47-countries-9783187cc6ff -> corroboration: The Hacker News, URL https://thehackernews.com/2026/08/attackers-exploit-vmware-vcenter.html -> corroboration: Rapid7 vendor analysis, URL https://www.rapid7.com/blog/post/etr-critical-vmware-vcenter-vulnerabilities-allow-authentication-bypass-and-remote-code-execution-cve-2026-59309-cve-2026-59310/"
+    summary: |
+      CVE-2026-59310, the CVSS 9.8 directory-traversal-to-RCE flaw in the vCenter Syslog server that Broadcom patched in VMSA-2026-0006 on 2026-07-29 (covered here 2026-07-30 as unexploited-at-publication), is now under confirmed active exploitation. German security firm QUIRSO GmbH, engaged on an incident-response case, identified 361 distinct victim IPs across 47 countries (Germany, US, Turkey, Iran and France most affected) that first beaconed to attacker infrastructure on 2026-08-03 — five calendar days after public disclosure. No authentication is required: an attacker with network access to vCenter sends path-traversal input to the Syslog server component to achieve arbitrary code execution. Post-compromise, the attack chain installs a malicious cron job that launches reverse_ssh, an open-source SSH-based reverse-shell framework, to establish a persistent outbound channel to attacker-controlled infrastructure — chosen because outbound SSH from a vCenter appliance is rarely alerted on and blends with legitimate administrative traffic. Broadcom confirms no workaround exists; the only remediation is updating to vCenter 9.1.0.0300, 9.0.2.0100, or 8.0 U3k/U2f. NCSC Switzerland updated its VMSA-2026-0006 advisory on 2026-08-12 to reflect "Actively Exploited" status, citing QUIRSO's report.
+    region_nexus: "Global — 47 countries affected per QUIRSO telemetry (Germany, US, Turkey, Iran, France highest-hit); vCenter is a near-ubiquitous virtualization management plane across Swiss/EU enterprise and public-sector data centres, so unpatched exposure is plausible in-region even without a named CH/EU victim yet."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: ["CVE-2026-59310"]
+    techniques: ["T1190", "T1053.003", "T1572"]
+    affected_products: ["VMware vCenter Server", "VMware Cloud Foundation", "VMware vSphere Foundation", "VMware Telco Cloud Platform"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-07-30/vmware-vmsa-2026-0006-vcenter-auth-bypass-vmxnet3-escape"
+    evidence:
+      - quote: "Compromised systems identified by QUIRSO were found to first establish contact with the attacker's domains on August 3, five days after Broadcom publicly disclosed the flaw."
+        attribution: "The Hacker News, citing QUIRSO"
+        source_url: "https://thehackernews.com/2026/08/attackers-exploit-vmware-vcenter.html"
+      - quote: "The attack chain is said to have exhibited path traversal activity consistent with the flaw, followed by the deployment of a malicious cron job to establish persistence on the host using reverse_ssh"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/08/attackers-exploit-vmware-vcenter.html"
+      - quote: "Fixed vCenter releases include: VMware vCenter 9.1: 9.1.0.0300; 9.0: 9.0.2.0100; 8.0: 8.0 U3k or 8.0 U2f"
+        attribution: "QUIRSO GmbH"
+        source_url: "https://medium.com/@quirso_de/active-exploitation-of-cve-2026-59310-361-victim-ips-across-47-countries-9783187cc6ff"
+      - quote: "Broadcom states that no workaround is available for CVE-2026-59310"
+        attribution: "QUIRSO GmbH"
+        source_url: "https://medium.com/@quirso_de/active-exploitation-of-cve-2026-59310-361-victim-ips-across-47-countries-9783187cc6ff"
+    extended_notes: |
+      Detection: hunt for outbound SSH-protocol connections initiated FROM vCenter appliances (not the normal direction of vCenter network traffic), unexpected cron/at entries on the vCenter Server Appliance (vCSA) photon OS, and Syslog-service worker-process children spawning shells. QUIRSO published a generic YARA rule for reverse_ssh binaries (github.com/QUIRSO/QTRDetectionContent) — not reproduced here per no-IOC policy, but the detection concept (SSH client/binary presence combined with unexpected outbound connections or execution on a vCenter appliance) is the actionable takeaway per QUIRSO's own framing: presence of reverse_ssh alone is not proof of compromise, but on a vCenter appliance it is a high-priority investigative trigger.
+    watchlist: []
+    borderline: false
+
+  - title: "SharePoint auth-bypass CVE-2026-55040 moves from PoC to active exploitation attempts within hours of Rapid7's public proof-of-concept — ~8,500 servers exposed globally"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/microsoft/hackers-leverage-new-microsoft-sharepoint-exploit-in-attacks/", publisher: "BleepingComputer", date: "2026-08-12", role: "primary" }
+      - { url: "https://www.rapid7.com/blog/post/ra-microsoft-sharepoint-jwt-token-authentication-bypass-cve-2026-55040/", publisher: "Rapid7", date: "2026-08-11/12", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12764", publisher: "NCSC Switzerland / GovCERT.ch (Cyber Security Hub)", date: "2026-08-12 (update)", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12764 (12.08.2026 update note: 'Claims of exploitation attempts of cve-2026-55040', linking BleepingComputer) -> primary: BleepingComputer, URL https://www.bleepingcomputer.com/news/microsoft/hackers-leverage-new-microsoft-sharepoint-exploit-in-attacks/ -> corroboration: Rapid7 PoC writeup, URL https://www.rapid7.com/blog/post/ra-microsoft-sharepoint-jwt-token-authentication-bypass-cve-2026-55040/ -> corroboration: MSRC CVE record (fetched via tools/fetch_source.py msrc cve CVE-2026-55040)"
+    summary: |
+      CVE-2026-55040 (CVSS 9.1, CWE-1390 Weak Authentication) is the JWT-token-validation authentication-bypass half of the SharePoint chain this pipeline has tracked since 14 July 2026 (Microsoft patched it that Patch Tuesday; the second link, CVE-2026-63520, shipped 11 August). MSRC's own record still lists "exploited: No" as of this check, but Rapid7 published a detailed technical analysis and working proof-of-concept for the bypass on 2026-08-11/12, and within hours a threat-intel account (Defused Cyber) reported the Rapid7 PoC being run against SharePoint honeypots ("Attackers are now using the @rapid7 POC for CVE-2026-55040 against our SharePoint honeypots"). The flaw allows an unauthenticated attacker to forge/bypass JWT-based session validation and impersonate any user, including administrators, on SharePoint Enterprise Server 2016 and Server 2019 (subscription-edition and 2016/2019 on-prem all receive the July fix); impact is confidentiality/integrity (file disclosure, data modification) with no availability impact. Shadowserver's internet-exposure tracker counts over 8,500 Microsoft SharePoint servers still reachable from the internet. This directly concerns Swiss constituents: BIT/FOITT (federal, 2026-08-04) and Canton Graubünden (2026-08-05) both disclosed on-premises SharePoint intrusions attributed to this same July disclosure wave, making renewed honeypot-confirmed exploitation attempts on the auth-bypass link a live re-compromise risk for any SharePoint estate that has not fully patched and rotated credentials.
+    region_nexus: "Direct Swiss precedent — BIT/FOITT (federal) and Canton Graubünden both disclosed on-premises SharePoint breaches in early August 2026 tied to the same disclosure wave this CVE belongs to; ~8,500 SharePoint servers remain internet-exposed globally per Shadowserver."
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: ["CVE-2026-55040"]
+    techniques: ["T1190", "T1550.001"]
+    affected_products: ["Microsoft SharePoint Server Subscription Edition", "Microsoft SharePoint Enterprise Server 2016", "Microsoft SharePoint Server 2019"]
+    entity_keys: ["incident:foitt-bit-sharepoint-breach-2026-07", "incident:graubuenden-canton-sharepoint-breach-2026-08"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-12/sharepoint-cve-2026-63520-55040-unauth-rce-chain-poc"
+    evidence:
+      - quote: "Attackers are now using the @rapid7 POC for CVE-2026-55040 against our SharePoint honeypots."
+        attribution: "Defused Cyber, quoted by BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/microsoft/hackers-leverage-new-microsoft-sharepoint-exploit-in-attacks/"
+      - quote: "Internet threat watchdog Shadowserver currently tracks over 8,500 Microsoft SharePoint servers exposed online."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/microsoft/hackers-leverage-new-microsoft-sharepoint-exploit-in-attacks/"
+      - quote: "The authentication feature could be bypassed as this vulnerability allows impersonation."
+        attribution: "Microsoft MSRC (CVE-2026-55040 record)"
+        source_url: "http://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-55040"
+    extended_notes: |
+      Triage note: MSRC's own exploited flag had not yet flipped to "Exploitation Detected" at time of this check — the honeypot-attack claim currently rests on Rapid7/Defused/BleepingComputer, not yet an MSRC or CISA KEV confirmation. Given the Swiss federal and cantonal precedent, this is worth flagging even ahead of a formal KEV addition. Detection: session/auth logs showing successful authenticated actions (e.g. site-collection admin operations, file reads) with no corresponding valid interactive sign-in event or MFA challenge in identity logs; anomalous JWT bearer tokens presented to SharePoint API endpoints without a preceding ADFS/Entra ID token-issuance event.
+    watchlist: []
+    borderline: false
+
+  - title: "Siemens SIMATIC IoT2050 Advanced: unauthenticated Node-RED HTTP interface allows CVSS 10.0 remote code execution as root (SSA-834709, CVE-2026-58115)"
+    sources:
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-834709.html", publisher: "Siemens ProductCERT", date: "2026-08-11", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0282", publisher: "NCSC-NL", date: "2026-08-11", role: "corroborating" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1009/", publisher: "ANSSI / CERT-FR (CERTFR-2026-AVI-1009)", date: "2026-08-12", role: "corroborating" }
+      - { url: "https://nki.gov.hu/figyelmeztetesek/serulekenysegek/cve-2026-58115/", publisher: "Nemzeti Kiberbiztonsági Intézet (Hungary)", date: "2026-08-11/12", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl (bridge: ncsc-nl csaf NCSC-2026-0282), URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0282 -> pivot: Nemzeti Kiberbiztonsági Intézet per-CVE page, URL https://nki.gov.hu/figyelmeztetesek/serulekenysegek/cve-2026-58115/ (identified exact Siemens SSA id and affected product) -> primary: Siemens ProductCERT advisory SSA-834709, URL https://cert-portal.siemens.com/productcert/html/ssa-834709.html -> corroboration: ANSSI/CERT-FR CERTFR-2026-AVI-1009, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1009/ (CVE-2026-58115 confirmed present in the advisory's CVE list)"
+    summary: |
+      Siemens ProductCERT published SSA-834709 on 2026-08-11 (part of the monthly Siemens Patch Tuesday roundup that NCSC-NL, CERT-FR and BSI all relayed the same day) disclosing CVE-2026-58115 (CVSS v3.1 10.0, CVSS v4.0 10.0, CWE-306 Missing Authentication for Critical Function) in SIMATIC IoT2050 Advanced (6ES7647-0BA00-1YA2) devices running Industrial OS with Node-RED installed. Affected devices do not enforce authentication on the Node-RED HTTP interface, which exposes programming nodes capable of executing OS-level commands. An unauthenticated remote attacker can submit a crafted flow through this HTTP interface to have Node-RED execute arbitrary code on the underlying server with maximum (root-equivalent) privileges — no prior foothold, credentials or user interaction required, network access to the interface is sufficient. All versions prior to V4.3.4.1 are affected; Siemens has released V4.3.4.1 as the fix and, as an interim mitigation, recommends uninstalling Node-RED entirely or hardening the Node-RED installation (per the Node-RED User Guide) where update is not immediately possible. SIMATIC IoT2050 is Siemens' compact SIMATIC IPC-family edge/IoT gateway line, commonly deployed at the OT/IT boundary in industrial automation and building/process-control environments — a device class directly relevant to energy, water and transport-sector operators in the Swiss/EU constituency.
+    region_nexus: "Global Siemens OT/ICS install base; SIMATIC IoT2050 is an edge-gateway product deployed across European industrial-automation and utility environments — no confirmed CH/EU victim yet, but the device class is directly relevant to energy/water/transport operators in scope."
+    primary_sector_nexus: "indirect"
+    sector: "energy, water, transport"
+    cves: ["CVE-2026-58115"]
+    techniques: ["T1190", "T1059"]
+    affected_products: ["Siemens SIMATIC IoT2050 Advanced (6ES7647-0BA00-1YA2)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Affected devices do not enforce authentication on the Node-RED HTTP interface, allowing unauthenticated access to programming nodes that are capable of executing system commands on the server."
+        attribution: "Siemens ProductCERT (SSA-834709)"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-834709.html"
+      - quote: "SIMATIC IoT2050 Advanced (6ES7647-0BA00-1YA2) All versions < V4.3.4.1 running Industrial OS with Node-RED installed affected by CVE-2026-58115"
+        attribution: "Siemens ProductCERT (SSA-834709)"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-834709.html"
+      - quote: "This could allow an unauthenticated remote attacker to create malicious flows through the HTTP interface in order to execute arbitrary code on the underlying server with maximum privileges."
+        attribution: "Siemens ProductCERT (SSA-834709)"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-834709.html"
+    extended_notes: |
+      No public exploitation reported at time of writing. Node-RED is a widely embedded low-code automation/flow engine — the vulnerability is specific to Siemens' bundling on SIMATIC IoT2050 Advanced running Industrial OS, not the upstream Node-RED project itself (no authentication was enforced on the vendor's deployment). Hunt/detection concept: unexpected new or modified Node-RED flow deployments via the HTTP admin/flow API without a corresponding authenticated engineering-workstation session; outbound or lateral command execution originating from the IoT2050's Node-RED runtime process. Hardening: disable/uninstall Node-RED where unused; if required, restrict network reachability of the Node-RED HTTP interface to the local engineering VLAN and enable Node-RED's own authentication/adminAuth configuration per Siemens' referenced User Guide.
+    watchlist: []
+    borderline: false
+
+cve_table:
+  - cve: CVE-2026-59310
+    product: "VMware vCenter Server (Broadcom)"
+    cvss: "9.8 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H)"
+    epss: "not fetched this run"
+    kev: "not yet listed in CISA KEV as of catalogVersion 2026.08.11"
+    exploited: "yes — confirmed by QUIRSO GmbH IR engagement, 361 victim IPs / 47 countries, first C2 contact 2026-08-03; NCSC-CH updated advisory 12814 to 'Actively Exploited' on 2026-08-12"
+    patch: "vCenter 9.1.0.0300 / 9.0.2.0100 / 8.0 U3k or U2f; no workaround exists"
+    source: "https://medium.com/@quirso_de/active-exploitation-of-cve-2026-59310-361-victim-ips-across-47-countries-9783187cc6ff"
+  - cve: CVE-2026-55040
+    product: "Microsoft SharePoint Server (Subscription Edition, 2019, Enterprise 2016)"
+    cvss: "9.1 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N) — confirmed on MSRC's own CVE record"
+    epss: "not fetched this run"
+    kev: "not yet listed in CISA KEV as of catalogVersion 2026.08.11"
+    exploited: "MSRC record still states 'exploited: No' as of this check; Rapid7/Defused Cyber/BleepingComputer report honeypot exploitation attempts within hours of Rapid7's 2026-08-11/12 PoC release — claim not yet vendor/KEV-confirmed"
+    patch: "Fixed in the 14 July 2026 Patch Tuesday cumulative updates for SharePoint Server Subscription Edition, 2019 and Enterprise 2016"
+    source: "https://www.bleepingcomputer.com/news/microsoft/hackers-leverage-new-microsoft-sharepoint-exploit-in-attacks/"
+  - cve: CVE-2026-58115
+    product: "Siemens SIMATIC IoT2050 Advanced (6ES7647-0BA00-1YA2)"
+    cvss: "10.0 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H; CVSS:4.0 also 10.0)"
+    epss: "not fetched this run"
+    kev: "not listed in CISA KEV"
+    exploited: "no exploitation reported at time of writing"
+    patch: "Update to V4.3.4.1 or later; interim mitigation: uninstall or harden Node-RED"
+    source: "https://cert-portal.siemens.com/productcert/html/ssa-834709.html"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org-profile.yaml configures no product watchlist for this deployment ('none configured — the product sweep is a no-op'); general coverage rules applied throughout this run. All three items surfaced (VMware vCenter, Microsoft SharePoint, Siemens SIMATIC IoT2050) were found through the standard S1 sweep, not a watchlist match."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: chrome-releases
+    reason: "feed https://chromereleases.googleblog.com/feeds/posts/default routes via jina and returns count=0 (confirmed again this run, third consecutive failure per source note). Worked around via direct fetch of https://chromereleases.googleblog.com/2026/ listing page + drill into dated posts; the most recent Stable channel release (151.0.7922.137/.138, Tue 2026-08-11) fixes 5 High-severity UAF bugs with no exploitation claimed and its own publish date sits just outside the 26h window, so no item qualified."
+  - source_id: ssd-disclosure
+    reason: "https://ssd-disclosure.com/ returned an HTTP 202 Cloudflare robot-challenge on both direct fetch and the jina reader (matches source note). The two posts visible via cached/prior render (Linux Bridge STP Timer UAF — already covered 2026-08-10; vBulletin runMaths CVE-2026-61511 — already in state/cves_seen.json from ~2026-07-28) were both stale; no new in-window item recoverable this run."
+  - source_id: siemens-productcert-csaf
+    reason: "https://cert-portal.siemens.com/productcert/csaf/ and the ssa-list still return S3 AccessDenied 403 on direct fetch, WebFetch and the jina reader (matches source note). Worked around this run via NCSC-NL's CSAF mirror (ncsc-nl csaf NCSC-2026-0282) to enumerate the August Siemens Patch Tuesday CVE set, then confirmed the standout CVE-2026-58115 by fetching the specific Siemens SSA page directly (https://cert-portal.siemens.com/productcert/html/ssa-834709.html, which — unlike the CSAF index — is NOT behind the S3 block). Recommend noting in the source record that individual ssa-*.html advisory pages are directly fetchable even when the csaf/ index and ssa-list.html are blocked."
+  - source_id: tenable-research
+    reason: "https://www.tenable.com/blog.xml returns count=0 via the jina-fallback feed parse, and https://www.tenable.com/blog direct-fetch returns a JS-rendered shell with no drillable listing in the plain HTML. No in-window Tenable research item recoverable this run."

@@ -1,0 +1,365 @@
+domain: S4
+run_id: 2026-08-13T0412Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: "2026-08-13T04:15:48Z"
+ended_at: "2026-08-13T04:27:19Z"
+duration_seconds: 691
+self_telemetry:
+  webfetch_calls: 11
+  websearch_calls: 8
+  bridge_fetches: 17
+
+items:
+  - title: "MyDr (Poland) confirms criminal intrusion after attackers claim 18.8M PESEL numbers stolen via XXE-to-RCE chain in PKCS#12 certificate handling"
+    sources:
+      - { url: "https://pro.mydr.pl/portal-info", publisher: "MyDr (official incident statement)", date: "2026-08-12", role: "primary" }
+      - { url: "https://zaufanatrzeciastrona.pl/post/hakerzy-twierdza-ze-ukradli-dane-ponad-18-milionow-polek-i-polakow-z-firmy-mydr/", publisher: "Zaufana Trzecia Strona (Adam Haertle)", date: "2026-08-10", role: "primary" }
+      - { url: "https://databreaches.net/2026/08/12/a-serious-incident-occurred-at-mydr-a-polish-healthcare-system-provider/", publisher: "DataBreaches.net", date: "2026-08-12", role: "corroborating" }
+    discovery_trace: "first seen at: databreaches-net, URL https://databreaches.net/2026/08/12/a-serious-incident-occurred-at-mydr-a-polish-healthcare-system-provider/ → primary: Zaufana Trzecia Strona (original investigation), URL https://zaufanatrzeciastrona.pl/post/hakerzy-twierdza-ze-ukradli-dane-ponad-18-milionow-polek-i-polakow-z-firmy-mydr/ → primary: MyDr's own incident statement, URL https://pro.mydr.pl/portal-info"
+    summary: |
+      MyDr, one of Poland's largest Electronic Medical Record (EMR/EHR) platforms used by thousands of clinics
+      (3M appointments/month, 2.7M prescriptions/month), issued an updated statement on 2026-08-12 (18:35 CET)
+      confirming it was the target of a deliberate external criminal act affecting part of its data — its first
+      official confirmation after two days of unconfirmed attacker claims. Attackers who contacted Polish
+      security journalist Adam Haertle (Zaufana Trzecia Strona) on 2026-08-08 claim to hold 18,814,422 unique
+      Polish PESEL (national ID) numbers plus ~2.5TB of exfiltrated data, including a database record for a
+      senior Polish politician (PESEL, phone numbers, a prescription) that partially checked out, plus
+      screenshots of internal Jira, HubSpot CRM and an SMSApi account. The attackers describe their entry
+      vector as remote code execution via an XXE (XML External Entity) flaw in the platform's handling of
+      PKCS#12 certificates, which they say yielded a GitHub API key, then the platform's source code, then a
+      pivot into AWS-hosted infrastructure (T1190 Exploit Public-Facing Application → T1552.001 Credentials In
+      Files for the harvested API key/cloud credentials → T1078.004 Valid Accounts: Cloud Accounts for the AWS
+      pivot → T1213 Data from Information Repositories for the GitHub source-code access). MyDr's own statement
+      says the affected data is likely historical (2024 and earlier), may not cover all client clinics or
+      patients, and that its dark-web monitoring partners have found no evidence yet of public
+      publication/sale. Polish PM Gawkowski separately said publicly that "much suggests an unauthorized person
+      may have gained access" to the data — an indirect government acknowledgement short of full confirmation.
+      Because MyDr is a data processor (not the GDPR controller) for thousands of individual clinics, it says it
+      cannot itself notify CERT Polska's breach portal; affected individuals must wait for their own clinic to
+      be notified downstream, which the reporting flags as a multi-day-to-weeks lag risk.
+    region_nexus: "Poland (EU) — MyDr serves thousands of Polish healthcare facilities"
+    primary_sector_nexus: "direct"
+    sector: "healthcare"
+    cves: []
+    techniques: [T1190, T1552.001, T1078.004, T1213]
+    affected_products: ["MyDr Electronic Medical Records platform"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:mydr-poland-ehr-breach-2026", type: incident, name: "MyDr Poland EHR breach",
+          aliases: ["MyDr PESEL breach"],
+          summary: "Attackers claim theft of 18.8M unique Polish PESEL numbers and ~2.5TB of data from MyDr, one of Poland's largest EMR platforms, via an alleged XXE-to-RCE chain in PKCS#12 certificate handling; MyDr confirmed a criminal intrusion on 2026-08-12 (Zaufana Trzecia Strona, DataBreaches.net)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Na tym etapie trwającego dochodzenia potwierdzamy, że staliśmy się celem zewnętrznego, celowego działania o charakterze przestępczym, którym objęta była część danych."
+        attribution: "MyDr official incident statement (Polish; MT: 'At this stage of the ongoing investigation we confirm we were the target of a deliberate external act of a criminal nature affecting part of the data')"
+        source_url: "https://pro.mydr.pl/portal-info"
+      - quote: "According to the hackers, they had access to 18,814,422 unique PESEL numbers."
+        attribution: "DataBreaches.net, relaying Zaufana Trzecia Strona (Adam Haertle)"
+        source_url: "https://databreaches.net/2026/08/12/a-serious-incident-occurred-at-mydr-a-polish-healthcare-system-provider/"
+      - quote: "Według tego, co usłyszeliśmy od sprawców, najpierw udało im się uzyskać zdalne wykonanie kodu przez podatność typu XXE przy obsłudze certyfikatów PKCS#12."
+        attribution: "Zaufana Trzecia Strona (Adam Haertle), relaying the attackers' own account, unverified by the outlet"
+        source_url: "https://zaufanatrzeciastrona.pl/post/hakerzy-twierdza-ze-ukradli-dane-ponad-18-milionow-polek-i-polakow-z-firmy-mydr/"
+    extended_notes: |
+      The exploitation chain (XXE, then a leaked GitHub API key, then AWS pivot) is entirely the attackers' own
+      unverified account, relayed by the journalist without independent technical confirmation — treat the
+      vulnerability-class claim as a lead, not a confirmed CVE. Adam Haertle cross-checked identity records for
+      five volunteers against the claimed dataset (3 of 5 matched) as a scope-plausibility check, and noted the
+      attackers' English writing style looks machine-translated/deliberately misleading as to origin. No named
+      threat-actor cluster.
+    borderline: false
+
+  - title: "FulcrumSec dumps Novo Nordisk's internal HuggingFace AI/ML ecosystem — 30 models, 70 datasets, 500GB of proprietary microscopy imaging"
+    sources:
+      - { url: "https://databreaches.net/2026/08/12/more-novo-nordisk-data-dumped-by-fulcrumsec/", publisher: "DataBreaches.net", date: "2026-08-12", role: "primary" }
+    discovery_trace: "first seen at: databreaches-net, URL https://databreaches.net/2026/08/12/more-novo-nordisk-data-dumped-by-fulcrumsec/ → primary (no further pivot needed — FulcrumSec's leak-site post is quoted directly; DataBreaches.net's own June coverage chain is the established primary trail for this incident)"
+    summary: |
+      The cloud data-extortion group FulcrumSec, which claimed the Novo Nordisk breach first disclosed
+      2026-06-11/13 (already tracked as incident:novo-nordisk-clinical-trial-breach-2026, most recently updated
+      2026-06-17), released a second-stage data dump on 2026-08-12: the pharma company's "complete enterprise
+      HuggingFace AI/ML ecosystem" — 30 models, 70 datasets, and roughly 500GB of proprietary Cell Painting
+      microscopy imaging (drug-discovery phenotypic-screening data), 1.05TB in total, distributed via torrent.
+      FulcrumSec frames this as "Stage 2" following a "Stage 1" release of compounds, manufacturing recipes and
+      source code, and states it turned down interest from buyers in China before choosing to release the data
+      openly. This is an unverified motive claim from the extorting group itself, attributed accordingly. The
+      technique class is the same as previously reported (T1213 Data from Information Repositories / internal
+      ML platform, prior T1567 exfiltration) — the new fact is the specific target class: an internal enterprise
+      HuggingFace deployment holding proprietary training data and models, illustrating that breach fallout now
+      routinely extends into internal AI/ML tooling and datasets, not just conventional file shares and source
+      control. Novo Nordisk had not responded to DataBreaches.net's query on the operational impact of this
+      release as of publication.
+    region_nexus: "Denmark (EU) — Novo Nordisk headquartered in Bagsværd"
+    primary_sector_nexus: "direct"
+    sector: "healthcare"
+    cves: []
+    techniques: [T1213, T1567]
+    affected_products: ["Novo Nordisk internal HuggingFace enterprise deployment"]
+    entity_keys: ["incident:novo-nordisk-clinical-trial-breach-2026"]
+    new_entities:
+      - { key: "actor:fulcrumsec", type: actor, name: "FulcrumSec", aliases: [],
+          summary: "Cloud data-theft extortion group; claimed the Novo Nordisk breach (2026-06) and MOXFIVE profiled it as active against at least 21 victims by 2026-06-10; released a second-stage 'Stage 2' dump of Novo Nordisk's internal AI/ML platform on 2026-08-12." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-06-17/novo-nordisk-fulcrumsec-claims-authorship-25m-demand-refused"
+    evidence:
+      - quote: "Today we are releasing all of the Novo Nordisk data not included in our original post: their complete enterprise HuggingFace AI/ML ecosystem. 30 models, 70 datasets, and half a terabyte of proprietary Cell Painting microscopy images. 1.05 terabytes in total"
+        attribution: "FulcrumSec leak-site post, relayed by DataBreaches.net"
+        source_url: "https://databreaches.net/2026/08/12/more-novo-nordisk-data-dumped-by-fulcrumsec/"
+    extended_notes: |
+      Single-source on this specific delta (DataBreaches.net directly quoting the leak-site post); the underlying
+      incident itself is multi-source confirmed from June reporting. No corroborating outlet found yet for this
+      2026-08-12 dump specifically at time of writing.
+    borderline: false
+
+  - title: "UK ICO reprimands ACRO Criminal Records Office over a 7-month undetected CMS compromise — patch-ownership gap the root cause, segmentation the save"
+    sources:
+      - { url: "https://ico.org.uk/action-weve-taken/enforcement/2026/08/acro-criminal-records-office/", publisher: "UK Information Commissioner's Office (formal reprimand)", date: "2026-08-12", role: "primary" }
+      - { url: "https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2026/08/acro-reprimanded-following-cyber-security-failings/", publisher: "UK ICO (press release)", date: "2026-08-12", role: "primary" }
+    discovery_trace: "first seen at: ico-uk, URL https://ico.org.uk/action-weve-taken/enforcement/2026/08/acro-criminal-records-office/ (found via ico-uk enforcement sitemap sweep) → primary: ICO press release, URL https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2026/08/acro-reprimanded-following-cyber-security-failings/"
+    summary: |
+      The UK Information Commissioner's Office issued a formal reprimand to ACRO Criminal Records Office — the
+      UK national policing body that runs criminal-record-check services — for infringing UK GDPR Article
+      32(1), 32(1)(b) and 32(1)(d) (security of processing). The ICO's investigation found that between August
+      2022 and March 2023 a hacker gained unauthorised access to ACRO's public website and content management
+      system (CMS) and staged personal data — of approximately 10,000 UK data subjects, including some
+      individuals' sensitive data — for exfiltration; ACRO could not conclusively determine whether the staged
+      data was actually removed. Root cause per the ICO: ACRO had engaged third-party providers for patch
+      management but failed to establish clear internal accountability for identifying and monitoring critical
+      CMS security updates, ran an ineffective patch-management process overall, and did not adequately
+      investigate security alerts that could have caught the intrusion earlier (T1190 Exploit Public-Facing
+      Application against an unpatched CMS). The mitigating factor the ICO credits: network segmentation
+      confined the attacker to the compromised website environment and prevented lateral movement into ACRO's
+      core systems, capping the scale of harm. ACRO's remedial steps (credited by the ICO) included
+      decommissioning the compromised infrastructure, migrating services, standing up security monitoring, and
+      further strengthening segmentation. The ICO's public messaging explicitly frames the two actionable
+      lessons for other organisations as (1) act on warning signs — actively monitor, investigate and escalate
+      security alerts before they become major incidents, and (2) get the basics right — patch management,
+      vulnerability management and regular security testing.
+    region_nexus: "United Kingdom — national criminal-records/policing body"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:acro-criminal-records-office-cms-breach-2022", type: incident, name: "ACRO Criminal Records Office CMS breach",
+          aliases: [],
+          summary: "Unauthorised access to ACRO Criminal Records Office's website/CMS between August 2022 and March 2023, exposing ~10,000 UK data subjects' personal data; ICO reprimand issued 2026-08-12 citing patch-management accountability gaps as root cause." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The ICO's investigation found that between August 2022 and March 2023, a hacker gained unauthorised access to ACRO's website and content management system (CMS). The attacker was able to stage personal information to be stolen, although ACRO could not conclusively determine whether the information was removed from its systems."
+        attribution: "UK Information Commissioner's Office"
+        source_url: "https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2026/08/acro-reprimanded-following-cyber-security-failings/"
+      - quote: "ACRO did not ensure clear responsibility for identifying and monitoring critical CMS security updates, failed to maintain an effective patch management process, and did not adequately investigate security alerts that could have identified the hacker's activity earlier."
+        attribution: "UK Information Commissioner's Office"
+        source_url: "https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2026/08/acro-reprimanded-following-cyber-security-failings/"
+      - quote: "Network segmentation prevented the hacker from moving beyond the compromised website environment into core systems, reducing the potential scale of harm."
+        attribution: "UK Information Commissioner's Office"
+        source_url: "https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2026/08/acro-reprimanded-following-cyber-security-failings/"
+    extended_notes: |
+      Underlying intrusion is historical (2022-2023); the reprimand and its accompanying case-study writeup are
+      the fresh, in-window artefact and the source of the actionable patch-accountability/segmentation lesson.
+      Single-source acceptable under the national-CERT/DPA carve-out (ICO is UK's data-protection authority
+      acting as primary disclosing party for its own enforcement decision).
+    borderline: false
+
+  - title: "Ransomware disables doors and HVAC at a major Canadian hospital — facility-management/OT systems as the new extortion lever in healthcare"
+    sources:
+      - { url: "https://www.bankinfosecurity.com/ransomware-attack-disables-canadian-hospitals-doors-hvac-a-32535", publisher: "BankInfoSecurity (ISMG)", date: "2026-08-12", role: "primary" }
+      - { url: "https://databreaches.net/2026/08/12/ransomware-attack-disables-canadian-hospitals-doors-hvac/", publisher: "DataBreaches.net", date: "2026-08-12", role: "corroborating" }
+    discovery_trace: "first seen at: databreaches-net, URL https://databreaches.net/2026/08/12/ransomware-attack-disables-canadian-hospitals-doors-hvac/ → primary: BankInfoSecurity, URL https://www.bankinfosecurity.com/ransomware-attack-disables-canadian-hospitals-doors-hvac-a-32535"
+    summary: |
+      A ransomware attack this week against Winnipeg's Health Sciences Centre (Manitoba's provincial tertiary
+      trauma/transplant/burns/pediatric hospital, 570,000+ patients/year, operated by Shared Health) disabled
+      building doors and HVAC by hitting facility-management/building-automation systems rather than clinical
+      IT — Shared Health confirms "the incident appears to have only impacted certain facility maintenance
+      systems," with no indication yet that patient data or clinical systems were affected (T1486 Data Encrypted
+      for Impact against OT/building-automation infrastructure; initial access vector not disclosed). No
+      ransomware group has claimed the attack as of publication. This is a Canadian incident with no direct
+      Swiss/EU nexus, included here because it is a materially evolving, directly transferable technique class
+      for this constituency's healthcare and critical-infrastructure defenders: attackers pivoting from
+      encrypting clinical/data systems (now harder to monetize as healthcare orgs improve backup/recovery) to
+      encrypting the buildings' own facility-management/BAS layer — doors, HVAC, likely elevators and access
+      control — to create physical-safety pressure that forces a ransom decision faster than data encryption
+      alone. Security experts quoted (MultiCare Health System CISO Jason Elrod; Black Hills InfoSec's John
+      Strand; Token's Kevin Surace) converge on the same hardening prescription: apply the same security rigor
+      to facility/OT systems as to clinical-data systems — segment and isolate BAS/OT networks from corporate
+      IT, maintain accurate OT asset inventories, tightly control remote/vendor access to facility systems with
+      phishing-resistant (hardware-bound, biometric) authentication rather than SMS/password fallback, monitor
+      OT for abnormal activity, and test recovery plans for OT specifically (not just clinical IT). A Manitoba
+      Nurses Union official separately noted the hospital's doors were already flagged as a safety concern
+      (unsecured, allowing unauthorized physical entry) before this incident, illustrating how a ransomware-driven
+      access-control failure compounds an existing physical-security gap.
+    region_nexus: "Canada — included under criterion (b): a materially evolving TTP (ransomware targeting hospital facility-management/BAS/OT systems for physical-disruption leverage) directly transferable to Swiss/European hospital OT environments"
+    primary_sector_nexus: "transferable — healthcare OT/BAS security lesson"
+    sector: "healthcare"
+    cves: []
+    techniques: [T1486]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:winnipeg-health-sciences-centre-ransomware-ot-2026", type: incident, name: "Winnipeg Health Sciences Centre ransomware (facility/OT)",
+          aliases: [],
+          summary: "Ransomware attack on Manitoba's Health Sciences Centre (Shared Health) disabled facility-management systems including doors and HVAC; no group has claimed responsibility as of 2026-08-12 (BankInfoSecurity/ISMG)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "At this time, the incident appears to have only impacted certain facility maintenance systems."
+        attribution: "Shared Health spokesperson, via BankInfoSecurity/ISMG"
+        source_url: "https://www.bankinfosecurity.com/ransomware-attack-disables-canadian-hospitals-doors-hvac-a-32535"
+      - quote: "If it becomes harder to monetize stolen data or encrypt traditional IT systems, attackers will look for the next lever that creates urgency and pressure. In healthcare, disrupting the physical environment can create enormous pressure very quickly."
+        attribution: "Jason Elrod, CISO, MultiCare Health System"
+        source_url: "https://www.bankinfosecurity.com/ransomware-attack-disables-canadian-hospitals-doors-hvac-a-32535"
+      - quote: "If attackers can disrupt HVAC, elevators, access control or other building management technologies, they can directly impact a hospital's ability to safely deliver care."
+        attribution: "John Strand, owner, Black Hills Information Security"
+        source_url: "https://www.bankinfosecurity.com/ransomware-attack-disables-canadian-hospitals-doors-hvac-a-32535"
+    extended_notes: |
+      No CVE or specific initial-access vector disclosed by Shared Health as of publication; the entry's value is
+      the OT/BAS-targeting pattern and its concrete hardening prescriptions, not attribution or a specific exploit.
+    borderline: true
+    borderline_reason: "Canadian victim, no Swiss/EU nexus — included solely under criterion (b), a transferable TTP for healthcare OT/BAS defenders in this constituency."
+
+  - title: "Cl0p's PTC Windchill / FlexPLM extortion campaign (CVE-2026-12569) moves to public leak-site listing — Swiss and Dutch victims now named, including medtech giant Philips"
+    sources:
+      - { url: "https://foresiet.com/blog/cl0p-windchill-flexplm-cve-2026-12569/", publisher: "Foresiet", date: "2026-08-10", role: "corroborating" }
+      - { url: "https://www.dexpose.io/clop-ransomware-strikes-health-technology-leader-philips/", publisher: "DeXpose", date: "2026-08-12", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Mammut Clop ransomware Cyberangriff August 2026\"), pivoting off a Ransomware.live API sweep (https://api.ransomware.live/v2/recentvictims, tier: standard/api, fetched 2026-08-13) that surfaced fresh 2026-08-12 Clop leak-site listings for MAMMUT.COM (CH), PHILIPS.COM (NL, healthcare), and STNET.IT (IT) among ~11 European listings in one ~25-minute posting window → corroboration: Foresiet, URL https://foresiet.com/blog/cl0p-windchill-flexplm-cve-2026-12569/ → corroboration: DeXpose, URL https://www.dexpose.io/clop-ransomware-strikes-health-technology-leader-philips/"
+    summary: |
+      Cl0p's already-tracked mass-extortion campaign against internet-exposed PTC Windchill and FlexPLM
+      deployments (CVE-2026-12569, an unauthenticated Windchill login-servlet deserialization RCE chained with
+      a pre-auth FlexPLM WSDL information-disclosure endpoint; campaign:clop-windchill-flexplm-extortion-2026,
+      first tracked here 2026-07-27 when "no victims had been listed on Cl0p's leak site") has now entered its
+      public-listing phase. Ransomware.live's tracker recorded a burst of roughly a dozen new European victims
+      named on Cl0p's leak site within a single ~25-minute window on 2026-08-12 (15:28–15:51 UTC), including
+      MAMMUT.COM — a Swiss outdoor-sports brand headquartered in Seon — and PHILIPS.COM, the Dutch health-
+      technology multinational (medical imaging/patient monitoring), alongside victims in Italy, Slovakia,
+      Hungary, Finland and the UK. Foresiet's independent review (2026-08-10) of an earlier batch described 42
+      then-masked Cl0p victim listings referencing project repositories, CAD files, engineering drawings, and
+      Windchill-related file paths, consistent with the campaign's PLM/engineering-data targeting; the named
+      listings now surfacing are consistent with a deanonymization/pressure phase for victims who have not
+      settled. **This is an extortion-site claim, not a confirmed breach for either named company** — neither
+      Mammut nor Philips has (per available reporting) issued a public statement confirming compromise, and
+      claim volume/timing is the leak site's own presentation. Organisations running internet-exposed PTC
+      Windchill or FlexPLM instances that were not patched or isolated by late June/July should assume
+      exfiltration already occurred and treat this listing wave as the ransom-negotiation deadline having passed
+      for the named victims (T1190 Exploit Public-Facing Application via CVE-2026-12569, T1505.003 Web Shell for
+      the JSP-webshell post-exploitation step reported in the original campaign).
+    region_nexus: "Switzerland (Mammut) and Netherlands (Philips) among the named victims — direct home-region and EU healthcare-adjacent nexus"
+    primary_sector_nexus: "direct — Philips is health technology; Mammut is Swiss home-region"
+    sector: "healthcare, manufacturing, retail"
+    cves: ["CVE-2026-12569"]
+    techniques: [T1190, T1505.003]
+    affected_products: ["PTC Windchill", "PTC FlexPLM"]
+    entity_keys: ["campaign:clop-windchill-flexplm-extortion-2026", "actor:clop"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-07-27/clop-windchill-flexplm-mass-extortion-wave-cve-2026-12569"
+    evidence:
+      - quote: "Foresiet reviewed a batch of 42 masked victim listings associated with the Clop extortion operation, with listings describing alleged exposure of project repositories, databases, CAD files, engineering drawings, backups, software and Windchill-related files."
+        attribution: "Foresiet"
+        source_url: "https://foresiet.com/blog/cl0p-windchill-flexplm-cve-2026-12569/"
+      - quote: "Mammut is a Swiss outdoor sports brand founded in 1862, headquartered in Seon, Switzerland."
+        attribution: "Ransomware.live victim record (AI-generated company description accompanying the Cl0p leak-site listing)"
+        source_url: "https://api.ransomware.live/v2/recentvictims"
+    extended_notes: |
+      Ransomware.live is Admiralty C (accurate mirror of leak-site posts, claims unverified); this item is
+      leak-site-claim sourcing only, treated per the fake-news guard as an extortion claim rather than a
+      confirmed breach. Two additional smaller Swiss victims (Camandona SA via a group calling itself
+      "majinahanashi", and Stücheli Architekten via a group calling itself "payload") appeared on unrelated
+      leak sites in the same 48h window (2026-08-11/12) but with no technical detail beyond a generic victim
+      listing — not included as separate items; noted here only as a volume signal that Swiss SMEs continue to
+      be named across multiple concurrent RaaS operations.
+    borderline: false
+
+  - title: "Hacktivist trio claims Santé publique France breach via unvalidated client-side role parameter — unconfirmed, and the lead claimant has a prior record of recycled/exaggerated leaks"
+    sources:
+      - { url: "https://www.zataz.com/sante-publique-france-visee-par-une-cyberattaque/", publisher: "ZATAZ.COM", date: "2026-08-12", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"cyberattaque administration France août 2026 données volées\") → primary: ZATAZ.COM, URL https://www.zataz.com/sante-publique-france-visee-par-une-cyberattaque/ (cross-checked against entities/registry.yaml actor:cybernox, previously registered from a 2026-07-25 ZATAZ/Cyberattaque.org report)"
+    summary: |
+      A message posted 2026-08-11 on a hacker forum, attributed to three handles ("cybernox", "artemis" and
+      "d'ont call me"), claims an intrusion against a platform associated with Santé publique France (the French
+      national public-health agency). The claimed technique is a client-side authorization/mass-assignment
+      flaw: per the attackers' own account, the platform's profile-edit page sent the account's role as a
+      user-editable field to the server with no server-side validation of the submitted value, and the set of
+      valid role values was discoverable in client-loaded JavaScript — allowing the attacker to intercept the
+      request and substitute an administrator ("Back Office admin") role value with no re-authentication check.
+      This maps to T1190 Exploit Public-Facing Application; the specific defect class is broken access control /
+      insecure direct object reference via unvalidated client-supplied authorization state (OWASP A01), a
+      pattern worth hunting for in any web application that trusts a client-submitted role/permission field.
+      The attackers' screenshots reportedly show an administrator panel, front-office accounts, an image library
+      and an email template, and claim exfiltrated data for roughly 80,000 accounts covering healthcare, social
+      and prevention-sector professionals, organisations and structures (names, postal addresses, phone numbers,
+      emails, professional categories, structure names/types) — resembling a professional directory rather than
+      patient medical records. **Santé publique France has not, per available reporting, confirmed this claim**;
+      ZATAZ's own headline carries a question mark and frames it as "revendiquée" (claimed). The "cybernox"
+      handle is already registry-tracked (actor:cybernox) from a 2026-07-25 incident in which the same handle
+      published dossiers on French political figures in protest of the EU "Chat Control" proposal — and in that
+      earlier case ZATAZ itself assessed the claimed material as "recomposed from earlier unrelated breaches
+      rather than any fresh intrusion." The current claim also references "Chat Control" and includes insults
+      directed at French authorities, consistent with the same hacktivist messaging pattern — which argues for
+      treating the *volume/scope* of this claim with real skepticism even though the described vulnerability
+      class (client-trusted role parameter) is a plausible, mechanically coherent bug report on its own.
+    region_nexus: "France (EU) — Santé publique France is the French national public-health agency"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, healthcare"
+    cves: []
+    techniques: [T1190]
+    affected_products: []
+    entity_keys: ["actor:cybernox"]
+    new_entities:
+      - { key: "incident:sante-publique-france-role-tampering-claim-2026", type: incident, name: "Santé publique France breach claim (role-tampering)",
+          aliases: [],
+          summary: "Unconfirmed hacker-forum claim (cybernox/artemis/'d'ont call me', 2026-08-11) of a Santé publique France platform breach via an unvalidated client-side role parameter, exposing ~80,000 professional/organisation accounts; not confirmed by the agency (ZATAZ, 2026-08-12)." }
+    relation_suggestions:
+      - { subject: "actor:cybernox", object: "incident:sante-publique-france-role-tampering-claim-2026",
+          basis: "ZATAZ: the claimed intrusion is attributed to handles including 'cybernox', the same hacktivist handle ZATAZ previously credited with the 2026-07-25 French political-figure dossier leaks" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: LOW
+    novelty: new
+    evidence:
+      - quote: "Un message publié le 11 août 2026 sur un forum pirate revendique une intrusion visant une plateforme associée à Santé publique France. Le pirate évoque une élévation de privilèges obtenue en modifiant directement le rôle d'un utilisateur dans une requête envoyée au serveur."
+        attribution: "ZATAZ.COM"
+        source_url: "https://www.zataz.com/sante-publique-france-visee-par-une-cyberattaque/"
+      - quote: "La revendication insiste sur un point déterminant : aucune vérification côté serveur n'aurait empêché cette modification. Les pirates indiquent également que les rôles utilisables étaient visibles dans le code JavaScript chargé par l'interface."
+        attribution: "ZATAZ.COM, relaying the attackers' own account, unverified by the outlet"
+        source_url: "https://www.zataz.com/sante-publique-france-visee-par-une-cyberattaque/"
+    extended_notes: |
+      Single-source (ZATAZ) for this run; several other French outlets (incyber.org, cyberattaque.org) surfaced
+      in search results but all appear to trace to the same original hacker-forum post rather than an
+      independent confirmation — not treated as separate corroboration per the independence-not-count rule.
+      Recommend the main agent hold this at LOW confidence / notable-at-most priority given the claimant's
+      track record, but the underlying vulnerability class (client-trusted authorization field) is worth
+      surfacing regardless of the volume claim's veracity.
+    borderline: true
+    borderline_reason: "Wholly unconfirmed leak/forum claim from an actor with a documented history of recycled/exaggerated leaks; included because the vulnerability class is mechanically instructive and the target is in-nexus (French public-health agency), not because the breach itself is verified."
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No supplier/third-party watchlist configured for this deployment (config/org-profile.yaml) — sweep is a no-op per instructions; general S4 coverage rules applied unchanged. No supplier-specific leads found requiring escalation beyond the items already returned above."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cnil-fr
+    reason: "WebFetch of https://www.cnil.fr/en/news returned only 6 distinct items despite a 172-result page count, and none were in the 26h window (most recent dated 2026-07-22); no in-window CNIL enforcement/breach items found this run."
+  - source_id: databreaches-net
+    reason: "Direct WebFetch of individual databreaches.net article URLs returned HTTP 403 (listing/RSS via tools/fetch_source.py feed worked fine; individual article pages needed the bridge's url command, which succeeded via jina reader fallback in every case). Not logged as a fetch_failures[] entry since the bridge recovered every article — recipe note for sources.json: prefer `feed` for the listing and `url` (not raw WebFetch) for individual databreaches.net article pages."
+  - source_id: ransom-isac
+    reason: "Direct WebFetch and bridge `url` both returned the JS-shell/listing page without the specific Clop/Windchill post content visible in the fetched body; could not confirm from ransom-isac.org directly whether the 2026-08-12 Cl0p leak-site listing wave is explicitly tied by them to the Windchill/FlexPLM campaign — relied on Foresiet + Ransomware.live + DeXpose instead. Not logged as fetch_failures[] since corroborating sources covered the story (covered_anyway)."
+  - source_id: venarix
+    reason: "Bridge `url` fetch returned the blog listing page shell (client-side rendered Astro/Alpine.js app); no article content resolved without JS execution. No specific lead required from this source this run (covered_anyway: true via other sources)."
