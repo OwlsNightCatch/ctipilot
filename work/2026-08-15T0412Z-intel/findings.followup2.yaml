@@ -1,0 +1,183 @@
+# work/2026-08-15T0412Z-intel/findings.followup2.yaml
+domain: followup2
+run_id: 2026-08-15T0412Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-15T06:00:01Z
+ended_at: 2026-08-15T06:07:39Z
+duration_seconds: 458
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 6
+  bridge_fetches: 10
+
+items:
+  - title: "SOCRadar re-attributes 95% of the '2,500-org LiteLLM breach' to the upstream Trivy/Docker Hub build compromise — the 40-minute PyPI window was the closing act, not the whole story"
+    sources:
+      - { url: "https://www.securityweek.com/trivy-not-litellm-behind-the-2500-org-compromise/", publisher: "SecurityWeek", date: "2026-08-14", role: "primary" }
+      - { url: "https://socradar.io/blog/litellm-supply-chain-attack/", publisher: "SOCRadar", date: "2026-08-13", role: "primary" }
+      - { url: "https://www.aquasec.com/blog/trivy-supply-chain-attack-what-you-need-to-know/", publisher: "Aqua Security", date: "2026-04-01", role: "primary" }
+      - { url: "https://www.docker.com/blog/trivy-supply-chain-compromise-what-docker-hub-users-should-know/", publisher: "Docker", date: "2026-03", role: "corroborating" }
+      - { url: "https://docs.litellm.ai/blog/security-update-march-2026", publisher: "LiteLLM (BerriAI)", date: "2026-03-27", role: "corroborating" }
+      - { url: "https://cert.europa.eu/blog/european-commission-cloud-breach-trivy-supply-chain", publisher: "CERT-EU", date: "2026-03", role: "corroborating" }
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/03/24/detecting-investigating-defending-against-trivy-supply-chain-compromise/", publisher: "Microsoft Security Blog", date: "2026-03-24", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-33634", publisher: "NVD", date: "2026", role: "corroborating" }
+    discovery_trace: >
+      first seen at: verifier-flagged lead, URL https://www.securityweek.com/trivy-not-litellm-behind-the-2500-org-compromise/
+      (SecurityWeek, 2026-08-14) → primary: SOCRadar's own row-level analysis, URL
+      https://socradar.io/blog/litellm-supply-chain-attack/ (2026-08-13, cited by SecurityWeek as
+      "According to SOCRadar, most of them were victims of the Trivy compromise, not LiteLLM") → pivot:
+      Aqua Security's own incident advisory (the upstream vendor named as root cause), URL
+      https://www.aquasec.com/blog/trivy-supply-chain-attack-what-you-need-to-know/ → pivot: Docker's own
+      blog on the Docker Hub distribution vector, URL
+      https://www.docker.com/blog/trivy-supply-chain-compromise-what-docker-hub-users-should-know/ → pivot:
+      LiteLLM/BerriAI's own security-update post confirming the Trivy-dependency origin, URL
+      https://docs.litellm.ai/blog/security-update-march-2026 → pivot: CERT-EU's own incident blog
+      confirming an unrelated victim (the European Commission) was compromised via the same Trivy
+      supply-chain vector, independently corroborating the timeline, URL
+      https://cert.europa.eu/blog/european-commission-cloud-breach-trivy-supply-chain → pivot: Microsoft
+      Security Blog technical/detection writeup, URL
+      https://www.microsoft.com/en-us/security/blog/2026/03/24/detecting-investigating-defending-against-trivy-supply-chain-compromise/
+      → pivot: NVD CVE record confirming scope and CPEs, URL https://nvd.nist.gov/vuln/detail/CVE-2026-33634
+    summary: |
+      The claim holds and is strongly corroborated. SOCRadar published a row-level re-analysis (2026-08-13,
+      picked up by SecurityWeek 2026-08-14) of the leaked exposure dataset behind the widely reported
+      "2,500+ organization LiteLLM supply-chain breach." Of 2,188 organization records carrying attributable
+      identifiers (the 2,500+ headline figure includes records without them), 2,085 — 95% — show data-collection
+      activity that ended *before* March 24, 2026, the day TeamPCP's two poisoned litellm==1.82.7/1.82.8 PyPI
+      releases went live (10:39–~11:19 UTC, roughly 40 minutes). The earliest collection record in the dataset
+      is timestamped March 19 at 18:05 UTC — 18 minutes after Aqua Security's own advisory places the
+      malicious Trivy v0.69.4 build's publication at 17:47 UTC (force-push of 76/77 trivy-action tags and all
+      7 setup-trivy tags began at 17:43). A second activity surge tracks March 22 15:43 UTC to March 23
+      01:40 UTC, exactly the window Docker's own blog gives for malicious Trivy images tagged 0.69.5/0.69.6
+      being live on Docker Hub. The dataset's final record, March 24 20:09 UTC, sits ~9 hours after PyPI
+      quarantined the LiteLLM packages — SOCRadar reads this as the .pth persistence payload continuing to
+      run on already-infected hosts after the infection source was gone, not new compromise activity.
+      Root cause, confirmed independently by the vendor: Aqua Security's own incident advisory (updated
+      through 2026-04-01) states a threat actor exploited a `pull_request_target` misconfiguration in Trivy's
+      GitHub Actions workflows in late February 2026, stole a privileged PAT, and — after Aqua's March 1
+      credential rotation turned out to be non-atomic and left residual access — used surviving access on
+      March 19 to force-push 76 of 77 `aquasecurity/trivy-action` version tags and all 7 `aquasecurity/setup-trivy`
+      tags to malicious commits (GitHub's "Immutable release" badge did not prevent this; only full-commit-SHA
+      pinning does), while simultaneously building and publishing a backdoored Trivy v0.69.4 binary/image.
+      LiteLLM's own CI pipeline pulled Trivy unpinned as a security-scanning dependency; the poisoned scanner
+      flowed into LiteLLM's build automatically. LiteLLM/BerriAI's own security-update post (2026-03-27,
+      last updated) confirms this upstream link and states the attacker then bypassed LiteLLM's normal
+      release workflow and uploaded the two malicious PyPI packages directly, via a suspected-compromised
+      maintainer PyPI account. The ecosystem compromise (Trivy binary + trivy-action + setup-trivy, and the
+      two malicious LiteLLM PyPI releases that resulted from it) is tracked as CVE-2026-33634, CVSS v4.0 9.4,
+      added to CISA's KEV catalog on 2026-03-26 per SOCRadar and NVD. There is no separate CVE for the LiteLLM
+      package poisoning itself — NVD's CVE-2026-33634 record already spans the `aquasecurity/trivy`,
+      `aquasecurity/trivy-action`, `aquasecurity/setup-trivy`, and `litellm` (1.82.7/1.82.8) product ranges
+      as one ecosystem-compromise record; SOCRadar explicitly notes this is unrelated to a separate June-2026
+      LiteLLM authentication-bypass RCE (CVE-2026-48710/CVE-2026-42271, a Starlette Host-header issue), which
+      should not be confused with this supply-chain incident.
+      A concrete, independent confirmation of impact beyond the reconstructed exposure dataset: CERT-EU's own
+      incident blog states the European Commission's "europa.eu" AWS-hosted web platform was compromised via
+      this exact vector — a threat actor "acquired an Amazon Web Services (AWS) secret (an API key) on
+      March 19 through the Trivy supply chain compromise," used TruffleHog for follow-on secret discovery,
+      and exfiltrated ~91.7 GB (340 GB uncompressed) of data later published by ShinyHunters on its leak site,
+      affecting at least 29 other EU Union entities beyond the Commission's own 42 internal clients. CERT-EU
+      assesses this with high confidence based on timing, targeted-resource match, and confirmed use of a
+      compromised Trivy version. This is the clearest concrete evidence that the upstream Trivy compromise —
+      not the 40-minute LiteLLM PyPI window — is what actually mattered for blast radius, and it lands squarely
+      in this constituency's core (an EU-level public institution).
+      Defender correction: an organization that audited only "did we run litellm==1.82.7/1.82.8 on
+      2026-03-24" believes it is clear. The corrected finding says that check is necessary but not sufficient.
+      The audit surface that actually matters is (1) any use of `aquasecurity/trivy-action` or
+      `aquasecurity/setup-trivy` referenced by mutable version tag rather than pinned commit SHA between
+      2026-02-27 and 2026-03-20; (2) any pull of `aquasec/trivy` Docker Hub images tagged `0.69.4`, `0.69.5`,
+      `0.69.6`, or `latest` between 2026-03-19 18:24 UTC and 2026-03-23 01:36 UTC (Docker's own confirmed
+      window); and (3) treating every credential reachable by an affected CI/CD runner — cloud IMDS-issued
+      keys, SSH/Kubernetes/service-account tokens, package-publishing tokens (npm, PyPI, container registries),
+      and application/database secrets — as exposed from the Trivy stage onward, not just from the LiteLLM
+      stage. SOCRadar and Aqua both explicitly warn that pinning to a mutable tag, even one carrying GitHub's
+      "Immutable" release badge, was not a control here; only full-commit-SHA pinning holds.
+    region_nexus: "global reconstructed exposure (137 country-code domains); European Commission (europa.eu, AWS-hosted) confirmed compromised via this exact vector per CERT-EU, with data pertaining to 29+ other EU Union entities; SOCRadar's country breakdown places Switzerland at 16 organizations in the reconstructed dataset, behind Germany/Brazil/France/Netherlands/Poland/UK/Japan/Russia"
+    primary_sector_nexus: "direct — European Commission (EU-level public institution) confirmed compromised via this vector per CERT-EU's own incident blog; eight .gov domains appear in SOCRadar's reconstructed exposure dataset"
+    sector: "public-sector, telco, finance (Stripe/Twilio/SendGrid keys among exposed credential types), energy/water/transport/healthcare (any sector running CI/CD with unpinned Trivy or a LiteLLM/AI-gateway dependency)"
+    cves: [CVE-2026-33634]
+    techniques: [T1195.002, T1078.004, T1552.005, T1552.001, T1611]
+    affected_products: ["Aqua Security Trivy", "aquasecurity/trivy-action", "aquasecurity/setup-trivy", "LiteLLM"]
+    entity_keys: ["actor:teampcp"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "For 2,085 organizations, or 95% of the 2,188 that were identified, data collection activity ended before March 24, when the poisoned LiteLLM packages were published to the registry."
+        attribution: "SecurityWeek, citing SOCRadar"
+        source_url: "https://www.securityweek.com/trivy-not-litellm-behind-the-2500-org-compromise/"
+      - quote: "The earliest collection occurred 18 minutes after the malicious Trivy build was published on March 19. The activity surged on March 22 and March 23 when malicious Trivy images were live on Docker Hub, and closed on March 24 after PyPI quarantined the packages."
+        attribution: "SecurityWeek, citing SOCRadar"
+        source_url: "https://www.securityweek.com/trivy-not-litellm-behind-the-2500-org-compromise/"
+      - quote: "The timestamps pin it more precisely than that. Aqua Security's own advisory puts the malicious Trivy tag force-push at 17:43 UTC on March 19 and the poisoned build at 17:47. The earliest collection record in the dataset is 18:05, eighteen minutes after that build published. Collection begins with the Trivy stage, not the LiteLLM one."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/litellm-supply-chain-attack/"
+      - quote: "On March 19, 2026 (~17:43 UTC): The attacker force-pushed 76 of 77 version tags in the aquasecurity/trivy-action repository and all 7 tags in aquasecurity/setup-trivy, redirecting trusted references to malicious commits. Simultaneously, the compromised aqua-bot service account triggered release automation to publish a malicious Trivy binary designated v0.69.4."
+        attribution: "Aqua Security"
+        source_url: "https://www.aquasec.com/blog/trivy-supply-chain-attack-what-you-need-to-know/"
+      - quote: "GitHub's release UI displayed \"Immutable\" badges next to each poisoned tag. The attacker may have deliberately published immutable releases after force-pushing, locking in the malicious state. Organizations should not rely solely on the \"Immutable\" indicator. Pinning to full commit SHAs remains the only truly immutable protection."
+        attribution: "Aqua Security"
+        source_url: "https://www.aquasec.com/blog/trivy-supply-chain-attack-what-you-need-to-know/"
+      - quote: "We believe that the compromise originated from the Trivy dependency used in our CI/CD security scanning workflow."
+        attribution: "LiteLLM (BerriAI)"
+        source_url: "https://docs.litellm.ai/blog/security-update-march-2026"
+      - quote: "We assess with high confidence that initial access was obtained through the Trivy supply-chain compromise, which was publicly attributed to a threat actor known as TeamPCP."
+        attribution: "CERT-EU"
+        source_url: "https://cert.europa.eu/blog/european-commission-cloud-breach-trivy-supply-chain"
+      - quote: "A significant volume of data (about 91.7 GB compressed) was exfiltrated from the compromised AWS account, including personal data such as names, email addresses, and email content."
+        attribution: "CERT-EU"
+        source_url: "https://cert.europa.eu/blog/european-commission-cloud-breach-trivy-supply-chain"
+      - quote: "You may be affected if your systems pulled aquasec/trivy between March 19, 18:24 UTC and March 23, 01:36 UTC if you specifically pulled the tags 0.69.4, 0.69.5, or 0.69.6 or you pulled the latest tag during the affected period."
+        attribution: "Docker"
+        source_url: "https://www.docker.com/blog/trivy-supply-chain-compromise-what-docker-hub-users-should-know/"
+      - quote: "Trivy is a security scanner. On March 19, 2026, a threat actor used compromised credentials to publish a malicious Trivy v0.69.4 release, force-push 76 of 77 version tags in `aquasecurity/trivy-action` to credential-stealing malware, and replace all 7 tags in `aquasecurity/setup-trivy` with malicious commits."
+        attribution: "NVD (CVE-2026-33634 description)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-33634"
+    extended_notes: |
+      Framing for composition: there is no specific prior ctipilot entry on the original "2,500-org LiteLLM
+      breach" claim itself (checked prior_coverage.json — not found under litellm/trivy/aqua/socradar/cloudsek
+      terms), so this is `novelty: new` rather than a formal `update_of` a specific entry id. It should,
+      however, be composed and read as a *correction to public reporting on an already-tracked strand* — this
+      pipeline has two adjacent entries in the last 7 days: 2026-08-06
+      "litellm-callback-hook-post-inference-tool-call-forgery" (different LiteLLM technique, gateway-admin
+      abuse of callback hooks — unrelated mechanism, same product) and 2026-08-08
+      "wiz-cloud-threat-highlights-h1-2026-ai-toolchain-exposure" (names LiteLLM's four H1-2026 security
+      events and entity actor:teampcp). Cross-reference both by id in the composed entry's body/`references`
+      rather than `update_of`, since neither covered the 2,500-org/Trivy-attribution claim specifically.
+
+      CVE bookkeeping flag for the main agent / next quality audit: NVD's CVE-2026-33634 record (confirmed
+      directly on nvd.nist.gov, quoted above) unambiguously describes the Trivy/trivy-action/setup-trivy/
+      LiteLLM ecosystem compromise, with CPE ranges for aquasec:trivy 0.69.4, aquasec:trivy_action (<0.35.0),
+      aquasec:setup-trivy (<0.2.6), litellm:litellm 1.82.7/1.82.8, and telnyx:telnyx 4.87.1/4.87.2 (the wider
+      TeamPCP campaign also hit the Telnyx Python SDK per SOCRadar). However, `state/cves_seen.json` currently
+      has CVE-2026-33634 attached to a DIFFERENT prior entry: "Checkmarx Jenkins AST plugin backdoor
+      (TeamPCP/UNC6780 supply-chain compromise, SANDCLOCK credential stealer, CVSS 9.4)", first_seen
+      2026-05-12, primary_source_url checkmarx.com/blog/ongoing-security-updates/. Checkmarx's Jenkins AST
+      plugin is NOT in CVE-2026-33634's NVD CPE configuration list, so this looks like a mis-citation in the
+      2026-05-12 entry (possibly the correct CVE for the Checkmarx incident was a different, unassigned-at-the-time
+      identifier, or a citation slip) rather than a legitimate dual-use of the same CVE id — worth a
+      quality-audit look, not something to silently fix here. Do not let this cause the current, verified
+      citation of CVE-2026-33634 (for the Trivy/LiteLLM ecosystem compromise, which is what NVD's own
+      description says the CVE covers) to be treated as a duplicate of the Checkmarx story — they are
+      different incidents.
+
+      Registry note: actor:teampcp exists (key checked, no aliases currently). SOCRadar/Google Threat
+      Intelligence Group track the same actor as UNC6780, PCPcat, ShellForce, and DeadCatx3 — none of these
+      are currently in the registry's alias list for actor:teampcp. Worth an alias-list update by the main
+      agent (not proposing a new entity — same actor, existing key).
+
+      Not fetchable / not attempted: the jina reader pool was reported exhausted (HTTP 402) for this run;
+      one bridge fetch (GitHub Security Advisory GHSA-69fq-xp46-6x23 detail page) failed on both direct
+      (403) and jina-fallback (402 on all rotated keys) transports — logged in Fetch failures below. This did
+      not block verification: Aqua Security's own advisory, Docker's own blog, LiteLLM's own advisory,
+      CERT-EU's own advisory, Microsoft's technical writeup, and NVD's CVE record together give more than
+      sufficient independent corroboration without the GHSA page.
+    watchlist: []
+    borderline: false
+
+candidate_sources: []
+
+coverage_gaps: []

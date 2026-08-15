@@ -1,0 +1,878 @@
+domain: S1
+run_id: 2026-08-15T0412Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: '2026-08-15T04:15:20Z'
+ended_at: '2026-08-15T04:34:50Z'
+duration_seconds: 1170
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 13
+  bridge_fetches: 28
+items:
+- title: Unauthenticated SQL injection in GeoServer's jsonArrayContains OGC filter is under active exploitation
+    with no CVE and no patch yet
+  sources:
+  - url: https://security-hub.ncsc.admin.ch/#/posts/12844
+    publisher: NCSC Switzerland (GovCERT.ch) — Cyber Security Hub
+    date: '2026-08-14'
+    role: primary
+  - url: https://thehackernews.com/2026/08/unpatched-geoserver-zero-day-targeted.html
+    publisher: The Hacker News
+    date: '2026-08-13'
+    role: corroborating
+  - url: https://www.securityweek.com/hackers-exploiting-unpatched-geoserver-zero-day/
+    publisher: SecurityWeek
+    date: '2026-08-14'
+    role: corroborating
+  - url: https://fieldeffect.com/blog/early-exploitation-attempts-observed-geoserver-zero-day
+    publisher: Field Effect
+    date: '2026-08-13'
+    role: corroborating
+  - url: https://github.com/geoserver/geoserver/security/advisories/GHSA-7g5f-wrx8-5ccf
+    publisher: GeoServer / GitHub Security Advisories (historical fix reference, CVE-2023-25157)
+    date: '2023-02-21'
+    role: background
+  discovery_trace: 'first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12844
+    -> primary: The Hacker News, URL https://thehackernews.com/2026/08/unpatched-geoserver-zero-day-targeted.html
+    -> corroborating: SecurityWeek, URL https://www.securityweek.com/hackers-exploiting-unpatched-geoserver-zero-day/
+    -> corroborating: Field Effect, URL https://fieldeffect.com/blog/early-exploitation-attempts-observed-geoserver-zero-day
+    -> background: GitHub GHSA-7g5f-wrx8-5ccf (2023 predecessor fix touching the same jsonArrayContains
+    filter), URL https://github.com/geoserver/geoserver/security/advisories/GHSA-7g5f-wrx8-5ccf'
+  summary: 'NCSC Switzerland''s Cyber Security Hub published an advisory on 2026-08-14 flagging active
+    exploitation of an unpatched SQL-injection zero-day in GeoServer, the open-source geospatial data
+    platform widely used by government, cantonal/communal and utility GIS and land-registry services.
+    The flaw was first disclosed by researcher @q1uf3ng on X on 2026-08-12 and sits in the jsonArrayContains
+    OGC filter expression (used by WFS/WMS/WCS query interfaces to test whether a JSON array field contains
+    a value): user-supplied filter arguments are concatenated into the backend SQL query without adequate
+    sanitisation, letting an unauthenticated remote attacker alter the query''s logic. GeoServer already
+    fixed jsonArrayContains once, for PostGIS and Oracle DataStores, in CVE-2023-25157 (CVSS 9.8, 2023);
+    this new zero-day is a fresh, unpatched bypass reachable in additional configurations, with reporting
+    again naming PostGIS/Oracle JDBC stores and separately flagging H2-backed deployments (whose default
+    administrative account is literally named ''sa'') as a path to full remote code execution via database-specific
+    command-execution features — and, per NCSC-CH, potentially reachable via Microsoft SQL Server backends
+    as well. No CVE has been assigned and no vendor patch exists as of publication. WatchTowr reports
+    hundreds of scanning/probing requests from a small pool of source IPs beginning within hours of public
+    disclosure, currently triggering database errors rather than confirmed compromise — but GeoServer
+    has a documented history of exploitation at internet scale, including a 2024 breach of a U.S. federal
+    agency via the earlier CVE-2024-36401.'
+  region_nexus: global; GeoServer is commonly deployed by Swiss and EU government/cantonal/communal GIS,
+    land-registry and utility-asset-mapping services — direct home-authority relevance via NCSC-CH's own
+    advisory
+  primary_sector_nexus: direct
+  sector: public-sector, energy, water, transport
+  cves: []
+  techniques:
+  - T1190
+  affected_products:
+  - GeoServer
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  evidence:
+  - quote: 'Current exploitation status: Actively Exploited, Proof of Concept Available'
+    attribution: NCSC Switzerland (GovCERT.ch) Cyber Security Hub
+    source_url: https://security-hub.ncsc.admin.ch/#/posts/12844
+  - quote: Within hours of public disclosure, we began observing exploitation attempts and have recorded
+      hundreds of attempts originating from a small number of source IP addresses.
+    attribution: watchTowr, via SecurityWeek
+    source_url: https://www.securityweek.com/hackers-exploiting-unpatched-geoserver-zero-day/
+  - quote: GeoServer jsonArrayContains unauthorized SQL injection, and in the case of the sa [system administrator]
+      database, it's naturally possible to achieve RCE.
+    attribution: researcher @q1uf3ng, via The Hacker News
+    source_url: https://thehackernews.com/2026/08/unpatched-geoserver-zero-day-targeted.html
+  extended_notes: 'No CVE/CVSS assigned as of this run — track for a follow-up entry once GeoServer/MITRE
+    assigns an identifier and a patched version ships. Detection concept: unauthenticated WFS/WMS/WCS
+    requests carrying jsonArrayContains filter expressions with SQL metacharacters or stacked-query syntax
+    in the filter argument; database error-log spikes (syntax errors, unexpected type casts) on the GeoServer
+    service account; for H2-backed deployments, unexpected OS process spawns from the Java process hosting
+    GeoServer. Hardening: restrict GeoServer''s WFS/WMS/WCS endpoints from the open internet, disable
+    jsonArrayContains-capable filters where not required, and if using H2, disable the H2 console/remote-command
+    features. Benign lookalike: legitimate GIS clients constructing jsonArrayContains filters for normal
+    attribute queries — the discriminator is malformed/oversized filter arguments containing quote characters
+    or SQL keywords rather than well-formed JSON-path values.'
+- title: Unauthenticated root-level OS command injection in Haiwell's internet-facing IoT HMI gateway
+    (CVE-2026-19188, CVSS 10.0)
+  sources:
+  - url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-02.json
+    publisher: CISA (ICS Advisory icsa-26-225-02, CSAF structured document)
+    date: '2026-08-13'
+    role: primary
+  discovery_trace: 'first seen at: cisa-advisories (bridge cisa csaf-recent listing), URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/changes.csv
+    -> primary: CISA ICS advisory icsa-26-225-02 CSAF document, URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-02.json
+    (human-readable mirror at https://www.cisa.gov/news-events/ics-advisories/icsa-26-225-02, unreachable
+    this run — jina reader pool exhausted, see coverage gap)'
+  summary: 'CISA published ICS advisory icsa-26-225-02 on 2026-08-13 for a maximum-severity OS command
+    injection (CWE-78) in the Haiwell IoT Cloud HMI Gateway, a China-headquartered vendor''s human-machine-interface/SCADA
+    gateway product that CISA states is deployed worldwide across the energy, critical-manufacturing,
+    and water-and-wastewater sectors. The flaw lives in the gateway''s Net Check diagnostic feature, reachable
+    via the /setting endpoint: the cmdPing Socket.io event accepts a user-controlled argument and passes
+    it unsanitised to the underlying OS shell, letting a remote, unauthenticated attacker inject and execute
+    arbitrary OS commands with root privileges. CISA rates it CVSS v3.1 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H)
+    and CVSS v4.0 also full-severity (AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H). The only
+    affected version on record is 3.40.1.12; Haiwell has shipped a fix in Scada-v3.50.1.19. No exploitation
+    has been confirmed yet, but the bug requires no authentication, no user interaction, and only network
+    reachability to the management interface — an imminent-exploitation profile for any internet-exposed
+    unit.'
+  region_nexus: worldwide deployment per CISA; relevant wherever Swiss/EU energy, water or manufacturing
+    operators use Haiwell IoT HMI gateways for remote SCADA access
+  primary_sector_nexus: indirect
+  sector: energy, water, critical manufacturing
+  cves:
+  - CVE-2026-19188
+  techniques:
+  - T1190
+  affected_products:
+  - Haiwell IoT Cloud HMI Gateway
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-NATIONAL-CERT
+  confidence: HIGH
+  novelty: new
+  evidence:
+  - quote: A critical OS command injection vulnerability has been identified in the Haiwell IoT Cloud
+      HMI Gateway product. The vulnerability exists in the Net Check feature accessible via the /setting
+      endpoint. The cmdPing Socket.io event fails to properly sanitize user-supplied input before passing
+      it to the underlying operating system, allowing an attacker to inject and execute arbitrary OS commands
+      with root privileges
+    attribution: CISA (ICS advisory icsa-26-225-02)
+    source_url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-02.json
+  - quote: Successful exploitation of this vulnerability may allow an attacker to inject and execute arbitrary
+      OS commands with root privileges.
+    attribution: CISA (ICS advisory icsa-26-225-02)
+    source_url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-02.json
+  extended_notes: 'Detection concept: unauthenticated Socket.io connections to the gateway''s /setting
+    endpoint invoking cmdPing with hostname/argument fields containing shell metacharacters (;, |, `,
+    $()); unexpected root-owned child processes spawned by the Haiwell gateway service process; outbound
+    connections initiated from the gateway process shortly after inbound Socket.io traffic. Hardening:
+    apply Scada-v3.50.1.19; per CISA''s standard OT guidance, do not expose the gateway management interface
+    to the internet, place it behind a firewall/VPN, and segment SCADA networks from business IT.'
+- title: Fortinet patches an unauthenticated FortiWeb admin-console bypass and an FGFM device-impersonation
+    flaw in FortiManager
+  sources:
+  - url: https://www.fortiguard.com/psirt/FG-IR-26-158
+    publisher: Fortinet PSIRT (FG-IR-26-158)
+    date: '2026-08-12'
+    role: primary
+  - url: https://www.fortiguard.com/psirt/FG-IR-26-157
+    publisher: Fortinet PSIRT (FG-IR-26-157)
+    date: '2026-08-12'
+    role: primary
+  - url: https://www.fortiguard.com/psirt/FG-IR-26-160
+    publisher: Fortinet PSIRT (FG-IR-26-160)
+    date: '2026-08-12'
+    role: primary
+  - url: https://advisories.ncsc.nl/rss/advisories
+    publisher: NCSC-NL (advisories NCSC-2026-0300 FortiWeb, NCSC-2026-0299 FortiManager)
+    date: '2026-08-13'
+    role: corroborating
+  - url: https://www.securityweek.com/fortinet-patches-authentication-flaws-in-fortiweb-and-fortimanager/
+    publisher: SecurityWeek
+    date: '2026-08-13'
+    role: corroborating
+  discovery_trace: 'first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories (NCSC-2026-0300/0299,
+    published 2026-08-13) -> primary: Fortinet PSIRT, URL https://www.fortiguard.com/psirt/FG-IR-26-158
+    and https://www.fortiguard.com/psirt/FG-IR-26-157 and https://www.fortiguard.com/psirt/FG-IR-26-160
+    -> corroborating: SecurityWeek, URL https://www.securityweek.com/fortinet-patches-authentication-flaws-in-fortiweb-and-fortimanager/'
+  summary: 'Fortinet published three PSIRT advisories on 2026-08-12, relayed by NCSC-NL on 2026-08-13.
+    CVE-2026-26035 (CVSS 8.8, CWE-287 Improper Authentication, FG-IR-26-158) is a FortiWeb bug: when Remote
+    RADIUS Type Admin authentication is configured with the non-default ''Wildcard'' option enabled, a
+    remote unauthenticated attacker can log into the FortiWeb GUI/CLI with an arbitrary username and password.
+    It affects FortiWeb 7.0.0-7.0.12, 7.2.0-7.2.12, 7.4.0-7.4.11, 7.6.0-7.6.6 and 8.0.0-8.0.2; fixed in
+    7.2.13, 7.4.12, 7.6.7 and 8.0.3. CVE-2026-70466 (CVSS 4.8, CWE-184, FG-IR-26-157) is an incomplete-disallowed-input-list
+    gap that lets an unauthenticated attacker bypass FortiWeb WAF policies via specially crafted requests;
+    Fortinet shipped an interim virtual patch (FG-VD-10009598.0day, FMWP DB update 26.071) ahead of the
+    code fix in 7.6.6/8.0.3, credited to researcher Rui Xi (@Cycloctane, Beijing University of Posts and
+    Telecommunications). CVE-2026-70468 (CVSS 7.3, CWE-288, FG-IR-26-160) lets a remote unauthenticated
+    attacker holding a valid certificate impersonate any FortiGate managed by a FortiManager instance
+    that has the fgfm-peercert-withoutsn CLI option enabled, via crafted FGFM protocol requests — affecting
+    FortiManager/FortiManager Cloud 7.2.5-7.2.9, 7.4.3-7.4.5 and 7.6.1, fixed in 7.2.10, 7.4.6 and 7.6.2
+    (workaround: disable fgfm-peercert-withoutsn). Fortinet states none of the three is known to be exploited
+    in the wild, but Fortinet edge products have a sustained recent history of rapid post-disclosure exploitation
+    — this pipeline covered a Gunra ransomware FortiOS MFA-bypass backdoor abusing an unrelated FortiOS
+    flaw on 2026-08-11 — so patching ahead of any public PoC is the operative recommendation.'
+  region_nexus: global; FortiWeb/FortiManager are commonly deployed by Swiss/EU public-sector and critical-infrastructure
+    operators for edge WAF and centralised firewall-fleet management
+  primary_sector_nexus: indirect
+  sector: public-sector, energy, finance, telco, healthcare
+  cves:
+  - CVE-2026-26035
+  - CVE-2026-70466
+  - CVE-2026-70468
+  techniques:
+  - T1190
+  affected_products:
+  - Fortinet FortiWeb
+  - Fortinet FortiManager
+  - Fortinet FortiManager Cloud
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  evidence:
+  - quote: An Improper Authentication vulnerability [CWE-287] in the FortiWeb Remote Radius Type Admin
+      Authentication configured with specific, non-default settings may allow a remote unauthenticated
+      attacker to login into the Fortiweb GUI/CLI with a random username and password
+    attribution: Fortinet PSIRT (FG-IR-26-158)
+    source_url: https://www.fortiguard.com/psirt/FG-IR-26-158
+  - quote: An incomplete list of disallowed inputs [CWE-184] in FortiWeb WAF may allow an unauthenticated
+      attacker to bypass policies via specifically crafted requests.
+    attribution: Fortinet PSIRT (FG-IR-26-157)
+    source_url: https://www.fortiguard.com/psirt/FG-IR-26-157
+  - quote: An Authentication Bypass Using an Alternate Path or Channel vulnerability in FortiManager and
+      FortiManager Cloud may allow a remote unauthenticated attacker to impersonate any FortiGate managed
+      by the FortiManager
+    attribution: Fortinet PSIRT (FG-IR-26-160)
+    source_url: https://www.fortiguard.com/psirt/FG-IR-26-160
+  extended_notes: 'Detection concept: FortiWeb admin-login events (auth logs) succeeding against RADIUS-configured
+    accounts with usernames not present in the RADIUS server''s known account list; FGFM protocol session
+    establishments to a FortiManager from a source presenting a valid-but-unexpected client certificate
+    serial. Hardening: disable the RADIUS ''Wildcard'' admin option on FortiWeb unless required and upgrade;
+    disable fgfm-peercert-withoutsn on FortiManager; apply the FMWP virtual patch immediately, then upgrade
+    to the fixed FortiWeb build.'
+- title: IBM i ships a coordinated patch cycle with a CVSS 9.9 remote-authenticated RCE and a Debug Server
+    bundle including a 9.8 stack overflow
+  sources:
+  - url: https://advisories.ncsc.nl/rss/advisories
+    publisher: NCSC-NL (advisory NCSC-2026-0301)
+    date: '2026-08-14'
+    role: primary
+  - url: https://www.ibm.com/support/pages/node/7283282
+    publisher: IBM Support (Security Bulletin, CVE-2026-16860)
+    date: '2026-08-14'
+    role: primary
+  - url: https://www.ibm.com/support/pages/security-bulletin-ibm-i-affected-multiple-vulnerabilities-debug-server
+    publisher: IBM Support (Security Bulletin, Debug Server bundle)
+    date: '2026-08-14'
+    role: primary
+  - url: https://www.ibm.com/support/pages/node/7283289
+    publisher: IBM Support (Security Bulletin, SQL bundle)
+    date: '2026-08-14'
+    role: primary
+  discovery_trace: 'first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories (NCSC-2026-0301,
+    published 2026-08-14) -> primary: IBM Support security bulletins, URL https://www.ibm.com/support/pages/node/7283282
+    (CVE-2026-16860), https://www.ibm.com/support/pages/security-bulletin-ibm-i-affected-multiple-vulnerabilities-debug-server
+    (Debug Server bundle), https://www.ibm.com/support/pages/node/7283289 (SQL bundle)'
+  summary: 'NCSC-NL relayed IBM''s IBM i security-bulletin batch on 2026-08-14 (NCSC-2026-0301). The standout
+    is CVE-2026-16860 (CVSS 9.9, CWE-427 Uncontrolled Search Path Element): a remote authenticated attacker
+    can achieve arbitrary code execution because IBM i resolves a search-path element without adequate
+    control, giving a lower-privileged authenticated session a path/library-hijack primitive with full-compromise
+    impact (CVSS vector AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:L). It affects IBM i 7.3, 7.4, 7.5 and 7.6;
+    fixed via PTFs SJ10882 (7.3), SJ10881 (7.4), SJ10880 (7.5) and SJ10879 (7.6). In the same cycle IBM
+    shipped a five-CVE Debug Server bundle: CVE-2026-17083 (CVSS 9.8, stack-based buffer overflow, unauthenticated
+    RCE), CVE-2026-17082 (8.8, improper validation leading to privilege escalation), CVE-2026-16907 (7.6,
+    bounds-check bypass, authenticated RCE), CVE-2026-17271 (7.5, improper input validation DoS) and CVE-2026-17248
+    (7.1, OS command injection DoS) — plus a separate seven-CVE SQL bundle (CVE-2026-17109, -17110, -17111,
+    -17222, -17418, -17419, -17420) covering SQL injection and privilege-management flaws, and a standalone
+    CVE-2026-6936 (6.5, uncontrolled recursion DoS in the Integrated Language Environment compiler). No
+    exploitation has been reported for any of these; the co-occurrence of two CVSS >=9.8 remote/authenticated
+    RCE bugs in a single release makes this a priority patch cycle for the platform.'
+  region_nexus: global; IBM i (AS/400-lineage midrange systems) remains in production at some European
+    finance and public-sector back-office operations
+  primary_sector_nexus: direct
+  sector: finance, public-sector
+  cves:
+  - CVE-2026-16860
+  - CVE-2026-17083
+  - CVE-2026-17082
+  - CVE-2026-16907
+  - CVE-2026-17271
+  - CVE-2026-17248
+  - CVE-2026-6936
+  techniques:
+  - T1210
+  - T1068
+  affected_products:
+  - IBM i
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: IBM i could allow a remote authenticated attacker to execute arbitrary code due to an uncontrolled
+      search path element.
+    attribution: IBM Support (Security Bulletin, CVE-2026-16860)
+    source_url: https://www.ibm.com/support/pages/node/7283282
+  - quote: 'CVSS Base score: 9.9'
+    attribution: IBM Support (Security Bulletin, CVE-2026-16860)
+    source_url: https://www.ibm.com/support/pages/node/7283282
+  extended_notes: 'Detection concept: on IBM i, monitor QAUDJRN audit journal entries for object-authority
+    and program-adoption anomalies around the Debug Server and search-path-resolved libraries; unexpected
+    PTF-target library changes. Hardening: apply the PTFs named per release (SJ10879-SJ10882 for CVE-2026-16860;
+    consult the linked bulletins for the Debug Server/SQL bundle PTF numbers) as a coordinated patch cycle
+    rather than individually.'
+- title: Unauthenticated OS command injection in Siemens Siveillance Video surveillance management servers
+    (CVE-2026-3014, CVSS 9.1)
+  sources:
+  - url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-09.json
+    publisher: CISA (ICS Advisory icsa-26-225-09, CSAF structured document, Siemens ProductCERT-sourced)
+    date: '2026-08-13'
+    role: primary
+  discovery_trace: 'first seen at: siemens-productcert-csaf rotation-priority sweep (cross-checked via
+    cisa-advisories bridge cisa csaf-recent listing), URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/changes.csv
+    -> primary: CISA ICS advisory icsa-26-225-09 CSAF document mirroring Siemens'' own SSA, URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-09.json
+    (Siemens'' own cert-portal.siemens.com pages for this specific SSA id not located this run — see coverage
+    gap)'
+  summary: CISA published icsa-26-225-09 on 2026-08-13 (mirroring a Siemens ProductCERT advisory) for
+    an OS command injection (CWE-78) in Siemens Siveillance Video, the vendor's video-management-system
+    (VMS) product used across critical-manufacturing, communications and commercial-facilities deployments
+    per CISA's sector tagging. CVSS v3.1 base score 9.1. Affected releases are Siveillance Video V2023
+    R3 before V23.3.27, V2024 R1 before V24.1.16 and V2025 before V25.1.15; Siemens fixes the issue in
+    HotfixRev27 (V23.3 line), HotfixRev16 (V24.1 line) and HotfixRev15 (V25.1 line). No exploitation has
+    been reported. Given the product's role as a physical-security video-surveillance management backbone,
+    an OS-command-injection primitive on the management server is a direct pivot point into camera feeds
+    and, depending on network placement, into the broader OT/IT boundary — internet- or VLAN-exposed Siveillance
+    Video management servers should be treated as a priority patch target.
+  region_nexus: global Siemens installed base; Siveillance Video is used in commercial-facilities and
+    critical-manufacturing physical-security deployments including in Europe
+  primary_sector_nexus: indirect
+  sector: critical manufacturing, commercial facilities, communications
+  cves:
+  - CVE-2026-3014
+  techniques:
+  - T1190
+  affected_products:
+  - Siemens Siveillance Video
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-NATIONAL-CERT
+  confidence: MEDIUM
+  novelty: new
+  evidence: []
+  extended_notes: 'CVSS vector and root-cause narrative text were not present in the CISA CSAF JSON beyond
+    CWE-78 classification and version ranges; Siemens'' own SSA advisory page for this specific bulletin
+    could not be located/fetched this run (attempted the ProductCERT search path; the specific SSA id
+    was not confirmed) — flagged as a follow-up to enrich with Siemens'' own narrative if this item is
+    composed. Hardening: apply the vendor hotfix per release line; segment VMS management servers from
+    general IT/business networks and do not expose the management interface directly to the internet.'
+- title: GitLab patches a path-traversal RCE in its package registry and a CI/CD pipeline authorization
+    bypass, plus 12 other flaws
+  sources:
+  - url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-2-released/
+    publisher: GitLab (official patch-release notes, 19.2.2/19.1.4/19.0.6)
+    date: '2026-08-12'
+    role: primary
+  - url: https://advisories.ncsc.nl/rss/advisories
+    publisher: NCSC-NL (advisory NCSC-2026-0297)
+    date: '2026-08-13'
+    role: corroborating
+  discovery_trace: 'first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories (NCSC-2026-0297,
+    published 2026-08-13) -> primary: GitLab official patch-release notes, URL https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-2-released/'
+  summary: 'GitLab shipped 19.2.2, 19.1.4 and 19.0.6 on 2026-08-12 (relayed by NCSC-NL on 2026-08-13),
+    fixing 14 vulnerabilities across Community and Enterprise Edition. The standout is CVE-2026-10053
+    (CVSS 8.5): an authenticated user can achieve remote code execution via a path-traversal flaw in the
+    package registry, affecting installations from 18.8 onward. CVE-2026-15423 (CVSS 8.5) lets a lower-privileged
+    developer run a CI/CD pipeline on a protected branch without the push permission normally required
+    to do so, via an authorization gap in the pipeline API. Two stored-XSS bugs in Analytics Dashboards
+    — CVE-2026-15217 and CVE-2026-15216 (both CVSS 8.7) — round out the high-severity set, alongside an
+    EE-only Duo Workflow Service authorization bypass (CVE-2026-19228, CVSS 8.5) and a CI manual-job-confirmation-modal
+    XSS (CVE-2026-16627, CVSS 7.7). The remaining CVEs are medium/low-severity missing-authorization or
+    incorrect-authorization gaps in the merge-request, external-status-check, npm dist-tag and GitLab
+    Duo settings APIs (CVSS 3.3-5.3). GitLab.com is already patched and GitLab Dedicated customers need
+    no action; self-managed CE/EE instances must apply the update directly. No exploitation has been reported
+    for any of the 14 CVEs.'
+  region_nexus: global; GitLab self-managed instances are widely used for CI/CD by European public-sector
+    and enterprise engineering teams
+  primary_sector_nexus: indirect
+  sector: public-sector, general/cross-sector
+  cves:
+  - CVE-2026-10053
+  - CVE-2026-15423
+  - CVE-2026-15217
+  - CVE-2026-15216
+  - CVE-2026-19228
+  - CVE-2026-16627
+  - CVE-2026-16494
+  techniques:
+  - T1190
+  - T1068
+  affected_products:
+  - GitLab Community Edition
+  - GitLab Enterprise Edition
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  evidence:
+  - quote: GitLab has remediated an issue that under certain conditions could have allowed an authenticated
+      user to achieve remote code execution due to a path traversal vulnerability in the package registry.
+    attribution: GitLab (official patch-release notes)
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-2-released/
+  - quote: We strongly recommend that all installations running a version affected by the issues described
+      below are upgraded to the latest version as soon as possible.
+    attribution: GitLab (official patch-release notes)
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-2-released/
+  extended_notes: 'Detection concept: package-registry upload/download requests carrying path-traversal
+    sequences (../) in package-name or version fields; CI/CD pipeline-creation API calls against protected
+    branches from accounts lacking push permission on that branch. Hardening: upgrade self-managed CE/EE
+    to 19.2.2/19.1.4/19.0.6 or later; review package-registry access logs for the affected version range
+    (18.8+) for anomalous traversal patterns predating the patch.'
+- title: Persistent XSS in Johnson Controls Metasys building-automation UI has no fix for two still-supported
+    major versions
+  sources:
+  - url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-14.json
+    publisher: CISA (ICS Advisory icsa-26-225-14, CSAF structured document)
+    date: '2026-08-13'
+    role: primary
+  discovery_trace: 'first seen at: cisa-advisories (bridge cisa csaf-recent listing), URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/changes.csv
+    -> primary: CISA ICS advisory icsa-26-225-14 CSAF document, URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-14.json'
+  summary: CISA published icsa-26-225-14 on 2026-08-13 for CVE-2026-34491 (CVSS 8.0, CWE-79), a persistent
+    cross-site-scripting flaw in the Johnson Controls Metasys building-automation-system web UI. CISA
+    names Critical Manufacturing, Commercial Facilities, Government Services and Facilities, Transportation
+    Systems and Energy as the affected critical-infrastructure sectors — Metasys is widely deployed as
+    the HVAC/building-automation controller in government office buildings. A low-privilege user can inject
+    a crafted URL-borne XSS payload that persists across logins and executes in the context of any user,
+    including administrators, who subsequently views the affected page. Metasys 15.0 was already patched
+    on 2026-03-25 and Metasys 16.0 was never affected; Metasys 14.1.5 had a fix forecast for 2026-07-15.
+    Metasys 12 and 13 are end-of-support and will NOT receive a fix at all — Johnson Controls' only guidance
+    for those versions is compensating network controls (restrict the Metasys UI to trusted networks,
+    segment building-automation systems from the corporate IT network, put a WAF in front of the UI, apply
+    CSP/security headers, monitor UI access logs for suspicious URL patterns). Metasys 11 and earlier
+    are unaffected (the bug was introduced at version 12).
+  region_nexus: global Johnson Controls installed base; Metasys is deployed in government office and public-facility
+    building-automation systems including in Europe
+  primary_sector_nexus: direct
+  sector: public-sector, transport, energy, critical manufacturing, commercial facilities
+  cves:
+  - CVE-2026-34491
+  techniques:
+  - T1190
+  affected_products:
+  - Johnson Controls Metasys
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-NATIONAL-CERT
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: A low-privilege user can inject a malicious XSS payload into the Metasys UI via a crafted URL.
+      The payload persists across logins and executes in the
+    attribution: Johnson Controls, via CISA ICS advisory icsa-26-225-14
+    source_url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-14.json
+  - quote: 'Metasys 12: End of support, update to later version'
+    attribution: Johnson Controls, via CISA ICS advisory icsa-26-225-14
+    source_url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-14.json
+  extended_notes: 'Detection concept: Metasys UI access logs showing URLs with embedded script/HTML-encoded
+    payloads in query parameters; unexpected JavaScript execution or DOM anomalies reported by operators
+    viewing shared Metasys dashboard links. Hardening per Johnson Controls JCI-PSA-2026-11: restrict Metasys
+    UI network exposure, WAF-front the UI, apply CSP headers, and — for Metasys 12/13 operators with no
+    available fix — prioritise migration off end-of-support versions.'
+- title: A fourth Flowise CVE lands via unauthenticated prompt injection into RCE, days after the last
+    batch cited the vendor's sunset notice
+  sources:
+  - url: https://www.vulncheck.com/advisories/flowise-before-prompt-injection-rce-via-csv-agent
+    publisher: VulnCheck (advisory)
+    date: '2026-08-13'
+    role: primary
+  - url: https://github.com/FlowiseAI/Flowise/security/advisories/GHSA-w7x8-q2gp-5cgg
+    publisher: FlowiseAI (GitHub Security Advisory GHSA-w7x8-q2gp-5cgg)
+    date: '2026-08-13'
+    role: primary
+  discovery_trace: 'first seen at: enisa-euvd (bridge enisa-euvd recent criticals listing), URL https://euvd.enisa.europa.eu/
+    -> primary: VulnCheck advisory, URL https://www.vulncheck.com/advisories/flowise-before-prompt-injection-rce-via-csv-agent
+    -> primary: FlowiseAI GitHub Security Advisory, URL https://github.com/FlowiseAI/Flowise/security/advisories/GHSA-w7x8-q2gp-5cgg'
+  summary: 'VulnCheck assigned CVE-2026-73487 (CVSS 9.0) against Flowise before 3.1.3 on 2026-08-13, five
+    days after this pipeline covered three other VulnCheck-assigned Flowise CVEs against a vendor that
+    had just announced it is winding down. This new bug is a regex-based Python code-validator bypass
+    in the CSV and Airtable Agent nodes: prompt injection delivered through the unauthenticated prediction
+    API can reach unblocked pandas functions such as pd.read_json(), letting an attacker exfiltrate datasets,
+    perform SSRF against internal services, or achieve code execution — all without authentication. Unlike
+    the three CVEs covered on 2026-08-08 (where BSI''s advisory marked the product unpatched with no vendor
+    left to fix it), this specific bug is fixed in Flowise 3.1.3 and above; the finding is credited to
+    researcher p80n-sec.'
+  region_nexus: global; self-hosted Flowise AI-agent-builder deployments
+  primary_sector_nexus: indirect
+  sector: general/cross-sector
+  cves:
+  - CVE-2026-73487
+  techniques:
+  - T1190
+  affected_products:
+  - Flowise
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: update-of:2026-08-08/flowise-three-cves-vendor-sunset-no-fix-coming
+  evidence:
+  - quote: Flowise before 3.1.3 contains a regex-based Python code validator bypass in CSV and Airtable
+      Agent nodes
+    attribution: VulnCheck
+    source_url: https://www.vulncheck.com/advisories/flowise-before-prompt-injection-rce-via-csv-agent
+  - quote: allows unauthenticated attackers to inject malicious code via prompt injection
+    attribution: VulnCheck
+    source_url: https://www.vulncheck.com/advisories/flowise-before-prompt-injection-rce-via-csv-agent
+  extended_notes: 'Detection concept: unauthenticated calls to the Flowise prediction API targeting CSV/Airtable
+    Agent flows with prompt content referencing pandas functions (pd.read_json, os., subprocess) or attempting
+    to break out of the expected agent-response format. Hardening: upgrade to Flowise 3.1.3+; given the
+    vendor''s broader sunset status noted in the 2026-08-08 entry, self-hosted operators should treat
+    any Flowise instance as a candidate for decommissioning or network isolation regardless of per-CVE
+    patch availability.'
+- title: Hitachi Energy APM Edge ships Linux-kernel IPsec/rxrpc write-what-where and OOB-write bugs with
+    module-disable as the only fix
+  sources:
+  - url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-04.json
+    publisher: CISA (ICS Advisory icsa-26-225-04, CSAF structured document)
+    date: '2026-08-13'
+    role: primary
+  discovery_trace: 'first seen at: cisa-advisories (bridge cisa csaf-recent listing), URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/changes.csv
+    -> primary: CISA ICS advisory icsa-26-225-04 CSAF document, URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-04.json'
+  summary: CISA published icsa-26-225-04 on 2026-08-13 for two vulnerabilities in Hitachi Energy's APM
+    Edge product (versions 6.10 and prior), an energy-sector asset-performance-management edge device,
+    tagged by CISA to the Energy critical-infrastructure sector. CVE-2026-43284 (CVSS 8.8) is a write-what-where
+    condition in the underlying Linux kernel's esp4/esp6 IPsec modules; CVE-2026-43500 (CVSS 7.8) is an
+    out-of-bounds write in the kernel's rxrpc module. Both trace to the embedded Linux kernel rather than
+    to Hitachi Energy's own application code, and Hitachi Energy's only stated remediation is to disable
+    the esp4/esp6 and rxrpc kernel modules respectively — there is no APM Edge-specific patch on record.
+    No exploitation has been reported.
+  region_nexus: global Hitachi Energy installed base in the energy sector, including Europe
+  primary_sector_nexus: indirect
+  sector: energy
+  cves:
+  - CVE-2026-43284
+  - CVE-2026-43500
+  techniques:
+  - T1068
+  affected_products:
+  - Hitachi Energy APM Edge
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-NATIONAL-CERT
+  confidence: LOW
+  novelty: new
+  evidence: []
+  extended_notes: Mitigation is module-disable only (`esp4`/`esp6` and `rxrpc`); no product-specific patch
+    identified in the advisory.
+  borderline: true
+  borderline_reason: kernel-inherited bugs with module-disable as the only remediation, no APM Edge-specific
+    patch, no exploitation evidence, and thin CSAF narrative (no vulnerability descriptions beyond CWE/CVSS)
+    — informational for energy-sector OT asset owners rather than an urgent action item
+- title: ANDRITZ HIPASE-250 process-control HMI ships four insecure-design bugs, including a fleet-wide
+    hardcoded VNC password, fixed since 2024
+  sources:
+  - url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-05.json
+    publisher: CISA (ICS Advisory icsa-26-225-05, CSAF structured document)
+    date: '2026-08-13'
+    role: primary
+  discovery_trace: 'first seen at: cisa-advisories (bridge cisa csaf-recent listing), URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/changes.csv
+    -> primary: CISA ICS advisory icsa-26-225-05 CSAF document, URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-05.json'
+  summary: 'CISA published icsa-26-225-05 on 2026-08-13 for four vulnerabilities in ANDRITZ HIPASE-250
+    (formerly 250 SCALA), an energy-sector process-control HMI, affecting versions <=7.20. CVE-2026-65309
+    (CVSS 7.5) stores and transmits user passwords in a reversible format instead of a one-way hash. CVE-2026-65310
+    (CVSS 7.5) exposes the device''s data/configuration endpoint with no authentication and permissive
+    CORS in its default configuration. CVE-2026-65311 (CVSS 5.3) exposes an undocumented HTTP endpoint
+    that changes the server''s logging level/target without authentication. CVE-2026-65313 (CVSS 8.1,
+    CWE-798) is the most operationally significant: the provisioning script used when installing HIPASE-250
+    engineering workstations sets a fixed, hard-coded x11vnc password identical across every deployed
+    workstation, so recovering one customer''s credential compromises all of them. ANDRITZ fixed all four
+    in V8.00.00 (released 2024-12) and V8.15.00 (released 2026-07) — the fixes substantially predate this
+    CISA disclosure, meaning any operator still on <=7.20 has been running exposed for an extended period.
+    No exploitation has been reported.'
+  region_nexus: ANDRITZ (Austria-headquartered) installed base in the energy sector worldwide, including
+    Europe
+  primary_sector_nexus: indirect
+  sector: energy
+  cves:
+  - CVE-2026-65309
+  - CVE-2026-65310
+  - CVE-2026-65311
+  - CVE-2026-65313
+  techniques:
+  - T1078
+  - T1552
+  affected_products:
+  - ANDRITZ HIPASE-250
+  - ANDRITZ 250 SCALA
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-NATIONAL-CERT
+  confidence: LOW
+  novelty: new
+  evidence:
+  - quote: A provisioning script used when installing HIPASE-250 (formerly 250 SCALA) engineering workstations
+      sets a fixed, hard-coded x11vnc password. Because the same credential is applied to every workstation
+    attribution: ANDRITZ, via CISA ICS advisory icsa-26-225-05
+    source_url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-05.json
+  extended_notes: Fixes already shipped in 2024-12 and 2026-07; this is coordinated public disclosure
+    catching up to a pre-existing fix.
+  borderline: true
+  borderline_reason: moderate CVSS ceiling (8.1), no confirmed exploitation, niche vendor with a narrower
+    deployment footprint than the other ICS items this cycle — included for energy-sector relevance and
+    the fleet-wide hardcoded-credential pattern
+- title: Johnson Controls Airwall zero-trust remote-access appliance ships a hardcoded cryptographic key
+    and an arbitrary file-read bug
+  sources:
+  - url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-03.json
+    publisher: CISA (ICS Advisory icsa-26-225-03, CSAF structured document)
+    date: '2026-08-13'
+    role: primary
+  discovery_trace: 'first seen at: cisa-advisories (bridge cisa csaf-recent listing), URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/changes.csv
+    -> primary: CISA ICS advisory icsa-26-225-03 CSAF document, URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-03.json'
+  summary: CISA published icsa-26-225-03 on 2026-08-13 for two vulnerabilities in Johnson Controls' Airwall
+    product (versions <=4.0.4), a zero-trust network-access appliance frequently deployed to gate remote
+    access into OT environments. CVE-2026-64887 (CVSS 6.8, CWE-798) is a hardcoded password or cryptographic
+    key that Johnson Controls describes as difficult to detect and difficult to remediate without manually
+    modifying affected systems. CVE-2026-34492 (CVSS 6.4) is an arbitrary file-read vulnerability arising
+    from unsanitised user-supplied input reaching filesystem-access functions, and requires user interaction
+    to trigger. Neither is individually rated critical, but a hardcoded key in a product whose entire
+    value proposition is gating trust into OT networks raises the practical stakes of the finding above
+    its CVSS score.
+  region_nexus: global Johnson Controls installed base; Airwall is used for OT remote-access gating including
+    in Europe
+  primary_sector_nexus: indirect
+  sector: energy, critical manufacturing
+  cves:
+  - CVE-2026-64887
+  - CVE-2026-34492
+  techniques:
+  - T1552
+  - T1005
+  affected_products:
+  - Johnson Controls Airwall
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-NATIONAL-CERT
+  confidence: LOW
+  novelty: new
+  evidence:
+  - quote: A hardcoded password or cryptographic key was identified in the Airwall application. A hardcoded
+      credential leads to a significant authentication failure that can be difficult for system or application
+      administrators to detect.
+    attribution: Johnson Controls, via CISA ICS advisory icsa-26-225-03
+    source_url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-03.json
+  extended_notes: null
+  borderline: true
+  borderline_reason: moderate CVSS (6.4-6.8), no confirmed exploitation — flagged for the sector-disproportionate
+    impact of a hardcoded key in a zero-trust OT remote-access gateway rather than for raw severity
+- title: A hard-coded, fleet-wide Bluetooth credential in a home-use brain-stimulation medical device
+    lets anyone in range alter stimulation parameters
+  sources:
+  - url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsma-26-225-01.json
+    publisher: CISA (ICS Medical Advisory icsma-26-225-01, CSAF structured document)
+    date: '2026-08-13'
+    role: primary
+  discovery_trace: 'first seen at: cisa-advisories (bridge cisa csaf-recent listing), URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/changes.csv
+    -> primary: CISA ICS Medical Advisory icsma-26-225-01 CSAF document, URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsma-26-225-01.json'
+  summary: CISA published medical advisory icsma-26-225-01 on 2026-08-13 for CVE-2026-18164 (CVSS 8.1,
+    CWE-798) in the Flow Neuroscience FL-100 (also marketed as Halo Neuroscience FL-100), a home-use transcranial
+    direct-current-stimulation (tDCS) device for depression treatment. An undocumented hard-coded credential
+    shared by all device units is authorised to bypass authentication, letting an attacker within Bluetooth
+    range arbitrarily manipulate the device's brain-stimulation parameters and state — a direct patient-safety
+    impact rather than a data-confidentiality one. Flow Neuroscience's only remediation is a firmware
+    update pushed via the Flow companion app; devices predating the July 2026 firmware remain vulnerable
+    until the user actively updates.
+  region_nexus: consumer medical device distributed internationally; healthcare-sector patient-safety
+    relevance rather than clinical-facility infrastructure
+  primary_sector_nexus: indirect
+  sector: healthcare
+  cves:
+  - CVE-2026-18164
+  techniques:
+  - T1078
+  affected_products:
+  - Flow Neuroscience FL-100
+  - Halo Neuroscience FL-100
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-NATIONAL-CERT
+  confidence: LOW
+  novelty: new
+  evidence:
+  - quote: An undocumented hard-coded credential, shared by all device units, is authorized to bypass
+      authentication. This allows an attacker within Bluetooth range to arbitrarily manipulate brain stimulation
+      parameters and state.
+    attribution: Flow Neuroscience, via CISA ICS Medical Advisory icsma-26-225-01
+    source_url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsma-26-225-01.json
+  extended_notes: Remediation is a user-initiated firmware update via the vendor's companion app; there
+    is no forced/remote patch mechanism.
+  borderline: true
+  borderline_reason: consumer wellness/home-medical device rather than clinical/hospital infrastructure
+    — included for the patient-safety angle and healthcare-sector relevance; main agent should judge fit
+    against the constituency definition
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: no product watchlist configured for this deployment (config/org-profile.yaml has none) — sweep
+    is a no-op per org-profile duty rules; general coverage rules applied unchanged.
+candidate_sources: []
+coverage_gaps:
+- source_id: chrome-releases
+  reason: 'rotation priority attempted: dated archive https://chromereleases.googleblog.com/2026/ fetched
+    directly (jina reader pool exhausted, direct-only worked); only one August post surfaced, ''Stable
+    Channel Update for Desktop'' Aug 11 2026 with CVE-2026-19556..19560 — published before this run''s
+    50h window (window start ~2026-08-13T02:12Z); no in-window Chrome release found. Feed subcommand (feeds/posts/default)
+    still returns count=0 as noted in the source record for a 4th consecutive run — recipe defect persists,
+    dated-archive-page fallback is the working recipe this run.'
+- source_id: siemens-productcert-csaf
+  reason: 'rotation priority attempted: the direct CSAF portal (cert-portal.siemens.com/productcert/csaf/)
+    was not probed directly this run because CISA''s CSAF mirror already surfaced 6 in-window Siemens
+    ICS advisories (Desigo DXR/PXC, Siveillance Video, Parasolid, Simcenter Femap, Solid Edge, LOGO! Soft
+    Comfort) with full product_status/remediation data; a targeted search for the Siveillance Video CVE-2026-3014
+    SSA id on cert-portal.siemens.com did not locate a matching page (SSA-625934 found instead covers
+    an unrelated Webhooks CVE-2025-0836) — the exact Siemens SSA id for CVE-2026-3014 is unconfirmed,
+    cited via the CISA CSAF mirror instead.'
+- source_id: cisa-advisories
+  reason: the jina reader pool (all 7 keys) was exhausted this run (HTTP 402 on every key), so `cisa page
+    <url>` (human-readable HTML narrative for ICS advisories) could not be fetched; the CSAF structured
+    JSON via the GitHub raw mirror (`cisa csaf-recent` / `cisa csaf <id>`) worked cleanly throughout and
+    supplied full product_status/remediation/CVSS data for all ICS items in this return — no content was
+    lost, only the narrative HTML framing.
+- source_id: cert-eu
+  reason: feed https://cert.europa.eu/publications/security-advisories-rss returned cleanly but newest
+    item was 2026-07-23 (stale relative to this run's window) — consistent with prior runs' observation
+    that the CERT-EU advisory series publishes infrequently; no in-window content.
+- source_id: cert-pl
+  reason: feed https://cert.pl/en/rss.xml returned cleanly; newest item 2026-08-10, outside this run's
+    50h window — no in-window content this run.
+- source_id: ncsc-uk
+  reason: feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml returned cleanly with an item
+    as recent as 2026-08-13 ('How BitLocker PINs help protect your data and devices') but it is guidance/blog
+    content, not an advisory or exploited-vuln item relevant to the S1 mission — no qualifying item.
+- source_id: cert-fr
+  reason: avis feed returned a large 2026-08-14 batch (Mattermost, Elastic Kibana, Stormshield Network
+    Security, Netgate, Tenable Security Center, PostgreSQL, Sophos, OpenSSL and more); drilled Stormshield/Netgate/Tenable
+    Security Center and found the CVE lists are dominated by bundled third-party/dependency CVEs without
+    vendor-specific exploitation or severity signal beyond generic 'peut permettre' language (CERT-FR
+    advisories carry no CVSS) — none individually cleared the bar for a distinct item this run given stronger
+    candidates elsewhere; not itemised as a coverage gap in the sense of missed content, but noting the
+    drill-down outcome for audit purposes.
+cve_table:
+- cve: CVE-2026-19188
+  product: Haiwell IoT Cloud HMI Gateway
+  cvss: 10.0
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: Scada-v3.50.1.19
+  source: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-02.json
+- cve: CVE-2026-26035
+  product: Fortinet FortiWeb
+  cvss: 8.8
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: 7.2.13 / 7.4.12 / 7.6.7 / 8.0.3
+  source: https://www.fortiguard.com/psirt/FG-IR-26-158
+- cve: CVE-2026-70466
+  product: Fortinet FortiWeb
+  cvss: 4.8
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: 7.6.6 / 8.0.3 (virtual patch FG-VD-10009598.0day available immediately)
+  source: https://www.fortiguard.com/psirt/FG-IR-26-157
+- cve: CVE-2026-70468
+  product: Fortinet FortiManager / FortiManager Cloud
+  cvss: 7.3
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: 7.2.10 / 7.4.6 / 7.6.2
+  source: https://www.fortiguard.com/psirt/FG-IR-26-160
+- cve: CVE-2026-16860
+  product: IBM i
+  cvss: 9.9
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: PTF SJ10879 (7.6) / SJ10880 (7.5) / SJ10881 (7.4) / SJ10882 (7.3)
+  source: https://www.ibm.com/support/pages/node/7283282
+- cve: CVE-2026-17083
+  product: IBM i (Debug Server)
+  cvss: 9.8
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: see IBM Support bulletin
+  source: https://www.ibm.com/support/pages/security-bulletin-ibm-i-affected-multiple-vulnerabilities-debug-server
+- cve: CVE-2026-3014
+  product: Siemens Siveillance Video
+  cvss: 9.1
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: V23.3 HotfixRev27 / V24.1 HotfixRev16 / V25.1 HotfixRev15
+  source: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-09.json
+- cve: CVE-2026-10053
+  product: GitLab CE/EE (package registry)
+  cvss: 8.5
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: 19.2.2 / 19.1.4 / 19.0.6
+  source: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-2-released/
+- cve: CVE-2026-15423
+  product: GitLab CE/EE (CI/CD pipeline API)
+  cvss: 8.5
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: 19.2.2 / 19.1.4 / 19.0.6
+  source: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-2-released/
+- cve: CVE-2026-34491
+  product: Johnson Controls Metasys
+  cvss: 8.0
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: 15.0.1 (shipped 2026-03-25); 14.1.5 forecast 2026-07-15; 12/13 EOL no fix; 16.0 unaffected
+  source: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-14.json
+- cve: CVE-2026-73487
+  product: Flowise
+  cvss: 9.0
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: 3.1.3
+  source: https://www.vulncheck.com/advisories/flowise-before-prompt-injection-rce-via-csv-agent
+- cve: CVE-2026-43284
+  product: Hitachi Energy APM Edge
+  cvss: 8.8
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: no product patch — disable esp4/esp6 kernel modules
+  source: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-04.json
+- cve: CVE-2026-65313
+  product: ANDRITZ HIPASE-250 / 250 SCALA
+  cvss: 8.1
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: V8.00.00 (2024-12) / V8.15.00 (2026-07)
+  source: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-05.json
+- cve: CVE-2026-64887
+  product: Johnson Controls Airwall
+  cvss: 6.8
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: see CISA advisory
+  source: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-225-03.json
+- cve: CVE-2026-18164
+  product: Flow Neuroscience FL-100
+  cvss: 8.1
+  epss: null
+  kev: false
+  exploited: 'no'
+  patch: firmware update via Flow app (July 2026)
+  source: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsma-26-225-01.json
