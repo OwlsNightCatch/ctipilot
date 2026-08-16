@@ -1,0 +1,81 @@
+domain: S3
+run_id: 2026-08-16T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-16T04:14:39Z
+ended_at: 2026-08-16T04:22:57Z
+duration_seconds: 498
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 7
+  bridge_fetches: 18
+items:
+  - title: "Jewelbug/XG-Web: a malicious \"PDF Viewer\" browser extension escapes the Chrome/Firefox sandbox via a fake Microsoft native-messaging host to plant a single watering-hole script across 15+ government webmail tenants"
+    sources:
+      - { url: "https://www.security.com/threat-intelligence/jewelbug-crypto-fraud-espionage", publisher: "Symantec / Carbon Black Threat Hunter Team (Broadcom)", date: "2026-08-13", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hackers-breach-govt-webmail-while-running-parallel-crypto-fraud/", publisher: "BleepingComputer (Bill Toulas)", date: "2026-08-13", role: "corroborating" }
+    discovery_trace: "backlog assignment → primary: Symantec/Carbon Black Threat Hunter Team, URL https://www.security.com/threat-intelligence/jewelbug-crypto-fraud-espionage (no pivot needed — this is the discovering lab's own write-up; body verified in full against the raw page, including the References/whitepaper link https://sed-cms.broadcom.com/sites/default/files/2026-08/Jewelbug%20Dossier.pdf) → corroboration: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/hackers-breach-govt-webmail-while-running-parallel-crypto-fraud/ (independent journalism reproducing the same facts, no contradictions found; also cross-checked against cybersecuritynews.com, TheHackerNews, DarkReading, Infosecurity Magazine coverage of the same Symantec report via WebSearch, all consistent)"
+    summary: |
+      Symantec's Threat Hunter Team documents Jewelbug (aka Earth Alux/Trend Micro, REF7707/Elastic, CL-STA-0049/Unit 42), a China-based hack-for-hire group running government espionage and a commodity cryptocurrency-fraud business from one shared control panel (XG-Web, a React/Node.js/MySQL browser-centric RAT-and-stealer platform the developers themselves mislabel a "penetration-testing platform"). The primary implant is a malicious Chrome/Firefox extension named "PDF Viewer" requesting cookies, scripting, debugger, web-request-interception and native-messaging permissions; a background service worker gives the operator a full remote bridge to the browser API (arbitrary JS injection, any browser function invocable by name). To escape the browser sandbox onto the host OS, the extension talks to a native-messaging host registered under the deliberately misleading name `com.microsoft.runedge` (HKCU\SOFTWARE\Google\Chrome\NativeMessagingHosts\com.microsoft.runedge), which executes operator commands through cmd.exe and returns output to the panel. The extension is not installed via the extension store: it is side-loaded directly into the browser profile by the group's Windows backdoor Antino (delivered as a fake Adobe Flash/Adobe-installer executable), which also drops the native-messaging helper and writes the registry value. Antino itself uses the Microsoft Graph API as its C2 channel to blend into legitimate Microsoft cloud traffic. In its largest documented operation, Jewelbug obtained write access to a Middle Eastern state telecom/national network-services provider's shared web-hosting platform and inserted a single script tag into the common webmail template — planting the watering hole simultaneously across more than 15 government-ministry tenants, firing on every login page and mailbox view. The hook opens a WebSocket to C2 on login, exfiltrates the session cookie jar, labels the victim by the government email address read from the webmail UI, filters for nine targeted government domains and a non-compromised, Windows host, then overlays the fake Flash-update lure that drops Antino and side-loads PDF Viewer. Victims span government ministries and militaries across the Middle East, Southeast Asia and South Asia (one campaign list alone named 90+ South Asian police/government email addresses); the group's own victim database recorded 1M+ implant check-ins and 580,000+ stolen cookies in under three months, and for at least one victim the extension's native-messaging bridge was used to reach an internal virtualization-management interface. A dormant clipboard-hijacking module capable of swapping copied cryptocurrency addresses exists in the same codebase but was not activated during the observed campaign window. Symantec assesses with high confidence, from government-issued identity documents and a signed authorization letter, that the crypto-fraud/SEO arm is run by a named individual tied to a registered Changsha, Hunan-province company — the same infrastructure, control panel and credentials serve both the espionage and the for-profit crime, the signature of a hack-for-hire entity monetizing state and criminal access from the same shop.
+    region_nexus: "Primary victims are government ministries/militaries in the Middle East, Southeast Asia and South Asia (no direct CH/EU victim named); the shared-hosting watering-hole technique and the browser-extension native-messaging sandbox-escape are directly transferable to any government's shared webmail/portal infrastructure, including Swiss cantonal/communal shared e-government hosting."
+    primary_sector_nexus: "indirect — technique-transferable to public-sector shared webmail/portal infrastructure; one implant variant separately configured to beacon through the internal corporate proxy of a major U.S. aerospace/industrial manufacturer, showing the tooling also reaches commercial critical-infrastructure-adjacent targets"
+    sector: "public-sector, government, telco (shared hosting platform compromised as the pivot), aerospace/industrial (secondary implant configuration)"
+    cves: []
+    techniques: [T1189, T1176, T1204.002, T1059.003, T1539, T1102.002, T1113, T1115]
+    affected_products: ["Google Chrome", "Mozilla Firefox"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:jewelbug", type: actor, name: "Jewelbug", aliases: ["Earth Alux", "REF7707", "CL-STA-0049"],
+          summary: "China-based hack-for-hire APT running government/military espionage across the Middle East, Southeast Asia and South Asia alongside a commodity cryptocurrency-fraud business, from shared infrastructure and one control panel (XG-Web); also tracked as Earth Alux (Trend Micro), REF7707 (Elastic Security Labs) and CL-STA-0049 (Palo Alto Networks Unit 42) (Symantec/Carbon Black Threat Hunter Team, 2026-08-13)." }
+      - { key: "malware:antino-backdoor", type: malware, name: "Antino",
+          aliases: [],
+          summary: "Jewelbug's Windows backdoor, delivered via malicious HTA downloaders and fake Adobe Flash/Adobe-installer executables; uses the Microsoft Graph API as its C2 channel and side-loads the group's 'PDF Viewer' malicious browser extension plus its native-messaging helper onto the victim host (Symantec, 2026-08-13)." }
+      - { key: "tool:xg-web", type: tool, name: "XG-Web",
+          aliases: [],
+          summary: "Jewelbug's browser-centric remote-access/information-stealing C2 platform — a React front end over a Node.js backend with a MySQL victim database — self-described by its developers as a 'penetration-testing platform'; administers both the group's espionage campaigns and its cryptocurrency-fraud operation from one panel (Symantec, 2026-08-13)." }
+      - { key: "malware:pdf-viewer-malicious-extension", type: malware, name: "PDF Viewer (malicious browser extension)",
+          aliases: [],
+          summary: "Jewelbug's primary browser implant: a Chrome/Firefox extension masquerading as a PDF reader that requests cookie/scripting/debugger/native-messaging permissions, exfiltrates the victim's cookie jar and credentials in near real time, and escapes the browser sandbox via a native-messaging host disguised as a Microsoft Edge component (Symantec, 2026-08-13)." }
+      - { key: "malware:clientking", type: malware, name: "ClientKing",
+          aliases: [],
+          summary: "Jewelbug's Rust-based implant for Linux servers and network devices (including consumer routers), extending the group's toolset beyond the browser/Windows implants covered by Antino and PDF Viewer (Symantec, 2026-08-13)." }
+    relation_suggestions:
+      - { subject: "actor:jewelbug", object: "malware:antino-backdoor",
+          basis: "Symantec: \"Jewelbug's main implant is the Antino backdoor\" (Symantec/Carbon Black, 2026-08-13)" }
+      - { subject: "actor:jewelbug", object: "tool:xg-web",
+          basis: "Symantec: espionage and crypto-fraud missions are \"administered from a single control panel, XG-Web\" (Symantec/Carbon Black, 2026-08-13)" }
+      - { subject: "actor:jewelbug", object: "malware:pdf-viewer-malicious-extension",
+          basis: "Symantec: the group \"operates a malicious Chrome and Firefox extension posing as an application called 'PDF Viewer'\" (Symantec/Carbon Black, 2026-08-13)" }
+      - { subject: "actor:jewelbug", object: "malware:clientking",
+          basis: "Symantec describes ClientKing as the group's Linux/router Rust implant extending its toolset (Symantec/Carbon Black, 2026-08-13)" }
+      - { subject: "malware:antino-backdoor", object: "malware:pdf-viewer-malicious-extension",
+          basis: "Symantec: the Antino-delivered fake Adobe Flash/installer \"sideloaded the 'PDF Viewer' extension into the victim's browser profile, dropped the native-messaging helper, and wrote the registry value that enabled it\" (Symantec/Carbon Black, 2026-08-13)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    backlog_item: jewelbug-xg-web
+    evidence:
+      - quote: "The extension talked to a Windows helper registered as a native-messaging host under the misleading name com.microsoft.runedge, which ran operator commands through the Windows command interpreter and returned the output to the panel."
+        attribution: "Symantec / Carbon Black Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/jewelbug-crypto-fraud-espionage"
+      - quote: "The downloaded executable was the group's Antino backdoor... It also sideloaded the \"PDF Viewer\" extension into the victim's browser profile, dropped the native-messaging helper, and wrote the registry value that enabled it: HKCU\\SOFTWARE\\Google\\Chrome\\NativeMessagingHosts\\com.microsoft.runedge"
+        attribution: "Symantec / Carbon Black Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/jewelbug-crypto-fraud-espionage"
+      - quote: "A single campaign spanned more than 15 government webmail tenants, with the hook firing on the login page and every mailbox view, indicating it sat in the shared template rather than being delivered per user."
+        attribution: "Symantec / Carbon Black Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/jewelbug-crypto-fraud-espionage"
+      - quote: "Jewelbug's victim database recorded more than one million implant check-ins and more than 580,000 stolen browser cookies in less than three months of active operations."
+        attribution: "Symantec / Carbon Black Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/jewelbug-crypto-fraud-espionage"
+      - quote: "Symantec researchers have high confidence attributing Jewelbug's financially-motivated activities to a Chinese company that advertises SEO services."
+        attribution: "BleepingComputer (Bill Toulas), corroborating"
+        source_url: "https://www.bleepingcomputer.com/news/security/hackers-breach-govt-webmail-while-running-parallel-crypto-fraud/"
+    extended_notes: |
+      Triage / benign-lookalike guidance (mechanically derived, not source-stated): a native-messaging host registered under HKCU\SOFTWARE\<Browser>\NativeMessagingHosts\<reverse-domain-name> is itself normal — legitimate password managers, ad blockers and PDF/document tools use this exact mechanism. The discriminators here are (1) a host name masquerading as a Microsoft component (`com.microsoft.*`) while being registered per-user under HKCU by a browser-extension-delivered dropper rather than an enterprise MSI/GPO-deployed, code-signed Microsoft installer under HKLM; (2) cmd.exe spawned with a native-messaging host executable (rather than the browser's own renderer/broker) as parent, an unusual process-lineage pairing worth a process-creation-with-parent-lineage hunt; (3) a browser extension requesting `nativeMessaging` + `webRequest` + `debugger` + all-URLs `cookies` together is a high-privilege permission combination rare in legitimate document-viewer extensions and worth an extension-manifest/permission-audit rule. Classification: reliability B (Symantec/Broadcom — established vendor threat-research lab, first-hand telemetry and whitepaper-backed investigation), credibility 2 (single technical source; not yet independently re-derived by a second telemetry-holding lab, though extensively and consistently reproduced by press with no contradicting reporting found). This item was queued by the 2026-08-15 fire (per spawn-message note) but not published then; verified in full against the raw Symantec page in this run (native-messaging host name, registry key, watering-hole mechanism and victim-labelling logic all confirmed against the primary text, not just the WebFetch summary).
+
+      Also checked and dropped for recency: Acronis TRU's "PATCHCORD"/"SHEETCORD" report (new C/C++ backdoor + Go-based Google-Sheets-C2 backdoor against Afghan telecom/South Asian critical infrastructure, attributed by press coverage to APT36) — Acronis published 2026-08-13T07:45Z, outside this run's 26h window and not a fresh delta on any tracked entry; flagging for a future run's attention since it targets critical-infrastructure telecom and uses a notable living-off-cloud-services C2 technique (Google Sheets API as C2 transport), URL https://www.acronis.com/en/tru/posts/patchcord-new-malware-cluster-targets-afghan-telecom-and-south-asian-critical-infrastructure/ (fetched via bridge, HTTP 200, datePublished confirmed in page metadata).
+
+candidate_sources: []
+coverage_gaps:
+  - source_id: paradigm-shift-research
+    reason: "ps.tc bridge (url) returns only the client-side SPA shell with a meta-refresh to pages/home.html, no post listing/dates surfaced (consistent with the source record's prior note). Escalated to the jina reader as last resort; all configured jina API keys reported HTTP 402 balance-exhausted and the anonymous free tier returned HTTP 403, so no content was recoverable this run. Not counted as a fetch_failures entry per the source's documented 'no transport failure, not a demotion' status — logged here as an unrecovered coverage gap for this run only."

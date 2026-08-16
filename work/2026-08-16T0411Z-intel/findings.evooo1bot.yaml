@@ -1,0 +1,246 @@
+domain: followup-evooo1bot
+run_id: 2026-08-16T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-16T05:30:28Z
+ended_at: 2026-08-16T05:37:22Z
+duration_seconds: 414
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 8
+  bridge_fetches: 1
+items:
+  - title: "Evooo1Bot — Mirai-derived Linux botnet adds SOCKS5 relay, honeypot-aware SSH brute-forcing, and an exploit arsenal that reaches Confluence, WSO2 and Kubernetes ingress-nginx, not just SOHO routers"
+    sources:
+      - { url: "https://www.fortinet.com/blog/threat-research/multi-functional-linux-botnet-evooo1bot", publisher: "FortiGuard Labs (Fortinet)", date: "2026-08-13", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/new-evooo1bot-linux-botnet-turns-routers-into-traffic-relay-nodes/", publisher: "BleepingComputer", date: "2026-08-15", role: "corroborating" }
+      - { url: "https://therecord.media/new-mirai-variant-adds-stealth-to-botnet-code", publisher: "The Record (Recorded Future News)", date: "2026-08-13", role: "corroborating" }
+      - { url: "https://www.infosecurity-magazine.com/news/new-linux-botnet-evooo1bot-victims/", publisher: "Infosecurity Magazine", date: "2026-08-14", role: "corroborating" }
+    discovery_trace: >
+      first seen at: assigned lead (BleepingComputer), URL
+      https://www.bleepingcomputer.com/news/security/new-evooo1bot-linux-botnet-turns-routers-into-traffic-relay-nodes/
+      (published 2026-08-15) → primary: FortiGuard Labs, URL
+      https://www.fortinet.com/blog/threat-research/multi-functional-linux-botnet-evooo1bot
+      (published 2026-08-13, author Cara Lin) → corroborating: The Record
+      (Recorded Future News), URL
+      https://therecord.media/new-mirai-variant-adds-stealth-to-botnet-code
+      (2026-08-13) → corroborating: Infosecurity Magazine, URL
+      https://www.infosecurity-magazine.com/news/new-linux-botnet-evooo1bot-victims/
+      (2026-08-14). WebSearch queries used to locate the primary:
+      WebSearch("Evooo1Bot FortiGuard Labs Mirai botnet"), WebSearch("\"Evooo1Bot\" fortinet.com").
+      Direct bridge fetch of the Fortinet URL (python3 tools/fetch_source.py url)
+      returned only a client-side-rendered SPA shell (title/meta tags, no article
+      body) — WebFetch's own rendering pipeline was the working transport for
+      this host; noted as a coverage/tooling gap below.
+    summary: |
+      FortiGuard Labs (Fortinet, researcher Cara Lin) documented a previously
+      undocumented Mirai-derived Linux botnet it names "Evooo1Bot" after a
+      hardcoded string found in every sample, active since at least July 2026
+      per FortiGuard IPS telemetry. It reuses Mirai's leaked DDoS engine (16
+      flood methods: UDP/SYN/ACK/DNS/GRE/STOMP/Xmas variants etc., T1498
+      Network Denial of Service) but layers on capabilities well beyond the
+      typical Mirai-derivative baseline. An integrated exploit module chains
+      at least 19 named CVEs, most against consumer/SOHO gateway gear and one
+      OT device (Alcatel-Lucent OmniPCX Enterprise CVE-2007-3010; NETGEAR
+      routers CVE-2016-6277; Tenda AC7/AC9/AC10/AC1900-AC15 CVE-2018-14558 and
+      CVE-2020-10987; Mitsubishi Electric/INEA ME-RTU CVE-2019-14931; Hikvision
+      IP cameras CVE-2021-36260; Telesquare SDT-CW3B1/TLR-2005KSH
+      CVE-2021-46422 and CVE-2024-29269; D-Link DIR-823X/DIR-868L
+      B1/go-rt-ac750/NAS devices CVE-2022-37055, CVE-2024-10914,
+      CVE-2025-10123, CVE-2025-55583; TP-Link Archer AX21 CVE-2023-1389) —
+      but the same module also carries functional exploits against three
+      genuinely enterprise-class, internet-facing systems: Atlassian
+      Confluence Server/Data Center OGNL injection (CVE-2022-26134), WSO2
+      products' unrestricted file-upload RCE (CVE-2022-29464, /fileupload
+      endpoint), and the Kubernetes ingress-nginx admission-controller RCE
+      ("IngressNightmare", CVE-2025-1974), plus PHP-CGI argument injection on
+      Windows (CVE-2024-4577) and a Zyxel firewall command-injection flaw
+      (CVE-2022-30525, /ztp/cgi-bin/handler). A Progress MOVEit Transfer
+      module (CVE-2023-34362) is present but FortiGuard states it "doesn't
+      execute the file upload procedure" and is "non-exploitable as shipped"
+      — an incomplete/decoy implementation, not a working exploit. Beyond the
+      CVE arsenal, the bot ships a SOCKS5 relay (direct-listen on TCP/1080,
+      plus a reverse-relay mode that separates a persistent encrypted control
+      channel from per-session proxy-data channels via RELAY_NEW/RELAY_DATA
+      framing), an HTTP credential sniffer that parses /proc/net/tcp to lift
+      Basic-Auth and Cookie headers to a local log file, and an SSH
+      brute-forcer whose 150+-entry credential dictionary mixes default IoT
+      creds with named enterprise/OT service accounts (jenkins, postgres,
+      oracle, nagios, deploy) — FortiGuard states this combination is "more
+      common in enterprise and operations-technology environments than on
+      consumer routers." The SSH module performs two-stage honeypot
+      detection: banner comparison against a hardcoded list of research
+      frameworks (Cowrie, Kippo, HonSSH, libssh, Twisted, Glutton, OpenCanary,
+      russh, MocanaSSH, etc.) before brute-forcing, then a post-login command
+      probe (`cat /proc/version; cat /proc/1/cmdline; ls
+      /opt/cowrie /home/cowrie /home/kippo`) that aborts the session if no
+      real kernel version string is returned or a Cowrie/Kippo path exists.
+      C2 uses AES-256-CTR and ChaCha20 (split key halves XOR-combined at
+      runtime) over TCP/443 to blend with HTTPS. Persistence is multi-layered:
+      a systemd unit disguised as "Apache HTTPD Cache Manager"
+      (Restart=always), a SysV init script, a cron entry re-fetching the
+      loader every 5 minutes, /etc/profile.d injection, and an rc.local
+      append; the process also raises its own oom_score_adj and holds
+      /dev/watchdog open to resist OOM-killer and reboot-triggered
+      interruption. An extensive anti-analysis layer checks for debuggers,
+      disassemblers, packet capture, forensic and AV tooling (strace, gdb,
+      ida, ghidra, wireshark, volatility, yara, rkhunter, etc.), sandbox/VM
+      artifacts (cuckoo, joesandbox, any.run, vmware, qemu, gvisor, kata,
+      firejail), and protects embedded strings behind a compile-time
+      AES/ChaCha20 obfuscation pipeline. FortiGuard's own text states only
+      that targeting spans "multiple known vulnerabilities across diverse
+      regions" without naming countries; The Record's independent coverage of
+      the same research additionally states telemetry activity is
+      "concentrated in North America, South America, Europe, India, China and
+      Japan" — this breakdown could not be independently confirmed in the
+      Fortinet blog's extractable text (most likely sourced from a chart or
+      graphic the fetch tooling did not render) and no source names a
+      Switzerland-specific victim or targeting pattern. No victim count or
+      infected-device scale figure is disclosed by any source.
+    region_nexus: "No country-level victim data in FortiGuard Labs' own extractable text ('diverse regions'); The Record separately states telemetry concentrated in North America, South America, Europe, India, China and Japan — not independently corroborated against the primary and treated as a secondary-source claim; no Switzerland-specific nexus stated by any source."
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector (telco/ISP-provided SOHO gateway devices; any sector running self-hosted Atlassian Confluence, WSO2 identity/API products, or internet-exposed Kubernetes ingress-nginx admission controllers)"
+    cves:
+      - CVE-2007-3010
+      - CVE-2016-6277
+      - CVE-2018-14558
+      - CVE-2019-14931
+      - CVE-2020-10987
+      - CVE-2021-36260
+      - CVE-2021-46422
+      - CVE-2022-26134
+      - CVE-2022-29464
+      - CVE-2022-30525
+      - CVE-2022-37055
+      - CVE-2023-1389
+      - CVE-2023-34362
+      - CVE-2024-4577
+      - CVE-2024-10914
+      - CVE-2024-29269
+      - CVE-2025-1974
+      - CVE-2025-10123
+      - CVE-2025-55583
+    techniques: [T1190, T1110, T1090.002, T1040, T1573.001, T1543.002, T1053.003, T1497, T1498, T1027]
+    affected_products:
+      - "Alcatel-Lucent OmniPCX Enterprise Communication Server"
+      - "NETGEAR routers (multiple models)"
+      - "Tenda AC7 / AC9 / AC10 / AC1900 (AC15) routers"
+      - "Mitsubishi Electric / INEA ME-RTU"
+      - "Telesquare SDT-CW3B1"
+      - "Telesquare TLR-2005KSH"
+      - "D-Link DIR-823X"
+      - "D-Link DIR-868L B1"
+      - "D-Link go-rt-ac750"
+      - "D-Link NAS devices (cgi-bin account_mgr.cgi)"
+      - "Hikvision IP cameras"
+      - "TP-Link Archer AX21"
+      - "Zyxel firewalls (ZTP handler)"
+      - "Atlassian Confluence Server and Data Center"
+      - "WSO2 API Manager / Identity Server / Enterprise Integrator"
+      - "Kubernetes ingress-nginx Controller"
+      - "PHP (CGI mode, Windows deployments)"
+      - "Progress MOVEit Transfer (module present but non-functional as shipped)"
+    entity_keys: []
+    new_entities:
+      - { key: "tool:evooo1bot", type: tool, name: "Evooo1Bot", aliases: [],
+          summary: "Mirai-derived modular Linux botnet documented by FortiGuard Labs (2026-08-13); reuses the leaked Mirai DDoS engine and adds encrypted C2, an SSH brute-force scanner with honeypot detection, a SOCKS5 relay module, an HTTP credential sniffer, and an exploit module chaining 19 CVEs across SOHO/IoT gateway devices plus enterprise targets (Atlassian Confluence, WSO2, Kubernetes ingress-nginx)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "the malware reuses the DDoS engine from the publicly leaked Mirai source code, it extends the original framework with numerous capabilities, including encrypted C2 communications, an SSH brute-force scanner, a SOCKS relay module, a credential sniffer, and an integrated exploit arsenal targeting multiple known vulnerabilities"
+        attribution: "FortiGuard Labs (via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/new-evooo1bot-linux-botnet-turns-routers-into-traffic-relay-nodes/"
+      - quote: "The embedded credential dictionary contains over 150 entries. Beyond typical IoT default credentials, the list includes service account names (jenkins, postgres, oracle, nagios, deploy) that are more common in enterprise and operations-technology environments than on consumer routers."
+        attribution: "FortiGuard Labs"
+        source_url: "https://www.fortinet.com/blog/threat-research/multi-functional-linux-botnet-evooo1bot"
+      - quote: "This exploit module doesn't execute the file upload procedure but only passes a payload argument to 'human2.aspx.' ... These are non-exploitable as shipped."
+        attribution: "FortiGuard Labs"
+        source_url: "https://www.fortinet.com/blog/threat-research/multi-functional-linux-botnet-evooo1bot"
+      - quote: "By transforming a compromised router...into a persistent proxy, the malware enables attackers to conceal their true origin, pivot into internal networks"
+        attribution: "FortiGuard Labs"
+        source_url: "https://www.fortinet.com/blog/threat-research/multi-functional-linux-botnet-evooo1bot"
+      - quote: "Telemetry shows activity concentrated in North America, South America, Europe, India, China and Japan."
+        attribution: "The Record (Recorded Future News)"
+        source_url: "https://therecord.media/new-mirai-variant-adds-stealth-to-botnet-code"
+    extended_notes: |
+      Relevance framing for the gate: the honest read is NOT "commodity
+      consumer-router botnet, no enterprise reach" — the exploit module
+      demonstrably carries functional, unauthenticated pre-auth RCE chains
+      against three enterprise-class, internet-facing systems that are
+      plausibly present in Swiss/European public-sector and CI estates:
+      Atlassian Confluence (CVE-2022-26134, patched since June 2022),
+      WSO2 products (CVE-2022-29464, patched since April 2022), and
+      Kubernetes ingress-nginx admission controllers (CVE-2025-1974
+      "IngressNightmare", patched in ingress-nginx 1.12.1 / 1.11.5, disclosed
+      March 2025 with independent research at the time estimating ~6,500
+      publicly exposed vulnerable clusters). All three CVEs are old enough
+      that any unpatched instance has had a multi-year (Confluence, WSO2) or
+      multi-month (ingress-nginx) patch window — meaning an org still
+      unpatched today is now exposed not only to targeted actors but to
+      commodity IoT-botnet mass-scanning that will fold a compromised
+      instance into DDoS, SOCKS5 relay/pivot, and credential-harvesting
+      infrastructure. The MOVEit Transfer module is explicitly non-functional
+      as shipped (payload wiring is broken), so CVE-2023-34362 should NOT be
+      read as actively exploited by this botnet — flagged here only because
+      Fortinet's own text raises and then debunks it; worth carrying so a
+      reader doesn't independently discover the module string and assume
+      MOVEit is newly at risk.
+
+      Detection/hunt concepts supported by the source (telemetry class first,
+      platform anchor second — no IOCs):
+      - Process/network: unexpected outbound TCP/443 connections from
+        embedded/edge devices, self-hosted Confluence/WSO2 app servers, or
+        Kubernetes ingress-nginx pods that do not correspond to expected
+        HTTPS egress (application server initiating C2-pattern outbound
+        connections is the discriminator vs. normal inbound-only web-server
+        traffic).
+      - Host/config artifact: unexplained systemd units named to impersonate
+        legitiate services (e.g. an "Apache HTTPD Cache Manager"-style unit
+        with Restart=always on a device/appliance that should not run such a
+        service), unexpected /etc/profile.d entries, appended /etc/rc.local
+        content, or a cron entry re-fetching a remote script every 5 minutes
+        — cron/systemd/profile.d/rc.local persistence stacked simultaneously
+        is itself an anomaly on embedded Linux appliances that normally carry
+        none of these.
+      - Authentication logs: SSH login attempts cycling through enterprise
+        service-account names (jenkins, postgres, oracle, nagios, deploy)
+        from a single low-reputation source in rapid succession is a
+        discriminator vs. legitimate automation, which authenticates as a
+        single expected account, not many.
+      - Benign lookalike / triage note: a device answering a probing SSH
+        session with an OpenSSH 9.7p1-style banner and passing a
+        Cowrie/Kippo-signature check before further compromise activity
+        indicates the attacker actively distinguishes honeypots from real
+        hosts — a defender running SSH honeypot/deception infrastructure
+        should not expect to observe post-authentication behavior from this
+        actor's automated component; absence of follow-on activity against a
+        deception asset is not evidence the scanning stopped.
+      - Hardening: patch Confluence/WSO2/ingress-nginx to the versions
+        referenced above; do not expose Kubernetes admission-controller
+        webhook endpoints to the public internet; disable or firewall
+        PHP-CGI on Windows IIS deployments per the CVE-2024-4577 advisory
+        guidance; rotate/replace default and weak SSH credentials on any
+        internet-facing Linux appliance, including OT/ICS gateway devices
+        (Mitsubishi Electric ME-RTU).
+
+      Coverage gap / tooling note for the pipeline: the jina reader pool
+      being exhausted forced a bridge (`fetch_source.py url`) attempt on the
+      Fortinet blog, which returned only the page's client-rendered SPA shell
+      (meta tags, no article body) — the direct WebFetch tool's own
+      rendering succeeded where the raw-HTML bridge did not. Surfacing this
+      because sources.json has no record yet for fortinet.com/blog and a
+      future run reaching for `tools/fetch_source.py url` on this host alone
+      (with jina also unavailable) would get an empty page; WebFetch directly
+      is the working recipe here, at least for this article.
+    borderline: false
+candidate_sources:
+  - id: fortinet-fortiguard-blog
+    publisher: "FortiGuard Labs (Fortinet) — Threat Research blog"
+    url: "https://www.fortinet.com/blog/threat-research"
+    category: research
+    why: "Named original-research source for Evooo1Bot and multiple other Mirai-derivative/IoT-botnet writeups (Moobot/Hikvision, GayFemboy) cited across recent runs; not yet a tracked source-list record. Note: blog article bodies are client-side rendered (SPA) — the raw-HTML bridge (tools/fetch_source.py url) returns only meta tags; direct WebFetch is the working transport for this host, no RSS feed identified in this session."
+coverage_gaps:
+  - source_id: fortinet-fortiguard-blog
+    reason: "Not in sources.json; bridge/raw-HTML fetch of the article returns a JS-rendered SPA shell with no body text (title/meta only) — direct WebFetch succeeded where the bridge did not. Recording as a tooling note, not a fetch_failures entry, since WebFetch itself succeeded on this host in this run."
