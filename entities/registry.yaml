@@ -1059,6 +1059,11 @@ entities:
     nexus: null
     summary: "SideCopy/APT36 delivering XenoRAT via mshta/HTA against Afghan provincial treasuries."
     first_seen: 2026-06-03
+    relations:
+      - to: "actor:apt36"
+        type: attributed-to
+        source: "2026-06-03/operation-xenofiscal-sidecopy-apt36-hits-provincial-treasury"
+        note: "Seqrite Labs documents the campaign as SideCopy (Transparent Tribe / APT36, Pakistan-attributed); the actor key was registered on 2026-08-17 and this edge connects the existing campaign record to it"
   - key: "campaign:outsider-phaas-gemini-2026"
     type: campaign
     name: "Outsider PhaaS"
@@ -4942,3 +4947,47 @@ entities:
     nexus: null
     summary: "Check Point Research's quarterly cross-sector ransomware landscape report, published 2026-08-13 from data-leak-site victim data. Counts 2,139 victims in Q2 2026, essentially flat quarter over quarter and up 33% year over year, with the top ten groups' share falling from 71% to 57.6% while the number of active groups climbed from 71 to 93, a new high for the tracked period. Records Qilin as the most prolific operator for a fourth straight quarter at 279 victims despite a 17% fall, The Gentlemen surging 62% to 269, the US victim share falling from 50% to 42%, ransom payment rates at a multi-year low near 23%, and a narrowing exploitation window with AI increasingly cited as the accelerant."
     first_seen: 2026-08-16
+  - key: "actor:apt36"
+    type: actor
+    name: "APT36"
+    aliases:
+      - "Transparent Tribe"
+    nexus: null
+    summary: "Pakistan-linked espionage cluster historically documented against government, military and diplomatic organisations in India and the wider South Asian region. Acronis Threat Research Unit assesses with moderate confidence that the PATCHCORD / SHEETCORD / HACKERAI activity against Afghan telecom providers and South Asian critical infrastructure overlaps with this cluster or a closely related Pakistan-linked actor, resting on sustained Afghan telecom and government targeting, a browser-credential harvesting tool previously seen in the group's operations, a command-and-control framework independently documented as part of its toolkit, and a Google Sheets channel resembling earlier work attributed at medium confidence to the same cluster (Acronis TRU, 2026-08-13)."
+    first_seen: 2026-08-17
+  - key: "malware:patchcord"
+    type: malware
+    name: "PATCHCORD"
+    aliases: []
+    nexus: null
+    summary: "Compiled C/C++ Windows backdoor delivered through Inno Setup installers impersonating Afghan Telecom service-management and VPN software and Afghanistan's Ministry of Communications and Information Technology. It persists by rewriting Microsoft Edge, Google Chrome and Mozilla Firefox shortcuts across five locations to launch itself with the real browser path as an argument while preserving the original icon, fingerprints the host, and polls a hardcoded server. Its most consequential command decodes an operator-supplied payload and executes it entirely in memory via VirtualAlloc, VirtualProtect and CreateThread, writing nothing to disk. A different variant, used in what Acronis calls an earlier campaign against India's energy sector in March 2026, carries virtual-machine, debugger, analysis-process and user-input checks that trigger a randomised sleep rather than process termination (Acronis TRU, 2026-08-13)."
+    first_seen: 2026-08-17
+    relations:
+      - to: "actor:apt36"
+        type: overlaps-with
+        source: "2026-08-17/patchcord-sheetcord-google-sheets-c2-browser-shortcut-hijack"
+        note: "Acronis TRU assesses at moderate confidence that the activity overlaps with the APT36 cluster or a closely related Pakistan-linked actor; the lab states an overlap, not an attribution"
+  - key: "malware:sheetcord"
+    type: malware
+    name: "SHEETCORD"
+    aliases: []
+    nexus: null
+    summary: "Go-based Windows implant from the same operator as PATCHCORD, whose command-and-control runs through the Google Sheets API v4: it authenticates with a cloud service-account credential hardcoded in the binary and creates a per-victim tab in the operator's spreadsheet for bidirectional tasking and results, a design Acronis records as consistent with the previously documented SHEETCREEP implant. It runs commands through PowerShell with script-block wrapping rather than the Windows command interpreter, collects markedly less host information than PATCHCORD, widens the browser-shortcut hijack from three browsers to six by adding Brave, Opera and Vivaldi using a generated temporary script instead of COM interfaces, and adds Startup-folder script persistence with a matching per-user Run key written by shelling out to reg.exe (Acronis TRU, 2026-08-13)."
+    first_seen: 2026-08-17
+    relations:
+      - to: "malware:patchcord"
+        type: overlaps-with
+        source: "2026-08-17/patchcord-sheetcord-google-sheets-c2-browser-shortcut-hijack"
+        note: "Acronis records SHEETCORD as combining functionality previously observed in the SHEETCREEP RAT with capabilities introduced in PATCHCORD, on shared operator infrastructure"
+  - key: "malware:hackerai-c2-agent"
+    type: malware
+    name: "HACKERAI C2 Agent"
+    aliases: []
+    nexus: null
+    summary: "Third implant in the PATCHCORD cluster, distributed from the earliest domain in the operator's infrastructure and named by Acronis Threat Research Unit. It shares the cluster's system fingerprinting, remote command execution and browser-shortcut hijacking, but replaces PATCHCORD's custom HTTP server and SHEETCORD's Google Sheets with GitHub Gists for both tasking and exfiltration — a third distinct command-and-control mechanism across one operator's toolset. Its anti-analysis features are comparatively basic, including a routine that loads placeholder strings in a loop with randomised sleeps to introduce execution delays without calling conventional sleep APIs (Acronis TRU, 2026-08-13)."
+    first_seen: 2026-08-17
+    relations:
+      - to: "malware:patchcord"
+        type: overlaps-with
+        source: "2026-08-17/patchcord-sheetcord-google-sheets-c2-browser-shortcut-hijack"
+        note: "Acronis states HACKERAI C2 Agent shares multiple capabilities with PATCHCORD and SHEETCORD, differing in its command-and-control transport"
