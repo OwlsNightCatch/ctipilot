@@ -1,0 +1,71 @@
+# Findings summary (machine-readable) — iteration 3
+- code: F1
+  category: claim-not-supported
+  section: run-record-frontmatter
+  item: "2026-08-17T0110Z-weekly run record — completed / duration_seconds"
+  url_or_quote: "completed: \"2026-08-17T02:10:44Z\" / duration_seconds: 3615"
+  summary: >
+    Contradicted by the same file: verification.iterations[2].ended_at is 2026-08-17T02:23:09Z and a third
+    iteration ran after that, so the record again claims a completion time that precedes work it documents.
+    Load-bearing, because the body's own operator recommendation is to correct exactly this field. Fix: re-stamp
+    work/<run-id>/main.ended_at at the true end of the run (after the verification loop closes, immediately
+    before commit) and recompute completed/duration_seconds from it, as runs/2026-08-10/2026-08-10T0110Z-weekly.md
+    did ("The `completed` timestamp in this record is the true end of the run and therefore postdates that decision").
+- code: F2
+  category: quantifier-without-source
+  section: verification-notes-body
+  item: "Diagnosis paragraph — W33 primary's verification loop generalised onto the W32 primary"
+  url_or_quote: "\"...never revised after the verification loop, which for these fires ran a further seven iterations.\" and \"Firing the backup at 01:10 puts it in the middle of the primary's verification loop every time.\""
+  summary: >
+    Both clauses describe the W33 primary only. origin/main:runs/2026-08-09/2026-08-09T2315Z-weekly.md records
+    verification_iterations: 2, with iteration 1 at 00:12:13-00:46:40Z and iteration 2 at 00:54:33-01:05:25Z — so
+    the W32 primary ran two iterations, not seven, and its loop had ended about five minutes BEFORE the W32 backup
+    started at 01:10:28Z (the remaining 41 minutes to its first commit 1e04b24 at 01:46:56Z were remediation, gate
+    and publishing). The record's central thesis is unaffected — both primaries were still working at 01:10 — but
+    the two quantifiers are false. Fix: attribute the seven iterations to the W33 primary, note W32's two plus its
+    post-loop remediation and publishing chain, and replace "in the middle of the primary's verification loop every
+    time" with the claim the artefacts support (inside the primary's real runtime every time).
+- code: F3
+  category: claim-not-supported
+  section: verification-notes-body
+  item: "Operator recommendation — the two levers and the rationale for the second"
+  url_or_quote: "\"Two things would each independently prevent a fifth occurrence: moving the backup's schedule to clear the primary's true end, and correcting the `completed` field so that it records when the run actually finished — the second matters beyond scheduling, because every consumer of that field, including the next fire's state digest, currently reads a completion time that has not happened yet.\""
+  summary: >
+    Two defects in one sentence. (a) Correcting the `completed` field cannot prevent a recurrence: the duplicate-week
+    guard reads origin/main and the remote claude/** branches, and at 01:10 the primary's record (with its `completed`
+    value) is not visible on either surface — the field's accuracy changes the diagnosis, not the collision, so only
+    the schedule move is preventive. (b) "reads a completion time that has not happened yet" is the inverted framing
+    iteration 2 already flagged: both primaries' fields UNDERSHOOT (W33 00:07:59Z vs first commit 01:46:29Z; W32
+    00:06:31Z vs 01:46:56Z), which the same paragraph states three sentences earlier. Fix: make the schedule move the
+    single preventive lever, and restate the second as a data-integrity item whose failure mode is a completion time
+    recorded ~1 h 40 min before the run's true end.
+- code: F4
+  category: claim-not-supported
+  section: verification-notes-body / run-record-frontmatter
+  item: "State-changes paragraph — counter resets across the eight fetched sources"
+  url_or_quote: "\"eight sources were fetched successfully and had their counters reset, and one new candidate was added.\""
+  summary: >
+    Contradicts the frontmatter's own corrected sources_changed entries, which say for socradar, novee-security and
+    advisories-ncsc-nl "counters already at zero, nothing to reset". Checked against git show origin/main:sources/sources.json:
+    consecutive_failures is 0 on main for ALL eight, so no failure counter was reset on any of them; only five quiet
+    counters changed (sophos-xops 2->0, crowdstrike 1->0, group-ib 1->0, kaspersky-securelist 1->0, bsi-de 1->0), and
+    socradar had no consecutive_quiet_periods key at all (absent -> 0). Fix: say five quiet-period counters were reset
+    and three sources had nothing to reset, and narrow the five sources_changed entries from "failure and quiet counters
+    reset" to the quiet counter, which is the only one that moved.
+- code: F5
+  category: quantifier-without-source
+  section: verification-notes-body / state/coverage_backlog.md
+  item: "Backlog row 3 — browser/OS trust-bridge class and its inventory action"
+  url_or_quote: "\"...with a concrete inventory action — enumerate native-messaging hosts on managed endpoints and flag any registered under a browser or platform vendor's name whose binary is neither in that vendor's path nor signed by it — that nothing in the store currently carries.\" (mirrored in state/coverage_backlog.md: \"Carries a concrete action nothing in the store carries: ...\")"
+  summary: >
+    The store does carry it. entries/2026-08-16/jewelbug-pdf-viewer-extension-native-messaging-webmail-hole.md (on
+    origin/main, published by 2026-08-16T0411Z-intel) instructs defenders to "inventory native-messaging host
+    registrations across the managed browser estate, because that registry key is the documented seam between a browser
+    extension and the operating system", and its Triage line already carries the vendor-impersonation discriminator:
+    "a host name asserting a Microsoft identity while being written per-user under `HKCU` by a downloaded executable,
+    where a genuine Microsoft browser component arrives through a signed machine-wide installer". The narrow reading
+    ("no entry carries it in actions[]") does not rescue the claim: body detection/hardening guidance is never an
+    actions[] item by rule, so that reading makes the novelty claim vacuous. The class framing across the eID helper,
+    the Jewelbug native-messaging host and the shared CI checkout may still be uncovered — the inventory action is not.
+    Fix: narrow the novelty claim to the cross-cutting class framing in both the record body and the backlog row, and
+    reference the Jewelbug entry as already carrying the native-messaging inventory guidance.
