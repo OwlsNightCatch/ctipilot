@@ -1,0 +1,103 @@
+domain: S3
+run_id: 2026-08-18T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-18T04:13:02Z
+ended_at: 2026-08-18T04:26:20Z
+duration_seconds: 798
+self_telemetry:
+  webfetch_calls: 42
+  websearch_calls: 9
+  bridge_fetches: 7
+items:
+  - title: "Unisoc VoLTE video-call exploit chain reaches Android kernel memory on budget/mid-range phones — no vendor fix, no CVE"
+    sources:
+      - { url: "https://thehackernews.com/2026/08/unisoc-volte-video-call-exploit-chain.html", publisher: "The Hacker News", date: "2026-08-17", role: "primary-relay" }
+      - { url: "https://www.infosecurity-magazine.com/news/unisoc-modem-flaw-rce-calls/", publisher: "Infosecurity Magazine", date: "2026-08-17", role: "corroborating-relay" }
+    discovery_trace: "first seen at: WebSearch (\"security researchers new technique disclosed detection August 2026\") → pivot: WebSearch (\"SSD Secure Disclosure Unisoc modem VoLTE Android kernel exploit chain\") → The Hacker News, URL https://thehackernews.com/2026/08/unisoc-volte-video-call-exploit-chain.html → corroborating: Infosecurity Magazine, URL https://www.infosecurity-magazine.com/news/unisoc-modem-flaw-rce-calls/ → attempted primary: SSD Secure Disclosure advisories at https://ssd-disclosure.com/unisoc-t612-lpe/ and https://ssd-disclosure.com/unisoc-t612-rce/ — both returned an empty JS-only shell via WebFetch and via the bridge (direct HTTP 202/187 bytes; jina reader fallback unavailable — all 7 keys HTTP 402 balance-exhausted this run), so the primary advisory text could not be read directly this run; both news outlets independently describe the same SSD disclosure with corroborating technical detail (chipset list, CWE, vendor non-response, prerequisites)."
+    summary: |
+      SSD Secure Disclosure (via researcher handle 0x50594d) published a two-stage exploit chain giving
+      full Android kernel-memory access on phones built around Unisoc (Spreadtrum) modem chipsets T606,
+      T612 and T7250 — with no vendor patch and, per both relaying outlets, no CVE assigned. Stage one
+      (disclosed by SSD in March 2026) is a SIP/SDP parsing memory-corruption bug in the modem's VoLTE
+      call-setup handling that lets an attacker who controls the call-signalling path (e.g. a rogue/private
+      4G cellular network) achieve code execution inside the modem processor by sending a malformed video
+      call. Stage two, disclosed 2026-08-17, is a CWE-1189 (improper isolation of shared resources)
+      flaw: from that modem-context foothold, the attacker disables protections on region 0 of the SoC's
+      ARM Memory Protection Unit, which was supposed to keep modem firmware memory walled off from the
+      Android kernel's physical memory — collapsing that boundary and giving read/write access to kernel
+      memory, sufficient to modify kernel code and complete local privilege escalation. SSD demonstrated
+      the full chain against a Realme C33 (T612) running a July-2025 Android security patch level; the
+      same modem firmware family also ships in the Motorola E13 (T606) and Xiaomi Redmi A5 (T7250) —
+      budget and mid-range handsets with large installed bases in emerging markets. Completing the attack
+      requires the victim to answer an incoming video call while the attacker's rogue VoLTE/4G
+      infrastructure is in range/reachable — a real but non-trivial prerequisite that keeps this out of
+      mass-exploitation territory for now. SSD reports it attempted to reach Unisoc through multiple
+      channels (email, LinkedIn) with no response, and as of disclosure no firmware update exists from
+      Unisoc or any downstream device vendor.
+    region_nexus: "global (Unisoc chipsets ship in budget/mid-range Android handsets sold worldwide, including Europe); no Swiss/EU-specific targeting reported"
+    primary_sector_nexus: "indirect — mobile-fleet/BYOD exposure relevant to any public-sector or CI organization issuing or tolerating budget Android handsets"
+    sector: "telco, public-sector (mobile device fleets), cross-sector (any org with BYOD Android exposure)"
+    cves: []
+    techniques: [T1068]
+    affected_products: ["Unisoc T606", "Unisoc T612", "Unisoc T7250", "Motorola E13", "Realme C33", "Xiaomi Redmi A5"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Completing the full chain requires the attacker to control a private 4G cellular network and the victim to answer the incoming video call."
+        attribution: "The Hacker News, relaying SSD Secure Disclosure"
+        source_url: "https://thehackernews.com/2026/08/unisoc-volte-video-call-exploit-chain.html"
+      - quote: "We have tried to reach out to the vendor through multiple channels (email and LinkedIn) but have not been able to receive any response."
+        attribution: "SSD Secure Disclosure, quoted by The Hacker News"
+        source_url: "https://thehackernews.com/2026/08/unisoc-volte-video-call-exploit-chain.html"
+      - quote: "The missing isolation allows code running in the modem context to access memory used by the Android kernel."
+        attribution: "Infosecurity Magazine"
+        source_url: "https://www.infosecurity-magazine.com/news/unisoc-modem-flaw-rce-calls/"
+      - quote: "The disclosure does not identify a vendor firmware update addressing the flaw."
+        attribution: "Infosecurity Magazine"
+        source_url: "https://www.infosecurity-magazine.com/news/unisoc-modem-flaw-rce-calls/"
+    extended_notes: |
+      Sourcing caveat: I could not read the primary SSD Secure Disclosure advisory pages directly this
+      run (https://ssd-disclosure.com/unisoc-t612-lpe/ and .../unisoc-t612-rce/ both render as an empty
+      client-side shell; the bridge's direct transport got HTTP 202/187 bytes and its jina-reader
+      fallback was unavailable — all 7 pool keys returned HTTP 402 balance-exhausted at run start per
+      the spawn constraint). The two outlets cited (The Hacker News, Infosecurity Magazine) both relay
+      the same SSD disclosure rather than offering independent first-hand telemetry, so I graded this
+      SINGLE-SOURCE-OTHER / MEDIUM confidence rather than MULTI-SOURCE despite having two URLs — per the
+      "two rewrites of one primary = one source" rule. A follow-up run with the jina reader pool restored
+      should re-fetch the SSD pages directly to pull the full CWE detail, PoC structure and any CVE
+      assignment that may follow.
+
+      Defender takeaway: no patch exists. Where an org's mobile fleet includes low/mid-range Android
+      devices (own-brand budget handsets, field-worker devices, kiosk/IoT Android units) built on Unisoc
+      silicon, the only current mitigations are carrier-level VoLTE anomaly monitoring (malformed
+      SIP/SDP messages are the stage-one indicator), disabling or restricting VoLTE video-call
+      auto-answer where MDM permits, and tracking OEM firmware channels for an eventual Unisoc patch.
+      This is a baseband-to-kernel isolation failure class (T1068 Exploitation for Privilege Escalation
+      is the closest active Enterprise-matrix mapping; MITRE ATT&CK for Mobile has no dedicated technique
+      for baseband/AP isolation bypass in the current dataset scope this pipeline tracks).
+    borderline: true
+    borderline_reason: "Sourcing is a relay of one primary (SSD Secure Disclosure) via two news outlets rather than two independent first-hand observations, and the primary advisory could not be fetched directly this run due to jina-pool exhaustion; technical substance and defender relevance are otherwise solid."
+candidate_sources:
+  - id: ssd-disclosure
+    publisher: "SSD Secure Disclosure (ssd-disclosure.com)"
+    url: "https://ssd-disclosure.com/"
+    category: research
+    why: "Independent vulnerability-research clearinghouse (0-day/n-day PoC disclosures across IoT/mobile/enterprise); broke the Unisoc T612 VoLTE-to-kernel exploit chain (2026-03 RCE stage + 2026-08-17 LPE stage) that no vendor advisory yet covers. Site is a client-side-rendered SPA — needs the jina reader (or a structured API if one exists) to read advisory bodies; direct WebFetch and the bridge's direct transport both return an empty shell."
+coverage_gaps:
+  - source_id: paradigm-shift-research
+    reason: "Confirmed again this run: direct bridge transport still returns only the SPA shell (page heading, no post grid). Jina-reader escalation unavailable all run (pool exhausted, 0/7 keys live) — cannot recover per the CRITICAL TRANSPORT CONSTRAINT for this run. Unchanged from 2026-08-16 note."
+  - source_id: ssd-disclosure (not yet in sources.json — see candidate_sources)
+    reason: "Both unisoc-t612-lpe and unisoc-t612-rce advisory pages are JS-only SPAs; direct WebFetch and bridge direct-transport both returned empty/minimal bodies (WebFetch: blank; bridge: HTTP 202, 187 bytes). Normally the bridge's jina-reader fallback would hydrate this, but all 7 jina pool keys returned HTTP 402 (balance exhausted) this run per the spawn's CRITICAL TRANSPORT CONSTRAINT. Recommend re-fetch once the pool is restored."
+  - source_id: trellix
+    reason: "Bridge direct-transport reachable but index/listing still shows only stale posts (dcsync-detection article dated 2026-04-14, ghost-spn article dated 2026-05-19 despite both appearing near the top of the /blogs/ nav) — same stale-index symptom flagged 2026-07-27. No in-window content found; recipe likely needs a dated RSS/sitemap discovery path rather than the /blogs/ nav crawl."
+  - source_id: ibm-xforce
+    reason: "Bridge returned raw page markup with no visible dated post listing in the fetched excerpt (metadata tag showed a 2025-03-27 CMS timestamp unrelated to actual post dates); could not confirm any in-window IBM X-Force content this run without a deeper drill than time allowed."
+  - source_id: recorded-future (not in this run's slice; checked opportunistically)
+    reason: "recordedfuture.com/blog and /research/insikt-group both render as landing pages with no post listing content surfaced through WebFetch; needs a specific /research/<slug> URL or a discovered listing/API route to drill."
+watchlist_sweep:
+  duty: none

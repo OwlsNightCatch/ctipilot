@@ -1,0 +1,265 @@
+domain: S1
+run_id: 2026-08-18T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-18T04:12:36Z
+ended_at: 2026-08-18T04:27:30Z
+duration_seconds: 894
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 7
+  bridge_fetches: 38
+
+items:
+  - title: "CISA KEV adds Ray AI compute engine's browser-DNS-rebinding RCE (CVE-2025-62593), 3-day remediation deadline"
+    sources:
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA (KEV catalog, api fetch)", date: "2026-08-17", role: "primary" }
+      - { url: "https://github.com/ray-project/ray/security/advisories/GHSA-q279-jhrf-cc6v", publisher: "Ray project (GitHub Security Advisory)", date: "2025-11-26", role: "primary" }
+      - { url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2025-199754", publisher: "ENISA EUVD", date: "2026-08-17", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (api fetch, catalogVersion 2026.08.17) → primary: Ray project GitHub Security Advisory, URL https://github.com/ray-project/ray/security/advisories/GHSA-q279-jhrf-cc6v → corroboration: ENISA EUVD, URL https://euvd.enisa.europa.eu/ (bridge enisa-euvd recent exploited, exploitedSince Aug 17 2026)"
+    summary: |
+      CISA added CVE-2025-62593 to the KEV catalog on 2026-08-17 with an unusually compressed
+      2026-08-20 federal remediation deadline (three days) — gate limb: actively exploited
+      (KEV addition itself is CISA's evidence-of-active-exploitation determination), reinforced
+      by the compressed deadline signalling elevated urgency. Ray's dashboard exposes
+      unauthenticated job-submission endpoints (/api/jobs, /api/job_agent/jobs/) by design; the
+      only defense against browser-borne requests is a check that the User-Agent header starts
+      with "Mozilla" (dashboard_optional_utils.is_browser_request() /
+      browsers_no_post_put_middleware in python/ray/dashboard/http_server_head.py). Firefox and
+      Safari's fetch() implementation allows a page to overwrite the User-Agent header
+      (Chrome does not, due to a spec-violating bug tracked at
+      issues.chromium.org/issues/40450316), so the guard is bypassable from arbitrary
+      JavaScript. Combined with a DNS-rebinding attack (trivially automated with tooling such as
+      nccgroup/singularity), a developer who merely visits a malicious site or is served a
+      malicious ad (malvertising) — while running Ray locally, even on a machine with no
+      internet-facing Ray port — has their own browser turned into a confused-deputy proxy that
+      reaches the Ray dashboard and submits arbitrary jobs, yielding remote code execution on
+      the host. The advisory further notes the technique "can also be leveraged to attack
+      network-adjacent instances of Ray" via the same browser-as-intermediary path. Fixed in
+      Ray 2.52.0, which for the first time adds a disabled-by-default authentication feature
+      (developers must explicitly enable it). ENISA EUVD lists CVSS v4.0 base score 9.4
+      (AV:N/AC:L/AT:N/PR:N/UI:P/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H), EPSS 0.37, exploitedSince
+      2026-08-17.
+    region_nexus: "global; Ray is widely used by ML/AI research and data-engineering teams, including Swiss/EU academic and public-sector research computing"
+    primary_sector_nexus: "indirect — public-sector research/education compute environments running Ray as a development tool"
+    sector: "public-sector, energy, finance (anywhere ML/data-engineering pipelines run Ray locally)"
+    cves: [CVE-2025-62593]
+    techniques: [T1189, T1210]
+    affected_products: ["Ray (ray-project/ray, all versions prior to 2.52.0)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This vulnerability is due to an insufficient guard against browser-based attacks, as the current defense uses the `User-Agent` header starting with the string 'Mozilla' as a defense mechanism."
+        attribution: "Ray project (GitHub Security Advisory GHSA-q279-jhrf-cc6v)"
+        source_url: "https://github.com/ray-project/ray/security/advisories/GHSA-q279-jhrf-cc6v"
+      - quote: "The fix for this vulnerability is to update to Ray 2.52.0 or higher. This version also, finally, adds a disabled-by-default authentication feature."
+        attribution: "Ray project (GitHub Security Advisory GHSA-q279-jhrf-cc6v)"
+        source_url: "https://github.com/ray-project/ray/security/advisories/GHSA-q279-jhrf-cc6v"
+      - quote: "This attack can also be leveraged to attack network-adjacent instance of ray by leveraging the browser as a confused deputy intermediary."
+        attribution: "Ray project (GitHub Security Advisory GHSA-q279-jhrf-cc6v)"
+        source_url: "https://github.com/ray-project/ray/security/advisories/GHSA-q279-jhrf-cc6v"
+    extended_notes: |
+      Detection (telemetry class first): host-based — process-creation events (e.g. Sysmon EID
+      1 / EDR equivalent) showing a browser process (firefox.exe/Safari WebKit renderer) as the
+      network client immediately preceding unexpected activity on the Ray dashboard's local port
+      (default 8265) is the anchor; application-log — Ray dashboard/API access logs showing
+      POST requests to /api/jobs or /api/job_agent/jobs/ whose Origin/Referer indicates a
+      third-party site rather than the expected local tooling; network/DNS — egress DNS logs
+      showing rapid re-resolution of an external domain to a loopback/internal address (the
+      rebinding signature) shortly before the dashboard hit. Hardening: upgrade to Ray >= 2.52.0
+      and explicitly enable the new (still disabled-by-default) authentication feature; do not
+      rely on the User-Agent check; bind the dashboard to loopback only and require a
+      reverse-proxy with real authentication for any non-loopback access; treat any Ray
+      dev/dashboard host as untrusted for outbound browsing (isolate the workstation network
+      profile). Triage/benign-lookalike: legitimate Ray CLI/Jupyter/IDE-extension traffic to the
+      dashboard API originates from local, non-browser processes with a stable, expected
+      User-Agent and Origin — cross-origin browser-tab traffic hitting the same endpoints,
+      especially paired with a DNS answer for the target hostname that recently pointed
+      elsewhere, is the discriminator the source's own mechanism supports.
+
+  - title: "GeoServer ships patches for actively-exploited pre-auth jsonArrayContains SQLi-to-RCE zero-day (GHSA-mqjf-5f49-2fjh, no CVE yet)"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12844", publisher: "NCSC Switzerland — Cyber Security Hub", date: "2026-08-17", role: "primary" }
+      - { url: "https://geoserver.org/announcements/vulnerability/2026/08/14/geoserver-3-0-1-released.html", publisher: "GeoServer project (official release announcement)", date: "2026-08-14", role: "primary" }
+      - { url: "https://github.com/geotools/geotools/security/advisories/GHSA-mqjf-5f49-2fjh", publisher: "GeoTools (GitHub Security Advisory)", date: "2026-08-15", role: "primary" }
+      - { url: "https://hadrian.io/blog/here-be-dragons-geoserver-pre-auth-sql-injection-to-rce", publisher: "Hadrian Security (technical research)", date: "2026-08-14", role: "corroborating" }
+      - { url: "https://www.securityweek.com/hackers-exploiting-unpatched-geoserver-zero-day/", publisher: "SecurityWeek", date: "2026-08-14", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/08/unpatched-geoserver-zero-day-targeted.html", publisher: "The Hacker News", date: "2026-08-13", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12844 (bridge ncsc-csh post 12844, edited 2026-08-17 'Updated with fixed versions') → primary: GeoServer project announcement, URL https://geoserver.org/announcements/vulnerability/2026/08/14/geoserver-3-0-1-released.html → primary: GeoTools GHSA, URL https://github.com/geotools/geotools/security/advisories/GHSA-mqjf-5f49-2fjh → corroboration: Hadrian.io technical writeup, URL https://hadrian.io/blog/here-be-dragons-geoserver-pre-auth-sql-injection-to-rce → corroboration: SecurityWeek, URL https://www.securityweek.com/hackers-exploiting-unpatched-geoserver-zero-day/ → corroboration: The Hacker News, URL https://thehackernews.com/2026/08/unpatched-geoserver-zero-day-targeted.html"
+    summary: |
+      UPDATE on the actively-exploited GeoServer zero-day this pipeline covered 2026-08-15 (no
+      CVE/no patch at the time): GeoServer has now shipped fixed releases and the Swiss national
+      CERT's rolling advisory was edited 2026-08-17 to record it — gate limb: actively exploited
+      (ongoing since 2026-08-12) with a material operational delta (patch now exists; prior entry's
+      "no patch in existence" premise is resolved and immediate remediation is now possible).
+      The vulnerable component is GeoTools' jsonArrayContains(<column>,<pointer>,<value>) filter
+      function (module gt-jdbc-postgis, invoked from GeoServer's OGC WFS/WMS filter processing),
+      which interpolates the <value> argument into a generated PostgreSQL jsonb_path_exists()
+      expression using unparameterized String.format() with no escaping — a regression of the
+      2023 fix for CVE-2023-25158 that affects only this one function. It is reachable
+      pre-authentication via GeoServer's public WFS/WMS endpoints against any PostGIS
+      (12+)-backed layer with a text or JSON column; GeoServer's own mitigation note for the
+      earlier CVE (enabling preparedStatements / disabling encode functions) does not stop this
+      variant. Per independent technical analysis, WFS 1.0 requests generate unwrapped SQL that
+      permits semicolon-terminated stacked statements reaching top-level injection, while WFS 2.0
+      wraps filters in a derived-table COUNT query that blocks simple stacking; where the
+      PostGIS connection string holds superuser or the pg_execute_server_program role, the
+      injected SQL escalates to OS command execution on the database host via
+      COPY ... TO PROGRAM. Publicly disclosed 2026-08-12 10:46 UTC by researcher @q1uf3ng ahead
+      of the vendor's intended release schedule; watchTowr recorded exploitation attempts within
+      hours, "hundreds" of attempts from a small pool of source IPs, consistent with GeoServer's
+      established history of being targeted at scale (it already carries multiple CISA KEV
+      entries from prior years). GeoServer 3.0.1, 2.28.5 and 2.27.6 (bundling GeoTools 35.1,
+      34.5, 33.6 respectively) were released 2026-08-14, tracked as GHSA-mqjf-5f49-2fjh
+      (CVSS 3.1 base 9.8); no CVE identifier has been assigned as of this writing.
+    region_nexus: "global; GeoServer underpins many European and Swiss cantonal/federal geodata (GIS) portals"
+    primary_sector_nexus: "direct — public-sector geospatial/GIS infrastructure (cadastral, planning, environmental data portals commonly run on GeoServer)"
+    sector: "public-sector, energy, water, transport (utility and infrastructure GIS platforms)"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["GeoServer 3.0.0; 2.28.0-2.28.4; 2.27.0-2.27.5 (with org.geotools:gt-jdbc-postgis 33.1/34.0/35.0)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-15/geoserver-jsonarraycontains-unauth-sqli-zeroday-exploited"
+    evidence:
+      - quote: "For PostGIS 12 and greater `jsonArrayContains(<column>, <pointer>, <value>)` function writes `<value>` into generated SQL without escaping."
+        attribution: "GeoTools (GitHub Security Advisory GHSA-mqjf-5f49-2fjh)"
+        source_url: "https://github.com/geotools/geotools/security/advisories/GHSA-mqjf-5f49-2fjh"
+      - quote: "This releases includes the GeoTools 35.1 resolution of the above SQL Injection vulnerability that: requires a Text or JSON column; affects PostGIS 12 and up."
+        attribution: "GeoServer project"
+        source_url: "https://geoserver.org/announcements/vulnerability/2026/08/14/geoserver-3-0-1-released.html"
+      - quote: "Within hours of public disclosure, we began observing exploitation attempts and have since recorded hundreds of attempts originating from a small number of source IP addresses."
+        attribution: "watchTowr (via SecurityWeek)"
+        source_url: "https://www.securityweek.com/hackers-exploiting-unpatched-geoserver-zero-day/"
+      - quote: "The value comes directly from the CQL filter, which comes directly from the HTTP request. It is dropped into a SQL string literal with no escaping."
+        attribution: "Hadrian Security"
+        source_url: "https://hadrian.io/blog/here-be-dragons-geoserver-pre-auth-sql-injection-to-rce"
+    extended_notes: |
+      Detection (telemetry class first): web/application-access-log — unauthenticated WFS/WMS
+      requests (GetFeature, GetMap) whose CQL filter parameter contains the literal string
+      "jsonArrayContains" is the direct anchor, particularly via the WFS 1.0 service path;
+      database-audit — PostgreSQL log_statement=all or pgAudit entries showing
+      jsonb_path_exists() calls with malformed/quote-breaking arguments, or any
+      COPY ... TO PROGRAM invocation from the GeoServer service account. Hardening: upgrade to
+      3.0.1 / 2.28.5 / 2.27.6 immediately; until upgraded, restrict the PostGIS JDBC connection
+      to a role without SUPERUSER or pg_execute_server_program; disable public WFS 1.0 access if
+      not required; place GeoServer behind a WAF rule blocking jsonArrayContains in filter
+      parameters as an interim compensating control. Triage/benign-lookalike: legitimate GIS
+      client requests carrying jsonArrayContains use well-formed pointer/value arguments with no
+      SQL metacharacters; injection attempts carry unescaped quotes/semicolons in the value
+      argument and, per the researcher's analysis, disproportionately arrive over WFS 1.0 rather
+      than WFS 2.0 (which structurally resists simple stacking).
+
+  - title: "Microsoft assigns CVE-2026-69414 to ShieldBreak — official tracking for the Nightmare Eclipse Defender-patch-bypass, still unpatched"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12622", publisher: "NCSC Switzerland — Cyber Security Hub", date: "2026-08-17", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1035/", publisher: "CERT-FR / ANSSI", date: "2026-08-17", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12622 (bridge ncsc-csh post 12622, edited 2026-08-17 'Added ref to CVE-2026-69414') → primary: CERT-FR advisory, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1035/ (bridge cert-fr avis-recent → url drill) → primary: MSRC, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69414 (bridge msrc cve CVE-2026-69414)"
+    summary: |
+      UPDATE on the ShieldBreak entry this pipeline covered 2026-08-12 (public PoC claiming a
+      full bypass of Microsoft's RoguePlanet fix, no CVE or vendor comment at the time): Microsoft
+      has now assigned CVE-2026-69414 ("Microsoft Defender Elevation of Privilege Vulnerability"),
+      officially tracking the flaw the Nightmare Eclipse persona published as ShieldBreak on
+      GitHub (github.com/MSNightmare/ShieldBreak) on 11-12 August, described by the researcher
+      as a 100%-reliable bypass — versus the original RoguePlanet's coin-flip race condition —
+      of the fix Microsoft shipped for CVE-2026-50656 in Malware Protection Engine build
+      1.1.26060.3008 (9 July 2026), reproduced on Windows Server 2025, Windows 11 25H2 and the
+      Canary channel. MSRC's entry (released 2026-08-14) confirms public disclosure, rates it
+      Important with CVSS 3.1 base 7.8 / temporal 7.0
+      (AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H/E:P/RL:O/RC:C — a local, low-privilege,
+      no-user-interaction elevation to SYSTEM), sets its own Exploitability Index to
+      "Exploitation More Likely" while marking exploited=No, and states no fix is yet available.
+      CERT-FR's 17 August advisory (CERTFR-2026-AVI-1035) independently bundles CVE-2026-69414
+      into its own bulletin alongside an unrelated PowerShell RCE (CVE-2026-50523, already
+      patched), giving a second national-CERT confirmation of the vendor's tracking. Gate limb:
+      no patch exists (vendor states "we are working to provide... a security update"), a fully
+      public, 100%-reliable PoC already circulates, and Microsoft's own exploitability signal is
+      "more likely" — normal patch-cycle remediation is not available to responders.
+    region_nexus: "global; Windows/Microsoft Defender estate — Swiss federal, cantonal and critical-infrastructure endpoints run Defender broadly"
+    primary_sector_nexus: "direct — Microsoft Defender is a baseline endpoint control across the public-sector and critical-infrastructure estate"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco (anywhere Microsoft Defender is deployed)"
+    cves: [CVE-2026-69414]
+    techniques: [T1068]
+    affected_products: ["Microsoft Defender / Microsoft Malware Protection Engine (builds carrying the July 2026 RoguePlanet fix, 1.1.26060.3008, on currently supported Windows desktop and server releases)"]
+    entity_keys: ["actor:nightmare-eclipse", "trend:shieldbreak-defender-rogueplanet-patch-bypass-2026-08"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-12/shieldbreak-defender-rogueplanet-patch-bypass-no-fix"
+    evidence:
+      - quote: "Microsoft is aware of an elevation of privilege in the Microsoft Malware Protection Engine in Microsoft Defender publicly referred to as \"ShieldBreak\". We are working to provide a high quality security update that addresses this vulnerability. We will provide information in this CVE when the update is available."
+        attribution: "Microsoft Security Response Center (MSRC), CVE-2026-69414"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69414"
+      - quote: "A new Proof of Concept dubbed ShieldBreak was published by Nightmare Eclipse: https://github.com/MSNightmare/ShieldBreak — Allegedly bypassing Microsoft's patch for RoguePlanet (CVE-2026-50656) — ShieldBreak is tracked as CVE-2026-69414 by Microsoft"
+        attribution: "NCSC Switzerland (Cyber Security Hub)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12622"
+    extended_notes: |
+      Detection (telemetry class first): process-creation telemetry (Sysmon EID 1 / EDR
+      equivalent) for any interactive shell (cmd.exe, powershell.exe) or unexpected child process
+      spawned with a parent image belonging to the Microsoft Malware Protection Engine
+      (MsMpEng.exe or its scanning-worker/signature helper processes) is the concrete anchor — the
+      engine process has no legitimate reason to launch a shell. Given the underlying mechanism is
+      a TOCTOU race in file handling, file-system telemetry showing rapid replace/rename
+      operations on a file mid-scan (create → open-for-scan → replace → engine re-reads) is a
+      secondary signal. Hardening: no vendor fix exists yet; application-allowlisting is reported
+      (from the RoguePlanet predecessor writeups) to block the underlying class by default —
+      treat that as the interim compensating control, and prioritise the eventual Defender
+      engine update once MSRC publishes it under CVE-2026-69414. Triage/benign-lookalike:
+      Defender's own remediation actions (quarantine, deletion) are internal API calls, not shell
+      invocations — any cmd/powershell process tree rooted at the engine process is itself the
+      discriminator, independent of confirming the TOCTOU race explicitly.
+
+cve_table:
+  - cve: "CVE-2025-62593"
+    product: "Ray (ray-project/ray)"
+    cvss: "9.4 (CVSS v4.0, CISA/ENISA)"
+    epss: 0.37
+    kev: true
+    exploited: true
+    patch: "2.52.0"
+    source: "CISA KEV (added 2026-08-17, due 2026-08-20); GitHub Security Advisory GHSA-q279-jhrf-cc6v; ENISA EUVD-2025-199754"
+  - cve: "none assigned (GHSA-mqjf-5f49-2fjh)"
+    product: "GeoServer / GeoTools gt-jdbc-postgis"
+    cvss: "9.8 (CVSS v3.1, GHSA)"
+    epss: null
+    kev: false
+    exploited: true
+    patch: "GeoServer 3.0.1 / 2.28.5 / 2.27.6 (GeoTools 35.1 / 34.5 / 33.6), released 2026-08-14"
+    source: "NCSC-CH CSH post 12844; geoserver.org release announcements; GitHub Security Advisory GHSA-mqjf-5f49-2fjh"
+  - cve: "CVE-2026-69414"
+    product: "Microsoft Defender / Malware Protection Engine"
+    cvss: "7.8 base / 7.0 temporal (CVSS 3.1, MSRC)"
+    epss: null
+    kev: false
+    exploited: "MSRC exploited=No; Exploitability Index 'Exploitation More Likely'; public 100%-reliable PoC (ShieldBreak) circulating"
+    patch: "none available yet"
+    source: "MSRC CVE-2026-69414; NCSC-CH CSH post 12622; CERT-FR CERTFR-2026-AVI-1035"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "deployment configures NO product watchlist — sweep is a documented no-op per spawn message; general coverage rules applied unchanged this run."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "cisa.gov Akamai-403 on direct WebFetch (confirmed this run) and jina reader pool fully exhausted (HTTP 402 on all 7 keys) — no rung on the ladder reaches the general (non-ICS) CISA Cybersecurity Advisories listing. The cisagov CSAF GitHub mirror (raw.githubusercontent.com/cisagov/CSAF) covers ICS/ICSMA advisories only and returned nothing newer than 2026-08-13 — confirms no in-window ICS advisory was missed, but general enterprise CISA advisories (AA-series) were not reachable by any transport this run."
+  - source_id: cisa-directives
+    reason: "Same transport failure as cisa-advisories (403 + jina pool exhausted); no evidence surfaced elsewhere of a new directive in-window."
+  - source_id: siemens-productcert-csaf
+    reason: "Vendor portal index/ssa-list.html still 403 on every transport; jina pool exhausted so the per-SSA-page direct-fetch fallback used on 2026-08-13 could not be attempted this run. The cisagov CSAF mirror (checked as an alternate) carried no Siemens ICSA newer than 2026-08-13, so no in-window Siemens advisory is known to have been missed, but the vendor's own portal remains unverified this run."
+  - source_id: ccb-belgium
+    reason: "Direct bridge fetch (url https://ccb.belgium.be/advisories) returned HTTP 200 but only cookie-consent/navigation shell (no dated advisory rows) as documented — this source's fetch_method is pinned to jina specifically because of this, and the jina reader pool is fully exhausted (HTTP 402) this run. No alternate structured route exists for CCB; genuine coverage gap for Belgian advisories this run."
+  - source_id: anssi-fr (actu feed only; avis feed worked)
+    reason: "The CERT-FR 'actualite' (actu) feed was not attempted this run given its documented staleness (last fresh item Nov 2025 per standing note); the avis (advisory) feed and cert-fr avis-recent bridge worked cleanly and were used for full coverage of ANSSI/CERT-FR vulnerability advisories in-window."

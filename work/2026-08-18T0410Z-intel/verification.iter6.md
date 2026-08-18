@@ -1,0 +1,60 @@
+**Model:** Sonnet 5 (`claude-sonnet-5`)
+**Timestamps:** started_at=2026-08-18T06:15:24Z · ended_at=2026-08-18T06:22:00Z · duration_seconds=396
+
+## Verification report — 2026-08-18T0410Z-intel (iteration 6)
+
+Scope covered, in the priority order given: (1) the five registry records this run added, plus the three `uses` edges on the incident record; (2) regression across the whole run (frontmatter/prose/citation consistency on the five-times-edited deep dive and seven-times-edited court-reporting entry); (3) the run record's published notes body and telemetry; (4) the five entries cold, including a full re-fetch of every primary this run cites.
+
+**Sources independently re-fetched or read this iteration:** `cash.txt`, `20min.txt`, `netzwoche.txt` (all three cited outlets behind the Zurich trial entry and the three malware registry records), `akooe.txt` and `newsat.txt` (AK Oberösterreich entry and registry record), `geoserver-release.txt` and `geoserver-2285.html` (GeoServer's own announcements), `hadrian.txt` (the reversing analysis, in full — every quoted sentence checked verbatim), `ncsc-12844-content.txt` / `ncsc-12844.txt` (NCSC-CH GeoServer post), `ncsc-12622-content.txt` / `ncsc-12622.txt` (NCSC-CH Nightmare Eclipse rolling advisory), `certfr-1035.txt` (CERT-FR advisory), `kev-ray.txt` and `osv-ray.json` / `osv-ray-details.txt` (CISA KEV entry and the Ray GHSA in full), `msrc-69414.json` (Microsoft's ShieldBreak CVE record). One live `WebFetch` performed this iteration against `https://github.com/geotools/geotools/security/advisories/GHSA-mqjf-5f49-2fjh` — the bridge and jina reader both still fail this host (402/403, confirmed independently), so the raw-capture text (`ghsa.err`) was correctly bypassed by re-fetching directly, which reproduced the CVSS 9.8 Critical rating and the "no mitigation available" language the entry attributes to it. The pinned ATT&CK dataset was checked programmatically for all eleven technique ids used across the five entries (T1685, T1486, T1490, T1657, T1070, T1189, T1059.006, T1210, T1190, T1059.004, T1068) — all active, none revoked or deprecated.
+
+### 1. The five registry records this run added
+
+**`malware:lockergoga`.** Iteration 5's fix restated the summary at operation level. Verified against `cash.txt`: "Laut Anklageschrift entwickelte der Informatiker die Erpressersoftware «Lockergoga» weitgehend selbstständig im Auftrag eines Mitbeschuldigten aus Moskau" supports "developed it largely independently on the instruction of a co-accused based in Moscow." The intrusion-pattern clause ("obtain access, disable monitoring processes, then encrypt servers and workstations") is cash.ch's own sequence, correctly attributed. The backup-encryption objective clause is correctly moved to 20 Minuten ("die Daten inklusive Back-up-Dateien zu verschlüsseln"). The closing sentence — "no source in this run's reporting separates which victims received which family" — is true: no cited source anywhere attributes a specific victim to a specific one of the three families.
+
+**`malware:megacortex`.** Verified against `cash.txt` ("Später wirkte er an der Entstehung der Schadsoftware «Megacortex» mit") for the development-order clause, now correctly attributed to cash.ch rather than left unattributed. The seven-country, ten-company list is now correctly attributed to Netzwoche alone: `netzwoche.txt` reads "an Angriffen auf zehn Unternehmen in der Schweiz, Frankreich, Norwegen, Schottland, Kanada, den Niederlanden und den USA beteiligt" — Switzerland, France, Norway, Scotland, Canada, the Netherlands, United States: seven countries, exact match to the record's list and order. The no-family-separation sentence is repeated and equally true here.
+
+**`malware:nefilim`.** Verified against `netzwoche.txt`: "Cyberangriffe mit den Schadprogrammen «Lockergoga», «Megacortex» und «Nefilim»" supports "named in the Zurich District Court charge sheet alongside LockerGoga and MegaCortex," and the December 2018–May 2020 period matches the same source ("zwischen Dezember 2018 und Mai 2020"). Same no-family-separation sentence, same truth value. All three family records now agree with each other and with the entry body — iteration 5's fix holds.
+
+**`incident:zurich-lockergoga-megacortex-nefilim-trial-2026`.** Cross-checked clause by clause against all three raw captures: the charges list (commercial extortion / serious data corruption / serious money laundering / child pornography possession), the custody-since-October-2021 detail, the four Swiss victims by name, the seven-country/ten-company Netzwoche figure, both damage figures (CHF 100m per 20 Minuten, CHF 130m per Netzwoche) each attributed to the outlet that actually states it, the CHF 4.5m ransom-paid-by-three-non-Swiss-companies detail, the ~500 GB Stadler Rail exfiltration figure, and the FSB-cover-identity allegation — all confirmed present in their attributed source and not silently borrowed from elsewhere. One observation, not a finding: the sentence "encrypting servers and workstations including backup files" synthesises cash.ch's sequential account (servers + workstations) with 20 Minuten's separate statement of the group's stated objective (data including backups) under the registry's established single trailing-citation convention (checked against ~15 other multi-source registry records, e.g. `incident:graubuenden-canton-sharepoint-breach-2026-08`, `incident:france-dgfip-tax-breach-2026-08`) rather than the entry-body per-clause citation discipline. The entry body itself keeps these two facts properly separated and separately cited (para 3). Not flagged: this is registry-level convention across ~600 records, not a clause-level misattribution that changes meaning.
+
+**`incident:ak-oberoesterreich-cyberattack-2026-08`.** Verified word-for-word against `akooe.txt` and `newsat.txt` — the 10 August attack date, the 16 August disclosure, the "cannot be established... due to deliberate trace removal" clause (verbatim German match), the Article 34 GDPR blanket-notification consequence, the police/DPA notification, the isolated-environment transfer, and "no ransomware family, actor or initial-access vector disclosed by any party." `newsat.txt` reproduces the AK statement via APA wire with no independent additions, matching the sourcing_note's claim that this is "one assessor with two publishers."
+
+**The three `uses` edges** on the incident record (→ `malware:lockergoga`, `malware:megacortex`, `malware:nefilim`) are typed correctly (incident *uses* malware), each `source` resolves to the real entry id `2026-08-18/zurich-trial-lockergoga-megacortex-nefilim-swiss-victims`, and the shared note — "named in the Zurich charge sheet as one of the three ransomware families deployed" — is supported by Netzwoche's charge list. No defect found in this surface.
+
+### 2. Regression across the run
+
+Re-read both multiply-edited entries end-to-end for frontmatter/body/citation coherence. `geoserver-jsonarraycontains-patched-wfs10-stacked-copy`: `verification: contradicted` is consistent with the sourcing_note and body's explicit statement of the encode-functions disagreement; the headline ("vendor and researcher disagree on whether any config change helps") states the disagreement rather than one side of it, resolving iteration 4's stale-headline defect; `classification: {reliability: A, credibility: 1}` is defensible given three independent assessors corroborate the uncontested facts. `zurich-trial-lockergoga-megacortex-nefilim-swiss-victims`: every per-clause citation checked resolves to the outlet that actually carries the fact (see § 1 and § 4); the damage-figure and ransom-figure splits are both stated with their reconciliation rather than resolved silently, matching the sourcing_note. No dangling citation, no orphaned sentence, no frontmatter/body mismatch found in either entry.
+
+One residual noted (advisory, not blocking): see Findings below.
+
+### 3. The run record
+
+Notes body and telemetry checked against the actual entry set (5 published, 2 updates, 1 deep dive — all match file contents), against the registered `entities_added` list (matches the five registry keys added), and for workflow-internal vocabulary: `grep` for "sub-agent", "main agent", "Phase N", "spawn" in the notes body and telemetry returns nothing; "research pass(es)" is not prohibited vocabulary — it appears in the notes bodies of at least three prior run records (`2026-08-16T0411Z-intel`, `2026-08-16T2315Z-weekly`, `2026-08-17T0413Z-intel`) as an established, accepted term for this pipeline, not narrative leakage of an implementation detail. `subagent_type` appears only as a documented YAML schema field (`docs/pipeline.md` § run record), not narrative prose. `verification_residual_count: 1` correctly equals iteration 5's `truth (1) + editorial (0)`, consistent with `site/content_model.py`'s validation logic for a non-final NEEDS_FIXES iteration. Verification block's five iterations match the task-provided history exactly (models, verdicts, counts). No defect found.
+
+### 4. The five entries, cold
+
+`cve-2025-62593-ray-dashboard-dns-rebinding-browser-rce-kev.md`: every evidence quote verified verbatim against `kev-ray.txt` and `osv-ray-details.txt`, including the fragment quote ending mid-sentence ("...as the current defense uses the"). The CVSS 4.0 vector matches `osv-ray.json`'s CVSS_V4 record exactly. The "network-adjacent Ray instances" claim is directly supported ("This attack can also be leveraged to attack network-adjacent instance of ray..."). The "first release to offer authentication at all" characterisation of Ray 2.52.0 is supported by the advisory's own framing ("longstanding decision... to not implement any sort of authentication" / "This version also, finally, adds... authentication").
+
+`cve-2026-69414-shieldbreak-defender-acknowledged-no-fix.md`: MSRC JSON confirms severity Important, baseScore 7.8, `publiclyDisclosed: Yes`, `exploited: No`, `latestSoftwareRelease: Exploitation More Likely` — all matched exactly. NCSC-CH post 12622's edit history confirms the 17 August "Added ref to CVE-2026-69414" edit; CERT-FR's CERTFR-2026-AVI-1035 confirmed to list Microsoft Malware Protection Engine alongside an unrelated PowerShell item, matching the entry's characterisation.
+
+### Findings
+
+**F11 — editorial / less-is-more flag (advisory).**
+- Entry: `2026-08-18/geoserver-jsonarraycontains-patched-wfs10-stacked-copy`
+- Quote: actions[1] — "...preferQueryMode=extended is not a mitigation and the two primaries contradict each other on whether disabling encode functions is one."
+- Iteration 5's F11 fix named the parties ("the vendor advisory and the reversing analysis") in the headline, the summary and the body, but left this one reader-facing surface — the second `actions[]` item, which renders into the brief's aggregated Action Items — carrying the un-named "the two primaries" phrasing the finding was originally raised against. The sourcing_note's own use of "primaries" (line 81) is correctly left alone, since sourcing_note is explicitly source-methodology text, not reader-facing narrative. Advisory only: "primaries" reads in ordinary English as "main sources" and is not confusing on its own; this is noted as an artifact of an otherwise-correct remediation, not something that need block publication.
+
+### Verdict
+
+**CLEAN.** No truth-class or editorial-class defects found. One F11 advisory item noted above, which the main agent may leave.
+
+### Findings summary (machine-readable)
+
+```yaml
+- code: F11
+  category: editorial-advisory
+  section: operational
+  item: "2026-08-18/geoserver-jsonarraycontains-patched-wfs10-stacked-copy"
+  url_or_quote: "actions[1]: \"...preferQueryMode=extended is not a mitigation and the two primaries contradict each other on whether disabling encode functions is one.\""
+  summary: "iteration 5's F11 fix named the parties in the headline, summary and body, but the second actions[] item — reader-facing, rendered into the aggregated brief Action Items list — still carries the unnamed \"the two primaries\" phrasing. Advisory only, no fix required to publish."
+```
