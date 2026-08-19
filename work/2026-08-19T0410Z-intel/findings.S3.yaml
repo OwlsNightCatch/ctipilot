@@ -1,0 +1,295 @@
+domain: S3
+run_id: "2026-08-19T0410Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-08-19T04:13:32Z"
+ended_at: "2026-08-19T04:26:52Z"
+duration_seconds: 800
+self_telemetry:
+  webfetch_calls: 26
+  websearch_calls: 9
+  bridge_fetches: 8
+
+items:
+  - title: "TheHatman advertises Fortune-500-scale Microsoft Entra directory theft; Unit 42 issues detection/hardening brief for password-spray + MFA-fatigue credential campaigns"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/large-scale-credential-attacks/", publisher: "Palo Alto Networks Unit 42", date: "2026-08-18", role: "primary" }
+      - { url: "https://www.theregister.com/security/2026/08/17/crook-hawks-millions-of-records-allegedly-plundered-from-corporate-azure-tenants/5288305", publisher: "The Register", date: "2026-08-17", role: "corroborating" }
+    discovery_trace: "first seen at: unit42 blog listing, URL https://unit42.paloaltonetworks.com/ → primary: Unit 42 threat brief, URL https://unit42.paloaltonetworks.com/large-scale-credential-attacks/ → corroborating: The Register, URL https://www.theregister.com/security/2026/08/17/crook-hawks-millions-of-records-allegedly-plundered-from-corporate-azure-tenants/5288305 (also cross-checked via WebSearch \"TheHatman Azure Entra credential theft McDonald's Vodafone Unit 42 mitigation\", which surfaced SecurityWeek, cybernews.com and Hudson Rock's original research as further independent corroboration)"
+    summary: |
+      Between 1 and 17 August 2026 an actor using the handle "TheHatman" advertised employee-directory
+      exports allegedly pulled from the Microsoft Entra tenants of at least nine Fortune-500-scale
+      organisations (McDonald's ~1.7M records, TCS ~800K, Vodafone ~425K, HCL Technologies ~250K, IHG
+      ~185K, Kyndryl ~170K, Gap ~80K, Hexaware ~20K, Wyndham ~9K). Hudson Rock — the research firm that
+      first flagged the listings, cited by Unit 42 — assessed the data as consistent with genuine Azure
+      AD/Entra directory exports (matching field structure and corporate email conventions) and noted the
+      exposed fields include names, job titles, department, office location and, critically, flags
+      identifying accounts holding Global Administrator privileges — effectively a target map for
+      follow-on BEC or privilege-escalation attempts. Unit 42 states it could not independently verify
+      TheHatman's own claimed vector (password spraying plus MFA-fatigue/push-bombing) and stresses no
+      Entra/Azure platform vulnerability has been identified — this is credential abuse, most plausibly
+      fed by commercial infostealer logs, not a zero-day. TCS has publicly stated it found no evidence of
+      a breach of its own systems, illustrating that "the tenant that got scraped" and "the company whose
+      name is on the data" are not always the same entity in these directory-harvesting cases. The same
+      brief (updated 18 August) recaps the unrelated June 2026 "FortiBleed" campaign — curated
+      breach-derived password lists sprayed against internet-exposed Fortinet/Sophos/MSSQL services,
+      followed by configuration extraction via a privilege-escalation flaw and offline cracking of
+      harvested secrets — as a second live illustration of the same multi-stage credential-attack pattern
+      Unit 42 is warning against.
+    region_nexus: "global; claimed victims include EU-headquartered multinationals (Vodafone, and India/UK-based TCS, HCL with large European operations) — directly transferable to any Entra/Azure AD tenant in the Swiss/EU public and CI sector"
+    primary_sector_nexus: "indirect"
+    sector: "telco, finance, public-sector, cross-sector"
+    techniques: [T1110.003, T1621, T1078.004, T1213, T1087.004]
+    affected_products: ["Microsoft Entra ID", "Microsoft Azure Active Directory", "Fortinet FortiGate", "Sophos firewalls"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:thehatman", type: actor, name: "TheHatman", aliases: [],
+          summary: "Handle used by an actor advertising employee-directory data allegedly exfiltrated from the Microsoft Entra tenants of at least nine Fortune-500-scale organisations on underground marketplaces between 1-17 August 2026, claiming password-spray and MFA-fatigue compromise (Unit 42 / Hudson Rock, 2026-08-18)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "TheHatman alleged exfiltration from organizations' Microsoft Entra tenants...claimed that they used compromised credentials through MFA fatigue and password spraying attacks"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/large-scale-credential-attacks/"
+      - quote: "Unit 42 recommends auditing remote access logs for suspicious activity with a focus on successful logins shortly after large volume password failure events"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/large-scale-credential-attacks/"
+      - quote: "it appears highly likely that this campaign originates from targeted exploitation of Infostealer infections rather than a systemic zero-day vulnerability in Azure"
+        attribution: "Hudson Rock, cited by The Register"
+        source_url: "https://www.theregister.com/security/2026/08/17/crook-hawks-millions-of-records-allegedly-plundered-from-corporate-azure-tenants/5288305"
+    extended_notes: |
+      Detection: Entra/Azure AD sign-in logs correlated with directory/Graph-API export volume — a burst
+      of successful sign-ins immediately following a spike in failed authentications from diverse source
+      IPs is the discriminating sequence Unit 42 calls out; pair with anomalous bulk Microsoft Graph
+      `/users` or `/directoryObjects` enumeration and unusual PowerShell/Graph-Explorer sessions from
+      accounts that don't normally script directory reads. Hardening: phishing-resistant MFA (FIDO2/
+      passkeys, not push-based) especially for any account flagged Global Administrator, Conditional
+      Access blocking legacy/basic auth, restricting third-party OAuth app consent, and periodic review of
+      which accounts actually need Global Admin (most orgs over-provision it). Given the org runs its own
+      M365/Entra tenant, treat the Global-Administrator-account-identification detail as the standout
+      takeaway: an external directory scrape does not need to touch privileged credentials to still map
+      out exactly which accounts are worth targeting next.
+
+  - title: "StopAndProtect: WordPress-hosted double-extortion operation combines ClickFix delivery, an SMB/USB worm and a custom credential stealer across ~2,000 compromised sites"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/thousands-of-hacked-wordpress-sites-one-operation-unmasking-stopandprotect/", publisher: "Check Point Research", date: "2026-08-18", role: "primary" }
+    discovery_trace: "first seen at: checkpoint-research RSS, URL https://research.checkpoint.com/feed/ → primary (no pivot needed): Check Point Research, URL https://research.checkpoint.com/2026/thousands-of-hacked-wordpress-sites-one-operation-unmasking-stopandprotect/ (attempted second-source fetch of a cybersecuritynews.com relay noted via WebSearch \"StopAndProtect ransomware WordPress ClickFix Check Point\" — the article returned an empty client-rendered shell to both WebFetch and the bridge, so it is not cited as a source; the finding is carried single-source from Check Point)"
+    summary: |
+      Check Point Research unmasked "StopAndProtect," an operation combining file encryption with data
+      theft that runs its entire infrastructure — payload hosting, C2, and stolen-data storage — on
+      thousands of compromised WordPress sites. Initial delivery uses the ClickFix pattern: a fake
+      CAPTCHA/verification prompt tricks the victim into pasting and running a PowerShell one-liner, which
+      pulls two further .NET-based downloader/loader stages before dropping the final payload set:
+      SilentEncryptor (the ransomware component), NetworkShareScanner (an SMB/USB worm for lateral spread),
+      LockScreen, a VBS-based spreader, SilentDataCollector (a credential/WhatsApp stealer), and
+      SimpleChatProxy (an attacker-victim chat/negotiation utility). The operators run a Visual Basic
+      6-based fleet-management tool that mass-administers the compromised WordPress estate: it installs
+      must-use (MU) plugins for boot-time persistence and stands up hidden REST API endpoints that permit
+      arbitrary file upload and remote code execution on each hijacked site — turning ordinary WordPress
+      installs into disposable, self-replenishing attacker infrastructure rather than victims in their own
+      right. An operational-security failure exposed open directory listings on one of the compromised
+      servers, revealing roughly 31,000 victim screenshots, over 700 stolen data archives, and — inside the
+      operators' own automation tool — source code enumerating close to 2,000 compromised WordPress
+      domains under their control. Traffic-log analysis puts the victim base above 6,000 unique IP
+      addresses, concentrated in the US (1,852), Russia (630) and India (630).
+    region_nexus: "global infrastructure abuse via compromised WordPress sites (any self-hosted WordPress instance, including Swiss/EU public-sector and SME sites, is a potential unwitting host for this operation's C2/staging layer), plus direct victim exposure wherever ClickFix lures land"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, cross-sector"
+    techniques: [T1204.004, T1059.001, T1505.003, T1021.002, T1486, T1005]
+    affected_products: ["WordPress"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:stopandprotect-wordpress-2026", type: campaign, name: "StopAndProtect", aliases: [],
+          summary: "Double-extortion operation that hijacks thousands of WordPress sites (via must-use plugins and hidden REST API endpoints for persistence/RCE) to host its own C2, payload-staging and stolen-data infrastructure, delivered to victims via ClickFix fake-CAPTCHA lures; Check Point counted close to 2,000 compromised domains and over 6,000 unique victim IPs (Check Point Research, 2026-08-18)." }
+      - { key: "malware:silentencryptor", type: malware, name: "SilentEncryptor", aliases: [],
+          summary: "Ransomware/file-encryption component deployed by the StopAndProtect operation as the final payload stage after a ClickFix-triggered PowerShell/.NET downloader chain (Check Point Research, 2026-08-18)." }
+    relation_suggestions:
+      - { subject: "campaign:stopandprotect-wordpress-2026", object: "malware:silentencryptor",
+          basis: "Check Point Research: StopAndProtect 'delivering modular payloads including ransomware (SilentEncryptor)...'" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM-HIGH
+    novelty: new
+    evidence:
+      - quote: "StopAndProtect is a newly identified operation that combines file encryption with data theft. The criminals abuse thousands of hacked WordPress websites as their infrastructure."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/thousands-of-hacked-wordpress-sites-one-operation-unmasking-stopandprotect/"
+      - quote: "Internal logs reveal thousands of IP addresses affected by this operation, underscoring that this is not a small, isolated incident but a large-scale campaign."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/thousands-of-hacked-wordpress-sites-one-operation-unmasking-stopandprotect/"
+      - quote: "One of the hacked servers contained source code of an automation tool for managing injected payloads at scale on compromised WordPress sites, listing close to 2,000 compromised WordPress domains."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/thousands-of-hacked-wordpress-sites-one-operation-unmasking-stopandprotect/"
+    extended_notes: |
+      Triage/benign-lookalike note: the ClickFix "verify you are human" copy-paste lure looks identical at
+      the telemetry level to the several other ClickFix waves already tracked in this pipeline (WP2Shell/
+      etherhiding/Vidar, macOS ClickFix, TELEPUZ) — the discriminator here is the downstream payload set
+      (SilentEncryptor + NetworkShareScanner SMB worm) rather than the delivery mechanism itself, so a
+      ClickFix PowerShell-paste detection should not assume a single family on the other end. Hunt idea:
+      any WordPress site under org control should be checked for unexpected must-use (mu-plugins) content
+      and REST API routes not shipped by an installed plugin — both are the operators' persistence/RCE
+      mechanism and would not show up in a normal plugin-list audit.
+
+  - title: "PurpleDelta: Recorded Future documents AI-assisted DPRK fraudulent-employment tradecraft — 22+ synthetic personas, ChatGPT-scripted interview cover, 1,100+ job applications"
+    sources:
+      - { url: "https://www.recordedfuture.com/research/purpledelta-fraudulent-employment-operations", publisher: "Recorded Future / Insikt Group", date: "2026-08-18", role: "primary" }
+    discovery_trace: "first seen at: recordedfuture-insikt RSS, URL https://www.recordedfuture.com/feed → primary (no pivot needed): Recorded Future / Insikt Group, URL https://www.recordedfuture.com/research/purpledelta-fraudulent-employment-operations (cross-checked via WebSearch \"PurpleDelta North Korea IT worker Recorded Future Insikt fraudulent employment\", which confirmed Insikt Group's own stated overlap with Jasper Sleet/UNC5267/Wagemole/Famous Chollima but surfaced no independent third-party corroboration of this specific 2026-08-18 report yet)"
+    summary: |
+      Insikt Group documents "PurpleDelta" — its designation for a North Korean fraudulent-remote-IT-worker
+      cluster that it states overlaps with the vendor designations Jasper Sleet (Microsoft), UNC5267
+      (Mandiant), Wagemole and Famous Chollima (CrowdStrike). Between late 2024 and early 2025, PurpleDelta
+      operators applied to more than 1,100 companies using at least 22 fabricated personas, submitting to
+      60+ positions a day across 8+ job platforms (Indeed, Upwork, LinkedIn and others), concentrated on
+      software/SaaS (41%), staffing/consulting (26%) and healthcare/biotech (10%) targets in North America.
+      Tradecraft specifics: AI-generated profile photos sourced from insertFace.com, custom-configured
+      ChatGPT assistants primed to hold a persona's fabricated backstory consistent through live interview
+      questioning, iTop screen-recording and real-time transcription/captioning tools used to rehearse and
+      pass technical interviews, and fraudulent identity documents from a service called TrustID Card to
+      clear KYC/verification steps. Once hired at 10+ confirmed organisations, operators recorded internal
+      meetings, coordinated with external facilitators (who physically host and remote-control the
+      employer-issued laptop) via Telegram/Slack, and used Google Translate to draft canned excuses for
+      personal-device use when questioned. Insikt Group separately observed interview scheduling overlaps
+      between different personas working at different victim companies — i.e., the same operator running
+      several fraudulent employments in parallel and reprioritising interviews for new roles over sustaining
+      existing ones.
+    region_nexus: "primarily North America-targeted hiring pipelines in this report, but the tradecraft (AI persona generation, LLM-scripted interview cover, remote-facilitator laptop hosting) is directly transferable to any organisation — including Swiss/EU public-sector and CI employers — that hires remote IT contractors"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology, healthcare, finance"
+    techniques: [T1585.001, T1199, T1684.001]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:purpledelta", type: actor, name: "PurpleDelta", aliases: ["Jasper Sleet", "UNC5267", "Wagemole", "Famous Chollima"],
+          summary: "Recorded Future/Insikt Group's designation for a North Korean fraudulent-remote-IT-worker cluster, stated by Insikt Group to overlap with the vendor designations Jasper Sleet (Microsoft), UNC5267 (Mandiant), Wagemole and Famous Chollima (CrowdStrike); documented applying to 1,100+ companies under 22+ AI-assisted fabricated personas between late 2024 and early 2025 (Recorded Future / Insikt Group, 2026-08-18)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "PurpleDelta operators maintained at least 22 fabricated personas across clusters, some supported by AI-generated profile photos and identity documents."
+        attribution: "Recorded Future / Insikt Group"
+        source_url: "https://www.recordedfuture.com/research/purpledelta-fraudulent-employment-operations"
+      - quote: "Operators recorded internal meetings at victim organizations and used Google Translate to draft pre-written excuses to justify using personal devices."
+        attribution: "Recorded Future / Insikt Group"
+        source_url: "https://www.recordedfuture.com/research/purpledelta-fraudulent-employment-operations"
+      - quote: "Insikt Group observed job interviews overlapping with meetings at companies where other personas were employed, prioritizing new work over existing jobs."
+        attribution: "Recorded Future / Insikt Group"
+        source_url: "https://www.recordedfuture.com/research/purpledelta-fraudulent-employment-operations"
+    extended_notes: |
+      Defender takeaway for HR/hiring-pipeline hardening (not an "action" per PD — this is standing
+      hiring-process guidance, not a do-now task tied to this finding's own mechanics): live video
+      identity verification held against a government-issued ID photo (not just a submitted scan),
+      geolocation/IP consistency checks on company-issued equipment from day one, and RMM/remote-access
+      tooling restrictions on new-hire endpoints during the probation period are the controls Insikt Group
+      and the org's own onboarding process would need to defeat this specific tradecraft (AI-persona photo,
+      ChatGPT-scripted interview answers, third-party laptop hosting).
+    borderline: true
+    borderline_reason: "single-source (Insikt Group only, no independent corroboration found yet for this specific report), and the DPRK IT-worker fraud pattern itself is already broadly known/public via FBI/OFAC/UK-OFSI advisories cited within Insikt's own piece — the delta here is the specific AI-tooling tradecraft detail, not the existence of the threat class"
+
+  - title: "GTIG/Mandiant details AVDH, an internal multi-agent LLM harness that found 100+ true-positive vulnerabilities in stolen source code within two days and has produced 12 assigned CVEs"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/staying-ahead-of-adversarial-ai-through-agentic-source-code-review/", publisher: "Google Threat Intelligence Group / Mandiant", date: "2026-08-18", role: "primary" }
+    discovery_trace: "first seen at: mandiant-gtig RSS (feedburner), URL https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v → primary (no pivot needed): Google Cloud / GTIG blog, URL https://cloud.google.com/blog/topics/threat-intelligence/staying-ahead-of-adversarial-ai-through-agentic-source-code-review/"
+    summary: |
+      GTIG/Mandiant describes AVDH (Agentic Vulnerability Discovery Harness), an internal multi-agent
+      LLM pipeline it uses during consulting/incident-response engagements and proactive code review. The
+      six-stage pipeline: (1) Explorer agents build a threat model of the target's attack surface; (2)
+      parallelised Discovery agents (running on Gemini Flash Lite) enumerate candidate entry points; (3) a
+      context-enrichment stage aggregates the target's existing security controls; (4) Access-Control and
+      Data-Flow-Analysis agents generate vulnerability hypotheses; (5) multiple Validation agents run the
+      same hypothesis at varied LLM temperature settings and require consensus before promotion; (6) a
+      human expert reviews and builds a proof-of-concept for anything that survives validation. Mandiant's
+      own domain expertise is injected as a hierarchical rule system (software domain to
+      language/framework to vulnerability-class rules) rather than left to model discretion, and Google's
+      Agent Development Kit (ADK) underpins the orchestration. GTIG states that during a recent
+      incident-response engagement involving stolen corporate source-code repositories, AVDH surfaced over
+      100 true-positive critical vulnerabilities within two days; more broadly the team has run it against
+      "tens of millions of lines of code," executing thousands of pipeline runs that produced 12 assigned
+      CVEs (including two named Drupal advisories, CVE-2026-13242 and CVE-2026-55803) with roughly a dozen
+      more in active disclosure. GTIG frames AVDH as complementary to Google's continuous CodeMender
+      scanning rather than a replacement for it.
+    region_nexus: "global (vendor capability description, not a regional incident)"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "During a recent incident response investigation involving stolen corporate repositories, the harness discovered over 100 true-positive critical vulnerabilities in just two days — achieving results in a fraction of the time required for manual review."
+        attribution: "Google Threat Intelligence Group / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/staying-ahead-of-adversarial-ai-through-agentic-source-code-review/"
+      - quote: "This rapid analysis has uncovered dozens of assignable flaws in widely used web extensions and open-source projects, resulting in 12 assigned CVEs, including CVE-2026-13242, CVE-2026-55803, and an additional dozen currently in active disclosure."
+        attribution: "Google Threat Intelligence Group / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/staying-ahead-of-adversarial-ai-through-agentic-source-code-review/"
+    extended_notes: |
+      Included for situational awareness on the AI-driven-vulnerability-discovery arms race this pipeline
+      has been tracking (Unit 42 Nova, Elastic's HackerOne-triage agent, the ongoing "CVE record
+      reliability" thread) rather than as an attacker TTP — no techniques[] mapping applies since this is
+      a defensive tooling description, not observed adversary behavior. The IR-engagement detail ("stolen
+      corporate repositories") is not tied by GTIG to any specific named incident in this piece.
+    borderline: true
+    borderline_reason: "single vendor-sourced capability announcement about GTIG's own internal tool, not an attacker technique or incident; included for its concrete technical architecture detail and thematic relevance to the pipeline's ongoing AI-vulnerability-discovery coverage thread, but it is lower-priority research than the other three items in this return"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: paradigm-shift-research
+    reason: "Still SPA-shell only on the direct bridge transport (HTTP 202, ~187B client-rendered shell); the jina reader that would hydrate it is credit-exhausted (all 7 keys HTTP 402) per this run's transport warning. Not retried beyond the documented 2026-08-16 status quo."
+  - source_id: ssd-disclosure-backlog-task
+    reason: "Backlog task (Unisoc VoLTE-to-Android-kernel exploit chain, advisories unisoc-t612-rce / unisoc-t612-lpe): confirmed the real advisory URLs via WebSearch (https://ssd-disclosure.com/unisoc-t612-rce/ and https://ssd-disclosure.com/unisoc-t612-lpe/), but all three alternate-transport attempts failed within the ~5-minute budget: (a) web.archive.org — the WebFetch tool refuses archive.org entirely (\"Claude Code is unable to fetch from web.archive.org\"), and the Wayback availability API returned HTTP 429 on every attempt via the proxy (both plain curl and after a 15s backoff); (b) SSD's own feed at https://ssd-disclosure.com/feed/ redirected to an sgcaptcha challenge page; (c) a second independent outlet (Dark Reading, https://www.darkreading.com/mobile-security/video-call-exploit-chains-two-flaws-unisoc-modems) returned HTTP 403 to WebFetch. The direct bridge fetch of the advisory itself still returns only the documented HTTP 202 / ~187B client-rendered shell. Still unreadable this run — remains a backlog item for a future run with a live jina pool or a working archive.org path. WebSearch itself surfaced enough third-party summary (TheHackerNews, cyberpress.org, Infosecurity Magazine, cybernews.com, SC Media, Dark Reading headline/snippet) to confirm the technical shape matches the backlog brief (SIP/SDP memory corruption in VoLTE call setup on Unisoc T606/T612/T7250, chained via an isolation bypass to reach Android kernel memory, no CVE, vendor unresponsive) but none of these could be fetched in full to extract verbatim load-bearing quotes, so it is not returned as a normal finding this run."
+  - source_id: fox-it-blog
+    reason: "WebFetch 403; bridge returned only page head/meta (no article list) within the response cap. Known very-low-cadence source (3 posts/18 months per source notes) — plausible empty window, not confirmed either way."
+  - source_id: ahnlab-asec
+    reason: "WebFetch 403; bridge returned only page head/meta, no article listing surfaced in the captured output. WebSearch found no items dated 2026-08-17 through 2026-08-19. Treated as no in-window signal found, not confirmed empty."
+  - source_id: ibm-xforce
+    reason: "Bridge returned page head/meta only (Adobe/Helix CMS shell), no article listing. WebSearch surfaced only recirculated coverage of the February 2026 Threat Intelligence Index, nothing genuinely new in-window."
+  - source_id: trellix
+    reason: "Bridge returned page head/meta only (no article listing in captured output, consistent with the 2026-07-27 note about a possibly stale/cached index). WebSearch found nothing dated in-window beyond an August 10 CTO perspective piece (out of window)."
+  - source_id: cloudflare-cf1
+    reason: "Fetched cleanly (WebFetch) but most recent post is 2026-08-11 — no in-window item."
+  - source_id: sans-ics
+    reason: "Fetched cleanly (WebFetch) but most recent post is 2026-08-11 — no in-window item."
+  - source_id: team-cymru
+    reason: "Fetched cleanly (WebFetch) but most recent post is 2026-08-11 — no in-window item."
+  - source_id: zimperium-zlabs
+    reason: "Fetched cleanly (WebFetch); most recent items (GoldDigger, 2026-08-18; Papyrus ad-fraud, 2026-08-17) are short mobile-malware write-ups without novel technical depth or CI/government-sector nexus beyond generic consumer-banking-fraud framing — triaged out as below the bar rather than a fetch failure."
+  - source_id: dragos
+    reason: "Fetched cleanly (WebFetch); in-window posts (MTSA resilience-requirement commentary, xOT standards commentary) are policy/methodology pieces, not technical threat research — triaged out, not a fetch failure."
+  - source_id: cryptotimes
+    reason: "Fetched cleanly; listing is pure crypto-markets/finance news with no security content in or out of window this run."
+  - source_id: talos
+    reason: "Fetched cleanly; most recent substantive post is 2026-08-13 (JWR phishing framework, already in prior coverage) — no in-window item."
+  - source_id: welivesecurity
+    reason: "Fetched cleanly; most recent post is 2026-08-17 (QR-phishing feature, non-technical) — no in-window item meeting the depth bar."
+  - source_id: kaspersky-securelist
+    reason: "Fetched cleanly; most recent post is 2026-08-12 — no in-window item (per the listing's own dateless-post caveat, worth a follow-up RSS-based check next run)."
+  - source_id: sentinellabs
+    reason: "Fetched cleanly; most recent post is 2026-08-13 — no in-window item."
+  - source_id: elastic-seclabs
+    reason: "Fetched cleanly; most recent post is 2026-08-11 — no in-window item."
+  - source_id: crowdstrike
+    reason: "Fetched cleanly; most recent post (2026-08-17, \"Teaching AI to Reason Through Detection Triage\") is a product-capability piece without new attacker-technique content — triaged out, not a fetch failure."
+  - source_id: zscaler-threatlabz
+    reason: "Fetched cleanly; most recent post is 2026-08-12 — no in-window item."
+  - source_id: proofpoint
+    reason: "Fetched cleanly; most recent post is 2026-07-23 — no in-window item."
+  - source_id: huntress
+    reason: "Fetched cleanly (RSS); most recent post (MacSync Stealer) is 2026-08-17T04:00Z, outside the 26h window anchored to the prior run's 2026-08-18T04:10Z start."
+  - source_id: citizen-lab
+    reason: "Fetched cleanly (RSS); most recent post is a non-technical call-for-applications notice (2026-08-17) — no in-window security research item."
+  - source_id: sophos-xops
+    reason: "Fetched cleanly (RSS); most recent posts are 2026-08-17 (Patch Tuesday roundup, NetNTLMv1 research) — both fall just outside the 26h window anchored to the prior run's start."
+  - source_id: group-ib
+    reason: "Fetched cleanly (RSS); most recent post is 2026-08-13 — no in-window item."
+  - source_id: intel471
+    reason: "Fetched cleanly (RSS); most recent post is 2026-08-11 — no in-window item."
+  - source_id: volexity
+    reason: "Fetched cleanly; most recent post is 2026-07-17 — no in-window item (sparse cadence expected)."
+  - source_id: coinspect-research
+    reason: "Bridge returned only page head/JSON-LD metadata (referencing the already-covered 'Ill Bloom' CryptoJS story); no fresh in-window item surfaced."

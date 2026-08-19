@@ -1,0 +1,266 @@
+domain: S1
+run_id: 2026-08-19T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-19T04:12:55Z
+ended_at: 2026-08-19T04:29:17Z
+duration_seconds: 982
+self_telemetry:
+  webfetch_calls: 15
+  websearch_calls: 11
+  bridge_fetches: 30
+
+items:
+  - title: "CISA adds Windows IKE Extension double-free RCE (CVE-2026-33824) to KEV — a four-month-old patch now confirmed under active exploitation"
+    sources:
+      - { url: "https://www.thezdi.com/blog/2026/4/22/cve-2026-33824-remote-code-execution-in-windows-ikev2", publisher: "Zero Day Initiative (Trend Micro)", date: "2026-04-23", role: "primary-technical" }
+      - { url: "https://euvd.enisa.europa.eu/", publisher: "ENISA EUVD (API: recent/exploited)", date: "2026-08-18", role: "primary" }
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA KEV Catalog (API)", date: "2026-08-18", role: "primary" }
+      - { url: "https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-33824", publisher: "Microsoft MSRC (CVRF API)", date: "2026-04-14", role: "corroborating" }
+      - { url: "https://unit42.paloaltonetworks.com/autonomous-ai-cyber-attack-campaign/", publisher: "Palo Alto Networks Unit 42", date: "2026-07-30", role: "background" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (bridge API) → dateAdded 2026-08-18 entry for CVE-2026-33824 → corroboration: enisa-euvd, URL https://euvd.enisa.europa.eu/ (bridge API, recent/exploited) confirms exploitedSince 2026-08-18 → primary technical root-cause: Zero Day Initiative, URL https://www.thezdi.com/blog/2026/4/22/cve-2026-33824-remote-code-execution-in-windows-ikev2 → vendor record: MSRC CVRF API, URL https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-33824 → background actor context: WebSearch (\"Windows IKE Extension CVE-2026-33824 VPN exploitation Chinese actor\") → Unit 42, URL https://unit42.paloaltonetworks.com/autonomous-ai-cyber-attack-campaign/"
+    summary: |
+      CISA added CVE-2026-33824 to the KEV catalog on 2026-08-18 based on evidence of active exploitation; ENISA's EUVD independently records exploitedSince 2026-08-18 and an EPSS of 55.85%. The flaw is a double-free in ikeext.dll, the Windows IKEv2 (Internet Key Exchange) service that negotiates IPsec Security Associations for VPN connections, triggered during fragment reassembly of IKE_SA_INIT / fragmented IKE_AUTH packets: a Security Realm Vendor ID payload's heap-allocated blob is shallow-copied into a work item and then freed twice — once during packet-context destruction and again during MMSA cleanup (Zero Day Initiative, discoverer WARP & MORSE / TrendAI Research). Exploitation requires no authentication and no user interaction — an attacker sends crafted UDP packets to port 500 or NAT-T port 4500 on any Windows host with IKEv2 enabled (a VPN gateway, Always On VPN endpoint, or domain member running RRAS) to trigger arbitrary code execution under the SYSTEM context of the IKEEXT service. Microsoft patched this in the April 2026 Patch Tuesday (CVSS 3.1 9.8, CWE-415), four months before CISA's KEV addition confirmed real-world exploitation; notably, Microsoft's own CVRF record for the CVE still shows "exploited: No" / "Exploitation Less Likely" with no revision since the original April publication, i.e. MSRC has not yet updated its own advisory to reflect the exploitation CISA and ENISA are now reporting. Separately, and as background only (not itself in-window), Unit 42 documented on 2026-07-30 that a Chinese-speaking actor it tracks as knaithe/KnYuan (orchestrating attacks via an autonomous DeepSeek-driven "Hermes Agent" framework over Telegram) attempted reverse-shell exploitation against three IKE VPN endpoints using this same CVE in late July, achieving "limited success" — consistent with, though not confirmed as the sole source of, the exploitation CISA cites for the KEV addition.
+    region_nexus: "global; any Windows Server/endpoint with IKEv2 (VPN gateway, RRAS, Always On VPN) exposed to the internet is affected, including Swiss/EU government and critical-infrastructure remote-access infrastructure"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, healthcare, finance, telco (any org running Windows-based IPsec/IKEv2 VPN gateways)"
+    cves: [CVE-2026-33824]
+    techniques: [T1190]
+    affected_products: ["Microsoft Windows (Internet Key Exchange (IKE) Service Extensions / IKEEXT)"]
+    entity_keys: ["actor:knaithe-knyuan"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Double free in Windows IKE Extension allows an unauthorized attacker to execute code over a network."
+        attribution: "Microsoft MSRC"
+        source_url: "https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-33824"
+      - quote: "The vulnerability is due to improper ownership handling of a heap-allocated blob pointer during IKEv2 fragment reassembly."
+        attribution: "Zero Day Initiative"
+        source_url: "https://www.thezdi.com/blog/2026/4/22/cve-2026-33824-remote-code-execution-in-windows-ikev2"
+      - quote: "Successful exploitation could result in a crash of the IKEEXT service, or potentially arbitrary code execution under the security context of the IKEEXT service (SYSTEM)."
+        attribution: "Zero Day Initiative"
+        source_url: "https://www.thezdi.com/blog/2026/4/22/cve-2026-33824-remote-code-execution-in-windows-ikev2"
+      - quote: "Double free in Windows IKE Extension allows an unauthorized attacker to execute code over a network."
+        attribution: "ENISA EUVD (EUVD-2026-22641)"
+        source_url: "https://euvd.enisa.europa.eu/"
+      - quote: "Reverse shell callbacks targeting three IKE VPN endpoints (CVE-2026-33824)."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/autonomous-ai-cyber-attack-campaign/"
+    extended_notes: |
+      Detection: telemetry class is network/session logs on the VPN gateway plus process-crash/creation telemetry on the host — repeated or malformed IKE_SA_INIT/IKE_AUTH exchanges to UDP/500 and UDP/4500 from a given source in short succession, especially followed by an IKEEXT service crash (Windows Event Log Application/System channel, service-crash event for "IKEEXT") or by lsass.exe/svchost.exe (IKEEXT host process) spawning unexpected child processes — is the discriminator; legitimate IKEv2 negotiation traffic does not crash the service. Hardening: patch is the only complete fix (April 2026 cumulative update); Microsoft's own interim mitigation is blocking inbound UDP/500 and UDP/4500 for systems that do not require IKE, or restricting those ports to known peer IPs via firewall for systems that do. Prioritise internet-facing Windows VPN gateways / RRAS servers for immediate patch verification given the KEV addition and 55.85% EPSS.
+    borderline: false
+
+  - title: "GitLab ships emergency patch for an unauthenticated GraphQL directive flaw that can delete public projects and user data (CVE-2026-19478, CVSS 9.4)"
+    sources:
+      - { url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-4-released/", publisher: "GitLab (vendor patch notes)", date: "2026-08-17", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/08/18/gitlab-critical-code-injection-flaw-cve-2026-19478/", publisher: "Help Net Security", date: "2026-08-18", role: "corroborating" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1037/", publisher: "CERT-FR / ANSSI", date: "2026-08-18", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12856 (bridge API, post id 12856, created 2026-08-18T08:32:59Z) → corroboration: advisories-ncsc-nl, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0303 (feed https://advisories.ncsc.nl/rss/advisories) → corroboration: anssi-fr, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1037/ (confirmed CVE-2026-19478 and CVE-2026-19650 in body) → corroboration: bsi-de, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2882 (feed https://wid.cert-bund.de/content/public/securityAdvisory/rss) → primary: GitLab vendor patch notes, URL https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-4-released/ → corroboration: Help Net Security, URL https://www.helpnetsecurity.com/2026/08/18/gitlab-critical-code-injection-flaw-cve-2026-19478/"
+    summary: |
+      GitLab shipped an out-of-band critical patch release (19.2.4, 19.1.6, 19.0.8, 18.11.11) on 2026-08-17 fixing CVE-2026-19478 (CVSS 3.1: 9.4), a code-injection-via-GraphQL-directive flaw that lets a remote, unauthenticated attacker modify or delete public projects and user data with no user interaction required, and CVE-2026-19650 (CVSS 7.1), a CSRF flaw in the GraphQL multiplex query handler that lets an unauthenticated user execute mutations via GET requests due to improper request validation. Both were reported through GitLab's HackerOne bug-bounty program (researchers "hiimguardian" and "kreep") and affect GitLab Community Edition and Enterprise Edition from 18.2 up to (but not including) 18.11.11, 19.0.8, 19.1.6 and 19.2.4 — i.e. every release since mid-2026. GitLab.com and GitLab Dedicated were already patched at disclosure; self-hosted instances require the update. As of this writing there is no public PoC and no confirmed in-the-wild exploitation, but the pre-auth, no-interaction profile against a widely self-hosted DevOps platform (often internet-facing for CI/CD webhooks and runners) puts it squarely in the imminent-exploitation risk class. Four national/EU CERTs (Switzerland's NCSC, the Netherlands' NCSC-NL, France's CERT-FR, and Germany's BSI) independently republished the advisory within 24 hours of GitLab's release.
+    region_nexus: "global; self-hosted GitLab CE/EE instances are common in Swiss/EU government and enterprise DevOps environments"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, telco, energy (any org self-hosting GitLab CE/EE)"
+    cves: [CVE-2026-19478, CVE-2026-19650]
+    techniques: [T1190, T1485]
+    affected_products: ["GitLab Community Edition (CE)", "GitLab Enterprise Edition (EE)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "could allow an unauthenticated user to remotely modify or delete public projects and user data via a GraphQL directive."
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-4-released/"
+      - quote: "Impacted Versions: GitLab CE/EE: all versions from 18.2 before 18.11.11, 19.0 before 19.0.8, 19.1 before 19.1.6, and 19.2 before 19.2.4"
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-4-released/"
+      - quote: "Code injection through a GraphQL directive and can be exploited remotely by an unauthenticated attacker without user interaction."
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/08/18/gitlab-critical-code-injection-flaw-cve-2026-19478/"
+    extended_notes: |
+      Detection: telemetry class is web/application access logs on the GitLab GraphQL endpoint (/api/graphql) — look for anomalous, unauthenticated (no session cookie / PAT) POST requests carrying GraphQL directive syntax targeting mutation operations, and for GET requests to the GraphQL endpoint carrying mutation payloads (the CVE-2026-19650 CSRF vector abuses GET-based multiplex queries). Gitlab audit-event logs (Admin Area > Monitoring > Audit Events) for unexpected project-deletion or data-modification events with no attributable authenticated actor are the key discriminator vs. legitimate maintainer activity, which always carries a session/PAT identity. Hardening: upgrade to 19.2.4 / 19.1.6 / 19.0.8 / 18.11.11 immediately; no workaround is documented, so instances that cannot patch immediately should restrict network reachability to the GraphQL endpoint.
+    borderline: false
+
+  - title: "Three widely-installed WordPress plugins patch pre-auth critical flaws — Forminator Forms (arbitrary PHP upload to RCE, 600k+ sites), User Profile Builder (auth bypass to admin takeover, 40k+ sites), Royal Elementor Addons (SSRF/XSS)"
+    sources:
+      - { url: "https://www.wordfence.com/blog/2026/08/600000-wordpress-sites-affected-by-arbitrary-file-upload-vulnerability-in-forminator-forms-wordpress-plugin/", publisher: "Wordfence Threat Intelligence", date: "2026-08", role: "primary" }
+      - { url: "https://thehackernews.com/2026/08/forminator-wordpress-flaw-can-enable.html", publisher: "The Hacker News", date: "2026-08-17", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12860 (bridge API, post id 12860, created 2026-08-18T11:26:32Z) → primary: Wordfence, URL https://www.wordfence.com/blog/2026/08/600000-wordpress-sites-affected-by-arbitrary-file-upload-vulnerability-in-forminator-forms-wordpress-plugin/ → corroboration: The Hacker News, URL https://thehackernews.com/2026/08/forminator-wordpress-flaw-can-enable.html → corroboration: WebSearch (\"Forminator Forms WordPress plugin CVE-2026-15748 arbitrary file upload 600000 sites\") confirmed CVSS/version data on securityweek.com and cybersecuritynews.com summaries"
+    summary: |
+      NCSC-CH's advisory of 2026-08-18 bundles three critical/high WordPress plugin disclosures published the same week. CVE-2026-15748 (CVSS 9.8) in Forminator Forms (WPMU DEV, 600,000+ active installs) is an unauthenticated arbitrary-file-upload flaw in the plugin's handle_file_upload() function: the dangerous-extension blocklist performs exact-key matching on MIME types, which attackers bypass with pipe-alternative MIME-type keys to upload executable PHP files and achieve remote code execution — the only prerequisite is that the target site has a form combining a File Upload field with a Select field. Wordfence validated the report and privately disclosed it to WPMU DEV on 2026-07-14; the vendor shipped Forminator 1.56.2 on 2026-07-31, and the technical write-up (with root cause) was only made public on 2026-08-17, which is what triggered NCSC-CH's advisory and this pipeline's coverage window. CVE-2026-15826 (CVSS 9.8) in User Profile Builder (40,000+ installs) is an unauthenticated authentication-bypass-via-type-confusion vulnerability reachable through the plugin's username parameter, allowing direct administrator-account takeover. CVE-2026-17123 (CVSS 8.8) is an authenticated (Contributor-level) SSRF in Royal Elementor Addons' form-builder webhook-URL setting, and CVE-2026-19217 (CVSS 5.4/6.4 depending on scoring source) is a companion stored-XSS in the same plugin via unvalidated widget settings. All four CVEs are independently confirmed on NVD with the versions above; patches are available for all affected plugins.
+    region_nexus: "global; WordPress-based public-sector and SME websites in Switzerland/EU are commonly built on these form/profile plugins"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, education (WordPress-hosted municipal/institutional sites), finance"
+    cves: [CVE-2026-15748, CVE-2026-15826, CVE-2026-17123, CVE-2026-19217]
+    techniques: [T1190, T1505.003]
+    affected_products: ["Forminator Forms (WPMU DEV)", "User Profile Builder", "Royal Elementor Addons (WP Royal)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This vulnerability makes it possible for unauthenticated attackers to upload arbitrary files, including executable PHP files, to a vulnerable site, which can lead to remote code execution and complete site compromise."
+        attribution: "The Hacker News (citing Wordfence)"
+        source_url: "https://thehackernews.com/2026/08/forminator-wordpress-flaw-can-enable.html"
+      - quote: "This is due to insufficient file type validation in handle_file_upload, where the dangerous-extension blocklist performs exact-key matching that is bypassed by pipe-alternative MIME type keys."
+        attribution: "The Hacker News (citing Wordfence)"
+        source_url: "https://thehackernews.com/2026/08/forminator-wordpress-flaw-can-enable.html"
+      - quote: "The vulnerability impacts all versions of the plugin before and including 1.56.1. It has been addressed in version 1.56.2 released on July 31, 2026."
+        attribution: "The Hacker News (citing Wordfence)"
+        source_url: "https://thehackernews.com/2026/08/forminator-wordpress-flaw-can-enable.html"
+    extended_notes: |
+      Detection: telemetry class is web-server access/error logs on WordPress sites running these plugins — for Forminator, look for POST requests to admin-ajax.php with action=forminator_forms_submit (or similar Forminator upload actions) carrying multipart file uploads whose Content-Type/MIME field uses pipe-delimited alternates, followed shortly by a GET request to a newly created file under wp-content/uploads with a .php/.phtml-class extension (the web-shell drop step, T1505.003); legitimate form submissions never write executable files. For User Profile Builder, unexpected wp-login.php or wp-admin session-cookie issuance immediately following a request touching the plugin's username-parameter endpoint, with no prior valid-credential POST, is the discriminator for the auth-bypass path. Hardening: update Forminator Forms to >=1.56.2, User Profile Builder to the fixed release, and Royal Elementor Addons to >=17.10.65; site owners who cannot patch immediately should disable File-Upload+Select field combinations in Forminator forms as an interim mitigation.
+    borderline: false
+
+  - title: "Red Hat build of Keycloak: unauthenticated reset-credentials flow bypass allows full account takeover, including admin accounts (CVE-2026-18963, CVSS 9.1)"
+    sources:
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-18963", publisher: "NVD (sourced from Red Hat secalert)", date: "2026-08-18", role: "primary" }
+      - { url: "https://euvd.enisa.europa.eu/", publisher: "ENISA EUVD (API: recent/criticals)", date: "2026-08-18", role: "corroborating" }
+      - { url: "https://bugzilla.redhat.com/show_bug.cgi?id=2511595", publisher: "Red Hat Bugzilla", date: "2026-08-18", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvd.enisa.europa.eu/ (bridge API, recent/criticals listing) → EUVD-2026-61063 entry for CVE-2026-18963 → primary: NVD CVE record (Red Hat-sourced description), URL https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-18963 → corroboration: Red Hat Bugzilla bug 2511595, URL https://bugzilla.redhat.com/show_bug.cgi?id=2511595 (bug title confirms 'Unauthenticated account takeover via reset-credentials flow bypass') → checked: keycloak.org release feed, URL https://www.keycloak.org/rss.xml, latest entry 26.7.1 (2026-08-05) does not yet reference this CVE"
+    summary: |
+      Red Hat disclosed CVE-2026-18963 (CVSS 3.1: 9.1) on 2026-08-18: a flaw in the reset-credentials flow of the keycloak-services component — the core engine for identity and access management in Red Hat build of Keycloak — lets an unauthenticated attacker force the password-reset process for any user without needing to click the required email-verification link, resulting in full account takeover by directly setting new credentials for the target account. No prerequisites beyond network access to the Keycloak realm's reset-credentials endpoint are stated; no user interaction or existing privileges are required (AV:N/AC:L/PR:N/UI:N). Red Hat's own errata (RHSA-2026:56519/56520/56523/56524) fix the flaw in Red Hat build of Keycloak 26.4.15, released 2026-08-18. Keycloak is a widely deployed open-source SSO/IAM product used to front authentication for many self-hosted and government applications; as of this writing the upstream community keycloak.org project's own release feed (latest post: 26.7.1, 2026-08-05) does not yet reference this CVE or a corresponding fix, so operators running the community distribution rather than Red Hat's downstream build should treat this as an open exposure pending an upstream release and should not assume parity with the Red Hat advisory's fixed-version guidance. No public PoC or in-the-wild exploitation has been reported yet, but the combination of CVSS 9.1, zero prerequisites, and "full control over target user accounts" (including any admin account reachable via the same realm's reset flow) makes this a high-priority patch item for any organization using Keycloak-backed authentication.
+    region_nexus: "global; Keycloak is a common open-source IAM/SSO backbone in European public-sector and enterprise identity stacks"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, healthcare, telco (any org using Keycloak/RHBK for SSO/IAM)"
+    cves: [CVE-2026-18963]
+    techniques: [T1190, T1098]
+    affected_products: ["Red Hat build of Keycloak", "Keycloak (keycloak-services component)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "A flaw was found in the reset-credentials flow of the keycloak-services component, which is the core engine for identity and access management in Red Hat Build of Keycloak. The issue allows an unauthenticated attacker to force the password reset process for any user without needing to click the required email verification link. This can result in the attacker gaining full control over target user accounts by directly setting new credentials."
+        attribution: "NVD / Red Hat secalert"
+        source_url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-18963"
+      - quote: "(CVE-2026-18963) CVE-2026-18963 keycloak-services: keycloak-services: Unauthenticated account takeover via reset-credentials flow bypass"
+        attribution: "Red Hat Bugzilla (bug 2511595 title)"
+        source_url: "https://bugzilla.redhat.com/show_bug.cgi?id=2511595"
+    extended_notes: |
+      Confidence set to MEDIUM rather than HIGH because, while the vulnerability is confirmed on two independent primary channels (NVD/Red Hat and ENISA EUVD) plus the Bugzilla tracker, no independent security-research outlet or third CERT advisory had picked up this CVE as of this run — it is a very fresh (same-day) disclosure. Detection: telemetry class is authentication/session logs and the identity provider's own audit log — Keycloak's admin-events / user-events log (event type UPDATE_PASSWORD or RESET_PASSWORD without a preceding VERIFY_EMAIL event in the same reset-credentials execution) is the discriminator; a legitimate reset always shows the email-verification-link click event ordered before the credential-update event, so a credential update with no matching verification event for that reset session is anomalous. A burst of password-reset completions against distinct usernames from a single source IP/session, or any reset event targeting a realm-admin or service account, warrants immediate investigation. Hardening: apply RHSA-2026:56519/56520/56523/56524 (RHBK 26.4.15) now; operators of the community keycloak.org distribution should watch for an upstream fix and consider temporarily disabling self-service password reset (Forgot Password) at the realm level as an interim mitigation until patched.
+    borderline: false
+
+cve_table:
+  - cve: CVE-2026-33824
+    product: "Microsoft Windows IKE Extension (IKEEXT / IKEv2 service)"
+    cvss: "9.8 (CVSS 3.1)"
+    epss: "55.85%"
+    kev: "added 2026-08-18"
+    exploited: "yes (CISA KEV + ENISA EUVD exploitedSince 2026-08-18); Microsoft's own CVRF record not yet updated to reflect exploitation"
+    patch: "April 2026 cumulative update (fixed since release)"
+    source: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+  - cve: CVE-2026-19478
+    product: "GitLab CE/EE (GraphQL API)"
+    cvss: "9.4 (CVSS 3.1)"
+    epss: "not yet scored"
+    kev: "not listed"
+    exploited: "no confirmed exploitation reported"
+    patch: "19.2.4 / 19.1.6 / 19.0.8 / 18.11.11 (2026-08-17)"
+    source: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-4-released/"
+  - cve: CVE-2026-19650
+    product: "GitLab CE/EE (GraphQL multiplex query handler)"
+    cvss: "7.1 (CVSS 3.1)"
+    epss: "not yet scored"
+    kev: "not listed"
+    exploited: "no confirmed exploitation reported"
+    patch: "19.2.4 / 19.1.6 / 19.0.8 / 18.11.11 (2026-08-17)"
+    source: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-4-released/"
+  - cve: CVE-2026-15748
+    product: "Forminator Forms (WordPress plugin, WPMU DEV)"
+    cvss: "9.8 (CVSS 3.1)"
+    epss: "not yet scored"
+    kev: "not listed"
+    exploited: "no confirmed exploitation reported"
+    patch: "1.56.2 (2026-07-31)"
+    source: "https://www.wordfence.com/blog/2026/08/600000-wordpress-sites-affected-by-arbitrary-file-upload-vulnerability-in-forminator-forms-wordpress-plugin/"
+  - cve: CVE-2026-15826
+    product: "User Profile Builder (WordPress plugin)"
+    cvss: "9.8 (CVSS 3.1)"
+    epss: "not yet scored"
+    kev: "not listed"
+    exploited: "no confirmed exploitation reported"
+    patch: "fixed release per vendor (see NCSC-CH advisory references)"
+    source: "https://security-hub.ncsc.admin.ch/#/posts/12860"
+  - cve: CVE-2026-17123
+    product: "Royal Elementor Addons (WordPress plugin, WP Royal)"
+    cvss: "8.8 (CVSS 3.1)"
+    epss: "not yet scored"
+    kev: "not listed"
+    exploited: "no confirmed exploitation reported"
+    patch: ">=17.10.65 per vendor advisory referenced by NCSC-CH"
+    source: "https://security-hub.ncsc.admin.ch/#/posts/12860"
+  - cve: CVE-2026-19217
+    product: "Royal Elementor Addons (WordPress plugin, WP Royal)"
+    cvss: "5.4-6.4 (source-dependent)"
+    epss: "not yet scored"
+    kev: "not listed"
+    exploited: "no confirmed exploitation reported"
+    patch: ">=17.10.65 per vendor advisory referenced by NCSC-CH"
+    source: "https://security-hub.ncsc.admin.ch/#/posts/12860"
+  - cve: CVE-2026-18963
+    product: "Red Hat build of Keycloak (keycloak-services component)"
+    cvss: "9.1 (CVSS 3.1)"
+    epss: "not yet scored"
+    kev: "not listed"
+    exploited: "no confirmed exploitation reported"
+    patch: "Red Hat build of Keycloak 26.4.15 (2026-08-18); upstream keycloak.org fix not yet confirmed"
+    source: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-18963"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org profile configures no product watchlist — sweep is a no-op per spawn instructions"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "cisa.gov 403s the direct transport and the jina reader pool is credit-exhausted (HTTP 402 on all 7 keys); no in-window CISA-authored cybersecurity-advisory content could be retrieved this run. Substitute check: the cisagov CSAF/OT mirror (raw.githubusercontent.com/cisagov/CSAF) shows nothing newer than 2026-08-13, and news coverage of the 2026-08-18 KEV-additions alert (CVE-2026-33824 item above) was independently obtained via WebSearch/EUVD/CISA-KEV-API, so no exploitation-relevant content is believed lost, but CISA's own advisory prose for the day could not be directly verified."
+  - source_id: cisa-directives
+    reason: "Same cisa.gov 403 + jina-exhausted condition; no substitute found confirming or ruling out an in-window directive publication."
+  - source_id: siemens-productcert-csaf
+    reason: "cert-portal.siemens.com 403s on direct transport; jina pool exhausted. Substitute: cisagov CSAF/OT mirror (raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/changes.csv) shows nothing newer than 2026-08-13, consistent with no in-window Siemens ProductCERT advisory being missed, but the vendor's own portal could not be directly checked."
+  - source_id: wordfence-user-profile-builder-advisory
+    reason: "https://www.wordfence.com/blog/2026/08/40000-wordpress-sites-affected-by-authentication-bypass-vulnerability-in-user-profile-builder-wordpress-plugin/ returned empty/blocked content via both WebFetch and the bridge (jina pool exhausted); technical detail on CVE-2026-15826 was instead sourced from the NCSC-CH advisory bundle and the Wordfence-URL slug itself (which names the mechanism: type confusion via username parameter)."
+
+fetch_failures:
+  - id: cisa-advisories
+    url_tried: "https://www.cisa.gov/cybersecurity-advisories/all.xml"
+    fetch_method: "bridge:url"
+    status_code: 403
+    error_class: transport-403
+    error_message: "direct HTTP 403, 410 B; jina reader: all 7 keys HTTP 402 balance-exhausted"
+    attempted_methods: ["bridge:url", "websearch"]
+    mitigation_applied: "checked cisagov CSAF/OT mirror (no newer than 2026-08-13) and corroborated the 2026-08-18 KEV-additions story via WebSearch/EUVD/KEV-API instead"
+    covered_anyway: false
+  - id: cisa-directives
+    url_tried: "https://www.cisa.gov/news-events/directives"
+    fetch_method: "bridge:url"
+    status_code: 403
+    error_class: transport-403
+    error_message: "direct HTTP 403, 396 B; jina reader: all 7 keys HTTP 402 balance-exhausted"
+    attempted_methods: ["bridge:url"]
+    mitigation_applied: "none — no substitute found for directive-specific content"
+    covered_anyway: false
+  - id: siemens-productcert-csaf
+    url_tried: "https://cert-portal.siemens.com/productcert/csaf/"
+    fetch_method: "bridge:url"
+    status_code: 403
+    error_class: transport-403
+    error_message: "direct HTTP 403 (per source-list note; jina pool exhausted this run)"
+    attempted_methods: ["bridge:url"]
+    mitigation_applied: "checked cisagov CSAF/OT mirror (no newer than 2026-08-13) — no Siemens-specific advisory confirmed lost"
+    covered_anyway: false

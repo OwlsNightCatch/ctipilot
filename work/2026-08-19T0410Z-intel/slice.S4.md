@@ -1,0 +1,26 @@
+- **venarix** (rotation) — VenariX · https://venarix.com/blog · rss=- · fetch_method=bridge · reliability=B · lang=en · last_fetch=2026-08-12
+  recipe: 2026-08-17: unreachable again — direct transport refused and the jina reader pool returned HTTP 402 on every rotating key, so the documented ladder had no last rung. Transport blocking plus an exhausted reader quota; NOT demoted.
+- **us-treasury-ofac** (rotation) — US Treasury OFAC — Recent Actions · https://ofac.treasury.gov/recent-actions · rss=- · fetch_method=bridge · reliability=A · lang=en · last_fetch=2026-08-12
+  recipe: 2026-07-14 intel run: bridge fetch of sb0559 + recent-actions/20260713, contributed the 1VPNS/cryptor-seller sanctions update entry.
+- **bitdefender-threat-debrief** (rotation) — Bitdefender Business Insights (Threat Debrief) · https://www.bitdefender.com/en-us/blog/businessinsights/ · rss=- · fetch_method=webfetch · reliability=B · lang=en · last_fetch=2026-08-17
+  recipe: Added 2026-08-17 (weekly) as this run's single new candidate. Recurring monthly ransomware/threat-landscape debrief; its 2026-08-12 edition was the only qualifying periodic report found in ISO week 2026-W33 and profiled an emerging actor (CRPx0) no curated source in the run's slice covered. FETCH ->
+- **bleepingcomputer** (rotation) — BleepingComputer · https://www.bleepingcomputer.com/news/security/ · rss=- · fetch_method=webfetch · reliability=B · lang=en · last_fetch=2026-08-17
+  recipe: 2026-07-14 intel run: contributed corroboration for CrashStealer (macOS infostealer).
+- **cnil-fr** (rotation) — CNIL France · https://www.cnil.fr/en/news · rss=- · fetch_method=webfetch · reliability=A · lang=en,fr · last_fetch=2026-08-17
+  recipe: 2026-07-05 admiralty audit: A — French DPA is the primary/definitive authority for its own sanctions and breach-enforcement decisions in-jurisdiction; live and drillable, no change (active).
+- **cyberinsider** (rotation) — CyberInsider · https://cyberinsider.com · rss=- · fetch_method=webfetch · reliability=C · lang=en · last_fetch=2026-08-17
+  recipe: 2026-07-05 admiralty audit: C — live server-rendered breach-news site, but mostly re-reporting/aggregation with only occasional original breach corroboration; stays active, corroborate before acting.
+- **databreaches-net** (rotation) — DataBreaches.net · https://databreaches.net/ · rss=- · fetch_method=rss · reliability=C · lang=en · last_fetch=2026-08-17
+  recipe: 2026-08-13: RECIPE: individual article URLs 403 on raw WebFetch; use `fetch_source.py feed` for the listing and `fetch_source.py url` for article bodies (auto-falls back to the reader, which succeeded on every article this run).
+- **ico-uk** (rotation) — UK ICO breach notifications · https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/ · rss=- · fetch_method=bridge · reliability=A · lang=en · last_fetch=2026-08-17
+  recipe: 2026-08-18: RECIPE FIX CANDIDATE: /media-centre/news-and-blogs/ returned 404 on the direct transport this run, while current ICO news items resolve under /about-the-ico/media-centre/news-and-blogs/YYYY/MM/. The enforcement listing remains a client-side-filtered application with no server-rendered re
+- **ransom-isac** (rotation) — Ransom-ISAC · https://ransom-isac.org/blog/ · rss=- · fetch_method=webfetch · reliability=C · lang=en · last_fetch=2026-08-17
+  recipe: 2026-08-15: the /blog/ path is a client-rendered shell with no server-side post list; the site's own /feed.xml works cleanly and is the recipe to use.
+- **ransomware-live** (rotation) — Ransomware.live · https://www.ransomware.live/ · rss=- · fetch_method=api · reliability=C · lang=en · last_fetch=2026-08-17
+  recipe: 2026-07-05 admiralty audit: C — community leak-site tracker (Mousqueton); accurate mirror of extortion posts but claims unverified, corroborate before citing as confirmed breach. Live, active retained.
+- **sec-disclosures-edgar** (rotation) — SEC EDGAR (8-K cyber filings) · https://efts.sec.gov/LATEST/search-index?q=%22Item+1.05%22&forms=8-K · rss=- · fetch_method=api · reliability=A · lang=en · last_fetch=2026-08-17
+  recipe: 2026-07-05 admiralty audit: A (was HIGH) — SEC's official EDGAR system; Item 1.05 8-Ks are first-party regulatory breach disclosures by the companies, i.e. primary-authority ground truth. Justified A: government regulator + legally-accountable first-party filings. Status stays active.
+- **troyhunt** (rotation) — Troy Hunt — Have I Been Pwned · https://www.troyhunt.com/ · rss=https://feeds.feedburner.com/TroyHunt · fetch_method=rss · reliability=B · lang=en · last_fetch=2026-08-17
+  recipe: 2026-07-05 admiralty audit: B — original first-hand breach research (HIBP), high reputation; weekly video roundups are low IOC/TTP density but that does not lower the source-reliability letter. No status change.
+- **zaufana-trzecia-strona** (rotation) — Zaufana Trzecia Strona · https://zaufanatrzeciastrona.pl/ · rss=- · fetch_method=webfetch · reliability=B · lang=pl · last_fetch=2026-08-17
+  recipe: 2026-08-13: added as candidate after breaking the MyDr electronic-health-record intrusion — original first-hand investigation by Adam Haertle, including direct contact with the claimants, independent verification of a subset of claimed records, and explicit statements of what the outlet could and co

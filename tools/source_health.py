@@ -315,6 +315,15 @@ def _bridge_check(source_id: str, url: str, *, timeout: float,
     default = ["jina", url] if fetch_method == "jina" else ["url", url]
     argv = API_BRIDGE_CMD.get(source_id) or default
     why = ""
+    # `why` is truncated for display; `why_full` keeps the untruncated stderr so
+    # classification never depends on where the truncation happened to fall.
+    # (2026-08-19: it did. The reader-quota test below searched the 140-char
+    # `why`, so a source whose bridge argv + URL pushed the literal "402" past
+    # that limit was misclassified `bridge-fail` → unsolved `needs-demote`,
+    # while a shorter-URL source failing on the identical exhausted-key
+    # condition classified correctly as `reader-quota`. ccn-cert-es and
+    # ssd-disclosure diverged that way on the same run with the same root cause.)
+    why_full = ""
     # One transient retry — the same Cloudflare/rate-limit blip handling as _check.
     for attempt in (1, 2):
         try:
@@ -323,14 +332,17 @@ def _bridge_check(source_id: str, url: str, *, timeout: float,
                 capture_output=True, text=True, timeout=timeout,
             )
         except subprocess.TimeoutExpired:
-            why = f"timed out after {timeout:.0f}s"
+            why = why_full = f"timed out after {timeout:.0f}s"
         except Exception as e:  # noqa: BLE001
+            why_full = f"error: {str(e)}"
             why = f"error: {str(e)[:120]}"
         else:
             out = proc.stdout or ""
             if proc.returncode == 0 and len(out.strip()) >= BRIDGE_MIN_BYTES:
                 return "bridge-ok", f"bridge `{' '.join(argv)}` → {len(out)} B"
-            tail = (proc.stderr or out or "").strip().splitlines()
+            raw = (proc.stderr or out or "").strip()
+            tail = raw.splitlines()
+            why_full = raw if tail else f"rc={proc.returncode}, {len(out)} B"
             why = tail[-1][:140] if tail else f"rc={proc.returncode}, {len(out)} B"
         if attempt == 1:
             time.sleep(1.5)
@@ -347,9 +359,11 @@ def _bridge_check(source_id: str, url: str, *, timeout: float,
     # JINA_API_KEYS; `jina-usage` confirms the pool balance), not N source
     # regressions. Its own class keeps it visible without flagging it as an
     # unsolved fault.
-    if "402" in why and ("balance exhausted" in why.lower()
-                         or "jina_api_key" in why.lower()
-                         or "reader proxy http 402" in why.lower()):
+    _quota_hay = f"{why_full}\n{why}".lower()
+    if ("402" in _quota_hay or "balance exhausted" in _quota_hay) and (
+            "balance exhausted" in _quota_hay
+            or "jina_api_key" in _quota_hay
+            or "reader proxy" in _quota_hay):
         return "reader-quota", detail
     # An essential reachable ONLY through an anti-bot bridge (server-side reader
     # proxy) has no other transport, and the hard rule forbids demoting it on a
