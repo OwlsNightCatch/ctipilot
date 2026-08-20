@@ -1,0 +1,47 @@
+**Model:** Sonnet 5 (`claude-sonnet-5`)
+**Timestamps:** started_at=2026-08-20T05:34:13Z · ended_at=2026-08-20T05:39:50Z · duration_seconds=337
+
+## Verification report — 2026-08-20T0409Z-intel (iteration 2)
+
+### Prior-iteration deltas — verification of remediations
+
+All twelve remediations from iteration 1 were checked against the actual entry text and, where a fix rested on a cited source, against that source fetched fresh this iteration.
+
+1. Oracle CPU cadence fix — CONFIRMED. Fetched `oracle.com/security-alerts/cspuaug2026.html` directly: "Security patches are released on the third Tuesday of each month" and "The next four dates are: 15 September 2026 (CSPU), 20 October 2026 (CPU)…", with CSPUs stated to "complement Oracle's existing quarterly cumulative Critical Patch Updates." The entry's frontmatter, action, and body now state exactly this (monthly CSPU, next 15 Sept 2026; distinct quarterly CPU, next 20 Oct 2026) with no remaining "quarterly"/"this quarter's" language attached to the CSPU itself.
+2. MLflow PR date fix — CONFIRMED. Fetched `github.com/mlflow/mlflow/pull/24258`: merged "July 2, 2026 17:14". Entry's source record date is `2026-07-02` and the body cites "merged 2026-07-02" — matches. No other date in the entry drifted on recheck (KEV dateAdded 2026-08-19 and dueDate 2026-09-02 both independently confirmed against the live KEV JSON feed).
+3. Latvia clause-splitting fix — CONFIRMED. Fetched The Record: "CSDD has a five-year contract with Tet covering IT infrastructure maintenance and monitoring, including some firewall and incident-monitoring functions" — matches the entry's Record-cited clause exactly, hedge "some" restored. Fetched inbox.eu: "despite the contract stipulating round-the-clock monitoring of the infrastructure" — matches the entry's inbox.eu-cited clause exactly. Each clause is now vouched for by the page it cites. On the title/summary "round the clock" question the main agent flagged: that phrasing is supported by inbox.eu's own words ("round-the-clock monitoring of the infrastructure"), so carrying it in the title/summary (which cite the entry as a whole, not one clause) is defensible — no finding.
+4. DOJ Mabna "seven-count"/"March 2018" fix — CONFIRMED. Fetched the DOJ release directly (bridge, since WebFetch 401'd): "Nine of the 17 defendants charged in the S2 indictment were previously charged in a 7-count indictment announced in March 2018." Matches the entry's DOJ-cited sentence exactly; the eight-defendant count is separately and correctly sourced to Nextgov ("adds eight defendants"), which the DOJ release also corroborates ("charges, which include eight additional defendants").
+5. Run-record priority-calibration count fix — CONFIRMED. Actual per-entry priorities: high = NetScaler, Zimbra, MLflow, Oracle, Latvia (5); notable = Ransom Busters, Grandoreiro, Castilla-La Mancha, DOJ Mabna (4). Matches the corrected "five high… four notable" text and its five-item enumeration.
+6. Run-record action-items count fix — CONFIRMED. Actual actions[] counts: NetScaler 1, Zimbra 2, MLflow 2, Oracle 1, Latvia 1 = 7 actions across 5 entries; Ransom Busters, Grandoreiro, Castilla-La Mancha, DOJ Mabna ship none (4 entries). Matches the corrected text exactly. `check_run.py`'s own action-items check independently reports "7 action items across 9 entries."
+7. NetScaler F14 interval fix — CONFIRMED. Prior-coverage index carries `2026-08-15/netscaler-saml-signedinfo-overflow-preauth-root-rce-not-dos` dated 2026-08-15; this entry is dated 2026-08-20 — five days, matching the corrected body text. The sentence carries no external citation, matching the remediation description (deliberately unlinked since that prior post was not fetched this run), and `references: [2026-08-15/netscaler-saml-signedinfo-overflow-preauth-root-rce-not-dos]` is present in frontmatter.
+8. Zimbra ENISA sourcing fix — CONFIRMED. ENISA EUVD record for CVE-2026-73570 fetched directly via the bridge (`enisa-euvd advisory`): baseScore 8.9, baseScoreVersion 3.1, epss 0.54, exploitedSince "Aug 18, 2026", and a description that is a verbatim match to the entry's quoted clause. The record is present in the entry's `sources[]` as corroborating and all three ENISA-derived clauses in the body now carry that citation.
+9. Castilla-La Mancha single-source fix — CONFIRMED. `verification: single-source` in frontmatter, sourcing_note explains the AI-assistance disclosure and that APD Noticies corroborates nothing, and the run record carries the single-source line. Independently confirmed APD Noticies' "17 de agosto" detail against the live page (matches); did not independently re-verify the AI-assistance footer disclosure itself (page is mostly CSS/JS in the static fetch and the specific disclosure text wasn't located in this pass) — this rests on iteration 1's own check, which is a defensible, specific claim I have no contrary evidence for.
+10. Run-record "at spawn" wording fix — CONFIRMED. Text now reads "no pass planned around the reader." A grep of all nine entries plus the run record for workflow-internal vocabulary (sub-agent, spawn, Phase N, main agent) found only legitimate uses of "spawned" describing OS process spawning in the Zimbra entry's body/actions — not a style violation.
+11. Grandoreiro references fix — CONFIRMED. `references: [2026-05-29/watchguard-documents-grandoreiro-s-delphi-dll-side-loading-w]` present.
+12. Oracle superlative softening fix — CONFIRMED. Body now reads "a protocol pair with a long history of public exploit work following Oracle releases" — no unsourced superlative remains.
+
+### Independent spot-checks beyond the delta list (this iteration)
+
+- NetScaler: CERT-EU advisory (`cert.europa.eu/publications/security-advisories/2026-010/`) fetched directly — CVSS 9.3/8.8, build boundaries (14.1-43.56/13.1-61.28), SIP ALG/LSN precondition, all match. Rapid7 blog fetched — CVSS v4.0 basis, affected/fixed builds, "not observed exploitation as of August 19, 2026" all match.
+- Zimbra: vendor wiki fetched — "TBD" score and the exact "Fixed a command injection…" quote both confirmed verbatim.
+- MLflow: GHSA/OSV mirror fetched — "resolved IP is never carried into the connection," redirect-following without re-pinning, fix in 3.15.0, and live confirmation against 3.13.0 all match; CISA KEV JSON fetched directly — catalog version 2026.08.19, dateAdded/dueDate and description quote all match verbatim.
+- Oracle: fetched the advisory directly and cross-checked all six named CVEs' risk-matrix rows (component, protocol, CVSS, PR/UI, affected versions) — every one matches the entry's `cves[]` block exactly, including the coincidence that both Fusion Middleware and Hyperion carry exactly 262 patches (107 of Hyperion's, 182 of Fusion Middleware's, unauthenticated) — initially looked like a copy-paste error, confirmed genuine on the source page.
+- Ransom Busters: GuidePoint blog and BleepingComputer article both fetched directly — fee range, DragonForce/Settra/Anubis attribution, tooling/artefact overlap (SoftPerfect Network Scanner, s5cmd, Remotely RMM, "Numlock!123", "DESKTOP-BBETH6K"), Coveware's independent corroboration, and "no victim… paid Ransom Busters; … the victim instead paid the RaaS operation" are all confirmed verbatim.
+- Grandoreiro: Acronis TRU post fetched directly — DLL sideload chain (DFF → dupfdll.dll → mingwm10.dll), seven-shortcut inverted sandbox check, C2-offline caveat, "limited but notable presence in Europe (mostly Spain)," no Brazil/Portugal targeting despite Portuguese authorship, and both "moderate confidence" hedges (spam delivery, sandbox blacklisting) all confirmed verbatim. Checked the ATT&CK pin directly: T1574.002 is indeed `revoked: true, revoked_by: T1574.001` in `attack/enterprise-attack.json` — the entry's use of the surviving T1574.001 id, and its sourcing-note explanation, is correct.
+- Latvia CSDD: CERT.LV bulletin fetched (Latvian) — 8-10 August window, 1.2M/200K record counts, phone/email/username/password NOT taken, second targeted attempt blocked, e-signature guidance all confirmed.
+- DOJ Mabna: department release fetched directly — Switzerland named in both the foreign-university and foreign-company lists, the $20M cost figure and password-spray sentence, and the "7-count indictment announced in March 2018" sentence all confirmed verbatim.
+- Registry: new entity records for `actor:ransom-busters`, `actor:settra`, `actor:anubis-raas`, `malware:grandoreiro`, `incident:latvia-csdd-breach-2026`, `incident:castilla-la-mancha-panzer-breach-2026`, `actor:mabna-institute`, `actor:panzer` all present, correctly keyed, and — notably — both `malware:grandoreiro` and `actor:anubis-raas` carry explicit disambiguation notes against name-collision risk with an existing `campaign:grandoreiro-2026-iberian-watchguard-eu-banks-btmob-maas` record and the unrelated Anubis Android banking-trojan family respectively. This is exactly the F15 discipline the prompt asks for, applied proactively.
+- Mechanical gate: `python3 tools/check_run.py 2026-08-20T0409Z-intel` — 37 pass · 0 warn · 1 fail, and the single fail (`verification.iterations missing or empty`) is the expected pre-verify placeholder pending this loop's completion, not a defect.
+
+No new truth or editorial defects found. No finding from iteration 1 was left unaddressed or only partially fixed.
+
+### Verdict
+
+CLEAN
+
+### Findings summary (machine-readable)
+
+```yaml
+# Findings summary (machine-readable)
+[]
+```

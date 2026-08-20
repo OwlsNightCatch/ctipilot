@@ -294,6 +294,13 @@ NATIONAL_CERT_HOSTS: tuple[str, ...] = (
     "bsi.bund.de", "wid.cert-bund.de", "cert.ssi.gouv.fr",
     "ncsc.gov.uk", "ncsc.nl", "advisories.ncsc.nl",
     "cisa.gov", "www.cisa.gov",
+    # Joint US advisories are frequently reachable only from a co-sealing
+    # agency's host while cisa.gov itself refuses the routine transports.
+    # Same disclosing parties, same document — added 2026-08-20 after the
+    # five-agency Siemens S7 advisory was retrievable only from the FBI
+    # mirror and cert.lv carried an EU member-state authority's own bulletin.
+    "ic3.gov", "www.ic3.gov", "media.defense.gov", "nsa.gov", "www.nsa.gov",
+    "cert.lv",
     "csirt.gov.it", "agid.gov.it", "acn.gov.it",
     "cert.at", "govcert.gv.at", "cert.pl", "ccn-cert.cni.es",
     "ccb.belgium.be", "safeonweb.be",

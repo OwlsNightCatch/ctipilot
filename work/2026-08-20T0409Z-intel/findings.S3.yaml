@@ -1,0 +1,292 @@
+domain: S3
+run_id: 2026-08-20T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-20T04:12:56Z
+ended_at: 2026-08-20T04:30:10Z
+duration_seconds: 1034
+self_telemetry:
+  webfetch_calls: 24
+  websearch_calls: 6
+  bridge_fetches: 22
+items:
+  - title: "Balonx Sistema — subscription PhaaS bundles a real-time WebSocket MFA-relay panel, an Android RAT and a GPT-4o-mini/ElevenLabs AI-vishing module against 20+ Mexican banks"
+    sources:
+      - { url: "https://www.group-ib.com/blog/balonx-sistema-mexico-phaas/", publisher: "Group-IB", date: "2026-08-19", role: "primary" }
+      - { url: "https://www.group-ib.com/blog/rss.xml", publisher: "Group-IB (blog feed)", date: "2026-08-19", role: "corroborating" }
+    discovery_trace: "first seen at: group-ib, URL https://www.group-ib.com/blog/rss.xml → primary: Group-IB, URL https://www.group-ib.com/blog/balonx-sistema-mexico-phaas/ (no pivot needed)"
+    summary: |
+      Group-IB documents Balonx Sistema, a subscription phishing-as-a-service platform ("Individual" tier 3,000 MXN/week,
+      "Office" tier 6,000 MXN/week, payment automated via the Bitso exchange API) targeting more than 20 Mexican financial
+      institutions. The phishing panel maintains a persistent, bidirectional WebSocket session between the victim's browser
+      and the operator's control panel: when a victim submits banking credentials, the operator relays them live to the real
+      bank portal, receives the resulting MFA challenge, and pushes one of 14 pre-built screen types (matched to the specific
+      OTP/SMS channel the bank uses) back to the victim to capture the code before it expires — a live adversary-in-the-middle
+      credential-and-OTP relay rather than a static credential-harvesting kit. The operation bundles a Spyroid-derived Android
+      RAT (APK "BankProtect," package sacred.explosion) distributed via fake bank security-alert lures, which opens a
+      persistent TCP connection to a hardcoded C2 (196.251.84.11:7771) for keylogging and screen capture. A parallel module
+      called CallFlow automates outbound vishing calls: GPT-4o-mini generates the conversational dialogue in real time,
+      ElevenLabs synthesizes the voice, and OpenAI Whisper transcribes the victim's spoken responses, all running on a
+      FreePBX PBX instance with 30 concurrent SIP channels. Group-IB traces the operation (aliased "Aclaraciones Bancarias")
+      to a first domain registered in 2019 and has now identified 350+ domains, all pointing to the same centralized Neon
+      PostgreSQL backend so that victim sessions and affiliate accounts persist across domain takedowns. Group-IB assesses
+      1,100+ victim credential sets harvested since at least October 2025, and ties the operation to roughly $1.73M MXN in
+      estimated affiliate earnings across 12 active operator accounts.
+    region_nexus: "Mexico / Latin America primary; the AiTM-relay + AI-vishing technique combination is directly transferable to European retail-banking phishing kits"
+    primary_sector_nexus: "indirect"
+    sector: "finance"
+    cves: []
+    techniques: [T1566.002, T1566.004, T1111, T1657]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:balonx-sistema", type: actor, name: "Balonx Sistema", aliases: ["Aclaraciones Bancarias"],
+          summary: "Mexico-based subscription PhaaS/vishing operator running a real-time WebSocket MFA-relay phishing panel, a Spyroid-derived Android RAT ('BankProtect'), and the CallFlow AI-vishing module against 20+ Mexican banks since at least 2019 (Group-IB, 2026-08-19)." }
+      - { key: "tool:callflow-ai-vishing", type: tool, name: "CallFlow", aliases: [],
+          summary: "AI-driven automated vishing module bundled with Balonx Sistema — GPT-4o-mini for dialogue generation, ElevenLabs for voice synthesis, OpenAI Whisper for ASR, run on FreePBX with 30 concurrent SIP channels (Group-IB, 2026-08-19)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "When a victim enters their banking credentials on the phishing page, the operator can immediately relay them to the legitimate banking portal, receive the MFA challenge, and instantly push a CODIGO or SMS_COMPRA screen to the victim requesting the same code before it expires."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/balonx-sistema-mexico-phaas/"
+      - quote: "CallFlow is an automated vishing (voice phishing) system that uses GPT-4o-mini to generate real-time conversational dialogue, ElevenLabs to synthesize a realistic synthetic voice, and OpenAI Whisper to transcribe the victim's speech."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/balonx-sistema-mexico-phaas/"
+      - quote: "1100+ Users credentials and financial information have been harvested since at least October, 2025."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/balonx-sistema-mexico-phaas/"
+    extended_notes: |
+      Detection angle for defenders outside Mexico: the interesting transferable piece is not the region but the pattern —
+      a phishing kit built as a live operator console (persistent WebSocket channel between a browser session and a
+      back-end panel) rather than a static credential-harvesting page, paired with an off-the-shelf AI-vishing stack
+      (commodity LLM + commercial TTS + ASR) callable by a non-technical operator over ordinary VoIP trunking. Both
+      elements — the always-on relay channel and the AI call-center pattern — are template-portable to any bank's OTP
+      flow, including SMS-OTP and app-push flows used by European retail banks. Hunt angle: outbound long-lived WebSocket
+      connections from consumer-facing anti-fraud/monitoring tooling to unfamiliar hosts immediately following a login
+      event, and inbound VoIP call volume anomalies tied to newly registered SIP trunks.
+    borderline: false
+
+  - title: "Grandoreiro's operators sideload through a renamed 'Duplicate Files Finder' binary, gate execution behind a ~50-check anti-analysis routine, and resolve C2 via Google DoH — full ATT&CK mapping and hunting leads published"
+    sources:
+      - { url: "https://www.acronis.com/en/tru/posts/grandoreiro-goes-north-from-brazil-to-mexico-with-a-new-dll-sideloading-campaign/", publisher: "Acronis Threat Research Unit (TRU)", date: "2026-08-19", role: "primary" }
+      - { url: "https://www.acronis.com/en-us/tru/feed.xml", publisher: "Acronis TRU (blog feed)", date: "2026-08-19", role: "corroborating" }
+    discovery_trace: "first seen at: acronis-tru, URL https://www.acronis.com/en-us/tru/feed.xml → primary: Acronis TRU, URL https://www.acronis.com/en/tru/posts/grandoreiro-goes-north-from-brazil-to-mexico-with-a-new-dll-sideloading-campaign/ (no pivot needed)"
+    summary: |
+      Acronis TRU (Santiago Pontiroli) documents a May-2026 Grandoreiro banking-trojan wave that survives the January 2024
+      Polícia Federal/INTERPOL infrastructure takedown and now concentrates on Mexico rather than Grandoreiro's historic
+      Brazil/Portugal base. Delivery is a ZIP (assessed moderate-confidence as spam-delivered given the invoice-styled
+      filename, "Fac-BH22DC0608_RevMQKSAC.zip") containing a renamed copy of the legitimate Duplicate Files Finder (DFF)
+      executable; DFF loads its genuine dependency dupfdll.dll, which in turn loads mingwm10.dll — in this chain a
+      malicious replacement rather than the legitimate library (T1574.001 DLL side-loading; the parent binary carries a
+      2008 compile timestamp against the malicious mingwm10.dll's 2026 timestamp). Before any C2 contact, the loader runs
+      an extensive anti-analysis gate: a system-uptime check (>=180,000 ms), a check for desktop shortcuts to seven named
+      analyst/AV tools that — if ALL present — is read as a sandbox fingerprint rather than a real user machine, hardware
+      profiling (RAM, CPU count, free disk, screen resolution, recent-documents list), VM-artifact checks (VBox/VMware
+      driver files, BIOS-string blacklist, VMware Tools registry key), a 49-name process blacklist covering debuggers,
+      disassemblers and network-analysis tools, an ip-api.com geolocation call that blacklists CZ/RU/NL, and a
+      username+hostname blacklist. Only after all checks pass does the malware resolve its hardcoded C2 domain
+      (b744156103040828396040.nhlfan[.]net) via Google's DNS-over-HTTPS endpoint (hxxps://dns[.]google/resolve?name=) and
+      issue an HTTP GET on TCP/6432 carrying an encrypted, host-fingerprinted request beginning with the literal token
+      CLIENT_SOLICITA_DDS_MDL. Strings are protected with a custom Base64+XOR scheme; TRU built and published a Python
+      decoder since no public one existed. TRU's own 30-day telemetry places the largest share of current detections in
+      Mexico, with a secondary cluster in Spain, and notes the Portuguese-speaking developer origin no longer correlates
+      with any Brazil/Portugal telemetry — consistent with public reporting that the post-takedown codebase forked into a
+      Mexico-focused "light" variant. TRU publishes its own MITRE ATT&CK mapping and IoCs (samples and five C2 domains).
+    region_nexus: "Latin America primary (Mexico-concentrated); secondary cluster in Spain, limited North America/Europe detections"
+    primary_sector_nexus: "indirect"
+    sector: "finance"
+    cves: []
+    techniques: [T1574.001, T1497.001, T1082, T1016, T1614, T1057, T1140, T1036.005, T1071.001, T1071.004, T1564.003]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "malware:grandoreiro", type: malware, name: "Grandoreiro", aliases: [],
+          summary: "Delphi-written Latin American banking trojan active since ~2016, targeting financial-institution customers via phishing and social engineering; survived the January 2024 Polícia Federal/INTERPOL takedown and continues operating at reduced scale (Acronis TRU, 2026-08-19)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "In this campaign, the authors use the legitimate Duplicate Files Finder application but rename it to a randomly generated filename to obscure its purpose. When executed, it first loads another legitimate dependency, dupfdll.dll. This DLL then attempts to load its next dependency, mingwm10.dll, which is not legitimate."
+        attribution: "Acronis Threat Research Unit"
+        source_url: "https://www.acronis.com/en/tru/posts/grandoreiro-goes-north-from-brazil-to-mexico-with-a-new-dll-sideloading-campaign/"
+      - quote: "If shortcuts for all seven applications are present on the desktop, the malware classifies the system as a sandbox environment and terminates execution."
+        attribution: "Acronis Threat Research Unit"
+        source_url: "https://www.acronis.com/en/tru/posts/grandoreiro-goes-north-from-brazil-to-mexico-with-a-new-dll-sideloading-campaign/"
+      - quote: "it is notable that, although the malware appears to have been developed by Portuguese-speaking authors, no telemetry observed targets in Brazil or Portugal. This is consistent with public reporting that the post-takedown Grandoreiro codebase forked, with a light variant now focused on Mexican targets."
+        attribution: "Acronis Threat Research Unit"
+        source_url: "https://www.acronis.com/en/tru/posts/grandoreiro-goes-north-from-brazil-to-mexico-with-a-new-dll-sideloading-campaign/"
+    extended_notes: |
+      TRU's own hunting leads (directly usable): a renamed Duplicate Files Finder executable loading mingwm10.dll from
+      the same directory; a process resolving a domain via https://dns.google/resolve?name= immediately followed by an
+      outbound TCP/6432 connection; the literal token CLIENT_SOLICITA_DDS_MDL in egress traffic or process memory; a GUI
+      process that suppresses its own window then queries ip-api.com and HKLM\HARDWARE\DESCRIPTION\System\BIOS in quick
+      succession. The sandbox-fingerprint-by-presence-of-all-seven-tools logic (rather than absence-of-tools) is itself
+      a useful triage signal: a real analyst workstation with all seven installed will trip the malware's own evasion
+      logic and silently no-op rather than alert.
+    borderline: false
+
+  - title: "ToxicPanda 2.0: Android banking trojan automates ADB Wireless Debugging enablement via Accessibility Service abuse to reach shell-level privilege without USB access, expanding to 349 targeted apps across 16 countries"
+    sources:
+      - { url: "https://zimperium.com/blog/the-toxicpanda-never-sleeps-toxicpanda-2.0-prepares-its-next-strike-on-mobile", publisher: "Zimperium zLabs", date: "2026-08-19", role: "primary" }
+    discovery_trace: "first seen at: zimperium-zlabs, URL https://zimperium.com/blog → primary: Zimperium zLabs, URL https://zimperium.com/blog/the-toxicpanda-never-sleeps-toxicpanda-2.0-prepares-its-next-strike-on-mobile (no pivot needed)"
+    summary: |
+      Zimperium zLabs documents ToxicPanda 2.0, a substantial evolution of the Android banking trojan first disclosed by
+      Cleafy in late 2024. The headline mechanism is privilege escalation without physical USB access: abusing the
+      Accessibility Service, the malware automates a five-step chain — enabling Developer Options, navigating to Wireless
+      Debugging, extracting the SPAKE2 pairing code the OS displays for wireless-ADB pairing, completing the SPAKE2
+      cryptographic handshake programmatically, and issuing high-privilege commands directly through the resulting ADB
+      shell session. Once at shell level, several remote commands that Cleafy's original analysis had flagged as
+      unimplemented placeholders are now fully functional. Overlay-based credential theft remains the core fraud
+      mechanism: transparent full-screen WebViews (the `transparent` command) capture PINs, patterns and passwords over
+      both banking-app login screens and the device lock screen itself, now covering 349 banking/financial/e-wallet/crypto
+      applications across 16 countries (up from a narrower initial target list), including 140+ apps specifically targeted
+      for PIN theft during active-session overlay capture. C2 remains AES-ECB-encrypted over a persistent WebSocket, but
+      payload delivery has moved to AWS-hosted buckets. New OEM-specific commands (`catAllViewSwitch`, `admSet`/`admPwd`
+      for Device Administrator abuse, `autoBoot` for battery-optimization-whitelist bypass) are tailored per-vendor for
+      Xiaomi, OPPO, Vivo, Samsung and Huawei devices, reflecting the fragmented background-execution restrictions each
+      OEM applies. Zimperium does not attribute the operation to a named actor or group.
+    region_nexus: "Global — 16 countries with active targeting; technique (accessibility-driven wireless-ADB abuse) is platform-generic and not region-specific"
+    primary_sector_nexus: "indirect"
+    sector: "finance, telco"
+    cves: []
+    techniques: [T1111, T1056, T1071.001]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "malware:toxicpanda", type: malware, name: "ToxicPanda", aliases: [],
+          summary: "Android banking trojan first documented by Cleafy (late 2024); version 2.0 (Zimperium zLabs, 2026-08-19) adds automated ADB Wireless Debugging abuse via Accessibility Service to reach shell-level device control without USB access, and expands overlay-phishing coverage to 349 apps across 16 countries." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "ToxicPanda 2.0 significantly expands its targeting scope, supporting phishing overlays for 349 banking, financial, e-wallet, and cryptocurrency applications across 16 countries."
+        attribution: "Zimperium zLabs"
+        source_url: "https://zimperium.com/blog/the-toxicpanda-never-sleeps-toxicpanda-2.0-prepares-its-next-strike-on-mobile"
+      - quote: "The malware abused the Accessibility Service enabling wireless debugging to get shell user capabilities to run some commands on the device."
+        attribution: "Zimperium zLabs"
+        source_url: "https://zimperium.com/blog/the-toxicpanda-never-sleeps-toxicpanda-2.0-prepares-its-next-strike-on-mobile"
+      - quote: "Several commands previously identified as unimplemented in Cleafy's analysis are now fully operational, expanding the malware's remote control and fraud capabilities."
+        attribution: "Zimperium zLabs"
+        source_url: "https://zimperium.com/blog/the-toxicpanda-never-sleeps-toxicpanda-2.0-prepares-its-next-strike-on-mobile"
+    extended_notes: |
+      Note for MDM/BYOD-relevant defenders: because ADB Wireless Debugging must be enabled via Developer Options before
+      it can be abused, an MDM/EMM policy that disables Developer Options (or alerts on its runtime toggle) on
+      corporate-enrolled Android devices removes this specific privilege-escalation path outright, independent of
+      whether the app-vetting layer catches the initial dropper. Full command reference published by Zimperium at
+      https://github.com/Zimperium/IOC/blob/master/2026-08-ToxicPanda/commands.md.
+    borderline: true
+    borderline_reason: "Consumer/BYOD mobile-banking malware with no stated enterprise or government targeting; included for the transferable ADB-privilege-escalation technique and MDM hardening lever, which is genuinely new to this pipeline's coverage of ToxicPanda."
+
+  - title: "UPDATE — Block traces the Coldcard Wave 1 attacker to a paid account at a blockchain data provider via query-log fingerprinting, handing law enforcement a lead"
+    sources:
+      - { url: "https://www.cryptotimes.io/2026/08/19/block-and-galaxy-research-give-lead-to-law-enforcement-in-111m-coldcard-bitcoin-theft/", publisher: "CryptoTimes", date: "2026-08-19", role: "primary" }
+      - { url: "https://bitcoinmagazine.com/technical/hunting-down-the-coldcard-hacker-wave-1-thief-may-be-known-to-fbi", publisher: "Bitcoin Magazine", date: "2026-08-18", role: "corroborating" }
+    discovery_trace: "first seen at: cryptotimes, URL https://www.cryptotimes.io/2026/08/19/block-and-galaxy-research-give-lead-to-law-enforcement-in-111m-coldcard-bitcoin-theft/ → primary: Bitcoin Magazine, URL https://bitcoinmagazine.com/technical/hunting-down-the-coldcard-hacker-wave-1-thief-may-be-known-to-fbi"
+    summary: |
+      Block's engineering team (lead Clay Garrett) says it identified an unusual on-chain pattern in the sweep
+      transactions draining Coldcard-generated Bitcoin addresses (the March-2021 hardware-TRNG-to-software-PRNG firmware
+      regression this pipeline covered on 2026-08-02) and traced it to a paid account the Wave 1 operator held at a named
+      blockchain-data-services provider. The provider's internal query logs matched the suspected workflow "with
+      extraordinary specificity, including the number, timing and sequence of requests" — i.e., the forensic technique is
+      correlating on-chain address-lookup query patterns against a commercial data provider's own request logs, not
+      on-chain analysis alone. Block says it shared this evidence with law-enforcement authorities; Galaxy Research
+      (separately) says it has been supplying confirmed attacker- and victim-address lists to law enforcement, exchanges
+      and compliance firms, and its analyst states investigators "may already" know the Wave 1 attacker's identity. As of
+      CryptoTimes' 19 August figure, roughly 1,531 of the total 1,778.84 BTC Galaxy Research now attributes to the
+      campaign remain unmoved in attacker-controlled addresses. No arrest or charge is reported; this is a lead, not a
+      confirmed identification.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "finance"
+    cves: []
+    techniques: [T1552.004]
+    affected_products: ["Coinkite COLDCARD Mk2", "Coinkite COLDCARD Mk3"]
+    entity_keys: ["incident:coldcard-rng-fallback-seed-theft-2026"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-02/coldcard-rng-fallback-macro-guard-seed-theft"
+    evidence:
+      - quote: "During our investigation of the Coldcard drain yesterday, we identified an unusual pattern in the sweeps. That pattern led us to a hypothesis that has since been confirmed: the operator used a paid account at a well-known blockchain-services provider."
+        attribution: "Block (via Bitcoin Magazine)"
+        source_url: "https://bitcoinmagazine.com/technical/hunting-down-the-coldcard-hacker-wave-1-thief-may-be-known-to-fbi"
+      - quote: "Their internal logs matched the suspected workflow with extraordinary specificity, including the number, timing and sequence of requests."
+        attribution: "Block (via Bitcoin Magazine)"
+        source_url: "https://bitcoinmagazine.com/technical/hunting-down-the-coldcard-hacker-wave-1-thief-may-be-known-to-fbi"
+      - quote: "the number, timing, and sequence of the attacker's queries with extraordinary specificity"
+        attribution: "CryptoTimes"
+        source_url: "https://www.cryptotimes.io/2026/08/19/block-and-galaxy-research-give-lead-to-law-enforcement-in-111m-coldcard-bitcoin-theft/"
+    extended_notes: |
+      Investigative-technique angle worth surfacing to fraud/threat-intel teams beyond the crypto-specific victim base:
+      the forensic pivot here is not blockchain analytics but correlating a commercial data provider's own
+      authenticated-query logs against attacker on-chain behaviour — i.e., attackers who pay for OSINT/blockchain-lookup
+      tooling create a second, subpoena-able evidence trail distinct from the blockchain itself. Directly transferable
+      to any investigation where an attacker is inferred to be using a paid third-party lookup/analytics service.
+    borderline: false
+
+  - title: "A new generation of bulletproof hosting providers absorbs demand within weeks of 2025-2026 law-enforcement takedowns, leaning on fast-flux, disposable cloud VPS rotation and reseller layering"
+    sources:
+      - { url: "https://www.intel471.com/blog/a-new-era-of-bulletproof-hosting-providers-emerge", publisher: "Intel 471", date: "2026-08-19", role: "primary" }
+      - { url: "https://www.intel471.com/blog/feed", publisher: "Intel 471 (blog feed)", date: "2026-08-19", role: "corroborating" }
+    discovery_trace: "first seen at: intel471, URL https://www.intel471.com/blog/feed → primary: Intel 471, URL https://www.intel471.com/blog/a-new-era-of-bulletproof-hosting-providers-emerge (no pivot needed)"
+    summary: |
+      Intel 471 tracks how bulletproof-hosting (BPH) demand redistributes rather than disappears after law-enforcement
+      action: following the disruption/exposure of established operators yalishanda (Alexander Volosovik), ccweb and
+      whost (Mykhaylo Rytikov) through 2025-2026 US Treasury sanctions, DOJ indictments and an FBI operation (Operation
+      Riptide), roughly 80% of yalishanda's ~2,240 tracked customer domains remained operational into June 2026, some
+      migrating onto legitimate cloud providers (Cloudflare, Amazon, DigitalOcean) to blend in rather than to a
+      replacement BPH brand. Emerging services named by Intel 471 — OtusCloud, reming's fast-flux proxy service, and
+      fluxy's "VIP FAST FLUX" offering — support the same customer base (malware C2, ransomware leak sites, phishing
+      infrastructure, carding shops, credential-harvesting pages) using disposable cloud VPS rental, frequent IP
+      rotation, layered reseller relationships and fast-flux DNS to raise the cost and latency of takedown-by-domain or
+      takedown-by-IP.
+    region_nexus: "global cybercrime infrastructure — no Europe/Switzerland-specific claim, but the malware families named (LockBit, Conti-era descendants, Black Basta, BlackSuit, Play) have all previously hit European targets"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1583.003, T1568.001]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:otuscloud-bulletproof-hosting", type: tool, name: "OtusCloud", aliases: [],
+          summary: "Emerging bulletproof-hosting brand named by Intel 471 (2026-08-19) as one of several services absorbing customer demand displaced from yalishanda/ccweb/whost after 2025-2026 law-enforcement action." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Arrests, sanctions and infrastructure seizures have created opportunities for junior providers, former resellers and newly branded services to absorb displaced customers, redistributing rather than eliminating demand for abuse-resistant infrastructure."
+        attribution: "Intel 471"
+        source_url: "https://www.intel471.com/blog/a-new-era-of-bulletproof-hosting-providers-emerge"
+      - quote: "Cybercriminals now typically rent disposable virtual private servers (VPSs), leveraging cloud infrastructure to blend into legitimate hosting networks and rotate IP addresses to evade blocklists."
+        attribution: "Intel 471"
+        source_url: "https://www.intel471.com/blog/a-new-era-of-bulletproof-hosting-providers-emerge"
+      - quote: "Disrupting a provider or removing an operator does not necessarily deactivate the underlying malicious operations."
+        attribution: "Intel 471"
+        source_url: "https://www.intel471.com/blog/a-new-era-of-bulletproof-hosting-providers-emerge"
+    extended_notes: |
+      Actionable takeaway framed narrowly: infrastructure-based blocking (IP/ASN reputation lists keyed to a named BPH
+      brand) has a shrinking half-life as brands rotate and blend into legitimate cloud IP space; fast-flux DNS
+      detection (short TTLs, high authoritative-nameserver churn per domain) remains the more durable detection
+      primitive than static IP/ASN blocklisting for this class of infrastructure.
+    borderline: true
+    borderline_reason: "Cybercrime-infrastructure landscape survey rather than a specific technique/vulnerability finding — included because it names concrete emerging BPH brands and the fast-flux/reseller-layering pattern is a durable, actionable detection primitive; main agent may judge it more W1/strategic-horizon in character than daily S3 research."
+
+candidate_sources: []
+coverage_gaps:
+  - source_id: reliaquest
+    reason: "jina reader pool exhausted (HTTP 402) all run; direct bridge/WebFetch on https://reliaquest.com/blog/ returns only nav/CSS chrome, no post-listing HTML (known client-side-rendered issue per source notes). No in-window ReliaQuest item recovered this run."
+  - source_id: ibm-xforce
+    reason: "https://www.ibm.com/think/x-force is JS-rendered; direct bridge fetch returns only page head/meta with no article hrefs in static markup. WebSearch surfaced only the February-2026 annual Threat Intelligence Index (out of window). No structured endpoint identified."
+  - source_id: trellix
+    reason: "Bridge fetch of https://www.trellix.com/blogs/ and drilled research-article URLs (dcsync-detection-without-signatures-trellix-ndr, purerat-fileless-utilizing-steganography-process-hollowing, weaponized-ai-commoditization-of-cybercrime) all resolve to content dated February-May 2026 — confirms the prior run's note that the served index/cache is stale. No in-window item recoverable this run."
+  - source_id: paradigm-shift-research
+    reason: "Not re-attempted this run given the persistent SPA-shell-only recipe gap logged in the source record and the jina reader (the only documented recovery path) being at HTTP 402 for the whole run."
+  - source_id: fox-it-blog
+    reason: "Direct WebFetch on https://blog.fox-it.com/ returned HTTP 403; bridge direct fetch returned only page head/CSS boilerplate with no post listing in the retrieved portion. Cadence is documented as very low (3 posts/18 months) so an empty result is not necessarily a miss, but the transport itself did not cleanly resolve this run."

@@ -1,0 +1,328 @@
+domain: S1
+run_id: 2026-08-20T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-20T04:12:27Z
+ended_at: 2026-08-20T04:26:33Z
+duration_seconds: 846
+self_telemetry:
+  webfetch_calls: 20
+  websearch_calls: 6
+  bridge_fetches: 22
+
+items:
+  - title: "Citrix NetScaler ADC/Gateway: new critical memory-overflow and authentication-bypass pair (CVE-2026-19489, CVE-2026-19490) — patched, not yet observed exploited"
+    sources:
+      - { url: "https://cert.europa.eu/publications/security-advisories/2026-010/", publisher: "CERT-EU", date: "2026-08-19", role: "primary" }
+      - { url: "https://www.rapid7.com/blog/post/etr-cve-2026-19490-critical-vulnerability-affecting-citrix-netscaler-adc-and-netscaler-gateway/", publisher: "Rapid7", date: "2026-08-19", role: "corroborating" }
+      - { url: "https://support.citrix.com/support-home/kbsearch/article?articleNumber=CTX696939", publisher: "Citrix (vendor advisory, JS-rendered — content not independently retrievable this run)", date: "2026-08-19", role: "vendor-reference" }
+    discovery_trace: "first seen at: anssi-fr/cert-eu essential-mandatory sweep, URL https://cert.europa.eu/publications/security-advisories/2026-010/ → primary: CERT-EU own advisory (2026-010) citing Citrix KB CTX696939, URL https://support.citrix.com/support-home/kbsearch/article?articleNumber=CTX696939 (Citrix's Wolken support portal is a JS shell to our fetch — content not retrievable) → corroborating: Rapid7 analysis, URL https://www.rapid7.com/blog/post/etr-cve-2026-19490-critical-vulnerability-affecting-citrix-netscaler-adc-and-netscaler-gateway/"
+    summary: |
+      On 19 August 2026 Citrix published a new security bulletin (CTX696939) for two vulnerabilities distinct from
+      the CVE-2026-8451/8452 SAML SignedInfo overflow chain this pipeline covered on 2026-08-15. CVE-2026-19490
+      (CVSS 9.3) is an authentication-bypass-via-alternate-path affecting NetScaler configured as a Gateway (SSL VPN,
+      ICA Proxy, CVPN, RDP Proxy) or as an AAA virtual server, with particular relevance when SAML actions are
+      configured — an unauthenticated remote attacker can circumvent the authentication control with no user
+      interaction. CVE-2026-19489 (CVSS 8.8) is a memory-overflow vulnerability (improper restriction of operations
+      within memory-buffer bounds) that requires SIP ALG to be enabled inside a Large Scale NAT (LSN) group
+      configuration, and can cause unpredictable behaviour or denial of service rather than code execution. Fixed
+      versions are NetScaler ADC/Gateway 14.1-73.32 and later, and 13.1-63.21 and later of the 13.1 branch. Rapid7
+      states it has not observed in-the-wild exploitation of CVE-2026-19490 as of the advisory date, but flags that
+      Citrix perimeter products are historically exploited within days of disclosure (CitrixBleed, CitrixBleed 2, the
+      July 2026 SAML SignedInfo chain). No public PoC is confirmed yet. Given the auth-bypass CVE requires zero
+      privileges and no interaction and sits on internet-facing VPN/AAA infrastructure, this is a same-day patch
+      priority independent of confirmed exploitation.
+    region_nexus: "global; CERT-EU advisory covers EU institutions directly, and NetScaler Gateway/AAA is a common remote-access control point in Swiss and EU government and CI networks"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, finance, healthcare, telco"
+    cves: [CVE-2026-19489, CVE-2026-19490]
+    techniques: [T1190]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The vulnerability CVE-2026-19489 (CVSS: 8.8) is a memory overflow vulnerability that can lead to unpredictable behaviour or Denial of Service."
+        attribution: "CERT-EU"
+        source_url: "https://cert.europa.eu/publications/security-advisories/2026-010/"
+      - quote: "The vulnerability CVE-2026-19490 (CVSS: 9.3) is an authentication bypass using an alternate path."
+        attribution: "CERT-EU"
+        source_url: "https://cert.europa.eu/publications/security-advisories/2026-010/"
+      - quote: "As of August 19, 2026, Rapid7 has not observed evidence that CVE-2026-19490 is being exploited in the wild."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-cve-2026-19490-critical-vulnerability-affecting-citrix-netscaler-adc-and-netscaler-gateway/"
+    extended_notes: |
+      Distinct from CVE-2026-8451/8452/10817/8452/8655/13474/10816 (the SAML SignedInfo overflow / CitrixBleed-class
+      chain covered 2026-08-15 and documented by NCSC-NL as NCSC-2026-0216) — a second, independent NetScaler
+      bulletin nine days later. Detection angle: authentication events on Gateway/AAA virtual servers showing
+      successful session establishment with no matching credential-validation log entry; monitor for anomalous SAML
+      assertion processing errors on AAA vservers. Hardening: NetScaler Console's CVE-tracking module
+      (supported-cve.html) can confirm build-level exposure; disable SIP ALG on LSN groups where not required as an
+      interim mitigation for CVE-2026-19489.
+    priority_hint: high
+
+  - title: "Zimbra Collaboration pre-auth SNMP-notification command injection (CVE-2026-73570) moves from patched-quietly to confirmed active exploitation a month later"
+    sources:
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1041/", publisher: "CERT-FR (ANSSI)", date: "2026-08-19", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/zimbra-patches-critical-snmp-command.html", publisher: "The Hacker News", date: "2026-07-21", role: "corroborating" }
+      - { url: "https://www.thehackerwire.com/zimbra-collaboration-rce-in-snmp-notifications-cve-2026-73570/", publisher: "TheHackerWire", date: "2026-08-13", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr essential-mandatory sweep, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1041/ (states ENISA reports active exploitation of CVE-2026-73570) → pivot: ENISA EUVD record cited in that advisory, URL https://euvd.enisa.europa.eu/vulnerability/CVE-2026-73570 (exploitedSince 2026-08-18) → primary: Zimbra's own 10.1.20 patch release notes referenced by The Hacker News, URL https://thehackernews.com/2026/07/zimbra-patches-critical-snmp-command.html → corroborating: TheHackerWire technical write-up, URL https://www.thehackerwire.com/zimbra-collaboration-rce-in-snmp-notifications-cve-2026-73570/"
+    summary: |
+      CVE-2026-73570 is an unauthenticated remote command-injection vulnerability (CVSS 8.9, CWE improper
+      neutralization) in Zimbra Collaboration's SNMP notification processing, present when the optional
+      zimbra-snmp package is installed and SNMP notifications are enabled. An attacker sends a specially crafted
+      SMTP request; the SNMP notification mechanism fails to sanitize the attacker-controlled data before it is
+      interpolated into an OS command executed as the Zimbra user, giving arbitrary command execution with no prior
+      authentication. Zimbra quietly shipped the fix in ZCS 10.1.20 on 2026-07-21 alongside four Classic Web Client
+      stored-XSS bugs and a mail-forwarding-restriction bypass (CVE-2026-50055) — at the time, no exploitation was
+      reported. ENISA's EUVD record now lists the vulnerability as exploited since 2026-08-18, roughly four weeks
+      after the patch shipped, and CERT-FR's 2026-08-19 advisory explicitly states "L'ENISA indique que la
+      vulnérabilité CVE-2026-73570 est activement exploitée." This is the now-familiar pattern of a vendor patch
+      quietly closing a pre-auth RCE that only draws mass scanning/exploitation attention weeks later once the
+      vulnerable code path is reverse-engineered from the diff. All Zimbra Collaboration deployments before 10.1.20
+      with zimbra-snmp installed and SNMP notifications enabled are exposed; the vendor's own patch is the only
+      remediation (no interim mitigation beyond disabling SNMP notifications / uninstalling zimbra-snmp).
+    region_nexus: "global; Zimbra Collaboration is widely deployed as a self-hosted mail/collaboration platform across European public-sector, education and SMB environments (notably in France, per CERT-FR's own advisory coverage)"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, telco"
+    cves: [CVE-2026-73570]
+    techniques: [T1190, T1059.004]
+    affected_products: ["Zimbra Collaboration (ZCS)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "L'ENISA indique que la vulnérabilité CVE-2026-73570 est activement exploitée."
+        attribution: "CERT-FR (ANSSI), relaying ENISA"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1041/"
+      - quote: "A command injection vulnerability in the SNMP monitoring component when SNMP notifications are enabled."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/zimbra-patches-critical-snmp-command.html"
+      - quote: "Due to improper sanitization of untrusted input during SNMP notification processing, an unauthenticated attacker can send specially crafted SMTP requests that may result in execution of arbitrary operating system commands as the Zimbra user."
+        attribution: "ENISA EUVD (EUVD-2026-58069)"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1041/"
+    extended_notes: |
+      Detection angle: monitor SMTP/mailbox-server logs for malformed or anomalously long header/field values
+      immediately preceding a spawn of zmsnmpnotify or other Zimbra SNMP-helper child processes from the mailboxd/
+      postfix parent — a legitimate SNMP notification never carries attacker-shaped command-metacharacter payloads
+      in its trigger fields. Triage discriminator: SNMP notifications are optional and most concerning to
+      organizations that installed zimbra-snmp for external NMS integration — check `zmsnmpnotify`-launching process
+      trees for command-injection markers ($( ), ;, |, backticks) in argv. Hardening: disable SNMP notifications or
+      remove the zimbra-snmp package if not required as an immediate compensating control on unpatched instances.
+    priority_hint: high
+
+  - title: "MLflow webhook-delivery SSRF (CVE-2026-64849) added to CISA KEV — redirect-based bypass of the existing IP-validation guard reaches cloud metadata endpoints"
+    sources:
+      - { url: "https://osv.dev/vulnerability/GHSA-7gwp-5pfp-969j", publisher: "GitHub Security Advisory (via OSV.dev mirror)", date: "2026-08-17", role: "primary" }
+      - { url: "https://github.com/mlflow/mlflow/pull/24258", publisher: "MLflow (GitHub, fixing PR)", date: "2026-07-02", role: "primary" }
+    discovery_trace: "first seen at: cisa-kev essential-mandatory sweep (api fetch, catalogVersion 2026.08.19, added 2026-08-19) → pivot: ENISA EUVD listing (enisa-euvd recent exploited, EUVD-2026-60473, exploitedSince 2026-08-19) → primary: GitHub Security Advisory GHSA-7gwp-5pfp-969j (direct GitHub fetch blocked HTTP 403 both direct and jina — retrieved via OSV.dev mirror), URL https://osv.dev/vulnerability/GHSA-7gwp-5pfp-969j → corroborating: the fixing pull request, URL https://github.com/mlflow/mlflow/pull/24258"
+    summary: |
+      CISA added CVE-2026-64849 to the KEV catalog on 2026-08-19 (dueDate 2026-09-02), describing an MLflow
+      server-side request forgery that lets an attacker "reach internal or cloud metadata services and receive
+      response_status and response_body." The root cause: MLflow's default Tracking Server (`mlflow server`, no
+      auth, SQLite backend) exposes the model-registry webhooks API unauthenticated, including a synchronous
+      POST /api/2.0/mlflow/webhooks/{id}/test endpoint that reflects the upstream HTTP response status and body back
+      to the caller. An SSRF guard (`_validate_webhook_url` in mlflow/utils/validation.py, added in PR #20747)
+      resolves the webhook hostname and rejects non-public IPs at registration time — but delivery
+      (mlflow/webhooks/delivery.py) follows HTTP redirects with no `allow_redirects=False` and never pins the
+      validated IP to the actual connection. An attacker registers a webhook pointing at an attacker-controlled
+      public HTTPS host that passes the guard, then has that host respond with a 302 to
+      http://169.254.169.254/latest/meta-data/iam/security-credentials/ (or any internal/loopback target); MLflow's
+      /test endpoint follows the redirect and reflects the fetched body, giving a full-read SSRF with no
+      authentication. A DNS-rebinding variant (TOCTOU between the guard's resolution and the actual connect) works
+      the same way. Confirmed live against mlflow==3.13.0 by the reporting researcher; fixed in 3.15.0 via a
+      connection-time IP-pinning adapter (`SSRFProtectedHTTPAdapter`) that validates the peer IP of the actual
+      socket after connect(), closing both the redirect-read and a 307/308 blind-write variant against
+      management endpoints that act on POST (e.g. Docker daemon, Elasticsearch, Spring Boot Actuator).
+    region_nexus: "global; MLflow is widely adopted as open-source ML experiment tracking/model-registry infrastructure, increasingly deployed by public-sector and CI-sector data-science teams standing up internal ML platforms"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, energy, healthcare"
+    cves: [CVE-2026-64849]
+    techniques: [T1190, T1552.005]
+    affected_products: ["MLflow"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "MLflow contains a server-side request forgery vulnerability that can allow attackers to reach internal or cloud metadata services and receive response_status and response_body."
+        attribution: "CISA KEV catalog"
+        source_url: "https://osv.dev/vulnerability/GHSA-7gwp-5pfp-969j"
+      - quote: "The default MLflow Tracking Server (`mlflow server`, no authentication, default SQLite backend) exposes the model-registry webhooks API unauthenticated, including a synchronous `POST /api/2.0/mlflow/webhooks/{id}/test` endpoint that returns the upstream response status and body to the caller."
+        attribution: "GitHub Security Advisory GHSA-7gwp-5pfp-969j"
+        source_url: "https://osv.dev/vulnerability/GHSA-7gwp-5pfp-969j"
+      - quote: "_validate_webhook_url resolves the webhook hostname via socket.getaddrinfo and checks that every resolved IP is public, but discards the resolved IP. The subsequent session.post then re-resolves the hostname independently."
+        attribution: "MLflow maintainers (fixing PR #24258)"
+        source_url: "https://github.com/mlflow/mlflow/pull/24258"
+    extended_notes: |
+      Detection angle: egress/proxy logs from hosts running mlflow server showing outbound HTTP connections to
+      link-local (169.254.0.0/16) or RFC1918 destinations immediately following a POST to
+      /api/2.0/mlflow/webhooks/*/test — a legitimate webhook target is operator-configured and stable, not
+      redirect-chained into a metadata address. Hardening: upgrade to MLflow >= 3.15.0; until then, do not expose
+      the tracking server's webhook API without a network-layer egress restriction (deny outbound to
+      169.254.169.254 and RFC1918 ranges from the MLflow server host), and enable the optional auth plugin
+      (WEBHOOK_BEFORE_REQUEST_HANDLERS) which is not loaded by default.
+    priority_hint: high
+
+  - title: "LMDeploy disaggregated-serving RCE via unauthenticated pickle deserialization over attacker-controlled ZMQ peer (CVE-2026-76850) — not yet observed exploited"
+    sources:
+      - { url: "https://www.vulncheck.com/advisories/lmdeploy-remote-code-execution-via-unsafe-pickle-deserialization-in-the-disaggregated-serving-peer-connector", publisher: "VulnCheck", date: "2026-08-19", role: "primary" }
+      - { url: "https://github.com/InternLM/lmdeploy/releases/tag/v0.16.0", publisher: "InternLM / LMDeploy (GitHub release notes)", date: "2026-08-19", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd always-sweep listing (enisa-euvd recent criticals), record EUVD-2026-62972, published 2026-08-19 → primary: VulnCheck advisory, URL https://www.vulncheck.com/advisories/lmdeploy-remote-code-execution-via-unsafe-pickle-deserialization-in-the-disaggregated-serving-peer-connector → corroborating: GitHub commit fixing the issue, URL https://github.com/InternLM/lmdeploy/commit/f05b4ad8bf2e2d84101a1d63b3c44fadd99223b2 and release tag https://github.com/InternLM/lmdeploy/releases/tag/v0.16.0"
+    summary: |
+      LMDeploy (InternLM's LLM inference/serving engine) deserializes disaggregated-serving peer-to-peer messages
+      with Python pickle before validating their type. The `handle_zmq_recv` coroutine in
+      lmdeploy/pytorch/disagg/conn/engine_conn.py calls `recv_pyobj()` — which runs `pickle.loads()` — on bytes
+      received over a ZMQ PULL socket, and only checks the deserialized object's type (`isinstance` against
+      `DistServeCacheFreeRequest`) after deserialization has already executed. The peer endpoint is
+      caller-controlled: the unauthenticated POST /distserve/p2p_initialize and /distserve/p2p_connect endpoints in
+      lmdeploy/serve/openai/api_server.py accept a `remote_engine_endpoint_info.zmq_address` value from the request
+      body and pass it straight to `connect()` on the engine's ZMQ socket, and neither endpoint enforces
+      authentication unless the server was started with `api_keys` (default None). A remote, unauthenticated
+      attacker can therefore direct a running LMDeploy engine to pull cache-free requests from a ZMQ endpoint they
+      control and achieve arbitrary code execution in the engine process via crafted pickle payloads. The
+      vulnerability requires disaggregated serving to be enabled — deployments that don't enable it are not
+      affected, since the vulnerable receive loop is only started once the migration backend accepts a connection.
+      Affects lmdeploy >= 0.9.2, < 0.16.0; fixed in v0.16.0. No exploitation-in-the-wild has been reported by any
+      source found this run (EPSS listed at 0.0 by ENISA EUVD at disclosure).
+    region_nexus: "global; LLM-serving infrastructure adoption is rising across public-sector and CI-sector AI initiatives, though disaggregated serving is a non-default, advanced deployment configuration"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, energy, healthcare"
+    cves: [CVE-2026-76850]
+    techniques: [T1190]
+    affected_products: ["LMDeploy"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "LMDeploy deserializes disaggregated-serving peer messages with pickle. The handle_zmq_recv coroutine reads peer-to-peer cache-free requests with recv_pyobj()"
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/advisories/lmdeploy-remote-code-execution-via-unsafe-pickle-deserialization-in-the-disaggregated-serving-peer-connector"
+      - quote: "A remote attacker can direct an engine to pull from a ZMQ endpoint under their control and execute arbitrary code."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/advisories/lmdeploy-remote-code-execution-via-unsafe-pickle-deserialization-in-the-disaggregated-serving-peer-connector"
+      - quote: "lmdeploy >= 0.9.2, < 0.16.0"
+        attribution: "VulnCheck / ENISA EUVD"
+        source_url: "https://www.vulncheck.com/advisories/lmdeploy-remote-code-execution-via-unsafe-pickle-deserialization-in-the-disaggregated-serving-peer-connector"
+      - quote: "fix(disagg): use JSON instead of pickle for P2P ZMQ requests"
+        attribution: "InternLM / LMDeploy (GitHub v0.16.0 release notes)"
+        source_url: "https://github.com/InternLM/lmdeploy/releases/tag/v0.16.0"
+    extended_notes: |
+      Detection angle: unexpected inbound ZMQ connections to an LMDeploy engine host from peer addresses not on the
+      operator's own cluster inventory, or engine-process crashes/anomalous child-process spawns immediately
+      following a POST to /distserve/p2p_connect. Triage discriminator: this only applies where disaggregated
+      serving is explicitly enabled and the server was started without `api_keys` — confirm both conditions before
+      treating an alert as applicable. Hardening: upgrade to LMDeploy >= 0.16.0; in the interim, set `api_keys` on
+      any LMDeploy deployment using disaggregated serving, and restrict network reachability of the ZMQ ports to
+      the trusted cluster network only.
+    priority_hint: medium
+    borderline: true
+    borderline_reason: "no confirmed in-the-wild exploitation and disaggregated serving is a non-default configuration, but pre-auth RCE + full technical root-cause + fresh vendor fix (0.16.0) clears the imminent-exploitation-profile bar for an AI-infrastructure component"
+
+  - title: "Oracle's August 2026 Critical Patch Update: 943 patches, >1,000 CVEs, 460+ unauthenticated remote flaws concentrated in Fusion Middleware and Hyperion"
+    sources:
+      - { url: "https://www.oracle.com/security-alerts/cspuaug2026.html", publisher: "Oracle (vendor CPU advisory)", date: "2026-08-18", role: "primary" }
+      - { url: "https://www.securityweek.com/943-patches-rolled-out-with-oracles-august-2026-security-update/", publisher: "SecurityWeek", date: "2026-08-19", role: "corroborating" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12862", publisher: "NCSC Switzerland (GovCERT.ch)", date: "2026-08-19", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub essential-mandatory sweep, URL https://security-hub.ncsc.admin.ch/#/posts/12862 → pivot: NCSC-NL advisory listing (advisories.ncsc.nl feed, NCSC-2026-0306 through NCSC-2026-0316, published 2026-08-19) → corroborating: SecurityWeek, URL https://www.securityweek.com/943-patches-rolled-out-with-oracles-august-2026-security-update/ → primary: Oracle's own CPU page, URL https://www.oracle.com/security-alerts/cspuaug2026.html"
+    summary: |
+      Oracle's August 2026 Critical Security Patch Update shipped 943 patches covering more than 1,000 unique CVEs
+      across roughly two dozen product lines — an unusually large release even by Oracle's quarterly standard.
+      Fusion Middleware and Hyperion each carry 262 fixes, together accounting for the bulk of the release; per
+      SecurityWeek, over 460 of the total CVEs are remotely exploitable without authentication, and nearly 90 carry
+      a CVSS base score of 9.8 or higher. Oracle's own risk matrix names CVE-2026-60782 (E-Business Suite Payments —
+      File Transmission over HTTP) and CVE-2026-70926 (E-Business Suite Workflow Notification Mailer, over SMTP) at
+      CVSS 9.8+ in E-Business Suite (120 patches total, 27 unauthenticated-remote); and in Fusion Middleware,
+      CVE-2026-73930 (Helidon), CVE-2026-60720/CVE-2026-61066 (Identity Manager), CVE-2026-60990/CVE-2026-60995
+      (Identity Manager Connector), CVE-2026-61248 (Internet Directory), CVE-2026-61003 (Managed File Transfer) and
+      CVE-2026-62608 (Reports Developer), plus multiple unnamed WebLogic Server and WebCenter CVEs (262 patches
+      total, 182 unauthenticated-remote). NCSC-NL's per-product breakdown confirms the Fusion Middleware surface is
+      reachable over HTTP, HTTPS, HTTP/2, LDAP, T3, IIOP, RMI, CORBA, SOAP, SMTP or UDP depending on component.
+      Oracle E-Business Suite (versions 12.2.3–12.2.15) is the same product line Cl0p mass-exploited via
+      CVE-2025-61882 in 2025 — the Workflow Notification Mailer / Payments-File-Transmission CVEs above sit in the
+      same functional area (inbound file/notification processing) as that prior campaign. No specific CVE in this
+      cycle carries a confirmed exploitation report as of this run; NCSC-CH's advisory records exploitation status
+      as "UNKNOWN" for the whole batch, and Oracle's own advisory text notes recurring post-disclosure exploitation
+      attempts against already-patched Oracle products historically. Given the volume of unauthenticated
+      remote-code-execution-class flaws in internet-facing middleware and ERP components, this is a same-cycle
+      patch-priority item for any Oracle Fusion Middleware / E-Business Suite / WebLogic estate rather than a
+      confirmed-exploited alert.
+    region_nexus: "global; Oracle Fusion Middleware, E-Business Suite and PeopleSoft are entrenched ERP/identity backbones across European public-sector and finance/healthcare back-office estates"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, healthcare, energy"
+    cves: [CVE-2026-60782, CVE-2026-70926, CVE-2026-73930, CVE-2026-60720, CVE-2026-61066, CVE-2026-60990, CVE-2026-60995, CVE-2026-61248, CVE-2026-61003, CVE-2026-62608]
+    techniques: [T1190]
+    affected_products: ["Oracle Fusion Middleware", "Oracle WebLogic Server", "Oracle E-Business Suite", "Oracle Hyperion", "Oracle PeopleSoft Enterprise", "Oracle Database Server", "Oracle Identity Manager", "Oracle Internet Directory", "Oracle Managed File Transfer", "Oracle Reports Developer", "Oracle Helidon"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "More than 1,000 unique CVEs across two dozen products, including over 460 vulnerabilities that can be exploited remotely without authentication."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/943-patches-rolled-out-with-oracles-august-2026-security-update/"
+      - quote: "Oracle continues to periodically receive reports of attempts to maliciously exploit vulnerabilities for which Oracle has already released security patches. In some instances, attackers have been successful because targeted customers had failed to apply available Oracle patches."
+        attribution: "Oracle (vendor CPU advisory)"
+        source_url: "https://www.oracle.com/security-alerts/cspuaug2026.html"
+      - quote: "Successful exploitation of the most severe vulnerabilities allows unauthenticated remote attackers to gain full system control and compromise sensitive data across diverse Oracle environments."
+        attribution: "NCSC Switzerland (GovCERT.ch)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12862"
+    extended_notes: |
+      Highest-value per-product follow-up: the E-Business Suite Payments/File-Transmission (CVE-2026-60782) and
+      Workflow-Notification-Mailer (CVE-2026-70926) CVEs sit in the same inbound-file/notification-processing
+      functional area Cl0p abused in the 2025 EBS campaign (CVE-2025-61882) — prioritize these two over the rest of
+      the EBS batch if patch sequencing is constrained. WebLogic T3/IIOP deserialization-class CVEs in this cycle are
+      not individually named by any source fetched this run and historically draw the fastest post-CPU PoC —
+      confirm via Oracle's own Risk Matrix (cspuaug2026.html) before assuming WebLogic is lower-priority than the
+      named CVEs above. Flagged borderline given the absence of confirmed exploitation for any single CVE in this
+      cycle.
+    priority_hint: medium
+    borderline: true
+    borderline_reason: "large-scale quarterly vendor patch cycle with no confirmed per-CVE exploitation yet — included for its unauthenticated-RCE attack-surface scale, named CVEs in E-Business Suite/Fusion Middleware, and ERP/middleware relevance to the constituency, but no confirmed exploitation makes it thinner than the other items this run"
+
+cve_table:
+  - { cve: "CVE-2026-19489", product: "Citrix NetScaler ADC/Gateway", cvss: "8.8", epss: null, kev: false, exploited: "not observed as of 2026-08-19 (Rapid7)", patch: "14.1-73.32+ / 13.1-63.21+", source: "https://cert.europa.eu/publications/security-advisories/2026-010/" }
+  - { cve: "CVE-2026-19490", product: "Citrix NetScaler ADC/Gateway", cvss: "9.3", epss: null, kev: false, exploited: "not observed as of 2026-08-19 (Rapid7)", patch: "14.1-73.32+ / 13.1-63.21+", source: "https://www.rapid7.com/blog/post/etr-cve-2026-19490-critical-vulnerability-affecting-citrix-netscaler-adc-and-netscaler-gateway/" }
+  - { cve: "CVE-2026-73570", product: "Zimbra Collaboration", cvss: "8.9", epss: 0.54, kev: false, exploited: "yes, since 2026-08-18 (ENISA EUVD / CERT-FR)", patch: "10.1.20", source: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1041/" }
+  - { cve: "CVE-2026-64849", product: "MLflow", cvss: "9.3", epss: 0.35, kev: true, exploited: "yes, since 2026-08-19 (CISA KEV)", patch: "3.15.0", source: "https://osv.dev/vulnerability/GHSA-7gwp-5pfp-969j" }
+  - { cve: "CVE-2026-76850", product: "LMDeploy", cvss: "9.3", epss: 0.0, kev: false, exploited: "not observed", patch: "0.16.0", source: "https://www.vulncheck.com/advisories/lmdeploy-remote-code-execution-via-unsafe-pickle-deserialization-in-the-disaggregated-serving-peer-connector" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "profile configures no product watchlist — sweep is a no-op per spawn instructions; general coverage rules applied unchanged across this run's essential-mandatory and always-sweep sources"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "essential-mandatory, attempted via python3 tools/fetch_source.py cisa page — HTTP 403 direct AND jina reader pool credit-exhausted (HTTP 402 on all 7 rotating keys); sixth+ consecutive unreachable run per source notes. CISA KEV JSON feed (separate recipe) was reachable and used as the substitute for the exploited-vulnerability surface; the general AA-series advisory listing itself carries no known-lost in-window content (cross-checked: no AA-series advisory referenced by any other source this run)."
+  - source_id: cisa-directives
+    reason: "essential-mandatory, attempted via python3 tools/fetch_source.py cisa page — same HTTP 403 direct + jina-exhausted condition as cisa-advisories; fifth+ consecutive unreachable run per source notes. No other source referenced a new CISA directive in-window."
+  - source_id: siemens-productcert-csaf
+    reason: "rotation-priority, attempted via direct bridge — HTTP 403, jina pool exhausted. Checked the cisagov CSAF mirror (python3 tools/fetch_source.py cisa csaf-recent 15) as the documented alternate: newest OT/ICS advisories released 2026-08-18 (icsa-26-230-01/02), nothing attributable to Siemens newer than the previously-noted 2026-08-13 cutoff — no in-window Siemens advisory known lost."
+  - source_id: ssd-disclosure
+    reason: "rotation, attempted via direct bridge (--direct) — HTTP 202 client-rendered shell as documented in the source record; no content retrievable. Standard-tier candidate source, not essential."
+  - source_id: ccb-belgium
+    reason: "NOT a coverage gap — noting the recipe fix: rotation-priority record pinned to fetch_method:jina (credit-exhausted this run), but python3 tools/fetch_source.py url https://ccb.belgium.be/advisories --direct returned a clean 200 HTML page with dated advisory rows (newest 18/08/2026, nothing newer than the already-covered GitLab/SAP items). Recommend updating the sources.json recipe for ccb-belgium to prefer the direct/bridge transport over jina now that direct access is confirmed working and the jina pool is unreliable."
+
+self_evolution_notes: |
+  ccb-belgium: direct transport (python3 tools/fetch_source.py url <URL> --direct) now returns a clean 200 Drupal-
+  rendered HTML page with dated advisory rows (article-search--date div, DD/MM/YYYY format) — this should replace
+  the jina-only recipe pinned in sources.json now that the jina pool is credit-exhausted; direct access working is
+  a durable finding, not a one-off.
