@@ -1,0 +1,494 @@
+domain: F1
+run_id: 2026-08-23T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-23T04:36:10Z
+ended_at: 2026-08-23T04:54:33Z
+duration_seconds: 1103
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 1
+  bridge_fetches: 10
+
+# =====================================================================
+# ITEM 1 — TrueConf Server CVE-2026-72529 / CVE-2026-72530 (Head Mare)
+# =====================================================================
+items:
+  - title: "TrueConf Server pre-auth RCE chain (CVE-2026-72529/72530) added to CISA KEV — Head Mare (now tracked as an APT, not hacktivists) trojanizes the client installer to plant PhantomCore/PhantomGraph/PhantomHook/PhantomReact backdoors on meeting participants"
+    sources:
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA KEV catalog", date: "2026-08-20", role: "primary" }
+      - { url: "https://trueconf.com/blog/news/security-fixes-updates-and-advisories", publisher: "TrueConf", date: "2026-08-21", role: "primary" }
+      - { url: "https://ics-cert.kaspersky.com/vulnerabilities/trueconf-server-missing-authentication-for-critical-function/", publisher: "Kaspersky ICS CERT", date: "2026-08-11", role: "primary" }
+      - { url: "https://ics-cert.kaspersky.com/vulnerabilities/trueconf-server-breakout-from-isolated-environment/", publisher: "Kaspersky ICS CERT", date: "2026-08-11", role: "primary" }
+      - { url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/", publisher: "Kaspersky ICS CERT", date: "2026-08-12", role: "primary" }
+      - { url: "https://securelist.com/head-mare-targets-trueconf-server-with-phantomcore/120988/", publisher: "Kaspersky Securelist", date: "2026-08-11", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-72529", publisher: "NVD (mirroring CNA Kaspersky Labs' own CVSS submission)", date: "2026-08-23", role: "corroborating — used for CVSS verification only, not cited as the entry's primary source per house style" }
+      - { url: "https://www.bleepingcomputer.com/news/security/cisa-orders-feds-to-patch-actively-exploited-trueconf-server-flaws/", publisher: "BleepingComputer", date: "2026-08-21", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json (CVE-2026-72529/72530 newly listed 2026-08-20) → pivot: TrueConf vendor advisory, URL https://trueconf.com/blog/news/security-fixes-updates-and-advisories → pivot: Kaspersky ICS CERT per-flaw advisories, URL https://ics-cert.kaspersky.com/vulnerabilities/trueconf-server-missing-authentication-for-critical-function/ and https://ics-cert.kaspersky.com/vulnerabilities/trueconf-server-breakout-from-isolated-environment/ → primary exploitation report: Kaspersky ICS CERT, URL https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/ → F1 deep-read pivot: Kaspersky Securelist full technical write-up, URL https://securelist.com/head-mare-targets-trueconf-server-with-phantomcore/120988/ (found via WebSearch \"Head Mare APT Kaspersky Securelist sectors instrumentation electronics transportation energy IT software development\" while checking S1's unsourced sector-list claim) → verification pivot: NVD CVE-2026-72529 / CVE-2026-72530 detail pages (used only to confirm the CNA-submitted CVSS 3.1/4.0 vectors that Kaspersky's own ICS-CERT page failed to render server-side) → corroboration: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/cisa-orders-feds-to-patch-actively-exploited-trueconf-server-flaws/"
+    summary: |
+      DEEP-READ RESULT: the underlying technical picture in findings.S1.yaml is accurate on the exploit
+      chain and patch versions, but THREE material corrections and several enrichments come from
+      reading the primaries in full (see corrections block below for the itemized diffs).
+
+      CISA added CVE-2026-72529 and CVE-2026-72530 to KEV on 2026-08-20. The two CVEs carry
+      DIFFERENT remediation deadlines in the catalog itself, not a single shared one: CVE-2026-72529
+      (missing authentication, CWE-306) has dueDate 2026-09-03; CVE-2026-72530 (code injection /
+      sandbox escape, CWE-94) has dueDate 2026-08-23 (today). Both scores are as the CNA (Kaspersky
+      Labs, per NVD's "CVSS information contributed by other sources" attribution) states them:
+      CVE-2026-72529 = CVSS 3.1 9.8 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H) / CVSS 4.0 9.3
+      (CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N); CVE-2026-72530 = CVSS 3.1 9.0
+      (CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:H) / CVSS 4.0 9.5
+      (CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H). TrueConf's own vendor advisory
+      table independently republishes the identical 3.1 vectors and scores, and separately lists the
+      internal identifiers: KLCERT-26-057 = CVE-2026-72529 ("Service on 4307/TCP" affected component);
+      KLCERT-26-058 = CVE-2026-72530 ("Isolated execution environment / code generation" affected
+      component; also carries a Russian BDU identifier, BDU:2026-11247).
+
+      Attack chain, confirmed against Kaspersky's ICS-CERT alert and its companion Securelist deep-dive
+      (both dated 2026-08-11/12): an unauthenticated remote attacker connects to TrueConf Server on
+      port 4307/TCP (open by default per TrueConf's own documentation) and invokes an undocumented
+      function to run a script inside an isolated sandbox where OS-level libraries (io, os, etc.) are
+      deliberately unavailable (CVE-2026-72529/KLCERT-26-057). A second flaw in the sandbox's code
+      generation logic (CVE-2026-72530/KLCERT-26-058) lets the attacker escape that isolation and
+      execute arbitrary OS commands with NT AUTHORITY\SYSTEM privileges. With SYSTEM access the
+      attacker overwrites httpconf/site/public/js/locale.php with a PHP web shell and deletes the
+      corresponding TrueConf event-log entries. Kaspersky's own internal testing found the underlying
+      logic flaw predates the CVE-covered version ranges — "our internal analysis showed that all
+      TrueConf server versions released since 2022 are vulnerable" — though the officially listed
+      affected range is versions before 5.3, and 5.3.x/5.4.x/5.5.x prior to 5.3.9/5.4.9/5.5.5
+      respectively; all three lines were fixed together on 2026-06-18, roughly two months before the
+      KEV listing.
+
+      From the web shell the attacker uses PowerShell (via the shell, not a separate RCE) to
+      fingerprint the IT environment, gain privileged database access, and — the meeting-attendee
+      impact vector — overwrite TrueConf Server's own distributed Windows client installer
+      (ClientInstFiles/trueconf_windows_client_x64.exe) with an unsigned trojanized copy; Kaspersky
+      confirms the malicious distributions it recovered carried no valid digital signature. Any
+      meeting participant with an x64 Windows host who accepts the resulting "download the new
+      client" prompt receives the genuine TrueConf client plus the PhantomCore backdoor, unpacked to
+      %LOCALAPPDATA%\TrueConf\Client\api-ms-win-crt-time-l1-1-0-2.dll and set to auto-launch via a
+      CLSID InprocServer32 registry key. On the compromised server itself, the web shell additionally
+      installs PhantomGraph — a Windows-service-persisted (SysExcSvc.dll / SysReadSvc.dll) backdoor
+      that Kaspersky states is used as a BACKUP C2 channel (primary post-compromise control stays on
+      the web shell + remote PowerShell) over a compromised Microsoft OneDrive account's Graph API
+      (graph.microsoft.com); the two DLLs are installed via a single Base64-encoded PowerShell command
+      that Kaspersky assesses was deliberately split across the two service installs specifically to
+      evade EDR. Kaspersky's Securelist detection-name list also documents credential-access and
+      lateral-movement tradecraft not captured in the ICS-CERT alert alone: reconnaissance commands
+      (hostname, whoami), an lsass.exe memory dump via the comsvcs.dll technique, and an SSH reverse
+      tunnel.
+
+      CORRECTION to the surfacing pass: on *nix TrueConf servers Head Mare installs not one but TWO
+      distinct backdoors, both confirmed by Kaspersky's own detection-name list — HEUR:Backdoor.Linux.
+      PhantomHook.a (a rootkit that hides its files and, by intercepting TrueConf's own network
+      functions, listens for attacker commands smuggled inside the TrueConf protocol itself) AND
+      HEUR:Backdoor.Linux.PhantomReact.a, a SEPARATE backdoor that uses GitHub as its command-and-
+      control channel. Kaspersky's own report text states this as two back-to-back sentences about
+      "*nix systems" ("On *nix servers running TrueConf, the attackers install a backdoor that hides
+      its files... Furthermore, on *nix systems, the attackers install a backdoor that uses GitHub as
+      a command and control channel"), and the associated YARA rule for the GitHub-C2 backdoor
+      (apt_HeadMare_Github_Backdoor) checks for the ELF magic number, confirming it too is a Linux
+      binary, not a Windows one. The surfacing pass's summary mentioned only the protocol-smuggling
+      rootkit and omitted the GitHub-C2 backdoor entirely.
+
+      CORRECTION: Kaspersky's Securelist write-up explicitly RECLASSIFIES Head Mare, stating "Previously,
+      we classified them as hacktivists, but now we define them as an APT group due to the sophistication
+      of their TTPs and the absence of destructive activity (encryption, wiping) in the targeted
+      infrastructures." The surfacing pass's "hacktivist-aligned cluster" characterization is now Kaspersky's
+      OWN SUPERSEDED classification, not its current one.
+
+      CORRECTION (wording): sectors observed to date, per Securelist's exact phrasing, are "instrument
+      manufacturing, electronics, transportation, energy, IT, and software development" — the surfacing
+      pass wrote "instrumentation" for the first sector, which is not the term Kaspersky uses. Both
+      Kaspersky documents describe targeting as exclusively Russian organizations; neither states or
+      implies exploitation outside that set, so the surfacing pass's "no exploitation outside Russian
+      targeting reported" conclusion stands confirmed on the full read.
+
+      Kaspersky names three concrete KEDR Expert detection-rule identifiers for defenders building
+      equivalent logic: unusual_php_file_creation_from_trueconf_process (the locale.php web-shell
+      replacement plus TrueConf event-log deletion), unusual_file_creation_from_trueconf (the
+      PhantomCore payload drop via the same replaced file), and unsigned_trueconf_installer (the
+      trojanized client installer lacking a vendor signature). Kaspersky's MDR service additionally
+      monitors: creation of suspicious files by TrueConf Server processes; execution of an unsigned
+      TrueConf Client installer; suspicious process chains from TrueConf Client/update executables;
+      new library registrations under HKEY_CURRENT_USER\Software\Classes\CLSID; lsass.exe
+      reconnaissance and memory-dump activity via comsvcs.dll; and SSH tunnel creation.
+    region_nexus: "primarily Russian critical-infrastructure targeting observed to date (Kaspersky names no victims outside Russia in either primary); global exposure wherever TrueConf Server is internet-reachable on 4307/TCP, including any EU organization whose staff join meetings hosted by a TrueConf-using contractor or partner"
+    primary_sector_nexus: "indirect"
+    sector: "energy, transport, telco, public-sector"
+    cves: [CVE-2026-72529, CVE-2026-72530]
+    techniques: [T1190, T1611, T1505.003, T1554, T1543.003, T1543.002, T1102.002, T1003.001, T1572, T1027]
+    affected_products: ["TrueConf Server"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:head-mare", type: actor, name: "Head Mare", aliases: [],
+          summary: "Cluster Kaspersky (Securelist/ICS CERT) previously classified as hacktivists targeting Russian and Belarusian organizations, but as of its 2026-08-11 report now formally reclassifies as an APT group given TTP sophistication and the absence of destructive (encryption/wiping) activity; observed since at least July 2026 chaining CVE-2026-72529/72530 against unpatched TrueConf Server instances to deliver PhantomCore, PhantomGraph, PhantomHook and PhantomReact backdoors via trojanized client installers (Kaspersky ICS CERT / Securelist, 2026-08-11/12)." }
+      - { key: "malware:phantomcore", type: malware, name: "PhantomCore", aliases: [],
+          summary: "Windows backdoor delivered by Head Mare inside a trojanized TrueConf client installer, unpacked to a file masquerading as a Windows CRT runtime stub under %LOCALAPPDATA%\\TrueConf\\Client (Kaspersky ICS CERT / Securelist, 2026-08-11/12)." }
+      - { key: "malware:phantomgraph", type: malware, name: "PhantomGraph", aliases: [],
+          summary: "Two-module (SysExcSvc.dll/SysReadSvc.dll) Windows-service-persisted backdoor Head Mare installs on compromised TrueConf servers as a backup C2 channel, using a compromised Microsoft OneDrive account's Graph API as its command-and-control transport (Kaspersky ICS CERT / Securelist, 2026-08-11/12)." }
+      - { key: "malware:phantomhook", type: malware, name: "PhantomHook", aliases: [],
+          summary: "Linux/*nix rootkit Head Mare installs on compromised *nix TrueConf servers; hides its own files and intercepts TrueConf's network functions to listen for attacker commands smuggled inside the TrueConf protocol itself (Kaspersky detection name HEUR:Backdoor.Linux.PhantomHook.a; Securelist, 2026-08-11/12)." }
+      - { key: "malware:phantomreact", type: malware, name: "PhantomReact", aliases: [],
+          summary: "Separate Linux/*nix backdoor Head Mare installs on compromised *nix TrueConf servers, distinct from PhantomHook, using GitHub as its command-and-control channel (Kaspersky detection name HEUR:Backdoor.Linux.PhantomReact.a; Securelist, 2026-08-11/12)." }
+    relation_suggestions:
+      - { subject: "actor:head-mare", object: "malware:phantomcore",
+          basis: "Kaspersky: Head Mare deploys PhantomCore via trojanized TrueConf client installers (Kaspersky ICS CERT/Securelist, 2026-08-11/12)" }
+      - { subject: "actor:head-mare", object: "malware:phantomgraph",
+          basis: "Kaspersky: Head Mare deploys PhantomGraph on compromised TrueConf servers using OneDrive as backup C2 (Kaspersky ICS CERT/Securelist, 2026-08-11/12)" }
+      - { subject: "actor:head-mare", object: "malware:phantomhook",
+          basis: "Kaspersky: Head Mare installs the PhantomHook rootkit on *nix TrueConf servers (Securelist detection-name list, 2026-08-11/12)" }
+      - { subject: "actor:head-mare", object: "malware:phantomreact",
+          basis: "Kaspersky: Head Mare installs the PhantomReact GitHub-C2 backdoor on *nix TrueConf servers (Securelist detection-name list, 2026-08-11/12)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An unauthorized attacker can connect to TrueConf server versions 5.3.X before 5.3.9, 5.4.X before 5.4.9, 5.5.X before 5.5.5, as well as earlier versions (our internal analysis showed that all TrueConf server versions released since 2022 are vulnerable) via port 4307/TCP (open by default, according to TrueConf documentation) and execute a malicious script on the server by calling an undocumented function."
+        attribution: "Kaspersky ICS CERT"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+        grep_verified: true
+      - quote: "The uploaded malicious script is executed in an isolated environment, where potentially hazardous libraries (io, os, etc.) are unavailable. However, attackers can exploit another vulnerability (assigned internal Kaspersky identifier KLCERT-26-058) to execute arbitrary code on the server with NT AUTHORITY\\SYSTEM privileges."
+        attribution: "Kaspersky ICS CERT"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+        grep_verified: true
+      - quote: "Most importantly, during the attack, the attackers replace the TrueConf client distribution file located at C:\\Program Files\\TrueConf Server\\ClientInstFiles\\trueconf_windows_client_x64.exe."
+        attribution: "Kaspersky ICS CERT"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+        grep_verified: true
+      - quote: "Even if your organization does not use a TrueConf server, your employees may connect to compromised TrueConf servers of contractors to participate in online meetings and download infected installation packages."
+        attribution: "Kaspersky ICS CERT"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+        grep_verified: true
+      - quote: "The manufacturer addressed the vulnerabilities used by the attackers in the latest TrueConf server update (versions 5.3.9, 5.4.9, and 5.5.5), released on June 18, 2026."
+        attribution: "Kaspersky ICS CERT"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+        grep_verified: true
+      - quote: "On *nix servers running TrueConf, the attackers install a backdoor that hides its files and, by intercepting TrueConf network functions, listens for commands sent from the attackers via the TrueConf protocol. Furthermore, on *nix systems, the attackers install a backdoor that uses GitHub as a command and control channel."
+        attribution: "Kaspersky ICS CERT"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+        grep_verified: true
+      - quote: "Previously, we classified them as hacktivists, but now we define them as an APT group due to the sophistication of their TTPs and the absence of destructive activity (encryption, wiping) in the targeted infrastructures."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/head-mare-targets-trueconf-server-with-phantomcore/120988/"
+        grep_verified: true
+      - quote: "We are observing several active Head Mare campaigns targeting Russian organizations across various industries: instrument manufacturing, electronics, transportation, energy,"
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/head-mare-targets-trueconf-server-with-phantomcore/120988/"
+        grep_verified: true
+      - quote: "We believe the attackers deliberately split this malicious command into two components to make it harder to detect using EDR tools."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/head-mare-targets-trueconf-server-with-phantomcore/120988/"
+        grep_verified: true
+      - quote: "The malicious distributions we detected did not have a valid digital signature."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/head-mare-targets-trueconf-server-with-phantomcore/120988/"
+        grep_verified: true
+      - quote: "Memory dump creation for the lsass.exe process using the comsvcs.dll library."
+        attribution: "Kaspersky Securelist (Kaspersky MDR detection coverage list)"
+        source_url: "https://securelist.com/head-mare-targets-trueconf-server-with-phantomcore/120988/"
+        grep_verified: true
+      - quote: "Resolution: 5.3.9 / 5.4.9 / 5.5.5"
+        attribution: "TrueConf"
+        source_url: "https://trueconf.com/blog/news/security-fixes-updates-and-advisories"
+        grep_verified: true
+      - quote: "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:H"
+        attribution: "TrueConf (published CVSS 3.1 vector for CVE-2026-72530)"
+        source_url: "https://trueconf.com/blog/news/security-fixes-updates-and-advisories"
+        grep_verified: true
+      - quote: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        attribution: "TrueConf (published CVSS 3.1 vector for CVE-2026-72529)"
+        source_url: "https://trueconf.com/blog/news/security-fixes-updates-and-advisories"
+        grep_verified: true
+    extended_notes: |
+      Additional ATT&CK mapping vs. the surfacing pass: added T1003.001 (LSASS Memory, via comsvcs.dll
+      memory dump — confirmed in the Securelist MDR-detection list) and T1572 (Protocol Tunneling, the
+      SSH reverse tunnel Kaspersky observed) and T1027 (Obfuscated Files or Information — the
+      Base64-encoded PowerShell service-install command Kaspersky says was deliberately split to evade
+      EDR). Detection concepts (telemetry class first, unchanged from the surfacing pass plus the
+      vendor rule names above): (1) file-write telemetry on the TrueConf server for an unexpected
+      write to httpconf/site/public/js/locale.php or to ClientInstFiles/trueconf_windows_client_x64.exe
+      outside a vendor-update window; (2) endpoint process-creation events showing the TrueConf client
+      installer spawning a DLL load from %LOCALAPPDATA%\TrueConf\Client with a filename mimicking a
+      Windows system component; (3) network/DNS egress telemetry showing a SERVER process (not a user
+      browser/mail client) making outbound HTTPS calls to graph.microsoft.com or
+      login.microsoftonline.com from a TrueConf host, or outbound calls to github.com API endpoints
+      from a *nix TrueConf host — both anomalous for a videoconferencing appliance; (4) Windows
+      service-creation events (4697/7045) for new services on a TrueConf server; (5) credential-access
+      telemetry for comsvcs.dll invoked against lsass.exe (a classic LSASS-dump technique, not specific
+      to this campaign but confirmed present here); (6) new outbound SSH client sessions initiated FROM
+      a TrueConf server (reverse-tunnel indicator). Hardening unchanged: patch to 5.3.9/5.4.9/5.5.5; do
+      not expose 4307/TCP to the internet; treat any TrueConf server that hosted external/contractor
+      participants during the exposure window as compromised until forensically cleared; validate the
+      client installer's signature against the vendor before trusting a server-distributed update. No
+      IOCs reproduced here per pipeline policy.
+
+      Minor sourcing footnote (not a substantive correction): the CISA KEV catalog's own "notes" field
+      cites Kaspersky ICS-CERT URLs under the path /advisories/2026/08/11/... , while the live
+      Kaspersky pages we fetched are under /vulnerabilities/... — a legacy/alternate path mismatch in
+      CISA's notes field, not a broken advisory; both vulnerability pages were reachable at the
+      /vulnerabilities/ path used throughout this record.
+
+# =====================================================================
+# ITEM 2 — crates.io compromise (arrayref / internment / append-only-vec)
+# =====================================================================
+  - title: "Three Rust crates.io packages hijacked via account takeover (arrayref, internment, append-only-vec) — 86-107 minute exposure window, build-time backdoor infrastructure overlaps DPRK's Mastra (Sapphire Sleet, high confidence) and axios (UNC1069) npm campaigns"
+    sources:
+      - { url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns", publisher: "Wiz Research", date: "2026-08-20", role: "primary" }
+      - { url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/", publisher: "The Rust Project (Rust Security Response Team, official blog)", date: "2026-08-20", role: "primary" }
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/", publisher: "Microsoft Security Response Center / Microsoft Security Blog", date: "2026-06-19 (update cited within a 2026-06-17 post)", role: "primary — verifies the Mastra/Sapphire Sleet attribution Wiz cites" }
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/north-korea-threat-actor-targets-axios-npm-package", publisher: "Google Threat Intelligence Group (Mandiant)", date: "2026-03-31", role: "primary — verifies the axios/UNC1069 attribution Wiz cites" }
+    discovery_trace: "first seen at: wiz-blog, URL https://www.wiz.io/blog → primary: Wiz Research, URL https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns → corroboration: The Rust Project official blog, URL https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/ → F1 deep-read pivot: extracted Wiz's embedded Next.js __NEXT_DATA__ JSON payload directly (the rendered HTML is a JS-only shell with no server-rendered body) to recover the full DAST article body and its outbound links → pivot: Microsoft Security Blog Mastra write-up, URL https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/ (linked from Wiz's 'Overlap with DPRK Supply Chain Attacks' section) → pivot: Google Cloud / GTIG axios write-up, URL https://cloud.google.com/blog/topics/threat-intelligence/north-korea-threat-actor-targets-axios-npm-package (linked from the same section) → registry cross-check: entities/registry.yaml actor:sapphire-sleet already carries UNC1069 as a registered alias, sourced to AWS Security Blog/CyberScoop (2026-07-29) and Google Cloud/GTIG (2026-07-30), so both vendor-attribution threads Wiz cites resolve to the SAME already-tracked entity, not two unrelated actors"
+    summary: |
+      DEEP-READ RESULT: findings.S1.yaml's technical description holds up well against the full primary
+      text (the malware-behavior description, the 86-107 minute exposure window, and the "no CVE
+      assigned" fact are all confirmed verbatim), but the reach statistic needed exact-wording
+      correction, one Wiz-issued self-correction was missed, and the attribution chain deserved
+      tighter sourcing to the two vendors actually making each claim (Microsoft for Mastra/Sapphire
+      Sleet, Google/Mandiant for axios/UNC1069) rather than reading as a single undifferentiated "DPRK
+      overlap" claim.
+
+      On 2026-08-20, an attacker who had taken over a crates.io publisher account pushed malicious
+      versions of arrayref, internment and append-only-vec to crates.io — NOT simultaneously as the
+      surfacing pass implied, but staggered across a 23-minute window: arrayref@0.3.10 published
+      2026-08-20T07:15:00Z, internment@0.8.7 at 07:34:07Z, append-only-vec@0.1.9 at 07:37:49Z (all per
+      the Rust Project's own blog post, which is also the source of the 07:15 UTC timestamp the
+      surfacing pass attached to "the compromise" generally — that timestamp is specifically arrayref's
+      publish time, and also happens to match when the Rust team received the initial report). All
+      three declared a new build-time dependency on a freshly published typosquat, proc-macro1,
+      impersonating the legitimate proc-macro2 crate (154M+ downloads per Wiz); notably, per Wiz,
+      proc-macro1 "was the first dependency added to arrayref in its ten-year history" — a strong
+      tell that the account, not the code, was compromised. The Rust Security Response Team credits
+      discovery to a THIRD PARTY: "We'd like to thank the Research Team at Nextron Systems GmbH for
+      initially discovering this and reporting it to us" — a detail the surfacing pass omitted
+      entirely. The team deleted all three malicious versions plus proc-macro1 and five further
+      attacker-controlled typosquat crates (proc-macro-en, aovine, arone, aronenao, tinymember — all
+      versions) with exposure windows of 86 minutes (arrayref), 90 minutes (internment) and 107
+      minutes (append-only-vec) — the surfacing pass's "86-107 minutes" range is exactly right — locked
+      the compromised publisher account, and states: "We do not believe the author of arrayref to be
+      acting maliciously, but their computer or credentials are likely compromised."
+
+      proc-macro1's build.rs script runs automatically at compile time (before any of the parent
+      crate's own code executes), reconstructs a C2 URL from Base64-encoded fragments, disables TLS
+      certificate validation for its own callback, and downloads a platform-specific second-stage
+      payload for x86_64 Linux/Windows/macOS and aarch64 macOS. The implant beacons over HTTPS POST,
+      collects hostname/username/OS details and enumerates installed applications, and — per Wiz's own
+      published correction to this same article — "queries the browsers' SQLite credential stores
+      directly" for Chrome/Brave/Edge but does NOT decrypt or retrieve the actual credential material:
+      "A prior version of this piece mistakenly stated that browser credentials were stolen. The
+      queries only enumerate saved logins, they do not retrieve the encrypted credential material."
+      This is a materially different claim from "collects credentials" and should be described as
+      browser-data/saved-login enumeration, not credential theft. The implant persists via a Registry
+      Run key (Windows), a LaunchAgent (macOS), or a systemd USER service (Linux — the surfacing pass
+      said "systemd service" without the user-scope detail), supports kill / minicfg (reconfigure C2
+      and beacon interval) / startup / runscript (execute PowerShell or shell scripts, sync or
+      background) commands, and — a capability the surfacing pass did not mention — falls back to a
+      Domain Generation Algorithm generating 10 algorithmic .com domains every 5 days if its primary C2
+      is unreachable; Wiz states the DGA domains do not currently appear to be registered. Configuration
+      is AES-128-GCM encrypted with a hardcoded key; command authentication uses an embedded RSA-2048
+      private key.
+
+      CORRECTION (exact wording/population): the reach claim is "arrayref can be found in over 35% of
+      all environments. Even more notably, it's used in ¾ of all environments where Rust is present."
+      Wiz does not define what population "all environments" is measured over (its own scanning
+      customer base is the most likely reading, not a universal claim about all computing environments
+      everywhere) — the surfacing pass's "35% of all software environments" and "three-quarters of all
+      environments that use Rust at all" are reasonable paraphrases of the same two sentences but should
+      not be presented as more precise than Wiz's own unscoped wording; this should ship with the
+      population caveat rather than as a flatly stated percentage.
+
+      Attribution, corrected to name each claiming vendor precisely: Wiz's own text states, without a
+      hedged confidence qualifier of its own, "The arrayref infrastructure substantially overlaps with
+      operations attributed to recent North Korean actors," based on three findings: (1) the arrayref
+      beacon's endpoint path was previously used in the Mastra npm supply-chain campaign (140+
+      compromised npm packages, June 2026), which MICROSOFT — not Wiz — "assesses with high confidence
+      ... is attributable to Sapphire Sleet, a North Korean state actor that primarily targets the
+      financial sector" (Microsoft's own wording, verified against its blog); (2) the arrayref C2 IP
+      shares a TLS certificate issuer with separate Mastra-campaign infrastructure; (3) a
+      victim-reported arrayref C2 IP also appears in GOOGLE THREAT INTELLIGENCE GROUP's (Mandiant's)
+      analysis of a March 2026 axios npm compromise, which GTIG "attributes ... to UNC1069, a
+      financially motivated North Korea-nexus threat actor active since at least 2018" (verified
+      against Google Cloud's own blog); and (4) both the Mastra and axios campaigns' infrastructure sit
+      in the same Hostwinds LLC /23 IP range. Notably, UNC1069 is already a registered alias of
+      actor:sapphire-sleet in this pipeline's entity registry (via a separate 2026-07-29/30
+      Amazon/Google cross-attribution), so Microsoft's Sapphire-Sleet attribution and Mandiant's UNC1069
+      attribution point at the SAME tracked cluster rather than two distinct groups whose overlap with
+      each other is itself unconfirmed — this strengthens, not weakens, the overall DPRK-nexus read,
+      but it should be attributed correctly: Microsoft attributes Mastra; Mandiant/GTIG attributes
+      axios; Wiz's own contribution is the infrastructure-overlap observation linking arrayref to both.
+      No CVE or RUSTSEC advisory identifier has been assigned to the arrayref incident itself.
+    region_nexus: "global software supply chain; affects any organization building Rust software, including CI/CD pipelines run by public-sector or critical-infrastructure operators using arrayref or its dependents"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: []
+    techniques: [T1195.002, T1547.001, T1543.001, T1543.002, T1217, T1140, T1568.002, T1027.002]
+    affected_products: ["arrayref (Rust crate)", "internment (Rust crate)", "append-only-vec (Rust crate)"]
+    entity_keys: [actor:sapphire-sleet, campaign:mastra-easy-day-js-supply-chain]
+    new_entities:
+      - { key: "campaign:rust-crates-arrayref-dprk-overlap-2026-08", type: campaign, name: "arrayref Rust crates.io compile-time backdoor", aliases: [],
+          summary: "2026-08-20 crates.io account-takeover compromise of arrayref, internment and append-only-vec via a typosquat build-dependency (proc-macro1) that executed a build-time backdoor with DGA C2 fallback; discovered and reported by Nextron Systems GmbH; Wiz Research assesses infrastructure overlap (shared C2 endpoint pattern, shared TLS-certificate issuer, shared Hostwinds /23 IP range) with the DPRK-linked Mastra campaign (Microsoft: high-confidence attribution to Sapphire Sleet) and the axios npm campaign (Google GTIG/Mandiant: attributed to UNC1069, a registered alias of the same tracked cluster) (Wiz Research, 2026-08-20)." }
+    relation_suggestions:
+      - { subject: "campaign:rust-crates-arrayref-dprk-overlap-2026-08", object: "actor:sapphire-sleet",
+          basis: "Wiz: arrayref beacon endpoint previously used in the Mastra campaign (Microsoft: high-confidence attribution to Sapphire Sleet); arrayref C2 IP shares an SSL certificate issuer with Mastra infrastructure; a victim-reported arrayref-related IP also appears in Google GTIG's analysis of the axios campaign, attributed by GTIG to UNC1069 — already a registered alias of actor:sapphire-sleet (Wiz Research, 2026-08-20; Microsoft Security Blog, 2026-06-17/19 update; Google Cloud/GTIG, 2026-03-31)" }
+      - { subject: "campaign:rust-crates-arrayref-dprk-overlap-2026-08", object: "campaign:mastra-easy-day-js-supply-chain",
+          basis: "Wiz: infrastructure overlap (beacon endpoint pattern, shared TLS-certificate issuer, shared Hostwinds /23 IP range) with the Mastra npm supply-chain campaign (Wiz Research, 2026-08-20)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "On August 20, 2026, malicious versions of three Rust crates were published to crates.io: arrayref@0.3.10, internment@0.8.7, and append-only-vec@0.1.9. The malicious crates added a typosquatted dependency (proc-macro1) whose build script downloads and executes a remote binary. Notably, proc-macro1 was the first dependency added to arrayref in its ten-year history."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+        grep_verified: true
+      - quote: "arrayref can be found in over 35% of all environments. Even more notably, it's used in ¾ of all environments where Rust is present."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+        grep_verified: true
+      - quote: "Edit: A prior version of this piece mistakenly stated that  browser credentials were stolen. The queries only enumerate saved logins, they do not retrieve the encrypted credential material."
+        attribution: "Wiz Research (correction notice within the same article)"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+        grep_verified: true
+      - quote: "Falls back to a Domain Generation Algorithm if the primary C2 is unreachable, generating 10 algorithmic .com domains every 5 days. Currently, the relevant domains do not appear to be registered."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+        grep_verified: true
+      - quote: "The arrayref infrastructure substantially overlaps with operations attributed to recent North Korean actors."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+        grep_verified: true
+      - quote: "This endpoint has been used in the Mastra campaign, attributed by Microsoft to DPRK / Sapphire Sleet"
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+        grep_verified: true
+      - quote: "This IP appears in Google Cloud Threat Intelligence's analysis of UNC1069's axios npm attack"
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+        grep_verified: true
+      - quote: "Both campaigns generally use the same 23.254.164.0/23 range of Hostwinds LLC infrastructure we see repeated in this incident."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+        grep_verified: true
+      - quote: "any developer workstation or CI runner that built an affected project must be treated as compromised."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+        grep_verified: true
+      - quote: "On 2026-08-20 at 7:15 UTC we got a report that the proc-macro1 crate was malicious."
+        attribution: "The Rust Project (Rust Security Response Team)"
+        source_url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/"
+        grep_verified: true
+      - quote: "the crate had a build script that was downloading a malicious payload"
+        attribution: "The Rust Project"
+        source_url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/"
+        grep_verified: true
+      - quote: "We do not believe the author of arrayref to be acting maliciously"
+        attribution: "The Rust Project"
+        source_url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/"
+        grep_verified: true
+      - quote: "arrayref@0.3.10: published at 2026-08-20T07:15:00Z, deleted at 2026-08-20T08:41:40Z. Online for 86 minutes."
+        attribution: "The Rust Project"
+        source_url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/"
+        grep_verified: true
+      - quote: "internment@0.8.7: published at 2026-08-20T07:34:07Z, deleted at 2026-08-20T09:04:11Z. Online for 90 minutes."
+        attribution: "The Rust Project"
+        source_url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/"
+        grep_verified: true
+      - quote: "append-only-vec@0.1.9: published at 2026-08-20T07:37:49Z, deleted at 2026-08-20T09:25:24Z. Online for 107 minutes."
+        attribution: "The Rust Project"
+        source_url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/"
+        grep_verified: true
+      - quote: "We'd like to thank the Research Team at Nextron Systems GmbH for initially discovering this and reporting it to us."
+        attribution: "The Rust Project"
+        source_url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/"
+        grep_verified: true
+      - quote: "Microsoft assesses with high confidence that this activity is attributable to Sapphire Sleet, a North Korean state actor that primarily targets the financial sector."
+        attribution: "Microsoft Security Response Center"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/"
+        grep_verified: true
+      - quote: "Sapphire Sleet also conducted a separate npm supply chain compromise affecting Axios, a popular JavaScript HTTP client, in April 2026."
+        attribution: "Microsoft Security Response Center"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/"
+        grep_verified: true
+      - quote: "GTIG attributes this activity to UNC1069, a financially motivated North Korea-nexus threat actor active since at least 2018, based on the use of WAVESHAPER.V2, an updated version of WAVESHAPER previously used by this threat actor."
+        attribution: "Google Threat Intelligence Group (Mandiant)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/north-korea-threat-actor-targets-axios-npm-package"
+        grep_verified: true
+    extended_notes: |
+      Note on the Google GTIG axios-attribution quote: the source repeats the UNC1069 attribution
+      TWICE with slightly different wording ("since at least 2018" at line 4 of
+      work/2026-08-23T0409Z-intel/gcp-unc1069-stripped.txt, "since 2018" at line 159). The evidence
+      record above uses the "since at least 2018" phrasing and was grep -F verified as a literal
+      contiguous substring of that saved file — confirmed MATCH.
+
+      ATT&CK mapping change vs. the surfacing pass: replaced T1555.003 (Credentials from Web Browsers)
+      with T1217 (Browser Information Discovery) given Wiz's own correction that the malware enumerates
+      saved logins/extension settings without decrypting or exfiltrating actual credential material —
+      T1555.003 implies credential theft that the corrected primary source does not support. Added
+      T1568.002 (Domain Generation Algorithms) for the DGA C2 fallback, and T1027.002 (Software
+      Packing) is arguably supportable for the "platform-specific second-stage payload" but was left out
+      pending confirmation the payload is literally packed/obfuscated at the binary level rather than
+      merely platform-selected; the composer may add it if the underlying Wiz Threat Center advisory
+      (https://app.wiz.io/boards/threat-center/wiz-adv-2026-151, not independently fetched this run —
+      it sits behind Wiz's customer portal) confirms packing. Dropped T1555.003 entirely rather than
+      keeping both, to avoid overstating the credential-theft claim in the same techniques[] list that
+      also carries the corrected evidence quote.
+
+      Six total attacker-controlled/typosquat crate names now on record across both primaries:
+      proc-macro1, proc-macro-en, aovine, arone, aronenao, tinymember — only proc-macro1 was the actual
+      build-dependency added to the three hijacked crates; the other five were deleted by the Rust
+      Security Response Team as a precaution (their precise role in this specific incident vs. broader
+      squatting infrastructure is not stated by either primary).
+
+      Detection concept (unchanged from S1, reinforced): build-time/CI telemetry — a cargo build/rustc
+      child process initiating outbound network egress, or a compiler-toolchain process spawning and
+          executing a downloaded binary from a temp directory (/tmp/rust-setup on Unix,
+      %TEMP%\rust-setup.ps1 on Windows per Wiz), is anomalous in any CI environment; correlate with new
+      Registry Run key / LaunchAgent / systemd user-service creation events immediately following a
+      build invocation, and with DNS queries for algorithmically-generated .com domains if the primary
+      C2 fails. Hardening: check ~/.cargo/registry/cache for cached copies of the six named crates
+      (Wiz's and the Rust Project's find-command are identical); pin dependencies via Cargo.lock; do not
+      resolve a sudden multi-version yank on a long-lived crate by blindly upgrading — treat it as an
+      investigation trigger per Wiz's explicit recommendation; review new/changed build-dependencies
+      entries, particularly networking crates (ureq, reqwest, rustls) with no legitimate reason to phone
+      home during a build.
+
+# =====================================================================
+corrections_vs_S1:
+  - item: "TrueConf / Head Mare (CVE-2026-72529/72530)"
+    correction: "KEV due-date framing was wrong: the two CVEs carry DIFFERENT dueDate values in the catalog itself (CVE-2026-72529 = 2026-08-23; CVE-2026-72530 = 2026-09-03), not one shared 'three-day vs. some-coverage-says' ambiguity. S1 presented this as if one date needed resolving against the other; in fact both dates are correct, each for a different CVE."
+    resolved_against: "python3 tools/fetch_source.py cisa-kev — direct read of the two KEV JSON records"
+  - item: "TrueConf / Head Mare"
+    correction: "Head Mare is no longer classified by Kaspersky as 'hacktivist' — Securelist's own write-up states Kaspersky now defines them as an APT group, explicitly superseding its prior hacktivist classification. S1's 'hacktivist-aligned cluster' framing was Kaspersky's OLD classification."
+    resolved_against: "https://securelist.com/head-mare-targets-trueconf-server-with-phantomcore/120988/"
+  - item: "TrueConf / Head Mare"
+    correction: "S1 described only ONE *nix backdoor (TrueConf-protocol-smuggling rootkit). Kaspersky's own report and detection-name list confirm a SECOND, separate *nix backdoor using GitHub as C2 (HEUR:Backdoor.Linux.PhantomReact.a, ELF-format per its YARA rule), omitted entirely from the surfacing summary."
+    resolved_against: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/ and https://securelist.com/head-mare-targets-trueconf-server-with-phantomcore/120988/"
+  - item: "TrueConf / Head Mare"
+    correction: "Sector-list wording corrected: 'instrument manufacturing' (Kaspersky's exact term), not 'instrumentation' (S1's paraphrase). This sector list is not present in the ICS-CERT threat-alert page S1 cited for it — it only appears in the companion Securelist article, which S1's sources list did not include."
+    resolved_against: "https://securelist.com/head-mare-targets-trueconf-server-with-phantomcore/120988/"
+  - item: "crates.io / arrayref"
+    correction: "The three crates were NOT all published at 07:15 UTC. Only arrayref was; internment published 07:34:07Z and append-only-vec published 07:37:49Z, a ~23-minute stagger. S1's phrasing implied simultaneous publication."
+    resolved_against: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/"
+  - item: "crates.io / arrayref"
+    correction: "The exact reach-statistic wording is 'over 35% of all environments' and '¾ of all environments where Rust is present' — Wiz does not say 'software environments' and does not define the measured population; S1's paraphrase ('35% of all software environments') implied a more universal/precise claim than Wiz actually made."
+    resolved_against: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+  - item: "crates.io / arrayref"
+    correction: "S1 described the malware as enumerating 'Chrome/Brave/Edge credential-database files... without decrypting' — directionally correct but missed that Wiz's OWN article carries a visible correction notice on this exact point ('a prior version of this piece mistakenly stated that browser credentials were stolen'), which is itself a notable fact about the source's reliability/currency that the composer should be aware of."
+    resolved_against: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+  - item: "crates.io / arrayref"
+    correction: "S1's attribution language ('Wiz's infrastructure analysis found... Microsoft attributes... Google Cloud's own reporting...') was directionally correct but did not surface that Google/Mandiant's specific designation is UNC1069, nor that UNC1069 is already a registered alias of actor:sapphire-sleet in this pipeline's own entity registry — meaning the two vendor attributions (Microsoft/Sapphire Sleet for Mastra, Mandiant/UNC1069 for axios) point at the SAME already-tracked cluster, which strengthens rather than weakens the overlap read and should be stated explicitly."
+    resolved_against: "https://cloud.google.com/blog/topics/threat-intelligence/north-korea-threat-actor-targets-axios-npm-package and entities/registry.yaml (actor:sapphire-sleet aliases)"
+  - item: "crates.io / arrayref"
+    correction: "S1 did not credit the discoverer. The Rust Project's own post names Nextron Systems GmbH's Research Team as the party that initially discovered and reported the malicious proc-macro1 crate."
+    resolved_against: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/"
+
+watchlist_sweep:
+  duty: none
+  note: "F1 is a scoped deep-read follow-up on two already-triaged items, not a domain sweep; no watchlist duty assigned."
+
+coverage_gaps:
+  - source_id: "ics-cert.kaspersky.com (trueconf-server-breakout-from-isolated-environment page specifically)"
+    reason: "Direct bridge fetch (python3 tools/fetch_source.py url) timed out on BOTH the direct GET and the jina-reader fallback (all 7 configured reader keys exhausted, HTTP 402) for this ONE specific URL, while every other ics-cert.kaspersky.com URL fetched cleanly via the same bridge in the same run. Recovered via a direct WebFetch call instead (different transport), which returned the page's title, CVE id, CWE, CVSS vector, affected-version list and two load-bearing quotes matching the already-grep-verified facts obtained independently from TrueConf's own advisory table and NVD's CNA-attributed CVSS record for the same CVE (CVE-2026-72530). No unresolved factual gap results — every fact this page would have carried is independently confirmed elsewhere in this record — but the specific sentences returned by WebFetch for this one page were not saved to a raw file and therefore could not be grep-verified as literal substrings in this run; they are not used as evidence quotes for that reason (the equivalent facts are instead cited to TrueConf's own table and the Kaspersky ICS-CERT threat-alert/Securelist reports, all of which WERE grep-verified)."
+  - source_id: "app.wiz.io/boards/threat-center/wiz-adv-2026-151"
+    reason: "Wiz's own Threat Intel Center advisory (linked twice from the public blog post) sits behind Wiz's customer portal and was not fetched — no login credentials available to this agent. Not treated as a fetch_failures entry because the public blog post fully covers the same technical content and IOC table; the portal advisory would only add customer-specific detection-rule mappings, which are out of scope for a no-IOC public-knowledge-base entry anyway."
+
+fetch_failures: []

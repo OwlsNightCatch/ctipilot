@@ -1,0 +1,427 @@
+domain: S1
+run_id: 2026-08-23T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-23T04:09:15Z
+ended_at: 2026-08-23T04:33:27Z
+duration_seconds: 1452
+self_telemetry:
+  webfetch_calls: 22
+  websearch_calls: 9
+  bridge_fetches: 34
+
+items:
+  - title: "TrueConf Server pre-auth RCE chain (CVE-2026-72529/72530) added to CISA KEV — Head Mare trojanizes the client installer to plant PhantomCore/PhantomGraph backdoors on meeting participants"
+    sources:
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA KEV catalog", date: "2026-08-20", role: "primary" }
+      - { url: "https://trueconf.com/blog/news/security-fixes-updates-and-advisories", publisher: "TrueConf", date: "2026-08-21", role: "primary" }
+      - { url: "https://ics-cert.kaspersky.com/vulnerabilities/trueconf-server-missing-authentication-for-critical-function/", publisher: "Kaspersky ICS CERT", date: "2026-08-11", role: "primary" }
+      - { url: "https://ics-cert.kaspersky.com/vulnerabilities/trueconf-server-breakout-from-isolated-environment/", publisher: "Kaspersky ICS CERT", date: "2026-08-11", role: "primary" }
+      - { url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/", publisher: "Kaspersky ICS CERT", date: "2026-08-12", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/cisa-orders-feds-to-patch-actively-exploited-trueconf-server-flaws/", publisher: "BleepingComputer", date: "2026-08-21", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json (CVE-2026-72529/72530 newly listed 2026-08-20) → pivot: TrueConf vendor advisory, URL https://trueconf.com/blog/news/security-fixes-updates-and-advisories → pivot: Kaspersky ICS CERT per-flaw advisories, URL https://ics-cert.kaspersky.com/vulnerabilities/trueconf-server-missing-authentication-for-critical-function/ and https://ics-cert.kaspersky.com/vulnerabilities/trueconf-server-breakout-from-isolated-environment/ → primary exploitation report: Kaspersky ICS CERT, URL https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/ → corroboration: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/cisa-orders-feds-to-patch-actively-exploited-trueconf-server-flaws/"
+    summary: |
+      CISA added CVE-2026-72529 and CVE-2026-72530 to its Known Exploited Vulnerabilities catalog
+      on 2026-08-20 with a three-day remediation deadline (2026-09-03 per the catalog; some coverage
+      cites 2026-08-23), and ENISA's EU Vulnerability Database independently lists both as exploited
+      since 2026-08-20. The chain sits entirely pre-authentication behind TrueConf Server's port
+      4307/TCP. CVE-2026-72529 (CVSS 3.1 9.8/CVSS 4.0 9.3, missing authentication for critical
+      function, CWE-306) lets a remote unauthenticated caller invoke an undocumented function on
+      that port and run an arbitrary script inside the server's isolated code-execution ("sandbox")
+      environment. CVE-2026-72530 (CVSS 3.1 9.0/CVSS 4.0 9.5, sandbox escape/code injection) is a
+      flaw in that same sandbox's code-generation logic that lets an attacker who already has script
+      execution there escape to the underlying host and run arbitrary OS commands with
+      NT AUTHORITY\SYSTEM privileges. Both were fixed together in 5.3.9/5.4.9/5.5.5 on 2026-06-18 —
+      more than two months before the KEV listing. Kaspersky ICS CERT reports (2026-08-12) that the
+      hacktivist-aligned cluster it tracks as Head Mare has chained both flaws since at least July
+      2026: replacing the file at TrueConf Server's httpconf/site/public/js/locale.php with a PHP web
+      shell, using that shell to reach the TrueConf Server database with elevated privileges and
+      remotely run PowerShell, then overwriting the server's own distributed Windows client installer
+      (ClientInstFiles/trueconf_windows_client_x64.exe) with a trojanized copy. Meeting participants
+      who accept the installer prompt receive the genuine TrueConf client alongside the PhantomCore
+      backdoor, unpacked to a file masquerading as a Windows CRT stub
+      (%LOCALAPPDATA%\TrueConf\Client\api-ms-win-crt-time-l1-1-0-2.dll). On the server itself, a
+      second implant, PhantomGraph, persists as two Windows services and uses a compromised Microsoft
+      OneDrive account's Graph API (graph.microsoft.com) as its command-and-control channel; on *nix
+      TrueConf servers Head Mare instead installs a hiding backdoor via systemd that listens for
+      commands smuggled inside the TrueConf protocol itself. Kaspersky explicitly warns that
+      organizations which do not run a TrueConf server of their own are still exposed if their staff
+      join a meeting hosted on a compromised third-party or contractor server and accept the client
+      update it offers. Targeting observed to date is concentrated on Russian organizations in
+      instrumentation, electronics, transportation, energy, IT and software-development sectors; no
+      exploitation outside that set has been reported.
+    region_nexus: "primarily Russian critical-infrastructure targeting observed to date; global exposure wherever TrueConf Server is internet-reachable on 4307/TCP, including any EU organization whose staff join meetings hosted by a TrueConf-using contractor or partner"
+    primary_sector_nexus: "indirect"
+    sector: "energy, transport, telco, public-sector"
+    cves: [CVE-2026-72529, CVE-2026-72530]
+    techniques: [T1190, T1611, T1505.003, T1554, T1543.003, T1543.002, T1102.002]
+    affected_products: ["TrueConf Server"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:head-mare", type: actor, name: "Head Mare", aliases: [],
+          summary: "Hacktivist-aligned cluster tracked by Kaspersky, previously known for targeting Russian and Belarusian organizations; observed since at least July 2026 chaining CVE-2026-72529/72530 against unpatched TrueConf Server instances to deliver PhantomCore and PhantomGraph backdoors via trojanized client installers (Kaspersky ICS CERT, 2026-08-12)." }
+      - { key: "malware:phantomcore", type: malware, name: "PhantomCore", aliases: [],
+          summary: "Windows backdoor delivered by Head Mare inside a trojanized TrueConf client installer, unpacked to a file masquerading as a Windows CRT runtime stub under %LOCALAPPDATA%\\TrueConf\\Client (Kaspersky ICS CERT, 2026-08-12)." }
+      - { key: "malware:phantomgraph", type: malware, name: "PhantomGraph", aliases: [],
+          summary: "Two-component backdoor Head Mare installs on compromised TrueConf servers, persisting as Windows services and using a compromised Microsoft OneDrive account's Graph API as its command-and-control channel (Kaspersky ICS CERT, 2026-08-12)." }
+    relation_suggestions:
+      - { subject: "actor:head-mare", object: "malware:phantomcore",
+          basis: "Kaspersky ICS CERT: Head Mare deploys PhantomCore via trojanized TrueConf client installers (Kaspersky, 2026-08-12)" }
+      - { subject: "actor:head-mare", object: "malware:phantomgraph",
+          basis: "Kaspersky ICS CERT: Head Mare deploys PhantomGraph on compromised TrueConf servers using OneDrive as C2 (Kaspersky, 2026-08-12)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An unauthorized attacker can connect to TrueConf server versions 5.3.X before 5.3.9, 5.4.X before 5.4.9, 5.5.X before 5.5.5...via port 4307/TCP and execute a malicious script on the server by calling an undocumented function."
+        attribution: "Kaspersky ICS CERT"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+      - quote: "Most importantly, during the attack, the attackers replace the TrueConf client distribution file located at C:\\Program Files\\TrueConf Server\\ClientInstFiles\\trueconf_windows_client_x64.exe."
+        attribution: "Kaspersky ICS CERT"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+      - quote: "Even if your organization does not use a TrueConf server, your employees may connect to compromised TrueConf servers of contractors to participate in online meetings and download infected installation packages."
+        attribution: "Kaspersky ICS CERT"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+      - quote: "Resolution: 5.3.9 / 5.4.9 / 5.5.5"
+        attribution: "TrueConf"
+        source_url: "https://trueconf.com/blog/news/security-fixes-updates-and-advisories"
+    extended_notes: |
+      Detection concepts (telemetry class first): (1) process-creation/file-write telemetry on the
+      TrueConf server for an unexpected write to httpconf/site/public/js/locale.php or to
+      ClientInstFiles/trueconf_windows_client_x64.exe outside a vendor-update window; (2) endpoint
+      process-creation events showing the TrueConf client installer spawning a DLL load from
+      %LOCALAPPDATA%\TrueConf\Client with a filename that mimics a Windows system component; (3)
+      network/DNS egress telemetry showing a server process (not a user browser/mail client) making
+      outbound HTTPS calls to graph.microsoft.com or login.microsoftonline.com from a TrueConf host —
+      anomalous for a videoconferencing appliance; (4) Windows service-creation events (4697/7045) for
+      new services on a TrueConf server. Hardening: patch to 5.3.9/5.4.9/5.5.5; do not expose
+      4307/TCP to the internet — restrict to a management network; treat any TrueConf server that
+      hosted external/contractor participants during the exposure window as compromised until
+      forensically cleared, and validate the client installer's signature/hash against the vendor
+      before trusting a server-distributed update. No IOCs reproduced here per pipeline policy —
+      see the Kaspersky ICS CERT report for the full indicator set if closed-source enrichment is
+      needed.
+
+  - title: "CVE-2026-69836 — Microsoft's own Entra ID CVSS-10 deserialization RCE record was marked exploited, then corrected to 'No' within 24 hours, while ENISA's exploited catalogue still disagrees"
+    sources:
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69836", publisher: "Microsoft Security Response Center", date: "2026-08-21", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-v6wh-624g-vvmv", publisher: "GitHub Security Advisories / NVD mirror", date: "2026-08-21", role: "corroborating" }
+      - { url: "https://www.helpnetsecurity.com/2026/08/21/microsoft-entra-id-vulnerability-cve-2026-69836/", publisher: "Help Net Security", date: "2026-08-21", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd (bridge: enisa-euvd recent exploited) listing CVE-2026-69836 with exploitedSince 2026-08-21 → primary: MSRC, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69836 (revision history shows 'Corrected Exploited to No') → corroboration: GitHub Security Advisory, URL https://github.com/advisories/GHSA-v6wh-624g-vvmv → corroboration: Help Net Security, URL https://www.helpnetsecurity.com/2026/08/21/microsoft-entra-id-vulnerability-cve-2026-69836/ (reporting the exploited claim before/without the correction)"
+    summary: |
+      Microsoft assigned CVE-2026-69836 on 2026-08-20 for a CWE-502 deserialization-of-untrusted-data
+      flaw in Entra ID, rated CVSS 3.1 base 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H), described only
+      as allowing "an unauthorized attacker to execute code over a network" — no further mechanism
+      detail is published. This is a cloud-service CVE under Microsoft's transparency programme: the
+      flaw was already fixed on Microsoft's own infrastructure before disclosure, so there is no
+      patch, KB article, or configuration change for any Entra ID tenant to apply. The notable part is
+      the exploitation field's history. MSRC's own revision log shows a version-1.1 update on
+      2026-08-21 titled "Corrected Exploited to No," stating verbatim: "This vulnerability was not
+      exploited in the wild. This is an informational change only." That wording implies the record
+      briefly stated something other than "No" between the 2026-08-20 publication and the 2026-08-21
+      correction — consistent with Help Net Security's same-day coverage, fetched for this report,
+      which describes Microsoft as having "confirmed" the flaw "was exploited in the wild" with no
+      correction visible at the time that article was written. As of this run, ENISA's EU
+      Vulnerability Database still carries CVE-2026-69836 on its exploited-vulnerabilities feed with
+      "exploitedSince: 2026-08-21," directly conflicting with MSRC's now-corrected record — and the
+      CVSS vector Microsoft itself publishes carries an Exploit Code Maturity sub-metric of "E:U"
+      (Unproven), which is itself inconsistent with any exploitation claim. CISA's KEV catalog does
+      not list the CVE at all. No independent telemetry-holding party (a research lab, an MDR
+      vendor) has published its own exploitation evidence; the vulnerability was credited to a named
+      external researcher rather than discovered via observed attack traffic.
+    region_nexus: "global — Entra ID underlies the majority of Swiss and European public-sector and enterprise identity infrastructure, though there is nothing for a tenant to act on"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, healthcare, telco"
+    cves: [CVE-2026-69836]
+    techniques: [T1190]
+    affected_products: ["Microsoft Entra ID"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "CVSS 10 identity-plane flaw normally clears the bar outright, but actionability is nil (vendor-mitigated cloud CVE, no customer step exists) — the item's value is the exploited-status contradiction itself, not a patch-now signal; main agent should judge whether that meta-story earns a full entry or a shorter treatment."
+    evidence:
+      - quote: "Deserialization of untrusted data in Microsoft Entra ID allows an unauthorized attacker to execute code over a network."
+        attribution: "Microsoft Security Response Center"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69836"
+      - quote: "Corrected Exploited to No. This vulnerability was not exploited in the wild. This is an informational change only."
+        attribution: "Microsoft Security Response Center (revision 1.1, 2026-08-21)"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69836"
+      - quote: "This vulnerability has already been fully mitigated by Microsoft. There is no action for users of this service to take."
+        attribution: "Microsoft Security Response Center"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69836"
+    extended_notes: |
+      Process note for the composer / verifier: treat the "exploited" fact as CONTRADICTED, not
+      confirmed — state both positions and attribute each to its source (MSRC's corrected record vs.
+      ENISA EUVD's exploited-since field) rather than asserting either. This is a live instance of the
+      "CVE ground truth is unreliable in both directions" pattern this pipeline flagged in 2026-W32
+      (fabricated CVEs on one side, unlisted exploited flaws on the other) — here a single vendor
+      cloud-CVE record disagreed with itself within 24 hours and a EU catalogue still mirrors the
+      earlier state three days later.
+
+  - title: "CVE-2026-16876 — NEC UNIVERGE IX-R/IX-V routers: an unauthenticated WebGUI request runs arbitrary commands when the HTTP(S) server feature is on (CVSS 9.4/9.3)"
+    sources:
+      - { url: "https://jvn.jp/en/jp/JVN81414813/", publisher: "JVN (Japan Vulnerability Notes / JPCERT-coordinated)", date: "2026-08-21", role: "primary" }
+      - { url: "https://jpn.nec.com/univerge/ix-nrv/Support/Security-Info/NV26-005.html", publisher: "NEC Corporation", date: "2026-08-21", role: "primary" }
+    discovery_trace: "first seen at: jpcert, URL https://www.jpcert.or.jp/english/index.html → pivot: JVN, URL https://jvn.jp/en/jp/JVN81414813/ → primary vendor advisory: NEC, URL https://jpn.nec.com/univerge/ix-nrv/Support/Security-Info/NV26-005.html (reached via https://jpn.nec.com/univerge/ix-nrv/Support/security_info.html listing)"
+    summary: |
+      NEC disclosed CVE-2026-16876 (JVN#81414813) on 2026-08-21: a missing-authentication-for-
+      critical-function flaw (CWE-306) in the Web console of its UNIVERGE IX-R/IX-V series routers —
+      models IX-R2510, IX-R2520, IX-R2530, IX-R2610-4G and IX-V100 — running firmware Ver1.1 through
+      Ver1.3 (all builds), Ver1.4.21 through Ver1.4.28 (all builds), or Ver1.5.23. The precondition is
+      the device's HTTP(S) server function being enabled — a single `http-server ip enable` or
+      `http-server ipv6 enable` configuration line, which simultaneously drives the Web console, PAC-
+      file distribution, and NetMeister child-device connection features. With that function on, a
+      remote unauthenticated attacker can send a specially crafted message to the Web console and
+      execute an arbitrary command with no credential. NEC rates it CVSS 4.0 base 9.3
+      (AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:L) and CVSS 3.0 base 9.4 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/
+      I:H/A:L). Neither NEC nor JVN reports observed exploitation. Fixed in Ver1.4.34 and Ver1.5.29 for
+      both the IX-R and IX-V lines. Where the update cannot be applied immediately, NEC's primary
+      workaround is to disable the HTTP(S) server function entirely (`no http-server ip enable` /
+      `no http-server ipv6 enable`); if even that cannot be done, NEC's fallback advice is to restrict
+      the connecting source by IP or MAC address filter, or to move the device's management IP address
+      and the TCP 80/443 listener to non-default, "hard to predict" values — an explicit admission that
+      obscurity, not access control, is the last-resort mitigation.
+    region_nexus: "Japan-market network equipment with international deployment in enterprise and telecom edge networks; relevant to any organization running UNIVERGE IX-series routers with the Web console enabled"
+    primary_sector_nexus: "indirect"
+    sector: "telco, public-sector"
+    cves: [CVE-2026-16876]
+    techniques: [T1190]
+    affected_products: ["NEC UNIVERGE IX-R2510", "NEC UNIVERGE IX-R2520", "NEC UNIVERGE IX-R2530", "NEC UNIVERGE IX-R2610-4G", "NEC UNIVERGE IX-V100"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "If a remote unauthenticated attacker sends a specially crafted message to the WebGUI...an arbitrary command may be executed."
+        attribution: "JVN"
+        source_url: "https://jvn.jp/en/jp/JVN81414813/"
+      - quote: "攻撃者によって当該製品のWebコンソールに細工したメッセージを送信された場合、認証無しで任意のコマンドを実行される可能性があります。 (If an attacker sends a crafted message to the product's Web console, an arbitrary command may be executed without authentication.)"
+        attribution: "NEC Corporation"
+        source_url: "https://jpn.nec.com/univerge/ix-nrv/Support/Security-Info/NV26-005.html"
+    extended_notes: |
+      Detection concept: web/application-access-log telemetry on the router's management interface for
+      POST/GET requests to the Web console endpoint from source addresses outside the management VLAN
+      — the affected function is triggered whenever the HTTP(S) server is reachable, so any external
+      source touching TCP 80/443 (or whatever port it was moved to) on one of these routers is
+      inherently suspicious if the console is meant to be internal-only. Hardening: patch to
+      Ver1.4.34/1.5.29; disable `http-server ip enable`/`http-server ipv6 enable` unless the Web
+      console is actively required; never expose the management interface to the WAN side.
+
+  - title: "Three Rust crates.io packages hijacked via account takeover (arrayref, internment, append-only-vec) — build-time backdoor infrastructure overlaps DPRK's Mastra and axios npm campaigns"
+    sources:
+      - { url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns", publisher: "Wiz Research", date: "2026-08-20", role: "primary" }
+      - { url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/", publisher: "The Rust Project (official blog)", date: "2026-08-20", role: "primary" }
+    discovery_trace: "first seen at: wiz-blog, URL https://www.wiz.io/blog → primary: Wiz Research, URL https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns → corroboration: The Rust Project official blog, URL https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/"
+    summary: |
+      On 2026-08-20 at 07:15 UTC, an attacker who had taken over a crates.io publisher account
+      pushed malicious versions of three widely used Rust crates — arrayref 0.3.10, internment 0.8.7,
+      and append-only-vec 0.1.9 — each declaring a dependency on a freshly published typosquat crate,
+      proc-macro1, impersonating the legitimate build-tooling crate proc-macro2. proc-macro1 carries a
+      build.rs script that executes automatically at compile time, before any of the parent crate's
+      own code runs: "because build scripts run during compilation, building an affected project was
+      sufficient to execute the payload." The script reconstructs a C2 URL from Base64-encoded
+      fragments and downloads a platform-specific second-stage payload (Linux x86_64, Windows x86_64,
+      macOS x86_64/aarch64), which beacons over HTTPS POST to a fixed URL path, collects hostname/
+      username/OS details, enumerates (Wiz states, without decrypting) Chrome/Brave/Edge credential-
+      database files, and installs persistence via Registry Run keys on Windows, a LaunchAgent on
+      macOS, or a systemd service on Linux, supporting kill/minicfg/startup/runscript commands. Wiz's
+      infrastructure analysis found the beacon's URL path was previously used in the Mastra npm
+      supply-chain campaign, which Microsoft attributes to DPRK actor Sapphire Sleet; that the
+      malware's C2 IP address shares a TLS certificate issuer with Mastra infrastructure; that a
+      second C2 IP address associated with victim reports appears in Google Cloud's own reporting on
+      the axios npm compromise linked to North Korea; and that both campaigns' infrastructure sits in
+      the same Hostwinds /23 IP range. The Rust Security Response Team deleted all three malicious
+      crate versions and the malicious dependency crates within 86-107 minutes of publication, locked
+      the compromised account, and states explicitly it does not believe the arrayref maintainer
+      acted maliciously — the takeover looks like a compromised account or credentials, not an
+      insider. Wiz states the payload-hosting infrastructure remained live at time of publication and
+      that arrayref alone is present in roughly 35% of all software environments and in three-
+      quarters of all environments that use Rust at all, making this one of the broader-reach single-
+      package compromises this pipeline has tracked even though the exposure window itself was under
+      two hours. No CVE or RUSTSEC advisory identifier has been assigned to the incident.
+    region_nexus: "global software supply chain; affects any organization building Rust software, including CI/CD pipelines run by public-sector or critical-infrastructure operators using arrayref or its dependents"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: []
+    techniques: [T1195.002, T1547.001, T1543.001, T1543.002, T1555.003, T1140]
+    affected_products: ["arrayref (Rust crate)", "internment (Rust crate)", "append-only-vec (Rust crate)"]
+    entity_keys: [actor:sapphire-sleet, campaign:mastra-easy-day-js-supply-chain]
+    new_entities:
+      - { key: "campaign:rust-crates-arrayref-dprk-overlap-2026-08", type: campaign, name: "arrayref Rust crates.io compile-time backdoor", aliases: [],
+          summary: "2026-08-20 crates.io account-takeover compromise of arrayref, internment and append-only-vec via a typosquat build-dependency (proc-macro1) that executed a build-time backdoor; Wiz assesses infrastructure overlap with DPRK-linked Mastra and axios npm supply-chain campaigns (Wiz Research, 2026-08-20)." }
+    relation_suggestions:
+      - { subject: "campaign:rust-crates-arrayref-dprk-overlap-2026-08", object: "actor:sapphire-sleet",
+          basis: "Wiz: beacon endpoint previously used in the Mastra campaign, attributed by Microsoft to DPRK/Sapphire Sleet; C2 IP shares an SSL certificate issuer with Mastra infrastructure (Wiz Research, 2026-08-20)" }
+      - { subject: "campaign:rust-crates-arrayref-dprk-overlap-2026-08", object: "campaign:mastra-easy-day-js-supply-chain",
+          basis: "Wiz: infrastructure overlap (beacon path, C2 IP range) with the Mastra npm supply-chain campaign (Wiz Research, 2026-08-20)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Malicious versions of the arrayref Rust crate (and others) executed a backdoor at compile time."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+      - quote: "The arrayref infrastructure substantially overlaps with operations attributed to recent North Korean actors."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+      - quote: "Treat affected hosts as compromised: any developer workstation or CI runner that built an affected project must be treated as compromised."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+      - quote: "the crate had a build script that was downloading a malicious payload"
+        attribution: "The Rust Project"
+        source_url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/"
+      - quote: "We do not believe the author of arrayref to be acting maliciously"
+        attribution: "The Rust Project"
+        source_url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/"
+    extended_notes: |
+      Detection concept: build-time/CI telemetry class — a `cargo build`/`rustc` child process
+      initiating outbound network egress, or a compiler-toolchain process spawning and executing a
+      downloaded binary from a temp directory, is anomalous and should be alertable in any CI
+      environment; correlate with new Registry Run key / LaunchAgent / systemd-unit creation events
+      immediately following a build invocation. Hardening: per the Rust Project's own guidance, check
+      `~/.cargo/registry/cache` for cached copies of the named malicious crates; pin dependencies via
+      Cargo.lock and verify checksums; review CI egress allowlists for build-time network calls, which
+      should not normally occur.
+
+  - title: "Three misp-stix vulnerabilities (CVE-2026-77710/77755/77761): a crafted STIX document can crash a MISP import pipeline, inject unvalidated sharing/distribution metadata, or contaminate a later import — fixed only by commits, no tagged release yet"
+    sources:
+      - { url: "https://github.com/advisories/GHSA-65gx-wjvj-88j8", publisher: "GitHub Security Advisories (MISP/misp-stix)", date: "2026-08-21", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-pqpx-w6cx-7q9c", publisher: "GitHub Security Advisories (MISP/misp-stix)", date: "2026-08-21", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-q62h-w723-22p2", publisher: "GitHub Security Advisories (MISP/misp-stix)", date: "2026-08-21", role: "primary" }
+      - { url: "https://github.com/MISP/misp-stix/releases", publisher: "MISP Project", date: "2026-08-22", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd (bridge: enisa-euvd recent lastvulnerabilities) listing CVE-2026-77710/77755/77761 published 2026-08-21 → pivot: GitHub Security Advisories GHSA-65gx-wjvj-88j8, GHSA-pqpx-w6cx-7q9c, GHSA-q62h-w723-22p2 → corroboration: MISP Project releases page, URL https://github.com/MISP/misp-stix/releases (confirms no tagged release yet carries the fixes)"
+    summary: |
+      Three CVEs disclosed 2026-08-21 against misp-stix, the Python library MISP and other threat-
+      intelligence platforms use to convert between MISP and STIX 1/STIX 2 formats — relevant to any
+      organization's own CTI ingestion pipeline, including MISP instances run by national CERTs, ISACs
+      and sector sharing communities. CVE-2026-77755 (CVSS 8.7, CWE-400) is a denial-of-service: the
+      STIX importer called sys.exit() on a parse failure, which raises SystemExit — a subclass of
+      BaseException that a standard `except Exception` handler does not catch — letting one malformed
+      document kill a long-running importer process outright; separately, the importer read and fully
+      materialised a submitted document in memory before validating its type or size, so a large
+      crafted document could inflate memory use to 2-7x the input file's size. CVE-2026-77710 (CVSS
+      6.9, CWE-915/CWE-807/CWE-20) is a trust-boundary flaw: the import logic decided whether to treat
+      an incoming document as a trusted "internal MISP export" — and therefore copy its attribute
+      metadata over verbatim — based on signals inside the document itself (MISP-specific tool labels
+      for STIX2, the document title for STIX1), both of which an attacker fully controls; a document
+      that spoofs those markers gets its x_misp_attributes dictionary copied directly onto imported
+      attributes, letting the sender set distribution, sharing_group_id, tags or other MISP-internal
+      fields the importing analyst believes came only from the external feed. CVE-2026-77761 (CVSS
+      6.3, CWE-459) is a parser state-isolation bug: several STIX1/STIX2 parser components retained
+      per-document state (galaxy/cluster data, references, timestamps) across reuse of the same long-
+      lived parser instance, so data from one processed document can leak into the MISP event
+      generated from the next; integrations that instantiate a fresh parser per file are unaffected.
+      All three are fixed only by individual GitHub commits at the time of writing (66119552, e8e732ad,
+      3e5e7bda, 66c654b9, ad4f0a65) — the project's own releases page shows no tagged version past
+      2026.7.8 that references these CVEs. None of the three advisories records observed exploitation,
+      and EPSS sits in the sub-30th percentile for all three (0.06-0.37%). The realistic delivery
+      vector is a poisoned STIX document from a compromised or malicious sharing partner, not a direct
+      network attack against the MISP instance.
+    region_nexus: "global — MISP is developed and widely deployed across European national CERTs, ISACs and sector sharing communities, including within the profile's own constituency"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-77710, CVE-2026-77755, CVE-2026-77761]
+    techniques: [T1499]
+    affected_products: ["misp-stix"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "moderate severity (max CVSS 8.7), no observed exploitation, EPSS sub-30th-percentile, and no tagged fix release yet (commits only) — but it sits directly in the CTI/SOC tooling supply chain this audience runs, which is the reason for including it despite the otherwise-thin severity profile."
+    evidence:
+      - quote: "A malformed STIX document could terminate a long-running importer process instead of returning a recoverable parsing error."
+        attribution: "GitHub Security Advisory GHSA-65gx-wjvj-88j8"
+        source_url: "https://github.com/advisories/GHSA-65gx-wjvj-88j8"
+      - quote: "The importer also now enforces an input-size limit before parsing. The default maximum is 100 MB."
+        attribution: "GitHub Security Advisory GHSA-65gx-wjvj-88j8"
+        source_url: "https://github.com/advisories/GHSA-65gx-wjvj-88j8"
+      - quote: "An attacker able to influence documents processed by such a long-lived parser could potentially cause information from one conversion to contaminate a subsequent MISP event."
+        attribution: "GitHub Security Advisory GHSA-q62h-w723-22p2"
+        source_url: "https://github.com/advisories/GHSA-q62h-w723-22p2"
+    extended_notes: |
+      Hardening for MISP operators: until a tagged misp-stix release lands, apply the referenced
+      commits directly or wrap STIX imports with an external size cap and process-level restart-on-
+      crash supervision; audit any automation that reuses a single misp-stix parser instance across
+      multiple files (batch import scripts are the likely affected pattern; per-file CLI invocations
+      are not). Treat any newly-received STIX bundle's classification/distribution fields as
+      requiring the same trust review as the bundle's actual intelligence content.
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org profile configures no product watchlist this deployment — sweep is a no-op per spawn instructions; general coverage rules applied unchanged."
+
+cve_table:
+  - { cve: "CVE-2026-72529", product: "TrueConf Server", cvss: "9.8 (v3.1) / 9.3 (v4.0)", epss: "0.79", kev: true, exploited: true, patch: "5.3.9 / 5.4.9 / 5.5.5", source: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json" }
+  - { cve: "CVE-2026-72530", product: "TrueConf Server", cvss: "9.0 (v3.1) / 9.5 (v4.0)", epss: "0.97", kev: true, exploited: true, patch: "5.3.9 / 5.4.9 / 5.5.5", source: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json" }
+  - { cve: "CVE-2026-69836", product: "Microsoft Entra ID", cvss: "10.0 (v3.1)", epss: "1.37", kev: false, exploited: "CONTRADICTED — ENISA EUVD lists exploited since 2026-08-21; MSRC revision 1.1 (2026-08-21) states 'not exploited in the wild'", patch: "N/A — vendor-mitigated cloud service, no customer action", source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69836" }
+  - { cve: "CVE-2026-16876", product: "NEC UNIVERGE IX-R/IX-V", cvss: "9.4 (v3.0) / 9.3 (v4.0)", epss: "n/a", kev: false, exploited: false, patch: "Ver1.4.34 / Ver1.5.29", source: "https://jpn.nec.com/univerge/ix-nrv/Support/Security-Info/NV26-005.html" }
+  - { cve: "CVE-2026-77710", product: "misp-stix", cvss: "6.9", epss: "0.29", kev: false, exploited: false, patch: "commits only (66c654b9, 3e5e7bda) — no tagged release", source: "https://github.com/advisories/GHSA-pqpx-w6cx-7q9c" }
+  - { cve: "CVE-2026-77755", product: "misp-stix", cvss: "8.7", epss: "0.30", kev: false, exploited: false, patch: "commits only (66119552, e8e732ad) — no tagged release", source: "https://github.com/advisories/GHSA-65gx-wjvj-88j8" }
+  - { cve: "CVE-2026-77761", product: "misp-stix", cvss: "6.3", epss: "0.37", kev: false, exploited: false, patch: "commit only (ad4f0a65) — no tagged release", source: "https://github.com/advisories/GHSA-q62h-w723-22p2" }
+
+candidate_sources:
+  - id: kaspersky-ics-cert
+    publisher: "Kaspersky ICS CERT (ics-cert.kaspersky.com)"
+    url: "https://ics-cert.kaspersky.com/"
+    category: research
+    why: "Distinct team/portal from the already-tracked kaspersky-securelist (GReAT malware research): dedicated ICS/OT vulnerability-coordination advisories (per-CVE pages with CVSS/affected-version detail, reachable via WordPress REST API when the rendered page is JS-thin) plus full campaign write-ups. Primary source for this run's TrueConf/Head Mare/PhantomCore item (both the two per-CVE advisories and the full exploitation report); reliability B (original vulnerability-coordination + research, not first-party vendor)."
+
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "Direct fetch 403 (Akamai) AND jina reader pool fully exhausted (HTTP 402 on all 7 configured keys, anonymous tier 403) — every rung of the fetch ladder failed this run. cisa csaf-recent (GitHub CSAF mirror) used as a substitute for ICS-specific content and returned the newest ICS advisory (icsa-26-232-01, Johnson Controls Simplex Incident Manager, 2026-08-20) but that advisory itself did not clear the inclusion bar (CVSS 5.8, local-only, no exploitation)."
+  - source_id: cisa-directives
+    reason: "Same failure mode as cisa-advisories — direct 403, jina reader pool exhausted on every key. No substitute transport exists for this specific listing (directives, not CSAF-structured)."
+  - source_id: siemens-productcert-csaf
+    reason: "Direct fetch HTTP 403; jina reader pool exhausted. No in-window Siemens advisory surfaced via WebSearch as a substitute either."
+  - source_id: ssd-disclosure
+    reason: "Direct fetch HTTP 202 (challenge page, not real content); jina reader pool exhausted. No substitute found."
+
+fetch_failures:
+  - id: cisa-advisories
+    url_tried: "https://www.cisa.gov/news-events/cybersecurity-advisories"
+    fetch_method: "bridge:url"
+    status_code: 403
+    error_class: transport-403
+    error_message: "direct HTTP 403, 414 B; jina fallback: all 7 configured reader keys returned HTTP 402 (balance exhausted), anonymous free tier HTTP 403"
+    attempted_methods: ["bridge:url", "bridge:cisa.page", "bridge:cisa.feed", "bridge:jina"]
+    mitigation_applied: "substituted bridge:cisa.csaf-recent (GitHub CSAF mirror, not proxy-blocked) for ICS-advisory coverage — recovered structured ICS content but not the general cybersecurity-advisories listing this record covers"
+    covered_anyway: false
+  - id: cisa-directives
+    url_tried: "https://www.cisa.gov/news-events/directives"
+    fetch_method: "bridge:url"
+    status_code: 403
+    error_class: transport-403
+    error_message: "direct HTTP 403; jina fallback: all 7 configured reader keys HTTP 402 (balance exhausted), anonymous free tier HTTP 403"
+    attempted_methods: ["bridge:url", "bridge:jina"]
+    mitigation_applied: "none — no substitute transport exists for the directives listing (not CSAF-structured); WebSearch found no in-window CISA directive"
+    covered_anyway: false
+  - id: siemens-productcert-csaf
+    url_tried: "https://cert-portal.siemens.com/productcert/csaf/"
+    fetch_method: "bridge:url"
+    status_code: 403
+    error_class: transport-403
+    error_message: "direct HTTP 403, 111 B; jina fallback: all 7 configured reader keys HTTP 402 (balance exhausted)"
+    attempted_methods: ["bridge:url", "bridge:jina"]
+    mitigation_applied: "none — no in-window Siemens ICS advisory surfaced via WebSearch as a substitute"
+    covered_anyway: false
+  - id: ssd-disclosure
+    url_tried: "https://ssd-disclosure.com/"
+    fetch_method: "bridge:url"
+    status_code: 202
+    error_class: transport-403
+    error_message: "direct HTTP 202, 169 B (anti-bot challenge page, not content); jina fallback: all 7 configured reader keys HTTP 402 (balance exhausted)"
+    attempted_methods: ["bridge:url", "bridge:jina"]
+    mitigation_applied: "none — no substitute found"
+    covered_anyway: false
