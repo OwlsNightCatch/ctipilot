@@ -1,0 +1,18 @@
+# Findings summary (machine-readable)
+- code: F4
+  category: hallucinated-fact
+  section: run-record-frontmatter (verification.iterations[4], n=5)
+  item: "iteration 5 started_at/ended_at timestamps recorded in the verification block"
+  url_or_quote: "started_at: \"2026-08-24T03:19:24Z\" ... ended_at: \"2026-08-24T03:30:41Z\""
+  summary: >-
+    Does not match the on-disk checkpoint files, which are the authoritative source per the
+    spawn instructions. work/2026-08-24T0110Z-weekly/verify.iter5.started_at contains
+    "2026-08-24T03:19:27Z" (3 seconds later than the record) and
+    work/2026-08-24T0110Z-weekly/verify.iter5.ended_at contains "2026-08-24T03:30:05Z" (36
+    seconds earlier than the record). Filesystem mtimes on both checkpoint files confirm they
+    were written at those times (started_at file mtime 03:19:27.209, ended_at file mtime
+    03:30:05.297) and were not touched afterward. All four other iterations (1-4) match their
+    checkpoint files exactly (verified byte-for-byte: iter1 02:27:49/02:39:21, iter2
+    02:41:20/02:48:03, iter3 02:49:38/03:05:18, iter4 03:05:23/03:14:54 — all identical between
+    record and checkpoint). Only iteration 5's pair drifted. Fix: replace both values with the
+    checkpoint files' own content, "2026-08-24T03:19:27Z" and "2026-08-24T03:30:05Z".
