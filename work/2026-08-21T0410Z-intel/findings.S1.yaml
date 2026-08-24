@@ -1,0 +1,367 @@
+domain: S1
+run_id: 2026-08-21T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-21T04:14:10Z
+ended_at: 2026-08-21T04:31:25Z
+duration_seconds: 1035
+self_telemetry:
+  webfetch_calls: 30
+  websearch_calls: 3
+  bridge_fetches: 16
+
+cve_table:
+  - { cve: "CVE-2026-72530", product: "TrueConf Server", cvss: "9.0 (CVSS v3.1, vendor) / 9.5 (CVSS v4.0, EUVD)", epss: null, kev: true, exploited: true, patch: "5.3.9 / 5.4.9 / 5.5.5 (released 2026-06-18)", source: "Kaspersky ICS-CERT KLCERT-26-058; CISA KEV 2026-08-20; EUVD-2026-62588" }
+  - { cve: "CVE-2026-72529", product: "TrueConf Server", cvss: "9.8 (CVSS v3.1, vendor) / 9.3 (CVSS v4.0, EUVD)", epss: 0.0, kev: true, exploited: true, patch: "5.3.9 / 5.4.9 / 5.5.5 (released 2026-06-18)", source: "Kaspersky ICS-CERT KLCERT-26-057; CISA KEV 2026-08-20; EUVD-2026-62587" }
+  - { cve: "CVE-2026-77651", product: "arrayref / internment / append-only-vec (crates.io)", cvss: "9.8 (CVSS v3.1, EUVD/MITRE)", epss: 0.0, kev: false, exploited: true, patch: "malicious versions deleted from crates.io 2026-08-20; no fixed version applicable (rogue dependency removed)", source: "rust-lang.org Security Response Team; EUVD-2026-63780" }
+  - { cve: "CVE-2026-64960", product: "ATutor", cvss: null, epss: null, kev: false, exploited: false, patch: "none — product end-of-life, unmaintained", source: "CERT Polska" }
+  - { cve: "CVE-2026-64961", product: "ATutor", cvss: null, epss: null, kev: false, exploited: false, patch: "none — product end-of-life, unmaintained", source: "CERT Polska" }
+  - { cve: "CVE-2026-64966", product: "ATutor", cvss: null, epss: null, kev: false, exploited: false, patch: "none — product end-of-life, unmaintained", source: "CERT Polska" }
+  - { cve: "CVE-2026-69414", product: "Microsoft Windows Defender / Windows 11 24H2, Windows Server 2025", cvss: null, epss: null, kev: false, exploited: false, patch: "none available; Microsoft rates 'Exploitation More Likely'", source: "LevelBlue SpiderLabs (independent reproduction); Microsoft MSRC (CVE assignment, 2026-08-18 per prior coverage)" }
+
+items:
+  - title: "TrueConf Server pre-auth chain actively exploited by Head Mare APT to trojanize client installers and deliver PhantomCore (CVE-2026-72529, CVE-2026-72530)"
+    sources:
+      - { url: "https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-breakout-from-isolated-environment/", publisher: "Kaspersky ICS-CERT (KLCERT-26-058)", date: "2026-08-11", role: "primary" }
+      - { url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/", publisher: "Kaspersky ICS-CERT", date: "2026-08-12", role: "primary" }
+      - { url: "https://trueconf.com/blog/news/security-fixes-updates-and-advisories", publisher: "TrueConf (vendor)", date: "2026-06-11", role: "primary" }
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA KEV Catalog", date: "2026-08-20", role: "corroborating" }
+    discovery_trace: >
+      first seen at: cisa-kev, URL https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      (catalogVersion 2026.08.20, two TrueConf Server CVEs added dateAdded 2026-08-20)
+      → pivot: enisa-euvd recent exploited (bridge api) confirmed EUVD-2026-62587/62588, exploitedSince 2026-08-20,
+      referencing https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-missing-authentication-for-critical-function/
+      → primary: Kaspersky KLCERT-26-058 advisory, URL https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-breakout-from-isolated-environment/
+      → pivot: Kaspersky's linked report on the Head Mare exploitation campaign, URL https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/
+      → primary: TrueConf's own vulnerability-disclosure catalogue, URL https://trueconf.com/blog/news/security-fixes-updates-and-advisories
+    summary: |
+      CISA added two TrueConf Server CVEs to KEV on 2026-08-20 (catalog version 2026.08.20), and ENISA EUVD independently
+      records exploitedSince 2026-08-20 for both. CVE-2026-72529 (missing authentication for a critical function, CVSS
+      3.1 9.8 / CVSS 4.0 9.3) lets an unauthenticated remote attacker on TCP/4307 — the port is open by default — invoke
+      an undocumented server function and execute an arbitrary script. CVE-2026-72530 (CWE-94 code injection / sandbox
+      escape, CVSS 3.1 9.0 / CVSS 4.0 9.5) lets an attacker who has reached the server's isolated execution environment
+      break out and run arbitrary commands on the underlying OS, reaching NT AUTHORITY\SYSTEM on Windows builds. Both
+      affect every TrueConf Server release since 2022 up to and including 5.3.x<5.3.9, 5.4.x<5.4.9 and 5.5.x<5.5.5; fixed
+      in 5.3.9 / 5.4.9 / 5.5.5, released 2026-06-18 — two months before the KEV addition. Kaspersky attributes exploitation
+      to the Head Mare APT group (previously tracked for attacks on Russian organizations), chained end-to-end: reach the
+      undocumented function over 4307/TCP, escape the sandbox to SYSTEM, overwrite the server-side file
+      httpconf/site/public/js/locale.php with a web shell, then replace the distributed Windows client installer
+      (trueconf_windows_client_x64.exe) with a version bundling the PhantomCore backdoor — so every organization whose
+      employees join a video call hosted on a compromised server receives a trojanized client, regardless of their own
+      network exposure. PhantomCore persists via a CLSID InprocServer32 registry hijack and two Windows services on
+      Windows, and via systemd services on Linux, and beacons out over standard web/cloud-storage protocols (no fix
+      statement covers exploitation prior to the KEV addition; Kaspersky's report is dated 2026-08-12, two days before
+      the two-month-old patch's exploited status was catalogued by CISA/ENISA on 2026-08-20).
+    region_nexus: "TrueConf is a Russian-headquartered video-conferencing vendor; Kaspersky's investigation began with Russian victim organizations, but the client-trojanization mechanism cascades to any organization (including EU/Swiss ones) whose staff join a call hosted on a compromised server, and the software is used internationally."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, telco"
+    cves: ["CVE-2026-72529", "CVE-2026-72530"]
+    techniques: ["T1190", "T1068", "T1505.003", "T1195.002", "T1543.003", "T1543.002", "T1112", "T1071.001"]
+    affected_products: ["TrueConf Server"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:head-mare", type: actor, name: "Head Mare", aliases: [],
+          summary: "APT cluster Kaspersky assesses is exploiting the two TrueConf Server zero-days (KLCERT-26-057/058, CVE-2026-72529/72530) against Russian organizations to deploy PhantomCore malware via trojanized video-conferencing client installers (Kaspersky ICS-CERT, 2026-08-12)." }
+      - { key: "malware:phantomcore", type: malware, name: "PhantomCore", aliases: [],
+          summary: "Backdoor delivered by Head Mare through a trojanized TrueConf Server Windows client installer, persisting via a CLSID InprocServer32 registry hijack and Windows services / Linux systemd units (Kaspersky ICS-CERT, 2026-08-12)." }
+    relation_suggestions:
+      - { subject: "actor:head-mare", object: "malware:phantomcore",
+          basis: "Kaspersky: 'PhantomCore malware is typically associated with the activity of the Head Mare APT group' (Kaspersky ICS-CERT, 2026-08-12)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An unauthorized remote attacker with network access via port 4307/TCP to TrueConf server versions 5.3.X before 5.3.9, 5.4.X before 5.4.9, 5.5.X before 5.5.5, as well as all versions before 5.3, could use a specially crafted script to break out of the isolated environment and execute arbitrary code on the host system."
+        attribution: "Kaspersky ICS-CERT (KLCERT-26-058)"
+        source_url: "https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-breakout-from-isolated-environment/"
+      - quote: "The manufacturer addressed the vulnerabilities used by the attackers in the latest TrueConf server update (versions 5.3.9, 5.4.9, and 5.5.5), released on June 18, 2026"
+        attribution: "Kaspersky ICS-CERT"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+      - quote: "PhantomCore malware is typically associated with the activity of the Head Mare APT group"
+        attribution: "Kaspersky ICS-CERT"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+    extended_notes: |
+      The client-trojanization mechanic is the defender-relevant angle beyond "patch your TrueConf server": an
+      organization can be fully patched and current on its own TrueConf deployment and still receive a backdoored
+      client if it joins a call hosted by a compromised third-party server — a supply-chain-style exposure through a
+      collaboration tool rather than through the organization's own attack surface. Detection concept: file-integrity
+      / EDR alerting on unexpected modification of TrueConf's own client installer distribution path, and on the
+      registry CLSID InprocServer32 persistence pattern combined with new Windows service creation tied to a
+      TrueConf-branded process tree.
+
+  - title: "Rust crates.io supply-chain attack (arrayref, internment, append-only-vec) — build-time payload with infrastructure overlap Wiz assesses to DPRK npm campaigns"
+    sources:
+      - { url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref", publisher: "Rust Security Response Team (rust-lang.org)", date: "2026-08-20", role: "primary" }
+      - { url: "https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack", publisher: "StepSecurity", date: "2026-08-20", role: "corroborating" }
+      - { url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns", publisher: "Wiz Research", date: "2026-08-20", role: "corroborating" }
+      - { url: "https://github.com/rustsec/advisory-db/issues/3161", publisher: "RustSec advisory-db (GitHub issue)", date: "2026-08-20", role: "corroborating" }
+    discovery_trace: >
+      first seen at: enisa-euvd recent lastvulnerabilities (bridge api), record EUVD-2026-63780 / CVE-2026-77651,
+      referencing https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref
+      → primary: Rust Security Response Team post, URL https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref
+      → pivot: StepSecurity technical writeup, URL https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack
+      → pivot: Wiz Research blog listing, URL https://www.wiz.io/blog → drill URL
+      https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns
+      → corroborating: RustSec advisory-db tracking issue, URL https://github.com/rustsec/advisory-db/issues/3161
+    summary: |
+      On 2026-08-20 the Rust Security Response Team discovered that three published crates.io crates — arrayref 0.3.10
+      (245M+ lifetime downloads of the family), internment 0.8.7, and append-only-vec 0.1.9 — had been republished to
+      add a new dependency on a typosquat crate, proc-macro1 (mimicking the legitimate proc-macro2, 154M+ downloads).
+      proc-macro1's build.rs executes at *compile time*, before any of the host crate's own code runs, so simply
+      building a project whose lockfile resolved to the poisoned version was enough to detonate the payload — no
+      function call into the crate's code was required. The script fetches a platform-specific second-stage binary
+      over HTTPS with certificate validation disabled (a custom "AcceptAll" verifier), drops it to a temp path
+      (/tmp/rust-setup on Unix, a PowerShell/VBS launcher chain on Windows), and executes it detached. The stage-2
+      backdoor reads Chrome/Brave/Edge credential stores directly via SQLite queries, exfiltrates host/user/OS
+      metadata and saved logins over HTTPS POST (Base64/JSON), persists via Registry Run keys (Windows), a
+      LaunchAgent (macOS) or a systemd user service (Linux), and falls back to a domain-generation algorithm if its
+      primary channel is unreachable. All three poisoned releases were live for 86–107 minutes (07:15–09:25 UTC)
+      before the Rust team deleted them, unyanked the legitimate prior versions, and locked the compromised
+      maintainer account. Because the malicious versions were deleted rather than yanked and the RustSec advisories
+      were still pending at publication time, `cargo audit` will not flag a project that already resolved the poisoned
+      version in its lockfile — detection requires an explicit lockfile/cache search. Wiz Research separately reports
+      infrastructure overlap between the arrayref payload's callback pattern and TLS-certificate-issuer reuse with
+      infrastructure previously used in the Mastra npm postinstall-payload campaign (Microsoft attributes to
+      DPRK-linked Sapphire Sleet) and the axios npm compromise (Google/Mandiant link to UNC1069/Sapphire Sleet) — Wiz
+      frames this explicitly as an assessed overlap on infrastructure-reuse evidence (shared IP range, shared SSL
+      issuer, shared C2 endpoint-path pattern), not a confirmed attribution.
+    region_nexus: "global; crates.io is used by Rust toolchains everywhere including in EU/Swiss public-sector and CI/CD environments; no region-specific victim data published."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco, energy, healthcare, transport, water"
+    cves: ["CVE-2026-77651"]
+    techniques: ["T1195.001", "T1036.005", "T1555.003", "T1005", "T1041", "T1071.001", "T1008", "T1547.001"]
+    affected_products: ["arrayref (crates.io Rust crate)", "internment (crates.io Rust crate)", "append-only-vec (crates.io Rust crate)"]
+    entity_keys: ["actor:sapphire-sleet", "campaign:mastra-easy-day-js-supply-chain"]
+    new_entities:
+      - { key: "campaign:arrayref-crates-io-supply-chain-2026-08", type: campaign, name: "arrayref crates.io supply-chain attack", aliases: ["proc-macro1 build-time dropper"],
+          summary: "2026-08-20 compromise of the Rust crates arrayref, internment and append-only-vec via a typosquatted proc-macro1 build-time dependency that executed a credential-stealing backdoor at compile time; Wiz Research assesses infrastructure overlap with DPRK-linked Mastra/axios npm campaigns (rust-lang.org, StepSecurity, Wiz Research, 2026-08-20)." }
+    relation_suggestions:
+      - { subject: "campaign:arrayref-crates-io-supply-chain-2026-08", object: "actor:sapphire-sleet",
+          basis: "Wiz Research: 'The arrayref payloads beacon to [an endpoint]. This endpoint has been used in the Mastra campaign, attributed by Microsoft to DPRK / Sapphire Sleet' — infrastructure/SSL-issuer reuse, assessed overlap not confirmed attribution (Wiz Research, 2026-08-20)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "the crate had a build script that was downloading a malicious payload"
+        attribution: "Rust Security Response Team"
+        source_url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref"
+      - quote: "Because Rust build scripts run at compile time, simply building any project whose lockfile resolved arrayref 0.3.10 was enough to detonate the payload. The crate's code never needs to be called."
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack"
+      - quote: "Malicious versions of the arrayref Rust crate (and others) executed a backdoor at compile time."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+    extended_notes: |
+      Confidence marked MEDIUM overall because the core compromise facts (rust-lang.org + StepSecurity, both technical
+      primaries) are HIGH confidence, but the DPRK attribution is Wiz's own assessed infrastructure-overlap claim,
+      not independently confirmed — carry the actor link as an assessment attributed to Wiz, not as settled fact.
+      Detection concept: search Cargo.lock / cargo-vet inputs for arrayref 0.3.10, internment 0.8.7,
+      append-only-vec 0.1.9, or any version of proc-macro1 / proc-macro-en / aovine / arone / aronenao / tinymember;
+      inspect ~/.cargo/registry/cache for matching cached .crate files (deleted-not-yanked packages still build from
+      warm caches); on build hosts, monitor process-creation telemetry for a build.rs / cargo-build parent spawning a
+      network client that then writes and executes a new binary from a temp directory — CI runners and developer
+      workstations are equally exposed since build scripts run with the full privileges of the invoking user/service
+      account (SSH keys, CI secrets, signing keys all in scope). `cargo audit` alone will not catch this because the
+      compromised versions were deleted rather than formally yanked/advised at time of detonation.
+
+  - title: "ATutor LCMS — 13 CVEs including unauthenticated login-token forgery and two file-upload RCE paths, unpatched because the product is end-of-life"
+    sources:
+      - { url: "https://cert.pl/en/posts/2026/08/CVE-2026-64960/", publisher: "CERT Polska (NASK)", date: "2026-08-20", role: "primary" }
+    discovery_trace: >
+      first seen at: cert-pl, feed https://cert.pl/en/rss.xml → primary: CERT Polska advisory, URL
+      https://cert.pl/en/posts/2026/08/CVE-2026-64960/ (no pivot needed — CERT Polska is the coordinating discloser)
+    summary: |
+      CERT Polska published coordinated-disclosure details for 13 vulnerabilities (CVE-2026-64960 through
+      CVE-2026-64972) in ATutor, an open-source Learning Content Management System historically deployed by
+      educational institutions. Tested against version 2.2.4 (the only version verified; CERT Polska notes later/
+      earlier versions are potentially affected too), the vendor is confirmed no longer active: "Product is no
+      longer actively supported and the vulnerabilities have not been fixed" — no patch exists for any of the 13.
+      The two most severe reach unauthenticated or low-friction remote code execution: CVE-2026-64960 (CWE-434,
+      unrestricted file upload) lets an authenticated attacker who knows a valid course_id upload an arbitrary,
+      server-executable file through the Gameme module with no extension/type validation; CVE-2026-64966 (CWE-22,
+      path traversal in ZIP extraction) lets a course instructor plant a .phtml file outside the intended extraction
+      directory and land it in the web root for RCE. CVE-2026-64961 (CWE-639) is a full authentication bypass —
+      unauthenticated auto-login tokens are derived only from a user's identifier and registration timestamp, both
+      guessable/enumerable, letting an attacker forge a valid session for any account. The remaining ten cover CSRF
+      on profile updates, path traversal to other courses' files via AT_FORCE_GET_FILE, predictable email-confirmation
+      tokens, missing authorization on test/question import endpoints, admin-triggerable SSRF, an IDOR that lets any
+      authenticated user delete another user's profile picture, stored XSS via an unescaped registration phone field,
+      and two reflected-XSS paths (crafted URLs; the `popup` parameter of preview.php).
+    region_nexus: "ATutor has seen historical use by educational institutions internationally, including in Europe; no Swiss/EU-specific deployment confirmed by this source."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-64960", "CVE-2026-64961", "CVE-2026-64962", "CVE-2026-64963", "CVE-2026-64964", "CVE-2026-64965", "CVE-2026-64966", "CVE-2026-64967", "CVE-2026-64968", "CVE-2026-64969", "CVE-2026-64970", "CVE-2026-64971", "CVE-2026-64972"]
+    techniques: ["T1190", "T1505.003"]
+    affected_products: ["ATutor"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Product is no longer actively supported and the vulnerabilities have not been fixed."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/08/CVE-2026-64960/"
+      - quote: "An authenticated attacker who knows a valid course_id can upload a server-executable malicious script"
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/08/CVE-2026-64960/"
+      - quote: "An unauthenticated attacker who can determine a user's identifier and registration timestamp can generate a valid token and authenticate."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/08/CVE-2026-64960/"
+    extended_notes: |
+      No CVSS scores were published by CERT Polska for any of the 13 CVEs. Given the product is unmaintained with no
+      patch path, the only viable mitigation for any institution still running ATutor is decommissioning or network
+      isolation (remove from internet exposure, restrict to an internal segment with no untrusted course-authoring
+      access) — there is no vendor fix to apply. Detection concept: web-access-log monitoring for file uploads to the
+      Gameme module endpoint with non-media extensions, and for ZIP-extraction requests followed by web-root writes
+      outside the expected course-content directory tree.
+
+  - title: "UPDATE — ShieldBreak (CVE-2026-69414) independently reproduced with full detection guidance; Microsoft still has no fix six days after the CVE was assigned"
+    sources:
+      - { url: "https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking", publisher: "LevelBlue SpiderLabs", date: "2026-08-19", role: "primary" }
+    discovery_trace: >
+      first seen at: trustwave-spiderlabs, URL https://www.levelblue.com/blogs/spiderlabs-blog → drill URL
+      https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking
+      (no further pivot needed — independent reproduction is the primary claim)
+    summary: |
+      LevelBlue's SpiderLabs OpsCTI/THOR teams independently reproduced the full ShieldBreak local-privilege-escalation
+      chain (CVE-2026-69414, previously tracked by this pipeline on 2026-08-12 and 2026-08-18) against Windows 11 24H2
+      and Windows Server 2025 with the August 2026 Patch Tuesday updates installed, confirming the technique still
+      reaches SYSTEM from a standard user account with Defender in its default configuration — Microsoft has assigned
+      the CVE and rated it "Exploitation More Likely" but has not shipped a fix. The seven-stage chain: register a
+      fake Cloud Files sync provider; create a Cloud Files placeholder file containing an EICAR test string; build a
+      shadow NT Object Manager directory with a symbolic link that redirects Windows Defender's scan path into
+      System32; call Defender's remediation APIs directly via MpClient.dll to trigger a "clean" action on the planted
+      placeholder; exploit a TOCTOU race during that clean operation by taking an exclusive lock on a CLFS log file
+      and swapping the symbolic link mid-transaction, so Defender's own clean engine writes an attacker-supplied DLL
+      to C:\Windows\System32\phoneinfo.dll (a filename that does not exist natively on any Windows version); and
+      finally trigger the Windows Error Reporting QueueReporting scheduled task, which loads that DLL via wermgr.exe
+      as SYSTEM. SpiderLabs published a full behavioral-correlation detection package rather than any single static
+      indicator, because every individual step uses a legitimate Windows capability (Cloud Files API, Object Manager,
+      Defender's own interfaces, CLFS, Task Scheduler).
+    region_nexus: "Any Windows 11 24H2 / Windows Server 2025 estate running Windows Defender in default configuration is affected; no region-specific exploitation reported yet — PoC-only, no in-the-wild use confirmed."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, energy, healthcare, telco, transport, water"
+    cves: ["CVE-2026-69414"]
+    techniques: ["T1068", "T1574.001", "T1053.005", "T1685", "T1106", "T1036.005"]
+    affected_products: ["Microsoft Windows Defender", "Windows 11", "Windows Server 2025"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-18/cve-2026-69414-shieldbreak-defender-acknowledged-no-fix"
+    evidence:
+      - quote: "ShieldBreak is fully self-contained and runs to full SYSTEM completion from a standard user account on any fully patched Windows 11 24H2 or Windows Server 2025 system with Windows Defender in its default configuration."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking"
+      - quote: "ShieldBreak is best detected through behavioral correlation rather than any single static indicator. The attack deliberately uses legitimate Windows capabilities: Cloud Files, native Object Manager APIs, Defender interfaces, CLFS operations, and Task Scheduler."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking"
+      - quote: "The LevelBlue OpsCTI and THOR teams reviewed and reproduced the complete ShieldBreak exploitation chain with the August 2026 Patch Tuesday updates installed, confirming the PoC functions as described."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking"
+    extended_notes: |
+      Detection signals SpiderLabs published (telemetry class first, platform anchor named): process/module-load
+      events (Sysmon EID 7) for MpClient.dll loaded by a non-Windows-Defender process, and for wermgr.exe loading
+      phoneinfo.dll; named-pipe creation/connection events (Sysmon EID 17/18) for a pipe named SHIELDBREAK and for a
+      SYSTEM process connecting to a user-created pipe; file-presence monitoring for
+      C:\Windows\System32\phoneinfo.dll (does not exist natively) and any C:\ShieldBreak_<GUID>\ directory; Windows
+      Error Reporting queue staging paths matching a Kernel_c0000000_A_B_C-C-D-E-<GUID> pattern; Security Event Log
+      4698/4702 for the QueueReporting scheduled task being run via ITaskService::Run(); Cloud Files API telemetry
+      (CfRegisterSyncRoot) called from a non-cloud-sync process; and CLFS file-locking (LockFileEx) by a non-system
+      process. **Triage:** the discriminator SpiderLabs gives is that every individual API call is legitimate — the
+      signal is the *sequence and actor* (a standard-user process registering a cloud sync root, then invoking
+      Defender's own remediation interfaces, then racing a CLFS lock) rather than any one call being anomalous alone.
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product watchlist configured for this deployment; sweep is a no-op per org profile. General vulnerability landscape (TrueConf, Rust crates.io, ATutor, ShieldBreak/Windows Defender) covered under normal S1 sweep regardless."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-directives
+    reason: "Seventh consecutive run unreachable: direct HTTP 403 on every attempt (Akamai bot management) and the jina reader pool returned HTTP 402 (exhausted) on all seven rotating keys, so the documented recovery ladder had no working rung. No evidence from any other source that a new directive published in-window."
+  - source_id: cisa-advisories
+    reason: "Same cisa.gov condition as cisa-directives this run (direct 403 + jina pool exhausted on all seven keys). CISA KEV JSON (unaffected, separate static path) and the cisagov CSAF GitHub mirror covered the exploited-vulnerability and ICS-advisory ground truth instead; the general AA-series advisory-listing narrative was not reachable by any transport."
+  - source_id: siemens-productcert-csaf
+    reason: "Vendor portal csaf/ index and per-advisory html pages return HTTP 403 on direct fetch (confirmed this run); the cisagov CSAF GitHub mirror was checked as the documented substitute and carried no Siemens advisory newer than the already-tracked SSA-834709 (2026-08-11) — no in-window Siemens advisory is known to have been lost."
+  - source_id: ssd-disclosure
+    reason: "One honest attempt per instructions: direct fetch returned HTTP 202 (169-byte SiteGround anti-bot challenge shell) and the jina reader pool is exhausted (HTTP 402 on all seven keys), so neither transport reached content. Consistent with four prior consecutive runs logging the same site-wide anti-bot interstitial."
+  - source_id: ccb-belgium
+    reason: "Direct transport worked cleanly this run (confirms the 2026-08-20 recipe fix) but the newest dated advisory row on the listing was 19/08/2026, outside this run's 26h window (window start ~2026-08-20T02:10Z); all titles visible were already-covered stories (GeoServer, SAP Commerce Cloud, Adobe Commerce, Zimbra, GitLab, Ivanti EPM, Microsoft Patch Tuesday, IBM i, Oracle CPU). No in-window CCB-original item found."
+
+bridge_uses:
+  - id: cisa-kev
+    method: bridge:cisa-kev
+    outcome: ok
+  - id: enisa-euvd
+    method: bridge:enisa-euvd.recent
+    outcome: ok
+  - id: ncsc-ch-security-hub
+    method: bridge:ncsc-csh.recent
+    outcome: ok
+  - id: cisa-advisories
+    method: bridge:cisa.feed
+    outcome: item-not-found
+  - id: cisa-directives
+    method: bridge:cisa.page
+    outcome: item-not-found
+  - id: cisa-advisories
+    method: bridge:cisa.csaf-recent
+    outcome: ok
+  - id: siemens-productcert-csaf
+    method: bridge:url
+    outcome: item-not-found
+  - id: ccb-belgium
+    method: bridge:url --direct
+    outcome: ok
+  - id: ssd-disclosure
+    method: bridge:url
+    outcome: item-not-found
+  - id: bsi-de
+    method: bridge:feed
+    outcome: ok
+  - id: advisories-ncsc-nl
+    method: bridge:feed
+    outcome: ok
+  - id: anssi-fr
+    method: bridge:cert-fr.avis-recent
+    outcome: ok
+  - id: cert-eu
+    method: bridge:cert-eu.recent
+    outcome: ok
+  - id: cert-pl
+    method: bridge:feed
+    outcome: ok
+  - id: ncsc-uk
+    method: bridge:feed
+    outcome: ok
+  - id: cisco-psirt
+    method: bridge:feed
+    outcome: ok
+  - id: adobe-psirt
+    method: bridge:url --direct
+    outcome: ok
+  - id: calif-codex
+    method: bridge:feed
+    outcome: ok
+  - id: socprime
+    method: bridge:feed
+    outcome: ok
+
+fetch_failures:
+  - id: cisa-directives
+    url_tried: https://www.cisa.gov/news-events/directives
+    fetch_method: bridge:cisa.page
+    status_code: 403
+    error_class: transport-403
+    error_message: "direct=(direct HTTP 403, 396 B); jina=(reader proxy failed: all seven rotating keys HTTP 402 balance exhausted; anonymous free tier HTTP 403)"
+    attempted_methods: [bridge:cisa.page, bridge:jina]
+    mitigation_applied: "none — coverage gap. CISA KEV JSON (separate static path, unaffected) and WebSearch were checked; no evidence surfaced of a new directive published in-window."
+    covered_anyway: false

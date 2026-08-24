@@ -1,0 +1,223 @@
+domain: follow-up-geoserver
+run_id: 2026-08-14T0417Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-14T07:23:08Z
+ended_at: 2026-08-14T07:33:29Z
+duration_seconds: 621
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 12
+  bridge_fetches: 16
+items:
+  - title: "Unauthenticated SQL-injection zero-day in GeoServer's jsonArrayContains function, unpatched, exploitation attempts within hours of disclosure"
+    sources:
+      - { url: "https://thehackernews.com/2026/08/unpatched-geoserver-zero-day-targeted.html", publisher: "The Hacker News", date: "2026-08-13", role: "primary" }
+      - { url: "https://www.csoonline.com/article/4209388/attackers-target-zero-day-vulnerability-in-geospatial-data-platform-geoserver.html", publisher: "CSO Online", date: "2026-08-13", role: "primary" }
+      - { url: "https://x.com/q1uf3ng/status/2087490992723407096", publisher: "@q1uf3ng (X post, original discloser)", date: "2026-08-12", role: "primary" }
+      - { url: "https://geoserver.org/blog/", publisher: "GeoServer project blog", date: "2026-08-14", role: "corroborating" }
+      - { url: "https://osv.dev/vulnerability/GHSA-7g5f-wrx8-5ccf", publisher: "OSV / GitHub Advisory Database (mirroring geoserver/geoserver GHSA-7g5f-wrx8-5ccf)", date: "2023-02-22", role: "corroborating" }
+      - { url: "https://www.f5.com/labs/articles/geoserver-targeting-on-the-rise", publisher: "F5 Labs", date: "2026-02-11", role: "corroborating" }
+      - { url: "https://github.com/mhtsec/GeoServer-jsonArrayContains-PG-RCE", publisher: "GitHub (independent PoC/research repo)", date: "unknown (recent)", role: "corroborating" }
+    discovery_trace: >
+      first seen at: verification-pass follow-up (thehackernews URL supplied), URL
+      https://thehackernews.com/2026/08/unpatched-geoserver-zero-day-targeted.html
+      → pivot: CSO Online, URL https://www.csoonline.com/article/4209388/attackers-target-zero-day-vulnerability-in-geospatial-data-platform-geoserver.html
+      (outbound link inside CSO Online body)
+      → primary: original discloser's X post, URL https://x.com/q1uf3ng/status/2087490992723407096
+      (fetched directly via bridge `url`, page rendered server-side with tweet text embedded
+      in <meta name="description"> and <title>, confirming the Chinese-language original
+      matches the English paraphrase carried by both news outlets)
+      → pivot: watchTowr Labs own blog/RSS checked directly for a matching post, URL
+      https://labs.watchtowr.com/rss/ (10 most recent items fetched; no GeoServer post found —
+      watchTowr's observations on this item appear to have been given as direct statements
+      to journalists (The Hacker News "in a statement", CSO Online "via email"), not yet as
+      a labs.watchtowr.com blog post)
+      → pivot: GeoServer project's own blog checked for a response, URL
+      https://geoserver.org/blog/ (fetched directly; most recent post as of fetch time is the
+      3.0.0 release announcement dated Jun 11, 2026 — no post addressing this SQL injection)
+      → pivot: historical jsonArrayContains SQLi advisory for context, URL
+      https://osv.dev/vulnerability/GHSA-7g5f-wrx8-5ccf (CVE-2023-25157, GitHub Advisory Database
+      via OSV)
+      → pivot: background on GeoServer targeting trend, URL
+      https://www.f5.com/labs/articles/geoserver-targeting-on-the-rise
+    summary: |
+      An unauthenticated SQL-injection vulnerability in GeoServer's jsonArrayContains
+      function was disclosed by a researcher using the handle @q1uf3ng on X at 10:46 UTC on
+      2026-08-12, with no CVE identifier assigned and no vendor patch available as of this
+      research (2026-08-14). The discloser's own post (fetched directly, original Chinese
+      text confirmed) states plainly: "GeoServer jsonArrayContains 未授权 SQL 注入 数据库sa的情况下理所当然的可以rce"
+      — i.e. unauthenticated SQL injection via jsonArrayContains, escalating "naturally" to RCE
+      when the backing database account is the SQL Server "sa" (system administrator) login.
+      This is the load-bearing precondition: the SQL injection itself requires no
+      authentication to GeoServer, but code execution is contingent on the database
+      account GeoServer connects with holding administrative privileges — reporting
+      specifically names Microsoft SQL Server's "sa" account, which by default grants the
+      ability to invoke OS command execution (xp_cmdshell-class functionality) from within
+      SQL. A separate, independently published proof-of-concept research repository
+      (mhtsec/GeoServer-jsonArrayContains-PG-RCE) documents a related SQL-injection-to-RCE
+      chain through the same function against PostgreSQL/PostGIS datastores, explicitly
+      caveating it is "not an arbitrary GeoServer RCE" and requires PostgreSQL 12+,
+      JSON-capable attributes, stacked-statement execution support, and elevated database
+      role privileges — indicating the exploitation path generalizes across DBMS backends
+      but always gates on backend account privilege, not on GeoServer's own auth. CSO Online
+      separately reports "another user confirmed on X that they were able to reproduce the
+      flaw in a non-default configuration" — a second-hand, unverified reproduction claim,
+      not corroborated by any primary technical write-up.
+
+      watchTowr (a threat-exposure-management vendor) told both The Hacker News ("in a
+      statement") and CSO Online ("via email") that it began observing exploitation attempts
+      within hours of the public disclosure, recording hundreds of attempts from a small pool
+      of source IP addresses; Jake Knott (watchTowr, principal security researcher) states the
+      observed activity is presently reconnaissance/fingerprinting — "triggering errors and not
+      proceeding further" — rather than payload delivery, but flags that GeoServer "has a track
+      record of being targeted and exploited at scale, with multiple vulnerabilities listed in
+      CISA's Known Exploited Vulnerabilities catalog" (CVE-2024-36401, added to KEV 2024-07-15,
+      and CVE-2025-58360, added 2025-12-11, both independently confirmed present on the current
+      KEV catalogue in this research). No independent telemetry source (e.g. Shadowserver,
+      GreyNoise, an ISP/CDN scanning-visibility report) was reachable in this research window to
+      corroborate watchTowr's attempt counts; the "hundreds of attempts / small pool of IPs"
+      figure is a single-vendor claim, presented as such.
+
+      As of this research, GeoServer's own project blog (geoserver.org/blog/, fetched directly)
+      carries no advisory addressing this issue — its most recent post is the GeoServer 3.0.0
+      release announcement (2026-06-11), which itself documents four unrelated CVEs
+      (CVE-2025-27511, CVE-2025-58175, CVE-2025-52465, CVE-2024-45747) fixed in that release.
+      GeoServer's practice, per that post, is to pair CVE assignment with the fix ("The use of
+      the CVE system allows the GeoServer team to reach a wider audience than blog posts") —
+      consistent with no CVE yet existing for an unpatched issue. No entry for this
+      vulnerability exists in the CISA KEV catalogue (checked via the bridge fetcher against
+      the full current catalogue). A WebSearch-generated summary during this research
+      surfaced an unverified claim that "CVE-2026-58231" had been assigned to this GeoServer
+      flaw; direct verification shows CVE-2026-58231 is an unrelated SAP Commerce Cloud
+      improper-authorization vulnerability (CVSS 10.0, patched in SAP Commerce Cloud
+      2211.55 / 2211-jdk21.17) — the search summarizer conflated two unrelated same-day
+      stories. No CVE has been verified assigned to the GeoServer jsonArrayContains issue.
+
+      The jsonArrayContains function has a documented SQL-injection history: GHSA-7g5f-wrx8-5ccf
+      (CVE-2023-25157, CVSS 9.8) fixed a jsonArrayContains injection reachable "when used with a
+      String or JSON field and with a PostGIS or Oracle DataStore (GeoServer 2.22.0+ only)",
+      patched in GeoServer 2.21.4, 2.22.2, 2.20.7, 2.19.7 and 2.18.7 — a different DBMS/DataStore
+      combination than the Microsoft SQL Server path being exploited now, meaning the 2023 fix
+      evidently did not close the code path currently under attack. GeoServer's currently
+      maintained release lines are 2.28.x (stable support ended April 2026, full EOL September
+      2026) and 3.0.x (extended support to April 2027); no primary source in this research
+      states which of these lines, or which specific version boundary, is affected by the new
+      issue — that remains unconfirmed pending a vendor advisory.
+
+      No advisory from NCSC-CH, GovCERT.ch, BSI CERT-Bund (WID feed), CERT-FR, CERT-EU, or
+      NCSC-NL was found in this research window (checked directly against each authority's
+      structured feed/API) — a gap worth flagging given GeoServer's use in Swiss and European
+      public-sector geodata portals (cadastral, environmental, and INSPIRE-directive mapping
+      services commonly run on GeoServer).
+    region_nexus: "global exploitation activity observed to date; GeoServer underpins Swiss/EU public-sector geodata (cadastral, environmental, INSPIRE) portals, making this directly sector-relevant even absent a confirmed regional victim"
+    primary_sector_nexus: "direct — GeoServer is widely deployed by government, defense, science and engineering organizations per reporting; underpins EU/CH public-sector geospatial data infrastructure"
+    sector: "public-sector, energy, water, transport"
+    cves: []
+    techniques: [T1190, T1595.002]
+    affected_products: ["GeoServer"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "GeoServer jsonArrayContains unauthorized SQL injection, and in the case of the sa [system administrator] database, it's naturally possible to achieve RCE"
+        attribution: "@q1uf3ng, original discloser (quoted via The Hacker News)"
+        source_url: "https://thehackernews.com/2026/08/unpatched-geoserver-zero-day-targeted.html"
+      - quote: "It was first disclosed on August 12, 2026, at 10:46 UTC, by a researcher named @q1uf3ng on X."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/08/unpatched-geoserver-zero-day-targeted.html"
+      - quote: "Currently, we're seeing attackers probe to identify vulnerable systems across the internet, triggering errors and not proceeding further,"
+        attribution: "Jake Knott, watchTowr (statement to The Hacker News)"
+        source_url: "https://thehackernews.com/2026/08/unpatched-geoserver-zero-day-targeted.html"
+      - quote: "GeoServer has a track record of being targeted and exploited at scale, with multiple vulnerabilities listed in CISA's Known Exploited Vulnerabilities catalog. More importantly, under certain configurations, this latest vulnerability could ultimately lead to remote code execution."
+        attribution: "Jake Knott, watchTowr (statement to The Hacker News)"
+        source_url: "https://thehackernews.com/2026/08/unpatched-geoserver-zero-day-targeted.html"
+      - quote: "Within hours of public disclosure, we began observing exploitation attempts and have since recorded hundreds of attempts originating from a small number of source IP addresses"
+        attribution: "watchTowr researchers (statement to CSO Online via email)"
+        source_url: "https://www.csoonline.com/article/4209388/attackers-target-zero-day-vulnerability-in-geospatial-data-platform-geoserver.html"
+      - quote: "Yet another example of how quickly attackers move once a vulnerability enters the public domain."
+        attribution: "watchTowr researchers (statement to CSO Online via email)"
+        source_url: "https://www.csoonline.com/article/4209388/attackers-target-zero-day-vulnerability-in-geospatial-data-platform-geoserver.html"
+      - quote: "So far, the researchers haven’t seen any malicious payloads or commands being sent, and the attempts look more like probes to identify vulnerable GeoServer instances."
+        attribution: "CSO Online"
+        source_url: "https://www.csoonline.com/article/4209388/attackers-target-zero-day-vulnerability-in-geospatial-data-platform-geoserver.html"
+      - quote: "If the database runs with administrator permissions on Microsoft SQL Server, the account also has the ability to execute commands on the system, so the SQL injection becomes a remote code execution vector."
+        attribution: "CSO Online"
+        source_url: "https://www.csoonline.com/article/4209388/attackers-target-zero-day-vulnerability-in-geospatial-data-platform-geoserver.html"
+      - quote: "Another user confirmed on X that they were able to reproduce the flaw in a non-default configuration."
+        attribution: "CSO Online"
+        source_url: "https://www.csoonline.com/article/4209388/attackers-target-zero-day-vulnerability-in-geospatial-data-platform-geoserver.html"
+      - quote: "jsonArrayContains</code> function, when used with a String or JSON field and with a PostGIS or Oracle DataStore (GeoServer 2.22.0+ only)"
+        attribution: "GeoServer project (GHSA-7g5f-wrx8-5ccf, CVE-2023-25157, via OSV/GitHub Advisory Database)"
+        source_url: "https://osv.dev/vulnerability/GHSA-7g5f-wrx8-5ccf"
+      - quote: "GeoSever 2.21.4"
+        attribution: "GeoServer project (GHSA-7g5f-wrx8-5ccf patch list, via OSV/GitHub Advisory Database) — note: 'GeoSever' typo present verbatim in the original advisory"
+        source_url: "https://osv.dev/vulnerability/GHSA-7g5f-wrx8-5ccf"
+      - quote: "GeoServer 3.0.0 Release"
+        attribution: "GeoServer project blog — most recent post as of this research, dated Jun 11, 2026, carries no reference to this issue"
+        source_url: "https://geoserver.org/blog/"
+      - quote: "The use of the CVE system allows the GeoServer team to reach a wider audience than blog posts."
+        attribution: "GeoServer project blog"
+        source_url: "https://geoserver.org/blog/"
+      - quote: "实话说今天是非常不开心的一天 实际上最近一段时间我都非常沮丧 各种事情 \n所以我公布一个0day 希望让你们心情变的开心\n\nGeoServer jsonArrayContains 未授权 SQL 注入 数据库sa的情况下理所当然的可以rce"
+        attribution: "@q1uf3ng (original X post text, fetched directly, Chinese-language original matching the English paraphrase carried by press coverage)"
+        source_url: "https://x.com/q1uf3ng/status/2087490992723407096"
+      - quote: "the repository emphasizes this is not an \"arbitrary GeoServer RCE\" but requires multiple preconditions: PostgreSQL 12+, compatible JSON-capable attributes, stacked statement execution support, and elevated database privileges"
+        attribution: "mhtsec/GeoServer-jsonArrayContains-PG-RCE README (paraphrase via WebFetch summary — not independently byte-verified; treat as lower-confidence detail)"
+        source_url: "https://github.com/mhtsec/GeoServer-jsonArrayContains-PG-RCE"
+    extended_notes: |
+      Verification/analytic notes for the composer:
+
+      - No CVE assigned as of this research. IMPORTANT: a WebSearch query synthesis during
+        this research asserted "CVE-2026-58231" was assigned to this GeoServer issue. This is
+        WRONG and was independently disproven: CVE-2026-58231 is an unrelated SAP Commerce
+        Cloud vulnerability (confirmed via a separate WebSearch that surfaced multiple SAP-
+        specific sources — The Hacker News, CSO Online Patch Tuesday coverage, SecurityWeek —
+        describing CVE-2026-58231 as an improper-authorization flaw in SAP Commerce Cloud
+        2211/2211-JDK21, patched in 2211.55/2211-jdk21.17). Do NOT carry CVE-2026-58231 into
+        the entry. This is flagged here specifically so the main agent/verifier does not
+        rediscover the same hallucinated mapping via its own search pass.
+      - CISA KEV catalogue checked in full via `python3 tools/fetch_source.py cisa-kev` —
+        confirmed GeoServer's two existing KEV entries (CVE-2024-36401, CVE-2025-58360) but
+        NO new entry for this issue.
+      - watchTowr Labs' own blog (labs.watchtowr.com, RSS checked directly, 10 most recent
+        items reviewed) has NOT published a post on this issue as of the fetch — the
+        attributed observations come from direct statements to two news outlets (a company
+        comment, not a research write-up), which lowers the corroboration tier for the
+        exploitation-attempt figures specifically (single-vendor claim, self-reported, not an
+        independently reviewable telemetry methodology). Confidence set to MEDIUM primarily
+        for this reason — the vulnerability's existence and unpatched/no-CVE status are firm
+        (multiple independent primaries including the discloser's own post), but the
+        "hundreds of attempts / small pool of IPs" scanning-volume claim rests on one vendor's
+        unpublished, self-reported telemetry relayed only through press statements.
+      - The mhtsec PostgreSQL-RCE PoC repository could not be confirmed as directly connected
+        to the same Aug 12 disclosure by any primary source (no cross-reference from the
+        discloser, watchTowr, or GeoServer to that specific repo was found) — it targets the
+        same function name in a different DBMS context (PostgreSQL/PostGIS vs. the reporting's
+        Microsoft SQL Server focus) and its precondition detail was obtained via WebFetch
+        summarization of the GitHub README (not independently byte-verified against raw HTML,
+        since direct/bridge fetch of that repo 403'd and jina credit was exhausted). Treat this
+        specific angle as corroborating context on the technique class (SQLi-to-RCE via
+        jsonArrayContains gated by DB privilege) rather than a confirmed detail of the exact
+        in-the-wild exploitation observed by watchTowr.
+      - Exact affected/patched version range is UNCONFIRMED by any primary source — this is a
+        genuine gap, not an omission. State this plainly in the entry rather than inferring a
+        version range from the 2023 GHSA (which covers a different DataStore combination and
+        was patched in 2.18.7–2.22.2, versions now largely superseded by the current 2.28.x/
+        3.0.x lines).
+      - No independent scanning/telemetry corroboration (Shadowserver, GreyNoise, etc.) found
+        in this research window for the exploitation-attempt volume; only watchTowr's
+        self-reported figures via two press outlets.
+    borderline: false
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: "github.com/geoserver/geoserver (security advisories / commits)"
+    reason: "Direct bridge fetch of https://github.com/geoserver/geoserver/security/advisories/GHSA-7g5f-wrx8-5ccf returned HTTP 403; jina reader credential pool was exhausted (HTTP 402 on all keys) at the time of this research, so the fallback rung was unavailable. Recovered the same advisory content via https://osv.dev/vulnerability/GHSA-7g5f-wrx8-5ccf (GitHub Advisory Database mirror, direct fetch succeeded) — no material content lost, but GitHub's own advisories/commits pages for GeoServer could not be browsed directly to check for any very recent (in-window) commit activity responding to this specific issue."
+  - source_id: "cybersecuritynews.com (CISA Warns of OSGeo GeoServer 0-Day Vulnerability Exploited in Attacks)"
+    reason: "Both direct bridge fetch (HTTP 202 empty body) and jina reader (credential pool exhausted, HTTP 402 on all keys) failed to retrieve this article; could not confirm whether it concerns this new Aug 2026 issue or the older CVE-2024-36401 (headline pattern matches historical 2024 coverage of CVE-2024-36401 more closely). Not relied upon for any claim in this item."
+  - source_id: "jina reader credential pool"
+    reason: "All jina reader API keys reported HTTP 402 (balance exhausted) throughout this research session, removing the last-resort fallback rung for every bridge fetch that needed it (GitHub, github.com/mhtsec repo direct attempt, cybersecuritynews.com). Direct bridge fetch and WebFetch covered the gap in most cases; flagging for operator awareness per the tool's own rotation-not-failure messaging, since a sustained pool exhaustion during a run does reduce fetch-ladder depth."
