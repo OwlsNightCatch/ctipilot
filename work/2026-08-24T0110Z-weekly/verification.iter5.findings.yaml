@@ -1,0 +1,66 @@
+# Findings summary (machine-readable)
+- code: F1
+  category: hallucinated-fact
+  section: run-record-frontmatter (sources_changed)
+  item: "sources_changed[trendmicro-research] describes a change the file does not carry and contradicts the notes body"
+  url_or_quote: "change: \"note only — same shape defect (fetch_method rss, rss_url null) but no feed URL could be verified this run; a feedburner guess 404s and the reader pool is credit-exhausted. NOT demoted — a recipe gap plus a quota condition is never a content failure\""
+  summary: >-
+    Frontmatter was not amended when the maintenance prose was. The notes body now says
+    "the primary weekly did, and its record for that source (carrying the feedburner URL)
+    was taken in preference to this run's weaker note", and the working tree agrees: the
+    trendmicro-research record is byte-identical to origin/main's (verified by dict compare
+    of sources/sources.json against `git show origin/main:sources/sources.json`), carrying
+    rss_url https://feeds.feedburner.com/TrendMicroResearch (fetched live this iteration via
+    tools/fetch_source.py url — returns a valid RSS channel "Trend Micro Research, News,
+    Perspectives") and main's own 2026-08-23 note. This run's note is NOT in the file, and
+    check_run.py's sources-touched check counts only huntress and expel as fetched on
+    2026-08-24. So (a) "note only" claims a change that does not exist, and (b) "fetch_method
+    rss, rss_url null" states a present-tense condition that the file no longer has — a
+    machine consumer of sources_changed would conclude the source is still feedless. The
+    sub-clause "a feedburner guess 404s" is itself accurate (the run's guess was
+    https://feeds.feedburner.com/TrendMicroResearchNewsAndPerspectives per
+    work/2026-08-24T0110Z-weekly/findings.W1b.yaml coverage_gaps, and it does fail — probed
+    this iteration), but it now reads as though the working feedburner URL was disproved.
+    Fix: restate to origin/main's own convention for exactly this case — cf. its
+    sources_changed entry `change: "no record change — investigated as the sweep's only
+    UNSOLVED and found healthy..."` — e.g. "no record change by this run — same shape defect
+    diagnosed (this run's own guessed feedburner path 404s), but the primary weekly located
+    and shipped the working feed URL first and its record was adopted in preference."
+- code: F2
+  category: quantifier-without-source
+  section: run-record-notes (paragraph "Second, and the point of the stand-down rule")
+  item: "Count of items this run wrote to the coverage backlog"
+  url_or_quote: "this fire's research was not wasted, and six items were written to the coverage backlog rather than left to die in this record"
+  summary: >-
+    state/coverage_backlog.md carries SEVEN rows dated 2026-08-24 attributed to
+    2026-08-24T0110Z-weekly (ShieldBreak, SynkLoader, Rapid7 Q2, Truffle Security, SOCRadar
+    FTP dead-drop, SilkParasite, and the Swiss half-year threat report) — confirmed by
+    `git diff origin/main -- state/coverage_backlog.md`, which shows exactly those seven "+"
+    rows. The record contradicts itself: this bolded lead sentence says six, while the policy
+    paragraph writes the seventh ("It is written to the coverage backlog with its announcement
+    URL and date") and the verification block's own iteration-1 remediation says "seventh
+    backlog row added". The defect was introduced by that iteration-1 remediation, which added
+    the row without updating the lead count. Fix the LEAD SENTENCE ONLY — the six-bullet list
+    below it, and "five findings appear nowhere in the primary weekly, and a sixth only
+    partially", are both correct and independently re-verified this iteration; the honest
+    restatement is "seven items were written to the coverage backlog — six verified residuals
+    and one forward row for a publication no window could reach".
+- code: F3
+  category: hallucinated-fact
+  section: run-record-notes (paragraph "Policy sweep result") + state/coverage_backlog.md row 7
+  item: "Swiss federal cyber authority half-year 2026 threat report — briefing stated as a past event"
+  url_or_quote: "Switzerland's federal cyber authority held an embargoed media briefing on its half-year 2026 threat report on 24 August with the embargo lifting at 11:00 CEST, after this run's research window closed."
+  summary: >-
+    The briefing had not happened when the record was written, amended, or verified. The cited
+    announcement (https://www.admin.ch/de/cybersicherheit-im-fokus-fachgespraech-240826,
+    fetched this iteration via the bridge) is an invitation to a future event, not a report of
+    a past one: JSON-LD carries startDate 2026-08-24T09:00 / endDate 2026-08-24T11:00 (CEST =
+    07:00–09:00 UTC), the body reads "Anlässlich der Publikation laden wir Sie herzlich zu
+    einem Fachgespräch ein" with a registration deadline "Bis am 21. August 2026", and the
+    embargo line is "Sämtliche Informationen unterliegen der Sperrfrist bis 24. August 2026 um
+    11.00 Uhr". This run ran 01:10–02:20 UTC and was amended at ~03:15 UTC — hours before the
+    09:00 CEST start. state/coverage_backlog.md row 7 repeats it ("An embargoed media briefing
+    was held on 2026-08-24..."). Everything else in the passage is correct and verified: the
+    11:00 CEST / 09:00 UTC lift, and that the next intel fire at ~04:10 UTC precedes it. Fix
+    is the tense in both places — "has announced an embargoed media briefing for 24 August
+    (09:00–11:00 CEST), with the report published and the embargo lifting at 11:00 CEST".
