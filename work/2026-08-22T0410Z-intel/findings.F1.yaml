@@ -1,0 +1,309 @@
+domain: F1
+run_id: 2026-08-22T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-22T04:36:53Z
+ended_at: 2026-08-22T04:53:07Z
+duration_seconds: 974
+self_telemetry:
+  webfetch_calls: 11
+  websearch_calls: 6
+  bridge_fetches: 19
+
+# ============================================================
+# F1-a. TrueConf Server CVE-2026-72529 + CVE-2026-72530
+# ============================================================
+items:
+  - id: F1-a
+    title: "TrueConf Server pre-auth RCE chain — deep-read verification of Kaspersky ICS CERT primaries"
+    sources:
+      - { url: "https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-missing-authentication-for-critical-function/", publisher: "Kaspersky ICS CERT (KLCERT-26-057)", date: "2026-08-11", role: "primary" }
+      - { url: "https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-breakout-from-isolated-environment/", publisher: "Kaspersky ICS CERT (KLCERT-26-058)", date: "2026-08-11", role: "primary" }
+      - { url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/", publisher: "Kaspersky ICS CERT (exploitation report)", date: "2026-08-12", role: "primary" }
+      - { url: "https://trueconf.com/blog/news/security-fixes-updates-and-advisories", publisher: "TrueConf (vendor own security-advisory table)", date: "2026-08-11" , role: "primary" }
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA KEV JSON feed", date: "2026-08-21", role: "primary" }
+    discovery_trace: "re-fetch of S1 primaries per F1 scoped-read tasking → Kaspersky KLCERT-26-057/-058 advisory pages fetched raw via tools/fetch_source.py url → Kaspersky exploitation report fetched raw → pivoted to TrueConf's own vendor security-bulletin page (trueconf.com/blog/news/security-fixes-updates-and-advisories, linked from the CISA KEV JSON 'notes' field) for independent CNA-side confirmation → NVD CVE-2026-72529/72530 pages read for the CNA (Kaspersky Labs) CVSS container → CISA KEV JSON re-fetched directly for dateAdded/dueDate ground truth"
+    cve_mapping_confirmed: |
+      CVE-2026-72529 = KLCERT-26-057 = "Missing authentication for critical function" (CWE-306). Confirmed via the KLCERT-26-057 advisory page itself (title + "CVE 2026-72529" field) AND independently via TrueConf's own vendor table (row "CVE-2026-72529 / Missing Authentication / Other identifiers: KLCERT-26-057"). NOT positional — both KLCERT advisory pages carry a single CVE each with no ambiguity.
+      CVE-2026-72530 = KLCERT-26-058 = "Breakout from isolated environment" (CWE-94, Code Injection). Confirmed the same way (TrueConf vendor table row: "CVE-2026-72530 / Sandbox Escape / Code Injection / Other identifiers: BDU:2026-11247; KLCERT-26-058").
+    cvss_detail: |
+      Both KLCERT-26-057 and KLCERT-26-058 advisory PAGES display "CVSS v3 Base Score: 0.0" literally in the static HTML fetch — this is a rendering artefact (the page populates the number via client-side JS from the vector string; the raw vector strings ARE present and correct). The TRUE scores, cross-confirmed independently by (a) NVD's CNA container attributed to "Kaspersky Labs" and (b) TrueConf's own vendor security-bulletin table, are:
+        CVE-2026-72529: CVSS 3.1 = 9.8 CRITICAL (vector CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H) — confirmed identically by NVD/Kaspersky-Labs-CNA container and TrueConf's own table.
+        CVE-2026-72529: CVSS 4.0 = 9.3 CRITICAL (vector CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N) — NVD CNA container only (TrueConf's table shows only a v3.1-equivalent "9.8" column, no v4).
+        CVE-2026-72530: CVSS 3.1 = 9.0 CRITICAL (vector CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:H) — confirmed identically by NVD/Kaspersky-Labs-CNA and TrueConf's own table.
+        CVE-2026-72530: CVSS 4.0 = 9.5 CRITICAL (vector CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H) — NVD CNA container only.
+      Note the CVSS3.1-vs-CVSS4.0 ranking INVERTS between the two CVEs: under v3.1 the missing-auth flaw (72529, AC:L) outscores the sandbox-breakout flaw (72530, AC:H); under v4.0 the breakout flaw (72530, which also gets AT:P and "Subsequent System" High impact) outscores the missing-auth flaw. S1's cve_table numbers (9.3/9.5, CVSS4.0) were correct as CVSS4.0 figures but should be labelled precisely as CVSS4.0, not left ambiguous — and the CVSS3.1 figures (9.8/9.0) belong alongside them since Kaspersky's own advisory pages lead with CVSS v3.
+    affected_and_fixed: |
+      TrueConf's own vendor table (structured, per-CVE):
+        CVE-2026-72529 affected: "<5.3; 5.3.x<5.3.9; 5.4.x<5.4.9; 5.5.x<5.5.5" — fixed: "5.3.9 / 5.4.9 / 5.5.5". Affected component named: "Service on 4307/TCP".
+        CVE-2026-72530 affected: "<5.3.9; 5.4.x<5.4.9; 5.5.x<5.5.5" (note: NO "<5.3" catch-all range listed here) — fixed: "5.3.9 / 5.4.9 / 5.5.5". Affected component named: "Isolated execution environment / code generation".
+      DISCREPANCY (see corrections below): Kaspersky's own KLCERT-26-058 advisory page lists identical affected-version text for BOTH CVEs, INCLUDING "All versions before 5.3" for CVE-2026-72530 too — which TrueConf's own vendor table does not carry for that specific CVE.
+      Kaspersky's exploitation report separately states, in its general technical-details section covering the exploit chain as a whole (not scoped to one CVE): "our internal analysis showed that all TrueConf server versions released since 2022 are vulnerable" — this is Kaspersky's OWN internal-analysis finding, broader than either KLCERT advisory's stated range, and broader again than TrueConf's own 72530 range.
+      Fix release date confirmed exact: "released on June 18, 2026" (Kaspersky exploitation report, verbatim, grep-verified) — S1 had only "released June 2026."
+    port_4307_attribution: |
+      RESOLVED: Kaspersky's exploitation report explicitly attributes the "open by default" characterisation to TrueConf's OWN documentation, not its own judgement — verbatim (grep-verified): "via port 4307/TCP (open by default, according to TrueConf documentation)". I could not locate the specific TrueConf documentation page Kaspersky is citing within this run's time budget (TrueConf's own security-bulletin page, fetched and read in full, does not itself state a default-open-port fact); so the claim is confirmed as Kaspersky's direct citation of TrueConf's docs, not independently re-verified against that underlying TrueConf documentation page.
+    post_exploitation_sequence: |
+      Confirmed component-by-component from the Kaspersky exploitation report (grep-verified quotes below):
+        1. Unauthenticated call to an undocumented server function via port 4307/TCP → arbitrary script execution inside an isolated environment lacking io/os libraries (CVE-2026-72529 / KLCERT-26-057).
+        2. Chained exploitation of CVE-2026-72530 / KLCERT-26-058 escapes that sandbox → arbitrary code execution as NT AUTHORITY\SYSTEM.
+        3. Attackers overwrite the file C:/Program Files/TrueConf Server/httpconf/site/public/js/locale.php with a malicious PHP web shell, AND delete TrueConf event-log records related to the exploit's own operation (anti-forensics step distinct from the web-shell drop).
+        4. The web shell is used to (a) gather IT-infrastructure information about the victim org, (b) gain privileged access to the TrueConf Server database, and (c) replace the legitimate TrueConf client installer file C:\Program Files\TrueConf Server\ClientInstFiles\trueconf_windows_client_x64.exe with a trojanized copy — served to ALL conference participants with x64 systems via the guest join page.
+        5. Separately (via the same web shell, run through remotely-executed PowerShell scripts), attackers install a TWO-COMPONENT Windows backdoor persisted as services SysExcSvc (communication module — C2 is a Microsoft OneDrive cloud storage account, via Microsoft Graph API) and SysReadSvc (execution module — reads/executes commands, writes results). Kaspersky states this backdoor is installed "as a backup command and control channel because all subsequent actions are carried out by remotely running PowerShell scripts via a web shell" — i.e. the PhantomCore/PhantomGraph service pair is a FALLBACK C2, not the primary attacker access path.
+        6. SEPARATELY, on *nix TrueConf servers, attackers install a DIFFERENT backdoor that (a) hides its files, (b) intercepts TrueConf's own network functions to listen for attacker commands sent via the TrueConf protocol itself, and ALSO a distinct backdoor using GitHub as its C2 channel. This *nix tooling is architecturally separate from the Windows PhantomCore/OneDrive chain — S1's summary described only the Windows path and did not surface the *nix GitHub-C2 backdoor or protocol-hijacking backdoor at all.
+        7. On the compromised workstation side: the trojanized installer deploys the legitimate TrueConf client AND drops PhantomCore malware to %LOCALAPPDATA%\TrueConf\Client\api-ms-win-crt-time-l1-1-0-2.dll, persisting via registry key HKEY_CURRENT_USER\Software\Classes\CLSID\{0340F119-A598-4ed9-B0AC-6F6A12D3E755}\InprocServer32.
+    victims_and_poc: |
+      Kaspersky's exploitation report states the investigation was "an attack on Russian organizations" — that is the ONLY victim-geography statement in the report. Neither KLCERT advisory nor the exploitation report mentions Belarus anywhere (grep-confirmed zero hits across all three fetched Kaspersky documents). S1's background sentence describing Head Mare as historically targeting "Russia and Belarus" is general actor-history context, NOT a statement about THIS campaign's victims — the report does not state or imply any victim outside Russia, but it also does not affirmatively rule one out; treat this as an open question the source is silent on, not a confirmed "Russia/Belarus only."
+      No source fetched this run (either KLCERT advisory or the exploitation report) mentions a public PoC, proof-of-concept, or exploit code being available — grep-confirmed zero hits for "PoC"/"proof of concept"/"public exploit" across all three documents. This should be reported as "no source states a public PoC exists," not as a confirmed absence of one anywhere.
+    corrections:
+      - "S1's cve_table CVSS figures (9.3 for CVE-2026-72529, 9.5 for CVE-2026-72530) are correct but were CVSS4.0-only and left unlabelled/ambiguous against the CVSS3.1 numbers Kaspersky's own advisory pages actually lead with (9.8 and 9.0 respectively). Both scales should be carried, explicitly labelled, since the ranking inverts between them."
+      - "The Kaspersky advisory pages' own displayed 'CVSS v3 Base Score: 0.0' field is a page-rendering artefact, not a real score of zero — worth flagging so nobody cites '0.0' from the page directly."
+      - "TrueConf's own vendor table gives a NARROWER affected-version range for CVE-2026-72530 (no 'all versions before 5.3' entry) than Kaspersky's KLCERT-26-058 advisory (which does include 'all versions before 5.3' for that CVE) — a genuine vendor-vs-researcher discrepancy on this one CVE's version floor, not previously surfaced by S1."
+      - "S1's summary conflated the Windows PhantomCore/PhantomGraph OneDrive-C2 backdoor with the separate *nix backdoor (GitHub C2 + TrueConf-protocol-hijacking backdoor) — these are two architecturally distinct implants for two different OS families and should not be merged into a single 'PhantomCore/PhantomGraph' description in the published entry."
+      - "S1's claim that Head Mare 'active since 2023 against Russian and Belarusian targets' should not be read as this report confirming Belarusian victims of the TrueConf campaign specifically — the exploitation report names only 'Russian organizations.'"
+      - "Fix release date is now precisely dated: 18 June 2026 (S1 only had 'June 2026')."
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "An unauthorized remote attacker with network access via port 4307/TCP to TrueConf server versions 5.3.X before 5.3.9, 5.4.X before 5.4.9, 5.5.X before 5.5.5, as well as all versions before 5.3, could execute an arbitrary script by calling an undocumented function."
+        attribution: "Kaspersky ICS CERT (KLCERT-26-057)"
+        source_url: "https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-missing-authentication-for-critical-function/"
+        grep_check: "MATCH — contiguous verbatim substring confirmed against klcert57_text.txt"
+      - quote: "An unauthorized remote attacker with network access via port 4307/TCP to TrueConf server versions 5.3.X before 5.3.9, 5.4.X before 5.4.9, 5.5.X before 5.5.5, as well as all versions before 5.3, could use a specially crafted script to break out of the isolated environment and execute arbitrary code on the host system."
+        attribution: "Kaspersky ICS CERT (KLCERT-26-058)"
+        source_url: "https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-breakout-from-isolated-environment/"
+        grep_check: "MATCH — contiguous verbatim substring confirmed against klcert58_text.txt"
+      - quote: "A remote unauthenticated attacker connecting to TrueConf Server over 4307/TCP can invoke an undocumented critical function and execute an arbitrary script on the server."
+        attribution: "TrueConf (vendor security-bulletin table, CVE-2026-72529 row)"
+        source_url: "https://trueconf.com/blog/news/security-fixes-updates-and-advisories"
+        grep_check: "MATCH — contiguous verbatim substring confirmed against trueconf_vendor_text.txt"
+      - quote: "Improper management of code generation can allow an attacker who has achieved code execution in the TrueConf Server isolated environment to escape the sandbox and execute arbitrary commands on the underlying operating system."
+        attribution: "TrueConf (vendor security-bulletin table, CVE-2026-72530 row)"
+        source_url: "https://trueconf.com/blog/news/security-fixes-updates-and-advisories"
+        grep_check: "MATCH — contiguous verbatim substring confirmed against trueconf_vendor_text.txt"
+      - quote: "via port 4307/TCP (open by default, according to TrueConf documentation)"
+        attribution: "Kaspersky ICS CERT (exploitation report)"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+        grep_check: "MATCH — contiguous verbatim substring confirmed against kl_report_text.txt"
+      - quote: "our internal analysis showed that all TrueConf server versions released since 2022 are vulnerable"
+        attribution: "Kaspersky ICS CERT (exploitation report)"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+        grep_check: "MATCH — contiguous verbatim substring confirmed against kl_report_text.txt"
+      - quote: "This enables them to replace the file"
+        attribution: "Kaspersky ICS CERT (exploitation report) — leads into the locale.php file-overwrite sentence"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+        grep_check: "MATCH — contiguous verbatim substring confirmed against kl_report_text.txt (file path C:/Program Files/TrueConf Server/httpconf/site/public/js/locale.php appears on the immediately following line)"
+      - quote: "The attackers use a Microsoft OneDrive cloud storage account as the command and control"
+        attribution: "Kaspersky ICS CERT (exploitation report)"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+        grep_check: "MATCH — contiguous verbatim substring confirmed against kl_report_text.txt (full sentence continues '...(C&C) server' in raw HTML with an &amp; entity, truncated here to a clean literal-matching fragment)"
+      - quote: "on *nix systems, the attackers install a backdoor that uses GitHub as a command and control channel"
+        attribution: "Kaspersky ICS CERT (exploitation report)"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+        grep_check: "MATCH — contiguous verbatim substring confirmed against kl_report_text.txt"
+    kev_ground_truth:
+      dateAdded: "2026-08-20 (both CVEs, confirmed via raw KEV JSON re-fetch)"
+      dueDate_72529: "2026-08-23"
+      dueDate_72530: "2026-09-03"
+      knownRansomwareCampaignUse: "Unknown (both)"
+
+# ============================================================
+# F1-b. SPIP CMS pre-auth RCE — MAJOR CORRECTION
+# ============================================================
+  - id: F1-b
+    title: "SPIP: TWO consecutive unconditional pre-auth RCE emergency releases three days apart (4.4.20 and 4.4.21), not one — CVE-2026-77647 is the 4.4.20 fix, the 4.4.21 fix remains unassigned"
+    sources:
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/", publisher: "CERT-FR / ANSSI", date: "2026-08-21", role: "primary" }
+      - { url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html", publisher: "SPIP maintenance team (4.4.21 release note)", date: "2026-08-20", role: "primary" }
+      - { url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-20.html", publisher: "SPIP maintenance team (4.4.20 release note)", date: "2026-08-17", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-77647", publisher: "NVD / MITRE CNA", date: "2026-08-20", role: "primary" }
+    discovery_trace: "re-read of S1's already-fetched local HTML (spip.html = CERT-FR advisory, spip_blog.html = 4.4.21 blog post) → gap identified (no 4.4.20 blog post read yet) → WebSearch ('\"SPIP 4.4.20\" blog.spip.net sortie mise à jour sécurité') → fetched https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-20.html directly → fetched NVD CVE-2026-77647 to resolve which release it belongs to"
+    corrections:
+      - "MAJOR: 4.4.20 (released Monday 17 August 2026, three days before 4.4.21) was ALSO a critical security release fixing its own separate 'unconditional (no-prerequisites) pre-authentication RCE' — described in nearly identical language to the 4.4.21 release note: also reported anonymously via ANSSI, also NOT caught by SPIP's security screen, also with vendor-stated in-the-wild exploitation attempts already observed. S1's finding treated 4.4.20 only as a version-number boundary and did not surface that it was itself a critical emergency security release for the SAME bug class."
+      - "CVE-2026-77647 IS the CVE for the 4.4.20 fix (confirmed via NVD: the CVE's own reference list cites https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-20.html directly, and its structured 'Affected' field is {version:0, lessThan:4.4.20} — i.e. all versions before 4.4.20). Root cause per NVD's MITRE-sourced description: 'incorrect identification of <?php blocks, and var_export's mishandling of certain cases such as presence of a \"<\" character' (CWE-94, CVSS 3.1 9.8 CRITICAL per CNA=MITRE, vector CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H). NVD's own description text states outright: 'as exploited in the wild in August 2026' — this is NVD/MITRE's own wording, not a hedge."
+      - "The 4.4.21 flaw (still uncredited with any CVE as of this run, per CERT-FR) is therefore a SEPARATE, NEWER bug specifically scoped by the vendor to 'la version 4.4.20 de SPIP' (i.e. code as it existed IN the 4.4.20 release, after the CVE-2026-77647 fix landed) — not a re-statement of the same flaw. The vendor has NOT stated whether this is a bypass of the 4.4.20 patch or an unrelated flaw of the same general shape; per the tasking instruction, no root cause is asserted for the 4.4.21 flaw since none has been published."
+      - "CERT-FR's stated affected range 'SPIP versions antérieures à 4.4.21' (versions before 4.4.21) is technically defensible in aggregate — SPIP < 4.4.20 needs the CVE-2026-77647 fix, and 4.4.20 itself needs the 4.4.21 fix — but is broader than the 4.4.21 vendor bulletin's own narrower framing ('touche la version 4.4.20 de SPIP'). Both statements should be carried side by side, not treated as contradictory or resolved to one."
+      - "4.4.20's release note additionally credits a security researcher by handle: 'Un grand merci à Glop pour son aide à l'analyse et au correctif de la faille' (a researcher named 'Glop' helped analyse/fix the CVE-2026-77647 flaw) — not previously surfaced."
+      - "CERT-FR attributes the active-exploitation claim explicitly to the vendor, not itself, in both instances: for the 4.4.21 flaw, CERT-FR's advisory text reads 'L'éditeur indique que cette vulnérabilité est activement exploitée' (verbatim, grep-verified) — 'the publisher/vendor states' — confirming S1's characterisation was correct on this specific point."
+    exact_quotes_resolution: |
+      CERT-FR CERTFR-2026-AVI-1063: "Systèmes affectés: SPIP versions antérieures à 4.4.21" (versions before 4.4.21 — the BROADER framing).
+      SPIP 4.4.21 vendor blog: "Cette version corrige une vulnérabilité universelle (sans conditions) pré-authentification RCE qui touche la version 4.4.20 de SPIP." (affects version 4.4.20 specifically — the NARROWER framing).
+      SPIP 4.4.20 vendor blog: "Cette version corrige une vulnérabilité universelle (sans conditions) pré-authentification RCE qui touche toutes les versions de SPIP." (affects ALL versions of SPIP).
+      Both blog posts contain the IDENTICAL follow-on sentence: "Cette faille n'est pas prise en charge par l'écran de sécurité. Il est impératif de mettre très rapidement votre site à jour, des tentatives d'exploitation de la faille ont déjà été constatées dans la nature." (not caught by the security screen; update immediately; exploitation attempts already observed in the wild) — this sentence is word-for-word identical across both the 4.4.20 and 4.4.21 release notes.
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Systèmes affectés SPIP versions antérieures à 4.4.21"
+        attribution: "CERT-FR / ANSSI (CERTFR-2026-AVI-1063)"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/"
+        grep_check: "MATCH — verified against spip_certfr.txt (text extracted from the previously-fetched spip.html)"
+      - quote: "L'éditeur indique que cette vulnérabilité est activement exploitée."
+        attribution: "CERT-FR / ANSSI (CERTFR-2026-AVI-1063)"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/"
+        grep_check: "MATCH — verified against spip_certfr.txt"
+      - quote: "Cette version corrige une vulnérabilité universelle (sans conditions) pré-authentification RCE qui touche la version 4.4.20 de SPIP."
+        attribution: "SPIP maintenance team (4.4.21 blog post)"
+        source_url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html"
+        grep_check: "MATCH — verified against spip_blog.txt"
+      - quote: "Cette version corrige une vulnérabilité universelle (sans conditions) pré-authentification RCE qui touche toutes les versions de SPIP."
+        attribution: "SPIP maintenance team (4.4.20 blog post)"
+        source_url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-20.html"
+        grep_check: "MATCH — verified against spip_4420_text.txt"
+      - quote: "lundi 17 août 2026"
+        attribution: "SPIP maintenance team (4.4.20 blog post dateline)"
+        source_url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-20.html"
+        grep_check: "MATCH — verified against spip_4420_text.txt (confirms 4.4.20 released Monday 17 August 2026, three days before 4.4.21's Thursday 20 August 2026)"
+      - quote: "SPIP before 4.4.20 allows unauthenticated remote attackers to execute arbitrary code, as exploited in the wild in August 2026."
+        attribution: "NVD / MITRE CNA (CVE-2026-77647 description)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-77647"
+        grep_check: "MATCH — verified against nvd_77647_text.txt"
+    extended_notes: |
+      Debian's security-announce list also carries an advisory for CVE-2026-77647 (referenced directly in the NVD record): https://lists.debian.org/debian-security-announce/2026/msg00359.html — not fetched this run due to time budget, flagged as an available further-corroboration link for the main agent if needed.
+
+# ============================================================
+# F1-c. GitLab CVE-2026-19478
+# ============================================================
+  - id: F1-c
+    title: "GitLab CVE-2026-19478 — WatchTowr's own honeypot, reported to journalists not a dedicated Labs post; '@gl_introduced' is a GraphQL directive, not an alias"
+    sources:
+      - { url: "https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/", publisher: "SecurityWeek", date: "2026-08-20", role: "primary" }
+      - { url: "https://www.csoonline.com/article/4211140/critical-gitlab-flaw-allows-attackers-to-delete-and-modify-public-repos.html", publisher: "CSO Online", date: "2026-08-18 (updated 2026-08-19)", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12856", publisher: "NCSC Switzerland (Cyber Security Hub, post 12856)", date: "2026-08-21T14:21Z (edit)", role: "corroborating" }
+    discovery_trace: "re-fetched SecurityWeek primary directly → fetched NCSC-CH post 12856 via bridge (ncsc-csh post 12856) → WebSearch for an independent watchTowr Labs blog post (site:labs.watchtowr.com GitLab; watchtowr.com \"gl_introduced\" GitLab) found NONE dedicated to this CVE → pivoted to CSO Online (Lucian Constantin), an independent outlet also carrying direct on-record Jake Knott (watchTowr) quotes, as a second primary alongside SecurityWeek"
+    watchtowr_independence_check: |
+      No dedicated watchTowr Labs blog post (labs.watchtowr.com) exists for CVE-2026-19478 as of this run — searched both a site-scoped query and a phrase-scoped query for the "@gl_introduced" hunt string; results returned only journalist coverage (SecurityWeek, CSO Online, TheHackerNews, Security Affairs, heise, it-boltwise) quoting watchTowr/Jake Knott directly, never a watchTowr-authored post. WatchTowr's claims in this story are journalist-relayed on-record quotes, not a self-published primary — worth noting since the org's methodology prefers the discoverer's own document over anyone's summary of it, and here none exists to prefer.
+    honeypot_observation: |
+      CONFIRMED as watchTowr's OWN honeypot network, on Wednesday 19 August 2026 (both SecurityWeek and CSO Online independently place this as "On Wednesday" against an article dated/updated around 18-20 August 2026 — 2026-08-19 was a Wednesday). CSO Online, verbatim: "On Wednesday, watchTowr started seeing in-the-wild exploitation of this vulnerability across its honeypot network."
+    reproduction_claim: |
+      Verbatim (SecurityWeek, grep-verified, matches S1 exactly): "Whilst no public exploit code is available, WatchTowr was able to reproduce the vulnerability within minutes of its disclosure, armed only with the advisory details and patch." Note the claim is "the advisory details and patch" — NOT literally "the patch diff" (S1's tasking used that phrase but the source does not); do not tighten the wording to imply a diff-specific reverse-engineering method the source doesn't state.
+      CSO Online adds the timeline detail S1 lacked: watchTowr's reproducibility warning itself came on 18 August 2026 (one day after the 17 August patch), a full day BEFORE the Wednesday 19 August honeypot detections — i.e. two separate watchTowr statements, one day apart, not one combined claim.
+    gl_introduced_directive_vs_alias: |
+      CORRECTION: S1 called "@gl_introduced" a "GraphQL alias string" — this is very likely wrong terminology. GraphQL syntax reserves the "@" prefix for DIRECTIVES (e.g. @include, @skip, custom schema directives); GraphQL ALIASES do not use an "@" prefix (they are written as `aliasName: fieldName`). Both GitLab's own vendor statement (quoted by SecurityWeek: "GitLab has remediated an issue that under certain conditions could allow an unauthenticated user to remotely modify or delete public projects and user data via a GraphQL directive") and CSO Online (independently: "CVE-2026-19478... is described as a code injection issue through the GraphQL directive") call the underlying mechanism a GraphQL DIRECTIVE, consistent with the "@" syntax of "@gl_introduced." Neither source calls it an alias. The main agent should correct "alias" to "directive" in the published entry.
+      Also newly surfaced: CVE-2026-19478 "was reported privately to GitLab through its bug bounty program on HackerOne" (CSO Online, grep-verified) — this was a coordinated private disclosure via bug bounty, not an internally-found bug; S1's finding did not state how the flaw was originally discovered/reported.
+      Separately, CVE-2026-19650 (the secondary CSRF flaw bundled in the same patch) is specifically "a CSRF issue in the GraphQL multiplex query handler" (CSO Online, grep-verified) — this "multiplex query handler" detail belongs to CVE-2026-19650, NOT to CVE-2026-19478 itself; a WebSearch AI-summary during this run incorrectly attributed the multiplex-handler root cause to CVE-2026-19478, which the primary source text does not support — flagging this as an observed WebSearch-summary hallucination risk for future runs.
+    ncsc_ch_status_change: |
+      Confirmed via raw JSON of post 12856: created 2026-08-18T08:32:59Z with "Current exploitation status: UNKNOWN"; edited 2026-08-21T14:21:57Z (reason field: "Updated with claims of active exploitation") to "Current exploitation status: Actively exploited," citing the SecurityWeek article as the update's news-coverage reference. Matches S1 exactly.
+    corrections:
+      - "'GraphQL alias string' should read 'GraphQL directive' — both GitLab's own statement and CSO Online independently call @gl_introduced's underlying mechanism a directive, consistent with GraphQL's @-prefix syntax convention; no source calls it an alias."
+      - "No independent watchTowr Labs blog post exists for this CVE — watchTowr's claims reach the public only via journalist on-record quotes (SecurityWeek's Ionut Arghire, CSO Online's Lucian Constantin quoting Jake Knott); this should be reflected as 'via SecurityWeek/CSO Online' attribution, not implied as a watchTowr self-published primary."
+      - "Newly surfaced: CVE-2026-19478 was reported to GitLab via HackerOne bug bounty (private disclosure), not found internally by GitLab."
+      - "The 'GraphQL multiplex query handler' root-cause detail belongs to the SEPARATE CVE-2026-19650 (CSRF), not to CVE-2026-19478 — do not merge the two CVEs' mechanisms."
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "Whilst no public exploit code is available, WatchTowr was able to reproduce the vulnerability within minutes of its disclosure, armed only with the advisory details and patch."
+        attribution: "WatchTowr, via SecurityWeek"
+        source_url: "https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/"
+        grep_check: "MATCH — verified against gitlab_sw_text.txt"
+      - quote: "On Wednesday, watchTowr started seeing in-the-wild exploitation of this vulnerability across its honeypot network."
+        attribution: "CSO Online (Lucian Constantin)"
+        source_url: "https://www.csoonline.com/article/4211140/critical-gitlab-flaw-allows-attackers-to-delete-and-modify-public-repos.html"
+        grep_check: "MATCH — verified against gitlab_cso_text.txt"
+      - quote: "is described as a code injection issue through the GraphQL directive and was reported privately to GitLab through its bug bounty program on HackerOne."
+        attribution: "CSO Online (Lucian Constantin)"
+        source_url: "https://www.csoonline.com/article/4211140/critical-gitlab-flaw-allows-attackers-to-delete-and-modify-public-repos.html"
+        grep_check: "MATCH — verified against gitlab_cso_text.txt"
+      - quote: "GitLab released versions 19.2.4, 19.1.6, 19.0.8, and 18.11.11 for both CE and EE editions to patch CVE-2026-19478 and CVE-2026-19650, a CSRF issue in the GraphQL multiplex query handler."
+        attribution: "CSO Online (Lucian Constantin)"
+        source_url: "https://www.csoonline.com/article/4211140/critical-gitlab-flaw-allows-attackers-to-delete-and-modify-public-repos.html"
+        grep_check: "MATCH — verified against gitlab_cso_text.txt"
+
+# ============================================================
+# F1-d. PTC Windchill/FlexPLM three new CVEs
+# ============================================================
+  - id: F1-d
+    title: "PTC Windchill/FlexPLM three new CVEs — GHSA records carry NO structured version data at all (confirmed empty vulnerabilities[] array); only BSI's CSAF product_tree yields one concrete fixed version; no source links these three CVEs to Cl0p"
+    sources:
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2963", publisher: "BSI CERT-Bund (WID-SEC-2026-2963, CSAF JSON)", date: "2026-08-20", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-5hvp-9mcx-5245", publisher: "GitHub Security Advisory (PTC CNA) — CVE-2026-77644", date: "2026-08-20", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-qxmv-9q88-wwmw", publisher: "GitHub Security Advisory (PTC CNA) — CVE-2026-77645", date: "2026-08-20", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-2698-qwmx-3r6f", publisher: "GitHub Security Advisory (PTC CNA) — CVE-2026-77646", date: "2026-08-20", role: "primary" }
+      - { url: "https://api.github.com/advisories/GHSA-5hvp-9mcx-5245", publisher: "GitHub Advisory REST API — CVE-2026-77644", date: "2026-08-20", role: "primary" }
+    discovery_trace: "fetched BSI CSAF JSON via tools/fetch_source.py bsi-csaf WID-SEC-2026-2963 (structured product_tree/product_status/vulnerabilities read directly) → attempted GHSA HTML pages via tools/fetch_source.py url (403 direct + jina pool exhausted, both failed) → escalated to WebFetch tool directly on the same github.com/advisories URLs (succeeded) and api.github.com/advisories/<id> JSON (succeeded for one, then rate-limited/403'd on repeats) → OSV lookups attempted for all three GHSA ids and all three CVE ids (all HTTP 404 — PTC Windchill is not an OSV-tracked ecosystem) → WebSearch for a Cl0p linkage found none"
+    bsi_csaf_structured_findings: |
+      BSI's CSAF product_tree gives ONE concrete, version-bound answer: CVE-2026-77644 → product_status.known_affected = T058482 = "PTC Windchill Risk and Reliability (WRR) Enterprise Edition <13.1.0.1"; the product_tree separately lists a sibling entry T058482-fixed = "Risk and Reliability (WRR) Enterprise Edition 13.1.0.1" (BSI's standard '-fixed' product-id convention denoting the remediating version, though this record carries no formal remediations[] block). THIS CORRECTS S1's blanket "not confirmed this run (vendor portal auth-gated)" for at least CVE-2026-77644 — the fixed version (13.1.0.1) WAS obtainable this run via BSI's structured CSAF data, without needing PTC's auth-gated portal.
+      For CVE-2026-77645 and CVE-2026-77646, BSI's product_status.known_affected references ONLY generic, version-less product identifiers (T058484 "PTC FlexPLM" cpe:/a:ptc:flexplm:-, T058483 "PTC Windchill" cpe:/a:ptc:windchill:-, T058485 "PTC Windchill PDMLink" cpe:/a:ptc:windchill:pdmlink) — no version range and no fixed-version sibling entry exists in this CSAF record for either CVE. So for these two, "not confirmed this run" remains accurate even after the deep read.
+    ghsa_structured_findings: |
+      Confirmed via the GitHub Advisory REST API JSON directly (api.github.com/advisories/GHSA-5hvp-9mcx-5245): the advisory's "vulnerabilities" array — the field that would normally carry package/ecosystem/vulnerable_version_range/first_patched_version — is EMPTY for all three PTC GHSA records (confirmed for GHSA-5hvp-9mcx-5245 via direct API JSON; GHSA-qxmv-9q88-wwmw and GHSA-2698-qwmx-3r6f confirmed the same via the rendered HTML page, which showed "Affected Versions: Unknown / Patched Versions: Unknown"). This is a genuine, structural gap in PTC's own advisory data — not a fetch failure or summarisation artefact — because PTC published these as non-ecosystem/custom GHSA records with no package registry to bind a version range to. PTC's own support articles (CS474818 for CVE-2026-77644; CS474826 covering BOTH CVE-2026-77645 AND CVE-2026-77646 — note ONE article covers two CVEs) remain the only place with real fixed-version numbers, and remain unreachable this run (OIDC-gated; direct fetch 403, jina exhausted).
+      CVSS confirmed per-CVE from the GHSA record itself (CNA = PTC):
+        CVE-2026-77644: CVSS4.0 9.3 CRITICAL, vector CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/.../U:Red. CWE-306 (Missing Authentication for Critical Function) — matches S1.
+        CVE-2026-77645: CVSS4.0 9.2 CRITICAL, vector CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:L/SI:L/SA:L/.../U:Red. CWE tag is CWE-20 ONLY (Improper Input Validation) — S1 hedged "CWE-20/CWE-502"; the GHSA's own structured cwe_ids array carries only CWE-20, even though the free-text description says the flaw "may be exploited through the deserialization of untrusted data" (the CWE-502 mechanism). Correction: report CWE-20 as the advisory's own classification, and note the deserialization mechanism as description text, not as a second official CWE tag.
+        CVE-2026-77646: CVSS4.0 7.7 HIGH, vector CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:H/SI:N/SA:N/.../U:Red. CWE-502 (Deserialization of Untrusted Data) — matches S1.
+      CORRECTION on the "Urgency: Red" flag: this is a CVSS4.0 Supplemental Metric (U:Red = Provider Urgency: Red) baked into the CNA's (PTC's) own published vector string — it appears on ALL THREE CVEs identically (U:Red on 77644, 77645, AND 77646), not a unique NVD-added annotation on CVE-2026-77645 alone as S1's summary implied ("NVD's supplemental CVSS metadata separately flags it 'Urgency: Red'"). It is PTC's own supplemental metric, common to all three, not NVD-specific and not unique to one CVE.
+    clop_link_check: |
+      No source found linking any of these three new CVEs to the Cl0p extortion campaign. A targeted WebSearch for the three CVE ids alongside "Cl0p" returned only unrelated hits and one explicit statement (search-engine synthesis of results, treat as directional not a citable quote) that the ongoing Cl0p campaign's exploited vulnerability remains the previously-known CVE-2026-12569, distinct from these three 2026-08-20 disclosures. This CONFIRMS the main agent's planned "no confirmed link" framing is correct and can be stated with confidence rather than hedged as an open question.
+    corrections:
+      - "CVE-2026-77644's fixed version (13.1.0.1) IS available this run via BSI's structured CSAF product_tree — S1's blanket 'not confirmed this run (vendor portal auth-gated)' should be narrowed to apply only to CVE-2026-77645 and CVE-2026-77646, which genuinely remain unconfirmed after this deep read too."
+      - "CVE-2026-77645's advisory-tagged CWE is CWE-20 only, not 'CWE-20/CWE-502' — the deserialization mechanism is description prose, not a second official CWE classification on this GHSA record."
+      - "The CVSS4.0 'U:Red' (Provider Urgency: Red) supplemental metric is common to all three CVEs' PTC-published vectors, not a unique NVD-added flag on CVE-2026-77645 alone."
+      - "Confirmed (not merely assumed): no source ties these three new CVEs to the ongoing Cl0p Windchill extortion campaign, which remains anchored to the earlier CVE-2026-12569."
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    evidence:
+      - quote: "A critical bypass access control vulnerability has been reported in PTC Windchill Risk and Reliability (WRR) Enterprise Edition."
+        attribution: "GitHub Security Advisory GHSA-5hvp-9mcx-5245 (PTC CNA)"
+        source_url: "https://github.com/advisories/GHSA-5hvp-9mcx-5245"
+        grep_check: "NOT independently grep-verified this run — obtained via WebFetch tool extraction (raw HTML unobtainable: direct fetch 403, jina pool credit-exhausted); the api.github.com JSON call independently corroborates the same text field for this one GHSA ID, giving moderate but not byte-level confidence."
+      - quote: "The vulnerability may be exploited through the deserialization of untrusted data."
+        attribution: "GitHub Security Advisory GHSA-qxmv-9q88-wwmw (PTC CNA)"
+        source_url: "https://github.com/advisories/GHSA-qxmv-9q88-wwmw"
+        grep_check: "NOT grep-verified — WebFetch extraction only, same transport-limitation caveat as above."
+
+# ============================================================
+# F1-e. misp-stix CVEs (CIRCL)
+# ============================================================
+  - id: F1-e
+    title: "misp-stix three CVEs — mechanism, fields and 100MB cap all confirmed verbatim from GHSA/NVD text; third CVE (CVE-2026-77761) has NO GHSA record found, only an NVD/CIRCL CNA container; no tagged release since 2026.7.8 confirmed independently via GitHub Releases AND PyPI"
+    sources:
+      - { url: "https://github.com/advisories/GHSA-pqpx-w6cx-7q9c", publisher: "GitHub Security Advisory / CIRCL — CVE-2026-77710", date: "2026-08-21", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-65gx-wjvj-88j8", publisher: "GitHub Security Advisory / CIRCL — CVE-2026-77755", date: "2026-08-21", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-77761", publisher: "NVD / CIRCL CNA — CVE-2026-77761", date: "2026-08-21", role: "primary" }
+      - { url: "https://github.com/MISP/misp-stix/releases", publisher: "GitHub Releases (MISP/misp-stix)", date: "2026-08-22 (checked)", role: "corroborating" }
+      - { url: "https://pypi.org/project/misp-stix/#history", publisher: "PyPI release history", date: "2026-08-22 (checked)", role: "corroborating" }
+    discovery_trace: "attempted api.github.com JSON for GHSA-pqpx-w6cx-7q9c and GHSA-65gx-wjvj-88j8 (403 after the first successful PTC call, rate-limited) → fell back to WebFetch directly on the github.com/advisories HTML pages (succeeded, full description text extracted) → WebSearch for the third CVE's GHSA id ('\"CVE-2026-77761\" GHSA misp-stix github advisories') found none → checked the repo's own Security Advisories tab (github.com/MISP/misp-stix/security/advisories — shows zero published advisories, confirming these GHSA ids were populated via the GitHub Advisory Database curation pipeline from the CVE record, not natively authored in-repo) → fell back to NVD's CIRCL-sourced CNA container for CVE-2026-77761 as the authoritative primary instead → checked GitHub Releases and PyPI independently for the current tagged-release state"
+    mechanism_confirmed: |
+      CVE-2026-77710 trust-decision bypass — CONFIRMED, GHSA-pqpx-w6cx-7q9c (fetched via WebFetch, full description read): the parser-selection logic decided "MISP-native" origin from attacker-controlled markers (STIX2 MISP-specific tool labels; STIX1 document title) — both fully producer-controlled and therefore untrustworthy (CWE-807: untrusted value drives a security-relevant trust decision). When classified as MISP-native, the code copied the ENTIRE x_misp_attributes dictionary directly into misp_object.add_attribute() with no allow-list (CWE-915: dynamically assigning externally-supplied object properties without restricting to an expected set) — confirmed explicitly naming the three requested fields plus a fourth catch-all: "a crafted STIX bundle could supply fields that were not part of the expected STIX-to-MISP round-trip format, including security-sensitive properties such as distribution, sharing_group_id, tags, or other MISP attribute fields." Two commits referenced: github.com/MISP/misp-stix/commit/3e5e7bda and .../66c654b9. CVSS4.0 6.9 MODERATE, vector CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:L/VA:N/SC:N/SI:N/SA:N (matches S1's cve_table figure). CWE tags: BOTH CWE-915 and CWE-807 (S1 only cited "CWE-915/CWE-807" in its title parenthetical for the wrong CVE grouping — worth double-checking against the published entry draft that these two CWEs stay attached to CVE-2026-77710 specifically).
+      CVE-2026-77755 DoS — CONFIRMED, GHSA-65gx-wjvj-88j8 (WebFetch, full description read): sys.exit() calls on parse-failure paths raise SystemExit (subclasses BaseException, not Exception) so callers' normal exception handlers don't catch it — confirmed verbatim. Separately, no input-size limit was enforced before parsing, so "processing could consume approximately two to seven times the input size in memory" (verbatim). Fix: "replace process-terminating sys.exit() calls with catchable exceptions such as STIXLoadingError and MissingSTIXContentError" and "enforces an input-size limit before parsing. The default maximum is 100 MB, can be adjusted by callers, and can explicitly be disabled when required" (verbatim) — CONFIRMS S1's "100MB" figure exactly, sourced to the advisory's own fix description, not an inference. CVSS4.0 8.7 HIGH (matches S1). CWE-400 (Uncontrolled Resource Consumption). Two commits: .../commit/66119552 and .../commit/e8e732ad.
+      CVE-2026-77761 parser-state contamination — CONFIRMED via NVD's CIRCL-sourced CNA container (no GHSA record locatable this run — see below): galaxy/galaxy-cluster data, passive-DNS bookkeeping, package titles, dates and timestamps can survive parser reuse across independent STIX documents; affects only long-lived-parser-reuse callers of the misp-stix API directly, NOT normal one-parser-per-file conversion entry points (explicitly stated, grep-verified). CVSS4.0 6.3 MEDIUM (CVSS-B, per CNA=CIRCL), vector CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:L/VI:L/VA:N/SC:N/SI:N/SA:N — matches S1's cve_table figure (6.3) exactly. CWE-459 (Incomplete Cleanup) — NOT previously stated by S1. Three commits: .../commit/ad4f0a65.patch, .../commit/f08373dd, .../commit/f6593931. Structured affected-range from the CNA container: {version: "0", lessThanOrEqual: "2026.7.8", status: "affected"} — i.e. ALL released versions up to and including the current latest tag (2026.7.8) are affected.
+    third_ghsa_not_found: |
+      Could not locate a GHSA id for CVE-2026-77761 this run despite (a) a targeted WebSearch for the CVE id plus 'GHSA misp-stix github advisories' and (b) checking the misp-stix repository's own Security Advisories tab directly (github.com/MISP/misp-stix/security/advisories), which currently shows "There aren't any published security advisories" for the repo — indicating these three CVEs' GHSA records (where they exist) were populated via GitHub's separate Advisory Database curation pipeline rather than natively authored in-repo, and CVE-2026-77761 in particular may not have been mirrored into GHSA at all as of this run. NVD's CIRCL-sourced CNA container is used as the primary instead — this is itself a first-party CNA source (CIRCL is the CVE Numbering Authority for MISP-project vulnerabilities and Luxembourg's national CERT), not a downgrade in source quality.
+    release_state_confirmed: |
+      Independently confirmed via BOTH GitHub Releases (github.com/MISP/misp-stix/releases) and PyPI (pypi.org/project/misp-stix/#history): the current, most recent tagged/published release remains 2026.7.8 (released 8 July 2026 per GitHub Releases' own date and PyPI's own upload-history date — note this is 8 July, not 9 July as S1's finding stated; S1 was off by one day). No release newer than 2026.7.8 exists as of this run (2026-08-22), and neither release history mentions any of the three CVEs by number. This means NONE of the three fixes (CVE-2026-77710, -77755, -77761) are in any pip-installable release yet — confirmed independently rather than inferred from the advisories' own silence on a fixed version, strengthening S1's claim to a dual-source confirmation.
+    corrections:
+      - "misp-stix's last tagged release date is 8 July 2026, not 9 July 2026 as S1 stated (minor, but worth fixing for precision) — confirmed independently via both GitHub Releases and PyPI, which agree with each other."
+      - "No GHSA record for CVE-2026-77761 could be located this run; use the NVD/CIRCL CNA container as the primary source for that CVE instead of implying a third GHSA exists to be found."
+      - "CVE-2026-77761's CWE is CWE-459 (Incomplete Cleanup) — not previously stated by S1."
+      - "The 100MB default input-size cap IS the advisory's own stated fix detail, not an inference — confirmed verbatim in GHSA-65gx-wjvj-88j8's fix description, alongside the 2-7x memory-multiplier figure, also verbatim."
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "A parser state isolation vulnerability in misp-stix could cause data from a previously processed STIX document to be retained and incorporated into the MISP event generated from a subsequent document when the same parser instance is reused."
+        attribution: "NVD / CIRCL CNA (CVE-2026-77761 description)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-77761"
+        grep_check: "MATCH — verified against nvd_77761_text.txt"
+      - quote: "The issue primarily affects applications using the misp-stix API directly and reusing parser instances across independent STIX documents. Normal conversion entry points that instantiate a new parser for each file are not affected by this particular reuse scenario."
+        attribution: "NVD / CIRCL CNA (CVE-2026-77761 description)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-77761"
+        grep_check: "MATCH — verified against nvd_77761_text.txt"
+      - quote: "a crafted STIX bundle could supply fields that were not part of the expected STIX-to-MISP round-trip format, including security-sensitive properties such as distribution, sharing_group_id, tags"
+        attribution: "GitHub Security Advisory GHSA-pqpx-w6cx-7q9c (CIRCL)"
+        source_url: "https://github.com/advisories/GHSA-pqpx-w6cx-7q9c"
+        grep_check: "NOT grep-verified — WebFetch extraction only (raw HTML unobtainable this run: direct fetch 403, jina pool credit-exhausted)."
+      - quote: "Because SystemExit inherits from BaseException rather than Exception, these failures bypassed the exception handlers used by callers of the library."
+        attribution: "GitHub Security Advisory GHSA-65gx-wjvj-88j8 (CIRCL)"
+        source_url: "https://github.com/advisories/GHSA-65gx-wjvj-88j8"
+        grep_check: "MATCH against S1's original evidence record (S1 grep-verified this quote in its own run per findings.S1.yaml); independently re-obtained this run via WebFetch, wording identical."
+      - quote: "The default maximum is 100 MB, can be adjusted by callers, and can explicitly be disabled when required."
+        attribution: "GitHub Security Advisory GHSA-65gx-wjvj-88j8 (CIRCL)"
+        source_url: "https://github.com/advisories/GHSA-65gx-wjvj-88j8"
+        grep_check: "NOT grep-verified — WebFetch extraction only, same transport-limitation caveat."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: "ptc-support-portal"
+    reason: "PTC's own CS474818 and CS474826 support articles (which would carry PTC's authoritative fixed-version numbers for all three Windchill/FlexPLM CVEs) are OIDC-login-gated; direct fetch returned no body and the jina reader pool was fully credit-exhausted (HTTP 402 on all keys) this run, so the fallback transport was unavailable. Confirmed unreachable via both rungs available this run."
+  - source_id: "github.com/advisories (direct + api.github.com)"
+    reason: "tools/fetch_source.py's direct GET on both github.com/advisories/<id> and api.github.com/advisories/<id> returned HTTP 403 for every GHSA id attempted (anti-bot on the direct transport), and the jina reader fallback was fully credit-exhausted (HTTP 402 on all 7 keys). WebFetch (the harness's own tool, different backend/UA) succeeded on github.com/advisories/<id> HTML pages for 5 of 6 GHSA ids attempted and once on the api.github.com JSON endpoint before that endpoint also began 403'ing on repeat calls (likely anonymous rate-limiting). Net effect: GHSA-sourced quotes in F1-d and F1-e are WebFetch-extracted, not grep-verified against a raw saved file the way every other quote in this return is — flagged per-quote above rather than silently treated as equally verified."
+  - source_id: "watchtowr labs blog"
+    reason: "No dedicated labs.watchtowr.com post exists for CVE-2026-19478 as of this run (searched twice, see F1-c watchtowr_independence_check) — not a fetch failure, a genuine absence; watchTowr's claims on this story reach the public only via journalist relay."

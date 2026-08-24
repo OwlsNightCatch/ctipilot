@@ -1,0 +1,420 @@
+domain: S3
+run_id: 2026-08-21T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-21T04:14:57Z
+ended_at: 2026-08-21T04:40:53Z
+duration_seconds: 1556
+self_telemetry:
+  webfetch_calls: 34
+  websearch_calls: 6
+  bridge_fetches: 28
+items:
+  - title: "Operation ASTERIX: fake Trezor/Ledger/Exodus wallet apps kill the real app mid-launch to steal seed phrases, and when Claude declined to help obfuscate the malware the operators jailbroke Kimi instead"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/tr-operation-asterix-crypto-fraud-vishing-phishing/", publisher: "Rapid7", date: "2026-08-18", role: primary }
+      - { url: "https://www.cryptotimes.io/2026/08/20/rapid7-exposes-fake-trezor-app-used-to-steal-crypto-seed-phrases/", publisher: "CryptoTimes", date: "2026-08-20", role: corroborating }
+    discovery_trace: "first seen at: cryptotimes, URL https://www.cryptotimes.io/ (homepage listing, headline only, no outbound links surfaced) -> WebSearch (\"Rapid7 fake Trezor app seed phrase malware\") -> primary: Rapid7, URL https://www.rapid7.com/blog/post/tr-operation-asterix-crypto-fraud-vishing-phishing/ -> corroborating: CryptoTimes article drilled directly, URL https://www.cryptotimes.io/2026/08/20/rapid7-exposes-fake-trezor-app-used-to-steal-crypto-seed-phrases/"
+    summary: >
+      Rapid7 documents a crypto-fraud pipeline it calls Operation ASTERIX, discovered after finding a misconfigured
+      web directory on the operators' infrastructure on 17 August. The pipeline chains bulk phone-number validation
+      against exchange APIs (885,000 numbers mined; 43,066 of 316,002 numbers in a German dataset confirmed live,
+      a 13.6% hit rate; 5,576 matched to Binance accounts and queued for attack), Asterisk/3CX-powered vishing that
+      references a fake case number shared with a companion phishing email, and Electron-packaged counterfeit
+      Trezor Suite, Ledger Live and Exodus wallet applications. The macOS Trezor build runs as a hidden Electron
+      process that polls the process list every five seconds, kills the legitimate Trezor Suite the moment it
+      launches, and brings its own transparent overlay window forward to prompt the victim for a 12-, 18-, 20- or
+      24-word BIP39 recovery phrase (plus optional passphrase) before exfiltrating it to Telegram bots. Rapid7's
+      most consequential finding is in the operators' own build environment: GitHub Copilot, Claude Code and Kimi
+      were used throughout development of phishing infrastructure, payload code and debugging; when a request to
+      obfuscate malicious code was refused by one model, the operators switched providers and deployed a custom
+      jailbreak prompt against Kimi combining identity replacement and trigger-phrase conditioning to defeat its
+      safety controls. Rapid7 frames AI-safety-control bypass as becoming a routine engineering step in malware
+      development pipelines rather than an edge case.
+    region_nexus: "Global; German phone-number dataset, Binance/Kraken/Crypto.com account validation. No Swiss/EU victim population disclosed, but the AI-jailbreak-in-malware-development-pipeline pattern is directly transferable to any SOC tracking AI-assisted threat evolution, and the targeted platforms (Trezor/Ledger/Exodus) see use among FINMA-supervised digital-asset custodians' retail customers."
+    primary_sector_nexus: "indirect"
+    sector: "finance"
+    cves: []
+    techniques: [T1566.004, T1036.005, T1056.002, T1588.007]
+    affected_products: ["Trezor Suite", "Ledger Live", "Exodus"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:operation-asterix", type: campaign, name: "Operation ASTERIX", aliases: [],
+          summary: "Rapid7-tracked crypto-fraud pipeline combining bulk phone-number validation, Asterisk/3CX-based vishing and Electron-packaged counterfeit Trezor Suite / Ledger Live / Exodus wallet applications to harvest BIP39 seed phrases; the developers used GitHub Copilot, Claude Code and Kimi throughout the build pipeline and deployed a custom jailbreak prompt against Kimi after Claude declined an obfuscation request (Rapid7, 2026-08-17, updated 2026-08-18)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The recovered logs show that 43,066 accounts were confirmed from the German dataset of 316,002 phone numbers, a hit rate of approximately 13.6%."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/tr-operation-asterix-crypto-fraud-vishing-phishing/"
+      - quote: "When one model began resisting parts of that workflow, the operator switched providers and attempted to bypass the next model's safety controls with a custom jailbreak prompt."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/tr-operation-asterix-crypto-fraud-vishing-phishing/"
+      - quote: "Every five seconds, the malware scanned the process list for the legitimate Trezor Suite...When it found the real wallet, it killed the process, brought its own window forward."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/tr-operation-asterix-crypto-fraud-vishing-phishing/"
+    extended_notes: >
+      Recency: Rapid7's own dateModified is 2026-08-18T14:59Z (~61.5h before this run, inside the 72h developing-story
+      allowance) and the story continued to see fresh independent pickup inside the standard 26h window via
+      CryptoTimes (2026-08-20, directly fetched and quoted above) and gbhackers.com (2026-08-20, surfaced via
+      WebSearch but not independently fetched, so not cited as a Source). No prior run has covered this story
+      (checked prior_coverage.json and entities/registry.yaml — no match on "ASTERIX", "Trezor", "Ledger",
+      "Operation ASTERIX"). Marked borderline because the direct victim population is retail/consumer crypto users
+      with no stated Swiss/EU nexus; carried primarily for the AI-jailbreak-in-development-pipeline tradecraft,
+      which is a transferable technique-class finding regardless of the campaign's own targeting.
+    borderline: true
+    borderline_reason: "No direct Swiss/EU or critical-infrastructure victim population (retail crypto-wallet fraud, German/US/Binance-account targeting); carried for the transferable AI-safety-bypass-in-malware-development tradecraft and finance-sector relevance to FINMA-supervised digital-asset custodians."
+
+  - title: "IBM X-Force baits ITG27 (Mustang Panda) into a deception environment and catches a new hVNC backdoor, Havencode, plus a Toneshell v10 that moved from raw sockets to WebSocket-over-TLS"
+    sources:
+      - { url: "https://www.ibm.com/think/x-force/trapping-a-mustang-panda", publisher: "IBM X-Force", date: "2026-08-20", role: primary }
+    discovery_trace: "first seen at: ibm-xforce, URL https://www.ibm.com/think/x-force (listing, dateless landing) -> primary: IBM X-Force, URL https://www.ibm.com/think/x-force/trapping-a-mustang-panda (dated 2026-08-20 in the article's own datePublished metadata)"
+    summary: >
+      IBM X-Force, working with deception-technology vendor Deception.Pro, captured live hands-on-keyboard
+      intrusions by ITG27 (formerly Hive0154; a China-aligned espionage group X-Force states overlaps with actors
+      publicly reported as Mustang Panda, Stately Taurus, UNK_SteadySplit, Camaro Dragon, Twill Typhoon, Polaris
+      and Earth Preta) inside simulated Indian government and energy-sector environments. The initial-access chain
+      uses hydropower-cooperation-themed spear-phishing archives whose legitimate executable side-loads a malicious
+      DLL ("SolidPDFCreator.dll") that recovers embedded shellcode and executes it via the EnumSystemLocalesA
+      enumeration-callback technique, delivering a new Claimloader variant that chains to Toneshell v10 — the
+      tenth iteration of ITG27's backdoor, which X-Force says has moved from custom socket-based C2 to WebSocket-
+      over-TLS via WinHTTP. In one incident, operators additionally deployed a backdoor X-Force had not seen
+      before, Havencode: a 64-bit DLL side-loaded alongside a legitimate executable that offers hidden-desktop
+      (HVNC) and existing-desktop (AVNC) remote control plus a generic TCP/UDP proxy/tunnel ("map") capability,
+      with the C2 address supplied only as a runtime command-line argument rather than embedded in the binary.
+      X-Force correlated operator activity across both incidents to consistent 08:00-18:00 China Standard Time
+      working hours and observed hands-on-keyboard typos (e.g. "net user /doamin"), supporting an assessment that
+      the intrusions were manually operated rather than fully automated. Detection guidance centers on DLL
+      side-loading into non-standard paths under C:\ProgramData\, EnumSystemLocalesA-callback shellcode execution,
+      Run-key persistence, and hidden-desktop / unexpected explorer.exe launches tied to HVNC activity; X-Force
+      also recommends 90-day minimum log retention given the actor's multi-day operational tempo.
+    region_nexus: "South Asia (Indian government and energy sector) — no direct Swiss/EU victim population disclosed, but the actor cluster (Mustang Panda / Stately Taurus / Camaro Dragon family) has a documented history of targeting European and Russian organisations, and the deception-capture methodology plus DLL-sideload/enumeration-callback tradecraft is directly transferable to any government or energy-sector defender."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy"
+    cves: []
+    techniques: [T1566.001, T1574.001, T1082, T1033, T1087.002, T1069.001, T1069.002, T1057, T1016, T1016.001, T1016.002, T1049, T1018, T1518.001, T1083, T1547.001, T1219, T1090]
+    affected_products: []
+    entity_keys: ["actor:mustang-panda"]
+    new_entities:
+      - { key: "malware:havencode", type: malware, name: "Havencode", aliases: [],
+          summary: "Previously undocumented VNC-capable backdoor deployed by ITG27 (Mustang Panda cluster), delivered as a side-loaded 64-bit DLL (\"roboform-x64.dll\"). Offers hidden-desktop (HVNC) and existing-desktop (AVNC) remote control plus a generic TCP/UDP proxy/tunnelling capability; its C2 address is supplied only as a command-line argument at execution time rather than embedded in the binary (IBM X-Force, 2026-08-20)." }
+      - { key: "malware:claimloader", type: malware, name: "Claimloader", aliases: [],
+          summary: "DLL-side-load loader family consistently associated with ITG27 (Mustang Panda cluster) intrusion activity; recovers embedded shellcode and launches it via the EnumSystemLocalesA enumeration-callback technique to deliver the Toneshell backdoor. Previously reported in part by Acronis under different toolchain categorisation (IBM X-Force, 2026-08-20)." }
+    relation_suggestions:
+      - { subject: "actor:mustang-panda", object: "malware:havencode", basis: "IBM X-Force: ITG27 operators deployed a previously undiscovered VNC-capable backdoor named Havencode (IBM X-Force, 2026-08-20)" }
+      - { subject: "actor:mustang-panda", object: "malware:claimloader", basis: "IBM X-Force: the sideloaded DLL loader is tracked as Claimloader, a malware family consistently associated with ITG27 intrusion activity (IBM X-Force, 2026-08-20)" }
+      - { subject: "actor:mustang-panda", object: "malware:toneshell", basis: "IBM X-Force identifies Toneshell v10 as the payload deployed in these ITG27 intrusions, describing it as the tenth iteration of the family and noting its transition to WebSocket-over-TLS C2 (IBM X-Force, 2026-08-20)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The Havencode backdoor dropped by the operators is a malware that has not been observed by X-Force before."
+        attribution: "IBM X-Force"
+        source_url: "https://www.ibm.com/think/x-force/trapping-a-mustang-panda"
+      - quote: "X-Force analysis shows that operator-initiated actions took place exclusively during weekday working hours (08:00-18:00) in China Standard Time."
+        attribution: "IBM X-Force"
+        source_url: "https://www.ibm.com/think/x-force/trapping-a-mustang-panda"
+      - quote: "Earlier variants relied on custom socket-based communications, while version 10 transitions to secure WebSocket communications using WinHTTP over TLS."
+        attribution: "IBM X-Force"
+        source_url: "https://www.ibm.com/think/x-force/trapping-a-mustang-panda"
+    extended_notes: >
+      Registry note: "actor:mustang-panda" (aliases: HoneyMyte) is the closest existing registry key for the actor
+      IBM X-Force calls ITG27/Hive0154; X-Force's own alias list (Mustang Panda, Stately Taurus, UNK_SteadySplit,
+      Camaro Dragon, Twill Typhoon, Polaris, Earth Preta) is broader than the registry's current aliases —
+      worth folding "ITG27" and "Hive0154" into that entity's alias list. Distinct from, and not a duplicate of,
+      the already-covered 2026-08-15 Kaspersky CoolClient/kernel-driver Mustang Panda entry (different toolset:
+      CoolClient/PlugX vs Claimloader/Toneshell/Havencode) and the 2026-08-17 Acronis PATCHCORD/SHEETCORD entry
+      (different actor, APT36, different region, Afghan telecom). Single-source: no independent secondary pickup
+      found yet via WebSearch (article published same day); IBM X-Force is treated as an Admiralty B vendor
+      research lab, not a national-CERT carve-out, so this is SINGLE-SOURCE-OTHER rather than a carve-out case.
+    borderline: false
+
+  - title: "BTR Reforged: Check Point turns Windows Defender's own boot-time remediation driver into a kernel read/write primitive, no vulnerability required"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/btr-reforged-weaponizing-defenders-remediation-driver-as-a-kernel-operation-primitive/", publisher: "Check Point Research", date: "2026-08-20", role: primary }
+      - { url: "https://cyberinsider.com/chinese-hackers-use-ai-to-automate-attacks-on-170000-servers/", publisher: "CyberInsider", date: "2026-08-20", role: unrelated-corroborating-attempt-dropped }
+    discovery_trace: "first seen at: checkpoint-research, URL https://research.checkpoint.com/feed/ (RSS listing) -> primary: Check Point Research, URL https://research.checkpoint.com/2026/btr-reforged-weaponizing-defenders-remediation-driver-as-a-kernel-operation-primitive/ (no independent secondary pickup found via WebSearch \"BTR Reforged Check Point Defender remediation driver\" beyond aggregator/vulners.com and a cybersecuritynews.com page that returned an empty body on fetch — logged as a dropped corroboration attempt, not cited)"
+    summary: >
+      Check Point Research reverse-engineered BTR.sys (the Boot-Time Removal driver embedded in Windows Defender's
+      MpEngine.dll, used when Defender needs to remove a file that is locked by the OS after a reboot) and found it
+      accepts a proprietary transaction blob — RC4-encrypted with a hardcoded key and protected by a modified
+      CRC-32 check — via a value read from its own service registry key, rather than exposing a standard IOCTL
+      interface. An attacker who already holds SeLoadDriverPrivilege (no memory-safety bug required, and no risk
+      of the driver being added to the Microsoft Vulnerable Driver Blocklist, since it is a legitimate signed
+      in-box component) can craft valid transactions instructing BTR.sys to delete or move files and directories
+      and delete or write registry keys/values from kernel mode. The most consequential exploitation window is a
+      "Golden Window" during Phase 1 boot, when the filesystem has become writable but security services
+      (Defender itself, third-party EDR/AV) have not yet started — letting an attacker tamper with or neutralize
+      those services before they can observe it. Check Point published a proof-of-concept tool, BTR_CLI, and
+      reports reliable exploitation across Windows 7 through 11; it found no evidence of in-the-wild abuse, and
+      states Microsoft's MSRC does not classify the finding as a vulnerability because it presupposes
+      administrator-level privilege the attacker must already hold. Detection guidance centers on Sysmon Event ID
+      15 (FileCreateStreamHash) alerts where the target filename ends in ".sys:changelist", and on monitoring for
+      unauthorized reads/writes of the driver's "Args" service-registry value or invocation of its configuration
+      interface outside Defender's own maintenance windows.
+    region_nexus: "Global; a Windows-platform-wide (7 through 11) EDR/AV-neutralization primitive with no regional targeting of its own — directly relevant to any Windows estate, including Swiss federal, cantonal and communal administration and CI operators."
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: []
+    techniques: [T1211, T1685]
+    affected_products: ["Microsoft Defender for Endpoint (BTR.sys Boot-Time Removal driver, MpEngine.dll)"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:btr_cli", type: tool, name: "BTR_CLI", aliases: [],
+          summary: "Check Point Research's proof-of-concept command-line tool implementing the reverse-engineered BTR.sys transaction protocol, published as supporting material for the BTR Reforged research (Check Point Research, 2026-08-20)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The driver does not expose a standard IOCTL interface. Instead, it reads a configuration blob pointed to by the Args value in its Service Registry Key."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/btr-reforged-weaponizing-defenders-remediation-driver-as-a-kernel-operation-primitive/"
+      - quote: "The abuse of BTR.sys fundamentally relies on the attacker possessing SeLoadDriverPrivilege."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/btr-reforged-weaponizing-defenders-remediation-driver-as-a-kernel-operation-primitive/"
+      - quote: "Alert on FileCreateStreamHash (Event ID 15) where TargetFilename ends in \".sys:changelist\"."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/btr-reforged-weaponizing-defenders-remediation-driver-as-a-kernel-operation-primitive/"
+    extended_notes: >
+      This is a different Windows-Defender-internals abuse technique from the already-covered ShieldBreak /
+      CVE-2026-69414 story (Cloud Files API + Object Manager namespace TOCTOU race writing a fake phoneinfo.dll
+      loaded by wermgr.exe) that appears in the url-liveness ledger for this run (fetched by a sibling sub-agent
+      at 2026-08-21T04:26:12Z via a LevelBlue SpiderLabs post) — confirmed non-duplicate by direct comparison of
+      mechanism (BTR.sys transaction-protocol abuse vs Cloud-Files/TOCTOU/wermgr.exe DLL planting). Presented at
+      Black Hat USA 2026 / DEF CON 34 per the researcher's own GitHub repo (github.com/Dump-GUY/BTR_CLI, not
+      fetched directly — surfaced via WebSearch snippet only). No independent secondary source was successfully
+      fetched: a cybersecuritynews.com corroborating article returned an empty WebFetch body and then failed on
+      both the bridge's direct transport (HTTP 202, near-empty) and the jina reader fallback (credit pool
+      exhausted, HTTP 402 on every key) — not logged as a formal fetch_failures entry since cybersecuritynews.com
+      is not a curated source-list record for this domain.
+    borderline: false
+
+  - title: "UAT-10147's SPECTRE implant abuses two BYOVD drivers to blind CrowdStrike, SentinelOne and Defender kernel callbacks, and Talos assesses the actor built it with jailbroken AI coding assistance"
+    sources:
+      - { url: "https://blog.talosintelligence.com/uat-10147-deploys-spectre-a-cross-platform-implant-with-linux-rootkit-and-byovd-capabilities/", publisher: "Cisco Talos", date: "2026-08-20", role: primary }
+      - { url: "https://blog.talosintelligence.com/uat-10147-chinese-speaking-adversary-integrates-agentic-ai-into-post-compromise-operations/", publisher: "Cisco Talos", date: "2026-08-20", role: primary }
+      - { url: "https://cyberinsider.com/chinese-hackers-use-ai-to-automate-attacks-on-170000-servers/", publisher: "CyberInsider", date: "2026-08-20", role: corroborating }
+    discovery_trace: "first seen at: talos, URL https://blog.talosintelligence.com/ (listing) -> primary: Cisco Talos, URL https://blog.talosintelligence.com/uat-10147-deploys-spectre-a-cross-platform-implant-with-linux-rootkit-and-byovd-capabilities/ and companion post https://blog.talosintelligence.com/uat-10147-chinese-speaking-adversary-integrates-agentic-ai-into-post-compromise-operations/ -> corroborating: WebSearch (\"UAT-10147 SPECTRE Talos rootkit BYOVD\") -> CyberInsider, URL https://cyberinsider.com/chinese-hackers-use-ai-to-automate-attacks-on-170000-servers/"
+    summary: >
+      Cisco Talos published two companion reports (same day) on UAT-10147, a Chinese-speaking cybercrime group that
+      gains initial access to roughly 170,000 URLs (per CyberInsider's relay of the same figures) by exploiting
+      known vulnerabilities in IIS/ASP.NET, Zimbra, Nacos, AjaxPro and Telerik UI, then combines SEO-fraud
+      monetization with a mature post-exploitation toolset spanning government, education, media, technology and
+      gaming victims. The group's cross-platform C2 implant, SPECTRE, is written in C with 45 Windows commands
+      (24 plaintext, 21 xorshift-PRNG-encrypted) covering process injection, credential theft, and — its most
+      consequential capability — a BYOVD component that loads vulnerable signed drivers (MSI's RTCore64.sys,
+      CVE-2019-16098, and Dell's DBUtil_2_3.sys, CVE-2021-21551) to obtain kernel read/write access and unlink the
+      process/thread/image-load notification callbacks that EDR products depend on, rendering "kernel-callback-
+      dependent security products such as CrowdStrike Falcon, SentinelOne, Microsoft Defender...completely blind
+      to new process creations." SPECTRE's Linux variant deploys a companion kernel rootkit Talos calls Specter,
+      masquerading as the legitimate module acpi_pad.ko, which uses ftrace-based syscall hooking to hide processes
+      (a custom kill-signal value removes the target task_struct from the kernel PID list, making /proc/<pid>
+      disappear) and persists via a fraudulent systemd unit. In the companion post, Talos documents evidence the
+      actor used PentestGPT, DeepAudit and ysoserial-based automation — including a recovered artifact showing an
+      AI tool generating a full exploitation README plus three companion Python scripts for a ViewState
+      deserialization attack, and a section Talos calls its most significant finding: a detailed record of an
+      active intrusion against a real target, generated as documentation by the AI tooling itself. Talos assesses
+      with moderate-to-high confidence that UAT-10147 belongs to an emerging class of financially motivated
+      operators using agentic AI to move beyond simple scripting assistance toward semi-autonomous offensive
+      orchestration (iterative exploit refinement, adaptive troubleshooting, exploit-validation workflows).
+    region_nexus: "Global; ~170,000 targeted URLs across government agencies, education, media, technology and gaming sectors in multiple countries per secondary reporting — direct relevance to any Swiss/EU public-sector or education entity running an internet-facing IIS, Zimbra, Nacos, AjaxPro or Telerik UI instance, and to any Windows/Linux estate defended by kernel-callback-dependent EDR."
+    primary_sector_nexus: "direct"
+    sector: "public-sector, technology, education"
+    cves: ["CVE-2019-16098", "CVE-2021-21551"]
+    techniques: [T1190, T1068, T1014, T1685, T1055, T1588.007]
+    affected_products: ["MSI Afterburner RTCore64.sys driver", "Dell DBUtil_2_3.sys driver", "Microsoft IIS", "Zimbra Collaboration Suite", "Nacos", "Telerik UI", "ABRT"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:uat-10147", type: actor, name: "UAT-10147", aliases: [],
+          summary: "Cisco Talos designation for a Chinese-speaking, financially motivated cybercrime group ('x神'/xshen) that gains initial access via known vulnerabilities in internet-facing IIS, Zimbra, Nacos, AjaxPro and Telerik UI servers, combines SEO-fraud monetization (BadIIS) with a mature cross-platform post-exploitation toolset, and — per Talos's moderate-to-high-confidence assessment — uses agentic AI tooling (PentestGPT, DeepAudit, ysoserial automation) to operationalize offensive tradecraft at scale (Cisco Talos, 2026-08-20)." }
+      - { key: "malware:spectre-implant", type: malware, name: "SPECTRE", aliases: [],
+          summary: "UAT-10147's cross-platform C2 implant, written in C with distinct Windows (45 commands) and Linux (29 commands) variants; the Windows variant includes a BYOVD component using CVE-2019-16098 (MSI RTCore64.sys) and CVE-2021-21551 (Dell DBUtil_2_3.sys) to unlink EDR kernel-callback notifications. The Linux variant deploys a companion kernel rootkit Specter, disguised as acpi_pad.ko, using ftrace-based syscall hooking for process hiding and persisting via a fraudulent systemd unit (Cisco Talos, 2026-08-20)." }
+    relation_suggestions:
+      - { subject: "actor:uat-10147", object: "malware:spectre-implant", basis: "Cisco Talos: UAT-10147 deploys the SPECTRE cross-platform implant (Cisco Talos, 2026-08-20)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "kernel-callback-dependent security products such as CrowdStrike Falcon, SentinelOne, Microsoft Defender...are rendered completely blind to new process creations"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-10147-deploys-spectre-a-cross-platform-implant-with-linux-rootkit-and-byovd-capabilities/"
+      - quote: "Signal 62 triggers process hiding by removing the target task_struct from the kernel PID list, rendering /proc/<pid> invisible"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-10147-deploys-spectre-a-cross-platform-implant-with-linux-rootkit-and-byovd-capabilities/"
+      - quote: "Talos assesses with moderate-to-high confidence that UAT-10147 is among an emerging class of financially motivated intrusion operators leveraging agentic AI systems to operationalize offensive tradecraft at scale."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-10147-chinese-speaking-adversary-integrates-agentic-ai-into-post-compromise-operations/"
+    extended_notes: >
+      Two Talos posts published within 18 seconds of each other on the same actor/campaign are merged into one
+      finding to avoid splitting one disclosure into duplicate items; the main agent may choose to compose as two
+      linked entries if preferred (one on the malware/BYOVD mechanism, one on the AI-tradecraft angle) — both
+      source URLs and all evidence quotes are tagged by which post they came from. CyberInsider's corroboration is
+      a re-report of the same two Talos posts rather than independent research (it cites both Talos URLs
+      directly), so this is treated as SINGLE-SOURCE-OTHER (Cisco Talos) rather than multi-source, despite the
+      same-day secondary pickup.
+    borderline: false
+
+  - title: "GTIG: three Russian-nexus clusters abuse legitimate Google/Microsoft/WhatsApp authentication flows — app-specific passwords, OAuth verification codes and device-linking — to reach diplomats, defense personnel and academics across NATO states"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/distinct-clusters-target-individuals-of-interest-to-russia/", publisher: "Google Threat Intelligence Group (GTIG)", date: "2026-08-20", role: primary }
+      - { url: "https://www.theregister.com/security/2026/08/21/russian_snoops_add_oauth_abuse_to_targeted_phishing_campaigns/5290706", publisher: "The Register", date: "2026-08-21", role: corroborating }
+    discovery_trace: "first seen at: mandiant-gtig, URL https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v (RSS feed) -> primary: GTIG, URL https://cloud.google.com/blog/topics/threat-intelligence/distinct-clusters-target-individuals-of-interest-to-russia/ -> WebSearch (\"GTIG UNC6293 OR UNC5976 Russian espionage app-specific password phishing\") -> corroborating: The Register, URL https://www.theregister.com/security/2026/08/21/russian_snoops_add_oauth_abuse_to_targeted_phishing_campaigns/5290706"
+    summary: >
+      Google Threat Intelligence Group (GTIG) is tracking three distinct suspected Russian cyber-espionage clusters
+      — UNC6293, UNC7005 (which GTIG identifies with Microsoft's Storm-2945 designation) and UNC5976 — running
+      persistent phishing and authentication-abuse campaigns against academics, diplomats, defense/aerospace
+      personnel and think-tank researchers across Europe and the US. GTIG assesses with moderate confidence that
+      UNC6293 and UNC7005 are sub-clusters of ICE RELIC (formerly APT29/Cozy Bear/Midnight Blizzard) handling
+      initial access: UNC6293 impersonates US State Department officials to convince targets to create Google
+      app-specific passwords (ASPs) — which bypass standard two-step verification entirely — or, in a newer
+      variant observed from June 2026, to complete a legitimate login with an external provider and then hand over
+      the resulting "verification code," which silently grants UNC6293 account access. UNC7005/Storm-2945 (already
+      tracked in this pipeline for its CaptiveCrunch hospitality-Wi-Fi captive-portal operation) additionally
+      deploys malware-as-a-service infostealers (VIDAR, ATOMIC, CHERRYPIE, ENGINELIGHT) and exploits hospitality
+      captive portals for initial delivery, while WhatsApp device-linking abuse is used across the clusters to
+      hijack the messaging identity of a target without needing their password. UNC5976 is described by GTIG as
+      operationally "distinct" from the other two, using OAuth-consent abuse via attacker-controlled Google Cloud
+      projects and fake file-sharing sites that redirect through legitimate Google OAuth pages before harvesting
+      tokens, and deploying a malicious Excel add-in GTIG names HEADRUSH. GTIG assesses with high confidence that
+      all three clusters share a Russian nexus, based on targeting patterns, diplomatic/wine-themed phishing lures
+      consistent with prior ICE RELIC campaigns, shared use of residential proxies, and geographic/sectoral
+      targeting consistency; campaigns are small (each reportedly under 100 targets) but designed to look like
+      legitimate authentication activity rather than phishing.
+    region_nexus: "Europe (NATO member states) and the US — academics, diplomats, defense/aerospace personnel and think-tank researchers. Direct relevance to the Swiss federal government's threat model given ICE RELIC/APT29's documented history of targeting European diplomatic and governmental personnel, and given Storm-2945/UNC7005 is an already-tracked entity in this pipeline (CaptiveCrunch, 2026-08-01)."
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1598.003, T1528, T1621]
+    affected_products: ["Google Workspace (application-specific passwords)", "Microsoft Entra ID / OAuth", "WhatsApp (device linking)", "Microsoft Excel (add-ins)"]
+    entity_keys: ["actor:storm-2945"]
+    new_entities:
+      - { key: "actor:unc6293", type: actor, name: "UNC6293", aliases: [],
+          summary: "Suspected Russian cyber-espionage cluster GTIG assesses with moderate confidence to be a sub-cluster of ICE RELIC (formerly APT29) responsible for initial access; impersonates US State Department officials to induce targets to create Google application-specific passwords or, since June 2026, to share an OAuth 'verification code' after a legitimate external-provider login, silently granting account access (GTIG, 2026-08-20)." }
+      - { key: "actor:unc5976", type: actor, name: "UNC5976", aliases: [],
+          summary: "Suspected Russian cyber-espionage cluster tracked by GTIG since March 2026, operationally distinct from UNC6293/UNC7005; abuses OAuth consent via attacker-controlled Google Cloud projects and fake file-sharing sites that redirect through legitimate Google OAuth pages to harvest tokens, and deploys a malicious Excel add-in named HEADRUSH (GTIG, 2026-08-20)." }
+    relation_suggestions:
+      - { subject: "actor:unc6293", object: "actor:midnight-blizzard", basis: "GTIG: \"We assess with moderate confidence that UNC6293 is a sub cluster of ICE RELIC (formerly APT29) responsible for initial access operations.\" (GTIG, 2026-08-20)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GTIG assesses with high confidence that these three threat clusters - UNC6293, UNC7005, and UNC5976 - possess a Russian nexus, based on high-level targeting patterns, phishing themes, and shared operational techniques."
+        attribution: "Google Threat Intelligence Group (GTIG)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/distinct-clusters-target-individuals-of-interest-to-russia/"
+      - quote: "We assess with moderate confidence that UNC6293 is a sub cluster of ICE RELIC (formerly APT29) responsible for initial access operations."
+        attribution: "Google Threat Intelligence Group (GTIG)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/distinct-clusters-target-individuals-of-interest-to-russia/"
+      - quote: "In June 2026, GTIG observed OAuth phishing where UNC6293 requested targets share either the full URL or 'verification code' after performing a legitimate login to an external provider. By providing the requested verification code the target would grant UNC6293 access to the account."
+        attribution: "Google Threat Intelligence Group (GTIG)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/distinct-clusters-target-individuals-of-interest-to-russia/"
+    extended_notes: >
+      GTIG's UNC7005 corresponds to Microsoft's Storm-2945 designation, already registered as actor:storm-2945
+      (the 2026-08-01 CaptiveCrunch entry) — worth adding "UNC7005" to that entity's alias list; this report's
+      chief new content beyond that existing entity is the two brand-new clusters (UNC6293, UNC5976), the
+      moderate-confidence ICE RELIC/APT29 sub-cluster assessment for UNC6293, and the ASP/OAuth-verification-code
+      and WhatsApp device-linking mechanisms. Not treated as update_of the CaptiveCrunch entry because the
+      primary new subject (three-cluster authentication-flow-abuse campaign against individuals) is materially
+      broader than that single entry's scope. The Register's coverage is largely a same-day re-report of GTIG's
+      own findings (quotes GTIG directly) rather than independent research, so this remains SINGLE-SOURCE-OTHER
+      (GTIG/Mandiant) despite the secondary pickup; GTIG's reliability as a telemetry-holding CTI unit is treated
+      as Admiralty B, not a national-CERT carve-out.
+    borderline: false
+
+  - title: "Apple's mercenary-spyware threat notifications hit an 'unprecedented' scale across 110 countries — no named spyware family, no attack-vector detail, pure volume signal"
+    sources:
+      - { url: "https://citizenlab.ca/unprecedented-number-of-apple-users-received-recent-spyware-alert/", publisher: "The Citizen Lab", date: "2026-08-20", role: primary }
+      - { url: "https://techcrunch.com/2026/08/17/unprecedented-number-of-apple-users-received-recent-spyware-alert-say-investigators/", publisher: "TechCrunch", date: "2026-08-17", role: corroborating }
+    discovery_trace: "first seen at: citizen-lab, URL https://citizenlab.ca/feed/ (RSS) -> primary: Citizen Lab, URL https://citizenlab.ca/unprecedented-number-of-apple-users-received-recent-spyware-alert/ -> pivot: TechCrunch, URL https://techcrunch.com/2026/08/17/unprecedented-number-of-apple-users-received-recent-spyware-alert-say-investigators/"
+    summary: >
+      Apple distributed mercenary-spyware threat notifications to users across 110 countries on 13 August 2026, in
+      what Citizen Lab senior researcher John Scott-Railton (quoted via TechCrunch) calls "pretty unprecedented" in
+      scale and geographic diversity. Access Now's Digital Security Helpline reported a 30-40% increase in contacts
+      since that date, and iVerify separately confirmed an influx of threat notifications; Apple's notification
+      channels now span iPhone lock screens, the Settings app, email and web logins. No specific spyware family,
+      vendor or attack vector is named in either the Citizen Lab post or the TechCrunch reporting it links to —
+      the story is a volume/awareness signal (researchers frame it as the visible tip of a much larger
+      "notification iceberg") rather than a technical disclosure, and Apple reiterates that no device with
+      Lockdown Mode enabled is known to have been successfully compromised.
+    region_nexus: "Global (110 countries); mercenary/government-sponsored spyware targeting of individuals, historically concentrated on journalists, civil-society figures, diplomats and government officials — a standing concern for Swiss federal officials and diplomatic staff as a target class, even though no specific incident or vector is disclosed here."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: ["Apple iOS/iPhone (threat notification system, Lockdown Mode)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The scale and geographic diversity of public posts about receiving notifications are pretty unprecedented."
+        attribution: "John Scott-Railton (Citizen Lab), via TechCrunch"
+        source_url: "https://techcrunch.com/2026/08/17/unprecedented-number-of-apple-users-received-recent-spyware-alert-say-investigators/"
+      - quote: "Apple has said that it is not aware of anyone who had Lockdown Mode enabled getting hacked."
+        attribution: "TechCrunch"
+        source_url: "https://techcrunch.com/2026/08/17/unprecedented-number-of-apple-users-received-recent-spyware-alert-say-investigators/"
+    extended_notes: >
+      Low technical depth for this audience: no named spyware family, no vulnerable component, no CVE, no
+      detection/hunt mechanism — this is an awareness/statistics item, the kind PD-guidance says to drop "without
+      ceremony" for a Tier 2/3 audience. Retained only as borderline because mercenary-spyware targeting of
+      diplomats and government officials is a standing concern for this constituency and the scale increase is a
+      genuine signal even without technical specifics; the main agent should weigh whether a pure volume/awareness
+      item earns a place in this brief.
+    borderline: true
+    borderline_reason: "Awareness/statistics piece (spyware-alert volume across 110 countries); no named spyware family, vendor, CVE or technical attack-chain detail — fails the audience's actionability bar even though the underlying concern (mercenary spyware targeting government/diplomatic personnel) is squarely in scope."
+
+watchlist_sweep: null
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: sans-ics
+    reason: "The focus-area=industrial-control-systems-ics query parameter is not honored by either WebFetch or the bridge (`url`) transport — both return the generic /blog/ listing (or its cached HTML) rather than the ICS-filtered view. Checked the unfiltered /blog/ listing directly as a fallback: no ICS/OT/SCADA/critical-infrastructure post in the last 15 items (most recent 20 Aug 2026, all non-ICS topics). Recipe needs a structured route (sitemap or category RSS) rather than the query-string filter; not a fetch failure, the host is reachable."
+  - source_id: ahnlab-asec
+    reason: "WebFetch 403s on both the listing and individual /en/<id>/ article pages (recipe says plain WebFetch should work; it no longer does this run). Recovered via the bridge (`url`) on both the listing and articles. Most recent dated article found via bridge drill is the July 2026 APT trend report (2026-08-19T15:00Z), ~37h before this run — outside the 26h standard window and judged not urgent/developing enough to justify the 72h allowance. No in-window item found."
+  - source_id: team-cymru
+    reason: "Listing (https://www.team-cymru.com/blog) surfaces no dates; drilled the top two posts (ShinyHunters Cluster A infrastructure validation, Cl0p 6-year retrospective) via /post/ URLs. The ShinyHunters post carries a structured datePublished of 2026-08-05 — 16 days old, outside window. The Cl0p post's page carries no structured date metadata (likely a non-WordPress CMS); given the ShinyHunters sibling post's age, judged unlikely to be fresher and not pursued further given time budget."
+  - source_id: cloudflare-cf1
+    reason: "No Cloudforce One-tagged post since 11 Aug 2026 (DDoS Threat Report H1 2026) — cadence is documented as sparse; no in-window item."
+  - source_id: coinspect-research
+    reason: "Blog listing (https://www.coinspect.com/blog/) returns ~30 post slugs with no visible publish dates in the static markup (appears alphabetically sorted, not chronological); no per-post drill attempted given time budget and the absence of any obviously-recent title. Recipe needs a dated index (sitemap.xml or RSS) to be workable for recency triage."
+  - source_id: trellix
+    reason: "Bridge listing continues to return the same set of posts noted stale in the 2026-07-27 audit (most recent dated article found was 19 May 2026 on a related-posts widget) — confirms the previously logged stale/cached-index issue is still unresolved. Not re-logged as a fresh failure."
+  - source_id: fox-it-blog
+    reason: "WebFetch 403s; bridge listing shows most recent post is the already-covered 22 May 2026 RemotePE piece. No new post — expected given the source's documented very-low cadence (3 posts in ~18 months)."
+  - source_id: greynoise
+    reason: "Most recent post (17 Aug 2026, \"A New Way to Navigate GreyNoise\") is a product-feature announcement, not research; nothing in window."
+  - source_id: horizon3-ai
+    reason: "Most recent post is a 12 June 2026 CVE disclosure IOC follow-up; nothing in window, consistent with the source's documented sparse/CVE-driven cadence."
+  - source_id: claroty-team82
+    reason: "Listing continues to show no publication dates in static markup (recipe gap noted in the source record on 2026-08-04, still unresolved). Drilled the top post (\"Chilling Discoveries... Copeland XWEB Pro Controllers\") via the bridge, which returned datePublished 2026-08-09 — 12 days old, outside window."
+  - source_id: dragos
+    reason: "Most recent threat-relevant post is 18 Aug 2026 (MTSA OT-resilience regulatory-compliance commentary, ~34h before this run) — outside the 26h standard window and not a breaking/developing story; the two most recent non-corporate posts (18 and 17 Aug) are both regulatory-compliance framing pieces rather than new threat research."
+  - source_id: watchtowr
+    reason: "Most recent post is 14 Aug 2026 (Citrix NetScaler CVE-2026-8452); nothing in window."
+  - source_id: shadowserver
+    reason: "Most recent post is 5 Aug 2026; sparse cadence as documented, nothing in window (flagged per source record's own guidance, not a failure)."
+  - source_id: fortinet-fortiguard-blog
+    reason: "Listing (bridge) returned the same set of posts already flagged stale in prior runs; drilled four candidate slugs and all returned datePublished 2025-10 through 2026-08-04, all outside window. Confirms the stale/cached-index issue noted for this source is still present."
+  - source_id: group-ib
+    reason: "One in-window post found (\"One Adversary: Fraud Is a Network, Not a Payment\", 2026-08-20) but assessed and dropped from the return: US/Australia investment-scam (pig-butchering) economics piece with no Swiss/EU nexus and low technical depth (network-graph-analysis concept, no specific mechanism, prerequisite, or detection hook stated) — did not clear the substantive-technical-analysis bar for this domain."
+  - source_id: zscaler-threatlabz
+    reason: "Listing checked; most recent post 12 Aug 2026 (customer-story/product content); nothing in window."
+  - source_id: proofpoint
+    reason: "Listing checked; most recent threat-insight post 23 Jul 2026; nothing in window."
+  - source_id: elastic-seclabs
+    reason: "Listing checked; most recent post 11 Aug 2026; nothing in window."
+  - source_id: sophos-xops
+    reason: "Feed checked; most recent post 19 Aug 2026 (~52h before this run); nothing in window."
+  - source_id: huntress
+    reason: "Feed checked; most recent post 17 Aug 2026 (~48h before this run); nothing in window."
+  - source_id: crowdstrike
+    reason: "Listing checked; most recent post 19 Aug 2026 (~40h before this run, AI-benchmark commentary); nothing in window."
+  - source_id: recordedfuture-insikt
+    reason: "Feed checked; most recent items 18-19 Aug 2026 (PurpleDelta, already covered 2026-08-19, and a product-feature announcement); nothing new in window."
+  - source_id: rapid7-research
+    reason: "Feed checked; most recent post is the CVE-2026-19490 Citrix NetScaler advisory (19 Aug 2026), already covered by a prior run (2026-08-20); the Operation ASTERIX research (17-18 Aug primary) was pursued separately via CryptoTimes discovery and is included as a finding above."

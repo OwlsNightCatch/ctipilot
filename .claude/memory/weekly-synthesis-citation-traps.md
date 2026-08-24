@@ -37,3 +37,38 @@ and was retitled and renamed instead. That is the cheap outcome; a half-sourced 
 non-update entry sharing CVE ids with the last 14 days — which a roll-up does by definition. Three
 consecutive weeklies have resolved it the same way: per-CVE trajectory as a **body table**, `cves: []`
 in frontmatter. Either the prompt or the check should say so.
+
+## 2026-W33 (7 iterations, 51 findings) — two mechanics behind almost all of it
+
+**1. The inherited sentence brings the prose but not the `sources[]` record.** Iteration 5 named this
+explicitly after four of its ten findings turned out to share it: a fact is carried from an operational
+entry into a weekly entry, the sentence survives the copy, the source record does not, and the citation
+that ends up on the clause is whatever else was already cited there. The sharpest instance — the roll-up's
+only basis for listing Adobe Commerce among the newly-confirmed-exploited was cited to Adobe's own
+bulletin, which says *"Adobe is not aware of any exploits in the wild"*; the exploitation observation was
+Sansec's and Sansec was in no `sources[]` list. Same shape: the SAP rebuild-and-redeploy claim (Onapsis,
+uncited), the 12,000-clinic count in the outlook (Notes from Poland, absent), and a MyDr paragraph whose
+two figures were each cited to the *other* co-cited outlet. **Fix: when you lift a sentence from an
+operational entry, lift its source record in the same motion.** That one habit would have removed roughly a
+third of this run's findings.
+
+**2. A fix applied to one half of an entry.** Iterations 4, 6 and 7 each found a defect that was a *partial
+remediation* of an earlier one — the four-days correction reached the summary but not the body; the
+citation swap moved the figures but not the ministerial title; the seven→six disclosure correction never
+reached the "in three of them" count derived from it. After every remediation, grep the same fact across
+title, headline, summary, body, `evidence[]` and `cves[]` in that entry before moving on.
+
+**3. Derived counts are the weekly's signature defect.** Four consecutive iterations caught a number in a
+title/headline/summary that its own body refuted (ten vs eight CVEs; six vs eight no-fix flaws; "four
+inside three days" when macOS was six; "every disclosure" against four counter-examples in the same
+entry). Re-derive every numeral and every absolute ("every", "all", "first", "only", "sole") from the
+body's own enumeration immediately before commit — none of these came from a source being wrong, all came
+from prose written before the list underneath it settled.
+
+**4. Two clocks, one sentence.** The lead entry merged time-to-working-exploit with
+time-to-observed-exploitation and produced a wrong interval twice (once corrected, once resurfacing in a
+different clause). When an entry's subject *is* an interval, name the endpoints in the sentence.
+
+**5. `cves: []` on weekly roll-up/synthesis entries — now four weeklies running.** The dedup FAIL fires
+again every time; the body table plus `cves: []` remains the resolution. This is settled practice, not a
+per-run discovery.
