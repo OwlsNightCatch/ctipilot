@@ -290,6 +290,14 @@ def _host_is_aggregator(host: str) -> bool:
 # `single-source`.
 NATIONAL_CERT_HOSTS: tuple[str, ...] = (
     "ncsc.admin.ch", "ncsc.ch", "govcert.ch",
+    # The Swiss federal cyber authority migrated its web presence from
+    # ncsc.admin.ch to bacs.admin.ch (relaunch noted on its own site
+    # 2026-08-20); official federal PDFs are served from the admin.ch
+    # news file service. Same disclosing authority, new hosts — added
+    # 2026-08-24 when the BACS Halbjahresbericht 2026/I was published
+    # only on those two hosts and the carve-out it plainly earns was
+    # being reported as unearned.
+    "bacs.admin.ch", "cms.news.admin.ch",
     "cert.europa.eu", "enisa.europa.eu",
     "bsi.bund.de", "wid.cert-bund.de", "cert.ssi.gouv.fr",
     "ncsc.gov.uk", "ncsc.nl", "advisories.ncsc.nl",

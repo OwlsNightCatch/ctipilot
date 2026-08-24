@@ -1,0 +1,139 @@
+domain: S4
+run_id: "2026-08-24T0410Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-08-24T04:10:43Z"
+ended_at: "2026-08-24T09:05:27Z"
+duration_seconds: 17684
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 14
+  bridge_fetches: 16
+
+items:
+  - title: "ShinyHunters lists MDR vendor ReliaQuest on its leak site with three unverified screenshots; ReliaQuest's own writeup instead documents a vishing call plus MFA-push approval contained to one view-only identity session"
+    sources:
+      - { url: "https://reliaquest.com/blog/threat-spotlight-social-engineering-attempt-against-reliaquest-what-we-found", publisher: "ReliaQuest (victim's own incident writeup)", date: "2026-08-23", role: "primary" }
+      - { url: "https://www.galaxywarden.com/blog/breach/reliaquest-llc-shinyhunters-2026-08", publisher: "GalaxyWarden (breach-tracking blog, reliability unconfirmed)", date: "2026-08-23", role: "corroborating" }
+    discovery_trace: >
+      first seen at: WebSearch ("ShinyHunters ReliaQuest hack claim August 2026") →
+      pivot: DataBreaches.Net, URL https://databreaches.net/2026/08/23/shinyhunters-claims-hack-of-reliaquest-but-provides-no-proof/
+      (attempted fetch failed — direct HTTP 403 and jina reader credit-exhausted this run; logged as fetch failure) →
+      pivot: GalaxyWarden, URL https://www.galaxywarden.com/blog/breach/reliaquest-llc-shinyhunters-2026-08 (fetched, corroborates claim exists and is unconfirmed) →
+      primary: ReliaQuest's own blog, URL https://reliaquest.com/blog/threat-spotlight-social-engineering-attempt-against-reliaquest-what-we-found (fetched in full)
+    summary: |
+      ShinyHunters posted ReliaQuest, LLC to its extortion leak site around 22-23 August 2026, supplying only three
+      screenshots that appear to show a logged-in session on ReliaQuest's identity-provider end-user settings page
+      and no data samples. ReliaQuest had not, at the time of the leak-site posting, issued a public statement, and
+      the claim's only support was the attacker's own screenshots. ReliaQuest then published its own detailed
+      incident account on 23 August 2026 titled "A Social Engineering Attempt Against ReliaQuest: What We Found,"
+      which frames a distinctly different event and explicitly states that "claims that ReliaQuest was compromised
+      or targeted by ransomware are false." Per ReliaQuest's account: on 22 August 2026 an attacker registered a
+      lookalike domain, stood up a fake ReliaQuest single sign-on page fronted by a content delivery network, then
+      cold-called multiple ReliaQuest employees, each time impersonating a named ReliaQuest security staffer to
+      steer the target toward the fake SSO page (T1656 Impersonation combined with T1566.004 Spearphishing Voice).
+      One employee entered a password on the fake page and approved the resulting MFA push notification (T1621
+      Multi-Factor Authentication Request Generation), handing the attacker a session on ReliaQuest's identity
+      dashboard (T1078.004 Valid Accounts: Cloud Accounts). ReliaQuest states the access was view-only: the
+      attacker made further attempts to pivot from the identity dashboard into business applications but was
+      "consistently denied due to security controls," specifically a device-trust policy that blocks any
+      non-ReliaQuest-managed device from reaching applications or systems regardless of a successful identity-provider
+      sign-in. Containment terminated the attacker's session, expired the compromised password, and reset every
+      authentication factor for the affected account. A stated 48-hour investigation covering control fidelity,
+      device trust and on-network access found no additional identities accessed, no business applications reached,
+      no customer or company data accessed beyond the one user's login credentials, and no persistence established.
+      ReliaQuest frames the underlying playbook — impersonation call, a throwaway lookalike domain burned within the
+      hour, a CDN-fronted harvesting page, MFA push abuse, and a rapid attempt to enroll a new authenticator for
+      persistence — as consistent with what it observes elsewhere in the industry.
+    region_nexus: "global; US-headquartered MDR/SecOps vendor with no stated Swiss or EU customer impact — included under criterion (b): a materially transferable identity-attack chain (voice-impersonation phishing driving MFA-push approval, capped only by device-trust binding) directly applicable to any organisation's IdP hardening posture, including this constituency's public-sector and critical-infrastructure identity estates"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector; MDR / security-operations vendor (relevant to any sector relying on third-party SOC/MDR services, including finance, energy, public-sector)"
+    cves: []
+    techniques: ["T1566.004", "T1621", "T1078.004", "T1656"]
+    affected_products: []
+    entity_keys: ["actor:shinyhunters"]
+    new_entities:
+      - key: "incident:reliaquest-shinyhunters-vishing-claim-2026-08"
+        type: incident
+        name: "ReliaQuest ShinyHunters leak-site claim / vishing incident (August 2026)"
+        aliases: []
+        summary: "ShinyHunters listed MDR vendor ReliaQuest on its leak site on ~22-23 August 2026 with unverified screenshots; ReliaQuest's own incident writeup instead documents a vishing call plus MFA-push approval that yielded one view-only identity-dashboard session, contained by device-trust controls before any application or customer data was reached, and explicitly denies compromise (ReliaQuest, 2026-08-23)."
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Claims that ReliaQuest was compromised or targeted by ransomware are false."
+        attribution: "ReliaQuest"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-social-engineering-attempt-against-reliaquest-what-we-found"
+      - quote: "One teammate entered their password and approved the push notification on their phone. That handed the attacker a brief session on our identity dashboard. The extent of the access was view only."
+        attribution: "ReliaQuest"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-social-engineering-attempt-against-reliaquest-what-we-found"
+      - quote: "This playbook is consistent with what we are seeing across the industry: an impersonation call, a throwaway lookalike domain registered and burned within the hour, a harvesting page behind a content delivery network, MFA push abuse, and a rapid attempt to enroll a new authenticator."
+        attribution: "ReliaQuest"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-social-engineering-attempt-against-reliaquest-what-we-found"
+    extended_notes: |
+      Detection concept (telemetry class first): identity-provider audit logs showing a successful primary
+      authentication plus MFA-push approval event immediately followed, within the same session, by repeated
+      application-access denials keyed to device-compliance/device-trust posture — that sequence (auth succeeded,
+      but every downstream access attempt failed on device state) is itself a higher-fidelity phishing indicator than
+      the authentication event alone. Benign lookalike / triage discriminator (source-supported): ReliaQuest states
+      the attacker also attempted rapid enrollment of a new MFA authenticator — a legitimate user re-enrolling a
+      lost device also generates this event, but the discriminator here is context: the attacker's enrollment
+      attempt followed immediately after a single push approval from a session that had already failed one or more
+      device-trust checks, whereas a legitimate re-enrollment typically follows an established helpdesk/change
+      workflow and originates from a session that has NOT just failed device compliance. Hardening takeaway: the
+      control that actually capped this incident's blast radius was device-trust binding — treating a successful
+      identity-provider sign-in as necessary but not sufficient for application access, with a separate managed-device
+      check required before any business system is reachable. This is the concrete lesson for any organisation
+      (including this constituency's public-sector and CI identity estates) relying on IdP authentication plus MFA
+      alone as the access boundary. Fake-news scrutiny applied: the ShinyHunters leak-site listing itself is treated
+      throughout as the attacker's own unverified assertion (no data sample, no ransomware, no forensic corroboration
+      from any third party) and is explicitly NOT the basis for this item — the item's substance is ReliaQuest's own
+      disclosed incident, which is a materially different (and lesser) event than the extortion claim implies.
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org profile configures no supplier watchlist — sweep is a no-op per instructions"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: databreaches-net
+    reason: "ROTATION/essential-adjacent source in slice. Front-page listing fetched successfully (bridge, direct GET) and confirmed the ShinyHunters/ReliaQuest lead, but the specific article URL 403'd on both direct fetch and the jina-reader fallback (all 7 pool keys credit-exhausted, HTTP 402, per this run's transport constraint) — logged as a fetch failure below; substituted GalaxyWarden as corroborating source and ReliaQuest's own blog as primary."
+  - source_id: zaufana-trzecia-strona
+    reason: "ROTATION-PRIORITY — fetched successfully (bridge). No in-window (last 24h) content: most recent dated post is 08.08.2026 (Polish energy-sector follow-up); the next-newest is the 2026-08-21 weekend digest. Quiet source this run, not a transport failure."
+  - source_id: venarix
+    reason: "ROTATION-PRIORITY — fetched successfully (bridge). Blog listing has no visible publish dates in the rendered HTML and no post newer than the already-covered Metabase downstream-impact piece (cited 2026-08-23 in this run's prior_coverage as the weekly's primary). No new in-window item identified."
+  - source_id: ransom-isac
+    reason: "Fetched successfully (bridge). Newest post (Infrastructure Destruction Squad / BLACKNET-00) is dated 19 August 2026 — outside the 24h window. No in-window content."
+  - source_id: ico-uk
+    reason: "Both /about-the-ico/media-centre/news-and-blogs/ and /action-weve-taken/enforcement/ fetched (bridge, HTTP 200) but the listing content is JS-rendered and the direct-GET body carried no dated article/enforcement entries (only nav chrome) — jina reader unavailable this run to hydrate the SPA shell. WebSearch fallback found only the already-covered ACRO reprimand (2026-08-13, in prior_coverage) and a Metropolitan Police Service reprimand dated ~7 August 2026 (outside window). Recipe gap: this host needs the jina reader to hydrate its listing; flagging for the next run when jina credit is available."
+  - source_id: cnil-fr
+    reason: "Fetched successfully (webfetch). /en/news listing returned only evergreen/topic links, no dated recent sanctions. WebSearch fallback found no in-window (last 24h) CNIL sanction or enforcement action."
+  - source_id: sec-disclosures-edgar
+    reason: "EDGAR full-text search API queried for Item 1.05 8-K filings in the 2026-08-21 to 2026-08-24 date range: zero hits. No US public-company material cybersecurity incident 8-K filed in-window."
+  - source_id: us-treasury-ofac
+    reason: "Fetched successfully (bridge). Most recent action listed is 21 August 2026 (Venezuela-related general licenses) — no new cyber-related sanctions designation in-window."
+  - source_id: troyhunt
+    reason: "RSS fetched successfully. Most recent substantive post is the Sri Lanka HIBP-onboarding announcement (2026-08-23T06:39Z, a governance/features item, not a breach disclosure) and a Weekly Update video roundup (2026-08-24T04:19Z, not yet reviewable as text); neither carries in-window breach-disclosure content in scope for S4."
+  - source_id: cyberinsider
+    reason: "Fetched successfully (webfetch). Front-page latest-news items are all already-covered stories (BadBox car-head-unit malware, SynkLoader, WhatsApp device-linking abuse) or off-topic (Alibaba fingerprinting). No new in-window breach/disclosure item."
+  - source_id: bitdefender-threat-debrief
+    reason: "Attempted (webfetch) — listing page returned no extractable post links in this run (candidate source, monthly cadence; last new edition already covered per source-list note). No in-window content identified; recipe may need revisiting."
+
+## Fetch failures
+fetch_failures:
+  - id: databreaches-net
+    url_tried: "https://databreaches.net/2026/08/23/shinyhunters-claims-hack-of-reliaquest-but-provides-no-proof/"
+    fetch_method: "bridge:url"
+    status_code: 403
+    error_class: "transport-403"
+    error_message: "direct HTTP 403, 5490 B; jina reader fallback failed on all 7 pool keys — balance exhausted (HTTP 402) per this run's stated transport constraint"
+    attempted_methods: ["bridge:url", "webfetch"]
+    mitigation_applied: "Substituted GalaxyWarden (corroborating, reliability unconfirmed) for confirmation the leak-site claim exists and is unconfirmed; used ReliaQuest's own blog post as the primary substantive source instead"
+    covered_anyway: false
+

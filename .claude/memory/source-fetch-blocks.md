@@ -170,3 +170,56 @@ Related shapes worth separating when writing the note: `prodaft` this run turned
 *two* defects wearing one label — a dead subdomain in the source note
 (`resources.prodaft.com`, NXDOMAIN) and, separately, a frozen client-rendered listing on the
 live URL. Fixing the note is not fixing the recipe; say which one you did.
+
+## PDF advisories and periodic reports — `fetch_source.py pdf <URL>` (added 2026-08-24)
+
+**A PDF primary is not an HTML problem, and two separate traps sit in front of it.**
+
+1. **Fetch it in BINARY.** Routing a PDF through a text transport corrupts its
+   compressed streams: the 2026-08-24 run's first copy of the BACS
+   Halbjahresbericht arrived at 2,840,294 bytes against 1,733,418 on a clean
+   binary fetch, and `pypdf` saw all 24 pages but failed every stream with
+   `Error -3 while decompressing data: incorrect header check`. A page count
+   that looks right is NOT evidence the bytes are intact — check the size and
+   that it starts `%PDF`.
+2. **This container's `cryptography` is broken and takes every PDF library with
+   it.** `_cffi_backend` is missing, so `import pypdf` dies inside
+   cryptography's Rust binding with a `PanicException`, and `pdfminer.six`
+   fails the same way because it imports cryptography too. pypdf only needs
+   cryptography for *encrypted* PDFs, so stubbing the broken import chain in
+   `sys.modules` restores full extraction on ordinary ones.
+
+Both are now handled by the bridge — use it instead of re-deriving this:
+
+```bash
+python3 tools/fetch_source.py pdf <URL>              # text, with ===== PAGE n ===== markers
+python3 tools/fetch_source.py pdf <URL> --no-page-markers
+```
+
+It refuses a non-PDF body with a clear message, survives a single unreadable
+page, and raises a distinct error when a PDF yields no text at all (scanned or
+image-only — there is no OCR here). Verified 2026-08-24 against the 23-page
+BACS report: 77,074 characters, identical to a hand-rolled extraction.
+
+**Why this matters beyond one report:** joint agency advisories and
+national-CERT periodic reports are a recurring primary source that no HTML
+transport can read, and the alternative is composing from a press release or an
+outlet's reading of the primary. The 2026-08-20 run published the five-agency
+Siemens S7 advisory single-source from an outlet because it could not render the
+PDF, and its backlog row asked for exactly this recipe.
+
+## The Swiss authority moved: ncsc.admin.ch → bacs.admin.ch (2026-08-24)
+
+The Swiss federal cyber authority relaunched its web presence on the
+`bacs.admin.ch` domain (its own relaunch notice is dated 2026-08-20) and the new
+site is a **Nuxt single-page application**: the bridge's direct GET returns only
+the JavaScript shell, while WebFetch's own renderer surfaces the listing. Both
+`ncsc-ch-focus` and `ncsc-ch-incidents` were corrected to `fetch_method:
+webfetch` on 2026-08-24. Official federal PDFs are served from
+`cms.news.admin.ch` (the admin.ch news file service), not from bacs.admin.ch.
+
+Consequence beyond the recipe: `NATIONAL_CERT_HOSTS` in `tools/check_run.py`
+listed only the old domain, so a `single-source-national-cert` carve-out that
+the home-region authority plainly earns was being reported as unearned. Both new
+hosts were added the same run. **When a national CERT changes domain, the
+carve-out list is a second place that needs the change.**

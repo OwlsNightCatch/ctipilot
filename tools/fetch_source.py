@@ -131,6 +131,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import ipaddress
 import json
 import os
@@ -1052,6 +1053,85 @@ def jina_usage(*, warn_below: int = JINA_LOW_BALANCE_TOKENS) -> dict[str, Any]:
             "the environment."
         )
     return out
+
+
+MAX_BODY_BYTES_PDF = 40 * 1024 * 1024
+
+
+def _import_pypdf():
+    """Import pypdf in a container whose `cryptography` install is broken.
+
+    This image ships a `cryptography` package whose native `_cffi_backend`
+    module is missing, so `import pypdf` dies inside cryptography's Rust
+    binding with a PanicException — which takes every PDF library with it
+    (pdfminer.six imports cryptography too). pypdf only needs cryptography
+    for ENCRYPTED PDFs; for ordinary ones the dependency is never exercised.
+    Stubbing the broken import chain therefore restores full text extraction
+    on unencrypted PDFs without pretending to support encrypted ones.
+
+    Discovered 2026-08-24 while extracting the BACS Halbjahresbericht 2026/I,
+    which no tooling in this container could read; recorded here so the next
+    PDF advisory does not repeat the diagnosis.
+    """
+    import types
+    for name in (
+        "cryptography", "cryptography.hazmat", "cryptography.hazmat.bindings",
+        "cryptography.hazmat.bindings._rust", "cryptography.hazmat.primitives",
+        "cryptography.hazmat.primitives.ciphers",
+        "cryptography.hazmat.primitives.asymmetric",
+        "cryptography.exceptions", "_cffi_backend",
+    ):
+        if name not in sys.modules:
+            mod = types.ModuleType(name)
+            mod.__path__ = []  # type: ignore[attr-defined]
+            sys.modules[name] = mod
+    rust = sys.modules["cryptography.hazmat.bindings._rust"]
+    if not hasattr(rust, "exceptions"):
+        rust.exceptions = types.ModuleType("exceptions")  # type: ignore[attr-defined]
+    import pypdf  # noqa: PLC0415
+    return pypdf
+
+
+def pdf_text(url: str, *, page_markers: bool = True) -> str:
+    """Fetch a PDF over the bridge and return its extracted text.
+
+    Advisory PDFs (joint agency advisories, national-CERT periodic reports)
+    are a recurring primary source that no HTML transport can read. The PDF
+    is fetched in BINARY through the ordinary bridge — which matters, because
+    routing a PDF through a text transport corrupts its compressed streams
+    and yields a file whose pages exist but whose content will not inflate.
+    """
+    code, body, _ = fetch(
+        url,
+        accept="application/pdf,application/octet-stream;q=0.9,*/*;q=0.5",
+        max_bytes=MAX_BODY_BYTES_PDF,
+    )
+    if code != 200:
+        raise RuntimeError(f"upstream HTTP {code} for {url}")
+    if not body.startswith(b"%PDF"):
+        raise RuntimeError(
+            f"not a PDF: {url} returned {len(body)} bytes beginning "
+            f"{body[:16]!r} — check the URL serves the file itself"
+        )
+    pypdf = _import_pypdf()
+    reader = pypdf.PdfReader(io.BytesIO(body))
+    out: list[str] = []
+    for i, page in enumerate(reader.pages, start=1):
+        try:
+            text = page.extract_text() or ""
+        except Exception as exc:  # a single unreadable page must not lose the rest
+            text = f"[page extraction failed: {exc}]"
+        if page_markers:
+            out.append(f"\n===== PAGE {i} =====\n{text}")
+        else:
+            out.append(text)
+    extracted = "".join(out)
+    if not extracted.strip():
+        raise RuntimeError(
+            f"PDF at {url} has {len(reader.pages)} page(s) but yielded no text — "
+            f"likely a scanned/image-only document (no OCR available here)"
+        )
+    return extracted
 
 
 def smart_fetch(url: str) -> tuple[str, str]:
@@ -2037,6 +2117,11 @@ def main(argv: list[str]) -> int:
     p_jina.add_argument("fmt", nargs="?", choices=["markdown", "html"], default="markdown",
                         help="return format (default markdown; `html` keeps simplified markup)")
 
+    p_pdf = sub.add_parser("pdf", help="fetch a PDF (binary) and print its extracted text — for advisory PDFs and national-CERT periodic reports no HTML transport can read")
+    p_pdf.add_argument("url")
+    p_pdf.add_argument("--no-page-markers", action="store_true",
+                       help="omit the ===== PAGE n ===== separators")
+
     sub.add_parser("jina-usage", help="remaining token balance of every configured reader key (JINA_API_KEYS / JINA_API_KEY) — warns (stderr) when the pool runs low")
 
     p_csh = sub.add_parser("ncsc-csh", help="NCSC Switzerland Cyber Security Hub")
@@ -2159,6 +2244,9 @@ def main(argv: list[str]) -> int:
                     # polluting stdout (which callers parse as page content).
                     print(f"# fetched via {method} reader fallback", file=sys.stderr)
                 sys.stdout.write(text)
+            return 0
+        if args.cmd == "pdf":
+            sys.stdout.write(pdf_text(args.url, page_markers=not args.no_page_markers))
             return 0
         if args.cmd == "jina":
             sys.stdout.write(jina_page(args.url, html=(args.fmt == "html")))
