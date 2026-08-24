@@ -56,6 +56,47 @@ cannot point at an entry with a *later* `discovered_at`, and the entry's folder 
 `discovered_at` — so the reshaped entry moves to the folder of the day you found the divergence, not the
 day you read the primary.
 
+## auto-merge-claude.yml aborts on `state/coverage_backlog.md` (observed twice, 2026-08-24)
+
+**The auto-merge workflow's auto-resolution list does not include `state/coverage_backlog.md`**, and that
+file is touched by *every* fire — intel, weekly and audit alike. So whenever two fires' pushes interleave,
+the workflow dies with `::error::Merge conflict in paths outside the auto-resolution rules; resolve
+manually.` It only resolves `state/cves_seen.json`, `state/source_health.json`, `entities/registry.yaml`
+(→ours) and `sources/sources.json` (→theirs). Two consecutive runs of `2026-08-24T0410Z-intel` failed this
+way before the merge was done by hand locally. **The fix is always local: merge `origin/main` into the
+feature branch, resolve the backlog by hand, commit, push — then the workflow sees a clean fast-forward.**
+An `--ours`/`--theirs` rule would be wrong for this file in either direction, which is probably why it is
+absent: both sides legitimately add rows and notes, so the only correct resolution is a *union* with the
+published rows moved to `## Struck`. Worth proposing to the operator that the workflow learn a union
+strategy for it; until then, expect to resolve it by hand on every overtake.
+
+Two mechanical traps in that resolution, both hit on 2026-08-24:
+
+- **The same row can appear twice after the merge** — once inside the conflict hunk (your side, moved) and
+  once as *common context* (main's side, in place). Git will happily leave you both. Extract all three
+  stages (`git show :1: / :2: / :3:`) and diff the row sets rather than editing the conflicted file in
+  place.
+- **`state/cves_seen.json` is NOT safe to take `--ours` after an overtake**, exactly as the 08-22 lesson
+  says for the registry: ours had 917 records, main had 941. Union-merge keyed on `id` with your changed
+  records overlaid on main's.
+
+## Triple overtake, 2026-08-24: the second entry lost was a *correction*, and the audit fire found it too
+
+`2026-08-24T0410Z-intel` (11.3 h — container stall of ~4.7 h before Phase 1, then an account session limit
+mid-verification) was overtaken by three fires. Two entries were dropped as duplicates: the SOCRadar
+FTP-banner research (a delayed 08-22 fire landed its own) and a Keycloak CVE-2026-18963 product-state
+correction — **the weekly quality audit's retrospective truth pass had independently reached the same
+finding and published it first**. New lesson on top of 08-22: *the audit fire is a publisher too*, so
+an intel run's `update_of` corrections of the store's own errors are the most collision-prone entries it
+composes. Check `entries/<today>/` on `origin/main` for the same `update_of` target before spending a
+verification round on a correction.
+
+Also: when your dropped entry carried a fact the surviving one lacks, and that fact is not
+defender-actionable on its own (here: the vendor's VEX document was revised the day after the erroneous
+entry, which bears on the surviving entry's claim that the record never read differently), the right home
+is a **correction-owed row in `state/coverage_backlog.md`** for the audit to weigh — not a third entry on
+one CVE, and not silence.
+
 ## sources.json serialization drift (re-normalized 2026-07-09)
 
 Despite the canonical `indent=1, ensure_ascii=False` contract (see [state-file-serialization](state-file-serialization.md)), the committed file had drifted to `ensure_ascii=True` escapes (`—` for —) on some earlier run — symptom: only lines containing non-ASCII flip in a diff (~180 lines). Re-normalized to the canonical form on 2026-07-09; if that symptom reappears, some writer used the default `ensure_ascii=True` again.

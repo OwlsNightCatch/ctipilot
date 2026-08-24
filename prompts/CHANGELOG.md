@@ -4,6 +4,44 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.33 — 2026-08-24 (the run clock stops at the end of the run, not before the verifier loop; trafilatura becomes the standard capture layer; operator notification policy)
+
+### Why — trafilatura capture + notification policy (operator directives, 2026-08-24)
+
+Mid-audit the operator issued three standing directives. (1) **Capture websites with trafilatura** (github.com/adbar/trafilatura), keep the metered **jina reader strictly last-resort** — its API keys are refilled sparsely and a dead pool must be a normal, survivable condition — and **avoid `WebFetch` for article bodies**, whose built-in summariser runs on a less capable model and drops the detail this pipeline exists to carry; make web requests as human as possible. (2) **Notifications only for highly critical vulnerabilities and for breaking problems that stop ctipilot working** — nothing else reaches the operator's phone. (3) All agents must be able to write memory without permission prompts, and memory must persist in the git repo (the container dies after every run).
+
+### What changed — trafilatura + notifications
+
+- **`tools/fetch_source.py extract <URL>` (new subcommand)** — the preferred article capture: the bridge's direct GET with its full human Chrome header set (UA + client hints + Sec-Fetch-*, already mutually consistent) extracted by trafilatura into clean, boilerplate-free markdown with metadata; trafilatura's own downloader as an alternate direct transport (auto-skipped in the proxy-forced cloud container, where its urllib3 stack cannot connect); jina strictly last. Tested against 20 representative CTI hosts: **18 need no reader at all** (BleepingComputer, Check Point, Claroty, Red Hat, WALLIX, Huntress included); only cisa.gov (Akamai) and heise (consent wall) remain jina-bound, both already pinned. Evidence: `work/2026-08-23T1311Z-audit/trafilatura-rollout.md`.
+- **`.claude/hooks/setup-deps.sh` (new SessionStart hook, async)** — idempotent per-container pip install of trafilatura; the bridge degrades gracefully without it.
+- **Fetch-ladder guidance updated everywhere it lives** — CLAUDE.md, `cti-run.md` (guard #9's Phase 4 deep-read, the Phase 4 transport paragraph, the Phase 5 source-health recipes), `cti-research.md` (§ Fetch tooling reference rung 2 is now `extract`; WebFetch demoted to quick checks/link discovery), and both verifier definitions in lockstep (truth-check step 1 reads content via `extract`, raw HTML via `url`). `quality-audit.md` Phase 3 item 4 is rewritten to match the directive: a dead reader pool is a normal steady state, never an operator recommendation or a notification — the audit instead checks that fires kept reading primaries through it and that reader spend outside pinned hosts stayed near zero.
+- **CLAUDE.md § Operator notification policy (new)** — push notifications only for `priority: critical`-class vulnerabilities and pipeline-breaking failures; everything else ends silently.
+- **`.claude/settings.json`** — memory-write permission rules broadened (absolute-path and worktree variants) so no agent is ever prompted for `.claude/memory/**`; the memory→repo symlink hook was verified live in this container.
+
+### What stays — trafilatura
+
+The jina reader and its key rotation are unchanged as the last rung — `fetch_method: jina` pins stay valid, `jina-usage` monitoring stays, and hosts genuinely needing JS/off-egress fetching still route there. The `url` subcommand and every structured recipe are unchanged. The outbound-links WebFetch template remains mandatory wherever WebFetch is still used.
+
+### Why — run clock
+
+The 2026-08-23 weekly quality audit found that **101 of the store's 153 run records stamp a `completed` timestamp that precedes their own last verifier iteration** — the run record says the fire finished before work the same record proves it did. The cause is structural and sits in this prompt: Phase 5's "Run-record telemetry (finalise)" step writes `work/<run-id>/main.ended_at` *before* the mechanical gate and *before* the Phase 5.7 verifier loop, and nothing re-stamps it afterwards. The loop routinely runs another one to two hours, so `duration_seconds` systematically under-reports the fire by exactly the length of its verification.
+
+This is not cosmetic. `duration_seconds` is what the runaway watchdog reads, what the Ops dashboard renders, and what every quality audit's telemetry review judges. `2026-08-19T0410Z-intel` recorded 3 963 s (1.1 h) while its seventh verifier iteration ended at 07:18:13Z — a true wall clock of at least 11 269 s (3.13 h), **past the runaway threshold, which therefore never fired**. That run's own prose waiver said it had "passed the ~3 h guard at iteration 7 (186 min elapsed)": the run knew, wrote it in words, and the machine field contradicted it. `2026-08-20T0409Z-intel` is the same shape (3 169 s recorded, ≥10 345 s real, waiver text "2 h 52 m"). The two previous audits' "no runaway, longest 2.2 h" telemetry verdicts were both computed from these falsified figures.
+
+### What changed — run clock
+
+- **`prompts/cti-run.md` Phase 5 § Run-record telemetry** — retitled to mark the stamp **provisional**, with the inline `date` command commented as a placeholder and the reason spelled out: Phase 5.7 has not run yet, so this is not the end of the fire.
+- **`prompts/cti-run.md` Phase 6 step 0 (new, MANDATORY first action)** — re-stamp `work/<run-id>/main.ended_at` after the verifier loop and rewrite `completed` / `duration_seconds` from it, then re-run the gate. If the corrected duration now trips the runaway warning, that is the watchdog finally seeing a real overrun: explain it in the run notes rather than trimming the number.
+- **`prompts/cti-run.md` § Quality gates** — a new checklist line for the run clock.
+- **`tools/check_run.py`** — new `run-clock` check. `completed` must be at or after every `ended_at` the record itself carries (verifier iterations and sub-agent blocks). **FAIL on v3.33+ records** at the gate; pre-v3.33 records are counted once, informationally, in `--all` (the pre-v3.33 non-migrated, plus 50 migrated v2 records the identity-only path skips) and never warned per record. The fix for a FAIL is always to re-stamp the clock, never to delete the sub-timestamps that expose it.
+- **`tools/check_run.py`** — new `ack-ledger` hygiene report under `--all`. The zero-warning discipline requires the audit to delete an acknowledgment row once the warning it covers stops firing, but nothing reported them: `warn()` prints the rows that matched and is silent about the rest, so a dead row could sit in the ledger indefinitely. Rows that silenced nothing on a full-store pass now WARN by name. All 14 current rows still match.
+
+### What stays — run clock
+
+Everything else. The three master-prompt banners move in lockstep (`cti-run.md`, `weekly-summary.md`, `quality-audit.md`); no phase contract the weekly or the audit references changes shape, so their build-on references still hold — both inherit the Phase 6 re-stamp through the shared publishing chain they already execute verbatim. Historical records stay immutable and are not repaired: their durations are wrong, they are settled history, and the store report now says so in one line rather than 48. `RUNAWAY_RUN_SECONDS` is unchanged at 3 h, and the runaway check stays a WARN — the new check makes the number it reads honest, it does not change what the number means.
+
+---
+
 ## 3.32 — 2026-08-21 (a PDF-only advisory is a transport problem, and the bridge now has the transport)
 
 ### Why

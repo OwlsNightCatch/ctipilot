@@ -134,6 +134,7 @@ def warn(label: str, detail: str = "") -> None:
     msg = f"{label}: {detail}" if detail else label
     for rec in _ack_ledger():
         if rec["check"] == label and str(rec["match"]) in msg:
+            rec["_hit"] = True
             ACKED.append(
                 f"{msg}  [acknowledged {rec.get('acknowledged_at', '?')}: "
                 f"{rec['reason']}]")
@@ -869,6 +870,75 @@ def check_run_record(run: dict[str, Any] | None, run_id: str, content_root: Path
              "publication and lets later scheduled fires overtake it (observed "
              "2026-07-09T2009Z: 11.2 h, published 11 h late). Surface the cause in "
              "the run record and to the operator")
+    check_run_clock(run)
+
+
+def _latest_recorded_activity(run: dict[str, Any]) -> tuple[Any, str] | None:
+    """The newest `ended_at` the record itself carries, across every verifier
+    iteration and every sub-agent block, with a label naming where it came
+    from. None when the record carries no parseable sub-timestamp."""
+    latest: Any = None
+    label = ""
+    iters = ((run.get("verification") or {}).get("iterations") or [])
+    for n, it in enumerate(iters, 1):
+        if not isinstance(it, dict):
+            continue
+        ts = _parse_iso_utc(it.get("ended_at"))
+        if ts is not None and (latest is None or ts > latest):
+            latest, label = ts, f"verification.iterations[{n}].ended_at"
+    for key, sa in (run.get("sub_agents") or {}).items():
+        if not isinstance(sa, dict):
+            continue
+        ts = _parse_iso_utc(sa.get("ended_at"))
+        if ts is not None and (latest is None or ts > latest):
+            latest, label = ts, f"sub_agents.{key}.ended_at"
+    return (latest, label) if latest is not None else None
+
+
+def _clock_inversion(run: dict[str, Any]) -> tuple[Any, Any, str] | None:
+    """`(completed, latest_activity, label)` when the record's `completed`
+    predates its own newest sub-timestamp, else None."""
+    completed = _parse_iso_utc(run.get("completed"))
+    if completed is None:
+        return None
+    latest = _latest_recorded_activity(run)
+    if latest is None or latest[0] <= completed:
+        return None
+    return (completed, latest[0], latest[1])
+
+
+def check_run_clock(run: dict[str, Any], store_mode: bool = False) -> bool:
+    """v3.33 telemetry-clock integrity: `completed` must be at or after every
+    timestamp the record itself reports, so `duration_seconds` covers the whole
+    fire rather than everything up to the Phase 5 stamp. Returns True when the
+    record is inverted (the caller decides what to do with pre-v3.33 history).
+
+    A FAIL here is fixed by re-stamping `completed` / `duration_seconds` from
+    the real end of the run — never by deleting the sub-timestamps that expose
+    it."""
+    inv = _clock_inversion(run)
+    if inv is None:
+        if not store_mode:
+            ok("run-clock", "completed covers every recorded sub-agent and "
+                            "verifier timestamp")
+        return False
+    completed, latest, label = inv
+    v = _prompt_version_tuple(run.get("prompt_version"))
+    started = _parse_iso_utc(run.get("started"))
+    true_s = int((latest - started).total_seconds()) if started else None
+    detail = (f"completed={run.get('completed')} precedes {label}="
+              f"{latest.strftime('%Y-%m-%dT%H:%M:%SZ')} by "
+              f"{int((latest - completed).total_seconds())} s")
+    if true_s is not None:
+        detail += (f"; recorded duration_seconds={run.get('duration_seconds')} "
+                   f"understates the fire by ~{true_s - int(run.get('duration_seconds') or 0)} s "
+                   f"(true wall clock at least {true_s} s)")
+    if v is not None and v >= CLOCK_INTEGRITY_FROM and not store_mode:
+        fail("run-clock",
+             f"{run.get('run_id')}: {detail}. Re-stamp `completed` and "
+             "`duration_seconds` at the END of the run (Phase 6, after the "
+             "verifier loop), not at the Phase 5 telemetry step")
+    return True
 
 
 def check_verification_confirmation(run: dict[str, Any], pre_verify: bool = False,
@@ -2064,6 +2134,19 @@ VERIFIER_ITERATION_CAP_PRE_V327 = 5
 # overrun into the next scheduled fire). Surface it — never a FAIL, the
 # record itself is the forensic evidence.
 RUNAWAY_RUN_SECONDS = 3 * 3600
+# v3.33+: `completed` / `duration_seconds` must cover the WHOLE fire, verifier
+# loop included. Phase 5 stamps `main.ended_at` before the mechanical gate and
+# the Phase 5.7 loop; a run that then spends another one-to-two hours looping
+# and never re-stamps records a `completed` that precedes its own last verifier
+# iteration. The 2026-08-23 audit found this on 101 of 153 records: 2026-08-19
+# recorded 3963 s while its iteration 7 ended at 07:18:13Z, a true 11 269 s —
+# past the runaway threshold that the recorded figure hid, and contradicting
+# the run's own wall-clock waiver text. Under-reported duration silently
+# defeats the runaway warning, the Ops dashboard and every audit's telemetry
+# review, so from v3.33 an inverted clock is a gate FAIL. Earlier records are
+# immutable history: `--all` counts them once, informationally, never as
+# warnings.
+CLOCK_INTEGRITY_FROM = (3, 33)
 
 # ATT&CK completeness by kind: these kinds inherently describe attacker
 # behavior (a campaign, an intrusion, an exploitable vulnerability's access
@@ -2678,6 +2761,7 @@ def check_all_run_records(runs: list[dict]) -> None:
     failed it otherwise) and run_id / date / kind are present."""
     n_err = 0
     n_migrated = 0
+    n_clock_legacy = 0
     now = datetime.now(timezone.utc)
     for r in runs:
         if r.get("migrated_from"):
@@ -2710,6 +2794,25 @@ def check_all_run_records(runs: list[dict]) -> None:
                  "exceeded the runaway threshold — see the per-run watchdog note")
         # v3.23+ double-CLEAN gate, store severity (immutable history → WARN)
         check_verification_confirmation(r, store_mode=True)
+        # v3.33 clock integrity. Pre-v3.33 records are immutable history from
+        # before the Phase 6 re-stamp existed — counted once below, never
+        # warned per record (dozens of them would drown the store report).
+        if check_run_clock(r, store_mode=True):
+            rv = _prompt_version_tuple(r.get("prompt_version"))
+            if rv is not None and rv >= CLOCK_INTEGRITY_FROM:
+                n_err += 1
+                fail("run-clock",
+                     f"{r.get('run_id')}: completed={r.get('completed')} precedes the "
+                     "record's own last verifier/sub-agent timestamp — duration_seconds "
+                     "does not cover the whole fire")
+            else:
+                n_clock_legacy += 1
+    if n_clock_legacy:
+        ok("run-clock",
+           f"{n_clock_legacy} pre-v{CLOCK_INTEGRITY_FROM[0]}.{CLOCK_INTEGRITY_FROM[1]} "
+           "record(s) stamp `completed` before their own verifier loop finished — "
+           "settled history from before the Phase 6 re-stamp; their duration_seconds "
+           "under-report the fire and must not be read as wall clock")
     if not n_err:
         ok("run-record",
            f"{len(runs)} run record(s) valid ({n_migrated} migrated, identity-checked only)")
@@ -2807,6 +2910,8 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
     if all_mode:
         run_all_checks(entries, runs, taxonomy, registry, parsed_state,
                        skip_build_tests=skip_build_tests)
+        print("\n== acknowledgment ledger hygiene ==")
+        report_dead_ack_rows(store_mode=True)
         return _summary()
 
     # -- run-scope selection --
@@ -2942,6 +3047,32 @@ def _summary() -> int:
         for a in ACKED:
             print(f"  - {a}")
     return 1 if FAILS else 0
+
+
+def report_dead_ack_rows(store_mode: bool) -> None:
+    """v3.33: surface acknowledgment rows that silenced nothing on this pass.
+
+    The audit's standing duty is that the ledger never accumulates dead rows —
+    an acknowledgment whose underlying warning no longer fires (the check
+    changed, the state was repaired) is deleted. Until now nothing reported
+    them: `warn()` prints the rows that DID match and is silent about the rest,
+    so a stale row could sit in the ledger indefinitely. Only meaningful under
+    `--all`, which is the pass that exercises every check across the whole
+    store; a single-run invocation legitimately matches almost none of them."""
+    if not store_mode:
+        return
+    dead = [r for r in _ack_ledger() if not r.get("_hit")]
+    if not dead:
+        ok("ack-ledger",
+           f"all {len(_ack_ledger())} acknowledgment row(s) still silence a live "
+           "warning — no dead rows to prune")
+        return
+    for r in dead:
+        warn("ack-ledger",
+             f"acknowledgment for check '{r['check']}' matching "
+             f"{str(r['match'])[:80]!r} silenced nothing on this pass — the "
+             "warning it covers no longer fires. The weekly audit deletes rows "
+             "that have stopped silencing anything; the ledger is not an archive")
 
 
 def main() -> int:
