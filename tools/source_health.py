@@ -340,6 +340,32 @@ def _bridge_check(source_id: str, url: str, *, timeout: float,
             out = proc.stdout or ""
             if proc.returncode == 0 and len(out.strip()) >= BRIDGE_MIN_BYTES:
                 return "bridge-ok", f"bridge `{' '.join(argv)}` → {len(out)} B"
+            # A QUERY recipe that succeeds and legitimately matches nothing is
+            # working, not broken. Search/API subcommands (SEC EDGAR full-text
+            # search, OSV queries, KEV filters) return a small, well-formed JSON
+            # envelope with an empty result set in a quiet window — under
+            # BRIDGE_MIN_BYTES, so the size test alone read it as `bridge-fail`
+            # and floated an unsolved `needs-demote` against a recipe that runs
+            # correctly on the very next call. (2026-08-23: sec-disclosures-edgar
+            # was the whole UNSOLVED list for the weekly sweep on exactly this —
+            # `sec-edgar 8k 2026-08-17 2026-08-23 1.05` exits 0 with total 0
+            # because no Item 1.05 8-K was filed that week.) Recognise the
+            # zero-result envelope explicitly; a malformed or error payload still
+            # falls through to bridge-fail.
+            if proc.returncode == 0 and out.strip().startswith(("{", "[")):
+                try:
+                    payload = json.loads(out)
+                except ValueError:
+                    payload = None
+                if isinstance(payload, dict):
+                    counts = [payload.get(k) for k in ("count", "total", "total_count")]
+                    lists = [payload.get(k) for k in ("hits", "results", "items", "vulns")]
+                    empty_count = any(c == 0 for c in counts if isinstance(c, int))
+                    empty_list = any(isinstance(v, list) and not v for v in lists)
+                    if empty_count or empty_list:
+                        return "bridge-ok", (f"bridge `{' '.join(argv)}` → {len(out)} B, "
+                                             "well-formed empty result set (recipe works, "
+                                             "query matched nothing this window)")
             raw = (proc.stderr or out or "").strip()
             tail = raw.splitlines()
             why_full = raw if tail else f"rc={proc.returncode}, {len(out)} B"

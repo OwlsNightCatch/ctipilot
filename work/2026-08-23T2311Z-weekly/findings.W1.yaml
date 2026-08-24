@@ -1,0 +1,212 @@
+domain: W1
+run_id: "2026-08-23T2311Z-weekly"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-08-23T23:16:49Z"
+ended_at: "2026-08-23T23:35:38Z"
+duration_seconds: 1129
+self_telemetry:
+  webfetch_calls: 26
+  websearch_calls: 42
+  bridge_fetches: 18
+
+items:
+  - title: "SilkParasite: a medium-confidence China-nexus cluster runs seven RAT families — five newly named — against Central Asian economic-policy ministries, with residue consistent with AI-assisted malware development"
+    sources:
+      - { url: "https://www.bitdefender.com/en-us/blog/businessinsights/silkparasite-tracking-china-nexus-apt-across-central-asia", publisher: "Bitdefender Labs", date: "2026-08-19", role: "primary" }
+      - { url: "https://therecord.media/china-cyber-espionage-central-asia", publisher: "The Record (Recorded Future News)", date: "2026-08-20", role: "corroborating" }
+    discovery_trace: "first seen at: bitdefender-threat-debrief, URL https://www.bitdefender.com/en-us/blog/businessinsights (listing fetch surfaced the post title/date) → primary: Bitdefender Labs, URL https://www.bitdefender.com/en-us/blog/businessinsights/silkparasite-tracking-china-nexus-apt-across-central-asia → corroboration: The Record, URL https://therecord.media/china-cyber-espionage-central-asia"
+    summary: |
+      Bitdefender Labs disclosed SilkParasite, a cyberespionage operation it assesses at medium confidence as China-nexus, targeting government bodies handling economic policy across Uzbekistan, Turkmenistan, Kyrgyzstan, Tajikistan, Kazakhstan and Georgia since roughly late 2025. Initial access is spear-phishing email carrying a malicious Office document inside a password-protected RAR (password in the email body), regionally tailored to impersonate specific ministries; the delivery macro checks for a running Kaspersky process (avp.exe) and adapts its behavior accordingly before dropping a legitimate signed application alongside a malicious DLL with the expected filename (DLL side-loading) — observed hosts include Calibre's ebook-edit.exe, ABBYY FineReader.exe, Quick Heal's emlproui.exe, a Windows Defender component (MpDefenderCoreService.exe) and Mp3tag.exe. Seven RAT families are in play — DriveSilkRAT (.NET/C++), CookiETagRAT (C++), NomadRAT (C++), GoginRAT (Go) and NodeEdgeRAT (Node.js) are newly documented; SpiceRAT (C/C++, previously attributed by Cisco Talos to SneakyChef) and BloodAlchemy (ShadowPad/Deed RAT lineage) were already known. Six of the seven load additional capability on demand from C2 rather than shipping it all at once; DriveSilkRAT routes commands through a shared Google Drive folder (living-off-trusted-services) and CookiETagRAT hides commands inside HTTP Cache-Control/ETag header values. Persistence rides scheduled tasks masquerading as routine maintenance (e.g. NodeEdgeRAT's "SysEdgeUpdateTaskMachineCore", styled as a Microsoft Edge updater). Bitdefender assesses medium confidence that development leaned on AI assistance — GoginRAT ships leftover Go unit-test functions and a hardcoded placeholder AES key ("0123456789abcdef"); NodeEdgeRAT's encryption-key config field is still set to the literal string "change_this_key"; two recovered phishing lures are themselves conspicuously AI-generated documents — while stressing the toolset overall remains "professionally engineered" human work that AI merely accelerated, not AI-authored malware.
+    region_nexus: "Central Asia (Uzbekistan, Turkmenistan, Kyrgyzstan, Tajikistan, Kazakhstan) and Georgia; no Swiss/EU targeting reported by the source"
+    primary_sector_nexus: "indirect"
+    sector: "government, public-sector"
+    cves: []
+    techniques: [T1566.001, T1204.002, T1574.002, T1053.005, T1102.002, T1071.001]
+    affected_products: ["Calibre", "ABBYY FineReader", "Quick Heal", "Microsoft Windows Defender (MpDefenderCoreService.exe)", "Mp3tag"]
+    entity_keys: ["actor:mustang-panda"]
+    new_entities:
+      - { key: "campaign:silkparasite-central-asia-2026", type: campaign, name: "SilkParasite", aliases: [],
+          summary: "Bitdefender Labs designation for a medium-confidence China-nexus cyberespionage operation running seven RAT families (five newly documented) against Central Asian and Georgian government bodies handling economic policy, active since roughly late 2025 (Bitdefender Labs, 2026-08-19)." }
+      - { key: "actor:sneakychef", type: actor, name: "SneakyChef", aliases: [],
+          summary: "China-based espionage actor first attributed by Cisco Talos as the operator of the SpiceRAT backdoor family, which Bitdefender observed reused within the SilkParasite Central-Asia campaign (Cisco Talos; Bitdefender Labs, 2026-08-19)." }
+      - { key: "tool:driversilkrat", type: tool, name: "DriveSilkRAT", aliases: [],
+          summary: ".NET/C++ remote access tool used in SilkParasite that routes C2 commands through a shared Google Drive folder and loads in-memory .NET plugins from it (Bitdefender Labs, 2026-08-19)." }
+    relation_suggestions:
+      - { subject: "actor:sneakychef", object: "campaign:silkparasite-central-asia-2026",
+          basis: "Bitdefender: SilkParasite reuses the SpiceRAT backdoor family, previously attributed by Cisco Talos to SneakyChef (Bitdefender Labs, 2026-08-19)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "SilkParasite is a cyberespionage operation, assessed at medium confidence as China-nexus, that targeted government bodies across Central Asia."
+        attribution: "Bitdefender Labs"
+        source_url: "https://www.bitdefender.com/en-us/blog/businessinsights/silkparasite-tracking-china-nexus-apt-across-central-asia"
+      - quote: "The toolset is small, modular, and professionally engineered, and it carries traces of AI-assisted development."
+        attribution: "Bitdefender Labs"
+        source_url: "https://www.bitdefender.com/en-us/blog/businessinsights/silkparasite-tracking-china-nexus-apt-across-central-asia"
+      - quote: "SilkParasite is primarily assisted: capable humans do the engineering and lean on AI to move faster, leaving behind a few tells but none of the degradation."
+        attribution: "Bitdefender Labs"
+        source_url: "https://www.bitdefender.com/en-us/blog/businessinsights/silkparasite-tracking-china-nexus-apt-across-central-asia"
+    extended_notes: |
+      Detection angle for defenders outside the named region: the DLL side-loading host list (Calibre, ABBYY FineReader, Quick Heal, an MS Defender component name, Mp3tag) is a concrete hunt list — flag any of these signed binaries loading a DLL from a non-standard install path or a path also writable by the current user. The AI-development-residue indicators (test-harness leftovers, placeholder crypto keys, template-literal config values) are a hunt heuristic worth generalizing: grep newly-recovered implants for common AI-scaffolding placeholders before assuming professional/nation-state tooling is bug-free.
+
+  - title: "Two independent vendors document the same technique class this week: attackers impersonating Claude, ChatGPT and Copilot to deliver stealers and RATs via poisoned search ads and fake install pages"
+    sources:
+      - { url: "https://www.sophos.com/en-us/blog/fake-ai-real-malware-attackers-impersonating-ai-brands", publisher: "Sophos X-Ops", date: "2026-08-19", role: "primary" }
+      - { url: "https://www.huntress.com/blog/fake-claude-macsync", publisher: "Huntress", date: "2026-08-17", role: "primary" }
+    discovery_trace: "first seen at: sophos-xops feed, URL https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 → primary: Sophos X-Ops, URL https://www.sophos.com/en-us/blog/fake-ai-real-malware-attackers-impersonating-ai-brands ; separately first seen at: huntress feed, URL https://www.huntress.com/blog/rss.xml → primary: Huntress, URL https://www.huntress.com/blog/fake-claude-macsync"
+    summary: |
+      Sophos X-Ops reviewed 38 confirmed adversarial-AI cases from a year of MDR casework (2025-07-02 through 2026-06-29) and found nearly all involved counterfeit versions of legitimate AI platforms used as malware delivery vehicles — Claude was the most abused brand (26 of 38 cases), ahead of ChatGPT and Copilot. The chain runs: a user searches for an AI coding tool, lands on a typosquatted domain via a malicious ad or poisoned search result, is walked through a fake "InstallFix" guide, and is talked into running an obfuscated one-liner (mshta, or PowerShell with -enc/IEX) that delivers LummaStealer, custom RATs, or a previously undocumented backdoor Sophos names "Beagle"; a parallel vector uses browser extensions posing as AI assistants that function as credential-harvesting infostealers. Sophos maps the pattern to T1566 (phishing lures), T1218.005 (mshta signed-binary proxy execution) and T1071.001 (web-protocol C2), and states behavioral detection outperformed any AI-brand-specific signature. Independently, Huntress reverse-engineered MacSync, a six-stage macOS infostealer/RAT distributed through a poisoned Google Ads result that redirects to a shared Claude.ai conversation displaying a curl command; the resulting chain runs a polymorphic zsh loader entirely in memory, uses AppleScript to harvest credentials, drops a Mach-O RAT that talks to a hardcoded WebSocket C2 endpoint, escalates TCC privileges for screen recording, and persists via a renamed LaunchAgent plist — exfiltrating browser cookies, Keychain secrets, SSH keys, Telegram sessions, cloud credentials and, via trojanized wallet apps, cryptocurrency seed phrases. Both write-ups land in the same week from unrelated MDR/SOC telemetry sources and converge on the same finding: employees searching for legitimate AI coding assistants are now a reliable initial-access vector, and file-hash detection is moot against the loader's polymorphism.
+    region_nexus: "global; the vector (search-engine ads for AI coding tools) is untargeted by geography or sector"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, healthcare, telco, energy, water, transport"
+    cves: []
+    techniques: [T1566, T1218.005, T1071.001, T1543.001, T1555.001]
+    affected_products: ["Claude (Anthropic)", "ChatGPT (OpenAI)", "Microsoft Copilot"]
+    entity_keys: ["campaign:clickfix-macos-2026"]
+    new_entities:
+      - { key: "malware:beagle-backdoor", type: malware, name: "Beagle", aliases: [],
+          summary: "Previously undocumented backdoor Sophos recovered from a fake-Claude-site delivery chain during MDR casework, part of a broader wave of malware distributed via counterfeit AI-brand install pages (Sophos X-Ops, 2026-08-19)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Attackers are exploiting the surge in demand for AI software by faking the software itself: names users trust, like Claude, ChatGPT, and Copilot, become delivery vehicles for malware."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/fake-ai-real-malware-attackers-impersonating-ai-brands"
+      - quote: "You can't detect based on the hash, you're gonna have to detect on the behavior."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/fake-claude-macsync"
+      - quote: "A recovery phrase doesn't work like that; there is nothing to revoke or reset, nothing to stop the access."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/fake-claude-macsync"
+    extended_notes: |
+      Triage/benign-lookalike note: legitimate AI-tool installers do also invoke shell one-liners and browser-extension installs, so the discriminator both vendors converge on is destination, not action class — a curl/PowerShell one-liner sourced from a shared-conversation link or a typosquat domain (rather than the vendor's own docs/CLI installer) is the tell. Hardening lever: block execution of terminal-paste instructions copied from web pages is not enforceable technically, but egress-filtering newly-registered/typosquat AI-brand domains and disabling unmanaged browser-extension installation are.
+
+  - title: "Cl0p Windchill/FlexPLM status, week of 17-23 August: GE quietly dropped from the leak site while Fiserv and Toast add public non-customer-data statements, and the named-victim count has plateaued around 43-45"
+    sources:
+      - { url: "https://www.govinfosecurity.com/clop-claims-data-theft-from-more-than-40-companies-a-32581", publisher: "GovInfoSecurity (ISMG)", date: "2026-08-17", role: "primary" }
+      - { url: "https://ankura.com/insights/ankura-ctix-flash-update-august-21-2026", publisher: "Ankura CTIX", date: "2026-08-21", role: "corroborating" }
+      - { url: "https://securityaffairs.com/197587/cyber-crime/cl0p-targets-40-organizations-through-ptc-windchill-flaw.html", publisher: "Security Affairs", date: "2026-08-21", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Cl0p Windchill victim count leak site August 20 2026\") → primary: GovInfoSecurity, URL https://www.govinfosecurity.com/clop-claims-data-theft-from-more-than-40-companies-a-32581 → corroboration: Ankura CTIX, URL https://ankura.com/insights/ankura-ctix-flash-update-august-21-2026 → corroboration: Security Affairs, URL https://securityaffairs.com/197587/cyber-crime/cl0p-targets-40-organizations-through-ptc-windchill-flaw.html"
+    summary: |
+      Status recheck on the Cl0p PTC Windchill/FlexPLM mass-extortion campaign (CVE-2026-12569), last covered here on 2026-08-19 with ReliaQuest's reverse-engineering of the custom X-windchill-req webshell and GE's confirmation that it was assessing Cl0p's claims. GovInfoSecurity/ISMG reports — sourced to its own outreach to the named companies — that "GE is no longer on Clop's darkweb leak site of companies that have not contacted it to negotiate a payoff," which the outlet frames as consistent with either a ransom payment or resumed negotiation; this is a single-source observation this run could not independently corroborate from a second outlet that itself checked the leak site, so it is carried as reported rather than confirmed. The same reporting adds two company statements not previously captured here: Fiserv, from which Cl0p claims to have stolen 874 GB including CAD files, told the outlet none of its "customer, bank, transaction, or personal data" were stolen based on a review to date; and Toast said it identified unauthorized access to "a limited number of files" containing "nonsensitive internal documents," isolated the affected systems the same day, and considers the incident contained. Shell separately characterized its own incident as unauthorized access to "a cloud-based IT service, managed by a third party, for non-critical operations," now blocked and contained with no evidence of exposed personal data. No new named victims or technical developments appeared in follow-on coverage through 2026-08-21; the ~43-45 named-victim count observed since 2026-08-15 has not moved, and the two 2026-08-21 pieces reviewed (Ankura CTIX flash update, Security Affairs) restate the existing webshell and victim-count facts without adding to them.
+    region_nexus: "global; named victims span multiple continents, none confirmed Swiss/European in this run's sources"
+    primary_sector_nexus: "indirect"
+    sector: "energy, healthcare, finance, manufacturing"
+    cves: ["CVE-2026-12569"]
+    techniques: [T1190, T1505.003]
+    affected_products: ["PTC Windchill", "PTC FlexPLM"]
+    entity_keys: ["actor:clop", "campaign:clop-windchill-flexplm-extortion-2026"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-16/weekly-w33-clop-windchill-status"
+    evidence:
+      - quote: "GE is no longer on Clop's darkweb leak site of companies that have not contacted it to negotiate a payoff."
+        attribution: "GovInfoSecurity (ISMG)"
+        source_url: "https://www.govinfosecurity.com/clop-claims-data-theft-from-more-than-40-companies-a-32581"
+      - quote: "Toast identified unauthorized access to a limited number of files; to date, the files identified contain nonsensitive internal documents."
+        attribution: "Toast spokesperson, via GovInfoSecurity (ISMG)"
+        source_url: "https://www.govinfosecurity.com/clop-claims-data-theft-from-more-than-40-companies-a-32581"
+    extended_notes: |
+      Coverage note: could not find a second outlet that independently checked Clop's leak-site listing state for GE this week (several secondary write-ups repeat the "removed from the site" framing without their own verification pass, so they are not treated as independent corroboration). Flag for the next weekly recheck whether GE issues its own statement.
+
+  - title: "Sophos publishes a CPU-only NetNTLMv1 rainbow-table pipeline that cracks a captured hash in under 20 minutes on commodity hardware — closing the 'you'd need a GPU farm' assumption behind leaving the legacy protocol enabled"
+    sources:
+      - { url: "https://www.sophos.com/en-us/blog/accelerating-netntlmv1-lookups-without-gpus", publisher: "Sophos X-Ops", date: "2026-08-17", role: "primary" }
+    discovery_trace: "first seen at: sophos-xops feed, URL https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 → primary: Sophos X-Ops, URL https://www.sophos.com/en-us/blog/accelerating-netntlmv1-lookups-without-gpus"
+    summary: |
+      Sophos X-Ops built a CPU-only rainbow-table lookup pipeline against NetNTLMv1 — the legacy Windows challenge-response scheme that still encrypts the derived NT hash under 56-bit DES when a static server challenge is used — that recovers the NT hash in under 20 minutes on a 64-core AMD EPYC server, work that previously needed roughly 8 hours on GPU hardware. The speedup comes from bitsliced DES with AVX2 vectorization processing 256 independent DES operations in parallel (~2.1 billion DES ops/sec on the test machine), split across three pipeline stages (precompute, search, check) with the table set horizontally sharded so the job runs concurrently with other CPU-bound cracking work rather than monopolizing a GPU. Sophos built on and published against Mandiant's public NetNTLMv1 rainbow tables. The practical effect for defenders: an environment that still permits NetNTLMv1 negotiation (a legacy compatibility default in many older Windows/AD deployments) can no longer assume that a captured NetNTLMv1 response is safe absent a GPU cluster — commodity server or even high-end workstation CPUs now clear it inside a lunch break, once an attacker has captured the response via any of the standard forced-authentication techniques (LLMNR/NBT-NS poisoning, coerced SMB/HTTP auth).
+    region_nexus: "global; applies to any Active Directory environment that has not disabled NetNTLMv1 negotiation"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: []
+    techniques: [T1557.001, T1110.002]
+    affected_products: ["Microsoft Windows NTLM (NetNTLMv1 authentication)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Threat actors thrive on the availability of legacy technology that survives long after its security integrity has expired."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/accelerating-netntlmv1-lookups-without-gpus"
+    extended_notes: |
+      Hardening lever named by the source: disable NetNTLMv1 negotiation outright (Network security: LAN Manager authentication level GPO) rather than relying on offline-cracking cost as a mitigating factor; the source frames periodic re-assessment of legacy-authentication exposure during security assessments as the compensating control where NetNTLMv1 cannot yet be disabled.
+
+  - title: "CopyCop (Storm-1516) runs a three-wave media-impersonation disinformation campaign against a US-Armenia AI data-center investment — a Russian-state-aligned information-operation technique class, not a network intrusion"
+    sources:
+      - { url: "https://www.recordedfuture.com/blog/copycop-targets-ai-investment", publisher: "Recorded Future (Insikt Group)", date: "2026-08-18", role: "primary" }
+    discovery_trace: "first seen at: recordedfuture-insikt feed, URL https://www.recordedfuture.com/feed → primary: Recorded Future Insikt Group, URL https://www.recordedfuture.com/blog/copycop-targets-ai-investment"
+    summary: |
+      Insikt Group documented three successive media-impersonation waves between 2026-06-24 and 2026-07-13 by CopyCop (tracked elsewhere as Storm-1516), a Russian state-aligned influence network, targeting the Firebird AI data-center project in Hrazdan, Armenia — a roughly $500 million US-Armenia AI infrastructure investment tied to Armenia's post-CSTO westward geopolitical realignment. The technique is not intrusion but fabrication and amplification: spoofed websites impersonating TechCrunch and Gizmodo, and forged Iranian-military-style communications, seeded false narratives about seismic risk, infrastructure instability and military targeting of the facility, amplified through a persistent CopyCop social-media account cluster whose combined reach grew from limited engagement to over 1.6 million views by the third wave. Insikt links the domains to prior confirmed CopyCop infrastructure via CSS-stylesheet-hash reuse across the media-impersonation sites. This is included as a technique-class item rather than a core Swiss/European nexus item: the victim is a non-European facility, but the fabricated-media-outlet-plus-coordinated-amplification playbook is the same class Russian-state-aligned actors have run against European targets, and Insikt's infrastructure-fingerprinting method (reused CSS assets) is a transferable detection lead for anyone tracking the same operator.
+    region_nexus: "Armenia; no direct Swiss/European targeting in this report, but the operator (CopyCop/Storm-1516) is Russian state-aligned and has run comparable campaigns against European targets"
+    primary_sector_nexus: "indirect"
+    sector: "energy, public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:copycop", type: actor, name: "CopyCop", aliases: ["Storm-1516"],
+          summary: "Russian state-aligned influence-operations network running coordinated media-impersonation and social-amplification campaigns; Insikt Group documented a three-wave disinformation campaign against a US-Armenia AI data-center investment in mid-2026 (Recorded Future/Insikt Group, 2026-08-18)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "victim (Armenia AI data center) is outside the constituency's home region and this is an information/influence operation rather than a network intrusion; included for the transferable technique class and the tracked-actor (Storm-1516) nexus to European targeting history — main agent to make the final call."
+    evidence:
+      - quote: "Between June 24 and July 13, 2026, Insikt Group documented three separate CopyCop media impersonations targeting the facility"
+        attribution: "Recorded Future (Insikt Group)"
+        source_url: "https://www.recordedfuture.com/blog/copycop-targets-ai-investment"
+    extended_notes: null
+
+status_rechecks:
+  - entity: "actor:exfilsquad"
+    delta: "no material delta beyond the 2026-08-13 Fortra validation already carried in this week's operational entries (2026-08-16). The unrelated Microsoft-D365 claim (130GB/8M records) is part of ExfilSquad's original 2026-07-26 claim batch, already folded into the Fortra assessment; no fresh in-window statement on it found."
+    checked_sources: ["WebSearch: ExfilSquad Power Pages Fortra new victims", "WebSearch: ExfilSquad new statement victim August 20 21 22 2026", "WebSearch: ExfilSquad Microsoft 130GB data claim", "WebSearch: ExfilSquad Microsoft claim fabricated refuted Fortra August 2026"]
+  - entity: "incident:minnesota-water-utilities-coordinated-cyberattack-2026-07"
+    delta: "no delta after the 2026-08-13 Dragos CVE-attribution-mismatch retrospective already carried in the 2026-08-16 weekly. No new agency statement, no actor naming by any US authority, and no European-exposure development found this week; the Forescout/thehackernews exposure-count piece (4,407 Rockwell PLCs, Spain at 3%) that surfaced in search predates the window (2026-08-06)."
+    checked_sources: ["WebSearch: Minnesota water utilities PLC attack FBI update August 2026", "WebSearch: water utility PLC hack attribution Iran Europe August 2026", "WebSearch: water utility PLC lockout Europe exposure MicroLogix August 2026", "WebFetch: thehackernews.com/2026/08/over-4400-rockwell-plcs-exposed-online.html (dated 2026-08-06, out of window)"]
+  - entity: "incident:metabase-sqli-zeroday-2026-08"
+    delta: "no delta beyond the VenariX tracker's 2026-08-17 update (nine confirmed downstream victims) already carried in the 2026-08-19 operational entry. No further tracker update or new named victim found in-window."
+    checked_sources: ["WebSearch: Metabase SQL injection downstream breach tracker update", "WebSearch: Metabase breach VenariX tracker August 20 21 22", "WebSearch: Metabase breach new victim confirmed this week"]
+  - entity: "trend:passkey-webauthn-attack-surface-2026-08"
+    delta: "no fifth thread or new vendor response found after the fourth-thread closure (Pass-the-Passkey/CVE-2026-34348) already carried in the 2026-08-16 weekly. This week's passkey-adjacent research (SpecterOps Pass-the-Passkey, Unit 42 Pass-ta-key) is the same material already dated to early August and already synthesized."
+    checked_sources: ["WebSearch: passkey WebAuthn attack research new August 2026"]
+  - entity: "campaign:rust-crates-arrayref-dprk-overlap-2026-08"
+    delta: "no wave-level delta beyond the operational entry published today (2026-08-23). Checked for further affected ecosystems, a Rust Foundation/crates.io policy response (mandatory 2FA, provenance requirements) and Wiz/Socket follow-ups; found none published in-window beyond what the operational entry already carries (Rust Security Response Team's removal timeline and the maintainer-compromise assessment, Wiz's DPRK-infrastructure-overlap claim). The unrelated 'onering' and 'TrapDoor' Rust-crate compromises found in search are both from June/May 2026 and are separate, older incidents."
+    checked_sources: ["WebSearch: npm PyPI supply chain attack this week August 2026 build script backdoor", "WebSearch: crates.io security team statement policy after arrayref attack review", "WebSearch: Sapphire Sleet DPRK npm supply chain campaign new package August 2026", "WebSearch: onering Rust crate compromise source code theft build", "WebFetch (attempted): internals.rust-lang.org/t/about-supply-chain-attacks (thread inactive since 2021, no relevant recent posts)"]
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product or supplier watchlist configured in the org profile; sweep is a no-op per spawn instructions. Time spent on the five status rechecks and the general threat-actor/research horizon instead."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: paradigm-shift-research
+    reason: "ps.tc reachable (200) but the /pages/blog.html route shows only a 'blog-unavailable' interstitial; latest listed article date is 2026-07-23. No in-window content available via any route tried."
+  - source_id: swisspost-cybersecurity
+    reason: "News listing reachable; no publication dates rendered on the listing page itself, and the one dated item checked (Swiss Threat Landscape Report) is from 2026-06-23, out of window. No in-window items identified."
+  - source_id: trendmicro-research
+    reason: "RSS at https://www.trendmicro.com/en_us/research.xml returned HTTP 404 on direct fetch; jina reader fallback failed on all rotated keys with HTTP 402 (balance exhausted on every credential tried). Could not establish a working feed URL for this source in the time available; recommend the source record's rss_url be re-verified."
+  - source_id: dragos
+    reason: "Blog index fetch via bridge returned links with no visible publish dates; the most recent-looking posts (introducing-dragos-emberai, mtsa-ot-resilience-requirements) could not be date-confirmed as in-window within the time budget, so they were not pursued further."
+  - source_id: volexity
+    reason: "Blog index's most recent post is dated 2026-07-17 (SonicWall SMA 0-day). No in-window content."
+  - source_id: crowdstrike
+    reason: "Counter Adversary Operations category listing appears to be JS-rendered; the bridge fetch returned only category-navigation links, no article links. No structured-endpoint alternative found for this source in the time available."
+
+notes_for_main_agent: |
+  jina reader: every rotated API key returned HTTP 402 (balance exhausted) throughout this run's fallback attempts (observed on bleepingcomputer.com, computerweekly.com, cybersecuritytimes.com, trendmicro.com fetches). This matches the operator note in cti-run.md about the reader being a metered last resort; flagging because it removed the fallback for several 403'd hosts this run (BleepingComputer, ComputerWeekly, cybersecuritytimes.com all had to be worked around via WebSearch snippets or partially-successful direct HTML fetches instead).

@@ -1,0 +1,398 @@
+domain: S3
+run_id: 2026-08-23T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-23T04:13:06Z
+ended_at: 2026-08-23T04:27:08Z
+duration_seconds: 842
+self_telemetry:
+  webfetch_calls: 42
+  websearch_calls: 15
+  bridge_fetches: 5
+
+items:
+  - title: "Cisco Talos: UAT-10147's SPECTRE implant unlinks EDR kernel callbacks via BYOVD, using ftrace-based rootkit hiding on Linux"
+    sources:
+      - { url: "https://blog.talosintelligence.com/uat-10147-deploys-spectre-a-cross-platform-implant-with-linux-rootkit-and-byovd-capabilities/", publisher: "Cisco Talos", date: "2026-08-20", role: "primary" }
+    discovery_trace: "first seen at: outage-backfill listing walk of blog.talosintelligence.com, URL https://blog.talosintelligence.com/ → primary: Cisco Talos, URL https://blog.talosintelligence.com/uat-10147-deploys-spectre-a-cross-platform-implant-with-linux-rootkit-and-byovd-capabilities/ (confirmed via WebSearch (\"Talos \\\"UAT-10147\\\" SPECTRE BadIIS agentic AI blog\"))"
+    summary: |
+      Cisco Talos disclosed SPECTRE, a cross-platform C backdoor operated by a Chinese-speaking
+      intrusion actor it tracks as UAT-10147, targeting compromised IIS and Linux web servers for
+      SEO-fraud monetization via BadIIS. The Windows variant implements 45 commands (24 plaintext,
+      21 encrypted) and performs BYOVD EDR neutralization: it downloads a vulnerable driver from C2
+      (RTCore64.sys, CVE-2019-16098, or DBUtil_2_3.sys, CVE-2021-21551), installs it as a transient
+      kernel service, resolves ntoskrnl.exe via NtQuerySystemInformation, and — using a hardcoded
+      per-build offset table covering 13 Windows versions — performs targeted kernel writes that
+      unlink PspCreateProcessNotifyRoutine, PspCreateThreadNotifyRoutine and PspLoadImageNotifyRoutine
+      callback entries from their doubly-linked lists, blinding kernel-callback-dependent EDR (Talos
+      names CrowdStrike Falcon, SentinelOne, Microsoft Defender) to process creation, thread creation
+      and image-load events. Process injection uses standard hollowing (svchost.exe default), APC
+      EarlyBird injection, and automated self-hollowing into RuntimeBroker.exe. Privilege escalation
+      abuses named-pipe impersonation (creates \pipe\spectre_<tid>, calls ImpersonateNamedPipeClient
+      to acquire a SYSTEM token). Credential theft avoids LSASS entirely: SAM/SYSTEM/SECURITY hive
+      dumping via RegSaveKeyA, cmdkey.exe /list enumeration (Vaultdump), and offline Chrome/Edge
+      login-data copy for later DPAPI decryption (Chromedump). C2 configuration updates ride an NTFS
+      Alternate Data Stream on the hosts file (C:\Windows\System32\drivers\etc\hosts:cache), letting
+      the actor rotate C2 without recompiling and without touching a firewall-visible file change. The
+      Linux variant (29 plaintext commands) persists via a systemd unit "hardware-monitor.service" and
+      a kernel module masquerading as "acpi_pad.ko"; its rootkit uses ftrace with
+      FTRACE_OPS_FL_IPMODIFY to redirect syscall entry points (hooked_tcp4/6_seq_show, hooked_kill,
+      hooked_tkill, hooked_tgkill, hooked_getdents64) and takes signal-based commands via kill()
+      syscalls to a magic PID 31337: signal 62 hides a process (removes its task_struct from the
+      kernel PID list), signal 36 hides the module itself (unlinks from the kernel module list), and
+      signal 37 escalates the caller to UID 0 by overwriting its credential structure. Talos assesses
+      with medium confidence that the Linux rootkit's source incorporated AI-assisted code generation
+      — citing a feature-list documentation structure that reads like an LLM's response to "write a
+      rootkit with the following features," uniform section formatting, pedagogical inline comments
+      explaining basic /proc/sys/kernel/tainted mechanics, and PDB build-path strings referencing
+      "C:\Users\*\Desktop\AI\" inside companion EfsPotato/RustPotato privilege-escalation tools. No
+      exploitation of a new vulnerability is involved beyond the two named old vulnerable-driver CVEs;
+      the finding is entirely behavioral/architectural.
+    region_nexus: "global; server-side compromise pattern (IIS/Linux) applicable to any internet-facing web-server estate, including EU/Swiss public-sector and CI web infrastructure"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, telco, technology"
+    cves: ["CVE-2019-16098", "CVE-2021-21551"]
+    techniques: [T1190, T1068, T1055.012, T1055.004, T1134.001, T1014, T1562.001, T1027, T1003.002, T1555.003, T1071.001]
+    affected_products: ["Microsoft Windows (all versions with kernel callback-dependent EDR)", "Linux (kernel ftrace subsystem)", "Internet Information Services (IIS)"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:uat-10147", type: actor, name: "UAT-10147", aliases: [],
+          summary: "Cisco Talos designation for a Chinese-speaking, financially motivated intrusion actor compromising vulnerable IIS and Linux web servers for BadIIS SEO-fraud monetization, notable for AI-assisted rootkit development and agentic-AI-driven post-compromise operations (Cisco Talos, 2026-08-20)." }
+      - { key: "malware:spectre-uat10147", type: tool, name: "SPECTRE", aliases: ["Specter"],
+          summary: "Cross-platform C backdoor (Windows: 45 commands; Linux: 29 commands, plus an ftrace-based rootkit) deployed by UAT-10147, featuring BYOVD-based EDR kernel-callback unlinking on Windows and signal-driven process/module hiding on Linux (Cisco Talos, 2026-08-20)." }
+    relation_suggestions:
+      - { subject: "actor:uat-10147", object: "campaign:cisco-talos-badiis-demo-pdb-maas-isapi-backdoor-lwxat-dragon",
+          basis: "Talos: UAT-10147 deploys BadIIS as part of its monetization model, and the article links to Talos's prior tracking of the commodity BadIIS MaaS ecosystem (Cisco Talos, 2026-08-20)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "By performing targeted kernel writes, the SPECTRE safely unlinks each registered EDR callback from its doubly-linked list"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-10147-deploys-spectre-a-cross-platform-implant-with-linux-rootkit-and-byovd-capabilities/"
+      - quote: "This strategy allows the threat actor to easily update the C2 configuration by modifying the ADS, thereby circumventing firewall blocklists without needing to recompile"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-10147-deploys-spectre-a-cross-platform-implant-with-linux-rootkit-and-byovd-capabilities/"
+      - quote: "Talos assesses with medium confidence that UAT-10147 leveraged a combination of AI-assisted development and human expertise"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-10147-deploys-spectre-a-cross-platform-implant-with-linux-rootkit-and-byovd-capabilities/"
+    extended_notes: |
+      Companion Talos post (same date, same actor) covers the agentic-AI-orchestrated exploitation
+      chain and is returned as a separate item in this findings set — see "Cisco Talos: UAT-10147
+      operationalizes agentic AI across the exploitation lifecycle...". The two may warrant a single
+      combined deep-dive entry or two linked entries at the main agent's discretion; both describe the
+      same actor's 2026 operations from different technical angles (implant architecture vs.
+      operational tooling/tradecraft).
+
+  - title: "Cisco Talos: UAT-10147 uses agentic AI end-to-end across exploitation — vulnerability discovery, exploit-chain construction, payload validation and intrusion documentation"
+    sources:
+      - { url: "https://blog.talosintelligence.com/uat-10147-chinese-speaking-adversary-integrates-agentic-ai-into-post-compromise-operations/", publisher: "Cisco Talos", date: "2026-08-20", role: "primary" }
+    discovery_trace: "first seen at: outage-backfill listing walk of blog.talosintelligence.com, URL https://blog.talosintelligence.com/ → primary: Cisco Talos, URL https://blog.talosintelligence.com/uat-10147-chinese-speaking-adversary-integrates-agentic-ai-into-post-compromise-operations/ (confirmed via WebSearch (\"Talos \\\"UAT-10147\\\" SPECTRE BadIIS agentic AI blog\"))"
+    summary: |
+      Cisco Talos assesses with moderate-to-high confidence that UAT-10147 represents an emerging
+      class of financially motivated intrusion operators using agentic AI systems to operationalize
+      offensive tradecraft at scale, rather than merely for scripting assistance. Initial access is
+      mass exploitation of ~170,000 candidate URLs (split into 17 target lists of ~10,000 each) via
+      known CVEs run through Metasploit: CVE-2022-27925 (Zimbra Collaboration Suite unauthenticated
+      RCE), CVE-2021-23758 (AjaxPro deserialization RCE), CVE-2021-29441/29442 (Nacos
+      ScriptEngineFactory arbitrary code execution), CVE-2019-18935 (Telerik UI for ASP.NET AJAX JSON
+      deserialization), and a Linux privilege-escalation set (CVE-2022-0995, CVE-2021-3156,
+      CVE-2015-5287, CVE-2015-3246, CVE-2010-3904, CVE-2022-0847). Talos recovered AI-generated
+      operational artifacts from actor infrastructure: a 9-section ASP.NET ViewState-deserialization
+      RCE playbook documenting ValidationKey/MachineKey extraction via badsecrets, a ysoserial.exe
+      TypeConfuseDelegate gadget-chain configuration (with an explicit correction of a mistaken belief
+      that .NET 4.8 patches these chains), and — most notably for defenders — a documented lesson that
+      time-based blind RCE confirmation (ping -n 10, timeout /t 10) fails against ViewState RCE because
+      .NET's Process.Start() returns asynchronously, so the actor pivoted to out-of-band callbacks
+      (certutil, PowerShell curl, DNS nslookup, and polling the webhook.site API) to confirm execution.
+      Four companion Python scripts generated by AI tooling automate post-exploitation diagnostics
+      (baseline write-capability tests, webroot ACL exfiltration, appcmd-based IIS physical-path
+      discovery), SPECTRE deployment via ViewState-based certutil download with PowerShell
+      Test-Path/Get-Item.Length verification, ASHX web-shell staging through a two-step
+      upload-handler-then-payload chain, and structured reconnaissance (webroot enumeration, appcmd
+      list site, whoami /priv) via UTF-16-LE Base64-encoded PowerShell. On Windows, the chain also
+      elevates via EfsPotato (renamed to evade detection) and then adds
+      C:\Windows\SysWOW64\inetsrv and C:\Windows\System32\inetsrv to the Windows Defender exclusion
+      list via registry writes and Add-MpPreference, before dropping BadIIS, a rogue local-admin
+      account with RDP access, and QuasarRAT/Gh0stCringe/SPECTRE via scheduled tasks disguised as
+      "Google Chrome Start". Talos names DeepAudit (a source-code vulnerability-scanning framework)
+      and PentestGPT as the actor's AI-driven reconnaissance and exploit-validation tooling. Victims
+      span government, university, media, technology and gaming sector servers in Brazil, Bolivia,
+      China, Canada and Vietnam.
+    region_nexus: "global; the technique class (mass CVE exploitation against internet-facing web/collaboration platforms, AI-accelerated exploit validation and post-exploitation automation) is directly transferable to EU/Swiss public-sector web estates running any of the named vulnerable components"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, education, media, technology, telco"
+    cves: ["CVE-2022-27925", "CVE-2021-23758", "CVE-2021-29441", "CVE-2021-29442", "CVE-2019-18935", "CVE-2022-0995", "CVE-2021-3156", "CVE-2015-5287", "CVE-2015-3246", "CVE-2010-3904", "CVE-2022-0847"]
+    techniques: [T1190, T1068, T1505.003, T1136.001, T1562.001, T1105, T1027, T1071.001]
+    affected_products: ["Zimbra Collaboration Suite", "AjaxPro", "Nacos", "Telerik UI for ASP.NET AJAX", "Microsoft Windows Defender", "Internet Information Services (IIS)"]
+    entity_keys: ["actor:uat-10147", "malware:spectre-uat10147"]
+    new_entities:
+      - { key: "tool:pentestgpt", type: tool, name: "PentestGPT", aliases: [],
+          summary: "AI-driven penetration-testing/exploit-validation tool observed used by UAT-10147 for dynamic web-server scanning and automated PoC exploit execution (Cisco Talos, 2026-08-20)." }
+      - { key: "tool:deepaudit", type: tool, name: "DeepAudit", aliases: [],
+          summary: "Source-code vulnerability-scanning framework observed installed on UAT-10147's management server to identify flaws in target websites/third-party libraries (Cisco Talos, 2026-08-20)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Talos assesses with moderate-to-high confidence that UAT-10147 is among an emerging class of financially motivated intrusion operators leveraging agentic AI systems to operationalize offensive tradecraft at scale."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-10147-chinese-speaking-adversary-integrates-agentic-ai-into-post-compromise-operations/"
+      - quote: "Time-based blind testing (e.g., ping -n 10 or timeout /t 10) is entirely ineffective for confirming ViewState RCE because Process.Start() is asynchronous and returns immediately."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-10147-chinese-speaking-adversary-integrates-agentic-ai-into-post-compromise-operations/"
+      - quote: "By routing exfiltrated data to a legitimate cloud-based configuration management service, the attackers effectively blend their traffic with normal administrative operations."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-10147-chinese-speaking-adversary-integrates-agentic-ai-into-post-compromise-operations/"
+    extended_notes: |
+      Companion piece to the SPECTRE/BYOVD implant item above — same actor, same publication date.
+      The "inverted success condition" defensive blind spot (5xx-response monitoring generating noise
+      while the exploit silently succeeds in the error stream) is a reusable hunting insight for any
+      shop running WAF/error-rate alerting on ASP.NET applications, independent of this specific actor.
+
+  - title: "Check Point Research: Windows Defender's own boot-time remediation driver (BTR.sys) is a signed, unblockable LOLDriver kernel primitive for arbitrary file/registry operations"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/btr-reforged-weaponizing-defenders-remediation-driver-as-a-kernel-operation-primitive/", publisher: "Check Point Research", date: "2026-08-20", role: "primary" }
+      - { url: "https://thehackernews.com/2026/08/microsoft-defenders-own-driver-can-be.html", publisher: "The Hacker News", date: "2026-08-20", role: "corroborating" }
+    discovery_trace: "first seen at: outage-backfill listing walk of research.checkpoint.com, URL https://research.checkpoint.com/ → primary: Check Point Research, URL https://research.checkpoint.com/2026/btr-reforged-weaponizing-defenders-remediation-driver-as-a-kernel-operation-primitive/ (confirmed via WebSearch (\"Check Point Research \\\"BTR Reforged\\\" Defender remediation driver kernel\")) → corroborating: The Hacker News, URL https://thehackernews.com/2026/08/microsoft-defenders-own-driver-can-be.html"
+    summary: |
+      Check Point Research (researcher Jiří Vinopal), presented at Black Hat USA 2026/DEF CON 34,
+      shows that BTR.sys ("Boot-Time Removal Tool"), a Microsoft-signed kernel driver shipped as a PE
+      resource inside MpEngine.dll and used by Defender's own boot-time remediation feature, exposes a
+      generalized kernel-mode execution primitive once its internal protocol is understood — with no
+      software vulnerability exploited. The driver's transaction configuration is delivered as an
+      RC4-encrypted binary blob stored in an NTFS Alternate Data Stream on the driver file (e.g.
+      driver.sys:changelist); all 18 driver versions the researcher examined share the same hard-coded
+      256-byte RC4 key, and integrity is checked with a modified, non-cumulative CRC-32 per structure.
+      The decrypted transaction supports six action IDs an attacker can chain in one payload: delete
+      file, delete directory, move/quarantine (which becomes an arbitrary-write primitive when the
+      destination path is attacker-controlled), delete registry key, delete registry value, and set
+      registry value (which can create missing key paths, enabling persistence). BTR.sys cannot be
+      added to Microsoft's Vulnerable Driver Blocklist or blocked via WDAC without breaking Defender's
+      own legitimate remediation function, because it is a required, functionally-intended Windows
+      component carrying a valid signature — a textbook "living-off-the-land driver" (LOLDriver) case
+      where signature-based trust fails as a control. The researcher's proof-of-concept, BTR_CLI
+      (MIT-licensed on GitHub), automates the full pipeline: extracting the legitimate driver from the
+      local MpEngine.dll, generating a correctly-CRC'd RC4-encrypted configuration, staging it in the
+      ADS, creating a randomized service/driver entry, and triggering execution via NtLoadDriver or
+      boot scheduling, with automatic cleanup including deletion of the driver's own BootClean.log to
+      remove forensic traces. A separate "golden window" is identified by configuring the driver as
+      SERVICE_SYSTEM_START in the "Boot Bus Extender" service group: at that boot phase, WdFilter.sys
+      (Defender's minifilter) is loaded but has no user-mode intelligence yet, MsMpEng.exe has not
+      started, and UCPD.sys (User Choice Protection) has not yet loaded, so the filesystem is writable
+      while the security service itself is dormant — letting the technique delete AV/EDR binaries
+      before they can lock themselves or self-protect. Microsoft's MSRC reviewed the findings and
+      confirmed they do not meet servicing criteria because the technique requires pre-existing
+      administrative privilege (SeLoadDriverPrivilege); no patch or blocklist update has been issued,
+      and the vendor treats it as a privilege-escalation tool, not a vulnerability. Check Point states
+      it found no evidence of real-world abuse across its collected samples and telemetry.
+    region_nexus: "global; applies to every Windows 7 through Windows 11 25H2 endpoint running Windows Defender, which includes the large majority of EU/Swiss public-sector and CI Windows estates"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: []
+    techniques: [T1562.001, T1553.002, T1027, T1543.003]
+    affected_products: ["Microsoft Windows Defender (BTR.sys / Boot-Time Removal Tool, embedded in MpEngine.dll)", "Microsoft Windows 7 through Windows 11 25H2"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:btr-sys-loldriver-primitive", type: tool, name: "BTR.sys weaponization (BTR Reforged / BTR_CLI)", aliases: ["Boot Time Removal Tool abuse"],
+          summary: "Technique and PoC tool (BTR_CLI) that repurposes Microsoft Defender's own signed BTR.sys boot-time remediation driver into a generalized kernel-mode file/registry-operation primitive for AV/EDR neutralization; requires pre-existing admin privilege, no CVE assigned (Check Point Research, 2026-08-20)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "BTR.sys carries a valid Microsoft signature, meaning it would normally pass signature enforcement."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/btr-reforged-weaponizing-defenders-remediation-driver-as-a-kernel-operation-primitive/"
+      - quote: "The technique relies on pre-existing administrative privileges (SeLoadDriverPrivilege)."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/btr-reforged-weaponizing-defenders-remediation-driver-as-a-kernel-operation-primitive/"
+      - quote: "During our analysis across all collected samples and telemetry sources, we did not observe evidence of real-world abuse of BTR.sys in the manner demonstrated in this research."
+        attribution: "Check Point Research (via The Hacker News)"
+        source_url: "https://thehackernews.com/2026/08/microsoft-defenders-own-driver-can-be.html"
+    extended_notes: |
+      Detection concept from the source (Sysmon-based, IOC-free): Event ID 15 for `.sys:changelist`
+      ADS creation where the feedback path targets a secondary ADS rather than a genuinely protected
+      path; Event ID 23 for file deletions by the System process (PID 4) immediately following a
+      driver load; Event ID 6 for a load of a BTR.sys-hash driver occurring outside Defender's own
+      process lineage; Event ID 12/13 for a service key created with a `:changelist` Args value under
+      the "Boot Bus Extender" group with no matching Event ID 7045; and Events 11/23 for rapid
+      creation/deletion of BootClean.log. Mitigation is procedural, not a patch: restrict
+      SeLoadDriverPrivilege assignment and build EDR rules that flag security-vendor driver loads
+      occurring outside the vendor's own service lineage.
+
+  - title: "Red Canary's July 2026 threat-tracking round-up: four new top-10 debuts (GraphSpy, Phexia, CastleRAT, EtherRAT) push EtherHiding-style blockchain C2 into the commodity mainstream"
+    sources:
+      - { url: "https://redcanary.com/blog/threat-intelligence/intelligence-insights-august-2026/", publisher: "Red Canary", date: "2026-08-20", role: "primary" }
+      - { url: "https://www.sysdig.com/blog/etherrat-dprk-uses-novel-ethereum-implant-in-react2shell-attacks", publisher: "Sysdig", date: "2025-12-08", role: "corroborating" }
+    discovery_trace: "first seen at: redcanary source-id (rotational slice) via RSS, URL https://redcanary.com/feed/ → primary: Red Canary, URL https://redcanary.com/blog/threat-intelligence/intelligence-insights-august-2026/ → corroborating: Sysdig, URL https://www.sysdig.com/blog/etherrat-dprk-uses-novel-ethereum-implant-in-react2shell-attacks (linked from the Red Canary post)"
+    summary: |
+      Red Canary's monthly threat-tracking round-up (covering July 2026 telemetry, published
+      2026-08-20) records four new entrants to its top-10 most-prevalent-threats list, three of them
+      sharing a blockchain-based "dead drop resolver" C2 technique (ATT&CK T1102.001) that Google's
+      threat-intelligence group previously termed EtherHiding. GraphSpy is an open-source Entra
+      ID/Microsoft 365 device-code-phishing tool that runs a local web server presenting a
+      browser-based GUI — Red Canary notes this materially lowers the skill bar for AiTM-style Entra ID
+      attacks — and can steal Primary Refresh Tokens, register Windows Hello for Business keys, and
+      exfiltrate SharePoint/OneDrive/Teams data; it is the third distinct device-code-phishing tool to
+      enter Red Canary's top 10 in 2026. Phexia is a macOS RAT/stealer delivered through malicious
+      copy-paste ("ClickFix"-style) commands chaining curl → osascript → LaunchAgent persistence, which
+      resolves its C2 by querying a specific Polygon smart contract
+      (0xA3a603F8a454a9c905b4c579Bb72628F7C15C2A0) via public Polygon RPC endpoints, with Telegram and
+      Steam profiles as backup channels. CastleRAT (Python and C variants, delivered via CastleLoader
+      and ClearFake precursors) provides keylogging, screen capture and remote shell, and resolves a
+      dead drop via steamcommunity.com or adversary-controlled domains. EtherRAT is a Node.js-based RAT
+      for both Windows workstations and Linux servers that retrieves C2 URLs from public Ethereum RPC
+      smart-contract storage and is delivered via malicious MSI installers disguised with .ini/.tmp/.dat
+      extensions; Red Canary notes it has reportedly been distributed as an RMM precursor ahead of
+      ransomware deployment. Red Canary's stated mitigation for the whole EtherHiding class is to block
+      or tightly monitor egress to public RPC endpoints (it links chainlist.org as the enumeration
+      source for that blocklist). Two long-tracked threats exited the top 10 for the first time since
+      being added: Atomic Stealer (first exit since August 2025) and NetSupport Manager (first exit
+      since September 2024).
+    region_nexus: "global; the underlying C2 technique (public blockchain RPC as dead-drop resolver) and the device-code-phishing vector are both directly applicable to any EU/Swiss organization running Microsoft 365/Entra ID or permitting egress to public blockchain RPC endpoints"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: []
+    techniques: [T1102.001, T1204.004, T1528, T1059.007]
+    affected_products: ["Microsoft Entra ID", "Microsoft 365", "macOS", "Windows"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:graphspy", type: tool, name: "GraphSpy", aliases: [],
+          summary: "Open-source, GUI-based device-code-phishing tool targeting Entra ID/Microsoft 365 — steals Primary Refresh Tokens, registers Windows Hello for Business keys, exfiltrates SharePoint/OneDrive/Teams data; entered Red Canary's top-10 most-prevalent threats in July 2026 (Red Canary, 2026-08-20)." }
+      - { key: "malware:phexia", type: malware, name: "Phexia", aliases: [],
+          summary: "macOS RAT/credential-and-wallet stealer delivered via ClickFix-style malicious copy-paste commands (curl → osascript → LaunchAgent), resolving C2 via a Polygon blockchain smart contract with Telegram/Steam backups; entered Red Canary's top-10 in July 2026 (Red Canary, 2026-08-20)." }
+      - { key: "malware:castlerat", type: malware, name: "CastleRAT", aliases: [],
+          summary: "Python/C remote-access trojan (keylogging, screen capture, remote shell) delivered via CastleLoader/ClearFake, resolving a dead drop via steamcommunity.com or adversary domains; entered Red Canary's top-10 in July 2026 (Red Canary, 2026-08-20)." }
+      - { key: "malware:etherrat", type: malware, name: "EtherRAT", aliases: [],
+          summary: "Node.js-based RAT for Windows and Linux resolving C2 via public Ethereum RPC smart-contract storage, delivered by disguised MSI installers; reported as an RMM-precursor ahead of ransomware deployment and possibly DPRK-linked without confirmed code overlap (Sysdig, 2025-12-08; Red Canary top-10 debut, 2026-08-20)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "GraphSpy runs a local web server that presents a browser-based GUI, which enables less technical adversaries to engage in Entra ID attacks."
+        attribution: "Red Canary"
+        source_url: "https://redcanary.com/blog/threat-intelligence/intelligence-insights-august-2026/"
+      - quote: "By using public blockchain infrastructure to resolve operational data at runtime, adversaries can rotate infrastructure more easily."
+        attribution: "Red Canary"
+        source_url: "https://redcanary.com/blog/threat-intelligence/intelligence-insights-august-2026/"
+      - quote: "EtherRAT leverages Ethereum smart contracts for command-and-control (C2) resolution, deploys five independent Linux persistence mechanisms"
+        attribution: "Sysdig"
+        source_url: "https://www.sysdig.com/blog/etherrat-dprk-uses-novel-ethereum-implant-in-react2shell-attacks"
+    extended_notes: |
+      This is Red Canary's regular monthly Intelligence Insights round-up (not a periodic/annual
+      report — recurs monthly, so not flagged ANNUAL REPORT). The ranking/prevalence data (top-10
+      position, rank deltas, first-exit dates for Atomic Stealer and NetSupport Manager) is Red
+      Canary's own MDR telemetry and is single-sourced to Red Canary; the underlying malware families
+      themselves have varying degrees of independent prior reporting (EtherRAT via Sysdig, linked
+      above; GraphSpy is a publicly available GitHub tool: https://github.com/RedByte1337/GraphSpy).
+      Confidence set to MEDIUM to reflect the single-source nature of the specific "new top-10 entrant"
+      claims themselves, while the technique class (EtherHiding/dead-drop resolution via public
+      blockchain RPC) is separately well-corroborated across GTIG, Guardio and prior Red Canary
+      reporting cited in the post's own outbound links.
+
+  - title: "Cyberattack on two Berlin Senate administrations cascades to all twelve district offices, blocking housing-benefit payments to 50,000+ households"
+    sources:
+      - { url: "https://www.behoerden-spiegel.de/2026/08/18/cyber-angriff-trifft-zwei-berliner-senatsverwaltungen/", publisher: "Behörden Spiegel", date: "2026-08-18", role: "primary" }
+      - { url: "https://www.tagesspiegel.de/berlin/wohngeld-larmschutz-halteverbote-diese-folgen-hat-der-hackerangriff-fur-berlinerinnen-und-berliner-15964877.html", publisher: "Tagesspiegel", date: "2026-08-20", role: "primary" }
+    discovery_trace: "first seen at: kommunaler-notbetrieb-de source-id (rotational slice), URL https://kommunaler-notbetrieb.de/ → pivot: WebSearch (\"Senatsverwaltung Berlin Cyberangriff August 2026 Landesnetz\") → primary: Behörden Spiegel, URL https://www.behoerden-spiegel.de/2026/08/18/cyber-angriff-trifft-zwei-berliner-senatsverwaltungen/ → pivot: WebSearch (\"Berlin Cyberangriff Bezirksämter Wohngeld Verzögerung August 2026\") → primary (fresher, in-window delta): Tagesspiegel, URL https://www.tagesspiegel.de/berlin/wohngeld-larmschutz-halteverbote-diese-folgen-hat-der-hackerangriff-fur-berlinerinnen-und-berliner-15964877.html"
+    summary: |
+      Two Berlin Senate administrations — Urban Development, Construction and Housing, and Mobility,
+      Transport, Climate Protection and Environment — were preventively disconnected from the Berlin
+      state network (Landesnetz) on 14 August 2026 after forensic investigation confirmed a
+      "compromising of the Berlin state network." Reporting on 20 August 2026 (Tagesspiegel) documents
+      the cascading operational impact: because all twelve Berlin district administrations
+      (Bezirksämter) depend on the same shared applications hosted by the two disconnected Senate
+      administrations, the outage blocked payment processing for over 50,000 households' Wohngeld
+      (housing-benefit) claims, blocked the "Bildung und Teilhabe" (education and participation)
+      benefit supporting disadvantaged children, halted noise-protection permits, parking-ban/moving-
+      permit and scaffold-placement approvals, and stalled building-permit and monument-protection
+      applications. Online postal-voting-document requests were briefly unavailable and were restored
+      the following morning; Interior Senator Iris Spranger stated election preparation and vote
+      counting were unaffected. Later reporting on 22 August (referenced via the kommunaler-notbetrieb.de
+      tracker) records the outage cascading to "restrictions in many citizen services" across all
+      district offices. Officials cite a malware infection introduced via an opened email attachment
+      as the initial-access vector; the Berlin State Criminal Police (LKA), the State Prosecutor's
+      Office and the Federal Office for Information Security (BSI) are investigating, and the Senate
+      is withholding further technical detail "for investigative-tactical reasons." Governing Mayor Kai
+      Wegner said reconnecting the disconnected administrations would likely take several more days as
+      of 19–20 August; no fixed recovery date has been given.
+    region_nexus: "direct — German (Berlin) state-government administration"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.001]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:berlin-senate-administrations-cyberattack-2026-08", type: incident, name: "Cyberattack on two Berlin Senate administrations (August 2026)", aliases: ["Cyberangriff auf Berliner Senatsverwaltungen", "Berlin Landesnetz compromise 2026-08"],
+          summary: "Malware introduced via an email attachment compromised the Berlin state network (Landesnetz) in mid-August 2026, forcing the Senate administrations for Urban Development/Housing and for Mobility/Transport/Environment offline; because all twelve Berlin district offices share the same applications, the outage blocked housing-benefit (Wohngeld) payments to 50,000+ households and several other citizen services (Behörden Spiegel / Tagesspiegel, 2026-08-18 / 2026-08-20)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "praktisch arbeitsunfähig, ohne Internet und Mailkommunikation nach außen"
+        attribution: "Behörden Spiegel (Berlin Senate Chancellery statement, translated: \"practically non-functional, without internet and outbound email communication\")"
+        source_url: "https://www.behoerden-spiegel.de/2026/08/18/cyber-angriff-trifft-zwei-berliner-senatsverwaltungen/"
+      - quote: "Zur Lage äußert sich der Senat aus ermittlungstaktischen Gründen derzeit nicht im Detail"
+        attribution: "Behörden Spiegel (translated: \"the Senate is not commenting in detail on the situation for investigative-tactical reasons\")"
+        source_url: "https://www.behoerden-spiegel.de/2026/08/18/cyber-angriff-trifft-zwei-berliner-senatsverwaltungen/"
+    extended_notes: |
+      Transferable lesson for any EU/Swiss cantonal/communal administration: the cascading failure
+      here is architectural, not attack-specific — a shared-application dependency meant one
+      compromised network segment removed a citizen-facing benefit-payment function for every
+      subordinate administrative unit, not just the two directly compromised offices. Worth
+      cross-referencing against this pipeline's own prior coverage of the FOITT/BIT SharePoint breach
+      and the Graubünden canton SharePoint breach (both Swiss federal/cantonal, 2026-07/08) for a
+      pattern synthesis on shared-service blast radius in public-sector IT.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: paradigm-shift-research
+    reason: "ps.tc blog remains broken (2nd consecutive run failing per rotation note): the recipe's example page https://ps.tc/pages/blog-usbliter8.html now renders an in-site 'Unavailable — this page is taking an unexpected detour' placeholder (dated 2026-07-23, no actual content). Homepage/blog/research/feed remain the same ~1KB JS SPA shell with no static links, confirmed again this run. WebSearch for site:ps.tc turned up no live in-window post. Recommend the main agent flag this source for a recipe/status re-audit — it may need demotion or removal if it stays broken a third run."
+  - source_id: cryptotimes
+    reason: "RSS /feed/ 403'd as documented; homepage WebFetch worked and surfaced two in-window security items (Sandbox SAND token-minting exploit and a Compound-related DeFi drain, both 2026-08-22), but both are narrow DeFi/gaming-token exploits with no transferable TTP, CVE, or nexus to the Swiss/EU public-sector or CI constituency — reviewed and excluded as out of scope rather than a fetch failure."
+  - source_id: sans-ics
+    reason: "General SANS blog listing (filtered for ICS focus area) showed no ICS-tagged posts in-window; the 12 posts visible on the page (Aug 5-20) were general-security topics, none ICS-specific."
+  - source_id: team-cymru
+    reason: "Top 10 posts on the listing were all dated 2026-08-05 through 2026-08-12 (Cl0p pattern-of-life analysis and ShinyHunters Cluster A infrastructure validation, both substantive but both pre-window) — no in-window post found."
+  - source_id: fox-it-blog
+    reason: "Direct WebFetch 403'd; WebSearch surfaced no Fox-IT-specific results for August 2026 (search was dominated by unrelated 'Fox' entities). Low-cadence source per its own recipe note (3 posts in ~18 months) — likely a quiet window, not a broken source."
+  - source_id: coinspect-research
+    reason: "Bridge fetch of the blog listing returned an Astro/JS-rendered shell without a readable article list in the raw HTML; WebSearch found the most recent substantive post (Ill Bloom, CryptoJS PRNG) dated 2026-08-05 — already covered by this pipeline per the prior-coverage index — no in-window item found."
+  - source_id: trellix
+    reason: "Bridge fetch of the blog listing returned a JS-rendered shell without a readable article list; WebSearch found the most recent items dated 2026-08-10 (AI-native security engineering perspective piece) — outside window, and not a technical threat-research item."
+  - source_id: ibm-xforce
+    reason: "Bridge fetch of https://www.ibm.com/think/x-force returned page metadata/scripts without a readable listing of individual posts in the raw HTML; WebSearch surfaced only the February 2026 annual Threat Intelligence Index (already old) — no in-window item confirmed. Recommend the recipe be re-validated; the 'listing has no inline per-post dates' note undersells how hard the raw HTML is to parse for a listing at all."
+
+notes: |
+  OUTAGE-BACKFILL DUTY: walked the blog index/listing (or RSS feed) of all 24 named publishers for
+  2026-08-20 through 2026-08-23. In-window technical items found: Cisco Talos (2 posts, UAT-10147/
+  SPECTRE + agentic AI), Check Point Research (1 post, BTR Reforged), Unit 42 (1 post, generic SDLC
+  supply-chain guidance — reviewed and excluded: no new named campaign/technique beyond restating
+  ChainDrop/XZ Utils/Axios, insufficiently technical/novel to clear the bar), Google Threat
+  Intelligence Group / Mandiant (listing had no visible dates; the one article checked in depth,
+  "UNC6671 Rebrands," was confirmed via full-article fetch to be dated 2026-08-06 — outside window,
+  and already reflected in this pipeline's 2026-08-09 weekly passkey-attack-surface entry — excluded),
+  Group-IB (2 posts, both reviewed and excluded: "One Adversary" fraud-network piece is
+  consumer-investment-scam research with no CVE/ATT&CK-mappable technique and weak nexus to the
+  Swiss/EU public-sector constituency; "Balonx Sistema" PhaaS piece is dated 2026-08-19, just outside
+  the 74h window, and targets Mexican banking specifically). ESET, Kaspersky Securelist, SentinelLabs,
+  Proofpoint, Trend Micro, CrowdStrike (beyond two marketing posts), Sophos, Huntress, Recorded
+  Future/Insikt, Elastic Security Labs, Volexity, watchTowr Labs, Rapid7, Symantec/security.com,
+  Zscaler ThreatLabz, Fortinet FortiGuard Labs, and Dragos showed no posts published in the
+  2026-08-20 to 2026-08-23 window on their respective listings (most recent visible posts ranged
+  2026-08-10 through 2026-08-18) — genuinely quiet for this slice of the outage gap, not fetch
+  failures.
+
+  JINA READER STATUS (as instructed, reporting explicitly): confirmed HTTP 402 "balance exhausted" on
+  every rotated key when the bridge auto-escalated during a cryptotimes feed fetch (direct feed GET
+  403'd, then all 7 jina credentials in the pool returned 402 in sequence). Direct WebFetch and the
+  bridge's direct-transport rung worked for the great majority of this run's fetches — only the small
+  number of hosts that specifically need the jina fallback (feed-blocked hosts, JS-shell listings) were
+  affected, and those are logged as coverage gaps above rather than fetch failures, since the direct
+  rung was tried first every time per the ladder discipline.

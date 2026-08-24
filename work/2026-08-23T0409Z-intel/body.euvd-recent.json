@@ -1,0 +1,90 @@
+[
+  {
+    "id": "EUVD-2026-63973",
+    "enisaUuid": "8229c51f-467d-3854-a05c-998923b31179",
+    "description": "DJI drones transmit DUML (DJI Universal Markup Language) protocol messages over BLE (Bluetooth Low Energy) without encryption. When a client attempts to connect to the drone over Wi-Fi, or when the drone is switched to QuickTransfer mode, the DJI Fly application exchanges DUML messages with the drone over BLE, including the Wi-Fi credentials. An attacker within BLE range can passively sniff this traffic and recover the credentials in cleartext, including the drone's Wi-Fi PSK, SSID, and trusted identifier UUID. Obtaining these credentials allows the attacker to join the drone's internal Wi-Fi network, interact with network services exposed by the drone, and decrypt Wi-Fi traffic exchanged between the drone and the legitimate user.\n\n* An attacker within BLE range recovers the Wi-Fi SSID and PSK in cleartext, and can then join the drone's network \n* The same capture also exposes the session UUID identifier, which is the only thing the drone uses to tell a trusted client from an unknown one, so the attacker can replay it and skip the physical confirmation of new connected devices.\n* The credentials do not change between sessions unless the operator manually resets the Wi-Fi settings, so one capture stays valid indefinitely\n* The attack is fully passive, with nothing transmitted and no connection made, so neither the operator nor the drone has any indication the session was observed\n* A BLE sniffer and presence during one normal DJI Fly connection are needed\n\nAffected models are DJI Neo until 01.00.0400, DJI Neo 2 until 01.00.0500, DJI Flip until 01.00.1200, DJI Air 3 until 01.00.1600, DJI Air 3S until 01.00.1400, DJI Avata 2 until 01.00.0400, DJI Avata 360 until 01.00.0300, DJI Mavic 3 until 01.00.1400, DJI Mavic 3 Classic until 01.00.0800, DJI Mavic 3 Pro until 01.01.0700, DJI Mavic 4 Pro until 01.00.0500, DJI Mini 2 until 01.07.0200, DJI Mini 3 until 01.00.0500, DJI Mini 3 Pro until 01.00.0900, DJI Mini 4 Pro until 01.00.1100, and DJI Mini 5 Pro until 01.00.0600.\n\nRemediation requires a firmware update from the vendor. There is no user-side mitigation that fully addresses the vulnerability without upgrading.",
+    "datePublished": "Aug 21, 2026, 2:06:55 PM",
+    "dateUpdated": "Aug 21, 2026, 5:42:36 PM",
+    "baseScore": 9.4,
+    "baseScoreVersion": "4.0",
+    "baseScoreVector": "CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H",
+    "references": "https://support.dji.com/help/content?customId=en-us03400011149&amp;spaceId=34&amp;re=US&amp;lang=en\n",
+    "aliases": "GHSA-gh7r-589j-33x7\nCVE-2026-77812\n",
+    "assigner": "CIRCL",
+    "epss": 0.06,
+    "enisaIdVendor": [
+      {
+        "id": "f17a73e3-813a-3b17-a0a5-d12d0cf0db25",
+        "vendor": {
+          "name": "DJI"
+        }
+      }
+    ]
+  },
+  {
+    "id": "EUVD-2026-63850",
+    "enisaUuid": "2a9683df-9da5-3361-841b-066cea796aba",
+    "description": "A vulnerability in misp-stix could allow a crafted STIX document to influence security-sensitive MISP attribute metadata during import.\n\nThe STIX import logic automatically selected between the internal MISP parser and the external STIX parser based on metadata contained in the STIX document itself. For STIX2, the presence of MISP-specific tool labels could cause a document to be classified as originating from MISP; similarly, STIX1 relied on the document title. These classification indicators are fully controlled by the STIX producer and therefore cannot constitute a trusted indication of the document's origin. The accompanying fix explicitly notes that the parser choice was previously based solely on labels or header titles that any producer could write, and introduces an explicit classification parameter allowing callers to override this detection.\n\nWhen STIX2 content was handled as an internal MISP export, attributes contained in an x-misp-object were converted by copying the complete x_misp_attributes dictionary and passing it directly to misp_object.add_attribute(). Consequently, a crafted STIX bundle could supply fields that were not part of the expected STIX-to-MISP round-trip format, including security-sensitive properties such as distribution, sharing_group_id, tags, or other MISP attribute fields.\n\nAn attacker able to provide a STIX document for import could therefore spoof the markers used to identify MISP-generated content and inject additional attribute properties. This could alter the distribution, sharing restrictions, classification, or semantic metadata of imported attributes, potentially causing information to be shared contrary to the importing organization's policy or influencing downstream processing and automation based on attacker-controlled tags or metadata.\n\nThe vulnerability results from dynamically assigning externally supplied object properties without restricting them to an expected set of attributes, matching CWE-915. MITRE specifically describes this weakness as accepting externally influenced fields without controlling which object attributes may be modified and recommends an allow-list, which is the approach implemented by the patch. The parser-selection issue additionally corresponds to CWE-807, because an untrusted value was used to make a security-relevant trust/classification decision.\n\nThe attack is also consistent with CAPEC-153 (Input Data Manipulation), in which an attacker controls the structure or flags of supplied data so that the target selects a different processing path or interprets the content differently than intended.",
+    "datePublished": "Aug 21, 2026, 8:54:01 AM",
+    "dateUpdated": "Aug 21, 2026, 5:19:40 PM",
+    "baseScore": 6.9,
+    "baseScoreVersion": "4.0",
+    "baseScoreVector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:L/VA:N/SC:N/SI:N/SA:N",
+    "references": "https://github.com/MISP/misp-stix/commit/3e5e7bda\nhttps://github.com/MISP/misp-stix/commit/66c654b9\n",
+    "aliases": "CVE-2026-77710\nGHSA-pqpx-w6cx-7q9c\n",
+    "assigner": "CIRCL",
+    "epss": 0.29,
+    "enisaIdVendor": [
+      {
+        "id": "a829dbba-2e4d-3b90-88f9-68e72da2c97c",
+        "vendor": {
+          "name": "MISP"
+        }
+      }
+    ]
+  },
+  {
+    "id": "EUVD-2026-63881",
+    "enisaUuid": "8206cd40-4dca-339d-aa6b-7036b40a8e47",
+    "description": "A denial-of-service vulnerability was identified in misp-stix when processing attacker-controlled STIX 1 or STIX 2 documents.\n\nThe STIX import code used sys.exit() to handle several parsing and loading failures. Because SystemExit inherits from BaseException rather than Exception, these failures bypassed the exception handlers used by callers of the library. As a result, a malformed STIX document could terminate a long-running importer process instead of returning a recoverable parsing error.\n\nAdditionally, no limit was imposed on the size of STIX documents before parsing. A submitted document was therefore read and materialised in memory before its validity or type was evaluated. Depending on the document and parsing path, processing could consume approximately two to seven times the input size in memory, allowing a sufficiently large STIX document to cause excessive memory and CPU consumption and potentially terminate or severely degrade the importing service.\n\nAn attacker able to provide STIX content to a MISP-STIX import workflow could exploit either condition to affect availability. A malformed document could cause abnormal process termination through an uncaught SystemExit, while a large document could exhaust resources during deserialisation and conversion.\n\nThe fixes replace process-terminating sys.exit() calls with catchable exceptions such as STIXLoadingError and MissingSTIXContentError, and extend exception handling around the complete STIX detection and conversion process. The importer also now enforces an input-size limit before parsing. The default maximum is 100 MB, can be adjusted by callers, and can explicitly be disabled when required. STIX 1 inputs are additionally checked for the expected root element before the complete XML tree is constructed.\n\nImpactSuccessful exploitation can cause:\n\n  *  termination of a long-running MISP-STIX importer;\n  *  excessive memory allocation;\n  *  excessive CPU consumption;\n  *  degradation or temporary unavailability of services relying on the converter;\n  *  interruption of batch or automated STIX ingestion workflows.",
+    "datePublished": "Aug 21, 2026, 9:55:11 AM",
+    "dateUpdated": "Aug 21, 2026, 12:09:16 PM",
+    "baseScore": 8.7,
+    "baseScoreVersion": "4.0",
+    "baseScoreVector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:L",
+    "references": "https://github.com/MISP/misp-stix/commit/e8e732ad\nhttps://github.com/MISP/misp-stix/commit/66119552\n",
+    "aliases": "GHSA-65gx-wjvj-88j8\nCVE-2026-77755\n",
+    "assigner": "CIRCL",
+    "epss": 0.3,
+    "enisaIdVendor": [
+      {
+        "id": "bd00e59e-45fa-36a9-a5f1-1c35c75a2626",
+        "vendor": {
+          "name": "MISP"
+        }
+      }
+    ]
+  },
+  {
+    "id": "EUVD-2026-63883",
+    "enisaUuid": "45e64ca1-71bb-3d21-be98-ef28f0085348",
+    "description": "A parser state isolation vulnerability in misp-stix could cause data from a previously processed STIX document to be retained and incorporated into the MISP event generated from a subsequent document when the same parser instance is reused.\n\nSeveral STIX 1 and STIX 2 parser components maintained per-document state that was not completely cleared between conversions. In the STIX 2 parser, galaxy and galaxy-cluster information, including custom galaxy clusters, could survive a parser reset and subsequently be associated with objects from another bundle.\n\nThe STIX 1 parsers were affected by the same underlying state-management issue. Depending on the parser type, retained information could include galaxies, references, passive DNS bookkeeping, package titles, dates, and timestamps. As a result, parsing a second STIX package with an already-used parser could produce a MISP event containing information that was present only in the previously processed package. For example, a generated event could inherit passive DNS records from an earlier document, reference unrelated galaxy information, combine titles from different packages, or use timestamps originating from another conversion.\n\nThe issue primarily affects applications using the misp-stix API directly and reusing parser instances across independent STIX documents. Normal conversion entry points that instantiate a new parser for each file are not affected by this particular reuse scenario.\n\nAn attacker able to influence documents processed by such a long-lived parser could potentially cause information from one conversion to contaminate a subsequent MISP event. This can affect the integrity of generated threat intelligence, resulting in incorrect associations, misleading contextual information, or unrelated indicators being attributed to an event. In environments where consecutive documents have different access controls or distribution scopes, the retained state could additionally result in limited disclosure of information from a previously processed document.\n\nSuccessful exploitation depends on the consuming application reusing the same parser instance and on the ordering of processed documents, which increases attack complexity. No direct availability impact or code execution is involved.",
+    "datePublished": "Aug 21, 2026, 10:11:54 AM",
+    "dateUpdated": "Aug 21, 2026, 12:00:49 PM",
+    "baseScore": 6.3,
+    "baseScoreVersion": "4.0",
+    "baseScoreVector": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:L/VI:L/VA:N/SC:N/SI:N/SA:N",
+    "references": "https://github.com/MISP/misp-stix/commit/f08373dd\nhttps://github.com/MISP/misp-stix/commit/ad4f0a65.patch\nhttps://github.com/MISP/misp-stix/commit/f6593931\n",
+    "aliases": "GHSA-q62h-w723-22p2\nCVE-2026-77761\n",
+    "assigner": "CIRCL",
+    "epss": 0.37,
+    "enisaIdVendor": [
+      {
+        "id": "5d0b96c6-85aa-3baf-95da-1ad82cd2015d",
+        "vendor": {
+          "name": "MISP"
+        }
+      }
+    ]
+  }
+]

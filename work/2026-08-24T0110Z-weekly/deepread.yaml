@@ -1,0 +1,225 @@
+domain: deepread
+run_id: "2026-08-24T0110Z-weekly"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+
+pages:
+
+  - shortname: levelblue
+    url: "https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking"
+    fetched: true
+    transport_used: "bridge:url (direct browser-UA GET, no fallback needed)"
+    body_file: "work/2026-08-24T0110Z-weekly/body.levelblue.txt"
+    publication_date: "2026-08-19 (JSON-LD datePublished: 2026-08-19T15:40:05.000Z; dateModified 2026-08-20T15:25:43.228Z; byline author 'Serhii Melnyk and Timmy Lister', publisher LevelBlue/Trustwave Holdings, Inc.)"
+    facts:
+      actor_designation: "Nightmare-Eclipse disclosure actor (per LevelBlue's naming); PoC series includes GreenPlasma, YellowKey, MiniPlasma, RoguePlanet, GreatXML, LegacyHive, and now ShieldBreak"
+      technique_class: "Local privilege escalation via Windows Defender remediation-path abuse combined with NT Object Manager namespace manipulation and Cloud Files (CldApi) hydration hijacking"
+      api_function_chain:
+        - "CfRegisterSyncRoot — registers the working directory as a Cloud Files sync root, provider self-identifies as 'Flubber' with a hardcoded provider GUID; creates placeholder file BERLIN"
+        - "NtCreateDirectoryObjectEx — dynamically resolved from ntdll.dll; creates two Object Manager directories beneath \\BaseNamedObjects\\Restricted\\ (a target dir and a shadow dir that falls through to the target)"
+        - "NtCreateSymbolicLinkObject — dynamically resolved from ntdll.dll; creates two conflicting symbolic links both named WD_SCAN — one (in the shadow dir) initially points to the working directory containing BERLIN, the other (in the target dir) points to a CLFS-related path"
+        - "MpClient.dll functions resolved dynamically (management, scanning, threat, clean) — the PoC opens the Defender RPC interface directly, scans BERLIN via the GLOBALROOT path \\\\.\\globalroot\\BaseNamedObjects\\Restricted\\WD_SHADOW_<GUID>\\WD_SCAN\\BERLIN, then starts the clean operation"
+        - "ReadDirectoryChangesW — background thread monitors the working directory for the CLFS log file Defender's clean transaction creates"
+        - "LockFileEx (LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY) — acquires an exclusive lock on the CLFS clean-transaction log file the instant it appears, holding Defender mid-transaction (the CLFS lock step)"
+        - "Symlink swap — deletes the shadow WD_SCAN link and recreates WD_SCAN pointing to \\??\\UNC\\127.0.0.1\\C$\\Windows\\System32\\phoneinfo.dll, so Defender's already-in-flight path resolves to a new destination without an NTFS junction"
+        - "CfExecute with RestartHydration, FileSize set to the DLL's size instead of the ZIP's — restarts Cloud Files hydration so the hydration callback now supplies the malicious DLL bytes while Defender's clean engine writes them via the redirected WD_SCAN path"
+        - "NtCreateFile + CreateFileMapping (PAGE_EXECUTE_READ | SEC_IMAGE) + MapViewOfFile — waits for Defender to finish creating phoneinfo.dll then maps it as an executable image to prevent remediation from removing it"
+        - "WER report crafted into C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\Kernel_c0000000_A_B_C-C-D-E-<GUID>\\, then the built-in QueueReporting scheduled task is triggered via the Task Scheduler COM interface method ITaskService::Run() — task runs as SYSTEM, wermgr.exe processes the report and loads phoneinfo.dll from System32"
+      symbolic_link_name: "WD_SCAN (created twice, in two different Object Manager directories under \\BaseNamedObjects\\Restricted\\, to establish the redirection layer); named pipe used for the final SYSTEM callback is hardcoded as \\pipe\\SHIELDBREAK"
+      dll_path_and_loader: "C:\\Windows\\System32\\phoneinfo.dll — written by Windows Defender's own clean engine (MsMpEng.exe appears as the writing process, which the post flags as an expected-but-must-be-correlated triage detail); subsequently loaded by wermgr.exe running as SYSTEM when it processes the crafted WER report"
+      scheduled_task_and_com_interface: "Built-in QueueReporting scheduled task, triggered via the Task Scheduler COM interface method ITaskService::Run()"
+      end_to_end_timing: "Approximately eight to 12 seconds on an unloaded system (page text: 'eight to12 seconds' — missing space in source)"
+      affected_windows_versions: "Windows 11 24H2 and Windows Server 2025, fully patched (August 2026 Patch Tuesday updates installed), Windows Defender in its default configuration; LevelBlue's OpsCTI and THOR teams reviewed and reproduced the full chain against those patch levels"
+      cve_mentioned: false
+      cve_search_note: "Grep of the full stripped body for 'cve' (case-insensitive) returned zero matches — the post names no CVE identifier anywhere, including the IOC/YARA appendix."
+      detection_signals_named:
+        - "Sysmon EID 7 (image/module load) — MpClient.dll loaded by a non-Windows-Defender process (near-zero false-positive per the post); also flagged for wermgr.exe loading phoneinfo.dll"
+        - "Sysmon EID 17 — creation of named pipe \\pipe\\SHIELDBREAK (hardcoded in this PoC specifically)"
+        - "Sysmon EID 18 — a SYSTEM-integrity process connecting to a user-created named pipe"
+        - "Security EID 4698/4702 — QueueReporting task triggered via ITaskService::Run()"
+        - "CldFlt ETW / Registry EID 4657 — CfRegisterSyncRoot called from a non-cloud-sync process"
+        - "No dedicated event ID given for NtCreateDirectoryObjectEx called from user mode — flagged as 'shared with LegacyHive, see YARA Appendix A' rather than an EID"
+        - "Behavioral chain emphasized over any single indicator: expected MpClient.dll consumers are MsMpEng.exe, MpCmdRun.exe, NisSrv.exe, ConfigSecurityPolicy.exe, MpSigStub.exe — an unrelated process loading it, followed by runtime resolution of MpManagerOpen / MpScanStart / MpCleanOpen / MpCleanStart / MpCleanControl, is the significant compound signal"
+        - "C:\\Windows\\System32\\phoneinfo.dll creation (any presence) called the single strongest indicator — the file does not exist natively on any Windows version"
+    quotes:
+      - candidate: "ShieldBreak is fully self-contained and runs to full SYSTEM completion from a standard user account on any fully patched Windows 11 24H2 or Windows Server 2025 system."
+        verified_verbatim: false
+        replacement: "ShieldBreak is fully self-contained and runs to full SYSTEM completion from a standard user account on any fully patched Windows 11 24H2 or Windows Server 2025 system with Windows Defender in its default configuration."
+        note: "Candidate appended a period after 'system' that does not exist on the page; the sentence continues 'with Windows Defender in its default configuration.' The replacement is the full contiguous sentence as printed (part of a larger sentence beginning 'Unlike LegacyHive, which requires a helper account logon...')."
+      - candidate: "ShieldBreak is best detected through behavioral correlation rather than any single static indicator."
+        verified_verbatim: true
+      - candidate: "The set of expected MpClient.dll consumers is small. A load by an unrelated process becomes especially significant when followed by runtime resolution of Defender functions."
+        verified_verbatim: false
+        replacement: "The set of expected MpClient.dll consumers is small. A load by an unrelated process becomes especially significant when followed by runtime resolution of MpManagerOpen, MpScanStart, MpCleanOpen, MpCleanStart, or MpCleanControl."
+        note: "Candidate's second sentence substitutes the vague 'Defender functions' for the page's actual named function list (MpManagerOpen, MpScanStart, MpCleanOpen, MpCleanStart, MpCleanControl). The first sentence matches verbatim; replacement is the full two-sentence passage as printed."
+
+  - shortname: bitdefender-silkparasite
+    url: "https://www.bitdefender.com/en-us/blog/businessinsights/silkparasite-tracking-china-nexus-apt-across-central-asia"
+    fetched: true
+    transport_used: "bridge:url (direct browser-UA GET; page is a Nuxt SSR app but full article body was present server-rendered in the HTML, no reader fallback needed)"
+    body_file: "work/2026-08-24T0110Z-weekly/body.bitdefender-silkparasite.txt"
+    publication_date: "2026-08-19 (JSON-LD Article + WebPage datePublished/dateModified: 2026-08-19T12:55:01.000Z; meta author 'Martin Zugec', technical solutions director at Bitdefender; publisher Bitdefender)"
+    facts:
+      countries_targeted: "Government bodies in Uzbekistan, Turkmenistan, Kyrgyzstan, Tajikistan, and Kazakhstan (regionally tailored lures, several impersonating specific ministries); one further document recovered from a public malware-sharing platform (VirusTotal) was addressed to a Georgian government entity"
+      rat_family_count: "Seven RAT families total; five previously undocumented and newly named by Bitdefender: DriveSilkRAT, CookiETagRAT, NomadRAT, GoginRAT, NodeEdgeRAT. The other two are previously known: SpiceRAT (previously documented by Cisco Talos, June 2024, in SneakyChef reporting) and BloodAlchemy (in the ShadowPad / Deed RAT lineage, loader previously documented by ITOCHU, May 2024)."
+      driveSilkRAT_c2_channel: "Google Drive — described as 'living off trusted services' (LOTS): operators drop command files into a shared Google Drive folder; the infected host polls the folder, downloads tasking, runs it through an in-memory .NET plugin system, and uploads results back to the same folder. Twelve custom .NET plugins recovered (process listing, system/network enumeration, file management, command execution); command execution runs via WMI rather than spawning cmd.exe directly. Roughly 65 infection instances observed at time of writing (an upper bound, not a confirmed machine count, since victim IDs derive from hardware fingerprinting), mostly in the Asia region."
+      cookieTagRAT_c2_channel: "HTTP Cookie and ETag response headers — commands arrive inside Cookie/ETag headers, results returned in the body; each host derives its own ChaCha20 key/nonce from a unique system identifier plus a fixed suffix, so traffic from one victim cannot decrypt another's. Initiates via DLL sideloading of the legitimate Mp3tag.exe loading malicious tak_deco_lib.dll, and runs its malicious logic straight from DllMain rather than waiting for an exported-function call, which also makes it fire immediately in a sandbox."
+      dll_sideloading_pairs_named:
+        - "Calibre's ebook-edit.exe loads malicious calibre-launcher.dll (tracked by Bitdefender as HelpLoader) → decrypts/launches SpiceRAT from a file with a .hlp extension"
+        - "ABBYY's FineReader.exe loads dsp_ippv2_x64.dll → BloodAlchemy"
+        - "Quick Heal's emlproui.exe loads scansts.dll → NomadRAT"
+        - "Windows Defender's MpDefenderCoreService.exe loads mpclient.dll → the C++ DriveSilkRAT variant"
+        - "Mp3tag's Mp3tag.exe loads tak_deco_lib.dll → CookiETagRAT"
+        - "A still-unidentified signed host loads mscorsvc.dll → GoginRAT (Go orchestrator)"
+      confidence_and_basis: "China-nexus affiliation held at medium confidence. Basis stated: (1) Cisco Talos's public link of SpiceRAT to SneakyChef, a China-based espionage group active since at least August 2023; (2) infrastructure analysis identifying several IP addresses tied to China Unicom's backbone network; (3) victim profile (Central Asian government economic-policy bodies) fitting a China-nexus intelligence interest; (4) BloodAlchemy's placement in the ShadowPad/Deed RAT lineage connecting to Bitdefender's own prior FamousSparrow (Azerbaijan energy sector) reporting. Bitdefender explicitly states it does NOT attribute the campaign to a single named group: 'Shared tooling ecosystems are not the same as a single controlling actor, and IP-level infrastructure analysis is circumstantial' — the cluster is designated SilkParasite, not tied to one actor."
+      ai_assistance_statement: "Bitdefender frames SilkParasite as 'primarily assisted' (capable humans engineer, lean on AI to move faster) versus 'primarily generated' (machine builds, comes out mediocre — their contrast case is APT36's 'vibeware'). Held at medium confidence because code-level tells are inconclusive individually: GoginRAT ships with leftover Go test functions and a hardcoded placeholder AES key (0123456789abcdef); NodeEdgeRAT has a config field literally named change_this_key; NomadRAT (C++) and GoginRAT (Go) share a suspiciously close high-level architecture across two languages. The clearest single AI fingerprint cited is an unmistakably AI-generated phishing lure (a fake Central Asian energy-cooperation platform), which the researchers suspect was deliberately kept low-quality to blend into normal AI-generated content the targets already receive."
+    quotes:
+      - candidate: "Cisco Talos has publicly linked SpiceRAT to SneakyChef, a China-based espionage group active since at least August 2023. Infrastructure analysis identified several IP addresses tied to China Unicom's backbone network."
+        verified_verbatim: false
+        replacement: "Cisco Talos has publicly linked SpiceRAT to SneakyChef, a China-based espionage group active since at least August 2023. Infrastructure analysis identified several IP addresses tied to China Unicom\u2019s backbone network."
+        note: "Two invisible character differences from the candidate: the page uses a non-breaking space (U+00A0) between 'SpiceRAT' and 'to' (not a normal space), and a curly right-single-quote (U+2019) in \"Unicom's\" (not a straight apostrophe). With those two characters corrected the passage is exactly verbatim; text and word choice are otherwise identical to the candidate."
+      - candidate: "SilkParasite is primarily assisted: capable humans do the engineering and lean on AI to move faster, leaving behind a few tells but none of the degradation."
+        verified_verbatim: true
+      - candidate: "The most consistent detection surface across the campaign is DLL sideloading, and the reliable signal is the pairing, not the DLL name alone: a legitimately signed application loading a library placed beside it."
+        verified_verbatim: false
+        replacement: "The most consistent detection surface across the campaign is DLL sideloading, and the reliable signal is the pairing, not the DLL name alone: a legitimately signed application loading a library placed beside it while running from an unusual location."
+        note: "Candidate added a period after 'placed beside it' that is not on the page; the actual sentence continues 'while running from an unusual location.' Replacement is the full contiguous sentence as printed."
+
+  - shortname: expel-synkloader
+    url: "https://expel.com/blog/synkloader-when-you-throw-in-everything-but-the-kitchen-sink/"
+    fetched: true
+    transport_used: "bridge:url (direct browser-UA GET, no fallback needed)"
+    body_file: "work/2026-08-24T0110Z-weekly/body.expel-synkloader.txt"
+    publication_date: "2026-08-20 (meta article:published_time / JSON-LD datePublished: 2026-08-20T21:00:50+00:00; dateModified 2026-08-21T17:25:38+00:00; byline 'By Marcus Hutchins', 'Published: August 20, 2026'; publisher Expel)"
+    facts:
+      delivery_vector_exact: "Microsoft Teams phishing: an attacker using a <username>@<company>.onmicrosoft.com address (Microsoft 365's default email domain for a company) reached out to the target posing as 'IT Service Desk (<Fake Name>)' and convinced the user to download and install an MSI installer."
+      fake_application_and_hosting: "MSI presents itself as 'PowerShell Cleaner' (product name PowershellCleaner), hosted at a Microsoft Azure file storage endpoint: https://filereserve.blob.core.windows[.]net/vgnghuyk/331/331.msi — giving the file the appearance of coming from Microsoft."
+      six_modules:
+        - "System profiler (Module 1) — loads a fake Microsoft-runtime-named DLL, msvcp150.dll, which is actually a custom-built C# module exporting RunPowerShell/RunPowerShellW to run PowerShell commands in memory via CPython; harvests hostname, current user, privilege level (SYSTEM/ADMIN/USER check), running processes, installed services, AD domain name, and AD computer count (AD_counter). Compile timestamp: 8:02:11 AM 7/28/2026 (per the C# module's PE compile timestamp); PDB path leaked the developer's local username: C:\\Users\\genry\\source\\repos\\pwshnewdll\\x64\\Release\\pwshnewdll.pdb"
+        - "Persistence module — uses CPython to load a second fake-named DLL, msvcp160.dll, a native manual DLL loader that maps DLLs into memory without touching disk, then calls an exported function; chain is Main Loader (Python) -> Persistence Module Loader (Python) -> In-Memory DLL Loader (C++ DLL) -> Persistence Module (C++ DLL)."
+        - "PhishLocker module — a fake Windows lock-screen GUI application (DLL export named 'open' rather than 'nm', otherwise near-identical to the persistence module) designed to steal the user's system login credentials; retrieves the real lock-screen background from C:\\Windows\\Web\\Screen and renders a full-screen window mimicking Windows 11's lock screen even though the analysis system ran Windows 10, producing visible mismatches (time/icon positioning, password-box theme, no background blur when the password prompt is focused); the fake screen re-focuses itself to block Alt+Tab escape."
+        - "TrafficRedirector module — a custom connection-tunneling / backconnect proxy using a protocol similar to HTTP CONNECT; connects outbound to the attacker's server and awaits IP:port instructions, then forwards traffic to/from that endpoint, letting the attacker route through the victim's IP (bypassing corporate IP allow-listing) and reach internal LAN-only services; introduces an additional C2 domain, dondermicapp[.]net."
+        - "Interactive Shell (RAT) module — reverse shell that polls a custom C2 endpoint for commands (no hardcoded commands this time), executed via msvcp150.dll's RunPowerShell; uses two separate C2 endpoints (one for incoming commands, one for uploading responses) and a Python deque() to queue responses."
+        - "VNC 'StreamMaster' module — Python-based VNC server that connects outbound (not a listening/traditional VNC server); not an HVNC (no hidden desktop) — streams screenshots via zlib compression and forwards mouse/keyboard input to the current session, which would be visible to the logged-on user; contains unusually formal, well-written comments not matching any open-source project, leading Expel to assess it was likely 'vibe-coded' (AI-assisted)."
+      languages_blended: "Python, PowerShell, C#, and C++ across the chain; some individual modules blend up to three of these languages at once (e.g., Python loader -> PowerShell exec via a C# DLL)."
+      compile_date: "Loader and components first compiled/distributed around July 28, 2026 (based on compile dates and file timestamps); the msvcp150.dll C# module specifically compiled 8:02:11 AM 7/28/2026."
+      ransomware_affiliate_assessment: "Expel assesses with low-medium confidence that the toolkit may belong to a ransomware group or an initial access broker selling access to ransomware groups, based on (a) the AD_counter functionality (counting AD-joined computers, which matters most to actors who profit from disrupting larger networks) and (b) the loader's functionality and methods matching other loaders previously used by such groups."
+      ip_allowlist_bypass_statement: "TrafficRedirector 'can enable the threat actors to connect to internet services using the infected machine IP address, bypassing corporate IP allow-listing,' and separately, combined with the PhishLocker-harvested system password, lets the attacker log into internal and external company systems using the victim's own credentials without triggering alerts tied to logins from unknown IPs or geolocations (SSO is called out as amplifying the value of the stolen password over pass-the-hash/Kerberos-NTLM attacks)."
+      incident_origin: "Discovered August 18, 2026 during investigation of an EDR alert on a scheduled task on a client network; Expel found no public references to the loader or its components at the time. Expel reverse-engineered the loader, ran a modified version that logged (rather than executed) attacker commands, and fed the attackers fake system/network information to lure them into a hands-on-keyboard session against a fabricated large-corporate-network profile."
+    quotes:
+      - candidate: "The attacker impersonates the target company's IT help desk, a tactic Microsoft highlighted earlier this year as increasingly common in multi-stage attacks."
+        verified_verbatim: false
+        no_usable_quote: true
+        note: "Full-text search of the stripped body for 'help desk', 'highlighted', 'increasingly common', and 'multi-stage' returned zero matches for the Microsoft-attribution claim anywhere in this article. Expel's own wording is: 'The original attack chain was distributed by a Microsoft Teams phishing technique in which the attacker posed as a member of the company\u2019s IT helpdesk' (note: 'IT helpdesk' one word, not 'IT help desk', and no claim about Microsoft having highlighted the tactic as trending). No contiguous substring of this article supports the candidate; treating the Microsoft-attribution clause as unsourced from this page."
+      - candidate: "SynkLoader was named as such because of its unusual combination of Python, PowerShell, C#, and C++, sometimes blending up to three programming languages in a single module"
+        verified_verbatim: false
+        replacement: "The loader ships a long chain of attack tools, which bridge multiple separate programming languages, with some modules using as many as three programming languages at once."
+        note: "The page's actual naming rationale is different from the candidate's: 'We decided on the name SynkLoader (pronounced \u201cSink Loader\u201d), in reference to its \u201ceverything but the kitchen sink\u201d approach' \u2014 the name references the kitchen-sink breadth of tooling, not specifically the language mix. The 'up to three languages per module' fact IS on the page, in the separate sentence used as the replacement above."
+      - candidate: "By obtaining the password, the attackers could use it alongside the tunneling module to access corporate environments from the infected device, bypassing IP allow-list restrictions"
+        verified_verbatim: false
+        replacement: "When combined with the system password phishing model, threat actors can use the infected user\u2019s username and password to log into both internal and external company systems, all without triggering alerts based on logins from unknown IPs or geolocations."
+        note: "Candidate is a paraphrase merging two separate sentences. The page's closest single sentence about combining the stolen password with the tunneling module (used as the replacement) does not itself contain the words 'bypassing IP allow-list restrictions' \u2014 that phrase instead appears in a separate, earlier sentence about TrafficRedirector's other use case: 'It can enable the threat actors to connect to internet services using the infected machine IP address, bypassing corporate IP allow-listing.' Neither sentence alone matches the candidate verbatim; the replacement given is the more directly on-point contiguous sentence linking password theft to the tunneling module."
+
+  - shortname: trufflesecurity
+    url: "https://trufflesecurity.com/blog/leaked-corporate-aws-keys-held-full-admin-rights"
+    fetched: true
+    transport_used: "bridge:url (direct browser-UA GET, no fallback needed; Framer-built site but body was server-rendered in the fetched HTML)"
+    body_file: "work/2026-08-24T0110Z-weekly/body.trufflesecurity.txt"
+    publication_date: "2026-08-19 (visible byline 'The Dig / August 19, 2026' appears twice on the page, both above and below the title). Note: the raw HTML also carries an HTML comment '<!-- Published Aug 21, 2026, 3:15 PM UTC -->' which is Framer's site-build/publish timestamp for the exported static site, not the article's own dateline; no JSON-LD datePublished field was present. Treating the on-page byline (August 19, 2026) as the article's own publication date per instructions; flagging the Aug 21 site-build comment as a discrepancy for the composer's awareness."
+    facts:
+      keys_tested_and_scanned: "10,616 leaked AWS key pairs re-verified on August 10, 2026, drawn from a total population of 64,024 unique verified AWS key pairs across 431,875 public findings (git history, Hugging Face datasets, Docker images, package registries, CI logs); the 10,616 were the subset with complete credentials suitable for re-verification."
+      date_span: "Keys surfaced publicly between August 2022 and August 2026."
+      pct_still_authenticated: "88% still authenticate."
+      figure_768_split: "768 live keys belong to a company and carry full control of its AWS account: 526 root keys plus 242 IAM users holding AdministratorAccess (the two sets do not overlap). This 768 is derived from a broader set of 817 business-linked keys (classified via account contact info + username-pattern matching against 9,308 active keys); the remaining 49 of the 817 are scoped below admin. Separately, 130 of the live root keys sit on organization-management accounts (controlling every member account in the org)."
+      hugging_face_figure: "Hugging Face is the largest single source: 8,482 unique live keys across 3,394 public datasets. AWS credentials are the second most common secret type Truffle verifies there. Hugging Face keys skew most privileged of any tracked source: 17.9% are root."
+      median_key_age: "Median live leaked key is 1,831 days old (~5 years), based on the 2,903 keys that permitted the iam:ListAccessKeys call (which returns exact creation date). Half are over five years old; the oldest is 17.4 years."
+      pct_never_rotated: "86% never rotated — of the keys where access-key enumeration was possible, only 13.7% (398 of 2,903) had any newer key alongside the leaked one."
+      billing_alert_pct: "9.5% of accounts with readable budget data (262 of a readable set) have any budget alert at all; framed elsewhere on the page as '90.5% of leaked-key accounts have none.' Median configured budget limit where one exists is $8 (the classic free-tier guardrail)."
+      overall_population: "64,024 unique verified AWS key pairs; 10,625 root keys (16.6%) across 9,945 distinct accounts, 48,744 IAM-user keys, 4,655 not classifiable at verification time. Only 25 keys (0.9%) were created in the last 30 days — most of the population has been leaking for years."
+      api_calls_used: "Re-verification used only read-only metadata calls: STS GetCallerIdentity; IAM ListAccessKeys; IAM policy-name enumeration (names only, never policy documents); Account GetContactInformation; Organizations Describe and ListAccounts; Budgets DescribeBudgets; and one Cost Explorer call per account. No policy documents, resources, or data were read; nothing was modified; no key material, account identifiers, or personal details are published. 10,260 of 10,616 re-checked key owners are being notified ahead of publication."
+      spend_and_quarantine_context: "929 of 7,590 active IAM users (12%) already carry AWS's own AWSCompromisedKeyQuarantine policy (AWS detected the exposure and restricted them); 112 of those still carry the pre-2023 version of that policy, meaning AWS flagged them at least three years ago and they still authenticate. Median monthly spend on readable accounts was $0.03, but the tail: 50 accounts spent over $1k last month, 9 spent over $10k, and the full readable set spent $420,631 in July alone."
+    quotes:
+      - candidate: "The median live leaked key is five years old and has never been rotated."
+        verified_verbatim: true
+      - candidate: "Each key of the 768 live keys in the two sets [has] full control of a company's AWS account."
+        verified_verbatim: false
+        replacement: "The two sets do not overlap, so 768 live keys give full control of a company AWS account."
+        note: "Candidate contains a bracketed word insertion ('[has]') not permitted verbatim; page's actual construction pluralizes differently ('768 live keys give full control', not 'each key ... has full control'). Replacement is the exact contiguous sentence as printed, from the paragraph beginning 'Crossing ownership against privilege produces the headline number.'"
+      - candidate: "90.5% of leaked-key accounts have none [billing alarms]."
+        verified_verbatim: false
+        replacement: "90.5% of leaked-key accounts have none."
+        note: "Candidate's bracketed gloss '[billing alarms]' is not on the page. The exact sentence as printed (in the 'What to do with this' section, under 'Set a budget alarm, even a small one.') is the replacement; the referent (budget/billing alarms) is clear from the preceding sentence in context but the bracket itself is not part of the verbatim text."
+
+  - shortname: socradar-ftp
+    url: "https://socradar.io/blog/ftp-banners-new-dead-drop-resolver-rats/"
+    fetched: true
+    transport_used: "bridge:url (direct browser-UA GET, no fallback needed)"
+    body_file: "work/2026-08-24T0110Z-weekly/body.socradar-ftp.txt"
+    publication_date: "2026-08-21 (JSON-LD BlogPosting/WebPage datePublished: 2026-08-21T13:30:40+03:00; dateModified 2026-08-21T14:37:05+03:00; meta article:published_time matches; author 'SOCRadar Threat Research Unit (STRU)', byline attributed to user 'ameer')"
+    facts:
+      technique_active_since: "FTP-banner-as-Dead-Drop-Resolver abuse has been weaponized (per FOFA infrastructure searches) since early July 2026 and remains operational, with new infrastructure observed as recently as August 2026. The underlying capability (FTP banners hosting DDR strings for malicious LNK-file command retrieval) was first documented in a post by MalwareHunterTeam; SOCRadar's STRU found the specific infrastructure referenced in that original post no longer active and expanded the search via FOFA to find live instances."
+      delivery_chain_exact: "Initial access observed via malicious LNK files (likely spread through phishing); SOCRadar also assesses the same FTP-banner DDR technique is 'highly versatile and easily adaptable' for ClickFix-style social-engineering campaigns, though that vector was not directly observed, only assessed as plausible."
+      rat_names_and_functions:
+        - "E4del — an Electron-based, modular RAT masquerading as a signed Discord binary; uses a dynamic tiered jitter system for its C2. Execution path: runpackage%e4del%[token] extracts an auth token, calls the C2's /api/download?token=[token]&clientId=[hwid] endpoint, downloads a dynamically generated ZIP into %LOCALAPPDATA%\\Packages\\[token], spawns a hidden PowerShell process to Expand-Archive it, recursively searches for config.json to find the designated entrypoint executable, launches it as a fully detached hidden child process, then deletes the ZIP and JSON config to cover its tracks."
+        - "PINHOLE — a stealthier, multi-stage RAT with fourteen distinct command types (browser credential theft, file upload/download, screenshot capture); maintains a dedicated 'FTP Stats Panel' (observed at hxxp[://]69.48.228[.]126:5000/) tracking script executions and connecting/blocked IP addresses — at time of analysis the script had run only 11 times, suggesting an early-stage campaign."
+      pinhole_resolver_services_exact: "PINHOLE resolves its C2 by using curl to fetch content from Pinterest pins or SurveyMonkey survey questions; it proxies the resolved C2 behind Cloudflare Workers, constructing its primary request as https://<D7/D8 field>/https://<D5/D6 field> and falling back to direct communication via the <D5/D6 field> URL if proxying fails. Configuration (including the build token and C2-DDR encryption key) is stored not in a file body but in NTFS Alternate Data Streams (ADS) of two local desktop.ini files, encoded with a custom base-41 alphabet then encrypted with a SplitMix64-based PRNG algorithm. Once C2 is resolved, PINHOLE GETs {C2}/api/health expecting an HTTP 200 containing the string 'yes', then GETs {C2}/api/bc for its next-stage payload (disguised with a fake JPEG SOI/APP0 header, FF D8 FF E0, which PINHOLE strips and byte-decrements to restore); six layers of unpacking occur before final-stage execution."
+      evasion_techniques_named:
+        - "Anti-emulation guard: resolves KERNEL32.DLL/kernelbase.dll/ntdll.dll and inspects their Export Address Tables for wildcard-template ('xxxx/xxxxx') stub exports characteristic of emulators/analysis sandboxes; exits immediately if detected."
+        - "Halo's Gate — exploits the fact Windows assigns syscall numbers (SSNs) sequentially in memory; when the target function's SSN bytes are hooked by an EDR, it scans neighboring unhooked functions immediately above/below in memory, extracts their SSNs, and calculates the target's actual SSN via arithmetic offset, then issues direct syscalls to bypass userland hooks (page notes this improves on the older Hell's Gate technique, which fails when the target function itself is hooked)."
+        - "Early Bird APC Injection — used to inject the next-stage payload into a legitimate process after C2 retrieval."
+        - "Shellcode fluctuation — only a single 4 KB page of the payload (of ~15 KB total / 15.5 KB position-independent loader) remains decrypted and executable at any given time; a memory dump at an arbitrary moment yields only one readable page, leaving ~11 KB fully encrypted. Payload upgrades the target page to PAGE_EXECUTE_READ then returns EXCEPTION_CONTINUE_EXECUTION to resume seamlessly."
+        - "ADS-based configuration storage — build token and C2-DDR decryption key stored in the Alternate Data Streams of desktop.ini files rather than as a discrete config file on disk."
+        - "Persistence via legacy 'Load' registry value at HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Windows, copying itself to C:\\Users\\{user}\\AppData\\Local\\Packages\\{random_name}\\{random_name}.exe."
+      actor_attribution: "None. SOCRadar explicitly states: 'Due to their novelty, evidence is currently insufficient for actor attribution.' E4del and PINHOLE are assessed as two separate clusters using the same FTP-banner delivery technique, not a single actor."
+    quotes:
+      - candidate: "PINHOLE retrieves its C2 configuration from Pinterest pins and SurveyMonkey survey questions, a tactic that offers versatility and resilience to take-downs."
+        verified_verbatim: false
+        replacement: "To obtain its C2, PINHOLE uses curl to fetch content from Pinterest pins or SurveyMonkey survey questions."
+        note: "Full-text search for 'versatility', 'resilience', and 'resilient' found no matching claim anywhere in the article about PINHOLE's C2 channel; the 'versatile' word appears once, in an unrelated sentence about LNK-file techniques being adaptable to ClickFix campaigns. The Pinterest/SurveyMonkey mechanism itself is real and confirmed (appears in four separate passages); the replacement is the page's own most direct statement of it."
+      - candidate: "FTP banners represent a novel alternative...less stealthy than traditional web-based DDRs, as security teams are more likely to flag FTP connections to unknown servers as..."
+        verified_verbatim: false
+        replacement: "However, this method is less stealthy than traditional web-based DDRs, as security teams are more likely to flag FTP connections to unknown servers as anomalous."
+        note: "Ellipsis-joined candidate spans two sentences. Full original passage: 'While threat actors typically utilize legitimate web services, such as X, GitHub, or YouTube, to provide cover through high-volume, expected network traffic, FTP banners represent a novel alternative. However, this method is less stealthy than traditional web-based DDRs, as security teams are more likely to flag FTP connections to unknown servers as anomalous.' Replacement given is the second, self-contained sentence carrying the 'less stealthy...anomalous' claim in full."
+      - candidate: "Only a single 4 KB page of the payload remains decrypted and executable at any given time...a mechanism commonly referred to as shellcode fluctuation."
+        verified_verbatim: false
+        replacement: "This flow ensures that only a single 4 KB page of the payload remains decrypted and executable at any given time (a mechanism commonly referred to as shellcode fluctuation)."
+        note: "Candidate drops the lead-in clause and turns a parenthetical into an ellipsis. Exact sentence as printed is the replacement (immediately followed by a second sentence on the memory-dump implication, not required to complete the shellcode-fluctuation claim)."
+
+  - shortname: rapid7-q2
+    url: "https://www.rapid7.com/blog/post/tr-new-report-ai-threats-q2-2026-ends-traditional-patch-cycles"
+    fetched: true
+    transport_used: "bridge:url (direct browser-UA GET, no fallback needed; Next.js SSR page, full body present)"
+    body_file: "work/2026-08-24T0110Z-weekly/body.rapid7-q2.txt"
+    publication_date: "2026-08-18 (JSON-LD datePublished: 2026-08-18T13:00:51.361Z; page <title>: 'New Report from Rapid7 Labs: Why Q2 2026 signals the end of traditional patch cycles'; in-body H1: 'New Report: AI threats are here. Why Q2 2026 signals the end of traditional patch cycles')"
+    facts:
+      report_title_and_period: "The underlying report is Rapid7's 'Quarterly Threat Landscape Report' (referred to on the page as 'the latest Quarterly Threat Landscape Report from Rapid7 Labs' and 'the full Quarterly Threat Landscape Report'), covering Q2 2026."
+      cve_figures_and_phrasing: "8,539 new high- and critical-severity CVEs (CVSS 7.0\u201310.0, en dash) disclosed this quarter \u2014 stated as 'double the number reported in the same quarter last year (4,268).' Newly exploited-vulnerability count held roughly steady quarter-over-quarter at 40. Page's own framing: 'The takeaway isn\u2019t that exploitation exploded - it\u2019s that disclosure volume is far outstripping what any team can triage.'"
+      pct_62_exact_wording: "'Nearly two-thirds of exploited vulnerabilities this quarter (62%) required no user interaction - no stolen credentials, no phishing victim, no click.' That share is up nine points year over year from 53% in Q2 2025 (attackers 'reach and exploit them on their own')."
+      missing_auth_pct: "Disclosures of missing-authentication flaws (CWE-306) surged 247% year over year, described as 'a fast-expanding pool of internet-facing systems that require no login at all.'"
+      qilin_victim_count: "Qilin led ransomware activity in Q2 with 263 listed victims; the United States remained the most heavily targeted country, with business services and healthcare among the hardest-hit sectors. Rapid7's Incident Response team also saw growing use of ClickFix and fake-CAPTCHA campaigns plus social engineering via trusted collaboration platforms like Microsoft Teams, together accounting for 31.8% of the incidents Rapid7 IR worked."
+      nation_state_note: "Continued activity from Iranian, North Korean, and Russian APT clusters targeting government, finance, healthcare, manufacturing, energy, and telecommunications; Russian campaigns targeted edge infrastructure, Iranian activity included sustained ICS/OT targeting."
+      exposure_based_prioritization_argument: "Rapid7's stated argument: patch-cycle-based triage cannot keep pace with disclosure volume and automation/AI-assisted attacker tooling that compresses time-to-exploit; the organization must instead prioritize by reachable exposure (what is exposed, which assets matter most, where attackers can realistically get in) rather than by patching volume or severity score alone. Framed as 'preemptive security': 'not a slogan, but an operating model.'"
+    quotes:
+      - candidate: "There were 8,539 new high- and critical-severity CVEs (CVSS 7.0-10.0) this quarter- double the number reported in the same quarter last year (4,268)."
+        verified_verbatim: false
+        replacement: "There were 8,539 new high- and critical-severity CVEs (CVSS 7.0\u201310.0) this quarter- double the number reported in the same quarter last year (4,268)."
+        note: "Only character-level difference: the page uses an en dash (\u2013, U+2013) between '7.0' and '10.0', not a regular hyphen as in the candidate. The odd, space-less hyphen in 'quarter- double' IS reproduced correctly in the candidate and is confirmed present verbatim on the page (apparent copy-editing artifact on Rapid7's own page, not an OCR/transcription error introduced by us)."
+      - candidate: "Nearly two-thirds of exploited vulnerabilities this quarter (62%) required no user interaction."
+        verified_verbatim: false
+        replacement: "Nearly two-thirds of exploited vulnerabilities this quarter (62%) required no user interaction - no stolen credentials, no phishing victim, no click."
+        note: "Candidate truncated the sentence with a fabricated closing period; the actual sentence continues past 'no user interaction' with a dash-delimited list ('- no stolen credentials, no phishing victim, no click.'). Replacement is the full contiguous sentence as printed."
+      - candidate: "The organizations that stay ahead won't be the ones patching fastest — they'll be the ones that know what they expose, which assets matter most, where attackers can reali\u2026"
+        verified_verbatim: false
+        replacement: "As disclosures keep growing, the organizations that stay ahead won\u2019t be the ones patching fastest \u2014 they\u2019ll be the ones that know what they expose, which assets matter most, where attackers can realistically get in, and how to reduce reachable exposure before it becomes an incident."
+        note: "Candidate is a mid-sentence truncation (with capitalization changed: page has lower-case 'the organizations' since it follows an introductory clause) and uses straight apostrophes where the page uses curly ones (\u2019). Replacement is the full contiguous sentence as printed, from 'As disclosures keep growing,' through 'before it becomes an incident.'"
+
+url_liveness_appended: true
+notes: |
+  All six pages fetched successfully on the first rung of the ladder (python3 tools/fetch_source.py url <URL>,
+  direct browser-UA GET) -- no WebFetch or jina fallback was required for any of the six. Each page's full raw
+  HTML body was saved and stripped per the tag-to-empty-string / block-tag-to-newline rule (custom stdlib
+  html.parser script; script/style/head/noscript contents discarded; entities decoded; no space substituted for
+  any tag) before quote verification, so all reported verified_verbatim results are against the literal
+  extracted body text, not a summarized rendering. Every quote flagged as non-verbatim was checked by exact
+  Python substring containment (`fragment in body`), not visual inspection, and every listed replacement was
+  itself re-verified as an exact contiguous substring of the saved body file before being included here.
