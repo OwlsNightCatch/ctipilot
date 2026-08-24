@@ -21,6 +21,7 @@ For an end-to-end map of what reads / writes what, see [docs/architecture.md](do
 | Build the per-run dedup index | `python3 tools/build_prior_coverage.py <run-id> 7` |
 | Compact state digest | `python3 tools/run_summary.py --out work/<run-id>/state-summary.json` |
 | Bridge fetcher for known-403 hosts | `python3 tools/fetch_source.py {cisa-kev \| ncsc-csh recent N \| url <URL>}` |
+| Read a PDF-only advisory (joint advisories, authority reports) | `python3 tools/fetch_source.py pdf <URL>` (stdlib, no OCR — an image-only PDF reports "no text objects", which means *not extractable*, never *says nothing*); tests: `python3 tools/test_fetch_source_pdf.py` |
 | Validate the org profile / re-render it into the prompts | `python3 tools/compose_prompts.py --check` / `--write` (also `--dump`, `--selftest`) |
 | ATT&CK pin: freshness / update / invariants | `python3 tools/attack_data.py {--check \| --update [--version X.Y] \| --selftest \| --info}` (contract: [attack/README.md](attack/README.md)) |
 

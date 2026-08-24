@@ -1,0 +1,584 @@
+domain: F1
+run_id: 2026-08-21T0410Z-intel
+task: "scoped Phase 4 deep read on 3 pre-triaged S1 items (not a domain sweep)"
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-21T04:46:17Z
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 0
+  bridge_fetches: 12
+
+note_ioc_discipline: >
+  All three primaries for item 1 (StepSecurity, Wiz, SafeDep) publish full IOC sections (raw IPs,
+  SHA-256 hashes, file paths). Per org no-IOC policy, none of those literal indicators are reproduced
+  below or should reach the published entry; only the behavioral mechanism is carried forward. Where a
+  fact requires referencing "the payload host" or "the C2 address" this file describes it positionally,
+  never as a literal IP.
+
+items:
+  # ---------------------------------------------------------------------
+  # ITEM 2 — Rust crates.io supply-chain attack (arrayref / internment / append-only-vec)
+  # ---------------------------------------------------------------------
+  - item_ref: "Rust crates.io supply-chain attack (arrayref, internment, append-only-vec) — CVE-2026-77651"
+    verification_result: "primaries fully reached; S1 draft required two corrections (below) and several enrichments"
+
+    corrections_required:
+      - field: cves / cve_table.product
+        issue: >
+          CVE-2026-77651 (MITRE-assigned; alias GHSA-jvc2-9prg-ffvc) is scoped to arrayref 0.3.10 ONLY.
+          Confirmed via ENISA EUVD record EUVD-2026-63780: enisaIdProduct lists a single product entry
+          {name: "arrayref", vendor: "droundy", product_version: "0.3.10"}. internment 0.8.7 and
+          append-only-vec 0.1.9 are tracked under separate identifiers with NO CVE of their own:
+          RUSTSEC-2026-0266 / OSV MAL-2026-14337 (internment) and RUSTSEC-2026-0262 / OSV MAL-2026-14333
+          (append-only-vec). The cve_table / cves[] field should not imply one CVE covers all three crates.
+      - field: cve_table.patch (CVE-2026-77651 row)
+        issue: >
+          "no fixed version applicable" is imprecise. RustSec's own advisory (RUSTSEC-2026-0260, fetched at
+          https://rustsec.org/advisories/RUSTSEC-2026-0260.html) states explicitly: Patched: "no patched
+          versions"; Unaffected: "<=0.3.9". The correct framing is: the malicious 0.3.10 was hard-deleted
+          from the registry (not fixed-forward); the last clean/safe release is 0.3.9, and the vendor
+          (Rust Security Response Team) recommends pinning arrayref="=0.3.9" (StepSecurity's explicit
+          recovery guidance). Same shape for internment (last safe 0.8.6) and append-only-vec (last safe
+          0.1.8) per StepSecurity's blast-radius section, independently corroborated by the SafeDep original
+          report's package table.
+      - field: summary prose
+        issue: >
+          The download-count framing "245M+ lifetime downloads of the family" conflates figures. Per
+          StepSecurity's own "attack at a glance" box: arrayref 0.3.10 alone = 245.2M all-time downloads
+          (53.7M in the trailing 90 days); internment 0.8.7 = 14.4M all-time (3.5M/90d); append-only-vec
+          0.1.9 = 4.5M all-time (1.3M/90d). StepSecurity states the COMBINED figure for the three
+          compromised crates explicitly as "264M: combined all-time downloads of the three compromised
+          crates" — 264M is the correct combined figure, not 245M (245M is arrayref alone). SafeDep
+          independently gives a near-identical arrayref figure (244,989,384 at time of writing).
+
+    verified_facts:
+      timeline_utc_2026_08_20:
+        - "01:17:36 — GitHub account 'dtolney' created, impersonating David Tolnay (dtolnay), author of the real proc-macro2. Zero repositories ever created. (StepSecurity)"
+        - "01:25:58 — crates.io account 'dtolney' (user id 438608) created, 8 minutes after the GitHub account. (StepSecurity)"
+        - "01:55:34 — proc-macro1@1.0.106 published: a clean decoy, byte-for-byte copy of legitimate proc-macro2 source, no build script — reputational cover so the crate does not look zero-history later. (StepSecurity, SafeDep)"
+        - "07:11:15 — proc-macro1@1.0.107 published: malicious payload added via a new build.rs plus three new build-dependencies (base64, rustls, ureq). (StepSecurity, SafeDep)"
+        - "07:15:00 — arrayref@0.3.10 published from the compromised 'droundy' owner account, adding proc-macro1 ^1.0.107 as arrayref's first-ever real dependency in its ten-year history. (rust-lang.org, StepSecurity)"
+        - "07:15:24–07:15:40 — arrayref 0.3.9, 0.3.8, 0.3.7, 0.3.6, 0.3.5 yanked by the same account in a ~4s-apart scripted burst — the upgrade lure (yanking triggers Cargo's 'consider updating to a version that is not yanked' warning, steering builds toward the one remaining, poisoned 0.3.10). (StepSecurity, SafeDep)"
+        - "07:34:07 — internment@0.8.7 published from the same account with the same build-time dropper dependency. (rust-lang.org, StepSecurity)"
+        - "07:37:49 — append-only-vec@0.1.9 published from the same account, completing three poisoned releases within 23 minutes of the first. (rust-lang.org, StepSecurity)"
+        - "07:54:11 — Incident reported to RustSec advisory-db (issue #3161) by researcher jhobern (credited FINDER in OSV: SafeDep); security@rust-lang.org notified in parallel. (StepSecurity)"
+        - "08:41:40 — arrayref@0.3.10 deleted from the crates.io index, after 86 minutes online. (rust-lang.org)"
+        - "09:04:11 — internment@0.8.7 deleted, after 90 minutes online. (rust-lang.org)"
+        - "09:25:24 — append-only-vec@0.1.9 deleted, after 107 minutes online — the longest exposure window of the three. (rust-lang.org)"
+        - "Same day — proc-macro1, proc-macro-en, aovine, arone, aronenao, tinymember (attacker-controlled crates; the latter three last published 2026-08-18, two days before the arrayref push) all deleted; the dtolney attacker account and the arone/aronenao/tinymember owner account locked; the droundy owner account locked as a precaution; the maliciously-yanked arrayref/internment/append-only-vec clean releases un-yanked and restored. (rust-lang.org)"
+
+      mechanism_build_time_execution: >
+        proc-macro1 is a typosquat of the legitimate proc-macro2 (154M+ downloads per Wiz); its library
+        source is an unmodified copy of proc-macro2 (so every build and test still passes — "there is not a
+        single line of malicious code inside arrayref itself" per StepSecurity), meaning the ENTIRE weapon is
+        confined to build.rs plus three new build-time-only dependencies (base64, rustls, ureq — a
+        downloader toolkit a token-parsing proc-macro crate has no legitimate reason to need). Because Cargo
+        compiles and RUNS build.rs at compile time as a normal step of `cargo build`/`cargo update` — before
+        any of the host crate's own runtime code executes and with the full privileges of the invoking
+        user/service account — simply resolving arrayref 0.3.10 in a Cargo.lock and building the project was
+        sufficient to detonate the payload; the arrayref/internment/append-only-vec code itself never needs
+        to be called. This is the reason Cargo.toml version-range pins ("arrayref = \"0.3\"") do not protect
+        a project — only the resolved Cargo.lock version matters, and Cargo builds every declared
+        non-optional dependency (proc-macro1) regardless of whether the parent crate's own code references
+        it.
+      mechanism_payload_delivery: >
+        build.rs reconstructs the payload-host URL and a callback address from base64-encoded string
+        fragments (so no plaintext network address appears in the source), fetches an OS/architecture-
+        specific second-stage binary (four build targets: linux/x86_64, windows/x86_64, macos/x86_64,
+        macos/aarch64 — any other platform combination panics the build) over a TLS connection whose
+        certificate validation is disabled via a custom ServerCertVerifier ("AcceptAll") that unconditionally
+        returns success from every certificate and signature check, necessary because the payload host is a
+        bare IP address with no valid certificate. On Unix the binary is written to a fixed temp path, marked
+        executable, and spawned detached with stdio nulled. On Windows the fetched bytes are a PowerShell
+        script written to the user's temp directory and launched via a VBScript wrapper executed by
+        wscript.exe with no window/console/prompt — the source carries an explicit comment (quoted by
+        SafeDep) that routing through wscript.exe/ShellExecute is specifically what escapes Cargo's job
+        object, so the process keeps running after cargo build exits; both platforms additionally leak the
+        child handle via Rust's std::mem::forget(child) so its destructor never runs and Cargo does not wait
+        on it. The build script's own execution completes and exits 0 either way — "the build succeeds.
+        Nothing looks wrong" (StepSecurity).
+      mechanism_second_stage_wiz_analysis: >
+        Wiz Research states it analyzed samples of the malicious crates "retrieved from Google Threat
+        Intelligence" (i.e., Wiz did not merely read third-party reports but examined the actual malware).
+        Per Wiz: the stage-2 implant beacons to its C2 via HTTPS POST to a fixed callback endpoint path,
+        exfiltrating host/user/OS metadata as Base64-encoded JSON; it collects hostname, username and OS
+        details, enumerates installed applications, and queries the Chrome/Brave/Edge browsers' SQLite
+        credential-store databases directly for SAVED-LOGIN records and extension settings. Persistence is
+        via a Registry Run key (Windows), a LaunchAgent (macOS), or a systemd user service (Linux). It
+        supports four commands (kill, minicfg [reconfigure C2/beacon interval], startup [install
+        persistence], runscript [download+execute PowerShell/shell scripts sync or background]), falls back
+        to a Domain Generation Algorithm generating 10 algorithmic .com domains every 5 days if the primary
+        C2 is unreachable (Wiz notes the DGA domains do not currently appear registered), encrypts its
+        configuration with AES-128-GCM under a hardcoded key, and authenticates commands via an embedded
+        RSA-2048 private key.
+      IMPORTANT_correction_wiz_self_issued: >
+        Wiz Research published a self-correction inline on this exact point, which must be carried forward
+        verbatim rather than the original claim: "Edit: A prior version of this piece mistakenly stated that
+        browser credentials were stolen. The queries only enumerate saved logins, they do not retrieve the
+        encrypted credential material." I.e., the malware lists WHICH sites/accounts have saved logins in
+        the browser's credential store; it does NOT decrypt/exfiltrate the actual password material itself.
+        Any composed entry must reflect "enumerates saved logins" / "reads which accounts have saved
+        credentials," not "steals passwords" or "exfiltrates credentials" outright.
+      second_stage_stepsecurity_caveat: >
+        StepSecurity's own persistence/behavior details for the second stage (Linux artifacts under
+        $HOME/.config, executables named similarly to legitimate-looking service names, a systemd service
+        registered to restart the payload, and a second reported C2 address distinct from the build-time
+        payload host) are explicitly sourced to a THIRD-PARTY report from an infected developer inside the
+        RustSec advisory-db thread, and StepSecurity states plainly: "These are third-party reports we have
+        not independently reproduced, but they are consistent with the dropper's design and worth hunting
+        for now." This is a lower-confidence claim than Wiz's own direct sample analysis and should be
+        attributed as such if carried into the entry.
+      runtime_reproduction_stepsecurity: >
+        StepSecurity independently reproduced the build-time detonation in a monitored GitHub Actions
+        workflow (their Harden-Runner CI egress-monitoring product) building a project pinned to the
+        malicious arrayref 0.3.10. In an audit-mode run, every expected Rust-toolchain network destination
+        (github.com, index.crates.io, static.crates.io, docs.rs, static.rust-lang.org) was allowed, and then,
+        mid-build-step, the job opened a connection to the payload host that had never been seen in any
+        prior run of the same workflow — flagged "Anomalous, first-seen endpoint" — while the build step
+        itself still reported success and the overall CI job still went green. In a second run, after the
+        payload host was added to a block list, the same connection was denied and the build continued
+        (silent failure swallowed by the dropper's own error handling) with the stage-2 payload never
+        reaching the runner. This independently confirms build.rs makes the network connection during
+        `cargo build` itself (not merely "if executed later") and that the compromise is invisible from the
+        CI job's pass/fail status alone.
+      exploitation_status_nuance: >
+        FLAG FOR COMPOSER: this is a genuine cross-source tension, not resolvable from the primaries — carry
+        both sides. RustSec's own formal advisory text for BOTH affected crates states no confirmed victim
+        usage: RUSTSEC-2026-0260 (arrayref): "This compromised version was published on 2026-08-20 and
+        removed approximately 86 minutes later, with no evidence of actual usage." RUSTSEC-2026-0262
+        (append-only-vec) carries the identical "with no evidence of actual usage" line for its 107-minute
+        window. Separately, StepSecurity reports (attributed explicitly as an unverified third-party account
+        from the same RustSec advisory-db thread) that "a developer who was infected on Linux reported the
+        post-execution behavior" — i.e., at least one third-party claim of an actual infection exists, but
+        it postdates/sits outside RustSec's own "no evidence of actual usage" assessment and has not been
+        independently reproduced by any of the four fetched primaries. Do not represent this as "confirmed
+        exploited" — the S1 cve_table's "exploited: true" for CVE-2026-77651 should be softened or footnoted
+        to reflect that the crate's own coordinating advisory (RustSec) explicitly found no evidence of
+        actual usage, while a single unverified third-party infection report exists in parallel.
+      yank_vs_delete_distinction: >
+        Precise mechanics for the entry: the ATTACKER yanked the clean prior arrayref releases (0.3.5–0.3.9)
+        as a social-engineering lure exploiting Cargo's "yanked version" warning to push developers toward
+        upgrading to the one remaining, malicious 0.3.10 ("weaponizing Cargo's own 'yanked version' warning
+        as the delivery mechanism" — StepSecurity). The RUST SECURITY RESPONSE TEAM then (a) hard-deleted
+        the three malicious releases (0.3.10/0.8.7/0.1.9) and the six attacker-owned crates from the
+        registry entirely — not merely yanked — and (b) reversed ("un-yanked") the maliciously-yanked clean
+        releases, restoring them to their normal, warning-free state. Because deletion (rather than a formal
+        yank + RustSec advisory) is what removed the malicious versions, and the RustSec advisories were
+        still pending at the time of detonation, `cargo audit` does not flag a project whose lockfile already
+        resolved the poisoned version — explicit detection gap stated by both rust-lang.org (implicitly, via
+        its manual cache-search recommendation) and StepSecurity directly: "cargo audit reports clean for a
+        project that pinned a poisoned version."
+
+    per_crate_version_table:
+      - crate: arrayref
+        malicious_version: "0.3.10"
+        published_utc: "2026-08-20T07:15:00Z"
+        deleted_utc: "2026-08-20T08:41:40Z"
+        exposure_minutes: 86
+        last_safe_version: "0.3.9"
+        rustsec_id: "RUSTSEC-2026-0260"
+        osv_malicious_id: "MAL-2026-14336"
+        cve: "CVE-2026-77651 (GHSA-jvc2-9prg-ffvc) — MITRE-assigned, CVSS 3.1 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H) per ENISA EUVD-2026-63780; EPSS 0.0"
+        downloads: "245.2M all-time / 53.7M trailing-90-day (StepSecurity); 244,989,384 at time of SafeDep's writing; ~152M of the all-time total attributed to the clean 0.3.9 release alone"
+      - crate: internment
+        malicious_version: "0.8.7"
+        published_utc: "2026-08-20T07:34:07Z"
+        deleted_utc: "2026-08-20T09:04:11Z"
+        exposure_minutes: 90
+        last_safe_version: "0.8.6"
+        rustsec_id: "RUSTSEC-2026-0266"
+        osv_malicious_id: "MAL-2026-14337"
+        cve: "none assigned — tracked only via RUSTSEC-2026-0266 / MAL-2026-14337"
+        downloads: "14.4M all-time / 3.5M trailing-90-day (StepSecurity)"
+        note: "internment itself depends on append-only-vec, so a single internment dependency resolve during the exposure window could pull in two poisoned crates in one tree (StepSecurity)."
+      - crate: append-only-vec
+        malicious_version: "0.1.9"
+        published_utc: "2026-08-20T07:37:49Z"
+        deleted_utc: "2026-08-20T09:25:24Z"
+        exposure_minutes: 107
+        last_safe_version: "0.1.8"
+        rustsec_id: "RUSTSEC-2026-0262"
+        osv_malicious_id: "MAL-2026-14333"
+        cve: "none assigned — tracked only via RUSTSEC-2026-0262 / MAL-2026-14333"
+        downloads: "4.5M all-time / 1.3M trailing-90-day (StepSecurity)"
+      - crate: "proc-macro1 (attacker-controlled typosquat)"
+        malicious_version: "1.0.107 (weaponized); 1.0.106 published earlier same morning as a clean, no-build-script decoy to build fake publishing history"
+        note: "not proc-macro2 — the legitimate, foundational proc-macro2 crate by David Tolnay is unaffected and was not compromised in any way (rust-lang.org, StepSecurity explicit disambiguation)."
+      - crate: "proc-macro-en (attacker-controlled)"
+        note: "RustSec's advisory records it shipped the identical build.rs dropper as proc-macro1 — a spare/backup typosquat, deleted in the same sweep."
+      - crate: "aovine, arone, aronenao (attacker-controlled)"
+        note: "arone (7 versions) and aronenao (11 versions) carried their own malicious build scripts and were last published 2026-08-18, two days before the arrayref push — the campaign's infrastructure predates the headline compromise."
+      - crate: "tinymember (attacker-controlled)"
+        note: "2 versions, 27 downloads, contained no malicious code itself but was deleted by association (same owner as arone/aronenao)."
+
+    dprk_attribution_claim_wiz_only: >
+      This is Wiz Research's OWN assessed claim; none of rust-lang.org, StepSecurity, or SafeDep make any
+      DPRK/North Korea attribution. Wiz's exact framing (verbatim, single JSON value-field per fragment,
+      confirmed contiguous in the fetched page): the arrayref campaign's "infrastructure substantially
+      overlaps with operations attributed to recent North Korean actors," on four cited evidence points: (1)
+      shared C2 endpoint URL-path pattern between the arrayref beacon and a campaign Wiz calls "Mastra,"
+      which Wiz states is "attributed by Microsoft to DPRK / Sapphire Sleet"; (2) the arrayref beacon's IP
+      shares an SSL certificate issuer with an IP also used in the Mastra campaign; (3) a victim-reported C2
+      IP from the arrayref incident appears in "Google Cloud Threat Intelligence's analysis of UNC1069's
+      axios npm attack, which Mandiant links to North Korea"; (4) both campaigns generally use the same
+      hosting-provider IP range (Wiz names the provider as Hostwinds LLC). This is infrastructure-overlap
+      reasoning (shared hosting range / SSL issuer / endpoint-path pattern / a victim report), explicitly
+      NOT a confirmed attribution by Wiz itself, and doubly not by Microsoft or Mandiant for THIS specific
+      campaign (their attributions are for the separate, earlier Mastra and axios campaigns that Wiz says
+      share infrastructure with this one). Compose as: "Wiz Research assesses infrastructure overlap between
+      this campaign and prior DPRK-linked (Sapphire Sleet / UNC1069) npm supply-chain campaigns, based on
+      [the four points above] — not as a settled attribution of the arrayref campaign itself to DPRK."
+
+    detection_and_hardening_concepts:
+      telemetry_class_and_anchors: >
+        Process-creation / child-process telemetry with parent lineage on build and CI hosts: a cargo
+        build-rs/build-script-build child process spawning a network client (or resolving a TLS/HTTP-client
+        library it has no functional need for) followed by writing an executable/script to a temp directory
+        and launching it detached is the core observable sequence — vendor-neutral anchors are Sysmon EID 1
+        (process creation) with parent image = a *-build-script-build.exe / cargo.exe / rustc.exe lineage,
+        Sysmon EID 3 (network connection) from that same lineage to a destination never seen in a build
+        baseline, and Sysmon EID 11 (file create) for a new executable/script dropped to a temp path
+        immediately followed by EID 1 executing it. On Windows specifically, wscript.exe spawned as a child
+        of a build process (rather than a user-invoked script) is anomalous. CI-specific anchor: egress
+        allow-listing / anomaly detection on build-runner network baselines (what StepSecurity's own
+        reproduction relied on) — any build-time destination not previously observed for a given
+        project/workflow is the signal, independent of which package or crate triggered it.
+      why_lockfile_pin_alone_is_insufficient: >
+        A Cargo.toml version *range* pin (e.g. arrayref = "0.3") never protects against this class — only
+        the RESOLVED Cargo.lock entry matters, and Cargo builds every declared non-optional dependency
+        (including a malicious proc-macro build dependency) regardless of whether the parent crate's runtime
+        code calls into it. A project must inspect its actual resolved Cargo.lock (and any warm
+        ~/.cargo/registry/cache or vendor/ directory, and any CI cache restore such as actions/cache or a
+        container image baked with a pre-warmed cache) for the specific poisoned version string, not merely
+        confirm its Cargo.toml constraint looks safe.
+      cargo_audit_gap: >
+        Because the malicious versions were deleted from the registry rather than formally yanked with a
+        published RustSec advisory at time of detonation, cargo audit / cargo-vet will not flag a project
+        that already resolved a poisoned version into its lockfile before the advisories were published —
+        an explicit, source-confirmed detection blind spot.
+      hardening: >
+        Sources' own recommended remediation: pin to the confirmed last-safe version per crate (0.3.9 /
+        0.8.6 / 0.1.8); treat any developer workstation or CI runner that built an affected project during
+        the exposure window as compromised and rotate every credential reachable from it (SSH keys, cloud
+        tokens, crates.io/registry API tokens, signing keys, CI secrets); adopt a "cooldown" policy that only
+        admits crate versions older than N days (StepSecurity notes this would have made the ~90-minute
+        exposure window a non-event); commit and enforce Cargo.lock with `--locked` in CI and review lockfile
+        diffs in PRs so a newly-added dependency name is visible in code review; treat a sudden multi-version
+        yank burst on a long-lived, previously dependency-free crate as an investigation trigger rather than
+        a routine "please upgrade" nudge.
+
+    sources:
+      - { url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref", publisher: "Rust Security Response Team (rust-lang.org)", date: "2026-08-20", role: primary, fetch: "full raw body via bridge url" }
+      - { url: "https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack", publisher: "StepSecurity", date: "2026-08-20", role: primary, fetch: "full raw body via bridge url" }
+      - { url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns", publisher: "Wiz Research", date: "2026-08-20", role: primary, fetch: "full raw body via bridge url; article text embedded as structured JSON, reconstructed field-by-field" }
+      - { url: "https://safedep.io/arrayref-proc-macro1-rust-build-time-malware/", publisher: "SafeDep (original reporter's team; SafeDep credited FINDER in OSV MAL-2026-14336)", date: "2026-08-20", role: corroborating, fetch: "full raw body via bridge url" }
+      - { url: "https://rustsec.org/advisories/RUSTSEC-2026-0260.html", publisher: "RustSec Advisory Database", date: "2026-08-20", role: corroborating, fetch: "full raw body via bridge url" }
+      - { url: "https://api.osv.dev/v1/query (crates.io / arrayref, internment, append-only-vec)", publisher: "OSV.dev", date: "2026-08-20/21", role: corroborating, fetch: "bridge osv query" }
+      - { url: "EUVD-2026-63780 (enisa-euvd advisory bridge)", publisher: "ENISA EUVD", date: "2026-08-21", role: corroborating, fetch: "bridge enisa-euvd advisory" }
+        # note: github.com/rustsec/advisory-db/issues/3161 is egress-blocked this run; rustsec.org's own
+        # advisory pages and SafeDep's report (which quotes the same build.rs source the GitHub issue
+        # carries) substitute as the reachable primaries for that thread's content.
+
+    discovery_trace_addendum: >
+      first seen at: S1 findings.S1.yaml item 2 (already primary-sourced to rust-lang.org/StepSecurity/Wiz)
+      → this pass fetched full raw bodies of all three plus pivoted to SafeDep (the original finder's
+      technical write-up, linked from OSV's MAL-2026-14336 REPORT reference) and rustsec.org's own advisory
+      pages (RUSTSEC-2026-0260/-0262/-0266) plus OSV.dev structured records and the ENISA EUVD record for
+      CVE-2026-77651, to obtain the exact per-crate version/CVE mapping the summarised sources did not state
+      explicitly.
+
+    evidence:
+      - quote: "On 2026-08-20 at 7:15 UTC we got a report that the proc-macro1 crate was malicious."
+        attribution: "Rust Security Response Team"
+        source_url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref"
+      - quote: "We do not believe the author of arrayref to be acting maliciously, but their computer or credentials are likely compromised, and we are attempting to contact them."
+        attribution: "Rust Security Response Team"
+        source_url: "https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref"
+      - quote: "Because Rust build scripts run at compile time, simply building any project whose lockfile resolved arrayref 0.3.10 was enough to detonate the payload. The crate's code never needs to be called."
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack"
+      - quote: "arrayref 0.3.10: 245.2M all-time downloads, 53.7M in the last 90 days. 406 dependent crate versions. Last safe version: 0.3.9."
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack"
+      - quote: "Because the malicious versions were deleted rather than yanked, and the RustSec advisories are still pending, cargo audit reports clean for a project that pinned a poisoned version."
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack"
+      - quote: "with no evidence of actual usage."
+        attribution: "RustSec Advisory Database (RUSTSEC-2026-0260, identical wording on RUSTSEC-2026-0262)"
+        source_url: "https://rustsec.org/advisories/RUSTSEC-2026-0260.html"
+      - quote: "The queries only enumerate saved logins, they do not retrieve the encrypted credential material."
+        attribution: "Wiz Research (self-issued correction)"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+      - quote: " infrastructure substantially overlaps with operations attributed to recent North Korean actors."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+      - quote: "attributed by Microsoft to DPRK / Sapphire Sleet"
+        attribution: "Wiz Research (describing a DIFFERENT, prior campaign — 'Mastra' — that Wiz says shares infrastructure with this one)"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+      - quote: "Google Cloud Threat Intelligence's analysis of UNC1069's axios npm attack"
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+      - quote: " can be found in over 35% of all environments. Even more notably, it's used in ¾ of all environments where Rust is present."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns"
+
+  # ---------------------------------------------------------------------
+  # ITEM 3 — ATutor LCMS, 13 CVEs (CERT Polska)
+  # ---------------------------------------------------------------------
+  - item_ref: "ATutor LCMS — CVE-2026-64960 through CVE-2026-64972 (13 CVEs), CERT Polska"
+    verification_result: >
+      Primary reached in full (English + Polish bilingual versions both fetched and compared — identical
+      content, no additional facts in Polish). CERT Polska's advisory page provides an EXPLICIT structured
+      per-CVE mapping (a metadata block per CVE giving CVE ID / CWE / vulnerable version, immediately
+      followed by a "Description" section enumerating each CVE's mechanism by ID) — this is a genuine
+      1:1 mapping, not an inferred pairing. One correction required: the S1 draft's enumeration of "the
+      remaining ten" omitted CVE-2026-64967 entirely.
+
+    per_cve_mapping_verbatim_from_advisory:
+      - cve: CVE-2026-64960
+        cwe: "CWE-434 — Unrestricted upload of file with dangerous type"
+        auth_precondition: "authenticated (any authenticated user who knows a valid course_id; course_id=0 commonly works as it represents the global context)"
+        mechanism: "ATutor's Gameme module allows upload of files of any type/extension with no restriction; uploaded files are stored in a web-accessible location BEFORE their content is validated. An authenticated attacker who knows a valid course_id can upload a server-executable malicious script, then request it over HTTP for remote code execution as the web server process user."
+      - cve: CVE-2026-64961
+        cwe: "CWE-639 — Authorization bypass through User-Controlled key"
+        auth_precondition: "UNauthenticated"
+        mechanism: >
+          Full authentication-bypass / account-takeover via the auto-login functionality: a token
+          validation check is present in code, but the values required for that validation remain
+          UNINITIALIZED in certain code paths. An unauthenticated attacker who can determine a user's
+          identifier and registration timestamp can generate a valid token and authenticate AS AN EXISTING
+          USER, INCLUDING ADMINISTRATOR, without knowing the password. (This is the "unauthenticated
+          login-token forgery" mechanism referenced in the task brief.)
+      - cve: CVE-2026-64962
+        cwe: "CWE-352 — Cross-Site Request Forgery (CSRF)"
+        auth_precondition: "requires an authenticated victim to visit an attacker-crafted page"
+        mechanism: "CSRF on the profile-update endpoint; lack of a CSRF token lets a forged cross-site request modify profile fields of an existing, logged-in user."
+      - cve: CVE-2026-64963
+        cwe: "CWE-22 — Path Traversal"
+        auth_precondition: "authenticated"
+        mechanism: "an authenticated user can access files from OTHER course directories when the AT_FORCE_GET_FILE configuration option is enabled — unauthorized cross-course file/information disclosure."
+      - cve: CVE-2026-64964
+        cwe: "CWE-340 — Generation of Predictable Numbers or Identifiers"
+        auth_precondition: "unauthenticated (against a target account)"
+        mechanism: "predictable email-confirmation/account-activation tokens derived from insufficiently random, registration-related values; an attacker who knows/predicts them can activate an unconfirmed account without access to the victim's mailbox."
+      - cve: CVE-2026-64965
+        cwe: "CWE-862 — Missing Authorization"
+        auth_precondition: "low-privileged authenticated (e.g. an enrolled student)"
+        mechanism: "missing authorization on Test and Question Import backend endpoints — a low-privileged user enrolled in a course can bypass authorization checks by sending requests directly to the backend import endpoints, allowing unauthorized import of tests/questions into a course."
+      - cve: CVE-2026-64966
+        cwe: "CWE-22 — Path Traversal"
+        auth_precondition: "authenticated with course-instructor privileges"
+        mechanism: >
+          Path traversal in ZIP-extraction functionality. An attacker with instructor privileges uploads and
+          extracts a specially crafted ZIP archive, causing files to be written OUTSIDE the intended
+          extraction directory; this places a server-executable .phtml file in the web root, achieving
+          remote code execution with web-server privileges. (This is the second of the two file-upload RCE
+          paths referenced in the task brief.)
+      - cve: CVE-2026-64967
+        cwe: "CWE-22 — Path Traversal"
+        auth_precondition: "authenticated with ADMINISTRATIVE privileges"
+        mechanism: >
+          [OMITTED FROM S1's DRAFT SUMMARY — ADD ON COMPOSITION] Path traversal in ATutor's error-log
+          viewer: an attacker with administrative privileges can access arbitrary files OUTSIDE the intended
+          logs directory, exposing sensitive files/other web-server-accessible resources.
+      - cve: CVE-2026-64968
+        cwe: "CWE-918 — Server-Side Request Forgery (SSRF)"
+        auth_precondition: "authenticated administrator"
+        mechanism: "SSRF in import functionality — an authenticated administrator can make the server request arbitrary internal HTTP endpoints, cloud metadata services, or local files via the file:// scheme if the PHP environment permits URL wrappers."
+      - cve: CVE-2026-64969
+        cwe: "CWE-639 — Authorization bypass through User-Controlled key (IDOR)"
+        auth_precondition: "any authenticated user (e.g. a student)"
+        mechanism: "IDOR in profile-picture endpoints — any authenticated user, including a student, can supply another user's member_id in a POST request to the profile-album endpoint and permanently delete that user's profile picture, including instructors' and administrators'."
+      - cve: CVE-2026-64970
+        cwe: "CWE-79 — Cross-site scripting (Stored)"
+        auth_precondition: "unauthenticated attacker (self-registers); victim must be authenticated and view the attacker's profile"
+        mechanism: "stored XSS via the registration 'phone' field — attacker registers an account with a JavaScript payload in the phone field; any authenticated user who views the attacker's public profile has that payload echoed without output encoding, executing in their browser and stealing their session cookie."
+      - cve: CVE-2026-64971
+        cwe: "CWE-79 — Improper Neutralization of Input During Web Page Generation (Reflected XSS)"
+        auth_precondition: "victim must open an attacker-supplied URL"
+        mechanism: "reflected XSS in the restore functionality via a specially crafted URL."
+      - cve: CVE-2026-64972
+        cwe: "CWE-79 — Improper Neutralization of Input During Web Page Generation (Reflected XSS)"
+        auth_precondition: "authenticated attacker"
+        mechanism: >
+          reflected XSS via the popup parameter of preview.php: an authenticated attacker injects a double
+          quote into the popup parameter to break out of the attribute value and append a new event handler
+          (e.g. onload); the related preview_top.php file DOES sanitise these parameters, but that does not
+          prevent XSS in the parent frameset rendered directly by preview.php itself — i.e., a
+          same-mechanism bypass because a sibling file's sanitization doesn't cover the top-level file's own
+          use of the parameter.
+
+    cvss_and_eol_status:
+      cvss: "CERT Polska's advisory publishes NO CVSS score for any of the 13 CVEs (confirmed absent on both the English and Polish page renderings) — do not synthesize one."
+      eol_statement_verbatim: "Product is no longer actively supported and the vulnerabilities have not been fixed. Only version 2.2.4 was tested and confirmed as vulnerable, other versions were not tested but might also be vulnerable."
+      fixed_version_any_of_13: "none — confirmed no patched version exists for any of the 13 CVEs; CERT Polska's per-CVE metadata blocks list only 'Vulnerable versions: 2.2.4' with no 'fixed in' field anywhere on the page."
+      exploitation_status: "not stated — the advisory makes no claim of any in-the-wild exploitation; it is a coordinated-disclosure notice, credited to reporters Michał Majchrowicz and Marcin Wyczechowski of the AFINE Team."
+      deployed_instance_count: "not stated — CERT Polska names no count of live ATutor deployments or an affected version range beyond 'other versions were not tested but might also be vulnerable.'"
+
+    correction_required:
+      field: "summary prose — enumeration of the 13 CVEs"
+      issue: >
+        S1's draft summary lists CVE-2026-64960, -64966, -64961 explicitly by mechanism, then groups "the
+        remaining ten" but only actually describes nine (CVE-2026-64962, -64963, -64964, -64965, -64968,
+        -64969, -64970, -64971, -64972) — CVE-2026-64967 (administrative-privilege path traversal in the
+        error log viewer, CWE-22) is missing entirely from the draft. Composition must add it (see mapping
+        table above).
+      field: "evidence[] quote for CVE-2026-64961"
+      issue: >
+        The S1 draft's evidence quote — "An unauthenticated attacker who can determine a user's identifier
+        and registration timestamp can generate a valid token and authenticate." — is NOT a verbatim
+        substring of the advisory. The actual sentence continues past "authenticate" with materially
+        important scope: "...and authenticate as an existing user, including administrator, without knowing
+        the password." The draft's version invents a sentence-ending period that does not exist in the
+        source and drops the account-takeover/administrator-impersonation scope. MUST be replaced with the
+        full, verified sentence (see corrected evidence[] below) — this is a fidelity defect, not a
+        stylistic one, since "authenticate" alone reads as generic login while the full sentence states
+        full impersonation of ANY account including admin.
+
+    sources:
+      - { url: "https://cert.pl/en/posts/2026/08/CVE-2026-64960/", publisher: "CERT Polska (NASK) — English", date: "2026-08-20", role: primary, fetch: "full raw body via bridge url" }
+      - { url: "https://cert.pl/posts/2026/08/CVE-2026-64960/", publisher: "CERT Polska (NASK) — Polish original", date: "2026-08-20", role: primary, fetch: "full raw body via bridge url; confirmed identical technical content to the English rendering, translated inline, no additional facts found" }
+
+    discovery_trace_addendum: >
+      first seen at: S1 findings.S1.yaml item 3, primary https://cert.pl/en/posts/2026/08/CVE-2026-64960/
+      → this pass re-fetched the full raw HTML body (English) plus the Polish-language original
+      (https://cert.pl/posts/2026/08/CVE-2026-64960/) to confirm the explicit per-CVE CWE/mechanism mapping
+      structurally present on the page, and to check for any Polish-only detail (none found).
+
+    evidence:
+      - quote: "An authenticated attacker who knows a valid course_id can upload a server-executable malicious script. The uploaded file can then be requested over HTTP, resulting in remote code execution as the web server process user."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/08/CVE-2026-64960/"
+      - quote: "Although a token validation check is present in the auto-login functionality, the values required for token validation remain uninitialized in certain code paths. An unauthenticated attacker who can determine a user's identifier and registration timestamp can generate a valid token and authenticate as an existing user, including administrator, without knowing the password."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/08/CVE-2026-64960/"
+      - quote: "An attacker with instructor privileges can upload and extract a specially crafted ZIP archive, causing files to be written outside the intended extraction directory. This allows an attacker to place a server-executable .phtml file in the web root and achieve remote code execution with web server privileges on the underlying server."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/08/CVE-2026-64960/"
+      - quote: "A Path Traversal vulnerability in ATutor's error log viewer allows an attacker with administrative privileges to access arbitrary files outside the intended logs directory."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/08/CVE-2026-64960/"
+      - quote: "Product is no longer actively supported and the vulnerabilities have not been fixed. Only version 2.2.4 was tested and confirmed as vulnerable, other versions were not tested but might also be vulnerable."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/08/CVE-2026-64960/"
+
+  # ---------------------------------------------------------------------
+  # ITEM 4 — ShieldBreak / CVE-2026-69414 UPDATE (LevelBlue SpiderLabs, 2026-08-19)
+  # ---------------------------------------------------------------------
+  - item_ref: "UPDATE — ShieldBreak (CVE-2026-69414) — LevelBlue SpiderLabs independent reproduction, 2026-08-19"
+    verification_result: "primary reached in full; S1 draft's evidence/detail is accurate — this pass adds substantially deeper mechanism and detection specificity plus current MSRC-confirmed patch status."
+
+    what_levelblue_independently_reproduced: >
+      The LevelBlue OpsCTI and THOR teams reproduced the COMPLETE seven-stage ShieldBreak chain on Windows 11
+      24H2 and Windows Server 2025 systems with the August 2026 Patch Tuesday updates already installed,
+      confirming the technique still reaches SYSTEM from a standard user account against Windows Defender in
+      its default configuration, with no additional arguments required (the PoC runs by simply
+      double-clicking "ShieldBreak.exe") and completing in roughly 8-12 seconds on an unloaded system. This
+      is materially different from Microsoft's advisory and the original researcher's disclosure in that:
+      (1) it is confirmed successful against the LATEST patch level as of the report date, directly refuting
+      any assumption that August's cumulative update touched the flaw; (2) it names the disclosing party as
+      "Nightmare-Eclipse," a recurring PoC-release persona LevelBlue places in an explicit lineage — GreenPlasma,
+      YellowKey, MiniPlasma, RoguePlanet, GreatXML, LegacyHive, and now ShieldBreak — and notes ShieldBreak is
+      a functional IMPROVEMENT over the immediately preceding LegacyHive PoC because LegacyHive required a
+      helper-account logon to trigger its final stage, whereas ShieldBreak is fully self-contained; (3) it
+      provides a complete, source-level seven-stage reconstruction of the exploit chain (extracted embedded
+      resources → fake Cloud Files sync-provider registration → NT Object Manager shadow-namespace
+      construction → direct MpClient.dll invocation of Defender's own scan/clean RPC interface → a TOCTOU
+      race using a CLFS-file exclusive lock to swap a symbolic link mid-transaction → Defender's own clean
+      engine writing the attacker DLL to System32 → SYSTEM code execution via the Windows Error Reporting
+      QueueReporting scheduled task loading that DLL through wermgr.exe) that neither Microsoft's terse
+      advisory text nor (per the existing entry's own sourcing_note) any previously-cited source had
+      supplied; and (4) it supplies a full MITRE ATT&CK technique table and concrete, tool-agnostic hunting
+      queries — none of which existed in the prior coverage.
+
+    seven_stage_mechanism_detail:
+      stage_1: "Payload extraction & setup — extracts embedded ZIP/DLL resources, raises process/thread priority (HIGH_PRIORITY_CLASS / THREAD_PRIORITY_TIME_CRITICAL) to improve odds of winning the later race, creates a named pipe (hardcoded name in the public PoC) for the final SYSTEM callback, and creates a hidden, world-writable working directory directly under C:\\."
+      stage_2: "Registers a fake Cloud Files sync provider (CfRegisterSyncRoot, hardcoded provider name/GUID in the public PoC) rooted at that working directory, then creates a placeholder file via CfCreatePlaceholders so the file appears to Windows as an undownloaded cloud-resident object. A two-phase hydration callback supplies a benign ZIP payload on the FIRST read (which triggers Windows Defender's detection) and the malicious DLL on a LATER read (which becomes the content actually written to disk)."
+      stage_3: "Dynamically resolves the native NtCreateDirectoryObjectEx and NtCreateSymbolicLinkObject APIs from ntdll.dll and builds a shadow NT Object Manager namespace beneath \\BaseNamedObjects\\Restricted\\, creating two conflicting symbolic links both named WD_SCAN — one initially resolving to the working directory (containing the placeholder), the other to a CLFS-related path — giving the exploit a namespace-level redirection layer independent of the underlying NTFS path."
+      stage_4: "Loads Microsoft's MpClient.dll directly (rather than invoking Defender through the Security Center UI or a command-line utility) and dynamically resolves Defender's own management/scan/clean functions (MpManagerOpen, MpScanStart, MpThreatOpen, MpThreatEnumerate, MpCleanOpen, MpCleanStart, MpCleanControl, MpHandleClose) to open Defender's RPC binding, scan the placeholder through the Object Manager shadow path, and — after Defender detects the ZIP bait — start Defender's own remediation ('clean') operation on it. From Defender's own perspective the request is authenticated and structurally legitimate; the malicious intent is entirely in how the caller controls the path resolution and the content the Cloud Files provider returns."
+      stage_5: "The core TOCTOU race: a background thread watches (ReadDirectoryChangesW) for the CLFS log file Defender's clean operation creates; when it appears, the exploit takes an exclusive lock on it via LockFileEx, holding Defender mid-transaction. While Defender is blocked, the exploit deletes the shadow WD_SCAN symbolic link and replaces it with one pointing at \\??\\UNC\\127.0.0.1\\C$\\Windows\\System32\\phoneinfo.dll — so the path Defender is already using resolves to a different destination without any NTFS junction being touched."
+      stage_6: "Restarts Cloud Files hydration, this time advertising the DLL's file size instead of the ZIP's; the hydration callback supplies the DLL bytes, and Defender's own clean engine — still operating through the now-redirected WD_SCAN path — writes the attacker-controlled DLL to C:\\Windows\\System32\\phoneinfo.dll (a filename that does not exist natively on any Windows version). The exploit then opens and memory-maps that file as an executable image (SEC_IMAGE) to keep it locked open so remediation cannot remove it."
+      stage_7: "Plants a crafted Windows Error Report into the system WER ReportQueue directory and triggers the built-in QueueReporting scheduled task via the Task Scheduler COM interface (ITaskService::Run()); the task runs as SYSTEM, causing wermgr.exe to process the report and load phoneinfo.dll from System32 — full SYSTEM code execution. The SYSTEM-integrity payload signals completion by connecting back to the named pipe created in stage 1."
+
+    detection_specifics_behavioral:
+      strongest_signal: "C:\\Windows\\System32\\phoneinfo.dll — this filename does not exist natively on any Windows version; LevelBlue calls its creation 'the strongest unconditional detection point' regardless of which process appears as the writer (note: telemetry will often show MsMpEng.exe — Windows Defender's own engine — as the writing process, which is EXPECTED given the mechanism, not a sign the write is benign)."
+      signal_module_load: "MpClient.dll loaded by any process outside the small, stable set of expected consumers (MsMpEng.exe, MpCmdRun.exe, NisSrv.exe, ConfigSecurityPolicy.exe, MpSigStub.exe) — vendor-neutral telemetry class: process/module-load events (Sysmon EID 7); significance increases sharply when followed by runtime API resolution of MpManagerOpen/MpScanStart/MpCleanOpen/MpCleanStart/MpCleanControl from that same process."
+      signal_wermgr_load: "wermgr.exe loading an unexpected DLL, specifically phoneinfo.dll — module-load telemetry (Sysmon EID 7)."
+      signal_named_pipe: "creation of a named pipe by a standard-user process followed by a SYSTEM-integrity process connecting to that same pipe — Sysmon EID 17 (pipe create) / EID 18 (pipe connect); the specific pipe name used in the released PoC is hardcoded and is a near-zero-false-positive atomic indicator FOR THIS PUBLIC VARIANT specifically (LevelBlue notes string-based indicators like the pipe/provider name/directory prefix are variant-specific, while the behavioral indicators — phoneinfo.dll creation, MpClient.dll cross-process loading — are variant-independent and should be hunted for regardless of variant)."
+      signal_object_manager: "a process calling NtCreateDirectoryObjectEx and NtCreateSymbolicLinkObject together, particularly targeting paths under \\BaseNamedObjects\\Restricted\\ — ordinary user-mode software rarely creates Object Manager directories/symlinks post-boot, so LevelBlue flags this combination as one of the strongest behavioral indicators in the chain; native-API telemetry (ETW-based or EDR kernel-callback equivalents) is the relevant class."
+      signal_cloud_files: "CfRegisterSyncRoot called by a process that is not a known/approved synchronization agent — Cloud Files ETW (CldFlt) telemetry; the composite signal is not the API call alone but an unapproved process registering a sync root, creating a placeholder, and immediately transitioning into Object Manager and Defender API activity."
+      signal_clfs_lock: "LockFileEx exclusive-lock acquisition against a CLFS log file by a non-system process — file-system lock telemetry; a useful contextual signal but explicitly NOT sufficient alone."
+      signal_scheduled_task: "the built-in QueueReporting scheduled task (under \\Microsoft\\Windows\\Windows Error Reporting\\) invoked via ITaskService::Run() outside its normal operational context — Security Event Log 4698/4702, or generic scheduled-task-execution telemetry."
+      triage_discriminator: >
+        LevelBlue's explicit framing (usable as the entry's Triage line): every individual API call in the
+        chain is independently legitimate (Cloud Files is used by real sync products, Object Manager
+        namespace manipulation has legitimate low-level uses, MpClient.dll is Microsoft's own supported
+        Defender interface, CLFS locking and Task Scheduler COM invocation are both routine). "ShieldBreak is
+        best detected through behavioral correlation rather than any single static indicator" — the
+        discriminator is the SEQUENCE and PROXIMITY of these normally-unrelated primitives from the same
+        process/session in a short window (fake sync-root registration → shadow Object Manager namespace →
+        direct Defender RPC invocation → CLFS lock/symlink swap → phoneinfo.dll write → WER task → wermgr.exe
+        loading that DLL), not any individual call.
+      mitre_attck_table_from_source: "T1068 (Exploitation for Privilege Escalation — core technique, the WD pipeline logic flaw); T1574.002 (DLL Side-Loading — phoneinfo.dll planted in System32, loaded by wermgr.exe); T1218 (Signed Binary Proxy Execution — wermgr.exe, a signed binary, used as the SYSTEM execution vehicle); T1053.005 (Scheduled Task/Job: Scheduled Task — QueueReporting triggered via ITaskService::Run()); T1562.001 (Impair Defenses: Disable or Modify Tools — Defender's own clean engine weaponized against the OS); T1106 (Native API — NtCreateDirectoryObjectEx, NtCreateSymbolicLinkObject, NtCreateFile); T1070.004 (Indicator Removal: File Deletion — post-exploitation cleanup of the working directory and WER artifacts); T1036.005 (Masquerading: Match Legitimate Name — the fake cloud provider masquerades as a sync service)."
+
+    patch_status_as_of_2026_08_19_confirmed_via_msrc: >
+      Cross-checked directly against Microsoft's own MSRC vulnerability record for CVE-2026-69414 (not merely
+      the LevelBlue post): latestRevisionDate is 2026-08-19 (version 1.1), and that revision's own change
+      description is "CWE added. Informational change only." — i.e., Microsoft's ONLY update to this CVE
+      record on the exact date of LevelBlue's post was an informational CWE tag (CWE-284, Improper Access
+      Control), not a fix. The record's live fields as of that revision: exploited = "No"; publiclyDisclosed
+      = "Yes"; latestSoftwareRelease (exploitability assessment) = "Exploitation More Likely" (unchanged from
+      the 2026-08-14 original); baseScore 7.8 / temporalScore 7.0, vector
+      CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H/E:P/RL:O/RC:C — the temporal metrics explicitly record
+      E:P (Proof-of-Concept exploit code available), RL:O (Official fix unavailable), RC:C (Confirmed report).
+      The description text is unchanged: "We are working to provide a high quality security update that
+      addresses this vulnerability. We will provide information in this CVE when the update is available."
+      This directly corroborates, from Microsoft's own record rather than only LevelBlue's framing, that NO
+      FIX had shipped as of 2026-08-19 and that Microsoft's own exploitability wording is unchanged.
+    itw_exploitation_claim: >
+      LevelBlue's post makes NO claim of in-the-wild exploitation anywhere in the text — every statement is
+      framed as "reproduced," "confirmed the PoC functions as described," or discusses the publicly released
+      PoC's mechanics. Do not upgrade this to "exploited in the wild"; MSRC's own record concurs (exploited =
+      "No"). This remains PoC-confirmed / exploitation-more-likely, not observed-exploited.
+
+    sources:
+      - { url: "https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking", publisher: "LevelBlue SpiderLabs", date: "2026-08-19", role: primary, fetch: "full raw body via bridge url" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69414", publisher: "Microsoft Security Response Center", date: "2026-08-19 (latest revision)", role: corroborating, fetch: "bridge msrc cve" }
+
+    discovery_trace_addendum: >
+      first seen at: S1 findings.S1.yaml item 4, primary
+      https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking
+      → this pass fetched the full raw body (confirmed all seven stages, IOC/YARA/hunting-query appendices,
+      and ATT&CK table) and separately re-queried Microsoft's own MSRC API for CVE-2026-69414's current
+      revision history to independently confirm patch status as of the post date rather than relying on the
+      blog's own framing alone.
+
+    evidence:
+      - quote: "The LevelBlue OpsCTI and THOR teams reviewed and reproduced the complete ShieldBreak exploitation chain with the August 2026 Patch Tuesday updates installed, confirming the PoC functions as described."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking"
+      - quote: "ShieldBreak is fully self-contained and runs to full SYSTEM completion from a standard user account on any fully patched Windows 11 24H2 or Windows Server 2025 system with Windows Defender in its default configuration."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking"
+      - quote: "Following GreenPlasma, YellowKey and MiniPlasma, RoguePlanet and GreatXML, and LegacyHive, the Nightmare-Eclipse disclosure actor has published ShieldBreak"
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking"
+      - quote: "Unlike LegacyHive, which requires a helper account logon to trigger the final stage, ShieldBreak is fully self-contained"
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking"
+      - quote: "ShieldBreak is best detected through behavioral correlation rather than any single static indicator. The attack deliberately uses legitimate Windows capabilities: Cloud Files, native Object Manager APIs, Defender interfaces, CLFS operations, and Task Scheduler."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking"
+      - quote: "This is the strongest unconditional detection point"
+        attribution: "LevelBlue SpiderLabs (referring to phoneinfo.dll creation in System32)"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking"
+      - quote: "We are working to provide a high quality security update that addresses this vulnerability. We will provide information in this CVE when the update is available."
+        attribution: "Microsoft Security Response Center (unchanged text as of the 2026-08-19 revision)"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69414"
+
+coverage_gaps:
+  - source_id: "github.com/rustsec/advisory-db#3161"
+    reason: "github.com is egress-blocked this run per spawn instructions. Substituted with rustsec.org's own advisory pages (RUSTSEC-2026-0260/-0262/-0266) and SafeDep's technical write-up (which explicitly quotes the same build.rs source the GitHub issue carries) — both reachable and independently corroborating. No unique content from the GitHub issue thread itself was confirmed lost, but its raw discussion comments (e.g. the exact wording of the third-party Linux-infection report) could not be read directly."
+
+candidate_sources: []

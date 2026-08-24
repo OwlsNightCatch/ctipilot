@@ -170,3 +170,37 @@ Related shapes worth separating when writing the note: `prodaft` this run turned
 *two* defects wearing one label — a dead subdomain in the source note
 (`resources.prodaft.com`, NXDOMAIN) and, separately, a frozen client-rendered listing on the
 live URL. Fixing the note is not fixing the recipe; say which one you did.
+
+## PDF-only advisories are readable now — `pdf <URL>` (added v3.32, 2026-08-21)
+
+**The gap:** this container ships no `pdftotext`, no `pypdf`, no `pdfminer` and no OCR, and the bridge had no PDF path — so every advisory published as a PDF and nothing else was unreachable *by design*, silently. It does not look like a blocked host; it looks like a source that summarises thinly.
+
+**What it cost, concretely:** on 2026-08-19 the five-agency joint advisory on an active threat to Siemens S7 PLCs (AA26-231A) had to be published **single-source from a news outlet's reading**, because the agency page 403s us and the PDF mirror served fine but nothing could parse the bytes. The primary turned out to carry five named detection classes, a gold-copy firmware comparison, device protection levels and an instruction to pass the mitigations to systems integrators — none of which the outlet's summary had.
+
+**The fix:** `python3 tools/fetch_source.py pdf <URL>` (`--json` for byte counts, decode method and caveats). Stdlib `zlib` only. Handles Flate and uncompressed content streams, PDF string escapes/nesting, `Tj`/`TJ`/`'`/`"`, simple fonts, and CID fonts via their ToUnicode CMap. Offline tests: `python3 tools/test_fetch_source_pdf.py`.
+
+**Select it on CONTENT TYPE, not on failure.** It is not a rung of the block-escalation ladder — reach for it because the primary is a PDF, not because something else 403'd. Mirrors count: a `media.defense.gov`, `ic3.gov` or member-agency copy of a joint advisory is the same document, and often reachable when the coordinating agency's own page is not.
+
+**Two honesty properties are contractual, not polish:**
+- An **image-only/scanned PDF reports "no text objects found"** — that means *not extractable*, NEVER *the document says nothing*. An empty extraction read as an empty document is how a scanned advisory becomes a false negative.
+- A **CMap-approximated decode is labelled an approximation.** Selection between the byte-wise and CMap decodes is by *volume of recovered prose*, not a ratio — because a CID PDF's byte-wise decode drops every unmapped glyph and leaves a short string of line breaks whose "share of good characters" is a perfect 1.0. That specific false green is pinned by a test.
+
+**Real PDFs find real bugs — test against one.** The 8-case offline suite passed while the extractor still crashed on the first genuine advisory: a marked-content property dictionary (`<</MCID 0>>`) was mis-parsed as a hex string once the scan stepped past the outer bracket. Fixed with a hex-body guard plus a hardened converter, and a regression test. Lesson: synthetic PDFs do not exercise what real producers emit.
+
+## Extraction shape is a quote-fidelity trap (2026-08-21)
+
+Verifying a quote against your own *normalised* extraction is a false green. Three shapes bit in one run:
+
+- **Non-breaking spaces.** The Check Point research page carries 450 `U+00A0`. Every candidate quote written with ordinary spaces MISSED on a literal check. The source's own characters are part of the quote — keep the NBSP, or choose span boundaries that avoid them.
+- **`re.sub(r'\s+',' ')` before checking.** Normalising whitespace to eyeball a passage, then quoting what you read, produces a "quote" that exists nowhere. It is exactly how a spliced quote passes locally and fails on the live page.
+- **PDF hard line breaks and hyphen splits.** Extracted advisory text breaks mid-sentence and splits words (`non\n-\nengineering`), so **no long prose span is contiguous**. Quote short spans that genuinely hit, or drop the quotation marks and paraphrase. Also: never transcribe a figure from a PDF extraction that interleaves language markers and splits digit runs — describe instead, and say so in the sourcing note.
+
+Tag-stripping rule still holds and is the fourth shape: replace tags with the **empty string**, not a space, or the check passes against a corrupted copy.
+
+## NCSC-CH moved to bacs.admin.ch (2026-08-20/21)
+
+NCSC Switzerland's public site migrated to the **Bundesamt für Cybersicherheit (BACS)** domain. `ncsc-ch-focus` → `https://www.bacs.admin.ch/de/im-fokus`, `ncsc-ch-incidents` → `https://www.bacs.admin.ch/de/aktuelle-vorfaelle`; both verified reachable before the records were changed. The announcement states old `ncsc.admin.ch` links redirect "in most cases" but that **those redirects are not permanently available** — so treat the old URLs as expiring, not working. Both are essential-tier records, so letting them break costs the home-region surface.
+
+**Not affected and deliberately unchanged:** `security-hub.ncsc.admin.ch`, the Cyber Security Hub API behind the `ncsc-csh` bridge subcommand, still resolves. Re-check it if the CSH recipe ever starts returning empty.
+
+Watch shape: this surfaced as a **metadata-drift** finding, not a fetch failure — the old URL still 200'd via redirect. A source that still works today because of a redirect the publisher says is temporary is a repair order, not a healthy record.
