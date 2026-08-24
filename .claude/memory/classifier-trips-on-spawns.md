@@ -85,3 +85,29 @@ chasing it — take the documented same-model exception, set
 `verification.confirmation_waived` with the spawn-failure reason and count, and publish on
 the low-residual early exit or the cap. Say plainly in the run record that the gate was not
 met rather than implying it was.
+
+## 2026-08-22 — the false positive on this diagnosis: absence of output is not death
+
+Iteration 2 of the verifier loop was declared dead and a retry was spawned on the
+rotation-recovery ladder. The evidence was entirely filesystem-side: a 119-byte transcript
+that had not grown in eleven minutes, no findings YAML, no report. **All three were true and
+the agent was healthy** — it was mid-verification and had written nothing yet, because the
+verifier definition writes its report at the end. It delivered a full report (NEEDS_FIXES,
+one finding) about ninety seconds after the retry went out.
+
+Two rules, both cheap:
+
+- **Do not diagnose a blocked spawn from missing output files while the agent's wall-clock
+  cap has not expired.** A killed spawn is announced by the harness — a task notification
+  with a terminal status, or an error on the spawn itself. A quiet run directory is the
+  normal mid-flight state of an agent that writes at the end, and the 30-minute verifier cap
+  means a quiet eleven minutes is unremarkable. Wait for the notification.
+- **Check a recovery spawn against the rotation it exists to protect before starting it.**
+  The retry was pinned to the same definition and therefore the same model as the iteration
+  it was replacing, so even a clean finish could not have supplied the second half of a
+  two-model agreement. A recovery spawn that cannot advance the gate is pure clock.
+
+Cost this run: several minutes of wall clock re-verifying material iteration 2 had just
+verified, against a ~3 h guard the run was already 2.3 h into. The genuine classifier block
+in the same run (a deep-read pass on kernel-driver material) looked nothing like this — it
+surfaced as an explicit termination, not as silence.

@@ -1,0 +1,337 @@
+domain: S1
+run_id: 2026-08-22T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-22T04:13:30Z
+ended_at: 2026-08-22T04:33:45Z
+duration_seconds: 1215
+self_telemetry:
+  webfetch_calls: 24
+  websearch_calls: 11
+  bridge_fetches: 22
+items:
+  - title: "TrueConf Server pre-auth RCE chain reaches CISA KEV — Head Mare APT already used it to plant PhantomCore web-shell backdoors on conference servers"
+    sources:
+      - { url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/", publisher: "Kaspersky ICS CERT", date: "2026-08-12", role: "primary" }
+      - { url: "https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-breakout-from-isolated-environment/", publisher: "Kaspersky ICS CERT (KLCERT-26-058)", date: "2026-08-11", role: "primary" }
+      - { url: "https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-missing-authentication-for-critical-function/", publisher: "Kaspersky ICS CERT (KLCERT-26-057)", date: "2026-08-11", role: "primary" }
+      - { url: "https://www.securityweek.com/cisa-urges-immediate-patching-of-exploited-trueconf-vulnerabilities/", publisher: "SecurityWeek", date: "2026-08-21", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json (catalogVersion 2026.08.21, CVE-2026-72529/72530 added 2026-08-20) → primary: Kaspersky ICS CERT advisories KLCERT-26-057 and KLCERT-26-058, URL https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-missing-authentication-for-critical-function/ and https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-breakout-from-isolated-environment/ → primary: Kaspersky ICS CERT exploitation report, URL https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/ → corroborating: SecurityWeek, URL https://www.securityweek.com/cisa-urges-immediate-patching-of-exploited-trueconf-vulnerabilities/"
+    summary: |
+      CISA added CVE-2026-72529 and CVE-2026-72530 to its KEV catalogue on 2026-08-20 — this pipeline's first coverage of a chain Kaspersky ICS CERT had already tied to live exploitation. Both flaws sit in TrueConf Server (Windows and Linux), a video-conferencing/UC platform marketed as a self-hosted Microsoft Teams alternative, reachable on port 4307/TCP which TrueConf's own documentation leaves open by default. Kaspersky's internal analysis found every TrueConf Server release since 2022 vulnerable. CVE-2026-72529 (CWE-306, missing authentication) lets an unauthenticated caller invoke an undocumented server function to run an arbitrary script; that script executes inside an isolated sandbox missing io/os and other hazardous libraries, so CVE-2026-72530 (CWE-94, code injection, "breakout from isolated environment") is chained to escape the sandbox and run arbitrary code as NT AUTHORITY\SYSTEM. Kaspersky observed the Head Mare APT group (active since 2023 against Russian and Belarusian targets) using exactly this chain to overwrite the legitimate TrueConf file C:/Program Files/TrueConf Server/httpconf/site/public/js/locale.php with a PHP web shell, delete the TrueConf event-log entries the exploit itself generated, and use the shell to install a two-component PhantomCore/PhantomGraph backdoor (persisted as Windows services SysExcSvc and SysReadSvc) and to replace legitimate TrueConf client installers served from the compromised server with trojanized copies that also drop PhantomCore on connecting workstations. Fixed in TrueConf Server 5.3.9, 5.4.9 and 5.5.5 (released June 2026); CISA's federal deadlines are 2026-08-23 (CVE-2026-72529) and 2026-09-03 (CVE-2026-72530).
+    region_nexus: "Head Mare's confirmed targeting is Russia/Belarus, but the vulnerable component and internet-reachable default port are global; any European org running an internet-facing TrueConf Server is equally exposed to independent re-use of the same public PoC-grade chain"
+    primary_sector_nexus: "indirect"
+    sector: "telco, public-sector"
+    cves: [CVE-2026-72529, CVE-2026-72530]
+    techniques: [T1190, T1611, T1685.005, T1505.003, T1543.003]
+    affected_products: ["TrueConf Server"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:head-mare", type: actor, name: "Head Mare", aliases: [],
+          summary: "APT group active since at least 2023 targeting organizations in Russia and Belarus; Kaspersky ICS CERT (2026-08-12) documented it exploiting an unauthenticated pre-auth chain in TrueConf Server to plant PhantomCore backdoors." }
+      - { key: "malware:phantomcore", type: malware, name: "PhantomCore", aliases: [],
+          summary: "Backdoor malware family associated with Head Mare APT activity; Kaspersky ICS CERT (2026-08-12) documented a two-component Windows/Linux variant installed via a TrueConf Server web-shell, persisting as services SysExcSvc/SysReadSvc." }
+      - { key: "malware:phantomgraph", type: malware, name: "PhantomGraph", aliases: [],
+          summary: "Backdoor component Kaspersky ICS CERT (2026-08-12) observed deployed alongside PhantomCore in the Head Mare TrueConf Server intrusion chain." }
+    relation_suggestions:
+      - { subject: "actor:head-mare", object: "malware:phantomcore",
+          basis: "Kaspersky ICS CERT: 'PhantomCore malware is typically associated with the activity of the Head Mare APT group' (2026-08-12)" }
+      - { subject: "actor:head-mare", object: "malware:phantomgraph",
+          basis: "Kaspersky ICS CERT lists PhantomGraph backdoor hashes alongside PhantomCore in the same Head Mare TrueConf intrusion report (2026-08-12)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This enables them to replace one of the TrueConf server files with their own web shell. This web shell is later used to gather information about the IT infrastructure of the attacked organization, gain privileged access to the TrueConf Server database, and replace the legitimate client installers mentioned earlier."
+        attribution: "Kaspersky ICS CERT"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+      - quote: "our internal analysis showed that all TrueConf server versions released since 2022 are vulnerable"
+        attribution: "Kaspersky ICS CERT"
+        source_url: "https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/"
+    extended_notes: |
+      Detection hook: TrueConf event-log gaps or deletions coinciding with unexpected outbound connections to port 4307; unexpected modification timestamp on httpconf/site/public/js/locale.php; new Windows services named SysExcSvc or SysReadSvc; TrueConf client installers served from the org's own TrueConf server exhibiting a different hash/signature than the vendor's published release. Hardening: TrueConf Server should not expose port 4307/TCP to the internet; treat any internet-reachable instance as compromised-until-proven-otherwise if unpatched since 2022.
+
+  - title: "TP-Link Omada Gateway: unauthenticated pre-auth OS command injection via OpenVPN (CVSS 9.3) plus a cleartext-DDNS-credential leak — three fresh CVEs, no exploitation confirmed yet"
+    sources:
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2964", publisher: "BSI CERT-Bund (WID-SEC-2026-2964)", date: "2026-08-20", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-19586", publisher: "NVD / TP-Link CNA", date: "2026-08-20", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-19683", publisher: "NVD / TP-Link CNA", date: "2026-08-20", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-9033", publisher: "NVD / TP-Link CNA", date: "2026-08-20", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, URL https://wid.cert-bund.de/content/public/securityAdvisory/rss (WID-SEC-2026-2964, 'TP-Link Omada Gateway: Mehrere Schwachstellen', published 2026-08-21T11:56Z) → pivot: BSI CSAF record, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2964 (CVE list only, vendor advisory page JS-rendered/unreachable this run) → primary: NVD/TP-Link CNA records, URL https://nvd.nist.gov/vuln/detail/CVE-2026-19586, https://nvd.nist.gov/vuln/detail/CVE-2026-19683, https://nvd.nist.gov/vuln/detail/CVE-2026-9033"
+    summary: |
+      TP-Link's own August 2026 advisory (referenced by BSI CERT-Bund WID-SEC-2026-2964, published 2026-08-20/21) discloses three new CVEs in TP-Link Omada Gateway routers/firewalls (ER605, ER7206, ER7212PC, ER7406, ER707-M2, ER7412-M2, ER8411, ER706W/ER706W-4G — the SMB/branch-office SD-WAN gateway line). The headline flaw, CVE-2026-19586 (CVSS 4.0: 9.3, CWE-78 OS command injection), is a pre-authentication bug in the gateway's OpenVPN-server implementation: insufficient validation of client-supplied data during OpenVPN connection establishment lets an unauthenticated remote attacker execute arbitrary OS commands before authentication completes, with full device compromise possible whenever OpenVPN Server is enabled and network-reachable. CVE-2026-9033 (CVSS 6.0, CWE-306) lets an unauthenticated attacker with access to the device's captive-portal service forcibly terminate active sessions. CVE-2026-19683 (CVSS 6.3, CWE-319) has the gateway transmitting Dynamic DNS (DDNS) authentication credentials in cleartext, letting anyone with network visibility intercept them and interfere with DDNS/DNS-record operations. Fixed firmware is already published per-model (e.g. ER605 v2 before 2.4.4 Build 20260630, ER7206 v2 before 2.3.5 Build 20260625, ER7212PC v2 before 2.4.3 Build 20260722) — note several fix builds predate the 2026-08-20 CVE assignment, so silent firmware updates may already have shipped weeks before the public advisory. No exploitation has been reported as of this run, and the vendor's own advisory page (JS-rendered SPA) could not be retrieved directly this run; NVD/TP-Link CNA records supplied the technical detail instead.
+    region_nexus: "global; TP-Link Omada gateways are a common SMB/branch-office/public-sector edge device in Europe"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, telco"
+    cves: [CVE-2026-19586, CVE-2026-19683, CVE-2026-9033]
+    techniques: [T1190, T1040]
+    affected_products: ["TP-Link Omada Gateway (ER605, ER7206, ER7212PC, ER7406, ER707-M2, ER7412-M2, ER8411, ER706W, ER706W-4G)"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "insufficient validation of client-supplied data during OpenVPN connection establishment, allowing unauthenticated remote attackers to execute arbitrary commands before authentication completes"
+        attribution: "NVD / TP-Link CNA record for CVE-2026-19586"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-19586"
+    extended_notes: |
+      No CVSS/CWE-mapped detection signature published yet; defenders should hunt for outbound OpenVPN handshake anomalies or unexpected process spawns from the gateway's OpenVPN daemon, and audit whether DDNS credentials transiting these gateways were exposed on untrusted network segments. Direct vendor advisory (omadanetworks.com) is a JS-only SPA that neither the bridge fetcher nor the (credit-exhausted) jina reader could render this run — flagging as a recipe gap for a future run.
+    borderline: true
+    borderline_reason: "no confirmed exploitation yet; severity and internet-facing edge-device class justify inclusion despite that"
+
+  - title: "Cisco Crosswork and Secure Workload: nine internally-discovered CVEs, five at CVSS 10.0, no workarounds — network-orchestration and workload-microsegmentation platforms, not known to be exploited"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh", publisher: "Cisco PSIRT", date: "2026-08-21", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP", publisher: "Cisco PSIRT", date: "2026-08-21", role: "primary" }
+      - { url: "https://thehackernews.com/2026/08/cisco-patches-nine-crosswork-and-secure.html", publisher: "The Hacker News", date: "2026-08-21", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12867 (published 2026-08-21T14:00Z) → primary: Cisco PSIRT advisories, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh and https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP → corroborating: The Hacker News, URL https://thehackernews.com/2026/08/cisco-patches-nine-crosswork-and-secure.html; independently corroborated by advisories.ncsc.nl, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0323"
+    summary: |
+      Cisco published two internal-security-review hardening releases on 2026-08-21 covering Crosswork network-orchestration products and Secure Workload (formerly Tetration) microsegmentation, together carrying nine CVEs, five of them CVSS 10.0/9.9. In Crosswork Data Gateway, Network Controller, Planning and Workflow Manager (7.2.1 and earlier / 2.1.1 and earlier, all fixed in 7.2.1-SP / 2.1.1-SP): CVE-2026-20030 (CVSS 10.0, CWE-89 SQL injection), CVE-2026-20357 (10.0, CWE-306 missing authentication for a critical function), CVE-2026-20358 (10.0, CWE-73 external control of file system) and CVE-2026-20359 (9.9, CWE-522 insufficiently protected credentials). In Secure Workload SaaS and on-premises (3.10 and earlier fixed in 3.10.9.1; 4.0 fixed in 4.0.4.16): CVE-2026-20315 (10.0, CWE-284 improper access control), CVE-2026-20317 (10.0, CWE-287 improper authentication), CVE-2026-20318 (9.6, CWE-20 improper input validation), CVE-2026-20231 (9.9, CWE-74/OS-command-style special-element injection) and CVE-2026-20319 (7.5, CWE-119 buffer overflow). Cisco states all nine were found during internal security review, "not known to be actively exploited," and that "there are no workarounds that address these vulnerabilities" — patching is the only remediation. NCSC-NL independently listed the Secure Workload cluster the same day. Neither advisory names a specific vulnerable interface/API beyond the CWE classes; Cisco's own text says the flaws affect the platforms "regardless of device configuration."
+    region_nexus: "global; Crosswork and Secure Workload are deployed by large carriers/enterprises including European telco and public-sector network operators for SD-WAN/network orchestration and microsegmentation"
+    primary_sector_nexus: "indirect"
+    sector: "telco, public-sector"
+    cves: [CVE-2026-20030, CVE-2026-20357, CVE-2026-20358, CVE-2026-20359, CVE-2026-20315, CVE-2026-20317, CVE-2026-20318, CVE-2026-20231, CVE-2026-20319]
+    techniques: [T1190, T1552]
+    affected_products: ["Cisco Crosswork Data Gateway", "Cisco Crosswork Network Controller", "Cisco Crosswork Planning", "Cisco Crosswork Workflow Manager", "Cisco Secure Workload"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The Cisco PSIRT is not aware of any public announcements or malicious use of the vulnerabilities that are described in this advisory."
+        attribution: "Cisco PSIRT (Crosswork hardening advisory)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh"
+      - quote: "There are no workarounds that address these vulnerabilities."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh"
+    extended_notes: |
+      Given no workarounds and CVSS 9.9-10.0 across both product lines, network/OT operators running Crosswork or Secure Workload should treat this as an out-of-band patch cycle rather than a normal maintenance window; both platforms sit with elevated network-wide visibility/control (orchestration and microsegmentation policy), so a successful exploit chain against either has broad blast radius across the managed fleet.
+
+  - title: "Microsoft Entra ID CVSS-10.0 deserialization RCE (CVE-2026-69836): Microsoft briefly marked it 'Exploited: Yes' then retracted the flag as an informational correction the next day"
+    sources:
+      - { url: "https://www.cybersecuritydive.com/news/microsoft-maximum-severity-flaw-entra-id-exploitation/828501/", publisher: "Cybersecurity Dive", date: "2026-08-21", role: "primary" }
+      - { url: "https://thehackernews.com/2026/08/microsoft-entra-id-flaw-cvss-100.html", publisher: "The Hacker News", date: "2026-08-21", role: "corroborating" }
+      - { url: "https://www.helpnetsecurity.com/2026/08/21/microsoft-entra-id-vulnerability-cve-2026-69836/", publisher: "Help Net Security", date: "2026-08-21", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvd.enisa.europa.eu/ (EUVD-2026-63693, exploitedSince 2026-08-21) → pivot: MSRC vulnerability record, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69836 → primary: Cybersecurity Dive, URL https://www.cybersecuritydive.com/news/microsoft-maximum-severity-flaw-entra-id-exploitation/828501/ → corroborating: The Hacker News and Help Net Security"
+    summary: |
+      Microsoft disclosed CVE-2026-69836, a CVSS 10.0 "Microsoft Entra ID Remote Code Execution Vulnerability" (CWE-502, deserialization of untrusted data allowing an unauthorized attacker to execute code over a network), on 2026-08-20. Entra ID (formerly Azure AD) is Microsoft's cloud identity service — sign-in, Conditional Access, privileged-role and app-registration control plane — so the exposure surface is every tenant, not an on-prem asset a customer patches. Microsoft's own bulletin states the vulnerability "has already been fully mitigated by Microsoft" server-side and "there is no action for users of this service to take"; the CVE exists purely for transparency. The exploitation-status field is the notable part: MSRC's initial 2026-08-20 publication marked "Exploited: Yes," and multiple outlets (and CERT-FR's advisory, which cites Microsoft directly) reported active in-the-wild exploitation on that basis; on 2026-08-21 Microsoft revised the field to "Exploited: No," describing it as "an informational change only." No details on who exploited it, when, or what attackers did have ever been published in either version of the advisory, and no public PoC exists. Discovered by Microsoft's own principal security engineer Robert Fitzpatrick.
+    region_nexus: "global — every Entra ID tenant, including Swiss/European public-sector and CI organizations using Entra ID for identity"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, healthcare, energy, water, transport, telco"
+    cves: [CVE-2026-69836]
+    techniques: [T1190]
+    affected_products: ["Microsoft Entra ID"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Although the security bulletin originally marked the 'Exploited' field...as 'Yes,' on August 21, 2026, Microsoft corrected the 'Exploited' status to 'No'."
+        attribution: "Cybersecurity Dive / The Hacker News, quoting Microsoft's MSRC revision note"
+        source_url: "https://www.cybersecuritydive.com/news/microsoft-maximum-severity-flaw-entra-id-exploitation/828501/"
+      - quote: "This vulnerability has already been fully mitigated by Microsoft. There is no action for users of this service to take."
+        attribution: "Microsoft MSRC"
+        source_url: "https://www.helpnetsecurity.com/2026/08/21/microsoft-entra-id-vulnerability-cve-2026-69836/"
+    extended_notes: |
+      No customer-side detection or hardening action applies (server-side cloud fix); the operational takeaway is process, not technical: an "Exploited: Yes" flag on a CVSS-10.0 identity-plane CVE that later flips to "No" as a same-vendor same-week correction is exactly the CVE-record-reliability failure mode this pipeline flagged in its 2026-08-09 weekly synthesis (fabricated/unreliable exploitation flags in both directions) — a SOC that triggered an incident-response posture off the initial flag should document that the retraction, not fresh evidence, is what changed the picture.
+
+  - title: "UPDATE — GitLab's unauthenticated GraphQL data-deletion flaw (CVE-2026-19478) moves from disclosed to actively exploited within 48 hours; WatchTowr reproduced it from the patch diff alone"
+    sources:
+      - { url: "https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/", publisher: "SecurityWeek", date: "2026-08-20", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12856", publisher: "NCSC Switzerland (Cyber Security Hub)", date: "2026-08-21", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12856 (edited 2026-08-21T14:21Z, 'Updated with claims of active exploitation') → primary: SecurityWeek, URL https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/"
+    summary: |
+      This pipeline covered CVE-2026-19478 (GitLab CE/EE, CVSS 9.4, unauthenticated GraphQL-directive code injection letting an attacker modify or delete public projects and user data) as newly disclosed on 2026-08-19. It is now confirmed exploited. WatchTowr states it reproduced the vulnerability "within minutes of its disclosure, armed only with the advisory details and patch" (patched 2026-08-17 in GitLab 19.2.4/19.1.6/19.0.8/18.11.11) despite no public exploit code being available, and by 2026-08-19 had detected honeypot exploitation attempts in the wild. The hunt signature WatchTowr publishes is concrete: search web/access logs for requests containing the GraphQL alias string "@gl_introduced" against the /api/graphql endpoint, and treat any unauthenticated request there as a probe or exploitation attempt. NCSC-CH's advisory update (2026-08-21) independently confirms the exploitation-status change from UNKNOWN to "Actively exploited."
+    region_nexus: "global; self-hosted GitLab CE/EE is common in European public-sector and enterprise software-supply-chain pipelines"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: [CVE-2026-19478, CVE-2026-19650]
+    techniques: [T1190]
+    affected_products: ["GitLab Community Edition", "GitLab Enterprise Edition"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-19/cve-2026-19478-gitlab-graphql-directive-unauth-data-deletion"
+    evidence:
+      - quote: "Whilst no public exploit code is available, WatchTowr was able to reproduce the vulnerability within minutes of its disclosure, armed only with the advisory details and patch."
+        attribution: "WatchTowr, via SecurityWeek"
+        source_url: "https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/"
+      - quote: "Organizations that haven't patched yet should hunt through web logs for requests containing '@gl_introduced', and look for signs of probes or attempted exploitation."
+        attribution: "WatchTowr, via SecurityWeek"
+        source_url: "https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/"
+    extended_notes: |
+      The exact entry id for update_of is a best-effort slug reconstruction from the prior-coverage record dated 2026-08-19 titled "CVE-2026-19478 — GitLab ships an out-of-band critical patch..."; the main agent should confirm against the actual entry filename in entries/2026-08-19/.
+
+  - title: "SPIP CMS: unconditional pre-authentication RCE, already exploited in the wild — no CVE assigned, bypasses SPIP's own built-in WAF-like 'security screen'"
+    sources:
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/", publisher: "CERT-FR / ANSSI", date: "2026-08-21", role: "primary" }
+      - { url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html", publisher: "SPIP maintenance team (vendor bulletin)", date: "2026-08-20", role: "primary" }
+    discovery_trace: "first seen at: anssi-fr, URL https://www.cert.ssi.gouv.fr/avis/feed/ (CERTFR-2026-AVI-1063, 'Vulnérabilité dans SPIP', published 2026-08-21) → primary: SPIP vendor bulletin, URL https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html"
+    summary: |
+      SPIP — an open-source French CMS widely used by French government ministries, municipalities and cultural institutions, and more broadly across francophone public administration — shipped an emergency release (4.4.21) on 2026-08-20 fixing what its own maintainers describe as "une vulnérabilité universelle (sans conditions) pré-authentification RCE" (an unconditional, no-prerequisites, pre-authentication remote code execution vulnerability) affecting version 4.4.20. The flaw was reported anonymously through ANSSI's vulnerability-declaration channel. Critically, the vendor states "cette faille n'est pas prise en charge par l'écran de sécurité" — the flaw is not caught by SPIP's built-in "security screen," a request-filtering protection layer site operators rely on as a compensating control against exactly this class of bug. The vendor bulletin states plainly that exploitation attempts have already been observed in the wild ("des tentatives d'exploitation de la faille ont déjà été constatées dans la nature") and urges immediate upgrade. CERT-FR's advisory (CERTFR-2026-AVI-1063, 2026-08-21) repeats the active-exploitation statement as sourced to the vendor and confirms no CVE identifier has been assigned to this specific flaw. Note: this is distinct from the separate, earlier CVE-2026-77647 (SPIP <4.4.20, a var_export()/<?php-block-detection injection bug, also publicly written up around 2026-08-20) — the 4.4.21 release fixes a second, newer unconditional pre-auth RCE found in the 4.4.20 codebase itself.
+    region_nexus: "France and francophone Europe — SPIP is a France-centric government/municipal/cultural-sector CMS; direct relevance to any francophone Swiss cantonal/communal site built on SPIP"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["SPIP"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Cette version corrige une vulnérabilité universelle (sans conditions) pré-authentification RCE qui touche la version 4.4.20 de SPIP."
+        attribution: "SPIP maintenance team"
+        source_url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html"
+      - quote: "Cette faille n'est pas prise en charge par l'écran de sécurité. Il est impératif de mettre très rapidement votre site à jour, des tentatives d'exploitation de la faille ont déjà été constatées dans la nature."
+        attribution: "SPIP maintenance team"
+        source_url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html"
+      - quote: "L'éditeur indique que cette vulnérabilité est activement exploitée."
+        attribution: "CERT-FR / ANSSI"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/"
+    extended_notes: |
+      No technical root-cause detail (vulnerable file/function/endpoint) has been published by SPIP or CERT-FR as of this run — the vendor bulletin is a release-notes page, not a technical advisory, and no CVE/GHSA record exists yet to carry a CWE. Defenders running SPIP < 4.4.21 should not rely on the "security screen" as a compensating control for this specific bug and should upgrade immediately; hunt for anomalous POST requests to SPIP's public-facing form/plugin endpoints in the period since 2026-08-20 given the vendor's own confirmation of in-the-wild attempts.
+
+  - title: "Zoom 'Zoomsday': a stack buffer overflow in the meeting-annotation protocol lets any participant corrupt every other participant's client memory (CVE-2026-53413, CVSS 8.3) — patched, no confirmed in-the-wild exploitation"
+    sources:
+      - { url: "https://ccb.belgium.be/advisories/warning-zero-click-remote-code-execution-zoom-clients-patch-immediately", publisher: "Centre for Cybersecurity Belgium (CCB)", date: "2026-08-20", role: "primary" }
+      - { url: "https://www.zoom.com/en/trust/security-bulletin/ZSB-26015/", publisher: "Zoom (vendor security bulletin ZSB-26015)", date: "2026-08-11", role: "primary" }
+      - { url: "https://securityaffairs.com/197042/hacking/zoom-patches-zoomsday-zero-click-flaw-enabling-remote-code-execution.html", publisher: "Security Affairs", date: "2026-08-11", role: "corroborating" }
+    discovery_trace: "first seen at: ccb-belgium, URL https://ccb.belgium.be/advisories (dated row 20/08/2026) → primary: CCB advisory, URL https://ccb.belgium.be/advisories/warning-zero-click-remote-code-execution-zoom-clients-patch-immediately → primary: Zoom vendor bulletin, URL https://www.zoom.com/en/trust/security-bulletin/ZSB-26015/ → corroborating: Security Affairs, URL https://securityaffairs.com/197042/hacking/zoom-patches-zoomsday-zero-click-flaw-enabling-remote-code-execution.html"
+    summary: |
+      CCB Belgium issued a "Patch Immediately" advisory on 2026-08-20 for CVE-2026-53413, publicly dubbed "Zoomsday" by discoverer A Security (researcher Idan Levcovich, who found it analysing Zoom's Android client on 2026-06-08 and privately reported it 2026-06-10; Zoom patched and disclosed on 2026-08-11). The vulnerable component is the Zoom Clients text-annotator function, specifically a missing bounds check in `CAnnoFormatBlock::Deserialize`, which accepts client-supplied 32-bit character counts without validating them against fixed 128-byte buffers — a classic stack buffer overflow (CWE-787, out-of-bounds write). Because annotation messages are exchanged directly between meeting participants over Zoom's proprietary protocol, an attacker who joins or hosts a meeting can send a malformed annotation message and corrupt another participant's client memory, potentially achieving arbitrary code execution on their device — no link click or file download needed from the target. Affected: Zoom Workplace (all platforms before 7.1.0/7.0.6 depending on branch), Zoom Workplace VDI Client for Windows (before 7.0.11/6.6.16), Zoom Rooms (before 7.1.0), Meeting SDK (before 7.1.0), Video SDK (before 2.6.0). Two related flaws in the same annotator disclosed alongside it: CVE-2026-53414 (buffer over-read / DoS) and CVE-2026-53415 (use-after-free). Zoom's own CVSS vector records UI:R (user interaction required) despite the "zero-click" framing used across coverage — the "zero-click" claim specifically means no malicious-link-click or file-download is needed, not that literally zero interaction of any kind occurs; treat that nuance as an open question the vendor bulletin does not resolve. No in-the-wild exploitation has been reported; this was a coordinated, privately-disclosed research finding.
+    region_nexus: "global; Zoom is in broad use across Swiss/European public-sector and CI organizations for meetings"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, healthcare, finance, energy, water, transport, telco"
+    cves: [CVE-2026-53413, CVE-2026-53414, CVE-2026-53415]
+    techniques: [T1203]
+    affected_products: ["Zoom Workplace", "Zoom Workplace VDI Client", "Zoom Rooms", "Zoom Meeting SDK", "Zoom Video SDK"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A missing bound check in the text annotator allowed an attacker to send crafted messages that would write attacker-supplied code past the intended buffer"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/zoom-patches-zero-click-code-execution-vulnerability/"
+      - quote: "Successful exploitation could allow an attacker participating in a meeting to execute arbitrary code on another participant's device, without requiring them to click a malicious link or download a file."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-zero-click-remote-code-execution-zoom-clients-patch-immediately"
+      - quote: "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:H/I:H/A:H"
+        attribution: "Zoom vendor bulletin ZSB-26015"
+        source_url: "https://www.zoom.com/en/trust/security-bulletin/ZSB-26015/"
+    extended_notes: |
+      Detection concept: crash/exception telemetry from Zoom client processes during active meetings (EDR process-crash or fault-reporting events correlated to zoom.exe / ZoomRooms / meeting-SDK-embedding hosts) in the window since the June 2026 discovery date is the closest portable hunt signal available, since no IOC-level detail was published. Hardening: patch all five affected product lines to the versions above; Zoom Rooms and kiosk-style unattended deployments (common in government meeting spaces) are a higher-value target class since they cannot be "socially engineered" into caution the way an individual user might.
+
+  - title: "misp-stix (the STIX-import library behind MISP, maintained by CIRCL): three CVEs — a trust-decision bypass letting a malicious STIX document forge MISP-native distribution/sharing metadata, a DoS via uncaught SystemExit plus unbounded memory use, and cross-document parser-state contamination — fixes exist only as unreleased commits"
+    sources:
+      - { url: "https://github.com/advisories/GHSA-pqpx-w6cx-7q9c", publisher: "GitHub Security Advisories / CIRCL", date: "2026-08-21", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-65gx-wjvj-88j8", publisher: "GitHub Security Advisories / CIRCL", date: "2026-08-21", role: "primary" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvd.enisa.europa.eu/ (EUVD-2026-63850, EUVD-2026-63881, EUVD-2026-63883, assigner CIRCL, published/updated 2026-08-21) → primary: GitHub Security Advisories, URL https://github.com/advisories/GHSA-pqpx-w6cx-7q9c and https://github.com/advisories/GHSA-65gx-wjvj-88j8 → pivot: misp-stix GitHub releases page, URL https://github.com/MISP/misp-stix/releases (confirms no tagged release since 2026.7.8 / 2026-07-09 incorporates these fixes)"
+    summary: |
+      CIRCL (Luxembourg's national CERT and MISP's maintaining organization) published three CVEs on 2026-08-21 against misp-stix, the Python library MISP instances use to import/export STIX 1 and STIX 2 threat-intel documents — directly relevant to any CERT, SOC or ISAC that ingests external STIX feeds into MISP. CVE-2026-77710 (CVSS 4.0: 6.9, CWE-915/CWE-807) is the most structurally interesting: the STIX-import logic decided whether to treat an incoming document as "MISP-native" purely from attacker-controlled metadata (STIX2 tool labels, or the STIX1 document title) — an untrusted value driving a security-relevant trust decision. When a document was classified as MISP-native, the parser copied an entire attacker-controlled `x_misp_attributes` dictionary directly into `misp_object.add_attribute()` with no allow-list, letting a crafted STIX bundle inject or override security-sensitive MISP attribute fields including `distribution`, `sharing_group_id` and `tags` — able to cause an org's own MISP instance to mis-classify or over-share imported intelligence contrary to policy. CVE-2026-77755 (CVSS 8.7, availability) is a denial-of-service: the importer used Python's `sys.exit()` on several parse-failure paths, which raises `SystemExit` (a `BaseException`, not `Exception`) and so is not caught by callers' normal exception handlers — a single malformed STIX document can kill a long-running import process; separately, no input-size limit was enforced before parsing, so a large document could consume 2-7x its size in memory before validation, enabling resource exhaustion. CVE-2026-77761 (CVSS 6.3) is a parser-state-isolation bug: STIX1/STIX2 parser components retained per-document state (galaxy/galaxy-cluster data, passive-DNS records, titles, timestamps) across reuse of the same parser instance, so a second document parsed on a long-lived parser could inherit and blend in data from an unrelated prior document — a correctness/confidentiality issue in environments where sequential documents carry different distribution scopes. All three fixes exist only as individual GitHub commits referenced in the advisories; as of this run the misp-stix GitHub Releases page and PyPI package history show no tagged release since 2026.7.8 (2026-07-09), meaning no pip-installable fixed version is yet available — mitigation requires manually applying the referenced commits or pinning to a post-fix git ref.
+    region_nexus: "global; MISP is the CTI-sharing platform standard across European national CERTs, ISACs and this pipeline's own peer ecosystem"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-77710, CVE-2026-77755, CVE-2026-77761]
+    techniques: [T1565.001, T1499]
+    affected_products: ["MISP (misp-stix library)"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "the parser choice was previously based solely on labels or header titles that any producer could write"
+        attribution: "ENISA EUVD, quoting the misp-stix fix commit description"
+        source_url: "https://euvd.enisa.europa.eu/"
+      - quote: "The STIX import code used sys.exit() to handle several parsing and loading failures. Because SystemExit inherits from BaseException rather than Exception, these failures bypassed the exception handlers used by callers of the library."
+        attribution: "GitHub Security Advisory GHSA-65gx-wjvj-88j8 / CIRCL"
+        source_url: "https://github.com/advisories/GHSA-65gx-wjvj-88j8"
+    extended_notes: |
+      Detection/hardening angle for MISP operators: until a tagged release ships, apply an explicit input-size cap ahead of any misp-stix import workflow (the fix defaults to 100MB), avoid reusing a single long-lived parser instance across documents from different trust/distribution contexts, and treat any newly-ingested STIX document that unexpectedly changes an existing attribute's `distribution` or `sharing_group_id` as suspect pending the allow-list fix. This is a supply-chain-adjacent finding for CTI tooling itself — the class of infrastructure this pipeline and its peers depend on to exchange threat intelligence.
+    borderline: false
+
+  - title: "UPDATE — Three new CVEs land on PTC Windchill/FlexPLM, the same product line Cl0p is running a custom Java web-shell implant against: an unauthenticated deserialization RCE (CVSS 9.2), an unauthenticated access-control bypass in the Risk and Reliability module (CVSS 9.3), and an SSRF via deserialization (CVSS 7.7)"
+    sources:
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2963", publisher: "BSI CERT-Bund (WID-SEC-2026-2963)", date: "2026-08-20", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-5hvp-9mcx-5245", publisher: "GitHub Security Advisory (PTC CNA)", date: "2026-08-20", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-qxmv-9q88-wwmw", publisher: "GitHub Security Advisory (PTC CNA)", date: "2026-08-20", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-2698-qwmx-3r6f", publisher: "GitHub Security Advisory (PTC CNA)", date: "2026-08-20", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-77645", publisher: "NVD / PTC CNA", date: "2026-08-20", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, URL https://wid.cert-bund.de/content/public/securityAdvisory/rss (WID-SEC-2026-2963, 'PTC Windchill und FlexPLM: Mehrere Schwachstellen', published 2026-08-21T11:51Z) → pivot: BSI CSAF record, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2963 → primary: GitHub Security Advisories, URL https://github.com/advisories/GHSA-5hvp-9mcx-5245, https://github.com/advisories/GHSA-qxmv-9q88-wwmw, https://github.com/advisories/GHSA-2698-qwmx-3r6f → corroborating: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-77645"
+    summary: |
+      Three new CVEs were assigned against PTC Windchill/FlexPLM on 2026-08-20 (per PTC's own support bulletins, relayed by BSI CERT-Bund WID-SEC-2026-2963) — the same product family this pipeline covered in deep-dive detail on 2026-08-19 as the target of a reverse-engineered Cl0p custom web-shell implant that already runs mass extortion against internet-facing Windchill instances. CVE-2026-77645 (CVSS 4.0: 9.2, CWE-20/CWE-502) is a critical, unauthenticated, network-exploitable remote-code-execution flaw via deserialization of untrusted data in both Windchill PDMLink and FlexPLM, affecting a broad version range (PDMLink 11.0 M030 through 13.1.3.0; FlexPLM 11.0 M030 through 13.0.3.0) — NVD's supplemental CVSS metadata separately flags it "Urgency: Red." CVE-2026-77644 (CVSS 9.3, CWE-306 missing authentication) is a critical unauthenticated access-control bypass specific to the Windchill Risk and Reliability (WRR) Enterprise Edition module. CVE-2026-77646 (CVSS 7.7, CWE-502) is a server-side request forgery reachable via deserialization of untrusted data in Windchill PDMLink and FlexPLM, exploitable without authentication. None of these three has a confirmed public link to the ongoing Cl0p campaign as of this run, and PTC's own advisory pages sit behind an OIDC login wall this run prevented fetching directly — but landing a second unauthenticated deserialization RCE on the exact product actively being mass-exploited, one week after this pipeline's own root-cause reporting on the Cl0p implant, is the kind of coincidence-or-not defenders running Windchill need on their radar regardless of attribution.
+    region_nexus: "global; PTC Windchill/FlexPLM PLM software is used by European manufacturing, aerospace and industrial-supply-chain organizations already under active Cl0p targeting this month"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy"
+    cves: [CVE-2026-77645, CVE-2026-77644, CVE-2026-77646]
+    techniques: [T1190]
+    affected_products: ["PTC Windchill PDMLink", "PTC FlexPLM", "PTC Windchill Risk and Reliability (WRR)"]
+    entity_keys: [actor:clop, campaign:clop-windchill-flexplm-extortion-2026]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-15/clop-windchill-philips-shell-first-victim-confirmations"
+    evidence:
+      - quote: "A critical remote code execution (RCE) vulnerability has been reported in PTC Windchill and PTC FlexPLM. The vulnerability may be exploited through the deserialization of untrusted data."
+        attribution: "GitHub Security Advisory GHSA-5hvp-9mcx-5245 (PTC CNA)"
+        source_url: "https://github.com/advisories/GHSA-5hvp-9mcx-5245"
+      - quote: "A critical bypass access control vulnerability has been reported in PTC Windchill Risk and Reliability (WRR) Enterprise Edition."
+        attribution: "GitHub Security Advisory (PTC CNA)"
+        source_url: "https://github.com/advisories/GHSA-qxmv-9q88-wwmw"
+    extended_notes: |
+      Fixed/patched version numbers were not surfaced by any source reachable this run (PTC's own advisory pages require an OIDC login); a follow-up run should attempt an authenticated or cached path to PTC's CS474818/CS474826 support articles to confirm patched builds. Given the affected version ranges span Windchill 11.0 through 13.1.3.0, any instance not already patched for the Cl0p-exploited CVE-2026-12569 should be assumed exposed to this new RCE as well until confirmed otherwise.
+    borderline: true
+    borderline_reason: "no confirmed exploitation of these three specific new CVEs yet, and no vendor-stated fixed version reachable this run; included because it lands on a product line under active mass-exploitation by a named ransomware actor"
+
+cve_table:
+  - { cve: "CVE-2026-72530", product: "TrueConf Server", cvss: "9.5 (CVSS4.0, Kaspersky/ENISA EUVD)", epss: 0.34, kev: true, exploited: true, patch: "5.3.9 / 5.4.9 / 5.5.5", source: "https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-breakout-from-isolated-environment/" }
+  - { cve: "CVE-2026-72529", product: "TrueConf Server", cvss: "9.3 (CVSS4.0, Kaspersky/ENISA EUVD)", epss: 0.28, kev: true, exploited: true, patch: "5.3.9 / 5.4.9 / 5.5.5", source: "https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-missing-authentication-for-critical-function/" }
+  - { cve: "CVE-2026-73570", product: "Zimbra Collaboration Suite", cvss: "8.9 (CVSS3.1, ENISA EUVD)", epss: 0.54, kev: true, exploited: true, patch: "10.1.20", source: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json" }
+  - { cve: "CVE-2026-19586", product: "TP-Link Omada Gateway", cvss: "9.3 (CVSS4.0, NVD)", epss: null, kev: false, exploited: false, patch: "model-specific — see NVD config table (e.g. ER605 v2 before 2.4.4 Build 20260630)", source: "https://nvd.nist.gov/vuln/detail/CVE-2026-19586" }
+  - { cve: "CVE-2026-19683", product: "TP-Link Omada Gateway", cvss: "6.3 (CVSS4.0, NVD)", epss: null, kev: false, exploited: false, patch: "model-specific — see NVD config table", source: "https://nvd.nist.gov/vuln/detail/CVE-2026-19683" }
+  - { cve: "CVE-2026-9033", product: "TP-Link Omada Gateway", cvss: "6.0 (CVSS4.0, NVD)", epss: null, kev: false, exploited: false, patch: "model-specific — see NVD config table", source: "https://nvd.nist.gov/vuln/detail/CVE-2026-9033" }
+  - { cve: "CVE-2026-20030", product: "Cisco Crosswork", cvss: "10.0", epss: null, kev: false, exploited: false, patch: "7.2.1-SP", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh" }
+  - { cve: "CVE-2026-20357", product: "Cisco Crosswork", cvss: "10.0", epss: null, kev: false, exploited: false, patch: "7.2.1-SP", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh" }
+  - { cve: "CVE-2026-20358", product: "Cisco Crosswork", cvss: "10.0", epss: null, kev: false, exploited: false, patch: "7.2.1-SP", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh" }
+  - { cve: "CVE-2026-20359", product: "Cisco Crosswork", cvss: "9.9", epss: null, kev: false, exploited: false, patch: "7.2.1-SP", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh" }
+  - { cve: "CVE-2026-20315", product: "Cisco Secure Workload", cvss: "10.0", epss: null, kev: false, exploited: false, patch: "3.10.9.1 / 4.0.4.16", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP" }
+  - { cve: "CVE-2026-20317", product: "Cisco Secure Workload", cvss: "10.0", epss: null, kev: false, exploited: false, patch: "3.10.9.1 / 4.0.4.16", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP" }
+  - { cve: "CVE-2026-20318", product: "Cisco Secure Workload", cvss: "9.6", epss: null, kev: false, exploited: false, patch: "3.10.9.1 / 4.0.4.16", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP" }
+  - { cve: "CVE-2026-20231", product: "Cisco Secure Workload", cvss: "9.9", epss: null, kev: false, exploited: false, patch: "3.10.9.1 / 4.0.4.16", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP" }
+  - { cve: "CVE-2026-20319", product: "Cisco Secure Workload", cvss: "7.5", epss: null, kev: false, exploited: false, patch: "3.10.9.1 / 4.0.4.16", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP" }
+  - { cve: "CVE-2026-69836", product: "Microsoft Entra ID", cvss: "10.0", epss: 0.0, kev: false, exploited: false, patch: "fully mitigated server-side by Microsoft, no customer action", source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69836" }
+  - { cve: "CVE-2026-19478", product: "GitLab CE/EE", cvss: "9.4", epss: null, kev: false, exploited: true, patch: "19.2.4 / 19.1.6 / 19.0.8 / 18.11.11", source: "https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/" }
+  - { cve: "CVE-2026-53413", product: "Zoom Workplace / Rooms / Meeting SDK / Video SDK / VDI Client", cvss: "8.3", epss: null, kev: false, exploited: false, patch: "Workplace 7.1.0/7.0.6; VDI Client 7.0.11/6.6.16; Rooms 7.1.0; Meeting SDK 7.1.0; Video SDK 2.6.0", source: "https://www.zoom.com/en/trust/security-bulletin/ZSB-26015/" }
+  - { cve: "CVE-2026-77710", product: "misp-stix (MISP)", cvss: "6.9 (CVSS4.0)", epss: 0.29, kev: false, exploited: false, patch: "fix commits merged, no tagged release as of 2026-08-21", source: "https://github.com/advisories/GHSA-pqpx-w6cx-7q9c" }
+  - { cve: "CVE-2026-77755", product: "misp-stix (MISP)", cvss: "8.7 (CVSS4.0)", epss: 0.47, kev: false, exploited: false, patch: "fix commits merged, no tagged release as of 2026-08-21", source: "https://github.com/advisories/GHSA-65gx-wjvj-88j8" }
+  - { cve: "CVE-2026-77761", product: "misp-stix (MISP)", cvss: "6.3 (CVSS4.0)", epss: 0.0, kev: false, exploited: false, patch: "fix commits merged, no tagged release as of 2026-08-21", source: "https://euvd.enisa.europa.eu/" }
+  - { cve: "CVE-2026-77645", product: "PTC Windchill PDMLink / FlexPLM", cvss: "9.2 (CVSS4.0)", epss: 0.472, kev: false, exploited: false, patch: "not confirmed this run (vendor portal auth-gated)", source: "https://github.com/advisories/GHSA-5hvp-9mcx-5245" }
+  - { cve: "CVE-2026-77644", product: "PTC Windchill Risk and Reliability (WRR)", cvss: "9.3 (CVSS4.0)", epss: null, kev: false, exploited: false, patch: "not confirmed this run (vendor portal auth-gated)", source: "https://github.com/advisories/GHSA-qxmv-9q88-wwmw" }
+  - { cve: "CVE-2026-77646", product: "PTC Windchill PDMLink / FlexPLM", cvss: "7.7 (CVSS4.0)", epss: null, kev: false, exploited: false, patch: "not confirmed this run (vendor portal auth-gated)", source: "https://github.com/advisories/GHSA-2698-qwmx-3r6f" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product or supplier watchlist configured in config/org-profile.yaml this deployment — sweep is a documented no-op per the org-profile duty semantics. General-coverage items above (TrueConf, TP-Link, Cisco Crosswork/Secure Workload, Entra ID, GitLab, SPIP, Zoom, misp-stix) were surfaced through the normal S1 sweep, not a watchlist match."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: siemens-productcert-csaf
+    reason: "Direct fetch HTTP 403 (both https://cert-portal.siemens.com/productcert/csaf/ and /productcert/html/ssa-list.html); jina reader pool fully credit-exhausted (HTTP 402 on all 7 keys, confirmed this run) so the documented recipe fallback was unavailable. WebSearch found only the already-known August Patch-Tuesday cycle (SIMATIC IoT2050 CVE-2026-58115, already covered 2026-08-xx) with no evidence of an additional in-window Siemens advisory. Fifth consecutive unreachable run for this rotation-priority source."
+  - source_id: cisa-advisories
+    reason: "Direct fetch HTTP 403 on https://www.cisa.gov/news-events/cybersecurity-advisories and https://www.cisa.gov/news-events/ics-advisories; jina reader pool credit-exhausted (HTTP 402 all keys). cisa-kev JSON feed (working substitute) was fetched successfully and is the source for the TrueConf KEV additions above. Seventh consecutive unreachable run for this essential source's HTML surface; the KEV JSON endpoint remains the working substitute per the source-list note."
+  - source_id: cisa-directives
+    reason: "Same cisa.gov 403 condition; jina pool exhausted. No substitute JSON feed exists for this source. Sixth consecutive unreachable run."
+  - source_id: ssd-disclosure
+    reason: "fetch_method is jina-only per source record; jina reader pool fully credit-exhausted (HTTP 402 on all 7 keys) this run, so the documented recipe had no working fallback. No WebSearch substitute attempted given the source's narrow research-blog scope and low likelihood of unique in-window content given the broader sweep already covering exploit-research angles via CCB/CERT-FR/Kaspersky this run."

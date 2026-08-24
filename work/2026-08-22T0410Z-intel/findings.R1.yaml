@@ -1,0 +1,470 @@
+domain: R1
+run_id: 2026-08-22T0410Z-intel
+scope: SCOPED RECOVERY - one missed in-window item (crates.io build-time supply-chain compromise, disclosed
+  2026-08-20) referred by the Phase 5.7 verification pass. Not a sweep.
+model: Opus 5
+model_id: claude-opus-5
+started_at: '2026-08-22T05:59:11Z'
+ended_at: '2026-08-22T06:08:59Z'
+duration_seconds: 588
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 4
+  bridge_fetches: 16
+items:
+- title: Compromised maintainer account poisons three Rust crates on crates.io with a build-time dropper;
+    the yank-and-upgrade lure was the delivery channel (RUSTSEC-2026-0260 … -0266)
+  sources:
+  - url: https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/
+    publisher: Rust Security Response Team (Rust Blog)
+    date: '2026-08-20'
+    role: primary
+  - url: https://rustsec.org/advisories/RUSTSEC-2026-0260.html
+    publisher: RustSec Advisory Database
+    date: '2026-08-20'
+    role: primary
+  - url: https://rustsec.org/advisories/RUSTSEC-2026-0265.html
+    publisher: RustSec Advisory Database
+    date: '2026-08-20'
+    role: corroborating
+  - url: https://rustsec.org/advisories/RUSTSEC-2026-0266.html
+    publisher: RustSec Advisory Database
+    date: '2026-08-20'
+    role: corroborating
+  - url: https://rustsec.org/advisories/RUSTSEC-2026-0262.html
+    publisher: RustSec Advisory Database
+    date: '2026-08-20'
+    role: corroborating
+  - url: https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack
+    publisher: StepSecurity
+    date: '2026-08-20'
+    role: primary
+  - url: https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns
+    publisher: Wiz Research
+    date: '2026-08-20'
+    role: primary
+  - url: https://safedep.io/arrayref-proc-macro1-rust-build-time-malware/
+    publisher: SafeDep
+    date: '2026-08-20'
+    role: corroborating
+  - url: https://www.bleepingcomputer.com/news/security/hackers-poison-arrayref-rust-crate-to-push-infostealer-malware/
+    publisher: BleepingComputer
+    date: '2026-08-20'
+    role: corroborating
+  discovery_trace: 'first seen at: verification-pass coverage-gap referral (Phase 5.7 verifier of run 2026-08-22T0410Z-intel),
+    lead URL https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/ -> primary confirmed:
+    Rust Security Response Team post, URL https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/
+    -> pivot: RustSec advisory database, URL https://rustsec.org/advisories/RUSTSEC-2026-0260.html (sibling
+    records -0261..-0266 enumerated via https://rustsec.org/packages/internment.html, /append-only-vec.html
+    and /proc-macro1.html rather than by guessing ids) -> pivot: WebSearch ("Wiz arrayref crates.io supply
+    chain attack proc-macro1 DPRK") -> primary: Wiz Research, URL https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns
+    -> pivot: WebSearch ("StepSecurity arrayref proc-macro1 crates.io malicious build.rs timeline analysis")
+    -> primary: StepSecurity registry forensics, URL https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack
+    -> corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/hackers-poison-arrayref-rust-crate-to-push-infostealer-malware/
+    -> corroborating: SafeDep, URL https://safedep.io/arrayref-proc-macro1-rust-build-time-malware/ -> blast-radius
+    cross-check against the crates.io API (crate + reverse_dependencies endpoints, not cited as an entry source)'
+  summary: 'On 2026-08-20 an attacker used the compromised crates.io publishing account of a long-standing
+    Rust maintainer (droundy) to publish poisoned releases of three low-level utility crates - arrayref 0.3.10,
+    internment 0.8.7 and append-only-vec 0.1.9 - within 23 minutes. Each poisoned release left the crate''s
+    library source untouched and added exactly one new dependency: proc-macro1, a same-day typosquat of the
+    ubiquitous proc-macro2 crate, whose build.rs reassembled a payload URL from base64 fragments, fetched
+    a platform-specific second stage over TLS with certificate validation explicitly disabled, wrote it to
+    a temp path named to look like a Rust toolchain installer, and spawned it detached (the child handle abandoned
+    in-source to escape Cargo''s job object). Because Cargo compiles and runs build scripts on the machine
+    performing the build with the building user''s full privileges, one cargo build or cargo update that resolved
+    a poisoned version was sufficient to execute the payload on a developer workstation or CI runner - the
+    crate''s code never had to be called, the build step concluded success and the compiler exited cleanly
+    (T1195.001, T1105). Twenty-four seconds after publishing arrayref 0.3.10 the same account yanked 0.3.9
+    back to 0.3.5 in a scripted burst, weaponising Cargo''s own ''yanked version'' warning so the responsible-looking
+    fix (cargo update -p arrayref) resolved to the single remaining non-yanked release; the original reporter
+    states this is how they were hit. The Rust Security Response Team, alerted at 07:54 UTC by the research
+    team at Nextron Systems GmbH (Germany), deleted the three malicious versions after 86, 90 and 107 minutes
+    online, removed six attacker-owned crates including a spare second dropper carrying the same build script
+    (proc-macro-en), locked the accounts and reversed the yanks; it assesses the maintainer''s computer or
+    credentials as compromised rather than the maintainer as acting maliciously (T1078). RustSec records that
+    arrayref 0.3.10 was downloaded 2,285 times, under 10% of the crate''s traffic across all versions, because
+    most consumers had older versions pinned in lockfiles - the decisive exposure question is the resolved
+    lockfile entry, not the Cargo.toml range (arrayref = "0.3" matches 0.3.10), and a warm ~/.cargo/registry
+    cache or committed vendor/ directory keeps building the payload offline even though the versions no longer
+    exist in the registry. Wiz''s analysis of the stage-two implant (retrieved from Google Threat Intelligence)
+    describes an HTTPS-POST beaconing backdoor with per-OS persistence, host and installed-application enumeration,
+    browser-profile enumeration, four operator commands including remote script execution, and a DGA fallback,
+    and assesses that its infrastructure substantially overlaps operations attributed to recent North Korean
+    actors - an overlap assessment by Wiz, not an established attribution.'
+  region_nexus: 'global - the exposure is any host that built Rust code in the 07:11-09:25 UTC window on 2026-08-20,
+    with no geographic targeting claimed by any source. The European nexus is on the discovery side: the Rust
+    Security Response Team credits the research team at Nextron Systems GmbH (Germany) with finding and reporting
+    it. No European or public-sector consumer or victim is named by any source.'
+  primary_sector_nexus: 'indirect - no public-sector victim is named. Relevance to the constituency is the
+    build-host exposure class: administrations, CI operators and public-sector technology suppliers that compile
+    Rust in-house or accept Rust build artefacts from suppliers, plus anyone whose CI runners hold cloud credentials,
+    signing keys or deployment secrets. Rust sits under widely used GUI, hashing and blockchain toolchains,
+    so exposure can be entirely transitive.'
+  sector: public-sector, technology/software-supply-chain, finance (blockchain tooling named among dependents)
+  cves: []
+  techniques:
+  - T1195.001
+  - T1078
+  - T1036.005
+  - T1105
+  - T1027
+  - T1059.001
+  - T1059.005
+  - T1547.001
+  - T1543.001
+  - T1543.002
+  - T1082
+  - T1518
+  - T1217
+  - T1071.001
+  - T1041
+  - T1568.002
+  technique_mapping_basis: 'T1195.001 Compromise Software Dependencies and Development Tools - RustSec: ''A
+    new version of the arrayref crate was published with a direct dependency on proc-macro1, which would execute
+    a malicious build script.'' | T1078 Valid Accounts - Rust Security Response Team: the releases were published
+    from the legitimate owner account, whose ''computer or credentials are likely compromised''; StepSecurity
+    adds that the publish came from the owner''s crates.io credentials (a long-lived API token or stolen session)
+    rather than the project''s normal workflow. (T1528 Steal Application Access Token is a plausible precursor
+    but no source establishes how the token was obtained - do not map it.) | T1036.005 Match Legitimate Resource
+    Name or Location - proc-macro1 is a typosquat of proc-macro2 shipping the genuine proc-macro2 source,
+    published by an account one transposed letter from a well-known Rust author, with forged author metadata
+    and a repository URL that 404s (StepSecurity, SafeDep, Wiz). | T1105 Ingress Tool Transfer - Wiz: the
+    build script ''Downloads a platform-specific payload based on OS and architecture'' and executes it. |
+    T1027 Obfuscated Files or Information - Wiz: ''Reconstructs a C2 URL from Base64 fragments''; StepSecurity:
+    ''The payload infrastructure is split into base64 fragments so no string match on the raw source reveals
+    a URL.'' | T1059.001 PowerShell and T1059.005 Visual Basic - BleepingComputer: ''On Windows, it creates
+    %TEMP%\\rust-setup.ps1 and uses a hidden wscript.exe and VBS launcher to keep the process running'' (StepSecurity
+    same, naming the .vbs wrapper). | T1547.001 Registry Run Keys / Startup Folder, T1543.001 Launch Agent,
+    T1543.002 Systemd Service - Wiz: ''Persists via Registry Run key (Windows), LaunchAgent (macOS), or systemd
+    user service (Linux)''. | T1082 System Information Discovery and T1518 Software Discovery - Wiz: ''Collects
+    hostname, username and operating system details, enumerates installed applications''. | T1217 Browser
+    Information Discovery - Wiz (as corrected by its own edit note): the implant ''reads Chrome, Brave and
+    Edge profiles for saved logins and extension settings, querying the browsers'' SQLite credential stores
+    directly'', but ''The queries only enumerate saved logins, they do not retrieve the encrypted credential
+    material.'' NOTE: T1555.003 Credentials from Web Browsers is what the pre-correction Wiz text and BleepingComputer''s
+    relay of it support; after the correction it is NOT established - map T1217 and describe the enumeration,
+    do not claim browser credential theft. | T1071.001 Web Protocols and T1041 Exfiltration Over C2 Channel
+    - Wiz: ''Beacons to C2 via HTTPS POST ..., exfiltrating host info and stolen credentials as Base64-encoded
+    JSON''. | T1568.002 Domain Generation Algorithms - Wiz: ''Falls back to a Domain Generation Algorithm
+    if the primary C2 is unreachable, generating 10 algorithmic .com domains every 5 days.'' All ids checked
+    active in the pinned ATT&CK 19.2 dataset; note T1036.005 is now named ''Match Legitimate Resource Name
+    or Location'' in v19.2.'
+  detection_and_triage: 'TELEMETRY CLASS FIRST. (1) CI/CD egress and build-step network telemetry: StepSecurity
+    reproduced the attack in a monitored GitHub Actions job and observed the build step open one outbound
+    connection to a destination never seen in any prior run of that workflow, flagged as anomalous against
+    the workflow''s own baseline, while the step still concluded success and the job went green - so the detection
+    signal is destination novelty during a compile step, not a job failure. Legitimate Rust build traffic
+    in that same run went only to the registry, index, docs and toolchain endpoints. (2) Process-creation
+    telemetry with build-script lineage: a child process spawned by a build script that OUTLIVES the build
+    step - StepSecurity notes the dropper abandons the child handle in-source specifically to escape Cargo''s
+    job object, so a detached descendant of a cargo/build-script process that survives job completion is the
+    anchor. On Windows the concrete shape is a script interpreter (wscript.exe) parented into a build tree
+    launching a PowerShell script from the user temp directory with no window; on Unix, a file written to
+    a temp directory by a build script, made executable and spawned detached with stdio nulled. (3) Manifest
+    and lockfile review as telemetry: a first-ever dependency appearing in a crate that has had none for a
+    decade, and build-kind dependencies that constitute a downloader toolkit (a base64 codec, a TLS stack
+    and an HTTP client) in a library with no reason to make network calls - StepSecurity states the registry
+    metadata alone proves the capability before the script is read, and Wiz''s hardening advice is to review
+    any new or changed build-dependencies entry. (4) Host persistence artefacts (third-party-reported for
+    stage two): an HKCU Run entry, a macOS LaunchAgent, or a systemd USER service registered to restart a
+    payload, plus unexpected user-config directories and temp-directory executables. (5) Retrospective hunt
+    scope: build logs for jobs that created or refreshed a lockfile between 07:11 and 09:25 UTC on 2026-08-20
+    (cargo update, cargo add, fresh cargo build with no committed lockfile, cache-busted or ephemeral runners)
+    - StepSecurity notes an ephemeral runner destroyed after the job still exfiltrated whatever secrets that
+    job held. TRIAGE / BENIGN LOOKALIKES: an outbound connection during a compile step is not by itself malicious
+    - networking crates legitimately appear in some build-dependency sets (Wiz''s own advice is to scrutinise
+    them ''in a crate with no reason to make network calls'', which implies the benign case exists). The discriminators
+    the sources support are: destination unseen in the workflow''s own prior-run baseline; a detached child
+    process that outlives the build; TLS to an endpoint with certificate validation explicitly disabled (the
+    dropper installs an accept-all certificate verifier because its endpoint has no valid certificate); and
+    a dependency edge that has no corresponding source-level import. Conversely, a green build, a passing
+    test suite and clean compiler output are NOT evidence of absence - the poisoned crates shipped genuine
+    upstream source, so everything built and passed. HARDENING LEVERS named by the sources: commit Cargo.lock
+    and build with --locked in CI, and review lockfile diffs in pull requests (a new dropper dependency is
+    unmissable in review); registry cooldown policies that admit only crate versions older than N days would
+    have made an 86-107-minute exposure a non-event; purge matching .crate files from ~/.cargo/registry/cache,
+    drop CI cache entries and rebuild vendor/ directories from clean sources, because deletion from crates.io
+    does not clean local caches; replace long-lived publishing tokens with scoped short-lived tokens / trusted-publishing
+    OIDC flows (one stolen token poisoned three crates in 23 minutes); pin the clean releases explicitly (=0.3.9,
+    =0.8.6, =0.1.8) and verify the resolved lockfile version rather than trusting the absence of a yank warning;
+    and treat a sudden yank of multiple stable versions of a long-lived crate as a signal to investigate rather
+    than a chore to clear (Wiz: ''Do not resolve yank warnings by upgrading blindly'').'
+  affected_products:
+  - arrayref (Rust crate, crates.io)
+  - internment (Rust crate, crates.io)
+  - append-only-vec (Rust crate, crates.io)
+  - Cargo / crates.io
+  affected_and_fixed_versions: 'Compromised legitimate crates (malicious versions hard-DELETED from crates.io,
+    not merely yanked; RustSec records ''no patched versions'' for each, so the remediation is to pin the
+    last clean release, not to upgrade): arrayref 0.3.10 malicious, unaffected <= 0.3.9 (RUSTSEC-2026-0260);
+    internment 0.8.7 malicious, unaffected <= 0.8.6 (RUSTSEC-2026-0266); append-only-vec 0.1.9 malicious,
+    unaffected <= 0.1.8 (RUSTSEC-2026-0262). The attacker also yanked arrayref 0.3.5-0.3.9 (and equivalent
+    releases of the other two); crates.io has since REVERSED those yanks, so the clean versions are warning-free
+    again. Attacker-owned crates, ALL versions deleted and to be treated as untrusted at any version: proc-macro1
+    (1.0.106 clean decoy published 01:55:34 UTC, 1.0.107 weaponised 07:11:15 UTC - RUSTSEC-2026-0265), proc-macro-en
+    (single version, same build script - RUSTSEC-2026-0264), arone (7 versions, last 2026-08-18) and aronenao
+    (11 versions, last 2026-08-18), both with malicious build scripts (RUSTSEC-2026-0261 covers aronenao),
+    aovine, and tinymember (2 versions, 27 downloads, no malicious code but same owner - RUSTSEC-2026-0263).
+    NOT affected: the genuine proc-macro2 crate is not compromised in any way (StepSecurity, SafeDep). Checksums
+    for the deleted internment, append-only-vec and proc-macro-en releases are not recoverable - they were
+    purged from crates.io, the sparse index and docs.rs before archival.'
+  entity_keys:
+  - actor:sapphire-sleet
+  - campaign:mastra-easy-day-js-supply-chain
+  new_entities:
+  - key: campaign:arrayref-crates-io-build-time-dropper
+    type: campaign
+    name: arrayref / proc-macro1 crates.io build-time dropper
+    aliases:
+    - arrayref supply-chain attack
+    - proc-macro1 typosquat campaign
+    summary: Supply-chain compromise of crates.io on 2026-08-20 in which a compromised maintainer account
+      published poisoned releases of three long-lived Rust utility crates (arrayref 0.3.10, internment 0.8.7,
+      append-only-vec 0.1.9) whose only change was a new dependency on proc-macro1, a same-day typosquat of
+      proc-macro2 whose build script fetched and detached a platform-specific second stage at compile time;
+      the operator also yanked the prior clean releases in a scripted burst so Cargo's own yanked-version
+      warning drove maintainers onto the poisoned release. Reported by Nextron Systems GmbH; malicious versions
+      online 86, 90 and 107 minutes; arrayref 0.3.10 downloaded 2,285 times (Rust Security Response Team,
+      RustSec 2026-0260 to -0266, StepSecurity, Wiz, 2026-08-20).
+  relation_suggestions:
+  - subject: campaign:arrayref-crates-io-build-time-dropper
+    object: actor:sapphire-sleet
+    basis: 'Wiz: the campaign''s infrastructure ''substantially overlaps with operations attributed to recent
+      North Korean actors'' - the stage-two beacon path matches one used in the Mastra campaign that Wiz says
+      Microsoft attributed to DPRK / Sapphire Sleet, a victim-reported C2 address appears in Google Cloud
+      threat intelligence''s UNC1069 axios analysis, and both campaigns use the same VPS provider range. This
+      is Wiz''s own overlap assessment on shared-infrastructure evidence - suggest overlaps-with, NOT attributed-to
+      (Wiz Research, 2026-08-20).'
+  - subject: campaign:arrayref-crates-io-build-time-dropper
+    object: campaign:mastra-easy-day-js-supply-chain
+    basis: 'Wiz: ''Shared C2 endpoint pattern'' - the arrayref stage-two payloads beacon to an endpoint ''used
+      in the Mastra campaign'', and the payload host shares a TLS certificate issuer string with a second
+      address used in that campaign (Wiz Research, 2026-08-20).'
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  confidence_note: HIGH for the mechanism, versions, timeline and response - first-party Rust Security Response
+    Team and RustSec records, independently corroborated by StepSecurity's registry forensics, Wiz's payload
+    analysis, SafeDep and BleepingComputer. MEDIUM at most for the DPRK overlap (single-vendor, infrastructure-only
+    evidence, framed by Wiz itself as overlap). LOW/third-party-reported for the stage-two host persistence
+    details, which StepSecurity explicitly says it has not independently reproduced.
+  classification_suggestion:
+    reliability: A
+    credibility: 1
+    note: Rust Security Response Team and RustSec are first-party authorities for crates.io and the Rust advisory
+      database (A); the facts are independently corroborated by four further publishers (1). Keep the DPRK-overlap
+      sub-claim inside attributive language - on its own it would rate B2.
+  novelty: new
+  priority_suggestion: high - build-time code execution with the building user's full privileges on developer
+    and CI hosts, with confirmed detonation, but the registry-side exposure is closed (malicious versions
+    deleted, yanks reversed) so the do-now work is a time-boxed retrospective hunt plus cache/vendor purge
+    and credential rotation rather than a patch. Composer may argue critical on the treat-as-compromised implication
+    for CI secret stores.
+  evidence:
+  - quote: 'The Rust Security Response Team verified this to be the case: the crate had a build script that
+      was downloading a malicious payload.'
+    attribution: Rust Security Response Team
+    source_url: https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/
+  - quote: to be acting maliciously, but their computer or credentials are likely compromised, and we are
+      attempting to contact them.
+    attribution: Rust Security Response Team
+    source_url: https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/
+  - quote: download traffic across all versions, as most users had older
+    attribution: RustSec Advisory Database (RUSTSEC-2026-0260)
+    source_url: https://rustsec.org/advisories/RUSTSEC-2026-0260.html
+  - quote: It was downloaded 2,285 times, which constituted less than
+    attribution: RustSec Advisory Database (RUSTSEC-2026-0260)
+    source_url: https://rustsec.org/advisories/RUSTSEC-2026-0260.html
+  - quote: Because build scripts run during compilation, building an affected project was sufficient to execute
+      the payload.
+    attribution: Wiz Research
+    source_url: https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns
+  - quote: infrastructure substantially overlaps with operations attributed to recent North Korean actors.
+    attribution: Wiz Research
+    source_url: https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns
+  - quote: 'Edit: A prior version of this piece mistakenly stated that  browser credentials were stolen. The
+      queries only enumerate saved logins, they do not retrieve the encrypted credential material.'
+    attribution: Wiz Research (self-correction)
+    source_url: https://www.wiz.io/blog/rust-supply-chain-attack-on-arrayref-significant-overlap-with-dprk-campaigns
+  - quote: Builds with pre-existing lockfiles pinning clean versions kept compiling the clean, yanked-but-downloadable
+      code, since yanking alone never breaks a locked build.
+    attribution: StepSecurity
+    source_url: https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack
+  - quote: The attacker turned the registry's own safety feature into the delivery channel.
+    attribution: StepSecurity
+    source_url: https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack
+  - quote: Rust build scripts compile and run on the machine performing the build, with that user's full privileges,
+      including access to SSH keys, cloud credentials, CI secrets, and signing keys.
+    attribution: StepSecurity
+    source_url: https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack
+  - quote: Automated tooling will not flag this for you.
+    attribution: StepSecurity
+    source_url: https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack
+  - quote: The decisive check is the lockfile, not the registry.
+    attribution: StepSecurity
+    source_url: https://www.stepsecurity.io/blog/arrayref-rust-crate-supply-chain-attack
+  - quote: as arrayref alone has more than 245 million lifetime downloads
+    attribution: BleepingComputer
+    source_url: https://www.bleepingcomputer.com/news/security/hackers-poison-arrayref-rust-crate-to-push-infostealer-malware/
+  - quote: while versions 0.3.5 through 0.3.9 were removed, potentially to force installation of the malicious
+      release.
+    attribution: BleepingComputer
+    source_url: https://www.bleepingcomputer.com/news/security/hackers-poison-arrayref-rust-crate-to-push-infostealer-malware/
+  evidence_verification: 'Every quote above was literal-checked with grep -F against the exact fetched body
+    saved under work/2026-08-22T0410Z-intel/ (rust-blog.txt, rustsec-RUSTSEC-2026-0260.html, wiz.html, step.html,
+    bc-arrayref.html): 14 of 14 PASS. Three earlier candidates FAILED on encoding and were fixed before inclusion:
+    the Rust-blog Nextron credit (curly apostrophe rendered as &#8217; - trimmed to start after it), the StepSecurity
+    ''registry''s own safety feature'' sentence (straight apostrophe in the body, curly in the cleaned text),
+    and the Wiz self-correction note, which contains a DOUBLE SPACE after ''stated that'' - preserved verbatim
+    above. Two quotes are deliberate mid-sentence fragments because inline <code> markup breaks the full sentence:
+    the Rust-blog quote begins ''to be acting maliciously'' (full sentence starts ''We do not believe the
+    author of arrayref...'') and the RUSTSEC pair straddles a <code>arrayref</code> tag (''...less than 10%
+    of arrayref download traffic across all versions...''). Composer: do not silently re-join them.'
+  extended_notes: "WHO IS EXPOSED (the load-bearing question for a defender, all source-stated):\n- Exposed:\
+    \ any developer workstation, CI runner or container build that CREATED or REFRESHED a lockfile\n  (cargo\
+    \ update / cargo add / fresh cargo build with no committed Cargo.lock / cache-busted runner) between\n\
+    \  07:11 and 09:25 UTC on 2026-08-20 and resolved arrayref 0.3.10, internment 0.8.7, append-only-vec 0.1.9,\n\
+    \  or any version of proc-macro1 / proc-macro-en / aovine / arone / aronenao / tinymember (StepSecurity).\n\
+    - NOT exposed by the registry event: builds with a pre-existing lockfile pinning clean versions - StepSecurity\n\
+    \  states plainly that these \"kept compiling the clean, yanked-but-downloadable code, since yanking alone\
+    \ never\n  breaks a locked build\". RustSec's 2,285-download figure and its \"less than 10% of arrayref\
+    \ download traffic\"\n  framing is the quantitative expression of the same fact.\n- BUT: a Cargo.toml\
+    \ semver pin is NOT protection (arrayref = \"0.3\" matches 0.3.10) - only the resolved lockfile\n  version\
+    \ matters; and a warm ~/.cargo/registry cache or a committed vendor/ directory keeps building the\n  deleted\
+    \ payload offline. Deletion from crates.io does not clean local caches (StepSecurity).\n- internment itself\
+    \ depends on append-only-vec, so a single internment resolve in the window could pull two\n  poisoned\
+    \ crates into one tree (StepSecurity).\n\nTOOLING GAP AND ITS CLOSURE (delta worth stating): StepSecurity\
+    \ wrote on 2026-08-20 that because the malicious\nversions were DELETED rather than yanked and the RustSec\
+    \ advisories were still pending, cargo audit reported\nclean for a project that pinned a poisoned version\
+    \ (\"Automated tooling will not flag this for you.\"). This run\nverified that the RustSec records now\
+    \ exist and are complete: RUSTSEC-2026-0260 (arrayref), -0261 (aronenao),\n-0262 (append-only-vec), -0263\
+    \ (tinymember), -0264 (proc-macro-en), -0265 (proc-macro1), -0266 (internment) -\nall issued 2026-08-20,\
+    \ last modified 2026-08-21, all with \"no patched versions\" and unaffected ranges <=0.3.9 /\n<=0.8.6\
+    \ / <=0.1.8. Advisory-DB-driven scanners therefore now have coverage; teams that concluded \"cargo audit\n\
+    clean\" on 20 August should re-run against a refreshed advisory database.\n\nBLAST-RADIUS FIGURES, each\
+    \ with the source that states it (no computed or estimated numbers):\n- arrayref: \"245.2M all-time downloads,\
+    \ 53.7M in the last 90 days. 406 dependent crate versions\" (StepSecurity).\n  BleepingComputer independently\
+    \ states \"more than 245 million lifetime downloads\" and \"more than 53 million\n  downloads over the\
+    \ past 90 days\".\n- internment: 14.4M all-time / 3.5M in 90 days; append-only-vec: 4.5M all-time / 1.3M\
+    \ in 90 days; \"264M\"\n  combined all-time for the three compromised crates (StepSecurity). BleepingComputer\
+    \ puts the internment +\n  append-only-vec pair at \"nearly 19 million installs\".\n- Realised exposure:\
+    \ arrayref 0.3.10 \"was downloaded 2,285 times\" (RUSTSEC-2026-0260). No source states a\n  download count\
+    \ for the poisoned internment or append-only-vec releases.\n- Dependent-count caveat for the composer:\
+    \ the \"roughly 403 dependents\" figure in the tasking does not match a\n  fetched source. StepSecurity\
+    \ states 406 dependent crate VERSIONS (not crates). A crates.io reverse-dependency\n  API query during\
+    \ this run (https://crates.io/api/v1/crates/arrayref/reverse_dependencies) returned\n  meta.total = 404\
+    \ records, and the crates.io crate API returned 246,327,884 total downloads / 54,159,527 recent\n  - live\
+    \ registry values consistent with, but not identical to, the vendor figures. Use StepSecurity's \"406\n\
+    \  dependent crate versions\" with its exact wording, or omit; do not print 403.\n- Downstream chain StepSecurity\
+    \ names: tiny-skia / tiny-skia-path -> sctk-adwaita -> winit -> egui / eframe /\n  iced (most Rust GUI\
+    \ applications); blake3 and the blake2 SIMD crates (hashing); revm-precompile (Ethereum\n  tooling); spl-token\
+    \ / solana-runtime (Solana tooling).\n\nTIMELINE (StepSecurity registry forensics, verified by them against\
+    \ crates.io audit logs and the\ncrates.io-index git history; per-crate publish/delete stamps independently\
+    \ in the Rust Security Response Team\npost):\n- 2026-08-18: arone (7 versions) and aronenao (11 versions)\
+    \ reach final publishes, both carrying malicious\n  build scripts - campaign infrastructure predates the\
+    \ arrayref push by two days.\n- 01:17:36 UTC GitHub account created impersonating a well-known Rust author\
+    \ (one transposed letter); 01:25:58\n  matching crates.io account; 01:55:34 clean decoy release of proc-macro1\
+    \ (a copy of genuine proc-macro2, no\n  build script) staged five hours ahead \"so the crate does not\
+    \ appear as a zero-history package\".\n- 07:11:15 proc-macro1 1.0.107 weaponised: build.rs plus exactly\
+    \ three build-kind dependencies (base64, rustls,\n  ureq) - StepSecurity notes a genuine proc-macro utility\
+    \ has no build-time dependencies at all, so the\n  registry metadata alone proves the capability before\
+    \ the script is read.\n- 07:15:00 arrayref 0.3.10 published from the legitimate owner account; 07:15:24-07:15:40\
+    \ the five prior 0.3.x\n  releases yanked ~2-6 s apart; 07:34:07 internment 0.8.7; 07:37:49 append-only-vec\
+    \ 0.1.9.\n- 07:54:11 reported to RustSec (advisory-db issue) and security@rust-lang.org. 08:03:09 proc-macro1\
+    \ deleted;\n  08:41:40 arrayref 0.3.10 removed from the index (86 min); 09:04:11 internment (90 min);\
+    \ 09:25:24\n  append-only-vec (107 min). Same day: remaining attacker crates deleted, accounts locked,\
+    \ yanks reversed.\n- ~09:05 the owner's GitHub account and the canonical arrayref repository began returning\
+    \ 404; StepSecurity\n  states whether this was the attacker, GitHub Trust and Safety or the owner is unknown.\n\
+    \nVICTIM IMPACT - what is observed vs potential:\n- No named organisation. No European or public-sector\
+    \ consumer is named by any source, and no source reports an\n  organisational victim.\n- Observed impact\
+    \ exists but is self-reported and small: the original reporter states they were hit via the\n  yank-upgrade\
+    \ lure; an infected Linux developer described stage-two persistence in the public RustSec thread\n  (user-config\
+    \ directories, two named executables, a systemd service registered to restart the payload, and\n  outbound\
+    \ traffic to a second address in the same hosting range); a separate researcher in the thread reported\n\
+    \  another C2 address. StepSecurity explicitly labels these \"third-party reports we have not independently\n\
+    \  reproduced\". Wiz separately cites a victim-reported C2 observation as one leg of its overlap analysis.\n\
+    - European nexus is on the DISCOVERY side, not the victim side: the Rust Security Response Team credits\
+    \ the\n  Research Team at Nextron Systems GmbH (a German vendor) with initially discovering and reporting\
+    \ it.\n\nDPRK OVERLAP - carry Wiz's own language and confidence, in both directions:\n- Wiz's title says\
+    \ \"Significant Overlap with DPRK Campaigns\"; its body says the infrastructure \"substantially\n  overlaps\
+    \ with operations attributed to recent North Korean actors\". Three legs, all infrastructure/pattern\n\
+    \  based, none code-based: (1) the stage-two beacon path matches one used in the Mastra campaign, which\
+    \ Wiz says\n  Microsoft attributed to DPRK / Sapphire Sleet, and the payload host shares a TLS certificate\
+    \ issuer string\n  with a second address used in that campaign; (2) a victim-reported C2 address appears\
+    \ in Google Cloud threat\n  intelligence's analysis of UNC1069's axios npm attack, which Wiz says Mandiant\
+    \ links to North Korea; (3) both\n  campaigns use the same /23 range at the same VPS provider.\n- Framing\
+    \ for the entry: this is an overlap assessment by one vendor on shared-infrastructure evidence. Neither\n\
+    \  the Rust Security Response Team, RustSec, StepSecurity nor SafeDep makes any attribution claim.\n \
+    \ BleepingComputer only relays Wiz's sentence. Alternative explanations Wiz does not exclude: shared bulletproof\n\
+    \  or commodity VPS hosting reused across unrelated operators, and payload/kit reuse. Do NOT write \"\
+    North Korea\n  did this\".\n- Registry note: the existing entities/registry.yaml record actor:sapphire-sleet\
+    \ already carries the aliases\n  UNC1069 and MIDNIGHT NEPTUNE and already summarises the npm debug / chalk\
+    \ / axios maintainer-account\n  compromises attributed to that cluster - i.e. Wiz's two comparison points\
+    \ map onto ONE already-tracked\n  cluster, and campaign:mastra-easy-day-js-supply-chain is already registered.\
+    \ The right edges are\n  overlaps-with, not attributed-to.\n\nCLASSIFICATION SUGGESTION: A1 for the incident\
+    \ facts (Rust Security Response Team and RustSec are the\nfirst-party authorities for their own registry\
+    \ and advisory database; independently corroborated by Wiz,\nStepSecurity, SafeDep and BleepingComputer).\
+    \ The DPRK-overlap sub-claim on its own is B2 (Wiz original\nresearch, uncorroborated by a second telemetry\
+    \ holder) - keep it inside attributive language rather than\nlowering the whole entry's rating.\n\nPRIORITY\
+    \ NOTE for the composer: the do-now action is retrospective, narrow and time-boxed (hunt a 2 h 14 min\n\
+    build window, purge caches and vendored copies, treat any host that built in the window as compromised\
+    \ and\nrotate what it could reach), because the registry-side exposure is closed - the malicious versions\
+    \ are deleted\nand the clean releases un-yanked. My read is priority high rather than critical: there\
+    \ is no open,\ninternet-facing exposure to patch, but the payload executed with full user privileges on\
+    \ build hosts, which is\nexactly where CI secrets and signing keys live, and confirmed detonation exists\
+    \ (2,285 downloads plus\nself-reported infections). Composer's call.\n\nIOC DISCIPLINE: no hashes, IPs,\
+    \ domains, URLs or C2 paths are carried in this findings file, by design. The\ntemp-file names (rust-setup\
+    \ / rust-setup.ps1 / rust-setup-launch.vbs) and persistence-artefact shapes are kept\nas behavioural artefacts\
+    \ because they are the triage surface; drop the literal filenames if the composer reads\nthem as host\
+    \ IOCs - the behavioural description stands without them.\n\nNO-CVE NOTE: no CVE was assigned. The identifiers\
+    \ are RUSTSEC-2026-0260 through -0266. Populate cves[] as\nempty; the advisory ids belong in prose and\
+    \ in the source list.\n"
+dedup_check: 'prior_coverage.json (142 records, 14-day window) contains no arrayref / crates.io / Rust-crate
+  record; the nearest neighbours are npm/PyPI waves (CHAINDROP 2026-08-08, the W32 open-source supply-chain
+  status synthesis 2026-08-09, the Trivy/LiteLLM correction 2026-08-15) - all different ecosystems and campaigns.
+  No CVE overlap (this incident has no CVE). entities/registry.yaml has no arrayref, crates.io or proc-macro1
+  entity; campaign:trapdoor is a distinct cross-ecosystem campaign (npm/PyPI/Crates.io, AI-assistant config
+  poisoning, first_seen 2026-05-26) and should NOT be reused. actor:sapphire-sleet and campaign:mastra-easy-day-js-supply-chain
+  already exist and are the correct targets for Wiz''s overlap claim. novelty: new.'
+candidate_sources:
+- id: stepsecurity
+  publisher: StepSecurity (CI/CD supply-chain security vendor, Threat Intel blog)
+  url: https://www.stepsecurity.io/blog
+  rss: https://www.stepsecurity.io/blog/rss.xml
+  category: research
+  why: Only source in this run that did primary registry forensics - verified the reporter's claims against
+    crates.io audit logs and the crates.io-index git history, reconstructed a second-resolution timeline including
+    the scripted yank burst, and published a monitored CI reproduction of the build-time detonation. Recurrent
+    primary on npm/PyPI/crates.io supply-chain incidents; would have closed this run's gap on its own. RSS
+    path unverified (inferred, not fetched) - confirm before writing the record.
+coverage_gaps:
+- source_id: rustsec-advisory-db-issue-3161
+  reason: 'The original disclosure thread (rustsec/advisory-db issue #3161 by researcher jhobern) is the true
+    first-hand primary for the build.rs static analysis and for the two infected-developer self-reports. Not
+    fetched: github.com paths 403 the direct transport and the jina reader pool is credit-exhausted (HTTP
+    402). Its content reaches this finding second-hand but attributed, via StepSecurity (which quotes it explicitly)
+    and Wiz. Not logged as a fetch failure - no transport was attempted against a known-blocked host with
+    a working alternative in hand.'
+- source_id: aikido-arrayref-analysis
+  reason: BleepingComputer names Aikido as a third vendor that published a technical analysis; not fetched
+    (time-boxed scoped recovery, four independent analyses already in hand). No expected additive fact.
+side_referrals:
+- item: Fourteen trojanized npm packages dropping the RedC2 4.0 Linux implant (2026-08-21)
+  assessment: 'WORTH AN ENTRY, subject to reaching the discovering vendor''s own write-up - the reportable
+    novelty is the execution trigger, not the packages: no install hook at all, the payload launches from
+    the package entry file on MODULE LOAD, so a single transitive import detonates it and install-script scanners
+    and --ignore-scripts see nothing. That is a clean complement to the crates.io build-time item (two different
+    pre-runtime execution triggers in one window) and a direct answer to the ''we don''t ship that dependency
+    to production'' reflex. Caveat: only an aggregator (The Hacker News, https://thehackernews.com/2026/08/14-trojanized-npm-packages-drop-redc2.html)
+    surfaced in this run''s search - pivot to the originating vendor before composing, and check the store''s
+    existing npm-wave coverage for dedup.'
+- item: isolated-vm advisory GHSA-864f-rcv7-6rh4 (2026-08-20)
+  assessment: 'WORTH AN ENTRY, and arguably the stronger of the two - a type confusion in ExternalCopy''s
+    transferList handling lets guest JavaScript corrupt host process memory and escape the V8-isolate sandbox
+    toward host code execution (T1611-class boundary break); fixed in 6.2.0 and 7.0.1, all versions up to
+    and including 7.0.0 affected, no CVE assigned, discovered by Endor Labs (https://www.endorlabs.com/learn/ghsa-864f-rcv7-6rh4-critical-type-confusion-vulnerability-in-isolated-vm).
+    Relevance driver: isolated-vm IS the sandbox that AI-agent and workflow-automation platforms (n8n, Activepieces,
+    Mastra) rely on to run untrusted user-supplied code, so the failed control is the one those deployments
+    treat as their trust boundary - directly on-point for public-sector self-hosted automation. Note GHSA-864f-rcv7-6rh4
+    returns 404 from the OSV API, so pull the advisory from GitHub or the vendor write-up; verify affected/fixed
+    versions against the GHSA itself before composing (version detail above comes from secondary reporting,
+    not a fetched primary).'

@@ -4,6 +4,26 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.32 — 2026-08-22 (authority PDFs become a readable transport instead of a rediscovery)
+
+### Why
+
+A great many of the publications this pipeline most needs to read first-hand are PDF-first: joint advisories from the US agencies, national-CERT bulletins, regulator decisions, court filings. The fetch bridge had no path for any of them, and the cost landed in the open: the 2026-08-20 run concluded that the five-agency Siemens S7 advisory PDF could not be rendered by any tooling in the container, composed the entry single-source from an outlet's reading of it, and told its readers so in the sourcing note — and then its own verification pass extracted the document's full text from a mirror with nothing but a different transport and the Python standard library. Three verifier iterations were spent on the consequences of that wrong conclusion, and the run's backlog left a standing instruction to "record the working extraction path in the fetch bridge so the next PDF advisory does not repeat this". This discharges it.
+
+The deeper reason is sourcing integrity rather than convenience. Composing from a third party's reading of a primary the run holds in its hands is a self-inflicted single-source condition, and it costs the pipeline the two things it values most in a primary: the exact affected/fixed version fields, and quotes that can be literal-substring-checked. An advisory the run cannot read is a real limitation; an advisory the run can read but does not is a defect.
+
+### What changed
+
+- **`tools/fetch_source.py` gains `pdf <URL-or-path>`.** Stdlib-only text extraction: it inflates the document's FlateDecode'd content streams and reads the text-showing operators out of them, handling literal and hex strings, octal and paren escapes, `TJ` arrays, Identity-H two-byte content, and uncompressed streams. It spends no reader credit. It takes a local path as well as a URL, which is the right shape for a heavy document — write it to `work/<run-id>/` once, then re-read it on disk so the bulk never enters an agent's context. It falls back to the reader only when the bytes themselves are refused, warns on stderr when the printable ratio says a subset font has defeated the extraction, and fails loudly rather than silently empty on a scanned image-only PDF, which needs OCR and not this.
+- **`.claude/agents/cti-research.md` documents it on the fetch ladder** as a peer of the structured subcommands, with the operative rule stated in one line: a PDF is never a reason to compose from someone else's reading of it.
+- **`CLAUDE.md`** carries the new subcommand in the bridge-fetcher row of the key-commands table.
+
+### What stays
+
+The ladder's shape and its economics: RSS → `WebFetch` → direct bridge → jina reader last. `pdf` sits on the third rung as another direct transport, not a new tier and not a reason to reach for the reader sooner. Every editorial rule is untouched — the extraction only changes which document a claim can be traced to, never what clears the gate. The prose rule that a quote must be a contiguous verbatim substring of a fetched page applies unchanged to extracted PDF text, and the extractor was built to preserve contiguity precisely so `grep -F` still means what it means. Banner-versioned prompts stay in lockstep; both verifier definitions are unchanged and therefore stay byte-identical below their header notes.
+
+---
+
 ## 3.31 — 2026-08-09 (verified-but-unpublished coverage gets a queue; the duplicate-week guard sees unpromoted branches; a blocked verifier rotation is recovered with a model override, not waived; the gate checks rotation on every publish path and catches a credibility/verification self-contradiction)
 
 ### Why

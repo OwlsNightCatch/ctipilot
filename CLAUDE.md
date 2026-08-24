@@ -20,7 +20,7 @@ For an end-to-end map of what reads / writes what, see [docs/architecture.md](do
 | Stdlib-only smoke tests for build helpers | `python3 site/test_build.py` |
 | Build the per-run dedup index | `python3 tools/build_prior_coverage.py <run-id> 7` |
 | Compact state digest | `python3 tools/run_summary.py --out work/<run-id>/state-summary.json` |
-| Bridge fetcher for known-403 hosts | `python3 tools/fetch_source.py {cisa-kev \| ncsc-csh recent N \| url <URL>}` |
+| Bridge fetcher for known-403 hosts | `python3 tools/fetch_source.py {cisa-kev \| ncsc-csh recent N \| url <URL> \| pdf <URL-or-path>}` |
 | Validate the org profile / re-render it into the prompts | `python3 tools/compose_prompts.py --check` / `--write` (also `--dump`, `--selftest`) |
 | ATT&CK pin: freshness / update / invariants | `python3 tools/attack_data.py {--check \| --update [--version X.Y] \| --selftest \| --info}` (contract: [attack/README.md](attack/README.md)) |
 

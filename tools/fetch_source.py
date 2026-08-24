@@ -142,6 +142,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import zlib
 from typing import Any
 
 
@@ -1091,6 +1092,247 @@ def smart_fetch(url: str) -> tuple[str, str]:
         ) from None
 
 
+# ---------------------------------------------------------------------------
+# PDF text extraction (stdlib only)
+# ---------------------------------------------------------------------------
+#
+# A great many authority publications are PDF-first: joint advisories from the
+# US agencies, national-CERT bulletins, regulator decisions, court filings.
+# The 2026-08-20 run lost most of an hour to one of them — it concluded the
+# advisory PDF was unreadable, composed the entry from an outlet's reading of
+# it, and its own verification pass then extracted the full text with nothing
+# but a different transport and the standard library. This is that path, made
+# permanent so the next PDF advisory is a one-liner rather than a rediscovery.
+#
+# Scope and honest limits: this reads the text-showing operators out of
+# FlateDecode'd (or plain) content streams. It handles WinAnsi/Latin-1 simple
+# fonts and Identity-H two-byte strings, which covers Word- and LaTeX-produced
+# documents. It does NOT apply per-font ToUnicode CMaps, so a document using a
+# subset font with a custom encoding can come back as mojibake — `pdf_text`
+# reports that as a low printable ratio on stderr rather than pretending the
+# extraction worked. It is not a layout engine: reading order follows the
+# content stream, and tables come out row-fragmented. Scanned/image-only PDFs
+# carry no text operators at all and yield an explicit empty-text error.
+
+_PDF_STREAM_RE = re.compile(rb"stream\r?\n?", re.IGNORECASE)
+
+_PDF_ESCAPES = {
+    ord("n"): b"\n", ord("r"): b"\r", ord("t"): b"\t",
+    ord("b"): b"\b", ord("f"): b"\f",
+    ord("("): b"(", ord(")"): b")", ord("\\"): b"\\",
+}
+
+
+def _pdf_inflate_streams(data: bytes) -> list[bytes]:
+    """Return the decoded bytes of every stream object in `data` that plausibly
+    holds page content. FlateDecode is inflated; uncompressed streams are taken
+    as-is; anything else (image codecs, encrypted streams) is skipped."""
+    out: list[bytes] = []
+    pos = 0
+    while True:
+        m = _PDF_STREAM_RE.search(data, pos)
+        if not m:
+            break
+        # The stream's dictionary is whatever precedes the `stream` keyword.
+        dict_start = data.rfind(b"<<", max(0, m.start() - 4096), m.start())
+        header = data[dict_start:m.start()] if dict_start != -1 else b""
+        end = data.find(b"endstream", m.end())
+        if end == -1:
+            break
+        raw = data[m.end():end]
+        pos = end + 9
+        # Skip streams that are plainly not text content.
+        if re.search(rb"/Subtype\s*/(Image|Type1C|CIDFontType0C|OpenType)", header):
+            continue
+        if b"/FlateDecode" in header:
+            for trim in (raw, raw.rstrip(b"\r\n"), raw.lstrip(b"\r\n")):
+                try:
+                    out.append(zlib.decompress(trim))
+                    break
+                except zlib.error:
+                    continue
+            else:
+                # Truncated or oddly framed stream — recover what inflates.
+                try:
+                    d = zlib.decompressobj()
+                    partial = d.decompress(raw)
+                    if partial:
+                        out.append(partial)
+                except zlib.error:
+                    pass
+        elif not re.search(rb"/Filter", header):
+            out.append(raw)
+    return out
+
+
+def _pdf_decode_string(buf: bytes) -> str:
+    """Decode one PDF string literal's bytes into text. Identity-H content is
+    two-byte big-endian, which shows up as a run of NUL-interleaved bytes; a
+    simple font's bytes are WinAnsi, close enough to Latin-1 for prose."""
+    if len(buf) >= 4 and buf[0::2].count(0) > len(buf) // 4:
+        try:
+            return buf.decode("utf-16-be", errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
+    return buf.decode("cp1252", errors="replace")
+
+
+def _pdf_text_from_content(content: bytes) -> str:
+    """Pull the text-showing operators out of one decoded content stream.
+
+    Walks the stream once, collecting `(...)` and `<...>` string operands and
+    flushing them on the operator that consumes them: `Tj` / `'` / `"` show one
+    string, `TJ` shows an array, and the positioning operators `Td` / `TD` /
+    `T*` / `TL` plus `ET` end a line."""
+    parts: list[str] = []
+    pending: list[str] = []
+    i, n = 0, len(content)
+    while i < n:
+        c = content[i]
+        if c == 0x28:  # "(" — literal string
+            i += 1
+            depth, buf = 1, bytearray()
+            while i < n:
+                ch = content[i]
+                if ch == 0x5C:  # backslash
+                    i += 1
+                    if i >= n:
+                        break
+                    esc = content[i]
+                    if esc in _PDF_ESCAPES:
+                        buf.extend(_PDF_ESCAPES[esc])
+                        i += 1
+                    elif 0x30 <= esc <= 0x37:  # octal, up to three digits
+                        oct_digits = bytearray()
+                        while i < n and len(oct_digits) < 3 and 0x30 <= content[i] <= 0x37:
+                            oct_digits.append(content[i])
+                            i += 1
+                        buf.append(int(oct_digits.decode("ascii"), 8) & 0xFF)
+                    elif esc in (0x0A, 0x0D):  # line continuation
+                        i += 1
+                        if i < n and content[i] == 0x0A and esc == 0x0D:
+                            i += 1
+                    else:
+                        buf.append(esc)
+                        i += 1
+                    continue
+                if ch == 0x28:
+                    depth += 1
+                elif ch == 0x29:
+                    depth -= 1
+                    if depth == 0:
+                        i += 1
+                        break
+                buf.append(ch)
+                i += 1
+            pending.append(_pdf_decode_string(bytes(buf)))
+            continue
+        if c == 0x3C and i + 1 < n and content[i + 1] != 0x3C:  # "<" hex string
+            end = content.find(b">", i)
+            if end == -1:
+                break
+            hex_body = re.sub(rb"[^0-9A-Fa-f]", b"", content[i + 1:end])
+            if len(hex_body) % 2:
+                hex_body += b"0"
+            try:
+                pending.append(_pdf_decode_string(bytes.fromhex(hex_body.decode("ascii"))))
+            except ValueError:
+                pass
+            i = end + 1
+            continue
+        if 0x41 <= c <= 0x5A or 0x61 <= c <= 0x7A or c == 0x27 or c == 0x22:
+            j = i
+            while j < n and (0x41 <= content[j] <= 0x5A or 0x61 <= content[j] <= 0x7A
+                             or content[j] in (0x27, 0x22, 0x2A)):
+                j += 1
+            op = content[i:j]
+            if op in (b"Tj", b"TJ", b"'", b'"'):
+                if pending:
+                    parts.append("".join(pending))
+                    pending = []
+                if op in (b"'", b'"'):
+                    parts.append("\n")
+            elif op in (b"Td", b"TD", b"T*", b"ET", b"TL"):
+                if pending:
+                    parts.append("".join(pending))
+                    pending = []
+                parts.append("\n")
+            elif pending:
+                # An operator we don't show text for — the operands were
+                # positioning or font arguments, not content.
+                pending = []
+            i = j
+            continue
+        i += 1
+    if pending:
+        parts.append("".join(pending))
+    text = "".join(parts)
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def pdf_text(source: str) -> str:
+    """Fetch (or read) a PDF and return its extracted text.
+
+    `source` is an https URL or a local file path — a path is accepted because
+    a heavy advisory is often better written to `work/<run-id>/` once and then
+    re-read on disk than fetched repeatedly. URLs go through the same ladder as
+    every other bridge fetch: a direct browser-UA GET first, and on a block the
+    reader proxy, whose own markdown rendering of a PDF is a legitimate second
+    transport when the bytes themselves are refused.
+
+    Raises RuntimeError when the document carries no text operators at all —
+    the signature of a scanned, image-only PDF, which needs OCR, not this."""
+    if source.startswith(("http://", "https://")):
+        code, body, _ = fetch(
+            source,
+            accept="application/pdf,application/octet-stream,*/*;q=0.8",
+            max_bytes=MAX_BODY_BYTES_HTML,
+        )
+        if code != 200 or not body.startswith(b"%PDF"):
+            # Not the bytes we wanted — fall back to the reader, which renders
+            # PDFs to markdown server-side.
+            detail = f"HTTP {code}, {len(body)} B, magic={body[:8]!r}"
+            try:
+                text = _jina_fetch(source)
+            except Exception as e:  # noqa: BLE001
+                raise RuntimeError(
+                    f"pdf: direct fetch did not return a PDF ({detail}); "
+                    f"reader fallback also failed ({str(e)[:160]})"
+                ) from None
+            print("# pdf: served by the reader proxy, not byte extraction",
+                  file=sys.stderr)
+            return text
+        data = body
+    else:
+        with open(source, "rb") as fh:
+            data = fh.read()
+        if not data.startswith(b"%PDF"):
+            raise RuntimeError(f"pdf: {source} is not a PDF (magic={data[:8]!r})")
+
+    streams = _pdf_inflate_streams(data)
+    chunks = [t for t in (_pdf_text_from_content(s) for s in streams) if t]
+    text = "\n\n".join(chunks).strip()
+    if not text:
+        raise RuntimeError(
+            "pdf: no text-showing operators found in "
+            f"{len(streams)} stream(s) — this is most likely a scanned, "
+            "image-only PDF that needs OCR rather than extraction"
+        )
+    printable = sum(1 for ch in text if ch.isprintable() or ch.isspace())
+    ratio = printable / len(text)
+    if ratio < 0.85:
+        print(
+            f"# pdf: WARNING printable ratio {ratio:.2f} — the document is "
+            "likely using subset fonts with a custom encoding, which this "
+            "extractor does not map. Treat the output as unreliable and "
+            "prefer the reader proxy (`jina <URL>`) for this document.",
+            file=sys.stderr,
+        )
+    return text
+
+
 def cisa_page(url: str) -> str:
     """Fetch a cisa.gov page body via the standard ladder — a direct browser-UA
     fetch first (so it auto-recovers the moment the Akamai block ever lifts),
@@ -2037,6 +2279,9 @@ def main(argv: list[str]) -> int:
     p_jina.add_argument("fmt", nargs="?", choices=["markdown", "html"], default="markdown",
                         help="return format (default markdown; `html` keeps simplified markup)")
 
+    p_pdf = sub.add_parser("pdf", help="extract the text of a PDF advisory (stdlib only, no reader credit) — takes an https URL or a local path; falls back to the reader only when the bytes themselves are refused")
+    p_pdf.add_argument("source", help="https URL of the PDF, or a local file path")
+
     sub.add_parser("jina-usage", help="remaining token balance of every configured reader key (JINA_API_KEYS / JINA_API_KEY) — warns (stderr) when the pool runs low")
 
     p_csh = sub.add_parser("ncsc-csh", help="NCSC Switzerland Cyber Security Hub")
@@ -2159,6 +2404,10 @@ def main(argv: list[str]) -> int:
                     # polluting stdout (which callers parse as page content).
                     print(f"# fetched via {method} reader fallback", file=sys.stderr)
                 sys.stdout.write(text)
+            return 0
+        if args.cmd == "pdf":
+            sys.stdout.write(pdf_text(args.source))
+            sys.stdout.write("\n")
             return 0
         if args.cmd == "jina":
             sys.stdout.write(jina_page(args.url, html=(args.fmt == "html")))

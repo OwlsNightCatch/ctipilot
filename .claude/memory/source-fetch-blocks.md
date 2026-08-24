@@ -170,3 +170,27 @@ Related shapes worth separating when writing the note: `prodaft` this run turned
 *two* defects wearing one label — a dead subdomain in the source note
 (`resources.prodaft.com`, NXDOMAIN) and, separately, a frozen client-rendered listing on the
 live URL. Fixing the note is not fixing the recipe; say which one you did.
+
+## 2026-08-22 — PDFs are a transport rung now, not a dead end (`pdf <URL-or-path>`)
+
+`tools/fetch_source.py pdf <URL-or-path>` extracts PDF text with nothing but the standard
+library (zlib + FlateDecode, uncompressed streams, hex and Identity-H strings, octal/paren
+escapes, TJ arrays). It spends **no reader credit**, takes a local path so a heavy document
+can be written into `work/<run-id>/` and grepped on disk for literal quote checks, warns when
+subset fonts defeat extraction, and fails loudly rather than returning silent empty on a
+scanned/image-only document.
+
+**Why it exists.** The 2026-08-20 fire concluded that a five-agency joint advisory's PDF
+"could not be rendered by any tooling in the container", composed the entry from an outlet's
+reading of it, and then had its own verification pass extract the full text using a different
+transport and the standard library. Three verifier iterations went on the consequences.
+
+**The rule that follows: a PDF is never a reason to compose from someone else's reading of a
+primary the run is already holding.** Doing that manufactures a single-source condition out
+of a document you have, and it costs exactly the fields this pipeline values most — the
+precise affected/fixed ranges and the literal-checkable quotes. Authority publishing is
+PDF-first far more often than the feed suggests (national CERTs, joint advisories, vendor
+PSIRT bulletins), so this rung gets used.
+
+Ladder position: it is a *direct* rung, alongside `url <URL>` — try it before the reader, and
+fall back to the reader only when the bytes themselves are refused.

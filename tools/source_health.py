@@ -340,6 +340,35 @@ def _bridge_check(source_id: str, url: str, *, timeout: float,
             out = proc.stdout or ""
             if proc.returncode == 0 and len(out.strip()) >= BRIDGE_MIN_BYTES:
                 return "bridge-ok", f"bridge `{' '.join(argv)}` → {len(out)} B"
+            # A structured recipe that legitimately found nothing is SUCCESS, not
+            # a recipe failure. Several API subcommands return a compact JSON
+            # envelope whose whole point is that `count`/`total` can be zero —
+            # `sec-edgar 8k` over a week with no cyber-incident filings returns
+            # ~120 bytes of valid JSON, well under BRIDGE_MIN_BYTES, and was
+            # therefore reported as "bridge/api recipe is failing now" on
+            # 2026-08-22 while the recipe demonstrably worked. That is exactly
+            # the "bridge fetched OK; no new content in window" case the run
+            # contract classes as success, and churning it as an unsolved
+            # needs-demote trains the operator to ignore the UNSOLVED list.
+            # So: if a zero-exit recipe emitted parseable JSON carrying a
+            # recognised envelope key, the recipe is alive whatever its size.
+            if proc.returncode == 0 and out.strip().startswith(("{", "[")):
+                try:
+                    parsed = json.loads(out)
+                except ValueError:
+                    parsed = None
+                if isinstance(parsed, list):
+                    return "bridge-ok", (f"bridge `{' '.join(argv)}` → {len(out)} B, "
+                                         f"{len(parsed)} record(s)")
+                if isinstance(parsed, dict) and (
+                    {"count", "total", "items", "hits", "source"} & set(parsed)
+                ):
+                    n = parsed.get("count", parsed.get("total"))
+                    return "bridge-ok", (
+                        f"bridge `{' '.join(argv)}` → {len(out)} B, valid empty result"
+                        if n == 0 else
+                        f"bridge `{' '.join(argv)}` → {len(out)} B, structured result"
+                    )
             raw = (proc.stderr or out or "").strip()
             tail = raw.splitlines()
             why_full = raw if tail else f"rc={proc.returncode}, {len(out)} B"

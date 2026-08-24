@@ -1,6 +1,6 @@
 # CTI Intelligence Run — Master Prompt
 
-> **Prompt version:** v3.31 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v3.32 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, **fired on an operator-chosen cadence** — several times a day, once a day, or anything else; the operator tunes the schedule at will and the prompt is cadence-agnostic and self-healing (the window is always derived from the gap to the last run, PD-7). The main agent composes entries and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/). Main agent and sub-agents may run on different models — every agent self-identifies (§ Self-identification).
 >

@@ -48,3 +48,22 @@ and that the fetch continues.
 **Diagnostic rule:** `jina-usage` reports the whole pool; a sub-agent's stderr reports only the keys
 it happened to touch. Never conclude "the pool is exhausted" from a sub-agent's report — check
 `jina-usage` first. Rotation warnings followed by content mean the ladder worked.
+
+## 2026-08-22 — the second probe-side false `needs-demote`: byte count is not health
+
+Same family as the `probe_url` target-mismatch fix, different mechanism. `source_health.py`
+judged a bridge recipe healthy by how many bytes it printed, so `sec-edgar 8k` — which
+correctly returned a well-formed JSON envelope with `count: 0` because no matching filing
+existed in the window, about 120 bytes — was flagged `needs-demote`. A **valid empty result is
+a working source**, and a quiet window is the normal state of a filing feed.
+
+Fixed: when a bridge exits 0 and its output parses as JSON, health is decided by structure
+rather than size — a list reports its record count, and a dict carrying any of
+`count`/`total`/`items`/`hits`/`source` is `bridge-ok` with "valid empty result" said
+explicitly when the count is zero. The sweep went from 3 UNSOLVED to **189/189 probed,
+189× action `none`**.
+
+**Generalisation for any future probe work: a probe must assert the shape the recipe promises,
+never a proxy for it.** Byte counts, non-empty output and HTTP 200 are all proxies, and each
+one has produced a false demotion signal in this repo. Demoting a healthy source costs
+coverage silently, which is the expensive direction of this error.

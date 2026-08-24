@@ -1,0 +1,271 @@
+domain: S2
+run_id: 2026-08-22T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-22T04:13:51Z
+ended_at: 2026-08-22T04:30:02Z
+duration_seconds: 971
+self_telemetry:
+  webfetch_calls: 28
+  websearch_calls: 16
+  bridge_fetches: 15
+
+items:
+  - title: "SPIP 4.4.21 fixes a second unconditional pre-authentication RCE in the French public-sector CMS, days after 4.4.20 patched a different one — no CVE assigned, and exploitation attempts already observed"
+    sources:
+      - { url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html", publisher: "SPIP (vendor blog)", date: "2026-08-20", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/", publisher: "CERT-FR / ANSSI", date: "2026-08-21", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-77647", publisher: "NVD", date: "2026-08-20", role: "corroborating (related, distinct flaw)" }
+    discovery_trace: "first seen at: anssi-fr, URL https://www.cert.ssi.gouv.fr/avis/feed/ (CERTFR-2026-AVI-1063, 21 Aug 2026) → primary: SPIP vendor blog, URL https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html → cross-check: NVD CVE-2026-77647 (a related but distinct, already-numbered SPIP flaw fixed in the preceding 4.4.20 release)"
+    summary: |
+      SPIP, the CMS underpinning a large share of French government, local-authority, media and
+      institutional websites, shipped version 4.4.21 on 2026-08-20 to fix what the vendor's own
+      release note calls "une vulnérabilité universelle (sans conditions) pré-authentification RCE"
+      (an unconditional, pre-authentication remote-code-execution flaw) affecting SPIP 4.4.20 — the
+      immediately preceding release. CERT-FR relayed the fix as CERTFR-2026-AVI-1063 the next day,
+      2026-08-21, recording remote code execution as the risk and "SPIP versions antérieures à
+      4.4.21" as affected. The vendor states the flaw was reported anonymously via ANSSI, that it is
+      NOT mitigated by SPIP's built-in "écran de sécurité" (a request-filtering protective layer many
+      administrators rely on as a compensating control), and that "des tentatives d'exploitation de
+      la faille ont déjà été constatées dans la nature" (exploitation attempts have already been
+      observed in the wild). Neither the vendor blog nor the CERT-FR advisory cites a CVE identifier
+      for this specific flaw. It is a distinct issue from CVE-2026-77647 (CVSS 9.8, CWE-94), a
+      separately numbered pre-auth RCE affecting SPIP before 4.4.20 caused by incorrect identification
+      of `<?php` blocks combined with `var_export()` mishandling a leading `<` character — that flaw's
+      fix shipped in the 4.4.20 release itself and its own NVD record likewise notes in-the-wild
+      exploitation as of August 2026. In short: two unauthenticated RCE-class flaws in successive SPIP
+      releases within roughly two weeks, both under active exploitation attempts, one still without a
+      CVE. Any Swiss or European public-sector or municipal site running SPIP should treat this as an
+      emergency patch regardless of CVE-tracking status, since a CVE-only vulnerability-management
+      workflow will miss the newer flaw entirely.
+    region_nexus: "France (national CERT advisory); transferable to any Swiss/European public-sector or institutional site running SPIP"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["SPIP"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Cette version corrige une vulnérabilité universelle (sans conditions) pré-authentification RCE qui touche la version 4.4.20 de SPIP."
+        attribution: "SPIP maintenance team (vendor blog)"
+        source_url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html"
+      - quote: "Cette faille n'est pas prise en charge par l'écran de sécurité."
+        attribution: "SPIP maintenance team (vendor blog)"
+        source_url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html"
+      - quote: "des tentatives d'exploitation de la faille ont déjà été constatées dans la nature"
+        attribution: "SPIP maintenance team (vendor blog)"
+        source_url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html"
+      - quote: "L'éditeur indique que cette vulnérabilité est activement exploitée."
+        attribution: "CERT-FR / ANSSI (CERTFR-2026-AVI-1063)"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/"
+    extended_notes: |
+      Detection/hunt concept (telemetry class first): web-server access-log review for anomalous
+      requests to SPIP entry points that precede unexpected PHP process spawns or webshell writes
+      under the SPIP document root — SPIP's compiled-template cache directory (typically
+      `tmp/cache/`) is the classic post-exploitation write target for this CMS family. Hardening:
+      upgrade to 4.4.21 immediately; do not rely on the "écran de sécurité" as a compensating
+      control for this specific flaw since the vendor states it does not cover it; where upgrade is
+      delayed, consider a reverse-proxy/WAF rule blocking unexpected header/body patterns targeting
+      SPIP's public front controller as an interim measure. No CVE identifier exists for the 4.4.21
+      fix as of this writing — SOC teams whose vulnerability-management tooling triggers only off
+      CVE feeds should flag SPIP as a manual watch item.
+    watchlist: []
+    borderline: false
+
+  - title: "Zoom 'Zoomsday' (CVE-2026-53413): a stack buffer overflow in the meeting-annotation parser lets any participant achieve RCE on another participant's device with no click required — CCB Belgium issues a fresh 'Patch Immediately' warning nine days after disclosure"
+    sources:
+      - { url: "https://ccb.belgium.be/advisories/warning-zero-click-remote-code-execution-zoom-clients-patch-immediately", publisher: "Centre for Cybersecurity Belgium (CCB)", date: "2026-08-20", role: "primary" }
+      - { url: "https://www.zoom.com/en/trust/security-bulletin/zsb-26015", publisher: "Zoom (vendor PSIRT, ZSB-26015)", date: "2026-08-14", role: "primary" }
+      - { url: "https://a.security/blog/asecurity-zoomsday", publisher: "A Security (discovering researcher, Idan Levcovich)", date: "2026-08-11", role: "primary" }
+      - { url: "https://securityaffairs.com/197042/hacking/zoom-patches-zoomsday-zero-click-flaw-enabling-remote-code-execution.html", publisher: "Security Affairs", date: "2026-08-11", role: "corroborating" }
+    discovery_trace: "first seen at: ccb-belgium, URL https://ccb.belgium.be/advisories (advisory dated 20/08/2026) → primary: CCB advisory detail, URL https://ccb.belgium.be/advisories/warning-zero-click-remote-code-execution-zoom-clients-patch-immediately → pivot: Zoom vendor bulletin ZSB-26015, URL https://www.zoom.com/en/trust/security-bulletin/zsb-26015 → pivot: discovering researcher's write-up, URL https://a.security/blog/asecurity-zoomsday"
+    summary: |
+      CCB Belgium published a "Patch Immediately" advisory on 2026-08-20 for CVE-2026-53413 in Zoom
+      Clients, nine days after Zoom's own PSIRT bulletin (ZSB-26015, initial publication 2026-08-11,
+      revised 2026-08-14 to add Zoom Video SDK to the affected-products list). The vulnerable
+      component is the meeting annotation feature's deserialization routine, identified by the
+      discovering researcher (Idan Levcovich, A Security) as `CAnnoFormatBlock::Deserialize`: the
+      function reads a 32-bit, attacker-controlled length count directly off the wire and copies that
+      many bytes into a fixed 128-byte buffer with no bounds check, producing a stack buffer overflow
+      (CWE-787) reachable through Zoom's normal encrypted meeting-annotation protocol
+      (`libannotate.so` on the platforms examined). CVSS 3.1 base score is 8.3
+      (AV:N/AC:H/PR:N/UI:R/S:C/C:H/I:H/A:H) — NVD's vector marks user interaction as "required," but
+      the researcher and the vendor both describe the practical exploitation condition as needing
+      nothing beyond being present in a meeting: "No click, no download, and nothing required of the
+      victim but being in the meeting." Any participant in a call can trigger code execution on any
+      other participant's client, across Windows, macOS, Linux, iOS and Android. Affected: Zoom
+      Workplace before 7.1.0 (and 7.0.6 on the maintenance branch), Zoom Workplace VDI Client for
+      Windows before 7.0.11/6.6.16, Zoom Rooms before 7.1.0, Zoom Meeting SDK before 7.1.0, Zoom Video
+      SDK before 2.6.0. The researcher's disclosure timeline shows the vendor had five weeks'
+      lead time (client fix shipped 2026-06-22, server-side mitigation 2026-07-15) before public
+      disclosure on 2026-08-11 — no in-the-wild exploitation has been reported by either the vendor
+      or CCB. The researcher frames the capability class ("previously have only been available to
+      nation-state threat actors") as the reason for treating unpatched Zoom clients in any
+      government, healthcare or other regulated meeting environment as an urgent compromise-risk
+      surface, not merely a routine client update.
+    region_nexus: "Belgium (national-CERT advisory); Zoom Workplace/Rooms/SDK are broadly deployed across Swiss and European public-sector, healthcare and education meeting environments"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, healthcare, telco"
+    cves: [CVE-2026-53413]
+    techniques: [T1203]
+    affected_products: ["Zoom Workplace", "Zoom Workplace VDI Client for Windows", "Zoom Rooms", "Zoom Meeting SDK", "Zoom Video SDK"]
+    entity_keys: []
+    new_entities:
+      - { key: "vuln:zoomsday-cve-2026-53413", type: campaign, name: "Zoomsday (CVE-2026-53413)", aliases: ["CVE-2026-53413"],
+          summary: "A Security's name for the zero-interaction stack buffer overflow in the Zoom Clients meeting-annotation deserializer (CAnnoFormatBlock::Deserialize), disclosed 2026-08-11 (A Security / Zoom ZSB-26015)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Missing bounds check in the annotator function of Zoom Clients allows buffer over-write, which may allow a meeting participant to achieve remote code execution of another participant via network access."
+        attribution: "Zoom (Security Bulletin ZSB-26015)"
+        source_url: "https://www.zoom.com/en/trust/security-bulletin/zsb-26015"
+      - quote: "Each count is a 32-bit value taken straight off the wire, and each buffer is a fixed 128 bytes. There is no bounds check to stop a count from exceeding the buffer length."
+        attribution: "A Security (Idan Levcovich)"
+        source_url: "https://a.security/blog/asecurity-zoomsday"
+      - quote: "No click, no download, and nothing required of the victim but being in the meeting."
+        attribution: "A Security (Idan Levcovich)"
+        source_url: "https://a.security/blog/asecurity-zoomsday"
+      - quote: "The Centre for Cybersecurity Belgium strongly recommends installing updates for vulnerable devices with the highest priority after thorough testing."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-zero-click-remote-code-execution-zoom-clients-patch-immediately"
+    extended_notes: |
+      Detection/hunt concept: this is a client memory-corruption bug reachable only through Zoom's
+      own encrypted transport, so it is not visible to network-layer inspection; the realistic
+      defensive control is endpoint-side — EDR/AV crash-and-exception telemetry on Zoom client
+      processes (unexpected child-process spawns from Zoom's meeting/annotation process, or
+      unexplained crashes of the annotation component) is the closest observable proxy, alongside
+      keeping Zoom auto-update enabled so the fixed-version floor is enforced fleet-wide. Hardening:
+      patch to the fixed versions listed above; where BYOD or VDI Zoom clients cannot be
+      centrally forced to update, disabling in-meeting annotation via account/group policy removes
+      the attack surface entirely until patched endpoints are confirmed. CCB's advisory explicitly
+      flags that patching does not remediate a historic compromise, i.e. organisations that ran
+      unpatched clients in meetings between disclosure (2026-08-11) and today should not treat
+      patching alone as closing out the exposure window.
+    watchlist: []
+    borderline: true
+    borderline_reason: "the underlying CVE (CVE-2026-53413) was disclosed 2026-08-11, more than a week before window_hours=50 (and slightly before developing_window_hours=72); the in-window trigger is CCB Belgium's own dated 'Patch Immediately' advisory (2026-08-20), a first-party national-CERT primary in its own right and not previously covered by this pipeline (checked entities/registry.yaml and prior_coverage.json — no match) — flagging for the main agent's recency call given the underlying-CVE age."
+
+  - title: "Martigny-Combe (Valais): a Swiss municipality's email account is compromised for eight days before detection, then used to mass-mail a fraudulent message to municipal contacts — BACS, the cantonal DPO and police notified"
+    sources:
+      - { url: "https://www.ictjournal.ch/news/2026-08-21/cyberattaque-en-valais-une-messagerie-de-la-commune-de-martigny-combe-compromise", publisher: "ICTjournal", date: "2026-08-21", role: "primary" }
+      - { url: "https://www.lenouvelliste.ch/valais/bas-valais/martigny-district/martigny-combe-commune/cyberattaque-a-la-commune-de-martigny-combe-300-courriels-contenant-des-donnees-sensibles-ont-ete-voles-1511002", publisher: "Le Nouvelliste", date: "2026-08-20", role: "primary" }
+      - { url: "https://www.inside-it.ch/erneuter-cyberangriff-auf-eine-walliser-gemeinde-20260821", publisher: "inside-it.ch", date: "2026-08-21", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Schweiz Kanton Gemeinde Cyberangriff Ransomware August 2026\") → pivot: inside-it.ch, URL https://www.inside-it.ch/erneuter-cyberangriff-auf-eine-walliser-gemeinde-20260821 → primary: ICTjournal, URL https://www.ictjournal.ch/news/2026-08-21/cyberattaque-en-valais-une-messagerie-de-la-commune-de-martigny-combe-compromise → primary: Le Nouvelliste, URL https://www.lenouvelliste.ch/valais/bas-valais/martigny-district/martigny-combe-commune/cyberattaque-a-la-commune-de-martigny-combe-300-courriels-contenant-des-donnees-sensibles-ont-ete-voles-1511002"
+    summary: |
+      The Valais municipality of Martigny-Combe (approx. 2,300 residents) disclosed that its
+      communal secretariat's email account was compromised, with initial access dating to
+      2026-08-10 per Le Nouvelliste's image caption ("L'attaque remonte au 10 août") — roughly
+      eight days before the intrusion was detected on 2026-08-18, when the account was used to
+      mass-mail a fraudulent message to the municipality's contacts (a business-email-compromise /
+      internal-spearphishing pattern: an attacker who already controls a trusted internal mailbox
+      uses it to reach that mailbox's own contact list rather than an external spoofed sender).
+      Le Nouvelliste reports roughly 300 emails containing sensitive data were retrieved by the
+      attacker before containment. Neither source describes the initial-access mechanism into the
+      mailbox itself (credential phishing, credential stuffing, or a compromised third-party mail
+      client are all consistent with the reported facts, but none is confirmed). The municipality
+      blocked access and engaged external forensic specialists, notified the Federal Office for
+      Cybersecurity (BACS/OFCS), the cantonal data-protection officer, and filed a criminal
+      complaint with Valais cantonal police. The disclosure explicitly frames this as the second
+      Valais communal-administration incident in recent months, after a ransomware attack disabled
+      IT at the municipality of Vétroz earlier in 2026 (sources disagree on the attributed group —
+      not independently resolved in this pass, and not load-bearing for this entry).
+    region_nexus: "Switzerland (Valais / Wallis canton) — communal administration"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1534, T1078]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:martigny-combe-email-compromise-2026-08", type: incident, name: "Martigny-Combe (Valais) municipal email compromise", aliases: [],
+          summary: "Compromise of the Martigny-Combe (Valais, Switzerland) communal secretariat email account, initial access ~2026-08-10, detected 2026-08-18, used to mass-mail a fraudulent message to municipal contacts; ~300 emails with sensitive data reportedly taken (Le Nouvelliste, ICTjournal, 2026-08-20/21)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "La messagerie du secrétariat communal de Martigny-Combe a été piratée. Des courriels ont été récupérés et un message frauduleux a été massivement envoyé à des contacts de la commune le 18 août."
+        attribution: "Le Nouvelliste"
+        source_url: "https://www.lenouvelliste.ch/valais/bas-valais/martigny-district/martigny-combe-commune/cyberattaque-a-la-commune-de-martigny-combe-300-courriels-contenant-des-donnees-sensibles-ont-ete-voles-1511002"
+      - quote: "L'attaque remonte au 10 août."
+        attribution: "Le Nouvelliste (image caption)"
+        source_url: "https://www.lenouvelliste.ch/valais/bas-valais/martigny-district/martigny-combe-commune/cyberattaque-a-la-commune-de-martigny-combe-300-courriels-contenant-des-donnees-sensibles-ont-ete-voles-1511002"
+    extended_notes: |
+      Triage-relevant pattern: an eight-day gap between initial mailbox compromise (10 Aug) and
+      the detection-triggering event (the mass fraudulent send on 18 Aug) is the operationally
+      interesting fact — the attacker had standing access to a live municipal mailbox for over a
+      week before doing anything that produced an alertable signal, meaning normal recipients would
+      have had no indicator during that window. Hunt concept: for small-municipality mail
+      environments without dedicated SOC coverage, the discriminating signal is anomalous
+      send-volume/recipient-fan-out from a single mailbox (a "the whole address book at once"
+      pattern) against that mailbox's historical baseline, plus any mail-rule or forwarding-rule
+      creation in the days prior — neither confirmed present here but a standard BEC-persistence
+      check. This is the second disclosed Valais communal-administration compromise in 2026,
+      following the Vétroz ransomware incident, reinforcing that Swiss small-municipality IT
+      remains a soft, resource-constrained target even where no ransomware is deployed.
+    watchlist: []
+    borderline: false
+
+berlin_landesnetz_tasking_result: |
+  STANDING ITEM RESULT — clean negative, as requested. No source published inside this run's
+  window (>= 2026-08-20T02:10Z; developing_window_hours=72 extends the floor back to
+  2026-08-19T04:10Z) names an access vector, a specific product, a CVE, a threat actor, or any
+  concrete attacker behaviour for the Berlin Landesnetz compromise. Checked in-window: berlin.de
+  district-office press releases (Friedrichshain-Kreuzberg, 2026-08-20 — confirms the blast radius
+  now includes downstream Bezirksamt services dependent on SenMVKU, no mechanism); ad-hoc-news.de
+  (2026-08-21 23:11 — household count updated to 55,000, isolation ongoing, no mechanism); NCSC-CH/
+  BACS "Im Fokus" and "Aktuelle Vorfälle" listings (nothing Berlin-related, and no new post at all
+  since 2026-08-18); WebSearch sweeps in German for BSI statements, an Abgeordnetenhaus inquiry
+  response, and RBB/Tagesspiegel/Berliner Zeitung follow-ups — none surfaced a mechanism inside the
+  window.
+
+  ONE finding worth flagging explicitly for the record, OUTSIDE the window and NOT composed as an
+  item: wiwo.de (Handelsblatt Media Group), published 2026-08-18 17:26 CEST — roughly 10.5 hours
+  before even the extended 72h developing-window floor — reports, citing Reuters sourcing from
+  security circles: "Nach Reuters-Informationen aus Sicherheitskreisen hatte es vor mehr als einer
+  Woche einen erfolgreichen Cyberangriff auf die genannten Senatsverwaltungsbereiche über eine
+  PDF-Datei mit Schadsoftware gegeben, die ein Mitarbeiter in einer E-Mail geöffnet hatte." (a
+  successful cyberattack on the named Senate administration areas via a malicious-PDF email
+  attachment opened by an employee, more than a week before the 18 August report — i.e. initial
+  access around 2026-08-10ish). This is a T1566.001 (spearphishing attachment) claim, single-sourced
+  to Reuters via a re-report, not corroborated by any primary I could reach (Senate Chancellery,
+  BSI, or a direct Reuters URL), and its freshest publication is outside this run's window on every
+  reading. I did not find any in-window (2026-08-20 through now) source repeating or corroborating
+  this claim with a fresh date — the closest in-window pieces (Friedrichshain-Kreuzberg press
+  release, ad-hoc-news.de) are pure status updates with zero mechanism content. Recommend the next
+  run watch for: (a) a fresh outlet repeating the Reuters PDF-attachment claim with an in-window
+  date, (b) a BSI Lagebericht or Amtshilfe statement, (c) an Abgeordnetenhaus Innenausschuss/
+  Digitalausschuss session readout (Grüne faction announced plans to raise it in the Digital
+  Committee per one search hit, session date not established).
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: jina-reader-pool
+    reason: "All 7 jina API keys returned HTTP 402 (balance exhausted) throughout this run; anonymous free tier also 403'd. Affected: heise.de (Berlin coverage — recovered via direct bridge fetch instead), thehackerwire.com SPIP/CVE detail (could not recover via any transport, used WebSearch synthesis only for the unconfirmed X-Spip-Filtre/analyse_resultat_skel detail, which I did NOT include in the composed item because I could not verify it against a primary). Flagging per self-evolution: jina pool needs top-up or the ccn-cert-es rotation-priority source (pinned to jina) will keep failing."
+  - source_id: ccn-cert-es
+    reason: "Not attempted this run — rotation-priority source per allocation.json, but time budget was spent on the Berlin standing-item chase and the three composed items; CCN-CERT (Spain) coverage deferred. Known 403 to all direct transports per the existing source note; would need the jina reader (unavailable this run, see above)."
+  - source_id: ncsc-uk
+    reason: "Not fetched this run — essential source not reached due to time allocation toward the Berlin standing-item chase and the three composed items; no NCSC UK check performed."
+  - source_id: cert-pl
+    reason: "cert.pl RSS fetched cleanly (both EN/PL feeds); nothing in-window beyond routine coordinated-disclosure CVE posts already reflected in cve_table-adjacent S1 territory — no incident/sector item surfaced."
+  - source_id: cert-at
+    reason: "cert.at homepage fetched cleanly; no items in the 2026-08-18 to 2026-08-22 window (most recent dated item was 2026-08-14)."
+  - source_id: enisa
+    reason: "enisa.europa.eu/news fetched cleanly; no items in the 2026-08-15 to 2026-08-22 window (most recent was 2026-08-06)."
+  - source_id: edpb
+    reason: "edpb.europa.eu/news/news_en fetched cleanly; no items in the 2026-08-14 to 2026-08-22 window (most recent was 2026-07-30)."
+
+watchlist_sweep:
+  duty: sector-lens
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product/supplier watchlist configured for this deployment; applied sector-lens weighting toward public-sector and home-region (Switzerland/Europe) per organization profile instead of a discrete sweep. All three composed items carry a direct or indirect public-sector nexus (French government CMS, Swiss communal administration, and collaboration software broadly deployed across Swiss/EU public-sector and healthcare)."
