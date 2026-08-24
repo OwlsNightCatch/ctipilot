@@ -1,0 +1,25 @@
+# Findings summary (machine-readable)
+- code: F3
+  category: claim-not-supported
+  section: incidents
+  item: "2026-08-24/reliaquest-vishing-mfa-push-device-trust-contained"
+  url_or_quote: "\"opening with a flat denial of something that was evidently circulating about it: 'Claims that ReliaQuest was compromised or targeted by ransomware are false'\" (body); \"its own opening sentence is a denial of exactly that\" (sourcing_note)"
+  summary: "https://reliaquest.com/blog/threat-spotlight-social-engineering-attempt-against-reliaquest-what-we-found (fetched this iteration via bridge raw HTML and WebFetch) actually opens, immediately after its byline, with 'On August 22, 2026, ReliaQuest was the target of a social engineering attack. While unsuccessful beyond temporarily exposing one identity, the attempt was an important reminder...' (confirmed also by the page's meta-description tag). The denial sentence appears near the END of the article, immediately after the containment/investigation-findings paragraph and immediately before the industry-playbook sentence -- not as an opening line. The underlying denial fact is accurate; the claim about where in the document it sits is false, and repeats in the entry body, the entry's sourcing_note, and the run record's F4-a remediation note ('the circulating claim its own opening sentence denies', runs/2026-08-24/2026-08-24T0410Z-intel.md line 229). Fix: remove the 'opening with' / 'opening sentence' framing."
+- code: F4
+  category: hallucinated-fact
+  section: run-record
+  item: "runs/2026-08-24/2026-08-24T0410Z-intel.md — frontmatter entities_added"
+  url_or_quote: "- incident:reliaquest-shinyhunters-vishing-claim-2026-08"
+  summary: "The F4-a remediation (iteration 1) renamed this registry key to incident:reliaquest-social-engineering-attempt-2026-08 'so the entity namespace does not assert the link either' (run record line 229), and entities/registry.yaml (line 5423) and the entry itself both carry only the new key -- confirmed this iteration by grep across entities/ and entries/, which found the old key nowhere. The run record's entities_added list was not updated to match and still names the pre-rename key, so it now asserts an entity was added under a name that was never actually registered. check_run.py does not cross-check entities_added against the registry, so this is not caught mechanically. Fix: replace with incident:reliaquest-social-engineering-attempt-2026-08."
+- code: F4
+  category: hallucinated-fact
+  section: run-record
+  item: "runs/2026-08-24/2026-08-24T0410Z-intel.md — sub_agents.DR1.note"
+  url_or_quote: "\"the nine entries carry 22 evidence[] quotes in total, of which 16 were in the machine-checked set ... (three ReliaQuest quotes were verified but omitted from that file, and six German fragments were checked separately against the extracted report text)\""
+  summary: "Arithmetic does not close: 16 (machine-checked) + 3 (ReliaQuest, omitted) = 19 English quotes; the note's own stated total of 22 requires exactly 3 German fragments (22-19=3), not six. Verified this iteration against ground truth: work/2026-08-24T0410Z-intel/quotes.json contains exactly 16 entries (direct read); the BACS entry's frontmatter evidence[] carries exactly 3 German quotes, not six; and iteration 1's own report (verification.iter1.md line 11) independently derived and stated the correct figure: 'all 19 English evidence[] quotes plus the 3 German BACS fragments ... All 22 are contiguous verbatim substrings.' This 'six' figure is a new arithmetic error introduced by the F11-d fix applied between iteration 1 and this iteration, not a residual of the original finding. Fix: change 'six German fragments' to 'three German fragments' (or restate the breakdown to close to 22)."
+- code: F11
+  category: editorial-advisory
+  section: annual-report
+  item: "2026-08-24/bacs-halbjahresbericht-2026-1-poland-sabotage-dream-job"
+  url_or_quote: "Defender takeaway: \"the public sector is now the largest reporting share\""
+  summary: "The F11-e fix (iteration 1) correctly reworded title/headline/summary/opening-paragraph to 'remains'/'continues to'/'weiterhin' language, and the entry's own intro paragraph now states 'this is a persistent ranking rather than a new development.' The Defender-takeaway paragraph was not swept in the same pass and still reads 'the public sector is now the largest reporting share' -- the identical novelty-implying phrasing the rest of the entry was fixed to remove, and it now contradicts the entry's own earlier sentence. Advisory: one-word fix ('remains' for 'is now'), operational conclusion unaffected."

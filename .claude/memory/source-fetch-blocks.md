@@ -204,3 +204,19 @@ NCSC Switzerland's public site migrated to the **Bundesamt für Cybersicherheit 
 **Not affected and deliberately unchanged:** `security-hub.ncsc.admin.ch`, the Cyber Security Hub API behind the `ncsc-csh` bridge subcommand, still resolves. Re-check it if the CSH recipe ever starts returning empty.
 
 Watch shape: this surfaced as a **metadata-drift** finding, not a fetch failure — the old URL still 200'd via redirect. A source that still works today because of a redirect the publisher says is temporary is a repair order, not a healthy record.
+
+## The Swiss authority moved: ncsc.admin.ch → bacs.admin.ch (2026-08-24)
+
+The Swiss federal cyber authority relaunched its web presence on the
+`bacs.admin.ch` domain (its own relaunch notice is dated 2026-08-20) and the new
+site is a **Nuxt single-page application**: the bridge's direct GET returns only
+the JavaScript shell, while WebFetch's own renderer surfaces the listing. Both
+`ncsc-ch-focus` and `ncsc-ch-incidents` were corrected to `fetch_method:
+webfetch` on 2026-08-24. Official federal PDFs are served from
+`cms.news.admin.ch` (the admin.ch news file service), not from bacs.admin.ch.
+
+Consequence beyond the recipe: `NATIONAL_CERT_HOSTS` in `tools/check_run.py`
+listed only the old domain, so a `single-source-national-cert` carve-out that
+the home-region authority plainly earns was being reported as unearned. Both new
+hosts were added the same run. **When a national CERT changes domain, the
+carve-out list is a second place that needs the change.**

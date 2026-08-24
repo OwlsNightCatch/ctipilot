@@ -291,6 +291,14 @@ def _host_is_aggregator(host: str) -> bool:
 # `single-source`.
 NATIONAL_CERT_HOSTS: tuple[str, ...] = (
     "ncsc.admin.ch", "ncsc.ch", "govcert.ch",
+    # The Swiss federal cyber authority migrated its web presence from
+    # ncsc.admin.ch to bacs.admin.ch (relaunch noted on its own site
+    # 2026-08-20); official federal PDFs are served from the admin.ch
+    # news file service. Same disclosing authority, new hosts — added
+    # 2026-08-24 when the BACS Halbjahresbericht 2026/I was published
+    # only on those two hosts and the carve-out it plainly earns was
+    # being reported as unearned.
+    "bacs.admin.ch", "cms.news.admin.ch",
     "cert.europa.eu", "enisa.europa.eu",
     "bsi.bund.de", "wid.cert-bund.de", "cert.ssi.gouv.fr",
     "ncsc.gov.uk", "ncsc.nl", "advisories.ncsc.nl",
@@ -1098,11 +1106,37 @@ def check_prompt_version(run: dict[str, Any], content_root: Path) -> None:
     if pre_commit is None:  # git unavailable / fixture root — fall back to a date heuristic
         pre_commit = str(run.get("date") or "") == datetime.now(timezone.utc).date().isoformat()
 
-    if pre_commit:
+    # A trailing version is only a *versioning-rule* defect when this run
+    # actually edited a prompt. When it did not, the changelog moved on under
+    # it — another fire bumped the banner while this one was mid-pipeline —
+    # and recording the version that genuinely executed is the truthful thing
+    # to do, not a skipped bump. Added 2026-08-24 after a run stalled ~4.7 h,
+    # was overtaken by two later fires, and was handed a FAIL it could only
+    # have "fixed" by claiming to have run a prompt version it never read.
+    # The test is against origin/main, not HEAD: a run that syncs with main
+    # mid-pipeline inherits another fire's prompt edits as local changes, and
+    # those must not read as this run's own. If the working tree's prompts are
+    # identical to origin/main, this run edited none of them.
+    prompt_edited: bool | None = None
+    try:
+        proc = subprocess.run(
+            ["git", "diff", "--name-only", "origin/main", "--", "prompts", ".claude/agents"],
+            capture_output=True, text=True, cwd=ROOT, timeout=15)
+        prompt_edited = bool(proc.stdout.strip()) if proc.returncode == 0 else None
+    except Exception:
+        prompt_edited = None
+
+    if pre_commit and prompt_edited is not False:
         fail("prompt-version",
              f"run record prompt_version v{badge} != CHANGELOG latest v{latest} — the prompt "
              f"banner bump and the CHANGELOG entry must ship in the same commit as the prompt "
              f"edit (versioning rule)")
+    elif pre_commit:
+        warn("prompt-version",
+             f"run record prompt_version v{badge} trails CHANGELOG latest v{latest}, and this run "
+             f"edited no prompt or agent definition — the changelog moved on under it (an overtaking "
+             f"fire bumped the banner mid-pipeline). Recording the version that actually executed is "
+             f"correct; the versioning rule is not in play")
     else:
         warn("prompt-version",
              f"run record prompt_version v{badge} trails CHANGELOG latest v{latest} "
