@@ -20,7 +20,7 @@ The first 200 lines or 25 KB of this file are loaded into every session by the a
 
 ## Index
 
-- [Auto-commit/push/deploy for routine fixes](auto-publish-routine-fixes.md) — go end-to-end through commit→push→auto-merge→deploy-site→live URL without pausing; memory writes are pre-authorized in settings.json (`permissions.allow`) so they never prompt/interrupt
+- [Auto-commit/push/deploy for routine fixes](auto-publish-routine-fixes.md) — go end-to-end through commit→push→auto-merge→deploy-site→live URL without pausing; settings.json runs `defaultMode: bypassPermissions` + a memory/settings allowlist, so NOTHING prompts the operator (their 2026-08-24 directive); also carries the 2026-08-24 directives: trafilatura capture via `extract` (jina last, WebFetch avoided for bodies), notifications only for critical vulns + pipeline breakage
 - [Changelog hygiene](changelog-hygiene.md) — version history lives only in prompts/CHANGELOG.md; never annotate rules with vN.M; check_run.py `prompt-version` gates it
 - [Customization framework](customization-framework.md) — branding.yaml + org-profile.yaml carry ALL org/brand values; never reintroduce identity literals in build.py or lens phrases in prompt prose; PYTHONHASHSEED=0 for build byte-diffs
 - [Design system](design-system.md) — the site's visual language = the "CTI Pilot Design Modernization" Claude Design project; component classes + brandable surface (nav/hero/ai-bar copy, accent-rgb auto-derived); DOM/JS contract for the new shell + live timeline; routes are /live/ (rolling), /daily/ (completed days only, excludes rolling day), /weekly/

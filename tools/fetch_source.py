@@ -1054,6 +1054,137 @@ def jina_usage(*, warn_below: int = JINA_LOW_BALANCE_TOKENS) -> dict[str, Any]:
     return out
 
 
+# --- trafilatura capture/extraction layer (v3.32, operator directive 2026-08-24) ---
+# The operator's standing order: capture websites with trafilatura
+# (https://github.com/adbar/trafilatura), avoid the jina reader wherever
+# possible (metered keys, refilled sparsely), and avoid WebFetch's built-in
+# summariser. Division of labour:
+#   * TRANSPORT stays with this bridge's `fetch()` — it already sends a full,
+#     mutually consistent human-browser header set (Chrome UA + client hints +
+#     Sec-Fetch-*), which is more "human" than trafilatura's own downloader.
+#   * trafilatura's `fetch_url` is a SECOND direct transport (different HTTP
+#     stack/fingerprint) tried before the reader ever spends credit.
+#   * EXTRACTION is trafilatura's job: boilerplate-free article text with
+#     metadata, replacing what jina's markdown was mostly used for.
+# trafilatura is pip-installed by .claude/hooks/setup-deps.sh at SessionStart;
+# every code path here degrades gracefully when the module is absent.
+
+def _trafilatura():
+    try:
+        import trafilatura  # noqa: PLC0415 — optional dependency, lazy import
+        return trafilatura
+    except ImportError:
+        return None
+
+
+def _trafilatura_config():
+    """A trafilatura config carrying the bridge's browser UA so its own
+    downloader presents the same human fingerprint as `fetch()`."""
+    t = _trafilatura()
+    if t is None:
+        return None
+    from trafilatura.settings import use_config  # noqa: PLC0415
+    cfg = use_config()
+    cfg.set("DEFAULT", "USER_AGENTS", BROWSER_UA)
+    cfg.set("DEFAULT", "DOWNLOAD_TIMEOUT", str(int(DEFAULT_TIMEOUT)))
+    return cfg
+
+
+def extract_readable(html: str, url: str | None = None) -> str | None:
+    """Clean, boilerplate-free markdown (title/date metadata included) from a
+    raw HTML body via trafilatura. None when trafilatura is unavailable or the
+    page has no extractable main content (a JS shell, a bare listing)."""
+    t = _trafilatura()
+    if t is None:
+        return None
+    try:
+        return t.extract(
+            html, url=url, output_format="markdown",
+            include_links=True, include_tables=True,
+            with_metadata=True, favor_recall=True,
+        )
+    except Exception:  # noqa: BLE001 — extraction must never kill a fetch
+        return None
+
+
+def _trafilatura_fetch(url: str) -> str | None:
+    """trafilatura's own downloader as an alternate DIRECT transport (no jina
+    credit spent). Returns raw HTML or None. It sees the same egress proxy as
+    everything else in this container; a different client stack sometimes
+    passes where urllib is fingerprinted."""
+    t = _trafilatura()
+    if t is None:
+        return None
+    # trafilatura's downloader (urllib3) does NOT honor the env proxy. In the
+    # cloud routine container all egress is forced through HTTPS_PROXY, so
+    # fetch_url can never connect there — skip the rung instead of burning a
+    # 30 s timeout per URL. On an unproxied machine the rung stays live.
+    if os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy"):
+        return None
+    _check_url(url)  # same SSRF gate as fetch()
+    try:
+        html = t.fetch_url(url, config=_trafilatura_config())
+        if html and len(html) > 500 and not _looks_blocked(html):
+            return html
+    except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
+def extract_page(url: str) -> tuple[str, str]:
+    """Readable-page ladder — the standard way to CAPTURE an article body.
+
+    Rungs, in order (jina strictly last — operator directive 2026-08-24):
+      1. direct browser-UA GET (`fetch`)  → trafilatura extraction;
+      2. trafilatura's own downloader     → trafilatura extraction;
+      3. the r.jina.ai reader (metered)   — only when both direct rungs fail
+         or the page needs JS to render its content.
+
+    Returns `(markdown_text, method)`, method ∈ {trafilatura-direct,
+    trafilatura-fetch, direct-raw, jina}. `direct-raw` means the page was
+    reachable but not article-shaped (extraction found no main content) —
+    the raw body is returned so the caller still gets the content."""
+    direct_err = ""
+    raw: str | None = None
+    try:
+        code, body, _ = fetch(
+            url,
+            accept="text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        )
+        if code == 200 and len(body) > 500:
+            text = body.decode("utf-8", errors="replace")
+            if not _looks_blocked(text):
+                raw = text
+                extracted = extract_readable(text, url)
+                if extracted:
+                    return extracted, "trafilatura-direct"
+            else:
+                direct_err = "direct hit returned an anti-bot/challenge body"
+        else:
+            direct_err = f"direct HTTP {code}, {len(body)} B"
+    except Exception as e:  # noqa: BLE001
+        direct_err = str(e)[:140]
+    html = _trafilatura_fetch(url)
+    if html:
+        extracted = extract_readable(html, url)
+        if extracted:
+            return extracted, "trafilatura-fetch"
+        if raw is None:
+            raw = html
+    if raw is not None:
+        # Reachable but not article-shaped (or trafilatura missing): hand the
+        # caller the raw body rather than spending reader credit on a page we
+        # already hold.
+        return raw, "direct-raw"
+    try:
+        return _jina_fetch(url), "jina"
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(
+            f"all transports failed for {url}: direct=({direct_err}); "
+            f"trafilatura=(no readable body); jina=({str(e)[:160]})"
+        ) from None
+
+
 def smart_fetch(url: str) -> tuple[str, str]:
     """Fetch an HTML page's body with an automatic fallback ladder so every
     page has a backup transport. Tries, in order:
@@ -2032,6 +2163,13 @@ def main(argv: list[str]) -> int:
     p_url.add_argument("--direct", action="store_true",
                        help="direct browser-UA GET only — do NOT fall back to the jina reader (raw HTML/XML)")
 
+    p_extract = sub.add_parser(
+        "extract",
+        help="PREFERRED article capture: fetch with human-browser headers and extract the readable "
+             "body via trafilatura (clean markdown, no boilerplate) — jina only as the last rung. "
+             "Use this instead of WebFetch for article/advisory bodies.")
+    p_extract.add_argument("url")
+
     p_jina = sub.add_parser("jina", help="LAST RESORT: force the r.jina.ai reader proxy (metered credit) — clean markdown; bypasses anti-bot/WAF/geo blocks and runs page JS. Try feed/WebFetch/url first")
     p_jina.add_argument("url")
     p_jina.add_argument("fmt", nargs="?", choices=["markdown", "html"], default="markdown",
@@ -2159,6 +2297,13 @@ def main(argv: list[str]) -> int:
                     # polluting stdout (which callers parse as page content).
                     print(f"# fetched via {method} reader fallback", file=sys.stderr)
                 sys.stdout.write(text)
+            return 0
+        if args.cmd == "extract":
+            text, method = extract_page(args.url)
+            print(f"# extract: served via {method}", file=sys.stderr)
+            sys.stdout.write(text)
+            if not text.endswith("\n"):
+                sys.stdout.write("\n")
             return 0
         if args.cmd == "jina":
             sys.stdout.write(jina_page(args.url, html=(args.fmt == "html")))

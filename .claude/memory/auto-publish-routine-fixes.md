@@ -46,3 +46,13 @@ every session that touches it — nothing forbids pre-approving the writes, and
 doing so is what lets memory accumulate and enhance across fires without a human
 in the loop. **Do not remove these allow rules.** If auto-memory ever prompts
 again, widen the path glob rather than deleting the block.
+
+## 2026-08-24 — three standing operator directives (binding on every fire)
+
+1. **Capture with trafilatura, jina strictly last.** `python3 tools/fetch_source.py extract <URL>` is the standard article read (human-browser GET + trafilatura → clean markdown). Avoid `WebFetch` for content — its summariser drops detail. The jina pool is refilled sparsely by the operator; a dead pool is NORMAL and must never stall a run — 18/20 tested hosts need no reader (evidence: `work/2026-08-23T1311Z-audit/trafilatura-rollout.md`). trafilatura is pip-installed per container by `.claude/hooks/setup-deps.sh`; in the cloud container its own downloader is proxy-blind and auto-skipped (extraction still works over the bridge's fetch).
+2. **Notifications: only critical vulns + pipeline breakage.** CLAUDE.md § Operator notification policy. No run summaries, no audit findings, no all-clears. Default is silence.
+3. **Memory must reach the repo.** The container dies after every run — memory not committed to git did not happen. The symlink hook was verified live 2026-08-24; `.claude/settings.json` now allows memory writes on absolute/worktree paths too, so no agent is ever prompted.
+
+**Memory-write mechanics (2026-08-24):** prefer the `Write`/`Edit` tools for `.claude/memory/` files — those paths are permission-allowlisted in `.claude/settings.json` on relative, absolute and worktree forms. Shell redirections into memory (`cat >>`, `tee`) are allowlisted too, but tool writes are the canonical path; never invent a third way that could prompt the operator.
+
+**Permissions (2026-08-24, operator directive):** `.claude/settings.json` sets `permissions.defaultMode: "bypassPermissions"` — no tool call in this repo prompts the operator, ever (they will not be watching). The memory/Bash allowlist remains as a fallback for hosts where bypass mode is administratively disabled.
