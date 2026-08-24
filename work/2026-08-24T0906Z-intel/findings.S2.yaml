@@ -1,0 +1,128 @@
+domain: S2
+run_id: 2026-08-14T0417Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-14T04:20:39Z
+ended_at: 2026-08-14T04:30:35Z
+duration_seconds: 596
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 0
+  bridge_fetches: 24
+items:
+  - title: "NCSC-UK guidance ties mandatory BitLocker PIN to the WinRE bypass class behind YellowKey, and names the fallback controls when a PIN cannot be enforced"
+    sources:
+      - { url: "https://www.ncsc.gov.uk/blogs/how-bitlocker-pins-help-protect-your-data-and-devices", publisher: "NCSC UK", date: "2026-08-13", role: primary }
+      - { url: "https://techcommunity.microsoft.com/blog/microsoft-security-blog/bitunlocker-leveraging-windows-recovery-to-extract-bitlocker-secrets/4442806", publisher: "Microsoft Security Blog (via NCSC-UK reference)", date: "2025", role: corroborating }
+      - { url: "https://www.bleepingcomputer.com/news/security/windows-bitlocker-zero-day-gives-access-to-protected-drives-poc-released/", publisher: "BleepingComputer (via NCSC-UK reference)", date: "2026", role: corroborating }
+    discovery_trace: "first seen at: ncsc-uk, URL https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml -> primary: NCSC UK blog, URL https://www.ncsc.gov.uk/blogs/how-bitlocker-pins-help-protect-your-data-and-devices (no further pivot needed; outbound references to Microsoft techcommunity and BleepingComputer fetched from within the same post)"
+    summary: |
+      NCSC-UK published hardening guidance responding to the public disclosure series around "YellowKey"
+      (CVE-2026-45585, disclosed by the pseudonymous researcher persona tracked in this pipeline as
+      Nightmare Eclipse / Chaotic Eclipse), which used the Windows Recovery Environment (WinRE) to bypass
+      certain BitLocker configurations and potentially decrypt drives that should have been protected.
+      NCSC-UK is explicit that this is not a novel bug class: WinRE deliberately ships unencrypted, because
+      it exists to recover data when BitLocker itself has failed, and that design tension means WinRE-based
+      bypasses of BitLocker have recurred for years — Microsoft found and patched four similar bugs in 2025,
+      presented at BlackHat with an accompanying technical write-up on the mechanism ("BitUnlocker" post,
+      referenced in NCSC-UK's own post). The guidance's core recommendation, already NCSC baseline advice but
+      restated with this incident as the trigger, is to configure BitLocker to require a PIN before decryption
+      (pre-boot authentication) — this closes the WinRE gap because the daemon/environment cannot reach the
+      volume without the user authenticating first, regardless of which specific WinRE bug is current. Where
+      mandatory PIN entry is impractical (hot-desked shared devices, time-critical emergency equipment,
+      unattended-boot devices in hazardous environments), NCSC-UK names three fallback mitigations with
+      different trust models: using the same PIN as Windows Hello (reduces user friction, not for shared
+      devices), BitLocker Network Unlock (skips the PIN prompt only while the device is on a trusted corporate
+      network, reverting to PIN prompt off-network), and Startup Keys (USB-based pre-boot authentication).
+      No new CVE is disclosed in this post; it is defensive guidance keyed to a technique class (WinRE-based
+      FDE bypass) rather than a single patch.
+    region_nexus: "UK (NCSC national guidance); technique class and Windows BitLocker deployment base apply directly to Swiss/EU public-sector and critical-infrastructure endpoint estates"
+    primary_sector_nexus: "direct — public-sector and CI endpoint hardening guidance (lost/stolen or physically-accessed managed devices)"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: [CVE-2026-45585]
+    techniques: [T1006]
+    affected_products: ["Microsoft Windows BitLocker", "Windows Recovery Environment (WinRE)"]
+    entity_keys: ["actor:nightmare-eclipse", "campaign:nightmare-eclipse-microsoft-dcu-threat-greenplasma-miniplasmaaac"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "By using the Windows Recovery Environment (WinRE), YellowKey was able to bypass certain BitLocker configurations, potentially decrypting drives that should have been protected."
+        attribution: "NCSC UK"
+        source_url: "https://www.ncsc.gov.uk/blogs/how-bitlocker-pins-help-protect-your-data-and-devices"
+      - quote: "BitLocker deliberately does not encrypt the files associated with WinRE (because an issue with BitLocker might be the reason you need to recover data)."
+        attribution: "NCSC UK"
+        source_url: "https://www.ncsc.gov.uk/blogs/how-bitlocker-pins-help-protect-your-data-and-devices"
+      - quote: "Requiring a user to authenticate before using WinRE helps to protect an element of Windows that is uniquely exploitable."
+        attribution: "NCSC UK"
+        source_url: "https://www.ncsc.gov.uk/blogs/how-bitlocker-pins-help-protect-your-data-and-devices"
+    extended_notes: |
+      Prior coverage: this pipeline has tracked the wider Nightmare Eclipse / Chaotic Eclipse Windows
+      zero-day drop series (GreatXML, RoguePlanet, LegacyHive, ShieldBreak) but had not yet carried a
+      standalone item on YellowKey / CVE-2026-45585 itself; NCSC-CH's own "Nightmare Eclipse" advisory
+      (security-hub post 12622, last edited 2026-08-12) lists YellowKey only in passing as one line in a
+      running list, with no defender-facing mitigation detail — the NCSC-UK post is the first source in this
+      run's window to name the concrete hardening lever (mandatory PIN vs. Network Unlock vs. Startup Key
+      trade-offs) rather than just the patch status. Confidence held at MEDIUM rather than HIGH because the
+      post itself carries no new incident/exploitation data — it is authoritative defensive guidance on an
+      already-patched, already-disclosed vulnerability class, not a new finding of compromise.
+    watchlist: []
+    borderline: true
+    borderline_reason: "This is national-authority hardening guidance rather than a fresh incident or an actively exploited vulnerability; included because it is genuinely new in-window content from an essential-tier source (NCSC-UK) naming a concrete, actionable mitigation for a technique class (WinRE/BitLocker pre-boot bypass) directly relevant to the constituency's Windows-based endpoint estates, but it is thinner than a typical S2 item and the main agent should weigh whether guidance-only content clears the bar this cycle."
+watchlist_sweep:
+  duty: sector-lens
+  note: "No product/supplier watchlist configured; applied sector/region lens throughout (public-sector and home-region CI weighting). All essential-tier home-region authorities (NCSC-CH x3 surfaces, ANSSI/CERT-FR avis+actualite+alerte feeds, BSI WID-SEC, CERT-EU, CERT.PL, CERT.at, NCSC-NL advisories+news, NCSC-UK, ENISA, CISA advisories/directives/news) were checked for in-window (26h) content; almost all in-window CERT/NCSC output this cycle was routine vendor-patch advisory republishing already carried by S1's vulnerability pipeline or already covered by prior runs (SAP, VMware vCenter/CVE-2026-59310, Cisco ASA/FTD CVE-2026-20349, Lazarus/AFD.sys, SharePoint chain, Cl0p batch, Liechtenstein VwbP, MyDr Poland, ICO/ACRO, Gunra, Stiftung Brandenburgische Gedenkstaetten — all already in prior_coverage.json). Standard-tier Swiss/regional discovery sources (dcod.ch, netzwoche, senthorus, oneconsult, infoguard, swisspost-cybersecurity, prodaft, lab52, ncc-research, sekoia, openssf-policy) were checked; content was either stale (outside the 26h window), promotional/non-technical, or re-reporting of already-covered stories. One qualifying new item found (NCSC-UK BitLocker/WinRE guidance)."
+candidate_sources: []
+coverage_gaps:
+  - source_id: ncsc-ch-focus
+    reason: "Latest in-window post (11.08.2026, Woche 32 AI-image quiz) and the 07.08.2026 ClickFix post are both outside the 26h window or already covered; no new NCSC-CH 'Im Fokus' content published in-window."
+  - source_id: ncsc-ch-incidents
+    reason: "Aktuelle Vorfälle page's newest listed item (kryptowallet phishing QR-code letters) is dated 31.07.2026; no new item in-window."
+  - source_id: ncsc-ch-security-hub
+    reason: "Newest CSH advisory posts/edits (SAP, Adobe, Microsoft Patch Tuesday August, VMware vCenter exploitation update) all fall on 2026-08-11/12, outside the 26h window from this run's 04:17Z start; all correspond to items already published by prior runs or S1's parallel vulnerability sweep."
+  - source_id: anssi-fr
+    reason: "CERT-FR avis/actualite/alerte feeds carry only routine vendor-patch advisories (13 Aug batch: MOVEit WAF, Wireshark, GitLab, Palo Alto, Fortinet, Foxit, Adobe, WordPress) with no incident-specific or campaign content in-window; newest ALE (alerte) item is CERTFR-2026-ALE-008 from 22 July, outside window."
+  - source_id: bsi-de
+    reason: "WID-SEC RSS carries only routine vendor-patch advisories in-window (Absolute Secure Access, cpio, BIND, Golang, Red Hat, Langflow, Foxit, Drupal, Apple macOS); no incident bulletin or campaign-specific content. BSI press/Kurzmeldungen page returned HTTP 404 on the URL attempted."
+  - source_id: cert-eu
+    reason: "Security-advisories RSS feed's newest entry (2026-009, SharePoint) is dated 23 July 2026 with no further update; no new CERT-EU advisory in-window."
+  - source_id: cert-pl
+    reason: "English RSS feed carries only routine vendor-patch advisories in-window (Magnolia CMS, entr, cpio, GNU Emacs); the one incident item present (Follow-Up Report of the December 2025 Energy Sector Incident, 08-08) is already in prior_coverage.json and outside this run's 26h window regardless."
+  - source_id: cert-at
+    reason: "Bare homepage's newest dated headline is 24.07.2026 (phishing from compromised Austrian mailboxes); no in-window content."
+  - source_id: enisa
+    reason: "News page's newest item (ENISA scales up CVE Program role) is dated 6 August 2026; no in-window item, and /news skews policy/exercise announcements rather than incident or advisory content per this source's documented cadence."
+  - source_id: advisories-ncsc-nl
+    reason: "Advisories RSS carries only routine vendor-patch advisories in-window (Fortinet, GitLab, AutoCAD, Cisco ASA/FTD, Adobe); the one advisory with an incident detail (NCSC-2026-0280, macOS Screen Sharing, confirmed active exploitation with a Monero miner payload via port 5900) was last revised 2026-08-12T09:37Z, outside this run's 26h window, and the underlying CVE-2026-65400 is already covered by a 2026-08-11 pipeline entry."
+  - source_id: ncsc-uk
+    reason: "n/a — this source contributed the one item returned this run."
+  - source_id: cisa-advisories
+    reason: "ICS-advisory feed carries only routine US-vendor ICS patch bulletins (Siemens, Johnson Controls, AVEVA, Hitachi Energy, ANDRITZ, Haiwell) dated 2026-08-13 (day-of-year 225); none carries an incident, exploitation, or campaign angle distinct from routine patching, and this pipeline's S1 domain covers the vulnerability-disclosure angle."
+  - source_id: cisa-directives
+    reason: "Directives listing carries no per-item publish dates; newest substantive directive (BOD 26-04) already noted out-of-window by a prior run; no new directive identified this run."
+  - source_id: prodaft
+    reason: "Pinned /reports URL remains a frozen cache (last-modified 2026-07-08 per page metadata); no in-window content reachable via this recipe, consistent with the source's existing note."
+  - source_id: oneconsult-ch
+    reason: "Newest blog post (BravoX DACH-region ransomware) dated 29/06/2026; no in-window content."
+  - source_id: swisspost-cybersecurity
+    reason: "News listing carries only undated promotional/product items (MDR packages, webinars, partnerships); no dated in-window incident or advisory content identifiable."
+  - source_id: infoguard-ch
+    reason: "Newest blog post (M&A cyber due-diligence) dated 10 August 2026; no in-window content."
+  - source_id: lab52
+    reason: "Feed's newest post (GRU military unit 67606) dated 3 July 2026; no in-window content."
+  - source_id: ncc-research
+    reason: "Bridge fetch of /research-blog/ returned only page CSS/head boilerplate with no drillable article listing reachable this run; recipe did not surface a dated post index."
+  - source_id: netzwoche
+    reason: "In-window items (13 Aug: Lazarus AFD.sys, Cisco ASA/FTD VPN DoS, fake CAPTCHA warning, Kapo Zürich Planzer-phishing consumer alert, Migros gift-phishing consumer alert) are either already covered by prior runs/S1, or below the technical-substance bar for this audience (consumer phishing/scam alerts)."
+  - source_id: sekoia
+    reason: "Newest blog post (cloud-perimeter product piece) dated 23 July 2026; no in-window research content."
+  - source_id: senthorus-ch
+    reason: "Cadence is weekly-roundup only (aggregation, not original research); newest indexed post title not resolved beyond the 11 Aug and 4 Aug entries, both weekly digests rather than in-window original content."
+  - source_id: openssf-policy
+    reason: "Newest policy post (CRA Readiness Reality) dated 25 June 2026; no in-window content."
+  - source_id: govcert-at
+    reason: "Per this source's own record, GovCERT Austria publishes no independent advisory/news stream; its content reaches readers via cert-at, which was checked directly (see cert-at gap note above)."
+  - source_id: dcod-ch
+    reason: "In-window roundup (13 Aug data-leaks weekly digest) surfaces only stories already in prior_coverage.json (Liechtenstein VwbP, Żabka) or below-bar consumer/legal items (Meta child-safety fine, Apple v. UK iCloud legal challenge, PNLD/ExfilSquad already thoroughly covered by four prior entries)."

@@ -1,0 +1,95 @@
+# Findings summary (machine-readable)
+- code: F1
+  category: claim-not-supported
+  section: entries
+  item: "2026-08-24/cve-2026-18963-keycloak-no-red-hat-product-unfixed"
+  url_or_quote: "The published CVE record carries the same two products with `defaultStatus` `unaffected` ([Red Hat Product Security, 2026-08-18](https://access.redhat.com/security/cve/CVE-2026-18963))"
+  summary: >-
+    Fetched https://access.redhat.com/security/cve/CVE-2026-18963 (bridge `url`, raw HTML, 217 KB): the page's
+    embedded product-state JSON expresses the two rows as "state":"Not affected" with
+    "delegated_not_affected_justification":"Component not Present" (JBoss EAP XP) and "Vulnerable Code not
+    Present" (RHSSO 7). The string `defaultStatus` does not occur on that page at all, and it carries no
+    `affected[]` block. The FACT is true but belongs to a different document: cveawg.mitre.org/api/cve/
+    CVE-2026-18963 (CNA redhat, datePublished 2026-08-18T17:05Z) has 13 affected[] records, of which the JBoss
+    EAP Expansion Pack and Red Hat Single Sign-On 7 rows carry defaultStatus "unaffected". Same defect in
+    `sourcing_note` ("independently confirmed against the published CVE record, whose affected[] block carries
+    the same two products with defaultStatus \"unaffected\""). Fix either by re-wording to the cited page's own
+    vocabulary (state "Not affected", justification "Component not Present" / "Vulnerable Code not Present") or
+    by naming the cve.org CVE Record as the document that carries defaultStatus. No new research needed.
+- code: F2
+  category: hallucinated-fact
+  section: run-record + audit-report
+  item: "runs/2026-08-23/2026-08-23T1311Z-audit.md · docs/audits/2026-08-23-weekly-quality-audit.md"
+  url_or_quote: "two corrections published this fire as update entries, four queued on the coverage backlog with full ground truth, four documented without a repair / '### Factual errors (10) ... (2 published this run, 4 queued with full ground truth)'"
+  summary: >-
+    Only ONE of the ten factual errors was repaired by a published correction. The report's own factual-errors
+    table has exactly one row marked "**Published**" (Keycloak). The second published entry (GitLab
+    CVE-2026-19478) corrects no factual error: work/2026-08-23T1311Z-audit/truth-B6.yaml line 82-86 records
+    `- entry: entries/2026-08-19/cve-2026-19478-gitlab-graphql-unauth-data-destruction.md / verdict: clean /
+    defect: null`, and the report itself files it under "### Recovered and published by this audit (1)" as a
+    completeness recovery. Verified the full factual-error census across the batch YAMLs: B1 2 (Traefik,
+    Black Hat), B2 2 (coding-agent, wp2root), B3 3 (Lazarus, SAP, Cl0p), B5 2 (w33 rollup, w33 looking-ahead),
+    B6 1 (Keycloak) = 10. Disposition is 1 published + 5 queued (as 4 backlog rows) + 4 documented. Correct both
+    the report heading and the run-record sentence so the published/queued split matches the table.
+- code: F3
+  category: hallucinated-fact
+  section: audit-report
+  item: "docs/audits/2026-08-23-weekly-quality-audit.md § Fixes shipped in this commit"
+  url_or_quote: "`state/cves_seen.json` re-synced for both."
+  summary: >-
+    Only CVE-2026-18963 was re-synced. `git diff state/cves_seen.json` touches exactly one record (last_seen
+    2026-08-19 -> 2026-08-24 plus an appended product-state correction sentence). The CVE-2026-19478 record is
+    untouched: last_seen still "2026-08-19" and title still ends "...no exploitation reported and GitLab
+    withholds the mechanism for 90 days." That is the exact stale exploitation answer the newly published entry
+    exists to correct, still sitting in the store-wide CVE index the report calls the machine surface. Fix by
+    re-syncing the CVE-2026-19478 record (last_seen + exploitation status in the title), not by softening the
+    sentence.
+- code: F4
+  category: hallucinated-fact
+  section: audit-report
+  item: "docs/audits/2026-08-23-weekly-quality-audit.md § Fixes shipped in this commit"
+  url_or_quote: "**`sources/sources.json`** — 7 changes, all in `sources_changed[]`"
+  summary: >-
+    The count matches nothing on disk. The run record's `sources_changed[]` carries 8 bullets (tenable-research,
+    0patch-blog, dragos, nozomi-networks, claroty-team82, sans-ics, the five-CERT bullet, symantec-broadcom), and
+    a record-level diff of sources/sources.json against HEAD shows 11 modified records (0patch-blog, cert-at,
+    cert-eu, claroty-team82, dragos, enisa, ncsc-uk, nozomi-networks, sans-ics, tenable-research,
+    withsecure-labs) plus 1 added (symantec-broadcom) = 12 source records touched. No reading of the report's
+    own semicolon-separated list yields 7 either (it enumerates 5 groups / 8 changes). State 8 entries in
+    sources_changed[] covering 12 source records, or drop the number.
+- code: F5
+  category: hallucinated-fact
+  section: audit-report
+  item: "docs/audits/2026-08-23-weekly-quality-audit.md § Fixes shipped in this commit"
+  url_or_quote: "**Warning sweep: zero.** `check_run.py --all` ends 0 warn · 0 fail (14 acknowledged, all still live — none added, none pruned)"
+  summary: >-
+    Ran `python3 tools/check_run.py --all` against the current working tree this iteration. It ends with 1
+    WARNING, and it is this run's own: "run-record: 2026-08-23T1311Z-audit: duration_seconds=75841 (~21.1 h)
+    exceeded the runaway threshold — see the per-run watchdog note". The 14 acknowledged rows are correct and
+    all still live (verified: 14 rows in the ACKNOWLEDGED block, same as the Phase 0 capture in
+    work/2026-08-23T1311Z-audit/check-all.txt, whose WARNINGS block is genuinely empty). The warning is not
+    fixable — the 21 h wall clock is the disclosed container suspension and the re-stamp at Phase 6 will make it
+    larger — and a run never self-acknowledges its own fresh warning, so the fix is to state the residual
+    honestly (Phase 0 was 0 warn · 0 fail · 14 ack; the commit ends 1 warn, this run's own disclosed wall clock)
+    rather than to claim a zero that the artifact contradicts.
+- code: F6
+  category: editorial-advisory
+  section: run-record
+  item: "runs/2026-08-23/2026-08-23T1311Z-audit.md frontmatter"
+  url_or_quote: "completed: \"2026-08-24T10:15:01Z\" / duration_seconds: 75841"
+  summary: >-
+    Advisory, forward-looking: `completed` currently precedes this verification iteration (started
+    2026-08-24T10:15:51Z). The gate passes only because `verification.iterations` is still empty. Once the
+    iterations are stamped, the v3.32 `run-clock` check this very run shipped will FAIL the record unless
+    Phase 6 step 0 re-stamps `completed` / `duration_seconds` after the loop. Flagging so the run does not ship
+    the exact inversion it root-caused. The report's "This run itself complies" only becomes true after that
+    re-stamp.
+- code: F7
+  category: editorial-advisory
+  section: audit-report
+  item: "docs/audits/2026-08-23-weekly-quality-audit.md § Factual errors table, last row"
+  url_or_quote: "| `2026-08-16/weekly-w33-vuln-status-rollup` (second defect, counted once above) | — | — | — |"
+  summary: >-
+    Advisory: the row renders as a near-empty line in the published table and reads as a formatting defect
+    rather than as the count reconciliation it is. A footnote under the table ("the w33 rollup carries two
+    distinct defects; both are counted in the 10") carries the same information without the empty row.

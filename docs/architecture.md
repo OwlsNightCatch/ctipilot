@@ -453,8 +453,19 @@ every edit is recorded in the run record's `sources_changed[]`.
   NCSC.ch** — don't even attempt `WebFetch` there. Structured subcommands
   (`cisa-kev`, `ncsc-csh`, `enisa-euvd`, `bsi-rss/csaf`, `ncsc-nl`,
   `cert-eu`, `cert-fr`, `ico-uk`, `sec-edgar`, `feed`, `msrc`) wrap
-  JS-rendered listing pages. Read-only by design: https-only, resolved-IP
-  deny list, redirect re-validation, body-size cap.
+  JS-rendered listing pages. `pdf <URL>` extracts the text of a PDF-only
+  advisory — the shape multi-agency joint advisories and national-authority
+  reports routinely take, and previously unreadable here at all (no
+  `pdftotext`, no PDF library in the routine container), which is why the
+  2026-08-19 five-agency Siemens S7 advisory shipped from an outlet's
+  reading instead of its own primary. Stdlib `zlib` extraction covering
+  Flate content streams, PDF string escapes, `Tj`/`TJ` operators, simple
+  fonts and CID fonts via their ToUnicode CMap; no OCR, so an image-only
+  PDF reports *no text objects found* rather than an empty document, and a
+  CMap-approximated decode is labelled as an approximation. Offline test
+  suite: [`tools/test_fetch_source_pdf.py`](../tools/test_fetch_source_pdf.py).
+  Read-only by design: https-only, resolved-IP deny list, redirect
+  re-validation, body-size cap.
 - [`tools/migrate_briefs.py`](../tools/migrate_briefs.py) — the one-shot
   v2 → v3 migration: decomposed the monolithic briefs into entries
   (discovery timestamps from git history), seeded the registry from

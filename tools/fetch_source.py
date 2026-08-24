@@ -1054,6 +1054,137 @@ def jina_usage(*, warn_below: int = JINA_LOW_BALANCE_TOKENS) -> dict[str, Any]:
     return out
 
 
+# --- trafilatura capture/extraction layer (v3.32, operator directive 2026-08-24) ---
+# The operator's standing order: capture websites with trafilatura
+# (https://github.com/adbar/trafilatura), avoid the jina reader wherever
+# possible (metered keys, refilled sparsely), and avoid WebFetch's built-in
+# summariser. Division of labour:
+#   * TRANSPORT stays with this bridge's `fetch()` — it already sends a full,
+#     mutually consistent human-browser header set (Chrome UA + client hints +
+#     Sec-Fetch-*), which is more "human" than trafilatura's own downloader.
+#   * trafilatura's `fetch_url` is a SECOND direct transport (different HTTP
+#     stack/fingerprint) tried before the reader ever spends credit.
+#   * EXTRACTION is trafilatura's job: boilerplate-free article text with
+#     metadata, replacing what jina's markdown was mostly used for.
+# trafilatura is pip-installed by .claude/hooks/setup-deps.sh at SessionStart;
+# every code path here degrades gracefully when the module is absent.
+
+def _trafilatura():
+    try:
+        import trafilatura  # noqa: PLC0415 — optional dependency, lazy import
+        return trafilatura
+    except ImportError:
+        return None
+
+
+def _trafilatura_config():
+    """A trafilatura config carrying the bridge's browser UA so its own
+    downloader presents the same human fingerprint as `fetch()`."""
+    t = _trafilatura()
+    if t is None:
+        return None
+    from trafilatura.settings import use_config  # noqa: PLC0415
+    cfg = use_config()
+    cfg.set("DEFAULT", "USER_AGENTS", BROWSER_UA)
+    cfg.set("DEFAULT", "DOWNLOAD_TIMEOUT", str(int(DEFAULT_TIMEOUT)))
+    return cfg
+
+
+def extract_readable(html: str, url: str | None = None) -> str | None:
+    """Clean, boilerplate-free markdown (title/date metadata included) from a
+    raw HTML body via trafilatura. None when trafilatura is unavailable or the
+    page has no extractable main content (a JS shell, a bare listing)."""
+    t = _trafilatura()
+    if t is None:
+        return None
+    try:
+        return t.extract(
+            html, url=url, output_format="markdown",
+            include_links=True, include_tables=True,
+            with_metadata=True, favor_recall=True,
+        )
+    except Exception:  # noqa: BLE001 — extraction must never kill a fetch
+        return None
+
+
+def _trafilatura_fetch(url: str) -> str | None:
+    """trafilatura's own downloader as an alternate DIRECT transport (no jina
+    credit spent). Returns raw HTML or None. It sees the same egress proxy as
+    everything else in this container; a different client stack sometimes
+    passes where urllib is fingerprinted."""
+    t = _trafilatura()
+    if t is None:
+        return None
+    # trafilatura's downloader (urllib3) does NOT honor the env proxy. In the
+    # cloud routine container all egress is forced through HTTPS_PROXY, so
+    # fetch_url can never connect there — skip the rung instead of burning a
+    # 30 s timeout per URL. On an unproxied machine the rung stays live.
+    if os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy"):
+        return None
+    _check_url(url)  # same SSRF gate as fetch()
+    try:
+        html = t.fetch_url(url, config=_trafilatura_config())
+        if html and len(html) > 500 and not _looks_blocked(html):
+            return html
+    except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
+def extract_page(url: str) -> tuple[str, str]:
+    """Readable-page ladder — the standard way to CAPTURE an article body.
+
+    Rungs, in order (jina strictly last — operator directive 2026-08-24):
+      1. direct browser-UA GET (`fetch`)  → trafilatura extraction;
+      2. trafilatura's own downloader     → trafilatura extraction;
+      3. the r.jina.ai reader (metered)   — only when both direct rungs fail
+         or the page needs JS to render its content.
+
+    Returns `(markdown_text, method)`, method ∈ {trafilatura-direct,
+    trafilatura-fetch, direct-raw, jina}. `direct-raw` means the page was
+    reachable but not article-shaped (extraction found no main content) —
+    the raw body is returned so the caller still gets the content."""
+    direct_err = ""
+    raw: str | None = None
+    try:
+        code, body, _ = fetch(
+            url,
+            accept="text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        )
+        if code == 200 and len(body) > 500:
+            text = body.decode("utf-8", errors="replace")
+            if not _looks_blocked(text):
+                raw = text
+                extracted = extract_readable(text, url)
+                if extracted:
+                    return extracted, "trafilatura-direct"
+            else:
+                direct_err = "direct hit returned an anti-bot/challenge body"
+        else:
+            direct_err = f"direct HTTP {code}, {len(body)} B"
+    except Exception as e:  # noqa: BLE001
+        direct_err = str(e)[:140]
+    html = _trafilatura_fetch(url)
+    if html:
+        extracted = extract_readable(html, url)
+        if extracted:
+            return extracted, "trafilatura-fetch"
+        if raw is None:
+            raw = html
+    if raw is not None:
+        # Reachable but not article-shaped (or trafilatura missing): hand the
+        # caller the raw body rather than spending reader credit on a page we
+        # already hold.
+        return raw, "direct-raw"
+    try:
+        return _jina_fetch(url), "jina"
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(
+            f"all transports failed for {url}: direct=({direct_err}); "
+            f"trafilatura=(no readable body); jina=({str(e)[:160]})"
+        ) from None
+
+
 def smart_fetch(url: str) -> tuple[str, str]:
     """Fetch an HTML page's body with an automatic fallback ladder so every
     page has a backup transport. Tries, in order:
@@ -2021,6 +2152,336 @@ def osv_query(ecosystem: str, package: str, version: str | None = None) -> dict[
     }
 
 
+# ── PDF text extraction (stdlib only) ─────────────────────────────────
+#
+# Government and vendor advisories are routinely published as PDF and
+# nothing else — the five-agency joint advisory on an active threat to
+# Siemens S7 PLCs (AA26-231A, 2026-08-19) is the case that forced this in:
+# the agency's own HTML page refused every transport, the PDF mirror served
+# fine, and no tooling in the routine container could turn those bytes into
+# text, so the entry had to be composed from an outlet's reading of it.
+# This container has no pdftotext, no pypdf, no pdfminer and no network
+# budget to install one, so the extractor below is written against the
+# container's actual floor: zlib from the standard library.
+#
+# It handles the shape advisory PDFs actually take — Flate-compressed
+# content streams, simple fonts with byte-per-glyph encodings, and CID
+# fonts whose bytes only become text through a ToUnicode CMap. It is a
+# text extractor, not a layout engine: reading order follows the content
+# stream, and a scanned (image-only) PDF yields nothing, which the caller
+# is told explicitly rather than left to infer from an empty result.
+
+import zlib  # noqa: E402  (stdlib; kept next to the PDF helpers that use it)
+
+_PDF_STREAM_RE = re.compile(rb"stream\r?\n?", re.IGNORECASE)
+_PDF_BFCHAR_RE = re.compile(rb"beginbfchar(.*?)endbfchar", re.DOTALL)
+_PDF_BFRANGE_RE = re.compile(rb"beginbfrange(.*?)endbfrange", re.DOTALL)
+_PDF_HEXTOK_RE = re.compile(rb"<([0-9A-Fa-f\s]+)>")
+_PDF_HEXBODY_RE = re.compile(rb"[0-9A-Fa-f\s]+")
+
+
+def _pdf_streams(data: bytes) -> list[bytes]:
+    """Every stream in the file, inflated where it is Flate-compressed.
+
+    Walks `stream` / `endstream` pairs rather than the cross-reference
+    table, so a linearised, incrementally-updated or slightly-malformed
+    file still yields its content. Streams that are not Flate (or that
+    fail to inflate — encrypted, or a filter we do not implement) are
+    skipped, not fatal.
+    """
+    out: list[bytes] = []
+    pos = 0
+    while True:
+        m = _PDF_STREAM_RE.search(data, pos)
+        if not m:
+            break
+        start = m.end()
+        end = data.find(b"endstream", start)
+        if end == -1:
+            break
+        raw = data[start:end]
+        pos = end + 9
+        if not raw:
+            continue
+        try:
+            out.append(zlib.decompress(raw))
+            continue
+        except zlib.error:
+            pass
+        try:
+            # Truncated / trailing-garbage streams: inflate what is there.
+            out.append(zlib.decompressobj().decompress(raw))
+            continue
+        except zlib.error:
+            pass
+        # Uncompressed content stream — keep it if it looks like PDF operators.
+        if b"Tj" in raw or b"TJ" in raw or b"BT" in raw:
+            out.append(raw)
+    return out
+
+
+def _pdf_hex_to_codes(blob: bytes) -> list[int]:
+    """`<0041>` / `<00410042>` → the integer codes it encodes."""
+    h = re.sub(rb"[^0-9A-Fa-f]", b"", blob)
+    if not h:
+        return []
+    if len(h) % 2:
+        h += b"0"
+    width = 4 if len(h) >= 4 and len(h) % 4 == 0 else 2
+    return [int(h[i:i + width], 16) for i in range(0, len(h), width)]
+
+
+def _pdf_hex_to_text(blob: bytes) -> str:
+    """A ToUnicode destination `<0041>` / `<00660066>` → its characters
+    (destinations are UTF-16BE, and may name a multi-character ligature)."""
+    h = re.sub(rb"\s+", b"", blob)
+    if len(h) % 4:
+        h = h + b"0" * (4 - len(h) % 4)
+    try:
+        return bytes.fromhex(h.decode("ascii")).decode("utf-16-be", "replace")
+    except (ValueError, UnicodeDecodeError):
+        return ""
+
+
+def _pdf_tounicode_map(streams: list[bytes]) -> dict[int, str]:
+    """Union of every ToUnicode CMap in the file: glyph code → text.
+
+    Merged across fonts deliberately. Resolving each code against the font
+    active at that point in the content stream would need the full
+    resource-dictionary graph; in practice an advisory PDF's fonts either
+    share an encoding or occupy disjoint code ranges, and a merged map
+    recovers readable text where a byte-wise decode returns mojibake.
+    Collisions keep the first mapping seen and are reported by the caller
+    as an approximation rather than silently.
+    """
+    cmap: dict[int, str] = {}
+    for s in streams:
+        if b"beginbfchar" not in s and b"beginbfrange" not in s:
+            continue
+        for body in _PDF_BFCHAR_RE.findall(s):
+            toks = _PDF_HEXTOK_RE.findall(body)
+            for i in range(0, len(toks) - 1, 2):
+                codes = _pdf_hex_to_codes(toks[i])
+                dst = _pdf_hex_to_text(toks[i + 1])
+                if len(codes) == 1 and dst:
+                    cmap.setdefault(codes[0], dst)
+        for body in _PDF_BFRANGE_RE.findall(s):
+            toks = _PDF_HEXTOK_RE.findall(body)
+            for i in range(0, len(toks) - 2, 3):
+                lo = _pdf_hex_to_codes(toks[i])
+                hi = _pdf_hex_to_codes(toks[i + 1])
+                dst = _pdf_hex_to_text(toks[i + 2])
+                if len(lo) != 1 or len(hi) != 1 or not dst:
+                    continue
+                if hi[0] < lo[0] or hi[0] - lo[0] > 65535:
+                    continue
+                base = ord(dst[-1])
+                for n, code in enumerate(range(lo[0], hi[0] + 1)):
+                    cmap.setdefault(code, dst[:-1] + chr(base + n))
+    return cmap
+
+
+def _pdf_unescape(raw: bytes) -> bytes:
+    """PDF literal-string escapes: \\n \\t \\( \\) \\\\ and \\ooo octal."""
+    out = bytearray()
+    i = 0
+    simple = {0x6E: 0x0A, 0x72: 0x0D, 0x74: 0x09, 0x62: 0x08, 0x66: 0x0C}
+    while i < len(raw):
+        c = raw[i]
+        if c != 0x5C:  # backslash
+            out.append(c)
+            i += 1
+            continue
+        i += 1
+        if i >= len(raw):
+            break
+        n = raw[i]
+        if n in simple:
+            out.append(simple[n])
+            i += 1
+        elif 0x30 <= n <= 0x37:  # octal, up to three digits
+            digits = bytearray()
+            while i < len(raw) and len(digits) < 3 and 0x30 <= raw[i] <= 0x37:
+                digits.append(raw[i])
+                i += 1
+            out.append(int(digits, 8) & 0xFF)
+        elif n in (0x0A, 0x0D):  # line continuation
+            i += 1
+            if i < len(raw) and raw[i] == 0x0A and n == 0x0D:
+                i += 1
+        else:
+            out.append(n)
+            i += 1
+    return bytes(out)
+
+
+def _pdf_literal_strings(content: bytes) -> list[tuple[bool, bytes]]:
+    """Every string operand in a content stream, in stream order, as
+    `(is_hex, bytes)`. Tracks nesting and escapes so a `)` inside a string
+    does not end it. Also emits a sentinel for the text operators that
+    imply a line break (`Td`, `TD`, `T*`, `'`, `"`, `ET`) so paragraphs do
+    not run together."""
+    out: list[tuple[bool, bytes]] = []
+    i, n = 0, len(content)
+    while i < n:
+        c = content[i]
+        if c == 0x28:  # (
+            depth, j, buf = 1, i + 1, bytearray()
+            while j < n and depth:
+                ch = content[j]
+                if ch == 0x5C:
+                    buf.append(ch)
+                    if j + 1 < n:
+                        buf.append(content[j + 1])
+                    j += 2
+                    continue
+                if ch == 0x28:
+                    depth += 1
+                elif ch == 0x29:
+                    depth -= 1
+                    if not depth:
+                        break
+                buf.append(ch)
+                j += 1
+            out.append((False, _pdf_unescape(bytes(buf))))
+            i = j + 1
+            continue
+        if c == 0x3C and i + 1 < n and content[i + 1] != 0x3C:  # < not <<
+            j = content.find(b">", i + 1)
+            if j == -1:
+                break
+            cand = content[i + 1:j]
+            # Only a genuine hex string. A dictionary's inner half — the
+            # `</MCID 0>` of a `<</MCID 0>>` marked-content property list —
+            # also presents as `<`-not-`<<` once the scan steps past the
+            # outer bracket, and treating it as hex crashes the decoder.
+            if cand and not _PDF_HEXBODY_RE.fullmatch(cand):
+                i += 1
+                continue
+            out.append((True, cand))
+            i = j + 1
+            continue
+        # Line-break-implying operators → sentinel
+        if c in (0x54, 0x45, 0x27, 0x22):  # T E ' "
+            tail = content[i:i + 2]
+            if tail in (b"Td", b"TD", b"T*", b"ET") or c in (0x27, 0x22):
+                out.append((False, b"\n"))
+                i += 2
+                continue
+        i += 1
+    return out
+
+
+def _pdf_prose_chars(text: str) -> int:
+    """Count of characters that are plausible prose, whitespace excluded.
+
+    Counted rather than ratioed because the failure mode being detected is
+    a decode that recovers *almost nothing*: a CID PDF's byte-wise decode
+    drops every unmapped glyph, leaving a short string of line breaks
+    whose ratio of "good" characters is a perfect 1.0. Volume of recovered
+    prose is the honest comparison between two candidate decodes.
+    """
+    return sum(1 for ch in text if ch.isalnum() or ch in ".,;:-/()'\"%")
+
+
+def _pdf_score(text: str) -> float:
+    """Share of characters that are plausible prose — used only to report
+    whether a decode looks clean, never as the sole basis for choosing one."""
+    if not text:
+        return 0.0
+    good = sum(1 for ch in text if ch.isalnum() or ch in " .,;:-/()\n\t'\"%")
+    return good / len(text)
+
+
+def _pdf_render(content_streams: list[bytes], cmap: dict[int, str]) -> tuple[str, str]:
+    """Extract text from content streams. Returns (text, method).
+
+    Tries a byte-wise decode first — correct for simple fonts, which is
+    most advisory PDFs — and falls back to the merged ToUnicode CMap when
+    that produces mojibake, which is what a CID/Identity-H font needs.
+    """
+    def direct() -> str:
+        parts: list[str] = []
+        for cs in content_streams:
+            for is_hex, s in _pdf_literal_strings(cs):
+                if is_hex:
+                    codes = _pdf_hex_to_codes(s)
+                    parts.append("".join(chr(c) if 32 <= c < 0x300 else "" for c in codes))
+                else:
+                    parts.append(s.decode("latin-1", "replace"))
+        return "".join(parts)
+
+    def viacmap() -> str:
+        parts: list[str] = []
+        for cs in content_streams:
+            for is_hex, s in _pdf_literal_strings(cs):
+                if s == b"\n":
+                    parts.append("\n")
+                    continue
+                codes = _pdf_hex_to_codes(s) if is_hex else list(s)
+                parts.append("".join(cmap.get(c, "") for c in codes))
+        return "".join(parts)
+
+    d = direct()
+    if not cmap:
+        return d, "byte-encoding"
+    v = viacmap()
+    if _pdf_prose_chars(v) > _pdf_prose_chars(d):
+        return v, "tounicode-cmap (merged across fonts — an approximation)"
+    return d, "byte-encoding"
+
+
+def pdf_text(url: str) -> dict[str, Any]:
+    """Fetch a PDF and return its extracted text.
+
+    The transport is the same browser-UA GET the rest of the bridge uses,
+    so a PDF behind the anti-bot posture that refuses the routine's HTML
+    fetches is still reachable. `notes` says how the text was recovered
+    and flags the two cases a caller must not mistake for content: a
+    scanned PDF (no text objects at all) and a CMap-approximated decode.
+    """
+    code, body, headers = fetch(
+        url, accept="application/pdf,*/*;q=0.8", max_bytes=MAX_BODY_BYTES_HTML
+    )
+    if code != 200:
+        raise RuntimeError(f"upstream HTTP {code} for {url}")
+    if not body.startswith(b"%PDF"):
+        ctype = headers.get("Content-Type", "unknown")
+        raise RuntimeError(
+            f"refused: {url} is not a PDF (Content-Type {ctype}, "
+            f"first bytes {body[:8]!r}) — use `url` for HTML"
+        )
+    streams = _pdf_streams(body)
+    cmap = _pdf_tounicode_map(streams)
+    content = [s for s in streams if b"Tj" in s or b"TJ" in s or b"BT" in s]
+    text, method = _pdf_render(content, cmap)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    notes = [f"decode: {method}"]
+    if not content:
+        notes.append(
+            "no text objects found — this is very likely a scanned or "
+            "image-only PDF; no OCR is available here, so treat the empty "
+            "text as 'not extractable', NOT as 'the document says nothing'"
+        )
+    if len(text) < 200 and content:
+        notes.append(
+            "suspiciously little text for a document with text objects — "
+            "verify against the publisher's HTML before citing"
+        )
+    return {
+        "source": "pdf",
+        "url": url,
+        "bytes": len(body),
+        "streams": len(streams),
+        "content_streams": len(content),
+        "tounicode_entries": len(cmap),
+        "chars": len(text),
+        "notes": "; ".join(notes),
+        "text": text,
+    }
+
+
 # ── CLI ───────────────────────────────────────────────────────────────
 
 def main(argv: list[str]) -> int:
@@ -2031,6 +2492,13 @@ def main(argv: list[str]) -> int:
     p_url.add_argument("url")
     p_url.add_argument("--direct", action="store_true",
                        help="direct browser-UA GET only — do NOT fall back to the jina reader (raw HTML/XML)")
+
+    p_extract = sub.add_parser(
+        "extract",
+        help="PREFERRED article capture: fetch with human-browser headers and extract the readable "
+             "body via trafilatura (clean markdown, no boilerplate) — jina only as the last rung. "
+             "Use this instead of WebFetch for article/advisory bodies.")
+    p_extract.add_argument("url")
 
     p_jina = sub.add_parser("jina", help="LAST RESORT: force the r.jina.ai reader proxy (metered credit) — clean markdown; bypasses anti-bot/WAF/geo blocks and runs page JS. Try feed/WebFetch/url first")
     p_jina.add_argument("url")
@@ -2146,6 +2614,16 @@ def main(argv: list[str]) -> int:
     p_osv_query.add_argument("package", help="package name, e.g. lodash")
     p_osv_query.add_argument("version", nargs="?", default=None, help="optional version filter")
 
+    p_pdf = sub.add_parser(
+        "pdf",
+        help="fetch a PDF advisory and print its extracted text (stdlib only — "
+             "no OCR, so an image-only PDF yields nothing and says so)",
+    )
+    p_pdf.add_argument("url")
+    p_pdf.add_argument("--json", action="store_true",
+                       help="print the full record (byte counts, decode method, notes) "
+                            "instead of just the text")
+
     args = p.parse_args(argv)
 
     try:
@@ -2159,6 +2637,13 @@ def main(argv: list[str]) -> int:
                     # polluting stdout (which callers parse as page content).
                     print(f"# fetched via {method} reader fallback", file=sys.stderr)
                 sys.stdout.write(text)
+            return 0
+        if args.cmd == "extract":
+            text, method = extract_page(args.url)
+            print(f"# extract: served via {method}", file=sys.stderr)
+            sys.stdout.write(text)
+            if not text.endswith("\n"):
+                sys.stdout.write("\n")
             return 0
         if args.cmd == "jina":
             sys.stdout.write(jina_page(args.url, html=(args.fmt == "html")))
@@ -2283,6 +2768,20 @@ def main(argv: list[str]) -> int:
             elif args.osv_cmd == "query":
                 json.dump(osv_query(args.ecosystem, args.package, args.version), sys.stdout, indent=2)
             sys.stdout.write("\n")
+            return 0
+        if args.cmd == "pdf":
+            rec = pdf_text(args.url)
+            if args.json:
+                json.dump(rec, sys.stdout, indent=2)
+                sys.stdout.write("\n")
+            else:
+                # stderr for the provenance so stdout stays pure document text.
+                print(
+                    f"# pdf: {rec['chars']} chars from {rec['content_streams']}/"
+                    f"{rec['streams']} streams — {rec['notes']}",
+                    file=sys.stderr,
+                )
+                sys.stdout.write(rec["text"] + "\n")
             return 0
     except (RuntimeError, ValueError) as e:
         print(f"fetch_source: {e}", file=sys.stderr)
