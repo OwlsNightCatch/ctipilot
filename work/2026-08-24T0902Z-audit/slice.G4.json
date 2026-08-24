@@ -1,0 +1,886 @@
+[
+ {
+  "id": "cisa-directives",
+  "publisher": "CISA Directives",
+  "url": "https://www.cisa.gov/news-events/directives",
+  "rss_url": null,
+  "tier": "essential",
+  "fetch_method": "bridge",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "Binding Operational Directives and Emergency Directives \u2014 high-priority defender signal. WebFetch HTTP 403 (re-confirmed 2026-05-08). REQUIRED: `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/directives`. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 bridge: python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/directives to discover /news-events/directives/{slug} hrefs, then `cisa page <full URL>` per directive for the body.. AVOID: WebFetch 403s the CISA UA \u2014 skip it, go straight to the bridge `cisa page` subcommand.. | 2026-07-04: bridge (cisa page) upstream HTTP 403 again \u2014 consecutive_fetch_failures 2; 403 is transport blocking (does NOT demote per lifecycle rules). CISA KEV JSON API still works via the bridge. | 2026-07-05 root-cause confirmed: www.cisa.gov dynamic paths (/news-events/*, all .xml feeds, and the CSAF .well-known) are blocked by Akamai bot management (`Access Denied`, `Reference #18.*`) for EVERY UA/header combination tested (chrome/firefox/googlebot/curl/minimal/+Referer all 403) \u2014 the block keys off the egress TLS/behavioural fingerprint, so it is unfixable from request headers. Only the STATIC /sites/default/files/feeds/ path (KEV JSON) is served. No reachable alternative for the advisory HTML content (search.gov results are a JS shell needing an API key; Wayback has no snapshots). SUBSTITUTE: `cisa-kev` JSON API for exploited-vuln ground truth + WebSearch corroboration for advisory narrative (covered_anyway). STAYS ACTIVE \u2014 a 403 is a transport block and NEVER demotes (hard rule). source_health.py now classifies this `bridge-blocked` (handled), not `needs-demote`, so the routine stops re-flagging it every run. | 2026-07-05 RECOVERED \u2014 CISA dynamic content is now reachable. The Akamai 403 on every UA still holds for a DIRECT fetch, but `tools/fetch_source.py` routes cisa.gov through the r.jina.ai reader proxy (server-side fetch, bypasses the Akamai fingerprint) for `cisa page` / `cisa feed`, and through the cisagov/CSAF GitHub mirror (raw.githubusercontent.com, not proxy-blocked) for `cisa csaf-recent` / `cisa csaf` (fully-structured ICS advisories). This SUPERSEDES the earlier KEV+WebSearch-substitute handling \u2014 the advisory/directive/news content itself is now fetchable with full detail. `cisa-kev` JSON remains the exploited-vuln ground truth. FETCH now works: `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/directives` (reader-proxy, full body) to read BOD/ED text; the filtered listing `.../directives/all?f[0]=directive_type:35` works via `cisa page` too. | 2026-07-05 admiralty audit: A (primary-authority) \u2014 CISA directives; bridge 403 is a known transport block (no demotion), directive series confirmed current via KEV references. Status stays active. | 2026-07-09: no RSS feed exists for directives; the listing DOES hydrate through the reader \u2014 `cisa page https://www.cisa.gov/news-events/directives` then grep /news-events/directives/<slug> hrefs for discovery (confirmed 2026-07-09: returns current BOD/ED links); new directives are also announced in the cisa-news feed (news.xml). | 2026-07-25: S1 reported no `cisa-directives` bridge subcommand in fetch_source.py; content reachable via `cisa page <advisory-url>`. fetch_method kept as-is pending a recipe; not demoted (403/tooling-gap, not source death). | 2026-08-04 run: RECIPE CONFIRMED \u2014 `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/directives` works and returns the full ED/BOD listing with drillable per-directive URLs. Caveat: the listing carries no per-item publish dates, so recency must come from the drilled directive page. Newest substantive item BOD 26-04 (2026-06-10), out of window. | 2026-08-16: unreachable this run for the same reason as cisa-advisories (direct 403 + reader pool exhausted). NOT demoted. No evidence a new directive published in-window. | 2026-08-17: unreachable again \u2014 direct transport refused and the jina reader pool returned HTTP 402 on every rotating key, so the documented ladder had no last rung. Transport blocking plus an exhausted reader quota; NOT demoted. | 2026-08-18: same cisa.gov condition, fourth consecutive run; rotation-priority source. NOT demoted. No evidence from any other source that a directive published in-window. | 2026-08-19: fifth consecutive unreachable run, same cisa.gov condition; rotation-priority source, NOT demoted."
+ },
+ {
+  "id": "advisories-ncsc-nl",
+  "publisher": "NCSC-NL \u2014 Security Advisories (RSS)",
+  "url": "https://advisories.ncsc.nl/rss/advisories",
+  "rss_url": null,
+  "tier": "essential",
+  "fetch_method": "rss",
+  "reliability": "A",
+  "language": [
+   "en",
+   "nl"
+  ],
+  "note": "Dutch NCSC machine-readable advisory feed (added 2026-05-08). Returns CSAF/CVRF-style Cisco/Ivanti/Apache/MOVEit/PAN-OS advisories with publication and last-update dates. The HTML hub at https://www.ncsc.nl/actueel is navigation-only (STUB) so prefer this RSS. Cite advisories via https://advisories.ncsc.nl/advisory/{id}. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://advisories.ncsc.nl/rss/advisories 5 (listing) then `python3 tools/fetch_source.py ncsc-nl csaf <NCSC-ID>` for the full advisory body \u2014 the /advisory?id= URL is a JS client-side redirect shell, do NOT bridge it directly. AVOID: WebFetch / bridge `url https://advisories.ncsc.nl/advisory?id=...` returns a JS redirect stub, not the advisory; the redirect target /<year>/<id-lower>-<ver>.html also serves a JS index page. Use the `ncsc-nl csaf` API subcommand for the structured body.. | 2026-07-05 admiralty audit: A (HIGH->A) \u2014 Dutch national CERT, primary authority for its jurisdiction; keep active; body still via ncsc-nl csaf <ID> API subcommand. | 2026-08-03 weekly (recipe fix): for NCSC-NL NEWS (as opposed to advisories) use https://feeds.ncsc.nl/nieuws.rss \u2014 the www.ncsc.nl/rss/* paths fail."
+ },
+ {
+  "id": "bsi-de",
+  "publisher": "BSI Germany \u2014 CERT-Bund WID (RSS)",
+  "url": "https://wid.cert-bund.de/content/public/securityAdvisory/rss",
+  "rss_url": null,
+  "tier": "essential",
+  "fetch_method": "rss",
+  "reliability": "A",
+  "language": [
+   "de",
+   "en"
+  ],
+  "note": "Federal Office for Information Security (Germany), CERT-Bund's WID advisory portal. The /portal/wid/kurzinformationen page is a JS-rendered SPA (WebFetch returns only the header). PRIMARY URL is the RSS feed. For per-advisory detail, fetch `https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-YYYY-NNNN`. **Never cite the kurzinformationen index** \u2014 always cite the per-advisory detail URL. 2026-05-08 audit: RSS returned 5 advisories all 2026-05-07 incl. LiteLLM, Checkmk, Linux Kernel. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://wid.cert-bund.de/content/public/securityAdvisory/rss 5  (then per-advisory body via api: python3 tools/fetch_source.py bsi-csaf WID-SEC-YYYY-NNNN). AVOID: Do NOT WebFetch the /portal/wid/kurzinformationen index \u2014 it is a JS-rendered SPA returning only the header. Never cite the index; cite the per-advisory securityadvisory?name=WID-SEC URL.. | 2026-07-05 admiralty audit: A (HIGH->A) \u2014 German federal CERT, primary authority; keep active. Cite per-advisory securityadvisory?name=WID-SEC URL; body via bsi-csaf subcommand."
+ },
+ {
+  "id": "cert-pl",
+  "publisher": "CERT Polska / NASK",
+  "url": "https://cert.pl/en/news/",
+  "rss_url": "https://cert.pl/en/rss.xml",
+  "tier": "essential",
+  "fetch_method": "webfetch",
+  "reliability": "A",
+  "language": [
+   "en",
+   "pl"
+  ],
+  "note": "Polish CERT \u2014 strong on Russia-adjacent threats and OT incidents. 2026-05-08 audit: WebFetch returned 5 dated posts incl. 'Annual report 2025' 2026-04-08. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://cert.pl/en/news/ (listing) then webfetch the per-post cert.pl/en/posts/... URL for body. AVOID: No issues \u2014 WebFetch returns clean dated listing and substantive detail pages. No bridge needed.. | 2026-07-05 admiralty audit: A (primary-authority) \u2014 Polish national CERT (NASK), original first-hand research; live, WebFetch clean. Status stays active. | 2026-08-04 run: RECIPE FIX \u2014 the tracked /en/news/ path does NOT list CERT-PL coordinated-disclosure CVE advisories (newest /news/ item was 2026-06-12 while the 2026-07-27 cJSON advisory existed). Advisories live at https://cert.pl/en/posts/<YYYY>/<MM>/<CVE-ID>/ and the per-advisory page carries a \"Publication date\" TABLE ROW (an HTML-tag strip collapses it \u2014 read the raw body around the label). FETCH \u2192 drill /en/posts/ per advisory; an essential-tier source was effectively dark for advisory discovery through /news/ alone. | 2026-08-05: RECIPE DRIFT \u2014 https://cert.pl/en/posts/ now returns HTTP 403 to WebFetch, the bridge AND the reader, so the per-advisory drill path recorded above is currently blocked. https://cert.pl/en/news/ still returns HTTP 200 via the bridge, so the source is alive and /news/ is the working discovery surface again. Do NOT demote on the 403 (transport block, not death); re-probe /en/posts/ each run and restore the drill recipe when it clears. | 2026-08-05: RSS RECIPE \u2014 with both HTML listings unusable this run (/en/posts/ 403, /en/news/ no drillable dated rows), the feeds https://cert.pl/en/rss.xml (English) and https://cert.pl/rss.xml (Polish) both return HTTP 200 with dated advisory items linking to /en/posts/<YYYY>/<MM>/<CVE-ID>/. Prefer the feed for discovery."
+ },
+ {
+  "id": "cert-eu",
+  "publisher": "CERT-EU",
+  "url": "https://cert.europa.eu/publications/security-advisories",
+  "rss_url": null,
+  "tier": "essential",
+  "fetch_method": "api",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "Computer Emergency Response Team for EU institutions. URL CORRECTED 2026-05-08: /publications root is a navigation page only \u2014 sub-agents repeatedly returned a STUB. Drill into /publications/security-advisories/ (per-advisory entries with IDs like 2026-006) and /publications/threat-intelligence/ (monthly Cyber Briefs, e.g. cb26-05). Cite the per-advisory URL https://cert.europa.eu/publications/security-advisories/{YYYY-NNN}/ rather than the index. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api: python3 tools/fetch_source.py cert-eu recent 5  (then webfetch per-advisory URL https://cert.europa.eu/publications/security-advisories/{YYYY-NNN}/ for body). AVOID: Do not cite /publications root \u2014 it is a navigation page. Use the per-advisory /security-advisories/{YYYY-NNN}/ URL.. | 2026-07-05 admiralty audit: A (primary-authority) \u2014 EU governmental CERT publishing its own advisory series; live, api fetch clean. Status stays active."
+ },
+ {
+  "id": "cisa-kev",
+  "publisher": "CISA Known Exploited Vulnerabilities Catalog",
+  "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+  "rss_url": null,
+  "tier": "essential",
+  "fetch_method": "api",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "Authoritative for actively-exploited vulns with federal remediation deadlines. WebFetch is reliably HTTP 403 on this host (transport-side block on the routine UA, ongoing since 2026-05-06; re-confirmed 2026-05-08). REQUIRED FETCH METHOD for both main agent AND every sub-agent: `python3 tools/fetch_source.py cisa-kev` returns the full KEV JSON catalog. Do NOT call WebFetch on cisa.gov; treat the 403 as a transport block \u2014 it never demotes the source. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api: python3 tools/fetch_source.py cisa-kev (full KEV JSON catalog, each entry is a drillable CVE record). AVOID: Do NOT WebFetch cisa.gov \u2014 reliably 403s the routine UA. The api subcommand is the only supported path.. | 2026-07-05 admiralty audit: A (primary-authority) \u2014 CISA KEV, authoritative exploited-vuln catalog; api fetch clean and current. Status stays active. | 2026-08-19: KEV JSON feed carried catalogue version 2026.08.18 and the four 2026-08-18 additions; the feed path works when every cisa.gov HTML path 403s."
+ },
+ {
+  "id": "enisa-euvd",
+  "publisher": "ENISA EU Vulnerability Database (EUVD)",
+  "url": "https://euvd.enisa.europa.eu/",
+  "rss_url": null,
+  "tier": "essential",
+  "fetch_method": "api",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "EU vulnerability database mandated by NIS2 Art. 12(2), operated by ENISA \u2014 the EU counterpart to CISA KEV for exploitation ground truth, plus CVSS/EPSS-enriched coverage of newly published vulnerabilities. Records carry EUVD-YYYY-NNNNN ids aliased to CVE/GHSA ids, references to vendor advisories, `baseScore`/`epss`, and \u2014 on the exploited listing \u2014 `exploitedSince` (EU-side actively-exploited signal to read NEXT TO cisa-kev every run; the two catalogs overlap but neither is a superset). tier: essential \u2014 attempted on EVERY intel run, and the check means ALL THREE listing endpoints, not just one: (1) newest records \u2192 `python3 tools/fetch_source.py enisa-euvd recent lastvulnerabilities` (\u2259 https://euvd.enisa.europa.eu/); (2) critical CVSS 9.0\u201310.0 \u2192 `python3 tools/fetch_source.py enisa-euvd recent criticals` (\u2259 https://euvd.enisa.europa.eu/search?fromScore=9&toScore=10); (3) actively exploited \u2192 `python3 tools/fetch_source.py enisa-euvd recent exploited` (\u2259 https://euvd.enisa.europa.eu/search?exploited=true). Drill one record with `enisa-euvd advisory <EUVD-id>`. REQUIRED FETCH METHOD: the bridge api subcommands only \u2014 the SPA at euvd.enisa.europa.eu returns an empty <noscript> shell to WebFetch (not a fetch failure; recipe transition per the agent definition). The JSON API lives on the separate services host euvdservices.enisa.europa.eu (bridge re-pointed 2026-05-11). Citation discipline: the API JSON is the data, never the citation \u2014 cite the vendor advisory / CERT primary the record references (CVE primary-source order puts EUVD below vendor/CERT but above researcher write-ups); where the EUVD entry itself is the source, cite the human detail page https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/<EUVD-id>, never the search/listing URL. | 2026-07-09 added as tier: essential on operator request (EUVD ground truth next to CISA KEV): all three listing endpoints verified live and current same day \u2014 lastvulnerabilities, criticals, and exploited each returned in-window JSON (exploited carries exploitedSince; e.g. EUVD-2026-40121 / CVE-2026-56290 exploitedSince Jul 7). | 2026-07-18 weekly audit: 'attempted' must mean a DISCOVERY SWEEP of the recent/criticals/exploited listings, not only per-CVE enrichment lookups. The 2026-07-18 intel fire used EUVD solely for CVE checks and missed WordPress WP2Shell (EUVD-2026-45280/45236, published 07-17, recovered by the audit) that the listings carried. S1 must walk the listing endpoints every run. | 2026-08-19: exploited and criticals listings plus two per-advisory lookups; supplied the structured affected/fixed build ranges behind two entries and independently corroborated both exploitation dates."
+ },
+ {
+  "id": "ncsc-ch-security-hub",
+  "publisher": "NCSC Switzerland \u2014 Cyber Security Hub (CSH) / GovCERT.ch",
+  "url": "https://security-hub.ncsc.admin.ch/#/dashboard",
+  "rss_url": null,
+  "tier": "essential",
+  "fetch_method": "api",
+  "reliability": "A",
+  "language": [
+   "de",
+   "fr",
+   "it",
+   "en"
+  ],
+  "note": "GovCERT.ch was MERGED INTO NCSC.ch in 2023; CSH replaces the legacy govcert.ch blog (frozen since 2023-09). The /govcert path on ncsc.admin.ch is a navigation page only. Substantive technical reports are now published on the CSH (TLP:CLEAR slice). The SPA at https://security-hub.ncsc.admin.ch/#/dashboard is JS-rendered (WebFetch returns only the 'CSH/Loading' shell). REQUIRED FETCH METHOD for both main agent AND every sub-agent: `python3 tools/fetch_source.py ncsc-csh recent 10` returns the listing + each post's full Markdown body in one call; `... ncsc-csh post <ID>` for one item. Cite the canonical SPA URL https://security-hub.ncsc.admin.ch/#/posts/{id}. Posts marked TLP:AMBER / TLP:RED MUST NEVER be fetched even if the API exposes them. (The legacy `govcert-ch` source ID was a duplicate of this entry and was removed 2026-05-08.) | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api: python3 tools/fetch_source.py ncsc-csh recent 10  (returns listing + each TLP:CLEAR post's full Markdown body); python3 tools/fetch_source.py ncsc-csh post <ID> for one. Cite https://security-hub.ncsc.admin.ch/#/posts/{id}.. AVOID: WebFetch returns only the JS 'CSH/Loading' SPA shell \u2014 never WebFetch the dashboard. NEVER fetch TLP:AMBER/TLP:RED posts even if exposed.. | 2026-07-05 admiralty audit: A (HIGH->A) status active->active \u2014 GovCERT.ch/Swiss national CERT, home authority, current (03.07.2026) TLP:CLEAR advisories via API. Justified A: primary national CERT and the deployment's ground truth. | 2026-08-06 (run 2026-08-06T0411Z-intel): RECIPE FIXED. The unversioned /api/posts/** tree stopped serving GET \u2014 every path under it, including paths that never existed, returns HTTP 405 with `Allow: DELETE, PUT`, while unknown roots still 404 (an edge rule on the whole subtree, so probing sibling paths finds nothing). The public read API moved under /api/v1/: GET /api/v1/posts/dashboard?pageSize=N&pageIndex=0 and GET /api/v1/posts/{id}/details, both confirmed 200 with TLP:Clear content. tools/fetch_source.py ncsc-csh list|post|recent updated accordingly and re-tested. Route table is recoverable from the SPA bundle (main-*.js) if it moves again."
+ },
+ {
+  "id": "anssi-fr",
+  "publisher": "ANSSI / CERT-FR",
+  "url": "https://www.cert.ssi.gouv.fr/",
+  "rss_url": null,
+  "tier": "essential",
+  "fetch_method": "api",
+  "reliability": "A",
+  "language": [
+   "fr",
+   "en"
+  ],
+  "note": "French national cybersecurity agency. WebFetch on the root works; for machine-readable lists prefer the RSS feeds at https://www.cert.ssi.gouv.fr/avis/feed/ (advisories) and https://www.cert.ssi.gouv.fr/alerte/feed/ (active-exploitation alerts). Drill into per-advisory pages /avis/{id}/ to extract CVE lists and affected versions (CVSS scores generally absent in CERT-FR text). 2026-05-08 audit: WebFetch returned CERTFR-2026-AVI-0552 Ivanti EPMM 2026-05-07. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api: python3 tools/fetch_source.py cert-fr avis-recent 5 (advisories) and cert-fr actu-recent 5 (alerts); then bridge `url https://www.cert.ssi.gouv.fr/avis/{id}/` per-advisory for CVE list + affected versions. WebFetch on the root also works.. AVOID: Don't expect CVSS scores in CERT-FR text; they cite CVE IDs and affected versions only. No need to WebFetch the root when the avis/alerte feeds are cleaner.. | 2026-06-30: CERT-FR actu feed returned only entries up to 2026-06-19 (S2 reports feed appears stale since Nov 2025 via bridge actu-recent). No in-window items; quiet-period++. National CERT \u2014 not demoted (transport 200, content stale); flag feed-staleness for investigation. | 2026-07-05 admiralty audit: A (HIGH->A) \u2014 French national CERT, primary authority; keep active. NB: actualite (actu) feed still stale (last item Nov 2025) as flagged 2026-06-30 \u2014 avis feed is fresh; flag actu-feed staleness for investigation, not a demotion. [2026-07-09] S2 observed fetch_source.py feed on CERT-FR actualite/avis feeds returns items ascending (oldest-first); N=20 surfaced Nov-2025 entries not the latest bulletin. Recheck raw feed order / consider reverse when assessing CERT-FR freshness. | 2026-07-11: KNOWN LIMIT \u2014 CERT-FR RSS feed renders a flat 00:00:00 +0000 timestamp for every item regardless of true publish time; for a \"yesterday-dated\" CERT-FR item the 24h recency floor is ambiguous, so corroborate the true publish time from the avis/actu page before dropping or including."
+ },
+ {
+  "id": "cisa-advisories",
+  "publisher": "CISA Cybersecurity Advisories",
+  "url": "https://www.cisa.gov/news-events/cybersecurity-advisories",
+  "rss_url": "https://www.cisa.gov/cybersecurity-advisories/all.xml",
+  "tier": "essential",
+  "fetch_method": "bridge",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "US government joint advisories often co-signed with allied CERTs (UK NCSC, ACSC AU, NCSC-NZ, CCCS CA, BSI DE, CERT-EU). WebFetch is reliably HTTP 403 on cisa.gov (re-confirmed 2026-05-08). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories`. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api/bridge: python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories  (then `cisa page <alert_url>` to drill). AVOID: WebFetch reliably HTTP 403 on cisa.gov \u2014 skip it entirely. Use the bridge `cisa page` subcommand.. | 2026-07-04: bridge (cisa page) upstream HTTP 403 again \u2014 consecutive_fetch_failures 2; 403 is transport blocking (does NOT demote per lifecycle rules). CISA KEV JSON API still works via the bridge. | 2026-07-05 root-cause confirmed: www.cisa.gov dynamic paths (/news-events/*, all .xml feeds, and the CSAF .well-known) are blocked by Akamai bot management (`Access Denied`, `Reference #18.*`) for EVERY UA/header combination tested (chrome/firefox/googlebot/curl/minimal/+Referer all 403) \u2014 the block keys off the egress TLS/behavioural fingerprint, so it is unfixable from request headers. Only the STATIC /sites/default/files/feeds/ path (KEV JSON) is served. No reachable alternative for the advisory HTML content (search.gov results are a JS shell needing an API key; Wayback has no snapshots). SUBSTITUTE: `cisa-kev` JSON API for exploited-vuln ground truth + WebSearch corroboration for advisory narrative (covered_anyway). STAYS ACTIVE \u2014 a 403 is a transport block and NEVER demotes (hard rule). source_health.py now classifies this `bridge-blocked` (handled), not `needs-demote`, so the routine stops re-flagging it every run. | 2026-07-05 RECOVERED \u2014 CISA dynamic content is now reachable. The Akamai 403 on every UA still holds for a DIRECT fetch, but `tools/fetch_source.py` routes cisa.gov through the r.jina.ai reader proxy (server-side fetch, bypasses the Akamai fingerprint) for `cisa page` / `cisa feed`, and through the cisagov/CSAF GitHub mirror (raw.githubusercontent.com, not proxy-blocked) for `cisa csaf-recent` / `cisa csaf` (fully-structured ICS advisories). This SUPERSEDES the earlier KEV+WebSearch-substitute handling \u2014 the advisory/directive/news content itself is now fetchable with full detail. `cisa-kev` JSON remains the exploited-vuln ground truth. FETCH now works via the reader-proxy recipe: `python3 tools/fetch_source.py cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml` to discover items (title+link), then `cisa page <advisory_url>` for the full body. For ICS/OT advisories prefer the fully-structured CSAF mirror: `cisa csaf-recent [N]` (dated index) + `cisa csaf <icsa-YY-DDD-NN>`. | 2026-07-05 admiralty audit: A (primary-authority) \u2014 CISA advisories; bridge 403 is a known transport block (does NOT demote per lifecycle rules), host confirmed live via KEV. Status stays active. | 2026-07-09 structured-listing recipe (v3.14): the /news-events/cybersecurity-advisories listing is a JS shell \u2014 `cisa page` on it returns only the filter UI. REQUIRED listing fetch: `python3 tools/fetch_source.py cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml 20` (structured {title,link} items, newest first); drill each item with `cisa page <link>`. Confirmed working 2026-07-09. | 2026-07-10: recipe recovered \u2014 `python3 tools/fetch_source.py cisa page` returned 200 full listing (S2); freshest item 07-07, no in-window content. Rotation-gap cleared; fetch_method/bridge path works. | 2026-07-10 (2009Z run): page URL returned only filter/facet UI in static HTML (no enumerated advisory rows); S1 recovered content via the RSS feed https://www.cisa.gov/cybersecurity-advisories/all.xml, which surfaced the in-window KEV addition. Prefer the RSS feed over the page URL for enumeration. | 2026-07-26 weekly quality audit: RUN-TIME RECIPE DIVERGENCE FIXED: the 2026-07-25 and 2026-07-26 fires both logged HTTP 403 fetching the /news-events/cybersecurity-advisories HTML listing while source_health.py probed the record green \u2014 because the health probe uses the working feed recipe (`cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml`), which is what a sweep must lead with too. This is an IGNORED-recipe problem, not a missing one: that feed URL was already this record's rss_url and the 2026-07-10 note already said to prefer it, and the fires still swept the url field. LEAD WITH rss_url. NEVER sweep the /news-events/cybersecurity-advisories HTML listing: Akamai 403s it for every UA. | 2026-08-04 run: FETCH NOTE \u2014 `cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml` returns 30 items cleanly, but the parsed `published` field comes back EMPTY. In-window filtering requires the date path in each alert URL (/news-events/alerts/YYYY/MM/DD/...) or the ICS day-of-year id (icsa-26-NNN-XX). | 2026-08-16: third consecutive run unreachable: cisa.gov Akamai-403s every direct UA and the jina reader pool \u2014 the documented recovery transport \u2014 returned HTTP 402 on all seven keys, so the full ladder failed. NOT demoted (403 is transport blocking, not content death). The CISA KEV and CSAF endpoints do not route through jina and covered the advisory surface this run; they are the load-bearing CISA path until reader credit is restored. | 2026-08-17: unreachable again \u2014 direct transport refused and the jina reader pool returned HTTP 402 on every rotating key, so the documented ladder had no last rung. Transport blocking plus an exhausted reader quota; NOT demoted. | 2026-08-18: fifth consecutive run unreachable \u2014 cisa.gov refuses the direct transport on every user agent and the reader pool returned HTTP 402 on all seven keys, so the documented ladder again had no last rung. NOT demoted (403 is transport blocking, not content death). The KEV API and the cisagov CSAF mirror do not route through the reader and covered the exploited-vulnerability and ICS surfaces this run; the general AA-series advisory listing was reachable by no transport. | 2026-08-19: sixth consecutive unreachable run \u2014 HTTP 403 to every direct transport with the reader fallback credit-exhausted; NOT demoted, a transport block is not content death. The KEV JSON feed remains the working substitute for the exploited-vulnerability surface."
+ },
+ {
+  "id": "ncsc-uk",
+  "publisher": "NCSC UK",
+  "url": "https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories",
+  "rss_url": "https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml",
+  "tier": "essential",
+  "fetch_method": "bridge",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "UK National Cyber Security Centre. /section/keep-up-to-date/threat-reports is a landing page with no actual reports listed. Substantive content lives at /section/keep-up-to-date/reports-advisories (joint advisories, CISA-co-signed) and /section/keep-up-to-date/malware-analysis-reports (technical malware analyses). Drill into individual reports for citation; never cite the landing page itself. NB: the RSS feed at /api/1/services/v1/report-rss-feed.xml has been observed to lag the HTML by months \u2014 prefer WebFetch on the HTML index. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 bridge: python3 tools/fetch_source.py url https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories  (parse real article slugs from the index, then `url <article_url>`; article body is JS-rendered so read <title> + <meta description> + dates rather than <p> text). WebFetch the HTML index also works for discovery.. AVOID: RSS at /api/1/services/v1/report-rss-feed.xml lags ~13 months (newest item May 2025) \u2014 do NOT use it for recency. CRITICAL: WebFetch's AI summariser MANGLES the article slugs (it returned /news/alert-ncsc-issues-advice-following-global-targeting-fortinet... which 404s; the real slug is /news/advice-following-global-targeting-of-fortinet-firewalls-and-vpn-gateways). Always take the slug from the bridge index, not from WebFetch's reconstructed URL. Never cite the landing page itself.. | 2026-07-05 admiralty audit: A (HIGH->A) status active->active \u2014 UK national cyber authority, original threat reporting + advisories; bridge index live/drillable (take slugs from bridge, not WebFetch). Justified A: primary national authority. No change. | 2026-07-11 audit: WORKING RECIPE FOUND \u2014 the combined feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml (reports + guidance + blog) is FRESH (items dated within days, verified 2026-07-11), unlike report-rss-feed.xml which lags months. Fetch via `python3 tools/fetch_source.py feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml 20` for discovery, then drill into item links for citation. This replaces the consent-banner-blocked HTML listing as the discovery path; the HTML listing kept returning a cookie-consent shell to WebFetch AND jina (recurring 'recipe gap' in July run records despite green last_successful_fetch \u2014 reachability is not readability). | 2026-07-13: reported RSS/feed path unresolved (report-feed.rss and all-feeds.xml 404'd); fetch_method=bridge still reaches the advisories listing \u2014 feed URL needs re-verification, kept active (feed drift, not death). | 2026-07-26 weekly quality audit: the 2026-07-13 note calling the feed path unresolved is STALE: the combined feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml (already on the record as rss_url) resolved cleanly this run. Lead with the feed for discovery; the HTML listing is a JS/consent shell with no drillable rows."
+ },
+ {
+  "id": "resecurity",
+  "publisher": "Resecurity",
+  "url": "https://www.resecurity.com/blog",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "C",
+  "language": [
+   "en"
+  ],
+  "note": "US CTI firm; cybercrime, ransomware, initial-access broker reporting (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 dated articles Apr 14 - May 5 2026. Some marketing tone \u2014 discovery / corroborate. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.resecurity.com/blog (then webfetch per-article URL for body). AVOID: Nothing blocks it; webfetch works clean. Some marketing tone \u2014 corroborate before citing as sole source.. | 2026-07-05 admiralty audit: C \u2014 originates research but marketing tone / uneven consistency; corroborate before citing as sole source. Live, active retained."
+ },
+ {
+  "id": "searchlight-cyber",
+  "publisher": "Searchlight Cyber",
+  "url": "https://slcyber.io/research-center/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Discovered on 2026-05-23 via Drupal CVE-2026-9082 coverage \u2014 published same-day technical analysis 'Keys to the Kingdom: Anonymous SQL Injection in Drupal Core CVE-2026-9082' (slcyber.io/research-center/keys-to-the-kingdom-anonymous-sql-injection-in-drupal-core-cve-2026-9082/) used as corroborating source by both S2 and S3 sub-agents. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://slcyber.io/research-center/ (listing) then webfetch per-article URL for body. AVOID: Listing page does not render per-item publication dates to WebFetch \u2014 get the date from the article page itself. Low/sporadic cadence (vuln-research drops, not a daily feed).. | 2026-07-05 admiralty audit: B \u2014 original vuln research, high quality; keep candidate (sporadic drops, only one documented run contribution so far \u2014 promote once it clears the 3-contribution bar). | 2026-07-18 weekly audit: contributed primary content again (WP2Shell CVE-2026-63030/-60137 discoverer write-up, cited primary on the audit-recovered entry) \u2014 second documented contributing run toward the 3-run activation bar. | 2026-07-26 weekly quality audit: promoted candidate \u2192 active on the documented lifecycle bar (cited by published entries from 4 distinct runs; the bar is 3). The promotion had never been executed because nothing counted contributing runs \u2014 the digest now emits sources.promotion_due (tools/run_summary.py)."
+ },
+ {
+  "id": "socprime",
+  "publisher": "SOC Prime",
+  "url": "https://socprime.com/blog/",
+  "rss_url": "https://socprime.com/blog/feed/",
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "C",
+  "language": [
+   "en"
+  ],
+  "note": "SOC Prime \u2014 Sigma-rule-focused threat-research blog (detection-engineering use case). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://socprime.com/blog/feed/ 5  (then webfetch per-post URL for detection guidance/body). AVOID: Nothing to avoid \u2014 WordPress feed and per-article WebFetch both work cleanly.. | 2026-07-05 admiralty audit: C \u2014 re-reports others' CVE disclosures with added Sigma detection guidance; useful but corroborate before acting. Keep active."
+ },
+ {
+  "id": "wordpress-org-news",
+  "publisher": "WordPress.org News",
+  "url": "https://wordpress.org/news/",
+  "rss_url": "https://wordpress.org/news/feed/",
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "ADDED as candidate by the 2026-07-18 weekly quality audit: WordPress core security releases (e.g. 7.0.2 / WP2Shell pre-auth RCE chain, 2026-07-17) had no curated discovery path \u2014 the release post is the vendor-primary for core CVEs affecting the huge Swiss/EU public-sector WordPress estate. Low cadence, high signal on security releases; the news feed carries them all. Promote to active after 3 contributing runs. | 2026-07-27 intel run: FIRST successful fetch since being added (rotation priority cleared) via the documented feed https://wordpress.org/news/feed/ \u2014 ten items spanning 2026-06-06 to 2026-07-22, none in-window. 200-but-quiet: last_successful_fetch set, consecutive_quiet_periods incremented to 1."
+ },
+ {
+  "id": "trustwave-spiderlabs",
+  "publisher": "LevelBlue (formerly Trustwave) SpiderLabs",
+  "url": "https://www.levelblue.com/blogs/spiderlabs-blog",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Trustwave SpiderLabs was rebranded to LevelBlue in 2025. URL CORRECTED 2026-05-08: legacy https://www.trustwave.com/en-us/resources/blogs/spiderlabs-blog 301-redirects to www.levelblue.com/blogs/spiderlabs-blog. 2026-05-08 audit: WebFetch returned 5 dated 2026 posts latest 2026-05-07 (Vidar/AutoIt, LevelBlue TTP Briefing, Vect ransomware). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.levelblue.com/blogs/spiderlabs-blog (listing) then webfetch the per-post www.levelblue.com/blogs/spiderlabs-blog/<slug> for full malware/TTP analysis. AVOID: Don't use the legacy trustwave.com URL \u2014 it 301s to levelblue.com (already corrected in the source). WebFetch works directly, no bridge.. | 2026-07-05 admiralty audit: B \u2014 reputable vendor threat-research lab, original malware/TTP analysis; levelblue.com URL (post-rebrand) resolves cleanly via WebFetch. No status change."
+ },
+ {
+  "id": "flatt-security",
+  "publisher": "GMO Flatt Security Research (RyotaK)",
+  "url": "https://flatt.tech/research/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "AI-agent and GitHub-Actions security research. Surfaced 2026-06-05 as primary discloser of the claude-code-action [bot]-actor-bypass + prompt-injection supply-chain flaw. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://flatt.tech/research/ (listing) then webfetch the per-post https://flatt.tech/research/posts/<slug>/ for full technical write-up. AVOID: Nothing to avoid \u2014 plain WebFetch works. Publishing cadence is low (roughly monthly), so 'recent' may be 2-3 weeks old.. | 2026-07-05 admiralty audit: B \u2014 original first-hand vulnerability research; stays active. Plain WebFetch works; cadence is ~monthly so 'recent' may be weeks old."
+ },
+ {
+  "id": "infoguard-labs",
+  "publisher": "InfoGuard Labs (Switzerland)",
+  "url": "https://labs.infoguard.ch/",
+  "rss_url": "https://labs.infoguard.ch/rss.xml",
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Swiss security research lab; discovered via the 'Ghost-Sender' Exchange Online spoofing disclosure surfaced in NCSC-CH post 12619 (2026-06-10). Strong CH/EU public-sector relevance. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://labs.infoguard.ch/ (listing has titles+dates), then fetch the article at https://labs.infoguard.ch/posts/<slug>/ \u2014 bridge 'url' works; the WebFetch summariser strips the 'labs.' subdomain (infoguard.ch/posts/<slug>/ 404s), so keep the labs. host for the drill.. AVOID: No feed and the listing post-cards are JS-rendered (raw HTML exposes only category/tag archive links). Don't drop the 'labs.' subdomain on article URLs \u2014 bare infoguard.ch/posts/<slug>/ 404s.. | 2026-07-05 admiralty audit: B \u2014 original Swiss vuln/malware research, strong CH/EU relevance; stays active. Keep the 'labs.' subdomain on drill URLs (bare infoguard.ch/posts/<slug>/ 404s). | 2026-08-05: RECIPE GAP \u2014 https://labs.infoguard.ch/ returns HTTP 200 but the post cards are JS-rendered and the raw body exposed no article links at all; no dated items could be enumerated by any transport tried. Needs a feed or sitemap probe before it can contribute. Not a demotion candidate (200, not a block). | 2026-08-09 RECIPE FIX: the standing 'JS-rendered listing, no extractable dates' gap is resolved \u2014 a working dated Atom/RSS feed exists at https://labs.infoguard.ch/rss.xml, returning full items with pubDate and article links. fetch_method switched webfetch -> rss. Consequence worth recording: the recipe gap had hidden this source's output from every prior run, and the first fetch through the fixed recipe surfaced a 22-CVE Swiss original-research disclosure (TeamDavid) that the pipeline had never covered."
+ },
+ {
+  "id": "pwn-ai",
+  "publisher": "PWN.AI (Nigusu Kasahun)",
+  "url": "https://pwn.ai/blog/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Discovered 2026-08-10 via W1 (weekly 2026-08-10T0110Z-weekly): discovering-researcher primary for CVE-2026-64638 (XSS2Shell), a WordPress Core pre-authentication XSS-to-RCE chain, with full root-cause depth including the sanitiser parser differential and the Application-Password capture step. Original disclosure, not aggregation. Re-added after the publish-time sources.json merge resolved --theirs and dropped the original addition. Candidate \u2014 promote to active after 3 runs with content contribution."
+ },
+ {
+  "id": "calif-codex",
+  "publisher": "Calif / Codex security research (blog.calif.io)",
+  "url": "https://blog.calif.io",
+  "rss_url": "https://blog.calif.io/feed",
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "2026-06-04: discovered as primary author of HTTP/2 Bomb CVE-2026-49975 (deep dive briefs/2026-06-04.md). AI-assisted vulnerability discovery, high technical depth. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://blog.calif.io/feed 5 (Substack feed) then WebFetch the /p/{slug} article URL for the full writeup.. AVOID: WebFetch on the blog ROOT returns a Substack SPA/marketing shell with no articles \u2014 skip it, go straight to the feed. Per-article /p/{slug} pages DO render to WebFetch (substantive).. | 2026-07-05 admiralty audit: B \u2014 original primary CVE research, high technical depth; stays active. Use the Substack /feed then drill /p/<slug> (blog root is a marketing SPA). | 2026-07-12: added explicit rss_url https://blog.calif.io/feed (Substack feed) \u2014 two research sub-agents this run guessed /rss.xml and /rss/ (both 404/empty); the working feed path was documented in notes but not in a machine-readable rss_url field. Feed verified 200 with items (newest 2026-07-01). No content change to fetch_method (rss)."
+ },
+ {
+  "id": "greynoise",
+  "publisher": "GreyNoise Labs",
+  "url": "https://www.greynoise.io/blog",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Mass-scanning and opportunistic-exploitation telemetry. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch (listing) then webfetch per-article URL for body. https://www.greynoise.io/blog lists dated posts; drill into /blog/{slug}.. AVOID: Listing dates can be slightly out of order (a research post dated April surfaced above June ops posts) \u2014 sort by date, don't trust top-of-page ordering.. | 2026-07-05 admiralty audit: B \u2014 independent scan-telemetry research lab, first-hand data; live, keep active. Sort by date (listing top-of-page ordering is unreliable)."
+ },
+ {
+  "id": "horizon3-ai",
+  "publisher": "Horizon3.ai (Attack Research / NodeZero)",
+  "url": "https://horizon3.ai/attack-research/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Discovered 2026-06-13 via CVE-2026-48558 (SimpleHelp OIDC auth-bypass) \u2014 Horizon3 was the primary-discovery vendor with public PoC/IOC disclosure; consistent original research on RMM/enterprise-tooling auth bypasses. Fetched 200 this run. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://horizon3.ai/attack-research/ (listing) then webfetch the /attack-research/disclosures/<slug>/ article for body. AVOID: Cadence is sparse (CVE disclosures, not daily) \u2014 gaps of weeks are normal, not a failure. | 2026-07-05 admiralty audit: B \u2014 original vuln discovery/disclosure with PoC/IOC; stays active. Sparse cadence (CVE-driven) is normal, not a failure."
+ },
+ {
+  "id": "jpcert",
+  "publisher": "JPCERT/CC (Japan)",
+  "url": "https://www.jpcert.or.jp/english/index.html",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "A",
+  "language": [
+   "en",
+   "ja"
+  ],
+  "note": "Japan Computer Emergency Response Team Coordination Center \u2014 primary Asian-region government CTI; strong on DPRK / China-aligned campaigns and Patch-Tuesday alerts (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 dated alerts Feb 12 - Apr 15 2026 (~3 weeks behind). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.jpcert.or.jp/english/index.html (listing) then webfetch the per-advisory jvn.jp/en/jp/JVN<id>/ URL for CVE/CVSS detail. AVOID: No bridge needed \u2014 WebFetch works. Note most listed items are JVN advisories on jvn.jp (a separate host) \u2014 drill there, not on jpcert.or.jp.. | 2026-07-05 admiralty audit: A \u2014 Japan's national CERT/CC; primary authority for its own coordinated advisories and JVN. HIGH->A, stays active."
+ },
+ {
+  "id": "keycloak",
+  "publisher": "Keycloak Project (security advisories / release notes)",
+  "url": "https://www.keycloak.org/security",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "CNCF/Red Hat upstream IAM \u2014 reference identity platform across EU public-sector e-government SSO. Release-notes blog + GitHub GHSA carry coordinated multi-CVE advisories. Discovered via Keycloak 26.6.3 deep dive 2026-06-07 (CVE-2026-9704 token-exchange privesc). Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live, drill=Y. The configured /security URL is a static policy page (no dated advisories). FETCH \u2192 `feed https://www.keycloak.org/rss.xml` for release posts that carry coordinated multi-CVE advisories, then drill the release blog post / linked GHSA. fetch_method webfetch\u2192rss. Stays candidate (needs content runs). | 2026-07-05 admiralty audit: A \u2014 first-party PSIRT for its own product (definitive source). Recommend candidate->active: live, drillable, relevant (EU public-sector SSO), recent clean fetch (2026-06-28, 0 failures). Fetch via rss.xml (the /security URL is static policy)."
+ },
+ {
+  "id": "mozilla-mfsa",
+  "publisher": "Mozilla Foundation Security Advisories",
+  "url": "https://www.mozilla.org/en-US/security/advisories/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "Firefox / Thunderbird / Firefox ESR security advisories (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 dated MFSA-2026-NN advisories all 2026-05-07/08. Drill into per-MFSA pages for CVE list and credit. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.mozilla.org/en-US/security/advisories/ (listing of dated MFSA entries) then webfetch the per-MFSA page https://www.mozilla.org/en-US/security/advisories/mfsa2026-NN/ for CVE list. AVOID: Nothing to avoid \u2014 plain WebFetch works on both listing and detail. No bridge needed.. | 2026-07-05 admiralty audit: A \u2014 first-party PSIRT, official MFSA advisories for Mozilla's own products; authoritative ground truth. Reliability HIGH->A, status stays active. A justified: definitive first-party disclosure source, direct authority over what it reports."
+ },
+ {
+  "id": "projectzero",
+  "publisher": "Google Project Zero",
+  "url": "https://projectzero.google/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Google's elite vulnerability research team. URL UPDATED 2026-05-08: legacy googleprojectzero.blogspot.com 301-redirects to projectzero.google. The Atom feed at /feed.xml is too large for WebFetch's content limit (>10 MB) \u2014 use the HTML index for the recent listing, or fetch the feed via the bridge if needed. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 bridge feed: python3 tools/fetch_source.py feed https://projectzero.google/feed.xml 5 (canonical URLs) then webfetch the per-post projectzero.google/YYYY/MM/<slug>.html. WebFetch of the HTML index also works for the listing.. AVOID: Don't WebFetch the /feed.xml directly \u2014 it exceeds WebFetch's content limit; use the bridge feed subcommand for the feed. WebFetch's summariser rendered post URLs as 'project-zero.google' (hyphen) \u2014 the canonical host is projectzero.google (no hyphen, confirmed via the bridge feed); use the feed's verbatim links.. | 2026-07-05 admiralty audit: B \u2014 top-tier original vuln-research lab, first-hand exploit research; not a CERT/PSIRT so capped at B. Live, no status change (active)."
+ },
+ {
+  "id": "0patch-blog",
+  "publisher": "ACROS Security / 0patch",
+  "url": "https://blog.0patch.com/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "0patch micropatch service \u2014 strong on legacy / unpatched-Windows exploitation chains and Patch-Tuesday analysis (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 micropatch posts Mar 30 - Apr 22 2026. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://blog.0patch.com/feeds/posts/default 5  (then webfetch the per-post 0patch.com/blog/<slug> URL for body). AVOID: blog.0patch.com now 301-redirects to 0patch.com/blog/ which is a JS/marketing shell to WebFetch (no dated posts surface). Do not WebFetch the listing \u2014 use the legacy Blogger Atom feed, which still emits the new-domain article URLs.. | 2026-07-05 admiralty audit: B (HIGH->B) \u2014 original micropatch/vuln analysis lab, first-hand technical work but not a primary authority; keep active, Blogger Atom feed still emits new-domain article URLs."
+ },
+ {
+  "id": "msrc-blog",
+  "publisher": "Microsoft Security Response Center (MSRC)",
+  "url": "https://msrc.microsoft.com/blog",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "Microsoft Security Response Center blog (added 2026-05-08). MSRC handles vuln coordination & Patch Tuesday context, distinct from MSTIC's actor-tracking. The landing redirects to www.microsoft.com/en-us/msrc/blog and renders as a navigation shell on WebFetch \u2014 drill into individual /blog/YYYY/MM/<slug>/ posts. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 WebSearch `site:msrc.microsoft.com/blog 2026` (or known post URL) then webfetch the per-post https://www.microsoft.com/en-us/msrc/blog/YYYY/MM/<slug> \u2014 individual posts render substantively even though the listing is an SPA shell.. AVOID: Don't WebFetch the /blog landing \u2014 it 301s to www.microsoft.com/en-us/msrc/blog and renders as an SPA navigation shell. Bridge url on the listing also returns only the SPA shell. There is NO working RSS (/blog/feed/ returns the HTML shell, not XML). Do not confuse with the `msft-secblog recent` bridge feed \u2014 that is the separate Microsoft Security Blog, not MSRC.. | 2026-07-05 admiralty audit: A \u2014 Microsoft PSIRT, first-party authority over its own product vulnerabilities/disclosure. Reliability HIGH->A, status stays active. A justified: definitive first-party PSIRT channel. Fetch per-post URLs (listing is an SPA shell, no working RSS)."
+ },
+ {
+  "id": "mysites-guru",
+  "publisher": "mySites.guru (Joomla/WordPress fleet security)",
+  "url": "https://mysites.guru/blog/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "jina",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Joomla/WordPress fleet-management vendor whose research team discovers and reproduces third-party-extension file-upload-to-RCE zero-days ahead of CVE assignment; original disclosing party for the mid-2026 Joomla extension file-upload RCE wave (SP Page Builder, Page Builder CK, Balbooa Forms) and for CVE-2026-48939 (iCagenda, CISA-KEV 2026-07-10). ADDED as candidate 2026-07-10 (2009Z run), cited as published primary for the iCagenda entry; fetch via jina (`python3 tools/fetch_source.py jina https://mysites.guru/blog/<slug>/`). Promote to active after 3 contributing runs. | 2026-07-11 contributed primary content again (RSFiles! CVE-2026-57827 + Phoca Download CVE-2026-57828, two more members of the Joomla-extension CWE-434 file-upload wave); consistent dated technically-precise disclosures, candidate still awaiting activation. | 2026-07-26 weekly quality audit: promoted candidate \u2192 active on the documented lifecycle bar (cited by published entries from 5 distinct runs; the bar is 3). The promotion had never been executed because nothing counted contributing runs \u2014 the digest now emits sources.promotion_due (tools/run_summary.py). | 2026-07-28: jina reader returned navigation chrome only. No demotion \u2014 transport/anti-bot block, not content death. | 2026-08-11: reader returns the extension-vulnerability post listing but with no per-item publication dates, so in-window status cannot be established for any item; S1 and S3 hit this independently. Recency-uncertain listings are excluded rather than included speculatively \u2014 a dated feed path for this publisher is the open recipe question."
+ },
+ {
+  "id": "ssd-disclosure",
+  "publisher": "SSD Secure Disclosure",
+  "url": "https://ssd-disclosure.com/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "jina",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Added 2026-07-28 as this run's single new candidate. Coordinated-disclosure programme publishing original root-cause analyses and working proof-of-concept code for vulnerabilities it brokers (primary source for CVE-2026-61511, the vBulletin runMaths pre-auth RCE). Rated B: original vulnerability research, not a first-party vendor authority. FETCH: direct WebFetch returns a partial render; `python3 tools/fetch_source.py url <article-url>` succeeded this run via the reader fallback and returned the full advisory including the root-cause section. | 2026-08-08: rotation-priority catch-up succeeded via the jina reader \u2014 the landing page enumerated dated advisories and one article body was retrieved. A second article returned HTTP 202 direct and a robot-challenge page through the reader, so per-article retrieval remains partial. Listing extraction is no longer the blocker; per-article anti-bot is. | 2026-08-09: regression \u2014 the landing page itself now returns a Cloudflare-style robot-challenge interstitial through both the direct bridge and the reader, where on 2026-08-08 the reader enumerated the dated advisory listing successfully. Independently observed by S1 and S3. 403/anti-bot never demotes; needs a new transport, not a status change. | 2026-08-10: RECIPE FIX: per-article advisory pages fetch cleanly via `fetch_source.py url <URL>` (direct); it is the jina-reader path that returns a Cloudflare-style robot-challenge interstitial on this host. Try direct FIRST for article bodies and reserve the reader for the listing page. Recovered the Linux bridge STP UAF advisory this run after two prior runs logged it as a transport failure. | 2026-08-11: the listing page https://ssd-disclosure.com/ returned a Cloudflare-style robot-challenge (HTTP 202) to BOTH the direct transport and the reader this run, which inverts the 2026-08-10 recipe note in the other direction: direct works for a KNOWN per-article URL, but neither transport reaches the listing, so discovery has no entry point without an article URL in hand. Keep the direct transport for article bodies; for discovery, try a feed/sitemap path next run before treating the source as unreachable. | 2026-08-13: HTTP 202 Cloudflare robot challenge on both direct fetch and the jina reader again this run; no in-window content recoverable. Transport block, not death \u2014 no demotion. | 2026-08-18: fetch_method jina -> bridge. Pinning this host to the reader is indefensible on two counts: the pool is credit-exhausted, and this record's own 2026-08-10 note documents the reader as the transport that gets the robot-challenge interstitial here while the direct `url` transport reads article bodies. Observed this run: the two Unisoc advisory pages returned HTTP 202 with a 187-byte shell to the direct transport, so neither rung reached content today and the surfaced finding could not be published on the primary. Needs a feed/sitemap probe. | 2026-08-18: UNSOLVED flag worked this run: five direct paths probed with a desktop browser user agent \u2014 two advisory article pages, /feed/, /rss, /sitemap.xml and the WordPress REST posts endpoint \u2014 and every one returned HTTP 202, the anti-bot challenge interstitial rather than content. No direct rung reaches this host today. NOT demoted (an anti-bot challenge is transport blocking) and NOT muted to fetch_method blocked, because the host served article bodies to the direct transport on 2026-08-10 and the reader has not been tested this run for want of credit \u2014 the block is intermittent, so muting it would silence a research primary that works on other days. | 2026-08-19: advisory pages still unreadable: alternate transports attempted this run were the archive host (refused/connection-reset) and a feed/sitemap probe, both failing inside the 5-minute budget. The Unisoc backlog row stays open. | 2026-08-19 RECIPE CORRECTION (evidence-based, reverses the 2026-08-18 change): the block on this host is NOT a client-rendered SPA and is NOT intermittent \u2014 it is a site-wide SiteGround anti-bot interstitial. Every path probed this run (/feed/, /rss, /advisories/feed/, /sitemap.xml, /wp-sitemap.xml and both Unisoc advisory pages) returned HTTP 202 with a 170-190 byte body whose only content is a meta-refresh to /.well-known/sgcaptcha/?r=<the requested path>. No feed, sitemap or article path escapes it, so there is no direct transport to author a recipe against. The reader proxy runs page JS server-side from its own egress and is therefore the correct transport for this host; fetch_method is set back to jina on that basis. The 2026-08-18 note reasoned the reader receives the challenge \u2014 today's evidence is that the DIRECT transport receives it, which is the opposite. Deliberately NOT set to blocked: blocked means unreachable by every transport including the reader, and the reader has not failed on its merits here, only on credit."
+ },
+ {
+  "id": "zdi",
+  "publisher": "Zero Day Initiative",
+  "url": "https://www.zerodayinitiative.com/blog/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Trend Micro ZDI vulnerability disclosure programme. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.zerodayinitiative.com/blog/ (listing) then webfetch each /blog/YYYY/M/D/<slug> article. AVOID: Nothing to avoid \u2014 WebFetch works on listing and articles.. | 2026-07-05 admiralty audit: B \u2014 established original vuln-disclosure programme (ZDI advisories, Pwn2Own); primary for its own disclosures but third-party products so not A. No status change (active)."
+ },
+ {
+  "id": "adobe-psirt",
+  "publisher": "Adobe PSIRT \u2014 Security Bulletins",
+  "url": "https://helpx.adobe.com/security/security-bulletin.html",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "bridge",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "Added 2026-08-07 to close a measured discovery-latency gap: Adobe has produced three separate waves of critical unauthenticated code-execution-class flaws in the Campaign/ColdFusion line since early July 2026 (APSB26-68/69, APSB26-114, APSB26-120), and this pipeline has been finding each one via NCSC-NL or CERT-FR relay rather than from the vendor. APSB26-120 published 2026-08-03 and reached this pipeline on 2026-08-07 through an NCSC-NL advisory dated 08-06. FETCH (probed 2026-08-07): https://helpx.adobe.com/security.html returns the 4 NEWEST bulletins with dates and is the right recency entry point; https://helpx.adobe.com/security/security-bulletin.html returns the full historical index (814 APSB ids in one fetch) and is the right target for a backfill or a specific-id lookup. Per-bulletin pages (helpx.adobe.com/security/products/<product>/<apsb-id>.html) carry an explicit per-CVE table of CWE / impact / severity / CVSS base score / CVSS vector, so CVE-to-score mapping is transcribable without positional guessing \u2014 prefer it over NVD, whose description text for CVE-2026-48331 characterises the impact as privilege escalation where Adobe's own table records arbitrary code execution. | 2026-08-08: promoted candidate -> active. The state digest counted 4 distinct contributing runs, past the 3-run promotion bar. | 2026-08-15: recipe repaired \u2014 health probe reported it unreachable on webfetch, but the bridge's url subcommand returned the full bulletin index this run; fetch_method switched webfetch -> bridge."
+ },
+ {
+  "id": "censys-blog",
+  "publisher": "Censys Research",
+  "url": "https://censys.com/resources/blog/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Internet-scale scanning telemetry; rapid-response advisories on edge-device CVEs (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 dated articles Apr 22 - May 6 2026. Rich complement to GreyNoise / Shadowserver. RSS at https://censys.com/feed/ also works. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://censys.com/feed/ 5  (then WebFetch the per-article /blog/<slug>/ URL for the body). AVOID: No need to scrape the /resources/blog/ listing \u2014 the feed is clean dated XML and WebFetch on article pages renders fine.. | 2026-07-05 admiralty audit: B (HIGH->B) \u2014 Censys vendor research, first-hand scan telemetry; keep active. Feed mixes research with company announcements; filter for the /blog/ research items. | 2026-08-05: BLOCKED on every transport. censys.com now returns HTTP 403 to the direct browser-UA fetch AND relays an upstream block/challenge through the jina reader, on the feed (https://censys.com/feed/), the blog index (/blog, /resources/blog/) and even /sitemap.xml \u2014 so the whole origin is challenge-gated, not one path. The legacy www.censys.io/blog/rss.xml returns 404. The documented feed recipe is therefore dead until the origin relaxes. Set fetch_method=blocked so source_health.py classes this handled rather than re-flagging it every run; status stays ACTIVE because a 403 is a transport block, never a content-death signal. Re-probe the feed each run and restore fetch_method=rss the moment it clears. | 2026-08-15: feed reachable again on the direct transport after being pinned fetch_method: blocked; switched back to webfetch \u2014 re-pin only if it regresses."
+ },
+ {
+  "id": "vulncheck",
+  "publisher": "VulnCheck",
+  "url": "https://www.vulncheck.com/blog",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Exploitation evidence and KEV-adjacent intelligence. URL UPDATED 2026-05-08: vulncheck.com 301-redirects to www.vulncheck.com \u2014 using the canonical avoids the redirect. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.vulncheck.com/blog (listing has titles+dates+URLs), then WebFetch the /blog/<slug> article URL for the technical body.. AVOID: No working RSS \u2014 /blog/rss 404s. The WebFetch summariser may mangle one URL ('wwv.vulncheck.com' typo) \u2014 use the canonical vulncheck.com/blog/<slug> form.. | 2026-07-05 admiralty audit: B \u2014 original exploitation/vuln research lab; WebFetch listing + article works, no RSS. No status change."
+ },
+ {
+  "id": "aikido-security",
+  "publisher": "Aikido Security (aikido.dev)",
+  "url": "https://www.aikido.dev/blog",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Software supply-chain / IDE-security research; primary source for the 2026-06-16 JetBrains Marketplace malicious-plugin disclosure (brief 2026-06-18 \u00a73). Discovered via that item. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.aikido.dev/blog (listing) then webfetch each /blog/<slug> article. AVOID: Nothing to avoid \u2014 WebFetch works on listing and articles.. | 2026-07-05 admiralty audit: B (MEDIUM->B) \u2014 original supply-chain/vuln research (own telemetry); stays active, no change."
+ },
+ {
+  "id": "apple-security",
+  "publisher": "Apple Security Advisories",
+  "url": "https://support.apple.com/en-us/100100",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "Apple platform security releases (iOS / iPadOS / macOS / Safari) \u2014 primary citation for ITW-exploited Apple 0-days (added 2026-05-08). 2026-05-08 audit: WebFetch returned dated entries iOS 26.4.2, 18.7.8, macOS Tahoe 26.4.1 (Apr 1-22 2026). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://support.apple.com/en-us/100100 (listing) then webfetch the per-release support.apple.com/en-us/<id> URL for CVE detail. AVOID: No need for the bridge \u2014 WebFetch returns the dated listing fine. Note WebFetch's summariser may mangle a single per-release URL; take URLs from the listing verbatim.. | 2026-07-05 admiralty audit: A (HIGH->A) \u2014 Apple first-party PSIRT, authoritative for its own products; keep active. WebFetch summariser truncates the listing; use the bridge `url` to read the dated release table and take per-release /en-us/<id> URLs verbatim. | 2026-07-28: WebFetch returned a truncation notice; advisory table is client-side rendered. No demotion \u2014 transport/anti-bot block, not content death."
+ },
+ {
+  "id": "chrome-releases",
+  "publisher": "Chrome Releases (Security Updates)",
+  "url": "https://chromereleases.googleblog.com/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "Chrome / ChromeOS Stable & Beta channel releases \u2014 primary citation for Chrome 0-day fixes (added 2026-05-08). Filter for 'Stable Channel Update' posts that reference CVEs / 'in the wild'. RSS at https://feeds.feedburner.com/GoogleChromeReleases also works. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://feeds.feedburner.com/GoogleChromeReleases 5 (filter for 'Stable Channel Update' posts referencing CVEs / 'in the wild'); feed summary carries the body, or webfetch the per-post chromereleases.googleblog.com URL. AVOID: Don't burn calls fetching every Beta/Dev/iOS channel post \u2014 only Stable Channel desktop updates carry the CVE/0-day security content.. | 2026-07-05 admiralty audit: A (vendor-psirt) \u2014 Google's own Chrome release channel, primary source for Chrome fixes; feed clean. Status stays active. Filter for Stable Channel desktop posts. | 2026-08-10: DEFECT: the feed subcommand returned 0 items for S1 this run despite the source being live; listing-extraction/recipe drift, not a transport block. Needs a recipe pass \u2014 do not demote (content axis unaffected). | 2026-08-11: feed-extraction defect CONFIRMED for a second consecutive run \u2014 `fetch_source.py feed https://chromereleases.googleblog.com/feeds/posts/default` routes via jina and returns count=0, and a direct GET of the listing returns the Blogger shell with no posts in the body. Next recipe attempt should try the explicit RSS alias `.../feeds/posts/default?alt=rss` or a dated archive path such as /2026/08/. | 2026-08-13: feed https://chromereleases.googleblog.com/feeds/posts/default returned count=0 for the third consecutive run; the dated listing page https://chromereleases.googleblog.com/2026/ is fetchable directly and is the working fallback. 403/empty-feed never demotes. | 2026-08-15: feeds/posts/default still returns count=0 (fourth consecutive run); the dated archive page chromereleases.googleblog.com/<year>/ is the working recipe and was used this run."
+ },
+ {
+  "id": "depthfirst",
+  "publisher": "depthfirst.com (security research blog)",
+  "url": "https://depthfirst.com",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "C",
+  "language": [
+   "en"
+  ],
+  "note": "AI-assisted vulnerability research blog; primary source for CVE-2026-42945 NGINX Rift (2026-05-13). Responsible disclosure track record confirmed. Added as candidate 2026-05-15. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-05-18: referenced as discovery source for NGINX Rift CVE-2026-42945 in-the-wild update; not directly cited in today's brief (citations go to The Hacker News + Security Affairs + NCSC-CH) | 2026-06-07: PRIMARY source for FFmpeg 21-zero-day AI-agent disclosure (CVE-2026-39210\u201339218), cited in deep-brief \u00a7 3 + \u00a7 5 cross-ref. Second contributing run \u2014 continue toward active after 3. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://depthfirst.com/research (listing \u2014 NOT the homepage, which is marketing-only) then webfetch per-article URL for body. AVOID: Homepage https://depthfirst.com is marketing/navigation only \u2014 go straight to /research for the dated post listing. Low publish cadence; no RSS observed.. | 2026-07-05 admiralty audit: C \u2014 original primary vuln research, newer/short track record. Recommend candidate -> active: live, drillable, clearly relevant, last_successful_fetch 2026-06-20, 0 failures, and cited as a primary source for multiple in-the-wild CVEs (all documented promotion criteria met)."
+ },
+ {
+  "id": "exodus-intelligence",
+  "publisher": "Exodus Intelligence (blog.exodusintel.com)",
+  "url": "https://blog.exodusintel.com",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Vulnerability-research lab publishing full technical write-ups with working exploits. Surfaced 2026-06-09 as primary for CVE-2026-23111 (Linux nf_tables UAF). RSS https://blog.exodusintel.com/feed/. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://blog.exodusintel.com/feed/ 5  (then webfetch/bridge per-post URL for full exploit write-up). AVOID: Don't WebFetch the SPA-ish blog homepage when the /feed/ returns full dated items with CVE IDs in the summaries.. | 2026-07-05 admiralty audit: B \u2014 original first-hand exploit/vuln research; stays active. Use /feed/ (full dated items with CVE IDs) rather than the SPA-ish homepage."
+ },
+ {
+  "id": "fbi-cyber-alerts",
+  "publisher": "Federal Bureau of Investigation (Cyber Division)",
+  "url": "https://www.ic3.gov/PSA",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "bridge",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "FBI Cyber Division public-service announcements and joint alerts (often co-sealed with EPA, CISA, DOE or NCSC-UK), the first-party record for FBI-observed victim reporting. Added 2026-08-01 as this run's single new candidate: its joint FBI/EPA announcement was the only source for the seven-state victim count, the naming of the MicroLogix 1100 series alongside the 1400, and the modified-ladder-logic finding in the water-sector PLC campaign; the parallel CISA alert names vendor equipment but carries none of those three facts. FETCH -> python3 tools/fetch_source.py url https://www.fbi.gov/investigate/cyber/alerts/<year>/<slug> (direct WebFetch 403s the routine UA; the bridge auto-fell back to the jina reader and returned the full body). Listing index: https://www.fbi.gov/investigate/cyber/alerts/<year>. Candidate - promote to active after 3 contributing runs. | 2026-08-02: flagged needs-demote by the sweep, diagnosed as the reader-credential outage, NOT a recipe break. The documented recipe reaches content by having the bridge auto-fall back to the jina reader (direct fetch 403s the routine UA); all four pooled keys are exhausted (HTTP 402) this run. Re-probed direct with a browser UA: https://www.fbi.gov/investigate/cyber/alerts and /investigate/cyber/news both 403. Recipe verified working on the 2026-08-01 run. No demotion \u2014 a 403 plus a credential-quota outage is a transport block, not source death. | 2026-08-03: candidate -> active: met the three-contributing-run promotion bar reported by the state digest. | 2026-08-15: bridge url subcommand fell through to the reader (the host refuses the direct transport) and the reader pool was exhausted, so no transport was available this run. Not demoted \u2014 an access wall, not content death. | 2026-08-16: source_health flagged needs-demote, but a serial re-probe returned 45 KB through the generic `url` bridge \u2014 which supersedes the 2026-08-15 note recording no transport available (that assessment was made while the reader pool was the only path tried). Metadata-drift correction: the generic bridge reaches this host directly. NOT demoted. | 2026-08-16 weekly (RECIPE FIX): url https://www.fbi.gov/investigate/cyber/alerts -> https://www.ic3.gov/PSA. The fbi.gov/investigate/cyber/alerts path now fails on the direct transport and falls through to the exhausted reader, so it was returning nothing; the IC3 public service announcement listing is the actual publication surface for FBI cyber alerts and returned 43 KB through the generic `url` bridge on a serial probe this run. Drill per-PSA pages from that listing."
+ },
+ {
+  "id": "morphisec",
+  "publisher": "Morphisec Labs",
+  "url": "https://www.morphisec.com/blog/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "C",
+  "language": [
+   "en"
+  ],
+  "note": "Israeli endpoint-security vendor; in-the-wild malware analysis (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 dated articles Apr 23 - May 7 2026. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.morphisec.com/blog/ (listing) then webfetch the per-article URL for body; RSS available at https://www.morphisec.com/rss-feeds/. AVOID: Listing carries marketing/webinar posts interleaved with research \u2014 filter to the threat-research/malware-analysis titles. No bridge needed; plain WebFetch works.. | 2026-07-05 admiralty audit: C \u2014 originates first-hand malware analysis but recent output is marketing-dominated with inconsistent research cadence; reliability MEDIUM->C. Live, status stays active; filter to malware-analysis titles."
+ },
+ {
+  "id": "onapsis",
+  "publisher": "Onapsis Research Labs",
+  "url": "https://onapsis.com/blog",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "SAP-security specialist research lab; authoritative public transcription of the monthly SAP Security Patch Day (per-CVE CVSS/CWE/SAP-Note detail behind SAP's login-gated notes). Added as candidate 2026-07-14 after serving as the primary for the July 2026 SAP Patch Day entry (CVE-2026-44747/-27690/-44761). FETCH -> webfetch https://onapsis.com/blog/sap-security-patch-day-<month>-<year>/ on SAP patch days. | 2026-07-26 weekly quality audit: promoted candidate \u2192 active on the documented lifecycle bar (cited by published entries from 4 distinct runs; the bar is 3). The promotion had never been executed because nothing counted contributing runs \u2014 the digest now emits sources.promotion_due (tools/run_summary.py)."
+ },
+ {
+  "id": "siemens-productcert-csaf",
+  "publisher": "Siemens ProductCERT (CSAF advisory portal)",
+  "url": "https://cert-portal.siemens.com/productcert/csaf/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "bridge",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "Siemens' own machine-readable CSAF advisory portal \u2014 first-party PSIRT authority for Desigo CC, SIMATIC, RUGGEDCOM, SICAM, Mendix and the rest of the Siemens OT/industrial estate. Added 2026-07-29 as this run's one new candidate: two prior published entries in the trailing 30 days cite cert-portal.siemens.com (the SICAM 8 firmware-signing advisory of 2026-07-10 and the RUGGEDCOM ROX II chain of 2026-07-18), with this run's own Desigo CC entry making a third, and the pipeline currently reaches Siemens advisories only through CISA's ICS republication, which lagged Siemens' own publication by two weeks on SSA-734552/SSA-814963 (Siemens 2026-07-14, CISA 2026-07-28). FETCH -> per-advisory structured CSAF: python3 tools/fetch_source.py url https://cert-portal.siemens.com/productcert/csaf/ssa-NNNNNN.json (verified working 2026-07-29). Read affected/fixed from product_status + remediations, never the prose summary. Reliability A: vendor PSIRT for its own products. | 2026-07-30: promoted candidate -> active; the state digest counted 3 distinct contributing runs, meeting the promotion bar. | 2026-08-02: recurring false needs-demote resolved. The health sweep probed the CSAF directory https://cert-portal.siemens.com/productcert/csaf/, which 403s every UA along with the CSAF discovery files (changes.csv, index.txt, .well-known/csaf/provider-metadata.json, the ROLIE feed) \u2014 all probed and all 403 this run. The documented per-advisory recipe is unaffected and was re-verified this run: `python3 tools/fetch_source.py url https://cert-portal.siemens.com/productcert/csaf/ssa-NNNNNN.json` returns the full CSAF document. Added a probe_url field pointing at a stable per-advisory document so the sweep exercises the recipe the runs actually use; tools/source_health.py now honours probe_url. No demotion \u2014 the source was never unreachable. | 2026-08-12: csaf/ and ssa-list.html returned S3 AccessDenied (403) on direct fetch, WebFetch and the jina reader; no in-window Siemens advisory confirmed this run. 403 is transport blocking \u2014 no demotion. | 2026-08-13: RECIPE: the csaf/ index and ssa-list.html still return S3 AccessDenied 403 on every transport, but INDIVIDUAL advisory pages at https://cert-portal.siemens.com/productcert/html/ssa-<id>.html ARE directly fetchable via `fetch_source.py url` \u2014 enumerate the month's SSA ids from the NCSC-NL CSAF mirror or CERT-FR, then fetch each Siemens page directly. Used successfully this run for SSA-834709. | 2026-08-15: CISA's CSAF mirror carried six in-window Siemens ICS advisories with full product_status and remediation data, so the vendor portal's 403 on its own index cost no coverage this run. | 2026-08-17: unreachable again \u2014 direct transport refused and the jina reader pool returned HTTP 402 on every rotating key, so the documented ladder had no last rung. Transport blocking plus an exhausted reader quota; NOT demoted. | 2026-08-18: vendor portal still 403 on every transport with the reader exhausted; the cisagov CSAF mirror carried no Siemens advisory newer than 2026-08-13, so no in-window Siemens advisory is known to have been lost. NOT demoted. | 2026-08-19: HTTP 403 to the direct transport with the reader exhausted; the cisagov CSAF mirror was checked as the alternate and held nothing newer than 2026-08-13, so no in-window Siemens advisory is known lost. NOT demoted."
+ },
+ {
+  "id": "tenable-research",
+  "publisher": "Tenable Research",
+  "url": "https://www.tenable.com/blog",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Tenable vuln research; Patch Tuesday analysis. RSS at https://www.tenable.com/blog/feed. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://www.tenable.com/blog/feed 5  (feed carries full HTML bodies inline; WebFetch the article URL only if more detail needed).. AVOID: The feed already includes substantive article bodies \u2014 often no separate per-article fetch is needed.. | 2026-07-05 admiralty audit: B \u2014 original vendor vuln research with own telemetry; feed carries full bodies. Keep active. | 2026-08-13: blog.xml feed parses to count=0 and the /blog listing is a JS-rendered shell with no drillable items; recipe gap unresolved this run."
+ },
+ {
+  "id": "trail-of-bits",
+  "publisher": "Trail of Bits",
+  "url": "https://blog.trailofbits.com/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Audit / research firm; deep technical writeups, supply-chain and crypto research (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 articles dated Apr 9 - May 5 2026. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://blog.trailofbits.com/ (listing) then webfetch the per-article URL on the blog.trailofbits.com host (NOT the bare trailofbits.com variant). AVOID: The WebFetch listing renders article hrefs without the 'blog.' subdomain (https://trailofbits.com/2026/...) and those 404. Re-add the 'blog.' prefix when drilling: https://blog.trailofbits.com/2026/... resolves 200.. | 2026-07-05 admiralty audit: B \u2014 original deep technical research; live. Keep active. Drill article URLs on the blog.trailofbits.com host."
+ },
+ {
+  "id": "certvde",
+  "publisher": "CERT@VDE (Germany)",
+  "url": "https://www.certvde.com/en/advisories/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "A",
+  "language": [
+   "en",
+   "de"
+  ],
+  "note": "CERT@VDE \u2014 Germany's OT/ICS coordinating CERT and CNA for industrial-automation vendors (WAGO, Phoenix Contact, etc.). Per-advisory pages at /en/advisories/VDE-YYYY-NNN/. Discovered 2026-07-13 via ENISA EUVD pivot (EUVD-2026-43297 -> VDE-2026-031, WAGO I/O System Field CVE-2026-4769); contributed a published vulnerability entry. High-value OT/ICS primary for the energy/water additional sectors; promote toward essential after the 3-contributing-run candidate window."
+ },
+ {
+  "id": "checkpoint-support",
+  "publisher": "Check Point Software Technologies",
+  "url": "https://support.checkpoint.com/results/sk/sk185222",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "bridge",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "Added 2026-08-05 as the ONE candidate source of this run. Check Point's own support/PSIRT advisory pages (sk articles) \u2014 the vendor primary for the Security Management / SmartConsole management-plane CVE stream this pipeline has covered four times in three weeks (CVE-2026-16232, CVE-2026-62144/-62145, CVE-2026-18574). Until now every Check Point entry had to lean on CERT-FR/BSI restatements because the vendor page was unreadable. FETCH \u2192 https://support.checkpoint.com/results/sk/<skid> is a Next.js SPA returning only a <title> to a direct GET. The full advisory body (symptoms, affected versions, conditions, mitigation, solution, dateCreated/lastModified) is served as JSON at https://support.checkpoint.com/_next/data/<buildId>/results/sk/<skid>.json \u2014 read <buildId> from the /_next/static/<buildId>/_buildManifest.js reference in the shell HTML (2026-08-05: qfIT1FE0sMobyOnl2MXEb; it rotates on every site deploy, so re-read it, never hardcode it). CITE the human /results/sk/<skid> URL; read the body from the data route. Candidate \u2014 promote to active after 3 contributing runs."
+ },
+ {
+  "id": "cisco-psirt",
+  "publisher": "Cisco PSIRT (RSS)",
+  "url": "https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "Cisco Product Security Incident Response Team feed (added 2026-05-08). 2026-05-08 audit: 5 dated advisories May 6 2026 (Unity Connection RCE, ISE auth bypass, etc.) \u2014 primary source for Cisco vuln context that ANSSI/CERT-EU advisories often cite. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml 5  (item links are full advisory URLs with title+CVE+impact; webfetch the cisco-sa-* URL for full body). AVOID: Feed summaries already carry CVE IDs + Security Impact Rating \u2014 often enough; strip the long ?vs_f=... query string when citing.. | 2026-07-05 admiralty audit: A (vendor-psirt) \u2014 Cisco's own PSIRT feed, first-party advisories for its products; feed clean and current. Status stays active."
+ },
+ {
+  "id": "claroty-team82",
+  "publisher": "Claroty Team82",
+  "url": "https://claroty.com/team82/research",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Claroty Team82 \u2014 OT / IoT vulnerability research (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 research titles; per-post dates not surfaced on listing \u2014 drill into individual posts. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch (listing) https://claroty.com/team82/research for titles+URLs, then WebFetch the per-post /team82/research/<slug> URL for the date+body (listing has no dates).. AVOID: claroty.com/feed 410s and the bridge returns only the HTML shell with article hrefs but no rendered dates \u2014 don't rely on a feed; WebFetch the listing then drill each post for its date.. | 2026-07-05 admiralty audit: B (research-lab) \u2014 Claroty OT/IoT research lab, original research; live, drill confirms recent dated substantive post. Status stays active (drill dates via per-post pages, no feed). | 2026-08-04 run: FETCH NOTE \u2014 https://claroty.com/team82/research returns 9 titles with NO publication dates; recency cannot be established from the listing. Needs a dated feed or per-post drill recipe."
+ },
+ {
+  "id": "esentire",
+  "publisher": "eSentire (Threat Response Unit / TRU)",
+  "url": "https://www.esentire.com/security-advisories",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "MDR/TRU security advisories with ITW-exploitation confirmations; surfaced via the 2026-07-02 Kemp LoadMaster CVE-2026-8037 exploitation-timeline advisory (\u00a7 4). Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-07-05 admiralty audit: B (MEDIUM->B) \u2014 original TRU exploitation advisories from own telemetry. Keep candidate (single contribution) but promotion-ready: clean fetch history, highly relevant to detection engineers."
+ },
+ {
+  "id": "sansec-research",
+  "publisher": "Sansec",
+  "url": "https://sansec.io/research",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Primary research firm for Magecart and e-commerce skimming campaigns (added 2026-05-17). Surfaced by S3 sub-agent during FunnelKit/WooCommerce active-exploitation pivot; Sansec confirmed the unauthenticated checkout-endpoint injection on FunnelKit Funnel Builder (cited in 2026-05-17 brief \u00a7 1). Industry standard for WordPress/Magento/PrestaShop skimmer disclosures. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live, drill=Y. CANONICAL Sansec entry (duplicate id `sansec` consolidated here). FETCH \u2192 webfetch https://sansec.io/research then drill per-article; Magecart / JS-supply-chain forensics, frequently first on CDN-compromise campaigns. Promoted candidate\u2192active; +vulns; MEDIUM\u2192HIGH. | 2026-07-05 admiralty audit: B \u2014 independent eCommerce-security lab, first-hand skimmer/supply-chain forensics; live and drillable. Status stays active."
+ },
+ {
+  "id": "shadowserver",
+  "publisher": "Shadowserver Foundation \u2014 News & Insights",
+  "url": "https://www.shadowserver.org/news-insights/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Non-profit; exposure scanning telemetry and incident observations. Cadence is sparse \u2014 flag 'no items' rather than fetch failure when window is empty. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.shadowserver.org/news-insights/ (listing) then webfetch each shadowserver.org/news/<slug>/ report. AVOID: Sparse cadence \u2014 flag 'no items in window' rather than a fetch failure; the listing mixes very recent items with months-old ones.. | 2026-07-05 admiralty audit: B \u2014 non-profit, first-hand scanning/sinkhole telemetry reports; live but sparse cadence (flag 'no items in window', not a failure). Status stays active."
+ },
+ {
+  "id": "snyk-research",
+  "publisher": "Snyk Security Research",
+  "url": "https://snyk.io/blog/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Snyk supply-chain / open-source vulnerability research (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 dated articles Apr 27-30 2026. RSS at https://snyk.io/blog/feed/. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://snyk.io/blog/feed/ 5 (title+date+summary+link) then webfetch the per-article snyk.io/blog/<slug>/ URL for body. AVOID: Feed interleaves corporate/marketing posts ('Day in the Life', product launches) with the supply-chain research \u2014 filter to the npm/PyPI/package-compromise titles.. | 2026-07-05 admiralty audit: B \u2014 vendor supply-chain research lab, original npm/PyPI research; live but filter marketing from the feed. Status stays active."
+ },
+ {
+  "id": "socket-dev-blog",
+  "publisher": "Socket Security (socket.dev blog)",
+  "url": "https://socket.dev/blog",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Primary disclosure outlet for supply-chain security findings (TeamPCP/Mini Shai-Hulud, node-ipc, GemStuffer). Multiple in-window primaries in W21 run. Proposed by W1 sub-agent. | 2026-05-26: contributed TrapDoor + Packagist supply-chain primaries (S1, S3). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://socket.dev/blog (listing) then webfetch the per-article socket.dev/blog/<slug> URL for body (full technical analysis renders). AVOID: Nothing to avoid \u2014 plain WebFetch works on listing and article. Listing mixes product-announcement posts (Socket MCP/Firewall) with the supply-chain research \u2014 filter to the package-compromise titles.. | 2026-07-05 admiralty audit: B \u2014 original supply-chain research from own scanning telemetry; reputable vendor lab. No status change (active)."
+ },
+ {
+  "id": "sonatype",
+  "publisher": "Sonatype (Software Supply Chain Research)",
+  "url": "https://www.sonatype.com/blog",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Software-supply-chain research lab; cited as corroborating primary for the 176-package npm dependency-confusion campaign (Sonatype-2026-003429) in the 2026-06-01 brief. Discovered via S3 WebSearch pivot from the Microsoft npm dependency-confusion post. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://www.sonatype.com/blog/rss.xml 5 (title+date+summary+link) then webfetch the per-article sonatype.com/blog/<slug> URL for body. AVOID: WebFetch on the /blog listing renders but DROPS publication dates \u2014 use the RSS feed for dates. The blog also mixes product/commentary posts with the supply-chain research; filter to the npm/dependency-attack titles.. | 2026-07-05 admiralty audit: B \u2014 original supply-chain research from first-hand registry telemetry; stays active. Use RSS for dates (WebFetch on /blog drops them)."
+ },
+ {
+  "id": "synacktiv",
+  "publisher": "Synacktiv Publications",
+  "url": "https://www.synacktiv.com/publications.html",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en",
+   "fr"
+  ],
+  "note": "French offensive-security firm (Pwn2Own regulars; added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 dated publications including vuln research. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.synacktiv.com/publications.html (listing \u2014 note WebFetch mangles relative hrefs; real article URLs are https://www.synacktiv.com/publications/<slug>) then webfetch the absolute per-article URL. AVOID: WebFetch returns article links as broken relative paths (https://publications/<slug>) \u2014 prepend https://www.synacktiv.com/ to form the real URL. Some posts are in French.. | 2026-07-05 admiralty audit: B \u2014 first-hand vuln/exploit research; live. Keep active. Reminder: reconstruct article URLs as https://www.synacktiv.com/publications/<slug>."
+ },
+ {
+  "id": "trendmicro-research",
+  "publisher": "Trend Micro Research",
+  "url": "https://www.trendmicro.com/en_us/research.html",
+  "rss_url": "https://feeds.feedburner.com/TrendMicroResearch",
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Trend Micro threat research. RSS at https://feeds.feedburner.com/TrendMicroResearch is a drop-in alternative. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://feeds.feedburner.com/TrendMicroResearch 5 (title+date+summary+link) then bridge: python3 tools/fetch_source.py url <article-url> for body (WebFetch 403s the article pages). AVOID: WebFetch 403s trendmicro.com article pages \u2014 for the body use the bridge 'url' (returns full article HTML with article:published_time meta). The feedburner RSS itself fetches fine without the bridge.. | 2026-07-05 admiralty audit: B \u2014 reputable vendor threat-research lab, original telemetry-driven research; feedburner RSS fetches cleanly. No status change. | 2026-08-23 (weekly W34): rss_url field added (https://feeds.feedburner.com/TrendMicroResearch). The working feed was documented in these notes but absent from the machine-readable field, so a sub-agent reading the allocation slice saw no feed and guessed https://www.trendmicro.com/en_us/research.xml, which 404s; with the reader pool exhausted there was no fallback and the source was lost for the run. Recipe unchanged, no status change."
+ },
+ {
+  "id": "truesec",
+  "publisher": "Truesec",
+  "url": "https://www.truesec.com/hub/blog",
+  "rss_url": "https://www.truesec.com/hub/blog/feed/",
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Nordic IR firm (offices SE/DK/FI/DE); annual Threat Intelligence Report; strong European IR visibility. List view shows per-post dates and authors; drill into /hub/blog/{slug} for full posts. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch (listing) https://www.truesec.com/hub/blog then webfetch https://www.truesec.com/hub/blog/{slug} per post. List view shows per-post dates and authors.. AVOID: Nothing \u2014 WebFetch works cleanly on listing and article. No bridge needed.. | 2026-07-05 admiralty audit: B \u2014 original first-hand IR/threat research, strong European IR visibility; WebFetch works cleanly on listing and articles. No status change. | 2026-07-30: source_health flagged this needs-demote on HTTP 502 via the webfetch listing path. NOT demoted \u2014 a 5xx is transport failure, not source death. Probed the ladder and found a working cheaper rung: the WordPress blog feed https://www.truesec.com/hub/blog/feed/ returns dated items (verified in-run: posts dated 2026-07-28, 2026-07-20, 2026-07-16). fetch_method webfetch -> rss with that rss_url; drill into /hub/blog/{slug} per post for full bodies as before. The direct bridge also reaches the HTML listing with HTTP 200, so the 502 was transient at the origin."
+ },
+ {
+  "id": "watchtowr",
+  "publisher": "watchTowr Labs",
+  "url": "https://labs.watchtowr.com/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Edge-device exploit research, often ahead of vendor disclosures. RSS at https://labs.watchtowr.com/rss/. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://labs.watchtowr.com/rss/ 5 (RSS carries near-full body) then webfetch the /<slug>/ for full article. AVOID: Cadence is bursty (multiple posts in days then quiet) \u2014 sparse periods are normal, not a failure. WebFetch on the article 403'd once in this audit; RSS is the more reliable entry and already carries substantive body HTML.. | 2026-07-05 admiralty audit: B \u2014 original edge-device exploit research, often ahead of vendors; RSS carries substantive body, bursty cadence is normal. No status change."
+ },
+ {
+  "id": "yeswehack",
+  "publisher": "YesWeHack \u2014 Vulnerability Intelligence",
+  "url": "https://www.yeswehack.com/blog",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en",
+   "fr"
+  ],
+  "note": "YesWeHack Vulnerability Intelligence team blog. French/EU offensive-security platform; co-authored the ChocoPoC research with Sekoia TDR on trojanised CVE proof-of-concept repositories targeting vulnerability researchers. EU-based primary source on exploit-PoC ecosystem abuse and scanner/template tradecraft \u2014 a surface no other tracked source covers. Discovered 2026-08-03 by W1. Listing at /blog (HTTP 200, verified 2026-08-03); an RSS feed exists at https://www.yeswehack.com/feed (HTTP 200). The /news path 404s \u2014 corrected in the same run that added the record, after source_health.py flagged it. Candidate \u2014 promote to active after 3 runs with content contribution."
+ },
+ {
+  "id": "hadrian-labs",
+  "publisher": "Hadrian",
+  "url": "https://hadrian.io/blog",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "bridge",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "ADDED as candidate by 2026-08-18 (this run's single new candidate). Offensive-security vendor whose Vulnerability Alerts blog publishes original root-cause reversing rather than re-reporting: it reconstructed the GeoServer jsonArrayContains SQL injection from a single researcher post to a working exploit and published the service-dependent exploitation analysis (WFS 1.0 reaching top-level SQL where WFS 2.0's count wrapper traps the injection, and the pgJDBC behaviour that makes preferQueryMode irrelevant) that this run's deep dive rests on \u2014 detail that appeared in no advisory. Rated B: original first-hand vulnerability research, not a first-party vendor authority for the affected product. FETCH: `python3 tools/fetch_source.py url https://hadrian.io/blog/<slug>` returned the full article body directly this run (~179 KB raw) with no reader fallback needed; the listing path has not yet been exercised. Promote to active after 3 contributing runs. | 2026-08-19: promoted candidate -> active on the counted promotion bar (three contributing runs per the state digest's promotion_due), not by eyeballing."
+ },
+ {
+  "id": "github-advisory",
+  "publisher": "GitHub Advisory Database",
+  "url": "https://github.com/advisories",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "bridge",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "GitHub-maintained advisory database \u2014 high-volume, machine-readable open-source ecosystem advisories (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 advisories all 2026-05-07 (rust-openssl, utcp-http, netbox, etc.). For per-ecosystem filtering use /advisories?type=...&query=...; for GraphQL / API see https://docs.github.com/en/graphql/reference/objects#securityadvisory. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://github.com/advisories (listing, dated GHSA items) then webfetch https://github.com/advisories/<GHSA-ID> for affected packages/CVE/severity/CWE. AVOID: Nothing to avoid for browsing; for programmatic/per-ecosystem filtering use /advisories?type=...&query=... or the GraphQL securityAdvisory API.. | 2026-07-05 root-cause + recipe fix: the 403 is NOT a browser-UA / anti-bot refusal \u2014 github.com AND api.github.com are blocked by the agent egress proxy itself (each session is bound to its configured repository; every other github.com path returns HTTP 403 with body `sessions are bound to their configured repositories`). No UA / header / Sec-CH-UA set recovers it (re-confirmed across chrome/firefox/googlebot/curl/minimal), and it behaves identically in the routine container. FETCH \u2192 bridge (OSV.dev, the reachable full mirror of the GitHub Advisory Database \u2014 every GHSA id, aliased to its CVE): `python3 tools/fetch_source.py osv query <ecosystem> <package> [version]` for advisories affecting a watchlist package (ecosystem \u2208 npm|PyPI|Go|Maven|crates.io|NuGet|RubyGems|Packagist\u2026), and `python3 tools/fetch_source.py osv vuln <GHSA-or-CVE>` to drill one advisory. fetch_method flipped webfetch\u2192bridge; github.com/advisories stays the human citation URL. | 2026-07-05 admiralty audit: B \u2014 curated/reviewed advisory DB, canonical for GHSA namespace + some original research (mixed with CVE mirror); live, keep active. | 2026-08-10: RECIPE FINDING (B1, Wazuh cluster): a GHSA page's markdown render DROPS the sidebar metadata panel that carries the CVE ID, severity, affected/patched versions and credits \u2014 `fetch_source.py jina <url> html` surfaces it, `fetch_source.py url <url>` does not. Use the html variant whenever a GHSA page is the per-CVE authority for an id. Also note github.com/advisories/<id> (the global database) and osv.dev may 404 for days after a repo-scoped advisory publishes, so absence there is propagation lag, not a wrong id. | 2026-08-18: RECIPE FINDING (main-agent deep read): `fetch_source.py url` on a GHSA page routes through the reader and therefore fails outright while the pool is exhausted, whereas WebFetch reads the same page directly and returns the severity band, CVSS vector, affected/patched ranges and credits. With the reader down, WebFetch is the working transport for this source, not the bridge \u2014 this is how the GeoServer advisory severity was resolved this run."
+ },
+ {
+  "id": "ccb-belgium",
+  "publisher": "Centre for Cybersecurity Belgium (CCB)",
+  "url": "https://ccb.belgium.be/advisories",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "bridge",
+  "reliability": "A",
+  "language": [
+   "en",
+   "nl",
+   "fr"
+  ],
+  "note": "Belgian national cybersecurity authority; publishes EN advisories on EU-relevant CVEs. Discovered 2026-05-24 via its corroborating Unbound 1.25.1 advisory (CVE-2026-33278 et al.) which carried technical detail beyond the NLnet Labs primary. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-02: contributed corroborating content (CVE-2026-41089 exploitation confirmation). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 bridge: python3 tools/fetch_source.py url https://ccb.belgium.be/advisories (listing, 72KB, dated advisories) then bridge url https://ccb.belgium.be/advisories/<slug> for the advisory body (48KB). AVOID: WebFetch listing works but its summariser rewrites article hosts to www.ccb.be \u2014 the canonical host is ccb.belgium.be; per-article WebFetch on www.ccb.be 503s. Use the bridge against ccb.belgium.be for the real hrefs and body.. | 2026-07-05 admiralty audit: A \u2014 Belgium's national cyber authority (CERT.be) publishing its own jurisdiction's official advisories; primary authority. No status change (active). Justified A: national CSIRT per rubric. | 2026-07-26 weekly quality audit: fetch_method bridge \u2192 jina: plain WebFetch and the generic `url` bridge both return only cookie-consent boilerplate for the advisory listing, while the jina reader returned the full paginated listing with dates. This is a reader-required host, so it is pinned rather than left to the auto-fallback. | 2026-08-17: unreachable again \u2014 direct transport refused and the jina reader pool returned HTTP 402 on every rotating key, so the documented ladder had no last rung. Transport blocking plus an exhausted reader quota; NOT demoted. | 2026-08-18: pinned to the reader, credit-exhausted for the fourth consecutive fire; the direct bridge returns only cookie-consent and navigation shell, exactly as the recipe note predicts. A quota condition never demotes. | 2026-08-19: reader-pinned recipe and the reader pool is credit-exhausted; a quota condition never demotes. Needs a direct transport or a structured feed \u2014 standing repair item. | 2026-08-20: recipe moved off the jina-only pin. `tools/fetch_source.py url https://ccb.belgium.be/advisories --direct` returns a clean 200 Drupal-rendered page with dated advisory rows (article-search--date, DD/MM/YYYY); verified this run after five consecutive fires lost this source to the exhausted reader pool. Direct transport is now the documented first rung."
+ },
+ {
+  "id": "oracle-cpu",
+  "publisher": "Oracle Critical Patch Updates",
+  "url": "https://www.oracle.com/security-alerts/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "bridge",
+  "reliability": "A",
+  "language": [
+   "en"
+  ],
+  "note": "Oracle quarterly Critical Patch Updates and individual Security Alerts (added 2026-05-08). Quarterly cadence (Jan / Apr / Jul / Oct); also publishes off-cycle Security Alerts for ITW-exploited bugs. 2026-05-08 audit: WebFetch surfaced CPU Apr 2026 + CVE-2026-21992 Mar 20 alert. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 bridge: python3 tools/fetch_source.py url https://www.oracle.com/security-alerts/ (listing) then bridge: python3 tools/fetch_source.py url https://www.oracle.com/security-alerts/<cpu-or-alert>.html for the advisory body. AVOID: WebFetch 403s oracle.com \u2014 skip WebFetch, go straight to the bridge. Quarterly CPU cadence (Jan/Apr/Jul/Oct) plus off-cycle Security Alerts; don't expect daily change.. | 2026-07-05 admiralty audit: A (HIGH->A) status active->active \u2014 first-party Oracle PSIRT, own-product advisories; bridge listing live/drillable. Justified A: vendor PSIRT for its own products. Quarterly cadence; Jul 2026 CPU due mid-month."
+ },
+ {
+  "id": "rapid7-research",
+  "publisher": "Rapid7 Research",
+  "url": "https://www.rapid7.com/blog/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "rss",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Rapid7 vuln and incident research; Metasploit project; weekly Metasploit Wrap-Up. RSS at https://www.rapid7.com/rss.xml. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://www.rapid7.com/rss.xml 5  (feed carries full HTML body incl. CVE detail; per-post URL drill optional). AVOID: Don't WebFetch the /blog/ landing page \u2014 the rss.xml feed already returns full post bodies with CVE IDs and module detail.. | 2026-06-30: a sub-agent hit HTTP 404 on https://www.rapid7.com/blog/feed/ \u2014 that is the WRONG endpoint. Correct feed is https://www.rapid7.com/rss.xml (already documented above). Source healthy; no demotion. | 2026-07-05 admiralty audit: B \u2014 original vendor vuln/incident research + Metasploit wrap-ups. Live and fresh (daily/weekly). Active retained; use rss.xml (not /blog/feed/)."
+ },
+ {
+  "id": "wiz-blog",
+  "publisher": "Wiz Research Blog",
+  "url": "https://www.wiz.io/blog",
+  "rss_url": "https://www.wiz.io/api/feed/cloud-threat-landscape/rss.xml",
+  "tier": "standard",
+  "fetch_method": "webfetch",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Cloud security research; strong on cloud-native CVEs, container escapes, and misconfiguration. Promoted from candidate \u2192 active 2026-05-08 after 2026-05-08 audit returned 5 dated 2026-05-06/08 items including Dirty Frag and Akamai integration. (v2.55: rss_url verified \u2014 use `python3 tools/fetch_source.py feed https://www.wiz.io/api/feed/cloud-threat-landscape/rss.xml [N]`) | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.wiz.io/blog (listing) then webfetch per-article wiz.io/blog/<slug> URL; RSS at https://www.wiz.io/api/feed/cloud-threat-landscape/rss.xml (cloud-threat-landscape slice only). AVOID: Listing renders the article hero IMAGE url first and the real link as a relative /blog/<slug> path \u2014 resolve it against www.wiz.io. The documented RSS only covers the cloud-threat-landscape slice, not all blog posts.. | 2026-07-05 admiralty audit: B \u2014 original cloud-security research from Wiz Research, but the blog feed mixes in marketing and policy re-reporting; resolve slugs against www.wiz.io. No status change."
+ },
+ {
+  "id": "kaspersky-ics-cert",
+  "publisher": "Kaspersky ICS CERT",
+  "url": "https://ics-cert.kaspersky.com/",
+  "rss_url": null,
+  "tier": "standard",
+  "fetch_method": "bridge",
+  "reliability": "B",
+  "language": [
+   "en"
+  ],
+  "note": "Added 2026-08-23 as this run's single new candidate. Distinct team and portal from the already-tracked kaspersky-securelist (GReAT malware research): Kaspersky ICS CERT runs a CVE-coordination programme publishing per-vulnerability advisories with CVSS and affected-version detail, plus full exploitation write-ups. Primary source for this run's TrueConf Server entry (CVE-2026-72529/72530 and the Head Mare exploitation report) \u2014 ENISA's EUVD records Kaspersky as the assigning CNA for both. Rated B: original vulnerability coordination and research, not a first-party vendor authority for the affected product. Promote to active after 3 contributing runs."
+ }
+]

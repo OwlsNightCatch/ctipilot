@@ -1,0 +1,578 @@
+domain: G6
+run_id: 2026-08-24T0902Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-24T09:06:51Z
+ended_at: 2026-08-24T09:26:30Z
+duration_seconds: 1179
+self_telemetry:
+  webfetch_calls: 24
+  websearch_calls: 11
+  bridge_fetches: 22
+
+audit_context: |
+  Coverage re-sweep, threat research & APT (per-publisher listing sweep), period
+  2026-08-16T00:00Z -> 2026-08-24T09:00Z. Method: walked each lab's blog index/RSS
+  in the priority order given (majors first, then the OT/ICS surface, then the
+  previously-logged-unreadable sources), enumerated in-period posts, read the
+  relevant ones, and cross-checked every candidate against
+  work/2026-08-24T0902Z-audit/prior_coverage.json (209 records) and
+  entities/registry.yaml before treating anything as a gap. jina reader pool was
+  checked first via `jina-usage`: all 7 configured keys report status "exhausted"
+  (HTTP 402), total_balance -13,774,163 — the reader was UNAVAILABLE for this
+  entire run. Every fetch below used RSS feed / WebFetch / the bridge's direct
+  `url` transport (no jina fallback available); this is noted per-source below
+  rather than repeated on every line.
+
+  Sources actually walked this run (majors): msft-ti (msft-secblog bridge),
+  mandiant-gtig (feedburner feed), talos (WebFetch listing), unit42 (feed),
+  checkpoint-research (feed), eset/welivesecurity (WebFetch), kaspersky-securelist
+  (feed), sentinellabs (WebFetch), proofpoint (WebFetch), trendmicro-research
+  (feed + WebFetch cross-check), sophos-xops (feed), recordedfuture-insikt (feed),
+  volexity (WebFetch), huntress (feed), rapid7-research (feed), withsecure-labs
+  (WebFetch + direct bridge for dates), plus a second wave: watchtowr (feed),
+  sysdig (feed), redcanary (feed), lab52 (feed), wiz-blog (feed), elastic-seclabs
+  (WebFetch), zscaler-threatlabz (WebFetch), jamf-threat-labs (WebFetch),
+  kaspersky-ics-cert (WebFetch), group-ib (direct bridge, grep-parsed).
+  OT/ICS surface (priority 2): dragos, nozomi-networks, claroty-team82, sans-ics,
+  industrialcyber-co — see `ot_ics_source_sweep` below.
+  Previously-unreadable probes (priority 3): withsecure-labs, symantec-broadcom,
+  cybereason, claroty-team82, forescout-vedere, 0patch-blog, tenable-research —
+  see `unreadable_source_probes` below.
+
+items:
+  # =================================================================
+  # GENUINE GAPS (novelty: new)
+  # =================================================================
+  - title: "TheHatman advertises 3.64M employee-directory records exfiltrated from nine Fortune 500 companies' Azure/Entra tenants via password-spray + MFA-fatigue"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/large-scale-credential-attacks/", publisher: "Unit 42 (Palo Alto Networks)", date: "2026-08-18", role: primary }
+      - { url: "https://www.bleepingcomputer.com/news/security/hacker-claims-36-million-azure-account-records-stolen-from-major-companies/", publisher: "BleepingComputer", date: "2026-08-17", role: corroborating }
+      - { url: "https://www.helpnetsecurity.com/2026/08/18/azure-data-leak-fortune-500-companies/", publisher: "Help Net Security", date: "2026-08-18", role: corroborating }
+      - { url: "https://www.hudsonrock.com/blog/massive-azure-exfiltration-campaign-exposes-millions-of-enterprise-records-via-compromised-credentials-mcdonalds-vodafone-kyndryl-others", publisher: "Hudson Rock", date: "2026-08-17", role: corroborating }
+    discovery_trace: >
+      first seen at: unit42 (feed https://unit42.paloaltonetworks.com/feed/, this run), URL
+      https://unit42.paloaltonetworks.com/large-scale-credential-attacks/ (Unit 42's "Threat
+      Brief: Mitigating Large-Scale Credential Attacks", updated 2026-08-18, links out to Hudson
+      Rock) -> pivot: WebSearch ("TheHatman Azure exfiltration McDonald's Vodafone Kyndryl Entra
+      credentials") -> corroborating: BleepingComputer, URL
+      https://www.bleepingcomputer.com/news/security/hacker-claims-36-million-azure-account-records-stolen-from-major-companies/
+      -> corroborating: Help Net Security, URL
+      https://www.helpnetsecurity.com/2026/08/18/azure-data-leak-fortune-500-companies/ -> primary
+      claim source: Hudson Rock, URL
+      https://www.hudsonrock.com/blog/massive-azure-exfiltration-campaign-exposes-millions-of-enterprise-records-via-compromised-credentials-mcdonalds-vodafone-kyndryl-others
+      (bridge direct GET returned only an unhydrated JS-SPA shell with no article body — title/date
+      only recoverable; jina reader unavailable this run for the hydrated version, HTTP 402 on all
+      7 keys).
+    summary: |
+      A threat actor using the handle "TheHatman" advertised, in listings posted between
+      31 July and 17 August 2026, employee-directory dumps totalling roughly 3.64 million
+      records exfiltrated from nine corporate Microsoft Azure/Entra ID tenants: McDonald's
+      (~1.7M), Tata Consultancy Services (~800K), Vodafone (~425K), HCL Technologies
+      (~250K), plus InterContinental Hotels Group, Kyndryl, Gap Inc., Hexaware and Wyndham
+      Hotels at smaller volumes. The claimed data is internal corporate-directory
+      attributes — names, employee IDs, email addresses, job titles, phone numbers, postal
+      addresses, department/group memberships, service-account entries and in some listings
+      Global Administrator account names — rather than customer or financial data. TCS
+      publicly attributed the access method to "password spray and Multi-Factor
+      Authentication (MFA) fatigue" attacks; Unit 42 states it has not independently
+      verified the specific intrusion vector or the claims themselves, and frames the
+      broader activity class as password-spraying and MFA-fatigue campaigns against cloud
+      identity infrastructure generally, not solely against Entra. Some named victims
+      (Gap, elements of TCS's own statement) characterise the exposed data as outdated or
+      non-sensitive; none has confirmed a specific technical root cause beyond TCS's
+      MFA-fatigue attribution. Hudson Rock, which analysed the dumps, assessed the data as
+      "foundational corporate directory attributes" that provide "a direct roadmap for
+      subsequent social engineering, spear-phishing, or targeted privilege escalation
+      attacks" against the named organisations — i.e. the operational risk is a
+      second-order social-engineering enablement rather than the leaked fields themselves.
+      Technique class: T1110.003 (Password Spraying) as the credential-access vector per
+      TCS's own statement, T1621 (Multi-Factor Authentication Request Generation / "MFA
+      fatigue" push-bombing) as the bypass of the second factor, T1078.004 (Valid Accounts:
+      Cloud Accounts) for the resulting Entra tenant access, and T1213 (Data from
+      Information Repositories) for the directory-export collection step. No CVE is
+      involved; this is a credential/identity-hygiene campaign against Microsoft 365/Entra
+      tenants broadly, not a single-vendor flaw.
+    region_nexus: "global (named victims span US, UK/multinational, India — no Swiss-specific victim named, but Vodafone and several named firms operate across Europe)"
+    primary_sector_nexus: "indirect"
+    sector: "finance, telco, technology, retail, public-sector"
+    cves: []
+    techniques: [T1110.003, T1621, T1078.004, T1213]
+    affected_products: ["Microsoft Entra ID", "Microsoft Azure"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:thehatman", type: actor, name: "TheHatman", aliases: [],
+          summary: "Handle used by a threat actor advertising bulk exfiltration of corporate Azure/Entra tenant directory data from nine Fortune 500 companies (listings posted 31 Jul-17 Aug 2026); TCS publicly attributes the access to password-spray and MFA-fatigue attacks against its Entra tenant (Unit 42 / TCS statement / Hudson Rock, 2026-08-17/18)." }
+    evidence:
+      - quote: "TheHatman claimed that they used compromised credentials through MFA fatigue and password spraying attacks to gain unauthorized access to these organizations."
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/large-scale-credential-attacks/"
+      - quote: "The attacker claims to have used password spray and Multi-Factor Authentication (MFA) fatigue as the attack vector"
+        attribution: "BleepingComputer (TCS statement)"
+        source_url: "https://www.bleepingcomputer.com/news/security/hacker-claims-36-million-azure-account-records-stolen-from-major-companies/"
+      - quote: "The exposure of service accounts and global admin names is particularly concerning, as this provides a direct roadmap for subsequent social engineering, spear-phishing, or targeted privilege escalation attacks against these organizations."
+        attribution: "Hudson Rock (via Help Net Security)"
+        source_url: "https://www.helpnetsecurity.com/2026/08/18/azure-data-leak-fortune-500-companies/"
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "No Swiss/EU-specific victim named and the underlying access vector is an actor's own claim (Unit 42 explicitly declines to verify it) rather than a confirmed technical root cause; included for its scale (Fortune 500, 3.64M records) and the transferable identity-hygiene lesson (Entra password-spray/MFA-fatigue hardening applies to any Microsoft 365 tenant, including CH/EU public-sector ones) rather than a direct constituency nexus. Sits closer to S1/S4 territory than G6 but surfaced only via a G6 vendor-blog pivot, so flagging here for the composer to route."
+
+  - title: "GTIG's Agentic Vulnerability Discovery Harness (AVDH) found 100+ true-positive critical vulnerabilities in stolen corporate source code in two days during an incident-response engagement"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/staying-ahead-of-adversarial-ai-through-agentic-source-code-review", publisher: "Google Threat Intelligence Group (GTIG) / Mandiant", date: "2026-08-18", role: primary }
+    discovery_trace: >
+      first seen at: mandiant-gtig (feed https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v,
+      this run) -> primary (no pivot needed), URL
+      https://cloud.google.com/blog/topics/threat-intelligence/staying-ahead-of-adversarial-ai-through-agentic-source-code-review
+    summary: |
+      Google Threat Intelligence Group describes AVDH (Agentic Vulnerability Discovery
+      Harness), a multi-agent orchestration pipeline that automates source-code security
+      review: sequential phases for threat modeling, entry-point discovery, context
+      enrichment, hypothesis generation and validation, each phase informed by
+      distilled-human-expertise rules before the next phase runs. The validation stage runs
+      multiple high-temperature agents in parallel to gather independent verdicts on each
+      candidate finding before a human expert reviews it and a proof-of-concept is built
+      pre-disclosure. GTIG states that during a live incident-response investigation
+      involving a corpus of stolen corporate source-code repositories, the harness surfaced
+      over 100 true-positive critical vulnerabilities within two days, and that over its
+      first 10 months of operation it has produced 12 assigned CVEs across "tens of
+      millions of lines of code." Vulnerability classes it traces for are the standard
+      taint-style sink classes: SQL injection, cross-site scripting, command injection and
+      path traversal. This is defensive/dual-use tooling research, not an attacker TTP
+      disclosure — the operationally relevant read for a defender is that adversaries with
+      access to any organisation's stolen source code now plausibly have the same
+      capability to triage it for exploitable bugs at this speed, which shortens the
+      window between a source-code-repository breach and follow-on exploitation of the
+      victim's own products.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "technology, public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:avdh-agentic-vulnerability-discovery-harness", type: tool, name: "AVDH (Agentic Vulnerability Discovery Harness)", aliases: [],
+          summary: "Google Threat Intelligence Group / Mandiant's multi-agent source-code security-review pipeline (threat modeling -> entry-point discovery -> context enrichment -> hypothesis generation -> validation); found 100+ true-positive critical vulnerabilities in stolen corporate source code in two days during an IR engagement and has produced 12 assigned CVEs over its first 10 months (GTIG, 2026-08-18). Distinct from Microsoft's own MDASH agentic vuln-discovery harness already tracked as tool:microsoft-mdash-2026." }
+    evidence:
+      - quote: "AVDH chains specialized agents together in a sequential pipeline, much like the waterfall approach to software development: each phase is completed before the next begins."
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/staying-ahead-of-adversarial-ai-through-agentic-source-code-review"
+      - quote: "During a recent incident response investigation involving stolen corporate repositories, the harness discovered over 100 true-positive critical vulnerabilities in just two days — achieving results in a fraction of the time required for manual review."
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/staying-ahead-of-adversarial-ai-through-agentic-source-code-review"
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Single-source (Google's own capability announcement about its own tool — no independent party can corroborate an internal usage statistic); genuinely useful defender-awareness content (source-code-breach-to-exploitation window is shrinking) but is defensive-tooling research rather than an attacker TTP disclosure, so it carries no techniques[] mapping."
+
+  - title: "Nozomi Networks: Winnipeg Health Sciences Centre ransomware disabled hospital HVAC/door-access building-management systems — legacy BACnet controllers and unclear IT/facilities ownership are the recurring BMS gap"
+    sources:
+      - { url: "https://www.nozominetworks.com/blog/when-ransomware-turns-off-the-hvac-lessons-from-the-winnipeg-hospital-incident", publisher: "Nozomi Networks", date: "2026-08-17", role: primary }
+      - { url: "https://www.cbc.ca/news/canada/manitoba/health-sciences-centre-ransomware-hack-9.7302058", publisher: "CBC News", date: "2026-08-10", role: corroborating }
+    discovery_trace: >
+      first seen at: nozomi-networks (WebFetch listing https://www.nozominetworks.com/blog, this
+      run; listing itself carries no visible dates, dates recovered by drilling the individual
+      post's JSON-LD `datePublished`) -> primary, URL
+      https://www.nozominetworks.com/blog/when-ransomware-turns-off-the-hvac-lessons-from-the-winnipeg-hospital-incident
+      (datePublished confirmed 2026-08-17 via direct bridge fetch of the page's schema.org
+      JSON-LD) -> corroborating: CBC News, URL
+      https://www.cbc.ca/news/canada/manitoba/health-sciences-centre-ransomware-hack-9.7302058
+    summary: |
+      Manitoba's Health Sciences Centre (Winnipeg) disclosed a ransomware incident, reported
+      2026-08-10, that Shared Health described as "affecting certain facility maintenance
+      systems, including HVAC and door access controls" — clinical operations and patient
+      care were not affected, but building-management systems were. Nozomi Networks'
+      analysis (published 2026-08-17) uses the incident to argue that hospital HVAC is
+      clinical infrastructure, not facilities overhead: precise pressure relationships and
+      filtration in patient-care areas (per ANSI/ASHRAE/ASHE 170-2025) depend on the same
+      BMS that ransomware operators increasingly reach as a soft target. Nozomi's stated
+      root-cause pattern for why BMS falls through security gaps: legacy protocols (BACnet)
+      designed for interoperability rather than security, controllers that "often run for a
+      decade or more without a patch," and unclear ownership between IT security teams and
+      facilities/engineering staff who operate the BMS day to day. Recommended controls are
+      the standard OT triad applied to BMS specifically: automated asset inventory of BMS
+      controllers, network-segmentation verification between BMS and IT/clinical networks,
+      and continuous behavioural monitoring of BACnet traffic to catch anomalous read/write
+      patterns before systems are fully compromised. This is a transferable lesson for any
+      CH/EU hospital or public building operator running BACnet-based HVAC/access-control
+      systems, independent of the Winnipeg victim.
+    region_nexus: "north-america (Canada); lesson is directly transferable to CH/EU healthcare and public-building operators running comparable BMS/BACnet infrastructure"
+    primary_sector_nexus: "indirect"
+    sector: "healthcare, public-sector"
+    cves: []
+    techniques: [T1486]
+    affected_products: []
+    entity_keys: []
+    evidence:
+      - quote: "Ransomware incident affecting certain facility maintenance systems, including HVAC and door access controls."
+        attribution: "Shared Health (via Nozomi Networks)"
+        source_url: "https://www.nozominetworks.com/blog/when-ransomware-turns-off-the-hvac-lessons-from-the-winnipeg-hospital-incident"
+      - quote: "The controllers themselves often run for a decade or more without a patch."
+        attribution: "Nozomi Networks"
+        source_url: "https://www.nozominetworks.com/blog/when-ransomware-turns-off-the-hvac-lessons-from-the-winnipeg-hospital-incident"
+      - quote: "Baseline normal asset behavior, and monitor BMS protocols in network traffic for anomalies."
+        attribution: "Nozomi Networks"
+        source_url: "https://www.nozominetworks.com/blog/when-ransomware-turns-off-the-hvac-lessons-from-the-winnipeg-hospital-incident"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+
+  - title: "Two OT-focused research labs independently flag the new US CE-TCO presidential memorandum (private-sector 'offensive cyber operations' against criminal infrastructure) as a fresh exposure class for internet-facing industrial control systems"
+    sources:
+      - { url: "https://www.whitehouse.gov/presidential-actions/2026/08/expanding-capabilities-to-combat-transnational-cyber-enabled-crime/", publisher: "The White House", date: "2026-08-12", role: primary }
+      - { url: "https://www.nozominetworks.com/blog/if-you-dont-secure-it-theyll-remove-it-what-the-new-ce-tco-offensive-cyber-memorandum-means-for-industrial-operators", publisher: "Nozomi Networks", date: "2026-08-17", role: primary }
+      - { url: "https://blog.talosintelligence.com/is-cyber-missing-the-marque/", publisher: "Cisco Talos", date: "2026-08-20", role: primary }
+    discovery_trace: >
+      first seen at: nozomi-networks (WebFetch listing, this run; date recovered via per-post
+      JSON-LD as above) -> primary: Nozomi Networks, URL
+      https://www.nozominetworks.com/blog/if-you-dont-secure-it-theyll-remove-it-what-the-new-ce-tco-offensive-cyber-memorandum-means-for-industrial-operators
+      -> primary source cited: The White House, URL
+      https://www.whitehouse.gov/presidential-actions/2026/08/expanding-capabilities-to-combat-transnational-cyber-enabled-crime/
+      ; independently, first seen at: talos (WebFetch listing https://blog.talosintelligence.com/,
+      this run) -> primary, URL https://blog.talosintelligence.com/is-cyber-missing-the-marque/
+      (which itself cites the same White House memorandum, confirming Nozomi and Talos analysed
+      the same primary independently).
+    summary: |
+      On 12 August 2026 the White House issued a presidential memorandum, "Expanding
+      Capabilities to Combat Transnational Cyber-Enabled Crime," establishing a program
+      under which vetted US private-sector companies ("Participating Companies") may
+      conduct "Cyber Surveillance Operations" and "Cyber Effects Operations" — defined to
+      include "manipulation, disruption, denial, degradation, or destruction of
+      information systems, networks, physical or virtual infrastructure controlled by
+      information systems" — against foreign cyber-enabled transnational criminal
+      organizations (CE-TCOs), under Department of Justice/DHS oversight via a new National
+      Coordination Center. The memorandum explicitly states it "creates no right or benefit
+      enforceable at law by any party" and its protections for unintentional targeting
+      apply only to US persons and US-resident information systems. Two research labs
+      independently published technical/operational risk assessments in the same week
+      without citing each other: Nozomi Networks (OT-focused, 2026-08-17) argues the
+      program's scope explicitly includes "industrial control systems and embedded
+      processors," meaning any internet-exposed OT asset that a criminal organisation has
+      compromised or is staging through becomes a potential target for a private US
+      company's "Cyber Effects Operation" — with "no legal recourse for asset owners whose
+      equipment is affected" and "overseas industrial facilities" left with "minimal
+      cover" since the memorandum's protections are US-persons/US-systems only. Talos
+      (general, 2026-08-20, "Is Cyber missing the Marque?") raises the same structural
+      concern from a different angle: attribution standards before authorising an
+      operation, handling of infrastructure where criminal and nation-state activity
+      overlap, and the diplomatic consequences "when another country discovers that
+      employees of an American cybersecurity company are conducting offensive operations
+      against infrastructure inside its borders." Neither piece describes a technique or
+      an active attack; the defender-relevant takeaway is a new category of legitimate,
+      government-authorised third-party disruption risk against internet-exposed
+      infrastructure (OT in particular) that a European/Swiss operator hosting
+      compromised-and-abused infrastructure could now be exposed to, with the memorandum's
+      own liability text offering no recourse to a non-US asset owner.
+    region_nexus: "united-states (policy origin); operational implication is global for any internet-exposed OT/embedded-processor asset, explicitly including operators outside the US per the memorandum's own scope limitation"
+    primary_sector_nexus: "indirect"
+    sector: "energy, water, public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    evidence:
+      - quote: "Cyber Effects Operation...results in the manipulation, disruption, denial, degradation, or destruction of information systems, networks, physical or virtual infrastructure controlled by information systems"
+        attribution: "The White House (presidential memorandum)"
+        source_url: "https://www.whitehouse.gov/presidential-actions/2026/08/expanding-capabilities-to-combat-transnational-cyber-enabled-crime/"
+      - quote: "If you do not fix your exposed infrastructure, someone eventually will, and you will have no say in how or when"
+        attribution: "Nozomi Networks"
+        source_url: "https://www.nozominetworks.com/blog/if-you-dont-secure-it-theyll-remove-it-what-the-new-ce-tco-offensive-cyber-memorandum-means-for-industrial-operators"
+      - quote: "What happens when another country discovers that employees of an American cybersecurity company are conducting offensive operations against infrastructure inside its borders?"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/is-cyber-missing-the-marque/"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "Policy/legal analysis rather than a technical TTP disclosure — carries no techniques[] mapping and reads closer to the weekly W2 strategic/policy lens than a daily G6 research item. Flagging for the composer to route to whichever horizon fits; including here because it was discovered exclusively via the G6 OT-research-blog sweep and a prior audit specifically asked this sweep to surface exactly this class of finding."
+
+  # =================================================================
+  # BORDERLINE / LOW-PRIORITY (reviewed, not full items)
+  # =================================================================
+  - title: "0patch micropatched CVE-2026-54121 (Certighost, AD CS EoP) for legacy/unsupported Windows on 2026-08-17 — underlying vulnerability already public since July, low novelty"
+    sources:
+      - { url: "https://0patch.com/blog/micropatches-released-for-certighost-active-directory-certificate-services-elevat", publisher: "0patch (ACROS Security)", date: "2026-08-17", role: primary }
+    discovery_trace: >
+      first seen at: 0patch-blog (feed https://blog.0patch.com/feeds/posts/default, this run) ->
+      primary (no pivot needed)
+    summary: |
+      0patch released micropatches on 2026-08-17 for "Certighost" (CVE-2026-54121, AD CS
+      elevation of privilege), extending coverage to Windows versions no longer receiving
+      official updates. The vulnerability itself was patched by Microsoft on 2026-07-14 and
+      a public PoC has been available since 2026-07-24 (H0j3n / Aniq Fakhrul) — this is
+      legacy-system backfill coverage, not new vulnerability information. Not included as a
+      full item; noted so the audit record shows it was reviewed rather than missed.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-54121]
+    techniques: []
+    affected_products: ["Microsoft Active Directory Certificate Services"]
+    entity_keys: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Underlying CVE and its exploitation mechanics are month-old public information (patched 2026-07-14, PoC 2026-07-24); the only in-window delta is a legacy-OS micropatch, of interest only to sites still running unsupported Windows builds with an Enterprise CA role."
+
+  - title: "Group-IB direct-transport recovery surfaces two in-window items (Mexican banking PhaaS, payment-fraud network) — reviewed, judged below the constituency relevance bar"
+    sources:
+      - { url: "https://www.group-ib.com/blog/balonx-sistema-mexico-phaas/", publisher: "Group-IB", date: "2026-08-19", role: primary }
+      - { url: "https://www.group-ib.com/blog/one-adversary-fraud-network/", publisher: "Group-IB", date: "2026-08-20", role: primary }
+    discovery_trace: >
+      first seen at: group-ib (direct bridge `url https://www.group-ib.com/blog/ --direct`, this
+      run — the previously-logged Cloudflare-gate/jina-required status did not reproduce; the
+      direct browser-UA GET returned 200 with full server-rendered HTML this run) -> primary (no
+      pivot needed, dates extracted by grepping the page's `blogpost-card__meta` markup for
+      "August 1[6-9]|2[0-4], 2026")
+    summary: |
+      Two Group-IB posts fall inside the window: "Balonx Sistema" (2026-08-19), a Mexican
+      phishing-as-a-service operation targeting 20+ financial institutions with live
+      phishing, AI-driven vishing and mobile-RAT capability; and "One Adversary: Fraud Is a
+      Network, Not a Payment" (2026-08-20), on a $187M payment-fraud criminal network.
+      Reviewed and judged below the strict relevance bar for this constituency: both are
+      Latin-America-focused financial-fraud research with no stated Swiss/European nexus,
+      no named actor overlap with anything tracked for this constituency, and no novel
+      technique class beyond commodity PhaaS + AI-vishing tooling already covered elsewhere
+      in this store. Noted principally as a RECIPE finding (see coverage notes below) rather
+      than pushed as a content gap.
+    region_nexus: "latin-america"
+    primary_sector_nexus: "indirect"
+    sector: "finance"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: LOW
+    novelty: new
+    borderline: true
+    borderline_reason: "No Swiss/EU nexus and no transferable novel technique; kept only because the source-recovery itself is the notable finding (see recipe_corrections)."
+
+  # =================================================================
+  # ALREADY COVERED (novelty: covered) — confirms the pipeline caught these
+  # =================================================================
+  - title: "Majors-sweep roll-up: in-window items from Microsoft, Mandiant/GTIG, Talos, Check Point, Sophos, Tenable and Nozomi/CE-TCO surface were already published"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/08/18/hunting-macsync-stealer-infrastructure-through-behavioral-pivots/", publisher: "Microsoft Threat Intelligence", date: "2026-08-18", role: primary }
+      - { url: "https://research.checkpoint.com/2026/btr-reforged-weaponizing-defenders-remediation-driver-as-a-kernel-operation-primitive/", publisher: "Check Point Research", date: "2026-08-20", role: primary }
+      - { url: "https://research.checkpoint.com/2026/thousands-of-hacked-wordpress-sites-one-operation-unmasking-stopandprotect/", publisher: "Check Point Research", date: "2026-08-18", role: primary }
+      - { url: "https://blog.talosintelligence.com/uat-10147-deploys-spectre-a-cross-platform-implant-with-linux-rootkit-and-byovd-capabilities/", publisher: "Cisco Talos", date: "2026-08-20", role: primary }
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/distinct-clusters-target-individuals-of-interest-to-russia/", publisher: "Google Threat Intelligence Group", date: "2026-08-20", role: primary }
+      - { url: "https://industrialcyber.co/industrial-cyber-attacks/cisa-nsa-fbi-warn-of-siemens-s7-plc-exploitation-using-ai-generated-scripts-to-disrupt-critical-industrial-processes/", publisher: "IndustrialCyber.co (relaying CISA/NSA/FBI/DOE/EPA AA26-231A)", date: "2026-08-20", role: corroborating }
+      - { url: "https://industrialcyber.co/ransomware/bitdefender-traces-silkparasite-cyberespionage-campaign-across-central-asia-to-seven-rat-families-china-nexus-tooling/", publisher: "IndustrialCyber.co (relaying Bitdefender)", date: "2026-08-20", role: corroborating }
+      - { url: "https://www.sophos.com/en-us/blog/fake-ai-real-malware-attackers-impersonating-ai-brands", publisher: "Sophos X-Ops", date: "2026-08-19", role: primary }
+      - { url: "https://www.sophos.com/en-us/blog/accelerating-netntlmv1-lookups-without-gpus", publisher: "Sophos X-Ops", date: "2026-08-17", role: primary }
+      - { url: "https://www.huntress.com/blog/fake-claude-macsync", publisher: "Huntress", date: "2026-08-17", role: primary }
+      - { url: "https://www.tenable.com/blog/frequently-asked-questions-about-the-active-threat-to-siemens-s7-series-plcs", publisher: "Tenable RSO", date: "2026-08-20", role: corroborating }
+    discovery_trace: "per-item traces folded into the summary; each was independently re-derived this run from the listed publisher's own listing/feed, then matched against work/2026-08-24T0902Z-audit/prior_coverage.json"
+    summary: |
+      Cross-checking the majors sweep against prior_coverage.json confirms the following
+      in-window items were already published and required no action:
+      MacSync Stealer (Microsoft's infrastructure-hunting angle, 2026-08-18, plus the
+      earlier Huntress 2026-08-17 discovery) -> covered by
+      2026-08-23/weekly-w34-searching-for-an-ai-tool-is-now-an-access-vector.
+      BTR Reforged / BTR.sys kernel-primitive abuse (Check Point, 2026-08-20) -> covered
+      by 2026-08-23/btr-sys-defender-remediation-driver-kernel-primitive and referenced in
+      2026-08-23/weekly-w34-three-ways-to-take-the-agent-off-the-board.
+      StopAndProtect WordPress-hosted extortion (Check Point, 2026-08-18) -> covered by
+      2026-08-19/stopandprotect-wordpress-hosted-extortion-mu-plugin.
+      UAT-10147 / SPECTRE cross-platform BYOVD implant + agentic-AI post-compromise
+      tradecraft (Talos, 2026-08-20, two posts) -> covered by
+      2026-08-23/spectre-uat-10147-byovd-edr-callback-unlink and
+      2026-08-23/uat-10147-agentic-ai-exploitation-oob-confirmation.
+      GTIG's three Russia-nexus espionage clusters (UNC7005, UNC5976, app-password/WhatsApp
+      device-linking abuse; 2026-08-20) -> covered by
+      2026-08-23/gtig-russia-clusters-app-passwords-whatsapp-linking.
+      CISA/NSA/FBI/DOE/EPA joint advisory AA26-231A on AI-generated Siemens S7 PLC
+      exploitation (2026-08-19, seen via IndustrialCyber.co and independently via Tenable's
+      FAQ post) -> covered by 2026-08-20/joint-advisory-active-threat-siemens-s7-plcs and
+      referenced in 2026-08-23/weekly-w34-ai-bought-throughput-not-capability.
+      Bitdefender's SilkParasite China-nexus Central Asia campaign (seen via
+      IndustrialCyber.co, 2026-08-20) -> covered by the same weekly-w34-ai-bought-throughput
+      entry and 2026-08-23/weekly-w34-c2-rendezvous-moved-to-services-you-cannot-block.
+      Sophos's "Fake AI, real malware" AI-brand-impersonation casework (2026-08-19) ->
+      covered by the same weekly-w34-searching-for-an-ai-tool entry above.
+      Sophos's CPU-only NetNTLMv1 rainbow-table pipeline (2026-08-17) -> covered by
+      2026-08-23/weekly-w34-netntlmv1-now-cracks-on-a-cpu-in-twenty-minutes.
+      No delta beyond what these entries already carry was found in the primary source
+      text for any of the above.
+    region_nexus: "global"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, water, finance"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: [actor:uat-10147, actor:purpledelta]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: covered
+
+  - title: "PurpleDelta, Oracle August 2026 CSPU/CPU, CVE-2026-19490 NetScaler, KerberLoss (CVE-2026-25177), GREYVIBE and Red Canary's August Intelligence Insights roll-up — all already published or reviewed as recycled"
+    sources:
+      - { url: "https://www.recordedfuture.com/research/purpledelta-fraudulent-employment-operations", publisher: "Recorded Future / Insikt Group", date: "2026-08-18", role: primary }
+      - { url: "https://www.tenable.com/blog/oracle-august-2026-critical-security-patch-update-cspu-addresses-925-cves", publisher: "Tenable RSO", date: "2026-08-18", role: corroborating }
+      - { url: "https://0patch.com/blog/micropatches-released-for-kerberloss-active-directory-domain-services-elevation-o", publisher: "0patch", date: "2026-08-16", role: corroborating }
+      - { url: "https://www.withsecure.com/en/resources-hub/w-labs/greyvibe/", publisher: "WithSecure Labs", date: "2026-05 (page carries an og:updated_time of 2026-08-21, but the report itself and all press coverage date to May 2026)", role: corroborating }
+      - { url: "https://redcanary.com/blog/threat-intelligence/intelligence-insights-august-2026/", publisher: "Red Canary", date: "2026-08-20", role: corroborating }
+    discovery_trace: "per-item traces folded into the summary; each independently re-derived this run and matched against prior_coverage.json"
+    summary: |
+      PurpleDelta DPRK IT-worker facilitator report (Recorded Future/Insikt, 2026-08-18) ->
+      covered by 2026-08-19/purpledelta-dprk-it-worker-facilitator-rmm-detection and
+      referenced in 2026-08-23/weekly-w34-ai-bought-throughput-not-capability.
+      Oracle August 2026 CSPU (925 CVEs, three unauthenticated CVSS 10.0 flaws) -> covered
+      by 2026-08-20/oracle-august-2026-cpu-three-unauthenticated-cvss-10.
+      CVE-2026-19490 NetScaler Gateway/AAA auth bypass (also surfaced via Rapid7's feed,
+      2026-08-19) -> covered by 2026-08-20/cve-2026-19490-netscaler-gateway-aaa-auth-bypass
+      and the weekly exploited-status roll-ups.
+      KerberLoss / CVE-2026-25177 AD DS EoP (0patch micropatch, 2026-08-16) -> covered by
+      2026-08-09/weekly-w32-kerberos-identity-confusion-poc-public.
+      WithSecure's GREYVIBE Russia-nexus AI-assisted campaign: verified via WebSearch that
+      the original report and all press coverage (The Hacker News, SecurityWeek, Cyberpress)
+      date to May 2026; the page's `og:updated_time` metadata (2026-08-21) reflects a cache
+      refresh, not new content — correctly treated as recycled/out-of-window, and the actor
+      is already tracked as
+      actor:greyvibe-russia-nexus-ai-assisted-five-parallel-ukraine-attack in the registry.
+      Red Canary's "Intelligence Insights: August 2026" monthly roll-up (2026-08-20) lists
+      14 threats (ClearFake, Scarlet Goldfinch, GraphSpy, MacSync, Phexia, CastleRAT,
+      EtherRAT, dead-drop-resolution/EtherHiding technique class, etc.) — every named
+      malware family in it cross-checks to
+      2026-08-23/blockchain-dead-drop-c2-commodity-graphspy and
+      2026-08-23/weekly-w34-c2-rendezvous-moved-to-services-you-cannot-block; the roll-up
+      adds no delta beyond what those entries already carry (roll-up source, discovery-only
+      per PD-13, correctly not cited as a primary anywhere).
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance"
+    cves: [CVE-2026-19490, CVE-2026-25177]
+    techniques: []
+    affected_products: []
+    entity_keys: [actor:purpledelta, "actor:greyvibe-russia-nexus-ai-assisted-five-parallel-ukraine-attack"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: covered
+
+# =================================================================
+# OT/ICS SOURCE SWEEP (explicit per-source report, per audit instructions)
+# =================================================================
+ot_ics_source_sweep:
+  - source_id: dragos
+    reachable: true
+    transport: "WebFetch (listing https://www.dragos.com/blog/ renders dated titles cleanly)"
+    in_period_posts: 3
+    in_period_titles:
+      - "Designing for Disruption: MTSA's Resilience Requirement (2026-08-18)"
+      - "The Prevention Bias Problem: Why Standards Are Failing OT Defenders (2026-08-17)"
+      - "Water Under Attack: A Decade of Warnings, and the Same Gaps Still Open (2026-08-13, just outside window)"
+    assessment: "All three in/near-window posts are standards/compliance commentary (MTSA resilience rule, a critique of OT security standards, a retrospective essay), not original threat research or a named campaign/vuln. No content gap; genuinely thin week for Dragos threat research specifically (their Q2 2026 industrial ransomware analysis and Anthropic Project Glasswing posts both predate the window)."
+  - source_id: nozomi-networks
+    reachable: true
+    transport: "WebFetch (listing renders titles+images but NO dates); dates recovered by drilling each candidate post's page and reading its schema.org JSON-LD `datePublished` field via the direct bridge — this is the working recipe the standing gap needed."
+    in_period_posts: 2
+    in_period_titles:
+      - "When Ransomware Turns Off the HVAC: Lessons from the Winnipeg Hospital Incident (2026-08-17)"
+      - "If You Don't Secure It, They'll Remove It: What the New CE-TCO Offensive Cyber Memorandum Means for Industrial Operators (2026-08-17)"
+    assessment: "GENUINE GAPS RECOVERED — both are new items above. Three other listing titles looked promising (APT28 IP-camera/NATO-supply-route tracking, Tengu Mirai variant, a 'Seven States' PLC water-utility piece) but drilled to Aug 3, Jul 27, and an unfound/likely-July URL respectively — all outside window, correctly excluded as recycled news."
+  - source_id: claroty-team82
+    reachable: true
+    transport: "WebFetch (listing https://claroty.com/team82/research renders 9 titles)"
+    in_period_posts: "UNKNOWN — standing recipe gap persists"
+    assessment: "STILL BROKEN: the listing carries no publication dates, no byline dates, and no discernible recency ordering (titles look evergreen/thematic rather than reverse-chronological — e.g. 'Examining the Legacy BMS LonTalk Protocol' sits alongside what may be much newer posts with no way to tell). Feed at claroty.com/feed 410s per the existing note. Tried this run: no sitemap probe attempted (ran out of prioritised time before probing /sitemap.xml here) — that is the next thing to try, following the Forescout sitemap recipe that worked below. Recommend a follow-up run probe `https://claroty.com/sitemap.xml` or `https://claroty.com/team82-sitemap.xml` before concluding no structured route exists."
+  - source_id: sans-ics
+    reachable: true
+    transport: "WebFetch (ICS-focus-area-filtered listing renders titles+dates cleanly)"
+    in_period_posts: 1
+    in_period_titles:
+      - "From Alerts to Adversaries: A Pragmatic Guide to Launching (and Maturing) Your Threat Hunting Program (2026-08-20)"
+    assessment: "Reviewed and excluded: despite surfacing on the ICS-filtered view, the title and visible framing are generic SOC threat-hunting-program guidance with no ICS/OT-specific content — consistent with the standing note that most posts reaching this filtered view are not actually ICS-specific. No gap."
+  - source_id: industrialcyber-co
+    reachable: true
+    transport: "RSS feed https://industrialcyber.co/feed/ — DIRECT fetch, 9 items returned cleanly, no Cloudflare challenge encountered this run (prior runs logged an intermittent challenge; recipe confirmed working again)"
+    in_period_posts: 9
+    in_period_titles: "see the Siemens S7 (AA26-231A) and Bitdefender SilkParasite items folded into the 'already covered' roll-up above; the remaining 7 in-window items were standards/certification/legislative press releases (ISASecure/NSA HCSA scheme, NIST SP 1353, Lastwall CMMC L2, CyberSheath CMMC report, SANS-OTCC partnership, NIST BACS guidance, Quantum-GUARD Act) with no original technical content — reviewed and excluded as non-actionable press/compliance items."
+    assessment: "Fully reachable, feed recipe confirmed still working; both threat-relevant items it aggregated were already independently covered via their originating vendors (CISA/NSA/FBI/Tenable and Bitdefender respectively)."
+
+# =================================================================
+# PREVIOUSLY-UNREADABLE SOURCE PROBES (priority 3, per audit instructions)
+# =================================================================
+unreadable_source_probes:
+  - source_id: withsecure-labs
+    reachable: true
+    transport: "WebFetch on the listing works (titles only, no dates); direct bridge `url` on an individual post page recovers the date via meta `og:updated_time` (does not reliably distinguish original-publish from last-cache-refresh — see GREYVIBE case, where the og:updated_time was 3 months stale relative to actual first publication)."
+    in_period_posts: 0
+    assessment: "No genuinely new in-window post found. GREYVIBE appeared to be fresh (og:updated_time 2026-08-21) but WebSearch confirmed the underlying report and all press coverage date to May 2026 — a cache-refresh trap, correctly excluded. Recipe gap NOT fully resolved: WithSecure's listing still carries no reliable per-post original-publish date; og:updated_time is misleading for recency decisions and should not be used as a publish-date proxy in future runs without cross-checking WebSearch for the original disclosure date."
+  - source_id: symantec-broadcom
+    reachable: true
+    transport: "WebFetch on https://www.security.com/threat-intelligence works cleanly (this is Broadcom/Symantec's current threat-intelligence blog host, NOT in sources.json under any tracked id — RECIPE RECOVERY, see candidate_sources/recipe_corrections below)."
+    in_period_posts: 0
+    in_period_titles_near_window:
+      - "Jewelbug: APT Group Runs Espionage and Crypto Fraud Operations Side by Side (2026-08-13, 3 days before window)"
+    assessment: "Host is fully reachable via plain WebFetch, contrary to this source being carried in prior audits as 'unreadable.' No transport problem exists today. Simply no post landed inside 2026-08-16 to 2026-08-24 (5 posts total visible, cadence is roughly one every 2-4 weeks). Recommend adding this as a tracked source (see candidate_sources) since the 'unreadable' status appears stale."
+  - source_id: cybereason
+    reachable: true
+    transport: "WebFetch on https://www.cybereason.com/blog works cleanly, no block encountered."
+    in_period_posts: 0
+    assessment: "Host reachable, but the blog is genuinely STALE, not blocked: the most recent post returned is 'Cybereason TTP Briefing Q4 2025,' dated 2026-02-05 — over six and a half months with no new post as of this audit. This reads as an abandoned/de-prioritised blog (consistent with Cybereason's known 2025-2026 corporate difficulties) rather than a fetch problem. Recommend NOT re-adding to active rotation; if already tracked anywhere it should be flagged for demotion/pruning rather than continued rotation-priority fetches, since six-plus months of silence from a formerly active vendor is a dead source, not a quiet week."
+  - source_id: forescout-vedere
+    reachable: true
+    transport: "The WebFetch-rendered blog homepage only surfaces ONE featured post with no listing/dates. RECIPE FOUND: the WordPress/Yoast sitemap index at https://www.forescout.com/sitemap.xml -> https://www.forescout.com/post-sitemap.xml lists every blog post with an exact <lastmod> ISO timestamp and full URL, sorted in publication order. This is a clean, dated, complete listing with zero anti-bot friction."
+    in_period_posts: 0
+    assessment: "Sitemap recipe confirmed working end-to-end this run (drilled the featured 'Exploiting Serial-to-Ethernet Converters' / BRIDGE:BREAK post via the bridge and confirmed its true datePublished is 2026-04-21, not new — the homepage was serving it as evergreen featured content). The newest post in the sitemap is 2026-08-11 ('7 things every architect should know about universal ZTNA'), so genuinely nothing landed in the 2026-08-16 to 2026-08-24 window. RECOMMEND: add forescout-vedere (or forescout-blog) to sources.json with fetch_method noted as 'sitemap: https://www.forescout.com/post-sitemap.xml, drill each /blog/<slug>/ URL via bridge for body + JSON-LD datePublished' — this fully resolves what was previously an unreadable/no-listing source."
+  - source_id: 0patch-blog
+    reachable: true
+    transport: "RSS feed https://blog.0patch.com/feeds/posts/default — direct fetch, worked cleanly, 10 dated items returned with no issues."
+    in_period_posts: 2
+    in_period_titles:
+      - "Micropatches released for \"Certighost\" AD CS EoP CVE-2026-54121 (2026-08-17)"
+      - "Micropatches released for \"KerberLoss\" AD DS EoP CVE-2026-25177 (2026-08-16)"
+    assessment: "Not actually unreadable this run — the documented Blogger Atom-feed recipe in sources.json's own notes worked exactly as described. Both in-window items were reviewed: KerberLoss already covered (2026-08-09 weekly entry); Certighost is legacy-backfill on a month-old public CVE, included above as a low-priority borderline note rather than a full item."
+  - source_id: tenable-research
+    reachable: true
+    transport: "RSS feed https://www.tenable.com/blog/feed — direct fetch, RECIPE FIXED. sources.json currently carries fetch_method: rss with rss_url: null and a 2026-08-13 note stating 'blog.xml feed parses to count=0 and the /blog listing is a JS-rendered shell.' That note is now STALE: https://www.tenable.com/blog/feed (note: path is /blog/feed, NOT /blog.xml or /rss/blog, both of which 404) returned 5 full items with complete HTML bodies inline (no separate article fetch needed) with zero errors this run."
+    in_period_posts: 2
+    in_period_titles:
+      - "Frequently asked questions about the active threat to Siemens S7 Series PLCs (2026-08-20)"
+      - "Oracle August 2026 Critical Security Patch Update (CSPU) Addresses 925 CVEs (2026-08-18)"
+    assessment: "GENUINE RECIPE FIX. Both in-window items were already independently covered via other sources (see 'already covered' roll-up above) so this contributes no new content gap this run, but the source itself is confirmed live and should have rss_url set to https://www.tenable.com/blog/feed in sources.json so future runs don't waste a cycle rediscovering this."
+
+recipe_corrections:
+  - source_id: tenable-research
+    field: rss_url
+    current_value: null
+    recommended_value: "https://www.tenable.com/blog/feed"
+    reason: "Confirmed working direct RSS fetch this run (5 items, full bodies, zero errors); the 2026-08-13 sources.json note describing count=0/JS-shell failure on a DIFFERENT path (blog.xml) is stale and should be superseded."
+  - source_id: nozomi-networks
+    field: notes
+    recommended_addition: "Listing has no visible dates (confirmed again this run), but drilling any individual post URL and reading the page's schema.org JSON-LD `datePublished` field via the direct bridge (`python3 tools/fetch_source.py url <post-url>` then grep for `datePublished`) reliably recovers the exact publish date. This is a full workaround for the standing 'no dates on listing' gap — just requires drilling candidates rather than trusting the listing order."
+  - source_id: withsecure-labs
+    field: notes
+    recommended_addition: "CAUTION: the individual post pages expose `og:updated_time` in their meta tags, which reflects last CACHE REFRESH, not original publish date — confirmed misleading on the GREYVIBE post (og:updated_time 2026-08-21, actual original publish May 2026, per WebSearch cross-check against The Hacker News/SecurityWeek coverage). Do not use `og:updated_time` alone to decide in-window status for this source; cross-check any date-uncertain hit against WebSearch before including."
+  - source_id: forescout-vedere
+    field: (new source — not currently tracked under this name; check if forescout.com is tracked under any other id)
+    recommended_value: "fetch_method: sitemap. Recipe: `url https://www.forescout.com/post-sitemap.xml` (direct bridge, plain GET, no anti-bot friction) returns a clean Yoast-generated XML sitemap with every blog post's exact URL and <lastmod> ISO timestamp, in publication order. Drill each candidate /blog/<slug>/ URL via the bridge for the full body + a more precise datePublished in the page's JSON-LD. This fully resolves the prior 'homepage shows only one featured post, no listing' gap."
+  - source_id: symantec-broadcom / cybereason
+    field: (both currently absent from sources.json entirely — not found under any id)
+    reason: "Neither symantec-broadcom nor cybereason exists as a tracked record in sources/sources.json (checked directly against the file, not just this run's slice) despite being named in this audit's probe list as previously-logged-unreadable — they may have been removed by an earlier audit, or never formally added. Both hosts are reachable today via plain WebFetch (see unreadable_source_probes above). Recommend: (a) add symantec-broadcom as a new candidate source at https://www.security.com/threat-intelligence (see candidate_sources below); (b) do NOT add cybereason — it is reachable but the blog has had no new post in 6.5+ months (last: 2026-02-05), which is a dead-source signal, not a transport problem."
+
+watchlist_sweep:
+  duty: none
+  note: "watchlist_duty for this audit sub-agent slot is none; no product/supplier sweep performed per the org profile (no watchlists configured)."
+
+candidate_sources:
+  - id: symantec-broadcom
+    publisher: "Broadcom / Symantec Threat Intelligence (security.com)"
+    url: "https://www.security.com/threat-intelligence"
+    category: research
+    why: "Reachable cleanly via plain WebFetch this run (no anti-bot, no 403) contrary to this host's standing 'unreadable' status in prior audit context. Original vendor threat-research lab (Jewelbug APT/crypto-fraud dual-use report, GodDamn/Beast ransomware rebrand, BYOVD-epidemic research all visible on the listing) at a reasonable if sparse cadence (~1 post every 2-4 weeks). Not currently present in sources.json under any id."
+
+coverage_gaps:
+  - source_id: trendmicro-research
+    reason: "Feed (https://feeds.feedburner.com/TrendMicroResearch) and the HTML listing (https://www.trendmicro.com/en_us/research.html) independently agree: no content newer than 2026-07-30 as of this audit (2026-08-24) — roughly 3.5 weeks of silence from a normally prolific vendor research blog. Both transports work (not a fetch failure), the silence appears genuine on Trend Micro's end. Flagging as worth a health check in a future run in case Trend Micro moved research publishing to a different URL/section this pipeline isn't tracking."
+  - source_id: claroty-team82
+    reason: "Standing gap NOT resolved this run: listing carries no dates and no recency ordering signal; feed 410s. Did not get to probing /sitemap.xml before time ran out on this sub-thread — recommend a follow-up probe of https://claroty.com/sitemap.xml (the Forescout sitemap recipe found this run suggests the same WordPress/Yoast pattern may work here)."
+  - source_id: jina reader pool
+    reason: "All 7 configured jina API keys report status 'exhausted' (HTTP 402), total_balance -13,774,163 (checked via `python3 tools/fetch_source.py jina-usage` at the start of this run). The reader was unavailable for the entire run; every fetch above used RSS/WebFetch/direct-bridge only. No content was confirmed lost to this (every host that needed the reader as a last resort either had a working direct alternative found this run, or is logged above as a standing gap), but this should be resurfaced to the operator as an ongoing capacity issue if it persists across further runs."

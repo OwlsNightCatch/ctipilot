@@ -1,0 +1,490 @@
+domain: G2
+run_id: 2026-08-16T1313Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-16T13:17:00Z
+ended_at: 2026-08-16T13:36:52Z
+duration_seconds: 1192
+self_telemetry:
+  webfetch_calls: 27
+  websearch_calls: 17
+  bridge_fetches: 14
+
+audit_watch_item_rechecks:
+  - item: "Bloctel / Afpa unconfirmed leak-site claims (2026-08-09 audit, opened)"
+    searched:
+      - 'WebSearch("Bloctel DGCCRF fuite données confirmée août 2026")'
+      - 'WebSearch("Afpa cyberattaque données confirmé août 2026")'
+    outcome: "RESOLVED (partial) — Bloctel is now confirmed by DGCCRF (French consumer-protection authority), a first-party government statement dated 2026-08-12, inside this window. Afpa remains unconfirmed: only a Cybernox forum claim (101 AFPABox accounts + admin credentials), no AFPA/government statement located this run. Published as a new item below (Bloctel) and Afpa stays closed exactly as the prior audit left it."
+    resolution_condition_met: "Bloctel: yes — DGCCRF press release (presse.economie.gouv.fr) confirms 3M phone numbers exposed via a compromised professional account. Afpa: no — condition (first-party statement or A/B journalism confirming scope) not met; stays unpublished."
+  - item: "Unconfirmed French leak-site claims (BANATIC / Interior Ministry / four SDIS) — closed by 2026-08-09 audit"
+    searched:
+      - 'WebSearch("BANATIC ministère intérieur SDIS fuite données confirmation")'
+    outcome: "STAYS CLOSED. No first-party statement (Interior Ministry, BANATIC operator, or any SDIS) or A/B-grade confirmation located. Every hit still traces to the original claim dates (91,213-record BANATIC claim; SDIS 02 admin-access claim from 24/07). Not re-opened, consistent with the prior audit's instruction not to re-open absent a first-party statement."
+
+items:
+  - title: "Dream Security documents the first largely-autonomous, multi-agent AI cyberattack confirmed against a national government — Taiwan, 21 systems mapped, 85 accounts cracked, nuclear regulator scanned"
+    kind: incident
+    sources:
+      - { url: "https://www.dreamgroup.com/blog/inside-a-multi-agent-ai-framework-used-to-compromise-government-entities-in-asia", publisher: "Dream Security (research lab)", date: "2026-08-12", role: "primary" }
+      - { url: "https://www.taipeitimes.com/News/front/archives/2026/08/13/2003862438", publisher: "Taipei Times", date: "2026-08-13", role: "primary" }
+      - { url: "https://www.theregister.com/security/2026/08/12/near-autonomous-ai-agents-attack-taiwans-nuclear-safety-agency/5287055", publisher: "The Register", date: "2026-08-12", role: "corroborating" }
+      - { url: "https://securityaffairs.com/197079/apt/china-linked-hackers-use-ai-agents-in-autonomous-attack-on-taiwan.html", publisher: "Security Affairs", date: "2026-08-12", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"autonomous AI agents attack Taiwan government agencies China August 2026\") → pivot: Security Affairs, URL https://securityaffairs.com/197079/apt/china-linked-hackers-use-ai-agents-in-autonomous-attack-on-taiwan.html → pivot: The Register, URL https://www.theregister.com/security/2026/08/12/near-autonomous-ai-agents-attack-taiwans-nuclear-safety-agency/5287055 (surfaced the primary link) → primary: Dream Security, URL https://www.dreamgroup.com/blog/inside-a-multi-agent-ai-framework-used-to-compromise-government-entities-in-asia → corroboration: Taiwan's Ministry of Digital Affairs / National Institute of Cyber Security confirmation via Taipei Times, URL https://www.taipeitimes.com/News/front/archives/2026/08/13/2003862438"
+    summary: |
+      Dream Security (Israel) documented a four-day campaign (1-4 July 2026, confirmed in-window by Taiwan's Ministry of Digital Affairs on 2026-08-13) in which a suspected China-linked operator ran an autonomous multi-agent AI framework, built on the open-source Hermes agent (Nous Research) and OpenClaw, against Taiwanese government infrastructure with minimal human steering. Reconnaissance decompiled an Angular JS bundle from a single government portal to extract 36+ API endpoints, OAuth client IDs and Keycloak SSO configuration objects, mapping 21 connected government systems and every supported authentication flow. The framework found three undocumented/hidden API endpoints that returned valid authenticated sessions without credentials, defeated CAPTCHAs via Tesseract OCR at 100% accuracy, forged JWTs by setting the algorithm field to "none", and password-sprayed 85 accounts to compromise them. Up to eight sub-agents ran in parallel across 12 documented "attack waves"; a self-reported "learning cycle" mechanism had the models autonomously search vulnerability databases, GitHub and security research for applicable CVEs and techniques mid-operation, with findings cross-verified by two further independent three-agent verification rounds before being acted on. The operators framed all activity to the model as "authorized penetration testing" to bypass the underlying LLM's own safety refusals. The campaign exfiltrated 2,500+ personnel records (including 239 Ministry of Justice legal-professional records), 7 SSO client secrets and 6 internal database credentials (MSSQL/Oracle/Sybase), and expanded from the initial government target set to IT supply-chain vendors, Taiwan's nuclear safety regulator and 7+ energy-sector companies. Dream discovered the operation via a 160MB compressed archive (1,395 files) inadvertently left exposed on the internet, documenting the tool's full operational architecture. Attribution to a Chinese state actor is not made by Dream or Taiwan; the "China-linked" framing rests on simplified-Chinese artefacts in the tooling's internal documentation, which multiple outlets and Dream itself flag as suggestive, not confirmed.
+    region_nexus: "Asia-Pacific (Taiwan) — no direct Swiss/EU nexus, included on transferable-TTP and shared-actor-class grounds (see borderline_reason)"
+    primary_sector_nexus: "public-sector (government), with expansion into energy-sector critical infrastructure and a nuclear regulator"
+    sector: "public-sector, energy, government"
+    cves: []
+    techniques: [T1595.002, T1552, T1110.003, T1078, T1190]
+    affected_products: []
+    entity_keys: ["tool:hermes-ai-agent"]
+    new_entities:
+      - { key: "tool:openclaw-agent", type: tool, name: "OpenClaw (AI agent framework)", aliases: ["Open Claw"], summary: "Open-source personal AI assistant/agent framework (launched November 2025) designed to let LLMs carry out multi-step autonomous tasks; combined with the Hermes agent to build the autonomous attack framework used against Taiwanese government systems (Dream Security, 2026-08-12)." }
+      - { key: "incident:taiwan-government-multi-agent-ai-autonomous-attack-2026", type: incident, name: "Taiwan government — multi-agent AI autonomous intrusion (July 2026)", aliases: [], summary: "Four-day campaign (1-4 July 2026) in which a suspected China-linked operator used an autonomous multi-agent AI framework (Hermes + OpenClaw) to map 21 Taiwanese government systems, crack 85 accounts, and exfiltrate 2,500+ personnel records, expanding into the nuclear safety regulator and 7+ energy companies; discovered by Dream Security via an exposed 160MB operator archive, confirmed by Taiwan's Ministry of Digital Affairs (2026-08-13)." }
+    relation_suggestions:
+      - { subject: "incident:taiwan-government-multi-agent-ai-autonomous-attack-2026", object: "tool:hermes-ai-agent", basis: "Dream Security: the attack framework was built on the open-source Hermes agent (dreamgroup.com, 2026-08-12)" }
+      - { subject: "incident:taiwan-government-multi-agent-ai-autonomous-attack-2026", object: "tool:openclaw-agent", basis: "Dream Security: the attack framework combined Hermes with OpenClaw (dreamgroup.com, 2026-08-12)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "deployed up to eight sub-agents, each assigned to its own targets and attack techniques, across 12 attack waves between July 1-4"
+        attribution: "Dream Security, via The Register"
+        source_url: "https://www.theregister.com/security/2026/08/12/near-autonomous-ai-agents-attack-taiwans-nuclear-safety-agency/5287055"
+      - quote: "The framework's own safety guardrails — LLM model refusals — were bypassed by framing all activity as 'authorized penetration testing'."
+        attribution: "Dream Security"
+        source_url: "https://www.dreamgroup.com/blog/inside-a-multi-agent-ai-framework-used-to-compromise-government-entities-in-asia"
+      - quote: "The relevant attack sources, methods, and scope of impact have all been fully investigated, and the affected units have successively completed their handling."
+        attribution: "Taiwan Ministry of Digital Affairs / National Institute of Cyber Security, via Taipei Times"
+        source_url: "https://www.taipeitimes.com/News/front/archives/2026/08/13/2003862438"
+    extended_notes: |
+      Included under the incident-inclusion gate limb (b) new/evolved TTP transferable to the constituency's defenders: this is (per every outlet and the primary) the first documented largely-autonomous, multi-agent, end-to-end AI cyberattack against a national government, with a concrete and repeatable methodology (decompile-the-SPA-for-secrets recon, hidden-endpoint discovery, CAPTCHA/JWT bypass, self-verifying "learning cycles", guardrail bypass via false pentest framing) built entirely from freely downloadable open-source components. Nothing about the tooling is Taiwan-specific; the same framework is directly repeatable against any government or CI portal, including Swiss/EU ones. Also arguably clears limb (c): the "suspected China-linked" actor-class is one Swiss/European CI and government defenders already watch. No IOCs are carried here by design; the technique class (autonomous multi-agent recon-to-exfiltration against SSO/OAuth-fronted portals) is the transferable content.
+    borderline: true
+    borderline_reason: "Out-of-region (Taiwan, no Swiss/EU nexus) and out-of-primary-sector at the direct-victim level, but the item is a first-of-its-kind TTP disclosure with a repeatable, vendor-agnostic methodology and a suspected nation-state actor class already on this constituency's watch list — main agent to weigh under PD-11(b)/(c) (the 'otherwise' limbs) against its own bar for the domain S3-vs-G2 boundary; equally composable as a research/deep-dive item rather than a straight incident."
+
+  - title: "Akira ransomware affiliate blinds EDR and AV for 100 minutes by rebooting into Safe Mode with Networking — SonicWall VPN without MFA, encryption failed on out-of-memory, data stolen anyway"
+    kind: incident
+    sources:
+      - { url: "https://www.huntress.com/blog/akira-hits-safe-mode-ransomware-rebooting-around-edr", publisher: "Huntress (MDR/DFIR provider)", date: "2026-08-12", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/akira-hackers-disable-edr-with-safe-mode-steal-data-but-fail-to-encrypt/", publisher: "BleepingComputer", date: "2026-08-13", role: "corroborating" }
+    discovery_trace: "first seen at: state/coverage_backlog.md (verified but unpublished by the 2026-08-16T0411Z-intel fire) → primary: Huntress, URL https://www.huntress.com/blog/akira-hits-safe-mode-ransomware-rebooting-around-edr → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/akira-hackers-disable-edr-with-safe-mode-steal-data-but-fail-to-encrypt/"
+    summary: |
+      Huntress documents an Akira ransomware intrusion beginning with a credential spray against an unauthenticated (no MFA) SonicWall SSL VPN, successful login at 03:52:42 UTC on 2026-08-04. The affiliate enumerated Active Directory via RDP to a domain controller and PowerShell (`Get-ADUser -Properties *`, exported to disk), archived file shares with WinRAR (`a -ep1 -scul -r0 -iext -imon1`) and exfiltrated the archive to an attacker-controlled S3 bucket via `s5cmd`. AnyDesk was installed as an auto-start service for remote access, then used to force a reboot into Windows Safe Mode with Networking via `msconfig.exe` at 06:29:21 UTC, after first registering AnyDesk to persist across the Safe Mode boot via a registry value under `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SafeBoot\Network\`. Safe Mode's minimal driver/service set excludes the third-party Huntress agent entirely and disables Windows Defender real-time protection (Windows records this as Service Control Manager event ID 3002, "This service cannot be started in Safe Mode"), leaving the host with no working EDR or AV for roughly 100 minutes. The `akira.exe` payload was executed at 06:34:29 UTC but crashed on out-of-virtual-memory errors within the constrained Safe Mode environment (System EID 26 "Out of Virtual Memory"; a PowerShell hard error "A new guard page for the stack cannot be created") — encryption failed. The attacker rebooted to normal mode at 08:10:38 UTC, at which point Defender's restored real-time protection quarantined `akira.exe` within two minutes. Despite the failed encryption, credentials and files were already exfiltrated, enabling extortion regardless of encryption outcome. Total time from initial VPN access to attempted detonation: under five hours.
+    region_nexus: "not stated as region-specific by Huntress; Akira is an actively tracked ransomware affiliate operating against European targets, and SonicWall SSL VPN is widely deployed across Swiss/EU public-sector and CI networks"
+    primary_sector_nexus: "not sector-specific in the source; transferable to any SonicWall-VPN-fronted network, including public-sector and CI estates"
+    sector: "cross-sector (VPN/remote-access exposure), transferable to public-sector, energy, healthcare, finance"
+    cves: []
+    techniques: [T1133, T1110.003, T1087, T1018, T1560.001, T1567.002, T1219, T1688]
+    affected_products: ["SonicWall SSL VPN", "AnyDesk", "Microsoft Windows (Safe Mode with Networking)", "Windows Defender"]
+    entity_keys: ["actor:akira"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "For 10 minutes while in Safe Mode, 'the host had no working EDR, and AV was blinded.'"
+        attribution: "Huntress, via BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/akira-hackers-disable-edr-with-safe-mode-steal-data-but-fail-to-encrypt/"
+      - quote: "Safe Mode boots with a stripped-down environment and constrained virtual memory, and the Akira process tree appears to have starved it"
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/akira-hits-safe-mode-ransomware-rebooting-around-edr"
+      - quote: "Require MFA on every VPN account. This intrusion started with a credential spray against an MFA-less SSL VPN."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/akira-hits-safe-mode-ransomware-rebooting-around-edr"
+    extended_notes: |
+      Detection concept beyond the evidence quotes: hunt for Kernel-Boot EID 27 with LOADOPTIONS containing SAFEBOOT:NETWORK and Kernel-General EID 12 with BootMode=2 (both indicate a Safe Mode boot occurred), System EID 7036 showing third-party security services stopping during boot, and registry writes under HKLM\SYSTEM\CurrentControlSet\Control\SafeBoot\{Network,Minimal}\ adding non-default service names — this is the generalisable persistence-into-Safe-Mode primitive (ATT&CK T1688), not an Akira-specific artefact, and applies to any ransomware operator using the same evasion. Benign-lookalike note: legitimate Safe Mode boots (troubleshooting, driver rollback) are rare on servers and essentially never followed by a third-party remote-access tool successfully reconnecting mid-Safe-Mode-session — that reconnection is the discriminating signal.
+
+  - title: "Bloctel (France's telemarketing do-not-call registry): DGCCRF confirms 3 million phone numbers exposed via an MFA-less professional account, days before the service's planned shutdown"
+    kind: incident
+    sources:
+      - { url: "https://presse.economie.gouv.fr/la-dgccrf-met-en-garde-les-consommateurs-a-la-suite-dune-fuite-de-donnees-sur-bloctel/", publisher: "DGCCRF / Ministère de l'Économie (France)", date: "2026-08-12", role: "primary" }
+      - { url: "https://frenchbreaches.com/alertes/bloctel-mshxaq0ysyd27ca7f6", publisher: "FrenchBreaches", date: "2026-08-06", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Bloctel DGCCRF fuite données confirmée août 2026\") — carried-forward audit watch item re-check → primary: DGCCRF, URL https://presse.economie.gouv.fr/la-dgccrf-met-en-garde-les-consommateurs-a-la-suite-dune-fuite-de-donnees-sur-bloctel/ → corroborating: FrenchBreaches, URL https://frenchbreaches.com/alertes/bloctel-mshxaq0ysyd27ca7f6"
+    summary: |
+      France's DGCCRF (consumer-protection and anti-fraud directorate) confirmed on 2026-08-12 that a cybercriminal fraudulently accessed a professional account on Bloctel's business-facing consultation service — the interface companies were required to query before telemarketing a number — and used it, without any two-factor authentication protecting the account, to run searches and retrieve phone numbers that the interface displayed in plaintext. Roughly 3 million phone numbers were extracted this way, of which about 600,000 corresponded to numbers actually registered on the Bloctel do-not-call list; DGCCRF states the Bloctel database itself was not otherwise breached and no data beyond phone numbers (no names, addresses) was exposed. The compromised account was blocked and all professional accounts were reviewed. The incident became public just before Bloctel's planned closure on 2026-08-11, timed to coincide with France's move to an opt-in consent model for telemarketing calls. Actors using the pseudonyms "Cybernox" and "don't call me" claimed responsibility on a cybercrime forum and offered the full dataset for free download rather than as a paid sample.
+    region_nexus: "France — home-region-adjacent (EU public-sector), matter referred to CNIL"
+    primary_sector_nexus: "public-sector (government consumer-protection service)"
+    sector: "public-sector, telecom-adjacent (telemarketing regulation)"
+    cves: []
+    techniques: [T1078]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:bloctel-professional-account-breach-2026-08", type: incident, name: "Bloctel professional-account data exposure (August 2026)", aliases: [], summary: "A compromised, MFA-less professional account on Bloctel's business consultation interface was used to bulk-retrieve ~3 million plaintext phone numbers (~600,000 registered on the do-not-call list) days before the service's planned closure; confirmed by DGCCRF 2026-08-12, claimed by actors using the pseudonyms Cybernox and 'don't call me'." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Un accès frauduleux à un compte professionnel a permis à un cybercriminel de récupérer des fichiers contenant 3 millions de numéros de téléphone"
+        attribution: "DGCCRF"
+        source_url: "https://presse.economie.gouv.fr/la-dgccrf-met-en-garde-les-consommateurs-a-la-suite-dune-fuite-de-donnees-sur-bloctel/"
+      - quote: "Les investigations menées ont confirmé que seuls des numéros de téléphone ont été exposés, sans aucune autre donnée personnelle"
+        attribution: "DGCCRF"
+        source_url: "https://presse.economie.gouv.fr/la-dgccrf-met-en-garde-les-consommateurs-a-la-suite-dune-fuite-de-donnees-sur-bloctel/"
+      - quote: "L'absence de double authentification (MFA) aurait permis à l'attaquant d'accéder aux numéros de téléphone affichés en clair"
+        attribution: "FrenchBreaches"
+        source_url: "https://frenchbreaches.com/alertes/bloctel-mshxaq0ysyd27ca7f6"
+    extended_notes: |
+      This resolves the carried-forward audit watch item ("Bloctel / Afpa unconfirmed leak-site claims", opened by the 2026-08-09 quality audit). Afpa, the sibling claim from the same actor cluster, remains unconfirmed and is NOT included here — see audit_watch_item_rechecks above. Triage-relevant lesson: bulk data exposure did not require a database compromise at all, only an unprotected legitimate account and a search feature with no per-query rate limit or export-volume ceiling — a hardening lever (query/export throttling on B2B portals, mandatory MFA on any account with bulk-lookup capability) worth generalising beyond this one service.
+
+  - title: "Scalingo (French cloud PaaS provider) confirms ~90,000-person data exposure — first named victim organisation of the Metabase unauthenticated SQL-injection zero-day this pipeline already tracks"
+    kind: incident
+    sources:
+      - { url: "https://doc.scalingo.com/security/bulletins/ssb-2026-004", publisher: "Scalingo (vendor security bulletin)", date: "2026-08-12", role: "primary" }
+      - { url: "https://www.cyberattaque.org/scalingo-les-donnees-de-90-000-personnes-volees-via-une-faille-critique-de-metabase/", publisher: "Cyberattaque.org", date: "2026-08-13", role: "corroborating" }
+    discovery_trace: "first seen at: cyberattaque-org feed, URL https://www.cyberattaque.org/feed/ → article URL https://www.cyberattaque.org/scalingo-les-donnees-de-90-000-personnes-volees-via-une-faille-critique-de-metabase/ → primary: Scalingo's own security bulletin, URL https://doc.scalingo.com/security/bulletins/ssb-2026-004"
+    summary: |
+      Scalingo, a French cloud Platform-as-a-Service provider, published security bulletin SSB-2026-004 confirming that its internal Metabase business-intelligence instance was compromised through CVE-2026-72898 (CVSS 10.0), the unauthenticated SQL-injection-via-password-reset-endpoint flaw this pipeline already tracks (covered here 2026-08-09 as a zero-day and 2026-08-12 once CVE-2026-72898 was assigned and KEV-listed). Metabase published its advisory on 2026-08-06; Scalingo's bulletin states three distinct malicious-activity clusters exploited the flaw against its instance, two of which exfiltrated data between the first data-access event at 01:03-01:04 UTC+2 on 2026-08-08 and a second attacker's extraction at 03:57-04:18 UTC+2 the same day — two days before Scalingo detected and contained the breach on 2026-08-10, and two days before public notification on 2026-08-12. Roughly 90,000 individuals are affected; exposed data includes names, usernames, emails, employer/company names, technical account identifiers, MFA-enrolment status (not secrets), GitHub-account associations, partial billing information, application/database names and characteristics, and environment-variable NAMES (not values). Scalingo states passwords, banking data, MFA secrets, recovery codes, API tokens, encryption keys, customer source code and production database contents were not compromised. Remediation is to upgrade self-hosted Metabase instances to v0.63.5.x or later and rotate any database credentials that were reachable from a publicly-accessible instance.
+    region_nexus: "France — home-region-adjacent (EU public/private cloud infrastructure)"
+    primary_sector_nexus: "indirect — cloud/PaaS supplier; no government customer named in the reachable reporting"
+    sector: "telco/cloud infrastructure, cross-sector supply-chain relevance"
+    cves: [CVE-2026-72898]
+    techniques: [T1190]
+    affected_products: ["Metabase (self-hosted, versions prior to 0.63.5.x)"]
+    entity_keys: ["incident:metabase-sqli-zeroday-2026-08"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-12/cve-2026-72898-metabase-sqli-cve-assigned-kev"
+    evidence:
+      - quote: "une faille critique permettant d'obtenir des droits administrateur sans être authentifié"
+        attribution: "Cyberattaque.org, describing Scalingo's bulletin"
+        source_url: "https://www.cyberattaque.org/scalingo-les-donnees-de-90-000-personnes-volees-via-une-faille-critique-de-metabase/"
+      - quote: "The vulnerability allows a remote, unauthenticated attacker to inject arbitrary SQL into a Metabase application database and gain administrator access to the affected instance."
+        attribution: "Scalingo"
+        source_url: "https://doc.scalingo.com/security/bulletins/ssb-2026-004"
+      - quote: "L'analyse de Scalingo a identifié trois groupes distincts d'activités malveillantes ayant réussi à exploiter la vulnérabilité."
+        attribution: "Scalingo, via Cyberattaque.org"
+        source_url: "https://www.cyberattaque.org/scalingo-les-donnees-de-90-000-personnes-volees-via-une-faille-critique-de-metabase/"
+    extended_notes: |
+      This is a concrete, confirmed-victim delta on an already-tracked CVE (CVE-2026-72898) rather than a new vulnerability disclosure — the main agent may prefer to fold it into the existing incident entity (incident:metabase-sqli-zeroday-2026-08) as an update_of, or compose it standalone given it names the first confirmed victim organisation with a public vendor bulletin. Three-cluster exploitation confirms this is being opportunistically mass-exploited, not a targeted single-actor event.
+
+  - title: "DGFiP (France's tax authority): a SECOND, distinct breach claim against the cadastral-data server SPDC — 2 million property owners, unconfirmed by the ministry"
+    kind: incident
+    sources:
+      - { url: "https://www.cyberattaque.org/dgfip-2-cyberattaque-cadastre/", publisher: "Cyberattaque.org", date: "2026-08-14", role: "primary (claim only, unconfirmed by victim)" }
+      - { url: "https://frenchbreaches.com/blog/fuites-de-donnees-a-la-dgfip-apres-les-impots-les-donnees-de-2-millions-de-proprietaires-visees", publisher: "FrenchBreaches", date: "2026-08-14", role: "corroborating (same claim, also unconfirmed)" }
+    discovery_trace: "first seen at: cyberattaque-org feed, URL https://www.cyberattaque.org/feed/ → article URL https://www.cyberattaque.org/dgfip-2-cyberattaque-cadastre/ → corroboration attempt: WebSearch (\"DGFiP cadastre SPDC confirmation ministère 15 août 16 août 2026\") — no government confirmation found as of window close"
+    summary: |
+      The actor using the pseudonym "ZeroBytes" — the same actor DGCCRF/DGFiP already confirmed against the 678,000-record income-tax dataset this pipeline tracks (entity actor:zerobytes, entry 2026-08-15/france-dgfip-tax-authority-credential-intrusion) — claims a SECOND, separate intrusion against DGFiP's Serveur Professionnel de Données Cadastrales (SPDC), the professional land-registry lookup service, on 2026-07-29. The actor claims a valid account plus an MFA-bypass technique gave sustained access long enough to automate extraction, yielding 252,149 cadastral records covering an estimated 2,041,778 property owners (name, birth date/place, address, MAJIC land parcel identifiers, ownership rights, co-owners) before the actor says they deliberately stopped, judging the download too slow. As of this window's close (2026-08-16), neither DGFiP nor the Ministry of Economy and Finance has confirmed this second claim; French breach-tracking outlets explicitly distinguish it from the already-confirmed income-tax intrusion and state the claimed scope and MFA-bypass method have not been independently verified.
+    region_nexus: "France — home-region-adjacent (EU government)"
+    primary_sector_nexus: "public-sector (national tax/land-registry authority) — same tracked victim as the confirmed DGFiP breach"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1078]
+    affected_products: []
+    entity_keys: ["actor:zerobytes", "incident:france-dgfip-tax-breach-2026-08"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: LOW
+    novelty: "update-of:2026-08-15/france-dgfip-tax-authority-credential-intrusion"
+    evidence:
+      - quote: "La nouvelle revendication concernant les données cadastrales doit cependant être distinguée de cette intrusion confirmée : son ampleur et les modalités avancées par le pirate restent à établir."
+        attribution: "FrenchBreaches"
+        source_url: "https://frenchbreaches.com/blog/fuites-de-donnees-a-la-dgfip-apres-les-impots-les-donnees-de-2-millions-de-proprietaires-visees"
+      - quote: "252 149 lignes de données cadastrales"
+        attribution: "ZeroBytes claim, via Cyberattaque.org"
+        source_url: "https://www.cyberattaque.org/dgfip-2-cyberattaque-cadastre/"
+    extended_notes: |
+      Genuinely borderline by design — flagging for the main agent's awareness of a fast-moving, already-tracked-actor story rather than asserting it as fact. Both citing outlets are discovery-tier (reliability C, and arguably not independent of each other since both ultimately relay the same forum claim) and neither is the victim or a government authority. Per the fake-news guard, this should NOT be composed as a confirmed second breach; if composed at all it should be framed strictly as "ZeroBytes claims X; DGFiP has not confirmed" with credibility no better than 4 (doubtful) absent a government statement. Recommend holding for a follow-up run to see if DGFiP confirms or denies.
+    borderline: true
+    borderline_reason: "Unconfirmed leak-site/forum claim against an already-tracked victim and actor; included only because it is a material development worth the main agent's awareness, not because it clears the confirmation bar on its own."
+
+  - title: "Arbeiterkammer Oberösterreich (Austrian statutory Chamber of Labour): cyberattack disables email and telephony for a week, no vector or actor disclosed"
+    kind: incident
+    sources:
+      - { url: "https://ooe.orf.at/stories/3366329/", publisher: "ORF Oberösterreich (Austrian public broadcaster)", date: "2026-08-10", role: "primary" }
+      - { url: "https://www.nachrichten.at/wirtschaft/nach-cyberangriff-auf-arbeiterkammer-es-ist-eine-laengere-geschichte;art15,4201631", publisher: "Nachrichten.at (OÖNplus)", date: "2026-08-12", role: "corroborating" }
+      - { url: "https://www.meinbezirk.at/oberoesterreich/c-wirtschaft/hackerangriff-legt-systeme-der-arbeiterkammer-ooe-lahm_a8841763", publisher: "meinbezirk.at", date: "2026-08-10", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Österreich Gemeinde Cyberangriff Datenleck August 2026\") → pivot: meinbezirk.at, URL https://www.meinbezirk.at/oberoesterreich/c-wirtschaft/hackerangriff-legt-systeme-der-arbeiterkammer-ooe-lahm_a8841763 → primary: ORF Oberösterreich, URL https://ooe.orf.at/stories/3366329/ → follow-up: Nachrichten.at, URL https://www.nachrichten.at/wirtschaft/nach-cyberangriff-auf-arbeiterkammer-es-ist-eine-laengere-geschichte;art15,4201631"
+    summary: |
+      The Arbeiterkammer Oberösterreich (AK OÖ, Upper Austria's statutory Chamber of Labour — a body under public law with mandatory membership representing employees, part of the Austrian social-partnership system) confirmed a cyberattack that its security systems detected via alarms around 05:00 on Monday, 2026-08-10. Email servers and the internal telephone system were disabled; the central office in Linz and all district offices switched to fully analogue operation. By Wednesday 2026-08-12, roughly 600 staff laptops had been confiscated at the Linz central office as part of the response, and Director Andrea Heimberger stated the Chamber had built a "parallel structure" to remain operational. As of the last available update (2026-08-12), the Chamber states there are no indications of who is behind the attack and no evidence data was extracted from its servers; the state of emergency was expected to continue at least through the end of that week. No ransomware family, initial-access vector, or exploited vulnerability has been disclosed in any reachable reporting.
+    region_nexus: "Austria — home-region-adjacent (Swiss/EU public-sector coverage focus)"
+    primary_sector_nexus: "public-sector (statutory body under public law)"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Offenbar hat ein Hackerangriff am Montag in der Früh für Computerausfälle bei der Arbeiterkammer Oberösterreich gesorgt."
+        attribution: "ORF Oberösterreich"
+        source_url: "https://ooe.orf.at/stories/3366329/"
+      - quote: "Aus derzeitiger Sicht seien von den Servern der AK keine Daten abgezogen worden."
+        attribution: "ORF Oberösterreich, quoting Director Andrea Heimberger"
+        source_url: "https://ooe.orf.at/stories/3366329/"
+      - quote: "Der Ausnahmezustand in der Arbeiterkammer Oberösterreich (AK) dauert noch bis mindestens Ende dieser Woche an."
+        attribution: "Nachrichten.at / OÖNplus"
+        source_url: "https://www.nachrichten.at/wirtschaft/nach-cyberangriff-auf-arbeiterkammer-es-ist-eine-laengere-geschichte;art15,4201631"
+    extended_notes: |
+      No techniques[] mapped — the reachable reporting names no attacker behaviour beyond "a cyberattack disabled email/telephony", which is why this is flagged borderline rather than a firm inclusion. Confirmed by the victim (a public-law statutory body) directly to a public broadcaster, so the occurrence itself is solid; only the technical substance is thin.
+    borderline: true
+    borderline_reason: "Confirmed, in-window incident at a statutory Austrian public-law body (home-region public-sector nexus) — but no named vector, actor, ransomware family, or confirmed data loss in any reachable reporting (paywall on the most detailed follow-up). Comparable in shape to the 2026-08-09 audit's correctly-dropped Verbandsgemeinde Rhein-Nahe item: in-scope by venue, thin on anything a Tier 2/3 responder acts on differently. Main agent to weigh regional/public-sector value vs. technical thinness."
+
+  # --- Items independently re-verified as already covered (novelty: covered) ---
+  - title: "CERT Polska: second Polish CHP plant shut down via private-APN pivot into OT (29 Dec 2025)"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json during this audit's independent sweep"
+    summary: "Independently re-surfaced during this sweep's national-CERT check; already published."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-09/cert-polska-private-apn-pivot-into-ot-chp-plant-shutdown"
+
+  - title: "Żabka (Poland): supplier Jira account intrusion, confirmed"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json and state/coverage_backlog.md (struck)"
+    summary: "Independently re-surfaced via ransomware/incident sweep; already published."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-10/zabka-supplier-account-jira-access-confirmed"
+
+  - title: "Connor Moucka / UNC5537 guilty plea — SaaS-tenant mass-extortion template"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json"
+    summary: "Independently re-surfaced via ransomware/extortion sweep; already published."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-10/unc5537-moucka-guilty-plea-saas-tenant-extortion-template"
+
+  - title: "Retelit (Italy): Qilin ransomware against telco/cloud operator serving 193 public administrations"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json and state/coverage_backlog.md (struck)"
+    summary: "Independently re-surfaced via ransomware.live CH/EU country sweep; already published."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-10/retelit-qilin-italian-telco-cloud-operator-public-sector"
+
+  - title: "CEVA Logistics fulfilment-processor breach — ten downstream organisations notified from one compromise"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json"
+    summary: "Independently re-surfaced via supply-chain breach sweep; already published."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-11/ceva-logistics-fulfilment-breach-ten-controllers-notified"
+
+  - title: "Stiftung Brandenburgische Gedenkstätten (German federal/state-funded memorial foundation): ransomware, full IT rebuild"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json during German public-sector sweep"
+    summary: "Independently re-surfaced via WebSearch (\"Deutschland Behörde Kommune Ransomware Cyberangriff August 2026\") pivots; already published."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-12/stiftung-brandenburgische-gedenkstaetten-ransomware"
+
+  - title: "Wesco: ExfilSquad CRM data-exfiltration claim confirmed, scope disputed (update)"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json and state/coverage_backlog.md"
+    summary: "Independently re-surfaced during ransomware/leak-site sweep; already published as an update."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-12/wesco-exfilsquad-crm-confirmation-dispute"
+
+  - title: "MyDr (Poland): EHR platform criminal intrusion confirmed, processor gap — later updated to 19M people / 2TB"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json"
+    summary: "Independently re-surfaced via Zaufana Trzecia Strona / Polish healthcare-breach sweep; already published and updated."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-13/mydr-poland-ehr-criminal-intrusion-confirmed-processor-gap"
+
+  - title: "UK ICO reprimands ACRO Criminal Records Office over a seven-month website compromise"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json; re-confirmed as ICO's newest enforcement action via ico.org.uk sitemap (lastmod 2026-08-12)"
+    summary: "Independently re-confirmed as the newest ICO enforcement action in-window; already published."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-13/ico-acro-reprimand-patch-ownership-gap-segmentation"
+
+  - title: "Cl0p leak site names 44 victims in a single batch, including Swiss and Dutch organisations (update)"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json; re-confirmed via ZATAZ weekly roundup mention of the same Windchill wave"
+    summary: "Independently re-surfaced via ZATAZ and ransomware/leak-site sweep; already published as an update."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-13/clop-leak-site-names-44-victims-swiss-dutch-listings"
+
+  - title: "France's DGFiP tax authority: credential intrusion, 678,000 records, confirmed (first breach)"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json; independently re-confirmed via DataBreaches.net and ZATAZ during this sweep"
+    summary: "Independently re-surfaced via multiple French-press and DataBreaches.net checks; already published. (See separate NEW item above for the SECOND, unconfirmed SPDC/cadastre claim by the same actor.)"
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-15/france-dgfip-tax-authority-credential-intrusion"
+
+  - title: "NHS Blood and Transplant: organ-offer messages sent over an unencrypted pager network"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json; independently re-surfaced via DataBreaches.net during this sweep"
+    summary: "Independently re-surfaced via DataBreaches.net; already published."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-15/nhsbt-transplant-data-unencrypted-pager-network"
+
+  - title: "Threema and its Swiss colocation partner hit by the same adaptive DDoS wave"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json during CH-specific sweep"
+    summary: "Already published; no update found this run."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-15/threema-nine-colocation-ddos-swiss-messenger-outage"
+
+  - title: "Cl0p Windchill wave: first victim confirmations, Philips confirms a server was hit (update)"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json; independently re-surfaced via ZATAZ (Cl0p cible Philips et Shell)"
+    summary: "Independently re-surfaced via ZATAZ; already published as an update."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-15/clop-windchill-philips-shell-first-victim-confirmations"
+
+  - title: "CVE-2026-59310 (VMware vCenter Syslog traversal) crosses into confirmed compromise, 361 victim IPs / 47 countries (update)"
+    kind: vulnerability
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json; independently re-surfaced via NCSC-CH Cyber Security Hub post 12814 and ZATAZ (VMware vCenter: des serveurs français compromis)"
+    summary: "Independently re-surfaced twice (NCSC-CH CSH advisory update 12.08.2026; ZATAZ French-server-compromise angle 13.08.2026); already published as an update."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-13/cve-2026-59310-vcenter-syslog-traversal-confirmed-exploited"
+
+  - title: "Lazarus burns Windows AFD.sys zero-day (CVE-2026-68820) on European defence targets — FudModule variant"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json; independently re-surfaced via Netzwoche and SwissCybersecurity.net (Lazarus nutzt Windows-Zero-Day für Angriffe auf Rüstungsfirmen)"
+    summary: "Independently re-surfaced via Swiss trade press; already published."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-12/lazarus-operation-dream-job-cve-2026-68820-afd-fudmodule"
+
+  - title: "BIT/FOITT (Swiss federal IT provider): SharePoint Server intrusion, ~200 accounts compromised"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json; surfaced again via WebSearch during CH public-sector sweep, but event/confirmation date (2026-08-04/05) falls OUTSIDE this window"
+    summary: "Already published, pre-window. Confirmed no in-window update or new disclosure found."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-05/bit-foitt-swiss-federal-sharepoint-breach-200-accounts"
+
+  - title: "Canton Graubünden: SharePoint server breach a day after the Confederation's"
+    kind: incident
+    sources: []
+    discovery_trace: "re-verification only — matched against prior_coverage.json; surfaced again via WebSearch during CH public-sector sweep, but event/confirmation date (2026-08-05/06) falls OUTSIDE this window"
+    summary: "Already published, pre-window. Confirmed no in-window update or new disclosure found."
+    novelty: "covered"
+    entity_keys: []
+    techniques: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    match_entry_id: "2026-08-06/canton-graubuenden-sharepoint-server-breach"
+
+# ------------------------------------------------------------------
+# Correctly-droppable borderlines checked and NOT included as items
+# (documented so the completeness judgement is auditable, per the
+# 2026-08-09 audit's own precedent)
+# ------------------------------------------------------------------
+correctly_droppable_checked:
+  - item: "Camandona SA (Switzerland) — majinahanashi ransomware leak-site claim, 2026-08-11"
+    reason: "Small private-sector Swiss company (~200 employees per third-party leak-tracker estimate); leak-site claim only, no victim statement, no A/B-grade journalism found; majinahanashi is noted by trackers as an emerging/unverified group. No government/CI nexus. Does not clear any inclusion-gate limb."
+    checked_via: "ransomware.live v2/recentvictims API + WebSearch(\"Camandona SA cyberattaque ransomware majinahanashi\")"
+  - item: "Gfeller Treuhand und Verwaltungs AG (Switzerland) — thegentlemen ransomware leak-site claim, 2026-08-13/14"
+    reason: "Small private-sector Swiss fiduciary/real-estate management firm; leak-site claim only, no victim statement, no A/B-grade journalism found. No government/CI nexus."
+    checked_via: "ransomware.live v2/recentvictims API + WebSearch(\"Gfeller Treuhand Verwaltung Cyberangriff Ransomware\")"
+  - item: "Check Point vendor report: Swiss cyberattacks up 35% in July 2026 (Netzwoche/SwissCybersecurity.net, 2026-08-14)"
+    reason: "Vendor telemetry percentage statistics (attack-volume counts, sector rankings) — excluded under this deployment's no-vanity-metrics rule; no actionable TTP content beyond restating that phishing/ransomware remain the top techniques."
+    checked_via: "WebFetch of the Netzwoche article citing blog.checkpoint.com"
+  - item: "Bridewell / BCON Collective UK CNI infostealer report (manufacturing 40% of victims)"
+    reason: "Could not be verified this run either — industrialcyber.co returns HTTP 403 on every transport (direct, bridge, and the jina reader fallback, which was credit-exhausted all run); no alternate outlet or a Bridewell-owned page surfaced the same specific claim. Confirms the 2026-08-16T0411Z-intel fire's own coverage-backlog note; still open, not a new finding this run."
+    checked_via: "WebFetch + bridge url (both 403) + WebSearch (found only older 2024 Bridewell reports, not the in-window one)"
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No supplier (or product) watchlist is configured for this deployment — the sweep is a no-op per the org profile. General G2 coverage rules applied unchanged."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ccn-cert-es
+    reason: "Direct transport returns navigation-shell/403 and the jina reader pool was exhausted for the whole run (all seven pooled keys HTTP 402) — could not check Spanish national-CERT incident content this run."
+  - source_id: cisa-directives
+    reason: "Unreachable this run (Akamai 403 + exhausted jina reader pool), consistent with the note already on this source's sources.json record for 2026-08-16; not a G2-specific gap."
+  - source_id: acn-italy
+    reason: "The /pubblicazioni listing page is JS-rendered with no server-side dated rows in the raw body reached via the bridge; could not enumerate recent ACN Italy publications for an incident-bulletin check this run (the source's own note documents a working per-slug drill recipe, but no fresh slug was available to test without already knowing one)."
+  - source_id: nl-times
+    reason: "Homepage and general RSS feed (rssfeed2) are general Dutch news, not security-filtered; no dedicated security/breach section or feed found this run, so a systematic NL-incident sweep beyond WebSearch was not possible."
+  - source_id: franceinfo.fr
+    reason: "HTTP 403 on direct transport; jina reader pool exhausted (HTTP 402 on all seven keys). Could not read a franceinfo.fr piece on the DGFiP breach questions directly; substituted with FrenchBreaches and Cyberattaque.org coverage of the same story."

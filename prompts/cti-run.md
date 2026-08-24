@@ -1,6 +1,6 @@
 # CTI Intelligence Run — Master Prompt
 
-> **Prompt version:** v3.31 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v3.32 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, **fired on an operator-chosen cadence** — several times a day, once a day, or anything else; the operator tunes the schedule at will and the prompt is cadence-agnostic and self-healing (the window is always derived from the gap to the last run, PD-7). The main agent composes entries and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/). Main agent and sub-agents may run on different models — every agent self-identifies (§ Self-identification).
 >
@@ -224,19 +224,60 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent` (sub-agent spawn), `Bash`, `Writ
 
 ## Phase 0 — Preflight (sequential, ~1 min)
 
-0. **Capture start timestamp + compute the run id (MANDATORY first action).** Before any `Read`:
+0. **Establish ground truth for "now" and "latest", then compute the run id (MANDATORY first action).** Before any `Read`. Two things this step must not take on faith — the container's clock and the freshness of its clone:
+
    ```bash
-   STARTED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-   RUN_DATE=$(date -u +%F)
+   # --- clock: cross-check the container against an external authority (v3.32) ---
+   # Guards that matter: require the header to START with a weekday letter (an
+   # empty string makes `date -d ""` return TODAY AT MIDNIGHT, which would look
+   # like a 9-hour skew and "correct" a good clock into a bad one), sanity-check
+   # the parsed epoch, and fall through several hosts — the proxy drops the Date
+   # header intermittently.
+   net_epoch() {
+       for h in https://api.github.com https://www.cloudflare.com https://example.com; do
+           d=$(curl -sSI --max-time 10 "$h" 2>/dev/null | tr -d '\r' \
+                 | awk 'BEGIN{IGNORECASE=1} /^date:[ ]*[A-Za-z]/{sub(/^[Dd]ate:[ ]*/,""); print; exit}')
+           [ -z "$d" ] && continue
+           e=$(date -u -d "$d" +%s 2>/dev/null) || continue
+           [ -n "$e" ] && [ "$e" -gt 1700000000 ] && { echo "$e"; return 0; }
+       done
+       return 1
+   }
+   NET_EPOCH=$(net_epoch) || NET_EPOCH=""
+   LOC_EPOCH=$(date -u +%s)
+   if [ -n "$NET_EPOCH" ]; then
+       SKEW=$(( NET_EPOCH > LOC_EPOCH ? NET_EPOCH - LOC_EPOCH : LOC_EPOCH - NET_EPOCH ))
+       echo "PREFLIGHT clock: local=$(date -u -d @$LOC_EPOCH +%FT%TZ) network=$(date -u -d @$NET_EPOCH +%FT%TZ) skew=${SKEW}s"
+   else
+       SKEW=0
+       echo "PREFLIGHT clock: no external date header obtained — proceeding on the container clock, unverified"
+   fi
+   if [ -n "$NET_EPOCH" ] && [ "$SKEW" -gt 300 ]; then
+       echo "PREFLIGHT: container clock is off by $(( SKEW / 60 )) min — TRUSTING THE NETWORK DATE"
+       REF=$NET_EPOCH
+   else
+       REF=$LOC_EPOCH
+   fi
+   STARTED=$(date -u -d "@${REF}" +"%Y-%m-%dT%H:%M:%SZ")
+   RUN_DATE=$(date -u -d "@${REF}" +%F); RUN_HHMM=$(date -u -d "@${REF}" +%H%M)
+
+   # --- clone: the first fetch can return stale refs; never plan a window off one ---
+   git fetch origin main
+   NEWEST_RUN=$(git ls-tree -r --name-only origin/main -- runs/ | grep -E '/[0-9]{4}-[0-9]{2}-[0-9]{2}T' | sort | tail -1)
+   echo "PREFLIGHT: now=${STARTED} · newest run record on origin/main=${NEWEST_RUN}"
+
    # Minute-precision, deterministic: a same-minute retry computes the same
    # run_id and updates the same record in place (idempotent retry).
-   RUN_ID="${RUN_DATE}T$(date -u +%H%M)Z-intel"
+   RUN_ID="${RUN_DATE}T${RUN_HHMM}Z-intel"
    mkdir -p "work/${RUN_ID}" "entries/${RUN_DATE}" "runs/${RUN_DATE}"
    echo "$STARTED" | tee "work/${RUN_ID}/main.started_at"
    echo "$RUN_ID"  | tee "work/${RUN_ID}/run_id"
    : > "work/${RUN_ID}/url-liveness.tsv"   # pre-create the empty ledger
    ```
-   Pass `RUN_ID` to every sub-agent so they checkpoint into the same `work/` dir. The `url-liveness.tsv` is the ledger sub-agents append to; `tools/check_run.py` reads it.
+
+   **Then sanity-check the pair before anything depends on it.** If `NEWEST_RUN`'s date is more than a couple of days behind `RUN_DATE` on a schedule that has been firing, treat it as **either** a real scheduler gap **or** a stale clone, and distinguish them by re-fetching (`git fetch origin main` again, then re-list) before concluding. Do not compute `gap_hours`, plan a window, or brief a sub-agent until both values have survived that check. **This is not hypothetical:** the 2026-08-24 quality-audit fire booted with a clock reading 2026-08-16T13:13Z and a first fetch that returned refs eight days old, computed a 168 h window ending 2026-08-16, briefed eight sub-agents on it, and only caught the error mid-run — for a few minutes it looked like an eight-day pipeline outage. A wrong clock does not fail loudly: it produces a well-formed run that researches and audits the wrong week.
+
+   Pass `RUN_ID` to every sub-agent so they checkpoint into the same `work/` dir, **and state today's date explicitly in every spawn message** — a sub-agent inherits the same bad clock and cannot detect it alone. The `url-liveness.tsv` is the ledger sub-agents append to; `tools/check_run.py` reads it.
 
 1. **Generate the dedup + state digests via scripts (MANDATORY).** Do NOT `Read` the prior entry *files* wholesale (their full bodies bloat context and risk the classifier trip) — the script pre-digests them for you. Instead:
    ```bash
@@ -328,6 +369,10 @@ For every candidate item in the findings YAMLs:
 4. **Verify CVE identifiers on NVD/MITRE — id provenance is the per-CVE authority, never a roundup (v3.21).** Re-verify anything that will enter frontmatter `cves[]`. A CVE id and its CVSS are transcribed from the record that *owns* them — the per-CVE advisory page, the vendor PSIRT bulletin, or the discloser's per-vulnerability report (e.g. a Talos `TALOS-YYYY-NNNN` page's "Vendor Response (CVE-…)" field) — never from a multi-CVE roundup blog post alone: a roundup that misprints an id poisons the store's whole CVE surface (dedup index, `/cve/` pages, automated triage matching), and this has happened (a Talos roundup printed three wolfSSL ids that contradicted Talos's own advisory pages; the entry propagated them). When the roundup and the per-CVE authority disagree, the authority wins and the discrepancy goes in `sourcing_note`.
 
    **The provenance rule covers *which flaw an id names*, not just the id and the score — and a positional mapping between two lists is a guess, never a transcription.** A page that describes four flaws in one order and then lists four assigned CVEs in ascending numeric order has told you nothing about which id belongs to which flaw; pairing them by position produces a confident, wrong `cves[]` that poisons the dedup index, the `/cve/` pages and every automated triage match. Find the explicit mapping — most disclosures carry one further down the page, in a summary table, or in the CNA records — and if none exists, carry the ids without per-flaw attribution rather than inventing the pairing. **Where a discloser publishes its own score alongside the CNA's, take the CNA's** (it is the number that travels with the CVE) and note both in `sourcing_note` when they differ. This is not hypothetical: the 2026-08-02 audit's own recovered entry mapped three of four ids positionally and inverted them, its verifier caught it, and the wrong mapping had already reached `state/cves_seen.json`. An id that resolves nowhere (NVD "Not Found" AND absent from the cited advisory) does not enter `cves[]`. **Read `affected` and `fixed` from the advisory's structured fields, not its prose summary** — CSAF `product_status` (`known_affected` vs `fixed`) and `remediations[].vendor_fix`, or the vendor bulletin's own version table; writing `fixed: "not stated in advisory"` when the CSAF names a fixed release leaves an automated triage consumer unable to answer "is my version patched?" (a 2026-07-24 entry did this for five CVEs whose CSAF and GHSA both named the fix).
+4b. **A "no patch exists" claim comes from the vendor's own channel, never from a news relay (v3.32).** "Unpatched", "no vendor fix", "no fix in existence", `status: no-patch`, and every remediation sentence that rests on them are **negative claims with an expiry date**, and a news article's headline is a snapshot that keeps asserting them after they stop being true. Before publishing one, check the vendor's own release / advisory / changelog channel *in this run* and cite that check — the vendor's page saying nothing is itself the citation ("no fix listed on the vendor's advisory as of `<date>`"), which is a different and honest claim. A relay's "unpatched" is corroboration for the exploitation, never for the absence of a fix.
+
+    This is the defect that costs the reader most, because the whole remediation inverts. Three 2026-W33 weekly entries published 2026-08-16T23:5xZ told readers GeoServer's actively exploited `jsonArrayContains` SQL injection had no vendor fix and that taking query endpoints off the public internet "is the whole remediation" — OSGeo had shipped 3.0.1, 2.28.5 and 2.27.6 on **2026-08-14**, two days earlier, explicitly to resolve it. All three inherited the framing from a 2026-08-14 news article titled "…Unpatched GeoServer Zero-Day" that was already stale when it was written, and none went to `geoserver.org`. The pipeline corrected itself two days later, but the weekly entries are immutable and still carry the wrong instruction. The same rule covers the mirror case: a **patched** claim needs the vendor's version table, not a relay's summary (§ Phase 2 item 4).
+
 5. **Dedup + update decision (PD-8).** Against the full 14-day `prior_coverage.json` you loaded in Phase 0 — every entry from every run in the window, not just the latest fire: CVE-id or entity-key match ⇒ either drop (no material delta) or mark as update note (`update_of: <matched entry id>`, delta-only). Also cross-check the CVE against the store-wide `cves.ids` from `state-summary.json` for coverage older than 14 days (the metadata check). Apply the long-running-campaign rule.
 6. **Recency re-check (PD-7).** Primary-source publication date outside `window_hours` and not update/background/patched-version-context ⇒ drop with run-record reason `out-of-window: primary source <date>, window_hours=<N>`. Set each survivor's `event_date`.
 7. **Relevance & actionability gate — for soundness AND completeness (PD-11).** Put every survivor to the gate: is it relevant to *this* constituency and does it clear one of PD-11's (a)–(d) — in particular, does each vulnerability demand action beyond the regular patch cycle? Drop anything that does not, regardless of how many remain — there is no count to hit and none to cut down to; if ten items genuinely clear the gate, all ten publish, if one does, one does. Resolve doubt by kind: doubt about *relevance to this constituency* → drop; doubt about the *severity* of a clearly-relevant item → keep it at the priority the cited facts support, never omit. **Then run the completeness sweep:** re-read the full findings set — every sub-agent's returned items, including anything they marked `borderline` — and confirm nothing genuinely relevant was left behind. An in-scope, actionable item that fell out for any reason other than failing the gate (space, an over-cautious call, a missed pivot the findings already point to) is a blind spot for a reader who has no other source — restore it, or spawn one scoped follow-up sub-agent if it needs a corroborating source. Record every borderline drop with a `borderline-drop: <title> — <reason>` line so a wrong call is recoverable.
@@ -482,8 +527,13 @@ Transitions: discovery → `candidate` (**hard cap: one new candidate per run**)
 ### Run-record telemetry (finalise)
 
 ```bash
+# PROVISIONAL stamp — the run is not over: the gate, the verifier loop and
+# the publishing chain still have to run. Phase 6 re-stamps this file
+# immediately before the commit, and THAT value is what `completed` carries.
 date -u +"%Y-%m-%dT%H:%M:%SZ" | tee "work/${RUN_ID}/main.ended_at"
 ```
+
+**`completed` and `duration_seconds` must cover the whole fire (v3.32).** Through v3.31 this stamp was taken here, in Phase 5, and copied straight into the record — so every run's recorded duration understated its true wall clock by the length of its Phase 5.7 loop. It was not a rounding error: the majority of stored records have a `completed` that precedes one of their own verifier iterations' `ended_at`, by up to 125 minutes (recomputations of the exact fraction land between 100 and 104 of 141–148 depending on how the denominator is defined; the 125-minute worst case is stable), and `2026-08-10T0411Z-intel` recorded 52 minutes for a fire its own notes place at ~2 h 55 m. The number matters because the ~3 h wall-clock watchdog (guard #10) is checked against exactly it, so an understated duration is a watchdog that cannot see an overrun — and every audit reading "no runaway this window" was reading a floor, not the figure. Write the provisional value now so the record is complete if the run dies, and re-stamp in Phase 6. `check_run.py` FAILs a v3.32+ record whose `completed` precedes any verifier-iteration or sub-agent `ended_at` it carries.
 
 Complete the frontmatter of `runs/<RUN_DATE>/<RUN_ID>.md`: `started`/`completed`/`duration_seconds` from the checkpoint files; `model`/`model_id` (§ Self-identification); `prompt_version` from this prompt's banner; `gap_hours`/`window_hours`; `entries_published` / `entries_updated` (must equal the files you actually wrote); `deep_dive` (entry id or null); full `sub_agents` blocks (models, timestamps, `sources_attempted`/`sources_used`/`items_returned`/`returned`, telemetry — verbatim from returns, `unknown`/`null` when unreported); `fetch_failures[]` (rich shape, ONLY real unrecovered failures — every record ends `covered_anyway: false`); `bridge_uses[]`; `sources_changed[]`; `entities_added[]`; `entries_dropped_by_verification`; **`publish_status: pending` + `publish_checked_at: null` + `publish_note: null`** (the machine-auditable publish outcome — Phase 7 amends these in place after its poll); verification counters (updated during Phase 5.7). **Idempotent retry:** if the record file already exists for this `run_id`, update it in place; never write a second record for the same fire.
 
@@ -579,6 +629,14 @@ After remediation: **re-run `python3 tools/check_run.py`**, fix FAILs, then re-s
 ## Phase 6 — Commit & sync & push (publishing chain)
 
 Output lands on `main` exclusively via the auto-merge GitHub Action. The routine **never pushes to `main` directly**.
+
+**0. Re-stamp the completion timestamp — the last thing before staging (v3.32).** This is the moment the run's work is actually finished: the gate is green, the verifier loop has closed, nothing further will change the output. Take the stamp here and carry it into the record, replacing the provisional Phase 5 value:
+
+```bash
+date -u +"%Y-%m-%dT%H:%M:%SZ" | tee "work/${RUN_ID}/main.ended_at"
+```
+
+Then set the run record's `completed` to this value and recompute `duration_seconds` from `main.started_at` to it. The record must show a `completed` that postdates every `sub_agents.*.ended_at` and every `verification.iterations[].ended_at` it carries — `check_run.py` FAILs a v3.32+ record that does not, so re-run the gate after the edit. (Phase 7's polling happens after the commit and is deliberately outside the figure: `completed` is when the run finished producing, `publish_checked_at` is when it confirmed the result landed.)
 
 **1. Stage and commit on the current branch.** Stage specifics — never `git add -A`. **Include `.claude/memory/` whenever memory was touched.** Commit the per-run `work/<run-id>/` directory (findings YAMLs, verification reports, url-liveness ledger, checkpoints, prior-coverage snapshot) — it is the operator's forensic surface.
 

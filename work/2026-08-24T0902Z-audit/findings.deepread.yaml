@@ -1,0 +1,547 @@
+domain: deepread
+run_id: "2026-08-24T0902Z-audit"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-08-24T09:23:03Z"
+ended_at: "2026-08-24T09:37:00Z"
+duration_seconds: 837
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 3
+  bridge_fetches: 22
+
+items:
+
+  # =========================================================================
+  # 1. SPIP CVE-2026-77647 — universal pre-auth RCE
+  # =========================================================================
+  - title: "SPIP CVE-2026-77647 — pre-auth RCE via var_export()/<?php-tag mis-detection, fixed in 4.4.20 then a second occurrence of the same bug class fixed three days later in 4.4.21 (no CVE yet for the second flaw)"
+    sources:
+      - { url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-20.html?lang=fr", publisher: "SPIP (vendor blog, French)", date: "2026-08-17", role: "primary" }
+      - { url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html?lang=fr", publisher: "SPIP (vendor blog, French)", date: "2026-08-20", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/", publisher: "CERT-FR / ANSSI", date: "2026-08-21", role: "primary" }
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-77647", publisher: "NVD (mirroring MITRE CNA record)", date: "2026-08-21", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-77647", publisher: "MITRE CVE Program (CNA record)", date: "2026-08-20", role: "primary" }
+      - { url: "https://www.thehackerwire.com/spip-unauthenticated-rce-cve-2026-77647/", publisher: "TheHackerWire (AI-generated CVE-tracker aggregator — see note)", date: "2026-08-20", role: "corroborating-low-value" }
+    discovery_trace: "first seen at: assigned reading list, URL https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-20.html?lang=fr → pivot: CERT-FR advisory, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/ → primary: MITRE CVE record, URL https://cveawg.mitre.org/api/cve/CVE-2026-77647 and NVD mirror, URL https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-77647 → pivot: SPIP's own follow-up bulletin, URL https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html?lang=fr (found by following the CERT-FR advisory's own Documentation link) → corroboration attempt: TheHackerWire, URL https://www.thehackerwire.com/spip-unauthenticated-rce-cve-2026-77647/ (AI-generated re-summary of the same NVD record, no independent value)."
+    summary: |
+      IMPORTANT CORRECTION TO THE TASK'S FRAMING: CVE-2026-77647 and CERT-FR advisory CERTFR-2026-AVI-1063
+      do NOT describe the same fix. There were two distinct pre-auth RCE flaws in the same SPIP subsystem,
+      patched three days apart:
+
+      Flaw #1 — fixed in SPIP 4.4.20 (released 2026-08-17). This is the flaw CVE-2026-77647 covers. MITRE's
+      own CNA description: "SPIP before 4.4.20 allows unauthenticated remote attackers to execute arbitrary
+      code, as exploited in the wild in August 2026. This is related to incorrect identification of <?php
+      blocks, and var_export's mishandling of certain cases such as presence of a '<' character." CWE-94
+      (Code Injection). CVSS 3.1 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H), scored by the CNA (cve@mitre.org)
+      — NVD mirrors this score verbatim (vulnStatus "Received", i.e. NVD has not independently re-analyzed
+      it). CISA's SSVC ADP layer records "exploitation: none" as of 2026-08-21, which is at odds with the
+      vendor's own "exploitation attempts already observed in the wild" language — flag this exploitation-
+      status divergence for the reader (CISA's automated triage vs. the vendor's direct statement).
+      Mechanism per SPIP's own blog: attacker-controlled input containing a malformed <?php tag or a literal
+      '<' character can escape its intended data context inside var_export()-generated output and be
+      interpreted as executable PHP by the server — the exact injection endpoint/parameter is not named in
+      either the vendor bulletin or the CVE record. No public PoC found. Debian filed a security-announce
+      entry (linked from the CVE record but the page itself sits behind a proof-of-work anti-bot challenge
+      we could not solve — see coverage_gaps) presumably prompting the CVE assignment three days after the
+      silent 4.4.20 fix.
+
+      Flaw #2 — fixed in SPIP 4.4.21 (released 2026-08-20), covered by CERT-FR's CERTFR-2026-AVI-1063
+      (published 2026-08-21, sourced from "Bulletin de sécurité SPIP du 20 août 2026" i.e. the 4.4.21 post).
+      SPIP's own 4.4.21 announcement states verbatim: "Cette version corrige une vulnérabilité universelle
+      (sans conditions) pré-authentification RCE qui touche la version 4.4.20 de SPIP" — i.e. this second,
+      same-class pre-auth RCE specifically affects SPIP 4.4.20 (the version that was supposed to be the fix
+      for flaw #1). This reads as either an incomplete fix in 4.4.20 or a second occurrence of the identical
+      bug class (mis-detection of <?php blocks / var_export mishandling of '<') that 4.4.20 did not close.
+      CERT-FR's advisory lists NO CVE identifier for this second flaw as of 2026-08-21 (checked the advisory's
+      structured fields directly — "Systèmes affectés: SPIP versions antérieures à 4.4.21", no CVE field
+      present). As of this research pass (2026-08-24) I found no separate CVE assigned to the 4.4.21 fix.
+
+      Both vendor bulletins state, verbatim: "Cette faille n'est pas prise en charge par l'écran de sécurité"
+      (this flaw is not covered by the [built-in input-filtering] security screen) — mechanically this means
+      SPIP's centralized request-sanitization layer, which pattern-matches GET/POST parameters for known-bad
+      injection sequences before requests reach application code, has no rule that catches this particular
+      class of bug because the injection does not manifest as a recognizable raw pattern in the request — it
+      is a serialization-time mishandling inside var_export()'s output-generation logic, which the security
+      screen (a request-time filter) never inspects. That structural gap is why the same bug class resurfaced
+      three days after the first "fix."
+
+      Operational takeaway for defenders: an estate that patched only to 4.4.20 (believing CVE-2026-77647
+      closed) remained exploitable via the second flaw until 4.4.21. Both vendor bulletins and CERT-FR state
+      exploitation attempts were already observed in the wild before each release; SPIP is the dominant CMS
+      for French-speaking public administration (tracked in this deployment's registry as
+      trend:spip-2026-rce-wave — "wide EU/CH Francophone government deployment"), so the Aug 17 / Aug 20
+      double-release matters directly for Suisse romande public-sector sites.
+    region_nexus: "france (vendor + CERT-FR); direct relevance to Swiss/EU Francophone public administration given SPIP's dominant install base there"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: ["CVE-2026-77647"]
+    techniques: ["T1190"]
+    affected_products: ["SPIP"]
+    entity_keys: ["trend:spip-2026-rce-wave"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "SPIP before 4.4.20 allows unauthenticated remote attackers to execute arbitrary code, as exploited in the wild in August 2026. This is related to incorrect identification of <?php blocks, and var_export's mishandling of certain cases such as presence of a '<' character."
+        attribution: "MITRE CVE Program (CNA record for CVE-2026-77647)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-77647"
+      - quote: "Cette faille n'est pas prise en charge par l'écran de sécurité."
+        attribution: "SPIP (vendor blog, 4.4.20 announcement)"
+        source_url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-20.html?lang=fr"
+      - quote: "Cette version corrige une vulnérabilité universelle (sans conditions) pré-authentification RCE qui touche la version 4.4.20 de SPIP."
+        attribution: "SPIP (vendor blog, 4.4.21 announcement)"
+        source_url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-21.html?lang=fr"
+      - quote: "L'éditeur indique que cette vulnérabilité est activement exploitée."
+        attribution: "CERT-FR (CERTFR-2026-AVI-1063)"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/"
+    extended_notes: |
+      TheHackerWire's article on this CVE is machine-generated ("THW AI Reporter... Reports are generated
+      using structured AI analysis of publicly available vulnerability disclosures") and adds no fact beyond
+      a paraphrase of the NVD/MITRE record — do not treat it as independent corroboration; Admiralty
+      reliability should be low (D/E) if cited at all, and I'd recommend citing only the NVD/MITRE/CERT-FR/
+      vendor primaries. Recommend the composed entry explicitly carry both version boundaries (4.4.20 AND
+      4.4.21) rather than only the 4.4.20 CVE, given the incomplete-fix pattern is itself the most
+      actionable fact for defenders who already patched once.
+    borderline: false
+
+  # =========================================================================
+  # 2. Adobe ColdFusion APSB26-90 (CVE-2026-48362 headline)
+  # =========================================================================
+  - title: "Adobe ColdFusion APSB26-90 — 13 CVEs, headline CVE-2026-48362 CVSS 10.0 OS command injection (CWE-78); Adobe states no observed exploitation despite Priority-1 rating"
+    sources:
+      - { url: "https://helpx.adobe.com/security/products/coldfusion/apsb26-90.html", publisher: "Adobe PSIRT", date: "2026-08-11", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12841", publisher: "NCSC-CH (security-hub)", date: "2026-08-12", role: "corroborating" }
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-48362", publisher: "NVD", date: "2026-08-13", role: "corroborating" }
+    discovery_trace: "first seen at: assigned reading list, URL https://helpx.adobe.com/security/products/coldfusion/apsb26-90.html (no pivot needed — vendor primary) → corroboration: NCSC-CH, URL https://security-hub.ncsc.admin.ch/#/posts/12841 → corroboration: NVD mirror, URL https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-48362"
+    summary: |
+      APSB26-90 (published 2026-08-11, Adobe's own Priority rating = 1 — the highest urgency tier) lists
+      13 CVEs affecting ColdFusion 2025 (all builds ≤ 2025.0.11, fixed in 2025.0.12) and ColdFusion 2023
+      (all builds ≤ 2023.0.22, fixed in 2023.0.23) — both tracks carry Priority rating 1 per Adobe's own
+      table. Reading Adobe's structured table row-by-row (not paired positionally, per the task's caution):
+
+        - CVE-2026-48362 — CWE-78 OS Command Injection — Arbitrary code execution — CVSS 10.0 —
+          CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H
+        - CVE-2026-48273 — CWE-95 Eval Injection — Arbitrary code execution — CVSS 9.9 —
+          AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H
+        - CVE-2026-71384 — CWE-863 Incorrect Authorization — Application DoS — CVSS 9.6 —
+          AV:A/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H
+        - CVE-2026-71386 — CWE-79 XSS — Arbitrary code execution — CVSS 8.8 —
+          AV:A/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H
+        - CVE-2026-21273 — CWE-20 Improper Input Validation — Privilege escalation — CVSS 8.7 —
+          AV:N/AC:L/PR:L/UI:R/S:C/C:H/I:H/A:N
+        - CVE-2026-71387 — CWE-863 Incorrect Authorization — Arbitrary code execution — CVSS 8.8 —
+          AV:A/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+        - CVE-2026-71385 — CWE-863 Incorrect Authorization — Security feature bypass — CVSS 8.4 —
+          AV:A/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H
+        - CVE-2026-34635 — CWE-321 Hard-coded Cryptographic Key — Security feature bypass — CVSS 8.2 —
+          AV:L/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:N
+        - CVE-2026-48440 — CWE-122 Heap-based Buffer Overflow — Arbitrary code execution — CVSS 8.1 —
+          AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H
+        - CVE-2026-21279 — CWE-20 Improper Input Validation — Security feature bypass — CVSS 8.1 —
+          AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:N
+        - CVE-2026-25652 — CWE-863 Incorrect Authorization — Privilege escalation — CVSS 7.8 —
+          AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H
+        - CVE-2026-48386 — CWE-327 Broken/Risky Crypto Algorithm — Memory exposure — CVSS 7.5 —
+          AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+        - CVE-2026-71383 — CWE-863 Incorrect Authorization — Security feature bypass — CVSS 7.3 (Important) —
+          AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L
+        - CVE-2026-48375 — CWE-863 Incorrect Authorization — Application DoS — CVSS 6.5 (Important) —
+          AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H
+        - CVE-2026-48376 — CWE-116 Improper Encoding/Escaping — Security feature bypass — CVSS 5.4 (Important) —
+          AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:L
+        - CVE-2026-48384 — CWE-20 Improper Input Validation — Security feature bypass — CVSS 4.9 (Important) —
+          AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:N/A:H
+
+      Three CVEs (CVE-2026-71384, -71386, -71387) are individually credited to external HackerOne-style
+      researchers (AnirudhAnand/a0xnirudh, Matan Sandori/matans1, Brennan D St. John/brennanstjohn) in
+      Adobe's Acknowledgements section; the rest are unattributed (internally discovered). Adobe's own note:
+      "Effective August 11, 2026, Adobe may assign a single CVE identifier to internally discovered
+      vulnerabilities with the same severity rating and CWE category when a release includes systemic
+      fixes" — relevant context for why several CVEs cluster by CWE.
+
+      Exploitation status: Adobe's advisory states verbatim "Adobe is not aware of any exploits in the wild
+      for any of the issues addressed in this update" — despite the CVSS 10.0 score and Priority-1 rating.
+      CISA's SSVC ADP layer for CVE-2026-48362 independently records "exploitation: none" (timestamped
+      2026-08-11), consistent with Adobe's statement.
+
+      CVSS-authority check: NVD's record for CVE-2026-48362 is "Analyzed" status but the score/vector is
+      sourced verbatim from psirt@adobe.com (Adobe's own CNA) — NVD did not independently rescore it, so
+      there is NO divergence between Adobe and NVD here; NCSC-CH's security-hub advisory also relays Adobe's
+      own CVSS numbers verbatim without independent rescoring. No national-CERT divergence found.
+
+      Same August 2026 Adobe Patch Tuesday also shipped APSB26-123 (Campaign Classic, three CVEs including
+      two CVSS-10.0 incorrect-authorization RCEs and a 9.0 SQLi-to-RCE) and APSB26-92 (Commerce/Magento,
+      CVE-2026-71362, CVSS 9.1, unauthenticated privilege escalation) per the NCSC-CH advisory — those are
+      out of scope for this deep-read but are cross-referenced by NCSC-CH's single combined post.
+    region_nexus: "global vendor advisory; NCSC-CH issued its own advisory the following day — direct relevance to any Swiss federal/cantonal ColdFusion deployment"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: ["CVE-2026-48362", "CVE-2026-48273", "CVE-2026-71384", "CVE-2026-71386", "CVE-2026-21273", "CVE-2026-71387", "CVE-2026-71385", "CVE-2026-34635", "CVE-2026-48440", "CVE-2026-21279", "CVE-2026-25652", "CVE-2026-48386", "CVE-2026-71383", "CVE-2026-48375", "CVE-2026-48376", "CVE-2026-48384"]
+    techniques: ["T1190", "T1068"]
+    affected_products: ["Adobe ColdFusion 2025", "Adobe ColdFusion 2023"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Adobe is not aware of any exploits in the wild for any of the issues addressed in this update."
+        attribution: "Adobe PSIRT (APSB26-90)"
+        source_url: "https://helpx.adobe.com/security/products/coldfusion/apsb26-90.html"
+      - quote: "Effective August 11, 2026, Adobe may assign a single CVE identifier to internally discovered vulnerabilities with the same severity rating and CWE category when a release includes systemic fixes."
+        attribution: "Adobe PSIRT (APSB26-90)"
+        source_url: "https://helpx.adobe.com/security/products/coldfusion/apsb26-90.html"
+      - quote: "Current exploitation status: UNKNOWN"
+        attribution: "NCSC-CH security-hub post 12841"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12841"
+    extended_notes: |
+      cve_table row set below carries the full 16-CVE ColdFusion matrix for state/dedup purposes.
+    borderline: false
+
+  # =========================================================================
+  # 3. GeoServer jsonArrayContains — correction entry, patch timeline
+  # =========================================================================
+  - title: "CORRECTION: GeoServer jsonArrayContains SQL injection (GHSA-mqjf-5f49-2fjh / CVE-2026-76904) — fixed versions were live from 2026-08-14, not 'unpatched'; GHSA's own prose 'Patches' list is wrong for two of three branches"
+    sources:
+      - { url: "https://geoserver.org/announcements/vulnerability/2026/08/14/geoserver-3-0-1-released.html", publisher: "GeoServer project (vendor)", date: "2026-08-14", role: "primary" }
+      - { url: "https://geoserver.org/announcements/vulnerability/2026/08/14/geoserver-2-28-5-released.html", publisher: "GeoServer project (vendor)", date: "2026-08-14", role: "primary" }
+      - { url: "https://geoserver.org/announcements/vulnerability/2026/08/14/geoserver-2-27-6-released.html", publisher: "GeoServer project (vendor)", date: "2026-08-14", role: "primary" }
+      - { url: "https://api.osv.dev/v1/vulns/GHSA-mqjf-5f49-2fjh", publisher: "GitHub Security Advisory GHSA-mqjf-5f49-2fjh, mirrored via OSV.dev (github.com itself egress-blocked in this environment)", date: "2026-08-21", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12844", publisher: "NCSC-CH (security-hub)", date: "2026-08-14 (created) / 2026-08-17 (edited)", role: "corroborating" }
+    discovery_trace: "first seen at: assigned reading list, URL https://geoserver.org/announcements/vulnerability/2026/08/14/geoserver-3-0-1-released.html (no pivot needed — vendor primary) → cross-check: sibling vendor posts for the 2.x branches, URL https://geoserver.org/announcements/vulnerability/2026/08/14/geoserver-2-28-5-released.html and URL https://geoserver.org/announcements/vulnerability/2026/08/14/geoserver-2-27-6-released.html → primary: GHSA structured record via OSV mirror, URL https://api.osv.dev/v1/vulns/GHSA-mqjf-5f49-2fjh (github.com direct fetch blocked in this environment, per task instruction) → corroboration/timeline: NCSC-CH post, URL https://security-hub.ncsc.admin.ch/#/posts/12844"
+    summary: |
+      Exact, dated patch timeline (all three GeoServer releases carry the SAME post-meta date on their own
+      pages: "Aug 14, 2026 • Jody Garnett"):
+
+        - GeoServer 3.0.1 — published 2026-08-14 — "made in conjunction with GeoTools 35.1"
+        - GeoServer 2.28.5 — published 2026-08-14 — "made in conjunction with GeoTools 34.5"
+        - GeoServer 2.27.6 — published 2026-08-14 — "made in conjunction with GeoTools 33.6"
+
+      GHSA-mqjf-5f49-2fjh's own OSV-normalized "affected" ranges (the authoritative structured field, not
+      its prose) agree with GeoServer's own dates: fixed in GeoTools 35.1, 34.5, and 33.6 respectively — and
+      the GHSA's own References section links to the GitHub release tags 33.6, 34.5, and 35.1 (not 33.5/34.4).
+
+      DISCREPANCY TO CORRECT: the GHSA's own prose "Patches" section reads verbatim: "Patches — GeoTools
+      35.1, GeoTools 33.5, GeoTools 34.4" — this is WRONG for two of the three branches (should read 33.6
+      and 34.5, not 33.5 and 34.4), contradicted by the GHSA's own structured affected/fixed-version data,
+      its own linked GitHub release tags, AND GeoServer's own vendor release posts. If a prior pass or entry
+      cited "33.5"/"34.4" as the fixed GeoTools versions, that is the error to correct — the true fixed
+      versions are 33.6, 34.5, 35.1.
+
+      GHSA's Mitigation section, quoted VERBATIM IN FULL (note the section's own internal contradiction —
+      it says "No mitigation is available" and then immediately lists one): "### Mitigation\n\nNo mitigation
+      is available:\n\n* To limit scope of SQL Injection the PostGIS connection pool should be configured
+      with limited rights."
+
+      CVE status: CVE-2026-76904 IS now assigned (confirmed via the GHSA's own `aliases` field on OSV,
+      `"aliases": ["CVE-2026-76904"]`). GHSA-mqjf-5f49-2fjh itself was published/github_reviewed at
+      2026-08-21T20:25:41Z — SEVEN DAYS after the fixed versions actually shipped (2026-08-14). CWE-89 (SQL
+      Injection), severity CRITICAL, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H (no numeric base score
+      field returned by OSV, only the vector string).
+
+      Mechanism per the GHSA's own Summary: "An SQL Injection Vulnerability has been found when executing
+      OGC Filters with PostGIS DataStore implementation: jsonArrayContains function. Requires PostGIS 12 or
+      greater with a String or JSON field. For PostGIS 12 and greater jsonArrayContains(<column>, <pointer>,
+      <value>) function writes <value> into generated SQL without escaping." Affected package:
+      org.geotools.jdbc:gt-jdbc-postgis.
+
+      NCSC-CH's own timeline (its post history log, verbatim from the post's own metadata) shows a THREE-DAY
+      lag between GeoServer's actual fix (2026-08-14) and NCSC-CH catching up: the post was created
+      2026-08-14T08:17:21Z under the title "GeoServer: Potential Zero-Day SQL Injection" citing a
+      SecurityWeek report of ACTIVE EXPLOITATION OF AN UNPATCHED FLAW and stating "No patch is currently
+      available; organizations should monitor for a vendor fix" — even though GeoServer's own fixed releases
+      carry that SAME calendar date. NCSC-CH's post was then edited 2026-08-17T12:35:20Z ("Updated with
+      fixed versions") to append links to the three GeoServer releases and note the GHSA identifier. GeoServer's
+      own post explains the compressed timeline: "unfortunately the issue was subject to public disclosure
+      prior to our intended release schedule" — implying the emergency release on 2026-08-14 was itself a
+      forced-early response to the same public disclosure/exploitation wave NCSC-CH was reporting that day,
+      and GeoServer's own coordinated-disclosure plan did not survive contact with the leak.
+    region_nexus: "global open-source geospatial platform; NCSC-CH issued its own advisory and update — direct relevance to Swiss federal/cantonal GIS/geospatial-data infrastructure"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: ["CVE-2026-76904"]
+    techniques: ["T1190"]
+    affected_products: ["GeoServer", "GeoTools"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:<prior GeoServer jsonArrayContains entry — main agent to match by CVE/entity>"
+    evidence:
+      - quote: "GeoServer 3.0.1 is made in conjunction with GeoTools 35.1, and GeoWebCache 2.0.1."
+        attribution: "GeoServer project"
+        source_url: "https://geoserver.org/announcements/vulnerability/2026/08/14/geoserver-3-0-1-released.html"
+      - quote: "GeoServer 2.28.5 is made in conjunction with GeoTools 34.5, and GeoWebCache 1.28.5."
+        attribution: "GeoServer project"
+        source_url: "https://geoserver.org/announcements/vulnerability/2026/08/14/geoserver-2-28-5-released.html"
+      - quote: "GeoServer 2.27.6 is made in conjunction with GeoTools 33.6."
+        attribution: "GeoServer project"
+        source_url: "https://geoserver.org/announcements/vulnerability/2026/08/14/geoserver-2-27-6-released.html"
+      - quote: "No mitigation is available:\n\n* To limit scope of SQL Injection the PostGIS connection pool should be configured with limited rights."
+        attribution: "GitHub Security Advisory GHSA-mqjf-5f49-2fjh (GeoTools maintainers)"
+        source_url: "https://api.osv.dev/v1/vulns/GHSA-mqjf-5f49-2fjh"
+      - quote: "unfortunately the issue was subject to public disclosure prior to our intended release schedule"
+        attribution: "GeoServer project"
+        source_url: "https://geoserver.org/announcements/vulnerability/2026/08/14/geoserver-3-0-1-released.html"
+      - quote: "No patch is currently available; organizations should monitor for a vendor fix."
+        attribution: "NCSC-CH security-hub post 12844 (initial version, 2026-08-14)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12844"
+    extended_notes: |
+      This item is explicitly flagged as a CORRECTION per the task framing. The main agent should locate the
+      prior entry covering this GeoServer flaw and either issue an update_of correction fixing the GeoTools
+      33.5/34.4 → 33.6/34.5 version error (if that error was propagated from the GHSA's own prose) and/or the
+      "still unpatched" framing (if the prior entry did not yet reflect the 2026-08-14 fix). I could not
+      determine the prior entry's exact text from this scoped pass — match by CVE-2026-76904 / GHSA-mqjf-5f49-2fjh
+      or by the "GeoServer zero-day" framing in prior_coverage.json.
+    borderline: false
+
+  # =========================================================================
+  # 4. GitLab CVE-2026-19478 — exploitation delta
+  # =========================================================================
+  - title: "GitLab CVE-2026-19478 (CVSS 9.4) — unauthenticated GraphQL directive code injection; watchTowr's honeypots caught first exploitation attempts two days after the emergency patch, no confirmed successful compromise reported"
+    sources:
+      - { url: "https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/", publisher: "SecurityWeek", date: "2026-08-20", role: "primary" }
+      - { url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-4-released/", publisher: "GitLab (vendor patch-release notes)", date: "2026-08-17", role: "primary" }
+      - { url: "https://thehackernews.com/2026/08/gitlab-cve-2026-19478-comes-under.html", publisher: "The Hacker News", date: "2026-08-21", role: "corroborating" }
+    discovery_trace: "first seen at: assigned reading list, URL https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/ (no pivot needed for the exploitation-observation claim) → pivot: GitLab's own patch-release notes, URL https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-4-released/ (found via GitLab's docs site, not linked directly from the SecurityWeek article) → corroboration: The Hacker News, URL https://thehackernews.com/2026/08/gitlab-cve-2026-19478-comes-under.html"
+    summary: |
+      GitLab's own patch-release page (docs.gitlab.com, dated 2026-08-17) states this was an ad-hoc critical
+      patch (outside the normal twice-monthly Wednesday cadence) shipping versions 19.2.4, 19.1.6, 19.0.8,
+      18.11.11 for CE/EE. Two CVEs were fixed together:
+
+        - CVE-2026-19478 — "Code Injection issue via GraphQL directive impacts GitLab CE/EE" — GitLab's own
+          text: "GitLab has remediated an issue that under certain conditions could allow an unauthenticated
+          user to remotely modify or delete public projects and user data via a GraphQL directive." Impacted
+          versions (GitLab's own precise range): "all versions from 18.2 before 18.11.11, 19.0 before
+          19.0.8, 19.1 before 19.1.6, and 19.2 before 19.2.4." CVSS 9.4, vector
+          CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:H/A:H (GitLab's own scoring, linked to GitLab's own CVSS
+          calculator explainer). Reported via HackerOne by researcher "hiimguardian."
+        - CVE-2026-19650 — CSRF in the GraphQL multiplex query handler, same affected-version range, CVSS
+          7.1 (AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:H/A:L), reported by "kreep" via HackerOne. (Companion fix in the
+          same release; not the flaw under active exploitation per the sources below.)
+
+      Exploitation observation: watchTowr (attack-surface-management/offensive-research firm), per
+      SecurityWeek and The Hacker News (principal researcher Jake Knott quoted in both), reproduced the
+      vulnerability "within minutes of its disclosure" using only GitLab's own advisory text and the code
+      diff in the fix — no public PoC was available. WatchTowr's OWN HONEYPOT NETWORK then caught the FIRST
+      in-the-wild exploitation attempts on Wednesday 2026-08-19 — two calendar days after the 2026-08-17
+      patch. No watchTowr-authored blog post for this specific CVE was locatable (searched; only press
+      quotes found) — treat watchTowr's findings here as press-relayed rather than a fetched primary
+      write-up; SecurityWeek/THN quote the researcher directly and by name, which is the strongest available
+      substitute.
+
+      Distinguishing attempts from successful compromise: NEITHER source reports a confirmed successful
+      compromise distinct from probing — both frame the finding strictly as "in-the-wild exploitation
+      attempts against watchTowr's honeypots" / "probes," with the detection guidance itself confirming this
+      framing: "Organizations that haven't patched yet should hunt through web logs for requests containing
+      '@gl_introduced,' and look for signs of probes or attempted exploitation." No named victim organization
+      or confirmed data-loss incident is cited in either source.
+
+      Vulnerable surface: unauthenticated access to the `/api/graphql` endpoint on self-managed instances
+      with public repositories, via the `@gl_introduced` GraphQL directive. Impact per SecurityWeek/THN:
+      attacker can forge merge records (make an unreviewed change appear reviewed/signed-off), delete
+      repositories, rewrite project state, manipulate audit logs, and ban project maintainers — all via a
+      single unauthenticated HTTP request. No named threat-actor cluster; SecurityWeek attributes the
+      compressed disclosure-to-exploitation window generically to "AI-enabled attackers" as a trend
+      commentary, not a specific cluster.
+    region_nexus: "global (GitLab self-managed instances); relevant to any self-managed GitLab CE/EE with public repositories, including public-sector code-hosting"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, telco"
+    cves: ["CVE-2026-19478", "CVE-2026-19650"]
+    techniques: ["T1190"]
+    affected_products: ["GitLab Community Edition (CE)", "GitLab Enterprise Edition (EE)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:<prior GitLab CVE-2026-19478 disclosure entry, if one exists — main agent to match>"
+    evidence:
+      - quote: "GitLab has remediated an issue that under certain conditions could allow an unauthenticated user to remotely modify or delete public projects and user data via a GraphQL directive."
+        attribution: "GitLab (vendor patch-release notes)"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-4-released/"
+      - quote: "Impacted Versions: GitLab CE/EE: all versions from 18.2 before 18.11.11, 19.0 before 19.0.8, 19.1 before 19.1.6, and 19.2 before 19.2.4"
+        attribution: "GitLab (vendor patch-release notes)"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-4-released/"
+      - quote: "Whilst no public exploit code is available, WatchTowr was able to reproduce the vulnerability within minutes of its disclosure."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/"
+      - quote: "On Wednesday, WatchTowr warned that its honeypot network has already caught the first in-the-wild exploitation attempts."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/"
+      - quote: "Organizations that haven't patched yet should hunt through web logs for requests containing '@gl_introduced,' and look for signs of probes or attempted exploitation."
+        attribution: "watchTowr, via The Hacker News"
+        source_url: "https://thehackernews.com/2026/08/gitlab-cve-2026-19478-comes-under.html"
+    extended_notes: |
+      Detection concept for defenders: telemetry class = web/application access logs on the GraphQL
+      endpoint; concrete anchor = search access/app logs for POST requests to /api/graphql whose body
+      contains the literal string "@gl_introduced" from unauthenticated/unexpected source IPs, especially
+      against projects with public visibility. Hardening lever: restrict unauthenticated access to
+      /api/graphql or remove public-repository visibility on self-managed instances that cannot patch
+      immediately; GitLab.com/GitLab Dedicated were already patched and required no customer action per
+      GitLab's own notes.
+    borderline: false
+
+  # =========================================================================
+  # 5. VMware vCenter CVE-2026-59310 — KEV addition + attribution delta
+  # =========================================================================
+  - title: "VMware vCenter CVE-2026-59310 (path traversal, CVSS 9.8) added to CISA KEV — QUIRSO assesses with MODERATE CONFIDENCE a suspected China-nexus actor, same report also ties the campaign to a Babuk-derived ransomware payload"
+    sources:
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA KEV catalog (fetched via structured API)", date: "2026-08-18", role: "primary" }
+      - { url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017", publisher: "Broadcom/VMware PSIRT (VMSA-2026-0006 / VMSA-2026-0006.1)", date: "2026-07-29 (initial) / 2026-08-03 (revision .1)", role: "primary" }
+      - { url: "https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html", publisher: "The Hacker News, extensively quoting named QUIRSO researchers", date: "2026-08-24", role: "primary-by-quotation" }
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-59310", publisher: "NVD", date: "2026-08-19", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/critical-vmware-vcenter-rce-flaw-exploited-for-reverse-ssh-access/", publisher: "BleepingComputer", date: "2026-08-13", role: "corroborating (earlier reverse_ssh wave, pre-attribution)" }
+    discovery_trace: "first seen at: assigned reading list, structured fetch via `python3 tools/fetch_source.py cisa-kev`, citation URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog → pivot: Broadcom advisory named in the KEV record's own notes field, URL https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017 → pivot: The Hacker News roundup, URL https://thehackernews.com/2026/08/critical-macos-sharepoint-vcenter-and.html → primary: the roundup's own linked deep-dive article on this specific attribution, URL https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html → attempted further pivot to QUIRSO's own Medium primary (linked from that THN article) FAILED — see coverage_gaps."
+    summary: |
+      CISA KEV record (fetched fresh from the structured catalog): cveID CVE-2026-59310, vendorProject
+      Broadcom, product VMware vCenter, vulnerabilityName "Broadcom VMware vCenter Path Traversal
+      Vulnerability," dateAdded 2026-08-18, dueDate 2026-08-21 (an unusually short 3-day remediation window),
+      knownRansomwareCampaignUse "Unknown" (CISA's own KEV field — note this is CISA's formal designation,
+      distinct from the Babuk-derived-ransomware finding below which comes from a different party and had
+      not been folded into CISA's KEV field as of the dateAdded/fetch time), CWE-22 (Path Traversal).
+
+      Broadcom's own advisory (VMSA-2026-0006, initial publication 2026-07-29, revised to .1 on 2026-08-03
+      to add 8.0 U2f express patches) states, verbatim: "VMware vCenter contains a directory traversal
+      vulnerability in the Syslog server. Broadcom has evaluated the severity of this issue to be in the
+      Critical severity range with a maximum CVSSv3 base score of 9.8" (vector
+      CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H). "Known Attack Vectors: A malicious actor with network
+      access to vCenter may exploit this issue to execute arbitrary code." No workaround exists ("Workarounds:
+      None"). Fixed-version response matrix (Broadcom's own table, applies to BOTH CVE-2026-59309 [a
+      companion vCenter auth-bypass fixed in the same advisory] and CVE-2026-59310 together):
+        - vCenter 9.1.x.x → fixed in 9.1.0.0300 (cumulative; 9.1.0.0200 first addressed the companion
+          CVE-2026-59309, but 9.1.0.0300 is the current recommended build)
+        - vCenter 9.0.x.x → fixed in 9.0.2.0100
+        - vCenter 8.0 (U3 branch) → fixed in 8.0 U3k
+        - vCenter 8.0 (U2 branch) → fixed in 8.0 U2f (this express patch only became available 2026-08-03,
+          5 days after the initial 2026-07-29 advisory)
+      NVD's record confirms the same CVSS score/vector sourced verbatim from security@vmware.com (no
+      divergence) and additionally lists VMware Cloud Foundation (9.1.x.x/9.0.x.x/5.x), vSphere Foundation
+      (9.1.x.x/9.0.x.x), Telco Cloud Infrastructure (3.0), and Telco Cloud Platform (5.1.x/5.0.x/4.x/3.0) as
+      affected products beyond standalone vCenter — broadening the footprint for any org running VCF/vSphere
+      Foundation bundles rather than standalone vCenter.
+
+      Attribution delta: German incident-response company QUIRSO (researchers Maike Orlikowski, Çağatay
+      Yürekli, and Denis Szadkowski) is the SOLE source for both the China-nexus attribution and the Babuk
+      ransomware finding — they are the SAME PARTY's assessment, from the same investigation, published on
+      QUIRSO's own Medium blog (which I could not fetch directly — see coverage_gaps — but which is quoted
+      extensively and verbatim, with named individual researchers, by The Hacker News). QUIRSO's own stated
+      confidence language: "assessed with moderate confidence that the exploitation campaign aimed at
+      CVE-2026-59310 is operated by a Chinese-speaking threat actor, likely working in the UTC+08:00 time
+      zone." Their stated evidence basis (direct quote): "the convergence of Chinese-language artifacts in
+      attacker-created scripts, apparent reuse of research from a Chinese security publication, repeated
+      operational use of Chinese-language tools and management software, victimology excluding mainland
+      China, and activity patterns compatible with UTC+08:00 working hours." No actor codename assigned by
+      QUIRSO — treat as an unnamed, moderate-confidence attribution, single-source (no second research firm
+      corroborates the China-nexus claim in the sources I could reach).
+
+      Scale/timeline: activity began 5 calendar days after the 2026-07-29 disclosure; QUIRSO's team first
+      observed compromised systems contacting attacker infrastructure on 2026-08-03; 361 unique victim IPs
+      across 47 countries identified (Germany 55, US 41, Turkey 38, Iran 26, France 25 — the highest
+      counts). Mechanism chain per QUIRSO (via THN): the cron daemon (crond) logged a malformed cron file
+      named to mirror the CVE id and the vCSA syslog naming convention, placed under /etc/cron.d (a
+      privileged execution location) via abuse of the vCSA syslog server itself; at least one such file
+      executed and dropped a backdoor ("linuxFile," alias systemlog/linux_x86) that communicates over an
+      unencrypted WebSocket transport with its own application-layer crypto and XOR-obfuscated C2 address,
+      and persists via systemd + cron. The actor additionally: set cron jobs impersonating legitimate VMware
+      service names (vmware-vpxd-stats-*, vmware-perf-collect-*, vmware-perf-sync-*) to add SSH keys, drop a
+      JSP web shell ("vmware-perf-update.jsp"), and create new privileged accounts (including one added to
+      the vSphere SSO Administrators group); created a sudoers.d entry granting the "perfcharts" service
+      account unrestricted passwordless root sudo; harvested vmdir credentials via the registry or VMware's
+      own vmafd Python module (GetMachineName/GetMachinePassword/GetDomainName) to perform privileged
+      directory modifications; and used the vSphere API for discovery before deploying an architecture-
+      specific reverse_ssh binary via a shell-script downloader. On at least one analyzed system, the attack
+      culminated in ransomware on ESXi hosts encrypting files with the ".babyk" extension — "typically
+      associated with Babuk-derived ransomware" — which QUIRSO explicitly says may have been "selected
+      opportunistically or even intentionally to confuse attribution efforts," and which QUIRSO's own
+      researcher (Szadkowski) characterizes as more likely a smokescreen to destroy ESXi log telemetry than
+      the campaign's primary objective; QUIRSO states it "cannot assess at this stage if the ransomware
+      strain was deployed across other compromised systems" (single-system analysis).
+
+      Direct quote on root-cause severity: "Exploitation of CVE-2026-59310 provided the actor with
+      immediate, non-interactive code execution in a root context on the vCenter Server appliance ...
+      giving the actor unrestricted access to the underlying VCSA without first having to compromise an
+      unprivileged local account and escalate from it" — i.e. no privilege-escalation step was needed; the
+      path-traversal RCE itself lands as root.
+    region_nexus: "global; VMware vCenter/vSphere/VCF is widely deployed in Swiss/EU public-sector and critical-infrastructure virtualization estates"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, healthcare, finance, telco"
+    cves: ["CVE-2026-59310", "CVE-2026-59309"]
+    techniques: ["T1190", "T1136.001", "T1053.003", "T1136", "T1098", "T1005", "T1486", "T1070"]
+    affected_products: ["VMware vCenter Server", "VMware Cloud Foundation", "VMware vSphere Foundation", "VMware Telco Cloud Infrastructure", "VMware Telco Cloud Platform"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:babuk-derived-ransomware-vcenter-2026", type: malware, name: "Babuk-derived ransomware (VMware vCenter CVE-2026-59310 campaign)",
+          aliases: [".babyk extension"],
+          summary: "ESXi-host ransomware payload observed by QUIRSO on at least one system compromised via CVE-2026-59310; encrypts files with a '.babyk' extension typically associated with Babuk-derived ransomware lineages. QUIRSO assesses the deployment may be a smokescreen to destroy ESXi log telemetry rather than the campaign's primary objective (QUIRSO, via The Hacker News, 2026-08-24)." }
+    relation_suggestions:
+      - { subject: "malware:babuk-derived-ransomware-vcenter-2026", object: "vulnerability:CVE-2026-59310",
+          basis: "QUIRSO: 'the campaign has led to the deployment of a Babuk-derived ransomware' following exploitation of CVE-2026-59310 (The Hacker News quoting QUIRSO, 2026-08-24)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:<prior VMware vCenter CVE-2026-59310 KEV/exploitation entry, if one exists — main agent to match>"
+    evidence:
+      - quote: "Broadcom VMware vCenter contains a path traversal vulnerability which could allow a threat actor with network access to vCenter to execute arbitrary code."
+        attribution: "CISA KEV catalog"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+      - quote: "VMware vCenter contains a directory traversal vulnerability in the Syslog server. Broadcom has evaluated the severity of this issue to be in the Critical severity range with a maximum CVSSv3 base score of 9.8."
+        attribution: "Broadcom/VMware PSIRT (VMSA-2026-0006)"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017"
+      - quote: "German incident response company QUIRSO assessed with moderate confidence that the exploitation campaign aimed at CVE-2026-59310 is operated by a Chinese-speaking threat actor, likely working in the UTC+08:00 time zone, which is predominantly used in Chinese-speaking regions."
+        attribution: "QUIRSO, via The Hacker News"
+        source_url: "https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html"
+      - quote: "The attack ultimately paves the way for the deployment of a ransomware on ESXi hosts that encrypts files with the \".babyk\" extension, which is typically associated with Babuk-derived ransomware."
+        attribution: "QUIRSO, via The Hacker News"
+        source_url: "https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html"
+      - quote: "Exploitation of CVE-2026-59310 provided the actor with immediate, non-interactive code execution in a root context on the vCenter Server appliance."
+        attribution: "QUIRSO researchers, via The Hacker News"
+        source_url: "https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html"
+    extended_notes: |
+      Attribution discipline note for the composer: BOTH the China-nexus claim and the Babuk-ransomware
+      claim trace to the SAME single party (QUIRSO), from the SAME report — do not present them as two
+      independently corroborating findings. Phrase as "QUIRSO assesses..." throughout, not "researchers
+      confirm" or similar. I was unable to reach QUIRSO's own Medium posts directly (403 direct fetch,
+      jina reader pool exhausted per the task's standing note) so the load-bearing quotes above are
+      attributed to QUIRSO but sourced via The Hacker News's verbatim quotation of three named QUIRSO
+      researchers — this is a secondary relay of primary quotes, not an independent secondary assessment;
+      note this distinction in the entry's sourcing_note. QUIRSO also separately reported a related but
+      distinct authentication-bypass CVE (CVE-2026-59309) exploited on at least one of the same systems,
+      with QUIRSO stating explicitly "there is no overlap between this activity and the chain of events
+      involving the abuse of CVE-2026-59310 on the same system" — the two exploitation chains are
+      independent per QUIRSO, not a single combined kill chain.
+    borderline: false
+
+cve_table:
+  - { cve: "CVE-2026-77647", product: "SPIP", cvss: "9.8 (CNA, cve@mitre.org)", epss: null, kev: false, exploited: "vendor-observed (SPIP blog); CISA SSVC ADP records 'exploitation: none' as of 2026-08-21 — divergence flagged", patch: "4.4.20", source: "https://cveawg.mitre.org/api/cve/CVE-2026-77647" }
+  - { cve: "CVE-2026-48362", product: "Adobe ColdFusion 2025/2023", cvss: "10.0 (Adobe PSIRT; NVD mirrors verbatim)", epss: null, kev: false, exploited: "Adobe states not observed", patch: "ColdFusion 2025: 2025.0.12; ColdFusion 2023: 2023.0.23", source: "https://helpx.adobe.com/security/products/coldfusion/apsb26-90.html" }
+  - { cve: "CVE-2026-76904", product: "GeoServer / GeoTools (org.geotools.jdbc:gt-jdbc-postgis)", cvss: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, CRITICAL (GitHub-reviewed, no numeric base score field in OSV record)", epss: null, kev: false, exploited: "yes — SecurityWeek-reported active exploitation of unpatched instances beginning 2026-08-14, per NCSC-CH's initial post", patch: "GeoTools 35.1 / 34.5 / 33.6 (GeoServer 3.0.1 / 2.28.5 / 2.27.6) — NOT 33.5/34.4 as the GHSA's own prose incorrectly states", source: "https://api.osv.dev/v1/vulns/GHSA-mqjf-5f49-2fjh" }
+  - { cve: "CVE-2026-19478", product: "GitLab CE/EE", cvss: "9.4 (GitLab's own scoring, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:H/A:H)", epss: null, kev: false, exploited: "yes — watchTowr honeypot-observed exploitation attempts from 2026-08-19; no confirmed successful compromise distinct from probing", patch: "19.2.4 / 19.1.6 / 19.0.8 / 18.11.11", source: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-4-released/" }
+  - { cve: "CVE-2026-19650", product: "GitLab CE/EE", cvss: "7.1 (GitLab's own scoring, CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:H/A:L)", epss: null, kev: false, exploited: "not reported", patch: "19.2.4 / 19.1.6 / 19.0.8 / 18.11.11 (same release as CVE-2026-19478)", source: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-2-4-released/" }
+  - { cve: "CVE-2026-59310", product: "VMware vCenter / Cloud Foundation / vSphere Foundation / Telco Cloud Infrastructure & Platform", cvss: "9.8 (VMware/Broadcom PSIRT, security@vmware.com; NVD mirrors verbatim, no divergence)", epss: null, kev: true, exploited: "yes — QUIRSO-documented campaign, 361 victim IPs / 47 countries, suspected China-nexus actor (moderate confidence, QUIRSO), Babuk-derived ransomware on at least one system", patch: "vCenter 9.1.0.0300 / 9.0.2.0100 / 8.0 U3k / 8.0 U2f", source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017" }
+  - { cve: "CVE-2026-59309", product: "VMware vCenter", cvss: "not individually broken out in Broadcom's advisory (grouped with CVE-2026-59310 in the same response matrix; auth-bypass class)", epss: null, kev: false, exploited: "yes on at least one system per QUIRSO, but QUIRSO states no overlap with the CVE-2026-59310 chain on that system", patch: "vCenter 9.1.0.0300 (first addressed in 9.1.0.0200) / 9.0.2.0100 / 8.0 U3k / 8.0 U2f", source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017" }
+
+watchlist_sweep:
+  duty: none
+  note: "No watchlist_duty assigned for this scoped deep-read task; org profile also configures no product/supplier watchlists."
+
+candidate_sources:
+  - id: quirso-medium
+    publisher: "QUIRSO (German digital-forensics/incident-response firm, Medium blog @quirso_de)"
+    url: "https://medium.com/@quirso_de"
+    category: research
+    why: "Original primary research on the CVE-2026-59310 VMware vCenter exploitation campaign, including the China-nexus attribution and Babuk-derived-ransomware finding — quoted extensively and by name in The Hacker News but could not be fetched directly in this run (403 direct, jina pool exhausted). Medium.com generally may need a dedicated fetch recipe (its own anti-bot posture) if this publisher proves recurring."
+
+coverage_gaps:
+  - source_id: "lists.debian.org (Debian security-announce, msg00359 for SPIP CVE-2026-77647)"
+    reason: "Proof-of-work anti-bot JS challenge page returned instead of content; direct bridge fetch could not solve it. Not re-tried per the one-retry policy. Low material impact — the MITRE/NVD CVE record and both SPIP vendor bulletins already supply the load-bearing facts."
+  - source_id: "medium.com/@quirso_de (QUIRSO's own primary reports on CVE-2026-59310, two posts linked from The Hacker News)"
+    reason: "Direct fetch returned HTTP 403; jina reader pool fully exhausted (HTTP 402 on every rotated key, as the task's standing note anticipated). Covered anyway via The Hacker News's extensive verbatim, named-researcher quotation of the same report — treat as primary-by-quotation, not as an independently fetched primary."
+  - source_id: "cybersecuritynews.com/vmware-vcenter-path-traversal-vulnerability-exploited"
+    reason: "Direct fetch returned HTTP 202 with a 225-byte anti-bot interstitial body; jina reader pool exhausted. Covered anyway by infosecurity-magazine.com's independent write-up of the same QUIRSO/reverse_ssh material (2026-08-13 wave) plus The Hacker News's later China-nexus/Babuk deep-dive — no unique fact lost."
+  - source_id: "www.thehackerwire.com (SPIP CVE-2026-77647 write-up)"
+    reason: "Reachable (via bridge; direct WebFetch 403'd), but the site's own author byline discloses it is AI-generated ('THW AI Reporter... Reports are generated using structured AI analysis of publicly available vulnerability disclosures') and adds no fact beyond a paraphrase of the NVD/MITRE record already captured directly. Flagging for reliability purposes, not as an unreached source."

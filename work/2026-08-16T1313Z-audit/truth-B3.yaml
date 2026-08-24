@@ -1,0 +1,326 @@
+# Retrospective audit truth pass — batch B3
+# run: 2026-08-16T1313Z-audit · window 2026-08-09T13:15:57Z → 2026-08-16T13:15Z
+# 16 entries · ATT&CK ids checked mechanically against attack/enterprise-attack.json v19.2 (89 ids, all active)
+
+- entry: entries/2026-08-10/forescout-rockwell-plc-exposure-census-cellular-carrier-path.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    Forescout blog re-fetched. All six evidence quotes are verbatim: "Querying the Shodan search engine
+    on August 3, 2026 returns 4,407 devices exposing port 44818."; "The vast majority (65%) are located
+    in the U.S., followed by Canada (12%) and Spain (3%)."; "Although we cannot confirm these particular
+    assets were compromised in this campaign, they had some interesting characteristics"; "19 of the 22
+    hosts (86%) were on the same mobile carrier network, connected via cellular routers."; "Approximately
+    86% (19 of 22) hosts observed in the affected cities were susceptible to this CVE based on firmware
+    versions." referring to CVE-2017-16740; "Exploitation would require Modbus TCP to be enabled, which
+    was not confirmed."; "There is no confirmation of any CVE exploited in this campaign". The 2020-peak
+    decline is stated ("decreased 47% from a high of 7,814 devices in March 2020 to a low of 4,169 in
+    June 2026"). MicroLogix 1400 and 1100 are named (Forescout also names CompactLogix 1769 and
+    ControlLogix 5590; the entry's narrower affected_products list is a subset, not an error).
+    cves[] is empty, correctly — the entry declines to assert a status for CVE-2017-16740.
+    T1078.001 (Default Accounts) is active and matches the body's no-password/default-password finding.
+    The Nextgov quotes were not re-fetched inside the time cap.
+  ground_truth_url: https://www.forescout.com/blog/ot-security-analysis-exposed-devices-attacked-in-us-water-systems/
+
+- entry: entries/2026-08-10/natjack-nat-trust-assumption-attack-class-two-cves.md
+  verdict: factual-error
+  defect: >
+    The entry asserts "Two CVEs were assigned and both name the downstream-spoofing hijack specifically"
+    and that "the other three primitives carry no identifier and no vendor fix at all"; the primary
+    source natjack.io now lists THREE assigned CVEs, and the second primitive (TCP hijacking via
+    upstream spoofing) carries its own Microsoft identifier, CVE-2026-56179 — so both the count and the
+    "no identifier" characterisation of that primitive are wrong as the source now reads. The
+    sourcing_note compounds it by presenting the two-CVE mapping as taken from "the researcher's own
+    explicit statement". (Secondary, non-load-bearing: cves[] records cvss null for CVE-2026-63913
+    while the Linux CNA record carries CVSS 3.1 8.2.)
+  ground_truth: >
+    natjack.io CVE list, verbatim mapping: CVE-2026-56181 — Microsoft Windows NAT (Hyper-V), downstream
+    spoofing; CVE-2026-56179 — Microsoft Windows NAT (Hyper-V), UPSTREAM spoofing; CVE-2026-63913 —
+    Linux Kernel Netfilter, downstream-spoofing mitigation. CVE-2026-56179 is confirmed in the CVE
+    record: assigner microsoft, "Origin validation error in Windows Network Address Translation (NAT)
+    allows an unauthorized attacker to perform spoofing over an adjacent network.", CVSS 3.1 8.3
+    (AV:A/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:H), affecting Windows Server 2025 and Windows 11 24H2/25H2/26H1 —
+    i.e. the same product surface the entry already covers.
+    TIMING CAVEAT the auditor must weigh: CVE-2026-56179 was published 2026-08-11T17:07Z (August Patch
+    Tuesday), one day AFTER this entry's run (2026-08-10T0411Z); it may not have been on natjack.io at
+    compose time. Suggested remediation is a superseding UPDATE entry adding CVE-2026-56179, not a
+    retraction. Everything else verified clean: the five named primitives match the source's list
+    (downstream TCP hijack, upstream TCP hijack, UDP DNS hijack, victim IP/port disclosure, denial of
+    service); CVE-2026-56181 CVSS 8.3 and the Windows Server 2025 / Win11 24H2-26H1 range match
+    Microsoft's record exactly; "Linux 7.1 plus seven stable and long-term point releases" is exactly
+    right (5.10.259, 5.15.210, 6.1.176, 6.6.143, 6.12.93, 6.18.35, 7.0.12, plus 7.1); the
+    "every evaluated NAT implementation" claim matches "All tested routers and network infrastructure
+    devices performing any form of network address translation have been found to be vulnerable to some
+    or all of the NatJack attacks."; all four evidence quotes are verbatim (the "_not a complete fix_"
+    underscores in the source are a markdown-extraction artefact, not a quote mismatch).
+  ground_truth_url: https://natjack.io/
+
+- entry: entries/2026-08-10/linux-bridge-stp-timer-uaf-no-cve-public-exploit.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    No defect found, but note a verification limitation rather than a clean bill: ssd-disclosure.com
+    returned an HTTP 202 anti-bot interstitial (209 bytes) to a desktop-Chrome UA, and the
+    github.com/torvalds/linux commit could not be read via the GitHub API in this session, so the two
+    verbatim quotes could not be re-confirmed against their pages in this pass. Nothing in the entry
+    contradicts independently checkable facts: cves[] is correctly empty (no CVE id is claimed and none
+    exists for this bug), T1068 is active and matches the described local privilege-escalation primitive,
+    and the entry itself flags the privilege precondition and the backport status as its own assessment
+    and as unknown respectively — the two places where an unsupported claim would normally sit.
+  ground_truth_url: https://ssd-disclosure.com/linux-bridge-stp-timer-use-after-free/
+
+- entry: entries/2026-08-10/coding-agent-ci-harness-trust-boundary-shared-checkout.md
+  verdict: imprecision
+  defect: >
+    cves[] records `cvss: null` for CVE-2026-12537 while the entry's own cited authority — the OSV
+    record it names as the source of the alias and the affected ranges — carries a CVSS 10.0 severity
+    vector. A reader triaging by score gets nothing for the more severe of the entry's two CVEs.
+  ground_truth: >
+    OSV GHSA-wpqr-6v78-jr5g: aliases [CVE-2026-12537], published 2026-04-24, severity
+    CVSS_V3 "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H" (10.0); affected @google/gemini-cli fixed
+    0.39.1 and google-github-actions/run-gemini-cli fixed 0.1.22 — the ranges the entry states, exactly.
+    The Google Cloud CNA record scores it CVSS 4.0 10.0. Everything else verified: Anthropic advisory
+    GHSA-fg94-h982-f3mm (13 June 2026) assigns CVE-2026-54316 at CVSS 6.0, affected ">= 0.2.54,
+    < 2.1.163", patched 2.1.163 — matching the entry's frontmatter — and the huggingface.co evidence
+    quote is verbatim, confirming the entry's careful claim that the identifier belongs to the
+    bare-hostname allowlist round and not to the command-validator or path-check rounds.
+    T1195.002/T1552/T1567/T1059.004 are all active in v19.2. The Novee write-up itself was not
+    re-fetched inside the time cap.
+  ground_truth_url: https://api.osv.dev/v1/vulns/GHSA-wpqr-6v78-jr5g
+
+- entry: entries/2026-08-10/retelit-qilin-italian-telco-cloud-operator-public-sector.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    No defect found. Verification limitation to record: the Italian-language primaries (IrpiMedia,
+    Bismark.it) and Retelit's press-release index were not re-fetched inside the 45-minute cap, so the
+    eight Italian evidence quotes were not re-confirmed character-by-character in this pass. The entry
+    is structurally sound on the dimensions this pass can check: cves[] empty, no IOCs, T1078 and T1486
+    active and matched to the described credential-reuse and encryption steps, and the three claim tiers
+    (Retelit's right-of-reply, IrpiMedia's own examination of the dump, Qilin's leak-site claim) are
+    kept separate with the leak-site claim never treated as fact — the failure mode this class of entry
+    usually exhibits. classification B/1 with two independent publishers plus a first-party statement is
+    consistent with the corroboration shown.
+  ground_truth_url: https://irpimedia.irpi.eu/retelit-operatore-cloud-e-telecomunicazioni-attacco-informatico/
+
+- entry: entries/2026-08-11/gunra-raas-fortios-mfa-backdoor-linux-prng-recoverable.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    cisa.gov was unreachable on every rung this pass (bridge direct HTTP 403; jina reader HTTP 402 on
+    all seven pooled keys; WebFetch HTTP 403), so the five evidence quotes could not be re-confirmed
+    against the advisory page itself. Every load-bearing claim was instead corroborated against an
+    independent summary of the same advisory and against the KEV catalog, and none of it contradicts the
+    entry: AA26-222A, released 10 August 2026 by FBI, CISA, NSA, DC3, USSS and the Republic of Korea
+    National Police Agency; initial access via CVE-2024-55591 and CVE-2025-24472 (both confirmed in KEV,
+    added 2025-01-14 and 2025-03-18, both "Fortinet FortiOS and FortiProxy Authentication Bypass
+    Vulnerability" — the entry's auth-bypass typing and exploited status are right); the persistent
+    forticloud-sync super-user account with a hard-coded password; the VDI authentication-portal edit
+    making one attacker-chosen OTP always validate; the Linux srand(time(NULL)) key seeding permitting
+    reconstruction from file timestamps; .ENCRT (Windows) and .GNRA (Linux); ChaCha20 and RSA-4096;
+    Conti 2022 source-code lineage; the Golden Community alias; the January 2026 RaaS launch; the
+    22:00-06:00 activity window; and the government/utilities/healthcare/finance/transport/manufacturing
+    sector spread across the Americas, Europe, Middle East, Africa and Asia-Pacific. All 36 techniques[]
+    ids are active in v19.2. classification A/1 is defensible: six-agency advisory as primary, with the
+    Linux key-recovery weakness independently corroborated by the cited Breakglass research.
+  ground_truth_url: https://hard2bit.com/en/blog/gunra-ransomware-joint-advisory-vpn-mfa-backdoor/
+
+- entry: entries/2026-08-11/belgian-eid-connective-extension-pin-recovery-driveby-rce.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    Bay Area Labs write-up re-fetched ("8 out of 10 Banks in Belgium HATE This One Weird eID RCE",
+    James Arnott, 7 August 2026). All three evidence quotes verbatim. Confirmed: vendor Nitro Software
+    Belgium described as "a Qualified Trust Service Provider on the EU eIDAS Trusted List, the highest
+    trust tier the regulation defines"; the vendor-marketing deployment claim quoted as "8 of the 10
+    largest banks in Belgium and 60+ Belgian government agencies and departments"; "over 2 million
+    users, primarily in Belgium" confirmed by the researchers from the Chrome Web Store and Edge
+    listings; the 48-byte pinToken carrying both ciphertext and the AES-128 key with a hardcoded IV;
+    the `library` DLL parameter accepting relative paths; the remediation dates 2026-05-08 (partial),
+    2026-06-01 (complete), 2026-07-22 (origin checks enforced) and the "Fixed 146 days after the first
+    report" figure; and that NO CVE is mentioned anywhere — matching the entry's empty cves[] and its
+    statement that no identifier was located. T1189/T1129/T1056.002/T1111 all active and each names a
+    behaviour the body describes.
+  ground_truth_url: https://amibeingpwned.com/blog/8-in-10-banks-in-belgium
+
+- entry: entries/2026-08-11/cve-2026-65400-screensharingd-remote-root-two-preauth-bugs.md
+  verdict: imprecision
+  defect: >
+    cves[] carries `cvss: "7.1"` for CVE-2026-65400, and neither of this entry's two cited sources
+    states any CVSS at all — Calif does not score it and Huntress does not score it. Apple, the owning
+    vendor, publishes no score. The public authority score is NVD's 9.8. The 7.1 is inherited from the
+    2026-08-08 parent entry, where it was correctly attributed to NCSC-NL in the sourcing_note; this
+    update entry carries it forward with no attribution, and it now sits under a body whose entire
+    argument is that the flaw is pre-authentication remote ROOT — a severity the 7.1 understates and
+    the entry's own analysis contradicts.
+  ground_truth: >
+    NVD CVE-2026-65400: CVSS 3.1 9.8, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, source
+    nvd@nist.gov, published 2026-08-06. Apple's CNA record carries a description but no metrics:
+    "An authentication issue was addressed with improved state management. This issue is fixed in macOS
+    Sequoia 15.7.9, macOS Sonoma 14.8.9, macOS Tahoe 26.6.1." — which confirms the entry's affected/fixed
+    strings exactly, and independently supports Calif's "state machine desync" reading over the
+    stale-return attribution. Everything else verified clean: Calif (10 Aug 2026) states screensharingd
+    "runs as `root`, the account that can do anything" (backticks are a markdown artefact, not a quote
+    mismatch), the four-hour exploit build, "Where the first bug is a stale return value, the second is
+    a state machine desync.", @osxreverser credited with the first bug, and the ~40k exposed-host scan
+    ("around 40k open screen sharing hosts on the internet, almost half in the US, most are residential
+    IPs but there are many juicy hosts in Murican universities, some companies"). Huntress (7 Aug 2026)
+    states verbatim both of its quoted sentences, the RSA-SRP vs SRP authentication_type discriminator,
+    the Censys "tens of thousands of potentially vulnerable hosts" figure, and the same fixed versions.
+    The `verification: contradicted` value and the sourcing_note's handling of the two incompatible root
+    causes are accurate to what the two sources actually say.
+  ground_truth_url: https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-65400
+
+- entry: entries/2026-08-11/ceva-logistics-fulfilment-breach-ten-controllers-notified.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    TechCrunch (Zack Whittaker, 10 August 2026) re-fetched. Confirmed verbatim: "the agency has received
+    data breach reports from 10 organizations in relation to the incident." attributed to Mark Schenkel
+    of the Dutch data protection authority; the declined-questions clause "would not answer TechCrunch's
+    questions about the incident, such as if the company knows how much personal data was taken"; CEVA's
+    statement that on Aug. 1 it confirmed to affected customers a cyber intrusion impacting part of its
+    European contract logistics operations, "The operational impact is limited to eight warehouses. No
+    other CEVA systems globally were affected."; the named downstream parties ING, Bol, De Bijenkorf,
+    Ajax, Ace & Tate and Valve; Valve learning on August 7 and Ceva storing shipping and delivery
+    information for 90 days. Critically, TechCrunch names NO initial-access vector, malware family or
+    actor — exactly as the entry states, and consistent with its mapping of T1005 only and its refusal
+    to map an access technique.
+  ground_truth_url: https://techcrunch.com/2026/08/10/a-data-breach-at-shipping-giant-ceva-logistics-is-rippling-across-banks-retailers-steam-gamers-and-beyond/
+
+- entry: entries/2026-08-12/lazarus-operation-dream-job-cve-2026-68820-afd-fudmodule.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    Check Point Research (11 August 2026) re-fetched and confirms every load-bearing claim: "The campaign
+    is affiliated to DPRK-linked Lazarus group and its latest wave focuses on the defense sector in
+    Europe and India."; "successful targeting observed in Western Europe, including France and Germany";
+    the exploit "targets a distinct, previously undocumented vulnerability, actively being used in the
+    wild"; the explicit separation from the superficially similar CVE-2025-60719; the 2024 precedent
+    CVE-2024-38193 in the same afd.sys driver; FudModule v3.1 with 94 ETW GUIDs matching the first 94 of
+    Gen's list in identical order; the disclosure timeline 28 July reported / 31 July confirmed / 5
+    August CVE assigned / 11 August fixed; MISTPEN, ForestTiger, Troy and RelayShell; Roundcube reached
+    via CVE-2025-49113; builds 26100 and 26200; and "It is important to note that the attacker only
+    impersonates Enveil, and there are no indications that the company was targeted or compromised." —
+    the entry's careful non-victim framing of Enveil. Microsoft's CVE record confirms the fourth evidence
+    quote verbatim ("Use after free in Windows Ancillary Function Driver for WinSock allows an authorized
+    attacker to elevate privileges locally."), CVSS 7.0 (AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H), published
+    2026-08-11. KEV confirms CVE-2026-68820 added 2026-08-11 (CWE-416) and CVE-2025-49113 added
+    2026-02-20. Rapid7 confirms the 7.0-because-of-the-race framing. All 18 techniques[] ids active.
+  ground_truth_url: https://research.checkpoint.com/2026/shattering-the-dream-when-a-job-offer-becomes-a-zero-day-attack/
+
+- entry: entries/2026-08-12/sap-august-2026-cve-2026-58231-commerce-cloud-data-hub-rce.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    Both the SAP Security Patch Day page and the Onapsis blog re-fetched; all six cves[] records match
+    their per-note authority exactly. SAP's own table: Note 3771065 "Improper Authorization in SAP
+    Commerce Cloud (Data Hub Adapter)" CVE-2026-58231 CVSS 10.0 Critical; Note 3765948 "Code Injection
+    vulnerability in SAP Manufacturing Integration and Intelligence" CVE-2026-44772 CVSS 9.9 Critical;
+    Note 3758900 CVE-2026-44758 CVSS 9.1; Note 3714806 "Memory Corruption vulnerability in Application
+    Server ABAP" CVE-2026-34265 CVSS 9.8 with the kernel list KRNL64NUC 7.22 … KERNEL … 9.19 reproduced
+    verbatim in the entry; Note 3772411 "Privilege Escalation vulnerability in SAP ABAP Developer Tools"
+    CVE-2026-58243 CVSS 8.8 High; Note 3773203 "Potential buffer overflow vulnerability affects SAP
+    Commerce Cloud in public-cloud deployments with NGINX" CVE-2026-42945 CVSS 8.1 High — the entry's
+    "buffer overflow affecting Commerce Cloud public-cloud deployments fronted by NGINX" is SAP's own
+    note title. SAP's count of 28 new notes + 1 GitHub security advisory + 2 updates matches the entry;
+    Onapsis's divergent count of 33 notes / 5 HotNews / 9 High Priority matches too, and the entry
+    correctly attributes each count to its own publisher. Both evidence quotes are verbatim in Onapsis.
+    Two upstream oddities worth logging but NOT entry defects: CVE-2026-44772 does not yet resolve in the
+    CVE Services API (CVE_RECORD_DNE) or NVD — a CNA publication lag; and CVE-2026-42945 is assigned by
+    F5 for the NGINX ngx_http_rewrite_module (CVSS 3.1 8.1, matching the entry), redistributed by SAP in
+    note 3773203, which is why the CVE record names NGINX rather than Commerce Cloud.
+  ground_truth_url: https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html
+
+- entry: entries/2026-08-12/cve-2026-20349-cisco-asa-ftd-ssl-vpn-dos-exploited.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    Cisco advisory cisco-sa-asaftd-vpn-dos-dzv4mQFF re-fetched, published 2026 August 11 16:39 GMT —
+    matching the entry's unusual time-of-day detail. CVSS 8.6, vector CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/
+    C:N/I:N/A:H, CWE-244, SIR High — all four reproduced correctly in the entry. Affected trains from
+    the Fixed Software tables: ASA 9.16, 9.18, 9.20, 9.22, 9.23, 9.24 and FTD 7.0, 7.2, 7.4, 7.6, 7.7,
+    10.0 — the entry's list is exact (the CVE record's enumerated version list additionally contains
+    ASA 9.19 and FTD 7.3 builds, but the advisory's own remediation tables are what the entry follows).
+    Hot-fix releases 89.16.4.50, 89.18.4.50, 9.20.4.235, 9.22.3.191, 9.23.1.211, 9.24.1.221 match
+    character-for-character. The three enabling configurations and their CLI forms match; FMC confirmed
+    not affected; the ASDM 7.24.1.374 note matches. Both evidence quotes verbatim. KEV confirms
+    CVE-2026-20349 added 2026-08-11 with dueDate 2026-08-14 and cwes ["CWE-244"] — the entry's
+    "14 August deadline" and "heap-inspection weakness" are both right.
+  ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-asaftd-vpn-dos-dzv4mQFF
+
+- entry: entries/2026-08-12/cve-2026-72898-metabase-sqli-cve-assigned-kev.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    GHSA-vwf4-m7j8-wcjf re-fetched (6 August 2026): CVE-2026-72898, CVSS 10.0, vector
+    CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H. Affected ranges ≥0.58.0 <0.58.23, ≥0.59.0 <0.59.20,
+    ≥0.60.0 <0.60.16, ≥0.61.0 <0.61.10, ≥0.62.0 <0.62.8, ≥0.63.0 <0.63.3 and patched versions 0.58.24,
+    0.59.21, 0.60.17, 0.61.11, 0.62.9, 0.63.5 — the entry's x.NN notation maps these exactly, and its
+    observation that the affected upper bounds and the patched versions do not meet is correct and is a
+    real property of the advisory, not an invention. Both evidence quotes are verbatim. KEV confirms
+    dateAdded 2026-08-11 with dueDate 2026-08-14. One wording nicety, below the defect bar: the CVE was
+    assigned by the CISA CNA-of-last-resort (assignerShortName cisa-cg, 2026-08-10) and is carried on the
+    GHSA, so "GitHub Security Advisory … assigns CVE-2026-72898" describes where the id is published
+    rather than who allocated it.
+  ground_truth_url: https://github.com/metabase/metabase/security/advisories/GHSA-vwf4-m7j8-wcjf
+
+- entry: entries/2026-08-12/shieldbreak-defender-rogueplanet-patch-bypass-no-fix.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    Cyber Kendra and Rapid7 both re-fetched. Verbatim in Cyber Kendra: "ShieldBreak is listed with a 100
+    percent success rate."; "No patch exists for ShieldBreak, and no vendor has reproduced it publicly
+    yet."; "ShieldBreak is now listed as tested on Windows Server 2025, alongside Windows 11 25H2 and the
+    Canary channel."; "ThreatLocker found that application allowlisting blocked RoguePlanet by default,
+    the strongest control available for this bug class."; "Analysts who dissected RoguePlanet in June
+    described an attack chain built on NTFS junctions, opportunistic locks, and the Windows Error
+    Reporting QueueReporting scheduled task."; and the engine build 1.1.26060.3008 shipped on July 9.
+    Rapid7 verbatim: "Nightmare Eclipse describes ShieldBreak as a full patch bypass for RoguePlanet, a
+    previous entry in the series which Microsoft patched as CVE-2026-50656 during July, a month after its
+    public disclosure." and the late-on-Patch-Tuesday pattern. The three-CVE track record is
+    independently true, not just reported: KEV carries CVE-2026-33825 (added 2026-04-22),
+    CVE-2026-41091 (2026-05-20) and CVE-2026-45498 (2026-05-20). Microsoft's CVE record for
+    CVE-2026-50656 confirms CVSS 7.8, the RoguePlanet public name, and affected Malware Protection
+    Engine 1.1.0.0 up to 1.1.26060.3008 — matching the entry's affected/fixed strings. classification
+    B/2 with confidence medium is the right calibration for researcher-only claims.
+  ground_truth_url: https://www.cyberkendra.com/2026/08/shieldbreak-poc-bypasses-microsofts.html
+
+- entry: entries/2026-08-12/cve-2026-62832-legacyhive-user-profile-service-patched.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    Microsoft's CVE record confirms the first evidence quote verbatim — "Improper link resolution before
+    file access ('link following') in Windows User Profile Service allows an authorized attacker to
+    elevate privileges locally." — with CVSS 3.1 7.8, vector AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H,
+    published 2026-08-11; both match the entry's frontmatter and body. The CVE is correctly recorded as
+    NOT in KEV (confirmed against the catalog), consistent with the entry's "not exploited" framing.
+    Rapid7 confirms the second evidence quote verbatim: "Between the public disclosure and the FAQ, which
+    describes an authenticated attacker who has credentials for another account and loads another user's
+    registry hive, the advisory is a solid match for Nightmare Eclipse's description of LegacyHive" — and
+    the entry's careful attribution of the LegacyHive identification to Rapid7 rather than to Microsoft
+    is exactly right. T1068/T1112/T1548 are all active and each names a behaviour the body describes.
+    The 0patch analysis was not re-fetched inside the time cap; empty actions[] is correct for an update
+    whose remediation arrives in the ordinary Patch Tuesday cycle.
+  ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-62832
+
+- entry: entries/2026-08-12/n-able-n-central-storm-1175-stormencryptor.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    The Record (Alexander Martin, 10 August 2026) re-fetched. Both evidence quotes verbatim: "the
+    Storm-1175 group began deploying a new ransomware strain on August 2 called StormEncryptor" and
+    "Microsoft has not formally confirmed the access vector, but noted that StormEncryptor deployments
+    began the same day the flaw was disclosed". Also confirmed: Storm-1175 described as China-linked and
+    financially motivated; CVE-2026-18577; N-able detecting the flaw in a zero-day attack on July 31 with
+    emergency hotfixes on August 2 and August 6; Huntress finding "more than half of reachable N-central
+    cloud servers across its partner base were still unpatched, with 28.6% of self-hosted instances
+    remaining exposed" — the entry's two figures exactly; the Kaseya comparison "60 of Kaseya's direct
+    customers before subsequently hitting around 1,500 downstream businesses"; and the 2024 ScreenConnect
+    targeting. The fixed build 2026.3.1.10 (Hotfix 2) traces to N-able's own status-page advisory via the
+    2026-08-09 parent entry; the CVE record's "2026.3.1.7 unaffected" reflects Hotfix 1 and is superseded
+    by the vendor's later Hotfix 2 requirement, which is precisely the delta the parent entry carried.
+    KEV confirms CVE-2026-18577 added 2026-08-03. verification: single-source with a sourcing_note
+    naming Microsoft as the originating assessor and the other outlets as additional publishers of one
+    assessment is the correct call, and classification B/2 matches it.
+  ground_truth_url: https://therecord.media/china-hackers-ransomware-microsoft

@@ -1,0 +1,524 @@
+domain: G4
+run_id: 2026-08-24T0902Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-24T09:06:27Z
+ended_at: 2026-08-24T09:20:45Z
+duration_seconds: 858
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 9
+  bridge_fetches: 22
+
+items:
+  - title: "SPIP CMS: a universal pre-auth RCE, unpatched by SPIP's own security screen, actively exploited within days of the 4.4.20 fix (CVE-2026-77647)"
+    sources:
+      - { url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-20.html?lang=fr", publisher: "SPIP project (vendor blog)", date: "2026-08-17", role: primary }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/", publisher: "CERT-FR / ANSSI", date: "2026-08-21", role: primary }
+      - { url: "https://www.thehackerwire.com/spip-unauthenticated-rce-cve-2026-77647/", publisher: "TheHackerWire", date: "2026-08-20", role: corroborating }
+    discovery_trace: >
+      first seen at: cert-fr (anssi-fr source-id), URL https://www.cert.ssi.gouv.fr/avis/feed/ (avis-recent listing,
+      "Vulnérabilité dans SPIP (21 août 2026)") → pivot: CERT-FR advisory detail, URL
+      https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/ (confirms "L'éditeur indique que cette vulnérabilité
+      est activement exploitée") → pivot: WebSearch ("SPIP CMS vulnerability actively exploited August 2026 RCE CVE")
+      → TheHackerWire, URL https://www.thehackerwire.com/spip-unauthenticated-rce-cve-2026-77647/ → pivot: WebSearch
+      ("SPIP.net sécurité 4.4.20 correctif faille critique exécution code") → primary: SPIP project's own blog, URL
+      https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-20.html?lang=fr
+    summary: |
+      SPIP, the PHP CMS used extensively by French government agencies, municipalities, media and francophone
+      institutions (including francophone Swiss sites), shipped 4.4.20 on 2026-08-17 to fix a universal,
+      no-precondition, pre-authentication remote code execution flaw that affects every SPIP version and is
+      NOT caught by SPIP's built-in "écran de sécurité" (security screen) protection layer. The bug was reported
+      anonymously through ANSSI's vulnerability-declaration channel. Root cause per aggregator reporting tracking
+      the CVE (TheHackerWire, corroborating the vendor's own severity language): incorrect identification of
+      <?php blocks combined with a mishandling in var_export() of input containing a literal '<' character lets
+      attacker-controlled data escape its intended context and be interpreted as executable PHP, yielding
+      unauthenticated RCE. SPIP's own release note states plainly that exploitation attempts have already been
+      observed in the wild ("des tentatives d'exploitation de la faille ont déjà été constatées dans la nature").
+      CERT-FR published its own advisory on 2026-08-21 (four days after the fix) explicitly stating the publisher
+      reports active exploitation. No version range is excluded — every branch is affected; upgrade to 4.4.20 is
+      the only remediation, there is no workaround since the flaw bypasses the product's own security-screen
+      mitigation layer.
+    region_nexus: "France (home authority ANSSI/CERT-FR); francophone Switzerland and Belgium plausibly exposed given SPIP's regional public-sector/media footprint"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, media"
+    cves: [CVE-2026-77647]
+    techniques: [T1190]
+    affected_products: ["SPIP CMS"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Cette version corrige une vulnérabilité universelle (sans conditions) pré-authentification RCE qui touche toutes les versions de SPIP."
+        attribution: "SPIP project"
+        source_url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-20.html?lang=fr"
+      - quote: "Il est impératif de mettre très rapidement votre site à jour, des tentatives d'exploitation de la faille ont déjà été constatées dans la nature."
+        attribution: "SPIP project"
+        source_url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-20.html?lang=fr"
+      - quote: "Cette faille n'est pas prise en charge par l'écran de sécurité."
+        attribution: "SPIP project"
+        source_url: "https://blog.spip.net/Mise-a-jour-critique-de-securite-sortie-de-SPIP-4-4-20.html?lang=fr"
+      - quote: "L'éditeur indique que cette vulnérabilité est activement exploitée."
+        attribution: "CERT-FR / ANSSI"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/"
+    extended_notes: |
+      This is a genuine gap in the audit window: not present anywhere in prior_coverage.json for 2026-08-16 to
+      2026-08-24 despite two independent A-reliability primaries (SPIP itself, CERT-FR) and clean corroboration.
+      SPIP's install base in Swiss francophone cantonal/communal sites is plausible but unverified this run —
+      worth a targeted watchlist note for that constituency.
+
+  - title: "Cisco Crosswork and Secure Workload: nine CVEs from an internal security review, four at CVSS 10.0/9.9 unauthenticated"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh", publisher: "Cisco PSIRT", date: "2026-08-19", role: primary }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP", publisher: "Cisco PSIRT", date: "2026-08-19", role: primary }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0323", publisher: "NCSC-NL", date: "2026-08-21", role: corroborating }
+    discovery_trace: >
+      first seen at: ncsc-ch-security-hub (bridge ncsc-csh recent), citation URL
+      https://security-hub.ncsc.admin.ch/#/posts/12867 ("[Advisory] Cisco: Multiple Critical Vulnerabilities in
+      Crosswork and Secure Workload", 2026-08-21) → pivot: Cisco PSIRT advisory, URL
+      https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh
+      → pivot: companion Cisco PSIRT advisory, URL
+      https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP
+      → cross-checked against the Cisco PSIRT RSS feed (advance-notification digest for 2026-08-19) and against
+      NCSC-NL's own advisory NCSC-2026-0323, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0323
+    summary: |
+      Cisco published two software-hardening advisories on 2026-08-19, both the product of internal security
+      reviews rather than external reports. Crosswork Data Gateway, Network Controller, Planning and Workflow
+      Manager (all ≤ 7.2.1 / ≤ 2.1.1) carry CVE-2026-20030 (SQL injection, CWE-89, CVSS 10.0), CVE-2026-20357
+      (missing authentication for a critical function, CWE-306, CVSS 10.0), CVE-2026-20358 (external control of
+      file system, CWE-73, CVSS 10.0) and CVE-2026-20359 (insufficiently protected credentials, CWE-522, CVSS
+      9.9) — network-reachable, no authentication or user interaction required per Cisco's own CVSS vectors.
+      Secure Workload (SaaS and on-premises, ≤ 3.10.9.1 / ≤ 4.0.4.16) carries five companion CVEs
+      (CVE-2026-20231 CWE-74 injection CVSS 9.9; CVE-2026-20315 CWE-284 improper access control CVSS 10.0;
+      CVE-2026-20317 CWE-287 improper authentication CVSS 10.0; CVE-2026-20318 CWE-20 path traversal CVSS 9.6;
+      CVE-2026-20319 CWE-119 buffer overflow CVSS 7.5). Cisco states none of these nine flaws is known to be
+      exploited and there are no workarounds — upgrade is the only remediation. The same 2026-08-19 PSIRT batch
+      also shipped a lower-severity Cisco BroadWorks blind XXE (CVE-2026-20320, CVSS 7.5, unauthenticated
+      configuration-file disclosure via the OCI-P provisioning interface) plus Medium-rated Unified Intelligence
+      Center SQLi, RoomOS stack overflow and Industrial Ethernet 1000 XSS/DoS items — all authenticated or
+      requiring physical access, so this entry's operational urgency rests on the two Critical hardening
+      releases.
+    region_nexus: "global; Crosswork/Secure Workload are enterprise network-orchestration and microsegmentation platforms deployed across telco and large-enterprise networks including EU/CH operators"
+    primary_sector_nexus: "indirect"
+    sector: "telco, finance, energy"
+    cves: [CVE-2026-20030, CVE-2026-20357, CVE-2026-20358, CVE-2026-20359, CVE-2026-20231, CVE-2026-20315, CVE-2026-20317, CVE-2026-20318, CVE-2026-20319, CVE-2026-20320]
+    techniques: [T1190]
+    affected_products: ["Cisco Crosswork Data Gateway", "Cisco Crosswork Network Controller", "Cisco Crosswork Planning", "Cisco Crosswork Workflow Manager", "Cisco Secure Workload", "Cisco BroadWorks"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "These vulnerabilities were found during internal testing and are not known to be actively exploited."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh"
+      - quote: "There are no workarounds that address these vulnerabilities."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP"
+    extended_notes: |
+      Genuine gap: neither advisory nor any of the nine CVEs appears in prior_coverage.json for the audit window.
+      Reachable via ncsc-ch-security-hub, an essential-tier source that DID carry this in-window (post 12867,
+      created 2026-08-21) — the miss looks like a research-pass gap rather than a source-availability gap.
+
+  - title: "Splunk Enterprise August 2026 Security Hardening Release: 55 CVEs including an unauthenticated embedded-report session-hijack path and a privileged SPL-to-full-system-credential-store escalation"
+    sources:
+      - { url: "https://advisory.splunk.com/advisories/SVD-2026-0801", publisher: "Splunk (vendor PSIRT)", date: "2026-08-19", role: primary }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1056/", publisher: "CERT-FR / ANSSI", date: "2026-08-20", role: corroborating }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0322", publisher: "NCSC-NL", date: "2026-08-21", role: corroborating }
+    discovery_trace: >
+      first seen at: advisories-ncsc-nl (RSS feed https://advisories.ncsc.nl/rss/advisories), item "NCSC-2026-0322
+      ... Kwetsbaarheden verholpen in Splunk Enterprise" (2026-08-21) → cross-checked against cert-fr avis-recent
+      listing, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1056/ ("Multiples vulnérabilités dans les
+      produits Splunk", 2026-08-20) → pivot: WebSearch ("Splunk Enterprise security advisory August 2026 10.4.2
+      10.2.6 10.0.9 9.4.14 CVE") → primary: Splunk's own advisory, URL
+      https://advisory.splunk.com/advisories/SVD-2026-0801
+    summary: |
+      Splunk published its August 2026 Security Hardening Release (SVD-2026-0801) on 2026-08-19, patching 55 CVEs
+      (CVE-2026-76251 through CVE-2026-76355) across Splunk Enterprise 10.4.0-10.4.1, 10.2.0-10.2.5,
+      10.0.0-10.0.8 and 9.4.0-9.4.13, plus Splunk Secure Gateway; fixed in 10.4.2, 10.2.6, 10.0.9 and 9.4.14.
+      The most severe class (CVSS 9.4, CVE-2026-76310/-76311/-76312) is an improper-access-control chain in the
+      Embedded Reports feature: Splunk's own advisory states an unauthenticated user who holds an embedded-report
+      token can download the report's search-job dispatch archive via the REST API, recover session material from
+      it, and use that material to access everything the report owner can see — the embedded-report access model
+      never restricted the REST dispatch-archive download path. A second high-value class requires only the
+      widely-granted schedule_search role capability: a user with that capability can run arbitrary SPL commands
+      at the highest system privilege level and read every credential in Splunk's credential store, a privilege
+      jump from a routine scheduling permission to full system and credential-store compromise. Separately, a
+      companion advisory (SVD-2026-0802, referenced in the same release) remediates 33 third-party-package CVEs
+      via Go and golang-grpc upgrades. No exploitation is reported for either flaw class.
+    region_nexus: "global; Splunk is widely deployed as SIEM/log-management tooling inside the constituency's own SOC and IT estates"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, energy, healthcare, telco"
+    cves: [CVE-2026-76310, CVE-2026-76311, CVE-2026-76312]
+    techniques: [T1190, T1068]
+    affected_products: ["Splunk Enterprise", "Splunk Secure Gateway"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An unauthenticated user who has an embedded report token could download the associated search job dispatch archive, recover session material, and use it to access all relevant data available to the report owner."
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-0801"
+      - quote: "Upgrade Splunk Enterprise to versions 10.4.2, 10.2.6, 10.0.9, and 9.4.14, or higher."
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-0801"
+    extended_notes: |
+      Genuine gap: neither SVD-2026-0801 nor any of its CVEs appears in prior_coverage.json for the window,
+      despite CERT-FR (avis-recent, essential-tier) and NCSC-NL both carrying it in-window. Distinct from the
+      already-covered June 2026 KEV entry CVE-2026-20253 (unrelated PostgreSQL-sidecar pre-auth RCE, patched
+      months earlier) — do not conflate the two Splunk stories.
+
+  - title: "UPDATE — CVE-2026-59310 (VMware vCenter Syslog traversal): CISA adds it to KEV, and Microsoft/Unit 42 reporting on the same day names a suspected China-nexus APT deploying Babuk-derived ransomware alongside the reverse_ssh backdoor"
+    sources:
+      - { url: "https://thehackernews.com/2026/08/critical-macos-sharepoint-vcenter-and.html", publisher: "The Hacker News", date: "2026-08-19", role: primary }
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA KEV Catalog", date: "2026-08-18", role: primary }
+    discovery_trace: >
+      first seen at: cisa-kev (bridge `cisa-kev`), catalogVersion 2026.08.21, entry CVE-2026-59310 dateAdded
+      2026-08-18 → pivot: WebSearch ("CVE-2026-59310 CISA KEV added August 18 2026 remediation deadline") →
+      primary: The Hacker News, URL https://thehackernews.com/2026/08/critical-macos-sharepoint-vcenter-and.html
+      (2026-08-19, covering all four 2026-08-18 KEV additions in one piece) → cross-checked against
+      https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+    summary: |
+      This pipeline already covered CVE-2026-59310 (VMware vCenter Syslog-server directory traversal, CVSS 9.8)
+      as actively exploited on 2026-08-13, citing QUIRSO's 361-victim-IP telemetry and NCSC-CH's 12 August
+      exploited-status flip. The material in-window delta: CISA added the CVE to its KEV catalog on 2026-08-18
+      (FCEB remediation deadline 2026-08-21), and The Hacker News' 2026-08-19 roundup of that day's four KEV
+      additions carries an attribution this pipeline had not yet recorded — the vCenter exploitation is assessed
+      by reporting citing Unit 42 as the work of a suspected China-nexus APT actor that deploys a backdoor along
+      with reverse_ssh binaries, with geographic concentration in Germany, the US, Turkey, Iran and France
+      (matching QUIRSO's original 47-country/361-IP figures). No CVE naming authority or research lab has issued
+      a named cluster designation for this activity in any source fetched this run — the attribution should be
+      carried as "suspected China-nexus APT" (unnamed), not upgraded to a tracked designation.
+    region_nexus: "global; concentrated in DE/US/TR/IR/FR per the cited telemetry, but any internet-reachable unpatched vCenter remains exposed"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, energy, healthcare, telco"
+    cves: [CVE-2026-59310]
+    techniques: [T1190, T1572, T1486]
+    affected_products: ["VMware vCenter Server"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-13/cve-2026-59310-vcenter-syslog-traversal-confirmed-exploited"
+    evidence:
+      - quote: "The vulnerability affecting VMware vCenter is assessed to have been exploited by a suspected China-nexus advanced persistent threat (APT) actor to deploy a backdoor along with reverse_ssh binaries."
+        attribution: "The Hacker News (citing Unit 42-sourced reporting)"
+        source_url: "https://thehackernews.com/2026/08/critical-macos-sharepoint-vcenter-and.html"
+    extended_notes: |
+      Attribution provenance is thin — this run could not reach the underlying Unit 42 write-up directly (not in
+      the G4 slice); the claim is carried through The Hacker News' aggregation. Treat the "China-nexus" and
+      "Babuk-derived ransomware" elements as attributed claims requiring the main agent's own verification pass
+      against the primary Unit 42 (or equivalent) report before publication, per PD-1/fake-news discipline.
+      Bundled in the same Hacker News piece (not separately gap-checked this run since already covered): the
+      CVE-2026-65400 macOS Screen Sharing Monero-miner item and CVE-2026-55040 SharePoint item are both already
+      in prior_coverage; CVE-2026-33824 (Microsoft IKEEXT) is also covered — the same piece additionally
+      attributes its exploitation to "another Chinese-speaking threat actor" running an autonomous
+      DeepSeek-enabled hacking campaign per Palo Alto Networks Unit 42 — worth the main agent checking whether
+      the existing CVE-2026-33824 entry already carries this attribution nuance.
+
+  - title: "UPDATE — CVE-2026-19478 (GitLab GraphQL unauthenticated data-destruction flaw): WatchTowr's honeypot catches in-the-wild exploitation attempts within 48 hours of the patch"
+    sources:
+      - { url: "https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/", publisher: "SecurityWeek", date: "2026-08-20", role: primary }
+    discovery_trace: >
+      first seen at: ncsc-ch-security-hub (bridge ncsc-csh recent), citation URL
+      https://security-hub.ncsc.admin.ch/#/posts/12856 (post edited 2026-08-21, "Updated with claims of active
+      exploitation") → pivot: SecurityWeek, URL
+      https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/
+    summary: |
+      This pipeline's existing entry for CVE-2026-19478 (2026-08-19) recorded "no exploitation is reported by any
+      party" as of GitLab's 2026-08-17 out-of-band patch. That has changed: SecurityWeek reported on 2026-08-20
+      that watchTowr's honeypot network caught the first in-the-wild exploitation attempts against
+      CVE-2026-19478 by 2026-08-19 — roughly two days after disclosure — noting watchTowr itself reproduced the
+      vulnerability from the advisory and patch diff alone, without public exploit code, "within minutes."
+      Switzerland's NCSC-CH updated its own advisory on 2026-08-21 to reflect the same claim, citing the same
+      SecurityWeek article. No exploit payload, victim count or actor attribution is given — the claim is
+      "attempted exploitation observed by one honeypot operator," not confirmed compromise.
+    region_nexus: "global; self-managed GitLab CE/EE instances (GitLab.com and GitLab Dedicated were already patched at disclosure)"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-19478]
+    techniques: [T1190, T1485]
+    affected_products: ["GitLab Community Edition", "GitLab Enterprise Edition"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-19/cve-2026-19478-gitlab-graphql-unauth-data-destruction"
+    evidence:
+      - quote: "On Wednesday, WatchTowr warned that its honeypot network has already caught the first in-the-wild exploitation attempts targeting CVE-2026-19478."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/"
+      - quote: "Whilst no public exploit code is available, WatchTowr was able to reproduce the vulnerability within minutes of its disclosure, armed only with the advisory details and patch."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/"
+    extended_notes: |
+      Distinguish from the CVE-2026-19490 (Citrix NetScaler) exploitation claim examined and DROPPED this run
+      (see coverage_gaps / notes below) — that one had no source beyond a single X/Twitter post and does not
+      clear the fake-news bar; this GitLab item has an independent journalism + research-lab chain and does.
+
+  - title: "Royal Elementor Addons (WordPress): authenticated SSRF and stored XSS bundled in the same NCSC-CH advisory as the already-covered Forminator/User Profile Builder flaws, but never individually surfaced"
+    sources:
+      - { url: "https://www.wordfence.com/threat-intel/vulnerabilities/wordpress-plugins/royal-elementor-addons/royal-addons-for-elementor-171064-authenticated-contributor-server-side-request-forgery-via-form-builder-widget-webhook-url-setting", publisher: "Wordfence Intelligence", date: "2026-08-18", role: primary }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12860", publisher: "NCSC-CH Cyber Security Hub", date: "2026-08-18", role: corroborating }
+    discovery_trace: >
+      first seen at: ncsc-ch-security-hub (bridge ncsc-csh recent), citation URL
+      https://security-hub.ncsc.admin.ch/#/posts/12860 ("[Advisory] Various WordPress Plugins: Critical RCE, SSRF
+      and XSS", 2026-08-18) → primary: Wordfence Intelligence vulnerability-database entries linked from that
+      post, URL https://www.wordfence.com/threat-intel/vulnerabilities/wordpress-plugins/royal-elementor-addons/royal-addons-for-elementor-171064-authenticated-contributor-server-side-request-forgery-via-form-builder-widget-webhook-url-setting
+    summary: |
+      The same NCSC-CH advisory that this pipeline used to source its already-published Forminator Forms
+      (CVE-2026-15748) and User Profile Builder (CVE-2026-15826) entries also carried two Royal Elementor Addons
+      (WP Royal) flaws that were never split out: CVE-2026-17123 (CVSS 8.8, Server-Side Request Forgery via the
+      Form Builder widget's webhook-URL setting, letting a Contributor-level account query internal services) and
+      CVE-2026-19217 (CVSS 6.4, stored XSS via unvalidated widget settings, same privilege precondition). Both
+      require existing Contributor-level WordPress access, which is materially different from the unauthenticated
+      Forminator/User Profile Builder pair — lower urgency, but still a privilege-escalation-adjacent path for
+      any environment that grants Contributor roles to untrusted or external content submitters.
+    region_nexus: "global; large installed base via the Elementor page-builder ecosystem, common in EU public-sector WordPress estates"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, education, technology"
+    cves: [CVE-2026-17123, CVE-2026-19217]
+    techniques: [T1190]
+    affected_products: ["WP Royal Royal Elementor Addons"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Both flaws require pre-existing Contributor-level access, materially lowering urgency versus the unauthenticated companions already published from the same advisory; moderate severity (8.8/6.4) but narrower exploitability."
+    evidence: []
+    extended_notes: |
+      This is a fill-the-gap item on an advisory the pipeline already partially processed — not a fully new
+      discovery, but the two CVEs it left out never appear anywhere in prior_coverage.json.
+
+  - title: "Joomla third-party extension wave (mySites.guru original disclosures): two CVSS-10.0 unauthenticated flaws (YOOtheme ZOO, Sourcerer) plus a CVSS 9.2 SQLi (iCagenda) inside the audit window"
+    sources:
+      - { url: "https://mysites.guru/blog/zoo-unauthenticated-file-upload-rce/", publisher: "mySites.guru", date: "2026-08-19", role: primary }
+      - { url: "https://mysites.guru/blog/sourcerer-14-unverified-content-php-execution/", publisher: "mySites.guru", date: "2026-08-17", role: primary }
+      - { url: "https://mysites.guru/blog/icagenda-calendar-module-sql-injection/", publisher: "mySites.guru", date: "2026-08-17", role: primary }
+    discovery_trace: >
+      first seen at: WebSearch-independent direct drill of mysites-guru's newly-verified RSS feed (RECIPE FIX
+      this run — see notes below), URL https://mysites.guru/rss.xml → primary: the three linked mySites.guru
+      blog posts, URLs as listed above
+    summary: |
+      mySites.guru — the Joomla/WordPress fleet-security vendor already tracked as an active source for its
+      original extension-vulnerability research — published a cluster of CWE-434/CWE-89-class Joomla extension
+      disclosures across the audit window. The two most severe: YOOtheme ZOO (com_zoo) up to 4.1.63 carried an
+      unauthenticated file-upload RCE scored CVSS 10.0 plus an unauthenticated SQL injection, fixed first in
+      4.1.64 then twice more inside three days (final: 4.1.66, one of the follow-up fixes itself scored 8.6);
+      and Sourcerer up to 13.x executed PHP from page content it could not trace to a verified source
+      (CVE-2026-74253, CVSS 10.0), fixed in 14.0.0. A third, iCagenda Calendar module 4.0.12 (CVE-2026-67365,
+      CVSS 9.2), fixed an unauthenticated SQL injection. None of the vendor posts report observed in-the-wild
+      exploitation for these three; mySites.guru's own site notes it found and reported all three findings
+      itself as part of its ongoing coordinated-disclosure programme across the Joomla extension ecosystem
+      (already the subject of tracked prior pipeline coverage on other extensions from the same wave — SP Page
+      Builder, RSFiles!, Phoca Download, iCagenda's own earlier CVE-2026-48939).
+    region_nexus: "global; Joomla extension ecosystem, moderate EU public-sector footprint"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-74253, CVE-2026-67365]
+    techniques: [T1190]
+    affected_products: ["YOOtheme ZOO (com_zoo)", "Sourcerer (Joomla extension)", "iCagenda Calendar module"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Single-source (discovering vendor only, no independent corroboration reached this run); part of a recurring high-volume Joomla-extension disclosure wave from one research shop — individually plausible but the main agent should weigh whether this clears the bar as discrete items or as one rolled-up mention given the already-established pattern."
+    evidence:
+      - quote: "YOOtheme ZOO (com_zoo) up to 4.1.63 had an unauthenticated file upload RCE scored CVSS 10.0, plus an unauthenticated SQL injection."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/zoo-unauthenticated-file-upload-rce/"
+      - quote: "Sourcerer, the Joomla extension, ran PHP from page content it could not trace to a verified source. CVE-2026-74253 scores 10.0 critical."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/sourcerer-14-unverified-content-php-execution/"
+    extended_notes: |
+      SELF-EVOLUTION NOTE for sources.json: the 2026-08-11 note on record `mysites-guru` says the jina-reader
+      listing carries no per-item publication dates, blocking in-window judgement. That gap is now resolved —
+      `https://mysites.guru/rss.xml` (linked from the site's own <head>, `rel="alternate" type="application/rss+xml"`)
+      returns clean dated items via the DIRECT transport (no jina needed), fetched successfully this run with
+      `tools/fetch_source.py feed https://mysites.guru/rss.xml`. Recommend the main agent update the source
+      record's `notes` and consider `fetch_method: rss` instead of `jina` for discovery (the reader may still be
+      needed for reading a specific article body if direct GET on `/blog/<slug>/` is blocked — that was not
+      re-tested this run).
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product/supplier watchlist configured for this deployment (org-profile.yaml) — sweep is a no-op per the master prompt's watchlist policy."
+
+candidate_sources: []
+
+source_reachability_log:
+  - id: cisa-directives
+    tier: essential
+    reachable: false
+    in_period_items: "unknown — could not read"
+    transport_attempted: "bridge `cisa page https://www.cisa.gov/news-events/directives`"
+    result: "Direct transport HTTP 403 (Akamai bot management, documented standing condition); jina reader pool exhausted (HTTP 402 on all 7 rotating keys). No transport on the documented ladder reached content this run. Consistent with five consecutive prior-run failures logged in sources.json (2026-08-16 through 2026-08-19) — this is a genuine, persistent transport-block condition, not a one-off. CISA KEV JSON (separate record) substitutes for exploited-vuln ground truth and was fully reachable."
+  - id: advisories-ncsc-nl
+    tier: essential
+    reachable: true
+    in_period_items: true
+    transport_attempted: "RSS feed https://advisories.ncsc.nl/rss/advisories, 20 items"
+    result: "Fully reachable, richly populated in-period (19 of 20 returned items dated 2026-08-19 through 2026-08-23). Corroborated the Cisco Crosswork/Secure Workload and Splunk gaps and the already-covered Zimbra/Citrix/Oracle items. Genuinely productive this run."
+  - id: bsi-de
+    tier: essential
+    reachable: true
+    in_period_items: "ambiguous"
+    transport_attempted: "RSS feed https://wid.cert-bund.de/content/public/securityAdvisory/rss, 20 items"
+    result: "Reachable, but all 20 returned items carry the identical batch timestamp 2026-08-24T08:5x:xx and are tagged [UPDATE] — this looks like a daily bulk republish/re-timestamp of the whole advisory backlog rather than genuinely fresh disclosures, consistent with previously-documented feed behaviour. None of the visible items (Chrome, Edge, Firefox, GeoServer, Redis, PostgreSQL, Golang, Linux Kernel, APR) named a new CVE not already covered by other in-window primaries. Recommend the operator treat this feed's `published` field with caution for recency decisions and cross-check the underlying WID-SEC advisory's own creation date before trusting a fresh-looking RSS timestamp."
+  - id: cert-pl
+    tier: essential
+    reachable: true
+    in_period_items: false
+    transport_attempted: "RSS feed https://cert.pl/en/rss.xml, 15 items"
+    result: "Reachable and fresh (items through 2026-08-20), but all are narrow single/multi-CVE coordinated-disclosure reports on low-profile software (ATutor, nnn, Carbone, OutSystems Service Center, Magnolia CMS) that did not clear the relevance bar for this constituency this run. Genuinely quiet for G4 purposes, not broken."
+  - id: cert-eu
+    tier: essential
+    reachable: true
+    in_period_items: false
+    transport_attempted: "api `cert-eu recent 15`"
+    result: "Reachable; newest advisory (2026-010, Citrix NetScaler) is dated 2026-08-19 and already fully covered by the pipeline. No new CERT-EU advisory number issued since. Genuinely quiet, not broken — CERT-EU's cadence is roughly monthly and nothing new fell in this 8-day window."
+  - id: cisa-kev
+    tier: essential
+    reachable: true
+    in_period_items: true
+    transport_attempted: "api `cisa-kev`"
+    result: "Fully reachable, catalogVersion 2026.08.21. Nine in-window additions (2026-08-17 through 2026-08-21) enumerated and cross-checked one by one against prior_coverage; only CVE-2026-59310 (VMware vCenter, already covered pre-window, update surfaced above) needed a delta note. Working perfectly this run."
+  - id: enisa-euvd
+    tier: essential
+    reachable: true
+    in_period_items: true
+    transport_attempted: "api `enisa-euvd recent {exploited,criticals,lastvulnerabilities}` — all three listing endpoints"
+    result: "All three endpoints fully reachable and current (freshest record timestamped 2026-08-24T08:08Z, same morning as this run). exploited listing corroborated the CVE-2026-69836 Entra ID and CVE-2026-73570 Zimbra items already in prior_coverage; criticals and lastvulnerabilities surfaced mostly DJI drone Bluetooth/DUML CVEs (CVSS 8.5-9.5) and a Joomla Page Builder CK SQLi already tracked in the mysites.guru wave item above. No standalone gap traced to EUVD alone this run — genuinely productive, not a silent-fetch problem."
+  - id: ncsc-ch-security-hub
+    tier: essential
+    reachable: true
+    in_period_items: true
+    transport_attempted: "api `ncsc-csh recent 15`"
+    result: "Fully reachable, extremely productive this run — the single highest-yield source in the slice. Surfaced the Cisco Crosswork/Secure Workload gap (post 12867), the Splunk corroboration, the GitLab and NetScaler exploitation-status UPDATE edits (posts 12856, 12863), and the Royal Elementor gap (post 12860). This directly refutes any concern that this source is 'fetching OK but contributing nothing' — for this run it was the opposite."
+  - id: anssi-fr
+    tier: essential
+    reachable: true
+    in_period_items: true
+    transport_attempted: "api `cert-fr avis-recent 15`"
+    result: "Fully reachable and highly productive — surfaced the SPIP CVE-2026-77647 gap (CERTFR-2026-AVI-1063) and the Splunk corroboration (CERTFR-2026-AVI-1056), both genuine finds this run. The bare avis feed alone (without drilling into the advisory detail page) would have UNDER-reported the SPIP exploitation claim — the feed summary line ('L'éditeur indique que cette vulnérabilité est activement exploitée') was in fact sufficient this time, but this is a reminder that CERT-FR avis summaries carry the load-bearing exploitation language and must be read in full, not skimmed for titles only."
+  - id: cisa-advisories
+    tier: essential
+    reachable: false
+    in_period_items: "unknown — could not read"
+    transport_attempted: "feed https://www.cisa.gov/cybersecurity-advisories/all.xml"
+    result: "Direct transport HTTP 403 (Akamai); jina reader pool exhausted (HTTP 402 on all 7 rotating keys). Same standing condition as cisa-directives, consistent with the run notes documenting unreachability on 2026-08-16 through 2026-08-19. The ICS/OT CSAF mirror (raw.githubusercontent.com, does not route through the reader) WAS reachable and was used as a substitute — three in-window ICS advisories retrieved (icsa-26-232-01 Johnson Controls Simplex Incident Manager CVSS 5.8, icsa-26-230-01 CISA Malcolm 6 CVEs up to CVSS 8.8, icsa-26-230-02 Siemens Simcenter Nastran) — all assessed below the strict relevance bar for this run (moderate severity, niche products, no exploitation) and not included as standalone items, but the CSAF mirror substitute worked and should be credited as covering the ICS surface even while the HTML/RSS surface was blocked."
+  - id: ncsc-uk
+    tier: essential
+    reachable: true
+    in_period_items: false
+    transport_attempted: "feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml, 20 items"
+    result: "Reachable and fresh (newest item 2026-08-20, 'Managing the cyber risk of agentic AI'), but the entire in-window slice is policy/guidance-blog content (agentic AI risk, BitLocker PINs, private 5G, water-sector connectivity guidance) with no vulnerability advisory in the window. Genuinely quiet for the G4 vulnerability/exploitation mission specifically — the guidance content is real and current, just outside this domain's mission scope."
+  - id: cert-at
+    tier: essential (directed addition)
+    reachable: true
+    in_period_items: false
+    transport_attempted: "bridge `url https://www.cert.at/` (bare homepage scrape per documented recipe)"
+    result: "Reachable; homepage returned dated headlines but the newest is 14.08.2026 (booking.com fraud warning, consumer-fraud content, not a vulnerability advisory) — before this run's window start. Genuinely quiet on vulnerabilities in-window, confirmed reachable and readable, not a silent/broken source."
+  - id: enisa
+    tier: essential (directed addition)
+    reachable: true
+    in_period_items: false
+    transport_attempted: "WebFetch https://www.enisa.europa.eu/news"
+    result: "Reachable; listing returned 10+ dated press items but the newest is 6 August 2026 ('ENISA scales up its role in the CVE Program'), before window start. This /news listing is policy/press-release-oriented by design (per the source record's own notes) — the actual vulnerability ground truth for ENISA is the separately-tracked enisa-euvd record, which WAS productive this run (see above). Genuinely quiet-by-design on this specific listing, not broken."
+  - id: ncsc-ch-focus
+    tier: essential (directed addition)
+    reachable: true
+    in_period_items: true
+    transport_attempted: "WebFetch https://www.bacs.admin.ch/de/im-fokus (post-rebrand Nuxt SPA, renders via WebFetch per documented recipe)"
+    result: "Reachable and current (newest item 24 August 2026, the day of this run). Confirms the 2026-08-20 NCSC.ch -> BACS (Bundesamt für Cybersicherheit) rebrand is live and the canonical-URL redirect from ncsc.admin.ch works. Content in-window is entirely consumer-fraud/AI-awareness themed (caller-ID spoofing, crypto-wallet phishing, fake-CAPTCHA malware, AI-generated-content detection) by design — this page is NOT the technical-vulnerability channel (that is ncsc-ch-security-hub, which WAS productive). Genuinely quiet for G4 purposes, not broken; worth a `sources.json` metadata note recording the BACS rebrand date for any record still citing the legacy ncsc.admin.ch host."
+  - id: ncsc-ch-incidents
+    tier: essential (directed addition)
+    reachable: true
+    in_period_items: false
+    transport_attempted: "WebFetch https://www.bacs.admin.ch/de/aktuelle-vorfaelle (bridge direct GET returned a Nuxt JS shell as documented; WebFetch rendered it)"
+    result: "Reachable via WebFetch (bridge direct GET confirmed JS-shell-only as already documented in sources.json). Newest dated entry is 18 August 2026 (SwissNovaChat/SwissNovaCare update, duplicate of the ncsc-ch-focus item) — genuinely within window but consumer-fraud content, not a vulnerability advisory, consistent with this page's documented design as the fraud/incident-report channel rather than the technical-vulnerability channel. Confirmed reachable and readable; the 'reporting successful fetches while contributing nothing' concern is explained here by content-type mismatch (fraud page vs. vulnerability domain), not by a broken fetch."
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "fetch_method jina; jina reader pool fully exhausted this run (HTTP 402 on all 7 rotating keys, confirmed via `jina-usage`-style rotation log). No alternate transport reaches this host per its own standing notes (direct transport returns a Cloudflare/SiteGround-style anti-bot challenge on every path). Could not determine whether any in-window SSD Secure Disclosure advisory exists."
+  - source_id: "Citrix NetScaler CVE-2026-19490 exploitation claim"
+    reason: "NCSC-CH's 2026-08-21 edit to post 12863 cites active exploitation sourced ONLY to a single X/Twitter post (@aviatrixtrc). WebSearch found no independent corroborating journalism or research-lab write-up for this specific exploitation claim (Rapid7's own analysis, dated the same day as the original advisory, explicitly states no observed exploitation as of 2026-08-19). Per the fake-news/verification policy (never include Telegram/X-only sourcing), this claim was investigated and DELIBERATELY DROPPED rather than surfaced as a finding — noting it here so the main agent does not independently re-discover and mistakenly include it."
+
+## Fetch failures
+- id: cisa-directives
+  url_tried: "https://www.cisa.gov/news-events/directives"
+  fetch_method: "bridge:cisa page"
+  status_code: 403
+  error_class: transport-403
+  error_message: "direct HTTP 403, 392 B; jina reader proxy failed on all 7 rotating keys with balance exhausted (HTTP 402)"
+  attempted_methods: ["bridge:cisa page (direct)", "bridge:cisa page (jina fallback, 7 keys)"]
+  mitigation_applied: "none — coverage gap for the directive-listing surface specifically; CISA KEV JSON (separate essential record) substituted for exploited-vuln ground truth and was fully reachable"
+  covered_anyway: false
+- id: cisa-advisories
+  url_tried: "https://www.cisa.gov/cybersecurity-advisories/all.xml"
+  fetch_method: "bridge:feed"
+  status_code: 403
+  error_class: transport-403
+  error_message: "direct upstream HTTP 403; jina reader proxy failed on all 7 rotating keys with balance exhausted (HTTP 402)"
+  attempted_methods: ["bridge:feed (direct)", "bridge:feed (jina fallback, 7 keys)"]
+  mitigation_applied: "switched to the cisagov CSAF GitHub mirror (bridge:cisa csaf-recent), which does not route through the reader and returned three in-window ICS advisories, none of which cleared the relevance bar"
+  covered_anyway: true
+- id: ssd-disclosure
+  url_tried: "https://ssd-disclosure.com/"
+  fetch_method: "bridge:jina"
+  status_code: 402
+  error_class: rate-limited
+  error_message: "reader proxy failed for https://ssd-disclosure.com/: all 7 rotating keys balance exhausted (HTTP 402); anonymous free tier also HTTP 403"
+  attempted_methods: ["bridge:jina (7 keys + anonymous fallback)"]
+  mitigation_applied: "none — coverage gap, no alternate transport documented for this host per its own standing sources.json notes (site-wide SiteGround anti-bot interstitial on every direct path)"
+  covered_anyway: false
+
+## Bridge uses
+- id: cisa-kev
+  method: bridge:cisa-kev
+  outcome: ok
+- id: enisa-euvd
+  method: bridge:enisa-euvd.recent (exploited, criticals, lastvulnerabilities — all three)
+  outcome: ok
+- id: ncsc-ch-security-hub
+  method: bridge:ncsc-csh.recent
+  outcome: ok
+- id: anssi-fr
+  method: bridge:cert-fr.avis-recent
+  outcome: ok
+- id: cert-eu
+  method: bridge:cert-eu.recent
+  outcome: ok
+- id: cisa-advisories
+  method: bridge:cisa.csaf-recent
+  outcome: ok
+- id: cisa-directives
+  method: bridge:cisa.page
+  outcome: item-not-found
+- id: cert-at
+  method: bridge:url
+  outcome: ok
+- id: ncsc-ch-incidents
+  method: bridge:url
+  outcome: ok (JS-shell, WebFetch used instead for content)
+- id: ssd-disclosure
+  method: bridge:jina
+  outcome: item-not-found
+- id: checkpoint-support
+  method: bridge:url
+  outcome: ok (confirmed already-covered CVE-2026-18574, no new content)
+- id: mysites-guru
+  method: bridge:feed (rss.xml — new recipe, not the documented jina recipe)
+  outcome: ok

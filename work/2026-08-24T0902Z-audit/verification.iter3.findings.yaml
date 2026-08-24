@@ -1,0 +1,119 @@
+# Findings summary (machine-readable) — iteration 3 (Opus 5, cold read + prior-iteration deltas)
+- code: F3
+  category: claim-not-supported
+  section: entries
+  item: "2026-08-24/spip-4-4-20-and-4-4-21-two-preauth-rce-security-screen-blind"
+  url_or_quote: "\"no CVE identifier has been assigned to it\" (summary, body) / \"The second flaw carries no CVE identifier as of this run, which is why cves[] holds one record and not two\" (sourcing_note) / \"plus an unidentified flaw in 4.4.20\" (title) / \"the second flaw has no identifier to track\" (defender takeaway) — cited source https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/"
+  summary: >-
+    The cited CERT-FR advisory now states the opposite. Fetched this iteration via
+    tools/fetch_source.py url: the Documentation block reads "Référence CVE CVE-2026-77806
+    https://www.cve.org/CVERecord?id=CVE-2026-77806" and the version history reads
+    "le 24 août 2026 — Ajout de l'identifiant CVE-2026-77806". The identifier itself was
+    published before this run, not today: the CVE record (cveawg.mitre.org, fetched this
+    iteration) carries datePublished 2026-08-21T13:37:43Z, description "SPIP before 4.4.21
+    allows unauthenticated remote attackers to execute arbitrary code, as exploited in the
+    wild in August 2026. This is related to code injection via an X-Spip-Filtre HTTP request
+    header that is mishandled by analyse_resultat_skel", CVSS 3.1 base 9.8, and references the
+    4.4.21 bulletin — i.e. it is unambiguously the second flaw. The entry's negative claim is
+    false as published, its cves[] carries one record where two now exist, and the "no
+    identifier to track" argument in the defender takeaway rests on it. Same claim to fix in
+    docs/audits/2026-08-24-weekly-quality-audit.md ("no identifier has been assigned to the
+    second flaw", published-misses bullet) and its watch-item row ("SPIP second flaw has no
+    identifier — NEW — open"), plus the matching state/coverage_backlog.md row. The CERT-FR
+    advisory is a citable authority for the identifier; the CVE page is not.
+- code: F4
+  category: hallucinated-fact
+  section: audit-report
+  item: "docs/audits/2026-08-24-weekly-quality-audit.md § 1 (completion-timestamp defect) + runs/2026-08-24/2026-08-24T0902Z-audit.md § The defect that made every duration in the store a floor"
+  url_or_quote: "\"the denominator is the 141 records carrying both a completion timestamp and at least one child timestamp — **100 of 141 have a `completed` that precedes one of their own children's `ended_at`**\" / \"(149 records carry a completion timestamp at all …)\""
+  summary: >-
+    The replacement figure for iteration 1's rejected "92 of 146" does not reproduce either.
+    Recomputed this iteration with the check's own semantics — site/content_model.collect_runs
+    over runs/, tools/check_run._parse_iso_utc, children = sub_agents.*.ended_at plus
+    verification.iterations[].ended_at, compared against completed — the store gives
+    104 of 148 skewed, with 156 records carrying a completion timestamp (103 of 147 and 155 if
+    this fire's own record is excluded). No plausible partition reaches 141/100: sub-agent
+    children only = 4/146, verification children only = 104/148, excluding audit kinds =
+    101/140, excluding weeklies = 86/127, excluding today's records = 96/138. The worst-skew
+    half of the claim does reproduce exactly (125.3 minutes, 2026-08-04T0411Z-intel), as does
+    the 2026-08-10T0411Z-intel illustration (duration_seconds 3103, completed 05:02:44Z, final
+    iteration ended 06:58:01Z). Iteration 1's remediation note says the corrected figure was
+    also written into the CHANGELOG, the prompt, the gate's comment and memory, so the fix has
+    to follow it there.
+- code: F4
+  category: hallucinated-fact
+  section: run-record
+  item: "runs/2026-08-24/2026-08-24T0902Z-audit.md § Zero-warning sweep"
+  url_or_quote: "\"flagging a `no-patch` status alongside a `patch-available` one would have caught the GeoServer defect's shape but also flagged 32 correct records\""
+  summary: >-
+    The run record still carries the 32 that iteration 1 found does not reproduce, while the
+    audit report it links to now says 27; the two published files contradict each other on the
+    same figure. The report's 27 is the correct one and reproduces exactly: scanning all 1338
+    entries, 3 cves[] records carry both `no-patch` and `patch-available`, 26 carry `no-patch`
+    alongside a non-empty prose `fixed` string, union 27 records across 15 entries. Update the
+    run-record sentence to the report's wording (27 records across 15 entries, 3 + 26 with the
+    2-record overlap) so the two agree.
+- code: F4
+  category: hallucinated-fact
+  section: audit-report
+  item: "docs/audits/2026-08-24-weekly-quality-audit.md § 4 (source health) and Recommendation 5; runs/2026-08-24/2026-08-24T0902Z-audit.md § Reader pool"
+  url_or_quote: "\"Symantec/Broadcom research is cited by four entries in this window alone with no source record\" / \"`symantec-broadcom` (four citations this window)\" / run record: \"a research publisher whose work the store already cites four times\""
+  summary: >-
+    The in-window count is two, not four. Across the 149 window entries exactly two cite
+    Symantec — 2026-08-16/jewelbug-pdf-viewer-extension-native-messaging-webmail-hole and
+    2026-08-16/weekly-w33-kernel-rootkits-edit-what-windows-reports — and both cite the same
+    article, https://www.security.com/threat-intelligence/jewelbug-crypto-fraud-espionage.
+    No broadcom.com URL appears in any August entry. Store-wide the publisher is cited by 7
+    entries across 6 distinct articles, so the run record's "already cites four times" does not
+    reproduce either. The underlying finding (a cited publisher with no record in
+    sources/sources.json — confirmed: no id matching symantec/broadcom/cybereason exists)
+    stands; only the counts are wrong.
+- code: F4
+  category: hallucinated-fact
+  section: audit-report
+  item: "docs/audits/2026-08-24-weekly-quality-audit.md § Imprecisions (19)"
+  url_or_quote: "\"The distribution is informative: **thirteen of the nineteen are sourcing-attribution or classification defects rather than wrong facts.**\""
+  summary: >-
+    The thirteen contradicts the report's own enumeration in the four bullets immediately
+    below it: Attribution drift (6) + Classification over-award (4) = 10, and the remaining two
+    buckets (Machine-surface gaps, Overstated precision) are neither attribution nor
+    classification. Second, the four buckets total 19 but cover only 18 distinct records:
+    2026-08-11/cve-2026-65400-screensharingd-remote-root-two-preauth-bugs is counted twice —
+    once as "One entry attaches a CVSS to sources that publish no score" (attribution) and once
+    as "a 7.1 inherited from a parent entry and carried without attribution" (machine-surface) —
+    while batch B7's Keycloak imprecision (2026-08-19/cve-2026-18963-keycloak-reset-credentials-account-takeover,
+    the "one affected product has no fix at all" claim that Red Hat's product-state table now
+    contradicts) appears in no bucket. Verified by extracting all 19 imprecision records from
+    the nine truth-B*.yaml files and mapping each to a bullet. The batch totals themselves are
+    sound: 149 items, 125 clean, 19 imprecision, 5 factual-error all reproduce from the YAMLs.
+- code: F4
+  category: hallucinated-fact
+  section: audit-report
+  item: "docs/audits/2026-08-24-weekly-quality-audit.md § Genuine misses"
+  url_or_quote: "\"Queued with reasons (thirteen rows): Adobe ColdFusion APSB26-90 and Campaign Classic APSB26-123; … and the TheHatman Azure/Entra directory claim.\""
+  summary: >-
+    The list under the "(thirteen rows)" label enumerates fifteen items, and fifteen is the
+    right number: state/coverage_backlog.md carries exactly 15 open rows attributed to
+    2026-08-24T0902Z-audit (28 open in total against 13 before this fire, 25 struck — all three
+    of which the report states correctly elsewhere), and the Fixes-shipped section says
+    "Fifteen backlog rows appended with a reason each". Either the label and the preceding
+    "thirteen were queued" sentence should read fifteen, or the two non-miss rows (the SPIP
+    identifier watch and Bloctel) should be named as such and dropped from the enumeration. The
+    run record repeats the same thirteen ("queued the remaining thirteen on
+    state/coverage_backlog.md with the reason for each").
+- code: F11
+  category: editorial-advisory
+  section: entries
+  item: "2026-08-24/correction-geoserver-w33-no-vendor-fix-claim-patch-existed"
+  url_or_quote: "cves[].status: [exploited, patch-available]; tags: actively-exploited; summary/body \"GeoServer's actively exploited `jsonArrayContains` SQL injection\""
+  summary: >-
+    Advisory only. None of the entry's four cited sources states exploitation: the three
+    GeoServer release announcements say only "This release addresses security vulnerabilities
+    and is an urgent update for production systems" and note prior public disclosure, and the
+    OSV record (fetched this iteration) carries no exploitation field. The status is inherited
+    from the referenced 2026-08-18 entry, which carries NCSC-CH hub post 12844 with the
+    evidence quote "Actively Exploited, Proof of Concept Available", so the fact is sound and
+    the reference chain is stated — but a one-line corroborating source
+    (https://security-hub.ncsc.admin.ch/#/posts/12844) would put the exploitation half of the
+    frontmatter on a citation of its own. Leave it if the main agent prefers not to touch a
+    verified entry.

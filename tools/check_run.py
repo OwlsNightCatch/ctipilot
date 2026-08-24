@@ -2030,6 +2030,23 @@ VERIFIER_ITERATION_CAP_PRE_V327 = 5
 # overrun into the next scheduled fire). Surface it — never a FAIL, the
 # record itself is the forensic evidence.
 RUNAWAY_RUN_SECONDS = 3 * 3600
+# v3.32: `completed` / `duration_seconds` must cover the WHOLE fire. Through
+# v3.31 the prompt stamped `work/<run-id>/main.ended_at` in Phase 5, i.e.
+# before the mechanical gate and before the Phase 5.7 verifier loop, and the
+# record's `completed` was read from that stamp — so every run's recorded
+# duration understated its true wall clock by the length of its verifier
+# loop and publishing chain. The majority of stored records have a
+# `completed` that precedes one of their own children's `ended_at`, by up
+# to 125 min
+# (2026-08-04T0411Z-intel), and 2026-08-10T0411Z-intel recorded 3103 s
+# (~52 min) for a fire its own notes place at ~2 h 55 m. The consequence is
+# not cosmetic: RUNAWAY_RUN_SECONDS above is checked against exactly this
+# number, so the ~3 h wall-clock watchdog had no machine-auditable signal
+# that could see an overrun. Enforced from the prompt version that moves the
+# stamp into Phase 6; earlier records are pre-rule history and are not
+# reported (they would add ~100 warnings the audit could only acknowledge;
+# the exact count moves with the denominator, which is why none is asserted).
+COMPLETION_COVERS_RUN_FROM = (3, 32)
 
 # ATT&CK completeness by kind: these kinds inherently describe attacker
 # behavior (a campaign, an intrusion, an exploitable vulnerability's access
@@ -2074,6 +2091,78 @@ def _mapping_ids_strict(run: dict[str, Any] | None) -> bool:
         return False
     v = _prompt_version_tuple(run.get("prompt_version"))
     return v is not None and v >= MAPPING_IDS_STRICT_FROM
+
+
+def check_completion_covers_run(run: dict[str, Any], store_mode: bool = False) -> None:
+    """v3.32: the record's `completed` must postdate everything the fire did.
+
+    `completed` / `duration_seconds` are the run's only machine-auditable
+    wall-clock figures — the runaway watchdog checks one, the Ops dashboard
+    renders both, and every quality audit reads them to answer "did any fire
+    overrun?". They are trustworthy only if the stamp is taken after the
+    last thing the run does. Through v3.31 it was taken in Phase 5, before
+    the gate and before the Phase 5.7 loop, so a record could and did claim
+    to have finished two hours before its own final verifier iteration
+    returned. This check makes that shape impossible to ship again: any
+    child timestamp the record itself carries — a verifier iteration's
+    `ended_at`, a sub-agent's `ended_at` — that is later than `completed`
+    means the stamp was taken too early.
+
+    Scoped to records from COMPLETION_COVERS_RUN_FROM onward: earlier
+    records are immutable pre-rule history, and reporting them would emit
+    ~100 warnings whose only available resolution is the acknowledgment
+    ledger. `store_mode` (--all) downgrades FAIL to WARN, as elsewhere —
+    a published record cannot be re-stamped.
+    """
+    v = _prompt_version_tuple(run.get("prompt_version"))
+    if v is None or v < COMPLETION_COVERS_RUN_FROM:
+        if not store_mode:
+            ok("run-completion",
+               "pre-v%d.%d run — the completion-covers-run rule is not yet in "
+               "force for this record (informational)" % COMPLETION_COVERS_RUN_FROM)
+        return
+
+    rid = run.get("run_id")
+    completed = _parse_iso_utc(run.get("completed"))
+    if completed is None:
+        # validate_run_record already FAILs a missing/unparseable completed.
+        return
+
+    later: list[tuple[str, Any]] = []
+    ver = run.get("verification") if isinstance(run.get("verification"), dict) else {}
+    iters = ver.get("iterations") if isinstance(ver.get("iterations"), list) else []
+    for idx, it in enumerate(iters, start=1):
+        if not isinstance(it, dict):
+            continue
+        ended = _parse_iso_utc(it.get("ended_at"))
+        if ended is not None and ended > completed:
+            n = it.get("n", it.get("iteration", idx))
+            later.append((f"verification iteration {n}", it.get("ended_at")))
+    subs = run.get("sub_agents") if isinstance(run.get("sub_agents"), dict) else {}
+    for name, sa in subs.items():
+        if not isinstance(sa, dict):
+            continue
+        ended = _parse_iso_utc(sa.get("ended_at"))
+        if ended is not None and ended > completed:
+            later.append((f"sub_agent {name}", sa.get("ended_at")))
+
+    if not later:
+        if not store_mode:   # one line per record would drown --all
+            ok("run-completion",
+               f"completed={run.get('completed')} postdates every recorded "
+               f"sub-agent and verifier timestamp")
+        return
+
+    worst = max(later, key=lambda p: _parse_iso_utc(p[1]) or completed)
+    skew = ((_parse_iso_utc(worst[1]) or completed) - completed).total_seconds() / 60
+    msg = (f"{rid}: completed={run.get('completed')} precedes {len(later)} of the "
+           f"record's own child timestamps — latest is {worst[0]} at {worst[1]}, "
+           f"{skew:.0f} min later. `completed` and `duration_seconds` must be "
+           f"stamped in Phase 6 immediately before the commit, after the verifier "
+           f"loop, not from a Phase 5 `main.ended_at`. An understated duration "
+           f"blinds the {RUNAWAY_RUN_SECONDS // 3600} h wall-clock watchdog, which "
+           f"is checked against exactly this number")
+    (warn if store_mode else fail)("run-completion", msg)
 
 
 def check_attack_dataset() -> dict[str, Any]:
@@ -2676,6 +2765,8 @@ def check_all_run_records(runs: list[dict]) -> None:
                  "exceeded the runaway threshold — see the per-run watchdog note")
         # v3.23+ double-CLEAN gate, store severity (immutable history → WARN)
         check_verification_confirmation(r, store_mode=True)
+        # v3.32+ completion-covers-run, store severity (immutable → WARN)
+        check_completion_covers_run(r, store_mode=True)
     if not n_err:
         ok("run-record",
            f"{len(runs)} run record(s) valid ({n_migrated} migrated, identity-checked only)")
@@ -2803,6 +2894,9 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
     if run is not None:
         print("\n== verification double-CLEAN (v3.23 gate) ==")
         check_verification_confirmation(run, pre_verify=pre_verify)
+
+        print("\n== completion timestamp covers the whole fire (v3.32) ==")
+        check_completion_covers_run(run)
 
         print("\n== prompt-version vs CHANGELOG ==")
         check_prompt_version(run, content_root)

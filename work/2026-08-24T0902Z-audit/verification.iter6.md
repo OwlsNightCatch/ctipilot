@@ -1,0 +1,50 @@
+**Model:** Sonnet 5 (`claude-sonnet-5`)
+**Timestamps:** started_at=2026-08-24T20:10:25Z · ended_at=2026-08-24T20:20:41Z · duration_seconds=616
+
+## Verification report — 2026-08-24T0902Z-audit (iteration 6)
+
+**Scope covered:** all four new entries under `entries/2026-08-24/`, the run record `runs/2026-08-24/2026-08-24T0902Z-audit.md`, and `docs/audits/2026-08-24-weekly-quality-audit.md`. `tools/check_run.py 2026-08-24T0902Z-audit` re-run and confirmed: 40 pass · 1 warn (the run's own disclosed runaway duration, correctly left unacknowledged) · 0 fail.
+
+**Prior-iteration deltas walked first.** All six applied-since-iteration-5 items were independently re-verified against primary sources fetched fresh in this iteration:
+
+1. CERTFR-2026-AVI-1033 fetched directly — confirmed it exists, carries "Référence CVE CVE-2026-77647", first-version date 17 août 2026, last-version date 24 août 2026, revision note "Ajout de l'identifiant CVE-2026-77647." AVI-1063 fetched — confirmed CVE-2026-77806, first-version 21 août 2026, last-version 24 août 2026, revision note "Ajout de l'identifiant CVE-2026-77806." Both advisories are correctly bound to their respective flaws throughout the entry's title/summary/cves[]/body/sourcing note. Good — but see F3 below for a residual date-labeling inconsistency this fix introduced.
+2. "The week between the 4.4.20 release and 2026-08-24" (17 Aug → 24 Aug = 7 days) — correctly stated as a week; the prior 3-day error is gone.
+3. Recounted the 19 imprecision verdicts directly from all nine `truth-B*.yaml` files: 149 total entries (125 clean + 19 imprecision + 5 factual-error), 19 imprecision verdicts landing on 19 distinct entry paths with no duplicate filenames. The report's "nineteen distinct entries" and the four-theme breakdown (6+4+4+5=19, screensharingd double-counted once and disclosed as such) reproduce exactly.
+4. GeoServer sourcing_note now reads "All four sources were fetched in this run" — confirmed, matches the four listed `sources[]` records.
+5. Registry entity `trend:natjack-nat-trust-assumption-attack-class` — re-fetched natjack.io directly: confirmed five primitives (downstream spoof, upstream spoof, DNS response hijack, external-mapping disclosure, NAT-table exhaustion — matched via grep) and three CVE ids (CVE-2026-56181, CVE-2026-56179, CVE-2026-63913, matching the registry summary and the natjack entry).
+6. `.claude/memory/scheduler-and-workflow-races.md` now dates the completion-skew measurement to 2026-08-24 in both occurrences — confirmed.
+
+**Cross-file consistency spot-checks (beyond the deltas):** verified the 149/125/19/5 split via direct YAML parse of all nine truth batches (exact match); verified the 28-open/backlog-row count via direct count of the `coverage_backlog.md` Open table (30 pipe-lines − 2 header rows = 28, matching "28 open in total against 13 before it"); verified the 301-row url-liveness ledger via `wc -l` (exact match); verified the 5 factual-error entries map 1:1 onto the NatJack (adjudicated development) + 3×GeoServer-W33 + 1×w34-IKE pattern the report and run record describe, and that the two new correction/update entries in this run's scope are exactly the fixes for the surviving 4.
+
+**Per-source fetches performed this iteration:** both SPIP blog bulletins (4.4.20, 4.4.21 — direct bridge), both CERT-FR advisories (AVI-1033, AVI-1063 — direct bridge), NVD REST API for CVE-2026-77647 and CVE-2026-77806, all three GeoServer OSGeo release announcements, the OSV/GHSA-mqjf-5f49-2fjh structured record, natjack.io, MSRC per-CVE JSON for CVE-2026-56179 and CVE-2026-33824 (via `tools/fetch_source.py msrc cve`), and the CERT-EU advisory 2026-010. All four entries' `evidence[]` quotes were confirmed as literal (allowing for HTML-entity/curly-quote encoding) substrings of their cited pages. `cve.org`/jina reader for CVE-2026-77806 could not be reached (JS SPA + exhausted jina credits) but was not needed — the same fact is independently obtainable and was cross-checked via the NVD REST API instead.
+
+### Citation does not support the claim
+
+- **F3** — Entry: `2026-08-24/spip-4-4-20-and-4-4-21-two-preauth-rce-security-screen-blind`. The body's inline citation for the CERTFR-2026-AVI-1063 URL reads `[CERT-FR, 2026-08-24](https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/)` (used for the clause "updated that advisory on 2026-08-24 to add the identifier now assigned to it, CVE-2026-77806"), but the frontmatter `sources[]` record for that same URL carries `date: "2026-08-21"`. Fetched AVI-1063 directly: its own revision history shows "le 21 août 2026 — Version initiale" and "le 24 août 2026 — Ajout de l'identifiant CVE-2026-77806." — i.e. the CVE-identifier content the entry cites this URL for only exists in the 08-24 revision, not the 08-21 initial version the frontmatter date names. By contrast the companion AVI-1033 record is dated `2026-08-24` in frontmatter, consistent with its own inline citation and with what it's cited for (the identifier addition) — so the two CERT-FR source records are dated on two different conventions (last-revision vs. first-publication) for the identical kind of citation, and one of them (AVI-1063) disagrees with its own inline-citation label by 3 days. Fix: set the AVI-1063 frontmatter source date to `2026-08-24` to match what the citation is actually used for and to be internally consistent with AVI-1033's treatment (or, if the intent was to date-stamp first publication, change the inline label to `2026-08-21` and cite a *different* AVI-1063 fact for that clause — but the current combination is inconsistent).
+
+### Unsupported / hallucinated facts
+
+- **F4** — Entry: `2026-08-24/spip-4-4-20-and-4-4-21-two-preauth-rce-security-screen-blind`, Defender-takeaway paragraph: **"The CVE record itself was published on 2026-08-21, so the gap was in the relay rather than in the numbering."** No inline citation is attached to this sentence, and none of the entry's four cited sources (SPIP 4.4.20 bulletin, SPIP 4.4.21 bulletin, CERTFR-2026-AVI-1033, CERTFR-2026-AVI-1063) state a CVE record's own publication date. CERTFR-2026-AVI-1063 does carry "Date de la première version: 21 août 2026" — but that is the *CERT-FR advisory's own* first-publication date, a different document from "the CVE record," and the entry's sentence conflates the two. (For the record, I independently confirmed via the NVD REST API that CVE-2026-77806 actually was published 2026-08-21T14:16:53.903 — so the specific date asserted happens to be correct — but the entry cites no source for it, cannot cite the source that would support it under this pipeline's own no-NVD/MITRE-citation rule, and the sentence as written attributes the date to the wrong document if a reader traces it back to the one CERT-FR source with a matching 21-August date on the page.) This is exactly the "true fact, not supported by the cited source" pattern the audit history has repeatedly flagged as the dominant residual defect class. Fix: either drop the sentence (the surrounding argument about the identifier-relay gap does not depend on it), or rephrase to attribute it correctly without implying it is drawn from a cited source (e.g. "the CVE identifier was assigned before CERT-FR's relay caught up" without a specific date claim), since no citable source in this entry states the CVE record's own publication date.
+
+### Verdict
+
+**NEEDS_FIXES (truth: 2, editorial: 0, advisory: 0)**
+
+Both findings are confined to one entry (the SPIP entry) and are residue of this iteration loop's own repeated rewrites of that entry's identifier-provenance and defender-takeaway paragraphs, exactly as the spawn message anticipated ("rewrite residue is the likeliest remaining defect class"). The other three entries (GeoServer correction, NatJack update, w34-IKE correction) were re-verified end-to-end against every cited primary source (OSGeo×3, OSV, natjack.io, MSRC×2, CERT-EU) with no residual defects found — every fact, quote, date, and version number checked out exactly as claimed. The run record's verification-iterations block, the audit report's headline arithmetic (125/19/5, four-theme 19-item reconciliation, 301 ledger rows, 28-open backlog, 5-of-18 convergence, 4.9 mean), and the memory-file date fix all reproduced cleanly and required no correction. Coverage judged complete for this scope — no missed angle identified beyond what the run record's own coverage-backlog and reader-pool sections already disclose.
+
+### Findings summary (machine-readable)
+
+```yaml
+- code: F3
+  category: claim-not-supported
+  section: entries/2026-08-24
+  item: "SPIP shipped two unconditional pre-authentication RCE fixes three days apart (CVE-2026-77647 / CVE-2026-77806)"
+  url_or_quote: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1063/"
+  summary: "frontmatter sources[] dates this URL 2026-08-21 (the advisory's initial-version date) but the body's inline citation for the same URL is labelled [CERT-FR, 2026-08-24] and is used for a fact (the CVE-2026-77806 identifier addition) that only exists in the advisory's 2026-08-24 revision per its own revision history. Companion source AVI-1033 is dated 2026-08-24 consistently; AVI-1063 should match."
+- code: F4
+  category: hallucinated-fact
+  section: entries/2026-08-24
+  item: "SPIP shipped two unconditional pre-authentication RCE fixes three days apart (CVE-2026-77647 / CVE-2026-77806)"
+  url_or_quote: "The CVE record itself was published on 2026-08-21, so the gap was in the relay rather than in the numbering."
+  summary: "No inline citation; none of the entry's four cited sources state a CVE record's own publication date. CERTFR-2026-AVI-1063 states its OWN first-version date as 21 août 2026, a different document from 'the CVE record' that the sentence conflates it with. (Independently confirmed via NVD REST API that CVE-2026-77806 was in fact published 2026-08-21T14:16:53.903 — the date is correct but uncited and, per this pipeline's own no-NVD-citation rule, not citable from any source the entry lists.)"
+```
