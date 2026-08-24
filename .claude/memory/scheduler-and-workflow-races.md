@@ -18,6 +18,44 @@ Both workflows fire on the same push to `claude/**`. Auto-merge can merge AND DE
 
 Two July runs silently ran far past any sane wall-clock: `2026-07-04T1809Z-intel` (**17.8 h**) and `2026-07-09T2009Z-intel` (**11.2 h** — fired 20:09, published 07:56 next day). Consequences observed: entries published up to ~11 h late, and the next scheduled fire overtakes the stalled run — `2026-07-10T0409Z-intel` computed `gap_hours: 16` from `1211Z` because the 2009Z run's record hadn't landed on main yet, i.e. the overtaking run cannot see the overtaken run's in-flight coverage. The 2009Z run improvised the correct recovery (re-pulled main before composing, deduped its 7 candidates against the 0409Z run's 6 entries, published only the 4-delta). v3.21 codifies both: main-run wall-clock watchdog (past ~3 h, land the run — no new research) + mandatory re-sync-and-re-dedup when overtaken; `check_run.py` WARNs on `duration_seconds` > 3 h and (--all) on a v3.14+ record still missing `publish_status` >24 h after start. Root cause of the stalls is scheduler/container-side (long suspensions), same class as the 07-07 outage — don't re-diagnose the repo.
 
+## 2026-08-22 — the worst overtake yet: 53 h alive, three fires past it, half the run stood down
+
+`2026-08-22T0410Z-intel` composed, gated and triple-verified **sixteen** entries, then discovered at the
+pre-push sync that `origin/main` had advanced by **three** fires. Elapsed from open to that discovery: about
+**53 h** — the container survived across two calendar days, so every file mtime and composition timestamp in
+the run still read 08-22 while the publish happened on 08-24. Its own ~3 h watchdog fired correctly and was
+obeyed; the stall was container-side, same class as the July cases above. **Eight of the sixteen were
+duplicates and were stood down; eight shipped as the delta.**
+
+Four things worth carrying:
+
+- **Two of the eight duplicates had NO CVE and NO shared entity key.** The Defender BTR.sys research
+  (neither entry carried a CVE; this run's carried no entity) and a Swiss communal mailbox compromise
+  (this run registered `incident:martigny-combe-…`, the overtaking fire registered nothing) were caught
+  only by *reading* the candidates against the store. A CVE-and-entity index pass would have shipped both.
+  The mechanical index is what a rushed run leans on, and it is exactly then that it is not enough.
+- **An overtaking fire's window is computed from the gap to the last *published* run, so it deliberately
+  swallows yours.** The 08-23 intel fire ran `window_hours: 74` *because* this fire had never published.
+  Expect the overlap to be near-total, not partial.
+- **Check `origin/main` at every phase boundary, not only at Phase 6.** Twelve of sixteen
+  entry-verifications were spent on material that could not publish. A cheap `git fetch` + run-record
+  listing at each boundary would have caught it hours earlier. (Recorded as a recommendation to the
+  operator in the run record rather than pushed into the prompt unilaterally at 53 h.)
+- **Resolve the merge by taking `main`'s shared state, then re-applying only your genuinely-new records.**
+  The habitual `--ours` on `entities/registry.yaml` / `state/*.json` assumes your side is purely additive.
+  After an overtake it is not: `--ours` would have discarded three fires of registry, CVE-index and
+  source-health work. Took `main` for registry/cves_seen/source_health/sources.json, then re-added 3
+  registry records, 11 CVE records and 1 candidate source. Also check your *tooling* diffs the same way —
+  this run's `source_health.py` fix turned out to be a rediscovery of one `main` already carried from the
+  same `sec-disclosures-edgar` case, and `main`'s was more thorough, so ours was discarded.
+
+One reshape worth copying: a duplicated-but-still-valuable entry can survive as an `update_of` on the
+overtaking entry when it carries a real correction (here the weekly rollup had 8 of 9 Cisco CVEs and called
+the whole set unauthenticated when 3 of 9 are `PR:L`). Two gate rules bite when you do it: `update_of`
+cannot point at an entry with a *later* `discovered_at`, and the entry's folder date must equal its
+`discovered_at` — so the reshaped entry moves to the folder of the day you found the divergence, not the
+day you read the primary.
+
 ## sources.json serialization drift (re-normalized 2026-07-09)
 
 Despite the canonical `indent=1, ensure_ascii=False` contract (see [state-file-serialization](state-file-serialization.md)), the committed file had drifted to `ensure_ascii=True` escapes (`—` for —) on some earlier run — symptom: only lines containing non-ASCII flip in a diff (~180 lines). Re-normalized to the canonical form on 2026-07-09; if that symptom reappears, some writer used the default `ensure_ascii=True` again.

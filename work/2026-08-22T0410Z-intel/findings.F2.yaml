@@ -1,0 +1,513 @@
+domain: F2
+run_id: 2026-08-22T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-22T04:37:21Z
+ended_at: 2026-08-22T04:51:33Z
+duration_seconds: 852
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 4
+  bridge_fetches: 23
+
+# ============================================================
+# F2-a. TP-Link Omada Gateway — CVE-2026-19586 / CVE-2026-19683 / CVE-2026-9033
+# Primary reached this run: https://support.omadanetworks.com/us/document/132084/
+# (TP-Link's own document-ID page — NOT the JS-only SPA landing the
+# surfacing pass hit; found via the BSI CSAF external reference).
+# ============================================================
+items:
+  - title: "TP-Link Omada Gateway: vendor's own advisory recovered — per-CVE CVSS v4.0 vectors, a 20-model/hardware-version firmware table, and confirmation the S1 model list was incomplete (CVE-2026-19586 / CVE-2026-19683 / CVE-2026-9033)"
+    sources:
+      - { url: "https://support.omadanetworks.com/us/document/132084/", publisher: "TP-Link / Omada Networks (vendor security advisory, document 132084)", date: "2026-08-20", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2964", publisher: "BSI CERT-Bund (WID-SEC-2026-2964, CSAF)", date: "2026-08-20", role: "primary" }
+    discovery_trace: "first seen at: findings.S1.yaml item 2 (this run) → pivot: BSI CSAF record WID-SEC-2026-2964, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2964, references[category=external] section names the vendor URL → primary: TP-Link/Omada vendor advisory document, URL https://support.omadanetworks.com/us/document/132084/ (recovered this run via the bridge `url` command against the specific document-ID path — the JS-only SPA landing page that blocked the S1 surfacing pass is not this URL)"
+    summary: |
+      TP-Link's own advisory (document 132084, titled "Security Advisory: Multiple Vulnerabilities in
+      Omada Gateways (CVE-2026-9033, CVE-2026-19586, CVE-2026-19683)", dated 08-20-2026) was recovered
+      this run via the bridge fetcher against the specific document-ID URL BSI CERT-Bund's CSAF
+      "references" section names as its external source — the JS-only SPA landing the S1 surfacing
+      pass hit is a different, non-content-bearing path. The vendor's own text gives per-CVE CVSS v4.0
+      vectors that the S1 pass did not have: CVE-2026-19586 (Pre-Authentication OS Command Injection
+      in Omada Gateways on OpenVPN Server) is CVSS v4.0 9.3/Critical, vector
+      CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:L/SI:L/SA:L — network-reachable, no attack
+      requirements beyond reachability, unauthenticated. TP-Link's own root-cause text: "insufficient
+      validation of client-supplied data during OpenVPN connection establishment" with the explicit
+      precondition "Exploitation requires the OpenVPN Server feature to be enabled, VPN service must
+      be reachable by the attacker, and the attacker must be able to initiate an OpenVPN connection
+      attempt." CVE-2026-9033 (Unauthenticated Captive Portal Session Termination and Forced Logout)
+      is CVSS v4.0 6.0/Medium, vector CVSS:4.0/AV:A/AC:L/AT:P/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N —
+      note AV:A (adjacent network, i.e. the attacker needs network access to the captive-portal
+      segment, not raw internet reach) and AT:P (attack requirements present), a nuance NVD's record
+      did not surface. CVE-2026-19683 (Unencrypted Credential Transmission in Omada Gateway Dynamic
+      DNS Authentication) is CVSS v4.0 6.3/Medium, vector CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:L/VI:L/
+      VA:N/SC:N/SI:N/SA:N. The vendor's per-model, per-hardware-version fixed-firmware table is
+      substantially LARGER than the S1 surfacing pass's list of eight models: it names 19 rows across
+      17 distinct model names plus split hardware versions on two of them (ER706W-4G v1 fixed at
+      1.2.11 Build 20260723 Rel.41567 vs. ER706W-4G v2 fixed at 2.1.11 Build 20260723 Rel.41624 — two
+      different fixed builds for the SAME model name depending on hardware revision). The additional
+      models the S1 pass's list omitted: ER706WP-4G (v1, fixed 1.1.11 Build 20260723 Rel.41624),
+      ER703WP-4G-Outdoor (v1, fixed 1.1.7 Build 20260723 Rel.41712), DR3220v-4G (v1, fixed 1.2.0 Build
+      20260630 Rel.82652), DR3650v (v1, fixed 1.2.0 Build 20260630 Rel.83311), DR3650v-4G (v1, fixed
+      1.2.0 Build 20260630 Rel.83347), ER603WP-4G-Outdoor (v1, fixed 1.0.2 Build 20260723 Rel.43271),
+      DR3150 (v1, fixed 1.0.1 Build 20260722 Rel.16854), ER701-5G-Outdoor (v1, fixed 1.0.3 Build
+      20260723 Rel.40931), and ER605W (v2, fixed 2.0.4 Build 20260723 Rel.43763). The vendor's stated
+      workaround is narrow and CVE-specific: "If immediate firmware upgrade is not possible, users
+      should disable the OpenVPN Server feature until the fixed firmware can be applied. If OpenVPN
+      Server must remain enabled, restrict access to the OpenVPN service to trusted networks or
+      trusted source IP addresses only, and ensure the service is not exposed to the public
+      Internet unless required." No source reached this run — not TP-Link's own advisory, not BSI's
+      CSAF record — states whether the OpenVPN Server feature is enabled by default or must be
+      manually turned on; this remains an open gap. No source states exploitation, scanning activity,
+      or a public PoC for any of the three CVEs.
+    region_nexus: "global; TP-Link Omada gateways are a common SMB/branch-office/public-sector edge device in Europe"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, telco"
+    cves: [CVE-2026-19586, CVE-2026-19683, CVE-2026-9033]
+    techniques: [T1190, T1040]
+    affected_products: ["TP-Link Omada Gateway ER605 (v2)", "TP-Link Omada Gateway ER7206 (v2)", "TP-Link Omada Gateway ER7212PC (v2)", "TP-Link Omada Gateway ER7406 (v1)", "TP-Link Omada Gateway ER707-M2 (v1)", "TP-Link Omada Gateway ER7412-M2 (v1)", "TP-Link Omada Gateway ER8411 (v1)", "TP-Link Omada Gateway ER706W (v1)", "TP-Link Omada Gateway ER706W-4G (v1, v2)", "TP-Link Omada Gateway ER706WP-4G (v1)", "TP-Link Omada Gateway ER703WP-4G-Outdoor (v1)", "TP-Link Omada Gateway DR3220v-4G (v1)", "TP-Link Omada Gateway DR3650v (v1)", "TP-Link Omada Gateway DR3650v-4G (v1)", "TP-Link Omada Gateway ER603WP-4G-Outdoor (v1)", "TP-Link Omada Gateway DR3150 (v1)", "TP-Link Omada Gateway ER701-5G-Outdoor (v1)", "TP-Link Omada Gateway ER605W (v2)"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of: findings.S1.yaml item 2 (this run, same brief) — deep-read enrichment, not a new item; the main agent should merge this detail into the same entry rather than publish twice"
+    evidence:
+      - quote: "A pre-authentication OS command injection vulnerability has been identified in Omada gateways configured to operate as an OpenVPN Server due to insufficient validation of client-supplied data during OpenVPN connection establishment. An unauthenticated remote attacker may provide specially crafted input influencing backend command execution logic before authentication completes. Exploitation requires the OpenVPN Server feature to be enabled, VPN service must be reachable by the attacker, and the attacker must be able to initiate an OpenVPN connection attempt."
+        attribution: "TP-Link / Omada Networks vendor advisory (document 132084)"
+        source_url: "https://support.omadanetworks.com/us/document/132084/"
+        grep_check: "PASS — literal substring confirmed via grep -F against work/2026-08-22T0410Z-intel/tplink-vendor.html"
+      - quote: "If immediate firmware upgrade is not possible, users should disable the OpenVPN Server feature until the fixed firmware can be applied."
+        attribution: "TP-Link / Omada Networks vendor advisory"
+        source_url: "https://support.omadanetworks.com/us/document/132084/"
+        grep_check: "PASS"
+      - quote: "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:L/SI:L/SA:L"
+        attribution: "TP-Link / Omada Networks vendor advisory (CVE-2026-19586 vector)"
+        source_url: "https://support.omadanetworks.com/us/document/132084/"
+        grep_check: "PASS"
+      - quote: "An unauthenticated attacker with network access to the captive portal service of an affected device can terminate active captive portal sessions, including forcing logout of specific users or clearing all active sessions."
+        attribution: "TP-Link / Omada Networks vendor advisory (CVE-2026-9033)"
+        source_url: "https://support.omadanetworks.com/us/document/132084/"
+        grep_check: "PASS"
+    extended_notes: |
+      Recipe fix for sources.json / future runs: the TP-Link/Omada advisory landing page IS a JS-only
+      SPA, but the per-advisory document URL (https://support.omadanetworks.com/us/document/<id>/,
+      e.g. 132084 here) is server-rendered and reachable via the plain bridge `url` command — no jina
+      needed. The reliable path to the document ID is the referencing national-CERT CSAF record's
+      "references[category=external]" field (BSI CERT-Bund's WID-SEC-*.json carried it directly this
+      run) rather than trying to crawl the vendor's own SPA search/listing.
+    corrections:
+      - "S1 findings.S1.yaml item 2 stated the vendor advisory 'neither the bridge fetcher nor the (credit-exhausted) jina reader could render this run' — CORRECTED: the specific document URL (support.omadanetworks.com/us/document/132084/) rendered fully via the plain bridge `url` command; the reachability problem was the SPA *landing/search* page, not this content page."
+      - "S1's affected_products list (ER605, ER7206, ER7212PC, ER7406, ER707-M2, ER7412-M2, ER8411, ER706W, ER706W-4G) is INCOMPLETE. The vendor's own table lists 9 additional model/hardware-version rows: ER706WP-4G, ER703WP-4G-Outdoor, DR3220v-4G, DR3650v, DR3650v-4G, ER603WP-4G-Outdoor, DR3150, ER701-5G-Outdoor, and ER605W — plus a second hardware version (v2) of ER706W-4G with a DIFFERENT fixed build than its v1 entry."
+      - "S1 did not state, and this run could not find any source stating, whether the OpenVPN Server feature defaults to enabled or disabled. This is a genuine gap, not a correction — flagging explicitly per the mandate rather than letting the omission read as confirmed-disabled-by-default."
+      - "No source (TP-Link, BSI) states or implies scanning, PoC availability, or in-the-wild exploitation for any of the three CVEs — S1's 'no exploitation confirmed' framing holds up under the vendor primary."
+
+# ============================================================
+# F2-b. Cisco Crosswork + Secure Workload, nine CVEs (2026-08-21 surfacing)
+# Primaries: Cisco's own PSIRT HTML advisories + their CSAF JSON exports
+# (per-CVE CVSS vectors are NOT in the HTML table — only in the CSAF JSON).
+# Corroboration: NCSC-NL CSAF for Secure Workload (matches exactly).
+# ============================================================
+  - title: "Cisco Crosswork + Secure Workload hardening release: per-CVE CVSS vectors from Cisco's own CSAF show SIX of nine CVEs are unauthenticated (PR:N) and THREE require low-privilege access (PR:L) — not a uniform unauthenticated set; advisories were FIRST published 2026-08-19, not 2026-08-21"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh", publisher: "Cisco PSIRT (HTML advisory)", date: "2026-08-19 (first published) / 2026-08-21 (last updated, v2.0 Final)", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP", publisher: "Cisco PSIRT (HTML advisory)", date: "2026-08-19", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh/csaf/cisco-sa-hardening-crosswork-UzDTU9Vh.json", publisher: "Cisco PSIRT (CSAF 2.0 export)", date: "2026-08-19", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP/csaf/cisco-sa-hardening-csw1-shSvndWP.json", publisher: "Cisco PSIRT (CSAF 2.0 export)", date: "2026-08-19", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0323", publisher: "NCSC-NL (NCSC-2026-0323, CSAF)", date: "2026-08-21", role: "corroborating" }
+    discovery_trace: "first seen at: findings.S1.yaml item 3 (this run) → pivot: Cisco PSIRT HTML advisories, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh and https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP → primary: each advisory's own CSAF 2.0 JSON export (linked from the HTML page's 'Download CSAF' button), URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh/csaf/cisco-sa-hardening-crosswork-UzDTU9Vh.json and https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP/csaf/cisco-sa-hardening-csw1-shSvndWP.json → corroborating: NCSC-NL independent CSAF record for the Secure Workload cluster, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0323 (per-CVE vectors match Cisco's CSAF exactly)"
+    summary: |
+      Cisco's own CSAF 2.0 JSON exports for both advisories (linked from each HTML page's "Download
+      CSAF" control) carry per-CVE CVSS v3.1 vectorStrings that the HTML advisory pages and the S1
+      surfacing pass did not have (the HTML page's "Details" table shows only a numeric score per CWE
+      grouping, not the vector). Reading them precisely settles the authentication question the task
+      specifically asked about. Crosswork (Data Gateway, Network Controller, Planning, Workflow
+      Manager — 7.2.1 and earlier / 2.1.1 and earlier, fixed in 7.2.1-SP / 2.1.1-SP for all four):
+      CVE-2026-20030 (CWE-89 SQLi) CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H = 10.0, unauthenticated;
+      CVE-2026-20357 (CWE-306 missing authentication) same vector, 10.0, unauthenticated; CVE-2026-20358
+      (CWE-73 external control of filesystem) CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H = 10.0,
+      unauthenticated; CVE-2026-20359 (CWE-522 insufficiently protected credentials)
+      CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H = 9.9 — PR:L, i.e. this one REQUIRES low-privilege
+      access, not unauthenticated. Secure Workload (SaaS and on-prem; 3.10 and earlier fixed in
+      3.10.9.1, 4.0 fixed in 4.0.4.16): CVE-2026-20231 (CWE-74 injection)
+      CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H = 9.9 — PR:L, low-privilege required; CVE-2026-20315
+      (CWE-284 improper access control) CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H = 10.0,
+      unauthenticated; CVE-2026-20317 (CWE-287 improper authentication)
+      CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H = 10.0, unauthenticated; CVE-2026-20318 (CWE-20
+      improper input validation) CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:N/I:H/A:H = 9.6 — PR:L,
+      low-privilege required; CVE-2026-20319 (CWE-119 buffer restriction)
+      CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H = 7.5, unauthenticated. Net: SIX of the nine CVEs
+      (20030, 20357, 20358, 20315, 20317, 20319) are unauthenticated (PR:N); THREE (20359, 20231,
+      20318) require low-privilege access (PR:L) — the two credential/input-validation-class bugs on
+      Secure Workload and the one credentials-class bug on Crosswork are the PR:L outliers. NCSC-NL's
+      independently-published CSAF record for the Secure Workload cluster carries the identical five
+      vectors, confirming Cisco's own numbers rather than a transcription artifact. Cisco's advisory
+      text confirms the grouping methodology explicitly: "Cisco has grouped these issues by their
+      underlying vulnerability class — Common Weakness Enumeration (CWE) — and assigned a single
+      Common Vulnerabilities and Exposures Identifier (CVE ID) to each CWE grouping," and further
+      states "The CVSS score that is assigned to each CVE ID represents the maximum potential
+      severity of the single most impactful underlying vulnerability within that specific CWE
+      category" — i.e. one CVE can bundle multiple underlying bugs of the same CWE class, scored at
+      the worst one's severity, the identical shape this pipeline previously saw in Cisco's August IOS
+      XE hardening release (not independently re-verified against that release this run for time
+      reasons, but the advisory's own wording is the same "grouped by CWE, one CVE per class"
+      construction). Both advisories confirm verbatim: "The Cisco PSIRT is not aware of any public
+      announcements or malicious use of the vulnerabilities that are described in this advisory" and
+      "There are no workarounds that address these vulnerabilities" — patching is the only path.
+      New detail beyond the S1 summary: both advisories' "Source" sections state "These
+      vulnerabilities were found during internal security testing using existing testing processes as
+      well as frontier AI models" — Cisco is crediting AI-assisted internal testing tooling, not a
+      named human researcher or external report, as (partial) provenance for the discovery. Also new:
+      the Secure Workload advisory's Fixed Software note states "The Cluster, Agent, and Connector
+      software of Cisco Secure Workload need to be upgraded to resolve all of these vulnerabilities.
+      For SaaS deployments, Cisco has upgraded the Cluster software, and customers need to upgrade
+      only the Agent and Connector software" — SaaS customers still have client-side work to do
+      (Agent/Connector upgrade), it is not a fully server-side fix. Finally, both HTML advisories'
+      header metadata show "First Published: 2026 August 19 16:00 GMT" — TWO DAYS before the
+      2026-08-21 date the S1 surfacing pass (via NCSC-CH Security Hub) picked the story up on; the
+      Crosswork advisory's header additionally shows "Last Updated: 2026 August 21 16:54 GMT" under
+      "Version 2.0: Final" — meaning 21 August was a revision/finalization of an advisory that had
+      already been public for two days, a distinction relevant to the main agent's in-window
+      recency call.
+    region_nexus: "global; Crosswork and Secure Workload are deployed by large carriers/enterprises including European telco and public-sector network operators for SD-WAN/network orchestration and microsegmentation"
+    primary_sector_nexus: "indirect"
+    sector: "telco, public-sector"
+    cves: [CVE-2026-20030, CVE-2026-20357, CVE-2026-20358, CVE-2026-20359, CVE-2026-20315, CVE-2026-20317, CVE-2026-20318, CVE-2026-20231, CVE-2026-20319]
+    techniques: [T1190, T1552, T1078]
+    affected_products: ["Cisco Crosswork Data Gateway", "Cisco Crosswork Network Controller", "Cisco Crosswork Planning", "Cisco Crosswork Workflow Manager", "Cisco Secure Workload"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of: findings.S1.yaml item 3 (this run, same brief) — deep-read enrichment"
+    evidence:
+      - quote: "Cisco has grouped these issues by their underlying vulnerability class - Common Weakness Enumeration (CWE) - and assigned a single Common Vulnerabilities and Exposures Identifier (CVE ID) to each CWE grouping."
+        attribution: "Cisco PSIRT (both advisories, identical text)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh"
+        grep_check: "PASS"
+      - quote: "The CVSS score that is assigned to each CVE ID represents the maximum potential severity of the single most impactful underlying vulnerability within that specific CWE category."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh"
+        grep_check: "PASS"
+      - quote: "The Cisco PSIRT is not aware of any public announcements or malicious use of the vulnerabilities that are described in this advisory."
+        attribution: "Cisco PSIRT (both advisories, identical text)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP"
+        grep_check: "PASS"
+      - quote: "There are no workarounds that address these vulnerabilities."
+        attribution: "Cisco PSIRT (both advisories, identical text)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP"
+        grep_check: "PASS"
+      - quote: "These vulnerabilities were found during internal security testing using existing testing processes as well as frontier AI models."
+        attribution: "Cisco PSIRT (both advisories, identical text)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-crosswork-UzDTU9Vh"
+        grep_check: "PASS"
+      - quote: "The Cluster, Agent, and Connector software of Cisco Secure Workload need to be upgraded to resolve all of these vulnerabilities. For SaaS deployments, Cisco has upgraded the Cluster software, and customers need to upgrade only the Agent and Connector software."
+        attribution: "Cisco PSIRT (Secure Workload advisory)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-csw1-shSvndWP"
+        grep_check: "PASS"
+    extended_notes: |
+      Triage-relevant framing for defenders: this is a nine-bug internal-discovery hardening release
+      with NO workaround and a mixed authentication bar. The three PR:L bugs (CVE-2026-20359 on
+      Crosswork; CVE-2026-20231 and CVE-2026-20318 on Secure Workload) still require only LOW
+      privilege, not administrative access — so any existing low-tier authenticated account (a
+      read-only API consumer, a low-privilege operator role) is a sufficient foothold; this is a
+      materially different exposure profile from the six PR:N bugs but still a low bar in practice for
+      any environment with self-service or delegated account provisioning into either platform.
+    corrections:
+      - "S1's summary implies (without stating outright) that these are internet-facing / unauthenticated flaws across the board. Cisco's own CSAF vectors show that is true for SIX of the nine CVEs (PR:N) but THREE require low-privilege authentication (PR:L): CVE-2026-20359 (Crosswork, CWE-522), CVE-2026-20231 and CVE-2026-20318 (Secure Workload, CWE-74 and CWE-20). This changes the triage story for those three: a hardening patch cycle, yes, but not a pure unauthenticated-RCE panic for the full set."
+      - "S1 and the underlying NCSC-CH Security Hub post dated this story 2026-08-21. Cisco's own advisory metadata shows BOTH advisories were FIRST PUBLISHED 2026-08-19T16:00:00Z — two days earlier. The Crosswork advisory was revised to 'Version 2.0: Final' on 2026-08-21T16:54Z, and that revision (not the original publication) is most plausibly what NCSC-CH picked up. The main agent should treat the underlying advisory's true first-publication date as 2026-08-19 for recency purposes, with 2026-08-21 as the version-2/finalization date, when deciding in-window status."
+      - "New non-workaround-related fact not previously reported: for Secure Workload SaaS deployments, Cisco upgraded the server-side Cluster software already, but customers STILL must upgrade the Agent and Connector software client-side — this is not a fully passive server-side fix the way the S1 framing might suggest by analogy to typical SaaS patch cycles."
+
+# ============================================================
+# F2-c. Microsoft Entra ID CVE-2026-69836 — Exploited-flag retraction
+# Primary: MSRC's own record via the bridge `msrc cve` command.
+# Live discrepancy found: CERT-FR and ENISA EUVD still carry "exploited"
+# as of this run, unretracted, after Microsoft's own correction.
+# ============================================================
+  - title: "CVE-2026-69836 Entra ID: Microsoft's own MSRC record never displays the original 'Exploited: Yes' value — only third-party reporting captured it — and, as of this run, CERT-FR and ENISA EUVD are STILL publishing 'exploited' unretracted, a day after Microsoft's own correction"
+    sources:
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69836", publisher: "Microsoft MSRC (vulnerability record, via bridge)", date: "2026-08-21 (last revision)", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1074/", publisher: "CERT-FR / ANSSI (CERTFR-2026-AVI-1074)", date: "2026-08-21 (no revision since)", role: "primary" }
+      - { url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-63693", publisher: "ENISA EU Vulnerability Database (EUVD-2026-63693)", date: "dateUpdated 2026-08-21 (record retrieved live this run)", role: "primary" }
+      - { url: "https://thehackernews.com/2026/08/microsoft-entra-id-flaw-cvss-100.html", publisher: "The Hacker News", date: "2026-08-21 (updated after publication)", role: "corroborating" }
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA KEV catalog", date: "catalogVersion 2026.08.21", role: "corroborating (negative check)" }
+    discovery_trace: "first seen at: findings.S1.yaml item 4 (this run) → pivot: MSRC record via bridge, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69836 → pivot: CERT-FR feed, URL https://www.cert.ssi.gouv.fr/avis/feed/ → primary: CERT-FR advisory detail, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1074/ → pivot: ENISA EUVD 'exploited' listing via bridge → primary: ENISA EUVD per-ID advisory via bridge, citation URL https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-63693 → corroborating: CISA KEV catalog JSON via bridge (CVE absent, checked negative) → corroborating: The Hacker News, URL https://thehackernews.com/2026/08/microsoft-entra-id-flaw-cvss-100.html"
+    summary: |
+      Microsoft's own MSRC record for CVE-2026-69836, read directly via the bridge, currently shows:
+      baseScore 10.0, vectorString "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H/E:U/RL:O/RC:C", CWE
+      "CWE-502: Deserialization of Untrusted Data", exploited: "No", latestSoftwareRelease
+      (exploitability assessment): "Exploitation Less Likely", customerActionRequired: false. The full
+      revision history is two entries: v1 (2026-08-20T07:00:00-07:00) description "Information
+      published." — this v1 text does NOT itself restate what the original Exploited value was; and
+      v1.1 (2026-08-21T07:00:00-07:00 = 2026-08-21T14:00:00Z) description "Corrected Exploited to No.
+      This vulnerability was not exploited in the wild. This is an informational change only." This
+      answers the task's precise question directly: Microsoft's OWN record, as it stands today, never
+      anywhere states the flaw WAS exploited — the only evidence the field ever read "Yes" is
+      third-party reporting of what the page displayed on 2026-08-20 (The Hacker News's own
+      after-the-fact editor's note: "Although the security bulletin originally marked the 'Exploited'
+      field under the Exploitability Assessment table as 'Yes,' on August 21, 2026, Microsoft
+      corrected the 'Exploited' status to 'No' after The Hacker News contacted the company for
+      comment." — this causal claim ["after The Hacker News contacted the company"] is THN's own
+      characterization, not something Microsoft's record states). THN's article also carries a direct
+      Microsoft spokesperson quote: "We identified and addressed this issue with a fix and released
+      CVE-2026-69836 for greater transparency. There are no additional actions customers need to
+      take" and states plainly "As of writing, there are currently no details on how the vulnerability
+      has been exploited, when these efforts began and if they are still ongoing, and how it was
+      discovered" — i.e. even at the height of the "Yes" claim, no exploitation detail was ever
+      published by anyone. The "fully mitigated / no action for users" wording IS Microsoft's own —
+      verbatim from the MSRC record's FAQ article: "This vulnerability has already been fully
+      mitigated by Microsoft. There is no action for users of this service to take. The purpose of
+      this CVE is to provide further transparency." The operationally important finding from checking
+      the authorities: CISA KEV does NOT list this CVE (expected — a Microsoft-hosted cloud identity
+      service has no on-prem component for federal agencies to patch, so it falls outside KEV's
+      patch-obligation model even when marked exploited). NCSC-CH's Security Hub has NOT published
+      anything on this CVE (checked the 20 most recent posts; no match beyond an unrelated false-
+      positive substring hit on an "N-central" advisory). But CERT-FR (CERTFR-2026-AVI-1074, published
+      21 August 2026, "Date de la dernière version: 21 août 2026" — i.e. NOT revised since) still
+      states, sourced explicitly to Microsoft: "Microsoft indique que la vulnérabilité CVE-2026-69836
+      est activement exploitée" (Microsoft states that CVE-2026-69836 is actively exploited) — this
+      advisory has not been updated to reflect Microsoft's own 2026-08-21 retraction. And ENISA's EU
+      Vulnerability Database record (EUVD-2026-63693), fetched live during this run, still carries
+      "exploitedSince": "Aug 21, 2026, 12:00:00 AM" and still appears in EUVD's "exploited vulnerabilities"
+      listing, with its own dateUpdated field ("Aug 21, 2026, 11:10:21 PM") timestamped AFTER
+      Microsoft's 14:00 UTC correction on the same day — meaning ENISA's own vulnerability database
+      has not synced with Microsoft's retraction as of the moment this research was performed. Net: a
+      SOC relying on CERT-FR or ENISA EUVD as its authority feed — rather than going directly to MSRC
+      — is, at the time of this research, still being told this CVSS-10.0 identity-plane flaw is
+      actively exploited, a full day after Microsoft's own retraction.
+    region_nexus: "global — every Entra ID tenant, including Swiss/European public-sector and CI organizations using Entra ID for identity; France (CERT-FR) and EU-wide (ENISA EUVD) authority feeds are the specific ones shown still carrying the stale exploited status"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, healthcare, energy, water, transport, telco"
+    cves: [CVE-2026-69836]
+    techniques: [T1190]
+    affected_products: ["Microsoft Entra ID"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of: findings.S1.yaml item 4 (this run, same brief) — deep-read enrichment"
+    evidence:
+      - quote: "Corrected **Exploited** to **No**. This vulnerability was not exploited in the wild. This is an informational change only."
+        attribution: "Microsoft MSRC (CVE-2026-69836 revision 1.1, 2026-08-21)"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69836"
+        grep_check: "PASS"
+      - quote: "This vulnerability has already been fully mitigated by Microsoft. There is no action for users of this service to take."
+        attribution: "Microsoft MSRC (CVE-2026-69836 FAQ article)"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69836"
+        grep_check: "PASS"
+      - quote: "Microsoft indique que la vulnérabilité CVE-2026-69836 est activement exploitée."
+        attribution: "CERT-FR / ANSSI (CERTFR-2026-AVI-1074, still current as of this run)"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1074/"
+        grep_check: "PASS (verified via literal Python substring check, UTF-8)"
+      - quote: "Although the security bulletin originally marked the \"Exploited\" field under the Exploitability Assessment table as \"Yes,\" on August 21, 2026, Microsoft corrected the \"Exploited\" status to \"No\" after The Hacker News contacted the company for comment."
+        attribution: "The Hacker News (Ravie Lakshmanan) editor's update note"
+        source_url: "https://thehackernews.com/2026/08/microsoft-entra-id-flaw-cvss-100.html"
+        grep_check: "PASS"
+      - quote: "As of writing, there are currently no details on how the vulnerability has been exploited, when these efforts began and if they are still ongoing, and how it was discovered."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/08/microsoft-entra-id-flaw-cvss-100.html"
+        grep_check: "PASS"
+    extended_notes: |
+      Discoverer credited by Microsoft per THN: "principal security engineer Robert Fitzpatrick" —
+      an internal Microsoft researcher, not an external report. No customer-side detection/hardening
+      action applies (server-side-only cloud fix). The process lesson stands as S1 framed it, but is
+      now sharper: this is not merely "a vendor flag got corrected" — it is "two independent European
+      vulnerability-authority feeds (a national CERT and the EU's own vulnerability database) are
+      still relaying the stale, vendor-retracted claim a day later," which is the exact scenario where
+      an automated SOC/triage pipeline keyed off CERT-FR or EUVD feeds (rather than MSRC directly)
+      would trigger an unnecessary incident-response posture off information its own source has since
+      corrected.
+    corrections:
+      - "S1's evidence quote for this item used an ellipsis ('the ''Exploited'' field...as ''Yes,''') which violates the no-ellipsis/no-splicing quote rule. The full, contiguous, non-elided sentence verified this run: \"Although the security bulletin originally marked the 'Exploited' field under the Exploitability Assessment table as 'Yes,' on August 21, 2026, Microsoft corrected the 'Exploited' status to 'No' after The Hacker News contacted the company for comment.\" The main agent should replace S1's evidence quote with this full version if it survives into the published entry's frontmatter."
+      - "S1's summary states MSRC's 'initial 2026-08-20 publication marked Exploited: Yes' as if this were confirmed from Microsoft's own record. CORRECTED / SHARPENED: Microsoft's CURRENT record's own revision-history text for v1 says only 'Information published' — it does not restate the original field value anywhere. The only evidence the original value was 'Yes' is third-party reporting (The Hacker News, Cybersecurity Dive, Help Net Security) of what the live page displayed before the 2026-08-21 correction, plus CERT-FR's and ENISA EUVD's still-live records that captured the pre-correction state and have not updated since."
+      - "NEW, not in S1: CERT-FR (CERTFR-2026-AVI-1074) and ENISA EUVD (EUVD-2026-63693) both STILL show the vulnerability as actively exploited as of this run (2026-08-22), unretracted, more than 24 hours after Microsoft's own correction. This is the single most operationally important fact for a SOC and was entirely absent from the S1 item."
+      - "NEW, not in S1: CISA KEV does not list this CVE (checked directly against the live KEV catalog JSON, catalogVersion 2026.08.21, 1674 entries) — consistent with KEV's on-prem-patch-obligation model not applying to a fully-managed cloud service, not evidence of anything else."
+
+# ============================================================
+# F2-d. Zoom "Zoomsday" — CVE-2026-53413 / -53414 / -53415
+# Primaries: Zoom's own per-CVE bulletins ZSB-26015/16/17, CCB Belgium,
+# and A Security's full technical write-up (server-rendered, recovered
+# in full this run — NOT JS-only as it might first appear).
+# Two real contradictions found and reported precisely below.
+# ============================================================
+  - title: "Zoomsday: Zoom's own per-CVE bulletins show DIFFERENT fixed-version floors for CVE-2026-53415 than for the other two CVEs; CCB Belgium's advisory covers ONLY CVE-2026-53413; and A Security's own write-up contradicts itself (and Zoom) on who found/reported CVE-2026-53415"
+    sources:
+      - { url: "https://www.zoom.com/en/trust/security-bulletin/ZSB-26015/", publisher: "Zoom (vendor security bulletin ZSB-26015, CVE-2026-53413)", date: "2026-08-11 (rev 1.1 2026-08-14)", role: "primary" }
+      - { url: "https://www.zoom.com/en/trust/security-bulletin/ZSB-26016/", publisher: "Zoom (vendor security bulletin ZSB-26016, CVE-2026-53414)", date: "2026-08-11 (rev 1.1 2026-08-14)", role: "primary" }
+      - { url: "https://www.zoom.com/en/trust/security-bulletin/ZSB-26017/", publisher: "Zoom (vendor security bulletin ZSB-26017, CVE-2026-53415)", date: "2026-08-11 (rev 1.1 2026-08-14)", role: "primary" }
+      - { url: "https://ccb.belgium.be/advisories/warning-zero-click-remote-code-execution-zoom-clients-patch-immediately", publisher: "Centre for Cybersecurity Belgium (CCB)", date: "2026-08-20", role: "primary" }
+      - { url: "https://a.security/blog/asecurity-zoomsday", publisher: "A Security (discovering researcher Idan Levcovich, Senior Vulnerability Researcher)", date: "2026-08-11 (last published, per page metadata 2026-08-19)", role: "primary" }
+    discovery_trace: "first seen at: findings.S1.yaml item 8 / findings.S2.yaml item 2 (this run) → pivot: Zoom's bulletin listing page, URL https://www.zoom.com/en/trust/security-bulletin/, to enumerate the ZSB numbers for CVE-2026-53414 and CVE-2026-53415 → primary: Zoom ZSB-26016, URL https://www.zoom.com/en/trust/security-bulletin/ZSB-26016/ and ZSB-26017, URL https://www.zoom.com/en/trust/security-bulletin/ZSB-26017/ → primary: CCB Belgium advisory (full text extracted, confirmed single-CVE scope), URL https://ccb.belgium.be/advisories/warning-zero-click-remote-code-execution-zoom-clients-patch-immediately → primary: A Security's full technical write-up (server-rendered body recovered in full, not JS-gated as its Webflow head/CSS might suggest), URL https://a.security/blog/asecurity-zoomsday"
+    summary: |
+      Zoom publishes one bulletin per CVE, not one combined bulletin for "Zoomsday." Reading all three
+      directly: ZSB-26015 (CVE-2026-53413, "Zoom Clients - Buffer Over-write") is CVSS 8.3/High, vector
+      CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:H/I:H/A:H, description "Missing bounds check in the annotator
+      function of Zoom Clients allows buffer over-write, which may allow a meeting participant to
+      achieve remote code execution of another participant via network access," reported by "Idan
+      Levcovich, A Security." Affected/fixed: Zoom Workplace before 7.1.0 and 7.0.6 (branch-dependent),
+      Zoom Workplace VDI Client for Windows before 7.0.11 and 6.6.16, Zoom Rooms before 7.1.0, Zoom
+      Meeting SDK before 7.1.0, Zoom Video SDK before 2.6.0. ZSB-26016 (CVE-2026-53414, "Zoom Clients -
+      Buffer Over-read") is CVSS 6.5/Medium, vector CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H
+      (denial-of-service impact only — A:H with C:N/I:N), same "Idan Levcovich, A Security" credit,
+      IDENTICAL affected/fixed table to ZSB-26015. ZSB-26017 (CVE-2026-53415, "Zoom Clients - Use After
+      Free") is CVSS 8.3/High, the SAME vector as CVE-2026-53413
+      (CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:H/I:H/A:H), description "Use after Free in the annotator
+      function of Zoom Clients may allow a meeting participant to achieve remote code execution of
+      another participant via network access" — BUT its affected/fixed table is DIFFERENT and HIGHER:
+      Zoom Workplace before 7.1.5 (not 7.1.0) and 7.0.6, Zoom Rooms before 7.1.5 (not 7.1.0), Zoom
+      Meeting SDK before 7.1.5 (not 7.1.0), Zoom Video SDK before 2.6.5 (not 2.6.0); VDI Client is the
+      same 7.0.11/6.6.16. This means a fleet patched only to the 7.1.0-line version that closes
+      CVE-2026-53413/-53414 is NOT yet patched against CVE-2026-53415 — a defender needs the 7.1.5 /
+      2.6.5 floor to close all three. ZSB-26017's "Reported by" field reads "Zoom Offensive Security" —
+      Zoom's OWN internal red team, not A Security. CCB Belgium's advisory ("Warning: Zero-Click Remote
+      Code Execution in Zoom Clients, Patch Immediately!," 2026-08-20) covers ONLY CVE-2026-53413: its
+      "CVE/CVSS" field lists a single entry, "CVE-2026-53413: 8.3 (CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/
+      C:H/I:H/A:H)," and the word "53414" / "53415" does not appear anywhere in the advisory body — CCB
+      says nothing about the other two CVEs. CCB states no in-the-wild exploitation claim of any kind
+      — the only occurrences of "exploit"/"wild" in its text are the hypothetical "may protect against
+      future exploitation" and the caveat "it does not remediate historic compromise," never a claim
+      of observed activity. On the UI:R vs. "zero-click" tension the task asked to be reported
+      precisely: Zoom's OWN CVSS vector for both RCE-capable CVEs (53413, 53415) carries UI:R (User
+      Interaction: Required) — yet CCB titles its advisory "Zero-Click," and A Security's own framing
+      is "No click, no download, and nothing required of the victim but being in the meeting." No
+      source — not Zoom, not CCB, not A Security — explicitly reconciles this: the most defensible
+      reading, unstated by any source, is that CVSS UI:R is apparently being scored for the victim's
+      mere presence as a participant whose client automatically parses incoming annotation protocol
+      data (a passive, non-consensual "interaction" in the everyday sense), not for an explicit action
+      like clicking a link — but no cited source says this in so many words, so this reading is offered
+      as an unattributed inference, not a sourced fact. The vulnerable function, per A Security's own
+      reverse-engineering write-up: "CAnnoFormatBlock::Deserialize" — "a small header followed by four
+      fixed 128-byte buffers... The wire supplies a character count per buffer, and the parser copies
+      2 × count bytes into it... Each count is a 32-bit value taken straight off the wire, and each
+      buffer is a fixed 128 bytes. There is no bounds check to stop a count from exceeding the buffer
+      length." A separate factory-level design flaw enables reaching it from either meeting seat:
+      Zoom's protocol dispatches on a numeric PDU opcode (AddObj = 0x10001, AddObjAck = 0x10002) with,
+      per A Security, "no sender-role or origin check" — an ack-type PDU is allowed to carry a full
+      object body, so a participant can inject an "AddObj" where only an acknowledgement is expected.
+      Disclosure timeline, per A Security: 2026-06-08 vulnerability discovered; 2026-06-09 zero-click
+      RCE confirmed on Zoom client v7.0.5 (all platforms); 2026-06-10 reported to Zoom; 2026-06-11 Zoom
+      acknowledges receipt; 2026-06-22 Zoom ships client-side fix in v7.1.0 covering CVE-2026-53413 and
+      CVE-2026-53414; 2026-07-15 Zoom deploys a server-side mitigation for still-unpatched clients;
+      2026-07-20 Zoom ships client-side fix in v7.1.5 covering CVE-2026-53415; 2026-08-11 public
+      disclosure. A genuine, unreconciled three-way contradiction on CVE-2026-53415's provenance: (1)
+      A Security's own Executive Summary states "A third vulnerability, CVE-2026-53415, was reported
+      but had already been found and fixed by Zoom before our report" — implying Zoom found it
+      independently; (2) A Security's own later, detailed section is titled "CVE-2026-53415: The
+      Sequel — A Second, Independent RCE" and states "The same AI-assisted research surfaced a second,
+      independent flaw in the very same engine... Lidor Elias identified and triaged this bug" —
+      implying A Security's OWN research team found it; (3) Zoom's bulletin ZSB-26017 itself credits
+      "Zoom Offensive Security," not A Security, as the reporter. These three statements are not
+      reconcilable as written and are reported here exactly as each source states them, without
+      resolving which is correct. Finally, on the specific mitigation question the task asked to be
+      checked precisely: no source states "disable in-meeting annotation via account/group policy" as
+      a mitigation for these specific CVEs. A Security's actual stated interim mitigation for
+      unpatched fleets is different and more specific: keep Zoom's default "enhanced encryption"
+      setting (i.e. do NOT enable end-to-end encryption) so that "Zoom's server-side mitigation" —
+      which filters malicious annotation messages before they reach clients — can still operate; per A
+      Security, "E2EE removes it, because a server cannot inspect what it cannot read. E2EE would not
+      have stopped this attack anyway: the attacker sits in the meeting, holding the keys." Separately,
+      in a forward-looking "reduce attack surface" section unrelated to this specific bug, A Security
+      does suggest organizations more generally "consider locking annotation, file transfer,
+      whiteboarding, remote control and third-party apps, and limiting screen sharing to hosts" — but
+      frames this as general hardening advice for the NEXT vulnerability class, not as the stated fix
+      for Zoomsday specifically.
+    region_nexus: "Belgium (CCB national-CERT advisory, CVE-2026-53413 only); Zoom Workplace/Rooms/SDKs broadly deployed across Swiss and European public-sector, healthcare and education meeting environments for all three CVEs"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, healthcare, telco"
+    cves: [CVE-2026-53413, CVE-2026-53414, CVE-2026-53415]
+    techniques: [T1203]
+    affected_products: ["Zoom Workplace", "Zoom Workplace VDI Client for Windows", "Zoom Rooms", "Zoom Meeting SDK", "Zoom Video SDK"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of: findings.S1.yaml item 8 / findings.S2.yaml item 2 (this run) — deep-read enrichment"
+    evidence:
+      - quote: "Missing bounds check in the annotator function of Zoom Clients allows buffer over-write, which may allow a meeting participant to achieve remote code execution of another participant via network access."
+        attribution: "Zoom (ZSB-26015, CVE-2026-53413)"
+        source_url: "https://www.zoom.com/en/trust/security-bulletin/ZSB-26015/"
+        grep_check: "PASS"
+      - quote: "Missing bounds check in the annotator function of Zoom Clients allows buffer over-read, which may allow a meeting participant to conduct a denial of service on another participant via network access."
+        attribution: "Zoom (ZSB-26016, CVE-2026-53414)"
+        source_url: "https://www.zoom.com/en/trust/security-bulletin/ZSB-26016/"
+        grep_check: "PASS"
+      - quote: "Use after Free in the annotator function of Zoom Clients may allow a meeting participant to achieve remote code execution of another participant via network access."
+        attribution: "Zoom (ZSB-26017, CVE-2026-53415)"
+        source_url: "https://www.zoom.com/en/trust/security-bulletin/ZSB-26017/"
+        grep_check: "PASS"
+      - quote: "Reported by Zoom Offensive Security"
+        attribution: "Zoom (ZSB-26017, CVE-2026-53415 source field)"
+        source_url: "https://www.zoom.com/en/trust/security-bulletin/ZSB-26017/"
+        grep_check: "PASS"
+      - quote: "Successful exploitation could allow an attacker participating in a meeting to execute arbitrary code on another participant's device, without requiring them to click a malicious link or download a file."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-zero-click-remote-code-execution-zoom-clients-patch-immediately"
+        grep_check: "PASS"
+      - quote: "While patching appliances or software to the newest version may protect against future exploitation, it does not remediate historic compromise."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-zero-click-remote-code-execution-zoom-clients-patch-immediately"
+        grep_check: "PASS"
+      - quote: "No click, no download, and nothing required of the victim but being in the meeting."
+        attribution: "A Security (Idan Levcovich)"
+        source_url: "https://a.security/blog/asecurity-zoomsday"
+        grep_check: "PASS"
+      - quote: "Each count is a 32-bit value taken straight off the wire, and each buffer is a fixed 128 bytes. There is no bounds check to stop a count from exceeding the buffer length."
+        attribution: "A Security (Idan Levcovich)"
+        source_url: "https://a.security/blog/asecurity-zoomsday"
+        grep_check: "PASS"
+      - quote: "A third vulnerability, CVE-2026-53415, was reported but had already been found and fixed by Zoom before our report."
+        attribution: "A Security (Executive Summary section)"
+        source_url: "https://a.security/blog/asecurity-zoomsday"
+        grep_check: "PASS"
+      - quote: "The same AI-assisted research surfaced a second, independent flaw in the very same engine."
+        attribution: "A Security ('CVE-2026-53415: The Sequel' section)"
+        source_url: "https://a.security/blog/asecurity-zoomsday"
+        grep_check: "PASS"
+      - quote: "Lidor Elias identified and triaged this bug."
+        attribution: "A Security"
+        source_url: "https://a.security/blog/asecurity-zoomsday"
+        grep_check: "PASS"
+      - quote: "consider locking annotation, file transfer, whiteboarding, remote control and third-party apps, and limiting screen sharing to hosts."
+        attribution: "A Security (general hardening-guidance section)"
+        source_url: "https://a.security/blog/asecurity-zoomsday"
+        grep_check: "PASS"
+      - quote: "Updating closes these CVEs. Until every client is updated, you can disable the"
+        attribution: "A Security (specific interim-mitigation guidance)"
+        source_url: "https://a.security/blog/asecurity-zoomsday"
+        grep_check: "PASS (note: full sentence continues '...end-to-end encryption setting' inside a <strong> tag boundary in the raw HTML, so the quote is truncated at the tag edge per the contiguous-verbatim-substring rule; the meaning is unaffected)"
+    extended_notes: |
+      Detection concept unchanged from S1/S2 framing (client-side memory corruption inside an
+      encrypted proprietary protocol; EDR crash/exception telemetry on Zoom client processes during
+      active meetings remains the best available proxy). New triage-relevant detail: the opcode-level
+      design flaw ("no sender-role or origin check" letting an AddObj PDU masquerade as an AddObjAck)
+      means BOTH the presenter/sharer seat and any viewer/participant seat can reach the deserializer
+      on the other party's client — this is bidirectional, not merely "a malicious presenter attacks
+      viewers."
+    corrections:
+      - "S1's cve_table gave ONE combined patch string for all three CVEs ('Workplace 7.1.0/7.0.6; VDI Client 7.0.11/6.6.16; Rooms 7.1.0; Meeting SDK 7.1.0; Video SDK 2.6.0'). CORRECTED: that table is accurate ONLY for CVE-2026-53413 and CVE-2026-53414. CVE-2026-53415 requires HIGHER versions per Zoom's own ZSB-26017: Workplace 7.1.5 (not 7.1.0), Rooms 7.1.5 (not 7.1.0), Meeting SDK 7.1.5 (not 7.1.0), Video SDK 2.6.5 (not 2.6.0). A fleet patched only to the 7.1.0/2.6.0 floor remains exposed to CVE-2026-53415."
+      - "S1's summary states 'two related flaws in the same annotator disclosed alongside it' without noting CCB Belgium's advisory covers ONLY CVE-2026-53413. CORRECTED: CCB's advisory text never mentions CVE-2026-53414 or CVE-2026-53415 at all — its CVE/CVSS field lists a single entry. If the published entry cites CCB as a source for all three CVEs, that overstates CCB's actual scope."
+      - "S1's summary attributed CVE-2026-53415 to A Security's research without noting Zoom's own bulletin credits 'Zoom Offensive Security' as the reporter, and without noting A Security's own article contradicts itself on this point (see the three-way discrepancy in the summary above). This should be surfaced as an open discrepancy, not resolved in either direction."
+      - "S2's extended_notes stated 'disabling in-meeting annotation via account/group policy removes the attack surface entirely until patched endpoints are confirmed' as if this were a source-stated mitigation for Zoomsday specifically. CORRECTED: no source (Zoom, CCB, A Security) states annotation-locking as the mitigation for these three CVEs. A Security's actual specific interim-mitigation guidance is to keep Zoom's default 'enhanced encryption' (i.e. NOT enable end-to-end encryption) so the vendor's server-side filter continues to operate; annotation-locking is offered by A Security only as generic forward-looking hardening advice for future, unrelated bug classes."
+      - "Neither S1 nor S2 flagged that Zoom's own CVSS vector (UI:R) sits in tension with the 'zero-click' branding used by CCB's advisory title and A Security's own marketing framing. This run reports the tension explicitly per the mandate rather than silently adopting either framing."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisco-ios-xe-august-hardening-cross-check
+    reason: "Task asked to confirm whether Cisco's Crosswork/Secure Workload CWE-grouping (one CVE per CWE class) matches the shape used in Cisco's August IOS XE hardening release. I confirmed the *methodology description* is worded identically in this run's two advisories ('grouped by CWE... assigned a single CVE ID to each CWE grouping') but did not re-fetch the IOS XE August advisory itself this run to verify byte-for-byte parity, for time-budget reasons — flagging as an unverified-but-plausible claim rather than a confirmed cross-check."
+  - source_id: tp-link-openvpn-default-state
+    reason: "Neither TP-Link's own advisory nor BSI's CSAF record states whether the OpenVPN Server feature on Omada gateways is enabled or disabled by default. WebSearch was not attempted for this specific sub-question given time budget; flagging as a genuine unresolved gap rather than assuming an answer."
+
+bridge_uses:
+  - { id: "bsi-de", method: "bridge:bsi-csaf", outcome: "ok" }
+  - { id: "msrc", method: "bridge:msrc.cve", outcome: "ok" }
+  - { id: "ncsc-nl", method: "bridge:ncsc-nl.csaf", outcome: "ok" }
+  - { id: "cisco-psirt", method: "bridge:url (x4 - 2 HTML advisories + 2 CSAF JSON exports)", outcome: "ok" }
+  - { id: "tplink-omada", method: "bridge:url", outcome: "ok (recovered the specific document-ID page; the SPA landing/search page remains unreachable by this transport)" }
+  - { id: "zoom-trust", method: "bridge:url (x4 - bulletin listing + ZSB-26015/16/17)", outcome: "ok" }
+  - { id: "ccb-belgium", method: "bridge:url", outcome: "ok" }
+  - { id: "a-security", method: "bridge:url", outcome: "ok (server-rendered article body recovered in full despite Webflow JS-site head/CSS bulk)" }
+  - { id: "cert-fr", method: "bridge:feed + bridge:url", outcome: "ok" }
+  - { id: "cisa-kev", method: "bridge:cisa-kev", outcome: "ok" }
+  - { id: "enisa-euvd", method: "bridge:enisa-euvd.recent + bridge:enisa-euvd.advisory", outcome: "ok" }
+  - { id: "ncsc-csh", method: "bridge:ncsc-csh.recent", outcome: "ok (checked negative for Entra ID)" }
+  - { id: "thehackernews", method: "bridge:url", outcome: "ok" }

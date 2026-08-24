@@ -1,0 +1,135 @@
+domain: S4
+run_id: 2026-08-21T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-21T04:15:16Z
+ended_at: 2026-08-21T04:32:49Z
+duration_seconds: 1053
+self_telemetry:
+  webfetch_calls: 22
+  websearch_calls: 11
+  bridge_fetches: 16
+items:
+  - title: "GTIG: three Russian-nexus clusters abuse WhatsApp device-linking and OAuth/device-code flows to spy on European and US officials, academics and defense personnel"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/distinct-clusters-target-individuals-of-interest-to-russia", publisher: "Google Threat Intelligence Group (GTIG)", date: "2026-08-20", role: "primary" }
+      - { url: "https://cyberinsider.com/russian-hackers-abuse-whatsapp-device-linking-to-spy-on-high-value-targets/", publisher: "CyberInsider", date: "2026-08-20", role: "corroborating (re-reports the GTIG primary; not an independent second source)" }
+    discovery_trace: "first seen at: cyberinsider, URL https://cyberinsider.com/russian-hackers-abuse-whatsapp-device-linking-to-spy-on-high-value-targets/ -> primary: Google Threat Intelligence Group, URL https://cloud.google.com/blog/topics/threat-intelligence/distinct-clusters-target-individuals-of-interest-to-russia"
+    summary: |
+      GTIG is tracking three suspected Russian-nexus cyber-espionage clusters — UNC6293, UNC7005
+      (Microsoft: Storm-2945, a sub-cluster this pipeline already tracks under actor:storm-2945)
+      and UNC5976 — abusing *legitimate* authentication flows rather than exploiting software bugs.
+      UNC6293 and UNC7005 are assessed (moderate confidence) as related sub-clusters of ICE RELIC
+      (Midnight Blizzard/APT29/Cozy Bear, tracked here as actor:midnight-blizzard); UNC5976 is a
+      distinct cluster with heavier malware use against military/aerospace targets in Ukraine and
+      Armenia via the HEADRUSH Excel-plugin/HTA downloader. Victimology explicitly spans "academia,
+      aerospace and defense, governments and think tanks across Europe" plus academia/think tanks
+      in the US.
+      Three abused flows, each using only legitimate infrastructure: (1) WhatsApp device-linking —
+      a phishing page harvests the target's phone number, the operator initiates a real WhatsApp
+      device-link request, the page shows the *genuine* QR/link code and talks the target into
+      approving it, handing the attacker a linked device with full account access; a follow-on fake
+      "voice call" invokes navigator.mediaDevices.getUserMedia() and MediaRecorder to capture
+      webcam/mic audio-video and upload the WebM to a C2 endpoint. (2) Google OAuth abuse — an
+      unverified, testing-mode Google Cloud project hosts a "Sign in with Google" button that
+      redirects through the real accounts.google.com login and then captures the resulting OAuth
+      token on the attacker's own (unverified) redirect URI — no credential phishing, pure token
+      theft. (3) Microsoft device-code phishing — a spoofed conference-registration page (one lure
+      impersonated GLOBSEC) fingerprints the browser (screen, timezone, hardware concurrency,
+      touch support, headless-browser tells) before asking the target to complete a real Microsoft
+      device-code login and hand the code to the "verification" form, giving the attacker the
+      resulting token. UNC7005 also distributes VIDAR (Windows) and AtomicStealer (macOS)
+      infostealers by OS-fingerprinting the User-Agent, plus ENGINELIGHT (Go) and CHERRYPIE, which
+      GTIG's own artefacts suggest is LLM-assisted code and which this pipeline already tracks as
+      tool:chocoshell-powershell-stealer (used by actor:storm-2945). GTIG documents the actor
+      iterating within days of exposure — revising templates, social-engineering questions and
+      color scheme, then adding a second fingerprinting stage to detect headless/automated
+      browsers.
+    region_nexus: "Europe (explicit: 'governments and think tanks across Europe'), Ukraine, Armenia, plus US academia/think tanks"
+    primary_sector_nexus: "direct — governments, defense/aerospace industrial base, academia and think tanks named explicitly as victim classes"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.002, T1528, T1123, T1125, T1555.003, T1082, T1497]
+    affected_products: ["WhatsApp", "Google Workspace / Google Cloud OAuth", "Microsoft Entra ID / Microsoft 365 device-code authentication"]
+    entity_keys: ["actor:storm-2945", "actor:midnight-blizzard", "tool:chocoshell-powershell-stealer"]
+    new_entities:
+      - { key: "actor:unc6293", type: actor, name: "UNC6293", aliases: [],
+          summary: "Google Threat Intelligence Group (GTIG) designation for a suspected Russian cyber-espionage cluster assessed with moderate confidence to be a sub-cluster of ICE RELIC (Midnight Blizzard/APT29), abusing Google Application Specific Passwords and now WhatsApp device-linking against academics, diplomats and government officials; distinguished from UNC7005 by tighter operational security (GTIG, 2026-08-20)." }
+      - { key: "actor:unc5976", type: actor, name: "UNC5976", aliases: [],
+          summary: "Google Threat Intelligence Group (GTIG) designation for a distinct Russian-nexus cyber-espionage cluster with its own infrastructure, running a heavier malware campaign (HEADRUSH Excel-plugin/HTA downloader) against military and aerospace targets in Ukraine and Armenia (GTIG, 2026-08-20)." }
+    relation_suggestions:
+      - { subject: "actor:unc6293", object: "actor:midnight-blizzard",
+          basis: "GTIG: 'GTIG assesses with moderate confidence that UNC6293 and UNC7005 are related to a subcluster of ICE RELIC' (Google Threat Intelligence Group, 2026-08-20)" }
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Google Threat Intelligence Group (GTIG) is tracking three distinct suspected Russian cyber espionage threat clusters abusing legitimate authentication flows to target individuals working in academia, aerospace and defense, governments and think tanks across Europe, as well as academia and think tanks within the United States."
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/distinct-clusters-target-individuals-of-interest-to-russia"
+      - quote: "Anyone following the instructions effectively authorized an attacker-controlled device to access their WhatsApp account."
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/distinct-clusters-target-individuals-of-interest-to-russia"
+      - quote: "Within days of identifying this activity, we observed the actor actively make changes to the operation... UNC7005 revised the template they used for social engineering, modifying the questions asked to the target as well as the color scheme."
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/distinct-clusters-target-individuals-of-interest-to-russia"
+    extended_notes: |
+      Triage/lookalike guidance from the source: the entire point of all three flows is that they
+      generate a *legitimate* auth event (a real WhatsApp device-link, a real Google OAuth consent,
+      a real Microsoft device-code redemption) — no malware execution and no anomalous credential
+      submission at the moment of compromise. Defender-relevant discriminators GTIG gives: (a)
+      WhatsApp — linked-device audits are the only user-visible signal; enterprises should establish
+      a routine of auditing linked/secondary devices on messaging apps and enforce off-platform
+      identity verification (safety numbers) before acting on "secure call/chat" invitations; (b)
+      Google OAuth — the giveaway is an *unverified, testing-mode* Cloud-project consent screen
+      requesting sensitive scopes, which Google's own UI flags with a warning most users click
+      through; hardening is to disable Application Specific Passwords org-wide (restrict 2-Step
+      Verification to security-keys-only) and enrol high-risk users in Advanced Protection Program;
+      (c) Microsoft device-code — the tell is an out-of-band request to relay a device code or
+      verification URL entered on a *different* site than the one that generated it; hardening is
+      disabling legacy/device-code authentication where not operationally required. GTIG also
+      published network/file IOCs (omitted here per this pipeline's no-IOC policy) and notes the
+      captive-portal/hospitality-network angle (Storm-2945's CaptiveCrunch, already tracked) and a
+      Microsoft blog on the same Storm-2945 activity (2026-07-31) as related reporting.
+      Not included as a separate item this run: a joint CISA/NSA/FBI/DOE/EPA advisory on
+      AI-generated exploitation scripts abusing the snap7 library against Internet-exposed Siemens
+      S7-series PLCs (energy/water/manufacturing sectors) — confirmed via prior_coverage.json to
+      already be published today as entry "2026-08-20/joint-advisory-active-threat-siemens-s7-plcs"
+      (discovered 2026-08-20T06:48Z by an earlier run). No material delta found beyond what that
+      entry already carries after reading the advisory's full text (PP-26-3374, created
+      2026-08-19T14:24Z) via the primary PDF.
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no supplier watchlist configured for this deployment (org-profile.yaml); sweep is a no-op per instructions."
+candidate_sources: []
+coverage_gaps:
+  - source_id: zaufana-trzecia-strona
+    reason: "Direct bridge (--direct) returned HTTP 200 (recovered from the 2026-08-19 Cloudflare-challenge state) but both the homepage and /feed/ serve content no newer than 2026-08-14T13:00:00Z — a full week stale relative to this run's window. Possible cause: our egress is being served a cached edge copy, or the outlet genuinely has not published since 2026-08-14 (unusual for this normally weekly-plus-daily-notes outlet). Not treated as a fetch failure (200 throughout) or a source death; flagging for the next run to re-check with a fresh probe. One article surfaced in the stale set (2026-08-08, Polish CHP-plant OT intrusion via private-APN pivot, Siemens S7-300/1200/1500 PLCs forced to STOP) duplicates prior_coverage entry 2026-08-09/cert-polska-private-apn-pivot-into-ot-chp-plant-shutdown — confirms the dedup is correct, not a miss."
+  - source_id: venarix
+    reason: "Listing page (/blog) is a client-filtered Astro SPA; the raw server-rendered HTML carries only nav/filter chrome and zero post links or dates (confirmed again this run). No RSS/API recipe exists yet. Per the 2026-08-19 note the per-article path (/blog/<slug>) serves full bodies once a slug is known, but without a working listing/feed recipe there is no way to discover today's slugs blind. Needs a sitemap.xml probe or an API recipe before this source can be worked reliably — flagging as a recipe gap, not attempted further this run given time budget."
+  - source_id: ico-uk
+    reason: "Sitemap-based enforcement listing fetched cleanly (bridge, 15 items) but the newest lastmod is 2026-08-12 (ACRO, already covered 2026-08-13) — no new enforcement action published in this run's window."
+  - source_id: cnil-fr
+    reason: "/en/news fetched cleanly via WebFetch; newest item is 2026-07-22, months stale. Cross-checked the French-language sanctions list via WebSearch: most recent update reported as 2026-05-28. No new CNIL enforcement action in window."
+  - source_id: sec-disclosures-edgar
+    reason: "bridge sec-edgar 8k query for Item 1.05 over 2026-08-19..2026-08-21 returned zero hits (total: 0). No material cybersecurity-incident 8-K filings in window."
+  - source_id: us-treasury-ofac
+    reason: "Bridge fetch of /recent-actions and the two most recent dated sub-pages (20260818, 20260820) succeeded (HTTP 200) but both designations are non-cyber (ICC/Venezuela-related; counter-narcotics/terrorism/Cuba/Iran-related). No ransomware-cashout or cyber-infrastructure sanctions action in window."
+dropped_candidates:
+  - title: "ShinyHunters 'pay or leak' ultimatum against Logitech/Streamlabs (deadline 2026-08-21)"
+    reason: "Pure leak-site claim (ransomware.live + secondary blogs cyberdaily.au, cybernews.com, DeXpose, RedPacketSecurity — all either leak-site mirrors or not Admiralty A/B journalism); no victim statement from Logitech or Streamlabs found despite the deadline falling today; fails the fake-news guard's victim-disclosure-or-A/B-journalism bar. Logitech is Swiss-HQ'd (Lausanne) but the claim itself is unconfirmed - monitor for the deadline outcome."
+  - title: "Qualiflex Datacenter (CH) leak-site listing naming HWZ-Studiengänge (fh-hwz.ch) and other .ch tenants — 'payload' ransomware group"
+    reason: "Swiss nexus (a Zurich university of applied sciences among the named tenants) but purely a leak-site claim discovered 2026-08-20; no Swiss press coverage, no HWZ statement, no regulator notice found after a dedicated search. Fails the fake-news guard; a related but distinct 'Qualiflex Solutions AG' listing by the same group exists from June 2026, also unconfirmed."
+  - title: "Ayuntamiento de Velilla de San Antonio (ES) — Kairos leak-site claim"
+    reason: "Continues Kairos's established pattern of Spanish-municipality data-theft extortion (cf. Ayuntamiento de Valdemoro, May 2026 — press-confirmed via EscudoDigital) but this specific August 2026 claim against Velilla de San Antonio has no victim statement or journalism found, only leak-site trackers. Fails the fake-news guard for a standalone entry."
+  - title: "Capgemini Engineering / historical Altran repository — Everest leak-site claim, 13.08 GB / 722,470 files, reportedly includes public-sector project data"
+    reason: "Sourcing found (cypro.co.uk, hendryadrian.com, redpacketsecurity.com, cyberattaque.org, frenchbreaches.com) is entirely leak-site-relay/bulletin sites, none Admiralty A/B; the one seemingly relevant LeMagIT hit ('Après Sopra Steria, Capgemini sous la menace d'une cyberattaque ?') turned out to be a recycled 2020 article about an unrelated incident (recency trap caught and discarded). No Capgemini statement found. Fails the fake-news guard."
+  - title: "CareCloud (US healthtech, 3.7M patients), RingCentral (US telco), Sakura Internet (Japan, 1.36M accounts)"
+    reason: "All out-of-window on verified publish timestamps (CareCloud 2026-08-19T20:07Z, RingCentral 2026-08-14, Sakura 2026-08-19T20:53Z vs. window start 2026-08-20T02:10:40Z) and none carry an EU/CH nexus or actor overlap with this constituency's threat model."
+  - title: "Chinese-speaking UAT-10147 agentic-AI post-compromise campaign against ~170,000 IIS/Linux servers (Cisco Talos)"
+    reason: "In-window (CyberInsider write-up 2026-08-20) and a genuinely notable AI-tradecraft finding, but no EU/CH victim or targeting named (Brazil, Bolivia, China, Canada, Vietnam) and it is an opportunistic financially-motivated SEO-fraud/data-theft campaign exploiting known, already-patched CVEs (Dirty Pipe, Baron Samedit) rather than a fresh incident disclosure — judged better suited to S1/S3's research lane than S4's incident-disclosure mandate; leaving it for those domains rather than duplicating."
+  - title: "Applebee's largest franchisee (Apple American Group LLC) data breach"
+    reason: "In-window (databreaches.net / BleepingComputer / CyberInsider all 2026-08-20) but a US restaurant franchise operator with no EU/CH nexus, no government/CI sector touch, and no actor attribution stated — fails the S4 out-of-nexus gate (a)-(d)."

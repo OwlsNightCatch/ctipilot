@@ -900,10 +900,10 @@ def _clock_inversion(run: dict[str, Any]) -> tuple[Any, Any, str] | None:
 
 
 def check_run_clock(run: dict[str, Any], store_mode: bool = False) -> bool:
-    """v3.32 telemetry-clock integrity: `completed` must be at or after every
+    """v3.33 telemetry-clock integrity: `completed` must be at or after every
     timestamp the record itself reports, so `duration_seconds` covers the whole
     fire rather than everything up to the Phase 5 stamp. Returns True when the
-    record is inverted (the caller decides what to do with pre-v3.32 history).
+    record is inverted (the caller decides what to do with pre-v3.33 history).
 
     A FAIL here is fixed by re-stamping `completed` / `duration_seconds` from
     the real end of the run — never by deleting the sub-timestamps that expose
@@ -2100,7 +2100,7 @@ VERIFIER_ITERATION_CAP_PRE_V327 = 5
 # overrun into the next scheduled fire). Surface it — never a FAIL, the
 # record itself is the forensic evidence.
 RUNAWAY_RUN_SECONDS = 3 * 3600
-# v3.32+: `completed` / `duration_seconds` must cover the WHOLE fire, verifier
+# v3.33+: `completed` / `duration_seconds` must cover the WHOLE fire, verifier
 # loop included. Phase 5 stamps `main.ended_at` before the mechanical gate and
 # the Phase 5.7 loop; a run that then spends another one-to-two hours looping
 # and never re-stamps records a `completed` that precedes its own last verifier
@@ -2109,10 +2109,10 @@ RUNAWAY_RUN_SECONDS = 3 * 3600
 # past the runaway threshold that the recorded figure hid, and contradicting
 # the run's own wall-clock waiver text. Under-reported duration silently
 # defeats the runaway warning, the Ops dashboard and every audit's telemetry
-# review, so from v3.32 an inverted clock is a gate FAIL. Earlier records are
+# review, so from v3.33 an inverted clock is a gate FAIL. Earlier records are
 # immutable history: `--all` counts them once, informationally, never as
 # warnings.
-CLOCK_INTEGRITY_FROM = (3, 32)
+CLOCK_INTEGRITY_FROM = (3, 33)
 
 # ATT&CK completeness by kind: these kinds inherently describe attacker
 # behavior (a campaign, an intrusion, an exploitable vulnerability's access
@@ -2760,7 +2760,7 @@ def check_all_run_records(runs: list[dict]) -> None:
                  "exceeded the runaway threshold — see the per-run watchdog note")
         # v3.23+ double-CLEAN gate, store severity (immutable history → WARN)
         check_verification_confirmation(r, store_mode=True)
-        # v3.32 clock integrity. Pre-v3.32 records are immutable history from
+        # v3.33 clock integrity. Pre-v3.33 records are immutable history from
         # before the Phase 6 re-stamp existed — counted once below, never
         # warned per record (dozens of them would drown the store report).
         if check_run_clock(r, store_mode=True):
@@ -3016,7 +3016,7 @@ def _summary() -> int:
 
 
 def report_dead_ack_rows(store_mode: bool) -> None:
-    """v3.32: surface acknowledgment rows that silenced nothing on this pass.
+    """v3.33: surface acknowledgment rows that silenced nothing on this pass.
 
     The audit's standing duty is that the ledger never accumulates dead rows —
     an acknowledgment whose underlying warning no longer fires (the check

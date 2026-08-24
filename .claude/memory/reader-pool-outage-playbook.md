@@ -48,3 +48,28 @@ and that the fetch continues.
 **Diagnostic rule:** `jina-usage` reports the whole pool; a sub-agent's stderr reports only the keys
 it happened to touch. Never conclude "the pool is exhausted" from a sub-agent's report — check
 `jina-usage` first. Rotation warnings followed by content mean the ladder worked.
+
+## 2026-08-22 — the second probe-side false `needs-demote`: byte count is not health
+
+Same family as the `probe_url` target-mismatch fix, different mechanism. `source_health.py`
+judged a bridge recipe healthy by how many bytes it printed, so `sec-edgar 8k` — which
+correctly returned a well-formed JSON envelope with `count: 0` because no matching filing
+existed in the window, about 120 bytes — was flagged `needs-demote`. A **valid empty result is
+a working source**, and a quiet window is the normal state of a filing feed.
+
+Fixed on `main` by the 2026-08-23 fire: when a bridge exits 0 and its output parses as JSON,
+health is decided by structure rather than size — `count`/`total`/`total_count` at zero, or an
+empty `hits`/`results`/`items`/`vulns` list, reports `bridge-ok` with "well-formed empty result
+set" said explicitly.
+
+**Worth knowing how this note came to be written twice.** The stalled 2026-08-22 fire
+independently found the same defect from the same `sec-edgar 8k` case and wrote its own narrower
+fix (`count`/`total` plus one list shape). At merge time `main` already had the better version, so
+the 08-22 patch was discarded. Two fires two days apart rediscovering one probe defect is a signal
+about the sweep's own reporting: an UNSOLVED row that names the *symptom* ("120 B, needs-demote")
+rather than the *shape mismatch* invites each run to re-derive the diagnosis from scratch.
+
+**Generalisation for any future probe work: a probe must assert the shape the recipe promises,
+never a proxy for it.** Byte counts, non-empty output and HTTP 200 are all proxies, and each
+one has produced a false demotion signal in this repo. Demoting a healthy source costs
+coverage silently, which is the expensive direction of this error.

@@ -1,0 +1,435 @@
+# work/2026-08-21T0410Z-intel/findings.F2.yaml
+# Scoped Phase 4 deep-read enrichment (NOT a domain sweep). Supplies verified
+# primary-source technical specifics + verbatim quotes + attribution/quote
+# corrections for three items already triaged by S2/S3 this run. Every quote
+# below was extracted from a full raw-body fetch (python3 tools/fetch_source.py
+# url <URL>), HTML-tag-stripped with empty-string replacement, and confirmed
+# as a literal contiguous substring of the saved clean-text file via Python
+# `in` (equivalent to grep -F) before being returned. Two load-bearing
+# corrections to prior drafts are flagged inline — see item 2 and item 3.
+domain: F2
+run_id: 2026-08-21T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-21T04:46:46Z
+ended_at: 2026-08-21T04:58:50Z
+duration_seconds: 724
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 2
+  bridge_fetches: 9
+
+items:
+  - ref: "S3 item 4 — UAT-10147 / SPECTRE"
+    title: "UAT-10147's SPECTRE implant abuses two BYOVD drivers to blind CrowdStrike, SentinelOne and Defender kernel callbacks, and Talos assesses the actor built it with AI-assisted development"
+    sources_verified:
+      - { url: "https://blog.talosintelligence.com/uat-10147-deploys-spectre-a-cross-platform-implant-with-linux-rootkit-and-byovd-capabilities/", publisher: "Cisco Talos", date: "2026-08-20T10:00:50Z", fetch_method: "bridge:url (full raw body)" }
+      - { url: "https://blog.talosintelligence.com/uat-10147-chinese-speaking-adversary-integrates-agentic-ai-into-post-compromise-operations/", publisher: "Cisco Talos", date: "2026-08-20T10:00:32Z", fetch_method: "bridge:url (full raw body)" }
+
+    byovd_mechanics: >
+      SPECTRE's Windows variant carries two named BYOVD commands (`byovd_load`, `byovd_unload`) plus
+      `edr_kill`, `callbacks` (enumerate kernel callbacks) and `proc_hide` — Talos states these are among
+      21 xorshift32-PRNG-encrypted commands out of 45 total. At runtime SPECTRE "downloads one of two
+      well-known vulnerable driver from the C2 — either RTCore64.sys from MSI (associated with
+      CVE-2019-16098) or DBUtil_2_3.sys from Dell (associated with CVE-2021-21551)," writes it to
+      %TEMP%, "installs it as a transient kernel service via the SCM, and opens an IOCTL handle to the
+      device." Both are legitimately-signed but vulnerable drivers exposing arbitrary kernel read/write
+      IOCTLs — Talos's post does not itself discuss the drivers' code-signing status explicitly; that
+      they load at all on modern x64 Windows without triggering Driver Signature Enforcement is
+      class-level BYOVD context, not a direct Talos statement, and should not be attributed to Talos as
+      a quote.
+      Once loaded, SPECTRE "uses NtQuerySystemInformation to locate 'ntoskrnl.exe' in the kernel address
+      space," then references "a hardcoded, per-build offset table covering 13 Windows versions to
+      calculate the exact kernel virtual addresses for PspCreateProcessNotifyRoutine,
+      PspCreateThreadNotifyRoutine, and PspLoadImageNotifyRoutine" — the three kernel-callback classes
+      named. "By performing targeted kernel writes, the SPECTRE safely unlinks each registered EDR
+      callback from its doubly-linked list" — i.e. it walks the kernel's internal doubly-linked
+      notify-routine list and patches out the entries EDR drivers register there, rather than exploiting
+      a logic flaw in the drivers themselves; the drivers supply only the raw kernel r/w primitive.
+      NOTE — verbatim quirk in the primary: Talos's own post spells out the acronym once as "Bring Your
+      Own Virtual Driver (BYOVD)" (industry-standard expansion is "Bring Your Own Vulnerable Driver");
+      this reads as a wording slip in Talos's post, not a deliberate redefinition — everywhere else in
+      the post they use the bare acronym "BYOVD." Flag verbatim; do not silently "correct" it if quoting
+      the full-form expansion, and prefer the bare acronym or the standard expansion in entry prose.
+
+    edr_blinding_claim_exact_wording: >
+      Talos's own sentence, verified as a contiguous substring of the fetched page: "Consequently,
+      kernel-callback-dependent security products such as CrowdStrike Falcon, SentinelOne, Microsoft
+      Defender, and other well-known EDR vendors are rendered completely blind to new process creations,
+      thread creations, and image load events for the remainder of the session, successfully
+      neutralizing EDR visibility on the target machine." This is Talos's own direct claim (not a
+      paraphrase overstating it) — it names the three specific vendors as illustrative examples
+      ("such as ... and other well-known EDR vendors") of the broader class "kernel-callback-dependent
+      security products," and scopes the blinding explicitly to three telemetry classes (process
+      creation, thread creation, image load) "for the remainder of the session" (i.e. until reboot or
+      driver reload) — not a permanent or complete EDR bypass beyond those three notification classes.
+
+    initial_access_and_cves: >
+      Two distinct exploitation surfaces, both from Talos's companion post:
+      (1) Windows/cross-platform initial access via known (already-patched) vulnerabilities: CVE-2022-27925
+      (unauthenticated RCE in Zimbra Collaboration Suite), CVE-2021-23758 (AjaxPro deserialization RCE),
+      CVE-2021-29441 and CVE-2021-29442 (Nacos arbitrary code execution via the ScriptEngineFactory
+      Service Provider Interface, invoking Runtime.exec() to spawn /bin/bash or cmd.exe), and
+      CVE-2019-18935 (Telerik UI for ASP.NET AJAX .NET JSON deserialization RCE — Talos states the actor
+      "actively probes the environment to verify the presence of the Telerik file upload handler and
+      fingerprint the software version" before deploying a "customized, weaponized proof-of-concept").
+      (2) Linux local-privilege-escalation chain used post-webshell: CVE-2022-0995 (Linux kernel
+      watch_queue out-of-bounds write), CVE-2021-3156 "Baron Samedit" (sudo heap overflow), CVE-2015-5287
+      (ABRT sosreport symlink handling), CVE-2015-3246 (libuser roothelper /etc/passwd corruption),
+      CVE-2010-3904 (Linux kernel RDS rds_page_copy_user arbitrary kernel-memory write), and CVE-2022-0847
+      "Dirty Pipe" (pipe-buffer overwrite of read-only files).
+      All eight CVEs (2010–2022) are old, publicly disclosed, already-patched vulnerabilities — Talos
+      describes exploitation of unpatched/outdated instances, not any 0-day. Correction to the S3 draft's
+      `affected_products` list: Talos's post names "RTCore64.sys from MSI" without the word "Afterburner"
+      — the S3 draft's "MSI Afterburner RTCore64.sys driver" adds a product name Talos itself does not
+      state in this post (RTCore64.sys is publicly known to ship with MSI Afterburner/RGB-fusion tooling,
+      but that association is not sourced to this Talos article). Similarly "Telerik UI" should read
+      "Telerik UI for ASP.NET AJAX" per the CVE-2019-18935 text. Recommend affected_products additions:
+      Zimbra Collaboration Suite, AjaxPro, Nacos, Telerik UI for ASP.NET AJAX (already close in the S3
+      draft), plus noting the Linux LPE chain touches sudo, ABRT, libuser and the Linux kernel RDS/pipe
+      subsystems (not currently listed).
+
+    ai_assisted_development_claims_exact_modality: >
+      Three separate, differently-hedged AI-development claims appear across the two posts — none should
+      be flattened into a single "finding of fact":
+      (a) Companion/AI post, the headline assessment: "Talos assesses with moderate-to-high confidence
+      that UAT-10147 is among an emerging class of financially motivated intrusion operators leveraging
+      agentic AI systems to operationalize offensive tradecraft at scale." — an explicit confidence-graded
+      ASSESSMENT, not an observation of fact.
+      (b) Same post, on DeepAudit: "While we have not directly observed the actor exploiting
+      vulnerabilities discovered by DeepAudit in victim environments, we did observe the framework
+      installed on their management server. Consequently, we assess with high confidence that they
+      intend to use it to identify vulnerabilities within target website source code or third-party
+      package libraries." — Talos explicitly states the negative (no direct observation of DeepAudit
+      output being exploited) before layering a high-confidence ASSESSMENT of intent on top of a directly
+      OBSERVED artifact (the installed framework).
+      (c) Same post, on PentestGPT — this one IS a direct observation, not an assessment: "Talos observed
+      the threat actor installing the PentestGPT framework on their C2 server and using it to dynamically
+      scan web servers and execute relevant proof-of-concept exploits."
+      (d) Same post, on the ysoserial-based AI tooling — also framed as direct observation of an artifact:
+      "The AI tool not only creates a well-documented README instructing the attacker on how to use
+      ysoserial to infiltrate the target server, but it also generates three companion Python scripts."
+      Talos frames the recovered README/scripts as AI-generated based on internal documentary evidence
+      (see (f) below for the parallel evidentiary reasoning applied to the Linux rootkit), and separately
+      states: "This ninth section represents the most significant finding in the recovered artifact: a
+      detailed record of an active intrusion against a real target." — "most significant finding" refers
+      to X-Force[sic, Talos]'s own artifact-recovery finding (an operational case record embedded in the
+      AI-generated documentation), not a claim that the AI itself is the most significant finding.
+      (e) BYOVD/malware post, on the Linux rootkit "Specter": "Talos investigated the source code of the
+      Specter rootkit and assesses with medium confidence that UAT-10147 leveraged a combination of
+      AI-assisted development and human expertise in the creation of this rootkit" — again an explicit
+      MEDIUM-confidence assessment, explicitly hedged as a "combination" with human expertise, not pure
+      AI authorship. Talos's supporting reasoning (documentation structure resembling a prompted product
+      spec, uniform machine-like section separators, and an "exhaustive, multi-method presentation"
+      Talos calls "a classic example of an AI's completeness reflex") is stated as evidentiary basis for
+      that assessment, not as independently confirmed fact.
+      (f) Same post, overall framing sentence: "We also assess that UAT-10147 is gradually incorporating
+      AI-assisted development into its operations, likely to support the creation and refinement of tools
+      used across its campaigns." — again "assess," with "likely" as an internal hedge on the motive.
+      Net: every AI-development claim in both posts is Talos's own graded assessment (moderate-to-high or
+      medium confidence) resting on stated circumstantial/stylistic evidence, EXCEPT the PentestGPT and
+      ysoserial-tooling artifacts themselves, which Talos states it directly observed on the actor's C2
+      infrastructure. An entry must preserve this fact/assessment split — do not write "Talos found
+      UAT-10147 used AI to build its rootkit" as a bare fact.
+
+    scale_claim_170000_urls: >
+      CORRECTION to the S3 draft: the ~170,000-URL figure is Talos's OWN claim in its companion post, not
+      merely "per CyberInsider's relay." Verbatim: "From the threat actor's command-and-control (C2)
+      server open directory, we also identified a target list containing approximately 170,000 URLs
+      stored in a text file." Talos further states the actor "split the large list into 17 files, each
+      containing about 10,000 URLs," using the Chinese character "萬" (10,000) abbreviated as "w" in
+      filenames. CyberInsider's 2026-08-20 piece is a same-day secondary re-report of this same Talos
+      figure, not an independent measurement — cite Talos as primary for this number.
+      Sector/country list — also Talos's OWN statement, not secondary reporting (correction to the S3
+      draft's region_nexus framing "per secondary reporting"): "Talos' investigation shows affected
+      servers located in Brazil, Bolivia, China, Canada, and Vietnam. These systems belong to
+      organizations in sectors including government, universities, media, technology, and gaming." This
+      sentence describes the victimology of servers Talos directly investigated (distinct from the raw
+      170,000-URL target list, whose per-country distribution is shown only in an un-transcribable
+      figure/chart, Figure 2, not in prose).
+
+    detection_and_hunt_anchors: >
+      Windows: service-creation telemetry for a new kernel-mode service pointing to a driver image under
+      %TEMP% (Talos: "installs it as a transient kernel service via the SCM, and opens an IOCTL handle to
+      the device") — a legitimate signed driver load from a non-standard, user-writable path combined
+      with an immediate IOCTL open is the discriminator vs. routine driver installation, which normally
+      loads from %SystemRoot%\System32\drivers and is preceded by an MSI/installer chain. Kernel-callback
+      integrity: enumerate/verify PspCreateProcessNotifyRoutine, PspCreateThreadNotifyRoutine and
+      PspLoadImageNotifyRoutine array entries against known-good EDR driver registrations (a sudden drop
+      in registered callbacks for a running EDR agent, with no corresponding agent uninstall/update
+      event, is the behavioral signal). SPECTRE's other named injection modalities (process hollowing
+      into svchost.exe by default; APC EarlyBird injection; on-startup self-hollowing of RuntimeBroker.exe)
+      are additional process-lineage anomalies to hunt on. Linux/Specter rootkit: ftrace-based hooking of
+      six syscalls (hooked_tcp6_seq_show, hooked_tcp4_seq_show, hooked_tkill, hooked_tgkill, hooked_kill,
+      hooked_getdents64) via FTRACE_OPS_FL_IPMODIFY — "because 'ftrace' is a legitimate kernel debugging
+      interface, this approach produces minimal noise in kernel integrity checks," per Talos, so the
+      discriminator is unexpected ftrace registrations against those six specific handlers outside kernel
+      debugging/tracing sessions, plus a kernel module loaded as "acpi_pad.ko" with a persistence unit
+      named "hardware-monitor.service" (description "Hardware Performance Monitor") configured with
+      Before=sysinit.target — the disguise name and the boot-ordering directive together are the
+      behavioral tell, since legitimate acpi_pad does not ship as a separate systemd-managed unit file.
+
+  - ref: "S3 item 2 — ITG27 / Mustang Panda / IBM X-Force"
+    title: "IBM X-Force baits ITG27 (Mustang Panda) into a deception environment: Havencode hVNC backdoor, Toneshell v10 WebSocket-over-TLS pivot"
+    novelty_note: "This publishes as update_of: 2026-08-15/mustang-panda-coolclient-signed-kernel-driver-rootkit per the spawn brief — delta-only enrichment below."
+    sources_verified:
+      - { url: "https://www.ibm.com/think/x-force/trapping-a-mustang-panda", publisher: "IBM X-Force", date: "2026-08-20", fetch_method: "bridge:url (full raw body)" }
+
+    havencode_mechanics: >
+      "The Havencode backdoor dropped by the operators is a malware that has not been observed by X-Force
+      before. Its main functionality is centered around the use of its hidden Virtual Network Computing
+      (hVNC) features, allowing operators to stealthily connect to the desktop of an infected victim and
+      browse the machine." Delivery/load: "The backdoor is delivered as a 64-bit DLL 'roboform-x64.dll',
+      together with a legitimate executable 'robotaskbaricon.exe'. Havencode is then launched via DLL
+      sideloading" — three command-line options are supported (HVNC server start on a supplied localhost
+      port for a hidden/new desktop; an AVNC mode connecting to the user's EXISTING desktop for
+      visibility-only, no-input-control observation; and a generic TCP/UDP proxy/tunnel capability X-Force
+      calls "PortMM," used during the incident to tunnel the local VNC server's traffic out to the C2
+      server, though X-Force notes "this feature may also be used for any other proxy traffic"). C2/config:
+      "It does not contain any embedded C2 addresses. Instead, the C2 server is provided as command line
+      argument at the time of execution" — no static C2 indicator to extract from the binary. In incident
+      A the operators "started the Havencode backdoor with incorrectly formatted command line arguments
+      in their first attempt," and it was retrieved "as a ZIP file, via a curl command from the
+      actor-controlled IP" with an HTTP response header indicating it was served from "Python's built-in
+      HTTP server" (Server: SimpleHTTP/0.6 Python/3.14.3) — an OPSEC/infrastructure artifact, not a
+      persistence mechanism; X-Force's writeup does not describe a separate persistence mechanism unique
+      to Havencode beyond the DLL-sideload load chain itself.
+
+    toneshell_v10_delta: >
+      "X-Force tracks this variant as Toneshell v10, which reflects continued evolution of the malware
+      family previously associated with ITG27 operations. Earlier variants relied on custom socket-based
+      communications, while version 10 transitions to secure WebSocket communications using WinHTTP over
+      TLS." Why it matters for detection: WebSocket-over-TLS via the native WinHTTP WebSocket API set
+      (WinHttpWebSocketCompleteUpgrade / WinHttpWebSocketReceive / WinHttpWebSocketSend /
+      WinHttpWebSocketClose, plus WinHttpGetIEProxyConfigForCurrentUser / WinHttpGetProxyForUrl for proxy
+      awareness) makes the C2 channel blend into the same protocol, port (443) and TLS handshake profile
+      as ordinary browser/application WebSocket traffic and legitimate WinHTTP-based Windows
+      applications — a network defender who was filtering/alerting on Toneshell's earlier raw
+              custom-socket C2 signature loses that discriminator entirely; detection has to shift to
+      TLS-metadata/JA3-class fingerprinting of the WinHTTP client stack, destination-reputation, or
+      endpoint-side hooking of the WinHTTP WebSocket API calls themselves rather than protocol-shape
+      alone. X-Force additionally identified three standalone PE32 DLL Toneshell v10 samples (two reusing
+      the "SolidPDFCreator.dll" masquerade name, one masquerading as "libcef.dll") that "reuse the
+      WinHTTP-based WebSocket communications model, command dispatcher logic, proxy handling and
+      reverse-shell functionality" of the shellcode-delivered payloads, and contain "repeated UTF-16LE
+      junk strings referencing characters and themes from the Harry Potter franchise" inserted between
+      command-dispatcher branches as an anti-analysis padding/obfuscation technique.
+
+    claimloader: >
+      "X-Force identifies the sideloaded DLL component as Claimloader, based on its consistent role as a
+      loader-stage implant. The malware copies the sideloading pair to a new installation directory
+      (commonly under C:\ProgramData), establishes persistence, recovers embedded shellcode and executes
+      Toneshell payload using a Windows enumeration callback." The specific callback mechanism: "The
+      loaders subsequently execute embedded shellcode using the EnumSystemLocalesA API as a callback
+      mechanism." X-Force notes "Acronis previously reported overlapping activity involving the same
+      campaign cluster but categorized portions of the toolchain differently" — i.e. Claimloader is
+      X-Force's own naming/categorization of a component Acronis had grouped differently, not a novel
+      malware family independent of prior reporting.
+
+    deception_environment_and_hands_on_keyboard: >
+      X-Force partnered with "Deception.Pro" to run two simulated victim environments — "an operational
+      technology company specializing in electric grids and a state-level government agency" — and
+      captured live ITG27 activity inside them over multiple days. Evidence the activity was human-driven
+      rather than scripted: two specific mistyped commands were logged in both incidents — "net user
+      /doamin" and "netsh waln show networks" (both typos of the intended commands) — and "During incident
+      A, the operators also started the Havencode backdoor with incorrectly formatted command line
+      arguments in their first attempt." X-Force's own conclusion: "This evidence is a strong indicator
+      that most of the operator activity was not scripted but performed by hand." Separately, and
+      independently corroborating manual operation: "X-Force analysis shows that operator-initiated
+      actions took place exclusively during weekday working hours (08:00-18:00) in China Standard Time."
+      Behaviorally, ordinary telemetry (process/network logs alone) would show a Toneshell reverse-shell
+      session and, separately, a Havencode HVNC/AVNC session and generic proxy traffic — it would NOT
+      show that a human was live-browsing the desktop, correcting mistyped commands, or pausing activity
+      over a weekend and resuming Monday with no further action before a deliberate shutdown command on
+      Tuesday; only the deception environment's full session recording let X-Force establish the
+      hands-on-keyboard cadence and operator behavior (typos, working-hours pattern, weekend pause) that
+      plain log telemetry would not surface on its own.
+
+    targeting_in_xforce_own_words: >
+      X-Force's own targeting statement, verbatim: "The observed activity extends a campaign previously
+      reported by Acronis, where ITG27 targeted India's energy sector and government organizations."
+      Deception-environment specifics: "X-Force analysts captured live ITG27 operator activity in fake
+      enterprise environments designed to resemble an operational technology company specializing in
+      electric grids and a state-level government agency." The initial-access lure: "In May 2026, X-Force
+      uncovered an email with the subject 'China BG' delivered to recipients within the Indian
+      government. The email includes a PDF attachment titled, 'Hydropower Cooperation Project Study.pdf'
+      imitating Nepal's Ministry of Foreign Affairs (MoFA)." On WHY India/energy: "X-Force assesses ITG27
+      aligns their activity to support the strategic regional interests of China. Supporting lure
+      material, recent energy developments in India, and the prioritization of material gathering from
+      fake government machines point to a probable motive for the group's recent focus on regional energy
+      interests." — an explicit ASSESSMENT of motive, not a stated fact.
+      On broader/Western targeting — the ONLY statement in this article that touches non-South-Asian
+      targeting is a general characterization of the actor's overall pattern, not a claim about THIS
+      campaign: "X-Force assesses ITG27 conducts cyber operations primarily in alignment with China's
+      regional interests but may extend its targeting of Western entities perceived to threaten China's
+      economic or military objectives." Do NOT read this as X-Force stating European targeting occurred
+      in this campaign — the article names no European victim, lure, or infrastructure anywhere in its
+      body; the "may extend" clause is a hedged general-actor assessment, not a finding tied to the
+      incidents X-Force describes here (both simulated environments were built to resemble an Indian
+      OT/electric-grid company and an Indian state-level government agency).
+
+    actor_naming_confirmed: >
+      Verbatim: "ITG27, formerly Hive0154, is a state sponsored espionage group aligned to the strategic
+      interests of China. Since at least 2024, ITG27 has engaged in cyberattacks targeting public and
+      private organizations, including think tanks, policy groups, government agencies and individuals.
+      ... ITG27 activity overlaps with threat actors publicly reported as Mustang Panda, Stately Taurus,
+      UNK_SteadySplit, Camaro Dragon, Twill Typhoon, Polaris, and Earth Preta." X-Force's own verb is
+      "overlaps with" — an overlap/correlation claim across independently-named clusters, not a flat
+      identity statement; HoneyMyte (the registry's existing alias for actor:mustang-panda) is NOT among
+      the seven names X-Force lists here, so "HoneyMyte" cannot be sourced to this article — worth noting
+      for the registry alias-merge decision (X-Force's alias list should be added to actor:mustang-panda
+      without implying X-Force itself used the term "HoneyMyte").
+
+    detection_hardening_notes_from_source: >
+      X-Force's own stated defensive recommendations (verbatim list, condensed): "Deploy detection rules
+      for ITG27 reconnaissance command sequences: systeminfo, whoami, net group, netstat, tasklist
+      executed in rapid succession"; "Scan endpoints for known malicious hashes and presence of
+      MATE%08X.TP, hvnc.log, avnc.log and roboform-x64.dll" (filenames/artifacts, not full IOCs — retained
+      here only as named-artifact context per the no-IOC entry policy, the main agent should not carry the
+      hash reference forward); "Retain endpoint and network logs for a minimum of 90 days to support
+      retrospective analysis given ITG27's multi-day operational tempo"; "Filter and sandbox all email
+      attachments and embedded URLs, particularly those linking to cloud storage services"; "Train staff
+      in government and energy sectors to recognize geopolitically themed spear-phishing lures."
+
+  - ref: "S2 item 2 — ZeroBytes / France, update-of 2026-08-15 DGFiP entry"
+    title: "France: ZeroBytes ties to the Ministry of National Education breach confirmed by the ministry; Bloctel breach actor attribution NOT supported by any source found"
+    novelty_note: "update_of: 2026-08-15/france-dgfip-tax-authority-credential-intrusion — delta-only enrichment below. CRITICAL CORRECTIONS in the last two sections — read before composing."
+    sources_verified:
+      - { url: "https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/zerobytes-a-l-origine-du-vol-de-donnees-du-fisc-revendique-un-piratage-de-donnees-visant-l-education-nationale-fin-juillet_8152235.html", publisher: "franceinfo", date: "2026-08-18", fetch_method: "bridge:url (full raw body)" }
+      - { url: "https://www.occrp.org/en/news/french-authorities-investigate-widespread-government-data-breaches", publisher: "OCCRP", date: "2026-08-20", fetch_method: "bridge:url (full raw body)" }
+      - { url: "https://presse.economie.gouv.fr/la-dgccrf-met-en-garde-les-consommateurs-a-la-suite-dune-fuite-de-donnees-sur-bloctel/", publisher: "DGCCRF (official, Ministère de l'Économie et des Finances)", date: "2026-08-12T14:28:07Z", fetch_method: "bridge:url (full raw body)" }
+      - { url: "https://www.rtl.fr/actu/sciences-tech/apres-le-fisc-l-education-nationale-le-cybercriminel-zerobytes-revendique-le-piratage-de-346-millions-de-lignes-de-donnees-d-eleves-et-de-personnel-7900662862", publisher: "RTL", date: "2026-08-18", fetch_method: "bridge:url (full raw body); fetched to trace OCCRP's own hyperlinked source for the 'media reports' claim" }
+      - { url: "https://www.it-connect.fr/fuites-donnees-etat-francais-dgfip-education-nationale/", publisher: "IT-Connect", date: "2026-08-20 (approx, article covers events through 20 Aug)", fetch_method: "bridge:url (full raw body); checked for a stated unified-investigation claim — found none" }
+
+    quote_correction_ministry_of_education_ssn: >
+      CORRECTION to the S2 draft's evidence entry for the education-ministry data-exposure detail: the
+      draft quote "Les données susceptibles d'avoir été exfiltrées concernent les agents du ministère
+      ayant exercé en académie depuis 2001. [...] Pour une partie d'entre eux s'y ajoutent des
+      coordonnées, adresse postale et numéro de téléphone, ainsi que le numéro de sécurité sociale." is
+      NOT a contiguous substring of the franceinfo article — it splices two separated sentences across an
+      ellipsis, dropping the intervening clause "Il s'agit d'éléments d'identité et d'informations
+      professionnelles – statut et fonctions." The article's actual (contiguous, verified) text runs:
+      "Les données susceptibles d'avoir été exfiltrées concernent les agents du ministère ayant exercé en
+      académie depuis 2001. Il s'agit d'éléments d'identité et d'informations professionnelles – statut
+      et fonctions. Pour une partie d'entre eux s'y ajoutent des coordonnées, adresse postale et numéro de
+      téléphone, ainsi que le numéro de sécurité sociale, avait précisé le ministère fin juillet. Ce
+      système d'information ne contient ni données bancaires, ni mots de passe, ni données relatives aux
+      élèves." Recommend two SEPARATE evidence quotes instead of one spliced quote:
+      Quote 1 (identity/professional data since 2001): "Les données susceptibles d'avoir été exfiltrées
+      concernent les agents du ministère ayant exercé en académie depuis 2001."
+      Quote 2 (SSN detail, standalone contiguous sentence): "Pour une partie d'entre eux s'y ajoutent des
+      coordonnées, adresse postale et numéro de téléphone, ainsi que le numéro de sécurité sociale"
+      Quote 3 (what the system does NOT contain — useful scoping fact, not currently in the draft): "Ce
+      système d'information ne contient ni données bancaires, ni mots de passe, ni données relatives aux
+      élèves." All three attributed to "Ministère de l'Education nationale, quoted by franceinfo," 31 July
+      2026 disclosure as relayed in the 18 August article.
+      Same problem, smaller: the draft's ZeroBytes quote "Je viens d'absorber 346 millions de lignes de
+      chez vous (brutes) il y a de ça quelques semaines. Vous m'aviez détecté, mais vous ne m'avez pas
+      coupé. Je suis donc resté infiltré sous vos yeux." also splices across an attribution clause the
+      article inserts mid-quote ("...pas coupé", ont affirmé les pirates sur le réseau social. "Je suis
+      donc resté infiltré..."). Use as two separate quotes: "Je viens d'absorber 346 millions de lignes de
+      chez vous (brutes) il y a de ça quelques semaines. Vous m'aviez détecté, mais vous ne m'avez pas
+      coupé" (first quoted statement) and "Je suis donc resté infiltré sous vos yeux. Un avis à dire
+      là-dessus ?" (second quoted statement) — both attributed to "ZeroBytes, quoted by franceinfo."
+
+    ministry_disclosure_date_and_dispute_scope: >
+      31 July 2026 is confirmed as the ministry's own disclosure date, quoted by franceinfo: the ministry
+      "avait annoncé qu'il avait été 'victime d'une intrusion frauduleuse dans l'un de ses systèmes
+      d'information'" and that "'Cette intrusion a pu conduire à l'exfiltration de données à caractère
+      personnel concernant un nombre important de ses agents'." On 18 August the ministry's office,
+      contacted directly by franceinfo ("Joint par franceinfo, l'entourage du ministre de l'Education
+      nationale, Edouard Geffray"), CONFIRMS the ZeroBytes claim corresponds to the same, already-disclosed
+      31 July intrusion — it does not dispute that the intrusion happened or that ZeroBytes is the actor.
+      CORRECTION to the task framing: this article does NOT contain an explicit ministry dispute of
+      ZeroBytes' "remained undetected/uncut-off" continued-access assertion — that claim ("Vous m'aviez
+      détecté, mais vous ne m'avez pas coupé... resté infiltré") appears only as ZeroBytes' own X/Twitter
+      statement, with no ministry rebuttal quoted anywhere in this article. On the student-data claim, the
+      ministry's own 18 August communiqué (quoted in full): "Des publications intervenues hier font état
+      de la mise en ligne de ces données et revendiquent la détention de données relatives à des élèves.
+      Le ministère poursuit ses expertises techniques afin d'établir la nature exacte et l'étendue des
+      données exfiltrées" — this is an open/pending posture ("continues its technical assessments to
+      establish the exact nature and extent"), NOT a denial. The only firm negative statement from the
+      ministry is the 31-July-sourced scope statement above ("ne contient ni données bancaires, ni mots de
+      passe, ni données relatives aux élèves" — that specific SYSTEM does not hold banking data, passwords
+      or student data), which describes the system compromised in the original 31 July incident, not a
+      rebuttal of ZeroBytes' newer, separate claim to hold student records from elsewhere. Recommend the
+      entry describe this precisely as "confirmed intrusion, contested/unresolved scope" rather than
+      "ministry disputes ZeroBytes' claims."
+
+    bloctel_dgccrf_own_statement: >
+      DGCCRF's own official press release (2026-08-12T14:28:07Z), verbatim: "Un accès frauduleux à un
+      compte professionnel a permis à un cybercriminel de récupérer des fichiers contenant 3 millions de
+      numéros de téléphone, dont 600 000 inscrits sur Bloctel." (A fraudulent access to a professional
+      account allowed a cybercriminal to retrieve files containing 3 million phone numbers, of which
+      600,000 registered on Bloctel.) "Aucune donnée personnelle n'a été divulguée (nom, adresse etc.)."
+      (No personal data — name, address etc. — was disclosed.) Remediation stated by DGCCRF: "Dès que
+      l'incident a été constaté, le compte piraté ayant permis d'accéder à ces numéros a été bloqué et
+      l'ensemble des comptes professionnels ont ensuite fait l'objet de vérifications. La base de données
+      Bloctel elle-même n'a pas été compromise." (As soon as the incident was noted, the compromised
+      account was blocked and all professional accounts were subsequently reviewed; the Bloctel database
+      itself was not compromised.) DGCCRF names NO threat actor anywhere in this release. "Accès
+      frauduleux à un compte professionnel" (fraudulent access to a professional account) IS DGCCRF's own
+      characterization of the access mechanism, not an inference — directly supports T1078 Valid
+      Accounts framing without qualification.
+
+    bloctel_zerobytes_attribution_chain_CRITICAL_CORRECTION: >
+      CRITICAL: no source fetched in this run attributes the Bloctel breach to ZeroBytes. This directly
+      contradicts the S2 draft's claim that "OCCRP's 20 August roundup reports that... media reporting
+      (RTL) now attributes it to the same ZeroBytes actor" behind DGFiP and the education ministry.
+      Tracing the exact chain: OCCRP's article (fetched in full, 2026-08-20) states, in order: (1) the
+      DGFiP hack, with "The French National Police's anticybercrime unit is leading the investigation into
+      the breach" (singular "the breach," grammatically referring back to the DGFiP hack just described);
+      (2) "The incident follows a separate late-July cyberattack targeting the Ministry of National
+      Education, with media reports indicating that the same hacker claimed responsibility for selling
+      data extracted from both government systems" — checking OCCRP's own HTML, the hyperlink on
+      "indicating" points to the RTL article above, and the "same hacker...both government systems" claim
+      covers ONLY DGFiP + Ministry of Education, not Bloctel; (3) an entirely separate paragraph:
+      "Additionally, ministry officials disclosed that hackers compromised Bloctel, an official government
+      service that allowed users to block telemarketing calls before shutting down on August 11. That
+      breach exposed files containing 3 million phone numbers." — OCCRP's hyperlink on "disclosed" points
+      to the DGCCRF press release itself, and this sentence names NO actor. Having fetched the RTL article
+      OCCRP links to in full: it is entirely about the DGFiP + Ministry of Education "same hacker" claim
+      (citing the researcher Clément Domingo/"SaxX" and the outlet French Breaches) and makes ZERO mention
+      of Bloctel anywhere in its body. A further independent French-language roundup (IT-Connect,
+      2026-08-20, covering DGFiP and the education-ministry breach in detail) likewise makes no mention of
+      Bloctel and states no unified-investigation claim. CONCLUSION: the actor behind the Bloctel breach is
+      UNNAMED in every source fetched this run; any entry text must not state or imply ZeroBytes
+      attribution for Bloctel. If the main agent has independent sourcing for this attribution it should
+      be re-verified against its own primary — it was not found here despite dedicated pursuit of the
+      OCCRP → RTL chain.
+
+    unified_investigation_claim_CORRECTION: >
+      CORRECTION: no source fetched in this run states a single unified investigation spanning all three
+      intrusions (DGFiP, Ministry of Education, Bloctel). What is actually stated, per-intrusion: DGFiP —
+      Paris prosecutor's office opened a case, with OCCRP/other reporting indicating the French National
+      Police anti-cybercrime unit (OFAC/OCLCTIC-class unit) leads that investigation. Ministry of
+      Education — the ministry's own 31 July communiqué states it "avait alors déposé plainte contre X
+      auprès du parquet de Paris et saisi l'agence nationale de la sécurité des systèmes d'information
+      (ANSSI), ainsi que la Commission nationale de l'informatique et des libertés (Cnil)" — i.e. its OWN
+      separate complaint to the Paris prosecutor, plus ANSSI and CNIL notification; IT-Connect adds ANSSI
+      is assisting that specific investigation. Bloctel — DGCCRF's own release states only that CNIL was
+      notified; no prosecutor referral or investigating unit is named in the DGCCRF text. The only
+      cross-intrusion linkage any source states is the media-relayed "same hacker" claim tying DGFiP and
+      the Ministry of Education together (via RTL/French Breaches reporting) — Bloctel is not included in
+      that linkage by any source found. Recommend the entry describe three separately-handled intrusions
+      with a media-relayed same-actor claim linking two of them (DGFiP + Education), explicitly noting
+      Bloctel's actor and investigative ownership remain unstated in the sourcing available.
+
+    access_mechanism_characterization: >
+      Per-intrusion, confirmed whether "credential/account abuse" is the source's own characterization or
+      an inference: DGFiP — this pipeline's existing 2026-08-15 entry already establishes this was
+      impersonated-agent/third-party credential abuse (not re-verified again this run, out of scope for
+      this delta). Ministry of Education — neither franceinfo nor the ministry's own quoted communiqué
+      states an access mechanism (no "credential," "compte," "identifiants" or similar term appears in the
+      franceinfo article's account of the ministry's statements) — the mechanism is UNSTATED for this
+      intrusion; do not carry forward an assumed T1078 characterization for the Education Ministry breach
+      without a supporting quote (the S2 draft's blanket claim that "DGFiP was reached via impersonated
+      agent and third-party credentials, and Bloctel via 'un accès frauduleux à un compte professionnel'"
+      is accurate for DGFiP and Bloctel but should not be read as also covering the Education Ministry
+      case, which has no stated mechanism in the sources fetched). Bloctel — DGCCRF's own words, "un accès
+      frauduleux à un compte professionnel" (a fraudulent access to a professional account), IS the
+      source's own characterization, not an inference — directly supports T1078 Valid Accounts for
+      Bloctel specifically.
+
+candidate_sources: []
+coverage_gaps: []

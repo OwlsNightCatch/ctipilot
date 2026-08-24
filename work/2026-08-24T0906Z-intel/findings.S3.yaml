@@ -1,0 +1,132 @@
+domain: S3
+run_id: 2026-08-14T0417Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-14T04:20:58Z
+ended_at: 2026-08-14T04:34:13Z
+duration_seconds: 795
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 6
+  bridge_fetches: 22
+
+items:
+  - title: "JWR phishing framework: live operator-puppeteered PhaaS impersonates Shopify/PayPal/Apple/Klarna checkouts, likely an Outsider PhaaS variant"
+    sources:
+      - { url: "https://blog.talosintelligence.com/dissecting-the-jwr-phishing-framework/", publisher: "Cisco Talos", date: "2026-08-13", role: "primary" }
+    discovery_trace: "first seen at: S3 major-labs sweep of talos, URL https://blog.talosintelligence.com/rss/ (feed item published Thu, 13 Aug 2026 10:00:35 GMT) → primary: Cisco Talos, URL https://blog.talosintelligence.com/dissecting-the-jwr-phishing-framework/ (no pivot needed — vendor's own first-hand research; WebSearch (\"Talos JWR phishing framework Outsider PhaaS\") checked for independent corroboration, surfaced only a malware.news repost of the same Talos content and unrelated PhaaS stories — no independent second source found)"
+    summary: |
+      Cisco Talos identified an undocumented phishing-as-a-service (PhaaS) client engine, internally branded "JWR" by its developer, that impersonates checkout and login flows for Shopify, PayPal, Apple, Klarna and unnamed banks. Unlike a static credential-harvesting page, the client keeps an AES-CTR-encrypted WebSocket open to the operator's C2 for the session's duration, streaming victim keystrokes character-by-character (partial card numbers, partial passwords, partial OTPs) before submission, so the operator can decide the next step before the victim even hits submit. The architecture splits into a Host Bridge module (an IIFE that relays commands into a phishing iframe styled as the legitimate checkout/login page) and a Vue.js "Content Mode" application that renders across 44 HTML pages and executes more than 40 distinct operator instructions (e.g., to_card, to_sms, to_2fa, to_pin, to_app, tip_fail/tip_change_card to force a second card, updata_2fa to silently inject an operator-supplied OTP). Data exfiltration covers a "cvvform" object spanning full PAN/CVV/PIN/expiry, SSN, passport/driver's-license images, up to three sets of website credentials, PayPal login, and a full device/browser fingerprint, POSTed once the operator closes the session to the endpoint api/open/the_final_interface; five REST endpoints back an HTTP long-poll fallback (api/open/pollInstruction) when the WebSocket is blocked. The client includes an anti-analysis self-referential .toString().search() debugger-detection check and decoy variables to defeat static analysis; operator-facing status strings are hardcoded in Simplified Chinese. Talos assesses with medium confidence that JWR is a variant of "The Outsider," a Chinese-speaking PhaaS platform whose FBI/Google-led "Ghost Hook" takedown Talos notes occurred in June 2026 — consistent with other operators reusing or forking the leaked/sold Outsider kit. The observed real-world campaign delivered the JWR client via SMS smishing lures impersonating road-toll authorities, postal/courier services and an electronic toll system across Singapore, the UAE and Southeast Asia. Talos published ClamAV (Js.Phishing.JwrFramework-10060456-0) and Snort2/3 SIDs (66924–66928) coverage.
+    region_nexus: "Southeast Asia / Middle East observed campaign (Singapore road-toll, UAE e-toll, regional courier lures); the underlying Chinese-speaking PhaaS lineage (Outsider, Lucid, Darcula, Lighthouse) has previously targeted European and Swiss financial-services customers, so the technique class is directly transferable to this constituency's finance/retail defenders even without a confirmed local victim in this specific campaign"
+    primary_sector_nexus: "indirect"
+    sector: "finance, retail/e-commerce"
+    cves: []
+    techniques: [T1566.002, T1111, T1071.001, T1027]
+    affected_products: []
+    entity_keys: ["campaign:outsider-phaas-gemini-2026"]
+    new_entities:
+      - { key: "tool:jwr-phishing-framework", type: tool, name: "JWR phishing framework", aliases: [],
+          summary: "Undocumented real-time, operator-driven phishing-as-a-service client engine impersonating Shopify/PayPal/Apple/Klarna checkout and login flows via an AES-CTR-encrypted WebSocket; Talos assesses with medium confidence it is a variant of The Outsider PhaaS (Cisco Talos, 2026-08-13)." }
+    relation_suggestions:
+      - { subject: "tool:jwr-phishing-framework", object: "campaign:outsider-phaas-gemini-2026",
+          basis: "Talos: \"Talos assesses with medium confidence that the JWR phishing framework is a variant of 'The Outsider'... based on several similarities in the client engine scripts and functionalities\" (Cisco Talos, 2026-08-13)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The client engine of the JWR phishing framework is a real-time, operator-driven system that, rather than merely logging form submissions like a static credential-stealing page, keeps an AES-CTR encrypted WebSocket open to the threat actor so they can steer each victim's session live."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/dissecting-the-jwr-phishing-framework/"
+      - quote: "Talos assesses with medium confidence that the JWR phishing framework is a variant of \"The Outsider,\" a phishing-as-a-service (PhaaS) platform, based on several similarities in the client engine scripts and functionalities of the two PhaaS platforms."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/dissecting-the-jwr-phishing-framework/"
+      - quote: "The following ClamAV signature detects and blocks this threat: Js.Phishing.JwrFramework-10060456-0"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/dissecting-the-jwr-phishing-framework/"
+    extended_notes: |
+      Talos found JWR shares no code-level implementation with three other Chinese-language PhaaS kits (Lucid, Darcula, Lighthouse) — independently engineered C2 protocol, encryption module and message envelope — but all four share the behavioral signature defining this PhaaS lineage: live operator puppeteering, card capture paired with OTP/2FA interception, and multi-brand templating at scale. Detection angle for defenders: the live-streaming, per-keystroke exfiltration model means static form-submission monitoring won't catch it — the WebSocket/long-poll C2 channel and the 44-page templated flow are the more durable telemetry hooks (web proxy/DNS visibility into the phishing domain's WebSocket handshake, and browser telemetry for pages requesting persistent WebSocket connections from a checkout-styled page).
+
+  - title: "Armored Likho deploys Still Toolkit: Rust Telegram-session stealer plus VAD-triggered audio surveillance, with a GitHub dead-drop C2 fallback"
+    sources:
+      - { url: "https://securelist.com/armored-likho-still-toolkit/121033/", publisher: "Kaspersky Securelist (GReAT)", date: "2026-08-13", role: "primary" }
+    discovery_trace: "first seen at: S3 major-labs sweep of kaspersky-securelist, URL https://securelist.com/feed/ (feed item published Thu, 13 Aug 2026 08:00:15 +0000) → primary: Kaspersky Securelist (GReAT), URL https://securelist.com/armored-likho-still-toolkit/121033/ (no pivot needed — vendor's own first-hand malware analysis)"
+    summary: |
+      Kaspersky GReAT documents a new Armored Likho (aka Eagle Werewolf) campaign distributing a dropper — written in Rust on the Tauri framework — disguised as a Russian charitable-donation app with a working, deceptive item catalog pulled from orderapiserver[.]info. While the victim browses the fake catalog, the dropper silently decrypts and launches a newly identified two-component cyber-espionage kit, the "Still Toolkit." Still Sync is a Tokio-based Rust stealer that talks to its C2 over gRPC serialized with FlatBuffers (HTTP or HTTPS depending on the configured C2 URL), registers the host via a SHA-256 "sysmarker" hash of motherboard serial/CPU ID/system UUID/BIOS serial/domain name, and — beyond simply stealing the Telegram Desktop or Microsoft Store tdata session folder — can authenticate to the Telegram API using the stolen session to pull the account's username, full chat/group/channel membership lists, dialogs, and media files under 250MB; when direct file access is blocked it falls back to SeBackupPrivilege abuse (CreateFileW with FILE_FLAG_BACKUP_SEMANTICS, Volume Shadow Copy, or Robocopy backup mode). Still Audio is a companion Rust implant that performs real-time voice-activity detection using a self-implemented Root-Mean-Square algorithm against raw audio samples (default threshold ~0.2, ~7ms silence-to-stop at 44.1kHz), records to a pre-buffer to avoid clipping the start of speech, encodes with a bundled libmp3lame.dll, and exfiltrates over the same gRPC channel — making no attempt to hide the microphone use (it appears in Windows' own "apps using the microphone" list as "Intel Audio"). Still Audio's C2-address resolution falls back to a Dead-Drop Resolver: if its primary server is unreachable for three days, it pulls a Base64-encoded, Blowfish-ECB-encrypted C2 URL from a forked GitHub repository, using the identical algorithm and hardcoded key GReAT previously observed in the group's AquilaRAT samples. GReAT attributes the campaign to Armored Likho with high confidence based on identical dropper/Tauri architecture, matching ICRYPTMP payload header and multi-part encryption format, the shared Dead Drop Resolver key, identical sysmarker-generation logic (down to matching PowerShell commands), and infrastructure overlap (shared hosting ASNs 149440/202448/215311 and consistent Windows-service-mimicking domain naming) with the group's documented February 2026 campaign. Victims are primarily private individuals in Russia, with corporate, government, IT and educational-sector victims also affected.
+    region_nexus: "Russia-domestic targeting (victimology: private individuals, plus corporate, government, IT and educational-sector organisations inside Russia); no confirmed Swiss/European victim — included for the transferable technique class (Dead Drop Resolver via a public code-hosting service, gRPC/FlatBuffers C2 architecture, self-implemented VAD-based audio surveillance) rather than direct regional nexus"
+    primary_sector_nexus: "none direct — technique-class relevance only"
+    sector: "government, IT, education (Russia-domestic victimology)"
+    cves: []
+    techniques: [T1123, T1102.001, T1005, T1071.001, T1204.002, T1027]
+    affected_products: []
+    entity_keys: ["actor:armored-likho"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "we found a new cyber-espionage toolkit – the Still Toolkit – made up of two components: Still Sync and Still Audio."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/armored-likho-still-toolkit/121033/"
+      - quote: "Still Audio also uses the Dead Drop Resolver technique as a fallback mechanism for obtaining the C2 address. If the current server stays unreachable for three days, the tool tries to pull the current C2 URL from a GitHub repository."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/armored-likho-still-toolkit/121033/"
+      - quote: "Based on these overlaps, along with additional technical artifacts, we're highly confident the Armored Likho group is behind the campaign."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/armored-likho-still-toolkit/121033/"
+    extended_notes: |
+      Detection angle: Still Audio deliberately does not hide from the OS microphone-usage indicator (shows as "Intel Audio"), which is a discriminator a hunt team can use directly — legitimate audio/communication apps rarely masquerade under a generic chipset-vendor process name while running as a background Windows service (auxhost). The Dead Drop Resolver technique (encrypted C2 address parked in a forked public GitHub repo, decrypted client-side) is a durable hunting signal: outbound requests to raw.githubusercontent.com from a non-developer host fetching a JSON file is anomalous and worth alerting on independent of this specific campaign's infrastructure.
+
+  - title: "ANNUAL REPORT — Check Point State of Ransomware Q2 2026: active-group count hits a new high as concentration loosens, and a leaked chat log gives first-party proof of a RaaS panel built by AI in three days"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q2-2026/", publisher: "Check Point Research", date: "2026-08-13", role: "primary" }
+    discovery_trace: "first seen at: S3 major-labs sweep of checkpoint-research, URL https://research.checkpoint.com/feed/ (feed item published Thu, 13 Aug 2026 12:54:35 +0000) → primary: Check Point Research, URL https://research.checkpoint.com/2026/the-state-of-ransomware-q2-2026/ (no pivot needed — vendor's own quarterly telemetry report)"
+    summary: |
+      Check Point Research's quarterly State of Ransomware report for Q2 2026 (a periodic/quarterly report, flagged per the required convention) shows the ransomware ecosystem's concentration loosening even as overall damage holds steady: the top 10 groups accounted for 57.6% of leak-site victims, down from 71% in Q1, while the number of active groups climbed from 71 to 93 — a new high for the tracked period. Leak-site victim counts held flat quarter-over-quarter at 2,139 (+0.8%) but are up 33% year-over-year. Qilin remained the most prolific single operator for a fourth straight quarter with 279 victims (down 17% from Q1), while The Gentlemen surged 62% to 269 victims and actually outpaced Qilin during June alone. An internal leak of The Gentlemen's own chat logs and affiliate-platform data exposed a core team of roughly nine operators supported by a broader affiliate base, and — the report's most concrete technical finding — confirmed the group used AI coding assistants to build its ransomware management panel in about three days, which Check Point frames as first-party evidence of AI materially accelerating malicious-tooling development rather than a claim inferred from indirect signals. Ransom-payment rates fell to a multi-year low near 23%, continuing a six-year decline from 85% in 2019, though on-chain ransomware payments still exceeded $820 million in 2025 and the payer market is bifurcating (rising average payments alongside a falling median — large enterprises still paying heavily while the mid-market increasingly holds firm). Q2 law-enforcement actions concentrated on shared criminal infrastructure rather than individual groups: a cryptocurrency-laundering platform takedown, sanctions against major Iranian digital-asset exchanges, dismantling of a malware code-signing service used by multiple RaaS operators, and disruption of infostealer and VPN-anonymization networks several groups depend on jointly. Geographically, the US share of victims fell from 50% to 42% quarter-over-quarter, driven by the fastest-growing groups (The Gentlemen and newly active Krybit) targeting the US less than the ecosystem average. Check Point also reports the exploitation window continuing to narrow, citing AI as an accelerant — vulnerabilities are now being weaponized within hours to days of disclosure.
+    region_nexus: "global ransomware-ecosystem trend report; the narrowing exploitation window and the geographic diversification away from the US (with faster-growing groups already less US-centric) are directly relevant to European/Swiss exposure planning"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector (ransomware ecosystem trends)"
+    cves: []
+    techniques: [T1587.001]
+    affected_products: []
+    entity_keys: ["actor:qilin", "actor:thegentlemen"]
+    new_entities:
+      - { key: "report:check-point-state-of-ransomware-q2-2026", type: report, name: "Check Point State of Ransomware Q2 2026", aliases: [],
+          summary: "Check Point Research's quarterly ransomware-ecosystem report covering Q2 2026: leak-site victim counts, group concentration/churn, ransom-payment trends, and a leaked internal chat log from The Gentlemen documenting AI-assisted RaaS panel development (Check Point Research, 2026-08-13)." }
+    relation_suggestions:
+      - { subject: "actor:thegentlemen", object: "report:check-point-state-of-ransomware-q2-2026",
+          basis: "Check Point Research: \"An internal leak gave an unprecedented look inside The Gentlemen's operation... confirmation that the group used AI coding assistants to build its ransomware management panel in about three days\" (Check Point Research, 2026-08-13)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The top 10 groups accounted for 57.6% of all victims, down from 71% in Q1, while the number of active groups climbed from 71 to 93, a new high for the period tracked in this report."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q2-2026/"
+      - quote: "An internal leak gave an unprecedented look inside The Gentlemen's operation. Chat logs and platform data exposed a core team of roughly nine operators supported by a broader affiliate base, along with confirmation that the group used AI coding assistants to build its ransomware management panel in about three days, genuine first party evidence of AI accelerating malicious tooling development."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q2-2026/"
+      - quote: "Ransom payment rates fell to a multi year low near 23%, continuing a six year decline from 85% in 2019."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q2-2026/"
+    extended_notes: |
+      This is a quarterly, not annual, report — flagged with the "ANNUAL REPORT" convention per the domain mission's instruction to flag any newly published periodic report. Note for a future deep-dive: the report states vulnerabilities are "now being weaponized within hours to days of disclosure" as an AI-driven trend, which is a recurring theme this pipeline has tracked from several other vendors this window (CrowdStrike's 2026 Threat Hunting Report on 88% exploitation inside 48 hours, already covered 2026-08-04) — corroborating rather than novel on that specific point, but the AI-assisted RaaS-panel-development finding (from a leaked chat log, not vendor inference) is the new, concrete data point.
+
+watchlist_sweep:
+  duty: none
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: paradigm-shift-research
+    reason: "Bridge fetch returns only the SPA shell (client-side redirect to pages/home.html, no post listing/dates reachable) — consistent with the 2026-07-27 note; still no discovered listing path or feed this run."
+  - source_id: recordedfuture-insikt
+    reason: "www.recordedfuture.com/research/insikt-group remains a landing/mission page with no dated article listing reachable; WebSearch found only an undated 2026 State of Security report page, no in-window Insikt post confirmed. Recipe gap persists from 2026-08-04."
+  - source_id: google-tag
+    reason: "blog.google/threat-analysis-group/ resolves to Google's general security blog, not a dated TAG-specific listing; WebSearch found no in-window TAG-specific post. Recipe gap persists from 2026-08-04."
+  - source_id: trendmicro-research
+    reason: "feeds.trendmicro.com/TrendMicroResearch feedburner mirror failed both direct (SSL EOF) and jina transports this run; fell back to WebFetch on the HTML listing instead, which returned items only through 2026-07-30 (nothing in-window)."
+  - source_id: zscaler-threatlabz
+    reason: "feeds.feedburner.com/Threatlabz returned via jina fallback only (all direct-transport jina keys reported HTTP 402 balance-exhausted, rotated through without success) with 0 items; fell back to WebFetch on the HTML listing, which surfaced only marketing/customer-story content through 2026-08-12, nothing in-window and nothing substantively technical."
+  - source_id: sygnia
+    reason: "Direct WebFetch 403'd as flagged in the source record's 2026-08-13 note; the bridge (tools/fetch_source.py url) recovered the listing successfully this run (recipe fix — WebFetch anti-bot block, not content death), but no article dates were extractable from the recovered HTML and no evidently fresh in-window post was identifiable among the linked slugs."

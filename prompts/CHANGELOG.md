@@ -4,7 +4,7 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
-## 3.32 — 2026-08-23 (the run clock stops at the end of the run, not before the verifier loop; trafilatura becomes the standard capture layer; operator notification policy)
+## 3.33 — 2026-08-24 (the run clock stops at the end of the run, not before the verifier loop; trafilatura becomes the standard capture layer; operator notification policy)
 
 ### Why — trafilatura capture + notification policy (operator directives, 2026-08-24)
 
@@ -33,12 +33,45 @@ This is not cosmetic. `duration_seconds` is what the runaway watchdog reads, wha
 - **`prompts/cti-run.md` Phase 5 § Run-record telemetry** — retitled to mark the stamp **provisional**, with the inline `date` command commented as a placeholder and the reason spelled out: Phase 5.7 has not run yet, so this is not the end of the fire.
 - **`prompts/cti-run.md` Phase 6 step 0 (new, MANDATORY first action)** — re-stamp `work/<run-id>/main.ended_at` after the verifier loop and rewrite `completed` / `duration_seconds` from it, then re-run the gate. If the corrected duration now trips the runaway warning, that is the watchdog finally seeing a real overrun: explain it in the run notes rather than trimming the number.
 - **`prompts/cti-run.md` § Quality gates** — a new checklist line for the run clock.
-- **`tools/check_run.py`** — new `run-clock` check. `completed` must be at or after every `ended_at` the record itself carries (verifier iterations and sub-agent blocks). **FAIL on v3.32+ records** at the gate; pre-v3.32 records are counted once, informationally, in `--all` (48 non-migrated, plus 50 migrated v2 records the identity-only path skips) and never warned per record. The fix for a FAIL is always to re-stamp the clock, never to delete the sub-timestamps that expose it.
+- **`tools/check_run.py`** — new `run-clock` check. `completed` must be at or after every `ended_at` the record itself carries (verifier iterations and sub-agent blocks). **FAIL on v3.33+ records** at the gate; pre-v3.33 records are counted once, informationally, in `--all` (the pre-v3.33 non-migrated, plus 50 migrated v2 records the identity-only path skips) and never warned per record. The fix for a FAIL is always to re-stamp the clock, never to delete the sub-timestamps that expose it.
 - **`tools/check_run.py`** — new `ack-ledger` hygiene report under `--all`. The zero-warning discipline requires the audit to delete an acknowledgment row once the warning it covers stops firing, but nothing reported them: `warn()` prints the rows that matched and is silent about the rest, so a dead row could sit in the ledger indefinitely. Rows that silenced nothing on a full-store pass now WARN by name. All 14 current rows still match.
 
 ### What stays — run clock
 
 Everything else. The three master-prompt banners move in lockstep (`cti-run.md`, `weekly-summary.md`, `quality-audit.md`); no phase contract the weekly or the audit references changes shape, so their build-on references still hold — both inherit the Phase 6 re-stamp through the shared publishing chain they already execute verbatim. Historical records stay immutable and are not repaired: their durations are wrong, they are settled history, and the store report now says so in one line rather than 48. `RUNAWAY_RUN_SECONDS` is unchanged at 3 h, and the runaway check stays a WARN — the new check makes the number it reads honest, it does not change what the number means.
+
+---
+
+## 3.32 — 2026-08-21 (a PDF-only advisory is a transport problem, and the bridge now has the transport)
+
+### Why
+
+The pipeline could not read a PDF. Not "read it badly" — could not read it at all: this container ships no `pdftotext`, no `pypdf`, no `pdfminer` and no OCR, and the fetch bridge had no PDF path, so every advisory published as a PDF and nothing else was unreachable by design.
+
+That is not a rare shape. Multi-agency joint advisories, national-authority reports and a good share of vendor bulletins ship as a PDF, and the agency landing page that links it is frequently the one refusing every transport we have. The cost was paid on 2026-08-19: the five-agency joint advisory on an active threat to Siemens S7 PLCs (AA26-231A) had to be published **single-source from a news outlet's reading of the PDF**, because the agency page 403s us and the PDF mirror served fine but the bytes could not be turned into text. That run's own verification pass later recovered the text by other means and found the primary carried the device list, the named libraries, both quotations and a technique mapping the outlet's summary did not — so the gap had cost real substance, and the run left a backlog row asking a later fire to *record the working extraction path in the fetch bridge*. This is that fire.
+
+The failure mode this closes is worse than a missing entry, because it is silent and it is systematic: a PDF-only advisory does not announce itself as unreachable. It looks like a source that summarises thinly, and the honest-looking response — cite the outlet that read it — publishes someone else's reading of a primary as if it were the primary.
+
+### What changed
+
+**`tools/fetch_source.py pdf <URL>` — PDF text extraction, stdlib only.** Written against the container's actual floor (`zlib`), because a transport that needs a package install is not a transport available to a fresh routine container. It handles the shape advisory PDFs take: Flate-compressed content streams (and uncompressed ones), literal and hex string operands with PDF escape and nesting rules, `Tj` / `TJ` / `'` / `"` text operators with line-break-implying positioning operators, simple fonts with byte-per-glyph encodings, and CID fonts whose bytes only become text through a ToUnicode CMap (`bfchar` + `bfrange`, merged across fonts). It walks `stream`/`endstream` pairs rather than the cross-reference table, so a linearised or incrementally-updated file still yields its content.
+
+Two honesty properties are part of the contract, not polish:
+
+- **An image-only / scanned PDF reports that it found no text objects.** There is no OCR here, and an empty extraction that reads as an empty document is how a scanned advisory becomes a false negative. The tool says "not extractable"; the prompts say that is never "the document says nothing".
+- **A CMap-approximated decode is labelled an approximation.** The merged-CMap path is chosen only when it recovers more prose than the byte-wise decode, and it is selected on *volume of recovered prose*, not on a ratio — because a CID PDF's byte-wise decode drops every unmapped glyph and leaves a short string of line breaks whose "share of good characters" is a perfect 1.0. That specific false green is pinned by a test.
+
+**`tools/test_fetch_source_pdf.py` — eight offline cases, no network.** Simple-font extraction with a `TJ` array and escaped parentheses; a CID font that only decodes through its CMap; the inverse guard that a document decoding fine byte-wise is *not* re-decoded through a stray CMap; an image-only PDF reporting no text objects; octal escapes with nested parentheses and a literal backslash; an uncompressed content stream; the prose-counter discrimination; and hex code-width handling. Runs in a fresh container with no dependencies.
+
+**The transport is documented where the agents read.** `.claude/agents/cti-research.md` gains the `pdf <URL>` entry in its fetch-tooling reference plus empirical rule 8 — *a PDF-only advisory is not a coverage gap, it is a `pdf <URL>` call*, mirrors of the same document included. Both verifier definitions gain the instruction to read a cited PDF rather than declare it unreadable, and to flag any claim where an entry cites an outlet's reading of a PDF that the primary does not support. `prompts/cti-run.md` names the rung in the Phase 4 deep-read ladder and as option (d) in the § `state/source_health.json` repair recipes.
+
+**The rung sits outside the block-escalation ladder, deliberately.** The jina reader is rung 4 because it costs metered credit and is reached on *failure*. `pdf` is selected on *content type*: reach for it because the primary is a PDF, not because something else failed. Filing it as a ladder rung would have taught the agents to try three doomed transports first.
+
+### What stays
+
+Everything else. The ladder's order for HTML is unchanged and jina stays the last resort for blocked hosts; `pdf` adds a transport rather than reordering one. No editorial rule moves: a PDF advisory read this way is a primary source subject to the same two-source rule, the same recency gate, the same relevance bar and the same verbatim-quote discipline as any other. The extractor is read-only, inherits the bridge's existing SSRF hardening and body caps, and adds no new egress path — it is the same browser-UA GET the bridge already makes, pointed at bytes it previously could not parse.
+
+The backlog row that asked for this stays open on its *other* half — a later fire should still re-read the S7 advisory PDF and publish an `update_of` only if the primary carries detail the published entry does not.
 
 ---
 
