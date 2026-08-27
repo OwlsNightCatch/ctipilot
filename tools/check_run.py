@@ -949,20 +949,21 @@ def check_run_clock(run: dict[str, Any], store_mode: bool = False) -> bool:
 def check_verification_confirmation(run: dict[str, Any], pre_verify: bool = False,
                                     store_mode: bool = False) -> None:
     """v3.23 double-CLEAN gate: a run whose final verifier verdict is CLEAN
-    must show the previous iteration also CLEAN, on a different model — the
-    rotation's independent second model agreeing is what turns one model's
-    CLEAN into a publish decision. Unconfirmed final CLEAN → FAIL pre-commit
-    unless the record explains it (`verification.confirmation_waived`, or a
-    first CLEAN landing exactly at the iteration cap → WARN). A same-model
-    confirmation WARNs (legitimate only as a recorded spawn-failure
-    exception, e.g. 2026-06-05's classifier-blocked Opus spawns).
-    NEEDS_FIXES finals are the early-exit / cap fail-open path with residuals
-    and are out of scope for the double-CLEAN gate — but the rotation itself
-    is checked on every chain regardless of verdict (v3.31: 2026-08-06 ran
-    all five iterations on `cti-verification` because every alternate spawn
-    was classifier-blocked, and because its final verdict was NEEDS_FIXES no
-    check saw it). `store_mode` (--all) downgrades FAIL to WARN — published
-    records are immutable history."""
+    must show the previous iteration also CLEAN — an independent second pass
+    agreeing is what turns one CLEAN into a publish decision. Unconfirmed
+    final CLEAN → FAIL pre-commit unless the record explains it
+    (`verification.confirmation_waived`, or a first CLEAN landing exactly at
+    the iteration cap → WARN). NEEDS_FIXES finals are the early-exit / cap
+    fail-open path with residuals and are out of scope for the gate.
+
+    Era rule: v3.23–v4.0 records were published under the opus/sonnet
+    rotation, so on those the chain must alternate definitions
+    (`verification-rotation`) and a same-model confirming pair WARNs
+    (legitimate only as a recorded spawn-failure exception, e.g. 2026-06-05's
+    classifier-blocked spawns). From v4.1 a single Sonnet 5 definition runs
+    every iteration — same-definition pairs are the expected shape and
+    neither check applies. `store_mode` (--all) downgrades FAIL to WARN —
+    published records are immutable history."""
     v = _prompt_version_tuple(run.get("prompt_version"))
     if v is None or v < DOUBLE_CLEAN_FROM:
         if not store_mode:
@@ -998,14 +999,21 @@ def check_verification_confirmation(run: dict[str, Any], pre_verify: bool = Fals
                 or str(it.get("model_id") or "").strip()
                 or str(it.get("model") or "").strip())
 
-    # Rotation integrity across the WHOLE chain — hard invariant #11 says
-    # consecutive iterations never run the same definition, and that holds on
-    # every publish path, not only on the CLEAN one. A recorded waiver (the
-    # classifier-blocked-spawn exception) is what makes a collapsed rotation
-    # acceptable, so it silences this.
-    pairs = [(a, b) for a, b in zip(iters, iters[1:])
-             if _ident(a) and _ident(a) == _ident(b)]
-    if pairs and not waived:
+    # Rotation integrity across the WHOLE chain — v3.23–v4.0 only. In that
+    # era hard invariant #11 said consecutive iterations never run the same
+    # definition, on every publish path, not only the CLEAN one; a recorded
+    # waiver (the classifier-blocked-spawn exception) is what made a
+    # collapsed rotation acceptable. v4.1+ runs a single definition, so the
+    # check is skipped for them.
+    single_verifier_era = v >= SINGLE_VERIFIER_FROM
+    pairs = [] if single_verifier_era else [
+        (a, b) for a, b in zip(iters, iters[1:])
+        if _ident(a) and _ident(a) == _ident(b)]
+    if single_verifier_era:
+        if not store_mode:
+            ok("verification-rotation",
+               "single verifier definition (v4.1+) — no alternation required")
+    elif pairs and not waived:
         names = ", ".join(f"{a.get('iteration', '?')}+{b.get('iteration', '?')}" for a, b in pairs[:4])
         emit = warn if store_mode else fail
         emit("verification-rotation",
@@ -1041,21 +1049,20 @@ def check_verification_confirmation(run: dict[str, Any], pre_verify: bool = Fals
                    else VERIFIER_ITERATION_CAP_PRE_V327)
             warn("verification-confirmation",
                  f"{rid}: first CLEAN landed at the {cap}-iteration cap "
-                 "with no room for the other-model confirmation pass — fail-open; set "
+                 "with no room for the confirmation pass — fail-open; set "
                  "verification.confirmation_waived with the reason")
         else:
             emit = warn if store_mode else fail
             emit("verification-confirmation",
                  f"{rid}: final verdict CLEAN is unconfirmed — iteration "
                  f"{final.get('n')} is the only CLEAN in the chain. A CLEAN publish "
-                 "requires two consecutive CLEAN verdicts on two different models "
-                 "(Phase 5.7 decision rules 1–2): spawn the other-model confirmation "
-                 "pass, or record why it was impossible in "
-                 "verification.confirmation_waived")
+                 "requires two consecutive CLEAN verdicts (Phase 5.7 decision rules "
+                 "1–2): spawn the confirmation pass, or record why it was impossible "
+                 "in verification.confirmation_waived")
         return
 
     ia, ib = _ident(prev), _ident(final)
-    if ia and ib and ia == ib:
+    if ia and ib and ia == ib and not single_verifier_era:
         warn("verification-confirmation",
              f"{rid}: confirming iterations {prev.get('n')} + {final.get('n')} both ran "
              f"{ia} — the confirmation pass must run on a different model (rotation); "
@@ -2302,6 +2309,16 @@ PUBLISH_TELEMETRY_FROM = (3, 14)
 # `verification.confirmation_waived` reason (watchdog overrun, other-model
 # spawn blocked).
 DOUBLE_CLEAN_FROM = (3, 23)
+# v4.1: one verifier definition (`cti-verification`, pinned to Claude
+# Sonnet 5) runs every Phase 5.7 iteration — the opus/sonnet rotation, the
+# `cti-verification-alt` variant and the two-DIFFERENT-models requirement are
+# retired (operator directive 2026-08-27). The double-CLEAN gate itself
+# stands: a CLEAN publish still needs the final two iterations both CLEAN.
+# Same-definition consecutive iterations are the expected shape from v4.1
+# on, so the `verification-rotation` check and the same-model WARN apply
+# only to v3.23–v4.0 records (immutable history, checked under its own
+# era's rule).
+SINGLE_VERIFIER_FROM = (4, 1)
 # v3.27 raised the Phase 5.7 cap 5 → 8 (operator directive 2026-07-18): the
 # double-CLEAN confirmation gate was churning into the 5-cap fail-open in
 # roughly half the runs; 8 gives the CLEAN chain room to converge. Records

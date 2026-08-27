@@ -6173,10 +6173,14 @@ def _verification_clean_publish(run: dict[str, Any]) -> bool:
 
 
 # Prompt v3.23 introduced the double-CLEAN publish gate: a CLEAN publish
-# requires the final TWO verifier iterations both CLEAN, on two different
-# models. Runs from earlier prompt versions legitimately published on a
-# single CLEAN — their status is reported as such, never flagged.
+# requires the final TWO verifier iterations both CLEAN. v3.23–v4.0 also
+# required the two passes to run on two different models (the opus/sonnet
+# rotation); v4.1 retired that — a single Sonnet 5 verifier definition
+# runs every iteration, so a same-definition confirming pair is the normal
+# confirmed shape from then on. Runs from before v3.23 legitimately
+# published on a single CLEAN — reported as such, never flagged.
 _DOUBLE_CLEAN_FROM = (3, 23)
+_SINGLE_VERIFIER_FROM = (4, 1)
 _PV_RE = re.compile(r"^v?(\d+)\.(\d+)")
 
 
@@ -6199,10 +6203,11 @@ def _verification_confirmation(run: dict[str, Any]) -> dict[str, Any]:
 
     Returns ``{"status", "gated", "waiver", "models"}`` where ``status`` is:
 
-    - ``confirmed``   — final two iterations both CLEAN, different verifiers
-      (the gate's success outcome);
-    - ``same-model``  — final two both CLEAN but the same verifier identity
-      (legitimate only as a recorded spawn-failure exception);
+    - ``confirmed``   — final two iterations both CLEAN (the gate's success
+      outcome; from v4.1 the two passes run the same single definition);
+    - ``same-model``  — v3.23–v4.0 only: final two both CLEAN but the same
+      verifier identity under the rotation era (legitimate only as a
+      recorded spawn-failure exception);
     - ``waived``      — final CLEAN unconfirmed, with
       ``verification.confirmation_waived`` naming why (recorded fail-open);
     - ``single``      — final CLEAN unconfirmed, no waiver. Expected on
@@ -6234,7 +6239,8 @@ def _verification_confirmation(run: dict[str, Any]) -> dict[str, Any]:
     ia, ib = _verifier_identity(prev), _verifier_identity(final)
     out["models"] = (str(prev.get("model") or ia or "?"),
                      str(final.get("model") or ib or "?"))
-    out["status"] = "same-model" if (ia and ib and ia == ib) else "confirmed"
+    rotation_era = v is not None and v < _SINGLE_VERIFIER_FROM
+    out["status"] = "same-model" if (rotation_era and ia and ib and ia == ib) else "confirmed"
     return out
 
 
@@ -6590,7 +6596,7 @@ def render_ops_page(
             "Double-CLEAN gate",
             (f"{gated_confirmed}/{len(gated_runs)}" if gated_runs else "—"),
             sub=(
-                (f"confirmed by two models · {gated_residual} residual publish · "
+                (f"confirmed by two consecutive CLEAN passes · {gated_residual} residual publish · "
                  f"{gated_fallopen} fail-open")
                 if gated_runs else "no v3.23+ runs yet (gate active from the next fire)"
             ),
@@ -7151,10 +7157,11 @@ def _ops_render_verification_iterations(
     status = conf.get("status")
     if status == "confirmed":
         ma, mb = conf.get("models") or ("?", "?")
+        pair = f"{_escape(ma)} ×2" if ma == mb else f"{_escape(ma)} + {_escape(mb)}"
         chip_blocks.append(
             f'<span class="ops-pill ops-pill--ok" title="double-CLEAN publish gate '
-            f'(v3.23): the final two iterations returned CLEAN on two different models">'
-            f'✓ double-CLEAN · {_escape(ma)} + {_escape(mb)}</span>'
+            f'(v3.23+): the final two iterations returned CLEAN in independent passes">'
+            f'✓ double-CLEAN · {pair}</span>'
         )
     elif status == "same-model":
         chip_blocks.append(
@@ -7770,8 +7777,8 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
             pub_html = '<span class="muted" title="pre-v3.14 record — no publish telemetry">–</span>'
 
         # Verification verdict — residual-aware, and double-CLEAN-aware for
-        # v3.23+ runs (×2 = the final two iterations CLEAN on two different
-        # models; fix rounds count NEEDS_FIXES iterations, so a defect-free
+        # v3.23+ runs (×2 = the final two iterations CLEAN in independent
+        # passes; fix rounds count NEEDS_FIXES iterations, so a defect-free
         # confirmed run reads `clean ×2`, never a remediation warning).
         verif_iters = r.get("verification_iterations")
         verif_residual = r.get("verification_residual_count") or 0
@@ -7794,7 +7801,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
                 'clean ×2 same-model</span>'
             )
         elif conf["gated"] and conf["status"] in ("single", "waived"):
-            reason = conf["waiver"] or "no second-model confirmation recorded"
+            reason = conf["waiver"] or "no confirmation pass recorded"
             verif_html = (
                 f'<span class="ops-pill ops-pill--warn" '
                 f'title="published on a single CLEAN — {_escape(reason)}">'
@@ -7802,7 +7809,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
             )
         else:
             x2 = " ×2" if conf["status"] == "confirmed" else ""
-            x2_title = (" · double-CLEAN confirmed by two models"
+            x2_title = (" · double-CLEAN confirmed by two consecutive CLEAN passes"
                         if conf["status"] == "confirmed" else "")
             if fix_rounds:
                 verif_html = (
@@ -7873,7 +7880,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
         '<th title="Fetch failures (coverage gaps)">Fetch fail</th>'
         '<th title="sources/sources.json edits this run (hover for breakdown)">Src Δ</th>'
         '<th title="Publish follow-through (Phase 7): ok / main-only / pending">Pub</th>'
-        '<th title="Verification verdict · ×2 = double-CLEAN confirmed by two models (v3.23+)">Verif</th>'
+        '<th title="Verification verdict · ×2 = double-CLEAN confirmed by two consecutive CLEAN passes (v3.23+)">Verif</th>'
         '</tr></thead>'
         '<tbody data-pager-rows>' + "".join(rows) + '</tbody></table></div>'
     )

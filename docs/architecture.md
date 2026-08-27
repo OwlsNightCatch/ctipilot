@@ -42,8 +42,7 @@ parts and defers to that spec for every field-level question.
          │                             ├ build_prior_coverage.py    │
          │  .claude/agents/            ├ run_summary.py             │
          │   ├ cti-research.md         └ fetch_source.py            │
-         │   ├ cti-verification.md                                  │
-         │   └ cti-verification-alt.md                              │
+         │   └ cti-verification.md                                  │
          └──────────────────────────────┬───────────────────────────┘
                                         │
                                         │ git push (claude/** branches only)
@@ -330,25 +329,20 @@ normal state — costs nothing.
   per successful fetch to `work/<run-id>/url-liveness.tsv` so
   `tools/check_run.py` can skip redundant HEAD/GETs.
 - [`cti-verification.md`](../.claude/agents/cti-verification.md) — read-only,
-  isolated context (Opus by default — gatekeeper of the publish gate).
-  The Phase 5.7 cold-reader verifier; its scope is **this run's new entries,
+  isolated context, pinned to Claude Sonnet 5 — gatekeeper of the publish
+  gate. The Phase 5.7 cold-reader verifier; its scope is **this run's new entries,
   every existing entry it appended a changelog record to (the whole entry —
   the new section and every changed field against the sources), plus the
   run record**. Runs AFTER `tools/check_run.py` exits 0 (cheap
   mechanical gate first), looped iteratively (cap 8, fresh spawn each time,
   no shared memory; each iteration re-runs `check_run.py` between fix and
   re-spawn; publish requires a confirmed CLEAN — two consecutive CLEAN
-  verdicts on two different models via the rotation). Finding categories
+  verdicts from independent cold passes; v4.1 retired the
+  `cti-verification-alt` rotation variant and the two-model requirement, so
+  the single definition runs every iteration). Finding categories
   F1–F18 include frontmatter ⇔ body agreement, priority calibration (a
   false `critical` fires notification hooks), classification drift and
   action-item discipline. Same self-identification contract.
-- [`cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md) —
-  Sonnet-pinned variant of `cti-verification`. Byte-identical operational
-  system prompt below its header note; only the YAML `model:` frontmatter
-  differs. The Phase 5.7 loop spawns this on **even iterations** (iter 2,
-  iter 4) so model-specific blind spots are caught when the next iteration
-  runs on a different model. The two verifier definitions move in lockstep
-  — when you edit one, regenerate the other.
 
 ### `state/` — the surviving flat state files
 
@@ -699,13 +693,13 @@ entries.
             ▼
  ┌────────────────────────────────────────────────────┐
  │ Phase 5.7 — verifier loop (≤8 iterations)           │
- │  odd iters: cti-verification (Opus)                 │
- │  even iters: cti-verification-alt (Sonnet) + the    │
- │    prior-iteration deltas block                     │
+ │  every iter: cti-verification (Sonnet 5), fresh;    │
+ │    a post-fix iter gets the prior-iteration deltas  │
+ │    block, a confirmation pass reads cold            │
  │  scope: this run's new + updated entries + record   │
  │  NEEDS_FIXES → remediate (incl. dropping entries)   │
  │    → re-run check_run.py → fresh re-spawn           │
- │  CLEAN → publish · iter 5 NEEDS_FIXES → fail-open,  │
+ │  2× CLEAN → publish · iter 8 NEEDS_FIXES → fail-open,│
  │    residuals recorded in the run record             │
  └──────────┬─────────────────────────────────────────┘
             ▼

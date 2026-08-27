@@ -96,15 +96,13 @@ Never hand-edit a managed block; edit the config and re-compose in the same comm
 ## 3. Sub-agent prompts ([`.claude/agents/`](../.claude/agents/))
 
 Isolated-context workers the main agent spawns. Model is bound by each file's YAML frontmatter
-(operator-rebindable). **These are master prompts too** — the same versioning rule applies, and the
-two verifier definitions move in lockstep (edit `cti-verification.md`, regenerate the alt body
-byte-identically in the same commit).
+(operator-rebindable; both pin `claude-sonnet-5`). **These are master prompts too** — the same
+versioning rule applies.
 
 | Sub-agent | Role |
 |---|---|
 | [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) | **Research worker.** One spawned per domain — intel run S1–S4 (+ conditional S5 closed-source intake); the audit's G1–G3 coverage re-sweeps. Reads the prior-coverage index and `entities/registry.yaml` before fetching; returns findings YAMLs (a covered finding comes back as `novelty: update-of:<entry-id>` so the main agent appends a changelog record instead of a second entry), never composes entries. |
-| [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md) | **Cold-reader verifier (Opus default).** Phase 5.7. Scope: the run's new entries, every existing entry it appended a changelog record to (whole entry — new section and changed fields against the sources), + the run record. Read-only; re-spawned fresh until a confirmed CLEAN (two consecutive CLEAN verdicts on two different models) or the 8-iteration cap. Two concerns — URL truth and editorial quality (finding categories F1–F18). Spawned on **odd** iterations. |
-| [`.claude/agents/cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md) | **Verifier, Sonnet rotation variant.** Byte-identical operational body to `cti-verification.md`; only the model frontmatter differs. Spawned on **even** iterations so model-specific blind spots surface. |
+| [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md) | **Cold-reader verifier (Claude Sonnet 5).** Phase 5.7. Scope: the run's new entries, every existing entry it appended a changelog record to (whole entry — new section and changed fields against the sources), + the run record. Read-only; spawned fresh on every iteration until a confirmed CLEAN (two consecutive CLEAN verdicts from independent cold passes) or the 8-iteration cap. Two concerns — URL truth and editorial quality (finding categories F1–F18). The `cti-verification-alt` rotation variant was retired in v4.1. |
 
 Self-identification for every agent (main + sub-agents) comes primarily from the model line the
 harness injects into that agent's own system prompt (`You are powered by the model named … The
@@ -114,7 +112,7 @@ vars set in the routine container. The env vars are **container-scoped**: they c
 default and cannot see a definition's `model:` pin, so an env-fallback report (marked
 `— container default, env fallback` on the `**Model:**` line) shows the container default even
 when the harness runs the agent on its pinned model — uniformity among such fallback reports is a
-measurement limitation, not evidence the pinning or rotation failed. Never spawn
+measurement limitation, not evidence the pinning failed. Never spawn
 `general-purpose` for research or verification — use the named sub-agents; keep the live routine
 allow-list matched to these definitions (see [`docs/operating.md` § Sub-agent capability ceiling](operating.md#sub-agent-capability-ceiling)).
 

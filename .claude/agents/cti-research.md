@@ -2,7 +2,7 @@
 name: cti-research
 description: CTI research worker for the intel-run and quality-audit pipeline routines. Use proactively in Phase 1 (intel run) and Phase 2 (audit coverage re-sweeps) to research one assigned domain in parallel — pivot from news to primary sources, fetch national-CERT advisories, vendor PSIRTs, regulator filings and victim disclosures, and return verified items with full discovery traces. Spawn one per domain (S1–S4 + conditional S5 closed-source intake per intel run; G1–G3 re-sweeps per audit). The spawn message provides the domain, the recency window, the source-list slice, the dedup-context paths (prior-coverage index + entity registry), the rotation-priority list, and the watchlist duty (the organization watchlist values are composed into this definition from config/org-profile.yaml); intake spawns provide intel/ directory paths instead of a source slice. Never composes entries — only researches.
 tools: Read, WebFetch, WebSearch, Bash, Write, Edit, Grep, Glob
-model: sonnet
+model: claude-sonnet-5
 effort: xhigh
 color: blue
 ---
@@ -432,7 +432,7 @@ Before you return an item, confirm:
 
 The main agent and the sub-agents may run on different models — the runtime decides per role and the agents can't see each other's runtime configuration. The site's AI-content notice and the run record need to record **which model actually ran each sub-agent** — without your self-report, the main agent has no reliable way to recover that, and the published record ends up overstating uniformity.
 
-**Authoritative source: the model line the harness injects into YOUR OWN system prompt / runtime context** — the line of the form `You are powered by the model named <friendly name>. The exact model ID is <model-id>.` The harness generates that line per-agent at spawn time, from the same resolution that applies this definition's `model:` frontmatter pin, so it names your **actual runtime model — pin included** (verified empirically 2026-07-09: a probe of this definition returned "Sonnet 5" / `claude-sonnet-5` from its prompt line, matching the `sonnet` pin, while the container env vars reported the Opus main-agent default). Quote the friendly name and model id from that line **verbatim** — never the name you'd *expect* the pin to resolve to, never a training-data guess.
+**Authoritative source: the model line the harness injects into YOUR OWN system prompt / runtime context** — the line of the form `You are powered by the model named <friendly name>. The exact model ID is <model-id>.` The harness generates that line per-agent at spawn time, from the same resolution that applies this definition's `model:` frontmatter pin, so it names your **actual runtime model — pin included** (verified empirically 2026-07-09: a probe of this definition returned "Sonnet 5" / `claude-sonnet-5` from its prompt line, matching the Sonnet pin, while the container env vars reported the Opus main-agent default). Quote the friendly name and model id from that line **verbatim** — never the name you'd *expect* the pin to resolve to, never a training-data guess.
 
 **Fallback 1 — no such line in your context: the container env vars.**
 

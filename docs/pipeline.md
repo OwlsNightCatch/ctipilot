@@ -828,18 +828,19 @@ verification_iterations: 2
 verification_residual_count: 0 # never 0 when the final iteration was NEEDS_FIXES
 verification:
   confirmation_waived: null    # optional (v3.23+): non-null string ONLY when the run published
-                               # on a CLEAN that no second model confirmed (single CLEAN at the
-                               # iteration cap, watchdog-overrun single iteration, other-model
+                               # on a CLEAN that no second pass confirmed (single CLEAN at the
+                               # iteration cap, watchdog-overrun single iteration, confirmation
                                # spawn blocked) — the reason, verbatim. Normal confirmed-CLEAN
                                # publishes omit it. `check_run.py` FAILs an unconfirmed final
                                # CLEAN on v3.23+ records unless this (or the cap) explains it.
   iterations:                  # v3.23+: a CLEAN publish requires the final TWO iterations both
-                               # CLEAN, on different models (the opus/sonnet rotation supplies
-                               # the model diversity) — so a CLEAN publish has ≥2 iterations
+                               # CLEAN — so a CLEAN publish has ≥2 iterations. v4.1+: both run
+                               # the single `cti-verification` definition (Claude Sonnet 5); the
+                               # two-different-models requirement of v3.23–v4.0 is retired
     - n: 1
       model: "…"
       model_id: "…"
-      subagent_type: cti-verification   # which rotation definition was spawned
+      subagent_type: cti-verification   # the verifier definition spawned (single since v4.1)
       started_at: "…"
       ended_at: "…"
       duration_seconds: 240
@@ -848,10 +849,10 @@ verification:
       editorial: 0             # F5–F10 + F12 + F16
       advisory: 0              # F11
       findings: []             # rich per-finding records, v2 shape
-    - n: 2                     # the confirmation pass — the other model, also CLEAN
+    - n: 2                     # the confirmation pass — an independent cold read, also CLEAN
       model: "…"
       model_id: "…"
-      subagent_type: cti-verification-alt
+      subagent_type: cti-verification
       started_at: "…"
       ended_at: "…"
       duration_seconds: 210

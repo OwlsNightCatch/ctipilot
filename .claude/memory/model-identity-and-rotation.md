@@ -1,6 +1,6 @@
 ---
 name: Model identity & verifier rotation
-description: Why sub-agent env-var self-reports cannot observe per-definition model pins, and how to record model identity truthfully
+description: Why sub-agent env-var self-reports cannot observe per-definition model pins, how to record model identity truthfully — and (2026-08-27) that the verifier rotation is retired, so uniform Sonnet 5 reports are the expected shape
 type: reference
 ---
 
@@ -72,3 +72,25 @@ measurement artifact, not an operational finding.
 - Pre-v3.15 run records showing uniform Opus across pinned sub-agents are
   measurement artifacts of the superseded protocol — immutable, never edited,
   interpreted via this note.
+
+## 2026-08-27 — rotation retired; pins stay explicit (prompt v4.1)
+
+Operator directive (see `routine-model-assignment.md`): the intel fires run on
+Claude Sonnet 5, the quality audit on Claude Opus 5, and both sub-agent
+definitions pin `model: claude-sonnet-5`. `cti-verification-alt` is deleted;
+the double-CLEAN gate is two consecutive CLEAN passes of the single
+`cti-verification` definition. Consequences for reading model telemetry:
+
+- **Uniform "Claude Sonnet 5" across every verifier iteration is now the
+  EXPECTED, healthy shape** — it is no longer a rotation signal in either
+  direction. What still matters is the provenance marker: a Model line
+  without `— container default, env fallback` came from the harness prompt
+  line and is authoritative; one with it is the container default and says
+  nothing about the pin.
+- Facts 1 and 2 above (env vars are container-scoped; the harness prompt line
+  is pin-aware) are unchanged and still the protocol.
+- `check_run.py` and `site/build.py` treat a same-definition confirming pair
+  as normal from prompt v4.1 on and only flag it on v3.23–v4.0 records; the
+  `warning_acknowledgments.json` rows for rotation-era waivers stay valid.
+- The 2026-07-09 probe table is historical: `cti-verification` then pinned
+  `opus`; it now pins `claude-sonnet-5`.

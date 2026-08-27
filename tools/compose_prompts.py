@@ -11,7 +11,6 @@ every agent in the workflow sees the same organization context:
     prompts/verification.md               blocks: org-certs
     .claude/agents/cti-research.md        blocks: research-mission, research-audience, org-data, org-certs
     .claude/agents/cti-verification.md    blocks: verify-context
-    .claude/agents/cti-verification-alt.md blocks: verify-context
 
 Managed block shape (content between the markers is REPLACED on --write):
 
@@ -62,7 +61,6 @@ TARGETS: list[tuple[str, list[str]]] = [
     (".claude/agents/cti-research.md",
      ["research-mission", "research-audience", "org-data", "org-certs"]),
     (".claude/agents/cti-verification.md", ["verify-context"]),
-    (".claude/agents/cti-verification-alt.md", ["verify-context"]),
 ]
 
 # Upstream defaults for the optional org-profile keys below — used when the

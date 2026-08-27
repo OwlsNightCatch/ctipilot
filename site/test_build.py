@@ -750,8 +750,28 @@ AUDIT_RUN = mk_run(
     verification={"iterations": [_iter(1, "CLEAN", "cti-verification", "Opus"),
                                  _iter(2, "CLEAN", "cti-verification-alt", "Sonnet")]})
 
+# v4.1: a single Sonnet 5 verifier definition runs every iteration, so a
+# same-definition confirming pair is the normal confirmed shape — while the
+# same shape on a rotation-era (v3.23–v4.0) record is still "same-model".
+SAME_DEF_V41_RUN = mk_run(
+    run_id="2026-08-28T0410Z-intel", date="2026-08-28", prompt_version="v4.1",
+    started="2026-08-28T04:10:00Z", completed="2026-08-28T04:40:00Z",
+    publish_status="ok", verification_iterations=2,
+    verification={"iterations": [_iter(1, "CLEAN", "cti-verification", "Claude Sonnet 5"),
+                                 _iter(2, "CLEAN", "cti-verification", "Claude Sonnet 5")]})
+SAME_DEF_V40_RUN = mk_run(
+    run_id="2026-08-27T0410Z-intel", date="2026-08-27", prompt_version="v4.0",
+    started="2026-08-27T04:10:00Z", completed="2026-08-27T04:40:00Z",
+    publish_status="ok", verification_iterations=2,
+    verification={"iterations": [_iter(1, "CLEAN", "cti-verification", "Opus"),
+                                 _iter(2, "CLEAN", "cti-verification", "Opus")]})
+
 print("== double-CLEAN classification ==")
 assert_eq("confirmed run classified", _verification_confirmation(CONFIRMED_RUN)["status"], "confirmed")
+assert_eq("v4.1 same-definition pair is confirmed", _verification_confirmation(SAME_DEF_V41_RUN)["status"], "confirmed")
+assert_eq("v4.1 confirmed pair carries the model names", _verification_confirmation(SAME_DEF_V41_RUN)["models"],
+          ("Claude Sonnet 5", "Claude Sonnet 5"))
+assert_eq("rotation-era same-definition pair still flagged", _verification_confirmation(SAME_DEF_V40_RUN)["status"], "same-model")
 assert_eq("fix-then-confirm classified", _verification_confirmation(FIXED_CONFIRMED_RUN)["status"], "confirmed")
 assert_eq("waived run classified", _verification_confirmation(WAIVED_RUN)["status"], "waived")
 assert_eq("pre-gate single CLEAN not gated", _verification_confirmation(RUN)["gated"], False)

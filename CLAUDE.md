@@ -60,19 +60,13 @@ Push notifications (the routine `PushNotification` channel) go to the operator's
 
 ## Auto-memory mechanics (only what's non-obvious)
 
-- **Storage:** `.claude/memory/MEMORY.md` is the index (auto-loaded, first 200 lines / 25 KB); topic files load on demand. Only difference from stock behaviour: the files live in the repo.
-- **Redirect mechanism:** [`.claude/hooks/setup-memory.sh`](.claude/hooks/setup-memory.sh) symlinks the system auto-memory dir into `<repo>/.claude/memory/` on `SessionStart`. Idempotent; self-documenting.
 - **Fallback:** if the symlink isn't created, `Read`/`Write`/`Edit` `.claude/memory/` directly — persistence still works.
 
 ## Custom sub-agents (`.claude/agents/`)
 
-Three named sub-agents — isolated context, model bound by YAML frontmatter (operator-rebindable):
+Two named sub-agents — `cti-research` (Phase 1 research workers; the audit's re-sweeps) and `cti-verification` (the Phase 5.7 cold-reader verifier) — isolated context, both pinned to `claude-sonnet-5` in their YAML frontmatter (operator-rebindable); each definition's frontmatter `description` is the authoritative role summary. The intel fires run on Claude Sonnet 5 and the quality audit on Claude Opus 5 (routine configuration, outside the repo); the sub-agent pins are model-explicit so they never follow the main agent. v4.1 retired the `cti-verification-alt` rotation variant: the double-CLEAN publish gate is two consecutive CLEAN verdicts from independent cold passes of the single verifier definition.
 
-- **`cti-research`** — Phase 1 (intel run) / Phase 2 (audit re-sweeps) parallel research workers, one per domain (S1–S4 + conditional S5 intake; G1–G3 on audits). Reads the prior-coverage index AND `entities/registry.yaml` before fetching; returns findings YAMLs with `entity_keys` / `new_entities` / `novelty: update-of:<entry-id>` (→ a changelog record on that entry). Opens every return with the mandatory `**Model:**` line.
-- **`cti-verification`** — Phase 5.7 cold-reader verifier (**Opus default**). Scope: the run's new entries + the entries it updated (read whole; new section and changed fields checked) + run record. Read-only; looped fresh-spawn until a **confirmed CLEAN — two consecutive iterations, on two different models, both CLEAN (v3.23)** — or the 8-iteration cap (v3.27). Finding categories F1–F18 incl. frontmatter⇔body agreement, priority calibration, Admiralty-classification drift, and action-item discipline.
-- **`cti-verification-alt`** — Sonnet rotation variant, byte-identical body below its header note. Spawned on even iterations. **When you edit one verifier definition, you MUST regenerate the other in the same commit.**
-
-**Self-identification primary source: the model line the harness injects into each agent's OWN system prompt** (`You are powered by the model named … The exact model ID is …`) — generated per-agent at spawn time, it sees the definition's `model:` pin (verified empirically 2026-07-09: pinned sub-agents reported Sonnet from their prompt line while the container env vars said Opus). Fallback 1: env vars `CLAUDE_FRIENDLY_NAME` / `CLAUDE_MODEL_ID` — **container-scoped**: they carry the main-agent default and cannot see a sub-agent's pin; env-fallback values carry an explicit `— container default, env fallback` marker on the `**Model:**` line, and uniformity among such reports is a measurement limitation, never proof that pinning/rotation failed. Fallback 2: `Anthropic Claude (specific model not determined)` — never a training-data guess. **NEVER spawn `general-purpose` for research or verification** — use the named sub-agents.
+**Self-identification primary source: the model line the harness injects into each agent's OWN system prompt** (`You are powered by the model named … The exact model ID is …`) — generated per-agent at spawn time, it sees the definition's `model:` pin (verified empirically 2026-07-09: pinned sub-agents reported Sonnet from their prompt line while the container env vars said Opus). Fallback 1: env vars `CLAUDE_FRIENDLY_NAME` / `CLAUDE_MODEL_ID` — **container-scoped**: they carry the main-agent default and cannot see a sub-agent's pin; env-fallback values carry an explicit `— container default, env fallback` marker on the `**Model:**` line, and uniformity among such reports is a measurement limitation, never proof that pinning failed. Fallback 2: `Anthropic Claude (specific model not determined)` — never a training-data guess. **NEVER spawn `general-purpose` for research or verification** — use the named sub-agents.
 
 ## Branching and publishing — feature branch only
 
@@ -102,51 +96,11 @@ Conflicts on `state/*.json` or `entities/registry.yaml` resolve `--ours`, `sourc
 - **Entry files are small — one `Write` per entry is safe.** Never batch more than ~5 file writes per assistant turn; long files (run record with many findings, docs) use skeleton-then-`Edit`. A single `Write` >300 lines risks a stream-idle timeout.
 - **Persist intermediate state often** under `work/<run-id>/` (version-controlled — committed with the run). Findings YAMLs, verification reports, url-liveness ledger, timestamp checkpoints are the operator's forensic surface.
 - **One new candidate source per run, maximum.**
-- **Verification loop is non-negotiable but never blocks publish.** Iteration 1 always runs; model rotation (odd = Opus `cti-verification`, even = Sonnet `cti-verification-alt`); **a CLEAN publish requires two consecutive CLEAN verdicts from two different models (v3.23)** — a first CLEAN triggers a confirmation pass on the other model, so a CLEAN publish is ≥2 iterations, and an unconfirmed CLEAN publishes only at the cap or with `verification.confirmation_waived` recorded; cap 8 with fail-open (v3.27 — raised from 5); `verification_residual_count` never 0 on a NEEDS_FIXES final iteration.
+- **Verification loop is non-negotiable but never blocks publish.** Iteration 1 always runs; every iteration spawns the single `cti-verification` definition fresh; **a CLEAN publish requires two consecutive CLEAN verdicts** — a first CLEAN triggers an independent cold confirmation pass, so a CLEAN publish is ≥2 iterations, and an unconfirmed CLEAN publishes only at the cap or with `verification.confirmation_waived` recorded; cap 8 with fail-open; `verification_residual_count` never 0 on a NEEDS_FIXES final iteration.
 
-## Where things live
+## Editing the master prompts and agent definitions
 
-```
-prompts/cti-run.md                 # intel-run master prompt (any cadence)
-prompts/quality-audit.md           # scheduled quality-audit run (builds on cti-run.md; reports → docs/audits/)
-prompts/CHANGELOG.md               # editorial-policy audit trail (bump on every prompt edit)
-prompts/verification.md            # two-source / fake-news verification policy
-prompts/entry-template.md          # canonical entry + run-record skeletons
-prompts/check-run-fixes.md         # fix recipes for common check_run.py FAILs
-docs/routines.md                   # catalog of every routine invocation prompt + in-repo prompt
-docs/pipeline.md                   # NORMATIVE v4 data model (entries + changelog lifecycle, registry, runs)
-config/org-profile.yaml            # org profile (compose_prompts.py renders it into the prompts)
-config/branding.yaml               # site branding profile
-entries/YYYY-MM-DD/<slug>.md       # per-finding living entries (one per finding; dated updates[] changelog)
-entities/registry.yaml             # global entity registry (actors, campaigns, malware, …)
-attack/enterprise-attack.json      # pinned MITRE ATT&CK release (generated — tools/attack_data.py)
-runs/YYYY-MM-DD/<run-id>.md        # per-run records: telemetry frontmatter + verification notes
-sources/sources.json               # ~150 curated CTI sources (autonomous lifecycle; tier field)
-state/cves_seen.json               # flat CVE dedup index
-state/source_health.json           # bounded source-health history
-state/warning_acknowledgments.json # audit-reviewed ledger of settled-history WARNs (zero-warning discipline)
-site/content_model.py              # reference parser/validator (entries, registry, runs)
-site/build.py                      # static-site generator (dynamic /live/, day pages, ops, feeds)
-site/taxonomy.yaml                 # controlled vocabulary for entry frontmatter
-tools/check_run.py                 # Phase 5.5 gate (must exit 0)
-tools/attack_data.py               # ATT&CK dataset builder/updater (--check/--update/--selftest)
-tools/build_prior_coverage.py      # entry-store dedup index builder
-tools/run_summary.py               # compact state digest (+ 24 h budget snapshot)
-tools/migrate_briefs.py            # one-shot v2→v3 migration (kept for provenance)
-tools/migrate_updates.py           # one-shot v3→v4 fold of update_of entries into their roots (provenance)
-tools/fetch_source.py              # bridge fetcher for known-403 hosts
-tools/source_candidates.py         # cited-but-untracked host surfacing
-tools/source_health.py             # source accessibility probe
-work/<run-id>/                     # per-run artefacts (committed with the run)
-```
-
-## Editing the master prompts — versioning rule (ALWAYS)
-
-Any edit to `prompts/cti-run.md`, `prompts/quality-audit.md`, `prompts/verification.md`, `prompts/entry-template.md`, `prompts/check-run-fixes.md`, or any `.claude/agents/*.md` MUST ship all three of: banner bump + `prompts/CHANGELOG.md` entry (`### Why` / `### What changed` / `### What stays`) + the edit itself, in the same commit. Both banner-versioned master prompts (`cti-run.md`, `quality-audit.md`) move in lockstep; both verifier definitions move in lockstep (edit `cti-verification.md`, regenerate the alt body byte-identically). **Exemption:** ORG-PROFILE block regeneration after a config-value change is not a prompt edit. `check_run.py` cross-checks the run record's `prompt_version` against the CHANGELOG head and FAILs on mismatch.
-
-### Intel-run ↔ audit — shared machinery lives in one place; the lens stays divergent (ALWAYS)
-
-v3 ended the v2 copy-drift problem structurally, and v4 keeps the pattern with one dependent: `prompts/quality-audit.md` **builds on** `prompts/cti-run.md` (it instructs a runtime `Read` of the intel-run prompt and defines only the audit divergences — retrospective truth passes, coverage re-sweeps, systemic review, the fix classes, the report). Shared machinery (anti-crash guards, PD-1…13, composition discipline incl. § Updating an existing entry, state lifecycle, gate, verifier loop, publishing chain) is edited ONLY in `cti-run.md`. When an edit to `cti-run.md` changes a phase contract the audit references, re-read `quality-audit.md` in the same commit to confirm the reference still holds.
+The versioning rule (banner bump + `prompts/CHANGELOG.md` entry + the edit, in one commit; `cti-run.md` and `quality-audit.md` move in lockstep) and the intel-run ↔ audit build-on contract live in [.claude/rules/prompt-editing.md](.claude/rules/prompt-editing.md), a path-scoped rules file that auto-loads whenever a session touches `prompts/**` or `.claude/agents/**`. `check_run.py` still FAILs a `prompt_version` ⇔ CHANGELOG mismatch mechanically.
 
 ## Self-evolution
 

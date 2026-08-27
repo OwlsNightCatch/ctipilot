@@ -111,3 +111,17 @@ Cost this run: several minutes of wall clock re-verifying material iteration 2 h
 verified, against a ~3 h guard the run was already 2.3 h into. The genuine classifier block
 in the same run (a deep-read pass on kernel-driver material) looked nothing like this — it
 surfaced as an explicit termination, not as silence.
+
+## 2026-08-27 — single Sonnet 5 verifier: there is no other-model fallback any more (v4.1)
+
+v4.1 deleted `cti-verification-alt` and pinned both sub-agent definitions to
+`claude-sonnet-5`. The v3.31 recovery ladder (spawn the other definition with a
+model override) no longer exists — there is nothing to switch to. The ladder is
+now: retry once → re-frame the spawn message (defensive-role framing, no quoted
+exploit prose, checkpointed findings) → record the iteration as a failed spawn
+(set `verification.confirmation_waived` only if it was the confirmation pass).
+A failed spawn never counts as CLEAN and costs an iteration slot, so re-framing
+is the primary mitigation, not a fallback. Note for the next audit: every
+observation above clustered on the *previous* Sonnet generation; whether Claude
+Sonnet 5 trips the classifier at the same rate is unmeasured as of this note —
+record spawn terminations per fire so the rate can be read off the run records.
