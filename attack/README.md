@@ -24,9 +24,9 @@ looking at.
 
 ## Lifecycle semantics (mirror of the registry's tombstones)
 
-Revoked and deprecated techniques are **kept**, flagged. Entries are
-immutable, so a T-id cited in an old entry must still resolve after MITRE
-revokes it. `revoked_by` carries the surviving id; consumers resolve it
+Revoked and deprecated techniques are **kept**, flagged. The store is not
+rewritten when the pin moves, so a T-id cited in an old entry must still
+resolve after MITRE revokes it. `revoked_by` carries the surviving id; consumers resolve it
 forward via `content_model.resolve_technique_id` — exactly how
 `merged_into` registry tombstones are resolved. New entries reference only
 active ids (`tools/check_run.py` WARNs on revoked/deprecated ids with the
@@ -44,7 +44,7 @@ python3 site/build.py && python3 site/test_build.py    # site must build green
 
 Commit the regenerated JSON on a normal feature branch and put the
 `--update` change summary (new / renamed / newly-revoked techniques, tactic
-changes) in the commit message body. The weekly routine surfaces
+changes) in the commit message body. The quality-audit routine surfaces
 `--check`'s result in its run record so a stale pin never goes unnoticed;
 any session may perform the update. `tools/check_run.py` FAILs when the
 dataset is missing or violates invariants, and WARNs when entry technique

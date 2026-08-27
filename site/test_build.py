@@ -13,14 +13,19 @@ Tests cover:
     - content_model round-trip (strict-YAML-subset parse/dump, entry
       loader, schema validation)
     - render_brief_sections: section stubs, TL;DR ordering, the
-      Immediate-Action callout, update rendering, action items, run notes
+      Immediate-Action callout, § Updates from changelog records, action
+      items, run notes
+    - the entry lifecycle (v4.0): updates[] ⇔ body-section pairing, activity
+      windowing, the live timeline's UPD rows, entry-page revision history,
+      per-record feed items, the home Updates card
     - briefbook.json / alerts.json shapes
-    - day/weekly grouping + section-key routing
+    - day grouping + section-key routing
     - RSS generation from fixture entries (incl. sector slices)
     - entity appearance matching (registry keys, aliases, CVE ids)
     - umami/CSP consistency + the branding profile contract
 """
 
+import copy
 import json
 import re
 import sys
@@ -50,12 +55,11 @@ from build import (  # noqa: E402
     build_graph_payload,
     build_items_feed,
     build_sector_feeds,
-    build_update_chains,
     compute_related_entities,
     daily_run_dates,
     enhance_brief_item_html,
     entries_by_day,
-    entries_by_week,
+    entry_activity,
     entry_section_key,
     is_safe_path_segment,
     parse_taxonomy,
@@ -65,18 +69,22 @@ from build import (  # noqa: E402
     render_day_page,
     render_days_index_page,
     render_entry_card,
+    render_entry_page,
+    render_home_page,
     render_inline,
     render_markdown,
     render_ops_page,
     render_run_detail_page,
     render_run_divider,
+    render_timeline_item,
+    render_update_card,
     run_url_path,
     scan_for_secrets,
     select_tldr_entries,
     slugify,
-    weekly_run_weeks,
-    weekly_section_key,
+    update_records_in,
 )
+from build import _live_timeline_html  # noqa: E402
 
 FAILURES: list[str] = []
 
@@ -243,7 +251,7 @@ REF_TS = datetime(2026, 7, 3, 12, 0, 0, tzinfo=timezone.utc)
 def mk_entry(slug, *, day="2026-07-03", ts="2026-07-03T04:21:09Z",
              kind="vulnerability", priority="notable",
              horizon="operational", **kw):
-    e = dict(content_model.ENTRY_DEFAULTS)
+    e = copy.deepcopy(content_model.ENTRY_DEFAULTS)
     e.update({
         "schema": 1,
         "kind": kind,
@@ -305,6 +313,8 @@ def mk_run(run_id="2026-07-03T0412Z-intel", **kw):
     return r
 
 
+UPD_AT = "2026-07-03T08:00:00Z"
+RUN2_ID = "2026-07-03T0752Z-intel"
 E_CRIT = mk_entry(
     "coolify-rce", kind="vulnerability", priority="critical",
     ts="2026-07-03T04:21:09Z",
@@ -314,9 +324,21 @@ E_CRIT = mk_entry(
                "publisher": "Example PSIRT"}],
     cves=[{"id": "CVE-2026-34038", "cvss": "9.9", "epss": None, "type": "rce",
            "vector": "zero-click", "auth": "post-auth",
-           "status": ["exploited", "patch-available"]}],
+           "status": ["exploited", "patch-available", "cisa-kev"]}],
     actions=["Patch Coolify to ≥ v4.0.0-beta.469."],
     tags=["vulnerabilities", "rce", "actively-exploited"],
+    entities=["tool:foxkit"],
+    # v4.0 entry lifecycle: one living entry; the later development is a
+    # changelog record + a paired body section, not a second entry.
+    updated_at=UPD_AT,
+    updates=[{"at": UPD_AT, "run_id": RUN2_ID, "type": "update",
+              "summary": "A public PoC has now surfaced and CISA added the CVE to KEV.",
+              "fields": ["cves", "body"],
+              "merged_from": "2026-07-03/coolify-rce-update"}],
+    body="Analysis body of coolify-rce with **detail** and a "
+         "[reference](https://example.com/ref-coolify-rce).\n\n"
+         "## Update — " + UPD_AT + "\n\n"
+         "A public PoC has now surfaced ([Example News, 2026-07-03](https://example.org/news-coolify-rce)).",
 )
 E_HIGH = mk_entry(
     "fortibleed-campaign", kind="threat", priority="high",
@@ -329,25 +351,26 @@ E_NOTE = mk_entry(
     ts="2026-07-03T02:00:00Z",
     body="TestFox infrastructure overlap noted; also tracked as FOXCAT-9.",
 )
-E_UPD = mk_entry(
-    "coolify-rce-update", kind="vulnerability", priority="notable",
-    ts="2026-07-03T08:00:00Z",
-    update_of="2026-07-03/coolify-rce",
-    entities=["tool:foxkit"],
-    body="**UPDATE (originally covered 2026-07-03):** A public PoC has now surfaced.",
-    cves=[{"id": "CVE-2026-34038", "cvss": "9.9", "epss": None, "type": "rce",
-           "vector": "zero-click", "auth": "post-auth",
-           "status": ["exploited", "patch-available", "cisa-kev"]}],
-    actions=[],
-)
 E_DEEP = mk_entry(
     "deep-dive-edge", kind="research", priority="notable",
     ts="2026-07-03T05:00:00Z",
     deep_dive=True, deep_dive_category="edge-infrastructure",
 )
+CORR_AT = "2026-07-03T09:30:00Z"
 E_OLD = mk_entry(
     "old-item", day="2026-07-01", ts="2026-07-01T10:00:00Z",
     kind="incident", priority="notable", sectors=["healthcare"],
+    # A correction dated two days after first publication — it must surface
+    # in the 2026-07-03 day page's § Updates while the entry keeps its
+    # 2026-07-01 kind-section placement.
+    updated_at=CORR_AT,
+    updates=[{"at": CORR_AT, "run_id": RUN2_ID, "type": "correction",
+              "summary": "Victim count corrected from 12 to 8 hospitals per the regulator's notice.",
+              "fields": ["body"]}],
+    body="Analysis body of old-item with 8 hospitals affected.\n\n"
+         "## Correction — " + CORR_AT + "\n\n"
+         "The original stated 12 hospitals; the regulator's notice names 8 "
+         "([Example PSIRT, 2026-07-03](https://example.com/advisory-old-item)).",
 )
 E_STRAT = mk_entry(
     "weekly-policy-item", day="2026-06-28", ts="2026-06-28T10:00:00Z",
@@ -360,10 +383,13 @@ E_STRAT2 = mk_entry(
     references=["2026-07-01/old-item"],
 )
 ALL_ENTRIES = sorted(
-    [E_CRIT, E_HIGH, E_NOTE, E_UPD, E_DEEP, E_OLD, E_STRAT, E_STRAT2],
+    [E_CRIT, E_HIGH, E_NOTE, E_DEEP, E_OLD, E_STRAT, E_STRAT2],
     key=lambda e: (e["discovered_at"], e["id"]),
 )
 RUN = mk_run()
+RUN2 = mk_run(run_id=RUN2_ID, started="2026-07-03T07:52:00Z", completed="2026-07-03T08:40:00Z",
+              entries_published=0, entries_updated=2,
+              updated_entry_ids=[E_CRIT["id"], E_OLD["id"]])
 
 # ---------------------------------------------------------------------
 # content_model round-trip + validation
@@ -374,7 +400,7 @@ fm = {
     "summary": "Line one.\nLine two.",
     "tags": ["vulnerabilities", "rce"],
     "cves": [{"id": "CVE-2026-1", "status": ["exploited"]}],
-    "update_of": None, "deep_dive": False,
+    "updates": [], "deep_dive": False,
 }
 dumped = content_model.dump_yaml_subset(fm)
 assert_eq("yaml subset round-trips", content_model.parse_yaml_subset(dumped), fm)
@@ -399,18 +425,61 @@ with tempfile.TemporaryDirectory() as td:
               le["immediate_action"]["title"], "Patch Coolify now")
     errs = content_model.validate_entry(le, TAXONOMY)
     assert_eq("fixture entry is schema-valid", errs, [])
+    assert_eq("changelog record round-trips", le["updates"][0]["at"], UPD_AT)
+    assert_eq("updated_at round-trips", le["updated_at"], UPD_AT)
     bad = dict(le)
     bad["priority"] = "urgent"
     assert_true("bad priority flagged",
                 any("priority" in x for x in content_model.validate_entry(bad, TAXONOMY)))
 
+print("== entry lifecycle (content_model) ==")
+_main, _secs = content_model.split_update_sections(E_CRIT["body"])
+assert_true("main analysis excludes the update section", "## Update" not in _main and "detail" in _main)
+assert_eq("one section paired by at", [(sc["type"], sc["at"]) for sc in _secs], [("update", UPD_AT)])
+assert_in("section body retained", "A public PoC has now surfaced", _secs[0]["body"])
+assert_eq("heading helper matches the parser",
+          content_model.update_section_heading("correction", CORR_AT), "## Correction — " + CORR_AT)
+assert_eq("activity ts = updated_at when later", content_model.entry_activity_ts(E_CRIT), UPD_AT)
+assert_eq("activity ts = discovered_at when never updated",
+          content_model.entry_activity_ts(E_HIGH), E_HIGH["discovered_at"])
+_since = datetime(2026, 7, 3, 6, 0, 0, tzinfo=timezone.utc)
+assert_eq("activity window admits the updated entry",
+          sorted(e["id"] for e in content_model.entries_in_window([E_CRIT, E_HIGH, E_OLD], _since, None, activity=True)),
+          sorted([E_CRIT["id"], E_OLD["id"]]))
+assert_eq("discovered_at window excludes it",
+          [e["id"] for e in content_model.entries_in_window([E_CRIT, E_HIGH, E_OLD], _since, None)], [])
+_act = entry_activity(E_CRIT)
+assert_eq("entry_activity names the updating run", (_act["is_update"], _act["run_id"], _act["at"]),
+          (True, RUN2_ID, UPD_AT))
+assert_eq("entry_activity of a never-updated entry", entry_activity(E_HIGH)["is_update"], False)
+assert_eq("update_records_in by day", [r["type"] for r in update_records_in(E_OLD, None, None, day="2026-07-03")],
+          ["correction"])
+assert_eq("update_records_in misses another day", update_records_in(E_OLD, None, None, day="2026-07-01"), [])
+_bad_pair = dict(E_CRIT)
+_bad_pair["body"] = _main  # section removed, record kept
+assert_true("record without its section is invalid",
+            any("pair 1:1" in x for x in content_model.validate_entry(_bad_pair, TAXONOMY)))
+_bad_upd = dict(E_CRIT)
+_bad_upd["updated_at"] = None
+assert_true("updated_at must mirror the last record",
+            any("updated_at" in x for x in content_model.validate_entry(_bad_upd, TAXONOMY)))
+_legacy = dict(E_HIGH)
+_legacy["update_of"] = "2026-07-01/old-item"
+assert_true("update_of is retired", any("retired" in x for x in content_model.validate_entry(_legacy, TAXONOMY)))
+assert_eq("run record accepts updated_entry_ids",
+          [e for e in content_model.validate_run_record(RUN2) if "updated_entry_ids" in e], [])
+_bad_run = dict(RUN2); _bad_run["entries_updated"] = 1
+assert_true("updated_entry_ids length must match entries_updated",
+            any("updated_entry_ids" in e for e in content_model.validate_run_record(_bad_run)))
+
 # ---------------------------------------------------------------------
 # render_brief_sections — the canonical assembler
 # ---------------------------------------------------------------------
 print("== render_brief_sections ==")
-day_entries = [E_NOTE, E_HIGH, E_CRIT, E_UPD, E_DEEP]
+day_entries = [E_NOTE, E_HIGH, E_CRIT, E_DEEP]
 by_id = {e["id"]: e for e in ALL_ENTRIES}
-html = render_brief_sections(day_entries, [RUN], prefix="", entries_by_id=by_id)
+html = render_brief_sections(day_entries, [RUN, RUN2], prefix="", entries_by_id=by_id,
+                             updated_entries=[E_CRIT, E_OLD], updates_day="2026-07-03")
 
 assert_in("TL;DR block renders", 'class="tldr"', html)
 assert_in("editorial section header renders", 'class="sect"', html)
@@ -422,14 +491,24 @@ actnow = render_actnow(E_CRIT, prefix="")
 assert_in("ACT NOW callout present", "ACT NOW · CRITICAL", actnow)
 assert_in("ACT NOW carries the action", "Upgrade to v4.0.0-beta.469 immediately.", actnow)
 assert_in("finding quotes evidence", "actively exploited in the wild", html)
-assert_in("update flagged on the finding", 'class="b upd">update', html)
-assert_in("update lead links the original", "originally covered", html)
-assert_in("update body retained after prefix strip", "A public PoC has now surfaced.", html)
-assert_true(
-    "redundant update-prefix stripped from body",
-    "<strong>UPDATE (originally covered 2026-07-03)" not in html,
-)
-assert_in("update lead href", 'href="entries/2026-07-03/coolify-rce/"', html)
+assert_in("updated badge on the finding", 'class="b upd"', html)
+assert_in("updated badge reads 'updated'", ">updated</span>", html)
+assert_in("changelog block rendered inside the finding card",
+          'class="entry-update entry-update--update"', html)
+assert_in("changelog block carries the section body", "A public PoC has now surfaced", html)
+assert_in("§ Updates section renders", ">Updates to prior coverage<", html)
+assert_in("§ Updates counts both records dated that day", "Updates to prior coverage</span><span class=\"c\">2 items", html)
+assert_in("update card for the correction", 'class="entry-update entry-update--correction"', html)
+assert_in("update card carries the record summary",
+          "Victim count corrected from 12 to 8 hospitals", html)
+assert_in("update card links the living entry", 'href="entries/2026-07-01/old-item/"', html)
+assert_in("update card names the updating run", 'href="runs/' + RUN2_ID + '/"', html)
+assert_true("the corrected old entry is NOT in a kind section of this day",
+            'id="old-item"' not in html)
+html_no_upd = render_brief_sections(day_entries, [RUN], prefix="", entries_by_id=by_id)
+assert_not_in("no § Updates without records in scope", ">Updates to prior coverage<", html_no_upd)
+assert_in("research section renamed", "Research, reports &amp; policy", render_brief_sections(
+    [E_DEEP, mk_entry("pol", kind="policy", ts="2026-07-03T06:00:00Z")], [RUN], prefix=""))
 assert_in("deep-dive section renders", ">Deep dive<", html)
 assert_in("action item present", "Patch Coolify to ≥ v4.0.0-beta.469.", html)
 assert_in("action finding-ref link", 'class="action-ref"', html)
@@ -447,6 +526,85 @@ assert_in("card carries provenance row", 'class="prov"', card)
 assert_in("card renders evidence citation", 'class="entry-cite"', card)
 assert_in("card citation carries attribution", 'class="entry-cite__attr"', card)
 assert_in("cve pill on card", "CVE-2026-34038", card)
+assert_in("card carries data-updated", 'data-updated="' + UPD_AT + '"', card)
+assert_in("card renders the changelog block header time", "03 Jul 2026 08:00 UTC", card)
+assert_in("card changelog block links the run", 'href="runs/' + RUN2_ID + '/"', card)
+assert_in("card changelog block lists changed fields", '<span class="echip echip--muted">cves</span>', card)
+assert_true("card main analysis precedes the changelog block",
+            card.find("Analysis body of coolify-rce") < card.find("entry-update--update"))
+
+print("== live timeline (activity-grouped) ==")
+tl = _live_timeline_html([E_CRIT, E_HIGH], [RUN, RUN2], prefix="")
+pos_run2 = tl.find('href="runs/' + RUN2_ID + '/"')
+pos_run1 = tl.find('href="runs/2026-07-03T0412Z-intel/"')
+pos_crit = tl.find('data-entry-id="' + E_CRIT["id"] + '"')
+pos_high = tl.find('data-entry-id="' + E_HIGH["id"] + '"')
+assert_true("updating run divider comes first", 0 <= pos_run2 < pos_run1)
+assert_true("updated entry sits under the updating run", pos_run2 < pos_crit < pos_run1)
+assert_true("new entry sits under its publishing run", pos_high > pos_run1)
+assert_in("updated row flagged UPD", 'style="color:var(--warn)">UPD</span>', tl)
+assert_in("updated row carries the record line", 'class="tl-update tl-update--update"', tl)
+assert_in("updated row shows the record summary", "A public PoC has now surfaced and CISA added", tl)
+assert_in("updated row stamped with the record time", "03 Jul 08:00Z", tl)
+assert_in("updated row marks the item", 'class="tl-item tl-item--updated"', tl)
+row = render_timeline_item(E_HIGH, prefix="", is_new=True)
+assert_in("new row flagged NEW", 'style="color:var(--ok)">NEW</span>', row)
+assert_not_in("new row has no update line", "tl-update", row)
+assert_eq("timeline appears once per entry", tl.count('data-entry-id="' + E_CRIT["id"] + '"'), 1)
+
+print("== entry page ==")
+epage = render_entry_page(
+    E_CRIT, entries_by_id=by_id, registry={}, runs_by_id={RUN["run_id"]: RUN, RUN2_ID: RUN2},
+    day_pages={"2026-07-03"}, site_url="https://x.example/", cachebust="t",
+    prefix="../../../", canonical="https://x.example/entries/2026-07-03/coolify-rce/",
+)
+assert_in("meta: first published", "first published 2026-07-03 04:21 UTC", epage)
+assert_in("meta: updated", ">updated 2026-07-03 08:00 UTC</a>", epage)
+assert_in("revision history panel", 'id="revision-history"', epage)
+assert_in("revision history lists the publish event", '<span class="b">Published</span>', epage)
+assert_in("revision history lists the record", 'class="revision revision--update"', epage)
+assert_in("revision links the updating run", 'href="../../../runs/' + RUN2_ID + '/"', epage)
+assert_in("changelog section anchored", 'id="update-' + UPD_AT + '"', epage)
+assert_in("JSON-LD dateModified = updated_at", '"dateModified":"' + UPD_AT + '"', epage)
+assert_in("JSON-LD datePublished = discovered_at", '"datePublished":"2026-07-03T04:21:09Z"', epage)
+assert_not_in("no update-chain block", "Update chain", epage)
+plain_page = render_entry_page(
+    E_HIGH, entries_by_id=by_id, registry={}, runs_by_id={}, day_pages=set(),
+    site_url="https://x.example/", cachebust="t", prefix="../../../",
+    canonical="https://x.example/entries/2026-07-03/fortibleed-campaign/",
+)
+assert_not_in("never-updated entry has no revision history", 'id="revision-history"', plain_page)
+assert_not_in("never-updated entry has no updated meta", "emeta-updated", plain_page)
+strat_page = render_entry_page(
+    E_STRAT, entries_by_id=by_id, registry={}, runs_by_id={}, day_pages=set(),
+    site_url="https://x.example/", cachebust="t", prefix="../../../",
+    canonical="https://x.example/entries/2026-06-28/weekly-policy-item/",
+)
+assert_in("legacy strategic entry links the daily archive", "Back to the daily archive", strat_page)
+assert_not_in("no /weekly/ link on legacy strategic entries", "weekly/", strat_page.split("<main")[-1] if "<main" in strat_page else strat_page.replace("weekly-policy-item", ""))
+
+print("== home Updates card ==")
+home = render_home_page(
+    today="2026-07-03", today_entries=[E_CRIT, E_HIGH], prev_day="2026-07-01",
+    prev_day_entries=[E_OLD], recent_updates=[E_CRIT, E_OLD],
+    site_url="https://x.example/", cachebust="t", canonical="https://x.example/",
+    counts={"entries": 7}, last_updated="03 Jul 12:00 UTC",
+)
+assert_in("home carries the Updates card", 'class="bcard bcard--updates"', home)
+assert_in("home Updates card lists the correction", "Victim count corrected", home)
+assert_in("home Updates card type badge", 'class="b upd upd--correction"', home)
+assert_not_in("home has no weekly card", "weekly/", home)
+home_empty = render_home_page(
+    today=None, today_entries=[], prev_day=None, prev_day_entries=[], recent_updates=[],
+    site_url="https://x.example/", cachebust="t", canonical="https://x.example/",
+)
+assert_in("home Updates card falls back to an explainer", "One living entry per finding", home_empty)
+
+print("== update card ==")
+ucard = render_update_card(E_OLD, E_OLD["updates"][0], prefix="")
+assert_in("update card is a finding card", 'class="finding entry-card update-card"', ucard)
+assert_in("update card carries data-updated", 'data-updated="' + CORR_AT + '"', ucard)
+assert_in("update card shows first-published origin", "First published 2026-07-01", ucard)
 
 # single-source badge
 ss = mk_entry("single-src", verification="single-source-national-cert",
@@ -461,18 +619,12 @@ assert_in("single-source badge rendered", "single-source · national CERT", ss_c
 print("== grouping ==")
 days = entries_by_day(ALL_ENTRIES)
 assert_eq("day pages: operational dates only", sorted(days), ["2026-07-01", "2026-07-03"])
-assert_eq("2026-07-03 has 5 operational entries", len(days["2026-07-03"]), 5)
-weeks = entries_by_week(ALL_ENTRIES)
-assert_eq("weekly grouping keys on ISO week of strategic entries",
-          sorted(weeks), ["2026-W26"])
-assert_eq("strategic-only in weeks", len(weeks["2026-W26"]), 2)
-assert_eq("update routes to updates", entry_section_key(E_UPD), "updates")
+assert_eq("2026-07-03 has 4 operational entries", len(days["2026-07-03"]), 4)
 assert_eq("deep dive routes to deep-dive", entry_section_key(E_DEEP), "deep-dive")
-assert_eq("policy has no daily section", entry_section_key(E_STRAT), None)
-assert_eq("weekly fallback by kind", weekly_section_key(E_STRAT), "weekly-policy")
-assert_eq("explicit weekly_section wins", weekly_section_key(E_STRAT2), "weekly-long-running")
-assert_eq("update chain resolves", build_update_chains(ALL_ENTRIES),
-          {"2026-07-03/coolify-rce": ["2026-07-03/coolify-rce-update"]})
+assert_eq("policy routes to the research section", entry_section_key(E_STRAT), "research")
+assert_eq("legacy synthesis kind has no section", entry_section_key(E_STRAT2), None)
+assert_eq("updated entry keeps its kind section (updates are derived)",
+          entry_section_key(E_CRIT), "trending-vulnerabilities")
 picked = select_tldr_entries([E_NOTE, E_HIGH, E_CRIT])
 assert_eq("tl;dr picks critical first", picked[0]["id"], E_CRIT["id"])
 assert_eq("tl;dr pads with notable to 3", len(picked), 3)
@@ -493,13 +645,9 @@ assert_eq("daily_run_dates ignores weekly, keeps daily fires",
           daily_run_dates(ALL_RUNS), {"2026-07-03", "2026-07-05"})
 assert_eq("daily_run_dates drops malformed dates",
           daily_run_dates([mk_run(date="not-a-date"), mk_run(date="")]), set())
-assert_eq("weekly_run_weeks keys the weekly fire's ISO week",
-          weekly_run_weeks(ALL_RUNS), {"2026-W26"})
 # The union: 2026-07-05 has no entry but ran, so it joins the page universe.
 day_universe = set(entries_by_day(ALL_ENTRIES)) | daily_run_dates(ALL_RUNS)
 assert_true("all-quiet day joins the day-page universe", "2026-07-05" in day_universe)
-week_universe = set(entries_by_week(ALL_ENTRIES)) | weekly_run_weeks(ALL_RUNS)
-assert_true("quiet weekly fire joins the week-page universe", "2026-W26" in week_universe)
 
 # Archive index lists the quiet day with an explicit "run record only" marker.
 archive_days = {d: entries_by_day(ALL_ENTRIES).get(d, []) for d in day_universe}
@@ -510,7 +658,7 @@ assert_in("archive lists the quiet day", "daily/2026-07-05/", archive_html)
 assert_in("archive marks the quiet day as run-record-only",
           "run record only", archive_html)
 assert_in("archive still counts a content day's entries",
-          "5 findings", archive_html)
+          "4 findings", archive_html)
 
 # The quiet day's page renders (0 entries) and surfaces its run-note.
 by_id_all = {e["id"]: e for e in ALL_ENTRIES}
@@ -519,6 +667,12 @@ quiet_page = render_day_page("2026-07-05", [], [QUIET_RUN], entries_by_id=by_id_
                              prefix="../../", canonical="https://x.example/briefs/2026-07-05/")
 assert_in("quiet day page names the run", "2026-07-05T0009Z-intel", quiet_page)
 assert_in("quiet day page reports zero entries", "0 verified findings", quiet_page)
+upd_day_page = render_day_page("2026-07-03", days["2026-07-03"], [RUN, RUN2], entries_by_id=by_id_all,
+                               site_url="https://x.example/", cachebust="t",
+                               prefix="../../", canonical="https://x.example/daily/2026-07-03/",
+                               updated_entries=[E_CRIT, E_OLD])
+assert_in("day page counts the day's updates", "2 updates to prior coverage", upd_day_page)
+assert_in("day page renders § Updates", ">Updates to prior coverage<", upd_day_page)
 
 # ---------------------------------------------------------------------
 # per-run detail pages + live-timeline run links + ops run selector
@@ -549,6 +703,15 @@ assert_in("run page renders the record body", "Watchlist: no hits this run.", ru
 assert_in("run page notes expanded by default", '<details class="verif" open>', run_page)
 assert_in("run page lists the run's entries",
           'href="../../entries/2026-07-03/coolify-rce/"', run_page)
+run2_page = render_run_detail_page(
+    RUN2, {}, run_entries=[E_CRIT, E_OLD], day_pages={"2026-07-03"},
+    site_url="https://x.example/", cachebust="t", prefix="../../",
+    canonical="https://x.example/runs/" + RUN2_ID + "/",
+)
+assert_in("run page distinguishes updated entries", 'class="ops-entry--updated"', run2_page)
+assert_in("run page names the update type", '>correction</span>', run2_page)
+assert_in("run page heading counts published and updated",
+          "Entries this run published (0) and updated (2)", run2_page)
 assert_in("run page links back to ops", 'href="../../ops/"', run_page)
 assert_in("run page links the day page", 'href="../../daily/2026-07-03/"', run_page)
 
@@ -648,14 +811,22 @@ assert_eq("briefbook carries all fixture entries", len(book["entries"]), len(ALL
 be = {x["id"]: x for x in book["entries"]}[E_CRIT["id"]]
 for field in ("id", "url", "date", "discovered_at", "kind", "horizon", "priority",
               "headline", "summary", "title", "tags", "regions", "sectors",
-              "entities", "cve_ids", "cve_status", "update_of", "updated_by",
+              "entities", "cve_ids", "cve_status", "updated_at", "activity_at",
+              "activity_run_id", "activity_is_update", "updates", "update_count",
               "deep_dive", "actions", "watchlist_hit", "verification",
               "techniques", "classification", "classification_html",
               "org_triage", "org_triage_html", "immediate_action", "html"):
     assert_true(f"briefbook entry field `{field}`", field in be)
+assert_true("briefbook has no retired update_of/updated_by", "update_of" not in be and "updated_by" not in be)
 assert_eq("briefbook cve_ids", be["cve_ids"], ["CVE-2026-34038"])
-assert_eq("briefbook cve_status union", be["cve_status"], ["exploited", "patch-available"])
-assert_eq("briefbook updated_by chain", be["updated_by"], ["2026-07-03/coolify-rce-update"])
+assert_eq("briefbook cve_status union", be["cve_status"], ["exploited", "patch-available", "cisa-kev"])
+assert_eq("briefbook activity is the update", (be["activity_is_update"], be["activity_run_id"], be["activity_at"]),
+          (True, RUN2_ID, UPD_AT))
+assert_eq("briefbook updates compact shape", be["updates"][0]["type"], "update")
+assert_eq("briefbook update_count", be["update_count"], 1)
+assert_eq("briefbook ordered by activity (updated entry first)",
+          book["entries"][0]["id"], E_OLD["id"])
+assert_in("briefbook html carries the changelog block", "entry-update--update", be["html"])
 assert_in("briefbook html is the finding card", 'class="finding entry-card"', be["html"])
 assert_eq("briefbook IA block", be["immediate_action"]["title"], "Patch Coolify now")
 assert_eq("briefbook run count", len(book["runs"]), 1)
@@ -678,6 +849,10 @@ assert_eq("alerts: high has null immediate_action",
           al[E_HIGH["id"]]["immediate_action"], None)
 assert_true("alerts URLs absolute",
             al[E_CRIT["id"]]["url"].startswith("https://x.example/entries/"))
+assert_eq("alerts carry updated_at", al[E_CRIT["id"]]["updated_at"], UPD_AT)
+assert_eq("alerts carry compact updates", al[E_CRIT["id"]]["updates"][0]["type"], "update")
+assert_eq("alerts: never-updated entry has null updated_at", al[E_HIGH["id"]]["updated_at"], None)
+assert_in("alerts comment explains activity re-entry", "updated_at", alerts["_comment"])
 
 # ---------------------------------------------------------------------
 # feeds from fixture entries
@@ -690,12 +865,21 @@ assert_in("item description = summary", "Summary coolify-rce.", items_xml)
 assert_in("pubDate from discovered_at", "03 Jul 2026 04:21:09", items_xml)
 assert_in("category carries cve id", "<category>CVE-2026-34038</category>", items_xml)
 assert_in("category carries tag", "<category>vulnerabilities</category>", items_xml)
+assert_in("per-record feed item title", "<title>Update: Headline coolify-rce</title>", items_xml)
+assert_in("per-record feed item guid", '<guid isPermaLink="false">https://x.example/entries/2026-07-03/coolify-rce/#update-' + UPD_AT + '</guid>', items_xml)
+assert_in("per-record item pubDate = record at", "03 Jul 2026 08:00:00", items_xml)
+assert_in("correction feed item", "<title>Correction: Headline old-item</title>", items_xml)
+assert_eq("items feed = entries + records", items_xml.count("<item>"), len(ALL_ENTRIES) + 2)
+_first_title = re.search(r"<item><title>([^<]*)</title>", items_xml).group(1)
+assert_eq("newest item first is the latest record", _first_title, "Correction: Headline old-item")
 sector_feeds = {f: x for f, x, _t in build_sector_feeds(ALL_ENTRIES,
                                                         site_url="https://x.example/",
                                                         ref_ts=REF_TS)}
 assert_true("eight sector slices emitted", len(sector_feeds) == 8)
 assert_in("healthcare entry lands in its slice",
           "Headline old-item", sector_feeds["feed-healthcare.xml"])
+assert_in("healthcare slice carries the correction item",
+          "<title>Correction: Headline old-item</title>", sector_feeds["feed-healthcare.xml"])
 assert_not_in("healthcare entry stays out of energy slice",
               "Headline old-item", sector_feeds["feed-energy.xml"])
 for fname, xml in sector_feeds.items():
@@ -746,7 +930,7 @@ assert_eq("explicit key + alias mention both match",
 assert_eq("registry first_seen backfills first_covered", fox["first_covered"], "2026-06-01")
 assert_true("cve entity from entry cves[]", "CVE-2026-34038" in by_key)
 assert_eq("cve entity appearance count",
-          len(by_key["CVE-2026-34038"]["appearances"]), 2)
+          len(by_key["CVE-2026-34038"]["appearances"]), 1)
 assert_true("historical cves_seen id becomes an entity", "CVE-2025-0001" in by_key)
 assert_eq("historical cve keeps its dates",
           by_key["CVE-2025-0001"]["first_covered"], "2026-05-01")

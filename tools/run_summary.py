@@ -27,9 +27,10 @@ Phase 0 needs into one small JSON:
         "fetch_gaps_in_window": [{"id", "runs_failing", "last_status"}]
       },
       "window24h": {                   # budget snapshot from entries/**
-        "operational_total": 5,
+        "operational_total": 5,          # operational entries first published in the last 24 h
         "entries_by_kind": {"threat": 2, "vulnerability": 2, "research": 1},
-        "updates": 1,
+        "entries_updated": 1,            # entries that received an updates[] changelog record in the last 24 h
+        "updates": 1,                    # alias of entries_updated (kept for the prompt's older wording)
         "deep_dives_today": 1,         # deep_dive entries with today's folder date
         "critical_count": 0,           # priority: critical in last 24 h
         "high_count": 2
@@ -172,16 +173,21 @@ def build_summary(now: datetime, recent_days: int, gap_runs: int,
     for e in cm.collect_entries():
         if e.get("deep_dive") and e.get("date") == today:
             deep_dives_today += 1
+        # v4.0 entry lifecycle: an entry counts as UPDATED in the window when
+        # any of its changelog records was made inside it (regardless of
+        # when the entry was first published).
+        if any(isinstance(u, dict)
+               and (uts := cm.parse_ts(u.get("at"))) is not None
+               and since <= uts <= now + timedelta(minutes=5)
+               for u in (e.get("updates") or [])):
+            updates += 1
         ts = cm.parse_ts(e.get("discovered_at"))
         if ts is None or ts < since or ts > now + timedelta(minutes=5):
             continue
         if e.get("horizon") != "operational":
             continue
         operational += 1
-        if e.get("update_of"):
-            updates += 1
-        else:
-            by_kind[e.get("kind", "?")] = by_kind.get(e.get("kind", "?"), 0) + 1
+        by_kind[e.get("kind", "?")] = by_kind.get(e.get("kind", "?"), 0) + 1
         if e.get("priority") == "critical":
             critical += 1
         elif e.get("priority") == "high":
@@ -189,6 +195,7 @@ def build_summary(now: datetime, recent_days: int, gap_runs: int,
     out["window24h"] = {
         "operational_total": operational,
         "entries_by_kind": by_kind,
+        "entries_updated": updates,
         "updates": updates,
         "deep_dives_today": deep_dives_today,
         "critical_count": critical,

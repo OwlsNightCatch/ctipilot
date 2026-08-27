@@ -1,5 +1,7 @@
 # Weekly synthesis — the citation traps that only appear when you compose from entries
 
+> **HISTORICAL context (weekly routine retired 2026-08-27, see [[entry-lifecycle-v4]]) — lessons still live.** No weekly is composed any more, but the same traps bite any prose composed from ENTRIES rather than fresh fetches: an audit's `improvement` / `correction` records, a Background paragraph, a consolidated campaign update. Read "the weekly" below as "whoever re-frames a fact they did not fetch".
+
 The weekly re-frames facts it did not fetch. Iteration 1 of the 2026-W32 verifier found 17 truth
 defects and **every one was a sourcing defect, not a content defect** — the analysis was right, the
 citation was pointed at the wrong page. Five reusable shapes:
@@ -32,7 +34,7 @@ citation was pointed at the wrong page. Five reusable shapes:
 connects is not fixable by adding a plausible link — the W32 passkey entry lost its fourth disclosure
 and was retitled and renamed instead. That is the cheap outcome; a half-sourced attribution is not.
 
-**Gate contradiction to reconcile (open):** `prompts/weekly-summary.md` Phase 4 says
+**Gate contradiction to reconcile (CLOSED 2026-08-27 — moot, the weekly and `weekly-vuln-rollup` are retired):** `prompts/weekly-summary.md` Phase 4 said
 `weekly-vuln-rollup` entries carry per-CVE `cves[]`, but `check_run.py`'s cross-run dedup FAILs any
 non-update entry sharing CVE ids with the last 14 days — which a roll-up does by definition. Three
 consecutive weeklies have resolved it the same way: per-CVE trajectory as a **body table**, `cves: []`

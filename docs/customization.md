@@ -11,7 +11,7 @@ improvements, build/site upgrades — without touching its customizations.
 
 | Config | Owns | Consumed by |
 |---|---|---|
-| [`config/org-profile.yaml`](../config/org-profile.yaml) | The **intelligence lens**: org name, sector, home region, constituency, audience register, product/supplier watchlists, org-triage scheme, the NATO Admiralty classification scheme + triage-kind split, national-CERT carve-out list, policy/regulatory watch, deployment site URL | `tools/compose_prompts.py` → rendered into the `ORG-PROFILE` managed blocks of both master prompts (`prompts/cti-run.md`, `prompts/weekly-summary.md`), `prompts/verification.md`, and all three agent definitions. `site/build.py` additionally reads the `classification:` block at build time so the rating badges, tooltips and the entry-detail assessment panel always describe the same scheme the agents were instructed to assess (NATO doctrine fallback when the profile is absent) |
+| [`config/org-profile.yaml`](../config/org-profile.yaml) | The **intelligence lens**: org name, sector, home region, constituency, audience register, product/supplier watchlists, org-triage scheme, the NATO Admiralty classification scheme + triage-kind split, national-CERT carve-out list, policy/regulatory watch, deployment site URL | `tools/compose_prompts.py` → rendered into the `ORG-PROFILE` managed blocks of the intel-run master prompt (`prompts/cti-run.md` — mission, org data, and the `org-policy-watch` block that tasks the S2 worker), `prompts/verification.md`, and all three agent definitions. `site/build.py` additionally reads the `classification:` block at build time so the rating badges, tooltips and the entry-detail assessment panel always describe the same scheme the agents were instructed to assess (NATO doctrine fallback when the profile is absent) |
 | [`config/branding.yaml`](../config/branding.yaml) | The **published site**: name, wordmark, taglines, footer copy, logos, favicon, theme colors, fonts, chart palettes, RSS feed identity, sector feed slices, trend cohorts, analytics | `site/build.py` (via `site/branding_config.py`) at build time |
 
 Plus one asset directory:
@@ -114,7 +114,9 @@ Everything lives in `config/org-profile.yaml`:
   deployment trusts as single sources for their own disclosures. Omit the
   key for the upstream default list; `[]` disables the carve-out entirely.
 - `policy_watch:` — the regulators and directives whose changes alter your
-  obligations (drives the weekly's W2 sweep and its `weekly-policy` section).
+  obligations (drives the intel run's S2 home-region & sector sweep; a
+  regulatory action with a transferable obligation publishes as a `policy`
+  entry).
 
 Then `python3 tools/compose_prompts.py --write` (CI does it too). The
 static prompt prose is org-neutral by design — it always defers to these
@@ -145,9 +147,11 @@ Hard invariants are not customization surface (see CLAUDE.md § Self-evolution):
 the AI-content transparency via run records, the no-IOC rule, two-source
 verification (the carve-out *list* is yours to set; the mechanism is not),
 English output, the feature-branch publishing chain, the mechanical gate
-(`tools/check_run.py` exit 0), the verification sub-agent loop, entry
-immutability + `update_of` discipline, the entity registry as the single
-entity namespace, volume discipline, and memory commits. Weakening them in
+(`tools/check_run.py` exit 0), the verification sub-agent loop, the entry
+lifecycle (one living entry per finding — every change a dated `updates[]`
+changelog record, never a silent edit, never a second entry), the entity
+registry as the single entity namespace, volume discipline, and memory
+commits. Weakening them in
 a fork is possible — it's your repo — but nothing in the config schema
 encourages it, and upstream merges will not respect the weakening.
 

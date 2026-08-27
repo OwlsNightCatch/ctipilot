@@ -159,7 +159,7 @@
     toast._t = setTimeout(function () { toastEl.classList.remove('show'); }, 1800);
   }
 
-  // ── finding chip filters (live / day / weekly) ─────────────────────
+  // ── finding chip filters (live / day pages) ────────────────────────
   // The chip bar toggles a shared filter state; app.js applies it to
   // any `.finding[data-*]` on the page AND fires `cti:filterchange` so
   // brief.js can re-render the live timeline with the same state.

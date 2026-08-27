@@ -122,5 +122,5 @@ Two further shapes worth keeping:
 - **A verifier's "no action recommended" is advice, not a ruling.** One pass flagged
   workflow jargon in the run-record notes and recommended no action because recent records
   all do it. Fixed anyway: the style rule names the notes body explicitly, and "others do
-  it too" is an argument for the weekly audit to sweep the store, not for this run to add
+  it too" is an argument for the quality audit to sweep the store, not for this run to add
   to the pile.

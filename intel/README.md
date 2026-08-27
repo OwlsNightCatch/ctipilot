@@ -4,8 +4,8 @@ This directory is the **hand-off point between an operator-owned feed script
 and the autonomous pipeline routines**. A script (yours — commercial CTI
 portal exports, ISAC bulletins, FIU/LE reports, internal advisories)
 downloads closed-source documents and commits them here; the next intel-run
-(or weekly) fire ingests them via a dedicated intake sub-agent (S5 on intel
-runs / W3 weekly) and folds qualifying items into entries with **unlinked
+fire ingests them via a dedicated intake sub-agent (S5) and folds qualifying
+items into entries with **unlinked
 closed-source citations** (`closed_sources` frontmatter records).
 
 **Most days this directory is empty or absent — that is the normal state.**

@@ -2,7 +2,7 @@
 
 Operator's reference for the autonomous CTI pipeline: one-time setup, the publishing chain, the operations dashboard, the sub-agent capability ceiling, and what to do when something goes wrong.
 
-The full run narrative lives in the prompts themselves — [`prompts/cti-run.md`](../prompts/cti-run.md) (the intel run, fired several times per day), [`prompts/weekly-summary.md`](../prompts/weekly-summary.md) (the weekly strategic run), and [`prompts/quality-audit.md`](../prompts/quality-audit.md) (the weekly quality-audit run). The data model (entries, entity registry, run records) is [`docs/pipeline.md`](pipeline.md). This file is the operator-facing wrapper around them.
+The full run narrative lives in the prompts themselves — [`prompts/cti-run.md`](../prompts/cti-run.md) (the intel run, fired on the operator's cadence) and [`prompts/quality-audit.md`](../prompts/quality-audit.md) (the quality-audit run). These are the pipeline's two routines; the weekly strategic run was retired on 2026-08-27. The data model (entries, entity registry, run records) is [`docs/pipeline.md`](pipeline.md). This file is the operator-facing wrapper around them.
 
 ---
 
@@ -11,7 +11,7 @@ The full run narrative lives in the prompts themselves — [`prompts/cti-run.md`
 `main` is protected: only [`.github/workflows/auto-merge-claude.yml`](../.github/workflows/auto-merge-claude.yml) promotes commits onto it. Every Claude Code session in this repo (interactive or routine) operates on a `claude/<adjective>-<name>-<id>` feature branch.
 
 ```
-routine fires (cloud, scheduled — intel run N×/day, weekly 1×/week, quality audit 1×/week)
+routine fires (cloud, scheduled — intel run + quality audit, each on the operator's cadence)
    │
    ▼
 feature branch  ─── git push ───▶  auto-merge-claude.yml
@@ -83,10 +83,9 @@ The first push to `main` that touches the content store (`entries/`, `runs/`, `e
 
 In <https://claude.ai/code/routines>, create these routines against this repository. The full, version-controlled text of every routine invocation prompt — plus a catalog of the in-repo prompts they load — lives in [`docs/routines.md`](routines.md); keep the live routine config in sync with it.
 
-1. **Intel run** — **several times per working day is the intended pattern** (e.g. every 4–6 h). The prompt is cadence-agnostic and self-healing: each fire derives its window from the gap since the previous run record, so missed fires are caught up automatically and the operator can change the cron freely without touching the prompt. More fires mean lower latency, never more content — dedup ensures a re-scan republishes only the new delta, and entry volume follows a strict relevance/actionability gate, not a count. Prompt, exactly one line: `Read prompts/cti-run.md and execute it.`
-2. **Weekly run** — once per week, operator-chosen day/time. Prompt: `Read prompts/weekly-summary.md and execute it.` It refuses to fire twice for the same ISO week.
-   - **Weekly backup run** *(optional resilience net)* — a second routine scheduled *after* the primary weekly slot that produces the weekly only if the primary did not. It checks whether a `-weekly` run record for the most-recently-completed ISO week reached `main` and exits if so, else runs the weekly. The pipeline has **no** `briefs/weekly/<week>.md` file, and the weekly targets the completed week (the week ending on the most recent Sunday), not the current calendar week — so the check keys on the run record's `week:` frontmatter, never a guessed file path or `date +%V` of today. Copy the exact prompt from [`docs/routines.md` § 1c](routines.md#1c-weekly-backup-run--resilience-net-for-the-weekly). Running the weekly is safe even in a race: `weekly-summary.md`'s Phase 0 `duplicate-week` guard is the authoritative backstop.
-3. **Weekly quality audit** — once per week, after the weekly slot (recommended: Sunday evening). Prompt, exactly one line: `Read prompts/quality-audit.md and execute it.` It audits the window since the previous audit record (truth re-verification of published entries against primaries, independent coverage re-sweeps, systemic drift review, watch-item and fix-effectiveness follow-through) and folds in the monthly priority-calibration review on the first fire of each calendar month. Self-healing across missed fires; a 72-h `duplicate-audit` guard makes double fires safe. Full rationale and catalog entry: [`docs/routines.md` § 1d](routines.md#1d-weekly-quality-audit--once-per-week-recommended-sunday-after-the-weekly-slot).
+1. **Intel run** — any cadence you like: several fires per working day (e.g. every 4–6 h) or a single daily fire are equally first-class. The prompt is cadence-agnostic and self-healing: each fire derives its window from the gap since the previous run record, so missed fires are caught up automatically and the operator can change the cron freely without touching the prompt. More fires mean lower latency, never more content — dedup ensures a re-scan republishes only the new delta (a covered finding receives a changelog record on its existing entry, never a second entry), and entry volume follows a strict relevance/actionability gate, not a count. Prompt, exactly one line: `Read prompts/cti-run.md and execute it.`
+2. **Quality audit** — operator-chosen cadence (weekly is typical; the prompt is cadence-agnostic and audits the window since its previous record). Prompt, exactly one line: `Read prompts/quality-audit.md and execute it.` It audits the window since the previous audit record (truth re-verification of published entries against primaries, independent coverage re-sweeps, systemic drift review, watch-item and fix-effectiveness follow-through, the ATT&CK-pin freshness check), appends `correction` / `improvement` changelog records to the published entries it finds wrong or thin, and folds in the monthly priority-calibration review on the first fire of each calendar month. Self-healing across missed fires; a 72-h `duplicate-audit` guard makes double fires safe. Full rationale and catalog entry: [`docs/routines.md` § 1b](routines.md#1b-quality-audit--operator-chosen-cadence-weekly-is-typical).
+3. **Retired routines** — the weekly strategic run and its backup (`Read prompts/weekly-summary.md …`) were removed on 2026-08-27; the prompt file no longer exists. If your routine config still lists either, **delete them** — a fire against a missing prompt cannot do anything useful.
 4. **Permissions** — leave **Allow unrestricted branch pushes** *off*. The routines push to `claude/**` only; the auto-merge workflow promotes.
 5. **Sub-agent capability ceiling** — see § [Sub-agent capability ceiling](#sub-agent-capability-ceiling) below.
 6. **Environment variables for self-identification (fallback layer)** — every agent's primary identity source is the model line the harness injects into its own system prompt (`You are powered by the model named … The exact model ID is …`), which is generated per-agent at spawn time and reflects a sub-agent definition's `model:` pin (verified empirically 2026-07-09: pinned sub-agents reported Sonnet from their prompt line while the container env said Opus). Additionally set both env vars in the routine container as the fallback for any agent whose context lacks that line:
@@ -126,9 +125,9 @@ and CVE TTP sections, the [`/attack/`](https://ctipilot.ch/attack/)
 coverage matrix and its Navigator-layer exports — renders against one
 pinned release committed at
 [`attack/enterprise-attack.json`](../attack/enterprise-attack.json)
-(contract: [`attack/README.md`](../attack/README.md)). The weekly routine
-runs `python3 tools/attack_data.py --check` on every fire and records the
-result in its run record, so a stale pin surfaces on its own; any session
+(contract: [`attack/README.md`](../attack/README.md)). The quality-audit
+routine runs `python3 tools/attack_data.py --check` on every fire and records
+the result in its run record, so a stale pin surfaces on its own; any session
 (routine or operator) may perform the update:
 
 ```sh
@@ -143,8 +142,8 @@ summary (new / renamed / newly-revoked techniques, tactic changes) in the
 commit body. Never hand-edit the dataset and never hardcode tactic or
 technique tables anywhere — releases genuinely drift (v19 replaced Defense
 Evasion with Stealth + Defense Impairment). Revoked ids keep resolving
-via `revoked_by` forwarding, so updating the pin never breaks the
-immutable entry store; after an update, `tools/check_run.py` WARNs
+via `revoked_by` forwarding, so updating the pin never breaks entries that
+cite an older release's ids; after an update, `tools/check_run.py` WARNs
 (`attack-mapping`) wherever a *new* entry still references a
 revoked/deprecated id.
 
@@ -158,7 +157,7 @@ To run manually: `python3 tools/source_health.py --dry-run --timeout 12`.
 
 ## Source candidates
 
-[`tools/source_candidates.py`](../tools/source_candidates.py) walks the last 30 days of entries, counts every outbound link host, subtracts hosts already in `sources/sources.json` and the news-aggregator allowlist, and outputs the top-N missing-but-cited domains. Operator runs manually (or as a weekly cron) to spot publishers worth promoting to `status: candidate`. Pure post-hoc analytics; no runtime cost on the pipeline.
+[`tools/source_candidates.py`](../tools/source_candidates.py) walks the last 30 days of entries, counts every outbound link host, subtracts hosts already in `sources/sources.json` and the news-aggregator allowlist, and outputs the top-N missing-but-cited domains. Operator runs manually (or as a periodic cron) to spot publishers worth promoting to `status: candidate`. Pure post-hoc analytics; no runtime cost on the pipeline.
 
 ```sh
 python3 tools/source_candidates.py                # last 30 days, top 20
@@ -170,7 +169,7 @@ python3 tools/source_candidates.py --json         # machine-readable
 
 Live at [`/ops/`](https://ctipilot.ch/ops/). Built entirely from the frontmatter of the run records under `runs/**`, rendered server-side at build time. Surfaces:
 
-- **Recent runs** — one row per fire: kind (intel/weekly), gap/window hours, `entries_published` / `entries_updated`, deep-dive picks, sub-agent allocation per S1–S4 (+S5 / W1–W3), fetch failures, verification iterations + residuals, entries dropped by verification, prompt version executed.
+- **Recent runs** — one row per fire: kind (intel/audit), gap/window hours, `entries_published` (new entries) / `entries_updated` (existing entries the fire appended a changelog record to, listed in `updated_entry_ids`), deep-dive picks, sub-agent allocation per S1–S4 (+S5; audit passes and G1–G3 on audit fires), fetch failures, verification iterations + residuals, entries dropped by verification, prompt version executed.
 - **Stale active sources** — sources marked `active` in `sources/sources.json` whose `last_successful_fetch` is more than 7 days old. Useful for spotting a quietly broken source or a rotation bias.
 - **Source health** — the recipe-level probe snapshot from `state/source_health.json`, floating only the unsolved problems (`needs-bridge` / `needs-demote`).
 
@@ -183,7 +182,7 @@ Operator-side signals to watch:
 | `verification_residual_count` non-zero on consecutive runs | Verifier is finding the same residual issue repeatedly. Check the run records' verification notes; if a check needs adjusting, edit the relevant agent definition (`.claude/agents/cti-verification.md` AND `cti-verification-alt.md` together — both verifier definitions move in lockstep) and bump the prompt version. |
 | `verification-confirmation` FAIL/WARN on `tools/check_run.py` | A v3.23+ run record's final verdict is CLEAN but the previous iteration was not also CLEAN on a different model (double-CLEAN gate). FAIL pre-commit when there was room to confirm; WARN when the record explains it (`verification.confirmation_waived`, or a first CLEAN landing exactly at the iteration cap) or when the two confirming iterations report the same model. Repeated waivers mean the loop is being short-circuited — investigate the run notes. |
 | `cap-breach` warning on `tools/check_run.py` | Verifier's final iteration returned `NEEDS_FIXES` — the run published at the safety-valve cap, not on a CLEAN verdict. Three or more cap-breaches in a 7-day window is the threshold to investigate prompt drift; the verifier is either finding real defects (signal: research sub-agent quality regression) or chasing fabricated ones (signal: verifier prompt regression). |
-| Any WARN surviving past a weekly audit | The zero-warning discipline (v3.28) holds `check_run.py --all` at **0 warn · 0 fail** after every audit: runs fix their own fixable warnings pre-commit; the audit fixes the rest at root cause or — settled immutable history only — acknowledges them with a reason in `state/warning_acknowledgments.json` (reported separately as `N acknowledged`, counted as zero). A WARN that outlives an audit means the sweep was skipped; a growing ledger means history is being acknowledged instead of causes being fixed — review the ledger diff in the audit commits. |
+| Any WARN surviving past an audit | The zero-warning discipline (v3.28) holds `check_run.py --all` at **0 warn · 0 fail** after every audit: runs fix their own fixable warnings pre-commit; the audit fixes the rest at root cause or — settled history on run records only, which stay immutable — acknowledges them with a reason in `state/warning_acknowledgments.json` (reported separately as `N acknowledged`, counted as zero). A WARN that outlives an audit means the sweep was skipped; a growing ledger means history is being acknowledged instead of causes being fixed — review the ledger diff in the audit commits. |
 | Same source on the stale list for >14 days | The source is dead, blocked, or its canonical URL changed. Open it manually; if the publisher restructured, update `url` in `sources/sources.json` and let the agent recover; if the publisher is gone, demote it. |
 | `fetch_failures` spike on one sub-agent | Either a publisher block (frequent on CISA / NCSC.ch — already routed via [`tools/fetch_source.py`](../tools/fetch_source.py)) or a transient network event. If it persists across runs for the same host, add the host to the bridge fetcher. |
 | Prompt version not bumped after a prompt edit | `tools/check_run.py` cross-checks the run record's `prompt_version` against `prompts/CHANGELOG.md`; this should never happen in production. If it does, the prompt-versioning rule (CLAUDE.md) was skipped — restore the bump. |
@@ -192,7 +191,7 @@ Operator-side signals to watch:
 
 ## Sub-agent capability ceiling
 
-The research sub-agents the runs spawn (S1–S4 + conditional S5 on intel runs, W1–W3 weekly) and the cold-reader verifiers are the single most dangerous configuration surface: a sub-agent that follows an injection-laced page could perform writes the parent never intended. The agent definitions in [`.claude/agents/`](../.claude/agents/) pin each role's ceiling — keep the live routine config matched to them:
+The research sub-agents the runs spawn (S1–S4 + conditional S5 on intel runs, G1–G3 on audit fires) and the cold-reader verifiers are the single most dangerous configuration surface: a sub-agent that follows an injection-laced page could perform writes the parent never intended. The agent definitions in [`.claude/agents/`](../.claude/agents/) pin each role's ceiling — keep the live routine config matched to them:
 
 | Role | Toolset |
 |---|---|
@@ -214,7 +213,7 @@ The routine credential (Claude GitHub App installation token, or the synced `gh`
 
 A leaked credential lets the holder push commits as the routine. Because every routine commit appears in the git diff and every prompt edit triggers the in-prompt CHANGELOG-bump rule, a maliciously crafted run is detectable but not preventable in real time. The defensive frame is "detect and correct".
 
-- **`JINA_API_KEYS` / `JINA_API_KEY` (reader proxy)** — rotate on *consumption*, not a calendar: each key carries a finite token balance, and `python3 tools/fetch_source.py jina-usage` reports what remains per key and for the pool (stderr warning below 1 M tokens combined, or when every key is dead). Generate a replacement at <https://jina.ai/api-dashboard/> and add it to the routine container's `JINA_API_KEYS` — nothing in the repo changes; the connector spends keys in listed order, skips exhausted/invalid ones automatically, and tries the anonymous free tier when the whole pool is dead — a best-effort backstop only (observed answering HTTP 401 on 2026-07-18), so treat a dead pool as an outage of the ladder's last-resort rung and replace the key promptly (the weekly quality audit checks the pool as of v3.25). Also rotate immediately if a key is ever exposed (pasted into a chat, a log, or a commit): the blast radius of a leak is only spend-down of the token balance and requests attributed to your account. Env-var setup: § [Set up the routines](#4-set-up-the-routines), item 7.
+- **`JINA_API_KEYS` / `JINA_API_KEY` (reader proxy)** — rotate on *consumption*, not a calendar: each key carries a finite token balance, and `python3 tools/fetch_source.py jina-usage` reports what remains per key and for the pool (stderr warning below 1 M tokens combined, or when every key is dead). Generate a replacement at <https://jina.ai/api-dashboard/> and add it to the routine container's `JINA_API_KEYS` — nothing in the repo changes; the connector spends keys in listed order, skips exhausted/invalid ones automatically, and tries the anonymous free tier when the whole pool is dead — a best-effort backstop only (observed answering HTTP 401 on 2026-07-18), so treat a dead pool as an outage of the ladder's last-resort rung and replace the key promptly (the quality audit checks the pool on every fire as of v3.25). Also rotate immediately if a key is ever exposed (pasted into a chat, a log, or a commit): the blast radius of a leak is only spend-down of the token balance and requests attributed to your account. Env-var setup: § [Set up the routines](#4-set-up-the-routines), item 7.
 
 ---
 
@@ -234,7 +233,8 @@ A leaked credential lets the holder push commits as the routine. Because every r
 | Routine fired but no commit on the feature branch | Routine container died mid-run. Check the routine's run log in claude.ai. The next fire self-heals: its gap-derived window covers everything the dead run missed. |
 | A fire happened but there is no run record under `runs/` | The worst outcome — the prompts write the run record even on zero-entry runs and sub-agent failures. Check the claude.ai run log for a crash before Phase 4; if the branch pushed partially, the auto-merge may still have landed entries without a record — `python3 tools/check_run.py --all` will flag the orphans. |
 | `tools/check_run.py` FAILs blocking a commit | See [`prompts/check-run-fixes.md`](../prompts/check-run-fixes.md) — every common FAIL has a fix recipe keyed to the checker's output labels. |
-| `dedup` FAIL — a new entry shares CVE ids with prior coverage | The run tried to publish a repeat as a fresh entry. Correct outcome: re-ship as `update_of: <original entry id>` with only the delta, or drop it. The prior-coverage index (`work/<run-id>/prior_coverage.json`) names the conflicting entry. |
+| `dedup` FAIL — a new entry shares CVE ids with an existing entry | The run tried to publish a repeat as a fresh entry. Correct outcome: delete the new file and append the delta to the existing entry as an `updates[]` changelog record with its `## Update — <at>` section (frontmatter brought to the current state), or drop it; a genuinely distinct finding that builds on the older one declares it in `references[]`. The prior-coverage index (`work/<run-id>/prior_coverage.json`) and the store-wide CVE index name the conflicting entry. |
+| `silent-edit` FAIL — an entry file changed without a changelog record | A published entry was edited (or deleted) by this run without an `updates[]` record carrying this run's id. Every change to a published entry ships as a dated `update` / `correction` / `improvement` record plus its body section (`docs/pipeline.md` § Entry lifecycle); runs never delete entries. |
 | Push succeeded but auto-merge workflow didn't run | GitHub Actions outage or `workflow_run` concurrency conflict. Check **Actions** → **Auto-merge claude/\* branches to main**; manually trigger via `workflow_dispatch` with the branch name. |
 | Auto-merge ran but failed loud (`::error::`) | A merge conflict outside the auto-resolved paths (`state/*.json`, `entities/registry.yaml`, `sources/sources.json`). Workflow logs name the conflicting file; resolve manually and re-trigger. Entry/run-record paths are per-run unique and never conflict. |
 | Auto-merge succeeded but `https://ctipilot.ch/` is stale | `deploy-site.yml` failure. Check **Actions** → **Deploy GitHub Pages site**. Common causes: vendored-library SHA mismatch, taxonomy validation failure, smoke-test failure. The run's Phase 7 reports this as `publish: main-only`. |

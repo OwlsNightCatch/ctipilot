@@ -2,32 +2,42 @@
 
 One Markdown file per verified finding, under `entries/<YYYY-MM-DD>/<slug>.md`
 where the folder is the UTC date of the entry's `discovered_at` timestamp.
-Every fire of the intel run (`prompts/cti-run.md`) — there can be several per
-day — adds only the *new* findings since the previous fire. The weekly run
-(`prompts/weekly-summary.md`) adds `horizon: strategic` entries.
+Every fire of the intel run (`prompts/cti-run.md`) — on whatever cadence the
+operator sets — adds only the *new* findings since the previous fire and
+appends dated updates to the entries it already published; the quality
+audit (`prompts/quality-audit.md`) appends corrections and improvements the
+same way. (`horizon: strategic` entries are archived output of the weekly
+routine retired on 2026-08-27; no new ones are written.)
 
 The full normative contract (frontmatter schema, kinds, priority semantics,
-update rules, relevance discipline) lives in [`docs/pipeline.md`](../docs/pipeline.md).
+the entry lifecycle, relevance discipline) lives in [`docs/pipeline.md`](../docs/pipeline.md).
 `site/content_model.py` is the reference parser; `tools/check_run.py` is the
 gate that every entry must pass before commit.
 
 Ground rules (see the spec for the rest):
 
-- **Entries are immutable once committed.** New information on a covered
-  story is a new entry with `update_of: <original entry id>` — including
-  two runs on the same day. Corrections ship the same way, never as edits.
+- **One living entry per finding.** New information on a covered story is
+  appended to the *same* entry as a timestamped `updates[]` changelog
+  record (`type: update | correction | improvement`, `at`, `run_id`,
+  `summary`) paired with a `## <Type> — <at>` body section; the frontmatter
+  is brought to the current state and `updated_at` mirrors the last record
+  (it floats the entry back to the top of the live brief). A correction
+  fixes the wrong statement where it stands *and* records what changed.
+  Never a second entry, never a silent edit — `discovered_at`, `run_id` and
+  the entry id are fixed forever, and `tools/check_run.py` FAILs an edit
+  without a record for the editing run.
 - **The entry id is the path**: `<YYYY-MM-DD>/<slug>`. No `id` field.
-- **All metadata is frontmatter** — headline, summary, discovery timestamp,
-  priority, immediate-action block, taxonomy tags/regions/sectors, entity
+- **All metadata is frontmatter** — headline, summary, first-publication and
+  latest-update timestamps, the changelog, priority, immediate-action block, taxonomy tags/regions/sectors, entity
   registry keys, per-CVE records, sources, evidence quotes, verification
   flags, actions. The rendered brief, the feeds, the entity pages, the
   trends dashboard and the notification surface are all derived from it.
 - **The body is the analysis** — same technical register and sourcing
   discipline as ever: inline links at the point of claim, no IOCs, no
   vanity metrics, English only.
-- **The brief is a rendering.** `/brief/` on the site renders any time
-  window over these files (default: last 24 h). Nothing here is "the brief"
-  by itself.
+- **The brief is a rendering.** `/live/` on the site renders any time
+  window over these files (default: last 24 h), ordered by each entry's
+  activity moment. Nothing here is "the brief" by itself.
 
 ## AI-generated content
 

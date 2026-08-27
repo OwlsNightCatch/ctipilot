@@ -89,11 +89,10 @@ DEFAULTS: dict[str, Any] = {
         "github_repo": "OwlsNightCatch/ctipilot",
         "lang": "en",
         "locale": "en_US",
-        # Topbar segment labels (Live / Daily / Weekly views). Empty → the
+        # Topbar segment labels (Live / Daily views). Empty → the
         # built-in labels.
         "nav_live": "",
         "nav_daily": "",
-        "nav_weekly": "",
         # Home hero copy. Empty → the built-in defaults (hero_subtitle
         # inherits `lede` when empty).
         "hero_eyebrow": "",
@@ -142,14 +141,12 @@ DEFAULTS: dict[str, Any] = {
             "Europe, and the public sector: autonomously generated, "
             "source-linked, IOC-free."
         ),
-        "weekly_description": (
-            "Weekly cyber threat intelligence summaries: multi-day "
-            "campaigns, sector patterns, policy horizon."
-        ),
         "items_description": (
             "Individual intelligence entries as they are verified and "
             "published (threats, incidents, vulnerabilities, research, "
-            "updates, deep dives). pubDate is the discovery moment."
+            "deep dives), plus one item per update or correction appended "
+            "to a published entry. pubDate is the discovery moment, or the "
+            "update's timestamp."
         ),
         "sector_slices": [],
     },

@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Build the per-run dedup index from the entry store (v3).
 
-Scans `entries/` for every entry whose folder date falls within the window
-(including entries published by EARLIER RUNS TODAY — multiple fires per day
-are first-class) and emits two artefacts under `work/<run-id>/`:
+Scans `entries/` for every entry whose ACTIVITY falls within the window —
+folder date (first publication) OR the date of its latest `updates[]`
+changelog record (v4.0: one living entry per finding; an entry first
+published 40 days ago but updated 3 days ago is in-window coverage) —
+including entries published or updated by EARLIER RUNS TODAY (multiple fires
+per day are first-class) and emits two artefacts under `work/<run-id>/`:
 
   prior_coverage.json        full records — the main agent AND the research
                              sub-agents Read this. The main agent loads every
@@ -21,13 +24,19 @@ key match. Coverage OUTSIDE this window is caught by the store-wide metadata
 check (state/cves_seen.json + the mechanical gate), not by this file.
 
 Full record shape (one per entry):
-  {id, kind, horizon, date, discovered_at, priority, title, headline,
-   summary, cves[], entities[], primary_source_url, update_of, deep_dive,
-   deep_dive_category, weekly_section}
+  {id, kind, horizon, date, discovered_at, updated_at, update_count,
+   last_update: {at, type, summary} | null, priority, title, headline,
+   summary, cves[], entities[], primary_source_url, deep_dive,
+   deep_dive_category}
+
+A candidate matching a record's CVEs or entity keys is never a new entry —
+it is an `updates[]` record appended to that entry (or nothing when there is
+no material delta); `last_update` tells the composer what the entry already
+says about the latest development.
 
 Keys record shape:
-  {id, kind, date, discovered_at, priority, cves[], entities[],
-   update_of, deep_dive, deep_dive_category}
+  {id, kind, date, discovered_at, updated_at, update_count, priority,
+   cves[], entities[], deep_dive, deep_dive_category}
 
 Usage:
     python3 tools/build_prior_coverage.py <run-id> <window-days> \
@@ -52,8 +61,11 @@ def build_records(window_days: int, today: str) -> list:
     cutoff = (anchor - timedelta(days=window_days)).strftime("%Y-%m-%d")
     records = []
     for e in cm.collect_entries():
-        if not (cutoff <= e.get("date", "") <= today):
+        activity = (cm.entry_activity_ts(e) or "")[:10] or e.get("date", "")
+        if not (cutoff <= e.get("date", "") <= today) and not (cutoff <= activity <= today):
             continue
+        updates = [u for u in (e.get("updates") or []) if isinstance(u, dict)]
+        last = updates[-1] if updates else None
         primary = None
         for s in e.get("sources") or []:
             if isinstance(s, dict) and s.get("url"):
@@ -65,6 +77,12 @@ def build_records(window_days: int, today: str) -> list:
             "horizon": e.get("horizon"),
             "date": e.get("date"),
             "discovered_at": e.get("discovered_at"),
+            "updated_at": e.get("updated_at"),
+            "update_count": len(updates),
+            "last_update": (
+                {"at": last.get("at"), "type": last.get("type"),
+                 "summary": last.get("summary")} if last else None
+            ),
             "priority": e.get("priority"),
             "title": e.get("title"),
             "headline": e.get("headline"),
@@ -72,17 +90,15 @@ def build_records(window_days: int, today: str) -> list:
             "cves": [c.get("id") for c in (e.get("cves") or []) if isinstance(c, dict)],
             "entities": list(e.get("entities") or []),
             "primary_source_url": primary,
-            "update_of": e.get("update_of"),
             "deep_dive": bool(e.get("deep_dive")),
             "deep_dive_category": e.get("deep_dive_category"),
-            "weekly_section": e.get("weekly_section"),
         })
     records.sort(key=lambda r: (r["discovered_at"] or "", r["id"]))
     return records
 
 
-_KEYS_FIELDS = ("id", "kind", "date", "discovered_at", "priority", "cves",
-                "entities", "update_of", "deep_dive", "deep_dive_category")
+_KEYS_FIELDS = ("id", "kind", "date", "discovered_at", "updated_at", "update_count",
+                "priority", "cves", "entities", "deep_dive", "deep_dive_category")
 
 
 def main() -> int:

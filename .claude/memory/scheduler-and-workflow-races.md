@@ -49,12 +49,13 @@ Four things worth carrying:
   this run's `source_health.py` fix turned out to be a rediscovery of one `main` already carried from the
   same `sec-disclosures-edgar` case, and `main`'s was more thorough, so ours was discarded.
 
-One reshape worth copying: a duplicated-but-still-valuable entry can survive as an `update_of` on the
-overtaking entry when it carries a real correction (here the weekly rollup had 8 of 9 Cisco CVEs and called
-the whole set unauthenticated when 3 of 9 are `PR:L`). Two gate rules bite when you do it: `update_of`
-cannot point at an entry with a *later* `discovered_at`, and the entry's folder date must equal its
-`discovered_at` — so the reshaped entry moves to the folder of the day you found the divergence, not the
-day you read the primary.
+One reshape worth copying: a duplicated-but-still-valuable entry can survive as a **changelog record
+appended to the overtaking entry** when it carries a real correction (here the weekly rollup had 8 of 9
+Cisco CVEs and called the whole set unauthenticated when 3 of 9 are `PR:L`). *(v3 wording: it survived as
+an `update_of` entry, and the gate required the update's `discovered_at` to be later than the target's and
+its folder date to equal its `discovered_at`. Since v4.0 — 2026-08-27 — `update_of` is retired: append a
+`correction` record + `## Correction — <at>` section to the overtaking entry instead, and the record's `at`
+must be later than that entry's last activity; see [[entry-lifecycle-v4]].)*
 
 ## auto-merge-claude.yml aborts on `state/coverage_backlog.md` (observed twice, 2026-08-24)
 
@@ -87,15 +88,17 @@ mid-verification) was overtaken by three fires. Two entries were dropped as dupl
 FTP-banner research (a delayed 08-22 fire landed its own) and a Keycloak CVE-2026-18963 product-state
 correction — **the weekly quality audit's retrospective truth pass had independently reached the same
 finding and published it first**. New lesson on top of 08-22: *the audit fire is a publisher too*, so
-an intel run's `update_of` corrections of the store's own errors are the most collision-prone entries it
-composes. Check `entries/<today>/` on `origin/main` for the same `update_of` target before spending a
-verification round on a correction.
+an intel run's corrections of the store's own errors are the most collision-prone changes it
+composes. Since v4.0 both fires append a changelog record to the SAME entry, so the race is now a
+record-ordering race: re-read the target entry on `origin/main` for a newer changelog record before
+appending yours (one record per fire; `at` strictly increasing; a second correction of the same defect is
+not a record at all).
 
 Also: when your dropped entry carried a fact the surviving one lacks, and that fact is not
 defender-actionable on its own (here: the vendor's VEX document was revised the day after the erroneous
 entry, which bears on the surviving entry's claim that the record never read differently), the right home
-is a **correction-owed row in `state/coverage_backlog.md`** for the audit to weigh — not a third entry on
-one CVE, and not silence.
+is a **correction-owed row in `state/coverage_backlog.md`** for the audit to weigh — not a duplicate
+record on the entry, and not silence.
 
 ## sources.json serialization drift (re-normalized 2026-07-09)
 
@@ -103,7 +106,7 @@ Despite the canonical `indent=1, ensure_ascii=False` contract (see [state-file-s
 
 ## Cadence is operator-owned and intentionally variable (operator decision 2026-07-18)
 
-The post-07-14 drop to a single daily fire (0409Z) was **intended** — the operator confirmed it responding to the 07-18 audit. Standing policy: the scheduler cadence may be raised or lowered at will, at any time, without notice; the entire setup must work off the **gap to the last run** (PD-7's gap-derived window — which is exactly what it does). Consequences: (a) a changed cadence is never an audit finding, an outage diagnosis, or an operator recommendation — audits check only that the gap-derived windows self-healed with no coverage hole (codified in `prompts/quality-audit.md` Phase 3, v3.27); (b) never treat "fewer fires than before" as a defect signal — only a *record-less* gap on a schedule that was supposed to fire (the 07-07 pattern above) is an availability signal; (c) latency effects of a lower cadence may appear as context in a miss's root cause, never as a flagged defect. Same date, related decisions: Phase 5.7 verifier iteration cap raised 5 → 8 (v3.27; double-CLEAN gate unchanged), and the `bd.zh.ch` MedusaLocker watch item CLOSED by operator decision (no dedicated tracking; new info flows through normal runs as `update_of`).
+The post-07-14 drop to a single daily fire (0409Z) was **intended** — the operator confirmed it responding to the 07-18 audit. Standing policy: the scheduler cadence may be raised or lowered at will, at any time, without notice; the entire setup must work off the **gap to the last run** (PD-7's gap-derived window — which is exactly what it does). Consequences: (a) a changed cadence is never an audit finding, an outage diagnosis, or an operator recommendation — audits check only that the gap-derived windows self-healed with no coverage hole (codified in `prompts/quality-audit.md` Phase 3, v3.27); (b) never treat "fewer fires than before" as a defect signal — only a *record-less* gap on a schedule that was supposed to fire (the 07-07 pattern above) is an availability signal; (c) latency effects of a lower cadence may appear as context in a miss's root cause, never as a flagged defect. Same date, related decisions: Phase 5.7 verifier iteration cap raised 5 → 8 (v3.27; double-CLEAN gate unchanged), and the `bd.zh.ch` MedusaLocker watch item CLOSED by operator decision (no dedicated tracking; new info flows through normal runs — since v4.0 as an `update` record on the existing entry).
 
 ## `completed` / `duration_seconds` understated the whole fire (audited 2026-08-24, fixed in v3.32)
 

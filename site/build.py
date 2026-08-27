@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the static-site bundle for GitHub Pages (CTI pipeline v3 SSG).
+"""Build the static-site bundle for GitHub Pages (CTI pipeline v4 SSG).
 
 Inputs (read-only · the v3 content model, see docs/pipeline.md):
     entries/YYYY-MM-DD/<slug>.md   per-finding entry files (via site/content_model.py)
@@ -12,13 +12,14 @@ Inputs (read-only · the v3 content model, see docs/pipeline.md):
     README.md / docs/*.md / prompts/*.md   rendered under /about/
 
 Outputs (written under site/_site/):
-    /                              home: live / latest-completed-day / latest-weekly cards
+    /                              home: live / latest-completed-day / recent-updates cards
     /live/                         the live rolling brief: default 24 h window server-rendered;
                                    assets/js/brief.js re-renders from data/briefbook.json
     /daily/                        completed-day index (archive), newest first
     /daily/YYYY-MM-DD/             one completed UTC day (canonical daily structure)
-    /weekly/ + /weekly/YYYY-Www/   weekly index + weekly pages (12-section structure)
-    /entries/YYYY-MM-DD/<slug>/    per-entry permalinks (badges, update chain, run link)
+    /entries/YYYY-MM-DD/<slug>/    per-entry permalinks (badges, changelog sections,
+                                   revision history, run link); folded v3 update entries
+                                   redirect here (updates[].merged_from)
     /entities/ /entities/<key>/    unified entity pages (registry + CVE universe)
     /cves/ /topics/                type-filtered entity list views (+ legacy redirects)
     /sources/ /sources/<id>/       source catalogue + per-source pages
@@ -28,11 +29,12 @@ Outputs (written under site/_site/):
     /runs/<run-id>/                per-run detail pages: full telemetry panel +
                                    verification & coverage notes (linked from the
                                    live timeline's run dividers and the ops run log)
-    /feeds/ + feed*.xml            daily / weekly / per-entry + 8 sector slices
+    /feeds/ + feed*.xml            daily / per-entry (+ one item per changelog record)
+                                   + 8 sector slices
     /about/**                      README, docs (incl. docs/pipeline.md), prompts
     /data/briefbook.json           last-35-days entries+runs with pre-rendered card HTML
     /data/alerts.json              last-7-days critical|high entries (notification hooks)
-    /data/search.json              search index (day / weekly / entry / entity / source)
+    /data/search.json              search index (day / entry / entity / technique / source)
     /data/site.json /data/build_manifest.json /sitemap.xml /robots.txt /404.html
 
 Design properties (unchanged from v2):
@@ -79,8 +81,7 @@ sys.path.insert(0, str(SITE))
 import content_model  # noqa: E402
 from content_model import (  # noqa: E402
     KIND_DAILY_SECTION,
-    KIND_WEEKLY_SECTION,
-    WEEKLY_SECTIONS,
+    UPDATE_TYPE_HEADINGS,
     collect_entries,
     collect_runs,
     load_registry,
@@ -114,16 +115,13 @@ FOOTER_TAGLINE = BRANDING["site"]["footer_tagline"].strip()
 SITE_LANG = BRANDING["site"]["lang"].strip()
 SITE_LOCALE = BRANDING["site"]["locale"].strip()
 
-# Navigation segment labels and the "latest" targets for the Daily / Weekly
-# segments. main() overwrites LATEST_DAY_REL / LATEST_WEEK_REL with the most
-# recent day / week page paths once they are known; the archive-index
-# fallbacks keep the nav valid before any brief exists. Overridable via
-# config/branding.yaml `site.nav`.
+# Navigation segment labels and the "latest" target for the Daily segment.
+# main() overwrites LATEST_DAY_REL with the most recent day page path once
+# it is known; the archive-index fallback keeps the nav valid before any
+# brief exists. Overridable via config/branding.yaml `site.nav_*`.
 NAV_LIVE_LABEL = (BRANDING["site"].get("nav_live") or "Live").strip()
 NAV_DAILY_LABEL = (BRANDING["site"].get("nav_daily") or "Daily").strip()
-NAV_WEEKLY_LABEL = (BRANDING["site"].get("nav_weekly") or "Weekly").strip()
 LATEST_DAY_REL = "daily/"
-LATEST_WEEK_REL = "weekly/"
 
 # AI-provenance bar (dismissible strip under the topbar). The label copy may
 # carry inline HTML (e.g. a bold lead-in); the link points at the About page.
@@ -158,12 +156,11 @@ CHART_INFO_RGB = BRANDING["charts"]["info_rgb"].strip() or "121,192,255"
 
 # RSS channel descriptions (channel titles derive from SITE_NAME + TAGLINE).
 FEED_DAILY_DESCRIPTION = BRANDING["feeds"]["daily_description"].strip()
-FEED_WEEKLY_DESCRIPTION = BRANDING["feeds"]["weekly_description"].strip()
 FEED_ITEMS_DESCRIPTION = BRANDING["feeds"]["items_description"].strip()
 
-# RSS truncation per feed (HTML archive is unbounded).
+# RSS truncation per feed (HTML archive is unbounded). FEED_ITEMS_MAX caps
+# the COMBINED list of entry items + changelog-record items.
 FEED_DAILY_MAX = 30
-FEED_WEEKLY_MAX = 30
 FEED_ITEMS_MAX = 50
 
 
@@ -811,7 +808,7 @@ def render_markdown(md: str, *, base_url: str | None = None) -> str:
 
 
 # Callout labels we lift out of paragraph prose into a styled aside block.
-# These are conventional editorial markers in the daily/weekly brief:
+# These are conventional editorial markers in the brief:
 # the "Defender takeaway" line is the operationally-actionable summary
 # closing every item, "Action items" / "Detection guidance" / "Hunting
 # hints" are occasional auxiliary callouts. By promoting the
@@ -1189,10 +1186,9 @@ _COPYRIGHT_NOTE_HTML = "\n        ".join(
 
 
 def _nav_segments_html(pfx: str, active_nav: str) -> str:
-    """The Live / Daily / Weekly segmented control. Live → the rolling
-    brief; Daily → the latest day page; Weekly → the latest weekly page
-    (LATEST_DAY_REL / LATEST_WEEK_REL are set in main(); they fall back
-    to the archive index when no page exists yet)."""
+    """The Live / Daily segmented control. Live → the rolling brief;
+    Daily → the latest day page (LATEST_DAY_REL is set in main(); it
+    falls back to the archive index when no page exists yet)."""
     def seg(nav_key: str, href: str, label: str, live_led: bool = False) -> str:
         active = " active" if active_nav == nav_key else ""
         led = '<span class="ld"><i></i></span>' if live_led else ""
@@ -1200,7 +1196,6 @@ def _nav_segments_html(pfx: str, active_nav: str) -> str:
     return (
         seg("live", "live/", NAV_LIVE_LABEL, live_led=True)
         + seg("daily", LATEST_DAY_REL, NAV_DAILY_LABEL)
-        + seg("weekly", LATEST_WEEK_REL, NAV_WEEKLY_LABEL)
     )
 
 
@@ -1251,8 +1246,8 @@ def _more_menu_links(pfx: str, *, drawer: bool = False) -> str:
     hidden on mobile), plus the site links. Desktop has no 'More' menu:
     every surface lives in the subnav, exactly once."""
     gh = f"https://github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}"
-    # No "Archive" here: the daily / weekly archives are reached from the
-    # Daily / Weekly views themselves (each page links "All … briefs").
+    # No "Archive" here: the daily archive is reached from the Daily view
+    # itself (each day page links "All daily briefs").
     rows = [
         (f"{pfx}entities/", "Entities", "actors · malware"),
         (f"{pfx}graph/", "Graph", "threat graph"),
@@ -1264,7 +1259,7 @@ def _more_menu_links(pfx: str, *, drawer: bool = False) -> str:
     ]
     tail = [
         (f"{pfx}about/", "About", ""),
-        (f"{pfx}feeds/", "RSS feeds", "11"),
+        (f"{pfx}feeds/", "RSS feeds", "10"),
     ]
     def row(href: str, label: str, hint: str) -> str:
         hint_html = f'<span class="mono">{_escape(hint)}</span>' if hint else ""
@@ -1375,12 +1370,14 @@ def _ld_article(
 ) -> dict[str, Any]:
     """An Article/TechArticle node for a per-finding entry permalink.
 
-    datePublished/dateModified are the entry's `discovered_at` (entries are
-    immutable — corrections ship as new `update_of` entries, so the two are
-    equal). `about` links the CVEs and registered entities the finding
-    concerns; `keywords` carries the tags and regions."""
+    datePublished is the entry's `discovered_at` (first publication);
+    dateModified is `updated_at` — the latest changelog record — when the
+    entry has been updated, else the same moment. `about` links the CVEs
+    and registered entities the finding concerns; `keywords` carries the
+    tags and regions."""
     title = str(entry.get("title") or entry["id"])
     published = str(entry.get("discovered_at") or "")
+    modified = str(entry.get("updated_at") or published)
     kind = str(entry.get("kind") or "")
     atype = "TechArticle" if kind in ("vulnerability", "research") else "Article"
     about: list[dict[str, Any]] = [
@@ -1399,7 +1396,7 @@ def _ld_article(
         "url": canonical,
         "mainEntityOfPage": {"@type": "WebPage", "@id": canonical},
         "datePublished": published,
-        "dateModified": published,
+        "dateModified": modified,
         "inLanguage": SITE_LANG,
         "isAccessibleForFree": True,
         "author": _ld_org(site_url),
@@ -1421,7 +1418,7 @@ def _ld_collection(
     site_url: str,
     items: list[tuple[str, str]] | None = None,
 ) -> dict[str, Any]:
-    """A CollectionPage node for a day/weekly brief or an index page. `items`
+    """A CollectionPage node for a day brief or an index page. `items`
     is an optional (absolute-url, name) list, rendered as a bounded ItemList
     so answer engines can enumerate the entries a listing page collects."""
     obj: dict[str, Any] = {
@@ -1466,7 +1463,7 @@ def base_template(
 
     `home_relative_prefix` is "../" * depth · used to point relative asset
     references back to the site root from a nested path. `active_nav` is
-    one of "live" / "daily" / "weekly" (marks the active segment).
+    one of "live" / "daily" (marks the active segment).
     """
     rel_alternate = rel_alternate or []
     alt_links = "".join(
@@ -1540,7 +1537,6 @@ def base_template(
 <meta name="twitter:description" content="{_escape(description)}" />
 <link rel="stylesheet" href="{pfx}assets/css/styles.css?v={cachebust}" />{_branding_css_links(pfx=pfx, cachebust=cachebust)}
 <link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} · Daily" href="{pfx}feed.xml" />
-<link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} · Weekly" href="{pfx}feed-weekly.xml" />
 <link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} · Per item" href="{pfx}feed-items.xml" />
 <link rel="sitemap" type="application/xml" href="{pfx}sitemap.xml" />
 <link rel="icon" href="{_favicon_href(pfx=pfx, cachebust=cachebust)}" />
@@ -1786,7 +1782,7 @@ def classification_meta(cls: Any) -> dict[str, str] | None:
 
 def render_classification_badge(cls: Any) -> str:
     """The intelligence-classification badge (`NATO B2`) rendered in every
-    finding's `.badges` strip — live timeline, day/weekly cards and the
+    finding's `.badges` strip — live timeline, day-page cards and the
     entry detail all carry it, tinted by the source-reliability tier so how
     much to trust the item reads at a glance; the configured scheme's full
     meaning sits on hover."""
@@ -1852,7 +1848,7 @@ DAILY_SECTIONS: list[tuple[str, str]] = [
     ("tldr", "0. TL;DR"),
     ("active-threats", "1. Active Threats, Trending Actors, Notable Incidents & Disclosures"),
     ("trending-vulnerabilities", "2. Trending Vulnerabilities"),
-    ("research", "3. Research & Investigative Reporting"),
+    ("research", "3. Research, Reports & Policy"),
     ("updates", "4. Updates to Prior Coverage"),
     ("deep-dive", "5. Deep Dive"),
     ("action-items", "6. Action Items"),
@@ -1867,24 +1863,6 @@ SECTION_SHORT: dict[str, str] = {
     "updates": "Updates",
     "deep-dive": "Deep dive",
 }
-
-# Weekly structure — the v2 12-section order with the v2 headings.
-# `weekly-glance` is derived (one bullet per critical/high strategic
-# entry); `verification-notes` renders the week's run-record bodies.
-WEEKLY_STRUCTURE: list[tuple[str, str]] = [
-    ("weekly-glance", "0. Week at a glance"),
-    ("weekly-top-stories", "1. Highest-impact events · what's on fire if no one acted"),
-    ("weekly-multi-day", "2. Multi-day campaigns and chains"),
-    ("weekly-vuln-rollup", "3. Vulnerability roll-up"),
-    ("weekly-sector-patterns", "4. Sector & victim patterns"),
-    ("weekly-incidents-recap", "5. Incidents & disclosures recap"),
-    ("weekly-research", "6. Research & threat-actor developments"),
-    ("weekly-annual-reports", "7. Annual / periodic threat reports"),
-    ("weekly-long-running", "8. Long-running campaigns · status update"),
-    ("weekly-policy", "9. Policy & regulatory horizon"),
-    ("weekly-looking-ahead", "10. Looking ahead · what to watch next week"),
-    ("verification-notes", "11. Verification & coverage notes"),
-]
 
 VERIFICATION_BADGE_LABEL = {
     "single-source": "single-source",
@@ -1908,24 +1886,14 @@ def run_url_path(run: dict[str, Any]) -> str:
 
 
 def entry_section_key(entry: dict[str, Any]) -> str | None:
-    """Daily-brief section for an operational entry. Orthogonal flags
-    relocate at render time: update_of → updates, deep_dive → deep-dive.
-    Strategic-only kinds map to None (not rendered in the window/day
-    view)."""
-    if entry.get("update_of"):
-        return "updates"
+    """Brief section for an operational entry, by kind. The one orthogonal
+    override: deep_dive → deep-dive. The "updates" section is NOT a kind
+    bucket — it is derived from the entries' `updates[]` changelog records
+    dated inside the rendered day/window (see render_brief_sections).
+    Legacy weekly-only kinds map to None (not rendered in any brief)."""
     if entry.get("deep_dive"):
         return "deep-dive"
     return KIND_DAILY_SECTION.get(entry.get("kind") or "")
-
-
-def weekly_section_key(entry: dict[str, Any]) -> str:
-    """Weekly section for a strategic entry: explicit `weekly_section`
-    wins, else the kind-based default from content_model."""
-    ws = entry.get("weekly_section")
-    if ws in WEEKLY_SECTIONS:
-        return ws
-    return KIND_WEEKLY_SECTION.get(entry.get("kind") or "", "weekly-top-stories")
 
 
 def entry_cve_ids(entry: dict[str, Any]) -> list[str]:
@@ -2001,32 +1969,9 @@ def _iso_week_of(date_str: str) -> str | None:
         return None
 
 
-def iso_week_of_entry(entry: dict[str, Any]) -> str | None:
-    """ISO week (`YYYY-Www`) of the entry's discovered_at date."""
-    m = DATE_RE.match(entry.get("date") or "")
-    if not m:
-        return None
-    try:
-        y, mo, d = (int(x) for x in entry["date"].split("-"))
-        iso = date(y, mo, d).isocalendar()
-        return f"{iso[0]:04d}-W{iso[1]:02d}"
-    except (ValueError, OverflowError):
-        return None
-
-
-def entries_by_week(entries: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
-    """Group STRATEGIC entries by ISO week of discovered_at. A weekly
-    page exists iff the week has at least one strategic entry."""
-    out: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for e in strategic_entries(entries):
-        wk = iso_week_of_entry(e)
-        if wk:
-            out[wk].append(e)
-    return dict(sorted(out.items()))
-
-
 def daily_run_dates(runs: list[dict[str, Any]]) -> set[str]:
-    """UTC dates (YYYY-MM-DD) of every non-weekly fire · the days that ran,
+    """UTC dates (YYYY-MM-DD) of every intel/audit fire (the legacy weekly
+    records never made a day page) · the days that ran,
     whatever they published. Unioned with the content days so an all-quiet
     day (0 entries) still gets a page, an archive slot and resolvable
     run-links: a quiet window is a first-class outcome, not an absence."""
@@ -2036,23 +1981,55 @@ def daily_run_dates(runs: list[dict[str, Any]]) -> set[str]:
     }
 
 
-def weekly_run_weeks(runs: list[dict[str, Any]]) -> set[str]:
-    """ISO weeks (YYYY-Www) of every weekly fire · the weeks that ran,
-    the strategic-cadence analogue of `daily_run_dates`."""
-    out = {_iso_week_of(str(r.get("date"))) for r in runs if r.get("kind") == "weekly"}
-    out.discard(None)
+def latest_update_record(entry: dict[str, Any]) -> dict[str, Any] | None:
+    """The last `updates[]` changelog record of an entry, or None."""
+    recs = [r for r in (entry.get("updates") or []) if isinstance(r, dict)]
+    return recs[-1] if recs else None
+
+
+def entry_activity(entry: dict[str, Any]) -> dict[str, Any]:
+    """The entry's latest activity: `{at, run_id, is_update, record}`.
+
+    `at` is `max(discovered_at, updated_at)` (content_model.entry_activity_ts);
+    when that moment is an update, `run_id` is the updating fire's id and
+    `record` the changelog record — the live timeline groups the entry under
+    THAT run and flags it UPD (docs/pipeline.md § Entry lifecycle)."""
+    at = content_model.entry_activity_ts(entry) or ""
+    rec = latest_update_record(entry)
+    if rec and str(rec.get("at") or "") == at and at != str(entry.get("discovered_at") or ""):
+        return {"at": at, "run_id": str(rec.get("run_id") or ""), "is_update": True, "record": rec}
+    return {"at": at, "run_id": str(entry.get("run_id") or ""), "is_update": False, "record": None}
+
+
+def update_sections_by_at(entry: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """`{at: section}` for the entry's `## <Type> — <at>` body sections."""
+    _main, sections = content_model.split_update_sections(entry.get("body") or "")
+    return {sc["at"]: sc for sc in sections}
+
+
+def update_records_in(entry: dict[str, Any], since: datetime | None,
+                      until: datetime | None = None,
+                      day: str | None = None) -> list[dict[str, Any]]:
+    """Changelog records of `entry` dated inside a scope: a UTC day
+    (`day` = YYYY-MM-DD) or a half-open [since, until) window."""
+    out: list[dict[str, Any]] = []
+    for rec in entry.get("updates") or []:
+        if not isinstance(rec, dict):
+            continue
+        at = str(rec.get("at") or "")
+        ts = parse_ts(at)
+        if ts is None:
+            continue
+        if day is not None:
+            if at[:10] == day:
+                out.append(rec)
+            continue
+        if since is not None and ts < since:
+            continue
+        if until is not None and ts >= until:
+            continue
+        out.append(rec)
     return out
-
-
-def build_update_chains(entries: list[dict[str, Any]]) -> dict[str, list[str]]:
-    """`update_of` back-references: entry id → ids of entries updating
-    it, ascending by discovered_at (entries arrive pre-sorted)."""
-    updated_by: dict[str, list[str]] = defaultdict(list)
-    for e in entries:
-        target = e.get("update_of")
-        if target:
-            updated_by[str(target)].append(e["id"])
-    return dict(updated_by)
 
 
 def reference_ts(entries: list[dict[str, Any]], runs: list[dict[str, Any]]) -> datetime:
@@ -2062,7 +2039,7 @@ def reference_ts(entries: list[dict[str, Any]], runs: list[dict[str, Any]]) -> d
     lastBuildDate without ever calling now()."""
     best: datetime | None = None
     for e in entries:
-        ts = parse_ts(e.get("discovered_at"))
+        ts = parse_ts(content_model.entry_activity_ts(e))
         if ts and (best is None or ts > best):
             best = ts
     for r in runs or []:
@@ -2115,11 +2092,29 @@ def runs_in_window(runs: list[dict[str, Any]], since: datetime,
 
 
 def _fmt_discovered(ts_str: str | None) -> str:
-    """`2026-07-03T04:21:09Z` → `discovered 2026-07-03 04:21 UTC`."""
+    """`2026-07-03T04:21:09Z` → `first published 2026-07-03 04:21 UTC`."""
     ts = parse_ts(ts_str)
     if ts is None:
         return ""
-    return "discovered " + ts.strftime("%Y-%m-%d %H:%M") + " UTC"
+    return "first published " + ts.strftime("%Y-%m-%d %H:%M") + " UTC"
+
+
+def _fmt_updated(ts_str: str | None) -> str:
+    """`2026-08-24T09:50:00Z` → `updated 2026-08-24 09:50 UTC`."""
+    ts = parse_ts(ts_str)
+    if ts is None:
+        return ""
+    return "updated " + ts.strftime("%Y-%m-%d %H:%M") + " UTC"
+
+
+def _fmt_long_stamp(ts_str: str | None) -> str:
+    """`2026-08-24T09:50:00Z` → `24 Aug 2026 09:50 UTC` (changelog headers)."""
+    ts = parse_ts(ts_str)
+    return ts.strftime("%d %b %Y %H:%M UTC") if ts else ""
+
+
+def _update_type_label(rtype: str) -> str:
+    return UPDATE_TYPE_HEADINGS.get(str(rtype or ""), "Update")
 
 
 def _entry_source_by_publisher(entry: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -2270,49 +2265,100 @@ def render_immediate_action_callout(entry: dict[str, Any], *, prefix: str = "") 
     )
 
 
-def render_update_lead(entry: dict[str, Any], *, prefix: str = "",
-                       entries_by_id: dict[str, dict[str, Any]] | None = None) -> str:
-    """`originally covered <link>` lead paragraph for update entries.
+def _entry_body_markdown(entry: dict[str, Any]) -> str:
+    """The entry's MAIN analysis Markdown — everything above the first
+    `## <Type> — <at>` changelog section (those render separately, styled,
+    via render_update_sections)."""
+    main, _sections = content_model.split_update_sections(entry.get("body") or "")
+    return main
 
-    When an index is provided and the target is not in it, the reference is
-    dangling (a handful of migrated records point at ids that never shipped)
-    — render it as plain text instead of a dead link to a 404 page."""
-    target = str(entry.get("update_of") or "")
-    if not target:
-        return ""
-    orig = (entries_by_id or {}).get(target)
-    label = orig.get("title") if orig else target
-    tdate = target.split("/", 1)[0]
-    if entries_by_id is not None and orig is None:
-        return (
-            '<p class="update-lead"><strong>UPDATE</strong> · originally covered '
-            f'{_escape(str(label))} <span class="mono muted">({_escape(tdate)})</span></p>'
-        )
+
+def render_update_block(entry: dict[str, Any], record: dict[str, Any],
+                        section: dict[str, Any] | None, *, prefix: str = "",
+                        base_url: str | None = None, with_summary: bool = False,
+                        entry_link: bool = False) -> str:
+    """One changelog record as a styled, timestamped block:
+    `<section class="entry-update entry-update--<type>">` with a header row
+    (type badge · long stamp · run link) and the section body as HTML.
+    `with_summary` prepends the record's summary (day pages / feeds);
+    `entry_link` appends an "open finding" link (day pages)."""
+    rtype = str(record.get("type") or "update")
+    at = str(record.get("at") or "")
+    rid = str(record.get("run_id") or "")
+    body_md = (section or {}).get("body") or ""
+    body_html = enhance_brief_item_html(render_markdown(body_md, base_url=base_url)) if body_md else ""
+    run_html = (
+        f'<a class="mono entry-update__run" href="{_escape(prefix)}runs/{_escape(rid)}/">run {_escape(rid)}</a>'
+        if rid else ""
+    )
+    summary_html = (
+        f'<p class="entry-update__summary">{_inline_text(str(record.get("summary") or ""))}</p>'
+        if with_summary and record.get("summary") else ""
+    )
+    link_html = (
+        f'<p class="entry-update__link"><a href="{_escape(prefix)}{_escape(entry_url_path(entry))}">'
+        f'Open finding: {_escape(str(entry.get("title") or entry["id"]))} →</a></p>'
+        if entry_link else ""
+    )
+    fields = [str(f) for f in (record.get("fields") or []) if isinstance(f, str)]
+    fields_html = (
+        '<span class="entry-update__fields">'
+        + "".join(f'<span class="echip echip--muted">{_escape(f)}</span>' for f in fields)
+        + "</span>"
+    ) if fields else ""
     return (
-        '<p class="update-lead"><strong>UPDATE</strong> · originally covered '
-        f'<a href="{_escape(prefix)}entries/{_escape(target)}/">'
-        f'{_escape(str(label))}</a> <span class="mono muted">({_escape(tdate)})</span></p>'
+        f'<section class="entry-update entry-update--{_escape(rtype)}" '
+        f'id="update-{_escape(at)}" data-update-at="{_escape(at)}">'
+        '<header class="entry-update__head">'
+        f'<span class="b upd upd--{_escape(rtype)}">{_escape(_update_type_label(rtype))}</span>'
+        f'<time class="mono entry-update__time" datetime="{_escape(at)}">{_escape(_fmt_long_stamp(at))}</time>'
+        f"{run_html}{fields_html}"
+        "</header>"
+        f"{summary_html}{body_html}{link_html}"
+        "</section>"
     )
 
 
-# Update entries render a styled "originally covered <link> (<date>)" lead
-# (render_update_lead). The agent also tends to open the body with a
-# redundant "**UPDATE (originally covered <date>):**" prefix — the same
-# reference a second time. Strip that leading prefix so the update is cited
-# once (in the lead), not twice.
-_BODY_UPDATE_PREFIX_RE = re.compile(
-    r"^\s*\*\*\s*update\b[^*\n]*?\b(?:originally|covered)\b[^*\n]*?\*\*\s*[:\-–—]*\s*",
-    re.IGNORECASE,
-)
+def render_update_sections(entry: dict[str, Any], *, prefix: str = "",
+                           base_url: str | None = None) -> str:
+    """Every changelog record of the entry as a styled block, in order,
+    paired with its body section by `at`."""
+    recs = [r for r in (entry.get("updates") or []) if isinstance(r, dict)]
+    if not recs:
+        return ""
+    by_at = update_sections_by_at(entry)
+    return '<div class="entry-updates">' + "".join(
+        render_update_block(entry, r, by_at.get(str(r.get("at") or "")),
+                            prefix=prefix, base_url=base_url)
+        for r in recs
+    ) + "</div>"
 
 
-def _entry_body_markdown(entry: dict[str, Any]) -> str:
-    """Entry body Markdown, with the redundant leading update-reference
-    prefix stripped for update entries (the styled lead already cites it)."""
-    body = entry.get("body") or ""
-    if entry.get("update_of"):
-        body = _BODY_UPDATE_PREFIX_RE.sub("", body, count=1)
-    return body
+def render_update_card(entry: dict[str, Any], record: dict[str, Any], *,
+                       prefix: str = "", base_url: str | None = None) -> str:
+    """§ Updates to Prior Coverage card on a day page: the finding's badges
+    and title (linked), then the changelog record as a block carrying its
+    summary, the section body and an "open finding" link."""
+    url = f"{prefix}{entry_url_path(entry)}"
+    section = update_sections_by_at(entry).get(str(record.get("at") or ""))
+    return (
+        f'<article class="finding entry-card update-card" '
+        f'data-entry-id="{_escape(entry["id"])}" '
+        f'data-tags="{_escape(" ".join(entry.get("tags") or []))}" '
+        f'data-regions="{_escape(" ".join(entry.get("regions") or []))}" '
+        f'data-kind="{_escape(entry.get("kind") or "")}" '
+        f'data-priority="{_escape(_pri_of(entry))}" '
+        f'data-discovered="{_escape(entry.get("discovered_at") or "")}" '
+        f'data-updated="{_escape(str(record.get("at") or ""))}">'
+        f"{render_badges(entry, prefix=prefix)}"
+        f'<h3 class="f-h"><a href="{_escape(url)}">{_escape(entry.get("title") or entry["id"])}</a></h3>'
+        f'<p class="update-card__origin muted">First published {_escape(str(entry.get("discovered_at") or "")[:10])}'
+        f' · <a href="{_escape(url)}">open finding →</a></p>'
+        + render_update_block(entry, record, section, prefix=prefix, base_url=base_url,
+                              with_summary=True)
+        + f"{render_source_line(entry, prefix=prefix)}"
+        "</article>"
+    )
 
 
 def _short_entry_label(entry: dict[str, Any], *, max_len: int = 52) -> str:
@@ -2330,7 +2376,7 @@ def _short_entry_label(entry: dict[str, Any], *, max_len: int = 52) -> str:
 
 # ── new-design finding / timeline primitives ─────────────────────────
 # The design system renders one intelligence finding three ways: as an
-# editorial `.finding` (day / weekly pages, entity embeds, feeds), as a
+# editorial `.finding` (day pages, entity embeds, feeds), as a
 # `.tl-item` timeline row (the live rolling brief), and as the full entry
 # detail. These small helpers keep the priority / verification / badge
 # vocabulary consistent across all three.
@@ -2414,10 +2460,10 @@ def render_prov_row(entry: dict[str, Any], *, prefix: str = "",
 
 def render_badges(entry: dict[str, Any], *, prefix: str = "", full: bool = False) -> str:
     """The `.badges` strip at the top of a finding / timeline row / entry
-    detail. Priority, CVE (linked to its page), exploited, update, and the
+    detail. Priority, CVE (linked to its page), exploited, updated, and the
     reliability rating — the Admiralty classification (or the org-triage
     rating on triage-kind entries) rides on EVERY card so how much to trust
-    an item reads at a glance in the live, daily and weekly views alike;
+    an item reads at a glance in the live and daily views alike;
     `full` adds kind / deep-dive / watchlist (entry detail)."""
     parts = [f'<span class="b {_pri_badge_class(entry)}">{_escape(_pri_label(entry))}</span>']
     cves = entry_cve_ids(entry)
@@ -2428,8 +2474,12 @@ def render_badges(entry: dict[str, Any], *, prefix: str = "", full: bool = False
         )
     if _entry_exploited(entry):
         parts.append('<span class="b exp">exploited</span>')
-    if entry.get("update_of"):
-        parts.append('<span class="b upd">update</span>')
+    if entry.get("updates"):
+        n_upd = len(entry["updates"])
+        parts.append(
+            f'<span class="b upd" title="{n_upd} changelog record'
+            f'{"" if n_upd == 1 else "s"} · updated {_escape(_fmt_long_stamp(entry.get("updated_at")))}">updated</span>'
+        )
     cls = render_classification_badge(entry.get("classification"))
     if cls:
         parts.append(cls)
@@ -2482,21 +2532,19 @@ def render_entry_card(
     is_new: bool = False,
     lead: bool = False,
 ) -> str:
-    """The canonical `.finding` · used on day pages, weekly pages,
-    entity-page embeds, feed bodies and briefbook.json. Carries
-    data-tags/data-regions/data-kind/data-priority/data-discovered so the
-    live filter chips + brief.js keep working. `section_key` is retained
-    for signature compatibility (findings are grouped by their section
-    server-side)."""
+    """The canonical `.finding` · used on day pages, entity-page embeds,
+    feed bodies and briefbook.json. Carries data-tags/data-regions/
+    data-kind/data-priority/data-discovered/data-updated so the live
+    filter chips + brief.js keep working. The main analysis renders first,
+    then evidence, then every changelog record as a styled
+    `.entry-update` block (render_update_sections). `section_key` is
+    retained for signature compatibility (findings are grouped by their
+    section server-side)."""
     url = f"{prefix}{entry_url_path(entry)}"
     body_html = enhance_brief_item_html(
         render_markdown(_entry_body_markdown(entry), base_url=base_url)
     )
-    is_update = bool(entry.get("update_of"))
-    lead_html = (
-        render_update_lead(entry, prefix=prefix, entries_by_id=entries_by_id)
-        if is_update else ""
-    )
+    updates_html = render_update_sections(entry, prefix=prefix, base_url=base_url)
     refs = [str(r) for r in (entry.get("references") or [])]
     refs_html = ""
     if refs:
@@ -2512,38 +2560,53 @@ def render_entry_card(
         f'data-regions="{_escape(" ".join(entry.get("regions") or []))}" '
         f'data-kind="{_escape(entry.get("kind") or "")}" '
         f'data-priority="{_escape(_pri_of(entry))}" '
-        f'data-discovered="{_escape(entry.get("discovered_at") or "")}">'
+        f'data-discovered="{_escape(entry.get("discovered_at") or "")}" '
+        f'data-updated="{_escape(entry.get("updated_at") or "")}">'
         f"{render_badges(entry, prefix=prefix)}"
         f'<h3 class="f-h" id="{_escape(entry["slug"])}">'
         f'<a href="{_escape(url)}">{_escape(entry.get("title") or entry["id"])}</a></h3>'
-        f"{lead_html}{body_html}{render_entry_evidence(entry)}{refs_html}"
+        f"{body_html}{render_entry_evidence(entry)}{updates_html}{refs_html}"
         f"{render_prov_row(entry, prefix=prefix)}"
         f"{render_source_line(entry, prefix=prefix)}"
         f"</article>"
     )
 
 
-def render_timeline_item(entry: dict[str, Any], *, prefix: str = "", is_new: bool = False) -> str:
+def render_timeline_item(entry: dict[str, Any], *, prefix: str = "", is_new: bool = False,
+                         record: dict[str, Any] | None = None) -> str:
     """One `.tl-item` row for the live rolling brief: rail (time + flag) +
-    a body of badges (priority/CVE-link/exploited/update), a linked
+    a body of badges (priority/CVE-link/exploited/updated), a linked
     headline, a one-line summary, provenance, and a clickable source row.
-    The body is a <div> (not an <a>) so the CVE badge, headline and source
-    links are all independently clickable."""
+    With `record` (the changelog record that is this entry's latest
+    activity) the row is flagged UPD, stamped with the record's time, and
+    carries the record's type + summary in a `.tl-update` line instead of
+    the entry summary (docs/pipeline.md § Entry lifecycle). The body is a
+    <div> (not an <a>) so the CVE badge, headline and source links are
+    all independently clickable."""
     url = f"{prefix}{entry_url_path(entry)}"
-    stamp = _fmt_stamp(entry.get("discovered_at"))
-    is_update = bool(entry.get("update_of"))
+    is_update = record is not None
+    stamp = _fmt_stamp(str(record.get("at")) if is_update else entry.get("discovered_at"))
     flag = "UPD" if is_update else ("NEW" if is_new else "")
     flag_style = "color:var(--warn)" if is_update else ("color:var(--ok)" if is_new else "")
-    summary = _inline_text(entry.get("summary") or entry.get("headline") or "")
+    if is_update:
+        rtype = str(record.get("type") or "update")
+        line = (
+            f'<p class="tl-update tl-update--{_escape(rtype)}">'
+            f'<b>{_escape(_update_type_label(rtype))}</b> · '
+            f'{_inline_text(str(record.get("summary") or ""))}'
+            f' <span class="muted">(first published {_escape(str(entry.get("discovered_at") or "")[:10])})</span></p>'
+        )
+    else:
+        line = f"<p>{_inline_text(entry.get('summary') or entry.get('headline') or '')}</p>"
     return (
-        '<div class="tl-item">'
+        f'<div class="tl-item{" tl-item--updated" if is_update else ""}" data-entry-id="{_escape(entry["id"])}">'
         f'<div class="tl-rail"><span class="tl-node" style="background:{_pri_dot(entry)}"></span>'
         f'<span class="time">{_escape(stamp)}</span>'
         f'<span class="flag" style="{flag_style}">{_escape(flag)}</span></div>'
         '<div class="tl-body">'
         f"{render_badges(entry, prefix=prefix)}"
         f'<h3 class="tl-title"><a href="{_escape(url)}">{_escape(entry.get("title") or entry["id"])}</a></h3>'
-        f"<p>{summary}</p>"
+        f"{line}"
         f"{render_prov_row(entry, prefix=prefix, open_label='open ↗')}"
         f"{render_source_line(entry, prefix=prefix)}"
         "</div></div>"
@@ -2690,7 +2753,7 @@ def render_run_note(run: dict[str, Any], *, base_url: str | None = None) -> str:
 _NEW_SECT_TITLE = {
     "active-threats": "Active threats, incidents & disclosures",
     "trending-vulnerabilities": "Trending vulnerabilities",
-    "research": "Research & investigative reporting",
+    "research": "Research, reports & policy",
     "updates": "Updates to prior coverage",
     "deep-dive": "Deep dive",
     "action-items": "Action items",
@@ -2713,7 +2776,7 @@ def _sect_header(num: int, title: str, count: int) -> str:
 
 
 def _secnav_html(items: list[tuple[str, int]]) -> str:
-    """In-page jump row rendered under the TL;DR of a day / weekly brief:
+    """In-page jump row rendered under the TL;DR of a day brief:
     one chip per rendered section (anchor = slugified title) with its
     item count. Empty when fewer than two sections rendered."""
     if len(items) < 2:
@@ -2730,7 +2793,7 @@ def render_tldr_list(
     picked: list[dict[str, Any]], *, prefix: str = "",
     eyebrow: str = "TL;DR · the day in one read",
 ) -> str:
-    """The numbered TL;DR list at the top of a day / weekly brief."""
+    """The numbered TL;DR list at the top of a day brief."""
     if not picked:
         return ""
     lis: list[str] = []
@@ -2752,7 +2815,7 @@ def render_tldr_list(
 
 def _verif_block(runs: list[dict[str, Any]], *, base_url: str | None = None,
                  heading: str, empty: str) -> str:
-    """The `.verif` provenance block at the foot of a day / weekly brief.
+    """The `.verif` provenance block at the foot of a day brief.
     Collapsed by default (a <details>); each run's notes are rendered as a
     cleanly separated block, revealed on click."""
     notes = [render_run_note(r, base_url=base_url) for r in runs or []]
@@ -2781,14 +2844,24 @@ def render_brief_sections(
     base_url: str | None = None,
     entries_by_id: dict[str, dict[str, Any]] | None = None,
     card_html_by_id: dict[str, str] | None = None,
+    updated_entries: list[dict[str, Any]] | None = None,
+    updates_day: str | None = None,
+    updates_window: tuple[datetime | None, datetime | None] | None = None,
 ) -> str:
-    """THE shared server-side assembler for the canonical daily / window
-    brief structure · used by /brief/ (default window), every day page,
-    and the daily RSS bodies; mirrored client-side by
-    site/assets/js/brief.js. `entries` must already be scoped to the
-    window/day (operational horizon). `runs` are the window's run
-    records (their bodies become § 7). Sections always render; empty
-    ones carry the explicit stub.
+    """THE shared server-side assembler for the canonical daily brief
+    structure · used by every day page and the daily RSS bodies (the live
+    view is the run-grouped timeline, not these sections). `entries` must
+    already be scoped to the day (operational horizon, by discovered_at).
+    `runs` are the day's run records (their bodies become § Verification).
+    Sections render only when non-empty.
+
+    § Updates to Prior Coverage is derived from the entries' changelog
+    (docs/pipeline.md § Entry lifecycle): `updated_entries` are the entries
+    with at least one `updates[]` record dated inside the scope — a UTC day
+    (`updates_day`) or a [since, until) window (`updates_window`) — and each
+    such record renders as an update card (type · time · summary · section
+    body · link). An entry first published AND updated in scope appears in
+    both its kind section and § Updates.
 
     `card_html_by_id` lets a caller inject pre-rendered card HTML (the
     briefbook path renders each card exactly once and reuses it here).
@@ -2803,6 +2876,16 @@ def render_brief_sections(
             buckets[skey].append(e)
     for skey in buckets:
         buckets[skey].sort(key=entry_sort_key)
+
+    # § Updates: (entry, record) pairs dated in scope, newest first.
+    update_hits: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    since, until = updates_window if updates_window else (None, None)
+    for e in updated_entries if updated_entries is not None else []:
+        if (e.get("horizon") or "operational") != "operational" and not updated_entries:
+            continue
+        for rec in update_records_in(e, since, until, day=updates_day):
+            update_hits.append((e, rec))
+    update_hits.sort(key=lambda er: (str(er[1].get("at") or ""), er[0]["id"]), reverse=True)
 
     out: list[str] = [render_tldr_list(select_tldr_entries(ops), prefix=prefix)]
     secnav_items: list[tuple[str, int]] = []
@@ -2839,6 +2922,17 @@ def render_brief_sections(
             )
             secnav_items.append((_sect_title(key, title), len(rows)))
             continue
+        if key == "updates":
+            if not update_hits:
+                continue
+            num += 1
+            cards = "".join(
+                render_update_card(e, rec, prefix=prefix, base_url=base_url)
+                for e, rec in update_hits
+            )
+            out.append(_sect_header(num, _sect_title(key, title), len(update_hits)) + cards)
+            secnav_items.append((_sect_title(key, title), len(update_hits)))
+            continue
         section_entries = buckets.get(key, [])
         if not section_entries:
             continue
@@ -2858,61 +2952,6 @@ def render_brief_sections(
         runs, base_url=base_url,
         heading="Verification &amp; coverage notes",
         empty="Every essential source was fetched; no single-source or contradicted items in this window.",
-    ))
-    return "".join(out)
-
-
-def render_weekly_sections(
-    week_entries: list[dict[str, Any]],
-    runs: list[dict[str, Any]],
-    *,
-    prefix: str = "",
-    base_url: str | None = None,
-    entries_by_id: dict[str, dict[str, Any]] | None = None,
-) -> str:
-    """The weekly 12-section structure (v2 order and headings) over the
-    week's STRATEGIC entries, rendered as editorial findings. § 0 'Week
-    at a glance' is a derived TL;DR (one bullet per critical/high
-    strategic entry). `runs` are the week's weekly-kind run records."""
-    strat = strategic_entries(week_entries)
-    by_id = entries_by_id or {e["id"]: e for e in strat}
-    buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for e in strat:
-        buckets[weekly_section_key(e)].append(e)
-    for k in buckets:
-        buckets[k].sort(key=entry_sort_key)
-
-    glance = [
-        e for e in sorted(strat, key=entry_sort_key)
-        if e.get("priority") in ("critical", "high")
-    ]
-
-    out: list[str] = [render_tldr_list(glance, prefix=prefix, eyebrow="Week at a glance")]
-    secnav_items: list[tuple[str, int]] = []
-
-    num = 0
-    for key, title in WEEKLY_STRUCTURE:
-        if key in ("weekly-glance", "verification-notes"):
-            continue
-        section_entries = buckets.get(key, [])
-        if not section_entries:
-            continue
-        num += 1
-        findings = "".join(
-            render_entry_card(
-                e, prefix=prefix, section_key=key, base_url=base_url,
-                entries_by_id=by_id, lead=(e.get("priority") == "critical"),
-            )
-            for e in section_entries
-        )
-        out.append(_sect_header(num, _sect_title(key, title), len(section_entries)) + findings)
-        secnav_items.append((_sect_title(key, title), len(section_entries)))
-
-    out.insert(1, _secnav_html(secnav_items))
-    out.append(_verif_block(
-        runs, base_url=base_url,
-        heading="About this weekly",
-        empty="Strategic entries synthesise the week's operational findings · each links the daily entries it draws on.",
     ))
     return "".join(out)
 
@@ -3175,17 +3214,20 @@ def render_filter_bar(entries: list[dict[str, Any]]) -> str:
 
 def _live_timeline_html(ops: list[dict[str, Any]], runs: list[dict[str, Any]],
                         *, prefix: str) -> str:
-    """Run-grouped, reverse-chronological timeline for the live brief.
-    EVERY run in the window gets a divider, including 0-finding runs
-    (shown as 'quiet window'); no run is hidden just because it published
-    nothing."""
-    entries_by_run: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    """Run-grouped, reverse-chronological timeline for the live brief,
+    keyed on each entry's ACTIVITY (docs/pipeline.md § Entry lifecycle): a
+    new finding sits under the run that published it; an entry whose latest
+    activity is a changelog record sits under the run that made that record,
+    flagged UPD with the record's type + summary. Each entry appears once,
+    at its latest activity. EVERY run in the window gets a divider,
+    including 0-finding runs (shown as 'quiet window'); no run is hidden
+    just because it published nothing."""
+    entries_by_run: dict[str, list[tuple[dict[str, Any], dict[str, Any]]]] = defaultdict(list)
     for e in ops:
-        entries_by_run[str(e.get("run_id") or "")].append(e)
+        act = entry_activity(e)
+        entries_by_run[act["run_id"]].append((e, act))
     for k in entries_by_run:
-        entries_by_run[k].sort(
-            key=lambda e: (str(e.get("discovered_at") or ""), e["id"]), reverse=True
-        )
+        entries_by_run[k].sort(key=lambda ea: (ea[1]["at"], ea[0]["id"]), reverse=True)
     runs_by_id = {str(r.get("run_id")): r for r in runs if r.get("run_id")}
 
     _floor = datetime(2000, 1, 1, tzinfo=timezone.utc)
@@ -3196,9 +3238,9 @@ def _live_timeline_html(ops: list[dict[str, Any]], runs: list[dict[str, Any]],
         if t:
             return t
         es = entries_by_run.get(rid) or []
-        return parse_ts(es[0].get("discovered_at")) or _floor if es else _floor
+        return parse_ts(es[0][1]["at"]) or _floor if es else _floor
 
-    # Union of runs in the window AND runs referenced by an in-window entry.
+    # Union of runs in the window AND runs referenced by an in-window activity.
     keys = [k for k in (set(runs_by_id) | set(entries_by_run)) if k]
     if not keys:
         return (
@@ -3225,8 +3267,12 @@ def _live_timeline_html(ops: list[dict[str, Any]], runs: list[dict[str, Any]],
             label, gap, len(es),
             url=f"{prefix}runs/{rid}/" if rid else None,
         ))
-        for e in es:
-            rows.append(render_timeline_item(e, prefix=prefix, is_new=(rid == first_nonempty)))
+        for e, act in es:
+            rows.append(render_timeline_item(
+                e, prefix=prefix,
+                is_new=(rid == first_nonempty and not act["is_update"]),
+                record=act["record"],
+            ))
     return "".join(rows)
 
 
@@ -3244,15 +3290,17 @@ def render_live_brief_page(
     prefix: str,
     canonical: str,
 ) -> str:
-    """/brief/ · the live rolling brief. The default 24 h window is
-    server-rendered as a run-grouped timeline; brief.js re-renders it
-    client-side from data/briefbook.json when the reader changes the
-    window (the range <select> or the "load older findings" button)."""
+    """/live/ · the live rolling brief. `window_entries` are the entries
+    whose ACTIVITY moment (max(discovered_at, updated_at)) falls in the
+    default 24 h window; they are server-rendered as a run-grouped timeline
+    and brief.js re-renders it client-side from data/briefbook.json when
+    the reader changes the window (the range <select> or the "load older
+    findings" button)."""
     ops = operational_entries(window_entries)
     n = len(ops)
     n_crit = sum(1 for e in ops if e.get("priority") == "critical")
     n_high = sum(1 for e in ops if e.get("priority") == "high")
-    n_upd = sum(1 for e in ops if e.get("update_of"))
+    n_upd = sum(1 for e in ops if entry_activity(e)["is_update"])
     n_exp = sum(1 for e in ops if _entry_exploited(e))
     kind_counts: dict[str, int] = {}
     for e in ops:
@@ -3301,7 +3349,7 @@ def render_live_brief_page(
   <span class="streaming">STREAMING</span>
   <span class="live-updated">· updated {updated} UTC</span>
 </div>
-<p class="vsub live-lede">Everything verified in the last {DEFAULT_WINDOW_HOURS} hours, held to a constant relevance bar. Read top to bottom, or load older findings to reach further back.</p>
+<p class="vsub live-lede">Everything verified or updated in the last {DEFAULT_WINDOW_HOURS} hours, held to a constant relevance bar. An update or correction to an earlier finding floats it back to the top under the run that made it. Read top to bottom, or load older findings to reach further back.</p>
 {actnow}
 <div class="rangebar">
   <div class="rangefields">
@@ -3366,7 +3414,7 @@ def _escape_json_island(payload: str) -> str:
 
 
 def _datenav_html(*, prefix: str, prev_rel: str, next_rel: str, label: str) -> str:
-    """‹ prev · <label> · next › date navigator (day + weekly headers).
+    """‹ prev · <label> · next › date navigator (day headers).
     `prev_rel` is the OLDER page, `next_rel` the NEWER; empty → disabled."""
     left = (
         f'<a href="{prefix}{prev_rel}" aria-label="Older">‹</a>' if prev_rel
@@ -3391,12 +3439,16 @@ def render_day_page(
     canonical: str,
     prev_day: str | None = None,
     next_day: str | None = None,
+    updated_entries: list[dict[str, Any]] | None = None,
 ) -> str:
-    """/briefs/YYYY-MM-DD/ · the settled record for one UTC day: the
-    day's operational entries in the canonical daily editorial structure
+    """/daily/YYYY-MM-DD/ · the settled record for one UTC day: the day's
+    operational entries (first published that day) in the canonical daily
+    editorial structure, § Updates to Prior Coverage from every changelog
+    record dated that day (`updated_entries` = the entries carrying one),
     plus that day's run-record notes."""
     ops = sorted(operational_entries(day_entries), key=entry_sort_key)
     n = len(ops)
+    n_upd = sum(len(update_records_in(e, None, None, day=day)) for e in (updated_entries or []))
     n_runs = len(day_runs)
     critical = next((e for e in ops if e.get("priority") == "critical"), None)
     try:
@@ -3415,9 +3467,13 @@ def render_day_page(
     actnow = render_actnow(critical, prefix=prefix) if critical else ""
     sections_html = render_brief_sections(
         ops, day_runs, prefix=prefix, base_url=canonical, entries_by_id=entries_by_id,
+        updated_entries=updated_entries or [], updates_day=day,
     )
     findings_word = "finding" if n == 1 else "findings"
     runs_word = "run" if n_runs == 1 else "runs"
+    upd_clause = (
+        f" · {n_upd} update{'' if n_upd == 1 else 's'} to prior coverage" if n_upd else ""
+    )
     body = f"""
 <div class="briefhead">
   {datenav}
@@ -3425,7 +3481,7 @@ def render_day_page(
 </div>
 <span class="eyebrow">Daily brief · UTC day</span>
 <h1 class="vtitle">{_escape(long_date)}</h1>
-<p class="vsub">{n} verified {findings_word} from {n_runs} {runs_word} · the settled record for this UTC day, in the classic brief order.</p>
+<p class="vsub">{n} verified {findings_word} from {n_runs} {runs_word}{upd_clause} · the settled record for this UTC day, in the classic brief order.</p>
 {actnow}
 <div class="ftoolrow">{render_filter_toggle()}</div>
 {render_filter_bar(ops)}
@@ -3542,178 +3598,6 @@ def render_days_index_page(
                     items=[
                         (site_url + f"daily/{d}/", f"CTI Daily Brief · {d}")
                         for d in sorted(days.keys(), reverse=True)
-                    ],
-                )
-            ],
-        },
-    )
-
-
-# === WEEKLY PAGES (v3) =================================================
-
-
-def _week_range_label(week: str) -> str:
-    """`2026-W27` → `2026-W27 · 30 Jun – 6 Jul`."""
-    try:
-        year, wk = week.split("-W")
-        monday = date.fromisocalendar(int(year), int(wk), 1)
-        sunday = date.fromisocalendar(int(year), int(wk), 7)
-        if monday.month == sunday.month:
-            span = f"{monday.day}–{sunday.day} {sunday.strftime('%b')}"
-        else:
-            span = f"{monday.strftime('%d %b')} – {sunday.strftime('%d %b')}"
-        return f"{week} · {span}"
-    except (ValueError, TypeError):
-        return week
-
-
-def render_weekly_page(
-    week: str,
-    week_entries: list[dict[str, Any]],
-    week_runs: list[dict[str, Any]],
-    *,
-    entries_by_id: dict[str, dict[str, Any]],
-    site_url: str,
-    cachebust: str,
-    prefix: str,
-    canonical: str,
-    prev_week: str | None = None,
-    next_week: str | None = None,
-) -> str:
-    """/weekly/YYYY-Www/ · the week's strategic entries in the weekly
-    editorial structure, with the "if you did nothing this week" lead and
-    referenced operational entries linked in place."""
-    strat = strategic_entries(week_entries)
-    n = len(strat)
-    glance = [e for e in sorted(strat, key=entry_sort_key)
-              if e.get("priority") in ("critical", "high")]
-    lead_entry = glance[0] if glance else None
-    lead_html = ""
-    if lead_entry:
-        lead_summary = _inline_text(lead_entry.get("summary") or lead_entry.get("headline") or "")
-        lead_url = f"{prefix}{entry_url_path(lead_entry)}"
-        lead_html = (
-            '<a class="actnow actnow--flat" href="' + _escape(lead_url) + '">'
-            '<div class="actnow-strip"><span class="adot" aria-hidden="true"></span>IF YOU DID NOTHING THIS WEEK</div>'
-            f'<div class="actnow-body"><p>{lead_summary}</p></div></a>'
-        )
-    sections_html = render_weekly_sections(
-        strat, week_runs, prefix=prefix, base_url=canonical, entries_by_id=entries_by_id,
-    )
-    datenav = _datenav_html(
-        prefix=prefix,
-        prev_rel=f"weekly/{prev_week}/" if prev_week else "",
-        next_rel=f"weekly/{next_week}/" if next_week else "",
-        label=_week_range_label(week),
-    )
-    try:
-        wk_num = int(week.split("-W")[1])
-        wk_title = f"Week {wk_num}"
-    except (ValueError, IndexError):
-        wk_title = week
-    body = f"""
-<div class="briefhead">
-  {datenav}
-  <a class="allbriefs" href="{prefix}weekly/">All weekly briefs ↗</a>
-</div>
-<span class="eyebrow">Weekly brief · ISO week</span>
-<h1 class="vtitle">{_escape(wk_title)}</h1>
-<p class="vsub">The strategic arc across the week's operational findings · what to fix if you act only once, the multi-day chains, and the policy horizon.</p>
-{lead_html}
-{sections_html}
-"""
-    description = (glance[0].get("summary") or "").strip()[:280] if glance else f"Weekly CTI summary · {week}."
-    description = description or f"Weekly CTI summary · {week}."
-    week_items = [
-        (site_url + entry_url_path(e), e.get("title") or e["id"])
-        for e in sorted(strat, key=entry_sort_key)
-    ]
-    return base_template(
-        title=f"CTI Weekly Summary · {week}",
-        description=description,
-        body=body,
-        canonical=canonical,
-        site_url=site_url,
-        cachebust=cachebust,
-        home_relative_prefix=prefix,
-        body_class="reading",
-        active_nav="weekly",
-        seo={
-            "og_type": "article",
-            "breadcrumb": [
-                (SITE_NAME, site_url),
-                ("Weekly", site_url + "weekly/"),
-                (week, canonical),
-            ],
-            "article": {"section": "Weekly summary"},
-            "json_ld": [
-                _ld_collection(
-                    name=f"CTI Weekly Summary · {week}",
-                    description=description,
-                    canonical=canonical,
-                    site_url=site_url,
-                    items=week_items,
-                )
-            ],
-        },
-    )
-
-
-def render_weekly_index_page(
-    weeks: dict[str, list[dict[str, Any]]],
-    *,
-    site_url: str,
-    cachebust: str,
-    prefix: str,
-    canonical: str,
-) -> str:
-    """/weekly/ · the weekly archive: every weekly summary, newest first."""
-    rows: list[str] = []
-    for week in sorted(weeks.keys(), reverse=True):
-        entries = strategic_entries(weeks[week])
-        n = len(entries)
-        top = [e for e in sorted(entries, key=entry_sort_key)
-               if e.get("priority") in ("critical", "high")]
-        hint = (top[0].get("headline") or "") if top else ""
-        rows.append(
-            f'<a class="arc" href="{prefix}weekly/{_escape(week)}/">'
-            f'<span class="arc-d">{_escape(week)}</span>'
-            f'<span class="arc-b"><span class="arc-t">CTI Weekly Summary · {_escape(_week_range_label(week))}</span>'
-            f'<span class="arc-s">{_inline_text(hint[:150])}</span></span>'
-            f'<span class="arc-c">{n} strategic</span></a>'
-        )
-    n_weeks = len(weeks)
-    listing = (
-        f'<div class="arclist">{"".join(rows)}</div>'
-        if rows else '<div class="section-empty">No weekly summaries yet.</div>'
-    )
-    body = f"""
-<span class="eyebrow">Archive · weekly briefs</span>
-<h1 class="vtitle">All weekly briefs</h1>
-<p class="vsub">Every published weekly, newest first · one page per ISO week: the strategic lens over multi-day chains, research, annual reports, policy, and the look ahead.</p>
-{listing}
-"""
-    return base_template(
-        title=f"Weekly summaries · {SITE_NAME}",
-        description=f"{n_weeks} weekly CTI summaries, newest first.",
-        body=body,
-        canonical=canonical,
-        site_url=site_url,
-        cachebust=cachebust,
-        home_relative_prefix=prefix,
-        body_class="reading",
-        active_nav="weekly",
-        seo={
-            "breadcrumb": [(SITE_NAME, site_url), ("Weekly", canonical)],
-            "json_ld": [
-                _ld_collection(
-                    name=f"Weekly summaries · {SITE_NAME}",
-                    description=f"{n_weeks} weekly CTI summaries, newest first.",
-                    canonical=canonical,
-                    site_url=site_url,
-                    items=[
-                        (site_url + f"weekly/{w}/", f"CTI Weekly Summary · {w}")
-                        for w in sorted(weeks.keys(), reverse=True)
                     ],
                 )
             ],
@@ -3859,7 +3743,6 @@ def render_entry_page(
     entry: dict[str, Any],
     *,
     entries_by_id: dict[str, dict[str, Any]],
-    updated_by: dict[str, list[str]],
     registry: dict[str, dict[str, Any]],
     runs_by_id: dict[str, dict[str, Any]],
     day_pages: set[str],
@@ -3868,22 +3751,24 @@ def render_entry_page(
     prefix: str,
     canonical: str,
 ) -> str:
-    """/entries/YYYY-MM-DD/<slug>/ · full metadata badge block, body,
-    evidence, actions, sources with roles, the update chain, entity
-    links, and the part-of-run link."""
+    """/entries/YYYY-MM-DD/<slug>/ · full metadata badge block, the main
+    analysis, evidence, every changelog record as a styled timestamped
+    block, actions, sources with roles, the Revision history panel, entity
+    links, and the part-of-run link. Legacy strategic entries (the retired
+    weekly routine's output) render the same way and link back to the
+    daily archive."""
     body_html = enhance_brief_item_html(
         render_markdown(_entry_body_markdown(entry), base_url=canonical)
     )
+    updates_html = render_update_sections(entry, prefix=prefix, base_url=canonical)
     is_op = (entry.get("horizon") or "operational") == "operational"
     day = entry["date"]
     # Operational entries from a completed day link back to that day page;
-    # entries from the still-rolling day (no day page yet) link to Live.
+    # entries from the still-rolling day (no day page yet) link to Live;
+    # legacy strategic entries link to the daily archive.
     if is_op and day in day_pages:
         parent_url = f"{prefix}daily/{day}/"
         parent_label = f"Daily brief {day}"
-    elif not is_op and iso_week_of_entry(entry):
-        parent_url = f"{prefix}weekly/{iso_week_of_entry(entry)}/"
-        parent_label = f"Weekly {iso_week_of_entry(entry)}"
     elif is_op:
         parent_url = f"{prefix}live/"
         parent_label = "the live brief"
@@ -3891,38 +3776,42 @@ def render_entry_page(
         parent_url = f"{prefix}daily/"
         parent_label = "the daily archive"
 
-    # --- update chain -------------------------------------------------
-    chain_bits: list[str] = []
-    target = str(entry.get("update_of") or "")
-    if target:
-        orig = entries_by_id.get(target)
-        if orig is None:
-            # Dangling reference (a few migrated records point at ids that
-            # never shipped) — plain text, never a dead link to a 404.
-            chain_bits.append(
-                '<li><span class="e-tag">updates</span> '
-                f'{_escape(target)}'
-                f' <span class="mono muted">{_escape(target.split("/", 1)[0])}</span></li>'
+    # --- revision history (the changelog, as a list) -------------------
+    rev_bits: list[str] = []
+    for rec in entry.get("updates") or []:
+        if not isinstance(rec, dict):
+            continue
+        rtype = str(rec.get("type") or "update")
+        at = str(rec.get("at") or "")
+        rid_u = str(rec.get("run_id") or "")
+        fields = [str(f) for f in (rec.get("fields") or []) if isinstance(f, str)]
+        rev_bits.append(
+            f'<li class="revision revision--{_escape(rtype)}">'
+            f'<a class="revision__jump" href="#update-{_escape(at)}">'
+            f'<span class="b upd upd--{_escape(rtype)}">{_escape(_update_type_label(rtype))}</span></a>'
+            f'<time class="mono revision__time" datetime="{_escape(at)}">{_escape(_fmt_long_stamp(at))}</time>'
+            + (f' <a class="mono revision__run" href="{prefix}runs/{_escape(rid_u)}/">{_escape(rid_u)}</a>' if rid_u else "")
+            + f'<p class="revision__summary">{_inline_text(str(rec.get("summary") or ""))}</p>'
+            + (
+                '<p class="revision__fields muted">Changed: '
+                + " ".join(f'<span class="echip echip--muted">{_escape(f)}</span>' for f in fields)
+                + "</p>" if fields else ""
             )
-        else:
-            chain_bits.append(
-                '<li><span class="e-tag">updates</span> '
-                f'<a href="{prefix}entries/{_escape(target)}/">'
-                f'{_escape(orig.get("title") or target)}</a>'
-                f' <span class="mono muted">{_escape(target.split("/", 1)[0])}</span></li>'
-            )
-    for uid in updated_by.get(entry["id"], []):
-        upd = entries_by_id.get(uid)
-        chain_bits.append(
-            '<li><span class="e-tag">updated by</span> '
-            f'<a href="{prefix}entries/{_escape(uid)}/">'
-            f'{_escape((upd or {}).get("title") or uid)}</a>'
-            f' <span class="mono muted">{_escape(uid.split("/", 1)[0])}</span></li>'
+            + "</li>"
         )
-    chain_html = (
-        '<section class="entry-chain"><h2 class="section-head">Update chain</h2>'
-        f'<ul class="entity-list">{"".join(chain_bits)}</ul></section>'
-    ) if chain_bits else ""
+    first_pub = str(entry.get("discovered_at") or "")
+    rid0 = str(entry.get("run_id") or "")
+    first_li = (
+        '<li class="revision revision--published">'
+        '<span class="b">Published</span>'
+        f'<time class="mono revision__time" datetime="{_escape(first_pub)}">{_escape(_fmt_long_stamp(first_pub))}</time>'
+        + (f' <a class="mono revision__run" href="{prefix}runs/{_escape(rid0)}/">{_escape(rid0)}</a>' if rid0 else "")
+        + "</li>"
+    )
+    revision_html = (
+        '<div class="esec revision-history" id="revision-history"><h4>Revision history</h4>'
+        f'<ol class="revision-list">{first_li}{"".join(rev_bits)}</ol></div>'
+    ) if rev_bits else ""
 
     # --- entities ------------------------------------------------------
     ent_bits: list[str] = []
@@ -3969,12 +3858,16 @@ def render_entry_page(
         )
 
     ia_html = render_immediate_action_callout(entry, prefix=prefix)
-    update_lead = render_update_lead(entry, prefix=prefix, entries_by_id=entries_by_id)
 
     emeta_parts: list[str] = []
     disc = _fmt_discovered(entry.get("discovered_at"))
     if disc:
         emeta_parts.append(f"<span>{_escape(disc)}</span>")
+    upd_stamp = _fmt_updated(entry.get("updated_at")) if entry.get("updates") else ""
+    if upd_stamp:
+        emeta_parts.append(
+            f'<a class="emeta-updated" href="#revision-history">{_escape(upd_stamp)}</a>'
+        )
     if rid:
         emeta_parts.append(
             f'<a class="mono" href="{prefix}ops/#run={urllib.parse.quote(rid, safe="")}">run {_escape(rid)}</a>'
@@ -4001,11 +3894,6 @@ def render_entry_page(
         )
         + "</ul></div>"
     ) if actions else ""
-
-    chain_html = (
-        '<div class="esec"><h4>Update chain</h4><ul class="entity-list">'
-        + "".join(chain_bits) + "</ul></div>"
-    ) if chain_bits else ""
 
     # --- Pivot rail (sticky aside on wide screens) ----------------------
     # Every hunting pivot the entry carries, grouped and linked: CVEs with
@@ -4092,14 +3980,14 @@ def render_entry_page(
 {emeta}
 <div class="ebody">
 {ia_html}
-{update_lead}
 {body_html}
 {render_entry_evidence(entry)}
+{updates_html}
 </div>
 {actions_html}
+{revision_html}
 {render_entry_attack_section(entry, prefix=prefix)}
 {render_detail_sources(entry)}
-{chain_html}
 <div class="verif"><div class="vh">PROVENANCE</div><p>AI-generated · no human review · this permalink is the shareable record for the finding · verify operationally critical claims against the linked primary source.</p></div>
 </div>
 {rail}
@@ -4112,10 +4000,6 @@ def render_entry_page(
     if is_op and day in day_pages:
         trail.append(("Daily", site_url + "daily/"))
         trail.append((day, site_url + f"daily/{day}/"))
-    elif (not is_op) and iso_week_of_entry(entry):
-        wk = iso_week_of_entry(entry)
-        trail.append(("Weekly", site_url + "weekly/"))
-        trail.append((wk, site_url + f"weekly/{wk}/"))
     elif is_op:
         trail.append(("Live", site_url + "live/"))
     else:
@@ -4130,13 +4014,13 @@ def render_entry_page(
         cachebust=cachebust,
         home_relative_prefix=prefix,
         body_class="reading entry-detail",
-        active_nav="daily" if is_op else "weekly",
+        active_nav="daily",
         seo={
             "og_type": "article",
             "breadcrumb": trail,
             "article": {
                 "published": entry.get("discovered_at"),
-                "modified": entry.get("discovered_at"),
+                "modified": entry.get("updated_at") or entry.get("discovered_at"),
                 "section": entry.get("kind"),
                 "tags": list(entry.get("tags") or []) + list(entry.get("regions") or []),
             },
@@ -4169,7 +4053,7 @@ def render_embedded_entries_section(
         )
     ordered = sorted(
         entries,
-        key=lambda e: (str(e.get("discovered_at") or ""), e.get("id") or ""),
+        key=lambda e: (content_model.entry_activity_ts(e) or "", e.get("id") or ""),
         reverse=True,
     )
     shown, rest = ordered[:limit], ordered[limit:]
@@ -4192,7 +4076,7 @@ def render_embedded_entries_section(
             f'<span class="mono">{_escape(e["date"])}</span>'
             f'<span class="b {_pri_badge_class(e)}">{_escape(_pri_label(e))}</span>'
             + ('<span class="b exp">exploited</span>' if _entry_exploited(e) else "")
-            + ('<span class="b upd">update</span>' if e.get("update_of") else "")
+            + ('<span class="b upd">updated</span>' if e.get("updates") else "")
             + render_classification_badge(e.get("classification"))
             + render_org_triage_badge(e.get("org_triage"))
             + "</span>"
@@ -4241,18 +4125,19 @@ def render_home_page(
     today_entries: list[dict[str, Any]],
     prev_day: str | None,
     prev_day_entries: list[dict[str, Any]],
-    latest_week: str | None,
-    latest_week_entries: list[dict[str, Any]],
+    recent_updates: list[dict[str, Any]] | None = None,
     site_url: str,
     cachebust: str,
     canonical: str,
     counts: dict[str, int] | None = None,
     last_updated: str = "",
 ) -> str:
-    """Home · hero (copy + live platform-status panel), three brief cards
-    (Live / Daily / Weekly), and the knowledge-base pivot band. `counts`
-    carries the store-wide totals (entries/entities/cves/sources) and
-    `last_updated` the reference timestamp string shown in the status
+    """Home · hero (copy + live platform-status panel), three cards
+    (Live / Daily / Recent updates & corrections), and the knowledge-base
+    pivot band. `recent_updates` are the entries whose latest activity is a
+    changelog record, newest activity first (the card shows the top few).
+    `counts` carries the store-wide totals (entries/entities/cves/sources)
+    and `last_updated` the reference timestamp string shown in the status
     panel."""
     redirect_js = f'<script src="assets/js/spa-redirect.js?v={cachebust}"></script>'
 
@@ -4304,28 +4189,33 @@ def render_home_page(
             '<span class="bgo">open the day archive →</span></a>'
         )
 
-    # (3) Latest weekly summary.
-    if latest_week:
-        strat = sorted(strategic_entries(latest_week_entries), key=entry_sort_key)
-        wlead = _lead([e for e in strat if e.get("priority") in ("critical", "high")] or strat)
-        if wlead and wlead[1]:
-            weekly_bp = f'<b>If you did nothing this week:</b> {_inline_text(wlead[1])}'
-        elif wlead and wlead[0]:
-            weekly_bp = f'<b>If you did nothing this week:</b> {_inline_text(wlead[0])}'
-        else:
-            weekly_bp = "The strategic arc across the week's operational findings · chains, sector patterns, and the policy horizon."
-        weekly_card = (
-            f'<a class="bcard" href="weekly/{_escape(latest_week)}/">'
-            f'<div class="bh"><span class="bt">Weekly</span><span class="bm">{_escape(latest_week)}</span></div>'
-            f'<p class="bp">{weekly_bp}</p>'
-            '<span class="bgo">the strategic arc →</span></a>'
+    # (3) Recent updates & corrections — entries whose latest activity is a
+    # changelog record (docs/pipeline.md § Entry lifecycle), newest first.
+    upd_rows: list[str] = []
+    for e in (recent_updates or [])[:4]:
+        act = entry_activity(e)
+        rec = act["record"] or {}
+        rtype = str(rec.get("type") or "update")
+        upd_rows.append(
+            '<li class="bupd">'
+            f'<span class="b upd upd--{_escape(rtype)}">{_escape(_update_type_label(rtype))}</span>'
+            f'<span class="mono muted">{_escape(_fmt_stamp(act["at"]))}</span> '
+            f'<a href="{_escape(entry_url_path(e))}">{_escape(str(e.get("title") or e["id"]))}</a>'
+            f'<span class="bupd-s">{_inline_text(str(rec.get("summary") or ""))}</span></li>'
+        )
+    if upd_rows:
+        updates_card = (
+            '<div class="bcard bcard--updates">'
+            '<div class="bh"><span class="bt">Updates</span><span class="bm">recent corrections &amp; developments</span></div>'
+            f'<ul class="bupd-list">{"".join(upd_rows)}</ul>'
+            '<a class="bgo" href="live/">every update floats back into the live brief →</a></div>'
         )
     else:
-        weekly_card = (
-            '<a class="bcard" href="weekly/">'
-            '<div class="bh"><span class="bt">Weekly</span><span class="bm">Sundays</span></div>'
-            '<p class="bp">The weekly strategic lens · multi-day chains, sector patterns and the policy horizon.</p>'
-            '<span class="bgo">the strategic arc →</span></a>'
+        updates_card = (
+            '<a class="bcard bcard--updates" href="live/">'
+            '<div class="bh"><span class="bt">Updates</span><span class="bm">corrections &amp; developments</span></div>'
+            '<p class="bp">One living entry per finding: developments, corrections and improvements are appended to the original entry with a dated changelog, and float it back into the live brief.</p>'
+            '<span class="bgo">open the live brief →</span></a>'
         )
 
     # --- Platform-status panel (right of the hero copy) -----------------
@@ -4372,7 +4262,7 @@ def render_home_page(
         ("sources/", "Sources", c.get("sources"),
          "The curated source list, reliability-rated and health-probed."),
         ("trends/", "Trends", None,
-         "Weekly cohort movement: ransomware, KEV, sector targeting."),
+         "Week-by-week cohort movement: ransomware, KEV, sector targeting."),
         ("ops/", "Operations", None,
          "Pipeline telemetry: runs, models, verification verdicts."),
     ]
@@ -4395,7 +4285,7 @@ def render_home_page(
 <div class="briefgrid">
 {live_card}
 {day_card}
-{weekly_card}
+{updates_card}
 </div>
 <div class="pivotband" aria-label="Knowledge base">
 {pivot_tiles}
@@ -4427,18 +4317,21 @@ def build_briefbook(
     card_html_by_id: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """data/briefbook.json · the last BRIEFBOOK_WINDOW_DAYS days of
-    entries (both horizons; brief.js filters operational) and runs, each
-    entry carrying the SAME server-rendered card HTML the day pages use.
-    `prefix` is /brief/'s path back to the site root (the only consumer
-    of the embedded HTML)."""
+    entries BY ACTIVITY (max(discovered_at, updated_at); both horizons —
+    brief.js filters operational) and runs, each entry carrying the SAME
+    server-rendered card HTML the day pages use plus its changelog
+    (`updates`, `updated_at`, `activity_at`, `activity_run_id`,
+    `activity_is_update`) so the client timeline can group an updated
+    entry under the run that updated it. `prefix` is /live/'s path back to
+    the site root (the only consumer of the embedded HTML)."""
     since = ref_ts - timedelta(days=BRIEFBOOK_WINDOW_DAYS)
-    window = content_model.entries_in_window(entries, since, None)
+    window = content_model.entries_in_window(entries, since, None, activity=True)
     by_id = {e["id"]: e for e in entries}
-    updated_by = build_update_chains(entries)
 
     out_entries: list[dict[str, Any]] = []
-    for e in sorted(window, key=lambda x: (str(x.get("discovered_at") or ""), x["id"]),
+    for e in sorted(window, key=lambda x: (content_model.entry_activity_ts(x) or "", x["id"]),
                     reverse=True):
+        act = entry_activity(e)
         ia = e.get("immediate_action")
         ia_out = None
         if isinstance(ia, dict):
@@ -4495,8 +4388,17 @@ def build_briefbook(
             "exploited": _entry_exploited(e),
             "verification_label": _verif_meta(e)[1],
             "verification_class": _verif_meta(e)[0],
-            "update_of": e.get("update_of"),
-            "updated_by": updated_by.get(e["id"], []),
+            "updated_at": e.get("updated_at"),
+            "activity_at": act["at"],
+            "activity_run_id": act["run_id"],
+            "activity_is_update": act["is_update"],
+            "updates": [
+                {"at": str(r.get("at") or ""), "run_id": str(r.get("run_id") or ""),
+                 "type": str(r.get("type") or "update"),
+                 "summary": " ".join(str(r.get("summary") or "").split())}
+                for r in (e.get("updates") or []) if isinstance(r, dict)
+            ],
+            "update_count": len([r for r in (e.get("updates") or []) if isinstance(r, dict)]),
             "deep_dive": bool(e.get("deep_dive")),
             "actions": [a for a in (e.get("actions") or []) if isinstance(a, str)],
             "watchlist_hit": bool(e.get("watchlist_hit")),
@@ -4546,12 +4448,16 @@ ALERTS_COMMENT = (
     "entries, newest first. Poll this file and alert on new `id` values; "
     "`immediate_action` is non-null exactly when priority is critical. "
     "URLs are absolute. Schema: {id, url, priority, headline, summary, "
-    "discovered_at, immediate_action:{title,action}|null, cve_ids[], "
+    "discovered_at, updated_at|null, updates[{at,type,summary}], "
+    "immediate_action:{title,action}|null, cve_ids[], "
     "entities[], techniques[], tags[], sectors[], regions[], "
     "verification, classification|null, org_triage:{category,rationale}|null}. "
-    "techniques[] carries the entry's MITRE ATT&CK ids (frontmatter + "
-    "prose-derived, revoked ids resolved forward); classification is the "
-    "collapsed Admiralty code (e.g. B2). See docs/pipeline.md."
+    "An entry enters the window by its activity moment (max(discovered_at, "
+    "updated_at)), so a critical/high entry re-enters when it receives a "
+    "changelog record — alert on new `id` values AND on a changed "
+    "`updated_at`. techniques[] carries the entry's MITRE ATT&CK ids "
+    "(frontmatter + prose-derived, revoked ids resolved forward); "
+    "classification is the collapsed Admiralty code (e.g. B2). See docs/pipeline.md."
 )
 
 
@@ -4564,9 +4470,9 @@ def build_alerts(
     """data/alerts.json · last ALERTS_WINDOW_DAYS days of critical/high
     entries; the notification-hook surface."""
     since = ref_ts - timedelta(days=ALERTS_WINDOW_DAYS)
-    window = content_model.entries_in_window(entries, since, None)
+    window = content_model.entries_in_window(entries, since, None, activity=True)
     alerts: list[dict[str, Any]] = []
-    for e in sorted(window, key=lambda x: (str(x.get("discovered_at") or ""), x["id"]),
+    for e in sorted(window, key=lambda x: (content_model.entry_activity_ts(x) or "", x["id"]),
                     reverse=True):
         if e.get("priority") not in ("critical", "high"):
             continue
@@ -4578,6 +4484,12 @@ def build_alerts(
             "headline": e.get("headline") or "",
             "summary": (e.get("summary") or "").strip(),
             "discovered_at": e.get("discovered_at"),
+            "updated_at": e.get("updated_at"),
+            "updates": [
+                {"at": str(r.get("at") or ""), "type": str(r.get("type") or "update"),
+                 "summary": " ".join(str(r.get("summary") or "").split())}
+                for r in (e.get("updates") or []) if isinstance(r, dict)
+            ],
             "immediate_action": (
                 {"title": str(ia.get("title") or ""), "action": str(ia.get("action") or "").strip()}
                 if isinstance(ia, dict) else None
@@ -4848,7 +4760,7 @@ def render_reliability_legend(reliability_codes: dict[str, Any] | None,
         'Admiralty scale, weighting original / primary authorities over aggregators. Every '
         'intelligence entry additionally carries a two-part Admiralty classification '
         f'(reliability letter + credibility number, e.g. {example_badge}): the same badge '
-        'is shown on every finding in the live, daily and weekly views.</p>'
+        'is shown on every finding in the live and daily views.</p>'
         f'<ul class="rel-key__list">{"".join(items)}</ul></details>'
     )
 
@@ -5336,17 +5248,15 @@ def fetch_github_metadata(repo: str, *, timeout: float = 6.0) -> dict[str, Any]:
 
 def render_feeds_page(*, site_url: str, cachebust: str,
                        prefix: str, canonical: str) -> str:
-    """Single discovery page for all 11 RSS feeds (3 main +
+    """Single discovery page for all 10 RSS feeds (2 main +
     8 sector slices). The topbar/footer link to this page; the brief-list
     page no longer carries chip-style per-feed links. `<head>` rel=alternate
-    autodiscovery for the three main feeds is unchanged."""
+    autodiscovery for the two main feeds is unchanged."""
     main_feeds: list[tuple[str, str, str]] = [
         ("feed.xml", "Daily · one item per day page, last 30",
          "One item per archived day. Description carries the day's TL;DR bullets; <code>&lt;content:encoded&gt;</code> carries the full day-page HTML. Categories carry the day's CVEs."),
-        ("feed-weekly.xml", "Weekly · every weekly summary, last 30",
-         "One item per weekly page. Same shape as daily."),
-        ("feed-items.xml", "Per entry · every published finding, last 50",
-         "One item per pipeline entry. <code>&lt;pubDate&gt;</code> is the entry's <code>discovered_at</code> · true discovery latency. Categories carry tags + regions + CVE status + CVE ids."),
+        ("feed-items.xml", "Per entry · every published finding and every update, last 50",
+         "One item per pipeline entry (<code>&lt;pubDate&gt;</code> = the entry's <code>discovered_at</code> · true discovery latency) PLUS one item per changelog record · an update, correction or improvement appended to a published entry (guid <code>&lt;entry url&gt;#update-&lt;at&gt;</code>, <code>&lt;pubDate&gt;</code> = the record's time, title prefixed by the record type). Categories carry tags + regions + CVE status + CVE ids."),
     ]
     sector_feeds: list[tuple[str, str, str]] = [
         (fname, f"Sector · {title}", description)
@@ -5368,7 +5278,7 @@ def render_feeds_page(*, site_url: str, cachebust: str,
     body = f"""
 <header>
   <h1>RSS feeds</h1>
-  <p class="subtitle">Eleven feeds in total. The three main feeds carry every day page, weekly page and entry; the eight sector slices filter the per-entry feed to the audience you care about. <code>&lt;pubDate&gt;</code> derives from each entry's <code>discovered_at</code> · the moment the pipeline verified the finding, not a publish schedule. <code>&lt;content:encoded&gt;</code> carries full HTML; categories carry tags / regions / CVE / status. No UTM parameters, no per-source variants · every link is plain canonical.</p>
+  <p class="subtitle">Ten feeds in total. The two main feeds carry every day page and every entry (plus every update or correction to one); the eight sector slices filter the per-entry feed to the audience you care about. <code>&lt;pubDate&gt;</code> derives from each entry's <code>discovered_at</code> · the moment the pipeline verified the finding, not a publish schedule · or from an update record's own timestamp. <code>&lt;content:encoded&gt;</code> carries full HTML; categories carry tags / regions / CVE / status. No UTM parameters, no per-source variants · every link is plain canonical.</p>
 </header>
 
 <section style="margin-top:1.4rem">
@@ -5384,7 +5294,7 @@ def render_feeds_page(*, site_url: str, cachebust: str,
 
 <section style="margin-top:1.6rem">
   <h2 class="section-head">Autodiscovery</h2>
-  <p>Every page on this site advertises the three main feeds via <code>&lt;link rel="alternate" type="application/rss+xml"&gt;</code> in the document head, so any feed reader pointed at the homepage finds them automatically. The eight sector slices are accessible through this page.</p>
+  <p>Every page on this site advertises the two main feeds via <code>&lt;link rel="alternate" type="application/rss+xml"&gt;</code> in the document head, so any feed reader pointed at the homepage finds them automatically. The eight sector slices are accessible through this page.</p>
 </section>
 """
     return base_template(
@@ -5481,7 +5391,7 @@ def _rewrite_about_links(html: str, *, prefix: str) -> str:
         prompts/                   → <prefix>about/prompts/
         briefs/ or brief/          → <prefix>daily/ or <prefix>live/
         briefs/<date>.md           → <prefix>daily/<date>/   (renamed route)
-        briefs/weekly/<name>.md    → <prefix>weekly/<name>/
+        briefs/weekly/<name>.md    → <prefix>daily/   (the weekly routine is retired)
         anything else relative     → https://github.com/<repo>/blob/main/<path>
                                      (state files, source list, scripts, etc.)
     """
@@ -5525,10 +5435,10 @@ def _rewrite_about_links(html: str, *, prefix: str) -> str:
         m = re.match(r"^briefs/(\d{4}-\d{2}-\d{2})(?:\.md|/)?$", p)
         if m:
             return prefix + f"daily/{m.group(1)}/" + frag
-        # Legacy weekly doc links → the /weekly/ page.
+        # Legacy weekly doc links → the daily archive (no /weekly/ any more).
         m = re.match(r"^briefs/weekly/(\d{4}-W\d{2})(?:\.md|/)?$", p)
         if m:
-            return prefix + f"weekly/{m.group(1)}/" + frag
+            return prefix + "daily/" + frag
         if p in ("briefs/", "briefs", "daily/", "daily"):
             return prefix + "daily/" + frag
         if p in ("brief/", "brief", "live/", "live"):
@@ -5644,7 +5554,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
     week_buckets: dict[str, dict[str, int]] = {c["key"]: {} for c in TREND_COHORTS}
     week_set: set[str] = set()
     for e in ops:
-        week = iso_week_of_entry(e) or "unknown"
+        week = _iso_week_of(e.get("date") or "") or "unknown"
         week_set.add(week)
         for cohort in TREND_COHORTS:
             if _item_matches_cohort(e, cohort):
@@ -6389,7 +6299,9 @@ def render_ops_page(
     daily_runs = [r for r in runs_desc if r.get("kind", "intel") not in ("weekly", "audit")]
     weekly_runs = [r for r in runs_desc if r.get("kind") == "weekly"]
     audit_runs = [r for r in runs_desc if r.get("kind") == "audit"]
-    kind_split_label = f"{len(daily_runs)} intel · {len(weekly_runs)} weekly" + (
+    kind_split_label = f"{len(daily_runs)} intel" + (
+        f" · {len(weekly_runs)} weekly (legacy)" if weekly_runs else ""
+    ) + (
         f" · {len(audit_runs)} audit" if audit_runs else ""
     )
     today = datetime.now(timezone.utc).date()
@@ -6722,7 +6634,7 @@ def render_ops_page(
 
   <div class="ops-subsection">
     <h3 class="ops-subhead">Sub-agent fetch density <span class="muted" style="font-weight:400">· last {len(heatmap_runs)} runs</span></h3>
-    <p class="ops-subtitle">Each cell is one run × one sub-agent (most recent {len(heatmap_runs)}). Intensity = used / attempted source ratio. Empty rows = sub-agent not in this routine (S1–S4 daily, W1–W2 weekly). White cells = stalled or absent.</p>
+    <p class="ops-subtitle">Each cell is one run × one sub-agent (most recent {len(heatmap_runs)}). Intensity = used / attempted source ratio. Empty rows = sub-agent not in this routine (S1–S4 intel; W1–W2 on legacy weekly records). White cells = stalled or absent.</p>
     <div class="ops-heatmap-wrap">{heatmap_html}</div>
   </div>
 </section>
@@ -6928,7 +6840,7 @@ def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: s
         return (
             '<div class="empty"><p>No <code>state/source_health.json</code> snapshot yet.</p>'
             '<p class="muted">Written by <code>tools/source_health.py</code> (run at the end of every '
-            'routine + a weekly GitHub Action) · a periodic accessibility probe of every source that '
+            'routine + a scheduled GitHub Action) · a periodic accessibility probe of every source that '
             'also verifies the api/bridge recipes still work.</p></div>'
         )
     latest = source_health.get("latest") or {}
@@ -7445,7 +7357,8 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
     failures = run.get("fetch_failures") or []
 
     # Sub-agent cards. Base slots per kind + any extra recorded keys
-    # (the conditional S5 / W3 closed-source intake agents). Audit runs have
+    # (the conditional S5 closed-source intake agent; W3 on legacy weekly
+    # records). Audit runs have
     # no fixed slots — their retrospective passes carry ad-hoc keys, so only
     # the recorded ones render (no synthetic "absent" S1–S4 cards).
     if kind == "weekly":
@@ -7467,20 +7380,36 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
         '(stood-down fire or pre-Phase-1 abort).</p>'
     )
 
-    # Entries this run published (links to permalinks).
+    # Entries this run published (links to permalinks) + entries it UPDATED
+    # (a changelog record carrying this run's id) — visually distinct rows.
+    rid_here = str(run.get("run_id") or "")
     entries_block = ""
     if run_entries:
-        lis = "".join(
-            f'<li><a href="{prefix}entries/{_escape(e["id"])}/">{_escape(e.get("title") or e["id"])}</a>'
-            f' <span class="e-tag">{_escape(e.get("kind") or "")}</span>'
-            f' <span class="muted mono">{_escape(e.get("priority") or "")}</span>'
-            + (' <span class="ops-pill ops-pill--neutral">update</span>' if e.get("update_of") else "")
-            + "</li>"
-            for e in run_entries
-        )
+        def _row(e: dict[str, Any]) -> str:
+            recs = [r for r in (e.get("updates") or [])
+                    if isinstance(r, dict) and str(r.get("run_id") or "") == rid_here]
+            is_new = str(e.get("run_id") or "") == rid_here
+            pill = ""
+            if recs and not is_new:
+                rtype = str(recs[-1].get("type") or "update")
+                pill = (f' <span class="ops-pill ops-pill--warn" title="{_escape(_fmt_long_stamp(recs[-1].get("at")))}">'
+                        f'{_escape(_update_type_label(rtype).lower())}</span>')
+            elif recs:
+                pill = ' <span class="ops-pill ops-pill--neutral">new + updated</span>'
+            return (
+                f'<li class="{"ops-entry--updated" if (recs and not is_new) else "ops-entry--new"}">'
+                f'<a href="{prefix}entries/{_escape(e["id"])}/">{_escape(e.get("title") or e["id"])}</a>'
+                f' <span class="e-tag">{_escape(e.get("kind") or "")}</span>'
+                f' <span class="muted mono">{_escape(e.get("priority") or "")}</span>{pill}</li>'
+            )
+        lis = "".join(_row(e) for e in run_entries)
+        n_new = sum(1 for e in run_entries if str(e.get("run_id") or "") == rid_here)
+        n_upd = len(run_entries) - n_new
+        head = "Entries published (this run)" if not n_upd else (
+            f"Entries this run published ({n_new}) and updated ({n_upd})")
         entries_block = (
             '<div class="ops-latest__failures">'
-            '<h3 class="ops-mini-head">Entries published (this run)</h3>'
+            f'<h3 class="ops-mini-head">{_escape(head)}</h3>'
             f'<ul class="entity-list">{lis}</ul>'
             "</div>"
         )
@@ -7801,7 +7730,8 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
     for r in runs:
         sa = r.get("sub_agents") or {}
         kind = r.get("kind", "intel")
-        # Sub-agent columns: fixed S1–S4 / W1–W2 slots per run kind; audit
+        # Sub-agent columns: fixed S1–S4 slots (W1–W2 on legacy weekly
+        # records); audit
         # runs record ad-hoc retrospective-pass keys, so show the first four
         # recorded ones. Rows are always padded to four columns so the table
         # aligns across kinds.
@@ -7935,9 +7865,9 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
         '<thead><tr><th title="Run id — links to the run\'s detail page">Run</th>'
         '<th>Kind</th><th>Main model</th><th>Prompt</th><th>Duration</th>'
         '<th title="Entries published this run">Entries</th>'
-        '<th title="Of which update_of entries">Upd</th>'
-        '<th title="S1 (intel) / W1 (weekly) / 1st audit pass">S1/W1</th>'
-        '<th title="S2 (intel) / W2 (weekly) / 2nd audit pass">S2/W2</th>'
+        '<th title="Existing entries this run appended a changelog record to">Upd</th>'
+        '<th title="S1 (intel) / W1 (legacy weekly) / 1st audit pass">S1</th>'
+        '<th title="S2 (intel) / W2 (legacy weekly) / 2nd audit pass">S2</th>'
         '<th title="S3 (intel) / 3rd audit pass">S3</th>'
         '<th title="S4 (intel) / 4th audit pass">S4</th>'
         '<th title="Fetch failures (coverage gaps)">Fetch fail</th>'
@@ -8098,11 +8028,11 @@ SECTOR_FEED_SLICES: list[tuple[str, tuple[str, ...], tuple[str, ...], str, str]]
 )
 
 FEEDS_PAGE_DESCRIPTION = (
-    "All RSS feeds · daily, weekly, per item, plus eight sector-specific "
+    "All RSS feeds · daily, per item (incl. updates), plus eight sector-specific "
     "slices (public sector, healthcare, finance, energy, OT/ICS, defense, "
     "telco, education)."
     if SECTOR_FEED_SLICES is _DEFAULT_SECTOR_FEED_SLICES
-    else "All RSS feeds · daily, weekly, per item, plus "
+    else "All RSS feeds · daily, per item (incl. updates), plus "
     f"{len(SECTOR_FEED_SLICES)} sector-specific slices "
     "(" + ", ".join(s[3] for s in SECTOR_FEED_SLICES) + ")."
 )
@@ -8129,10 +8059,12 @@ def build_daily_feed(
     *,
     site_url: str,
     ref_ts: datetime,
+    updates_by_day: dict[str, list[dict[str, Any]]] | None = None,
 ) -> tuple[str, datetime]:
     """feed.xml · one item per DAY page: title `CTI Daily Brief · <date>`,
     description = the day's TL;DR bullets, content = the day page's body
-    HTML. Last FEED_DAILY_MAX days."""
+    HTML (incl. § Updates to Prior Coverage from `updates_by_day`). Last
+    FEED_DAILY_MAX days."""
     items_xml: list[str] = []
     most_recent = datetime.fromtimestamp(0, tz=timezone.utc)
     for day in sorted(days.keys(), reverse=True)[:FEED_DAILY_MAX]:
@@ -8142,6 +8074,7 @@ def build_daily_feed(
         body_html = render_brief_sections(
             day_entries, runs_by_day.get(day, []),
             prefix=site_url, base_url=url, entries_by_id=by_id,
+            updated_entries=(updates_by_day or {}).get(day, []), updates_day=day,
         )
         tldr = select_tldr_entries(day_entries)
         desc_html = render_tldr_bullets(tldr, prefix=site_url)
@@ -8167,54 +8100,6 @@ def build_daily_feed(
         link=site_url,
         self_link=site_url + "feed.xml",
         description=FEED_DAILY_DESCRIPTION,
-        last_build=rfc822(most_recent if items_xml else ref_ts),
-        items_xml="".join(items_xml),
-    )
-    return feed, most_recent
-
-
-def build_weekly_feed(
-    weeks: dict[str, list[dict[str, Any]]],
-    runs_by_week: dict[str, list[dict[str, Any]]],
-    *,
-    site_url: str,
-    ref_ts: datetime,
-) -> tuple[str, datetime]:
-    """feed-weekly.xml · one item per weekly page, last FEED_WEEKLY_MAX."""
-    items_xml: list[str] = []
-    most_recent = datetime.fromtimestamp(0, tz=timezone.utc)
-    for week in sorted(weeks.keys(), reverse=True)[:FEED_WEEKLY_MAX]:
-        strat = sorted(strategic_entries(weeks[week]), key=entry_sort_key)
-        url = f"{site_url}weekly/{week}/"
-        by_id = {e["id"]: e for e in strat}
-        body_html = render_weekly_sections(
-            strat, runs_by_week.get(week, []),
-            prefix=site_url, base_url=url, entries_by_id=by_id,
-        )
-        glance = [e for e in strat if e.get("priority") in ("critical", "high")]
-        desc_html = render_tldr_bullets(glance, prefix=site_url)
-        cve_ids = sorted({c for e in strat for c in entry_cve_ids(e)})
-        cats = "".join(f"<category>{_escape(c)}</category>" for c in cve_ids[:8])
-        pub = _day_pub_ts(strat)
-        items_xml.append(
-            "<item>"
-            f"<title>{_escape(f'CTI Weekly Summary · {week}')}</title>"
-            f"<link>{_escape(url)}</link>"
-            f'<guid isPermaLink="true">{_escape(url)}</guid>'
-            f"<pubDate>{rfc822(pub)}</pubDate>"
-            f"<dc:date>{_escape(pub.strftime('%Y-%m-%dT%H:%M:%SZ'))}</dc:date>"
-            f"{cats}"
-            f"<description><![CDATA[{_cdata_safe(desc_html)}]]></description>"
-            f"<content:encoded><![CDATA[{_cdata_safe(body_html)}]]></content:encoded>"
-            "</item>"
-        )
-        if pub > most_recent:
-            most_recent = pub
-    feed = _channel_rss(
-        title=f"{SITE_NAME} · Weekly ({TAGLINE})",
-        link=site_url,
-        self_link=site_url + "feed-weekly.xml",
-        description=FEED_WEEKLY_DESCRIPTION,
         last_build=rfc822(most_recent if items_xml else ref_ts),
         items_xml="".join(items_xml),
     )
@@ -8254,32 +8139,85 @@ def _entry_feed_item(entry: dict[str, Any], *, site_url: str,
     )
 
 
+def _update_feed_item(entry: dict[str, Any], record: dict[str, Any], *,
+                      site_url: str) -> str:
+    """One RSS <item> per changelog record (docs/pipeline.md § Entry
+    lifecycle): guid `<entry url>#update-<at>` (not a permalink), pubDate =
+    the record's `at`, title prefixed by the record type, description =
+    the record's summary, content = the styled update block + a link to
+    the living entry."""
+    url = site_url + entry_url_path(entry)
+    at = str(record.get("at") or "")
+    ts = parse_ts(at) or datetime(2000, 1, 1, tzinfo=timezone.utc)
+    rtype = str(record.get("type") or "update")
+    section = update_sections_by_at(entry).get(at)
+    body_html = (
+        render_update_block(entry, record, section, prefix=site_url, base_url=url,
+                            with_summary=True, entry_link=True)
+    )
+    cat_parts = ["update", rtype] + list(entry.get("tags") or []) + entry_cve_ids(entry)
+    cats = "".join(f"<category>{_escape(c)}</category>" for c in cat_parts[:16])
+    desc_html = f"<p>{_inline_text(str(record.get('summary') or ''))}</p>"
+    headline = entry.get("headline") or entry.get("title") or entry["id"]
+    return (
+        "<item>"
+        f"<title>{_escape(_update_type_label(rtype))}: {_escape(str(headline))}</title>"
+        f"<link>{_escape(url)}#update-{_escape(at)}</link>"
+        f'<guid isPermaLink="false">{_escape(url)}#update-{_escape(at)}</guid>'
+        f"<pubDate>{rfc822(ts)}</pubDate>"
+        f"<dc:date>{_escape(at)}</dc:date>"
+        f"{cats}"
+        f"<description><![CDATA[{_cdata_safe(desc_html)}]]></description>"
+        f"<content:encoded><![CDATA[{_cdata_safe(body_html)}]]></content:encoded>"
+        "</item>"
+    )
+
+
+def _feed_items_for(entries: list[dict[str, Any]], *, site_url: str,
+                    entries_by_id: dict[str, dict[str, Any]] | None,
+                    cap: int) -> tuple[list[str], datetime]:
+    """Entry items + one item per changelog record, ordered by their own
+    timestamp (newest first), capped to `cap` combined. Returns the XML
+    fragments and the newest timestamp."""
+    stamped: list[tuple[str, str, int, dict[str, Any], dict[str, Any] | None]] = []
+    for e in entries:
+        stamped.append((str(e.get("discovered_at") or ""), e["id"], 0, e, None))
+        for rec in e.get("updates") or []:
+            if isinstance(rec, dict) and rec.get("at"):
+                stamped.append((str(rec["at"]), e["id"], 1, e, rec))
+    stamped.sort(key=lambda t: (t[0], t[1], t[2]), reverse=True)
+    picked = stamped[:cap]
+    items = [
+        _update_feed_item(e, rec, site_url=site_url) if rec is not None
+        else _entry_feed_item(e, site_url=site_url, entries_by_id=entries_by_id)
+        for _ts, _id, _k, e, rec in picked
+    ]
+    most_recent = datetime.fromtimestamp(0, tz=timezone.utc)
+    for t, *_rest in picked:
+        ts = parse_ts(t)
+        if ts and ts > most_recent:
+            most_recent = ts
+    return items, most_recent
+
+
 def build_items_feed(
     entries: list[dict[str, Any]],
     *,
     site_url: str,
     ref_ts: datetime,
 ) -> tuple[str, datetime]:
-    """feed-items.xml · one item per ENTRY, last FEED_ITEMS_MAX, newest
-    first by discovered_at (true discovery latency)."""
+    """feed-items.xml · one item per ENTRY (pubDate = discovered_at, true
+    discovery latency) plus one item per changelog record (pubDate = the
+    record's at), newest first, FEED_ITEMS_MAX combined."""
     by_id = {e["id"]: e for e in entries}
-    ordered = sorted(
-        entries,
-        key=lambda e: (str(e.get("discovered_at") or ""), e["id"]),
-        reverse=True,
-    )[:FEED_ITEMS_MAX]
-    items_xml = [_entry_feed_item(e, site_url=site_url, entries_by_id=by_id) for e in ordered]
-    most_recent = datetime.fromtimestamp(0, tz=timezone.utc)
-    for e in ordered:
-        ts = parse_ts(e.get("discovered_at"))
-        if ts and ts > most_recent:
-            most_recent = ts
+    items_xml, most_recent = _feed_items_for(entries, site_url=site_url,
+                                             entries_by_id=by_id, cap=FEED_ITEMS_MAX)
     feed = _channel_rss(
         title=f"{SITE_NAME} · Per item",
         link=site_url,
         self_link=site_url + "feed-items.xml",
         description=FEED_ITEMS_DESCRIPTION,
-        last_build=rfc822(most_recent if ordered else ref_ts),
+        last_build=rfc822(most_recent if items_xml else ref_ts),
         items_xml="".join(items_xml),
     )
     return feed, most_recent
@@ -8291,9 +8229,9 @@ def build_sector_feeds(
     site_url: str,
     ref_ts: datetime,
 ) -> list[tuple[str, str, datetime]]:
-    """The 8 sector slices · the per-entry feed filtered on entry
-    sectors / tags (SECTOR_FEED_SLICES, branding-overridable). Returns
-    `[(filename, xml, most_recent_ts), …]`."""
+    """The 8 sector slices · the per-entry feed (entry items + one item per
+    changelog record) filtered on entry sectors / tags (SECTOR_FEED_SLICES,
+    branding-overridable). Returns `[(filename, xml, most_recent_ts), …]`."""
     by_id = {e["id"]: e for e in entries}
     out: list[tuple[str, str, datetime]] = []
     for fname, accept_sectors, accept_tags, title_suffix, description in SECTOR_FEED_SLICES:
@@ -8304,25 +8242,14 @@ def build_sector_feeds(
             if (set(e.get("sectors") or []) & accept_sectors_set)
             or (set(e.get("tags") or []) & accept_tags_set)
         ]
-        candidates.sort(
-            key=lambda e: (str(e.get("discovered_at") or ""), e["id"]), reverse=True
-        )
-        candidates = candidates[:FEED_ITEMS_MAX]
-        items_xml = [
-            _entry_feed_item(e, site_url=site_url, entries_by_id=by_id)
-            for e in candidates
-        ]
-        most_recent = datetime.fromtimestamp(0, tz=timezone.utc)
-        for e in candidates:
-            ts = parse_ts(e.get("discovered_at"))
-            if ts and ts > most_recent:
-                most_recent = ts
+        items_xml, most_recent = _feed_items_for(candidates, site_url=site_url,
+                                                 entries_by_id=by_id, cap=FEED_ITEMS_MAX)
         feed = _channel_rss(
             title=f"{SITE_NAME} · {title_suffix}",
             link=site_url,
             self_link=site_url + fname,
             description=description,
-            last_build=rfc822(most_recent if candidates else ref_ts),
+            last_build=rfc822(most_recent if items_xml else ref_ts),
             items_xml="".join(items_xml),
         )
         out.append((fname, feed, most_recent))
@@ -8354,7 +8281,9 @@ def _fill_weekly_timeline(buckets: list[tuple[str, int]]) -> list[tuple[str, int
     """Take a sparse `[(YYYY-Www, count)]` list and fill in zero counts
     for every ISO week between min and max so the sparkline shows the
     coverage rhythm rather than a single dot. If only one bucket
-    exists, return it as-is · the sparkline helper handles that."""
+    exists, return it as-is · the sparkline helper handles that.
+    (Calendar-week bucketing for /trends/ and entity sparklines — nothing
+    to do with the retired weekly routine.)"""
     if len(buckets) < 2:
         return buckets
     from datetime import date as _date, timedelta as _td
@@ -8826,8 +8755,8 @@ def render_entities_index_page(
 # list carries the key, or its title/body mentions the entity's name or
 # an alias (the v2 phrase-matching approach, ported to entry dicts).
 # Timelines derive from entry dates; citations from entry sources; the
-# old v2 coverage-log "delta timeline" is replaced by the update_of chain
-# plus appearance dates.
+# old v2 coverage-log "delta timeline" is replaced by appearance dates plus
+# each entry's own changelog (updates[]).
 
 
 def _source_prefix_index(sources_raw: dict[str, Any]) -> list[tuple[str, str, str]]:
@@ -8978,7 +8907,7 @@ def _phrase_hits(haystack_folded: str, haystack_raw: str,
 
 def _entry_appearance(entry: dict[str, Any]) -> dict[str, Any]:
     skey = entry_section_key(entry) if (entry.get("horizon") or "operational") == "operational" \
-        else weekly_section_key(entry)
+        else "legacy-strategic"
     return {
         "date": entry["date"],
         "section": skey or "",
@@ -9280,8 +9209,8 @@ def render_entity_page(
     """Single renderer for every entity type · CVE + every registry type
     (actor, campaign, malware, tool, incident, report, trend, policy).
     Same layout as v2: header pills → KPI tiles → coverage strip →
-    story timeline (entry permalinks; the update_of chain lives on the
-    entry pages) → charts → related entities → external refs + cited
+    story timeline (entry permalinks; each entry's changelog lives on its
+    own page) → charts → related entities → external refs + cited
     sources → embedded matching entries."""
     etype = (entity.get("type") or "").lower()
     title = entity.get("title") or entity.get("key") or "Untitled"
@@ -10860,55 +10789,58 @@ def main() -> int:
 
     # ---- Derived indexes -------------------------------------------------
     entries_by_id = {e["id"]: e for e in entries}
-    updated_by = build_update_chains(entries)
     days = entries_by_day(entries)
-    weeks = entries_by_week(entries)
+    # Entries with a changelog record dated on a given UTC day — the day
+    # page's § Updates to Prior Coverage (docs/pipeline.md § Entry lifecycle).
+    updates_by_day: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for e in operational_entries(entries):
+        for rec in e.get("updates") or []:
+            if isinstance(rec, dict) and isinstance(rec.get("at"), str):
+                d_ = rec["at"][:10]
+                if DATE_RE.match(d_) and e not in updates_by_day[d_]:
+                    updates_by_day[d_].append(e)
     # Every fire is a first-class event — including an all-quiet one that
-    # published nothing. Its run record is the artifact, so the day (or ISO
-    # week) must stay visible: listed in the archive, its run-notes rendered,
-    # its run-links resolvable. The page/link universe is therefore the union
-    # of content days/weeks and the days/weeks that merely ran. `days`/`weeks`
-    # themselves stay entry-driven (the RSS feeds carry published content
-    # only, never an empty item); the union drives page generation, the
-    # archive indexes, the search index, the home marquee, and every
-    # "is there a page for this date?" link decision.
+    # published nothing. Its run record is the artifact, so the day must
+    # stay visible: listed in the archive, its run-notes rendered, its
+    # run-links resolvable. The page/link universe is therefore the union of
+    # content days (entries first published OR updated that day) and the
+    # days that merely ran. `days` itself stays entry-driven (the RSS feeds
+    # carry published content only, never an empty item); the union drives
+    # page generation, the archive index, the search index, the home cards,
+    # and every "is there a page for this date?" link decision.
     ref = reference_ts(entries, runs)
     # Daily = COMPLETED UTC days only. The current (rolling) day is served
     # exclusively by the Live view; it gets no /daily/<today>/ page and is
-    # absent from the day archive until it completes. Weekly keeps every week.
+    # absent from the day archive until it completes.
     today = ref.strftime("%Y-%m-%d")
-    day_pages = {d for d in (set(days) | daily_run_dates(runs)) if d < today}
-    week_pages = set(weeks) | weekly_run_weeks(runs)
-    # Point the Daily / Weekly topbar segments at the most recent pages.
-    global LATEST_DAY_REL, LATEST_WEEK_REL
+    day_pages = {d for d in (set(days) | set(updates_by_day) | daily_run_dates(runs)) if d < today}
+    # Point the Daily topbar segment at the most recent page.
+    global LATEST_DAY_REL
     if day_pages:
         LATEST_DAY_REL = f"daily/{max(day_pages)}/"
-    if week_pages:
-        LATEST_WEEK_REL = f"weekly/{max(week_pages)}/"
     runs_by_id = {str(r.get("run_id")): r for r in runs if r.get("run_id")}
+    # entries_by_run: the entries a run PUBLISHED plus the entries it UPDATED
+    # (a changelog record carrying its run_id) — the run detail page lists
+    # both, visually distinct.
     entries_by_run: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for e in entries:
         rid = str(e.get("run_id") or "")
         if rid:
             entries_by_run[rid].append(e)
+        for rec in e.get("updates") or []:
+            urid = str((rec or {}).get("run_id") or "") if isinstance(rec, dict) else ""
+            if urid and urid != rid and e not in entries_by_run[urid]:
+                entries_by_run[urid].append(e)
     runs_by_day: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    runs_by_week: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in runs:
         rdate = str(r.get("date") or "")
         if not DATE_RE.match(rdate):
             continue
         if r.get("kind") == "weekly":
-            try:
-                y, m, d = (int(x) for x in rdate.split("-"))
-                iso = date(y, m, d).isocalendar()
-                runs_by_week[f"{iso[0]:04d}-W{iso[1]:02d}"].append(r)
-            except ValueError:
-                pass
-        else:
-            runs_by_day[rdate].append(r)
-    for bucket in (runs_by_day, runs_by_week):
-        for k in bucket:
-            bucket[k].sort(key=lambda r: str(r.get("started") or ""), reverse=True)
+            continue  # legacy weekly records: ops/run pages only, no day page
+        runs_by_day[rdate].append(r)
+    for k in runs_by_day:
+        runs_by_day[k].sort(key=lambda r: str(r.get("started") or ""), reverse=True)
 
     sources = annotate_sources(sources_raw, entries)
     entities_list, entries_by_entity_key = build_entities(
@@ -10964,13 +10896,15 @@ def main() -> int:
         if index:
             sitemap.append((site_url + rel_url, lastmod))
 
-    # ---- /brief/ — the dynamic window brief + briefbook ----------------
+    # ---- /live/ — the dynamic window brief + briefbook -----------------
+    # Window membership is by ACTIVITY (max(discovered_at, updated_at)): an
+    # updated entry floats back into the live window.
     card_html_by_id: dict[str, str] = {}
     briefbook = build_briefbook(
         entries, runs, ref_ts=ref, prefix="../", card_html_by_id=card_html_by_id
     )
     window_since = ref - timedelta(hours=DEFAULT_WINDOW_HOURS)
-    window_entries = content_model.entries_in_window(entries, window_since, None)
+    window_entries = content_model.entries_in_window(entries, window_since, None, activity=True)
     window_runs = runs_in_window(runs, window_since, None)
     emit_html(
         "live/",
@@ -11006,8 +10940,11 @@ def main() -> int:
                 canonical=site_url + rel_url,
                 prev_day=_day_seq[_i - 1] if _i > 0 else None,
                 next_day=_day_seq[_i + 1] if _i + 1 < len(_day_seq) else None,
+                updated_entries=updates_by_day.get(day, []),
             ),
-            lastmod=day,
+            lastmod=max([day] + [str(r.get("at"))[:10] for e in updates_by_day.get(day, [])
+                                 for r in (e.get("updates") or []) if isinstance(r, dict)
+                                 and str(r.get("at") or "")[:10] == day]),
         )
     emit_html(
         "daily/",
@@ -11021,38 +10958,6 @@ def main() -> int:
         lastmod=max(day_pages) if day_pages else "",
     )
 
-    # ---- Weekly pages + index + legacy redirects ------------------------
-    _week_seq = [w for w in sorted(week_pages) if is_safe_path_segment(w)]
-    for _wi, week in enumerate(_week_seq):
-        week_entries = weeks.get(week, [])
-        rel_url = f"weekly/{week}/"
-        emit_html(
-            rel_url,
-            render_weekly_page(
-                week, week_entries, runs_by_week.get(week, []),
-                entries_by_id=entries_by_id,
-                site_url=site_url,
-                cachebust=cachebust,
-                prefix="../../",
-                canonical=site_url + rel_url,
-                prev_week=_week_seq[_wi - 1] if _wi > 0 else None,
-                next_week=_week_seq[_wi + 1] if _wi + 1 < len(_week_seq) else None,
-            ),
-            lastmod=max((e["date"] for e in week_entries), default=""),
-        )
-    emit_html(
-        "weekly/",
-        render_weekly_index_page(
-            {w: weeks.get(w, []) for w in week_pages},
-            site_url=site_url,
-            cachebust=cachebust,
-            prefix="../",
-            canonical=site_url + "weekly/",
-        ),
-        lastmod=max(weeks) if weeks else "",
-    )
-
-
     # ---- Per-entry permalinks + tag/region indexes ----------------------
     tag_index: dict[str, list[dict[str, Any]]] = defaultdict(list)
     region_index: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -11063,7 +10968,6 @@ def main() -> int:
             render_entry_page(
                 e,
                 entries_by_id=entries_by_id,
-                updated_by=updated_by,
                 registry=registry,
                 runs_by_id=runs_by_id,
                 day_pages=day_pages,
@@ -11072,12 +10976,33 @@ def main() -> int:
                 prefix="../../../",
                 canonical=site_url + rel_url,
             ),
-            lastmod=e["date"],
+            lastmod=(str(e.get("updated_at") or "")[:10] or e["date"]),
         )
         for t in e.get("tags") or []:
             tag_index[t].append(e)
         for r in e.get("regions") or []:
             region_index[r].append(e)
+        # Folded v3 update entries (docs/pipeline.md § Entry lifecycle,
+        # `updates[].merged_from`): their old permalinks redirect to the
+        # living entry. noindex, out of the sitemap, never over a real entry.
+        for rec in e.get("updates") or []:
+            mf = str((rec or {}).get("merged_from") or "") if isinstance(rec, dict) else ""
+            if not mf or mf in entries_by_id or not content_model.ENTRY_ID_RE.match(mf):
+                continue
+            mf_date, mf_slug = mf.split("/", 1)
+            if not (is_safe_path_segment(mf_date) and is_safe_path_segment(mf_slug)):
+                continue
+            emit_html(
+                f"entries/{mf}/",
+                render_redirect_page(
+                    target_url=f"/{rel_url}#update-{str(rec.get('at') or '')}",
+                    title=f"{mf} · folded into {e['id']}",
+                    site_url=site_url,
+                    cachebust=cachebust,
+                ),
+                lastmod=str(rec.get("at") or "")[:10],
+                index=False,
+            )
 
     def tag_or_region_page(facet: str, value: str, bucket: list[dict[str, Any]]) -> str:
         rel_url = f"{facet}/{value}/"
@@ -11220,14 +11145,19 @@ def main() -> int:
     latest_completed = day_keys[0] if day_keys else None
     today = latest_completed          # unused for display; kept for signature
     prev_day = latest_completed
-    latest_week = max(weeks) if weeks else None
     recent_entries = sorted(
         entries, key=lambda e: (str(e.get("discovered_at") or ""), e["id"]), reverse=True
+    )
+    # Entries whose latest activity is a changelog record, newest first —
+    # the home "Updates" card.
+    recent_updates = sorted(
+        (e for e in operational_entries(entries) if entry_activity(e)["is_update"]),
+        key=lambda e: (content_model.entry_activity_ts(e) or "", e["id"]), reverse=True,
     )
     counts = {
         "entries": len(entries),
         "days": len(days),
-        "weeklies": len(weeks),
+        "updates": sum(len(e.get("updates") or []) for e in entries),
         "entities": len(entities_list),
         "cves": len(cves_list),
         "sources": len(sources["sources"]),
@@ -11240,8 +11170,7 @@ def main() -> int:
             today_entries=window_entries,
             prev_day=prev_day,
             prev_day_entries=days.get(prev_day, []) if prev_day else [],
-            latest_week=latest_week,
-            latest_week_entries=weeks.get(latest_week, []) if latest_week else [],
+            recent_updates=recent_updates,
             site_url=site_url,
             cachebust=cachebust,
             canonical=site_url,
@@ -11492,7 +11421,7 @@ def main() -> int:
     <h3 style="margin-top:0">Common ways here</h3>
     <ul style="margin-top:0.4rem">
       <li><strong>Renamed CVE / source / entity page.</strong> Use the search box above (also at the top of every page).</li>
-      <li><strong>Reading the brief.</strong> The rolling window is at <code>/live/</code>, completed days at <code>/daily/</code>, weekly summaries at <code>/weekly/</code>.</li>
+      <li><strong>Reading the brief.</strong> The rolling window is at <code>/live/</code>, completed days at <code>/daily/</code>; every finding has one permalink under <code>/entries/</code> that carries its updates and corrections.</li>
       <li><strong>Multi-CVE link from an older entry.</strong> Each CVE has its own page; use the search box or the
         <a href="{site_base_path}cves/">full CVE list</a>.</li>
     </ul>
@@ -11527,11 +11456,10 @@ def main() -> int:
     atomic_write_text(OUT / "404.html", err)
 
     # ---- RSS feeds -----------------------------------------------------
-    daily_xml, _daily_recent = build_daily_feed(days, runs_by_day, site_url=site_url, ref_ts=ref)
-    weekly_xml, _weekly_recent = build_weekly_feed(weeks, runs_by_week, site_url=site_url, ref_ts=ref)
+    daily_xml, _daily_recent = build_daily_feed(days, runs_by_day, site_url=site_url, ref_ts=ref,
+                                               updates_by_day=updates_by_day)
     items_xml, _items_recent = build_items_feed(entries, site_url=site_url, ref_ts=ref)
     atomic_write_text(OUT / "feed.xml", daily_xml)
-    atomic_write_text(OUT / "feed-weekly.xml", weekly_xml)
     atomic_write_text(OUT / "feed-items.xml", items_xml)
     sector_feed_results = build_sector_feeds(entries, site_url=site_url, ref_ts=ref)
     sector_feed_hashes: dict[str, str] = {}
@@ -11577,7 +11505,6 @@ def main() -> int:
         "cachebust": cachebust,
         "feeds": {
             "feed.xml": hashlib.sha256(daily_xml.encode("utf-8")).hexdigest(),
-            "feed-weekly.xml": hashlib.sha256(weekly_xml.encode("utf-8")).hexdigest(),
             "feed-items.xml": hashlib.sha256(items_xml.encode("utf-8")).hexdigest(),
             **sector_feed_hashes,
         },
@@ -11599,21 +11526,15 @@ def main() -> int:
             "route": f"daily/{day}/",
             "tags": sorted({c for e in day_ops for c in entry_cve_ids(e)})[:6],
         })
-    for week in sorted(week_pages, reverse=True):
-        search_idx.append({
-            "kind": "weekly",
-            "id": week,
-            "title": f"CTI Weekly Summary · {week}",
-            "hint": f"{len(weeks.get(week, []))} strategic entries",
-            "route": f"weekly/{week}/",
-            "tags": [],
-        })
     for e in recent_entries:
         search_idx.append({
             "kind": "entry",
             "id": e["id"],
             "title": e.get("title") or e["id"],
-            "hint": (e.get("summary") or "").strip()[:240],
+            "hint": (
+                (f"updated {str(e.get('updated_at'))[:10]} · " if e.get("updates") else "")
+                + (e.get("summary") or "").strip()
+            )[:240],
             "route": entry_url_path(e),
             "tags": list(e.get("tags") or [])[:4] + entry_cve_ids(e)[:4],
         })
@@ -11666,7 +11587,7 @@ def main() -> int:
 
     # ---- Prune orphans + self-check --------------------------------------
     prune_orphans(OUT)
-    feed_files = [OUT / "feed.xml", OUT / "feed-weekly.xml", OUT / "feed-items.xml"] + [
+    feed_files = [OUT / "feed.xml", OUT / "feed-items.xml"] + [
         OUT / fname for fname, _xml, _ts in sector_feed_results
     ]
     errors, warnings = self_check(manifest=manifest, feed_files=feed_files, site_url=site_url)
@@ -11682,7 +11603,7 @@ def main() -> int:
 
     print(
         f"built {OUT} · entries={counts['entries']} days={counts['days']} "
-        f"weeklies={counts['weeklies']} entities={counts['entities']} "
+        f"updates={counts['updates']} entities={counts['entities']} "
         f"cves={counts['cves']} sources={counts['sources']} "
         f"tags={manifest['counts']['tags']} regions={manifest['counts']['regions']} "
         f"cachebust={cachebust} "

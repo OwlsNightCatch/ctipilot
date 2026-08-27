@@ -14,13 +14,10 @@ parts and defers to that spec for every field-level question.
                       ┌────────────────────────────────────┐
                       │  Claude Code routines (cloud)      │
                       │                                    │
-                      │  intel run — fired N× per day:     │
+                      │  intel run — operator cadence:     │
                       │   "Read prompts/cti-run.md and     │
                       │    execute it."                    │
-                      │  weekly — fired once per week:     │
-                      │   "Read prompts/weekly-summary.md  │
-                      │    and execute it."                │
-                      │  quality audit — once per week:    │
+                      │  quality audit — operator cadence: │
                       │   "Read prompts/quality-audit.md   │
                       │    and execute it."                │
                       └─────────────────┬──────────────────┘
@@ -31,8 +28,7 @@ parts and defers to that spec for every field-level question.
          │                                                          │
          │  prompts/                  entries/YYYY-MM-DD/<slug>.md  │
          │   ├ cti-run.md             entities/registry.yaml        │
-         │   ├ weekly-summary.md      runs/YYYY-MM-DD/<run-id>.md   │
-         │   ├ quality-audit.md                                     │
+         │   ├ quality-audit.md       runs/YYYY-MM-DD/<run-id>.md   │
          │   ├ CHANGELOG.md                                         │
          │   ├ verification.md        state/                        │
          │   ├ entry-template.md       ├ cves_seen.json             │
@@ -40,7 +36,7 @@ parts and defers to that spec for every field-level question.
          │                            sources/sources.json          │
          │  docs/pipeline.md          work/<run-id>/                │
          │   (NORMATIVE data model)                                 │
-         │  docs/audits/              (weekly audit reports)        │
+         │  docs/audits/              (quality-audit reports)       │
          │  site/content_model.py     tools/                        │
          │   (shared parser)           ├ check_run.py (Phase 5.5)   │
          │                             ├ build_prior_coverage.py    │
@@ -71,7 +67,9 @@ parts and defers to that spec for every field-level question.
                                         ▼
                               GitHub Pages reader
                               /live/ renders the entry store
-                              over a reader-chosen time window
+                              over a reader-chosen time window,
+                              ordered by activity (an updated
+                              entry floats back to the top)
                               (real HTML pages — no SPA)
 ```
 
@@ -79,9 +77,10 @@ parts and defers to that spec for every field-level question.
 
 ### `docs/pipeline.md` — the normative data model
 
-The single normative specification of the v3 content model: entry-file
-frontmatter (kinds, priority, verification enum, `update_of`, `cves[]`,
-`evidence[]`, `org_triage`, …), run-id shape, the entity-registry contract,
+The single normative specification of the content model (v4): entry-file
+frontmatter (kinds, priority, verification enum, the `updates[]` changelog +
+`updated_at`, `cves[]`, `evidence[]`, `org_triage`, …), the entry lifecycle
+(one living entry per finding), run-id shape, the entity-registry contract,
 run-record telemetry, relevance discipline, cross-run dedup, and what
 `tools/check_run.py` validates. **If any code or doc disagrees with it, the
 spec wins and the code is the bug.** Nothing in this file restates its field
@@ -89,7 +88,7 @@ tables — read it once before touching any producer or consumer.
 
 ### `prompts/` — everything the routines load at runtime
 
-The two master prompts plus the runtime-policy / template / debug docs they reference. Each master prompt is the *entire* runtime contract for a routine; the routine is invoked with a one-line wrapper ("Read this prompt and execute it"). The supporting files live under `prompts/` because the master prompts `Read` them at runtime — they are part of the prompt machinery, not operator-facing documentation.
+The two master prompts (intel run, quality audit) plus the runtime-policy / template / debug docs they reference. Each master prompt is the *entire* runtime contract for a routine; the routine is invoked with a one-line wrapper ("Read this prompt and execute it"). The supporting files live under `prompts/` because the master prompts `Read` them at runtime — they are part of the prompt machinery, not operator-facing documentation.
 
 - [`prompts/cti-run.md`](../prompts/cti-run.md) — the intel run, **fired
   multiple times per day** (the operator picks the cadence; the prompt is
@@ -100,20 +99,13 @@ The two master prompts plus the runtime-policy / template / debug docs they refe
   record → state update → 5.5 mechanical gate → 5.7 verifier loop →
   commit/sync/push → publish verification. Output: zero or more entry
   files plus exactly one run record per fire.
-- [`prompts/weekly-summary.md`](../prompts/weekly-summary.md) — the weekly
-  *strategic* run, fired once per week. **Builds on `cti-run.md`** — it
-  instructs a runtime `Read` of the intel-run prompt and defines only the
-  weekly divergences (W-PD-1 inclusion gate, ISO-week recency, weekly dedup
-  polarity, `weekly_section` placement, relevance-driven section volume), so
-  shared machinery lives in exactly one file and cannot copy-drift. Output:
-  `horizon: strategic` entries + one run record; the `/weekly/YYYY-Www/`
-  page is rendered from them. The weekly may re-frame operational entries
-  via `references`; intel runs never duplicate strategic entries — the
-  asymmetry runs one way.
-- [`prompts/quality-audit.md`](../prompts/quality-audit.md) — the weekly
-  *quality-audit* run, fired once per week (recommended: Sunday, after the
-  weekly slot). **Builds on `cti-run.md`** the same way and defines only the
-  audit lens over the window since the previous audit record: retrospective
+- [`prompts/quality-audit.md`](../prompts/quality-audit.md) — the
+  *quality-audit* run, fired on an operator-chosen cadence (weekly is
+  typical; the window is always the gap since the previous audit record).
+  **Builds on `cti-run.md`** — it instructs a runtime `Read` of the
+  intel-run prompt and defines only the audit lens over the window since
+  the previous audit record, so shared machinery lives in exactly one file
+  and cannot copy-drift: retrospective
   truth verification of every published entry against its primary sources
   (batched cold-reader passes on the verifier sub-agents), independent
   coverage re-sweeps diffed against the store (G1 vulns / G2 incidents +
@@ -123,9 +115,15 @@ The two master prompts plus the runtime-policy / template / debug docs they refe
   previous audit's fixes, and — first fire of each calendar month — the
   priority-calibration review (priority distribution vs verifier F16 drift).
   Root-causes every confirmed defect and ships the fix under the versioning
-  rule (or a numbered operator recommendation). Output: an audit report
+  rule (or a numbered operator recommendation). Also owns the ATT&CK-pin
+  freshness check (`tools/attack_data.py --check`). Output: an audit report
   under `docs/audits/`, one run record (`-audit` run-id suffix, `kind:
-  intel`), and audit-recovered entries where a gap still clears PD-11.
+  audit`), audit-recovered entries where a gap still clears PD-11, and
+  `correction` / `improvement` changelog records appended to the entries it
+  found wrong or thin. (The weekly strategic routine that used to sit
+  beside these two — `prompts/weekly-summary.md` — was retired on
+  2026-08-27; its `horizon: strategic` entries stay in the store as
+  archived permalinks.)
 - [`prompts/CHANGELOG.md`](../prompts/CHANGELOG.md) — the version history of
   the prompts. Treat as the audit trail for editorial-policy changes.
 - [`prompts/verification.md`](../prompts/verification.md) — the editorial /
@@ -148,15 +146,22 @@ complete metadata contract (headline, summary, priority + optional
 records, sources, evidence quotes, verification flags, `actions[]`); the
 body is the analysis in the same technical register as a v2 brief item.
 
-**Entries are immutable once committed.** New information — including a
-same-day development between two runs — is a new entry with
-`update_of: <original entry id>`; corrections ship the same way, never as
-edits. Volume follows a strict relevance/actionability gate rather than a
-count — no per-run, per-day, or rolling-24 h target or ceiling; the window
-carries exactly the entries that earn their place, and more runs mean lower
-latency, never more content (dedup). Everything the site renders —
-the dynamic brief, day archives, weeklies, feeds, entity pages, trends,
-`data/alerts.json` — is derived from these files. Contract pointer:
+**One living entry per finding.** New information — including a same-day
+development between two runs — is appended to the finding's own entry as a
+timestamped `updates[]` changelog record with a matching
+`## Update — <at>` body section; corrections fix the wrong statement where
+it stands and record a `correction`; added precision is an `improvement`.
+The frontmatter always reflects the current state, `discovered_at` /
+`run_id` / the entry id never change, `updated_at` mirrors the last record,
+and the gate FAILs any edit that ships without a record for the editing
+fire (no silent edits — `docs/pipeline.md` § Entry lifecycle). Volume
+follows a strict relevance/actionability gate rather than a count — no
+per-run, per-day, or rolling-24 h target or ceiling; the window carries
+exactly the entries that earn their place, and more runs mean lower
+latency, never more content (dedup). Everything the site renders — the
+dynamic brief (ordered by activity, so an update floats an entry back to
+the top), day archives, feeds (one item per entry and per update), entity
+pages, trends, `data/alerts.json` — is derived from these files. Contract pointer:
 [`entries/README.md`](../entries/README.md); spec: [`docs/pipeline.md`](pipeline.md).
 
 ### `entities/registry.yaml` — the global entity registry
@@ -194,21 +199,23 @@ derives evidence-bound entity/CVE → technique profiles from entries
 `content_model.entry_technique_ids`), renders the entity-page ATT&CK
 sections and the `/attack/` overlap matrix, and exports per-entity ATT&CK
 Navigator layers. Revoked techniques are kept and forwarded — the ATT&CK
-analogue of registry tombstones, because immutable entries keep citing old
-ids. Normative: [`docs/pipeline.md`](pipeline.md) § The ATT&CK layer;
+analogue of registry tombstones, because the store is not rewritten when
+the pin moves and older entries keep citing old ids. Normative: [`docs/pipeline.md`](pipeline.md) § The ATT&CK layer;
 contract: [`attack/README.md`](../attack/README.md).
 
 ### `runs/` — per-run records
 
 One file per fire at `runs/<YYYY-MM-DD>/<run-id>.md`, with
-`run_id = <YYYY-MM-DD>T<HHMM>Z-<intel|weekly>` (UTC, minute precision,
+`run_id = <YYYY-MM-DD>T<HHMM>Z-<intel|audit>` (UTC, minute precision,
 lexically sortable; a same-minute retry updates the same record —
-idempotent). **The run record is the mandatory artifact of every fire** —
+idempotent; `-weekly` records are legacy history from the retired routine). **The run record is the mandatory artifact of every fire** —
 zero entries is a healthy quiet window; a missing record is an operational
 failure. Frontmatter is the machine-readable telemetry (models per role,
-gap/window hours, per-sub-agent allocation, fetch failures, entry counters,
-the full verification-loop breakdown — the v2 `run_log.json` entry,
-relocated); the body is the human-readable verification & coverage notes
+gap/window hours, per-sub-agent allocation, fetch failures, entry counters
+— `entries_published` for new files, `entries_updated` +
+`updated_entry_ids[]` for the existing entries the fire appended a
+changelog record to — the full verification-loop breakdown — the v2
+`run_log.json` entry, relocated); the body is the human-readable verification & coverage notes
 (the v2 brief § 7, relocated), including the parseable `Coverage gaps:` /
 `Watchlist:` / `Closed-source intake:` / `Essential-coverage:` lines the
 next run's preflight reads. The Ops dashboard at `/ops/` is built entirely
@@ -238,8 +245,9 @@ vendor/exposure/criticality, suppliers with relationship/criticality,
 standing free-text interests), the vulnerability-triage scheme
 (categories with id/name/criteria/response + a default), the
 national-CERT single-source carve-out list (`national_certs` — absent key
-= upstream default list, `[]` = carve-out disabled), the weekly's
-standing policy/regulatory watch (`policy_watch`), the `classification:`
+= upstream default list, `[]` = carve-out disabled), the standing
+policy/regulatory watch the intel run's S2 worker sweeps (`policy_watch`),
+the `classification:`
 scheme (the NATO Admiralty code + the `triage_kinds` split), and the
 `deployment:` section (`site_url` only — there is no visibility/TLP flag).
 The defaults reproduce the historical Swiss-federal-SOC deployment;
@@ -248,11 +256,10 @@ behaviours no-ops.
 
 `tools/compose_prompts.py` (stdlib-only; `--check` / `--write` / `--dump` /
 `--selftest`; `--get dotted.key` for single values) renders the profile
-into `ORG-PROFILE:BEGIN/END` managed marker blocks inside six files:
+into `ORG-PROFILE:BEGIN/END` managed marker blocks inside five files:
 [`prompts/cti-run.md`](../prompts/cti-run.md) (mission + audience, the
-§ Organization profile & watchlists data block),
-[`prompts/weekly-summary.md`](../prompts/weekly-summary.md) (same, plus
-the `org-policy-watch` block under W2), `prompts/verification.md` (the
+§ Organization profile & watchlists data block, and the `org-policy-watch`
+block that tasks S2), `prompts/verification.md` (the
 `org-certs` carve-out list), the `cti-research` definition (mission,
 audience, watchlist values, `org-certs`), and both verifier definitions
 (§ Organization context). The static policy text around the blocks
@@ -291,8 +298,7 @@ gate. For org-internal operation see
 
 Operator-owned feed scripts commit dated folders (`intel/<YYYY-MM-DD>/`)
 of front-mattered text documents; the runs detect in-window content in
-Phase 0 and spawn a conditional intake sub-agent (S5 on intel runs / W3
-weekly) that extracts items with mandatory verbatim evidence quotes and
+Phase 0 and spawn a conditional intake sub-agent (S5) that extracts items with mandatory verbatim evidence quotes and
 public-corroboration pivots. Entries cite the documents via
 `closed_sources` frontmatter records (`{title, provider, date, ref}`
 — referenced, never a fabricated URL). There is no TLP gate — everything
@@ -306,9 +312,9 @@ normal state — costs nothing.
 
 - [`cti-research.md`](../.claude/agents/cti-research.md) — isolated context,
   per-role model bound by the agent definition's YAML frontmatter (operator
-  rebindable). Phase 1 (intel run) / Phase 2 (weekly) parallel research
-  workers — S1–S4 + conditional S5 intake per intel run, W1–W2 + W3 weekly;
-  also reused for verification follow-ups (max 3 per iteration). Embeds the
+  rebindable). Phase 1 parallel research workers — S1–S4 + conditional S5
+  intake per intel run; the audit's G1–G3 coverage re-sweeps; also reused
+  for verification follow-ups (max 3 per iteration). Embeds the
   `WebFetch` outbound-links template, the `tools/fetch_source.py` contract
   for known-403 hosts, the intelligence-methodology tradecraft, the
   findings-YAML return contract, and the mandatory `**Model:**`
@@ -325,14 +331,17 @@ normal state — costs nothing.
   `tools/check_run.py` can skip redundant HEAD/GETs.
 - [`cti-verification.md`](../.claude/agents/cti-verification.md) — read-only,
   isolated context (Opus by default — gatekeeper of the publish gate).
-  The Phase 5.7 cold-reader verifier; its scope is **this run's new entries
-  plus the run record**. Runs AFTER `tools/check_run.py` exits 0 (cheap
+  The Phase 5.7 cold-reader verifier; its scope is **this run's new entries,
+  every existing entry it appended a changelog record to (the whole entry —
+  the new section and every changed field against the sources), plus the
+  run record**. Runs AFTER `tools/check_run.py` exits 0 (cheap
   mechanical gate first), looped iteratively (cap 8, fresh spawn each time,
   no shared memory; each iteration re-runs `check_run.py` between fix and
   re-spawn; publish requires a confirmed CLEAN — two consecutive CLEAN
-  verdicts on two different models via the rotation). Finding categories F1–F16 include frontmatter ⇔ body
-  agreement and priority calibration (a false `critical` fires notification
-  hooks). Same self-identification contract.
+  verdicts on two different models via the rotation). Finding categories
+  F1–F18 include frontmatter ⇔ body agreement, priority calibration (a
+  false `critical` fires notification hooks), classification drift and
+  action-item discipline. Same self-identification contract.
 - [`cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md) —
   Sonnet-pinned variant of `cti-verification`. Byte-identical operational
   system prompt below its header note; only the YAML `model:` frontmatter
@@ -356,17 +365,18 @@ remain:
   lookup must not require scanning the entry store.
 - `state/warning_acknowledgments.json` — the zero-warning discipline's
   ledger (v3.28): audit-reviewed acknowledgments of `check_run.py` WARNs
-  whose subjects are settled immutable history (a published record's
-  runaway duration, an era-correct confirmation waiver). `check_run.py`
-  reports matching warnings separately (`N acknowledged`) and counts them
-  as zero, so `--all` is held at 0 warn · 0 fail. Written only by the
-  weekly quality audit (or an operator-directed session), never by a run
-  for its own fresh warnings.
+  whose subjects are settled history on run records — which stay immutable
+  — (a published record's runaway duration, an era-correct confirmation
+  waiver). `check_run.py` reports matching warnings separately
+  (`N acknowledged`) and counts them as zero, so `--all` is held at
+  0 warn · 0 fail. Written only by the quality audit (or an
+  operator-directed session), never by a run for its own fresh warnings.
 - `state/source_health.json` — written by
   [`tools/source_health.py`](../tools/source_health.py): bounded history
   (12 runs) of per-source accessibility probes via each source's *actual
-  recipe*. Fired by the weekly [`source-health.yml`](../.github/workflows/source-health.yml)
-  Action and at the end of every routine run; rendered on `/ops/`. Lets
+  recipe*. Fired by the [`source-health.yml`](../.github/workflows/source-health.yml)
+  Action (a weekly cron, independent of the routines) and at the end of
+  every routine run; rendered on `/ops/`. Lets
   demotion logic key off a stable failing pattern instead of one fire's
   luck.
 
@@ -412,9 +422,14 @@ every edit is recorded in the run record's `sources_changed[]`.
   entry schema + taxonomy + registry linkage via `content_model.py`,
   folder-date/`discovered_at`/slug consistency, blocked-URL patterns +
   liveness (honouring `work/<run-id>/url-liveness.tsv`), evidence
-  presence/binding, `priority` ⇔ `immediate_action`, cross-run CVE dedup
-  (FAIL) + entity-key dedup (WARN), `update_of` resolution + cycle check,
-  rolling-24 h composition report (informational), CVE sync with
+  presence/binding, `priority` ⇔ `immediate_action`, the entry lifecycle
+  (`updates[]` shape, `updated_at` mirror, 1:1 body-section pairing,
+  record `run_id` resolution, no silent edit — `entry-updates` /
+  `silent-edit`; `update_of` retired), store-wide CVE dedup (FAIL unless
+  the older entry is declared in `references[]`) + entity-key dedup (WARN),
+  `references[]` resolution, run counters vs disk (`entries_published`,
+  `entries_updated` + `updated_entry_ids`), rolling-24 h composition report
+  (informational), CVE sync with
   `cves_seen.json`, IOC scan, closed-source traceability to `intel/` (no TLP
   gate), org-triage + Admiralty-classification vocabulary/placement,
   run-record completeness + prompt-version cross-check
@@ -427,10 +442,12 @@ every edit is recorded in the run record's `sources_changed[]`.
   recipes: [`prompts/check-run-fixes.md`](../prompts/check-run-fixes.md).
 - [`tools/build_prior_coverage.py`](../tools/build_prior_coverage.py) —
   Phase 0 helper: scans `entries/` for the last N days (14 on the intel run
-  and the weekly) **including entries earlier runs published today** and
+  and the audit) **including entries earlier runs published today** and
   writes `work/<run-id>/prior_coverage.json` (full records incl. each
-  entry's `summary` — the main agent AND the sub-agents read this to load
-  every in-window brief for compose-time / fetch-time dedup) +
+  entry's `summary`, `updated_at`, its changelog record count and the last
+  record's summary — the main agent AND the sub-agents read this to load
+  every in-window brief for compose-time / fetch-time dedup, and to decide
+  new-entry vs update-record) +
   `prior_coverage_keys.json` (lean keys-only metadata index). Coverage
   older than the window is caught by the store-wide `state/cves_seen.json`
   metadata check. This machinery is the mechanical heart of the
@@ -442,7 +459,7 @@ every edit is recorded in the run record's `sources_changed[]`.
 - [`tools/attack_data.py`](../tools/attack_data.py) — builds and updates
   the pinned MITRE ATT&CK dataset `attack/enterprise-attack.json` from the
   official `mitre-attack/attack-stix-data` releases: `--check` (pin vs
-  upstream latest — a weekly-run duty), `--update [--version X.Y]`
+  upstream latest — a quality-audit duty), `--update [--version X.Y]`
   (rewrite + printed change summary for the commit body), `--selftest`
   (offline invariants), `--info`. See § `attack/enterprise-attack.json`.
 - [`tools/fetch_source.py`](../tools/fetch_source.py) — stdlib-only HTTP
@@ -471,6 +488,14 @@ every edit is recorded in the run record's `sources_changed[]`.
   (discovery timestamps from git history), seeded the registry from
   `covered_items.json`, converted `run_log.json` into run records. Kept in
   the repo for provenance; never runs again.
+- [`tools/migrate_updates.py`](../tools/migrate_updates.py) — the one-shot
+  v3 → v4 migration (2026-08-27): folded the 180 `update_of` entries into
+  their 114 root entries as changelog records + `## Update — <at>` sections,
+  brought each root's frontmatter to the chain's current state, re-pointed
+  `references[]` and registry `relations[].source`, and removed the folded
+  files (old permalinks redirect via `merged_from`). Report:
+  `work/migration-v4-updates/report.json`. Kept for provenance; a store
+  with no `update_of` entries is a no-op.
 - [`tools/source_candidates.py`](../tools/source_candidates.py) — walks the
   last 30 days of entries, counts outbound-link hosts, subtracts hosts
   already in `sources.json` + the aggregator allowlist, outputs the top-N
@@ -488,7 +513,7 @@ every edit is recorded in the run record's `sources_changed[]`.
 
 System reference for operators, contributors, and curious readers. With one exception nothing here is loaded by the prompts at runtime (that material lives under `prompts/`); the exception is [`docs/pipeline.md`](pipeline.md), which the run prompts reference as the normative data model.
 
-- [`docs/pipeline.md`](pipeline.md) — the normative v3 data model (see the top of this file).
+- [`docs/pipeline.md`](pipeline.md) — the normative data model (see the top of this file).
 - [`docs/architecture.md`](architecture.md) — this file. End-to-end map of every component.
 - [`docs/operating.md`](operating.md) — operator runbook: routine setup, GitHub App, Pages, ops dashboard, troubleshooting.
 - [`docs/customization.md`](customization.md) — downstream fork / rebrand guide (two-config model, upstream-merge workflow).
@@ -516,8 +541,8 @@ System reference for operators, contributors, and curious readers. With one exce
   — plus a `workflow_run` chain from every successful auto-merge (pushes
   by `GITHUB_TOKEN` don't retrigger workflows, so the chain is explicit).
   Runs `site/build.py`, force-pushes `site/_site/` to `gh-pages`.
-- [`source-health.yml`](../.github/workflows/source-health.yml) — weekly
-  cron (Sundays 04:30 UTC) + `workflow_dispatch`. Runs
+- [`source-health.yml`](../.github/workflows/source-health.yml) — a weekly
+  cron (Sundays 04:30 UTC) + `workflow_dispatch`, independent of the routines. Runs
   [`tools/source_health.py`](../tools/source_health.py) and commits
   `state/source_health.json` directly to `main` (that path sits in the
   auto-merge auto-resolution allowlist, so a concurrent claude/* push
@@ -546,14 +571,18 @@ the timeline client-side from `data/briefbook.json` (the last ~35 days of
 entries) when the reader changes the window selector (6 / 12 / 24 / 48 /
 72 h) or loads older findings. Page inventory:
 
-- `/` home (Live / Daily / Weekly brief cards) · `/live/` the live rolling
-  brief · `/daily/YYYY-MM-DD/` one settled page per **completed** UTC day
-  in the classic editorial section order (the still-rolling day lives only
-  in `/live/`) · `/daily/` the newest-first completed-day archive ·
-  `/weekly/YYYY-Www/` weekly pages rendered from the week's strategic
-  entries (+ `/weekly/` archive).
+- `/` home · `/live/` the live rolling brief, ordered by each entry's
+  activity moment (`max(discovered_at, updated_at)`) so an updated finding
+  reappears at the top under the run that changed it, flagged `UPD` ·
+  `/daily/YYYY-MM-DD/` one settled page per **completed** UTC day in the
+  classic editorial section order, with § Updates to Prior Coverage
+  rendered from that day's changelog records (the still-rolling day lives
+  only in `/live/`) · `/daily/` the newest-first completed-day archive.
 - `/entries/YYYY-MM-DD/<slug>/` per-entry permalinks (metadata badges,
-  update chain, producing-run link).
+  "first published · updated" meta, each `## <Type> — <at>` section as a
+  timestamped block, a revision-history panel, producing-run link); the
+  old URLs of the v3 update entries folded on 2026-08-27 are meta-refresh
+  redirect stubs to the living entry (`merged_from`).
 - `/entities/<key>/` unified entity pages from the registry + CVE
   universe — including the derived ATT&CK-technique section and a
   per-entity Navigator layer (`attack-layer.json`); `/cves/` and
@@ -568,16 +597,18 @@ entries) when the reader changes the window selector (6 / 12 / 24 / 48 /
   the full telemetry panel + the record's verification & coverage notes,
   linked from the live timeline's run dividers and the ops run log),
   `/feeds/`, `/about/**` (README, docs, prompts rendered as pages).
-- Eleven RSS feeds: `feed.xml` (one item per day page), `feed-weekly.xml`,
-  `feed-items.xml` (one item per entry — `<pubDate>` is the entry's
-  `discovered_at`, true discovery latency, not commit time) + eight sector
-  slices (`feed-public-sector.xml`, `feed-healthcare.xml`,
+- Ten RSS feeds: `feed.xml` (one item per day page), `feed-items.xml` (one
+  item per entry — `<pubDate>` is the entry's `discovered_at`, true
+  discovery latency, not commit time — plus one item per changelog record,
+  `guid` `<entry url>#update-<at>`, `<pubDate>` the record's `at`) + eight
+  sector slices (`feed-public-sector.xml`, `feed-healthcare.xml`,
   `feed-finance.xml`, `feed-energy.xml`, `feed-ot-ics.xml`,
   `feed-defense.xml`, `feed-telco.xml`, `feed-education.xml`).
 - Data islands: `data/briefbook.json` (the `/live/` client payload —
-  Phase 7 polls it for the run id), `data/alerts.json` (last 7 days of
-  `critical`/`high` entries with headline, summary, `immediate_action`,
-  entities, CVEs — the notification-hook surface), `data/search.json`,
+  Phase 7 polls it for the run id), `data/alerts.json` (last 7 days by
+  activity moment of `critical`/`high` entries with headline, summary,
+  `immediate_action`, entities, CVEs, `updated_at` + compact changelog —
+  the notification-hook surface), `data/search.json`,
   `data/site.json`.
 
 The site is read-only with respect to the rest of the repo: it reads
@@ -595,13 +626,12 @@ cve_types / cve_vectors / cve_auth / cve_status). The build and
 
 ## Data flow per intel run
 
-The weekly run shares this machinery verbatim (it `Read`s `cti-run.md` at
-runtime); it differs in Phase 1 (a local week-in-review pass over the
-window's operational entries) and its research fan-out (W1–W2 + W3). The
-weekly quality-audit run builds on it the same way; its fan-out is
-retrospective — truth-verification passes over the window's published
-entries plus independent gap re-sweeps (G1–G3) — and its extra output is
-the audit report under `docs/audits/`.
+The quality-audit run shares this machinery verbatim (it `Read`s
+`cti-run.md` at runtime); its fan-out is retrospective — truth-verification
+passes over the window's published entries plus independent gap re-sweeps
+(G1–G3) — and its extra outputs are the audit report under `docs/audits/`
+and the `correction` / `improvement` records it appends to existing
+entries.
 
 ```
  ┌──────────────┐  Phase 0     ┌───────────────────────────────────────┐
@@ -633,7 +663,8 @@ the audit report under `docs/audits/`.
  │ Phase 2 — verification & triage (main context)      │
  │  URL spot-checks · two-source/carve-outs ·          │
  │  fake-news guard · CVE verify · dedup ⇒ new entry   │
- │  vs update_of vs drop · recency re-check ·          │
+ │  vs update record on the existing entry vs drop ·   │
+ │  recency re-check ·                                 │
  │  relevance/actionability gate · rank ⇒ priority     │
  │ Phase 3 — deep-dive selection (reserved for items   │
  │  that earn it; category rotation from prior entries)│
@@ -641,8 +672,10 @@ the audit report under `docs/audits/`.
             ▼
  ┌────────────────────────────────────────────────────┐
  │ Phase 4 — compose (strictly from findings files)    │
- │  Write entries/<date>/<slug>.md   (one per finding, │
- │    immutable; updates as update_of entries)         │
+ │  Write entries/<date>/<slug>.md   (one per NEW      │
+ │    finding); Edit an existing entry for a           │
+ │    development: append an updates[] record + its    │
+ │    `## Update — <at>` section, bump updated_at      │
  │  Write runs/<date>/<run-id>.md    (telemetry front- │
  │    matter + verification-notes body)                │
  └──────────┬─────────────────────────────────────────┘
@@ -669,7 +702,7 @@ the audit report under `docs/audits/`.
  │  odd iters: cti-verification (Opus)                 │
  │  even iters: cti-verification-alt (Sonnet) + the    │
  │    prior-iteration deltas block                     │
- │  scope: this run's entries + run record             │
+ │  scope: this run's new + updated entries + record   │
  │  NEEDS_FIXES → remediate (incl. dropping entries)   │
  │    → re-run check_run.py → fresh re-spawn           │
  │  CLEAN → publish · iter 5 NEEDS_FIXES → fail-open,  │
@@ -704,14 +737,16 @@ A safe pattern for extending the system without affecting the runs:
    first, add it to `site/content_model.py` (parser + validator) and
    `tools/check_run.py`, then teach the prompts' Phase 4 to populate it
    and `site/build.py` to render it. Existing entries stay valid because
-   new fields are optional with a documented default — entries are
-   immutable, so a migration rewrite is not an option.
+   new fields are optional with a documented default — a bulk rewrite of
+   the store is never the first choice (the changelog contract requires a
+   record per edit; a store-wide migration is an operator-authorized
+   one-shot tool, like `tools/migrate_updates.py`).
 3. **New source category.** Add the records to `sources/sources.json` and
    extend the category filter in `prompts/cti-run.md` Phase 1 so a
    sub-agent slice picks them up. The site's source catalogue follows on
    the next build automatically.
 4. **New routine** (e.g. a monthly horizon scan). Add a prompt under
-   `prompts/` (follow the weekly's pattern: build on `cti-run.md`, define
+   `prompts/` (follow the audit's pattern: build on `cti-run.md`, define
    only the divergences), create a routine pointing at it, and extend the
    run-id `kind` vocabulary in `docs/pipeline.md` + `content_model.py`.
 
@@ -720,5 +755,6 @@ Anything more invasive (new content type, new repo layout) — update
 the reasoning in the commit message, and bump the prompt version with a
 CHANGELOG entry explaining the *why*. The prompts and the data-model spec
 are the load-bearing parts of the system; small contract changes are easy
-to ship by accident and hard to roll back — not least because published
-entries are immutable.
+to ship by accident and hard to roll back — every published entry is a
+living record whose provenance fields (`discovered_at`, `run_id`, id) are
+fixed forever, and every change to one is a visible changelog record.

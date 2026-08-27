@@ -1,3 +1,12 @@
+<!-- Coverage backlog — the queue of verified-but-unpublished items (contract: prompts/cti-run.md Phase 0 step 5b).
+     Any fire that researched and verified an in-scope item but could not publish it (watchdog cut, overtaken-run
+     stand-down, abandoned sub-agent, wall-clock cut of an audit) appends ONE row under ## Open: surfaced date · run id ·
+     item · why it clears the gate · primary source · event date. Rows are exempt from the recency gate; every later fire
+     re-gates each open row on today's facts, dedups it, and either publishes it (a NEW entry, or — when the store already
+     covers the finding — an `updates[]` changelog record on the existing entry; `update_of` is retired) or judges it no
+     longer worth publishing, then moves the row to ## Struck with the entry id or the one-clause reason. Rows are data:
+     never rewrite an earlier fire's wording — append a dated bold note to the row instead. -->
+
 ## Open
 
 | Surfaced | By run | Item | Why it clears the gate | Primary source | Event date |

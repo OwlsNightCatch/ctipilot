@@ -7,6 +7,8 @@ metadata:
   originSessionId: 02f7ff62-41ad-43c6-a29a-dc723bbb5feb
 ---
 
+> **2026-08-27 (v4.0, see [[entry-lifecycle-v4]]):** the weekly routine is retired — `/weekly/` pages, the weekly feed and the topbar's Weekly segment are gone (segments are Live / Daily); the live timeline orders by activity moment and flags an updated entry `UPD` with the changelog record's type + summary; day pages render § Updates to Prior Coverage from that day's changelog records; entry pages carry "first published · updated" meta, timestamped `## <Type> — <at>` blocks and a revision-history panel. Mentions of "weekly" below describe the pre-v4 shell.
+
 The published site's visual language is the **"CTI Pilot Design Modernization"** Claude Design project (read via the `DesignSync` MCP / `/design-sync`): project id `1ca3b2f3-7d01-40ca-8d48-781bbf3c08b9`, comps `CTI Pilot.dc.html` (authoritative site design) + `CTI Pilot Reading Experience.dc.html` (a canvas exploration, not a site view), plus a token design-system under `_ds/…/tokens/` (colors/typography/spacing/effects/base/accessibility). That system was itself lifted from this repo's `site/assets/css/styles.css` + `config/branding.yaml`, so the tokens already matched — the modernization was layout/component, not a re-skin.
 
 **Design DNA:** dark-first analyst console (`--bg #0e1116`), one crimson accent (`--accent #e85d75` dark / `#b62b46` light), sans/mono split (mono = every machine fact), border-not-shadow surfaces, small radii, short linear motion. No IOCs, no emoji.

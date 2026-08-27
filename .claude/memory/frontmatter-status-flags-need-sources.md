@@ -43,6 +43,6 @@ usually has to ride on an advisory that states the listing.
 ## Related
 
 - A KEV *listing* that flips a store-covered CVE from not-confirmed-exploited to confirmed-exploited
-  is a material delta worth an `update_of` (PD-13) — but only when a source this run says so.
+  is a material delta worth an `update` changelog record on the covered entry (PD-13) — but only when a source this run says so.
 - `verifier-attribution-defects.md` — the prose-side sibling of this defect class.
 - Aim at least one verifier iteration at the structured blocks specifically, not just the prose.

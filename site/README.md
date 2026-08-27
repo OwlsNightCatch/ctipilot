@@ -7,18 +7,20 @@ records (`runs/`), and the global **entity registry**
 signature page is **`/live/`** — the brief is a *query*: the reader picks
 a time window (default last 24 h) and the page renders a run-grouped
 timeline of every run in that window (quiet 0-finding runs included).
-`/daily/` archives each **completed** UTC day; `/weekly/` the strategic
-weeks. Read-only: the agentic
+`/daily/` archives each **completed** UTC day. A finding has ONE entry for
+its whole life (v4.0): developments, corrections and improvements are
+appended to it as a dated changelog (`updates[]`), and an update floats
+the entry back into the live window under the run that made it. Read-only: the agentic
 workflow (`prompts/`, `entries/`, `runs/`, `entities/`, `state/`,
 `sources/`) is the source of truth; this folder only **publishes** what
 the pipeline produces.
 
 The deployed site lives at <https://ctipilot.ch/>.
 
-## Architecture (v3 — static-site generator + one dynamic page)
+## Architecture (v4 — static-site generator + one dynamic page)
 
 Every URL is a real HTML page rendered at build time. The topbar is a
-segmented **Live / Daily / Weekly** control plus a search modal, a display
+segmented **Live / Daily** control plus a search modal, a display
 & accessibility popover (light / dark / system theme, dyslexia-friendly
 font, comfortable spacing), and a GitHub-stars badge; a second
 **knowledge-base subnav** row (desktop) links every pivot surface exactly
@@ -77,20 +79,20 @@ site/
 
 ```
 _site/
-├── index.html                            # Home — live-brief card + latest day + latest weekly
-├── brief/index.html                      # THE dynamic brief (default: last 24 h server-rendered;
-│                                         #   6/12/24/48/72 h chips + since-date picker; brief.js
-│                                         #   re-windows from data/briefbook.json; ?hours= / ?since=)
-├── briefs/
+├── index.html                            # Home — live-brief card + latest day + recent updates card
+├── live/index.html                       # THE dynamic brief (default: last 24 h server-rendered as a
+│                                         #   run-grouped timeline BY ACTIVITY; brief.js re-windows
+│                                         #   from data/briefbook.json)
+├── daily/
 │   ├── index.html                        # day archive, grouped by month
-│   └── YYYY-MM-DD/index.html             # static day page — that UTC day's operational entries
-│                                         #   in the canonical 8-section structure + run notes
-├── weekly/
-│   ├── index.html                        # weekly list
-│   └── YYYY-Www/index.html               # weekly page — the week's strategic entries in the
-│                                         #   12-section weekly structure (§ 0 derived)
-├── entries/YYYY-MM-DD/<slug>/index.html  # per-entry permalink: badge strip, evidence, sources
-│                                         #   with roles, update chain, entity links, run link
+│   └── YYYY-MM-DD/index.html             # static day page — that UTC day's operational entries in
+│                                         #   the canonical structure + § Updates to Prior Coverage
+│                                         #   (every changelog record dated that day) + run notes
+├── entries/YYYY-MM-DD/<slug>/index.html  # per-entry permalink: badge strip, main analysis, evidence,
+│                                         #   changelog sections (styled .entry-update blocks),
+│                                         #   Revision history, sources with roles, entity links,
+│                                         #   run link. Folded v3 update entries' old URLs are
+│                                         #   noindex redirect stubs to the living entry (#update-<at>)
 ├── entities/{index.html,<key>/…}         # unified entity pages (registry + CVEs) — typed
 │                                         #   relationships + derived co-occurrence sections
 ├── graph/index.html                      # interactive threat graph (canvas, assets/js/graph.js)
@@ -102,15 +104,17 @@ _site/
 ├── ops/index.html                        # operations dashboard, built from runs/** frontmatter
 ├── feeds/index.html                      # feed discovery
 ├── feed.xml                              # one item per day page (last 30)
-├── feed-weekly.xml                       # one item per weekly page (last 30)
-├── feed-items.xml                        # one item per ENTRY, pubDate = discovered_at (last 50)
+├── feed-items.xml                        # one item per ENTRY (pubDate = discovered_at) + one item per
+│                                         #   changelog record (guid <url>#update-<at>, pubDate = at) (last 50)
 ├── feed-<sector>.xml ×8                  # sector slices of the per-entry feed
 ├── about/…                               # README, docs/ (incl. pipeline.md), prompts/, changelog
 └── data/
-    ├── briefbook.json                    # last ~35 days of entries + runs with pre-rendered
-    │                                     #   HTML cards — the /live/ client data
-    ├── alerts.json                       # last 7 days of critical/high entries with
-    │                                     #   immediate_action metadata — the notification-hook surface
+    ├── briefbook.json                    # last ~35 days of entries BY ACTIVITY + runs with pre-rendered
+    │                                     #   HTML cards and the changelog (updates, updated_at,
+    │                                     #   activity_at, activity_run_id, activity_is_update) — the
+    │                                     #   /live/ client data
+    ├── alerts.json                       # last 7 days (by activity) of critical/high entries with
+    │                                     #   immediate_action + updated_at/updates — the notification-hook surface
     ├── graph.json                        # the threat graph: entity/CVE/technique nodes +
     │                                     #   curated typed edges (with source entries) +
     │                                     #   derived co-occurrence/CVE/technique edges
@@ -119,9 +123,11 @@ _site/
 
 Plus `.nojekyll`, `404.html`, `sitemap.xml`, `robots.txt`,
 `.well-known/security.txt`, and `CNAME`. The reading routes are `/live/`
-(rolling), `/daily/` (completed days), and `/weekly/`; the design refresh
-renamed the earlier `/brief/` and `/briefs/` routes and keeps no legacy
-redirects for them.
+(rolling) and `/daily/` (completed days); the design refresh renamed the
+earlier `/brief/` and `/briefs/` routes and keeps no legacy redirects for
+them, and v4.0 retired `/weekly/` with the weekly routine (the historical
+`horizon: strategic` entries stay reachable by permalink, entity, CVE, tag,
+region and search).
 
 ## Discoverability (SEO + machine-readability)
 
@@ -138,8 +144,8 @@ structured-data builders are the `_ld_*` helpers just above
 | Page | `og:type` | JSON-LD |
 |---|---|---|
 | Home | `website` | `WebSite` + `Organization` |
-| Entry permalink | `article` | `Article` / `TechArticle` (dates from `discovered_at`, `keywords` from tags+regions, `about` → CVEs/entities) + `BreadcrumbList` |
-| Day / weekly brief | `article` | `CollectionPage` + `ItemList` of the brief's entries + `BreadcrumbList` |
+| Entry permalink | `article` | `Article` / `TechArticle` (`datePublished` = `discovered_at`, `dateModified` = `updated_at`, `keywords` from tags+regions, `about` → CVEs/entities) + `BreadcrumbList` |
+| Day brief | `article` | `CollectionPage` + `ItemList` of the brief's entries + `BreadcrumbList` |
 | Index / entity / source / tag / region | `website` | `CollectionPage` (+ `ItemList` where cheap) + `BreadcrumbList` |
 
 Identity fields (`WebSite`/`Organization` name, publisher, `sameAs`)
@@ -161,20 +167,20 @@ scraping and no state-file joining:
 
 | Join | Source |
 |---|---|
-| Entry → sections | `kind` (+ `update_of` → Updates, `deep_dive` → Deep Dive, `weekly_section` for strategic entries) via `content_model.KIND_DAILY_SECTION` / `KIND_WEEKLY_SECTION` |
+| Entry → sections | `kind` (+ `deep_dive` → Deep Dive) via `content_model.KIND_DAILY_SECTION`; § Updates is derived from `updates[]` records dated in the day |
 | Entity → entries | explicit `entities:` registry keys, plus word-boundary name/alias phrase matching against titles/bodies (short all-caps acronyms match case-sensitively) |
 | Entity ↔ entity | curated typed `relations[]` (registry; each edge cites its establishing entry) + derived same-entry co-occurrence — rendered on entity pages and `/graph/` |
 | CVE → entries | `cves[].id` frontmatter records (+ `state/cves_seen.json` for historical context) |
 | Source → entries | longest-prefix URL match between `sources.json#url` and `sources[]` records |
 | Tag / Region | `tags:` / `regions:` frontmatter (taxonomy-validated) |
-| Update chains | `update_of` links, rendered on entry pages and day pages |
-| Run → entries | `run_id` frontmatter; the ops dashboard lists each run's entries |
+| Changelog | `updates[]` records paired with `## <Type> — <at>` body sections (`content_model.split_update_sections`); rendered as blocks on cards and entry pages, as update cards in a day's § Updates, as `.tl-update` rows in the live timeline, as extra feed items, and as the Revision history panel |
+| Run → entries | `run_id` frontmatter (published) + `updates[].run_id` (updated); the run detail page lists both |
 
 ## Determinism
 
 Two consecutive runs with no input changes produce a byte-identical site
 (`writes=0` on the second run): the build's "now" is the newest content
-moment (`discovered_at` / run `completed`) rather than wall-clock;
+moment (`discovered_at` / `updated_at` / run `completed`) rather than wall-clock;
 `pubDate` comes from `discovered_at` (true discovery latency); the
 cache-bust hash comes from asset bytes; writes are atomic with an
 end-of-build orphan prune. A failed build leaves the previous live site

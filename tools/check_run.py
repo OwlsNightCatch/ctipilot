@@ -21,14 +21,19 @@ Exit codes:
     1   one or more FAIL checks
     2   script-level error (no run records, unknown run id, content_model missing)
 
-Scope model:
-    A "run scope" is the run record `runs/<date>/<run-id>.md` plus every
-    entry whose `run_id` matches. Historical entries and records (other
-    run_ids) are loaded as *context* for the dedup / composition checks but are
-    not re-validated strictly — EXCEPT in --all mode, where every entry gets
-    schema validation and registry cross-checks (but never URL liveness:
-    that would hammer hundreds of historical URLs) and run records carrying
-    `migrated_from` get only a minimal parse/identity check.
+Scope model (v4.0 — docs/pipeline.md § Entry lifecycle):
+    A "run scope" is the run record `runs/<date>/<run-id>.md` plus the NEW
+    entries (frontmatter `run_id` == this run) plus the UPDATED entries (an
+    `updates[]` changelog record whose `run_id` == this run). Both sets get
+    the full content checks; URL liveness covers every source of a new entry
+    but only the sources an update ADDED (relative to the committed HEAD copy)
+    on an updated entry. Historical entries and records (other run_ids) are
+    loaded as *context* for the dedup / composition checks but are not
+    re-validated strictly — EXCEPT in --all mode, where every entry gets
+    schema validation, changelog-record resolution and registry cross-checks
+    (but never URL liveness: that would hammer hundreds of historical URLs)
+    and run records carrying `migrated_from` get only a minimal
+    parse/identity check.
 
 Design rules (carried over from check_brief.py):
     - Stdlib-only. No third-party deps.
@@ -85,11 +90,11 @@ ACKED: list[str] = []
 # Acknowledged-warning ledger (v3.28 zero-warning discipline). A warning on
 # settled, immutable history (a past run record's runaway duration; an
 # era-correct confirmation waiver from the 5-cap era) cannot be "fixed"
-# without falsifying the record — the weekly quality audit reviews each such
+# without falsifying the record — the quality audit reviews each such
 # warning and, when it is genuinely unfixable, acknowledges it here with a
 # reason. Acknowledged warnings are reported separately and do not count as
 # warnings, so `--all` can be held at zero. Discipline (enforced by prompt,
-# reviewed in the audit): only the weekly audit adds entries, never a run
+# reviewed in the audit): only the quality audit adds entries, never a run
 # for its own fresh warnings; `match` must pin the specific run/subject.
 ACK_LEDGER_PATH = STATE_DIR / "warning_acknowledgments.json"
 _ACK_LEDGER: list[dict] | None = None
@@ -1143,34 +1148,77 @@ def check_prompt_version(run: dict[str, Any], content_root: Path) -> None:
              f"(record already committed; the changelog moved on after publication — informational)")
 
 
-def check_run_counters(run: dict[str, Any], run_entries: list[dict]) -> None:
+def check_run_counters(run: dict[str, Any], new_entries: list[dict],
+                       updated_entries: list[dict]) -> None:
     """The record's self-reported counters must equal what is actually on
-    disk: `entries_published` == entry files carrying this run_id,
-    `entries_updated` == those with update_of set, and a non-null
+    disk: `entries_published` == NEW entry files carrying this run_id,
+    `entries_updated` == existing entries carrying an `updates[]` changelog
+    record with this run_id, `updated_entry_ids` (REQUIRED on v4.0+
+    records, optional before) == exactly those entry ids, and a non-null
     `deep_dive` must name a deep_dive: true entry from this run. Counter
     drift means the record was written before composition finished (or an
-    entry was added/dropped after the record) — the Ops dashboard and the
-    rolling-24 h composition report both key on these numbers."""
-    actual_pub = len(run_entries)
-    actual_upd = len([e for e in run_entries if e.get("update_of")])
+    entry was added/dropped after the record) — the Ops dashboard, the run
+    detail page and the rolling-24 h composition report all key on these."""
+    run_id = str(run.get("run_id") or "")
+    actual_pub = len(new_entries)
+    actual_upd_ids = sorted(e["id"] for e in updated_entries)
+    actual_upd = len(actual_upd_ids)
+    if not _lifecycle_enforced(run):
+        # Pre-v4.0 records counted their `update_of` entries as published
+        # FILES ("entries_published: N incl. updates · entries_updated: of
+        # which update_of"). tools/migrate_updates.py folded those files into
+        # their root entries as changelog records carrying `merged_from`, so
+        # the historical counters are reproduced from the folded records —
+        # the record stays true to what the fire wrote at the time.
+        folded = sum(
+            1 for e in updated_entries
+            for r in _entry_update_records(e, run_id) if r.get("merged_from"))
+        actual_pub += folded
+        actual_upd = folded
+        actual_upd_ids = sorted(
+            str(r["merged_from"]) for e in updated_entries
+            for r in _entry_update_records(e, run_id) if r.get("merged_from"))
     pub = run.get("entries_published")
     upd = run.get("entries_updated")
     if pub == actual_pub:
-        ok("run-counters", f"entries_published = {pub} matches {actual_pub} entry file(s) on disk")
+        ok("run-counters", f"entries_published = {pub} matches {actual_pub} new entry file(s) on disk")
     else:
         fail("run-counters",
              f"entries_published = {pub!r} but {actual_pub} entry file(s) carry run_id "
              f"{run.get('run_id')!r}")
     if upd == actual_upd:
-        ok("run-counters", f"entries_updated = {upd} matches {actual_upd} update entr{'y' if actual_upd == 1 else 'ies'}")
+        ok("run-counters",
+           f"entries_updated = {upd} matches {actual_upd} entr{'y' if actual_upd == 1 else 'ies'} "
+           "carrying a changelog record from this run")
     else:
         fail("run-counters",
-             f"entries_updated = {upd!r} but {actual_upd} of this run's entries have update_of set")
+             f"entries_updated = {upd!r} but {actual_upd} existing entr{'y' if actual_upd == 1 else 'ies'} "
+             f"carry an updates[] record with run_id {run.get('run_id')!r}: {actual_upd_ids[:6]}")
+    uei = run.get("updated_entry_ids")
+    if not _lifecycle_enforced(run):
+        ok("run-counters", "updated_entry_ids not required (pre-v4.0 record; historical "
+           "update entries are reproduced from their folded changelog records)")
+    elif uei is None:
+        if _lifecycle_enforced(run):
+            fail("run-counters",
+                 "updated_entry_ids missing — v4.0+ run records list every entry the fire "
+                 f"appended a changelog record to ([] when none); on disk: {actual_upd_ids[:6]}")
+        else:
+            ok("run-counters", "updated_entry_ids absent (pre-v4.0 record — optional)")
+    elif not isinstance(uei, list):
+        fail("run-counters", "updated_entry_ids must be a list of entry ids")
+    elif sorted(str(i) for i in uei) != actual_upd_ids:
+        fail("run-counters",
+             f"updated_entry_ids {sorted(str(i) for i in uei)[:6]} != entries carrying a record "
+             f"from this run on disk {actual_upd_ids[:6]}")
+    else:
+        ok("run-counters", f"updated_entry_ids names exactly the {actual_upd} updated entr"
+           f"{'y' if actual_upd == 1 else 'ies'} on disk")
     dd = run.get("deep_dive")
     if dd is None:
         ok("run-counters", "deep_dive: null (no deep-dive entry claimed)")
     else:
-        match = [e for e in run_entries if e["id"] == dd and e.get("deep_dive") is True]
+        match = [e for e in new_entries if e["id"] == dd and e.get("deep_dive") is True]
         if match:
             ok("run-counters", f"deep_dive {dd} resolves to a deep_dive: true entry of this run")
         else:
@@ -1196,8 +1244,10 @@ def check_entry_schema(run_entries: list[dict], taxonomy: dict, registry_keys) -
         ok("entry-schema", f"all {len(run_entries)} entr{'y' if len(run_entries) == 1 else 'ies'} pass validate_entry")
 
 
-def check_entry_run_binding(run: dict[str, Any], run_entries: list[dict]) -> None:
-    """Every entry's discovered_at must sit inside the run's wall-clock
+def check_entry_run_binding(run: dict[str, Any], new_entries: list[dict],
+                            updated_entries: list[dict]) -> None:
+    """Every NEW entry's discovered_at — and every UPDATED entry's changelog
+    record `at` for this run — must sit inside the run's wall-clock
     envelope: [started − 5 min, completed + 12 h]. The lower slack absorbs
     clock skew between the record and the first verified finding; the upper
     slack allows a long compose/verify tail (the record's `completed` may be
@@ -1212,21 +1262,32 @@ def check_entry_run_binding(run: dict[str, Any], run_entries: list[dict]) -> Non
         return
     lo = started - timedelta(minutes=5)
     hi = completed + timedelta(hours=12)
+    run_id = str(run.get("run_id") or "")
     outside: list[str] = []
-    for e in run_entries:
+    n_ts = 0
+    for e in new_entries:
         ts = cm.parse_ts(e.get("discovered_at"))
         if ts is None:
             continue  # entry-schema already fails the unparseable timestamp
+        n_ts += 1
         if not (lo <= ts <= hi):
             outside.append(f"{e['id']} discovered_at {e.get('discovered_at')}")
+    for e in updated_entries:
+        for rec in _entry_update_records(e, run_id):
+            ts = cm.parse_ts(rec.get("at"))
+            if ts is None:
+                continue
+            n_ts += 1
+            if not (lo <= ts <= hi):
+                outside.append(f"{e['id']} updates[].at {rec.get('at')}")
     if outside:
         warn("entry-run-binding",
-             f"{len(outside)} entr{'y' if len(outside) == 1 else 'ies'} outside "
+             f"{len(outside)} timestamp(s) outside "
              f"[{lo.strftime('%Y-%m-%dT%H:%M:%SZ')}, {hi.strftime('%Y-%m-%dT%H:%M:%SZ')}]: "
              + "; ".join(outside[:5]))
     else:
         ok("entry-run-binding",
-           f"all {len(run_entries)} discovered_at timestamps inside the run window (−5 min / +12 h slack)")
+           f"all {n_ts} discovered_at / changelog timestamps inside the run window (−5 min / +12 h slack)")
 
 
 def _entry_cve_ids(entry: dict) -> set[str]:
@@ -1234,33 +1295,21 @@ def _entry_cve_ids(entry: dict) -> set[str]:
             if isinstance(c, dict) and c.get("id")}
 
 
-def _update_chain_ids(entry: dict, entries_by_id: dict[str, dict]) -> set[str]:
-    """Entry ids reachable from `entry` via update_of (up to 20 hops).
-    Used to exempt an entry's own coverage lineage from the dedup scan."""
-    seen: set[str] = set()
-    cur = entry.get("update_of")
-    hops = 0
-    while cur and cur not in seen and hops < 20:
-        seen.add(str(cur))
-        nxt = entries_by_id.get(str(cur))
-        cur = nxt.get("update_of") if nxt else None
-        hops += 1
-    return seen
-
-
-def check_dedup(run: dict[str, Any], run_entries: list[dict],
+def check_dedup(run: dict[str, Any], new_entries: list[dict],
                 all_entries: list[dict], entries_by_id: dict[str, dict],
                 registry: dict[str, Any] | None = None) -> None:
-    """Cross-run dedup — the mechanical stage-4 of the pipeline's dedup
-    ladder (docs/pipeline.md § Dedup across runs). For each NON-update entry
-    of this run: FAIL when any of its cves[].id appears in ANY entry from
-    the prior 14 days by folder date (including earlier runs the same day,
-    excluding this run's own entries and the entry's update_of lineage);
-    WARN when one of its entity keys appears on a non-update prior entry —
-    forcing the update_of decision to be explicit. For UPDATE entries: FAIL
-    when update_of does not resolve to an existing entry file, and FAIL when
-    it points at an entry with a LATER discovered_at (an update cannot
-    predate its original)."""
+    """Cross-run dedup — the mechanical stage-5 of the pipeline's dedup
+    ladder (docs/pipeline.md § Dedup across runs). One living entry per
+    finding (v4.0): a candidate that matches covered ground is an `updates[]`
+    record on the existing entry, never a second entry. For each NEW entry
+    of this run: FAIL when any of its cves[].id appears in ANY other existing
+    entry — store-wide, any age — unless that entry's id is listed in the
+    new entry's `references[]` (the explicit, reviewable statement that this
+    is a distinct finding building on the older one); WARN when one of its
+    entity keys appears on an entry from the prior 14 days (resolving
+    merged_into tombstones) — forcing the update-vs-new decision to be
+    deliberate. Entries this run UPDATED are exempt: the record IS the dedup
+    decision."""
     run_id = run.get("run_id")
     run_date_s = str(run.get("date") or "")
     try:
@@ -1269,102 +1318,186 @@ def check_dedup(run: dict[str, Any], run_entries: list[dict],
         warn("dedup", f"run date {run_date_s!r} unparseable — dedup window skipped")
         return
     window_start = (run_date - timedelta(days=14)).isoformat()
-    prior = [e for e in all_entries
-             if e.get("run_id") != run_id and window_start <= e["date"] <= run_date_s]
+    new_ids = {e["id"] for e in new_entries}
+    others = [e for e in all_entries if e["id"] not in new_ids]
+    recent = [e for e in others if window_start <= e["date"] <= run_date_s]
+    reg = registry or {}
 
     cve_hits: list[str] = []
     entity_hits: list[str] = []
-    update_fails: list[str] = []
-    for e in run_entries:
-        upd = e.get("update_of")
-        if upd:
-            target = entries_by_id.get(str(upd))
-            if target is None:
-                update_fails.append(
-                    f"{e['id']}: update_of {upd!r} does not resolve to an existing entry file")
-                continue
-            t_ts = cm.parse_ts(target.get("discovered_at"))
-            e_ts = cm.parse_ts(e.get("discovered_at"))
-            if t_ts is not None and e_ts is not None and t_ts > e_ts:
-                update_fails.append(
-                    f"{e['id']}: update_of {upd} has LATER discovered_at "
-                    f"({target.get('discovered_at')}) than the update itself ({e.get('discovered_at')})")
-            continue  # update entries are exempt from the overlap scan — the link IS the dedup
-        chain = _update_chain_ids(e, entries_by_id)
+    declared: list[str] = []
+    for e in new_entries:
         e_cves = _entry_cve_ids(e)
-        # Resolve merged_into tombstones so an old entry's key and its
-        # canonical successor still register as the same entity.
-        reg = registry or {}
-        e_ents = {cm.resolve_entity_key(reg, str(k)) for k in (e.get("entities") or []) if k}
-        # A weekly strategic entry synthesises the operational entries it lists in
-        # references[] — sharing their entity keys is the design, not drift, so the
-        # declared reference IS the dedup for those pairs (same logic as update_of
-        # above). CVE-level overlap is still reported: per-CVE metadata belongs to
-        # the operational entry that owns it and must not be duplicated upward.
-        e_refs = set()
-        if str(e.get("horizon") or "") == "strategic":
-            e_refs = {str(r) for r in (e.get("references") or []) if r}
-        for p in prior:
-            if p["id"] in chain:
-                continue
-            overlap = e_cves & _entry_cve_ids(p)
-            if overlap:
+        e_refs = {str(r) for r in (e.get("references") or []) if r}
+        if e_cves:
+            for p in others:
+                overlap = e_cves & _entry_cve_ids(p)
+                if not overlap:
+                    continue
+                if p["id"] in e_refs:
+                    declared.append(f"{e['id']} builds on {p['id']} ({sorted(overlap)})")
+                    continue
                 cve_hits.append(
                     f"{e['id']}: CVE(s) {sorted(overlap)} already covered by {p['id']} — "
-                    f"ship as update_of with a genuine delta, or drop")
-            if not p.get("update_of") and p["id"] not in e_refs:
+                    "append a changelog record to that entry (the delta), or, if this is a "
+                    "genuinely distinct finding, declare the older entry in references[]")
+        e_ents = {cm.resolve_entity_key(reg, str(k)) for k in (e.get("entities") or []) if k}
+        if e_ents:
+            for p in recent:
+                if p["id"] in e_refs:
+                    continue
                 ent_overlap = e_ents & {cm.resolve_entity_key(reg, str(k))
                                         for k in (p.get("entities") or []) if k}
                 if ent_overlap:
                     entity_hits.append(
                         f"{e['id']}: entity {sorted(ent_overlap)} also on {p['id']} — "
-                        f"confirm the non-update decision was deliberate (material new story, not a delta)")
-    for h in update_fails:
-        fail("dedup", h)
+                        "confirm the new-entry decision was deliberate (a distinct story, not a "
+                        "delta that belongs in that entry's changelog)")
     for h in cve_hits:
         fail("dedup", h)
     for h in entity_hits:
         warn("dedup", h)
-    if not (cve_hits or entity_hits or update_fails):
+    if declared:
+        ok("dedup", f"{len(declared)} CVE overlap(s) declared via references[]: "
+           + "; ".join(declared[:3]))
+    if not (cve_hits or entity_hits):
         ok("dedup",
-           f"no CVE/entity overlap with {len(prior)} prior entr{'y' if len(prior) == 1 else 'ies'} "
-           f"in the 14-day window; all update_of targets resolve in order")
+           f"no undeclared CVE overlap with the {len(others)} other entr{'y' if len(others) == 1 else 'ies'} "
+           f"in the store; no entity overlap with the {len(recent)} in the 14-day window")
 
 
-def check_update_targets(scope_entries: list[dict], entries_by_id: dict[str, dict]) -> None:
-    """update_of chains must terminate — no cycles, no >20-hop runaways.
-    A cycle would make the render-time 'originally covered' walk loop
-    forever; 20 hops on one story means the ≤1-consolidated-update-per-week
-    rule has collapsed."""
-    bad: list[str] = []
-    checked = 0
+def check_entry_updates(scope_entries: list[dict], runs_by_id: dict[str, dict],
+                        run_id: str | None = None, *, store_mode: bool = False,
+                        enforce: bool = False) -> None:
+    """The entry lifecycle's changelog (docs/pipeline.md § Entry lifecycle).
+    validate_entry already enforces the record shape, the strictly
+    increasing `at`, the `updated_at` mirror and the 1:1 pairing with
+    `## <Type> — <at>` body sections. This check adds what needs the run
+    store: every record's `run_id` must resolve to an existing run record
+    (or be the run under check) — FAIL in run scope, WARN store-wide on
+    committed history; on v4.0+ runs an entry carries at most ONE record
+    per fire (FAIL); `fields` values must be frontmatter keys or "body"
+    (WARN)."""
+    known_fields = set(cm.ENTRY_DEFAULTS) | set(cm.ENTRY_REQUIRED) | {"body"}
+    n_records = 0
+    n_entries = 0
+    problems_fail: list[str] = []
+    problems_warn: list[str] = []
     for e in scope_entries:
-        if not e.get("update_of"):
+        recs = [r for r in (e.get("updates") or []) if isinstance(r, dict)]
+        if not recs:
             continue
-        checked += 1
-        seen = {e["id"]}
-        cur = str(e.get("update_of"))
-        hops = 0
-        while cur:
-            if cur in seen:
-                bad.append(f"{e['id']}: update_of chain cycles at {cur}")
-                break
-            seen.add(cur)
-            hops += 1
-            if hops >= 20:
-                bad.append(f"{e['id']}: update_of chain exceeds 20 hops (runaway or cycle)")
-                break
-            nxt = entries_by_id.get(cur)
-            if nxt is None:
-                break  # unresolved target — check_dedup / --all resolution reports it
-            cur = str(nxt.get("update_of")) if nxt.get("update_of") else ""
-    if bad:
-        for b in bad:
-            fail("update-target", b)
-    else:
-        ok("update-target",
-           f"{checked} update chain(s) acyclic and bounded" if checked
-           else "no update entries in scope")
+        n_entries += 1
+        per_run: dict[str, int] = {}
+        for i, rec in enumerate(recs):
+            n_records += 1
+            rid = str(rec.get("run_id") or "")
+            per_run[rid] = per_run.get(rid, 0) + 1
+            if rid and rid not in runs_by_id and rid != str(run_id or ""):
+                msg = (f"{e['id']}: updates[{i}].run_id {rid!r} does not resolve to a run "
+                       "record — every changelog record names the fire that made it")
+                (problems_warn if store_mode else problems_fail).append(msg)
+            for f in rec.get("fields") or []:
+                if str(f) not in known_fields:
+                    problems_warn.append(
+                        f"{e['id']}: updates[{i}].fields names {f!r}, which is not a "
+                        "frontmatter field (or \"body\")")
+        if run_id is not None and enforce and per_run.get(str(run_id), 0) > 1:
+            problems_fail.append(
+                f"{e['id']}: {per_run[str(run_id)]} changelog records from run {run_id} — one "
+                "record per fire per entry; fold this fire's changes into a single record")
+    for m in problems_fail:
+        fail("entry-updates", m)
+    for m in problems_warn:
+        warn("entry-updates", m)
+    if not problems_fail and not problems_warn:
+        if n_records:
+            ok("entry-updates",
+               f"{n_records} changelog record(s) on {n_entries} entr{'y' if n_entries == 1 else 'ies'}: "
+               "every run_id resolves, ≤1 record per fire per entry, fields well-formed")
+        else:
+            ok("entry-updates", "no changelog records in scope")
+
+
+def check_silent_edits(run: dict[str, Any] | None, run_id: str,
+                       entries_by_id: dict[str, dict], content_root: Path) -> None:
+    """No silent edits (docs/pipeline.md § Entry lifecycle rule 2): every
+    entry file the working tree has modified or added relative to HEAD must
+    be a NEW entry of this run (`run_id` == run) or carry an `updates[]`
+    record with this run's id; a DELETED entry file always FAILs (entries
+    are never removed by a run — a wrong entry is corrected through its
+    changelog). Skipped gracefully when git is unavailable (fixture roots).
+    FAIL on v4.0+ runs; WARN on records from before the lifecycle."""
+    try:
+        proc = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=all", "--", "entries/"],
+            capture_output=True, text=True, cwd=content_root, timeout=15)
+    except Exception:
+        proc = None
+    if proc is None or proc.returncode != 0:
+        ok("silent-edit", "skipped — git status unavailable for the content root")
+        return
+    report = fail if _lifecycle_enforced(run) else warn
+    silent: list[str] = []
+    deleted: list[str] = []
+    n_ok = 0
+    for ln in proc.stdout.splitlines():
+        if len(ln) < 4:
+            continue
+        code, rel = ln[:2], ln[3:].strip().strip('"')
+        if " -> " in rel:
+            rel = rel.split(" -> ", 1)[1]
+        if not rel.startswith("entries/") or not rel.endswith(".md"):
+            continue
+        if "D" in code:
+            deleted.append(rel)
+            continue
+        eid = rel[len("entries/"):-len(".md")]
+        e = entries_by_id.get(eid)
+        if e is None:
+            silent.append(f"{rel} (changed on disk but not loadable as an entry)")
+            continue
+        if str(e.get("run_id") or "") == run_id or _entry_update_records(e, run_id):
+            n_ok += 1
+            continue
+        silent.append(f"{eid} (modified, run_id {e.get('run_id')!r}, no updates[] record for {run_id})")
+    for d in deleted:
+        report("silent-edit", f"{d} deleted in the working tree — entries are never removed by a "
+               "run; correct a wrong entry through a `correction` changelog record")
+    for m in silent:
+        report("silent-edit", f"{m} — every change to a published entry ships as an updates[] "
+               "record whose run_id is this fire (type update|correction|improvement) plus a "
+               "`## <Type> — <at>` section")
+    if not silent and not deleted:
+        ok("silent-edit", f"{n_ok} changed entry file(s) in the working tree, every one a new "
+           "entry of this run or carrying this run's changelog record")
+
+
+def check_legacy_shape(run: dict[str, Any] | None, new_entries: list[dict]) -> None:
+    """v4.0 retired the weekly strategic routine: a v4+ fire is `intel` or
+    `audit`, and its new entries are `horizon: operational`, carry a kind
+    from content_model.ACTIVE_KINDS (synthesis/outlook were the weekly's),
+    and never set `weekly_section`. FAIL on v4.0+ runs; earlier records are
+    history and pass silently."""
+    if run is None or not _lifecycle_enforced(run):
+        ok("legacy-shape", "n/a (pre-v4.0 record or no run record)")
+        return
+    bad: list[str] = []
+    if run.get("kind") not in cm.ACTIVE_RUN_KINDS:
+        bad.append(f"run record kind {run.get('kind')!r} — v4+ fires are {cm.ACTIVE_RUN_KINDS} "
+                   "(the weekly routine was retired)")
+    for e in new_entries:
+        if e.get("kind") not in cm.ACTIVE_KINDS:
+            bad.append(f"{e['id']}: kind {e.get('kind')!r} is a retired weekly kind — v4+ entries "
+                       f"use {cm.ACTIVE_KINDS}")
+        if (e.get("horizon") or "operational") != "operational":
+            bad.append(f"{e['id']}: horizon {e.get('horizon')!r} — every v4+ entry is operational")
+        if e.get("weekly_section") is not None:
+            bad.append(f"{e['id']}: weekly_section is a legacy field — never set on v4+ entries")
+    for b in bad:
+        fail("legacy-shape", b)
+    if not bad:
+        ok("legacy-shape", "run kind and every new entry's kind/horizon are v4-shaped")
 
 
 def report_rolling_composition(run: dict[str, Any], all_entries: list[dict]) -> None:
@@ -1603,15 +1736,41 @@ def _load_url_liveness_ledger() -> dict[str, str]:
     return {u: st for u, (st, _) in cached.items() if st.startswith("2")}
 
 
+def _committed_source_urls(entry: dict, content_root: Path) -> set[str] | None:
+    """Source URLs of the entry as committed at HEAD (None when HEAD has no
+    such file or git is unavailable — the caller then treats every source as
+    new). Used to scope liveness on an UPDATED entry to the sources the
+    update added; the older sources were checked when they were published
+    and their later link rot is not this run's defect."""
+    rel = f"entries/{entry['id']}.md"
+    try:
+        proc = subprocess.run(["git", "show", f"HEAD:{rel}"], capture_output=True,
+                              text=True, cwd=content_root, timeout=15)
+    except Exception:
+        return None
+    if proc.returncode != 0:
+        return None
+    try:
+        fm_text, _body = cm.split_frontmatter(proc.stdout)
+        fm = cm.parse_yaml_subset(fm_text)
+    except Exception:
+        return None
+    return {str(sr.get("url")) for sr in (fm.get("sources") or []) if isinstance(sr, dict)}
+
+
 def check_source_urls_resolve(run_entries: list[dict], *, skip: bool,
-                              timeout: float = 10.0) -> None:
+                              timeout: float = 10.0,
+                              updated_entries: list[dict] | None = None,
+                              content_root: Path = ROOT) -> None:
     """Live HEAD/GET every source URL of THIS RUN's entries; FAIL on 404.
     Catches fabricated-URL drift the verifier was designed to find —
     duplicating it here so the operator gets a green/red answer locally
     without spawning a sub-agent. Use `--no-link-check` for offline runs.
     Entries carrying `migrated_from` are skipped entirely — their URLs were
     validated when the v2 brief published and historical link rot is not
-    this run's defect.
+    this run's defect. For entries this run UPDATED (v4.0 changelog), only
+    the sources NOT present in the committed HEAD copy are checked — the
+    ones the update added.
 
     v2 origin: check_brief.py check_source_urls_resolve (~lines 1078-1312),
     including the SSRF defences and the pre-flight CA probe."""
@@ -1683,6 +1842,28 @@ def check_source_urls_resolve(run_entries: list[dict], *, skip: bool,
             u = src.get("url", "") or ""
             if u.startswith("http://") or u.startswith("https://"):
                 urls.setdefault(u, []).append(e["id"])
+    n_upd_new = 0
+    n_upd_old = 0
+    for e in updated_entries or []:
+        if e.get("migrated_from"):
+            migrated_skipped += 1
+            continue
+        committed = _committed_source_urls(e, content_root)
+        for src in e.get("sources") or []:
+            if not isinstance(src, dict):
+                continue
+            u = src.get("url", "") or ""
+            if not (u.startswith("http://") or u.startswith("https://")):
+                continue
+            if committed is not None and u in committed:
+                n_upd_old += 1
+                continue
+            n_upd_new += 1
+            urls.setdefault(u, []).append(e["id"])
+    if updated_entries:
+        ok("source-urls",
+           f"updated entries: {n_upd_new} source URL(s) added by this run queued for the live "
+           f"check, {n_upd_old} pre-existing source(s) skipped (checked when first published)")
     if migrated_skipped:
         ok("source-urls",
            f"{migrated_skipped} migrated entr{'y' if migrated_skipped == 1 else 'ies'} skipped "
@@ -2147,13 +2328,22 @@ RUNAWAY_RUN_SECONDS = 3 * 3600
 # immutable history: `--all` counts them once, informationally, never as
 # warnings.
 CLOCK_INTEGRITY_FROM = (3, 33)
+# v4.0+: the entry lifecycle (docs/pipeline.md § Entry lifecycle). One living
+# entry per finding; every change is an `updates[]` changelog record paired
+# with a `## <Type> — <at>` body section. From v4.0 the gate FAILs: an entry
+# modified in the working tree without a record for the modifying run
+# (`silent-edit`), a run record lacking `updated_entry_ids`, more than one
+# record per entry per fire, a new entry with a legacy kind / horizon /
+# weekly_section, and a run record whose kind is not intel|audit (the weekly
+# routine was retired). Pre-v4 history is validated structurally only.
+ENTRY_LIFECYCLE_FROM = (4, 0)
 
 # ATT&CK completeness by kind: these kinds inherently describe attacker
 # behavior (a campaign, an intrusion, an exploitable vulnerability's access
 # vector), so an empty `techniques[]` is a composition defect, never a
 # judgment call. Research/annual-report usually map but may legitimately
-# carry no TTP content (statistics, governance) → WARN. Strategic kinds
-# (policy, synthesis, outlook) may map nothing at all.
+# carry no TTP content (statistics, governance) → WARN. Policy entries and
+# the legacy weekly kinds (synthesis, outlook) may map nothing at all.
 ATTACK_REQUIRED_KINDS = {"threat", "incident", "vulnerability"}
 ATTACK_EXPECTED_KINDS = {"research", "annual-report"}
 
@@ -2181,6 +2371,21 @@ def _parse_iso_utc(value: Any) -> datetime | None:
         return datetime.fromisoformat(str(value or "").replace("Z", "+00:00"))
     except ValueError:
         return None
+
+
+def _lifecycle_enforced(run: dict[str, Any] | None) -> bool:
+    """True when this run's prompt version is subject to the v4.0 entry
+    lifecycle hard gates (silent-edit, updated_entry_ids, legacy shapes)."""
+    if run is None:
+        return False
+    v = _prompt_version_tuple(run.get("prompt_version"))
+    return v is not None and v >= ENTRY_LIFECYCLE_FROM
+
+
+def _entry_update_records(entry: dict, run_id: str) -> list[dict]:
+    """The entry's `updates[]` records made by `run_id`."""
+    return [r for r in (entry.get("updates") or [])
+            if isinstance(r, dict) and str(r.get("run_id") or "") == str(run_id)]
 
 
 def _mapping_ids_strict(run: dict[str, Any] | None) -> bool:
@@ -2517,17 +2722,21 @@ def check_essential_coverage(run: dict[str, Any], sources_data: dict[str, Any] |
     ENISA-class authorities) must be *attempted* on every intel run. Reads
     the union of the record's `sub_agents[*].sources_attempted`. WARN, not
     FAIL — the run must publish regardless; the gap is disclosed and the
-    next run's rotation self-heals. Weekly runs are exempt (the guarantee is
-    an intel-cadence property; W1/W2 slices are horizon-scoped). Skipped for
-    migrated records and records without sub_agents telemetry.
+    next run's rotation self-heals. Audit runs are exempt (their sub-agents
+    are retrospective passes, not source slices), as are the legacy weekly
+    records. Skipped for migrated records and records without sub_agents
+    telemetry.
     v2 origin: check_essential_coverage (~lines 1841-1878)."""
     if run.get("migrated_from"):
         ok("essential-coverage", "n/a (migrated run record)")
         return
-    if run.get("kind") in ("weekly", "audit"):
+    if run.get("kind") == "audit":
         ok("essential-coverage",
-           f"n/a for {run.get('kind')} runs (intel-cadence coverage guarantee; "
+           "n/a for audit runs (intel-cadence coverage guarantee; "
            "audit sub-agents are retrospective passes, not source slices)")
+        return
+    if run.get("kind") == "weekly":
+        ok("essential-coverage", "n/a (legacy weekly record — the routine was retired in v4.0)")
         return
     subs = run.get("sub_agents")
     if not isinstance(subs, dict) or not subs:
@@ -2687,7 +2896,7 @@ def check_entry_id_uniqueness(entries: list[dict]) -> None:
     """Entry ids are path-derived (YYYY-MM-DD/slug) so the filesystem makes
     duplicates structurally hard — this guards the residual cases (a
     tolerant-collector bug, case-folding filesystems, future non-path id
-    sources) so downstream update_of/references links stay unambiguous."""
+    sources) so downstream references[] links stay unambiguous."""
     seen: dict[str, int] = {}
     dupes: list[str] = []
     for e in entries:
@@ -2700,22 +2909,18 @@ def check_entry_id_uniqueness(entries: list[dict]) -> None:
 
 
 def check_references_resolve(entries: list[dict], entries_by_id: dict[str, dict]) -> None:
-    """--all: every update_of and references[] value must resolve to an
-    existing entry file (globally). Per-run mode covers update_of via the
-    dedup check; this is the store-wide sweep.
+    """--all: every references[] value must resolve to an existing entry file
+    (globally). Per-run mode covers a new entry's references via the dedup
+    check; this is the store-wide sweep.
 
     Severity follows commit state (same pattern as check_prompt_version): a
     dangling link on an UNCOMMITTED (new/modified) entry FAILs — this is the
     moment it must be fixed, the target was mistyped or never written. A
-    dangling link on an already-committed entry WARNs: entries are immutable
-    once committed, so a historical dangling link is normally unrepairable in
-    place, and a permanent FAIL would keep `--all` red forever — training the
-    operator to ignore it and masking NEW failures. The WARN keeps the defect
-    visible without poisoning the exit code. (The four 2026-05/06 dangling
-    links from the v2->v3 migration were repaired on 2026-07-09 by a one-time
-    operator-authorized immutability exception — frontmatter `update_of`
-    repointed to the surviving migrated targets, bodies untouched; see
-    .claude/memory/entry-immutability-exceptions.md.)"""
+    dangling link on an already-committed entry WARNs: a historical dangling
+    link is repaired through the entry's changelog (an `improvement` record),
+    not silently, and a permanent FAIL would keep `--all` red forever —
+    training the operator to ignore it and masking NEW failures. The WARN
+    keeps the defect visible without poisoning the exit code."""
     dirty: set[str] | None = None
     try:
         proc = subprocess.run(
@@ -2731,9 +2936,6 @@ def check_references_resolve(entries: list[dict], entries_by_id: dict[str, dict]
     bad_old: list[str] = []
     for e in entries:
         problems = []
-        upd = e.get("update_of")
-        if upd and str(upd) not in entries_by_id:
-            problems.append(f"{e['id']}: update_of {upd!r} does not resolve")
         for ref in e.get("references") or []:
             if str(ref) not in entries_by_id:
                 problems.append(f"{e['id']}: references value {ref!r} does not resolve")
@@ -2746,11 +2948,11 @@ def check_references_resolve(entries: list[dict], entries_by_id: dict[str, dict]
     if len(bad_new) > 12:
         fail("references", f"(+{len(bad_new) - 12} more unresolved links on uncommitted entries)")
     for b in bad_old[:12]:
-        warn("references", b + " — committed/immutable, grandfathered (WARN, not FAIL)")
+        warn("references", b + " — committed history, grandfathered (WARN, not FAIL; repair via a changelog record)")
     if len(bad_old) > 12:
         warn("references", f"(+{len(bad_old) - 12} more grandfathered unresolved links)")
     if not bad_new and not bad_old:
-        ok("references", "all update_of / references links resolve to existing entries")
+        ok("references", "all references[] links resolve to existing entries")
 
 
 def check_all_run_records(runs: list[dict]) -> None:
@@ -2774,6 +2976,16 @@ def check_all_run_records(runs: list[dict]) -> None:
         for e in cm.validate_run_record(r):
             n_err += 1
             fail("run-record", e)
+        if _lifecycle_enforced(r):
+            if r.get("kind") not in cm.ACTIVE_RUN_KINDS:
+                n_err += 1
+                fail("legacy-shape",
+                     f"{r.get('run_id')}: kind {r.get('kind')!r} on a v4.0+ record — the weekly "
+                     f"routine was retired; fires are {cm.ACTIVE_RUN_KINDS}")
+            if r.get("updated_entry_ids") is None:
+                n_err += 1
+                fail("run-counters",
+                     f"{r.get('run_id')}: v4.0+ record without updated_entry_ids")
         # Phase 7 follow-through: a v3.14+ record still carrying no
         # publish_status a day after it started means the publish-status
         # amendment never landed — the operator cannot tell from state
@@ -2839,9 +3051,12 @@ def run_all_checks(entries: list[dict], runs: list[dict], taxonomy: dict,
     if not n_err:
         ok("entry-schema", f"all {len(entries)} entr{'y' if len(entries) == 1 else 'ies'} pass validate_entry")
 
-    print("\n== all: update_of / references resolution + cycles ==")
+    print("\n== all: references resolution ==")
     check_references_resolve(entries, entries_by_id)
-    check_update_targets(entries, entries_by_id)
+
+    print("\n== all: entry lifecycle — changelog records ==")
+    runs_by_id = {str(r.get("run_id")): r for r in runs if r.get("run_id")}
+    check_entry_updates(entries, runs_by_id, store_mode=True)
 
     print("\n== all: CVE sync ==")
     check_cve_sync(entries, parsed_state.get("cves_seen.json"), scope_label="store")
@@ -2932,9 +3147,17 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
             return 2
 
     run_id = str(run.get("run_id")) if run is not None else str(run_arg)
-    run_entries = [e for e in entries if e.get("run_id") == run_id]
+    new_entries = [e for e in entries if e.get("run_id") == run_id]
+    updated_entries = [e for e in entries
+                       if e.get("run_id") != run_id and _entry_update_records(e, run_id)]
+    # Content checks cover both the new entries and the ones this run updated
+    # (the whole updated entry is re-validated — its new section and changed
+    # fields live in the same file as the rest).
+    run_entries = new_entries + updated_entries
     entries_by_id = {e["id"]: e for e in entries}
-    print(f"\nrun scope: {run_id} · {len(run_entries)} entr{'y' if len(run_entries) == 1 else 'ies'}\n")
+    runs_by_id = {str(r.get("run_id")): r for r in runs if r.get("run_id")}
+    print(f"\nrun scope: {run_id} · {len(new_entries)} new entr{'y' if len(new_entries) == 1 else 'ies'}"
+          f" · {len(updated_entries)} updated entr{'y' if len(updated_entries) == 1 else 'ies'}\n")
 
     print("== run record ==")
     check_run_record(run, run_id, content_root, pre_verify=pre_verify)
@@ -2947,20 +3170,26 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
         check_prompt_version(run, content_root)
 
         print("\n== run counters vs disk ==")
-        check_run_counters(run, run_entries)
+        check_run_counters(run, new_entries, updated_entries)
 
     print("\n== entry schema ==")
     check_entry_schema(run_entries, taxonomy, set(registry.keys()))
 
     if run is not None:
         print("\n== entry ↔ run time binding ==")
-        check_entry_run_binding(run, run_entries)
+        check_entry_run_binding(run, new_entries, updated_entries)
 
-        print("\n== cross-run dedup (14-day window) ==")
-        check_dedup(run, run_entries, entries, entries_by_id, registry)
+        print("\n== cross-run dedup (store-wide CVEs, 14-day entities) ==")
+        check_dedup(run, new_entries, entries, entries_by_id, registry)
 
-    print("\n== update-chain integrity ==")
-    check_update_targets(run_entries, entries_by_id)
+    print("\n== entry lifecycle — changelog records ==")
+    check_entry_updates(run_entries, runs_by_id, run_id, enforce=_lifecycle_enforced(run))
+
+    print("\n== entry lifecycle — no silent edits ==")
+    check_silent_edits(run, run_id, entries_by_id, content_root)
+
+    print("\n== v4 shape (retired weekly kinds / horizon / run kind) ==")
+    check_legacy_shape(run, new_entries)
 
     if run is not None:
         print("\n== rolling-24h composition (informational) ==")
@@ -3016,8 +3245,9 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
         print("\n== fetch failures (rich shape + bridge allowlist) ==")
         check_fetch_failures(run)
 
-    print("\n== source URL liveness (HEAD/GET every source link of this run) ==")
-    check_source_urls_resolve(run_entries, skip=skip_link_check)
+    print("\n== source URL liveness (new entries: every source; updated entries: sources added) ==")
+    check_source_urls_resolve(new_entries, skip=skip_link_check,
+                              updated_entries=updated_entries, content_root=content_root)
 
     print("\n== build-side smoke tests ==")
     check_test_build(skip_build_tests)
@@ -3036,13 +3266,13 @@ def _summary() -> int:
             print(f"  - {f_}")
     if WARNS:
         print("\nWARNINGS (not blocking, but the zero-warning discipline "
-              "applies — fix what this run caused before commit; the weekly "
+              "applies — fix what this run caused before commit; the quality "
               "audit sweeps the rest to zero):")
         for w in WARNS:
             print(f"  - {w}")
     if ACKED:
         print("\nACKNOWLEDGED (settled history per "
-              "state/warning_acknowledgments.json — reviewed by the weekly "
+              "state/warning_acknowledgments.json — reviewed by the quality "
               "audit, not counted as warnings):")
         for a in ACKED:
             print(f"  - {a}")
@@ -3071,7 +3301,7 @@ def report_dead_ack_rows(store_mode: bool) -> None:
         warn("ack-ledger",
              f"acknowledgment for check '{r['check']}' matching "
              f"{str(r['match'])[:80]!r} silenced nothing on this pass — the "
-             "warning it covers no longer fires. The weekly audit deletes rows "
+             "warning it covers no longer fires. The quality audit deletes rows "
              "that have stopped silencing anything; the ledger is not an archive")
 
 

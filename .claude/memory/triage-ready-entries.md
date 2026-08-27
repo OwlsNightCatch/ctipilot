@@ -18,6 +18,6 @@ type: project
 ## Why-lines worth keeping
 
 - The 2026-07-09 audits found: 80 distinct ATT&CK IDs across the store, ALL prose-only (not retrievable); FP-disambiguation present only in the best entries; F4 (148×, mostly ellipsis-spliced evidence quotes) and F3 (167×, facts attributed to the wrong co-cited source) the top truth defects — v3.13 added the contiguous-quote and per-fact-attribution compose rules for exactly these.
-- **Migrated v2 entries (`migrated_from != null`) are a lower-fidelity tier** — placeholder evidence, empty entities/actions/techniques. Entries are immutable; never "fix" the tail, let consumers filter on the field (documented in `docs/pipeline.md`).
+- **Migrated v2 entries (`migrated_from != null`) are a lower-fidelity tier** — placeholder evidence, empty entities/actions/techniques. The tail is never bulk-rewritten — let consumers filter on the field (documented in `docs/pipeline.md`); since v4.0 an audit may lift an individual migrated entry through an `improvement` changelog record ([[entry-lifecycle-v4]]), and the provenance flag itself never changes.
 - `cves[].vector` semantics trip readers: `vector` = victim-interaction axis (`zero-click` ok on a post-auth bug), `auth` = auth axis. Clarified in `site/taxonomy.yaml` comment 2026-07-09 after an auditor misread Coolify's `zero-click`+`post-auth` as a taxonomy error.
 - Everything above is org-agnostic by design — no org-profile value is baked into the triage-ready rules, so the shape survives re-parameterization via `config/org-profile.yaml`.

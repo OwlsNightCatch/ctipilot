@@ -40,3 +40,8 @@ organization-specific value; the static code/prompts are org-neutral.
   For byte-diff comparisons of build changes, build both sides with
   `PYTHONHASHSEED=0`.
 - Fork guide for operators: `docs/customization.md`.
+
+**2026-08-27 (v4.0):** the weekly routine is retired, so `prompts/weekly-summary.md` is no longer a
+compose target; the `org-policy-watch` block now renders into `prompts/cti-run.md` (it tasks the S2
+home-region & sector worker). Compose targets: `cti-run.md`, `verification.md`, the three agent
+definitions. See [[entry-lifecycle-v4]].

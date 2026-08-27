@@ -1,10 +1,11 @@
 # Entry reference templates
 
-Read by the intel-run and weekly routines during their compose phase. It
-contains the canonical skeleton for an entry file and a run record, plus a
+Read by the intel-run and quality-audit routines during their compose phase.
+It contains the canonical skeleton for an entry file and a run record, a
+worked example of updating an existing entry through its changelog, plus a
 worked-good body fragment showing the technical-depth bar. The substantive
 editorial / verification / state / publishing rules live in
-`prompts/cti-run.md` and `prompts/weekly-summary.md`; the NORMATIVE
+`prompts/cti-run.md` and `prompts/quality-audit.md`; the NORMATIVE
 frontmatter contract is [`docs/pipeline.md`](../docs/pipeline.md) — this
 file only shows the rendered shape.
 
@@ -35,7 +36,7 @@ omitted entirely when the sources give no honest basis for one.
 
 ---
 
-## Entry skeleton — vulnerability (operational)
+## Entry skeleton — vulnerability
 
 `entries/<YYYY-MM-DD>/<slug>.md` — one `Write` per file. Field semantics:
 [`docs/pipeline.md`](../docs/pipeline.md). Every taxonomy value from
@@ -52,9 +53,10 @@ summary: >
   1–3 self-contained sentences naming the product, versions, exploitation
   status, and who must act. This is the TL;DR bullet, the RSS description,
   and the notification text.
-discovered_at: "YYYY-MM-DDTHH:MM:SSZ"
+discovered_at: "YYYY-MM-DDTHH:MM:SSZ"   # first publication — never changes
+updated_at: null                         # == updates[-1].at once the entry has a changelog record
 event_date: "YYYY-MM-DD"
-run_id: YYYY-MM-DDTHHMMZ-intel
+run_id: YYYY-MM-DDTHHMMZ-intel           # the originating fire — never changes
 priority: high
 immediate_action: null
 tags: [vulnerabilities, rce, actively-exploited, cisa-kev]
@@ -96,8 +98,9 @@ evidence:
 verification: multi-source
 sourcing_note: null
 confidence: high
-update_of: null
-references: []
+references: []                   # entry ids this finding builds on; a distinct finding sharing a
+                                 # CVE with an older entry MUST list it here (else the gate FAILs it
+                                 # as a duplicate)
 deep_dive: false
 deep_dive_category: null
 org_triage: null                 # triage block when the org profile configures a scheme
@@ -111,6 +114,7 @@ actions: []                      # do-now bar (cti-run.md Phase 4 § actions[]):
   # advice, never a restatement of the body's detection/hardening guidance.
   # When one ships: "Patch {Product} to ≥ {version} now and {the
   # rotation / termination / compromise-check the mechanics demand}."
+updates: []                      # the changelog — empty on a new entry; see § Updating an existing entry
 migrated_from: null
 ---
 
@@ -163,15 +167,13 @@ Variants:
       the specific time-critical defender action.
   ```
 
-- **update note** — `update_of: <YYYY-MM-DD/slug>`; body opens
-  `**UPDATE (originally covered YYYY-MM-DD):**` and carries only the delta.
 - **deep dive** — `deep_dive: true` + `deep_dive_category: <rotation slug>`;
   body is the full deep-dive narrative (Background paragraph when PD-10
   applies, kill chain with ATT&CK links, hunt concepts, hardening).
-- **weekly strategic** — `horizon: strategic` + `weekly_section: <weekly-*>`
-  + `references: [<entry ids>]`; a `weekly-top-stories` body opens with
-  `**If you did nothing this week:**`. The `weekly-looking-ahead` entry is
-  `kind: outlook` with the justified watch list as its body.
+- **policy** — `kind: policy` for a regulatory action, deadline or authority
+  guidance that changes what the constituency is obliged or advised to do;
+  same skeleton, usually `cves: []`, `techniques: []` allowed, Admiralty
+  block, body names the obligation and its date.
 - **closed-source entry** — `closed_sources: [{title, provider, date, ref}]`,
   inline attribution in the body as plain text
   `(Provider, YYYY-MM-DD — closed source)`, never a fabricated URL. There is
@@ -182,13 +184,94 @@ Variants:
 
 ---
 
+## Updating an existing entry — the changelog (worked example)
+
+A finding has ONE entry for its whole life. A development, correction or
+improvement on covered ground is appended to that entry — never a second
+file (`prompts/cti-run.md` Phase 4 § Updating an existing entry; normative:
+`docs/pipeline.md` § Entry lifecycle). `Read` the entry, then land the
+record, the section and the frontmatter changes in one `Edit`/`Write`.
+
+The frontmatter after two changes — a KEV listing (an `update`) and a later
+audit correction of the fixed version:
+
+````yaml
+discovered_at: "2026-07-03T04:21:09Z"      # unchanged
+updated_at: "2026-07-11T14:40:12Z"         # == the last record's at
+run_id: 2026-07-03T0412Z-intel             # unchanged — updating fires appear in updates[]
+priority: high                             # moved from notable by the 07-05 record
+cves:
+  - id: CVE-YYYY-NNNNN
+    cvss: "9.8"
+    epss: null
+    type: rce
+    vector: zero-click
+    auth: pre-auth
+    status: [exploited, cisa-kev, patch-available]   # current state — moved by the 07-05 record
+    affected: "≤ 4.2.1"
+    fixed: "4.2.2"                                   # corrected by the 07-11 record (was "4.3.0")
+actions:                                   # the CURRENT do-now set — replaced, never accumulated
+  - "Patch {Product} to ≥ 4.2.2 now; hunt for {the artifact the exploitation reporting names}."
+updates:
+  - at: "2026-07-05T04:40:12Z"
+    run_id: 2026-07-05T0410Z-intel
+    type: update
+    summary: >
+      CISA added CVE-YYYY-NNNNN to the Known Exploited Vulnerabilities catalog on 2026-07-04 and
+      {Lab} reports in-the-wild exploitation since 2026-07-02; status moves from PoC-only to
+      exploited and priority to high.
+    fields: [cves, priority, tags, actions, summary]
+  - at: "2026-07-11T14:40:12Z"
+    run_id: 2026-07-11T1435Z-audit
+    type: correction
+    summary: >
+      The fixed version was stated as 4.3.0; the vendor advisory's fix table names 4.2.2 as the
+      first fixed release. Corrected in the CVE record, the action and the body.
+    fields: [cves, actions, body]
+````
+
+The body: the main analysis first (corrected where it was wrong — the
+correction record's `fields` says `body`), then one section per record,
+same order, heading exactly `## <Type> — <at>`:
+
+````markdown
+{The main analysis — a complete, readable entry on its own. Where the
+07-11 correction applies, this text now says 4.2.2, not 4.3.0.}
+
+## Update — 2026-07-05T04:40:12Z
+
+CISA added CVE-YYYY-NNNNN to the Known Exploited Vulnerabilities catalog on 2026-07-04
+([CISA, 2026-07-04](https://…)). {Lab} observed exploitation against internet-exposed
+{Product} instances beginning 2026-07-02, with {the observable behaviour the source
+describes — telemetry class first} ([{Lab}, 2026-07-04](https://…)). The delta only —
+no recap of the original analysis.
+
+## Correction — 2026-07-11T14:40:12Z
+
+The entry stated the first fixed release as 4.3.0. The vendor advisory's fix table names
+4.2.2 ([Vendor PSIRT, YYYY-MM-DD](https://…)); the CVE record, the action item and the
+analysis above now say 4.2.2. Readers who patched to 4.2.2 on the original guidance were
+already fixed; the misstatement affected only the version boundary.
+````
+
+Rules the gate enforces: one record ⇔ one section, in order, same `at`;
+`at` strictly later than `discovered_at` and than the previous record;
+`updated_at` mirrors the last record; every new source cited in a section is
+appended to `sources[]`; `discovered_at` / `run_id` / the path never change;
+an entry file modified in the working tree without a record for the modifying
+run FAILs (`silent-edit`). The updating run lists the entry id in its run
+record's `updated_entry_ids[]` and counts it in `entries_updated`.
+
+---
+
 ## Run-record skeleton
 
 `runs/<YYYY-MM-DD>/<run-id>.md` — frontmatter telemetry per
 [`docs/pipeline.md`](../docs/pipeline.md) § Run records (schema, run_id,
-kind, timing, models, window/gap hours, entry counters, sub_agents blocks,
-fetch_failures, bridge_uses, sources_changed, entities_added, verification
-iterations). Body:
+kind, timing, models, window/gap hours, entry counters — `entries_published`
+for new files, `entries_updated` + `updated_entry_ids[]` for the entries this
+fire appended a changelog record to — sub_agents blocks, fetch_failures,
+bridge_uses, sources_changed, entities_added, verification iterations). Body:
 
 ````markdown
 ## Verification & coverage notes

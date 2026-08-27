@@ -29,76 +29,7 @@ Cadence-agnostic and self-healing: each fire derives its window from the gap sin
 record, so missed fires catch up automatically and the cron can change without touching the prompt.
 More fires mean lower latency, never more content — dedup republishes only the new delta.
 
-### 1b. Weekly run — once per week
-
-```
-Read prompts/weekly-summary.md and execute it.
-```
-
-Fires on an operator-chosen day/time. Summarises the most recently completed ISO week. Refuses to
-fire twice for the same ISO week (Phase 0 `duplicate-week` guard).
-
-### 1c. Weekly backup run — resilience net for the weekly
-
-A second routine that fires *after* the primary weekly slot and produces the weekly only if the
-primary did not. Its whole job is to answer one question — *did a `-weekly` run record for the
-relevant week reach `main`?* — and, only if not, run the weekly itself.
-
-**Current correct prompt (paste this into the backup routine config):**
-
-```
-Backup run for the weekly CTI summary. This repo has NO `briefs/weekly/<week>.md` file: the
-weekly output is `horizon: strategic` entry files plus one run record `runs/<date>/<run-id>.md`
-whose run_id ends `-weekly` and whose frontmatter carries `week: <YYYY-Www>`. The weekly always
-summarises the most recently COMPLETED ISO week — the week ending on the most recent Sunday
-(today itself when today is Sunday), NOT the calendar week the current weekday falls in.
-
-First determine whether that week's summary already published:
-
-    u=$(date -u +%u); back=$(( u % 7 ))                 # Mon=1..Sun=7 -> days back to that Sunday
-    TARGET_WEEK=$(date -u -d "-${back} days" +%G-W%V)   # ISO label of the most recent completed week
-    git fetch origin main
-    if git grep -q -e "^week: ${TARGET_WEEK}$" origin/main -- runs/; then
-        echo "backup: weekly for ${TARGET_WEEK} already on origin/main - no action"; exit 0
-    fi
-
-If the grep matches, a `-weekly` run record for ${TARGET_WEEK} is already on `main` - the primary
-run succeeded; print the message and exit without producing anything. If it does NOT match,
-`Read prompts/weekly-summary.md` and execute it in full. That prompt's Phase 0 duplicate-week
-guard independently re-derives the week and stops with `duplicate-week` if a record already
-covers it, so running it is safe even in a race - no duplicate content can result.
-```
-
-**Why the check is written this way**
-
-- **It checks the artifact that actually exists.** The v3 pipeline has no weekly brief file — the
-  weekly's output is `horizon: strategic` entry files plus a per-fire run record
-  `runs/<date>/<run-id>-weekly.md`, *rendered* to `/weekly/<YYYY-Www>/` by the site build (see
-  [`docs/pipeline.md`](pipeline.md)). The record's frontmatter `week:` key is the durable, unique
-  signal a week published; only weekly records carry that key, so grepping `runs/` for
-  `^week: <TARGET_WEEK>$` is unambiguous. The per-fire run-id (date + `HHMM`) is not a fixed path,
-  so a `git cat-file` on a guessed filename can't work — the content grep is what's robust.
-- **It targets the week the weekly actually covers.** The weekly summarises the most recently
-  *completed* ISO week — the week ending on the most recent Sunday, inclusive of today when today is
-  Sunday. `back = $(date +%u) % 7` is the number of days back to that Sunday (Sun→0, Mon→1, … Sat→6),
-  and its ISO label is `date -d "-${back} days" +%G-W%V`. This matches the primary on every weekday:
-  a Sunday-night primary fire and a Monday-morning backup both resolve to the same week, and a backup
-  that fires mid-week never prematurely targets the still-open current week.
-- **The duplicate-week guard is the authoritative backstop.** Even if the pre-check is stale (the
-  routine container's git proxy mirrors `github.com` on a schedule, not per-pull — see
-  [`docs/operating.md`](operating.md)) and the backup proceeds to run, `weekly-summary.md`'s Phase 0
-  re-derives the week and stops with `duplicate-week`. No duplicate content can be produced. The
-  pre-check is a compute-saving optimisation layered on top of that guarantee, not the guarantee.
-
-> **Superseded prompt (do not use).** The earlier backup prompt computed `date -u +%G-W%V` (the
-> *current* calendar week, which on Mon–Sat is the still-open week, not the completed one) and tested
-> `git cat-file -e origin/main:briefs/weekly/<week>.md` — a path that does not exist in the v3 model.
-> Both faults made the check report "missing" on every fire, so the backup could never confirm a
-> primary success via its intended signal; it leaned entirely on the downstream `duplicate-week`
-> guard to avoid double-publishing (wasteful) and could not distinguish a healthy state from a real
-> primary failure. The prompt above fixes both.
-
-### 1d. Weekly quality audit — once per week (recommended: Sunday, after the weekly slot)
+### 1b. Quality audit — operator-chosen cadence (weekly is typical)
 
 ```
 Read prompts/quality-audit.md and execute it.
@@ -106,26 +37,35 @@ Read prompts/quality-audit.md and execute it.
 
 Institutionalizes the 2026-07-11 full-store intelligence-quality audit
 ([`docs/audits/2026-07-11-intelligence-quality-audit.md`](audits/2026-07-11-intelligence-quality-audit.md))
-as a standing continuous-improvement routine. Each fire audits the window since the previous
-`-audit` run record (default 7 days, self-healing across missed fires, capped at 21 days):
-retrospective truth verification of every published entry against its primary sources, independent
-coverage re-sweeps diffed against the store, systemic/operational review (runaway runs,
-dark-but-green sources, discipline drift), re-check of the previous audit's watch items, and an
-effectiveness check on its shipped fixes. The **first fire of each calendar month** additionally
-runs the priority-calibration review (priority distribution vs verifier F16 drift — the monthly
-review recommended by the 07-11 audit). Output: an audit report under `docs/audits/`, a run
-record (`run_id` suffix `-audit`), recovered entries where coverage gaps still clear PD-11, and
-fixes shipped under the versioning rule. A 72-h `duplicate-audit` guard (mirror of
-`duplicate-week`) makes double fires safe; a clean audit is a healthy outcome and is reported as
-such.
+as a standing continuous-improvement routine. Cadence-agnostic like the intel run: each fire audits
+the window since the previous `-audit` run record (default 7 days when there is none, self-healing
+across missed fires, capped at 21 days): retrospective truth verification of every published entry
+against its primary sources, independent coverage re-sweeps diffed against the store,
+systemic/operational review (runaway runs, dark-but-green sources, discipline drift), re-check of the
+previous audit's watch items, an effectiveness check on its shipped fixes, and the ATT&CK-pin
+freshness check (`tools/attack_data.py --check`). The **first fire of each calendar month**
+additionally runs the priority-calibration review (priority distribution vs verifier F16 drift — the
+monthly review recommended by the 07-11 audit). Output: an audit report
+`docs/audits/<date>-quality-audit.md`, a run record (`run_id` suffix `-audit`, `kind: audit`),
+recovered entries where coverage gaps still clear PD-11, `correction` / `improvement` changelog
+records appended to the published entries it found wrong or thin (never a second entry, never a
+silent edit — `docs/pipeline.md` § Entry lifecycle), and fixes shipped under the versioning rule. A
+72-h `duplicate-audit` guard makes double fires safe; a clean audit is a healthy outcome and is
+reported as such.
+
+> **Retired routine (2026-08-27).** A weekly strategic run (`Read prompts/weekly-summary.md and
+> execute it.`) and its backup routine used to be the third and fourth entries here. Both were
+> removed by operator decision along with the prompt file, the `/weekly/` pages and the weekly feed;
+> the `horizon: strategic` entries they produced stay in the store as archived permalinks. **If the
+> live routine config still carries either, delete them** — the prompt they `Read` no longer exists.
 
 **Optional: an intel-run backup.** There is no intel backup configured, and one is rarely needed —
 the intel run is cadence-agnostic and the *next* scheduled fire self-heals the missed window from the
-gap since the last run record. If you want one anyway, mirror the pattern above but key on
-*recency of the latest intel run record* rather than an ISO week, e.g. skip when
-`git grep -l "^kind: intel$" origin/main -- runs/<today>/` shows a record newer than your staleness
-threshold, else `Read prompts/cti-run.md and execute it.` The intel run has no `duplicate-week`
-guard, so its safety net is dedup (a re-scan republishes only the new delta), not a hard stop.
+gap since the last run record. If you want one anyway, key it on *recency of the latest intel run
+record*, e.g. skip when `git grep -l "^kind: intel$" origin/main -- runs/<today>/` shows a record
+newer than your staleness threshold, else `Read prompts/cti-run.md and execute it.` The intel run
+has no hard duplicate guard, so its safety net is dedup (a re-scan republishes only the new delta,
+and a covered finding receives a changelog record instead of a second entry), not a hard stop.
 
 ---
 
@@ -140,11 +80,10 @@ the CHANGELOG head.
 
 | Prompt | Role |
 |---|---|
-| [`prompts/cti-run.md`](../prompts/cti-run.md) | **Intel-run master prompt** (fires N×/day). Defines the shared machinery once: anti-crash guards, prime directives PD-1…PD-13, entry composition discipline, state lifecycle, the mechanical gate (Phase 5.5), the verification loop (Phase 5.7), and the publishing chain (Phases 6–7). Everything else builds on it. |
-| [`prompts/weekly-summary.md`](../prompts/weekly-summary.md) | **Weekly strategic run.** *Builds on* `cti-run.md` — it `Read`s that file at runtime and defines only the divergent weekly lens (W-PD-1 inclusion gate, ISO-week recency + `duplicate-week` guard, weekly dedup polarity, `weekly_section` placement). Shared machinery is never copied here, so the two prompts cannot drift. |
-| [`prompts/quality-audit.md`](../prompts/quality-audit.md) | **Weekly quality-audit run.** *Builds on* `cti-run.md` the same way and defines only the audit lens: retrospective truth passes over the window's published entries, independent coverage re-sweeps, systemic review, watch-item carry-forward, fix-effectiveness checks, and the monthly priority-calibration review (Phase 3b, first fire of each calendar month). Root-causes every confirmed defect and ships the fix; report under `docs/audits/`. |
+| [`prompts/cti-run.md`](../prompts/cti-run.md) | **Intel-run master prompt** (fires on the operator's cadence). Defines the shared machinery once: anti-crash guards, prime directives PD-1…PD-13, entry composition discipline incl. the entry lifecycle (new entry vs `updates[]` record on the existing entry), state lifecycle, the mechanical gate (Phase 5.5), the verification loop (Phase 5.7), and the publishing chain (Phases 6–7). Everything else builds on it. |
+| [`prompts/quality-audit.md`](../prompts/quality-audit.md) | **Quality-audit run.** *Builds on* `cti-run.md` — it `Read`s that file at runtime and defines only the audit lens: retrospective truth passes over the window's published entries, independent coverage re-sweeps, systemic review, watch-item carry-forward, fix-effectiveness checks, the ATT&CK-pin freshness check, and the monthly priority-calibration review (Phase 3b, first fire of each calendar month). Root-causes every confirmed defect and ships the fix; corrections and improvements to published entries land as changelog records on those entries; report under `docs/audits/`. Shared machinery is never copied here, so the two prompts cannot drift. |
 | [`prompts/verification.md`](../prompts/verification.md) | **Two-source / fake-news verification policy.** The sourcing checklist and the `verification` frontmatter enum that surfaces every entry's sourcing status. Referenced by both master prompts and by the verifier sub-agents. |
-| [`prompts/entry-template.md`](../prompts/entry-template.md) | **Canonical entry + run-record skeletons.** The frontmatter contract and section shape the main agent composes against. |
+| [`prompts/entry-template.md`](../prompts/entry-template.md) | **Canonical entry + run-record skeletons.** The frontmatter contract (incl. `updated_at` / `updates[]`) and section shape the main agent composes against, plus the worked example of appending a changelog record to an existing entry. |
 | [`prompts/check-run-fixes.md`](../prompts/check-run-fixes.md) | **Fix recipes for common `tools/check_run.py` FAILs.** Consulted when the Phase 5.5 gate does not exit 0. |
 | [`prompts/CHANGELOG.md`](../prompts/CHANGELOG.md) | **Editorial-policy audit trail.** One entry per prompt edit; its head version must match the banner of the edited prompt and the `prompt_version` recorded in run records. Not itself a prompt the routine executes. |
 
@@ -163,8 +102,8 @@ byte-identically in the same commit).
 
 | Sub-agent | Role |
 |---|---|
-| [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) | **Research worker.** One spawned per domain — intel run S1–S4 (+ conditional S5 closed-source intake); weekly W1–W2 (+ conditional W3). Reads the prior-coverage index and `entities/registry.yaml` before fetching; returns findings YAMLs, never composes entries. |
-| [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md) | **Cold-reader verifier (Opus default).** Phase 5.7. Scope: the run's new entries + run record. Read-only; re-spawned fresh until a confirmed CLEAN (two consecutive CLEAN verdicts on two different models) or the 8-iteration cap. Two concerns — URL truth and editorial quality (finding categories F1–F18). Spawned on **odd** iterations. |
+| [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) | **Research worker.** One spawned per domain — intel run S1–S4 (+ conditional S5 closed-source intake); the audit's G1–G3 coverage re-sweeps. Reads the prior-coverage index and `entities/registry.yaml` before fetching; returns findings YAMLs (a covered finding comes back as `novelty: update-of:<entry-id>` so the main agent appends a changelog record instead of a second entry), never composes entries. |
+| [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md) | **Cold-reader verifier (Opus default).** Phase 5.7. Scope: the run's new entries, every existing entry it appended a changelog record to (whole entry — new section and changed fields against the sources), + the run record. Read-only; re-spawned fresh until a confirmed CLEAN (two consecutive CLEAN verdicts on two different models) or the 8-iteration cap. Two concerns — URL truth and editorial quality (finding categories F1–F18). Spawned on **odd** iterations. |
 | [`.claude/agents/cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md) | **Verifier, Sonnet rotation variant.** Byte-identical operational body to `cti-verification.md`; only the model frontmatter differs. Spawned on **even** iterations so model-specific blind spots surface. |
 
 Self-identification for every agent (main + sub-agents) comes primarily from the model line the
@@ -185,8 +124,10 @@ allow-list matched to these definitions (see [`docs/operating.md` § Sub-agent c
 
 - When you add, remove, or rename a routine, update § 1 here and
   [`docs/operating.md` § Set up the routines](operating.md#4-set-up-the-routines) in the same change.
-- When you change what a weekly run *writes* (the artifact the backup keys on), re-check the backup
-  prompt in § 1c — the pre-check greps `runs/` for `^week: <TARGET_WEEK>$`, which assumes the weekly
-  record keeps carrying a `week:` frontmatter key.
+- When you change what an audit fire *writes* (report filename pattern `docs/audits/<date>-quality-audit.md`,
+  the `-audit` run-id suffix, `kind: audit`, the changelog records it appends), re-check § 1b here and
+  `prompts/quality-audit.md` Phase 0 — the audit's window anchor greps `runs/` for the newest `-audit`
+  record, and the monthly calibration duty greps `docs/audits/` for a current-month `## Priority
+  calibration` heading.
 - The in-repo prompt tables (§ 2, § 3) describe roles, not versions — the live version is always the
   banner at the top of each file and the head of [`prompts/CHANGELOG.md`](../prompts/CHANGELOG.md).

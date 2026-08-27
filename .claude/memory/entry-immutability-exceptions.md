@@ -6,7 +6,9 @@ type: project
 
 # Entry immutability exceptions
 
-Published entries are immutable — corrections ship as new entries with `update_of`. This file is the audit log of the rare, operator-authorized exceptions, so a future session or verifier that notices post-publication mtimes/commits on entry files knows they were sanctioned, not drift.
+> **HISTORICAL — this ledger is retired (v4.0, operator directive 2026-08-27).** Entries are living records now: every change to a published entry is an `updates[]` changelog record (`correction` / `improvement` / `update`) with a matching `## <Type> — <at>` section on the entry itself — see [[entry-lifecycle-v4]] and `docs/pipeline.md` § Entry lifecycle. The changelog IS the ledger, so nothing is logged here any more. The v3-era entries below stay as the record of what was edited when entries were immutable.
+
+Published entries were immutable in v3 — corrections shipped as new entries with `update_of`. This file was the audit log of the rare, operator-authorized exceptions, so a future session or verifier that noticed post-publication mtimes/commits on entry files knew they were sanctioned, not drift.
 
 ## 2026-07-09 — repair of the four v2→v3 migration dangling `update_of` links
 

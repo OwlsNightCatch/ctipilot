@@ -58,7 +58,7 @@ Sites with anonymous "authors", AI-generated stock images, and confidently state
 
 ## Recency sanity check
 
-Every entry reflects events inside the run's gap-derived recency window (`window_hours` — see `prompts/cti-run.md` PD-7; developing stories up to `developing_window_hours`). Older material qualifies only as: a *material new development* on covered ground (→ `update_of` entry, delta only); a vendor advisory freshly relevant (e.g. quietly KEV-listed today); or a national-CERT publication today referencing prior activity. In every case `event_date` states the original date so the reader is never misled.
+Every entry reflects events inside the run's gap-derived recency window (`window_hours` — see `prompts/cti-run.md` PD-7; developing stories up to `developing_window_hours`). Older material qualifies only as: a *material new development* on covered ground (→ an `update` changelog record on the existing entry, delta only); a vendor advisory freshly relevant (e.g. quietly KEV-listed today); or a national-CERT publication today referencing prior activity. In every case `event_date` states the original date so the reader is never misled.
 
 ---
 
@@ -67,7 +67,7 @@ Every entry reflects events inside the run's gap-derived recency window (`window
 - [ ] Every claim has an inline link to a source fetched this run; every URL in `sources[]` was actually fetched and matches its claim.
 - [ ] Zero IOCs anywhere (hashes, IPs, attacker domains/URLs, rule code).
 - [ ] Zero vanity metrics.
-- [ ] No in-window duplication (incl. earlier runs today): repeats are `update_of` entries with a material delta or dropped.
+- [ ] No duplication of covered ground (incl. earlier runs today, and the store-wide CVE index): repeats are changelog records on the existing entry with a material delta, or dropped; every record has its `## <Type> — <at>` section and no entry was edited without one.
 - [ ] Every entry's `verification` value is correct: `multi-source` needs ≥2 independent sources; carve-outs named in `sourcing_note`.
 - [ ] Classification set on EVERY entry — never zero ratings: every non-triage-kind entry carries a valid Admiralty `classification` (reliability A–F tracking the cited source's own letter; credibility 1–6 tracking corroboration, assessed independently); triage-kind entries carry `org_triage` + `classification: null` when a triage scheme is configured, and the Admiralty block like every other kind when none is (`check_run.py` FAILs a missing rating from v3.18).
 - [ ] CVE identifiers verified against NVD/MITRE; `cves[]` records complete (type/vector/auth/status).
@@ -87,7 +87,7 @@ Every entry reflects events inside the run's gap-derived recency window (`window
 
 ## Phase 5.7 — Final verification sub-agent (URL truth + editorial quality)
 
-After entries and the run record are written, state is updated, and `tools/check_run.py` exits 0 (the cheap mechanical gate runs first), an independent verification sub-agent reads the run's output end to end — every new entry (frontmatter AND body) plus the run record — as a hostile, technically-fluent SOC reader with no memory of how the run was assembled. **The gate to publish is a confirmed CLEAN — two consecutive iterations, on two different models, both returning verdict CLEAN** (v3.23; the 8-iteration cap — raised from 5 in v3.27 — and the low-residual early exit are the fail-open safety valves). A single model's CLEAN never publishes alone: the rotation puts the confirmation pass on the other model, so one model's blind spot is never the last word.
+After entries and the run record are written, state is updated, and `tools/check_run.py` exits 0 (the cheap mechanical gate runs first), an independent verification sub-agent reads the run's output end to end — every new entry (frontmatter AND body), every entry the run appended a changelog record to (read whole; the new section and every changed field checked against the cited sources), plus the run record — as a hostile, technically-fluent SOC reader with no memory of how the run was assembled. **The gate to publish is a confirmed CLEAN — two consecutive iterations, on two different models, both returning verdict CLEAN** (v3.23; the 8-iteration cap — raised from 5 in v3.27 — and the low-residual early exit are the fail-open safety valves). A single model's CLEAN never publishes alone: the rotation puts the confirmation pass on the other model, so one model's blind spot is never the last word.
 
 **Truth gate.** Every URL fetched; every claim cross-checked against its linked source; every named entity traced to a fetched source; every `evidence[]` quote confirmed verbatim; frontmatter ⇔ body agreement (a `summary` claiming more than the body's sources support is a hallucination with a notification blast radius).
 
@@ -103,7 +103,7 @@ Remediation per finding type, re-run `tools/check_run.py`, fresh re-spawn — th
 
 ## Operator review pattern
 
-Periodically (e.g. weekly), a human operator reviews:
+Periodically, a human operator reviews:
 
 - `git log -- sources/sources.json` for demotions and candidates; promote or revert as warranted.
 - Recent run records' verification-notes bodies for recurring single-source patterns or repeated drops (a missing source, or a quality issue with an existing one).

@@ -7,9 +7,9 @@ supplier watchlists, vulnerability-triage scheme) is parameterized in
 marker blocks inside the master prompts and the sub-agent definitions, so
 every agent in the workflow sees the same organization context:
 
-    prompts/cti-run.md                    blocks: daily-mission, org-data
-    prompts/weekly-summary.md             blocks: weekly-mission, org-data
-    .claude/agents/cti-research.md        blocks: research-mission, org-data
+    prompts/cti-run.md                    blocks: daily-mission, org-data, org-policy-watch
+    prompts/verification.md               blocks: org-certs
+    .claude/agents/cti-research.md        blocks: research-mission, research-audience, org-data, org-certs
     .claude/agents/cti-verification.md    blocks: verify-context
     .claude/agents/cti-verification-alt.md blocks: verify-context
 
@@ -54,8 +54,10 @@ END_RE = re.compile(r"^<!--\s*ORG-PROFILE:END\s+(?P<name>[a-z-]+)\s*-->\s*$")
 
 # Target files and the block names each MUST contain.
 TARGETS: list[tuple[str, list[str]]] = [
-    ("prompts/cti-run.md", ["daily-mission", "org-data"]),
-    ("prompts/weekly-summary.md", ["weekly-mission", "org-data", "org-policy-watch"]),
+    # v4.0: the weekly strategic routine (prompts/weekly-summary.md) was
+    # retired; its standing policy / regulatory watch moved into the intel
+    # run's S2 (home region & sector) domain.
+    ("prompts/cti-run.md", ["daily-mission", "org-data", "org-policy-watch"]),
     ("prompts/verification.md", ["org-certs"]),
     (".claude/agents/cti-research.md",
      ["research-mission", "research-audience", "org-data", "org-certs"]),
@@ -555,11 +557,10 @@ def _sector_phrase(org: dict[str, Any]) -> str:
     return phrase
 
 
-def _render_mission(profile: dict[str, Any], kind: str) -> str:
+def _render_mission(profile: dict[str, Any], kind: str = "daily") -> str:
     org = profile["organization"]
     artifact = {
         "daily": "operating the continuous intelligence pipeline",
-        "weekly": "producing the weekly strategic view",
     }[kind]
     lines = [
         GENERATED_NOTE,
@@ -883,15 +884,18 @@ def _render_certs(profile: dict[str, Any]) -> str:
 
 
 def _render_policy_watch(profile: dict[str, Any]) -> str:
-    """`org-policy-watch` block — the weekly W2 / § 9 standing regulatory
-    watch list."""
+    """`org-policy-watch` block — the intel run's S2 (home region & sector)
+    standing policy / regulatory watch list (v4.0: inherited from the
+    retired weekly's W2 domain)."""
     org = profile["organization"]
     items = profile["policy_watch"]
     lines: list[str] = [GENERATED_NOTE]
     if items:
         lines.append(
             f"Standing policy / regulatory watch for {org['name']} "
-            f"({org['region_focus']} · {org['sector']}):"
+            f"({org['region_focus']} · {org['sector']}) — S2 sweeps these every run; a "
+            "development ships as a `policy` entry only when it changes what the "
+            "constituency's defenders are obliged or advised to do (PD-11 c):"
         )
         lines.append("")
         lines.extend(f"- {_flow(t)}" for t in items)
@@ -908,7 +912,6 @@ def _render_policy_watch(profile: dict[str, Any]) -> str:
 def render_blocks(profile: dict[str, Any]) -> dict[str, str]:
     return {
         "daily-mission": _render_mission(profile, "daily"),
-        "weekly-mission": _render_mission(profile, "weekly"),
         "research-mission": _render_research_mission(profile),
         "research-audience": _render_research_audience(profile),
         "org-data": _render_org_data(profile),
@@ -1163,7 +1166,7 @@ def selftest() -> int:
     blocks_b = render_blocks(profile)
     check(blocks_a == blocks_b, "rendering deterministic")
     check("pipe \\| in notes" in blocks_a["org-data"], "table-cell pipe escaped")
-    check(set(blocks_a) == {"daily-mission", "weekly-mission", "research-mission",
+    check(set(blocks_a) == {"daily-mission", "research-mission",
                             "research-audience", "org-data", "verify-context",
                             "org-certs", "org-policy-watch"},
           "all block names rendered")
