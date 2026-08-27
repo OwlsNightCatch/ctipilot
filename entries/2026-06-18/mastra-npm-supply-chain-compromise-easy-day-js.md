@@ -4,8 +4,13 @@ kind: threat
 horizon: operational
 title: Mastra npm supply-chain compromise (easy-day-js)
 headline: Mastra npm supply-chain compromise (easy-day-js)
-summary: "Deep dive: the Mastra AI framework's entire npm namespace was backdoored. A trojanised easy-day-js look-alike dependency was swept as a production dependency into 140+ @mastra/* packages in under 90 minutes, delivering a cross-platform credential/wallet stealer; the publishing-account access vector is not disclosed by the primaries (JFrog, 2026-06-17)."
+summary: >
+  Deep dive: the Mastra AI framework's entire npm namespace was backdoored. A trojanised
+  easy-day-js look-alike dependency was swept as a production dependency into 140+ @mastra/*
+  packages in under 90 minutes, delivering a cross-platform credential/wallet stealer; the
+  publishing-account access vector is not disclosed by the primaries (JFrog, 2026-06-17).
 discovered_at: "2026-06-18T05:10:36Z"
+updated_at: "2026-06-21T04:55:02Z"
 event_date: 2026-06-17
 run_id: 2026-06-18-aa7ee817
 priority: high
@@ -14,11 +19,16 @@ tags:
   - supply-chain
   - infostealer
   - identity
+  - nation-state
+  - north-korea-nexus
 regions:
   - global
 sectors:
   - technology
+  - finance
 entities: []
+techniques: []
+affected_products: []
 cves: []
 sources:
   - url: "https://research.jfrog.com/post/easy-day-js/"
@@ -27,18 +37,43 @@ sources:
   - url: "https://socket.dev/blog/mastra-npm-packages-compromised"
     publisher: Socket
     role: corroborating
+  - url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/"
+    publisher: Microsoft Threat Intelligence
+    role: primary
+  - url: "https://www.bleepingcomputer.com/news/security/microsoft-links-mastra-ai-supply-chain-attack-to-north-korean-hackers/"
+    publisher: BleepingComputer
+    role: corroborating
+  - url: "https://snyk.io/blog/a-forgotten-contributor-account-compromised-the-entire-mastra-npm-package-scope/"
+    publisher: Snyk
+    role: corroborating
 closed_sources: []
 evidence: []
 verification: multi-source
 sourcing_note: null
 confidence: high
-update_of: null
 references: []
+weekly_section: null
 deep_dive: true
 deep_dive_category: supply-chain
 org_triage: null
+classification: null
 watchlist_hit: false
 actions: []
+updates:
+  - at: "2026-06-21T04:55:02Z"
+    run_id: 2026-06-21-2b75e32c
+    type: update
+    summary: >
+      Microsoft now attributes last week's Mastra npm scope compromise to North Korea's Sapphire Sleet
+      (BlueNoroff) and discloses the access vector our 2026-06-18 coverage could not: a dormant
+      maintainer account that retained publish rights across all 142 @mastra packages
+      (BleepingComputer, 2026-06-20).
+    fields:
+      - sectors
+      - sources
+      - tags
+      - body
+    merged_from: 2026-06-21/mastra-npm-scope-compromise-attributed-to-north-korea-with-t
 migrated_from: briefs/2026-06-18.md
 ---
 
@@ -55,3 +90,9 @@ On 2026-06-17 the entire npm namespace of Mastra — an open-source JavaScript/T
 **Detection concepts (no IOCs).** Hunt for `node` processes spawned from the OS temp directory (Sysmon EID 1 with parent `node`/`npm`/`npx` and an image path under `%TEMP%` or `/tmp`); for new per-user persistence (LaunchAgent / systemd user unit / `HKCU` Run key) created by a `node` parent immediately after a package install; and for `npm`/`node` processes making outbound TLS where certificate validation has been disabled. Reputable package-security tooling flagged `easy-day-js` within minutes of publication, so dependency-scanning telemetry is a high-signal early-warning surface.
 
 **Hardening.** Run `npm ls easy-day-js` across all workspaces and CI runners and remove the dependency; treat any host that installed an affected `@mastra/*` version in the exposure window as compromised and rotate all secrets, tokens and wallet material present on it. Structurally: enforce `--ignore-scripts` (or vetted allowlists) for install-time lifecycle hooks in CI, require lockfile hash/integrity verification and npm provenance attestation, and as general supply-chain hygiene audit npm org membership so publish/maintainer rights stay scoped to active maintainers.
+
+## Update — 2026-06-21T04:55:02Z
+
+The deep dive on 2026-06-18 documented the `easy-day-js` poisoning of 140+ `@mastra` packages but noted the cited primaries did not disclose *how* the publishing account was obtained, and made no attribution. Microsoft Threat Intelligence has now closed both gaps: it attributes the operation to North Korea's **Sapphire Sleet** (BlueNoroff / UNC1069) and states the access vector was a **dormant former-contributor npm account (`ehindero`) whose publish rights across the entire `@mastra` scope were never revoked** ([BleepingComputer, 2026-06-20](https://www.bleepingcomputer.com/news/security/microsoft-links-mastra-ai-supply-chain-attack-to-north-korean-hackers/)).
+
+Microsoft's analysis details the post-install chain — `easy-day-js` disables TLS verification, pulls a cross-platform Node.js implant that enumerates 166 cryptocurrency-wallet browser extensions and steals browser profiles, then establishes a `scdev` svchost service running as SYSTEM for boot persistence ([Microsoft Threat Intelligence, 2026-06-17](https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/)). Snyk independently confirms the dormant-account root cause and notes npm does not expire scope-publish permissions on inactivity ([Snyk, 2026-06-16](https://snyk.io/blog/a-forgotten-contributor-account-compromised-the-entire-mastra-npm-package-scope/)). The defender action shifts from "remove `easy-day-js`" to a structural control: audit your own private-registry and package-scope ACLs for dormant accounts with retained publish rights, and enforce time-bound or MFA-gated publish tokens. Microsoft notes this is Sapphire Sleet's second npm scope-takeover of 2026 (after Axios in April) — a systematised dormant-high-privilege-account hunt, not a one-off.

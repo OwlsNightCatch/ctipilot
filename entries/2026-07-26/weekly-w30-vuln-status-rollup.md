@@ -65,13 +65,11 @@ sourcing_note: "A consolidating status view; each CVE's exploitation status and 
 confidence: high
 update_of: null
 references:
-  - 2026-07-21/servicenow-ai-platform-cve-2026-6875-active-exploitation
-  - 2026-07-22/cve-2026-50522-sharepoint-machine-key-theft-exploited
+  - 2026-07-13/servicenow-ai-platform-sandbox-escape-cve-2026-6875
+  - 2026-07-14/microsoft-july-2026-patch-tuesday-two-exploited-zero-days
   - 2026-07-23/check-point-smartconsole-auth-bypass-cve-2026-16232
-  - 2026-07-25/check-point-mgmt-cve-2026-62144-62145-siblings
   - 2026-07-22/langflow-cve-2026-0770-exploited-ncsc-nl-15-cve-batch
-  - 2026-07-26/langflow-1-10-2-required-cve-2026-0770-precondition-fix
-  - 2026-07-26/wp2shell-cve-2026-63030-60137-confirmed-exploited-kev
+  - 2026-07-18/wordpress-core-wp2shell-preauth-rce-chain-cve-2026-63030
   - 2026-07-25/certighost-cve-2026-54121-ad-cs-dc-impersonation-poc
   - 2026-07-21/cve-2026-2291-dnsmasq-heap-overflow-rce-exodus
   - 2026-07-20/cve-2026-42533-nginx-pcre-capture-clobber-preauth-rce

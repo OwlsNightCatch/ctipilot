@@ -2,44 +2,68 @@
 schema: 1
 kind: incident
 horizon: operational
-title: "Liechtenstein's beneficial-ownership register breached: copies of ~31,000 legal entities' records taken, and four more e-government systems pulled offline as a precaution"
-headline: "A targeted attack on Liechtenstein's beneficial-ownership register yielded a targeting dataset on the owners behind Swiss- and EU-administered structures"
+title: >
+  Liechtenstein's beneficial-ownership register breached: copies of ~31,000 legal entities'
+  records taken, and four more e-government systems pulled offline as a precaution
+headline: >
+  A targeted attack on Liechtenstein's beneficial-ownership register yielded a targeting dataset
+  on the owners behind Swiss- and EU-administered structures
 summary: >
-  The Government of Liechtenstein disclosed on 2026-08-02 that an unknown actor gained unauthorised digital access to the
-  Verzeichnis wirtschaftlich berechtigter Personen — the national beneficial-ownership register at the Amt für Justiz —
-  overnight into 2026-07-30 and copied records for roughly 31,000 legal entities. Forensics released 2026-08-03
-  characterise it as a targeted attack on that register with no attacks found on other systems, but the government
-  progressively took the eMWST VAT portal, the Lides reporting platform, the central account register and the Intax tax
-  system offline as a precaution. No initial-access vector has been disclosed, no actor identified and no ransom demand
-  reported; the breach is declared under GDPR Article 33.
+  The Government of Liechtenstein disclosed on 2026-08-02 that an unknown actor gained
+  unauthorised digital access to the Verzeichnis wirtschaftlich berechtigter Personen — the
+  national beneficial-ownership register at the Amt für Justiz — overnight into 2026-07-30 and
+  copied records for roughly 31,000 legal entities. Forensics released 2026-08-03 characterise it
+  as a targeted attack on that register with no attacks found on other systems, but the government
+  progressively took the eMWST VAT portal, the Lides reporting platform, the central account
+  register and the Intax tax system offline as a precaution. No initial-access vector has been
+  disclosed, no actor identified and no ransom demand reported; the breach is declared under GDPR
+  Article 33.
 discovered_at: "2026-08-04T04:48:00Z"
-event_date: "2026-07-30"
+updated_at: "2026-08-05T04:12:23Z"
+event_date: 2026-07-30
 run_id: 2026-08-04T0411Z-intel
 priority: high
 immediate_action: null
-tags: [data-breach]
-regions: [europe, dach, switzerland]
-sectors: [public-sector, finance]
-entities: [incident:liechtenstein-vwbp-register-breach-2026-07]
-techniques: [T1213]
+tags:
+  - data-breach
+  - phishing
+regions:
+  - europe
+  - dach
+  - switzerland
+sectors:
+  - public-sector
+  - finance
+entities:
+  - "incident:liechtenstein-vwbp-register-breach-2026-07"
+techniques:
+  - T1213
 affected_products: []
 cves: []
 sources:
   - url: "https://www.presseportal.ch/de/pm/100000148/100941487"
     publisher: "Regierung des Fürstentums Liechtenstein"
-    date: "2026-08-02"
+    date: 2026-08-02
     role: primary
   - url: "https://www.presseportal.ch/de/pm/100000148/100941500"
     publisher: "Regierung des Fürstentums Liechtenstein"
-    date: "2026-08-03"
+    date: 2026-08-03
     role: primary
   - url: "https://therecord.media/hackers-steal-records-liechtenstein-companies-foundations"
-    publisher: "The Record (Recorded Future News)"
-    date: "2026-08-03"
+    publisher: The Record (Recorded Future News)
+    date: 2026-08-03
     role: corroborating
   - url: "https://www.srf.ch/news/international/31-000-geklaute-datensaetze-taeterschaft-von-cyberangriff-in-liechtenstein-weiterhin-unklar"
-    publisher: "SRF"
-    date: "2026-08-03"
+    publisher: SRF
+    date: 2026-08-03
+    role: corroborating
+  - url: "https://www.presseportal.ch/de/pm/100000148/100941523"
+    publisher: "Regierung des Fürstentums Liechtenstein"
+    date: 2026-08-04
+    role: primary
+  - url: "https://landesspiegel.li/2026/08/cyberangriff-auf-stiftungsregister-regierung-identifiziert-moegliches-einfallstor/"
+    publisher: Landesspiegel
+    date: 2026-08-04
     role: corroborating
 closed_sources: []
 evidence:
@@ -47,19 +71,27 @@ evidence:
     publisher: "Regierung des Fürstentums Liechtenstein"
   - quote: "Beim Angriff auf das VwbP handelt es sich um eine Verletzung des Schutzes personenbezogener Daten gemäss Art. 33 Datenschutz-Grundverordnung (DSGVO)."
     publisher: "Regierung des Fürstentums Liechtenstein"
-  - quote: "Weitere Angriffe auf andere Systeme konnten nicht festgestellt werden."
+  - quote: Weitere Angriffe auf andere Systeme konnten nicht festgestellt werden.
     publisher: "Regierung des Fürstentums Liechtenstein"
   - quote: "Am Montag, 3. August 2026, folgten zusätzlich das Zentrale Kontenregister sowie das zentrale Steuerfachsystem Intax. Es handelt sich um reine Vorsichtsmassnahmen."
     publisher: "Regierung des Fürstentums Liechtenstein"
+  - quote: "Ein erster Hinweis auf ein mögliches Einfallstor des Angriffs wurde identifiziert."
+    publisher: "Regierung des Fürstentums Liechtenstein"
+  - quote: "Weder zu den Servern der Landesverwaltung noch zu weiteren Systemen der Landesverwaltung wurden gemäss aktuellem Kenntnisstand widerrechtliche Zugriffsversuche registriert."
+    publisher: "Regierung des Fürstentums Liechtenstein"
+  - quote: "Im Verzeichnis sind Name des Rechtsträgers sowie Name, Vorname, Geburtsdatum, Staatsangehörigkeit und Wohnsitzstaat der wirtschaftlich berechtigten Personen aufgeführt."
+    publisher: "Regierung des Fürstentums Liechtenstein"
+  - quote: "Eine Adresse oder Telefonnummer wird nicht erfasst. Ebenso werden keinerlei finanzielle Daten der Rechtsträger wie Umsätze, Vermögen oder Dividenden erfasst."
+    publisher: "Regierung des Fürstentums Liechtenstein"
 verification: multi-source
 sourcing_note: >
-  The government is the primary disclosing party for its own incident; The Record and SRF corroborate the scope
-  independently. The `techniques[]` mapping deliberately carries only the collection behaviour the sources describe —
-  bulk copying of records out of the register. No cited source states how access was obtained, so no access-vector
-  technique is mapped.
+  The government is the primary disclosing party for its own incident; The Record and SRF
+  corroborate the scope independently. The `techniques[]` mapping deliberately carries only the
+  collection behaviour the sources describe — bulk copying of records out of the register. No
+  cited source states how access was obtained, so no access-vector technique is mapped.
 confidence: high
-update_of: null
 references: []
+weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null
@@ -67,7 +99,28 @@ classification:
   reliability: A
   credibility: 1
 watchlist_hit: false
-actions: []
+actions:
+  - "Brief fiduciary, trustee and private-banking teams that genuine VwbP breach notifications will arrive over the coming days by an indirect route — Amt für Justiz to the legal entity, then the legal entity to the beneficial owner — and that forged notifications imitating that same two-hop chain should be expected in the same window."
+updates:
+  - at: "2026-08-05T04:12:23Z"
+    run_id: 2026-08-05T0412Z-intel
+    type: update
+    summary: >
+      At a media conference on 2026-08-04 the Government of Liechtenstein gave its first substantive
+      forensic update on the breach of the beneficial-ownership register (VwbP): a first indication of
+      a possible entry point has been identified, and preliminary results show the register was
+      attacked in a targeted and isolated way, with no unlawful access attempts registered against the
+      state administration's other servers or systems. The government also published the register's
+      exact contents — legal-entity name plus surname, first name, date of birth, nationality and
+      country of residence — and states no address, telephone number or financial data is recorded,
+      which is why individual notification has to run through the legal entities themselves.
+    fields:
+      - actions
+      - evidence
+      - sources
+      - tags
+      - body
+    merged_from: 2026-08-05/liechtenstein-vwbp-entry-point-identified-field-set
 migrated_from: null
 ---
 
@@ -80,3 +133,15 @@ The forensic update on 2026-08-03 is where the operationally interesting tension
 **Defender takeaway:** the exposure that travels beyond Liechtenstein is the nature of the dataset. This is not a credential dump; it is an authoritative mapping of the people behind companies, foundations and trusts, and the constituency that administers those structures is largely Swiss and European — the fiduciaries, trustees, banks and advisers on the other side of the border. Anyone in that business should expect pretexted contact that cites genuine, verifiable register facts about a real client entity, which is precisely the input that makes business-email-compromise and CEO-fraud attempts survive the recipient's usual sanity check. The hunt that follows from that is in mail flow and case handling rather than on the endpoint: inbound requests referencing correct entity details, ownership structures or registration facts, arriving outside an established channel, and the mandate or payment-detail changes they lead to. The second lesson is architectural and shows in the government's own actions: taking four unrelated e-government services offline "as a precaution" is what happens when blast radius cannot be proven quickly from telemetry. Per-register segmentation and retained, exportable per-principal access logs on each data service are what make "was this one reached too?" a query rather than a shutdown decision.
 
 **Triage:** bulk read-out of a register by an external identity is a volumetric anomaly against a stable baseline, not an indicator match — a single external session enumerating tens of thousands of entities looks nothing like the handful of lookups a legitimate professional user performs, and it is detectable with no knowledge of the attacker's tooling. The benign lookalike is a sanctioned bulk export or an integrated partner system doing a scheduled sync; those are attributable to a known principal, run on a known schedule, and appear in change records, whereas this pattern is a single principal exceeding its own historical retrieval volume by orders of magnitude within one session.
+
+## Update — 2026-08-05T04:12:23Z
+
+The Government of Liechtenstein held a media conference on 2026-08-04 and closed the largest gap in its earlier disclosure. The original coverage recorded that no initial-access vector had been disclosed; the government now states that a first indication of a possible entry point has been identified, with detailed evaluation still running ([Regierung des Fürstentums Liechtenstein, 2026-08-04](https://www.presseportal.ch/de/pm/100000148/100941523)). It characterises the event as a targeted attack at a high technical level against a highly complex security structure, and the isolation finding is now stated positively rather than as an absence: according to current knowledge, no unlawful access attempts were registered against the state administration's servers or its other systems ([Regierung des Fürstentums Liechtenstein, 2026-08-04](https://www.presseportal.ch/de/pm/100000148/100941523)). Further systems holding sensitive data were nonetheless taken off the network as a precaution and put through security checks.
+
+**The second addition changes the risk model rather than merely adding detail.** The government published exactly what the register holds: the name of the legal entity, plus surname, first name, date of birth, nationality and country of residence of the beneficial owners, with no address or telephone number recorded ([Regierung des Fürstentums Liechtenstein, 2026-08-04](https://www.presseportal.ch/de/pm/100000148/100941523)). Landesspiegel adds that banking systems, client funds, assets, transaction data and bank client data are not affected ([Landesspiegel, 2026-08-04](https://landesspiegel.li/2026/08/cyberangriff-auf-stiftungsregister-regierung-identifiziert-moegliches-einfallstor/)). The earlier entry warned of pretexted contact citing verifiable register facts; that assessment now sharpens in a specific direction. What the attacker holds is an identity-verification kit — the legal entity, the full name, the date of birth, the nationality, the country of residence — and not a way to reach anyone. That combination fits identity impersonation and account-recovery abuse aimed at the fiduciaries, trustees and banks who administer these structures considerably better than it fits mass phishing of the beneficial owners, because the attacker must source contact details elsewhere before they can use any of it.
+
+The notification mechanics are themselves worth publishing as a defensive signal. Because the register holds no contact data, the Amt für Justiz cannot notify individuals directly: it will notify the legal entities, who will in turn notify their beneficial owners, and a public information desk opened on 2026-08-04 ([Regierung des Fürstentums Liechtenstein, 2026-08-04](https://www.presseportal.ch/de/pm/100000148/100941523)). That two-hop chain lands in the inboxes of Swiss and European trustees and advisers over the coming days, and it is precisely the shape a social engineer would imitate — an unexpected message about a register breach, arriving via an intermediary rather than the authority, asking the recipient to confirm who they are. Genuine and forged notifications will be in circulation in the same window.
+
+**Triage:** the discriminator for recipients is direction of information flow. A genuine notification in this chain tells the recipient what happened; it does not need them to supply identity details back, because the sender already holds the relationship. A message that opens with accurate register facts and then asks the recipient to verify identity, confirm ownership or authorise a change is inverting that flow, and the accuracy of the opening facts is exactly what the stolen dataset supplies.
+
+The Amt für Justiz has filed a criminal complaint against persons unknown, and law-enforcement authorities are evaluating digital traces in cooperation with European authorities.

@@ -71,8 +71,7 @@ sourcing_note: >
 confidence: medium
 update_of: null
 references:
-  - 2026-07-31/health-isac-shinyhunters-sso-tier0-advisory-brinks-home
-  - 2026-07-28/ey-itsm-breach-shinyhunters-attribution-claim
+  - 2026-07-18/abbott-exact-sciences-shinyhunters-entra-sso-vishing
   - 2026-07-19/ernst-young-third-party-itsm-platform-breach-client-tax-data
 deep_dive: false
 deep_dive_category: null

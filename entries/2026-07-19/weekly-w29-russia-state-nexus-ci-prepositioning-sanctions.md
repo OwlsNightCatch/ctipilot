@@ -75,7 +75,6 @@ confidence: high
 update_of: null
 references:
   - 2026-07-13/fsb-centre-16-static-tundra-router-hijacking-advisory
-  - 2026-07-13/france-eu-turla-fsb-centre-16-attribution-french-victimology
   - 2026-07-13/russia-ip-camera-hijacking-nato-military-supply-routes
 deep_dive: false
 deep_dive_category: null

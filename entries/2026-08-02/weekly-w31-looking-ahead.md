@@ -89,11 +89,11 @@ update_of: null
 references:
   - 2026-08-02/phoenix-contact-charx-sec-3xxx-unauth-root-no-firmware-yet
   - 2026-08-01/ibm-websphere-cve-2026-14512-14446-preauth-no-fix-pack
-  - 2026-07-27/clop-windchill-flexplm-mass-extortion-wave-cve-2026-12569
+  - 2026-06-20/ptc-windchill-cve-2026-12569-unauthenticated-java-deserializ
   - 2026-07-29/cve-2026-0769-langflow-preauth-eval-rce-exploited-not-in-kev
   - 2026-07-27/cve-2026-16723-fastjson-1x-spring-boot-fat-jar-rce-no-patch
   - 2026-07-29/cve-2025-15467-siemens-desigo-cc-cms-overflow-v7-unfixed
-  - 2026-08-02/cve-2026-66066-rails-attack-chain-public-forensic-tooling
+  - 2026-07-31/cve-2026-66066-rails-activestorage-libvips-file-read
 deep_dive: false
 deep_dive_category: null
 org_triage: null

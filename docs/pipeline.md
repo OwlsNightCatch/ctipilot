@@ -1,11 +1,24 @@
-# The intelligence pipeline — data model (v3, normative)
+# The intelligence pipeline — data model (v4, normative)
 
-This document is the single normative specification of the v3 content model:
-per-finding **entries**, the **entity registry**, and per-run **run records**.
-Every producer (the run prompts, the migration tool) and every consumer
+This document is the single normative specification of the content model:
+per-finding **entries** (one living record per finding, with a dated
+changelog), the **entity registry**, and per-run **run records**. Every
+producer (the run prompts, the migration tools) and every consumer
 (`site/build.py`, `tools/check_run.py`, the verifier agents) implements
 exactly this contract. If code and this document disagree, this document
 wins and the code is the bug.
+
+**v4.0 (2026-08-27) in one paragraph.** Two routines remain — the intel run
+(`prompts/cti-run.md`, any cadence) and the quality audit
+(`prompts/quality-audit.md`); the weekly strategic routine is retired and
+its `/weekly/` pages are gone (its `horizon: strategic` entries stay in the
+store as archived permalinks). A finding has exactly **one** entry for its
+whole life: developments, corrections and improvements are appended to that
+entry as timestamped `updates[]` changelog records with matching body
+sections, `updated_at` floats the entry back to the top of the live brief,
+and the old `update_of` second-entry mechanism is retired (the historical
+update entries were folded into their roots by `tools/migrate_updates.py`).
+See § Entry lifecycle.
 
 ## Why this model exists
 
@@ -33,7 +46,7 @@ Two properties are non-negotiable and carried over from v2 unchanged:
    verification, fake-news guard, URL truth, taxonomy validation, the
    mechanical self-check, and the adversarial verifier loop.
 
-## Repository layout (v3)
+## Repository layout
 
 ```
 entries/YYYY-MM-DD/<slug>.md   # one finding per file; folder = UTC date of discovered_at
@@ -61,7 +74,7 @@ Retired from v2 (no backwards compatibility): `briefs/` (migrated into
 ## Run identity — multiple runs per day
 
 ```
-run_id = <YYYY-MM-DD>T<HHMM>Z-<fire>      fire ∈ { intel, weekly, audit }
+run_id = <YYYY-MM-DD>T<HHMM>Z-<fire>      fire ∈ { intel, audit }   (weekly: legacy records only)
 e.g.     2026-07-03T0412Z-intel           runs/2026-07-03/2026-07-03T0412Z-intel.md
 ```
 
@@ -69,13 +82,13 @@ e.g.     2026-07-03T0412Z-intel           runs/2026-07-03/2026-07-03T0412Z-intel
   retry computes the same `run_id` and updates the same record in place
   (idempotent retry, same rationale as v2's sha8 scheme).
 - The suffix names the **fire type** and the frontmatter `kind` carries the
-  same value from the validated vocabulary `{ intel, weekly, audit }` (v3.24
-  — weekly quality-audit fires, [`prompts/quality-audit.md`](../prompts/quality-audit.md),
-  are `kind: audit`; before v3.24 they carried `kind: intel` with the
-  `-audit` run-id suffix as the only discriminator, and the two pre-v3.24
-  audit records were migrated to `kind: audit` when the vocabulary landed).
-  Consumers distinguish run types by `kind`; the run-id suffix stays as the
-  human-readable mirror.
+  same value. A v4+ fire is `intel` or `audit` (`content_model.ACTIVE_RUN_KINDS`);
+  `weekly` remains in the validated vocabulary only so the historical weekly
+  run records keep validating — the weekly routine was retired in v4.0 and
+  `check_run.py` FAILs a new record carrying it. (v3.24 made audit fires
+  `kind: audit`; before that they carried `kind: intel` with the `-audit`
+  suffix as the only discriminator.) Consumers distinguish run types by
+  `kind`; the run-id suffix stays as the human-readable mirror.
 - `work/<run-id>/` uses the identical string.
 - Migrated v2 runs keep their historical ids (`2026-07-03-04ba8283`,
   `2026-W26-b78503e7`) as filenames under `runs/<date>/`; only new runs use
@@ -90,11 +103,17 @@ unique within the day. The **entry id** is path-derived:
 `<YYYY-MM-DD>/<slug>` (e.g. `2026-07-03/coolify-cve-2026-34038-rce`).
 There is no `id` frontmatter field — the path is the identity.
 
-**Entries are immutable once committed.** A later run never edits a
-published entry. New information on a covered story becomes a **new entry**
-with `update_of: <original entry id>` — the v2 "UPDATE (originally covered
-YYYY-MM-DD)" rule generalised to any granularity, including two runs on the
-same day. Corrections likewise ship as update entries, never as rewrites.
+**One entry per finding, for the finding's whole life.** The entry is the
+single living record of the finding: a later run (an intel fire or the
+quality audit) that learns something new about it, finds an error in it, or
+can make it more precise **edits this same file** — appending a dated
+`updates[]` changelog record and a matching `## <Type> — <at>` body section,
+bringing the frontmatter to the current truth, and bumping `updated_at`.
+There is never a second entry for the same finding, and there is never a
+silent edit: every change is a record the reader and the gate can see.
+Three things never change once published — the entry id/path,
+`discovered_at` (first publication) and `run_id` (the originating fire).
+Full contract: § Entry lifecycle.
 
 ### Frontmatter — strict YAML subset
 
@@ -110,7 +129,7 @@ literals, full-line comments only. Producers MUST stay inside this subset;
 ---
 schema: 1
 kind: vulnerability            # see § Kinds
-horizon: operational           # operational | strategic
+horizon: operational           # always `operational` on v4+ entries (`strategic` = legacy weekly entries)
 title: "CVE-2026-34038 — Coolify: authenticated command injection to RCE (CVSS 9.9)"
 headline: "Coolify ships an emergency fix for a CVSS 9.9 authenticated command-injection RCE"
 summary: >
@@ -118,9 +137,12 @@ summary: >
   This is the TL;DR bullet body, the RSS description, and the notification
   text — a reader who sees ONLY this must know what is affected and why it
   matters.
-discovered_at: "2026-07-03T04:21:09Z"   # UTC moment this run verified the finding
+discovered_at: "2026-07-03T04:21:09Z"   # UTC moment the finding was FIRST published — never changes
+updated_at: null               # UTC moment of the latest changelog record (== updates[-1].at); null until
+                               # the first update. max(discovered_at, updated_at) is the entry's activity
+                               # moment — the live brief's sort key
 event_date: "2026-07-02"                # date of the underlying event / primary publication
-run_id: 2026-07-03T0412Z-intel
+run_id: 2026-07-03T0412Z-intel          # the ORIGINATING fire — never changes; updating runs appear in updates[]
 priority: high                 # critical | high | notable | routine — see § Priority
 immediate_action: null         # or the block below — presence ⇔ priority: critical
 # immediate_action:
@@ -163,13 +185,10 @@ verification: multi-source     # multi-source | single-source | single-source-na
                                # single-source-victim | contradicted
 sourcing_note: null            # human clause, e.g. "victim-own SEC 8-K disclosure carve-out"
 confidence: high               # high | medium | low
-update_of: null                # entry id when this is an update note on prior coverage
-references: []                 # entry ids this entry synthesises / builds on (weekly synthesis)
-weekly_section: null           # strategic entries only: explicit weekly render section
-                               # (weekly-top-stories | weekly-multi-day | weekly-vuln-rollup |
-                               #  weekly-sector-patterns | weekly-incidents-recap | weekly-research |
-                               #  weekly-annual-reports | weekly-long-running | weekly-policy |
-                               #  weekly-looking-ahead); unset -> kind-based default placement
+references: []                 # entry ids this entry builds on (a distinct finding that shares a CVE
+                               # with an older entry MUST list it here — the explicit, gate-checked
+                               # statement that it is not a duplicate; see § Dedup)
+weekly_section: null           # LEGACY (pre-v4 strategic entries only) — a v4+ entry never sets it
 deep_dive: false               # true ⇒ this entry IS the deep-dive treatment
 deep_dive_category: null       # taxonomy-free rotation slug when deep_dive: true (see prompt)
 org_triage: null               # or {category: P1, rationale: "…"} on triage-kind entries when a scheme is defined
@@ -180,10 +199,22 @@ classification: null           # null here (vulnerability is a triage kind → u
                                # assessed independently — config/org-profile.yaml `classification:`.
 watchlist_hit: false           # true only when inclusion was driven by an org-profile watchlist match
 actions: []                    # imperative, entry-specific defender actions (strings) — feed § Action Items
+updates: []                    # the changelog — append-only, oldest first (§ Entry lifecycle):
+# updates:
+#   - at: "2026-07-05T04:40:12Z"          # UTC; > discovered_at and > the previous record's at
+#     run_id: 2026-07-05T0410Z-intel      # the fire that made the change
+#     type: update                        # update | correction | improvement
+#     summary: >                          # 1–3 self-contained sentences: what changed and why —
+#       CISA added CVE-2026-34038 to KEV on 2026-07-04; status moved to exploited.   # the timeline row
+#     fields: [cves, priority, summary]   # optional: frontmatter fields changed in place ("body" for
+#                                         # an edit to the main analysis)
+#     merged_from: null                   # migration provenance only (a v3 update_of entry folded here)
 migrated_from: null            # v2 provenance (briefs/YYYY-MM-DD.md) — migration tool only
 ---
 
-Body: the full analysis in Markdown. Inline source links at the point of
+Body: the full analysis in Markdown, followed — when the entry has been
+updated — by one `## <Type> — <at>` section per `updates[]` record, in the
+same order (§ Entry lifecycle). Inline source links at the point of
 claim (`([Publisher, YYYY-MM-DD](URL))`), defender takeaway, detection and
 hardening concepts — ATT&CK mappings live in `techniques[]`, and an inline
 T-id appears in prose only where essential (deep-dive kill chains, a
@@ -203,8 +234,15 @@ English only.
 
 - **`headline`** — bold-lead TL;DR headline, ≤ 120 chars, no trailing period.
 - **`summary`** — the load-bearing standalone digest. Never empty.
-- **`discovered_at`** — the moment *this pipeline* verified the finding, set
-  once, never backdated. The folder date MUST equal its UTC date.
+- **`discovered_at`** — the moment *this pipeline* first published the
+  finding, set once, never backdated, never changed by an update. The folder
+  date MUST equal its UTC date.
+- **`updated_at` / `updates[]`** — the entry's changelog (§ Entry
+  lifecycle). `updates[]` is append-only, oldest first; `updated_at` MUST
+  equal the last record's `at` (null while the list is empty). The entry's
+  **activity moment** is `max(discovered_at, updated_at)`
+  (`content_model.entry_activity_ts`): it orders the live brief, the
+  briefbook and the feeds, so an update floats the entry back to the top.
 - **`event_date`** — recency anchor of the underlying event (primary-source
   publication date). Drives staleness checks; `discovered_at` drives windows.
 - **`entities`** — every value MUST resolve to a key in
@@ -233,8 +271,8 @@ English only.
   hallucination. Entries that predate this field (the migrated/early-v3
   tail) carry their mappings as in-prose T-ids only; consumers derive
   their effective set via `content_model.entry_technique_ids` (frontmatter
-  ∪ dataset-known prose ids) — entries are immutable, so that derivation
-  path is permanent.
+  ∪ dataset-known prose ids) — the tail is not bulk-rewritten, so that
+  derivation path stays.
 - **`affected_products[]`** — official vendor product names as plain
   strings (`"Citrix NetScaler ADC"`, `"Adobe ColdFusion"`), the names an
   alert, asset inventory, or CMDB would carry. Generalizes the CVE-only
@@ -250,9 +288,14 @@ English only.
   of a page fetched this run, attributed to a listed source's publisher.
 - **`verification`/`sourcing_note`** — `single-source*` values replace the v2
   `[SINGLE-SOURCE]` heading flag; renderers surface them as badges.
-- **`update_of`** — must resolve to an existing earlier entry. An update
-  entry re-states only the delta, never recaps. Long-running campaigns get
-  ≤ 1 consolidated update per week unless something critical changes.
+- **`update_of`** — RETIRED in v4.0. The gate FAILs any non-null value:
+  developments and corrections are `updates[]` records on the existing
+  entry, never a second entry. (Long-running campaigns still get ≤ 1
+  consolidated update record per week unless something critical changes.)
+- **`references[]`** — entry ids this entry builds on. It is also the
+  explicit dedup statement: a genuinely distinct finding whose `cves[]`
+  intersect an existing entry's MUST list that entry here, or the gate
+  FAILs the new entry as a duplicate (§ Dedup across runs).
 - **`actions[]`** — only actions derived from this entry's own content,
   held to the do-now bar (`prompts/cti-run.md` Phase 4 § `actions[]`, v3.19):
   concrete, self-contained, start-now tasks — never generic advice, never a
@@ -263,9 +306,9 @@ English only.
   may carry placeholder `evidence[]`, empty `entities`/`actions`/
   `techniques`, and news-register bodies; **machine consumers (triage
   agents, exporters) should treat `migrated_from != null` as a
-  lower-fidelity tier** and prefer native v3 entries when both cover a
-  topic. Entries are immutable, so the migrated tail is never upgraded in
-  place.
+  lower-fidelity tier** and prefer native entries when both cover a topic.
+  An audit may lift a migrated entry through an `improvement` record like
+  any other entry; the provenance flag itself never changes.
 - **`org_triage` / `classification`** — every entry carries exactly one
   classification scheme, selected by kind. Triage kinds
   (`classification.triage_kinds` in `config/org-profile.yaml`, default
@@ -298,23 +341,131 @@ independently clears every element of the bar.
 
 ### Kinds — what renders where
 
-| `kind` | daily-brief section (operational horizon) | weekly section (strategic horizon) |
+| `kind` | brief section (`content_model.KIND_DAILY_SECTION`) | writable by v4+ runs |
 |---|---|---|
-| `threat` | § 1 Active Threats, Trending Actors, Notable Incidents & Disclosures | § Highest-impact / § Long-running via synthesis |
-| `incident` | § 1 (same section, incident/disclosure flavour) | § Incidents & disclosures recap |
-| `vulnerability` | § 2 Trending Vulnerabilities | § Vulnerability roll-up |
-| `research` | § 3 Research & Investigative Reporting | § Research & threat-actor developments |
-| `annual-report` | § 3 (one-time treatment per PD-9) | § Annual / periodic threat reports |
-| `policy` | — (strategic only) | § Policy & regulatory horizon |
-| `synthesis` | — (strategic only) | § Multi-day campaigns / § Sector patterns / § Long-running campaigns |
-| `outlook` | — (strategic only) | § Looking ahead |
+| `threat` | § Active Threats, Trending Actors, Notable Incidents & Disclosures | yes |
+| `incident` | § Active Threats (incident / disclosure flavour) | yes |
+| `vulnerability` | § Trending Vulnerabilities | yes |
+| `research` | § Research, Reports & Policy | yes |
+| `annual-report` | § Research, Reports & Policy (one-time treatment per PD-9) | yes |
+| `policy` | § Research, Reports & Policy — a regulatory action or deadline with a transferable obligation for the constituency (PD-11 c) | yes |
+| `synthesis` | — (legacy weekly kind; archived entries only) | **no** |
+| `outlook` | — (legacy weekly kind; archived entries only) | **no** |
 
-Orthogonal flags relocate an entry at render time: `update_of` ⇒ § Updates
-to Prior Coverage; `deep_dive: true` ⇒ § Deep Dive (and not its kind
-section). `horizon: operational` entries come from intel runs;
-`horizon: strategic` from weekly runs. The daily/window view renders
-operational entries only; the weekly view renders the week's strategic
-entries plus the operational entries its `synthesis` entries `reference`.
+`content_model.ACTIVE_KINDS` is the writable set; `check_run.py` FAILs a
+v4+ entry with a legacy kind, `horizon: strategic` or a `weekly_section`.
+Orthogonal flags relocate an entry at render time: `deep_dive: true` ⇒
+§ Deep Dive (and not its kind section); an entry with a changelog record
+dated inside the rendered day/window additionally appears in § Updates to
+Prior Coverage (rendered from that record — see § Rendering). The legacy
+`horizon: strategic` entries are archived history: reachable by permalink,
+entity page, CVE page, tag/region index and search, rendered in no brief.
+
+## Entry lifecycle — one living entry per finding
+
+A finding is published once and then **maintained in place**. The same
+file carries the original analysis, every later development, every
+correction and every improvement, each as a dated, attributed changelog
+record. This replaces the v3 "immutable entry + `update_of` second entry"
+model (retired 2026-08-27, operator decision): a reader — human or triage
+agent — opens one URL and sees the current state of the finding *and* how
+it got there, and an update surfaces on the live brief exactly like a new
+finding would.
+
+### The changelog record
+
+```yaml
+updates:
+  - at: "2026-07-05T04:40:12Z"      # UTC; strictly later than discovered_at and than the previous record
+    run_id: 2026-07-05T0410Z-intel  # the fire that made the change — resolves to a run record
+    type: update                    # update | correction | improvement (vocabulary below)
+    summary: >                      # 1–3 self-contained sentences: what changed and why. This is the
+      …                             # text the live timeline row, the day page's § Updates and the feed
+                                    # item show — a reader who sees ONLY this knows what moved
+    fields: [cves, priority]        # optional: the frontmatter fields this record changed in place;
+                                    # "body" when the main analysis itself was edited (corrections)
+    merged_from: null               # optional, migration provenance only: the v3 update_of entry id
+                                    # that was folded into this record (the build redirects its old URL)
+updated_at: "2026-07-05T04:40:12Z"  # == updates[-1].at
+```
+
+Every record pairs **1:1, in order, by `at`** with a body section headed
+exactly `## <Type> — <at>` (`Update`, `Correction` or `Improvement`, an em
+dash, the record's `at` verbatim — `content_model.update_section_heading`).
+The section carries the **delta only**, inline-cited like any other prose,
+never a recap of the entry. The main analysis is everything above the first
+such heading and must remain a complete, readable entry on its own.
+
+| `type` | when | what changes |
+|---|---|---|
+| `update` | a **material new development** on the finding — new actor, victim, CVE in the chain, patch shipped, exploitation-status change (incl. a KEV listing of a not-yet-exploited CVE), confirmed law-enforcement action | the section states the development; the frontmatter moves to the **new current state**: `cves[].status`/`fixed`, `affected_products`, `entities`, `techniques`, `tags`, `actions[]` (replace, never accumulate — the list is the *current* do-now set), and `priority`/`immediate_action` when the bar changes in either direction; `headline`/`summary` are revised only when a reader who sees only the summary must now know something different (e.g. now exploited) |
+| `correction` | the entry **stated something wrong** — a claim its source does not support, an inverted mechanism, a wrong version/date/score/id, a mis-attributed quote | the wrong statement is **fixed where it stands** (frontmatter and/or body — `fields` names them, `"body"` included) so the entry never asserts something known to be false, AND the section records what was wrong, what is right, and the ground-truth source. The reader can see both the corrected text and the correction note; git carries the exact diff |
+| `improvement` | precision or depth added **without reversing a claim** — a second independent source, a technique mapped that the body already described, a `**Triage:**` line the mechanism supports, a fixed version stated to vendor precision, a Background paragraph | the section states what was added and on what basis; touched frontmatter listed in `fields` |
+
+Rules, all enforced by `tools/check_run.py` (`entry-updates`, `silent-edit`) unless noted:
+
+1. **Provenance never moves.** The entry id/path, `discovered_at`, `run_id`
+   and `migrated_from` are never edited. Folder date == `discovered_at` date
+   forever, whatever `updated_at` says.
+2. **No silent edits.** Every change to a published entry's file — any field,
+   any prose — ships with a changelog record whose `run_id` is the editing
+   fire. At the gate, an entry modified in the working tree relative to
+   `HEAD` that carries neither `run_id == <this run>` (new) nor an
+   `updates[]` record with `run_id == <this run>` FAILs (`silent-edit`).
+3. **One record per fire per entry.** A fire that changes an entry in
+   several ways writes one record covering all of them; two fires write two
+   records. Records are append-only and strictly increasing in `at`; a
+   record is never edited or removed by a later fire (a wrong update is
+   corrected by a further `correction` record).
+4. **Sources travel with the change.** A section's inline citations are
+   `sources[]` records like any other claim's — new sources are appended to
+   `sources[]` (the first record stays the original primary), new verbatim
+   quotes to `evidence[]`. The verifier reads the whole entry and checks the
+   new section and every changed field against them.
+5. **The main analysis stays current.** An `update` that supersedes a
+   statement in the main analysis (a "no patch" claim after the patch
+   shipped, "PoC only" after exploitation) edits that statement too — a
+   minimal, `fields: [body]`-declared edit — so the entry never contradicts
+   itself; the section explains the change. Developments are never
+   *absorbed* into the analysis silently: the section is where the reader
+   learns what happened when.
+6. **Who may update.** Any intel run (its own dedup decision, PD-8) and the
+   quality audit (soundness corrections, completeness improvements). The
+   audit's former "immutability-exception ledger" is retired — the
+   changelog *is* the ledger, and it lives with the entry.
+7. **Cadence discipline.** Long-running campaigns receive ≤ 1 consolidated
+   `update` record per week unless something critical changes; bookkeeping
+   that changes nothing a reader would act on (a `cisa-kev` flag on a CVE
+   the entry already calls exploited) is not a record.
+
+### How the pipeline reacts to an update
+
+- **Live brief** (`/live/`, `data/briefbook.json`, brief.js): the entry is
+  in the window iff its **activity moment** is; it renders in the run group
+  of the fire that made the latest record, flagged `UPD` with the record's
+  type and `summary` shown under the headline; the pulse panel's "updates to
+  prior coverage" counts it. An entry appears once, at its latest activity.
+- **Day pages** (`/daily/<date>/`): § Updates to Prior Coverage lists every
+  entry with a record dated that UTC day, rendered from the record (type,
+  time, summary, the section body, link to the entry); the entry's kind
+  section still shows it only on its `discovered_at` day.
+- **Entry permalink**: "First published <discovered_at> · Updated
+  <updated_at>" in the meta line; each `## <Type> — <at>` section renders
+  as a timestamped, type-badged block; a *Revision history* panel lists the
+  records (type · time · run link · summary · changed fields).
+- **Feeds**: `feed-items.xml` and the sector feeds emit one item per entry
+  (`pubDate` = `discovered_at`) **and one item per changelog record**
+  (`guid` = `<entry url>#update-<at>`, `pubDate` = `at`, title prefixed by
+  the type, description = the record's `summary`, content = the section).
+- **`data/alerts.json`**: an entry enters the 7-day window by activity
+  moment and carries `updated_at` + a compact `updates[]` (`at`, `type`,
+  `summary`), so a hook can alert on a critical/high entry's update.
+- **Redirects**: for every record with `merged_from`, the build emits a
+  meta-refresh stub at the folded entry's old permalink pointing at the
+  living entry (noindex, excluded from the sitemap).
+- **Run records**: `entries_updated` counts the entries a fire appended a
+  record to and `updated_entry_ids[]` names them (§ Run records); the run's
+  detail page and the ops dashboard list them beside its new entries.
 
 ## Relevance discipline — volume follows relevance, not cadence or a count
 
@@ -416,8 +567,8 @@ dedup matching and the site's phrase-based entry↔entity attachment).
 who/what/so-what plus the attributing source and date.
 
 **Merging duplicates — `merged_into` tombstones.** Because keys are
-permanent and published entries are immutable, a duplicate entity is never
-deleted while any entry references it. Instead the losing record becomes a
+permanent and hundreds of published entries reference them by key, a
+duplicate entity is never deleted while any entry references it. Instead the losing record becomes a
 tombstone: it keeps its key and gains `merged_into: <canonical-key>`.
 Semantics enforced by `content_model.validate_registry` (surfaced as FAILs
 by `check_run.py`): the target must exist and must not itself be a
@@ -574,18 +725,18 @@ three parts:
    Defense Impairment (new TA0112) and every release revokes ids.
    Revoked/deprecated techniques are **kept, flagged**, with `revoked_by`
    forwarding — the ATT&CK analogue of the registry's `merged_into`
-   tombstones, and for the same reason: entries are immutable, so an id
-   cited before MITRE revoked it must keep resolving
+   tombstones, and for the same reason: the store is not rewritten when the
+   pin moves, so an id cited before MITRE revoked it must keep resolving
    (`content_model.resolve_technique_id`). Updating the pin is an explicit,
    diff-reviewed act: `tools/attack_data.py --check` (drift detection;
-   weekly-run duty) / `--update` (rewrite + change summary for the commit
+   quality-audit duty) / `--update` (rewrite + change summary for the commit
    body) / `--selftest` (offline invariants; also enforced by
    `check_run.py`).
 2. **Per-entry effective techniques —
    `content_model.entry_technique_ids`.** The union of the entry's
    `techniques[]` frontmatter (canonical, v3.17+) and dataset-known T-ids
-   in its body prose (the only mapping surface of the immutable pre-v3.17
-   store), revoked ids resolved forward. Exposed per entry in
+   in its body prose (the only mapping surface of the pre-v3.17 tail, which
+   is not bulk-rewritten), revoked ids resolved forward. Exposed per entry in
    `data/briefbook.json` and `data/alerts.json` as `techniques[]`.
 3. **Derived aggregations (`site/build.py`).** Per entity AND per CVE:
    `{technique id: [supporting entry ids]}` — evidence-bound, rendered as
@@ -606,13 +757,15 @@ complete machine-readable telemetry record (the v2 `run_log.json` entry,
 relocated); the body is the human-readable **verification & coverage
 notes** — the v2 brief § 7, relocated to a dedicated, per-run home.
 
-Run records are immutable once their fire completes, with exactly two
-same-fire in-place updates permitted: the same-minute retry (idempotent
-run_id) and the **Phase 7 publish-status amendment** — after the publish
-poll, the fire updates `publish_status`/`publish_checked_at`/`publish_note`
-in place, commits `run: <run-id> publish-status`, and re-pushes the feature
-branch (fire-and-forget; auto-merge promotes it). No other field is ever
-edited after commit, and no later fire edits an earlier fire's record.
+Run records are immutable once their fire completes (unlike entries, which
+are living records — a run record is telemetry about one fire and has no
+"current state" to maintain), with exactly two same-fire in-place updates
+permitted: the same-minute retry (idempotent run_id) and the **Phase 7
+publish-status amendment** — after the publish poll, the fire updates
+`publish_status`/`publish_checked_at`/`publish_note` in place, commits
+`run: <run-id> publish-status`, and re-pushes the feature branch
+(fire-and-forget; auto-merge promotes it). No other field is ever edited
+after commit, and no later fire edits an earlier fire's record.
 
 An optional `stood_down: <reason>` field (non-empty string) marks a fire that
 legitimately aborted **before Phase 1** spawned any research/verification
@@ -627,7 +780,7 @@ to the run record). Normal fires omit `stood_down`.
 ---
 schema: 1
 run_id: 2026-07-03T0412Z-intel
-kind: intel                    # intel | weekly | audit (matches the run-id suffix)
+kind: intel                    # intel | audit (matches the run-id suffix; `weekly` = legacy records)
 date: "2026-07-03"
 started: "2026-07-03T04:12:03Z"
 completed: "2026-07-03T04:31:40Z"
@@ -637,10 +790,12 @@ model_id: "…"
 prompt_version: "v3.1"
 window_hours: 24               # gap-derived recency window this run covered (24 h floor)
 gap_hours: 7                   # hours since the previous run record
-entries_published: 3           # new entry files this run (incl. updates)
-entries_updated: 1             # of which update_of entries
+entries_published: 3           # NEW entry files this run (run_id == this run)
+entries_updated: 1             # existing entries this run appended an updates[] record to
+updated_entry_ids:             # v4.0: their ids — len == entries_updated; [] when none
+  - 2026-07-01/some-earlier-entry
 deep_dive: null                # entry id of a deep-dive entry published this run, or null
-sub_agents:                    # S1–S4 (+S5) / W1–W2 (+W3): identical shape to v2
+sub_agents:                    # S1–S4 (+S5); audit fires: truth-pass and re-sweep workers
   S1:
     model: "…"
     model_id: "…"
@@ -730,47 +885,60 @@ is built entirely from `runs/**` frontmatter.
    `discovered_at`. The `summary` makes the file a load of every in-window
    brief, not just a key list.
 2. **Compose-time dedup (in-context, 14 days).** The main agent `Read`s the
-   full `prior_coverage.json` — every in-window brief loaded into context —
-   and drops any candidate whose CVE ids or entity keys match an in-window
-   entry from **any** run in those 14 days, unless it ships as `update_of`
-   with a genuine delta.
+   full `prior_coverage.json` — every in-window brief loaded into context
+   (each record also carries `updated_at`, its record count and the last
+   record's summary) — and never writes a new entry for a candidate whose
+   CVE ids or entity keys match an in-window entry from **any** run in those
+   14 days: the candidate is either an `updates[]` record on that entry
+   (material delta) or nothing.
 3. **Metadata check (store-wide, older than 14 days).** Coverage older than
    the 14-day in-context window is caught by the store-wide CVE index
    (`state/cves_seen.json`, surfaced as `cves.ids` in the state summary),
-   not an in-context read — an old CVE re-surfacing is still recognised.
+   not an in-context read — an old CVE re-surfacing is still recognised and
+   handled the same way (a record on the existing entry).
 4. **Fetch-time dedup.** Research sub-agents read `prior_coverage.json`
    before fetching and skip already-covered items unless they hold a
-   material delta.
-5. **Mechanical gate.** `tools/check_run.py` FAILs a new non-update entry
-   whose CVE set intersects a prior entry from the last 14 days, and WARNs
-   on entity-key overlap, forcing the update_of decision to be explicit.
+   material delta (returned as `novelty: update-of:<entry-id>`).
+5. **Mechanical gate.** `tools/check_run.py` FAILs a new entry whose CVE set
+   intersects **any** existing entry (store-wide, any age) unless the new
+   entry lists that entry in `references[]` — the explicit, reviewable
+   statement that this is a distinct finding building on the older one, not
+   a duplicate — and WARNs on entity-key overlap inside 14 days. Entries
+   updated by the run are exempt (the record IS the dedup decision).
 
 ## Rendering — the brief is a query
 
 - **`/live/`** — the live rolling brief, rendered as a run-grouped,
-  reverse-chronological **timeline**. Reader picks *last N hours* (6 / 12 /
-  24 / 48 / 72) via the window selector or loads older findings; default
-  **24 h**. **Every run in the window appears, including quiet (0-finding)
-  ones.** The default window ships server-rendered (full content, no-JS
-  readable); JS re-renders the timeline client-side from
-  `data/briefbook.json` (last ~35 days of entries + run records). Each
-  timeline row carries priority / CVE / exploited badges, a linked
-  headline, provenance, and a clickable source list.
+  reverse-chronological **timeline** keyed on each entry's **activity
+  moment** (`max(discovered_at, updated_at)`): a new finding appears under
+  the run that published it, an updated finding under the run that updated
+  it (flag `UPD`, the record's type + summary shown), each entry once at
+  its latest activity. Reader picks *last N hours* (6 / 12 / 24 / 48 / 72)
+  via the window selector or loads older findings; default **24 h**.
+  **Every run in the window appears, including quiet (0-finding) ones.**
+  The default window ships server-rendered (full content, no-JS readable);
+  JS re-renders the timeline client-side from `data/briefbook.json` (last
+  ~35 days of entries by activity + run records). Each timeline row carries
+  priority / CVE / exploited / updated badges, a linked headline,
+  provenance, and a clickable source list.
 - **`/daily/YYYY-MM-DD/`** — one settled page per **completed** UTC day
   (the still-rolling day lives only in `/live/`), in the classic editorial
   section order: TL;DR → Active Threats → Trending Vulnerabilities →
-  Research → Updates → Deep Dive → Action Items, with a collapsible
-  Verification block. `/daily/` is the newest-first archive; daily RSS keys
-  on these.
-- **`/weekly/YYYY-Www/`** — static weekly page: the week's strategic
-  entries in the 12-section weekly structure, with referenced operational
-  entries linked in place.
-- **`/entries/YYYY-MM-DD/<slug>/`** — per-entry permalink.
+  Research, Reports & Policy → Updates to Prior Coverage (every entry with a
+  changelog record dated that day, rendered from the record) → Deep Dive →
+  Action Items, with a collapsible Verification block. `/daily/` is the
+  newest-first archive; daily RSS keys on these.
+- **`/entries/YYYY-MM-DD/<slug>/`** — per-entry permalink: current state
+  first, the changelog sections as timestamped blocks, a Revision history
+  panel; "First published … · Updated …" meta. Folded v3 update entries'
+  old URLs redirect here (`merged_from`).
 - **Feeds** — `feed-items.xml` (one item per entry, `<pubDate>` =
-  `discovered_at` — true discovery latency, not commit time) + the eight
-  sector slices + daily/weekly digest feeds.
-- **`data/alerts.json`** — last 7 days of `critical`/`high` entries with
-  headline, summary, immediate_action, entities, CVEs, techniques: the
+  `discovered_at` — true discovery latency, not commit time — **plus one
+  item per changelog record**, `<pubDate>` = its `at`) + the eight sector
+  slices + the daily digest feed. There is no weekly feed.
+- **`data/alerts.json`** — last 7 days (by activity moment) of
+  `critical`/`high` entries with headline, summary, immediate_action,
+  entities, CVEs, techniques, `updated_at` and compact `updates[]`: the
   notification-hook surface.
 - **`/attack/` + `data/attack.json` + `entities/<key>/attack-layer.json`**
   — the ATT&CK coverage matrix, its client-side overlap dataset, and the
@@ -793,8 +961,16 @@ discovered_at/slug consistency; source-URL block-list + liveness (honouring
 immediate_action consistency; entity refs resolve; registry integrity
 (incl. typed-relation vocabulary, endpoint constraints, canonical targets
 and source-entry resolution — § Relationships);
-update_of resolution; cross-run dedup; rolling-24 h composition (reported,
-not gated on a count); CVE sync with `cves_seen.json`; IOC scan; run-record completeness (incl. verification
+the entry lifecycle (`updates[]` shape, `updated_at` mirror, strictly
+increasing `at`, 1:1 body-section pairing, record `run_id` resolution, no
+silent edit — an entry modified without a record for the modifying run
+FAILs; `update_of` retired — any non-null value FAILs; v4+ entries carry no
+legacy kind / horizon / weekly_section); `references[]` resolution;
+cross-run dedup (store-wide CVE overlap FAILs unless declared in
+`references[]`); run counters vs disk (`entries_published`,
+`entries_updated` + `updated_entry_ids`, `deep_dive`); rolling-24 h
+composition (reported, not gated on a count); CVE sync with
+`cves_seen.json`; IOC scan; run-record completeness (incl. verification
 counters and prompt-version cross-check against `prompts/CHANGELOG.md`);
 `sources/sources.json` shape (incl. Admiralty A–F `reliability_codes`);
 closed-source citation traceability to `intel/` (no TLP gate); org-triage and

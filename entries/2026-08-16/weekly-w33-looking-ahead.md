@@ -83,8 +83,8 @@ references:
   - 2026-08-12/shieldbreak-defender-rogueplanet-patch-bypass-no-fix
   - 2026-08-10/freebsd-ctl-ha-three-preauth-kernel-rce-primitives-port-999
   - 2026-08-10/natjack-nat-trust-assumption-attack-class-two-cves
-  - 2026-08-15/mydr-poland-19-million-records-government-confirmed
-  - 2026-08-15/clop-windchill-philips-shell-first-victim-confirmations
+  - 2026-08-13/mydr-poland-ehr-criminal-intrusion-confirmed-processor-gap
+  - 2026-06-20/ptc-windchill-cve-2026-12569-unauthenticated-java-deserializ
 deep_dive: false
 deep_dive_category: null
 org_triage: null

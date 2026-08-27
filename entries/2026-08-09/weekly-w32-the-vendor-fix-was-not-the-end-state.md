@@ -86,13 +86,11 @@ confidence: high
 update_of: null
 references:
   - 2026-08-03/cve-2026-18577-n-able-n-central-auth-bypass-exploited
-  - 2026-08-05/n-able-n-central-post-exploitation-rmm-tunnel-driver
-  - 2026-08-09/n-able-n-central-hotfix-2-required-supersedes-hotfix-1
   - 2026-08-05/cve-2026-34486-tomcat-encryptinterceptor-fail-open-kev
   - 2026-08-07/adobe-campaign-classic-apsb26-120-second-wave-unauth-rce
   - 2026-08-08/flowise-three-cves-vendor-sunset-no-fix-coming
   - 2026-08-08/cve-2026-65400-macos-screen-sharing-auth-state-bypass
-  - 2026-08-04/inc-ransom-sonicwall-sma1000-patch-rollback-fake-ir-outreach
+  - 2026-07-14/sonicwall-sma1000-ssrf-cve-2026-15409-actively-exploited
 deep_dive: false
 deep_dive_category: null
 org_triage: null

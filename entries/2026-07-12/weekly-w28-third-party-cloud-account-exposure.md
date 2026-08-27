@@ -70,7 +70,7 @@ update_of: null
 references:
   - 2026-07-08/accenture-confirms-data-theft-888-azure-devops-claim
   - 2026-07-09/deutsche-bank-unsafe-ransomware-third-party-vendor-incident
-  - 2026-07-09/kddi-isp-email-breach-zero-day-root-cause-update
+  - 2026-06-29/kddi-third-party-email-platform-breach-exposes-up-to-14-22-m
   - 2026-07-09/nayax-cloud-account-incident-the-syndicate-claim
   - 2026-07-10/odido-shinyhunters-vishing-dutch-police-attribution
   - 2026-07-10/nextcloud-gmbh-elasticsearch-exposure-msb-nrw
@@ -80,6 +80,7 @@ org_triage: null
 watchlist_hit: false
 actions: []
 ---
+
 Read as a set, the week's confirmed incidents point away from the classic perimeter-RCE story and toward exposure that lives in someone else's account, platform or supply chain.
 
 The **third-party / vendor** strand: Accenture confirmed a data-theft incident after the handle "888" advertised roughly 35 GB of internal source code ([BleepingComputer, 2026-07-08](https://www.bleepingcomputer.com/news/security/accenture-confirms-breach-after-hacker-offers-stolen-data-for-sale/)); Deutsche Bank disclosed a third-party-vendor incident after the "Unsafe" ransomware group posted claims ([Computing, 2026-07-09](https://www.computing.co.uk/news/2026/security/deutsche-bank-probes-supplier-cyber-incident-after-ransomware-gang-claims-breach)); and KDDI named a zero-day in third-party email-platform software as the root cause of a breach affecting about 12 million people ([BleepingComputer, 2026-07-09](https://www.bleepingcomputer.com/news/security/japanese-telecom-giant-kddi-says-data-breach-affects-12-million-people/)). The **cloud-account** strand: Nayax, a Bank-of-Lithuania-licensed EEA payment institution, disclosed a cloud-account incident (claimed by "The Syndicate") in its own SEC Form 6-K ([Nayax, 2026-07-09](https://www.sec.gov/Archives/edgar/data/1901279/000117891326003440/zk2635660.htm)); ShinyHunters' Odido (Netherlands telecom) breach drew a Dutch-national-involvement assessment from police voice analysis ([Politie, 2026-07-08](https://www.politie.nl/nieuws/2026/juli/8/onderzoek-naar-hack-odido-wijst-op-mogelijke-betrokkenheid-nederlanders.html)); and Nextcloud GmbH's own hosting infrastructure exposed roughly 367,000 internal records through a misconfigured public Elasticsearch ([Cybernews, 2026-07-10](https://cybernews.com/security/nextcloud-cloud-provider-data-leak/)).

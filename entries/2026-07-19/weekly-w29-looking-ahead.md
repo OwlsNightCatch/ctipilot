@@ -54,8 +54,8 @@ update_of: null
 references:
   - 2026-07-18/wordpress-core-wp2shell-preauth-rce-chain-cve-2026-63030
   - 2026-07-17/firefox-152-0-6-wasm-site-isolation-public-exploit
-  - 2026-07-15/microsoft-july-patch-tuesday-sharepoint-dynamics-followup
-  - 2026-07-14/progress-sharefile-szc-path-traversal-zero-day-patched
+  - 2026-07-14/microsoft-july-2026-patch-tuesday-two-exploited-zero-days
+  - 2026-07-13/progress-sharefile-storage-zone-controller-shutdown
   - 2026-07-16/cve-2026-46817-oracle-ebs-payments-preauth-rce-kev-listed
 deep_dive: false
 deep_dive_category: null

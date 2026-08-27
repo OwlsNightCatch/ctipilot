@@ -68,9 +68,7 @@ sourcing_note: >
 confidence: medium
 update_of: null
 references:
-  - 2026-08-16/exfilsquad-fortra-confirms-13-victims-power-pages-anon-role
-  - 2026-08-05/ncsc-ch-power-pages-dataverse-anonymous-access-advisory
-  - 2026-08-12/wesco-exfilsquad-crm-confirmation-dispute
+  - 2026-07-31/exfilsquad-uk-department-for-education-pnld-breach
 deep_dive: false
 deep_dive_category: null
 org_triage: null

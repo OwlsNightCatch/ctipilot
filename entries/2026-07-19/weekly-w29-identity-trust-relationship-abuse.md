@@ -71,7 +71,7 @@ references:
   - 2026-07-18/abbott-exact-sciences-shinyhunters-entra-sso-vishing
   - 2026-07-15/proofpoint-oauth-client-id-spoofing-entra-id-evasion
   - 2026-07-18/moodle-local-o365-jwt-forgery-admin-takeover-cve-2026-54733
-  - 2026-07-17/scattered-spider-tfl-sentencing-helpdesk-vishing
+  - 2026-06-23/two-scattered-spider-members-plead-guilty-over-the-2024-tran
 deep_dive: false
 deep_dive_category: null
 org_triage: null

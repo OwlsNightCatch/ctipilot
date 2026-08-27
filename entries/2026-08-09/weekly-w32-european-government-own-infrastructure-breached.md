@@ -92,7 +92,6 @@ references:
   - 2026-08-05/bit-foitt-swiss-federal-sharepoint-breach-200-accounts
   - 2026-08-06/canton-graubuenden-sharepoint-server-breach
   - 2026-08-04/liechtenstein-vwbp-beneficial-ownership-register-breach
-  - 2026-08-05/liechtenstein-vwbp-entry-point-identified-field-set
   - 2026-08-05/hungary-state-treasury-mvh-bytetobreach-weblogic
   - 2026-08-09/cert-polska-private-apn-pivot-into-ot-chp-plant-shutdown
   - 2026-08-08/dprk-contagious-interview-blast-radius-flemish-government

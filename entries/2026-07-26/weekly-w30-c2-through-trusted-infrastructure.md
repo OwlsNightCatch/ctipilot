@@ -82,7 +82,6 @@ confidence: high
 update_of: null
 references:
   - 2026-07-21/hollowgraph-m365-calendar-graph-api-c2-cavern
-  - 2026-07-22/cavern-cav3rn-oilrig-attribution-dns-aaaa-c2-fallback
   - 2026-07-24/msarat-chaos-cdp-webrtc-covert-c2
   - 2026-07-26/teleshim-bindcloak-volume-serial-keying-government-espionage
   - 2026-07-21/cruciferra-crypter-as-a-service-process-ghosting-byovd

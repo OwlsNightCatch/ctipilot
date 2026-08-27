@@ -87,11 +87,9 @@ confidence: medium
 update_of: null
 references:
   - 2026-07-31/exfilsquad-uk-department-for-education-pnld-breach
-  - 2026-07-31/everest-publishes-stadler-rail-supplier-archive
-  - 2026-07-28/ey-itsm-breach-shinyhunters-attribution-claim
-  - 2026-07-29/uvvg-arad-romania-university-cyberattack-qilin-claim
-  - 2026-07-19/ernst-young-third-party-itsm-platform-breach-client-tax-data
   - 2026-07-22/everest-ransomware-stadler-rail-supplier-platform-breach
+  - 2026-07-19/ernst-young-third-party-itsm-platform-breach-client-tax-data
+  - 2026-07-29/uvvg-arad-romania-university-cyberattack-qilin-claim
 deep_dive: false
 deep_dive_category: null
 org_triage: null

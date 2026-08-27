@@ -21,6 +21,7 @@ inline `[a, b]` lists and `{k: v}` mappings of plain scalars only,
 
 from __future__ import annotations
 
+import copy
 import json
 import re
 from datetime import datetime, timezone
@@ -52,7 +53,18 @@ KINDS = (
     "synthesis",
     "outlook",
 )
+# `strategic` is a LEGACY value: the weekly strategic routine was retired in
+# v4.0 (2026-08-27). Every entry a v4+ run writes is `operational`; the
+# historical strategic entries stay valid, archived records.
 HORIZONS = ("operational", "strategic")
+# Entry kinds a v4+ run may write. `synthesis` and `outlook` were the weekly
+# routine's kinds and are retired for new entries (kept in KINDS so the
+# historical store validates); `policy` stays first-class — a regulatory
+# action with a transferable lesson is an intel-run finding (PD-11 c).
+ACTIVE_KINDS = ("threat", "incident", "vulnerability", "research", "annual-report", "policy")
+# LEGACY (v4.0): `weekly_section` values carried by pre-v4 strategic entries.
+# No renderer keys on them any more; the vocabulary stays so the archived
+# entries keep validating. A v4+ entry never sets weekly_section.
 WEEKLY_SECTIONS = (
     "weekly-top-stories",
     "weekly-multi-day",
@@ -65,17 +77,6 @@ WEEKLY_SECTIONS = (
     "weekly-policy",
     "weekly-looking-ahead",
 )
-# Fallback placement of a strategic entry when weekly_section is unset.
-KIND_WEEKLY_SECTION = {
-    "threat": "weekly-top-stories",
-    "incident": "weekly-incidents-recap",
-    "vulnerability": "weekly-vuln-rollup",
-    "research": "weekly-research",
-    "annual-report": "weekly-annual-reports",
-    "policy": "weekly-policy",
-    "synthesis": "weekly-multi-day",
-    "outlook": "weekly-looking-ahead",
-}
 PRIORITIES = ("critical", "high", "notable", "routine")
 VERIFICATIONS = (
     "multi-source",
@@ -85,7 +86,20 @@ VERIFICATIONS = (
     "contradicted",
 )
 CONFIDENCES = ("high", "medium", "low")
+# `weekly` is LEGACY (v4.0 retired the weekly strategic routine): existing
+# weekly run records stay valid history; a v4+ fire is `intel` or `audit`.
 RUN_KINDS = ("intel", "weekly", "audit")
+ACTIVE_RUN_KINDS = ("intel", "audit")
+
+# Entry changelog (v4.0 — docs/pipeline.md § Entry lifecycle). Every change
+# to a published entry is one `updates[]` record paired 1:1 with a body
+# section headed `## <Type> — <at>`; `updated_at` mirrors the last record.
+UPDATE_TYPES = ("update", "correction", "improvement")
+UPDATE_TYPE_HEADINGS = {"update": "Update", "correction": "Correction", "improvement": "Improvement"}
+UPDATE_HEADING_RE = re.compile(
+    r"^## (Update|Correction|Improvement) — (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\s*$",
+    re.MULTILINE,
+)
 ENTITY_TYPES = ("actor", "campaign", "malware", "tool", "incident", "report", "trend", "policy")
 SOURCE_ROLES = ("primary", "corroborating")
 
@@ -160,17 +174,18 @@ RELATION_TYPES = {
     },
 }
 
-# Which daily-brief render section a kind maps to (operational horizon).
-# Orthogonal overrides at render time: update_of -> "updates",
-# deep_dive -> "deep-dive". Strategic-only kinds map to None for the
-# daily view and are rendered by the weekly structure instead.
+# Which brief render section a kind maps to. Orthogonal override at render
+# time: deep_dive -> "deep-dive". The "updates" section is derived from the
+# entries' `updates[]` changelog (entries updated in the window/day), not
+# from a kind. The legacy weekly-only kinds (synthesis, outlook) map to None
+# — they are archived history reachable by permalink, entity and search.
 KIND_DAILY_SECTION = {
     "threat": "active-threats",
     "incident": "active-threats",
     "vulnerability": "trending-vulnerabilities",
     "research": "research",
     "annual-report": "research",
-    "policy": None,
+    "policy": "research",
     "synthesis": None,
     "outlook": None,
 }
@@ -475,6 +490,32 @@ def _dump_scalar(value) -> str:
     return s
 
 
+FOLD_WIDTH = 96
+
+
+def _fold_lines(s: str, width: int = FOLD_WIDTH) -> list | None:
+    """Lines for a `>` folded block scalar that round-trips to exactly `s`
+    through `_collect_block_scalar`, or None when folding cannot reproduce
+    the string (runs of whitespace, leading/trailing blanks on a paragraph,
+    a `#`-led line, an empty paragraph). Paragraphs (`\n`-separated) become
+    blank-line-separated groups; each paragraph is wrapped on single spaces."""
+    import textwrap
+    if not s or s != s.strip():
+        return None
+    out: list = []
+    for para in s.split("\n"):
+        if para == "" or para != para.strip() or "  " in para:
+            return None
+        lines = textwrap.wrap(para, width=width, break_long_words=False,
+                              break_on_hyphens=False, drop_whitespace=True)
+        if not lines or " ".join(lines) != para or any(l.startswith("#") for l in lines):
+            return None
+        if out:
+            out.append("")
+        out.extend(lines)
+    return out
+
+
 def _dump_block(value, indent: int, out: list) -> None:
     pad = "  " * indent
     if isinstance(value, dict):
@@ -482,7 +523,15 @@ def _dump_block(value, indent: int, out: list) -> None:
             out[-1] += " {}"
             return
         for k, v in value.items():
-            if isinstance(v, str) and "\n" in v:
+            folded = _fold_lines(v) if isinstance(v, str) and len(v) > FOLD_WIDTH else None
+            if folded is not None:
+                # Long prose (summary, sourcing_note, rationale) is emitted as
+                # a `>` folded scalar so the file stays readable in a diff —
+                # the parser folds it back to the identical string.
+                out.append(f"{pad}{k}: >")
+                for line in folded:
+                    out.append(f"{pad}  {line}" if line else "")
+            elif isinstance(v, str) and "\n" in v:
                 out.append(f"{pad}{k}: |")
                 for line in v.split("\n"):
                     out.append(f"{pad}  {line}" if line else "")
@@ -602,9 +651,11 @@ ENTRY_DEFAULTS = {
     "verification": "multi-source",
     "sourcing_note": None,
     "confidence": "high",
-    "update_of": None,
+    "updated_at": None,
+    "updates": [],
+    "update_of": None,       # RETIRED (v4.0) — accepted only as null on legacy files
     "references": [],
-    "weekly_section": None,
+    "weekly_section": None,  # LEGACY (v4.0) — pre-v4 strategic entries only
     "deep_dive": False,
     "deep_dive_category": None,
     "org_triage": None,
@@ -624,7 +675,10 @@ def load_entry(path: Path, root: Path = ROOT) -> dict:
     fm = parse_yaml_subset(fm_text)
     if not isinstance(fm, dict):
         raise YamlSubsetError(f"{path}: frontmatter is not a mapping")
-    entry = dict(ENTRY_DEFAULTS)
+    # Deep-copy the defaults: the list/dict defaults (`updates`, `tags`, …)
+    # must never be shared between entries (a consumer appending to one
+    # entry's `updates` would otherwise mutate every entry that lacked the key).
+    entry = copy.deepcopy(ENTRY_DEFAULTS)
     entry.update(fm)
     entry["slug"] = path.stem
     entry["date"] = path.parent.name
@@ -648,16 +702,66 @@ def collect_entries(entries_dir: Path = ENTRIES_DIR, root: Path = ROOT) -> list:
     return entries
 
 
-def entries_in_window(entries: list, since: datetime, until: datetime | None = None) -> list:
-    """Filter entries whose discovered_at falls in [since, until)."""
+def entries_in_window(entries: list, since: datetime, until: datetime | None = None,
+                      *, activity: bool = False) -> list:
+    """Filter entries whose discovered_at falls in [since, until).
+
+    With `activity=True` the window keys on the entry's ACTIVITY moment —
+    `max(discovered_at, updated_at)` — so an entry that received a
+    changelog record inside the window is in the window even when it was
+    first published long before it (v4.0: an update floats the entry back
+    to the top of the live brief)."""
     out = []
     for e in entries:
-        ts = parse_ts(e.get("discovered_at"))
+        ts = parse_ts(entry_activity_ts(e) if activity else e.get("discovered_at"))
         if ts is None:
             continue
         if ts >= since and (until is None or ts < until):
             out.append(e)
     return out
+
+
+def entry_activity_ts(entry: dict) -> str | None:
+    """The entry's latest activity timestamp as a string: `updated_at`
+    when it is later than `discovered_at`, else `discovered_at`. Both are
+    fixed-width UTC ISO-8601 Z strings, so a lexical max is a temporal
+    max. This is the sort key of the live brief and the feed order (v4.0)."""
+    disc = entry.get("discovered_at")
+    upd = entry.get("updated_at")
+    if isinstance(upd, str) and upd and (not isinstance(disc, str) or upd > disc):
+        return upd
+    return disc if isinstance(disc, str) and disc else None
+
+
+def split_update_sections(body: str) -> tuple[str, list]:
+    """Split an entry body into (main analysis, [update sections]).
+
+    Update sections are the trailing `## <Type> — <at>` blocks the entry
+    lifecycle appends (docs/pipeline.md § Entry lifecycle), one per
+    `updates[]` record. Each returned section is
+    `{"type": "update"|"correction"|"improvement", "at": <ts>, "body": <markdown>}`
+    in document order. The main analysis is everything before the first
+    such heading (stripped). Renderers use this to style each update as a
+    timestamped block; the gate uses it to pair sections with records."""
+    text = body or ""
+    matches = list(UPDATE_HEADING_RE.finditer(text))
+    if not matches:
+        return text.strip(), []
+    main = text[: matches[0].start()].strip()
+    sections = []
+    for i, m in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        sections.append({
+            "type": m.group(1).lower(),
+            "at": m.group(2),
+            "body": text[m.end():end].strip(),
+        })
+    return main, sections
+
+
+def update_section_heading(rtype: str, at: str) -> str:
+    """The exact body heading that pairs with an `updates[]` record."""
+    return f"## {UPDATE_TYPE_HEADINGS.get(rtype, 'Update')} — {at}"
 
 
 def parse_ts(value) -> datetime | None:
@@ -1009,18 +1113,78 @@ def validate_entry(entry: dict, taxonomy: dict, registry_keys=None) -> list:
     if needs_evidence and not entry.get("evidence"):
         err("evidence[] required (immediate_action or exploited-status CVE)")
 
-    # update / reference links
-    upd = entry.get("update_of")
-    if upd is not None and not ENTRY_ID_RE.match(str(upd)):
-        err(f"update_of {upd!r} is not an entry id (YYYY-MM-DD/slug)")
+    # reference links
+    if entry.get("update_of") is not None:
+        err("update_of is retired (v4.0) — developments and corrections are appended "
+            "to the existing entry as `updates[]` records, never a second entry")
     for ref in entry.get("references") or []:
         if not ENTRY_ID_RE.match(str(ref)):
             err(f"references value {ref!r} is not an entry id")
 
+    # entry lifecycle — the changelog (docs/pipeline.md § Entry lifecycle)
+    updates = entry.get("updates")
+    if updates is None:
+        updates = []
+    if not isinstance(updates, list):
+        err("updates must be a list of changelog records")
+        updates = []
+    prev_at = entry.get("discovered_at") if isinstance(entry.get("discovered_at"), str) else ""
+    record_ats: list = []
+    for i, rec in enumerate(updates):
+        where = f"updates[{i}]"
+        if not isinstance(rec, dict):
+            err(f"{where} is not a mapping")
+            continue
+        unknown = set(rec) - {"at", "run_id", "type", "summary", "fields", "merged_from"}
+        if unknown:
+            err(f"{where}: unknown field(s) {sorted(unknown)}")
+        at = rec.get("at")
+        if not isinstance(at, str) or parse_ts(at) is None:
+            err(f"{where}.at is not a UTC ISO 8601 `YYYY-MM-DDTHH:MM:SSZ` timestamp")
+            at = None
+        elif prev_at and at <= prev_at:
+            err(f"{where}.at {at} must be later than the previous record / discovered_at ({prev_at})")
+        if at:
+            prev_at = at
+            record_ats.append(at)
+        if not _is_str(str(rec.get("run_id") or "")) or not RUN_ID_RE.match(str(rec.get("run_id"))):
+            err(f"{where}.run_id missing or not a run id")
+        if rec.get("type") not in UPDATE_TYPES:
+            err(f"{where}.type {rec.get('type')!r} not in {UPDATE_TYPES}")
+        if not _is_str(rec.get("summary")):
+            err(f"{where}.summary missing — every changelog record states what changed")
+        fields = rec.get("fields")
+        if fields is not None and not _is_str_list(fields):
+            err(f"{where}.fields must be a list of frontmatter field names (or \"body\")")
+        mf = rec.get("merged_from")
+        if mf is not None and not ENTRY_ID_RE.match(str(mf)):
+            err(f"{where}.merged_from {mf!r} is not an entry id")
+    updated_at = entry.get("updated_at")
+    if updates:
+        if record_ats and updated_at != record_ats[-1]:
+            err(f"updated_at {updated_at!r} must equal the last changelog record's at "
+                f"({record_ats[-1]})")
+    elif updated_at is not None:
+        err("updated_at set but updates[] is empty — updated_at mirrors the last changelog record")
+    # body sections pair 1:1 with records, same order, same `at`
+    _main, sections = split_update_sections(entry.get("body") or "")
+    sec_ats = [sc["at"] for sc in sections]
+    if sec_ats != record_ats and not (not sections and not updates):
+        err(f"update sections in the body {sec_ats} do not pair 1:1 with updates[] records "
+            f"{record_ats} — every record needs exactly one `## <Type> — <at>` section, in order")
+    else:
+        for sc, rec in zip(sections, [r for r in updates if isinstance(r, dict)]):
+            if sc["type"] != rec.get("type"):
+                err(f"update section at {sc['at']} is headed {sc['type']!r} but the record's type is "
+                    f"{rec.get('type')!r}")
+            if not sc["body"].strip():
+                err(f"update section at {sc['at']} has an empty body — the section carries the "
+                    "cited delta, not just a heading")
+
     if entry.get("deep_dive") and not _is_str(entry.get("deep_dive_category")):
         err("deep_dive: true requires deep_dive_category")
 
-    ws = entry.get("weekly_section")
+    ws = entry.get("weekly_section")  # LEGACY (v4.0): pre-v4 strategic entries only
     if ws is not None:
         if ws not in WEEKLY_SECTIONS:
             err(f"weekly_section {ws!r} not in {WEEKLY_SECTIONS}")
@@ -1052,6 +1216,8 @@ def validate_entry(entry: dict, taxonomy: dict, registry_keys=None) -> list:
 
     if not _is_str(entry.get("body")):
         err("entry body is empty")
+    elif not _is_str(_main):
+        err("entry body has no main analysis before the first update section")
     return errs
 
 
@@ -1223,6 +1389,16 @@ def validate_run_record(run: dict) -> list:
               "verification_residual_count"):
         if not isinstance(run.get(f), int):
             err(f"`{f}` must be an integer")
+    # v4.0: the entries this fire appended changelog records to (entry ids).
+    # Optional on records that predate the entry lifecycle; when present it
+    # must be a list of entry ids and its length must equal entries_updated.
+    uei = run.get("updated_entry_ids")
+    if uei is not None:
+        if not isinstance(uei, list) or not all(
+                isinstance(i, str) and ENTRY_ID_RE.match(i) for i in uei):
+            err("`updated_entry_ids` must be a list of entry ids (YYYY-MM-DD/slug)")
+        elif isinstance(run.get("entries_updated"), int) and len(uei) != run["entries_updated"]:
+            err(f"`entries_updated` = {run['entries_updated']} but `updated_entry_ids` lists {len(uei)}")
     # Machine-auditable publish outcome (v3.14; optional — absent on older records)
     ps = run.get("publish_status")
     if ps is not None and ps not in ("pending", "ok", "main-only"):

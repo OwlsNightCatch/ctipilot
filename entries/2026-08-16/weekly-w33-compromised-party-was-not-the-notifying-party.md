@@ -91,7 +91,6 @@ confidence: high
 update_of: null
 references:
   - 2026-08-13/mydr-poland-ehr-criminal-intrusion-confirmed-processor-gap
-  - 2026-08-15/mydr-poland-19-million-records-government-confirmed
   - 2026-08-11/ceva-logistics-fulfilment-breach-ten-controllers-notified
   - 2026-08-15/france-dgfip-tax-authority-credential-intrusion
   - 2026-08-10/retelit-qilin-italian-telco-cloud-operator-public-sector

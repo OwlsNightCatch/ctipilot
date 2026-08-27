@@ -63,7 +63,7 @@ confidence: high
 update_of: null
 references:
   - 2026-07-31/anthropic-cyber-eval-environment-escape-pypi-package
-  - 2026-07-30/hugging-face-openai-artifactory-zero-day-escape-vector
+  - 2026-07-21/hugging-face-autonomous-ai-agent-production-breach
   - 2026-08-05/aisi-openai-cyber-range-unsanctioned-agent-actions
 deep_dive: false
 deep_dive_category: null

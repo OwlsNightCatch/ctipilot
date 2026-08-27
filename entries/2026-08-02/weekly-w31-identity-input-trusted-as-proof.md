@@ -71,9 +71,9 @@ confidence: high
 update_of: null
 references:
   - 2026-07-29/cve-2026-59243-airflow-fab-azure-ad-jwt-signature-bypass
-  - 2026-07-29/check-point-cve-2026-16232-sic-dn-substitution-root-cause
+  - 2026-07-23/check-point-smartconsole-auth-bypass-cve-2026-16232
   - 2026-08-01/solarwinds-web-help-desk-cve-2026-28323-saml-auth-bypass
-  - 2026-07-31/balbooa-gridbox-cve-2026-65884-anon-admin-registration-rce
+  - 2026-07-26/joomla-gridbox-cookie-forged-super-user-auth-bypass-wave
   - 2026-08-02/sp-page-builder-cve-2026-65766-preauth-sqli-mail-relay
   - 2026-08-01/aimy-captcha-joomla-cve-2026-65883-object-injection-rce
 deep_dive: false

@@ -96,7 +96,7 @@ sourcing_note: >
   publishers, not two independent assessors.
 confidence: medium
 update_of: null
-references: ["2026-08-19/clop-windchill-custom-implant-reverse-engineered", "2026-08-15/clop-windchill-philips-shell-first-victim-confirmations"]
+references: ["2026-06-20/ptc-windchill-cve-2026-12569-unauthenticated-java-deserializ"]
 deep_dive: false
 deep_dive_category: null
 org_triage: null

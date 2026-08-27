@@ -81,7 +81,6 @@ confidence: high
 update_of: null
 references:
   - 2026-07-24/laundry-bear-zimbra-zero-click-cve-2025-66376
-  - 2026-07-25/laundry-bear-zimreaper-app-password-persistence
   - 2026-07-25/ta458-roundpress-webmail-zero-days-sogo-cve-2026-8496
   - 2026-07-22/zimbra-10-1-20-snmp-command-injection-rce-plus-stored-xss
 deep_dive: false

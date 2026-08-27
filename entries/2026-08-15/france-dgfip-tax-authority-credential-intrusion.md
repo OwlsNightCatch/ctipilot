@@ -2,16 +2,23 @@
 schema: 1
 kind: incident
 horizon: operational
-title: "France's tax authority cut the intruders' accounts in June and July and found no data theft — it took the criminal's sale listing two months later to establish that 678,000 records had already gone"
-headline: "DGFiP confirms a 678,000-record theft via a stolen agent account and a third party's credentials — missed by its own post-intrusion access checks"
+title: >
+  France's tax authority cut the intruders' accounts in June and July and found no data theft — it
+  took the criminal's sale listing two months later to establish that 678,000 records had already
+  gone
+headline: >
+  DGFiP confirms a 678,000-record theft via a stolen agent account and a third party's credentials
+  — missed by its own post-intrusion access checks
 summary: >
-  France's Direction générale des Finances publiques confirmed on 2026-08-14 that intrusions in June and July
-  2026, using stolen credentials of a DGFiP agent and of an authorised third party, were used to view and extract
-  data on 678,000 individuals and businesses. DGFiP cut the accounts when it detected the intrusions, but its
-  access reviews at the time did not reveal that data had been stolen; only investigations opened after the
-  attacker advertised the dataset on 2026-08-12 established the theft.
+  France's Direction générale des Finances publiques confirmed on 2026-08-14 that intrusions in
+  June and July 2026, using stolen credentials of a DGFiP agent and of an authorised third party,
+  were used to view and extract data on 678,000 individuals and businesses. DGFiP cut the accounts
+  when it detected the intrusions, but its access reviews at the time did not reveal that data had
+  been stolen; only investigations opened after the attacker advertised the dataset on 2026-08-12
+  established the theft.
 discovered_at: "2026-08-15T04:47:00Z"
-event_date: "2026-08-14"
+updated_at: "2026-08-21T06:45:00Z"
+event_date: 2026-08-14
 run_id: 2026-08-15T0412Z-intel
 priority: high
 immediate_action: null
@@ -23,20 +30,37 @@ regions:
   - europe
 sectors:
   - public-sector
+  - education
 entities:
-  - incident:france-dgfip-tax-breach-2026-08
-  - actor:zerobytes
-techniques: [T1078, T1199]
+  - "incident:france-dgfip-tax-breach-2026-08"
+  - "actor:zerobytes"
+  - "incident:france-education-ministry-breach-2026-07"
+  - "incident:france-bloctel-breach-2026-08"
+techniques:
+  - T1078
+  - T1199
 affected_products: []
 cves: []
 sources:
   - url: "https://presse.economie.gouv.fr/acces-illegitime-au-systeme-dinformation-de-la-direction-generale-des-finances-publiques/"
     publisher: "Ministère de l'Économie et des Finances"
-    date: "2026-08-14"
+    date: 2026-08-14
     role: primary
   - url: "https://www.theregister.com/security/2026/08/14/french_tax_authority_admits_data_heist_after_crook_touts_2m_records/5287885"
     publisher: The Register
-    date: "2026-08-14"
+    date: 2026-08-14
+    role: corroborating
+  - url: "https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/zerobytes-a-l-origine-du-vol-de-donnees-du-fisc-revendique-un-piratage-de-donnees-visant-l-education-nationale-fin-juillet_8152235.html"
+    publisher: franceinfo
+    date: 2026-08-18
+    role: primary
+  - url: "https://presse.economie.gouv.fr/la-dgccrf-met-en-garde-les-consommateurs-a-la-suite-dune-fuite-de-donnees-sur-bloctel/"
+    publisher: "DGCCRF / Ministère de l'Économie et des Finances"
+    date: 2026-08-12
+    role: primary
+  - url: "https://www.occrp.org/en/news/french-authorities-investigate-widespread-government-data-breaches"
+    publisher: OCCRP
+    date: 2026-08-20
     role: corroborating
 closed_sources: []
 evidence:
@@ -44,16 +68,25 @@ evidence:
     publisher: "Ministère de l'Économie et des Finances"
   - quote: "Néanmoins, les contrôles d'accès réalisés à cette occasion n'ont pas permis de détecter que ces intrusions avaient conduit à des vols de données, en raison de la sophistication de l'attaque."
     publisher: "Ministère de l'Économie et des Finances"
+  - quote: "Les données susceptibles d'avoir été exfiltrées concernent les agents du ministère ayant exercé en académie depuis 2001."
+    publisher: "Ministère de l'Education nationale, quoted by franceinfo"
+  - quote: "Pour une partie d'entre eux s'y ajoutent des coordonnées, adresse postale et numéro de téléphone, ainsi que le numéro de sécurité sociale"
+    publisher: "Ministère de l'Education nationale, quoted by franceinfo"
+  - quote: "Ce système d'information ne contient ni données bancaires, ni mots de passe, ni données relatives aux élèves."
+    publisher: "Ministère de l'Education nationale, quoted by franceinfo"
+  - quote: "Un accès frauduleux à un compte professionnel a permis à un cybercriminel de récupérer des fichiers contenant 3 millions de numéros de téléphone, dont 600 000 inscrits sur Bloctel."
+    publisher: DGCCRF
 verification: multi-source
 sourcing_note: >
-  The confirmed facts come from the French Ministry of Economy and Finance's own statement about its own
-  incident. The attacker's own claims — a dataset of more than two million taxpayers, a
-  multi-factor-authentication bypass, and retained access — are assertions reported by the press; the government
-  disputed the retained-access claim and its published statement addresses neither of the others, and each is
-  attributed to the source that carries it.
+  The confirmed facts come from the French Ministry of Economy and Finance's own statement about
+  its own incident. The attacker's own claims — a dataset of more than two million taxpayers, a
+  multi-factor-authentication bypass, and retained access — are assertions reported by the press;
+  the government disputed the retained-access claim and its published statement addresses neither
+  of the others, and each is attributed to the source that carries it.
 confidence: high
-update_of: null
-references: []
+references:
+  - 2026-08-16/weekly-w33-compromised-party-was-not-the-notifying-party
+weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null
@@ -62,6 +95,30 @@ classification:
   credibility: 1
 watchlist_hit: false
 actions: []
+updates:
+  - at: "2026-08-21T06:45:00Z"
+    run_id: 2026-08-21T0410Z-intel
+    type: update
+    summary: >
+      ZeroBytes, the actor behind the DGFiP tax-authority intrusion this pipeline covered on
+      2026-08-15, publicly claimed on 18 August to have taken 346 million raw lines from France's
+      Ministry of National Education. Contacted directly by franceinfo, the minister's office
+      confirmed the claim corresponds to the fraudulent intrusion the ministry had already disclosed
+      on 31 July, and the ministry's own account of the exposed data adds a detail the earlier
+      coverage did not carry: identity and professional information for staff who worked in an
+      académie since 2001, with postal address, telephone number and French social-security number for
+      a subset. The system holds no banking data, no passwords and no student data, and the ministry
+      is continuing technical work on the actor's separate claim to hold student records. Separately,
+      a third French government service lost 3 million phone numbers to a fraudulently accessed
+      professional account — with no actor named by any source.
+    fields:
+      - entities
+      - evidence
+      - references
+      - sectors
+      - sources
+      - body
+    merged_from: 2026-08-21/zerobytes-france-education-ministry-bloctel-unattributed
 migrated_from: null
 ---
 
@@ -74,3 +131,19 @@ The access path carries no vulnerability: it is a valid agent account plus an au
 **Defender takeaway:** cutting the compromised accounts is containment, not scoping. When a government record system is reached through valid credentials, the question that decides the incident's real size is what those sessions *read and exported* — bulk-query and export volumes per account, off-hours retrieval patterns, third-party accounts operating outside their normal scope — and that question has to be answered from query and data-access telemetry, not from the access-control review that follows an account takedown. An organisation that only verifies the accounts are closed can close an incident that is still open.
 
 **Triage:** a legitimate tax-administration account queries citizen and business records all day, so record access is not the signal. The discriminators are volume and shape against that account's own baseline — sustained bulk retrieval or export where the role's normal pattern is individual case lookups, activity outside the agent's working hours, and an authorised third-party account reaching record classes its contracted purpose never needed.
+
+## Update — 2026-08-21T06:45:00Z
+
+The earlier entry recorded that France's Direction générale des Finances publiques confirmed intrusions in June and July 2026 using stolen credentials of a DGFiP agent and of an authorised third party, and that only the attacker's sale listing — two months later — established that data on 678,000 individuals and businesses had gone. The delta is that the same actor's footprint now reaches a second French government system, and that the ministry involved has put its own words to what was taken.
+
+**The Education Ministry link.** ZeroBytes claimed on 18 August to have absorbed 346 million raw lines from the Ministry of National Education some weeks earlier, asserting it had been detected but not cut off. Contacted directly by franceinfo, the minister's office confirmed the claim corresponds to the fraudulent intrusion into one of its information systems that the ministry had already announced on 31 July ([franceinfo, 2026-08-18](https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/zerobytes-a-l-origine-du-vol-de-donnees-du-fisc-revendique-un-piratage-de-donnees-visant-l-education-nationale-fin-juillet_8152235.html)). The linkage of the two thefts to one actor comes from French media reporting rather than from any authority, and this entry carries it at that weight.
+
+What the ministry itself said about the data is the materially new fact. The information at risk concerns ministry staff who worked in an académie since 2001 — identity elements and professional information, status and functions — and for a portion of them the ministry adds contact details, postal address, telephone number and the French social-security number. It also draws a boundary: that information system contains no banking data, no passwords and no student data. On the actor's separate assertion to hold student records, the ministry's position is that its technical examination continues — pending, not a denial. The social-security-number exposure is the detail this pipeline's DGFiP-only coverage did not carry, and it changes the downstream risk for the affected staff from contactability to identity fraud.
+
+**The third breach, and why it is not part of this story.** In the same period France's consumer-protection directorate disclosed a separate incident: "Un accès frauduleux à un compte professionnel a permis à un cybercriminel de récupérer des fichiers contenant 3 millions de numéros de téléphone, dont 600 000 inscrits sur Bloctel" — a fraudulent access to a professional account let a cybercriminal retrieve files containing 3 million phone numbers, 600,000 of them registered on the Bloctel telemarketing opt-out list ([DGCCRF, 2026-08-12](https://presse.economie.gouv.fr/la-dgccrf-met-en-garde-les-consommateurs-a-la-suite-dune-fuite-de-donnees-sur-bloctel/)). DGCCRF states no personal data such as name or address was disclosed, that the compromised account was blocked as soon as the incident was noticed and all professional accounts subsequently reviewed, and that the Bloctel database itself was not compromised.
+
+It is worth being explicit about what is *not* established, because the opposite was circulating: no source names an actor for Bloctel, and none ties it to ZeroBytes. The "same hacker" claim in international coverage traces, through its own hyperlink, to a French broadcast report that discusses only the tax authority and the Education Ministry ([OCCRP, 2026-08-20](https://www.occrp.org/en/news/french-authorities-investigate-widespread-government-data-breaches)). Nor does any source describe one investigation spanning all three; the national anti-cybercrime unit is placed on the DGFiP breach.
+
+**Triage:** across the intrusions where a mechanism is stated at all, the access is a legitimate account used by someone who should not have it — an agent's and an authorised third party's credentials at DGFiP, a professional account at DGCCRF. There is no malware, no exploited vulnerability and no CVE anywhere in this cluster, so nothing here produces a detection signal on an endpoint. The discriminator is behavioural on the identity plane: a valid account performing bulk record retrieval at a volume and rate no human workflow generates, from a session that is otherwise unremarkable. The DGFiP case established the harder half of the problem — its own post-intrusion access reviews, run when the accounts were cut, did not reveal that data had already been taken. The Education Ministry case adds the same shape from the other side: the actor's claim to have been detected without being evicted is unaddressed by the ministry's published statements.
+
+**Defender takeaway:** for an administration whose exposure runs through authorised third parties, the control this cluster keeps pointing at is not authentication but **egress volume accounting on legitimate sessions** — knowing what a normal day's record access looks like per account and per third-party integration, so that a bulk export is visible while it happens rather than when a listing appears for sale. Two months elapsed between the DGFiP intrusions and the discovery that data had gone, and the discovery came from the criminal market, not from the victim. Where a third-party account holds query access to a personal-data system, the reviewable question is whether anyone would notice that account reading a hundred thousand records, and the honest answer in three separate French cases this summer was no.

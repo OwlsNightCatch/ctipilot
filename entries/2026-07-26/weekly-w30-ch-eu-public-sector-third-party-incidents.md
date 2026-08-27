@@ -90,9 +90,8 @@ references:
   - 2026-07-22/everest-ransomware-stadler-rail-supplier-platform-breach
   - 2026-07-24/bravox-vaud-fiduciary-municipalities-breach
   - 2026-07-25/stiftung-autismuslink-bern-inc-ransom-breach
-  - 2026-07-26/ifage-geneva-dragonforce-data-published-student-records
-  - 2026-07-26/ancpi-romania-dnsc-report-2m-epayment-records-exfiltrated
-  - 2026-07-21/ancpi-romania-cadastre-databases-not-affected-update
+  - 2026-07-14/dragonforce-leak-claim-ifage-geneva-adult-education
+  - 2026-07-19/ancpi-romania-cadastre-cyberattack-bytetobreach
 deep_dive: false
 deep_dive_category: null
 org_triage: null

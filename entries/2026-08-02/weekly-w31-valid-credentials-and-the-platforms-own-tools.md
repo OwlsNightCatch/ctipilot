@@ -90,10 +90,9 @@ update_of: null
 references:
   - 2026-08-01/france-education-nationale-agent-training-breach
   - 2026-08-02/cci-nice-cote-dazur-edrh-admin-account-export-breach
-  - 2026-07-31/everest-publishes-stadler-rail-supplier-archive
+  - 2026-07-22/everest-ransomware-stadler-rail-supplier-platform-breach
   - 2026-07-30/huntress-sonicwall-credential-stuffing-92-accounts-30-orgs
   - 2026-08-02/adform-trackpoint-supply-chain-clipboard-crypto-clipper
-  - 2026-07-22/everest-ransomware-stadler-rail-supplier-platform-breach
 deep_dive: false
 deep_dive_category: null
 org_triage: null

@@ -77,8 +77,7 @@ references:
   - 2026-08-06/endlessdoors-zbtlink-router-factory-shipped-root-backdoor
   - 2026-08-08/cpdlc-atn-b1-five-protocol-flaws-no-mitigation-available
   - 2026-08-05/thermo-fisher-genetic-analyzer-dna-file-integrity
-  - 2026-08-09/thermo-fisher-genetic-analyzer-correction-patch-exists
-  - 2026-08-06/water-plc-lockouts-twelve-states-named-utility-confirms
+  - 2026-07-29/minnesota-30-water-utilities-coordinated-ot-attack
 deep_dive: false
 deep_dive_category: null
 org_triage: null

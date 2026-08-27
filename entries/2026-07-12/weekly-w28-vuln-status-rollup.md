@@ -56,12 +56,12 @@ classification:
   credibility: 1
 update_of: null
 references:
-  - 2026-07-08/cve-2026-48282-adobe-coldfusion-actively-exploited-kev
+  - 2026-07-02/cve-2026-48276-48277-48281-48282-48283-48316-adobe-coldfusio
   - 2026-07-10/citrixbleed-2-dragonforce-iab-kill-chain-stac3725
-  - 2026-07-10/gitea-cve-2026-20896-ncsc-ch-actively-exploited-update
+  - 2026-06-23/cve-2026-20896-gitea-docker-trust-all-reverse-proxy-default
   - 2026-07-08/cve-2026-55255-langflow-idor-kev-chained-with-rce
   - 2026-07-08/ghostlock-cve-2026-43499-linux-kernel-rtmutex-uaf-lpe
-  - 2026-07-11/cve-2026-47291-httpsys-zdi-exploitation-mechanics
+  - 2026-06-10/cve-2026-47291-microsoft-june-patch-tuesday-http-sys-pre-aut
   - 2026-07-09/cve-2026-53359-januscape-kvm-x86-guest-to-host-vm-escape
   - 2026-07-08/beyondtrust-rs-pra-preauth-bypass-cve-2026-40138-cluster
   - 2026-07-10/siemens-sicam-8-ssa-229470-firmware-signing-bypass
@@ -72,6 +72,7 @@ org_triage: null
 watchlist_hit: false
 actions: []
 ---
+
 This roll-up consolidates the 2026-W28 vulnerabilities that cross the out-of-band-action bar — actively exploited, at imminent mass exploitation, or otherwise demanding a response the routine monthly cycle does not give. Per-CVE facts, CVSS, and affected/fixed versions live in the linked operational entries; this entry is the status trajectory a reader uses to sequence the week's patching.
 
 **Confirmed exploited / on CISA KEV this week.** *Adobe ColdFusion* CVE-2026-48282 (one of the 1 July CVSS 10.0 unauthenticated RCEs) — exploited within two hours of public detail, KEV-listed 7 July ([BleepingComputer, 2026-07-08](https://www.bleepingcomputer.com/news/security/max-severity-adobe-coldfusion-flaw-now-exploited-in-attacks/)). *Citrix NetScaler* CitrixBleed 2 CVE-2025-5777 — weaponised into a repeatable initial-access-broker kill chain ending in DragonForce ransomware; patch plus session termination required. *Gitea* CVE-2026-20896 — NCSC-CH escalated to "Actively Exploited, Proof of Concept Available" ([NCSC-CH, 2026-07-10](https://security-hub.ncsc.admin.ch/#/posts/12755)). *Langflow* CVE-2026-55255 — cross-tenant IDOR chained with pre-auth RCE, first exploited 25 June, now KEV. *Joomla extension file-upload wave* — CVE-2026-48908 / 56290 / 56291 / 48939 exploited as zero-days (see the dedicated top-story), CVE-2026-57827/57828 patched without confirmed exploitation yet.

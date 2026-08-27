@@ -61,7 +61,7 @@ references:
   - 2026-07-26/oracle-july-2026-cpu-fusion-middleware-cvss10-unauth
   - 2026-07-25/certighost-cve-2026-54121-ad-cs-dc-impersonation-poc
   - 2026-07-24/mitel-micollab-awv-unauth-command-injection
-  - 2026-07-12/weekly-w28-netherlands-nis2-in-force
+  - 2026-06-29/netherlands-nis2-cyberbeveiligingswet-clears-the-lower-house
   - 2026-07-19/weekly-w29-eu-ci-resilience-regulatory-deadlines
 deep_dive: false
 deep_dive_category: null

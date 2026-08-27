@@ -83,8 +83,8 @@ sourcing_note: >
 confidence: high
 update_of: null
 references:
-  - 2026-08-19/metabase-downstream-victims-nine-credential-rotation
-  - 2026-08-19/clop-windchill-custom-implant-reverse-engineered
+  - 2026-08-09/metabase-unauth-sqli-zeroday-exploited-framework-tally
+  - 2026-06-20/ptc-windchill-cve-2026-12569-unauthenticated-java-deserializ
   - 2026-08-23/rust-crates-arrayref-build-script-backdoor-dprk
   - 2026-08-23/trueconf-server-kev-head-mare-trojanized-installer
 deep_dive: false

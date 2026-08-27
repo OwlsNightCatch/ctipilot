@@ -62,7 +62,6 @@ references:
   - 2026-07-16/worldleaks-kudankulam-reliance-third-party-hosting-breach
   - 2026-07-19/ernst-young-third-party-itsm-platform-breach-client-tax-data
   - 2026-07-14/asyncapi-npm-supply-chain-compromise-github-actions
-  - 2026-07-16/asyncapi-npm-compromise-valid-provenance-attestations-delta
 deep_dive: false
 deep_dive_category: null
 org_triage: null

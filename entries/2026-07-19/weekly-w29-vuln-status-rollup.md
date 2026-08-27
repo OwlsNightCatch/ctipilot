@@ -48,12 +48,10 @@ sourcing_note: "cves: [] by design — every CVE in this roll-up is fully source
 confidence: high
 update_of: null
 references:
-  - 2026-07-18/sonicwall-sma1000-uta0533-exploitation-kill-chain
-  - 2026-07-14/progress-sharefile-szc-active-exploitation-confirmed
+  - 2026-07-14/sonicwall-sma1000-ssrf-cve-2026-15409-actively-exploited
+  - 2026-07-13/progress-sharefile-storage-zone-controller-shutdown
   - 2026-07-16/cve-2026-46817-oracle-ebs-payments-preauth-rce-kev-listed
-  - 2026-07-17/cve-2026-58644-sharepoint-confirmed-exploited-kev
   - 2026-07-14/microsoft-july-2026-patch-tuesday-two-exploited-zero-days
-  - 2026-07-15/microsoft-july-patch-tuesday-sharepoint-dynamics-followup
   - 2026-07-13/fsb-centre-16-static-tundra-router-hijacking-advisory
   - 2026-07-16/cve-2023-4346-knx-building-automation-lockout-dos-kev
   - 2026-07-18/wordpress-core-wp2shell-preauth-rce-chain-cve-2026-63030

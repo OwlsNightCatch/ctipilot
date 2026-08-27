@@ -44,7 +44,7 @@ references:
   - "2026-07-02/cve-2026-48276-48277-48281-48282-48283-48316-adobe-coldfusio"
   - "2026-07-01/cve-2026-8451-citrix-netscaler-adc-gateway-pre-auth-saml-mem"
   - "2026-07-03/cve-2026-13368-watchguard-fireware-iked-pre-auth-rce"
-  - "2026-07-01/nissan-is-the-largest-named-victim-yet-in-the-shinyhunters-o"
+  - "2026-06-28/naic-breached-via-oracle-peoplesoft-zero-day-shinyhunters-pu"
 deep_dive: false
 deep_dive_category: null
 org_triage: null

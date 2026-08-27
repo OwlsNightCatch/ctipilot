@@ -83,7 +83,7 @@ update_of: null
 references:
   - 2026-08-23/misp-stix-import-trust-boundary-dos-parser-state
   - 2026-08-18/zurich-trial-lockergoga-megacortex-nefilim-swiss-victims
-  - 2026-08-19/clop-windchill-custom-implant-reverse-engineered
+  - 2026-06-20/ptc-windchill-cve-2026-12569-unauthenticated-java-deserializ
 deep_dive: false
 deep_dive_category: null
 org_triage: null

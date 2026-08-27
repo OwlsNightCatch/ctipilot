@@ -54,7 +54,7 @@ confidence: medium
 update_of: null
 references:
   - 2026-07-26/weekly-w30-ch-eu-public-sector-third-party-incidents
-  - 2026-07-26/ancpi-romania-dnsc-report-2m-epayment-records-exfiltrated
+  - 2026-07-19/ancpi-romania-cadastre-cyberattack-bytetobreach
 deep_dive: false
 deep_dive_category: null
 org_triage: null

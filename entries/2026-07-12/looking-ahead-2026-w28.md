@@ -50,10 +50,10 @@ classification:
   credibility: 2
 update_of: null
 references:
-  - 2026-07-12/weekly-w28-netherlands-nis2-in-force
+  - 2026-06-29/netherlands-nis2-cyberbeveiligingswet-clears-the-lower-house
   - 2026-07-12/weekly-w28-finma-post-quantum-guidance
   - 2026-07-12/weekly-w28-joomla-file-upload-rce-wave
-  - 2026-07-12/weekly-w28-the-gentlemen-status
+  - 2026-06-29/the-gentlemen
   - 2026-07-12/weekly-w28-exploited-edge-enterprise-software
   - 2026-06-29/eu-cyber-resilience-act-75-days-to-the-11-september-vulnerab
 deep_dive: false
@@ -62,6 +62,7 @@ org_triage: null
 watchlist_hit: false
 actions: []
 ---
+
 Items already in motion for the coming weeks — each with a dated source or an in-week entry, none a prediction:
 
 - **EU regulatory clocks.** The Dutch NIS2 **Cyberbeveiligingswet** enters into force **15 August 2026** — now a fixed date after the 7 July Senate passage ([Rijksoverheid.nl, 2026-07-07](https://www.rijksoverheid.nl/actueel/nieuws/2026/07/07/cyberbeveiligingswet-en-wet-weerbaarheid-kritieke-entiteiten-vanaf-15-augustus-2026-van-kracht)). The **EU Cyber Resilience Act** vulnerability/incident-reporting obligation lands **11 September 2026**, roughly 60 days out and previously covered in this store — the reporting-platform readiness is the item to watch next.

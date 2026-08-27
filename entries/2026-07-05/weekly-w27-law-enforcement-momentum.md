@@ -49,9 +49,9 @@ classification:
   credibility: 1
 update_of: null
 references:
-  - "2026-07-04/netnut-popa-residential-proxy-botnet-disrupted-by-google-fbi"
+  - "2026-06-21/krebs-and-qurium-tie-the-popa-android-tv-residential-proxy-b"
   - "2026-06-30/microsoft-disrupts-stegoad-119-edge-extensions-hid-payloads"
-  - "2026-06-30/us-posts-10m-bounty-on-the-russia-nexus-signal-whatsapp-crew"
+  - "2026-06-27/fbi-cisa-russian-intelligence-now-phishing-signal-backup-rec"
   - "2026-06-30/mustang-panda-abuses-zoho-workdrive-as-a-dead-drop-c2-channe"
 deep_dive: false
 deep_dive_category: null

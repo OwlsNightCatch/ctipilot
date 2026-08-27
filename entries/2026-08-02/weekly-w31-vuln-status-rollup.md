@@ -82,15 +82,14 @@ references:
   - 2026-07-28/cve-2025-68686-fortios-ssl-vpn-symlink-persistence-kev
   - 2026-07-30/cisco-secure-fmc-cve-2026-20316-static-credential-exploited
   - 2026-07-27/cve-2026-16723-fastjson-1x-spring-boot-fat-jar-rce-no-patch
-  - 2026-07-31/balbooa-gridbox-cve-2026-65884-anon-admin-registration-rce
-  - 2026-07-29/check-point-cve-2026-16232-sic-dn-substitution-root-cause
-  - 2026-07-27/clop-windchill-flexplm-mass-extortion-wave-cve-2026-12569
-  - 2026-07-31/ta488-exchange-owa-cve-2026-42897-owareaper-implant
+  - 2026-07-26/joomla-gridbox-cookie-forged-super-user-auth-bypass-wave
+  - 2026-07-23/check-point-smartconsole-auth-bypass-cve-2026-16232
+  - 2026-06-20/ptc-windchill-cve-2026-12569-unauthenticated-java-deserializ
+  - 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
   - 2026-07-30/cve-2013-4786-exposed-bmc-ipmi-rakp-hash-disclosure
   - 2026-07-31/unit42-autonomous-deepseek-hermes-netscaler-cve-2026-3055
-  - 2026-08-02/unit42-autonomous-campaign-confirmed-impact-was-understated
   - 2026-07-28/cve-2026-61511-vbulletin-preauth-rce-public-exploit
-  - 2026-08-02/cve-2026-66066-rails-attack-chain-public-forensic-tooling
+  - 2026-07-31/cve-2026-66066-rails-activestorage-libvips-file-read
   - 2026-07-30/rufroot-cve-2026-59726-ruflo-mcp-bridge-unauth-rce
   - 2026-07-29/cve-2026-0769-langflow-preauth-eval-rce-exploited-not-in-kev
   - 2026-07-29/cve-2026-63077-teamcity-onprem-unauth-deserialization-rce
@@ -104,7 +103,7 @@ references:
   - 2026-08-01/aimy-captcha-joomla-cve-2026-65883-object-injection-rce
   - 2026-08-02/sp-page-builder-cve-2026-65766-preauth-sqli-mail-relay
   - 2026-07-30/hashicorp-terraform-mcp-server-hcsec-2026-23-token-exfil
-  - 2026-07-30/hugging-face-openai-artifactory-zero-day-escape-vector
+  - 2026-07-21/hugging-face-autonomous-ai-agent-production-breach
 deep_dive: false
 deep_dive_category: null
 org_triage: null

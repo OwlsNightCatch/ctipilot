@@ -80,9 +80,9 @@ sourcing_note: >
 confidence: high
 update_of: null
 references:
-  - 2026-07-31/ta488-exchange-owa-cve-2026-42897-owareaper-implant
+  - 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
   - 2026-08-01/captivecrunch-storm-2945-hospitality-captive-portal-rat
-  - 2026-08-01/device-code-phishing-bl-networks-second-wave-2026
+  - 2026-07-10/m365-conditional-access-gaps-railway-lshiy-campaigns
 deep_dive: false
 deep_dive_category: null
 org_triage: null

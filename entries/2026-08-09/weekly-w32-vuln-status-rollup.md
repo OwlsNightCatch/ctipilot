@@ -88,12 +88,10 @@ confidence: high
 update_of: null
 references:
   - 2026-08-03/cve-2026-18577-n-able-n-central-auth-bypass-exploited
-  - 2026-08-05/n-able-n-central-post-exploitation-rmm-tunnel-driver
-  - 2026-08-09/n-able-n-central-hotfix-2-required-supersedes-hotfix-1
   - 2026-08-05/cve-2026-34486-tomcat-encryptinterceptor-fail-open-kev
-  - 2026-08-05/cve-2026-9198-langflow-auto-login-validate-code-kev
-  - 2026-08-06/cve-2026-63077-teamcity-kev-confirmed-exploited
-  - 2026-08-08/cve-2026-8037-kemp-loadmaster-kev-confirmed-exploitation
+  - 2026-07-22/langflow-cve-2026-0770-exploited-ncsc-nl-15-cve-batch
+  - 2026-07-29/cve-2026-63077-teamcity-onprem-unauth-deserialization-rce
+  - 2026-06-30/cve-2026-8037-progress-kemp-loadmaster-pre-auth-rce-via-unin
   - 2026-08-09/cryptojs-cve-2026-71851-weak-entropy-exploited
   - 2026-08-09/metabase-unauth-sqli-zeroday-exploited-framework-tally
   - 2026-08-04/cve-2026-20079-cisco-secure-fmc-auth-bypass-root-hotfix
@@ -102,10 +100,10 @@ references:
   - 2026-08-06/veeam-service-provider-console-veeam-one-ten-cves
   - 2026-08-07/adobe-campaign-classic-apsb26-120-second-wave-unauth-rce
   - 2026-08-07/keycloak-saml-broker-signature-bypass-cve-2026-16443
-  - 2026-08-08/zapscape-cve-2026-64561-kvm-shadow-mmu-second-vm-escape
+  - 2026-07-09/cve-2026-53359-januscape-kvm-x86-guest-to-host-vm-escape
   - 2026-08-06/endlessdoors-zbtlink-router-factory-shipped-root-backdoor
   - 2026-08-08/cpdlc-atn-b1-five-protocol-flaws-no-mitigation-available
-  - 2026-08-09/thermo-fisher-genetic-analyzer-correction-patch-exists
+  - 2026-08-05/thermo-fisher-genetic-analyzer-dna-file-integrity
   - 2026-08-03/gladinet-centrestack-hardcoded-key-token-forgery
   - 2026-08-08/flowise-three-cves-vendor-sunset-no-fix-coming
   - 2026-08-09/teamdavid-tobit-22-cves-unauth-mailbox-takeover-dach

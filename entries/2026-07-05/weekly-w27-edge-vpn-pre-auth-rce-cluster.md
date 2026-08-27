@@ -52,7 +52,6 @@ references:
   - "2026-07-01/cve-2026-8451-citrix-netscaler-adc-gateway-pre-auth-saml-mem"
   - "2026-07-03/cve-2026-13368-watchguard-fireware-iked-pre-auth-rce"
   - "2026-06-30/cve-2026-8037-progress-kemp-loadmaster-pre-auth-rce-via-unin"
-  - "2026-07-02/kemp-loadmaster-cve-2026-8037-exploitation-attempts-confirme"
 deep_dive: false
 deep_dive_category: null
 org_triage: null
