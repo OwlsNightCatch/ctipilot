@@ -19,7 +19,7 @@ summary: >
   No workaround exists for any of the five, so patching is the only control; none is reported
   exploited, and all were reported privately to Broadcom, one of them through Pwn2Own.
 discovered_at: "2026-07-30T04:54:00Z"
-updated_at: "2026-08-13T04:58:00Z"
+updated_at: "2026-08-28T05:20:00Z"
 event_date: 2026-07-29
 run_id: 2026-07-30T0409Z-intel
 priority: high
@@ -32,6 +32,7 @@ tags:
   - path-traversal
   - patch-available
   - actively-exploited
+  - ransomware
 regions:
   - global
   - europe
@@ -48,6 +49,7 @@ techniques:
   - T1611
   - T1053.003
   - T1572
+  - T1486
 affected_products:
   - VMware vCenter Server
   - VMware ESX
@@ -80,6 +82,7 @@ cves:
     auth: pre-auth
     status:
       - exploited
+      - cisa-kev
       - patch-available
     affected: >
       vCenter 9.1, 9.0 and 8.0 branches below the fixed builds; see the Broadcom advisory's response
@@ -149,6 +152,18 @@ sources:
     publisher: The Hacker News
     date: 2026-08-12
     role: corroborating
+  - url: "https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html"
+    publisher: The Hacker News, citing QUIRSO GmbH
+    date: 2026-08-17
+    role: corroborating
+  - url: "https://www.infosecurity-magazine.com/news/vcenter-cve-2026-59310-exploited/"
+    publisher: Infosecurity Magazine, citing QUIRSO GmbH
+    date: 2026-08-14
+    role: corroborating
+  - url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+    publisher: CISA Known Exploited Vulnerabilities Catalog (JSON feed)
+    date: 2026-08-18
+    role: primary
 closed_sources: []
 evidence:
   - quote: A malicious actor with network access to vCenter may exploit this issue to bypass authentication and gain unauthorized access to the system.
@@ -166,7 +181,11 @@ evidence:
   - quote: "In combination with unauthorized installation, unexpected outbound connections or execution on a vulnerable vCenter appliance, however, it is a high-priority indicator requiring investigation."
     publisher: QUIRSO GmbH
   - quote: "Current exploitation status: **Actively Exploited**"
-    publisher: NCSC-CH / GovCERT.ch Cyber Security Hub
+    publisher: NCSC Switzerland
+  - quote: "The digital forensics company assessed a suspected advanced persistent threat (APT) actor was responsible, counting 361 victim IP addresses across 47 countries"
+    publisher: Infosecurity Magazine, citing QUIRSO GmbH
+  - quote: "The deployment [of Babuk-derived ransomware] may not have been the primary objective of the campaign"
+    publisher: The Hacker News, paraphrasing QUIRSO's assessment
 verification: multi-source
 sourcing_note: >
   Every version and score in this entry is transcribed from the response-matrix tables in
@@ -218,6 +237,23 @@ updates:
       - techniques
       - body
     merged_from: 2026-08-13/cve-2026-59310-vcenter-syslog-traversal-confirmed-exploited
+  - at: "2026-08-28T05:20:00Z"
+    run_id: 2026-08-28T0409Z-intel
+    type: update
+    summary: >
+      CISA added CVE-2026-59310 to its Known Exploited Vulnerabilities catalog on 2026-08-18.
+      QUIRSO's continued investigation of the exploitation campaign this entry already tracks now
+      reports a suspected China-nexus attribution and, in at least one case, deployment of
+      Babuk-derived ransomware against ESXi hosts — but both findings trace to QUIRSO's own
+      investigation alone; no independent assessor has corroborated either, and they are recorded
+      here as QUIRSO's assessment rather than established fact.
+    fields:
+      - cves
+      - tags
+      - techniques
+      - sources
+      - evidence
+      - body
 migrated_from: null
 ---
 
@@ -254,3 +290,13 @@ A second, separate signal sits alongside it and should not be merged with the fi
 **Triage:** administrators do legitimately place scheduled jobs on appliances and do run SSH from jump hosts, so neither artefact alone resolves. What separates this activity is the appliance being the SSH *client* toward an external network, a scheduled entry created outside a change window and not present in the platform team's configuration baseline, and either appearing on a vCenter whose build predates the VMSA-2026-0006 fixes. On an appliance patched before 29 July none of the three should be present at all.
 
 **Defender takeaway:** vCenter is a single control point over an entire virtual estate, and this flaw needs nothing but network reach to it. Broadcom offers no workaround, so version state is the only preventive control — but for any appliance that was reachable and unpatched between 29 July and now, the five-day disclosure-to-exploitation gap and the three-day saturation curve mean an upgrade closes the door without answering whether anyone already walked through it. Treat that window as a compromise-assessment scope, not a patching backlog item.
+
+## Update — 2026-08-28T05:20:00Z
+
+CISA added CVE-2026-59310 to its Known Exploited Vulnerabilities catalog on 2026-08-18 — a jurisdiction-agnostic confirmation of active exploitation, independent of any US-FCEB remediation deadline, layered on top of NCSC-CH's own actively-exploited determination already recorded above.
+
+QUIRSO's continued work on the campaign this entry has tracked since 13 August now attributes the activity to a suspected China-nexus actor and reports that Babuk-derived ransomware was deployed against ESXi hosts in at least one investigated case: "the digital forensics company assessed a suspected advanced persistent threat (APT) actor was responsible, counting 361 victim IP addresses across 47 countries" ([Infosecurity Magazine, citing QUIRSO GmbH, 2026-08-14](https://www.infosecurity-magazine.com/news/vcenter-cve-2026-59310-exploited/)). The ransomware deployment (`.babyk` extension) is assessed by QUIRSO as plausibly a smokescreen rather than the operation's goal: "the deployment [of Babuk-derived ransomware] may not have been the primary objective of the campaign" ([The Hacker News, paraphrasing QUIRSO's assessment, 2026-08-17](https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html)) — plausibly intended to encrypt ESXi log files and hinder forensics rather than for extortion.
+
+Both findings warrant the same caveat this entry already applies to the CVE-2026-59309 scanning correlation: every outlet surveyed (The Hacker News, Infosecurity Magazine, and further security-press pickup) cites QUIRSO's own Medium write-ups as the sole source for the China-nexus attribution (built on a UTC+08:00 activity pattern, Chinese-language code artefacts, and reuse of a Chinese security publication) at QUIRSO's own stated moderate confidence, and for the ransomware finding. Two outlets reporting one firm's conclusion is wide distribution of a single assessor's work, not independent corroboration of it — the attribution and the ransomware-deployment finding should be read as QUIRSO's own assessment, not as cross-verified intelligence, and are recorded here on that basis rather than folded into this entry's overall A/1 rating, which reflects the multi-CERT-corroborated vulnerability and initial-exploitation facts.
+
+Nothing in this update changes the remediation guidance already given above: patch every internet-reachable vCenter to the fixed builds, and treat any instance that was internet-reachable and unpatched between 29 July and 3 August as a compromise-assessment candidate rather than a patch-and-close item — that assessment should now explicitly include a check for Babuk-derived (`.babyk`) file extensions on any ESXi hosts the appliance manages, alongside the reverse_ssh persistence and cron-entry artefacts already described.

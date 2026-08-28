@@ -6,24 +6,25 @@ weekly_section: weekly-multi-day
 title: "Berlin's state network was compromised on 14 August and both isolated Senate departments came back online on 23 August — nine days in which housing benefit stopped for more than 50,000 households and no named authority stated how the attackers got in"
 headline: "Two ministries cut off the shared network, and the citizen services that stopped were in the districts"
 summary: >
-  Berlin's Senate Chancellery confirmed on 2026-08-17 that forensic work had established a compromise
-  of the Landesnetz, the shared network of the Berlin state administration, and that the Senate
-  Department for Urban Development, Building and Housing and the Senate Department for Mobility,
-  Transport, Climate Protection and Environment had been isolated from it since Friday 2026-08-14.
-  The two departments stayed reachable only by telephone; the services that stopped were in the
-  district offices that depend on their applications, including housing-benefit disbursement to more
-  than 50,000 entitled households. On 2026-08-23 both departments were reported back on the network
-  and in principle operational, with forensic work continuing for weeks. Across those nine days
-  neither the Senate Chancellery, the Landeskriminalamt, the Berlin public prosecutor nor the BSI has
-  stated an initial-access vector, an exploited product or a CVE — the Chancellery says explicitly
-  that no further detail can be given for investigative reasons. This pipeline surfaced the incident on
-  20 August and re-worked it on 23 August without being able to publish an operational entry, for
-  exactly that reason; one unattributed press claim of a malicious email attachment has never been
-  repeated by any authority.
+  Berlin's Senate Chancellery confirmed the Landesnetz, the shared network of the Berlin state
+  administration, was compromised at least as early as 7 August 2026 — a week earlier than the 14
+  August isolation date first reported — and that the Senate Department for Urban Development,
+  Building and Housing and the Senate Department for Mobility, Transport, Climate Protection and
+  Environment had been isolated from it since that Friday. The two departments stayed reachable only
+  by telephone; the services that stopped were in the district offices that depend on their
+  applications, including housing-benefit disbursement to more than 50,000 entitled households. On
+  2026-08-23 both departments were reported back on the network, though staff reportedly still resort
+  to private internet connections for some work; forensic work continues. The Senate's own
+  data-exposure assessment has since widened from "harmless open geodata" to stating it cannot rule
+  out personal or other non-public data. An unconfirmed press claim (RBB, 27 August, not confirmed
+  internally) reports extortionists sent Berlin's Senate a ransom demand. Across every one of these
+  developments, neither the Senate Chancellery, the Landeskriminalamt, the Berlin public prosecutor
+  nor the BSI has stated an initial-access vector, an exploited product or a CVE.
 discovered_at: "2026-08-23T23:53:00Z"
-event_date: "2026-08-14"
+updated_at: "2026-08-28T05:10:00Z"
+event_date: "2026-08-07"
 run_id: 2026-08-23T2311Z-weekly
-priority: notable
+priority: high
 immediate_action: null
 tags: [data-breach]
 regions: [europe, dach]
@@ -50,6 +51,14 @@ sources:
     publisher: "Der Tagesspiegel"
     date: "2026-08-23"
     role: corroborating
+  - url: "https://www.tagesspiegel.de/berlin/sie-waren-tagelang-unbemerkt-im-it-netz-unterwegs-hacker-fordern-laut-medienbericht-losegeld-vom-berliner-senat-15984600.html"
+    publisher: "Der Tagesspiegel"
+    date: "2026-08-27"
+    role: primary
+  - url: "https://www.tagesspiegel.de/berlin/keine-belastbaren-erkenntnisse-berliner-senat-tappt-nach-hackerangriff-im-dunklen-15976892.html"
+    publisher: "Der Tagesspiegel"
+    date: "2026-08-24"
+    role: primary
 closed_sources: []
 evidence:
   - quote: "Im Zuge forensischer Untersuchungen hat sich eine Inkriminierung des Landesnetzes Berlin ergeben."
@@ -58,6 +67,14 @@ evidence:
     publisher: "Presse- und Informationsamt des Landes Berlin (Senatskanzlei)"
   - quote: "All Senate departments are once again connected to Berlin’s state network and are, in principle, operational,"
     publisher: "Berlin.de (dpa)"
+  - quote: "hat die Senatsverkehrsverwaltung erstmals am 7. August einen Datenabfluss gemeldet. Warum die Behörde genau wie die ebenfalls betroffene Senatsverwaltung für Stadtentwicklung erst sieben Tage später – am 14. August – vom Netz getrennt wurde, ist unklar."
+    publisher: "Der Tagesspiegel, citing the Senatskanzlei's response to an inquiry"
+  - quote: "Es kann nicht ausgeschlossen werden, dass im Geschäftsbereich der Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt auch personenbezogene oder sonstige nicht-öffentliche Daten betroffen sind"
+    publisher: "Senatskanzlei Berlin press statement, quoted by Der Tagesspiegel"
+  - quote: "Wir haben dazu keine belastbaren Erkenntnisse"
+    publisher: "Florian Hauer (CDU), Staatssekretär für Digitalisierung, quoted by Der Tagesspiegel"
+  - quote: "Nach dem erfolgreichen Hackerangriff auf die Berliner Verwaltung fordern Erpresser laut RBB-Abendschau nun Lösegeld. […] Dem Tagesspiegel gegenüber wurde die Darstellung am Donnerstagabend nicht bestätigt."
+    publisher: "Der Tagesspiegel, citing RBB Abendschau; unconfirmed by the Senate"
 verification: multi-source
 sourcing_note: >
   The compromise, the isolation and the participating authorities come from the Senate Chancellery's
@@ -82,6 +99,25 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
+updates:
+  - at: "2026-08-28T05:10:00Z"
+    run_id: 2026-08-28T0409Z-intel
+    type: update
+    summary: >
+      The Senate Chancellery confirmed to Der Tagesspiegel that the intrusion began at least as
+      early as 7 August, a week before the 14 August isolation this entry originally recorded as
+      the start; CDO Florian Hauer told parliament on 24 August he still could not state how the
+      attackers gained access. The Senate's data-exposure assessment has widened from "harmless
+      open geodata" to stating it cannot rule out personal or non-public data. An unconfirmed
+      press claim (27 August, not confirmed internally) reports a ransom demand. No authority has
+      yet named a vector, product or CVE.
+    fields:
+      - event_date
+      - priority
+      - summary
+      - evidence
+      - sources
+      - body
 migrated_from: null
 ---
 
@@ -94,3 +130,15 @@ The Senate Chancellery's own release of 17 August states the finding in one sent
 Nine days later the Governing Mayor announced that "All Senate departments are once again connected to Berlin’s state network and are, in principle, operational," with the Senate Chancellery noting that the specialised procedures used in the districts are in principle available again and that occasional disruptions and delays may persist at the outset; both administrations have implemented immediate measures including continuously increased monitoring of their IT systems, and the forensic work continues in the coming weeks ([Berlin.de (dpa), 2026-08-23](https://www.berlin.de/en/news/10587704-5559700-after-hacker-attack-senate-departments-b.en.html)).
 
 **Defender takeaway:** for a Swiss federal, cantonal or communal administration the transferable question is not how Berlin was breached — nobody outside the investigation knows — but what the same containment decision would cost here. The Berlin case makes two properties of a shared administrative network legible that are usually invisible until they are exercised. First, the blast radius of *containment* is not the blast radius of the *intrusion*: isolating two ministries was the correct and fast response, and it stopped a citizen payment for more than 50,000 households because the dependency ran outward from the isolated ministries into district offices that were never compromised. The mapping worth having in a drawer is therefore not an asset inventory but a service-dependency inventory — which citizen-facing processes stop if any given administrative unit is cut from the shared network, and which of them have a manual or offline fallback. Second, nine days is what a competent, well-resourced, three-authority response took to reconnect, with forensics still running afterwards; a continuity plan that assumes hours is planning for a different incident. **Triage:** none is offered, and that is the point — with no vector, product, CVE or attacker behaviour on the public record from any named authority, there is nothing here to hunt for, and this entry maps no ATT&CK technique rather than invent one. Where an authority does eventually name a surface, that is the moment this becomes an operational finding rather than a continuity one.
+
+## Update — 2026-08-28T05:10:00Z
+
+Two named-authority facts have changed since the original entry, and the vector question it was built around has not.
+
+**The intrusion is now dated a week earlier than first understood.** The Senate Chancellery confirmed to Der Tagesspiegel that the Senate Department for Mobility, Transport, Climate Protection and Environment "hat die Senatsverkehrsverwaltung erstmals am 7. August einen Datenabfluss gemeldet" — first reported a data leak on 7 August, a full week before the 14 August isolation this entry originally treated as the incident's start; the Chancellery itself states it is unclear why the department was disconnected only seven days after that report ([Der Tagesspiegel, citing the Senatskanzlei, 2026-08-27](https://www.tagesspiegel.de/berlin/sie-waren-tagelang-unbemerkt-im-it-netz-unterwegs-hacker-fordern-laut-medienbericht-losegeld-vom-berliner-senat-15984600.html)). `event_date` above now records 7 August rather than 14 August accordingly.
+
+**The data-exposure assessment has widened.** CDO/Staatssekretär Florian Hauer told the Innenausschuss on 2026-08-24 that officials still "keine belastbaren Erkenntnisse" — have no solid findings — on how the attackers gained access, and could not make a statement on the access mechanism at all ([Florian Hauer, quoted by Der Tagesspiegel, 2026-08-24](https://www.tagesspiegel.de/berlin/keine-belastbaren-erkenntnisse-berliner-senat-tappt-nach-hackerangriff-im-dunklen-15976892.html)). The Senatskanzlei's own subsequent statement moves the exposure assessment for the Mobility department from Hauer's earlier "harmless open geodata" characterisation to: "Es kann nicht ausgeschlossen werden, dass im Geschäftsbereich der Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt auch personenbezogene oder sonstige nicht-öffentliche Daten betroffen sind" — personal or other non-public data in that department's business area cannot be ruled out ([Senatskanzlei Berlin, quoted by Der Tagesspiegel, 2026-08-27](https://www.tagesspiegel.de/berlin/sie-waren-tagelang-unbemerkt-im-it-netz-unterwegs-hacker-fordern-laut-medienbericht-losegeld-vom-berliner-senat-15984600.html)).
+
+**An unconfirmed ransom-demand claim surfaced on 27 August.** Der Tagesspiegel reports, citing RBB Abendschau: "Nach dem erfolgreichen Hackerangriff auf die Berliner Verwaltung fordern Erpresser laut RBB-Abendschau nun Lösegeld. […] Dem Tagesspiegel gegenüber wurde die Darstellung am Donnerstagabend nicht bestätigt" — extortionists are reported demanding a ransom, a characterisation the Senate did not confirm when asked ([Der Tagesspiegel, citing RBB Abendschau, 2026-08-27](https://www.tagesspiegel.de/berlin/sie-waren-tagelang-unbemerkt-im-it-netz-unterwegs-hacker-fordern-laut-medienbericht-losegeld-vom-berliner-senat-15984600.html)). This is carried here as an unattributed, unconfirmed press claim, on exactly the same footing as the earlier unattributed email-attachment claim this entry has always declined to use — neither is treated as fact, and `techniques` stays empty on the same basis as before: no named authority states an attacker behaviour to map.
+
+**Priority moves to `high`** on the strength of the widened, authority-confirmed data-exposure assessment and the extended intrusion timeline, not on the unconfirmed ransom claim. **Defender takeaway, updated:** a "no sensitive data" assessment given nine days into an incident is a snapshot, not a conclusion — Berlin's own revision, three weeks in, moved from ruling out personal data to being unable to rule it out. Any continuity plan built on an early damage assessment should treat that assessment as provisional until an authority states it has completed its forensic review, not merely reconnected the network. **Triage:** unchanged — still nothing to hunt, because still no authority has named a surface, a product or a CVE.
