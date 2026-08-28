@@ -61,8 +61,17 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Upgrade iCagenda to 4.0.12 or later by manually downloading the release rather than trusting an automated update-status check — the Calendar module's own version stayed pinned at 4.0.7 through package releases 4.0.8-4.0.11, and iCagenda's own update feed had not yet been updated to list 4.0.12 as of this run, so both the extension manager's package version and an automated update check can each independently report a vulnerable site as current."
-updates: []
+  - "Upgrade iCagenda to 4.0.12 or later by manually downloading the release rather than trusting an automated update-status check — the Calendar module's own version stayed pinned at 4.0.7 through package releases 4.0.8-4.0.11, and iCagenda's own update feed had not yet been updated to list 4.0.12 as of 2026-08-28, so both the extension manager's package version and an automated update check can each independently report a vulnerable site as current."
+updates:
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Operator-directed editorial pass (v4.2): removed composition-rationale narration and 
+      pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
+      restated the summary or padded without responder value. No factual claim changed.
+    fields: [actions]
 migrated_from: null
 ---
 

@@ -92,8 +92,12 @@ RUN_KINDS = ("intel", "weekly", "audit")
 ACTIVE_RUN_KINDS = ("intel", "audit")
 
 # Entry changelog (v4.0 — docs/pipeline.md § Entry lifecycle). Every change
-# to a published entry is one `updates[]` record paired 1:1 with a body
-# section headed `## <Type> — <at>`; `updated_at` mirrors the last record.
+# to a published entry is one `updates[]` record; non-internal records pair
+# 1:1 with a body section headed `## <Type> — <at>`. An `internal: true`
+# record (v4.2) documents a pipeline-internal fix (metadata/frontmatter
+# hygiene) in the changelog only — no reader-facing section, never rendered.
+# `updated_at` mirrors the last `type: update` non-internal record (v4.2:
+# corrections and improvements never re-float the entry in the live brief).
 UPDATE_TYPES = ("update", "correction", "improvement")
 UPDATE_TYPE_HEADINGS = {"update": "Update", "correction": "Correction", "improvement": "Improvement"}
 UPDATE_HEADING_RE = re.compile(
@@ -1130,14 +1134,19 @@ def validate_entry(entry: dict, taxonomy: dict, registry_keys=None) -> list:
         updates = []
     prev_at = entry.get("discovered_at") if isinstance(entry.get("discovered_at"), str) else ""
     record_ats: list = []
+    visible_ats: list = []   # records that pair with a `## <Type> — <at>` body section
+    float_ats: list = []     # records that move `updated_at` (type `update`, not internal)
     for i, rec in enumerate(updates):
         where = f"updates[{i}]"
         if not isinstance(rec, dict):
             err(f"{where} is not a mapping")
             continue
-        unknown = set(rec) - {"at", "run_id", "type", "summary", "fields", "merged_from"}
+        unknown = set(rec) - {"at", "run_id", "type", "summary", "fields", "merged_from",
+                              "internal"}
         if unknown:
             err(f"{where}: unknown field(s) {sorted(unknown)}")
+        if "internal" in rec and not isinstance(rec.get("internal"), bool):
+            err(f"{where}.internal must be a boolean")
         at = rec.get("at")
         if not isinstance(at, str) or parse_ts(at) is None:
             err(f"{where}.at is not a UTC ISO 8601 `YYYY-MM-DDTHH:MM:SSZ` timestamp")
@@ -1147,6 +1156,10 @@ def validate_entry(entry: dict, taxonomy: dict, registry_keys=None) -> list:
         if at:
             prev_at = at
             record_ats.append(at)
+            if not rec.get("internal"):
+                visible_ats.append(at)
+                if rec.get("type") == "update":
+                    float_ats.append(at)
         if not _is_str(str(rec.get("run_id") or "")) or not RUN_ID_RE.match(str(rec.get("run_id"))):
             err(f"{where}.run_id missing or not a run id")
         if rec.get("type") not in UPDATE_TYPES:
@@ -1160,20 +1173,25 @@ def validate_entry(entry: dict, taxonomy: dict, registry_keys=None) -> list:
         if mf is not None and not ENTRY_ID_RE.match(str(mf)):
             err(f"{where}.merged_from {mf!r} is not an entry id")
     updated_at = entry.get("updated_at")
-    if updates:
-        if record_ats and updated_at != record_ats[-1]:
-            err(f"updated_at {updated_at!r} must equal the last changelog record's at "
-                f"({record_ats[-1]})")
+    if float_ats:
+        if updated_at != float_ats[-1]:
+            err(f"updated_at {updated_at!r} must equal the last floating changelog record's at "
+                f"({float_ats[-1]}) — only `type: update` records (not internal) move updated_at; "
+                "corrections/improvements and internal records never re-float the entry")
     elif updated_at is not None:
-        err("updated_at set but updates[] is empty — updated_at mirrors the last changelog record")
-    # body sections pair 1:1 with records, same order, same `at`
+        err("updated_at set but no floating changelog record — updated_at mirrors the last "
+            "`type: update` (non-internal) record and is null when there is none")
+    # body sections pair 1:1 with the VISIBLE (non-internal) records, same order, same `at`;
+    # an `internal: true` record is changelog-only and never has a reader-facing section
     _main, sections = split_update_sections(entry.get("body") or "")
     sec_ats = [sc["at"] for sc in sections]
-    if sec_ats != record_ats and not (not sections and not updates):
-        err(f"update sections in the body {sec_ats} do not pair 1:1 with updates[] records "
-            f"{record_ats} — every record needs exactly one `## <Type> — <at>` section, in order")
+    visible_recs = [r for r in updates if isinstance(r, dict) and not r.get("internal")]
+    if sec_ats != visible_ats and not (not sections and not visible_recs):
+        err(f"update sections in the body {sec_ats} do not pair 1:1 with the non-internal "
+            f"updates[] records {visible_ats} — every non-internal record needs exactly one "
+            "`## <Type> — <at>` section, in order; internal records have none")
     else:
-        for sc, rec in zip(sections, [r for r in updates if isinstance(r, dict)]):
+        for sc, rec in zip(sections, visible_recs):
             if sc["type"] != rec.get("type"):
                 err(f"update section at {sc['at']} is headed {sc['type']!r} but the record's type is "
                     f"{rec.get('type')!r}")

@@ -4,6 +4,51 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.3 — 2026-08-28 (entry content is modifiable when changelog-tracked — the residual immutability guard on earlier sections is dropped)
+
+### Why
+
+Operator directive, 2026-08-28: drop the guard that previous entries can never be modified. A published entry may be modified — any frontmatter field, the main analysis, the text of earlier `## <Type> — <at>` sections — as long as every change is cleanly tracked in the entry's changelog. The v4.0–v4.2 lifecycle already routed changes through `updates[]` records, but still held earlier body sections (and, in prose, "the entry" generally) immutable, forcing a wrong earlier update to be answered only by an appended note rather than fixed where it stands.
+
+### What changed
+
+- **`prompts/cti-run.md` Phase 4 § Updating an existing entry, step 5:** the never-touch list shrinks to identity (`id`/path, `discovered_at`, `run_id`, `migrated_from`) and the `updates[]` records themselves (append-only — they are the audit trail). Everything else, including earlier sections' text, may be revised in place when the fire's own changelog record declares the edit (`fields`, `body` included).
+- **`docs/pipeline.md` § Entry lifecycle rule 3** and the **root `CLAUDE.md` hard rule** carry the same relaxation.
+- No mechanical change: `check_run.py` already enforces exactly this contract (`silent-edit` requires a record for the modifying fire; it never froze entry content), and the record/section pairing gates (`entry-updates`) are unaffected.
+
+### What stays
+
+One entry per finding; no silent edits (every modification ships with a changelog record for the modifying fire); records append-only with strictly increasing `at`; one record per fire per entry; identity fields fixed; the v4.2 internal-record and `updated_at` float rules; run-record immutability.
+
+---
+
+## 4.2 — 2026-08-28 (internal changelog records; corrections stop re-floating entries; no pipeline internals in reader-facing text; quality over quantity below the critical bar; sub-agents pin the generic `sonnet` alias)
+
+### Why
+
+Operator directive, 2026-08-28, after reviewing the 2026-08-28T0409Z fire. Four things:
+
+1. **Metadata corrections leaked pipeline internals to readers and re-surfaced stale entries.** The fire's correction on the Lazarus AFD.sys entry rendered a reader-facing section that read "This entry's `cves[]` record for CVE-2025-49113 carried `auth: pre-auth` and `vector: zero-click` …" — record-keeping narration a responder cannot use — and its `updated_at` bump floated a 16-day-old entry back to the top of /live/ although the story had not moved. The operator's ruling: internals go in the changelog only, with no user-facing message, and a correction is not an update to the finding or story, so it earns no new timestamp.
+2. **The same fire wrote composition-rationale paragraphs into most entry bodies** ("`actions[]` is empty: …", "`techniques[]` maps only …", "per this pipeline's house rules", registry keys in prose) — selection and mapping rationale that belongs in the run record, not in a briefing a Tier 2/3 team works.
+3. **Quality over quantity.** Short, relevant and actionable beats more; completeness stays a hard duty for the critical/high signal, but below that bar a marginal item dropped (or held to two sentences) is the better outcome than a diluted brief the team has to re-triage.
+4. **Model pins.** Pinning the dated `claude-sonnet-5` id freezes the sub-agents on one generation; the operator wants the generic `sonnet` alias so the pins track the current Sonnet.
+
+### What changed
+
+- **Data model (`site/content_model.py`, normative `docs/pipeline.md` § Entry lifecycle):** an `updates[]` record may carry `internal: true` — a pipeline-internal fix (metadata/frontmatter hygiene) documented in the changelog only: no `## <Type> — <at>` body section, never rendered anywhere on the site, never moves `updated_at`. Section pairing is now 1:1 with the **non-internal** records. `updated_at` mirrors the last non-internal **`type: update`** record and is null when there is none — corrections and improvements no longer re-float an entry in /live/ (their sections still render on the entry page and in the day page's § Updates by record `at`). `site/build.py` filters internal records out of every reader surface (entry pages, revision history, day-page updates, feeds, briefbook JSON, counts, badges).
+- **`prompts/cti-run.md`** — Phase 4 § Updating an existing entry rewritten for the reader-facing-vs-internal decision and the new `updated_at` rule; the style rule against internal-policy shorthand now names frontmatter field names, registry keys, "this pipeline/store/run" self-references and composition-rationale narration explicitly, and states that an empty `actions[]` needs no apology in the body; PD-11 rebalanced — sound throughout, complete on the critical/high signal, quality over quantity below it; Phase 5.5/checklist wording updated to the new gate semantics.
+- **`prompts/quality-audit.md`** — the audit's correction/improvement flow follows the same split (section when reader-facing, `internal: true` when metadata-only; no `updated_at` bump on either), A-INV-1 and the checklist updated.
+- **`.claude/agents/cti-verification.md`** — truth check 4c knows internal records (no section; internals in a section are an editorial defect) and the corrected `updated_at` mirror; the intel-run coverage bullet carries the rebalanced sound/complete weighting.
+- **`.claude/agents/cti-research.md` / `cti-verification.md`** — `model:` pins changed `claude-sonnet-5` → `sonnet`.
+- **Store migration:** 8 entries whose last record is a correction had `updated_at` recomputed under the new rule; the Lazarus CVE-2025-49113 correction converted to `internal: true` (section removed); the Gemini CLI CVSS-divergence correction rewritten reader-facing; the 2026-08-28 fire's entries cleaned of composition-rationale paragraphs and internal jargon (operator-directed editorial pass, one changelog record per touched entry).
+- **`sources/sources.json`** — `heise-sec` and `inside-it-ch` promoted `tier: standard` → `essential` (operator-named critical sources; neither was attempted by the 2026-08-28 fire under rotation).
+
+### What stays
+
+The one-entry-per-finding lifecycle, the one-record-per-fire rule, strictly increasing `at`, the silent-edit gate, the dedup contract, the verifier loop and double-CLEAN gate, the run-record-per-fire duty, and every other v4.0/v4.1 mechanism are unchanged. Reader-facing corrections keep their `## Correction — <at>` sections — only their timestamp side-effect is gone.
+
+---
+
 ## 4.1 — 2026-08-27 (Series 5 models: Sonnet 5 runs the intel fires and every sub-agent, Opus 5 runs the audit; one verifier definition; the double-CLEAN gate keeps two passes and drops the two-model requirement)
 
 ### Why

@@ -2,7 +2,7 @@
 name: cti-research
 description: CTI research worker for the intel-run and quality-audit pipeline routines. Use proactively in Phase 1 (intel run) and Phase 2 (audit coverage re-sweeps) to research one assigned domain in parallel — pivot from news to primary sources, fetch national-CERT advisories, vendor PSIRTs, regulator filings and victim disclosures, and return verified items with full discovery traces. Spawn one per domain (S1–S4 + conditional S5 closed-source intake per intel run; G1–G3 re-sweeps per audit). The spawn message provides the domain, the recency window, the source-list slice, the dedup-context paths (prior-coverage index + entity registry), the rotation-priority list, and the watchlist duty (the organization watchlist values are composed into this definition from config/org-profile.yaml); intake spawns provide intel/ directory paths instead of a source slice. Never composes entries — only researches.
 tools: Read, WebFetch, WebSearch, Bash, Write, Edit, Grep, Glob
-model: claude-sonnet-5
+model: sonnet
 effort: xhigh
 color: blue
 ---

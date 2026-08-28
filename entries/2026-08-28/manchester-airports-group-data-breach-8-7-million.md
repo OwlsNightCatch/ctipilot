@@ -63,7 +63,16 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Operator-directed editorial pass (v4.2): removed composition-rationale narration and 
+      pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
+      restated the summary or padded without responder value. No factual claim changed.
+    fields: [body]
 migrated_from: null
 ---
 
@@ -71,4 +80,4 @@ Manchester Airports Group (MAG), operator of Manchester, London Stansted and Eas
 
 MAG states neither it nor the accessed system holds bank or payment-card data, and that no operational or aviation-security system was touched: "at no point has passenger safety or aviation security been compromised" ([Manchester Airports Group, 2026-08-27](https://www.manchesterairport.co.uk/help/data-security-incident/)). The group has suspended its Manage My Booking self-service portal as a precaution while investigating. The Register reports — attributed to the outlet, not confirmed by MAG's own statement — that the intrusion compromised one internal system and then pulled files from a third-party-hosted database, that the attacker's ransom demand was notably lower than the group's typical extortion demand and was not paid, and that MAG characterises the incident internally as "a hack, not a lapse." No extortion group or actor has claimed the incident publicly at time of writing, and neither MAG nor any outlet has named an access vector, an exploited product, or a CVE. The UK ICO has confirmed receipt of a breach report and is assessing it.
 
-Technique mapping is deliberately thin: MAG's own statement and every outlet checked confirm the breach and its scale but none states an access vector, exploited product or CVE, and no extortion actor has claimed responsibility. T1213 (Data from Information Repositories) is offered only as a minimal defensible outcome-mapping — data was obtained from an internal system and a third-party-hosted database per The Register's reporting — not as an access-vector claim. As one of Europe's largest airport-group operators and with transport as an additional sector for this constituency, the transferable point is scale rather than mechanism: a breach touching 8.7 million records through what appears to be low-sensitivity WiFi-signup collection illustrates how ancillary customer-facing services (guest WiFi, parking bookings) can carry disproportionate downstream exposure relative to their apparent sensitivity.
+No source states an access vector, exploited product or CVE, and no extortion actor has claimed responsibility; per The Register's reporting the data was obtained from an internal system and a third-party-hosted database. The transferable point is scale rather than mechanism: 8.7 million records exposed through apparently low-sensitivity WiFi-signup collection shows how ancillary customer-facing services (guest WiFi, parking bookings) can carry disproportionate downstream exposure.

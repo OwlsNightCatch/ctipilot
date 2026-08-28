@@ -31,11 +31,14 @@ sources:
     role: primary
 closed_sources: []
 evidence:
-  - quote: "Die Gemeinde Martigny-Combe im Wallis hat am 18. August einen unbefugten Zugriff auf das geschäftliche E-Mail-System ihres Gemeindesekretariats festgestellt."
+  - quote: "The municipality of Martigny-Combe in Valais detected unauthorised access to the business email system of its municipal secretariat on 18 August. (translated from German)"
+    original: "Die Gemeinde Martigny-Combe im Wallis hat am 18. August einen unbefugten Zugriff auf das geschäftliche E-Mail-System ihres Gemeindesekretariats festgestellt."
     publisher: "Gemeinde Martigny-Combe statement, quoted by SwissCybersecurity.net"
-  - quote: "konnte durch den Angriff eine betrügerische Nachricht versendet werden. Diese sei unter anderem an Kontakte der Verwaltung verschickt worden."
+  - quote: "the attack made it possible to send a fraudulent message, which was distributed among others to contacts of the administration. (translated from German)"
+    original: "konnte durch den Angriff eine betrügerische Nachricht versendet werden. Diese sei unter anderem an Kontakte der Verwaltung verschickt worden."
     publisher: "Gemeinde Martigny-Combe statement, quoted by SwissCybersecurity.net"
-  - quote: "Martigny-Combe hat den Vorfall zudem dem Bundesamt für Cybersicherheit (BACS) sowie dem kantonalen Beauftragten für Datenschutz und Transparenz gemeldet."
+  - quote: "Martigny-Combe has additionally reported the incident to the Federal Office for Cybersecurity (BACS) and to the cantonal commissioner for data protection and transparency. (translated from German)"
+    original: "Martigny-Combe hat den Vorfall zudem dem Bundesamt für Cybersicherheit (BACS) sowie dem kantonalen Beauftragten für Datenschutz und Transparenz gemeldet."
     publisher: "SwissCybersecurity.net"
 verification: single-source
 sourcing_note: >
@@ -52,12 +55,21 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Operator-directed editorial pass (v4.2): removed composition-rationale narration and 
+      pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
+      restated the summary or padded without responder value. No factual claim changed.
+    fields: [evidence, body]
 migrated_from: null
 ---
 
-The municipality of Martigny-Combe (canton Valais) detected unauthorised access to its administrative secretariat's business email system on 2026-08-18: "die Gemeinde Martigny-Combe im Wallis hat am 18. August einen unbefugten Zugriff auf das geschäftliche E-Mail-System ihres Gemeindesekretariats festgestellt" ([Gemeinde Martigny-Combe statement, quoted by SwissCybersecurity.net, 2026-08-24](https://www.swisscybersecurity.net/news/2026-08-24/cyberangriff-kompromittiert-e-mail-system-der-gemeinde-martigny-combe)). Per the municipality's own statement, the access was used to send a fraudulent message to contacts of the administration, and personal data contained in that email may have been passed to an unauthorised third party: "konnte durch den Angriff eine betrügerische Nachricht versendet werden. Diese sei unter anderem an Kontakte der Verwaltung verschickt worden" ([Gemeinde Martigny-Combe statement, quoted by SwissCybersecurity.net, 2026-08-24](https://www.swisscybersecurity.net/news/2026-08-24/cyberangriff-kompromittiert-e-mail-system-der-gemeinde-martigny-combe)) — the municipality specifically flags phishing and identity-theft risk for recipients of the fraudulent message.
+The municipality of Martigny-Combe (canton Valais) detected unauthorised access to its administrative secretariat's business email system on 2026-08-18: "the municipality of Martigny-Combe in Valais detected unauthorised access to the business email system of its municipal secretariat on 18 August" (translated from German) ([Gemeinde Martigny-Combe statement, quoted by SwissCybersecurity.net, 2026-08-24](https://www.swisscybersecurity.net/news/2026-08-24/cyberangriff-kompromittiert-e-mail-system-der-gemeinde-martigny-combe)). Per the municipality's own statement, the access was used to send a fraudulent message to contacts of the administration, and personal data contained in that email may have been passed to an unauthorised third party: "the attack made it possible to send a fraudulent message, which was distributed among others to contacts of the administration" (translated from German) ([Gemeinde Martigny-Combe statement, quoted by SwissCybersecurity.net, 2026-08-24](https://www.swisscybersecurity.net/news/2026-08-24/cyberangriff-kompromittiert-e-mail-system-der-gemeinde-martigny-combe)) — the municipality specifically flags phishing and identity-theft risk for recipients of the fraudulent message.
 
-The compromised access was blocked immediately on discovery, technical security measures were applied, and external specialists are now conducting a scoping analysis. The incident was reported to Switzerland's Bundesamt für Cybersicherheit (BACS) and to the cantonal data-protection and transparency commissioner: "Martigny-Combe hat den Vorfall zudem dem Bundesamt für Cybersicherheit (BACS) sowie dem kantonalen Beauftragten für Datenschutz und Transparenz gemeldet" ([SwissCybersecurity.net, 2026-08-24](https://www.swisscybersecurity.net/news/2026-08-24/cyberangriff-kompromittiert-e-mail-system-der-gemeinde-martigny-combe)), and a criminal complaint has been filed with the Valais cantonal police. This is the second Valais municipality reported hit by a cyberattack in 2026 — Vétroz was disabled by a cyberattack in April, a separate, already-dated incident of an undisclosed type not otherwise covered here — a pattern this pipeline has not previously tracked as a recurring theme for the canton.
+The compromised access was blocked immediately on discovery, technical security measures were applied, and external specialists are now conducting a scoping analysis. The incident was reported to Switzerland's Bundesamt für Cybersicherheit (BACS) and to the cantonal data-protection and transparency commissioner: "Martigny-Combe has additionally reported the incident to the Federal Office for Cybersecurity (BACS) and to the cantonal commissioner for data protection and transparency" (translated from German) ([SwissCybersecurity.net, 2026-08-24](https://www.swisscybersecurity.net/news/2026-08-24/cyberangriff-kompromittiert-e-mail-system-der-gemeinde-martigny-combe)), and a criminal complaint has been filed with the Valais cantonal police. This is the second Valais municipality reported hit by a cyberattack in 2026 — Vétroz was disabled by a cyberattack in April, a separate, already-dated incident of an undisclosed type not otherwise covered here.
 
-No access vector is stated by any source, hence `techniques[]` carries only T1078 (Valid Accounts) for the unauthorised mailbox access itself; no technique is mapped for the onward fraudulent message, since the source does not state whether recipients were internal or external, or what the message contained. `actions[]` is empty: small-scale, single-municipality incident with no transferable technical detail beyond the standard business-email-compromise response already known to this audience.
+No source states how the mailbox was accessed — only the unauthorised use of a valid account is established — and nothing is disclosed about the onward fraudulent message's recipients or content.

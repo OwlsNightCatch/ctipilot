@@ -58,7 +58,16 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Operator-directed editorial pass (v4.2): removed composition-rationale narration and 
+      pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
+      restated the summary or padded without responder value. No factual claim changed.
+    fields: [body]
 migrated_from: null
 ---
 
@@ -66,4 +75,4 @@ Independent researcher 0x50594d, via SSD Secure Disclosure, chained two flaws in
 
 The MPU is the only hardware boundary separating modem memory from the application processor's memory, including memory used by the Android kernel; Unisoc's design shares that physical memory space between the two processors with no independent hardware enforcement beyond it. The overall attack requires an attacker-controlled position on the 4G/VoLTE network able to deliver the malformed SIP/SDP payload during call setup, and the victim simply answering an incoming video call — no other user interaction. CWE-1189 (Improper Isolation of Shared Resources on a System-on-a-Chip) is the classification given for the combined chain. No CVE identifier has been assigned, and no firmware update or mitigation is available: "the disclosure does not identify a vendor firmware update addressing the flaw" ([Infosecurity Magazine, citing SSD Secure Disclosure, 2026-08-17](https://www.infosecurity-magazine.com/news/unisoc-modem-flaw-rce-calls/)). Unisoc did not respond to SSD's disclosure attempts, and device owners have no interim control beyond watching for a manufacturer firmware update.
 
-Unisoc chips are concentrated in budget-tier Android devices, a segment with weaker patch cadence and longer field life; this is relevant to any BYOD or public-sector device fleet that includes low-cost handsets. `actions[]` is left empty deliberately: no vendor fix or interim mitigation exists, and the only defender-facing lever — device-fleet composition — is a standing inventory question rather than a do-now task this specific disclosure changes. The transferable lesson for a device-procurement or BYOD policy is that chipset-level isolation defects can sit below any control the device's own OS vendor can patch, since the flaw is in modem firmware Unisoc alone controls, not in Android itself.
+Unisoc chips are concentrated in budget-tier Android devices, a segment with weaker patch cadence and longer field life; this is relevant to any BYOD or public-sector device fleet that includes low-cost handsets. No vendor fix or interim mitigation exists; the only defender-facing lever — device-fleet composition — is a standing inventory question. The transferable lesson for a device-procurement or BYOD policy is that chipset-level isolation defects can sit below any control the device's own OS vendor can patch, since the flaw is in modem firmware Unisoc alone controls, not in Android itself.

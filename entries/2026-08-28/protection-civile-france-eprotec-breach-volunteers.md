@@ -39,13 +39,17 @@ sources:
     role: corroborating
 closed_sources: []
 evidence:
-  - quote: "a annoncé vendredi 21 août avoir été victime d'un piratage informatique et d'une \"violation de données à caractère personnel\" au mois de mars"
+  - quote: "announced on Friday 21 August that it had been the victim of a computer intrusion and a "personal data breach" in March. (translated from French)"
+    original: "a annoncé vendredi 21 août avoir été victime d'un piratage informatique et d'une \"violation de données à caractère personnel\" au mois de mars"
     publisher: "Franceinfo (AFP)"
-  - quote: "s'inscrit dans un contexte d'attaques multiples menées au cours de la même période à l'encontre de structures comparables, notamment plusieurs fédérations sportives"
+  - quote: "fits within a context of multiple attacks carried out over the same period against comparable organisations, notably several sports federations. (translated from French)"
+    original: "s'inscrit dans un contexte d'attaques multiples menées au cours de la même période à l'encontre de structures comparables, notamment plusieurs fédérations sportives"
     publisher: "Franceinfo (AFP)"
-  - quote: "Ces données concernent des bénévoles de la Protection civile, des anciens bénévoles et des personnes externes à la Protection civile"
+  - quote: "The data concerns Protection Civile volunteers, former volunteers and persons external to the Protection Civile. (translated from French)"
+    original: "Ces données concernent des bénévoles de la Protection civile, des anciens bénévoles et des personnes externes à la Protection civile"
     publisher: "Franceinfo (AFP)"
-  - quote: "A ce stade, les investigations ne permettent pas de déterminer si l'ensemble de ces données a effectivement été consulté ou extrait, ni si elles ont été vendues, utilisées ou rendues publiques"
+  - quote: "At this stage, the investigations do not make it possible to determine whether all of this data was actually accessed or extracted, nor whether it was sold, used or made public. (translated from French)"
+    original: "A ce stade, les investigations ne permettent pas de déterminer si l'ensemble de ces données a effectivement été consulté ou extrait, ni si elles ont été vendues, utilisées ou rendues publiques"
     publisher: "Franceinfo (AFP)"
 verification: multi-source
 sourcing_note: >
@@ -66,14 +70,21 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Operator-directed editorial pass (v4.2): removed composition-rationale narration and 
+      pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
+      restated the summary or padded without responder value. No factual claim changed.
+    fields: [evidence, body]
 migrated_from: null
 ---
 
-La Fédération Nationale de Protection Civile (FNPC) confirmed on 2026-08-21 — via a spokesperson statement to AFP and a written communiqué, both quoted directly by Franceinfo — that it was the victim of a hack and "violation de données à caractère personnel" in March 2026 on the eProtec platform used to manage the volunteers, schedules and training of this state-approved civil security association: "a annoncé vendredi 21 août avoir été victime d'un piratage informatique et d'une 'violation de données à caractère personnel' au mois de mars" ([Franceinfo (AFP), 2026-08-21](https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/la-protection-civile-annonce-avoir-ete-visee-par-une-cyberattaque-en-mars_8156621.html)).
+La Fédération Nationale de Protection Civile (FNPC) confirmed on 2026-08-21 — via a spokesperson statement to AFP and a written communiqué, both quoted directly by Franceinfo — that it was the victim of a hack and "personal data breach" (translated from French) in March 2026 on the eProtec platform used to manage the volunteers, schedules and training of this state-approved civil security association: "announced on Friday 21 August that it had been the victim of a computer intrusion and a 'personal data breach' in March" (translated from French) ([Franceinfo (AFP), 2026-08-21](https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/la-protection-civile-annonce-avoir-ete-visee-par-une-cyberattaque-en-mars_8156621.html)).
 
-The FNPC states the attack "s'inscrit dans un contexte d'attaques multiples menées au cours de la même période à l'encontre de structures comparables, notamment plusieurs fédérations sportives" ([FNPC communiqué, quoted by Franceinfo, 2026-08-21](https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/la-protection-civile-annonce-avoir-ete-visee-par-une-cyberattaque-en-mars_8156621.html)) — fits a pattern of contemporaneous attacks on comparable structures, including several sports federations — framing this as part of a wider wave rather than a targeted campaign against it specifically. Exposed data includes civil-status information, phone numbers and profile photographs of current volunteers, former volunteers and people external to the organisation, including minors: "ces données concernent des bénévoles de la Protection civile, des anciens bénévoles et des personnes externes à la Protection civile" ([FNPC communiqué, quoted by Franceinfo, 2026-08-21](https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/la-protection-civile-annonce-avoir-ete-visee-par-une-cyberattaque-en-mars_8156621.html)); the FNPC explicitly states no data belonging to people the Protection Civile has rescued is involved, and that neither passwords nor banking details appear in the leak.
+The FNPC states the attack "fits within a context of multiple attacks carried out over the same period against comparable organisations, notably several sports federations" (translated from French) ([FNPC communiqué, quoted by Franceinfo, 2026-08-21](https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/la-protection-civile-annonce-avoir-ete-visee-par-une-cyberattaque-en-mars_8156621.html)) — fits a pattern of contemporaneous attacks on comparable structures, including several sports federations — framing this as part of a wider wave rather than a targeted campaign against it specifically. Exposed data includes civil-status information, phone numbers and profile photographs of current volunteers, former volunteers and people external to the organisation, including minors: "the data concerns Protection Civile volunteers, former volunteers and persons external to the Protection Civile" (translated from French) ([FNPC communiqué, quoted by Franceinfo, 2026-08-21](https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/la-protection-civile-annonce-avoir-ete-visee-par-une-cyberattaque-en-mars_8156621.html)); the FNPC explicitly states no data belonging to people the Protection Civile has rescued is involved, and that neither passwords nor banking details appear in the leak.
 
-The federation says it only became aware of the breach around 17–18 August and that its investigation cannot yet determine whether the exposed data was actually consulted or extracted, nor whether it was sold, used or made public: "à ce stade, les investigations ne permettent pas de déterminer si l'ensemble de ces données a effectivement été consulté ou extrait, ni si elles ont été vendues, utilisées ou rendues publiques" ([FNPC communiqué, quoted by Franceinfo, 2026-08-21](https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/la-protection-civile-annonce-avoir-ete-visee-par-une-cyberattaque-en-mars_8156621.html)) — it has filed a complaint with the Paris prosecutor's cybercrime unit. The commonly cited "525,000+ profiles / 15,000 photographs" figure comes from FrenchBreaches, the specialist outlet that first surfaced the breach; the FNPC itself says it is still trying to establish the exact number of people affected, so that volume should be attributed to the tracker, not treated as an organisational confirmation.
-
-No access vector is stated by any source; `techniques[]` carries only T1213 (Data from Information Repositories) for the confirmed outcome — personal-data records extracted from the eProtec volunteer-management platform's own data store — since nothing about how the attacker first got in is disclosed. `actions[]` is empty: no defender-actionable mechanism is disclosed for this organisation-specific incident.
+The federation says it only became aware of the breach around 17–18 August and that its investigation cannot yet determine whether the exposed data was actually consulted or extracted, nor whether it was sold, used or made public: "at this stage, the investigations do not make it possible to determine whether all of this data was actually accessed or extracted, nor whether it was sold, used or made public" (translated from French) ([FNPC communiqué, quoted by Franceinfo, 2026-08-21](https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/la-protection-civile-annonce-avoir-ete-visee-par-une-cyberattaque-en-mars_8156621.html)) — it has filed a complaint with the Paris prosecutor's cybercrime unit. The commonly cited "525,000+ profiles / 15,000 photographs" figure comes from FrenchBreaches, the specialist outlet that first surfaced the breach; the FNPC itself says it is still trying to establish the exact number of people affected, so that volume should be attributed to the tracker, not treated as an organisational confirmation.

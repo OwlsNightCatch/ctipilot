@@ -99,9 +99,9 @@ sourcing_note: >
   Escalation through Scheduled Search Alert Action Configuration) is the CVE that reaches the full
   credential store via privileged SPL escalation, from a schedule_search-only role — distinct from
   CVE-2026-76350's system-level SPL execution via a scheduled PDF alert action, and both are
-  carried in cves[] on their own stated terms. CVE-2026-76260 (CVSS 6.5, a role missing the
-  correct capability can read stored credentials via a REST endpoint) is a related but lower-
-  severity item not separately mapped in cves[] here.
+  recorded individually here on their own stated terms. CVE-2026-76260 (CVSS 6.5, a role missing
+  the correct capability can read stored credentials via a REST endpoint) is a related but
+  lower-severity item not separately recorded.
 confidence: high
 references: []
 deep_dive: false
@@ -115,7 +115,16 @@ actions:
   - "Patch Splunk Enterprise to 10.4.2 / 10.2.6 / 10.0.9 / 9.4.14 now, and in the interim set allowEmbedTokenAuth = false in server.conf on any instance where embedded reports are not actively used — the three CVSS 9.4 flaws are unauthenticated for anyone holding, or able to read the page HTML for, an embedded-report token, and the compromised session can carry admin privileges."
   - "Audit which reports and dashboards are currently embedded (via allowEmbedTokenAuth or a page exposing report HTML) and owned by an admin-role account — those are the highest-value targets for CVE-2026-76310/76311/76312 and should either be re-owned to a lower-privileged account or have embedding disabled first."
   - "Review every role holding only the schedule_search capability and, until patched, remove or restrict scheduled-search alert-action authoring for those roles — CVE-2026-76253 lets a schedule_search-only user run arbitrary SPL with system-level privilege and read every credential in the credential store, which is a materially larger blast radius than the role's intended scope."
-updates: []
+updates:
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Operator-directed editorial pass (v4.2): removed composition-rationale narration and 
+      pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
+      restated the summary or padded without responder value. No factual claim changed.
+    fields: [sourcing_note]
 migrated_from: null
 ---
 

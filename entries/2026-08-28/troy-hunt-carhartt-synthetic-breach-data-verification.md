@@ -47,8 +47,8 @@ sourcing_note: >
   outlet had independently replicated this specific verification analysis at fetch time), but the
   source is the person who directly did the primary verification work on the primary dataset, not
   a secondary report of someone else's claim, which places it closer to a primary technical
-  disclosure than ordinary single-source news. Worth flagging given this pipeline's own AI-content
-  transparency principle: several of the analytical conclusions quoted here (the domain-singleton,
+  disclosure than ordinary single-source news. Worth flagging for AI-content
+  transparency: several of the analytical conclusions quoted here (the domain-singleton,
   birth-year and closing-synthesis observations) are verbatim output from "PwnedClaw," Hunt's own
   AI chat assistant, reproduced inside his post's chat transcript — not sentences Hunt personally
   wrote, though he directed the analysis, validated each finding against the raw data himself, and
@@ -64,7 +64,16 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Operator-directed editorial pass (v4.2): removed composition-rationale narration and 
+      pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
+      restated the summary or padded without responder value. No factual claim changed.
+    fields: [sourcing_note, body]
 migrated_from: null
 ---
 
@@ -76,4 +85,4 @@ Corroborating evidence the real customer data is present and genuinely breached:
 
 Excluding the identified TPC-DS synthetic chunk files (600 plus a further 1,200) dropped the count from 24.9M to 13,306,258 — a 47% reduction, and still not the final figure. Hunt's own further manual review, again assisted by PwnedClaw, found and removed several more inflation sources: 5,736 Microsoft-365 domain-alias triplicates (the same mailbox counted three times across `carhartt.com`, `carhartt.onmicrosoft.com` and `carhartt.mail.onmicrosoft.com`); 285,808 `deactivate-`-prefixed soft-delete duplicates (with 3,174 renamed back to their active form where no duplicate existed); and 48,787 `wctest.com` plus 32,514 `carharttdonotship.com` addresses, both internal performance-test domains identified by a shared `perftest` alias pattern rather than real customers. The final published figure — which Hunt's own tweet states directly — is 12,933,413 unique addresses: "New breach: Carhartt was the target of a ShinyHunters extortion campaign earlier this month. Data allegedly obtained from the company was later published, including 12.9M unique email addresses. 83% were already in @haveibeenpwned" ([Troy Hunt, 2026-08-25](https://www.troyhunt.com/a-cautionary-tale-about-data-breach-claims-verification-and-carhartt/)) — a little over half of ShinyHunters' implied headline scope.
 
-The methodology is region-agnostic and directly applicable to any breach-claim triage this constituency performs, regardless of victim — Carhartt itself is a US retailer, out-of-nexus as a victim, but the finding is a reusable defender/CTI-analyst verification methodology rather than a victim-specific disclosure, directly relevant to this pipeline's own fake-news-scrutiny duty and to any SOC or CTI team triaging leak-site record-count claims. It is also a case study in AI-assisted analysis discipline: an AI assistant's confident, well-phrased analytical output is not automatically fact, and PwnedClaw's own intermediate 13.3M figure was itself superseded by further manual review — the analyst directing it still owns validating every claim and every number against the underlying data before publishing. No `techniques[]` are mapped — the finding is about analyst tradecraft, not attacker tradecraft, and no CVE applies. `actions[]` is empty: this is a standing analytical methodology for future breach-claim triage, not a discrete task this specific finding creates.
+The methodology is region-agnostic: Carhartt itself is a US retailer, but the finding is a reusable verification methodology for any SOC or CTI team triaging leak-site record-count claims, not a victim-specific disclosure. It is also a case study in AI-assisted analysis discipline: an AI assistant's confident, well-phrased analytical output is not automatically fact, and PwnedClaw's own intermediate 13.3M figure was itself superseded by further manual review — the analyst directing it still owns validating every claim and every number against the underlying data before publishing.

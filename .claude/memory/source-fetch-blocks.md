@@ -1,222 +1,50 @@
 ---
 name: Source fetch blocks & primary-source substitutes
-description: Hosts that block the routine fetcher and the citable primaries to substitute
+description: The fetch ladder, working recipes for blocked/JS hosts, jina key-pool rules, PDF extraction, and the probe/health traps
 type: reference
 ---
 
-# Source fetch blocks & primary-source substitutes
+# Source fetch blocks & recipes (condensed 2026-08-28)
 
-Recurring transport blocks the routine hits, and what to cite instead. A block is transport, not death — never demote a source for a 403/anti-bot challenge.
+A block is transport, not death — **never demote a source for a 403 / anti-bot challenge / exhausted reader credit**.
 
-## kernel.org git frontend — Anubis anti-bot challenge (discovered 2026-07-04)
+## Fetch ladder (v3.33)
 
-`git.kernel.org` commit/advisory pages (both `.../commit/?id=<sha>` and `/stable/c/<sha>`) now serve an **Anubis proof-of-work JS challenge** ("Making sure you're not a bot!") to both direct `WebFetch` and `tools/fetch_source.py url`. The existing tooling cannot solve it, so kernel.org commit pages are **not a fetchable primary** for kernel-CVE citations right now.
+RSS feed → `fetch_source.py extract <URL>` (human-header GET + trafilatura → markdown; internal fallbacks, jina strictly last) → structured recipe (`cisa csaf`, `cert-eu recent`, …) → `jina <URL>` only for `fetch_method: jina` hosts (heise article bodies, cisa.gov dynamic paths, ccn-cert geo-gate) or after every direct rung failed. Avoid `WebFetch` for article bodies (summariser drops detail); use it only for liveness checks and JS-SPA listings it renders that the bridge cannot (bacs.admin.ch). 18/20 representative CTI hosts extract with no reader (`work/2026-08-23T1311Z-audit/trafilatura-rollout.md`).
 
-**Substitute primary for kernel CVEs:** distro security trackers, which name the CVE, give CVSS + per-package fix status, and are not blocked:
-- `https://ubuntu.com/security/CVE-YYYY-NNNNN` (Canonical — CVSS, per-package fixed/needed status)
-- `https://security-tracker.debian.org/tracker/CVE-YYYY-NNNNN` (per-suite fixed versions)
-- Red Hat RHSA / SUSE where the affected distro applies.
+## Working recipes for blocked hosts
 
-These count as `role: primary` (vendor advisory analogs) and are **not** blocked-URL patterns (unlike NVD/MITRE per-CVE pages, which `check_run.py` FAILs).
+| Host / need | Recipe |
+|---|---|
+| CISA advisories/directives/news (Akamai 403s every direct UA) | `cisa page <url>` / `cisa feed <feed> [N]` / `cisa csaf-recent [N]` / `cisa csaf <icsa-id>`; KEV = `cisa-kev` (own subcommand, no reader) |
+| GitHub Advisory DB (github.com/api.github.com egress-proxy-blocked; raw.githubusercontent.com IS reachable) | OSV.dev: `osv query <ecosystem> <pkg>` / `osv vuln <GHSA-or-CVE>`; cite `github.com/advisories/<GHSA>` |
+| kernel.org (Anubis PoW challenge) | distro trackers: `ubuntu.com/security/CVE-…`, `security-tracker.debian.org/tracker/CVE-…` — count as `role: primary` |
+| ncsc-uk | `feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml` (HTML listing is a consent shell; `report-rss-feed.xml` alone lags months) |
+| ransomware.live | JSON API `https://api.ransomware.live/v2/countryvictims/<CC>` — discovery only, leak-site claims stay single-source |
+| NCSC-CH / BACS (moved 2026-08-20 to bacs.admin.ch — Nuxt SPA; old ncsc.admin.ch redirects are explicitly NOT permanent) | `ncsc-ch-focus`/`-incidents` = `fetch_method: webfetch`; official PDFs on `cms.news.admin.ch`; CSH API = `ncsc-csh` (`/api/v1/posts/...`), cite `security-hub.ncsc.admin.ch/#/posts/<id>` |
+| PDF-only advisories (joint advisories, authority reports) | `fetch_source.py pdf <URL>` — select on CONTENT TYPE, never as a failure rung; mirrors (media.defense.gov, ic3.gov) count as the same document |
+| infoguard-labs | RSS `https://labs.infoguard.ch/rss.xml` |
+| heise-sec | `feed https://www.heise.de/security/feed.xml N` → `jina <article>` (browser engine; needs a live key; free articles only) |
+| Reader-unreachable even via jina | coe.int, downloads.seppmail.com — stay `blocked` |
 
-## GitHub Advisory Database — github.com is egress-proxy-blocked; use OSV.dev (root-caused 2026-07-05)
+`TRANSPORT_BLOCKED_UNREACHABLE` in `source_health.py` marks a blocked host as handled; add an id ONLY after direct AND jina AND bridge all fail.
 
-The `github-advisory` 403 is **NOT** a browser-UA / anti-bot refusal (the source-health audit mislabelled it). `github.com` **and** `api.github.com` are blocked by the **agent egress proxy itself**: each session is bound to its configured repository, so every other github.com / api.github.com path (including `github.com/advisories` and `api.github.com/advisories`) returns HTTP 403 with body `{"message":"This GitHub API path is not available: sessions are bound to their configured repositories..."}`. No UA / header / Sec-CH-UA set recovers it (re-confirmed across chrome/firefox/googlebot/curl/minimal), and it behaves identically in the routine container. `raw.githubusercontent.com` is a *different* host and IS reachable.
+## jina reader pool
 
-**Fix (shipped v3.4):** route through **OSV.dev** (`api.osv.dev`), the reachable full mirror of the GitHub Advisory Database — every GHSA id present, aliased to its CVE:
-- `python3 tools/fetch_source.py osv query <ecosystem> <package> [version]` — advisories affecting a watchlist package (ecosystem ∈ npm|PyPI|Go|Maven|crates.io|NuGet|RubyGems|Packagist…). Maps cleanly onto the watchlist-driven model.
-- `python3 tools/fetch_source.py osv vuln <GHSA-or-CVE>` — drill one advisory.
-Cite the human URL `https://github.com/advisories/<GHSA-ID>`; the bridge supplies the data. `fetch_method` is now `bridge`.
+- Keys: `JINA_API_KEYS` list (+ legacy `JINA_API_KEY`), spend order, auto-rotate on 402/401; dead keys cached cross-process 6 h (`dead-keys.json`). **Rotation warnings followed by content mean the ladder worked** — never conclude "pool exhausted" from a sub-agent's stderr; check `jina-usage` (whole-pool report). Anonymous free tier is BEST-EFFORT (observed 401) — an exhausted pool can be a reader outage, and a dead pool is a NORMAL condition the pipeline works through (operator refills sparsely; keys never in the repo).
+- Cost savers: local 1 h disk cache (`JINA_CACHE_DIR`/`JINA_CACHE_TTL`; repeat fetches = 0 requests) + `X-Cache-Tolerance: 3600`. Quality audit runs `jina-usage` every fire.
+- Pool-dead blast radius: `fetch_method: jina` sources + recipes that silently fall back to the reader go dark; KEV survives. Never demote; probe direct alternatives and record them; needs the operator (no in-pipeline fix restores credit).
 
-## CISA advisories / directives / news — REACHABLE via reader proxy + CSAF mirror (recovered 2026-07-05)
+## PDF extraction honesty (contractual)
 
-**Root cause of the block:** `cisa.gov/news-events/*`, **all `.xml` feeds, and the CSAF `.well-known`** 403 a DIRECT fetch (`WebFetch` and `fetch_source.py url`/`cisa page` direct attempt) via **Akamai bot management** (`Access Denied`, `Reference #18.*`, `errors.edgesuite.net`) keyed off the egress TLS/behavioural fingerprint — **every** UA/header combination 403s (chrome/firefox/googlebot/curl/minimal/+Referer). Only the **static** `/sites/default/files/feeds/` path (KEV JSON) is served directly.
+- "no text objects found" = **not extractable** (image-only/scanned), NEVER "the document says nothing".
+- A CMap-approximated decode is labelled an approximation; selection between decodes is by volume of recovered prose, not a ratio.
+- Real PDFs find real bugs — test extractor changes against a genuine advisory, not only the synthetic suite.
 
-**Fix (shipped v3.5) — the content IS now fetchable with full detail:**
-- `python3 tools/fetch_source.py cisa page <cisa-url>` — advisory / directive / news **body**. Tries a direct fetch first (auto-recovers if Akamai ever lifts), else falls back to the **r.jina.ai** reader proxy, which fetches from its own egress (bypasses the Akamai fingerprint) and returns clean markdown with the full body.
-- `python3 tools/fetch_source.py cisa feed <feed-url> [N]` — a cisa.gov RSS/Atom feed (`news.xml`, `cybersecurity-advisories/all.xml`, `ics-advisories.xml`, `ics-medical-advisories.xml`) → `{title, link}` items via the reader proxy. Drill each `link` with `cisa page`.
-- `python3 tools/fetch_source.py cisa csaf-recent [N]` — recent **ICS/OT** advisories from the **cisagov/CSAF** GitHub mirror `changes.csv` (newest-first, ISO-dated). Reachable via `raw.githubusercontent.com` (NOT proxy-blocked), NO third party.
-- `python3 tools/fetch_source.py cisa csaf <icsa-YY-DDD-NN | icsma-YY-DDD-NN>` — the full **CSAF v2 JSON** for one ICS advisory (CVEs, CVSS, product tree, remediations) — richest machine-readable form CISA publishes.
-- `cisa-kev` JSON stays the exploited-vuln ground truth. **Deprecated/dead:** `/cisa/blog.xml` (`/blog.xml`) returns Access-Denied even through the reader — do not use it.
+## Health/probe traps
 
-**Health/lifecycle:** these probe `bridge-ok` now. They remain in `source_health.py TRANSPORT_BLOCKED_HANDLED` only as a transient-outage safety net (a reader-proxy blip is treated as a transport block → never demote). Reader proxy is anonymous by default; set `JINA_API_KEY` env if a run ever hits its rate limit.
-
-## jina reader (r.jina.ai) is a GENERAL-PURPOSE transport, not just the CISA path (v3.8, 2026-07-06; ladder order superseded by v3.25 below)
-
-The reader was wired only into `cisa page`/`cisa feed`. It is now a **first-class, universal fetch transport** — `python3 tools/fetch_source.py jina <URL> [html]`. It fetches from **its own egress** (bypasses anti-bot / WAF / geo blocks that 403 ours) **and executes page JavaScript** (hydrates JS-only SPAs that return an empty shell to a plain GET), returning the full body as clean markdown. `fetch_source.py url` auto-falls-back to the reader on a challenge/403 (`--direct` opts out); `feed` falls back too (`method: jina` in its result). `fetch_method: jina` marks sources whose only working transport is the reader. Reader-unreachable hosts (401 even to r.jina.ai): `coe.int`, `downloads.seppmail.com` — those stay `blocked`. **Ladder order: see the v3.25 note below — the reader is now the LAST rung, not rung 3.**
-
-## group-ib.com + ccn-cert.cni.es — RECOVERED via the reader (2026-07-06, supersedes the block below)
-
-Both were long marked `fetch_method: blocked` (Cloudflare Managed-Challenge / geo-gate). The 2026-07-06 jina-fallback audit found **both are reachable**: `www.group-ib.com/blog/` now returns 200 to a **direct** browser-UA fetch (~800 KB real blog, current posts) — moved to `fetch_method: bridge` (with reader as backup); `www.ccn-cert.cni.es` still 403s direct but the **reader** returns the full body (~39 KB) — moved to `fetch_method: jina`. Both **removed from `TRANSPORT_BLOCKED_UNREACHABLE`** (now emptied) and probe `bridge-ok`/`jina-ok`. Recipes + backups are in their `sources.json` notes. The reader is a transport, not a citation — cite the publisher URL.
-
-## `TRANSPORT_BLOCKED_UNREACHABLE` — reserved for hosts the reader ALSO fails (mechanism kept, set emptied 2026-07-06)
-
-The frozenset in `tools/source_health.py` still exists to mark a `fetch_method: blocked` host as **handled** (`action: none`, coverage gap) instead of churning as `needs-demote` every sweep — but it is now **empty**, because the reader recovered the two hosts that were in it. Add a source-id **only** after confirming direct AND the **jina reader** AND the bridge all fail (transport block, not death — a genuine 404/5xx/dead host still surfaces). Per rule A1 a 403 transport block **never demotes**; document any addition in the source's `sources.json` notes too.
-
-## JS-rendered pages with no server content (recurring recipe gaps)
-
-Sources whose "recent items" live only in client-hydrated JS, so the fetcher gets an empty shell: NCSC-CH `aktuelle-vorfaelle.html`, OFAC recent-actions table, `sans.org/newsletters/newsbites/`, `prodaft.com/reports` (Next.js SPA). Pivot to their RSS/JSON endpoint where one exists, or a WebSearch pivot; flag as a recipe gap, never fabricate content.
-
-## jina reader v2 — authenticated, browser engine; heise.de per-article bodies RECOVERED (2026-07-12)
-
-The reader connector (`tools/fetch_source.py` `_jina_fetch`) now sends, on every keyed markdown page fetch: `Authorization: Bearer <key>` (env-only — keys are NEVER stored in the repo; the routine env carries them), `X-Engine: browser` (highest-fidelity rendering tier, authenticated rungs only), `X-With-Links-Summary: true` (outbound URLs survive the markdown conversion), `X-Cache-Tolerance: 300` and `X-Retain-Images: none`. The `fmt="html"` feed path keeps the default engine so the `<hN><a href>` feed parse stays stable.
-
-- **heise-sec RECOVERED** (was demoted as fetch-waste since v2.64): the browser-engine reader returns the FULL per-article body that the TollBit/heise+ gate denies every direct transport. Recipe: `feed https://www.heise.de/security/feed.xml N` for discovery → `jina <article-url>` for body. Free articles only; a heise+ article stays paywalled → pivot.
-- **Key lifecycle:** `python3 tools/fetch_source.py jina-usage` reports EVERY configured key's remaining token balance plus the pool total (Jina dashboard API) and WARNs on stderr below 1 M tokens combined / when every key is dead → operator generates a new key at https://jina.ai/api-dashboard/ and adds it to the env. The quality-audit run should include a `jina-usage` check so a dying pool is caught before it silently degrades the reader to the anonymous tier.
-- No key in env → reader still works anonymously (shared rate limit, no browser engine) — same behaviour as before v2.
-
-## jina reader v3 — multi-key pool + anonymous free-tier fallback (2026-07-13)
-
-Shipped after the 2026-07-12→13 runs lost every jina fetch to a spent key (HTTP 402 was a terminal, non-retryable error). `_jina_fetch` now walks a **credential ladder** per fetch:
-
-- **Key pool:** `JINA_API_KEYS` (new) takes one or more keys separated by commas/semicolons/whitespace — listed order = spend order; the original `JINA_API_KEY` still works and is appended after the list (it may itself carry a separated list). Duplicates are collapsed.
-- **Rotation:** a key answering **402** (balance exhausted) or **401** (invalid/revoked) is marked dead for the rest of the process (`_JINA_DEAD_KEYS`, so a multi-fetch invocation doesn't re-burn it per page) and the next key is tried immediately — no backoff wasted on a dead key. A stderr line names the rotated key by suffix.
-- **Anonymous backstop:** when no live key remains, the request runs on the reader's **anonymous free tier** (no `Authorization`, no `X-Engine: browser` — requesting the browser engine keyless is itself a 402). An exhausted pool degrades fidelity, never availability; heise-style TollBit-gated bodies are what the anonymous tier may miss.
-- **Health semantics:** `source_health.py`'s `reader-quota` class now only fires when the whole pool is dead AND the anonymous rung also failed for that fetch; its action text says to add a fresh key to `JINA_API_KEYS`. The final connector error still carries the `HTTP 402` / `balance exhausted` markers the classifier keys on.
-
-## jina reader v3.1 — token/request savers: local response cache + 1 h reader cache tolerance (2026-07-13)
-
-Two cost controls in `_jina_fetch`, both on by default:
-
-- **Local disk cache** — reader bodies are cached under `JINA_CACHE_DIR` (default `/tmp/ctipilot-jina-cache`, OUTSIDE the repo, dies with the container), keyed by SHA-256 of `(return-format, url)`, TTL `JINA_CACHE_TTL` (default 3600 s; `0` disables). A hit costs **zero API requests and zero tokens**. This kills the run's built-in double spend: the Phase 5.7 verifier re-fetches every entry source Phase 1 research already fetched — same container, same hour → all cache hits. Atomic writes (tmp+rename, parallel-sub-agent safe); best-effort (any cache I/O error → live fetch); challenge/blocked bodies raise BEFORE the cache put, so they are never stored; measured 1.2 s live → 0.14 s hit.
-- **`X-Cache-Tolerance` 300 → 3600** — the reader may serve its own snapshot up to an hour old instead of re-crawling/re-rendering. Aligned with the local TTL: an intel run processes a multi-hour window, so hour-stale content cannot cost it a finding. If a fetch ever NEEDS to be bypass-fresh (rare — e.g. re-probing a page that just changed), run it with `JINA_CACHE_TTL=0` (local bypass; the header still allows the reader's snapshot).
-
-## ncsc-uk — WORKING recipe found (2026-07-11 audit); "reachable but unreadable" is a failure class
-
-The NCSC-UK HTML listing (`/section/keep-up-to-date/reports-advisories`) had been a "recipe gap" in nearly every July run — consent-banner shell to WebFetch AND jina — while `sources.json` showed it green (an HTTP 200 bumped `last_successful_fetch`): an **essential source dark for weeks with healthy-looking bookkeeping**. Recipe: the combined feed `https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml` is FRESH (verified 2026-07-11; items days old) — use `python3 tools/fetch_source.py feed <that URL> 20` for discovery, drill item links for citation. (`report-rss-feed.xml` alone lags months — that's what earned RSS its bad reputation in the old note.) General lesson: a 200 that yields no parseable items is a coverage gap, not a success — when a source repeats as a "recipe gap" across runs, spend the five minutes probing its API/feed endpoints instead of re-logging the gap.
-
-## ransomware.live — use the JSON API, not the HTML (2026-07-11 audit)
-
-The HTML site returns chrome with no parseable victim table. Working recipe for country sweeps: `https://api.ransomware.live/v2/countryvictims/CH` (any ISO country code) via plain fetch. Leak-site claims stay single-source PD-6 material — the API is discovery, never confirmation.
-
-## jina reader v4 — LAST-RESORT rung; anonymous tier NOT guaranteed; fresh key verified (v3.25, 2026-07-18)
-
-The 2026-07-18T0409Z run exhausted the key pool mid-window (HTTP 402) **and the anonymous free tier answered HTTP 401** — falsifying the v3 assumption "exhausted pool = degraded fidelity, never availability". Operator-directed changes (prompt v3.25):
-
-- **Ladder reordered — the reader is rung 4 of 4:** RSS (`feed`) → direct `WebFetch` → **direct bridge** (`url <URL>` raw body / structured publisher recipe) → **jina reader LAST**. Every reader fetch spends metered API-key credit; routine fetches must never burn it when a free direct transport serves the same content. Force `jina <URL>` directly ONLY for `fetch_method: jina` sources (heise article bodies via browser engine, cisa.gov dynamic paths, ccn-cert geo-gate — hosts proven to need it) or after every direct rung failed. `url`'s auto-reader-fallback is unchanged, so nothing requires switching commands mid-read.
-- **Full-detail reads:** prefer `url <URL>` (whole raw body, nothing summarised away) over the reader; heavy raw HTML goes to `work/<run-id>/` and gets extracted on disk (grep/python), keeping bulk out of main context — the 2026-07-18 deep-read proved this path.
-- **Anonymous rung:** `_jina_fetch` now treats 401/402 on the anonymous credential as non-retryable (no backoff burned); all docs say an exhausted pool can be a reader OUTAGE. Treat `jina-usage` "pool dead" as an incident, not a footnote.
-- **Institutionalized watch:** quality-audit Phase 3 item 4 runs `python3 tools/fetch_source.py jina-usage` on every audit fire; low/dead pool → operator recommendation (new key at jina.ai/api-dashboard → `JINA_API_KEYS` env; keys NEVER in the repo).
-- **2026-07-18 session verification:** a fresh operator-supplied key (suffix `…MrZOsc`, 10 M tokens, trial to 2036) was tested from this repo: `jina-usage` reports it live; rotation off the dead env key (`…xI3xEh`, 402) worked; heise article body (VMware Avi, id 11368661) and cisa.gov/news-events/directives both returned full content through it. Operator still needs to update the routine container env vars.
-
-## ncsc-ch-incidents (aktuelle-vorfaelle.html) — read the FULL accordion before judging freshness (2026-07-18)
-
-The 07-18 audit's G2 sweep flagged the page "reachable-but-stale: Oct-2025 consumer-phishing only". **False alarm, operator-corrected same day:** the documented bridge fetch (`python3 tools/fetch_source.py url <page URL>` — this admin.ch page does NOT 403 the bridge) returns the full accordion, 10 dated entries newest-first, latest **01.07.2026 13:22** (SwissNovaChat/SwissNovaCare fake-subscription warning). The trap: 4 of 10 entries cluster in Oct 2025, so a truncated or summarized read that misses the top of the accordion concludes "stale". Rule: judge this page's freshness only from the raw bridge body, scanning every `DD.MM.YYYY` in document order (newest is first). Cadence is genuinely slow (quarterly-ish) and the surface is consumer-fraud by design — operational/sector incidents live on the Cyber Security Hub (`ncsc-csh`) / Im Fokus; neither fact is staleness.
-
-## NCSC-CH Cyber Security Hub — public API versioned to /api/v1/ (fixed 2026-08-06)
-
-The `ncsc-csh` bridge went dark: `GET /api/posts/dashboard` and `GET /api/posts/{id}/details`
-both returned **HTTP 405 with `Allow: DELETE, PUT`**. Two sub-agents independently hit it and
-both fell back to the jina reader on the SPA root, which hydrates the top-10 titles but gives
-no per-post dates or bodies — enough to confirm nothing was missed, not enough to work from.
-
-**The diagnostic that matters:** *every* path under `/api/posts/**` answered 405, including
-paths that never existed (`/api/posts/feed`, `/api/posts/list`), while unknown roots still
-returned 404. A uniform 405 across a whole subtree including non-existent children is an
-**edge rule on the subtree, not a moved route** — so probing sibling paths is wasted effort.
-Go to the client instead.
-
-**Recovery, generalisable to any SPA-backed source:** read the route table out of the app
-bundle.
-
-```bash
-curl -sS https://security-hub.ncsc.admin.ch/ | grep -o 'main-[^"]*\.js'
-curl -sS https://security-hub.ncsc.admin.ch/<that file> \
-  | grep -o -E '"/api/[A-Za-z0-9/_{}.-]*post[A-Za-z0-9/_{}.-]*' | sort -u
-```
-
-That surfaced `/api/v1/posts/dashboard` and `/api/v1/posts/{postId}/details`, both 200 with
-TLP:Clear content. `tools/fetch_source.py` patched to the versioned paths and re-tested end
-to end; the procedure is also recorded in the code comment beside the endpoints.
-
-Two notes for next time: this is a `tier: essential` source, so a run that loses it owes a
-same-run repair rather than a coverage-gap line — the fix took about five minutes once the
-405-across-the-subtree pattern was recognised. And the CSH detail URL to cite in an entry is
-the hash route `https://security-hub.ncsc.admin.ch/#/posts/<id>`, which resolves live and
-passes the gate's liveness check.
-
-## The silent recipe gap — a source that 200s and still contributes nothing (2026-08-09)
-
-The dangerous failure is not the 403. It is the source that returns HTTP 200, gets logged
-as attempted, never raises a `fetch_failures[]` entry, and yet cannot contribute an item
-because its listing carries **no extractable publication dates**. Under a recency-gated
-run every item from such a source is silently ineligible, forever, and nothing in the
-telemetry says so — `source_health.py` classes it `ok` because the transport is fine.
-
-`infoguard-labs` sat in exactly this state. Its note had carried "RECIPE GAP: JS-rendered
-listing, no dates extractable" since at least 2026-08-05, it was allocated to sub-agents
-and dutifully attempted, and it had never once contributed. The fix was a two-minute
-discovery — a working dated feed at `https://labs.infoguard.ch/rss.xml` — and the very
-first fetch through it surfaced original Swiss vulnerability research the pipeline had
-never covered: 22 CVEs in Tobit TeamDavid, a DACH-region self-hosted M365 alternative with
-roughly 12,000 internet-facing instances, unauthenticated heap leak to full mailbox
-takeover, vendor unresponsive. A home-region blind spot, invisible for as long as the
-recipe was broken.
-
-Two habits from this:
-
-- **Treat a `coverage_gaps` note that names a recipe gap as a repair order, not a status.**
-  A source that cannot yield dates is not "covered but quiet" — it is uncovered. The same
-  standing-repair-order discipline that applies to `source_health.py` UNSOLVED flags
-  applies here, and the sub-agents are the ones positioned to find the feed.
-- **When a recipe is fixed, check what the gap hid.** The newly readable listing's recent
-  items have never been eligible for any prior run, so the top of the feed is a backlog,
-  not a duplicate set. This one was a day outside the window and was published anyway as
-  first coverage with an explicit sourcing note and a run-record paragraph — a defensible
-  exception precisely because the reason it was late was a pipeline defect rather than an
-  editorial judgement.
-
-Related shapes worth separating when writing the note: `prodaft` this run turned out to be
-*two* defects wearing one label — a dead subdomain in the source note
-(`resources.prodaft.com`, NXDOMAIN) and, separately, a frozen client-rendered listing on the
-live URL. Fixing the note is not fixing the recipe; say which one you did.
-
-## PDF-only advisories are readable now — `pdf <URL>` (added v3.32, 2026-08-21)
-
-**The gap:** this container ships no `pdftotext`, no `pypdf`, no `pdfminer` and no OCR, and the bridge had no PDF path — so every advisory published as a PDF and nothing else was unreachable *by design*, silently. It does not look like a blocked host; it looks like a source that summarises thinly.
-
-**What it cost, concretely:** on 2026-08-19 the five-agency joint advisory on an active threat to Siemens S7 PLCs (AA26-231A) had to be published **single-source from a news outlet's reading**, because the agency page 403s us and the PDF mirror served fine but nothing could parse the bytes. The primary turned out to carry five named detection classes, a gold-copy firmware comparison, device protection levels and an instruction to pass the mitigations to systems integrators — none of which the outlet's summary had.
-
-**The fix:** `python3 tools/fetch_source.py pdf <URL>` (`--json` for byte counts, decode method and caveats). Stdlib `zlib` only. Handles Flate and uncompressed content streams, PDF string escapes/nesting, `Tj`/`TJ`/`'`/`"`, simple fonts, and CID fonts via their ToUnicode CMap. Offline tests: `python3 tools/test_fetch_source_pdf.py`.
-
-**Select it on CONTENT TYPE, not on failure.** It is not a rung of the block-escalation ladder — reach for it because the primary is a PDF, not because something else 403'd. Mirrors count: a `media.defense.gov`, `ic3.gov` or member-agency copy of a joint advisory is the same document, and often reachable when the coordinating agency's own page is not.
-
-**Two honesty properties are contractual, not polish:**
-- An **image-only/scanned PDF reports "no text objects found"** — that means *not extractable*, NEVER *the document says nothing*. An empty extraction read as an empty document is how a scanned advisory becomes a false negative.
-- A **CMap-approximated decode is labelled an approximation.** Selection between the byte-wise and CMap decodes is by *volume of recovered prose*, not a ratio — because a CID PDF's byte-wise decode drops every unmapped glyph and leaves a short string of line breaks whose "share of good characters" is a perfect 1.0. That specific false green is pinned by a test.
-
-**Real PDFs find real bugs — test against one.** The 8-case offline suite passed while the extractor still crashed on the first genuine advisory: a marked-content property dictionary (`<</MCID 0>>`) was mis-parsed as a hex string once the scan stepped past the outer bracket. Fixed with a hex-body guard plus a hardened converter, and a regression test. Lesson: synthetic PDFs do not exercise what real producers emit.
-
-## Extraction shape is a quote-fidelity trap (2026-08-21)
-
-Verifying a quote against your own *normalised* extraction is a false green. Three shapes bit in one run:
-
-- **Non-breaking spaces.** The Check Point research page carries 450 `U+00A0`. Every candidate quote written with ordinary spaces MISSED on a literal check. The source's own characters are part of the quote — keep the NBSP, or choose span boundaries that avoid them.
-- **`re.sub(r'\s+',' ')` before checking.** Normalising whitespace to eyeball a passage, then quoting what you read, produces a "quote" that exists nowhere. It is exactly how a spliced quote passes locally and fails on the live page.
-- **PDF hard line breaks and hyphen splits.** Extracted advisory text breaks mid-sentence and splits words (`non\n-\nengineering`), so **no long prose span is contiguous**. Quote short spans that genuinely hit, or drop the quotation marks and paraphrase. Also: never transcribe a figure from a PDF extraction that interleaves language markers and splits digit runs — describe instead, and say so in the sourcing note.
-
-Tag-stripping rule still holds and is the fourth shape: replace tags with the **empty string**, not a space, or the check passes against a corrupted copy.
-
-## NCSC-CH moved to bacs.admin.ch (2026-08-20/21)
-
-NCSC Switzerland's public site migrated to the **Bundesamt für Cybersicherheit (BACS)** domain. `ncsc-ch-focus` → `https://www.bacs.admin.ch/de/im-fokus`, `ncsc-ch-incidents` → `https://www.bacs.admin.ch/de/aktuelle-vorfaelle`; both verified reachable before the records were changed. The announcement states old `ncsc.admin.ch` links redirect "in most cases" but that **those redirects are not permanently available** — so treat the old URLs as expiring, not working. Both are essential-tier records, so letting them break costs the home-region surface.
-
-**Not affected and deliberately unchanged:** `security-hub.ncsc.admin.ch`, the Cyber Security Hub API behind the `ncsc-csh` bridge subcommand, still resolves. Re-check it if the CSH recipe ever starts returning empty.
-
-Watch shape: this surfaced as a **metadata-drift** finding, not a fetch failure — the old URL still 200'd via redirect. A source that still works today because of a redirect the publisher says is temporary is a repair order, not a healthy record.
-
-## The Swiss authority moved: ncsc.admin.ch → bacs.admin.ch (2026-08-24)
-
-The Swiss federal cyber authority relaunched its web presence on the
-`bacs.admin.ch` domain (its own relaunch notice is dated 2026-08-20) and the new
-site is a **Nuxt single-page application**: the bridge's direct GET returns only
-the JavaScript shell, while WebFetch's own renderer surfaces the listing. Both
-`ncsc-ch-focus` and `ncsc-ch-incidents` were corrected to `fetch_method:
-webfetch` on 2026-08-24. Official federal PDFs are served from
-`cms.news.admin.ch` (the admin.ch news file service), not from bacs.admin.ch.
-
-Consequence beyond the recipe: `NATIONAL_CERT_HOSTS` in `tools/check_run.py`
-listed only the old domain, so a `single-source-national-cert` carve-out that
-the home-region authority plainly earns was being reported as unearned. Both new
-hosts were added the same run. **When a national CERT changes domain, the
-carve-out list is a second place that needs the change.**
+- **The silent recipe gap:** a source can 200 forever and contribute nothing when its listing has no extractable dates (infoguard-labs hid a 22-CVE DACH disclosure for weeks). A `coverage_gaps` recipe-gap note is a repair order, not a status; when fixed, the top of the feed is a backlog — publish first coverage with a sourcing note.
+- **A probe must assert the shape the recipe promises, never a proxy.** Byte count, non-empty output and HTTP 200 have each produced a false demotion here (`sec-edgar 8k`: a valid `count: 0` envelope ≈120 B read as dead). A valid empty result is a working source.
+- `probe_url` field overrides the probe target when a publisher blocks its directory index but per-item fetches work (siemens-productcert-csaf).
+- A national-CERT domain change also needs `NATIONAL_CERT_HOSTS` in `check_run.py`, or the single-source carve-out reports as unearned.
+- A "reachable but stale" verdict needs the RAW body read in document order — ncsc-ch-incidents' accordion is newest-first and a truncated read concludes stale.

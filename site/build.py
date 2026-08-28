@@ -1981,9 +1981,17 @@ def daily_run_dates(runs: list[dict[str, Any]]) -> set[str]:
     }
 
 
+def visible_updates(entry: dict[str, Any]) -> list[dict[str, Any]]:
+    """The entry's reader-facing changelog records: `internal: true` records
+    (pipeline-internal metadata fixes, v4.2) are changelog-only and never
+    rendered anywhere on the site."""
+    return [r for r in (entry.get("updates") or [])
+            if isinstance(r, dict) and not r.get("internal")]
+
+
 def latest_update_record(entry: dict[str, Any]) -> dict[str, Any] | None:
-    """The last `updates[]` changelog record of an entry, or None."""
-    recs = [r for r in (entry.get("updates") or []) if isinstance(r, dict)]
+    """The last visible `updates[]` changelog record of an entry, or None."""
+    recs = visible_updates(entry)
     return recs[-1] if recs else None
 
 
@@ -1995,8 +2003,8 @@ def entry_activity(entry: dict[str, Any]) -> dict[str, Any]:
     `record` the changelog record — the live timeline groups the entry under
     THAT run and flags it UPD (docs/pipeline.md § Entry lifecycle)."""
     at = content_model.entry_activity_ts(entry) or ""
-    rec = latest_update_record(entry)
-    if rec and str(rec.get("at") or "") == at and at != str(entry.get("discovered_at") or ""):
+    rec = next((r for r in visible_updates(entry) if str(r.get("at") or "") == at), None)
+    if rec and at != str(entry.get("discovered_at") or ""):
         return {"at": at, "run_id": str(rec.get("run_id") or ""), "is_update": True, "record": rec}
     return {"at": at, "run_id": str(entry.get("run_id") or ""), "is_update": False, "record": None}
 
@@ -2011,11 +2019,10 @@ def update_records_in(entry: dict[str, Any], since: datetime | None,
                       until: datetime | None = None,
                       day: str | None = None) -> list[dict[str, Any]]:
     """Changelog records of `entry` dated inside a scope: a UTC day
-    (`day` = YYYY-MM-DD) or a half-open [since, until) window."""
+    (`day` = YYYY-MM-DD) or a half-open [since, until) window. Internal
+    records are pipeline bookkeeping and never surface."""
     out: list[dict[str, Any]] = []
-    for rec in entry.get("updates") or []:
-        if not isinstance(rec, dict):
-            continue
+    for rec in visible_updates(entry):
         at = str(rec.get("at") or "")
         ts = parse_ts(at)
         if ts is None:
@@ -2281,7 +2288,8 @@ def render_update_block(entry: dict[str, Any], record: dict[str, Any],
     `<section class="entry-update entry-update--<type>">` with a header row
     (type badge · long stamp · run link) and the section body as HTML.
     `with_summary` prepends the record's summary (day pages / feeds);
-    `entry_link` appends an "open finding" link (day pages)."""
+    `entry_link` appends an "open finding" link (day pages). Callers pass
+    only visible (non-internal) records."""
     rtype = str(record.get("type") or "update")
     at = str(record.get("at") or "")
     rid = str(record.get("run_id") or "")
@@ -2322,8 +2330,8 @@ def render_update_block(entry: dict[str, Any], record: dict[str, Any],
 def render_update_sections(entry: dict[str, Any], *, prefix: str = "",
                            base_url: str | None = None) -> str:
     """Every changelog record of the entry as a styled block, in order,
-    paired with its body section by `at`."""
-    recs = [r for r in (entry.get("updates") or []) if isinstance(r, dict)]
+    paired with its body section by `at`. Internal records never render."""
+    recs = visible_updates(entry)
     if not recs:
         return ""
     by_at = update_sections_by_at(entry)
@@ -2474,8 +2482,8 @@ def render_badges(entry: dict[str, Any], *, prefix: str = "", full: bool = False
         )
     if _entry_exploited(entry):
         parts.append('<span class="b exp">exploited</span>')
-    if entry.get("updates"):
-        n_upd = len(entry["updates"])
+    if visible_updates(entry):
+        n_upd = len(visible_updates(entry))
         parts.append(
             f'<span class="b upd" title="{n_upd} changelog record'
             f'{"" if n_upd == 1 else "s"} · updated {_escape(_fmt_long_stamp(entry.get("updated_at")))}">updated</span>'
@@ -3778,9 +3786,7 @@ def render_entry_page(
 
     # --- revision history (the changelog, as a list) -------------------
     rev_bits: list[str] = []
-    for rec in entry.get("updates") or []:
-        if not isinstance(rec, dict):
-            continue
+    for rec in visible_updates(entry):
         rtype = str(rec.get("type") or "update")
         at = str(rec.get("at") or "")
         rid_u = str(rec.get("run_id") or "")
@@ -3863,7 +3869,7 @@ def render_entry_page(
     disc = _fmt_discovered(entry.get("discovered_at"))
     if disc:
         emeta_parts.append(f"<span>{_escape(disc)}</span>")
-    upd_stamp = _fmt_updated(entry.get("updated_at")) if entry.get("updates") else ""
+    upd_stamp = _fmt_updated(entry.get("updated_at")) if entry.get("updated_at") else ""
     if upd_stamp:
         emeta_parts.append(
             f'<a class="emeta-updated" href="#revision-history">{_escape(upd_stamp)}</a>'
@@ -4076,7 +4082,7 @@ def render_embedded_entries_section(
             f'<span class="mono">{_escape(e["date"])}</span>'
             f'<span class="b {_pri_badge_class(e)}">{_escape(_pri_label(e))}</span>'
             + ('<span class="b exp">exploited</span>' if _entry_exploited(e) else "")
-            + ('<span class="b upd">updated</span>' if e.get("updates") else "")
+            + ('<span class="b upd">updated</span>' if visible_updates(e) else "")
             + render_classification_badge(e.get("classification"))
             + render_org_triage_badge(e.get("org_triage"))
             + "</span>"
@@ -4396,9 +4402,9 @@ def build_briefbook(
                 {"at": str(r.get("at") or ""), "run_id": str(r.get("run_id") or ""),
                  "type": str(r.get("type") or "update"),
                  "summary": " ".join(str(r.get("summary") or "").split())}
-                for r in (e.get("updates") or []) if isinstance(r, dict)
+                for r in visible_updates(e)
             ],
-            "update_count": len([r for r in (e.get("updates") or []) if isinstance(r, dict)]),
+            "update_count": len(visible_updates(e)),
             "deep_dive": bool(e.get("deep_dive")),
             "actions": [a for a in (e.get("actions") or []) if isinstance(a, str)],
             "watchlist_hit": bool(e.get("watchlist_hit")),
@@ -4488,7 +4494,7 @@ def build_alerts(
             "updates": [
                 {"at": str(r.get("at") or ""), "type": str(r.get("type") or "update"),
                  "summary": " ".join(str(r.get("summary") or "").split())}
-                for r in (e.get("updates") or []) if isinstance(r, dict)
+                for r in visible_updates(e)
             ],
             "immediate_action": (
                 {"title": str(ia.get("title") or ""), "action": str(ia.get("action") or "").strip()}
@@ -8189,8 +8195,8 @@ def _feed_items_for(entries: list[dict[str, Any]], *, site_url: str,
     stamped: list[tuple[str, str, int, dict[str, Any], dict[str, Any] | None]] = []
     for e in entries:
         stamped.append((str(e.get("discovered_at") or ""), e["id"], 0, e, None))
-        for rec in e.get("updates") or []:
-            if isinstance(rec, dict) and rec.get("at"):
+        for rec in visible_updates(e):
+            if rec.get("at"):
                 stamped.append((str(rec["at"]), e["id"], 1, e, rec))
     stamped.sort(key=lambda t: (t[0], t[1], t[2]), reverse=True)
     picked = stamped[:cap]
@@ -10801,8 +10807,8 @@ def main() -> int:
     # page's § Updates to Prior Coverage (docs/pipeline.md § Entry lifecycle).
     updates_by_day: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for e in operational_entries(entries):
-        for rec in e.get("updates") or []:
-            if isinstance(rec, dict) and isinstance(rec.get("at"), str):
+        for rec in visible_updates(e):
+            if isinstance(rec.get("at"), str):
                 d_ = rec["at"][:10]
                 if DATE_RE.match(d_) and e not in updates_by_day[d_]:
                     updates_by_day[d_].append(e)
@@ -11164,7 +11170,7 @@ def main() -> int:
     counts = {
         "entries": len(entries),
         "days": len(days),
-        "updates": sum(len(e.get("updates") or []) for e in entries),
+        "updates": sum(len(visible_updates(e)) for e in entries),
         "entities": len(entities_list),
         "cves": len(cves_list),
         "sources": len(sources["sources"]),
@@ -11539,7 +11545,7 @@ def main() -> int:
             "id": e["id"],
             "title": e.get("title") or e["id"],
             "hint": (
-                (f"updated {str(e.get('updated_at'))[:10]} · " if e.get("updates") else "")
+                (f"updated {str(e.get('updated_at'))[:10]} · " if e.get("updated_at") else "")
                 + (e.get("summary") or "").strip()
             )[:240],
             "route": entry_url_path(e),

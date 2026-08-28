@@ -18,7 +18,7 @@ summary: >
   this constituency is forensic-science institutes and clinical genomics laboratories, where the
   impact is a falsified result rather than a data breach.
 discovered_at: "2026-08-05T04:12:23Z"
-updated_at: "2026-08-09T14:15:00Z"
+updated_at: null
 event_date: 2026-08-04
 run_id: 2026-08-05T0412Z-intel
 priority: high
@@ -111,7 +111,7 @@ updates:
     run_id: 2026-08-09T1315Z-audit
     type: correction
     summary: >
-      This pipeline's 2026-08-05 entry on CVE-2026-17583 stated throughout — in its title, its
+      The 2026-08-05 entry here on CVE-2026-17583 stated throughout — in its title, its
       summary, its cves[] status and its action item — that Thermo Fisher offered no fix for the
       missing integrity checking on Applied Biosystems genetic-analyzer result files, and told readers
       the control that closes the gap is architectural because there is no patch to wait for. That is
@@ -134,6 +134,14 @@ updates:
       - tags
       - body
     merged_from: 2026-08-09/thermo-fisher-genetic-analyzer-correction-patch-exists
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      v4.2 migration: pipeline-internal phrasing removed from the correction section; 
+      updated_at recomputed under the new float rule where applicable.
+    fields: [updated_at, body]
 migrated_from: null
 ---
 
@@ -151,13 +159,13 @@ Detection concepts, telemetry class first. File-integrity monitoring on the .fsa
 
 ## Correction — 2026-08-09T14:15:00Z
 
-The earlier entry's central claim was false, and the correction runs the wrong way round from the usual — a flaw this pipeline described as unfixable has a fix, and readers were told not to look for one.
+The earlier entry's central claim was false, and the correction runs the wrong way round from the usual — a flaw previously described here as unfixable has a fix, and readers were told not to look for one.
 
 CISA's advisory ICSMA-26-216-01 carries eight per-product vendor-fix records for this flaw, alongside seven mitigation records. Five of the eight name a patched version for a specific product line: "Applied Biosystems 3500/3500xL Series Data Collection Software: Update to version 4.0.3", and correspondingly 3730/3730xL Data Collection Software to 5.0.3, SeqStudio Genetic Analyzer Data Collection Software to 1.2.6, SeqStudio Flex Series Instrument Software to 1.2.1, and GeneMapper ID-X Software to 1.7.4 ([CISA ICSMA-26-216-01 (CSAF), 2026-08-04](https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsma-26-216-01.json)). Three products are genuinely unfixed, and the advisory says why rather than staying silent: the 3130 Series, ABI PRISM 3100/3100-Avant and ABI PRISM 310 Data Collection Software each carry "Product is End of Life (EoL), no update provided" ([CISA ICSMA-26-216-01 (CSAF), 2026-08-04](https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsma-26-216-01.json)). The original entry generalised the end-of-life products' position to the whole product set.
 
 The substance of the fix matters as much as its existence, because the earlier entry argued that no software update could address the problem and that only an architectural control — moving completed `.fsa`/`.hid` files into append-only or signed storage — would do. The advisory says the updates do precisely that job in the instrument software: "Thermo Fisher has developed security updates to address the vulnerability. The security updates implement the use of digital signatures on the instrument software that adds an extralayer of protection. Moving forward, this will help users verify that data files have not been modified" ([CISA ICSMA-26-216-01 (CSAF), 2026-08-04](https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsma-26-216-01.json)). The interim measures the original entry treated as the whole answer — encrypted storage media, access restriction to authorised personnel, least privilege on the instrument hosts, and firewall rules and network ACLs limiting internet connectivity to trusted sources — are in the advisory as what to do *until* the applicable updates are installed, not instead of them.
 
-Nothing about the flaw itself changes: the CVSS 3.1 base score of 8.4, the local attack vector, the affected version list and the mechanism — result files written with no integrity checking, so a file altered after the run reads as authentic — were all correct in the original entry and were re-verified in this audit. What changes is the disposition. For five of the eight product lines this is a patching task on a normal change window, and the frontmatter here supersedes the earlier `status: [no-patch]` and its empty `fixed` field, both of which would otherwise leave an automated triage consumer answering "is my version patched?" with a wrong no.
+Nothing about the flaw itself changes: the CVSS 3.1 base score of 8.4, the local attack vector, the affected version list and the mechanism — result files written with no integrity checking, so a file altered after the run reads as authentic — were all correct in the original entry and were re-verified in this audit. What changes is the disposition. For five of the eight product lines this is a patching task on a normal change window, and this entry's vulnerability record now carries the patched versions — the earlier no-patch status would otherwise leave anyone asking "is my version patched?" with a wrong no.
 
 **Defender takeaway:** where genetic-analyzer output feeds forensic or clinical reporting, install the applicable update and get the signature check the vendor built, then keep the archival control for the three end-of-life lines that will never receive one. The original entry's advice was right only for those three.
 

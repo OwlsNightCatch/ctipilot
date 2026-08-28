@@ -49,8 +49,8 @@ sourcing_note: >
   Nozomi Networks' technical analysis and CBC News's direct reporting of Shared Health's own
   statements are independent, corroborating primaries. No actor, ransomware family or access
   vector has been named by Shared Health as of the most recent update (2026-08-17) or by this
-  run's own re-check; techniques[] carries only the confirmed encryption/impact outcome (T1486),
-  not an access-vector claim no source supports.
+  run's own re-check; only the confirmed encryption/impact outcome is mapped — no source
+  supports an access-vector claim.
 confidence: medium
 references: []
 deep_dive: false
@@ -61,14 +61,21 @@ classification:
   credibility: 1
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Operator-directed editorial pass (v4.2): removed composition-rationale narration and 
+      pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
+      restated the summary or padded without responder value. No factual claim changed.
+    fields: [sourcing_note, body]
 migrated_from: null
 ---
 
 Manitoba's provincial health authority, Shared Health, disclosed on 2026-08-10 that Winnipeg's Health Sciences Centre (the province's largest hospital) and CancerCare Manitoba were hit by "a ransomware incident affecting certain facility maintenance systems, including HVAC and door access controls" ([Nozomi Networks, 2026-08-12](https://www.nozominetworks.com/blog/when-ransomware-turns-off-the-hvac-lessons-from-the-winnipeg-hospital-incident)). Central monitoring of heating, ventilation and cooling was lost — the equipment itself kept running and was switched to local/manual monitoring — the hospital's security office was closed, and staff could not issue or update physical ID access cards, prompting the Manitoba Nurses Union to flag entrance-security concerns given a history of violent incidents at the facility. Clinical care and patient-facing IT systems were not affected: "clinical services continue uninterrupted, and based on the investigation conducted to date, there is no indication that patients have been affected" ([Shared Health, via CBC News, 2026-08-10](https://www.cbc.ca/news/canada/manitoba/health-sciences-centre-ransomware-hack-9.7302058)) — which Nozomi Networks' analysis credits to IT/OT network segmentation having held between the clinical and facility networks.
 
-As of CBC's most recent status update (2026-08-17, one week post-disclosure) and this run's own re-check, Shared Health's investigation had still not attributed the incident to a named ransomware group, disclosed an access vector, or confirmed whether personal health or financial data was accessed — initial review suggested none was: "the health authority says its investigation has found the attack has affected central monitoring of its heating, ventilation and cooling systems but that they are still operating and being monitored locally" ([CBC News (The Canadian Press), reporting Shared Health's update, 2026-08-17](https://www.cbc.ca/news/canada/manitoba/winnipeg-hsc-ransomware-cyberattack-9.7310005)). No extortion group has claimed the incident on a leak site.
+As of CBC's most recent status update (2026-08-17, one week post-disclosure), Shared Health's investigation had still not attributed the incident to a named ransomware group, disclosed an access vector, or confirmed whether personal health or financial data was accessed — initial review suggested none was: "the health authority says its investigation has found the attack has affected central monitoring of its heating, ventilation and cooling systems but that they are still operating and being monitored locally" ([CBC News (The Canadian Press), reporting Shared Health's update, 2026-08-17](https://www.cbc.ca/news/canada/manitoba/winnipeg-hsc-ransomware-cyberattack-9.7310005)). No extortion group has claimed the incident on a leak site.
 
 Nozomi frames the transferable lesson as structural rather than incident-specific: hospital building-management systems — BACnet-class protocols, often a decade-plus without patching, owned by facilities teams outside IT's asset inventory — sit on the same class of network reachability as any other IT asset, so ransomware that never specifically targets OT can still disable HVAC and access-control availability as a side effect. In a hospital, ventilation loss is itself an infection-control failure under ANSI/ASHRAE/ASHE 170 pressure-relationship and air-change requirements, not merely a comfort issue — the transferable point this constituency's healthcare-sector estates should carry regardless of Winnipeg's specific vector, which remains undisclosed.
-
-`techniques[]` is limited to T1486 (ransomware/encryption impact) rather than any access-vector claim, matching the same technique-mapping gap this pipeline has already carried for the Berlin Landesnetz compromise: no source names how the attackers got in, so nothing is invented to fill that field. `actions[]` is empty — no specific patch, hunt or block action follows from an incident with no disclosed vector; the standing lesson (facility building-management systems belong in the same asset inventory and segmentation review as any other network-reachable IT asset) is body content, not a discrete task this specific incident adds.

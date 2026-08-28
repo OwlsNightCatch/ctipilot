@@ -55,7 +55,16 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Operator-directed editorial pass (v4.2): removed composition-rationale narration and 
+      pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
+      restated the summary or padded without responder value. No factual claim changed.
+    fields: [body]
 migrated_from: null
 ---
 
@@ -63,4 +72,4 @@ Kudelski Security, a Swiss research lab headquartered in Cheseaux-sur-Lausanne, 
 
 Separately, a DPRK-affiliated manager's own WinSCP credential vault — stolen in a 2021 leak — held access to historical Emotet botnet loader infrastructure, and cross-referencing that infrastructure's later reuse ties it into a loader role for subsequent campaigns. The investigation names operational bases and identifies university-affiliated IT-worker pipelines at named North Korean technical universities, plus organisational entities supporting fake IT-worker placement across multiple countries — directly relevant tradecraft for this constituency's HR and identity-vetting teams screening remote-hire pipelines, where a DPRK IT worker's fabricated identity and credentials are the initial-access vector rather than a technical exploit.
 
-Both `actor:bismarck-dprk-cybercrime` (new) and the already-tracked `actor:purpledelta` North Korean IT-worker cluster are referenced here; Kudelski's own article treats Bismarck as distinct from PurpleDelta rather than as an alias. `actions[]` is empty: this is a research/awareness finding for HR and identity-vetting process design rather than a technical exposure with a specific patch, hunt or block action; the transferable lesson belongs in the body's defender-facing framing rather than a do-now task list.
+Kudelski's own article treats Bismarck as distinct from the already-tracked PurpleDelta North Korean IT-worker cluster rather than as an alias. This is a research/awareness finding for HR and identity-vetting process design rather than a technical exposure with a specific patch, hunt or block action.

@@ -178,9 +178,14 @@ sources:
     date: "2026-07-02"
     role: primary              # primary | corroborating — first source is the most primary
 closed_sources: []             # [{title, provider, date, ref}] — intel/ drop citations, never URLs (no TLP gate)
-evidence:                      # verbatim quotes binding claims to fetched sources
+evidence:                      # quotes binding claims to fetched sources — quote is ALWAYS English (v4.2)
   - quote: "An authenticated remote command injection vulnerability (CWE-78) in Coolify…"
     publisher: "coollabsio GHSA"
+  - quote: "first reported a data leak on 7 August. (translated from German)"   # non-English source:
+    original: "hat … erstmals am 7. August einen Datenabfluss gemeldet."        # quote = marked English
+    publisher: "Der Tagesspiegel"                                               # translation; original =
+                                                                                # verbatim source text (the
+                                                                                # verifier greps THIS)
 verification: multi-source     # multi-source | single-source | single-source-national-cert |
                                # single-source-victim | contradicted
 sourcing_note: null            # human clause, e.g. "victim-own SEC 8-K disclosure carve-out"
@@ -286,6 +291,12 @@ English only.
 - **`evidence[]`** — required when any CVE `status` includes `exploited` and
   on every `immediate_action` entry. Each quote must be a verbatim substring
   of a page fetched this run, attributed to a listed source's publisher.
+  **English-only (v4.2, operator directive 2026-08-28):** a non-English
+  source is quoted as a marked English translation in `quote` ("… (translated
+  from German)"), with the verbatim source-language text in the optional
+  `original` field — the verification surface. The renderer shows only
+  `quote`; reader-facing prose quotes the same way and never carries
+  untranslated non-English text.
 - **`verification`/`sourcing_note`** — `single-source*` values replace the v2
   `[SINGLE-SOURCE]` heading flag; renderers surface them as badges.
 - **`update_of`** — RETIRED in v4.0. The gate FAILs any non-null value:
@@ -384,17 +395,36 @@ updates:
                                     # item show — a reader who sees ONLY this knows what moved
     fields: [cves, priority]        # optional: the frontmatter fields this record changed in place;
                                     # "body" when the main analysis itself was edited (corrections)
+    internal: false                 # optional (v4.2): true = a pipeline-internal fix (metadata /
+                                    # frontmatter hygiene, structured-field corrections with no
+                                    # reader-facing delta). Internal records have NO body section,
+                                    # are never rendered anywhere on the site, and never move
+                                    # updated_at — the changelog documents them for the operator only
     merged_from: null               # optional, migration provenance only: the v3 update_of entry id
                                     # that was folded into this record (the build redirects its old URL)
-updated_at: "2026-07-05T04:40:12Z"  # == updates[-1].at
+updated_at: "2026-07-05T04:40:12Z"  # == at of the last `type: update` non-internal record; null when none
 ```
 
-Every record pairs **1:1, in order, by `at`** with a body section headed
-exactly `## <Type> — <at>` (`Update`, `Correction` or `Improvement`, an em
-dash, the record's `at` verbatim — `content_model.update_section_heading`).
-The section carries the **delta only**, inline-cited like any other prose,
-never a recap of the entry. The main analysis is everything above the first
-such heading and must remain a complete, readable entry on its own.
+Every **non-internal** record pairs **1:1, in order, by `at`** with a body
+section headed exactly `## <Type> — <at>` (`Update`, `Correction` or
+`Improvement`, an em dash, the record's `at` verbatim —
+`content_model.update_section_heading`); an `internal: true` record has no
+section. The section carries the **delta only**, inline-cited like any other
+prose, never a recap of the entry — and never pipeline internals: field
+names, run mechanics and record-keeping narration ("this entry's cves[]
+record carried …") do not belong in reader-facing text; a change with
+nothing to tell the reader is an internal record. The main analysis is
+everything above the first such heading and must remain a complete,
+readable entry on its own.
+
+**Only `type: update` moves `updated_at` (v4.2, operator directive
+2026-08-28).** A material new development re-floats the entry to the top of
+the live brief; a `correction` or `improvement` does not — it changes the
+entry in place, its section (when reader-facing) renders on the entry page
+and in the day page's § Updates by its record `at`, but the finding's
+position in the live timeline stays where the story last moved.
+`updated_at` therefore mirrors the last non-internal `type: update` record
+and is `null` when the entry has none.
 
 | `type` | when | what changes |
 |---|---|---|
@@ -415,8 +445,13 @@ Rules, all enforced by `tools/check_run.py` (`entry-updates`, `silent-edit`) unl
 3. **One record per fire per entry.** A fire that changes an entry in
    several ways writes one record covering all of them; two fires write two
    records. Records are append-only and strictly increasing in `at`; a
-   record is never edited or removed by a later fire (a wrong update is
-   corrected by a further `correction` record).
+   record is never edited or removed by a later fire — the changelog is
+   the audit trail. The entry's *content* carries no such immutability
+   (operator directive 2026-08-28): a later fire may revise the
+   frontmatter, the main analysis, and the text of earlier `## <Type> —
+   <at>` sections alike — a wrong earlier update is fixed where it stands —
+   provided the fire's own record cleanly declares the change (a further
+   `correction` record whose `fields` name what moved, `body` included).
 4. **Sources travel with the change.** A section's inline citations are
    `sources[]` records like any other claim's — new sources are appended to
    `sources[]` (the first record stays the original primary), new verbatim

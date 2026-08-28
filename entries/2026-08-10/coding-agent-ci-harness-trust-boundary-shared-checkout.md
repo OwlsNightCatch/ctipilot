@@ -16,7 +16,7 @@ summary: >
   instruction file the second treats as authoritative, has no CVE and was fixed only in the vendor's
   own repository.
 discovered_at: "2026-08-10T04:59:00Z"
-updated_at: "2026-08-28T04:55:00Z"
+updated_at: null
 event_date: "2026-08-05"
 run_id: 2026-08-10T0411Z-intel
 priority: notable
@@ -95,17 +95,22 @@ updates:
     run_id: 2026-08-28T0409Z-intel
     type: correction
     summary: >
-      This entry's CVE-2026-12537 (Google Gemini CLI) record carried cvss: null and vector:
-      user-interaction, sourced only to the OSV mirror of the advisory. The CNA's own CVSS 4.0
-      rating, read directly from NVD — labelled "Secondary" in NVD's own type field, despite
-      being the assigning CNA's rating rather than NVD's — is 10.0 CRITICAL with User Interaction:
-      None (CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/...); NVD's own "Primary"-labelled CVSS 3.1 rating
-      on the same record is 7.8 with User Interaction: Required — a materially different exposure
-      picture. The record now carries both scores and the zero-click vector the CNA's own rating
-      supports.
+      CVE-2026-12537 (Google Gemini CLI) carries two sharply divergent official severity
+      ratings: the assigning CNA rates it CVSS 4.0 10.0 CRITICAL with no user interaction and
+      no authentication required, while NVD's own CVSS 3.1 assessment is 7.8 with a local
+      vector and user interaction required. Both ratings are now recorded here; the CNA's
+      unauthenticated zero-click rating is the more severe and should drive triage.
     fields:
       - cves
       - body
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      v4.2 migration: the 2026-08-28 CVSS-divergence correction rewritten reader-facing 
+      (record-field narration removed); updated_at recomputed under the new float rule.
+    fields: [updated_at, body]
 migrated_from: null
 ---
 
@@ -113,7 +118,7 @@ Three AI coding-agent CI harnesses were broken in different ways by the same und
 
 The Claude Code Action work is best read as three successive rounds of patch-and-bypass, and only the last of them carries an identifier. Round one turned on an ordering mistake in defensive code: the command-injection validation pipeline strips single-quoted content before inspecting a command — a sensible-looking measure to avoid false positives on shell metacharacters inside string literals — which means an injected payload placed inside single quotes is examined only after the interesting part has been removed. A validator that sanitises its input before deciding whether the input is dangerous is checking something other than what will execute. Round two was an asymmetry in the allowlist itself, where commands classed as read-only were exempted from path checking, so a read-only utility could be pointed at any file on the runner. Neither round carries a CVE. The identifier belongs to the third round, and Anthropic's own advisory states what it covers: "Because the hostname huggingface.co was pre-approved as a bare hostname for the WebFetch tool, any path on that domain—including attacker-controlled model repositories—was auto-approved without a permission prompt or being subject to --allowedTools restrictions." The advisory records the affected range as 0.2.54 up to 2.1.163 and the fix in 2.1.163 ([Anthropic, 2026-06-13](https://github.com/anthropics/claude-code/security/advisories/GHSA-fg94-h982-f3mm)). The Google finding is tracked as CVE-2026-12537, rated 10.0 CRITICAL by the assigning CNA with no user interaction required, fixed in gemini-cli 0.39.1 and run-gemini-cli 0.1.22 ([NVD/MITRE CVE record, 2026-08-28](https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-12537)).
 
-Both of those were patched weeks to months before the write-up appeared, so for those two vendors the action is a version check, not an incident. Their mechanics are still worth carrying, because the lesson generalises to anyone building command allowlists rather than merely consuming these products — and because the exfiltration target the researchers reached is one this store already knows from a different flaw in the same product family. The write-up's phrasing of that step is worth quoting for how narrow the distinction is: "cat /proc/$PPID/environ reads the parent, not self, and pulls from the process that still holds every single thing the isolation was built to keep away."
+Both of those were patched weeks to months before the write-up appeared, so for those two vendors the action is a version check, not an incident. Their mechanics are still worth carrying, because the lesson generalises to anyone building command allowlists rather than merely consuming these products — and because the exfiltration target the researchers reached is already known here from a different flaw in the same product family. The write-up's phrasing of that step is worth quoting for how narrow the distinction is: "cat /proc/$PPID/environ reads the parent, not self, and pulls from the process that still holds every single thing the isolation was built to keep away."
 
 The third finding is the one that is genuinely current, and it has no CVE because, as the researchers observe, nobody files one for newly documented behaviour. In an OpenAI Codex workflow, two agent passes ran over a single shared checkout, and the agent's own default instruction file sat in that checkout outside the protected-metadata set. That file "is loaded from disk on every single invocation and injected as instructions the model treats as authoritative" — so a first pass induced to modify it dictates what the second pass believes it has been told to do. The fix was structural rather than a patch: "3 Days after our report they fixed it and the two passes on openai/codex were split into separate jobs, each with its own checkout." That change landed in the vendor's own repository. It does not propagate to anyone else's pipeline, because the flaw is not in a shipped component — it is in a workflow shape.
 
@@ -121,4 +126,4 @@ The third finding is the one that is genuinely current, and it has no CVE becaus
 
 ## Correction — 2026-08-28T04:55:00Z
 
-This entry's CVE-2026-12537 record carried `cvss: null` and `vector: user-interaction`, sourced to the OSV mirror of the Gemini CLI advisory rather than to a CVSS score directly. A direct query of NVD's CVE 2.0 API shows the assigning CNA's own rating — which NVD's own record labels type "Secondary" despite it being the CNA's rather than NVD's own score — is CVSS 4.0, 10.0 CRITICAL, with the vector `CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/...` — User Interaction: None ([NVD/MITRE CVE record, 2026-08-28](https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-12537)). NVD's own "Primary"-labelled CVSS 3.1 rating on the same record is 7.8, with vector `CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H` — a local attack vector with user interaction required ([NVD/MITRE CVE record, 2026-08-28](https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-12537)). Both figures now stand in this entry's CVE record; the CNA's zero-click, unauthenticated rating is the more severe of the two and the one that should drive triage, with the narrower NVD-primary rating recorded alongside it as a named divergence rather than a substitute.
+CVE-2026-12537 (Google Gemini CLI) carries two sharply divergent official severity ratings, and the divergence itself is the triage-relevant fact. The assigning CNA rates the flaw CVSS 4.0, 10.0 CRITICAL, with the vector `CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/...` — network-reachable, no privileges, no user interaction ([NVD/MITRE CVE record, 2026-08-28](https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-12537)). NVD's own CVSS 3.1 assessment of the same record is 7.8, with vector `CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H` — a local attack vector with user interaction required ([NVD/MITRE CVE record, 2026-08-28](https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-12537)). Both ratings now stand above; the CNA's zero-click, unauthenticated rating is the more severe of the two and the one that should drive triage, with NVD's narrower rating alongside it as a named divergence rather than a substitute.

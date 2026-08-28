@@ -59,7 +59,7 @@ cves:
     vector: zero-click
     auth: pre-auth
     status: [no-patch]
-    affected: "miniOrange OAuth Client for Joomla — free edition fixed; paid editions have no fix as of this run"
+    affected: "miniOrange OAuth Client for Joomla — free edition fixed; paid editions have no fix as of 2026-08-28"
     fixed: "3.2.0 (free edition only)"
 sources:
   - url: "https://patchstack.com/articles/one-slug-seven-editions-the-miniorange-saml-sso-bug-that-let-anyone-log-in-as-your-wordpress-admin/"
@@ -97,8 +97,17 @@ classification:
 watchlist_hit: false
 actions:
   - "Audit every miniOrange SAML or OAuth product in use — on WordPress or Joomla — and upgrade to the fixed version regardless of which platform was 'already checked': the same openssl_verify() tri-state defect exists independently in both codebases, so clearing one platform says nothing about the other. For WordPress, confirm the exact edition and build against DigitalOcean's own version findings rather than the vendor's public CVE range, since six paid editions were silently patched outside that range."
-  - "For any Joomla site running the miniOrange OAuth Client extension, there is no fix for paid editions as of this run — restrict or disable the extension's login-cookie trust mechanism until a patch ships, since CVE-2026-77995 lets a client-supplied cookie value alone determine the logged-in account with no verification."
-updates: []
+  - "For any Joomla site running the miniOrange OAuth Client extension, there is no fix for paid editions as of 2026-08-28 — restrict or disable the extension's login-cookie trust mechanism until a patch ships, since CVE-2026-77995 lets a client-supplied cookie value alone determine the logged-in account with no verification."
+updates:
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Operator-directed editorial pass (v4.2): removed composition-rationale narration and 
+      pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
+      restated the summary or padded without responder value. No factual claim changed.
+    fields: [actions, cves]
 migrated_from: null
 ---
 

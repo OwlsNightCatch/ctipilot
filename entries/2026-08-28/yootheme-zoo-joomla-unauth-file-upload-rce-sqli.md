@@ -75,7 +75,11 @@ sources:
     role: primary
 closed_sources: []
 evidence:
-  - quote: "ZOO lets visitors submit content through a front-end submission form... The Image element validates that attachment. It builds a validator configured with a MIME type group of image and a maximum size... The problem is which value that validator inspects. It reads the Content-Type header the client attached to the upload."
+  - quote: "ZOO lets visitors submit content through a front-end submission form"
+    publisher: "mySites.guru"
+  - quote: "The Image element validates that attachment. It builds a validator configured with a MIME type group of image and a maximum size"
+    publisher: "mySites.guru"
+  - quote: "The problem is which value that validator inspects. It reads the Content-Type header the client attached to the upload."
     publisher: "mySites.guru"
   - quote: "A site with no submission form at all is still fully exposed to this one."
     publisher: "mySites.guru (on CVE-2026-74804)"
@@ -98,11 +102,21 @@ watchlist_hit: false
 actions:
   - "Upgrade every YOOtheme ZOO (com_zoo) installation to 4.1.66 or later now, regardless of whether the front-end submission form is enabled — CVE-2026-74804 (unauthenticated SQL injection) is reachable on any site running ZOO at all. There is no fix for the 3.x line; treat any ZOO 3.x installation as permanently exposed and plan migration or removal."
   - "Audit images/zoo/uploads/ on every ZOO installation for any non-image file, especially .php, as a compromise check regardless of current patch level — the file-upload flaw (CVE-2026-74803) predates this week's disclosure across the entire 1.0.0–4.1.63 range."
-updates: []
+updates:
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Operator-directed editorial pass (v4.2): the first evidence quote spliced three
+      non-contiguous source fragments with ellipses; split into three separate verbatim
+      records (a residual flagged by the publishing fire's own final verification pass).
+      No factual claim changed.
+    fields: [evidence]
 migrated_from: null
 ---
 
-mySites.guru (Phil Taylor) found and reported three unauthenticated flaws in YOOtheme ZOO (`com_zoo`), a Joomla content-construction extension, affecting every version 1.0.0 through 4.1.63. CVE-2026-74803 (CVSS 10.0, CWE-434) is an arbitrary-file-upload-to-RCE: the front-end submission form's Image element validates an upload solely by trusting the client-supplied `Content-Type` header — "the Image element validates that attachment. It builds a validator configured with a MIME type group of image and a maximum size... The problem is which value that validator inspects. It reads the Content-Type header the client attached to the upload" ([mySites.guru, 2026-08-25](https://mysites.guru/blog/zoo-unauthenticated-file-upload-rce/)) — never inspecting file bytes or enforcing an extension allow-list. An anonymous visitor uploads a `.php` file declared `image/jpeg`; Joomla's `File::makeSafe()` preserves the `.php` extension, and the file lands executable inside `images/zoo/uploads/`, a directory the web server executes PHP from.
+mySites.guru (Phil Taylor) found and reported three unauthenticated flaws in YOOtheme ZOO (`com_zoo`), a Joomla content-construction extension, affecting every version 1.0.0 through 4.1.63. CVE-2026-74803 (CVSS 10.0, CWE-434) is an arbitrary-file-upload-to-RCE: the front-end submission form's Image element validates an upload solely by trusting the client-supplied `Content-Type` header — "the Image element validates that attachment. It builds a validator configured with a MIME type group of image and a maximum size", and, as the discloser puts it, "the problem is which value that validator inspects. It reads the Content-Type header the client attached to the upload" ([mySites.guru, 2026-08-25](https://mysites.guru/blog/zoo-unauthenticated-file-upload-rce/)) — never inspecting file bytes or enforcing an extension allow-list. An anonymous visitor uploads a `.php` file declared `image/jpeg`; Joomla's `File::makeSafe()` preserves the `.php` extension, and the file lands executable inside `images/zoo/uploads/`, a directory the web server executes PHP from.
 
 CVE-2026-74804 (CVSS 9.3, CWE-89) is a precondition-free unauthenticated SQL injection in `ItemController::element()` — two unescaped request values pasted into the query's string-comparison condition — reachable on any site running ZOO at all: "a site with no submission form at all is still fully exposed to this one" ([mySites.guru, 2026-08-25](https://mysites.guru/blog/zoo-unauthenticated-file-upload-rce/)). mySites.guru proved it bypasses access filters and extracts the database name and version via UNION-based extraction. CVE-2026-75114 (CVSS 5.1) is a lower-severity open redirect in the Twitter comment callback.
 

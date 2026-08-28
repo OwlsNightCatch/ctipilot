@@ -58,7 +58,16 @@ classification:
   credibility: 1
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Operator-directed editorial pass (v4.2): removed composition-rationale narration and 
+      pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
+      restated the summary or padded without responder value. No factual claim changed.
+    fields: [body]
 migrated_from: null
 ---
 
@@ -70,4 +79,4 @@ KrebsOnSecurity, which had independently identified one of the defendants — th
 
 Google's Threat Intelligence Group characterises TeamPCP's structure directly: "it is not a structured criminal crew with a single operator. It is a peer community of individually-skilled actors, with one clear center of gravity" ([Austin Larsen, Google Threat Intelligence Group, via KrebsOnSecurity, 2026-08-27](https://krebsonsecurity.com/2026/08/two-alleged-teampcp-hackers-arrested-in-australia/)), tracing its likely primary operator's residential/mobile internet connections to South Africa during at least some of its attacks. Investigators note further arrests are not ruled out; both defendants were held in custody pending an 18 September court date.
 
-This is `actor:teampcp`'s first law-enforcement disruption. It does not change the remediation guidance already published for the LiteLLM/Trivy and coding-agent-CI-harness campaigns this store tracks under the same actor — a decentralised peer community losing two participants does not retire the worm's self-propagating infrastructure or the copycat variants it has already spawned. `actions[]` is empty: this is a law-enforcement outcome, not a new exposure calling for a fresh patch or hunt action; the standing guidance on pinning dependencies and auditing for Shai-Hulud-family indicators, already covered elsewhere in this store, still applies.
+This is TeamPCP's first law-enforcement disruption. It does not change the remediation guidance already published for the LiteLLM/Trivy and coding-agent CI-harness campaigns attributed to the same actor — a decentralised peer community losing two participants does not retire the worm's self-propagating infrastructure or the copycat variants it has already spawned; the standing guidance on pinning dependencies and auditing for Shai-Hulud-family indicators still applies.

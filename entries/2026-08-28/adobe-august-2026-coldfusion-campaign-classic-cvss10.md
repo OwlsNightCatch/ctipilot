@@ -100,7 +100,7 @@ sourcing_note: >
   the vendor's own track record for its security bulletins, credibility stays at 2 pending
   independent corroboration. The CVE-to-CVSS-to-CWE table above is transcribed cell-by-cell from
   each bulletin's own raw table structure rather than a summarizer, after an earlier CVE-mapping
-  defect in this store elsewhere was traced to positional pairing.
+  defect in prior coverage was traced to positional pairing.
 confidence: high
 references: []
 deep_dive: false
@@ -113,7 +113,16 @@ watchlist_hit: false
 actions:
   - "Patch internet-facing ColdFusion 2025/2023 instances to 2025.0.12 / 2023.0.23 now — CVE-2026-48362 is an unauthenticated OS command injection at CVSS 10.0, the class of flaw that gets weaponised within days of a patch diff being published, and Adobe reports no exploitation yet, which is the window to close before one exists."
   - "For any on-premise or hybrid Adobe Campaign Classic ACC v7 deployment, upgrade to 7.4.4 build 9400 now — two of the three fixed flaws (CVE-2026-71398, CVE-2026-27302) are unauthenticated CVSS 10.0 code-execution paths; Adobe-hosted instances are already remediated and need no action."
-updates: []
+updates:
+  - at: "2026-08-28T15:00:00Z"
+    run_id: 2026-08-28T1500Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Operator-directed editorial pass (v4.2): removed composition-rationale narration and 
+      pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
+      restated the summary or padded without responder value. No factual claim changed.
+    fields: [sourcing_note]
 migrated_from: null
 ---
 
