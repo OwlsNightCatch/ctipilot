@@ -7,7 +7,9 @@ Conventions: one topic per file, kebab-case filename, YAML front block (`name`, 
 ## Index
 
 - [Operator directives 2026-08-28](operator-directives-2026-08-28.md) — internal records, only `update` floats updated_at, no internals in reader text, quality>quantity, English-only quotes, v4.3 modifiability, xhigh effort, minimal plugins/skills
+- [Permission rules: Edit covers Write](permission-rules-edit-covers-write.md) — Write(path) allow rules are dead; only Edit(path) matches file tools
 - [Entry lifecycle](entry-lifecycle-v4.md) — one living entry per finding; changelog records + sections; what stays untouchable; composition traps
+- [STIX export layer](stix-export-layer.md) — /stix/ bundles, uuid5 id-stability contract, relation collapse table, canonical ATT&CK ids, no TAXII by decision
 - [Routine model assignment](routine-model-assignment.md) — Sonnet 5 intel / Opus 5 audit, generic `sonnet` pins at xhigh, single verifier, double-CLEAN; self-ID protocol (prompt line, not env vars)
 - [Verification lessons](verification-lessons.md) — aiming iterations, testing findings before applying, inverted claims, unsourced status flags, quote fidelity, composing-from-entries traps
 - [Source fetch blocks & recipes](source-fetch-blocks.md) — fetch ladder, blocked-host recipes, jina pool rules, PDF extraction honesty, probe/health traps
@@ -21,7 +23,8 @@ Conventions: one topic per file, kebab-case filename, YAML front block (`name`, 
 - [Triage-ready entries](triage-ready-entries.md) — actionability shape footnotes: migrated tier, vector vs auth semantics
 - [State-file serialization](state-file-serialization.md) — derive JSON format from the live file, `git diff --stat` after; the constant has flipped twice
 - [Auto-publish routine fixes](auto-publish-routine-fixes.md) — commit→push→merge→deploy→probe end-to-end without pausing; permissions pre-authorized
-- [Customization framework](customization-framework.md) — branding.yaml + org-profile.yaml carry all identity; never re-literal build.py; PYTHONHASHSEED=0 for byte diffs
+- [Customization framework](customization-framework.md) — branding.yaml + org-profile.yaml carry all identity; shipped profile = generic "Swiss Government Entities" example/POC (no concrete org anywhere); slices/cohorts/certs/policy-watch/site_url are config-only, no in-code defaults; never re-literal build.py; PYTHONHASHSEED=0 for byte diffs
+- [Site landing = live brief](site-landing-live-brief.md) — 2026-08-29: / is the brief, /live/ is a stub, /changes/, per-entry index.md twins, llms.txt reversal
 - [Design system](design-system.md) — component/DOM contract, brandable surface, CSS invariants (no dlig, badge guards, trends honesty)
 - [UI writing style](ui-writing-style.md) — no em dashes in site chrome (use ·/:/,); entry content may use them sparingly
 - [Changelog hygiene](changelog-hygiene.md) — version history only in prompts/CHANGELOG.md; no vN.M annotations in rules

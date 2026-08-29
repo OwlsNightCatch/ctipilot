@@ -3,7 +3,8 @@
 `enterprise-attack.json` is the single, versioned MITRE ATT&CK® Enterprise
 dataset every consumer in this repo renders and validates against. It is a
 compact extraction (technique id → name, tactics, first-paragraph
-definition, sub-technique parentage, platforms, lifecycle flags) from the
+definition, sub-technique parentage, platforms, lifecycle flags, upstream
+STIX id) from the
 official STIX 2.1 release bundles published by MITRE at
 [mitre-attack/attack-stix-data](https://github.com/mitre-attack/attack-stix-data).
 `tools/attack_data.py` is the only writer; treat the JSON as generated —
@@ -57,6 +58,7 @@ older than the ids the sources now use.
 |---|---|
 | `site/content_model.py` | `load_attack_dataset()` / `resolve_technique_id()` — the shared loader every other consumer goes through |
 | `site/build.py` | entity/CVE → TTP aggregation, entity-page ATT&CK sections, the `/attack/` matrix + overlap view, `data/attack.json`, per-entity Navigator layer exports |
+| `site/stix_model.py` | `stix_id` (each technique's upstream MITRE STIX id) → the `/stix/` bundles reference MITRE's canonical `attack-pattern` objects; a pin written before the field existed falls back to a deterministic local id, still consumer-mergeable via the `mitre-attack` external_id |
 | `tools/check_run.py` | dataset presence/invariants; entry `techniques[]` id existence + lifecycle WARNs |
 | research / verification agents | technique names + definitions when composing and cold-reading entries |
 

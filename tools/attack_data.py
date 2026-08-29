@@ -17,7 +17,8 @@ version catalog; each release is a self-contained STIX bundle. This tool
 extracts the compact subset the pipeline needs — technique id → name,
 tactics, first-paragraph definition, sub-technique parentage, platforms,
 lifecycle flags (deprecated / revoked + `revoked_by` forwarding, the
-ATT&CK analogue of the registry's `merged_into` tombstones) — plus the
+ATT&CK analogue of the registry's `merged_into` tombstones), upstream
+STIX id (`stix_id`, feeds the site's STIX export) — plus the
 tactic table in official matrix order and the release metadata.
 
 Revoked and deprecated techniques are KEPT in the dataset, flagged: entries
@@ -207,6 +208,7 @@ def extract_dataset(bundle: dict, source_url: str) -> dict:
         phases.sort(key=lambda s: tactic_order.get(s, 999))
         is_sub = bool(obj.get("x_mitre_is_subtechnique"))
         techniques[tid] = {
+            "stix_id": obj.get("id"),
             "name": obj.get("name"),
             "tactics": phases,
             "subtechnique": is_sub,
@@ -373,6 +375,14 @@ def selftest(dataset: dict | None) -> list:
                 errs.append(f"{tid}: parent {parent!r} is itself a sub-technique")
         elif t.get("parent") is not None:
             errs.append(f"{tid}: non-subtechnique with parent set")
+        # `stix_id` is optional (absent on pins written before it was
+        # extracted); the STIX export falls back to a deterministic local id.
+        sid = t.get("stix_id")
+        if sid is not None and not re.match(
+            r"^attack-pattern--[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            str(sid),
+        ):
+            errs.append(f"{tid}: stix_id {sid!r} is not attack-pattern--<uuid>")
         rb = t.get("revoked_by")
         if rb is not None:
             if rb not in techniques:

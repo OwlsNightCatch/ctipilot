@@ -475,7 +475,7 @@ Rules, all enforced by `tools/check_run.py` (`entry-updates`, `silent-edit`) unl
 
 ### How the pipeline reacts to an update
 
-- **Live brief** (`/live/`, `data/briefbook.json`, brief.js): the entry is
+- **Live brief** (the landing page `/`, `data/briefbook.json`, brief.js): the entry is
   in the window iff its **activity moment** is; it renders in the run group
   of the fire that made the latest record, flagged `UPD` with the record's
   type and `summary` shown under the headline; the pulse panel's "updates to
@@ -944,7 +944,7 @@ is built entirely from `runs/**` frontmatter.
 
 ## Rendering — the brief is a query
 
-- **`/live/`** — the live rolling brief, rendered as a run-grouped,
+- **`/` (the landing page)** — the live rolling brief, rendered as a run-grouped,
   reverse-chronological **timeline** keyed on each entry's **activity
   moment** (`max(discovered_at, updated_at)`): a new finding appears under
   the run that published it, an updated finding under the run that updated
@@ -958,7 +958,7 @@ is built entirely from `runs/**` frontmatter.
   priority / CVE / exploited / updated badges, a linked headline,
   provenance, and a clickable source list.
 - **`/daily/YYYY-MM-DD/`** — one settled page per **completed** UTC day
-  (the still-rolling day lives only in `/live/`), in the classic editorial
+  (the still-rolling day lives only in the landing-page brief), in the classic editorial
   section order: TL;DR → Active Threats → Trending Vulnerabilities →
   Research, Reports & Policy → Updates to Prior Coverage (every entry with a
   changelog record dated that day, rendered from the record) → Deep Dive →
@@ -970,8 +970,10 @@ is built entirely from `runs/**` frontmatter.
   old URLs redirect here (`merged_from`).
 - **Feeds** — `feed-items.xml` (one item per entry, `<pubDate>` =
   `discovered_at` — true discovery latency, not commit time — **plus one
-  item per changelog record**, `<pubDate>` = its `at`) + the eight sector
-  slices + the daily digest feed. There is no weekly feed.
+  item per changelog record**, `<pubDate>` = its `at`) + the sector
+  slices from `config/branding.yaml` `feeds.sector_slices` (this
+  deployment: `feed-public-sector.xml`) + the daily digest feed.
+  There is no weekly feed.
 - **`data/alerts.json`** — last 7 days (by activity moment) of
   `critical`/`high` entries with headline, summary, immediate_action,
   entities, CVEs, techniques, `updated_at` and compact `updates[]`: the
@@ -983,6 +985,21 @@ is built entirely from `runs/**` frontmatter.
   all canonical entities, covered CVEs and (toggleable) ATT&CK techniques:
   curated typed edges + derived co-occurrence/CVE/technique edges, each
   with its provenance (§ Relationships).
+- **`/stix/` — STIX 2.1 bundle endpoints** (`site/stix_model.py`) — the
+  store compiled to STIX 2.1 on every build, pulled like the RSS feeds:
+  `bundle.json` (full corpus), `recent.json` (briefbook-window activity,
+  reference-closed — the poll target for TIP platforms such as OpenCTI),
+  `entities.json` (core entity graph), `sector-<slug>.json` (the RSS
+  sector slices), `extension-schema.json`. One `report` per entry; the
+  registry as intrusion-set/campaign/malware/tool/incident (+ trend →
+  grouping, policy/report → report); one shared `vulnerability` per CVE;
+  `techniques[]` as MITRE's canonical attack-patterns; `relations[]` as
+  SROs. Every id is uuid5 over the permanent store key (entry id,
+  registry key, CVE id) under the branding-URL namespace, so one finding
+  keeps one object forever, the shared-object graph carries the
+  cross-brief connections, and re-ingestion is idempotent. Deliberately
+  no TAXII server: a static host cannot satisfy the TAXII 2.1 media-type
+  / header / filtering MUSTs.
 - **Entity pages, trends, ops, search** — all derived from entries +
   registry + runs, same URLs as v2. Entity/CVE pages carry the derived
   ATT&CK section; covered techniques are searchable.

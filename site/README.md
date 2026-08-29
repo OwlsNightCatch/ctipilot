@@ -4,10 +4,13 @@ A static, dependency-free GitHub Pages site that renders the pipeline's
 content store server-side: per-finding **entries** (`entries/`), per-run
 records (`runs/`), and the global **entity registry**
 (`entities/registry.yaml`), cross-linked with the source list. The
-signature page is **`/live/`** — the brief is a *query*: the reader picks
-a time window (default last 24 h) and the page renders a run-grouped
-timeline of every run in that window (quiet 0-finding runs included).
-`/daily/` archives each **completed** UTC day. A finding has ONE entry for
+signature page is **the landing page itself** — the live rolling brief
+renders at `/` (the retired `/live/` URL is a redirect stub), and the
+brief is a *query*: the reader picks a time window (default last 24 h)
+and the page renders a run-grouped timeline of every run in that window
+(quiet 0-finding runs included). `/daily/` archives each **completed**
+UTC day; `/changes/` is the store-wide changelog, every dated record
+newest-first. A finding has ONE entry for
 its whole life (v4.0): developments, corrections and improvements are
 appended to it as a dated changelog (`updates[]`), and an update floats
 the entry back into the live window under the run that made it. Read-only: the agentic
@@ -20,7 +23,7 @@ The deployed site lives at <https://ctipilot.ch/>.
 ## Architecture (v4 — static-site generator + one dynamic page)
 
 Every URL is a real HTML page rendered at build time. The topbar is a
-segmented **Live / Daily** control plus a search modal, a display
+segmented **Live / Daily / Changes** control plus a search modal, a display
 & accessibility popover (light / dark / system theme, dyslexia-friendly
 font, comfortable spacing), and a GitHub-stars badge; a second
 **knowledge-base subnav** row (desktop) links every pivot surface exactly
@@ -29,10 +32,10 @@ left, Feeds · About right-aligned — with the active surface highlighted
 (there is no desktop "More" menu; the mobile drawer carries the same
 links); the footer is a single minimal row. JavaScript is progressive enhancement only
 (search modal + autocomplete, GitHub-stars fetch, finding chip filters,
-theme / accessibility toggles, AI-bar dismiss, copy-link, and `/live/`'s
-window selector + load-older). With JS disabled the site is fully readable:
-`/live/` serves its server-rendered default 24 h timeline; only re-windowing
-and the chip filters need JS.
+theme / accessibility toggles, AI-bar dismiss, copy-link, and the landing
+page's window selector + load-older). With JS disabled the site is fully
+readable: the landing page serves its server-rendered default 24 h
+timeline; only re-windowing and the chip filters need JS.
 
 ```
 site/
@@ -64,8 +67,8 @@ site/
     │   ├── search.js      # Token-prefix scoring across data/search.json
     │   ├── app.js         # Topbar menus/drawer/display popover, search modal,
     │   │                  # AI-bar dismiss, copy-link, finding chip filters
-    │   └── brief.js       # /live/ window selector + load-older: re-renders the
-    │                      # run-grouped timeline from data/briefbook.json
+    │   └── brief.js       # landing-page window selector + load-older: re-renders
+    │                      # the run-grouped timeline from data/briefbook.json
     └── vendor/
         ├── HASHES         # SHA-256 + SHA-384 known-good hashes; build aborts on mismatch
         ├── marked.min.js  # vendored, unused at runtime (kept integrity-pinned)
@@ -79,10 +82,15 @@ site/
 
 ```
 _site/
-├── index.html                            # Home — live-brief card + latest day + recent updates card
-├── live/index.html                       # THE dynamic brief (default: last 24 h server-rendered as a
-│                                         #   run-grouped timeline BY ACTIVITY; brief.js re-windows
-│                                         #   from data/briefbook.json)
+├── index.html                            # THE landing page IS the dynamic brief (default: last 24 h
+│                                         #   server-rendered as a run-grouped timeline BY ACTIVITY;
+│                                         #   brief.js re-windows from data/briefbook.json) + the
+│                                         #   knowledge-base pivot band and machine-endpoint links
+├── live/index.html                       # noindex redirect stub → / (legacy inbound links)
+├── changes/index.html                    # store-wide changelog — every visible updates[] record,
+│                                         #   newest first, grouped by UTC day, deep-linked to the
+│                                         #   entry's ## <Type> — <at> section
+├── llms.txt                              # AI-agent site map: what this is + the machine endpoints
 ├── daily/
 │   ├── index.html                        # day archive, grouped by month
 │   └── YYYY-MM-DD/index.html             # static day page — that UTC day's operational entries in
@@ -93,6 +101,9 @@ _site/
 │                                         #   Revision history, sources with roles, entity links,
 │                                         #   run link. Folded v3 update entries' old URLs are
 │                                         #   noindex redirect stubs to the living entry (#update-<at>)
+├── entries/YYYY-MM-DD/<slug>/index.md    # the entry's raw Markdown source (frontmatter + body) —
+│                                         #   advertised via <link rel="alternate" type="text/markdown">,
+│                                         #   the entry meta line, and markdown_url in briefbook.json
 ├── entities/{index.html,<key>/…}         # unified entity pages (registry + CVEs) — typed
 │                                         #   relationships + derived co-occurrence sections
 ├── graph/index.html                      # interactive threat graph (canvas, assets/js/graph.js)
@@ -107,6 +118,14 @@ _site/
 ├── feed-items.xml                        # one item per ENTRY (pubDate = discovered_at) + one item per
 │                                         #   changelog record (guid <url>#update-<at>, pubDate = at) (last 50)
 ├── feed-<sector>.xml ×8                  # sector slices of the per-entry feed
+├── stix/                                 # STIX 2.1 bundle endpoints (site/stix_model.py):
+│   ├── index.html                        #   human discovery page (mapping, id guarantees, ingestion)
+│   ├── bundle.json                       #   full corpus (reports, entity SDOs, vulnerabilities,
+│   │                                     #   attack-patterns, SROs, correction notes)
+│   ├── recent.json                       #   briefbook-window activity, reference-closed — the poll target
+│   ├── entities.json                     #   core entity graph (no reports)
+│   ├── sector-<slug>.json                #   one per sector feed slice (same predicate as the RSS slices), ref-closed
+│   └── extension-schema.json             #   JSON Schema behind the property extension
 ├── about/…                               # README, docs/ (incl. pipeline.md), prompts/, changelog
 └── data/
     ├── briefbook.json                    # last ~35 days of entries BY ACTIVITY + runs with pre-rendered
@@ -121,13 +140,39 @@ _site/
     ├── search.json · site.json · build_manifest.json
 ```
 
-Plus `.nojekyll`, `404.html`, `sitemap.xml`, `robots.txt`,
-`.well-known/security.txt`, and `CNAME`. The reading routes are `/live/`
-(rolling) and `/daily/` (completed days); the design refresh renamed the
+Plus `.nojekyll`, `404.html`, `sitemap.xml`, `robots.txt`, `llms.txt`,
+`.well-known/security.txt`, and `CNAME`. The reading routes are `/`
+(rolling — the landing page), `/daily/` (completed days) and `/changes/`
+(the store-wide changelog); the design refresh renamed the
 earlier `/brief/` and `/briefs/` routes and keeps no legacy redirects for
 them, and v4.0 retired `/weekly/` with the weekly routine (the historical
 `horizon: strategic` entries stay reachable by permalink, entity, CVE, tag,
 region and search).
+
+## STIX 2.1 export (`stix_model.py` → `/stix/`)
+
+The whole content store compiles into STIX 2.1 on every build — a pure
+derived layer (the markdown store stays the source of truth), consumed on
+a pull model like the RSS feeds. Mapping: entry → `report`; registry
+actor → `intrusion-set`, campaign/malware/tool/incident → their SDOs,
+trend → `grouping`, policy + registry report → `report`; CVE → one shared
+`vulnerability`; `techniques[]` → MITRE's canonical `attack-pattern`
+objects (upstream `stix_id` from the ATT&CK pin, deterministic fallback
+before the pin is regenerated); curated `relations[]` → SROs (types
+OpenCTI rejects between a pair collapse to `related-to` with the original
+type preserved). Admiralty credibility drives `confidence` (STIX 2.1
+Appendix A); reliability/verification/kind/priority/permanent ids travel
+in one property extension (no `x_` custom properties). Everything is
+TLP:WHITE.
+
+Every id is uuid5 over the permanent store key under a namespace derived
+from the canonical branding URL (`stix.id_namespace` overrides) — never
+`SITE_URL`, so previews mint production ids and re-ingestion is
+idempotent. There is deliberately **no TAXII surface**: GitHub Pages
+cannot serve the TAXII 2.1 media type, `X-TAXII-*` headers, or query
+filtering (all spec MUSTs), so consumers poll the bundle URLs instead.
+Optional dev-only validation (never CI — the build stays stdlib):
+`pip install stix2-validator && stix2_validator site/_site/stix/bundle.json`.
 
 ## Discoverability (SEO + machine-readability)
 
@@ -143,7 +188,7 @@ structured-data builders are the `_ld_*` helpers just above
 
 | Page | `og:type` | JSON-LD |
 |---|---|---|
-| Home | `website` | `WebSite` + `Organization` |
+| Landing page (the live brief at `/`) | `website` | `WebSite` + `Organization` + `CollectionPage`/`ItemList` of the current window |
 | Entry permalink | `article` | `Article` / `TechArticle` (`datePublished` = `discovered_at`, `dateModified` = `updated_at`, `keywords` from tags+regions, `about` → CVEs/entities) + `BreadcrumbList` |
 | Day brief | `article` | `CollectionPage` + `ItemList` of the brief's entries + `BreadcrumbList` |
 | Index / entity / source / tag / region | `website` | `CollectionPage` (+ `ItemList` where cheap) + `BreadcrumbList` |
@@ -158,7 +203,11 @@ are written for back-compat but excluded (`emit_html(..., index=False)`).
 `robots.txt` is fully permissive (`Allow: /` for every crawler, including
 AI agents) and points at the sitemap. No `og:image` ships by default (the
 site is deliberately image-free); the `seo["image"]` hook lets a fork add
-one. No `llms.txt` — Google Search ignores it and it adds nothing.
+one. `/llms.txt` (operator directive 2026-08-29) gives AI agents a one-fetch
+site map: what the site is, the reading surfaces, and the machine endpoints
+(briefbook.json, per-entry raw Markdown, search.json, alerts.json, feeds,
+STIX) to prefer over scraping HTML — classic Google ignores it, but agentic
+readers are first-class consumers of this site.
 
 ## Cross-references
 

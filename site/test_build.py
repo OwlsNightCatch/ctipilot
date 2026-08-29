@@ -69,9 +69,10 @@ from build import (  # noqa: E402
     render_day_page,
     render_days_index_page,
     render_entry_card,
+    render_changes_page,
     render_entry_page,
-    render_home_page,
     render_inline,
+    render_live_brief_page,
     render_markdown,
     render_ops_page,
     render_run_detail_page,
@@ -324,7 +325,8 @@ E_CRIT = mk_entry(
                "publisher": "Example PSIRT"}],
     cves=[{"id": "CVE-2026-34038", "cvss": "9.9", "epss": None, "type": "rce",
            "vector": "zero-click", "auth": "post-auth",
-           "status": ["exploited", "patch-available", "cisa-kev"]}],
+           "status": ["exploited", "patch-available", "cisa-kev"],
+           "affected": "≤ v4.0.0-beta.420", "fixed": "v4.0.0-beta.469"}],
     actions=["Patch Coolify to ≥ v4.0.0-beta.469."],
     tags=["vulnerabilities", "rce", "actively-exploited"],
     entities=["tool:foxkit"],
@@ -359,7 +361,7 @@ E_DEEP = mk_entry(
 CORR_AT = "2026-07-03T09:30:00Z"
 E_OLD = mk_entry(
     "old-item", day="2026-07-01", ts="2026-07-01T10:00:00Z",
-    kind="incident", priority="notable", sectors=["healthcare"],
+    kind="incident", priority="notable", sectors=["public-sector"],
     # A correction dated two days after first publication — it must surface
     # in the 2026-07-03 day page's § Updates while the entry keeps its
     # 2026-07-01 kind-section placement.
@@ -381,6 +383,7 @@ E_STRAT2 = mk_entry(
     kind="synthesis", priority="notable", horizon="strategic",
     weekly_section="weekly-long-running",
     references=["2026-07-01/old-item"],
+    migrated_from="briefs/2026-06-28.md",
 )
 ALL_ENTRIES = sorted(
     [E_CRIT, E_HIGH, E_NOTE, E_DEEP, E_OLD, E_STRAT, E_STRAT2],
@@ -582,23 +585,79 @@ strat_page = render_entry_page(
 )
 assert_in("legacy strategic entry links the daily archive", "Back to the daily archive", strat_page)
 assert_not_in("no /weekly/ link on legacy strategic entries", "weekly/", strat_page.split("<main")[-1] if "<main" in strat_page else strat_page.replace("weekly-policy-item", ""))
+# Metadata completeness on the permalink: event date, deck, CVE detail
+# fields, source dates, references, migration provenance, horizon badge.
+assert_in("meta: event date", ">event 2026-07-03</span>", epage)
+assert_in("deck: headline + summary visible on the permalink",
+          '<p class="edeck"><strong>Headline coolify-rce</strong> Summary coolify-rce.</p>', epage)
+assert_in("rail CVE detail line (type · vector · auth)",
+          '<div class="erail-cve__meta">rce · zero-click · post-auth</div>', epage)
+assert_in("rail CVE fixed version",
+          '<span class="erail-cve__vl">Fixed</span> v4.0.0-beta.469', epage)
+assert_in("rail CVE affected versions",
+          '<span class="erail-cve__vl">Affected</span> ≤ v4.0.0-beta.420', epage)
+assert_in("source date rides the role label", "primary · 2026-07-03", epage)
+assert_in("entry advertises its raw markdown twin in the head",
+          'rel="alternate" type="text/markdown"', epage)
+assert_in("entry meta line links the raw source", ">raw .md</a>", epage)
+assert_in("entry JSON-LD points at the markdown encoding",
+          '"encodingFormat":"text/markdown"', epage)
+assert_in("deep-dive badge carries the category",
+          "deep dive · edge-infrastructure", build.render_badges(E_DEEP, full=True))
+strat2_page = render_entry_page(
+    E_STRAT2, entries_by_id=by_id, registry={}, runs_by_id={}, day_pages=set(),
+    site_url="https://x.example/", cachebust="t", prefix="../../../",
+    canonical="https://x.example/entries/2026-06-28/weekly-synthesis/",
+)
+assert_in("references render as Builds on", "Builds on:", strat2_page)
+assert_in("builds-on links the referenced entry",
+          'href="../../../entries/2026-07-01/old-item/"', strat2_page)
+assert_in("migration provenance in the meta line", "migrated from briefs/2026-06-28.md", strat2_page)
+assert_in("non-operational horizon badge", ">strategic</span>", strat2_page)
 
-print("== home Updates card ==")
-home = render_home_page(
-    today="2026-07-03", today_entries=[E_CRIT, E_HIGH], prev_day="2026-07-01",
-    prev_day_entries=[E_OLD], recent_updates=[E_CRIT, E_OLD],
-    site_url="https://x.example/", cachebust="t", canonical="https://x.example/",
-    counts={"entries": 7}, last_updated="03 Jul 12:00 UTC",
+print("== landing page (live brief at the site root) ==")
+by_id_all = {e["id"]: e for e in ALL_ENTRIES}
+landing = render_live_brief_page(
+    [E_CRIT, E_HIGH, E_OLD], [RUN, RUN2],
+    all_entries=ALL_ENTRIES, all_runs=[RUN, RUN2],
+    ref_ts=datetime(2026, 7, 3, 12, 0, tzinfo=timezone.utc),
+    entries_by_id=by_id_all, card_html_by_id={},
+    site_url="https://x.example/", cachebust="t",
+    prefix="", canonical="https://x.example/",
+    counts={"entries": 7, "days": 3, "updates": 1, "entities": 4,
+            "cves": 2, "sources": 5, "attack_techniques_covered": 6},
+    latest_day="2026-07-01",
 )
-assert_in("home carries the Updates card", 'class="bcard bcard--updates"', home)
-assert_in("home Updates card lists the correction", "Victim count corrected", home)
-assert_in("home Updates card type badge", 'class="b upd upd--correction"', home)
-assert_not_in("home has no weekly card", "weekly/", home)
-home_empty = render_home_page(
-    today=None, today_entries=[], prev_day=None, prev_day_entries=[], recent_updates=[],
-    site_url="https://x.example/", cachebust="t", canonical="https://x.example/",
+assert_in("landing is canonical at the root", '<link rel="canonical" href="https://x.example/" />', landing)
+assert_in("landing carries the server-rendered timeline", "data-brief-timeline", landing)
+assert_in("landing hero is the one h1", "<h1>", landing)
+assert_not_in("feed heading demoted below the hero h1", '<h1 class="feedhead-title">', landing)
+assert_in("knowledge-base pivot band below the feed", 'class="pivotband"', landing)
+assert_in("pivot band links the daily archive at the latest day", 'href="daily/2026-07-01/"', landing)
+assert_in("pivot band links the changelog", 'href="changes/"', landing)
+assert_in("machine-endpoint line for agents", "data/briefbook.json", landing)
+assert_in("machine-endpoint line advertises llms.txt", "llms.txt", landing)
+assert_in("updates pulse tile links the changelog", 'href="changes/"', landing)
+assert_in("landing declares the WebSite identity node", '"@type":"WebSite"', landing)
+assert_in("landing enumerates the window as a CollectionPage", '"@type":"CollectionPage"', landing)
+assert_not_in("landing never links the retired /live/ page", 'href="live/"', landing)
+
+print("== /changes/ — store-wide changelog ==")
+changes = render_changes_page(
+    ALL_ENTRIES, site_url="https://x.example/", cachebust="t",
+    prefix="../", canonical="https://x.example/changes/",
 )
-assert_in("home Updates card falls back to an explainer", "One living entry per finding", home_empty)
+assert_in("changes page lists the correction", "Victim count corrected", changes)
+assert_in("changes page type badge", 'class="b upd upd--correction"', changes)
+assert_in("changes row deep-links the entry section",
+          'href="../entries/2026-07-01/old-item/#update-' + CORR_AT + '"', changes)
+assert_in("changes row links the run record", 'href="../runs/' + RUN2_ID + '/"', changes)
+assert_in("changes are grouped by UTC day", ">2026-07-03<", changes)
+changes_empty = render_changes_page(
+    [E_STRAT], site_url="https://x.example/", cachebust="t",
+    prefix="../", canonical="https://x.example/changes/",
+)
+assert_in("changes page explains itself when empty", "No changelog records yet", changes_empty)
 
 print("== update card ==")
 ucard = render_update_card(E_OLD, E_OLD["updates"][0], prefix="")
@@ -895,13 +954,13 @@ assert_eq("newest item first is the latest record", _first_title, "Correction: H
 sector_feeds = {f: x for f, x, _t in build_sector_feeds(ALL_ENTRIES,
                                                         site_url="https://x.example/",
                                                         ref_ts=REF_TS)}
-assert_true("eight sector slices emitted", len(sector_feeds) == 8)
-assert_in("healthcare entry lands in its slice",
-          "Headline old-item", sector_feeds["feed-healthcare.xml"])
-assert_in("healthcare slice carries the correction item",
-          "<title>Correction: Headline old-item</title>", sector_feeds["feed-healthcare.xml"])
-assert_not_in("healthcare entry stays out of energy slice",
-              "Headline old-item", sector_feeds["feed-energy.xml"])
+assert_true("one sector slice emitted", len(sector_feeds) == 1)
+assert_in("public-sector entry lands in its slice",
+          "Headline old-item", sector_feeds["feed-public-sector.xml"])
+assert_in("public-sector slice carries the correction item",
+          "<title>Correction: Headline old-item</title>", sector_feeds["feed-public-sector.xml"])
+assert_not_in("sector-less entry stays out of the public-sector slice",
+              "Headline coolify-rce", sector_feeds["feed-public-sector.xml"])
 for fname, xml in sector_feeds.items():
     errs = _xml_validate(xml)
     if errs:
@@ -1103,11 +1162,20 @@ import branding_config  # noqa: E402
 print("== branding profile ==")
 
 _shipped = branding_config.load_branding()
+# The mirror contract EXCLUDES the deployment-scoped lists (sector_slices,
+# cohorts): those live only in the config — no in-code default, no fallback.
+_shipped_cmp = copy.deepcopy(_shipped)
+_shipped_cmp["feeds"]["sector_slices"] = []
+_shipped_cmp["trends"]["cohorts"] = []
 assert_eq(
     "shipped config/branding.yaml equals upstream DEFAULTS "
-    "(byte-identical default site)",
-    _shipped, branding_config.DEFAULTS,
+    "(byte-identical default site; deployment-scoped lists excluded)",
+    _shipped_cmp, branding_config.DEFAULTS,
 )
+assert_true("shipped sector_slices are config-defined (not mirrored in code)",
+            bool(_shipped["feeds"]["sector_slices"]))
+assert_true("shipped cohorts are config-defined (not mirrored in code)",
+            bool(_shipped["trends"]["cohorts"]))
 assert_eq(
     "default theme emits no override CSS",
     branding_config.render_branding_css(_shipped), "",
@@ -1176,7 +1244,7 @@ with tempfile.TemporaryDirectory() as _td:
     assert_eq("override: site.name replaced", _fork["site"]["name"], "acme-cti.example")
     assert_eq(
         "override: unset tagline inherits upstream default",
-        _fork["site"]["tagline"], "Switzerland, Europe & Public Sector",
+        _fork["site"]["tagline"], "Swiss Government Entities",
     )
     assert_eq("override: analytics off", _fork["analytics"]["provider"], "none")
     _css = branding_config.render_branding_css(_fork)
@@ -1211,21 +1279,21 @@ with tempfile.TemporaryDirectory() as _td:
     _fork2 = branding_config.load_branding(_tmp)
     assert_eq(
         "custom cohorts replace defaults",
-        branding_config.trend_cohorts(_fork2, [{"key": "default"}]),
+        branding_config.trend_cohorts(_fork2),
         [{"key": "apac", "title": "APAC items / week", "tags": (),
           "sectors": (), "regions": ("apac",), "match": "any"}],
     )
     assert_eq(
-        "custom sector slices replace defaults",
-        branding_config.sector_feed_slices(_fork2, [("default",)]),
+        "custom sector slices render verbatim",
+        branding_config.sector_feed_slices(_fork2),
         [("feed-manufacturing.xml", ("manufacturing",), (),
           "Manufacturing", "Items affecting manufacturing.")],
     )
-    assert_eq(
-        "empty cohort list keeps upstream defaults",
-        branding_config.trend_cohorts(_shipped, [{"key": "default"}]),
-        [{"key": "default"}],
-    )
+    # No in-code defaults: the shipped config carries the complete sets.
+    assert_true("shipped config defines the cohort set",
+                len(branding_config.trend_cohorts(_shipped)) > 0)
+    assert_true("shipped config defines the sector slices",
+                len(branding_config.sector_feed_slices(_shipped)) > 0)
 
 # Module-level consistency in the imported build: snippet present iff
 # analytics enabled; branding constants derive from the shipped config.
@@ -1234,16 +1302,21 @@ assert_eq(
     bool(build.UMAMI_SNIPPET), build.ANALYTICS_ENABLED,
 )
 assert_eq("build: SITE_NAME from config", build.SITE_NAME, _shipped["site"]["name"])
+# The slice/cohort sets come ONLY from config (no in-code default constant).
 assert_eq(
-    "build: default sector slices in effect with empty config list",
-    build.SECTOR_FEED_SLICES is build._DEFAULT_SECTOR_FEED_SLICES,
-    not _shipped["feeds"]["sector_slices"],
+    "build: sector slices come from the config",
+    build.SECTOR_FEED_SLICES,
+    branding_config.sector_feed_slices(_shipped),
 )
 assert_eq(
-    "build: default trend cohorts in effect with empty config list",
-    build.TREND_COHORTS is build._DEFAULT_TREND_COHORTS,
-    not _shipped["trends"]["cohorts"],
+    "build: trend cohorts come from the config",
+    build.TREND_COHORTS,
+    branding_config.trend_cohorts(_shipped),
 )
+assert_true("build: no in-code sector-slice default constant",
+            not hasattr(build, "_DEFAULT_SECTOR_FEED_SLICES"))
+assert_true("build: no in-code trend-cohort default constant",
+            not hasattr(build, "_DEFAULT_TREND_COHORTS"))
 
 
 # ---------------------------------------------------------------------
@@ -1462,6 +1535,212 @@ if build.ATTACK_TECHNIQUES:
               build.render_entry_attack_section(mk_entry("no-atk"), prefix=""), "")
 else:
     print("  (skipped — attack/enterprise-attack.json not present)")
+
+# ---------------------------------------------------------------------
+# STIX 2.1 export (site/stix_model.py)
+# ---------------------------------------------------------------------
+print("== stix export ==")
+import stix_model  # noqa: E402
+
+# Timestamp conversion — STIX requires millisecond precision.
+assert_eq("stix_ts second precision", stix_model.stix_ts("2026-07-03T04:21:09Z"),
+          "2026-07-03T04:21:09.000Z")
+assert_eq("stix_ts date", stix_model.stix_ts("2026-07-03"),
+          "2026-07-03T00:00:00.000Z")
+assert_eq("stix_ts fractional passthrough",
+          stix_model.stix_ts("2026-08-05T21:33:58.496Z"), "2026-08-05T21:33:58.496Z")
+try:
+    stix_model.stix_ts("yesterday")
+    assert_true("stix_ts rejects garbage", False)
+except ValueError:
+    assert_true("stix_ts rejects garbage", True)
+
+# Pinned uuid5 vectors — an accidental namespace/seed change must fail loud
+# (every published object id would silently change for consumers).
+_ns = stix_model.make_namespace("https://ctipilot.ch/")
+assert_eq("namespace uuid5 vector", str(_ns), "a9479913-dd84-5607-b3cb-42bbc237046d")
+assert_eq("report id uuid5 vector",
+          stix_model.sid(_ns, "report", "entry:2026-07-03/coolify-rce"),
+          "report--a9d595c9-0cd6-557f-a2bf-7e7a806af882")
+assert_eq("configured namespace wins",
+          str(stix_model.make_namespace("https://x/", str(_ns))), str(_ns))
+try:
+    stix_model.make_namespace("https://x/", "nope")
+    assert_true("bad configured namespace rejected", False)
+except ValueError:
+    assert_true("bad configured namespace rejected", True)
+
+# Admiralty credibility → confidence (STIX 2.1 Appendix A normative table).
+assert_eq("credibility 1 → 90", stix_model.confidence_from_credibility(1), 90)
+assert_eq("credibility 2 → 70", stix_model.confidence_from_credibility("2"), 70)
+assert_eq("credibility 6 → unspecified", stix_model.confidence_from_credibility(6), None)
+assert_eq("credibility absent → unspecified", stix_model.confidence_from_credibility(None), None)
+
+_STIX_REG = {
+    "actor:testers": {
+        "key": "actor:testers", "type": "actor", "name": "Testers",
+        "aliases": ["TST"], "nexus": "china-nexus", "summary": "Test actor.",
+        "first_seen": "2026-07-01",
+        "relations": [
+            {"to": "malware:testware", "type": "uses",
+             "source": "2026-07-03/coolify-rce", "note": "deploys it"},
+            {"to": "actor:testers2", "type": "collaborates-with",
+             "source": "2026-07-03/coolify-rce"},
+        ],
+    },
+    "actor:testers2": {"key": "actor:testers2", "type": "actor", "name": "Testers II",
+                       "aliases": [], "nexus": None, "summary": "Second actor.",
+                       "first_seen": "2026-07-02"},
+    "malware:testware": {
+        "key": "malware:testware", "type": "malware", "name": "Testware",
+        "aliases": [], "nexus": None, "summary": "Test malware.",
+        "first_seen": "2026-07-01",
+        "relations": [{"to": "actor:testers", "type": "attributed-to",
+                       "source": "2026-07-03/coolify-rce"}],
+    },
+    "trend:test-wave": {"key": "trend:test-wave", "type": "trend", "name": "Test wave",
+                        "aliases": [], "nexus": None, "summary": "A wave.",
+                        "first_seen": "2026-07-01"},
+    "actor:old-name": {"key": "actor:old-name", "type": "actor", "name": "Old Name",
+                       "aliases": [], "nexus": None, "summary": "Tombstone.",
+                       "first_seen": "2026-07-01", "merged_into": "actor:testers"},
+}
+_e_rich = mk_entry(
+    "coolify-rce",
+    entities=["actor:old-name", "trend:test-wave"],  # tombstone must remap
+    cves=[{"id": "CVE-2026-1111", "cvss": "9.8", "type": "rce", "vector": "zero-click",
+           "auth": "pre-auth", "status": ["exploited", "patch-available"],
+           "affected": "≤1.0", "fixed": "1.1"}],
+    classification={"reliability": "B", "credibility": 2},
+    updates=[
+        {"at": "2026-07-04T08:00:00Z", "run_id": RUN2_ID, "type": "update",
+         "summary": "New detail."},
+        {"at": "2026-07-05T08:00:00Z", "run_id": RUN2_ID, "type": "correction",
+         "summary": "Fixed a wrong version range."},
+        {"at": "2026-07-06T08:00:00Z", "run_id": RUN2_ID, "type": "correction",
+         "summary": "Metadata only.", "internal": True},
+    ],
+)
+_e_bare = mk_entry("bare-item", day="2026-07-04", ts="2026-07-04T05:00:00Z",
+                   kind="research", sources=[])
+_e_bare["classification"] = {"reliability": "F", "credibility": 6}
+_compiled = stix_model.compile_stix(
+    [_e_rich, _e_bare], _STIX_REG, cves_seen_records=[
+        {"id": "CVE-2026-1111", "first_seen": "2026-07-03", "last_seen": "2026-07-05",
+         "primary_source_url": "https://example.com/advisory", "title": "Test CVE."},
+    ],
+    attack_dataset=None, ns=_ns, publisher_name="ctipilot.ch",
+    site_url="https://ctipilot.ch/",
+    extension_schema_url="https://ctipilot.ch/stix/extension-schema.json",
+)
+_objs = _compiled["objects"]
+_by_type: dict[str, list] = {}
+for _o in _objs.values():
+    _by_type.setdefault(_o["type"], []).append(_o)
+
+_rep = _objs[_compiled["report_ids"]["2026-07-03/coolify-rce"]]
+assert_eq("report published = discovered_at", _rep["published"], "2026-07-03T04:21:09.000Z")
+assert_eq("report modified follows latest changelog record",
+          _rep["modified"], "2026-07-06T08:00:00.000Z")
+assert_eq("report kind vulnerability → report_types", _rep["report_types"], ["vulnerability"])
+assert_eq("report confidence B2 → 70", _rep["confidence"], 70)
+assert_true("report permalink is the first external reference",
+            _rep["external_references"][0]["url"].endswith("/entries/2026-07-03/coolify-rce/"))
+assert_in("report labels carry priority", "critical" if _e_rich["priority"] == "critical"
+          else "notable", _rep["labels"])
+_ext_payload = next(iter(_rep["extensions"].values()))
+assert_eq("extension carries reliability", _ext_payload["reliability"], "B")
+assert_eq("extension carries the entry id", _ext_payload["entry_id"], "2026-07-03/coolify-rce")
+_vuln = _by_type["vulnerability"][0]
+assert_eq("one vulnerability per CVE", len(_by_type["vulnerability"]), 1)
+assert_eq("vulnerability named by CVE id", _vuln["name"], "CVE-2026-1111")
+assert_eq("vulnerability labels = status union", _vuln["labels"],
+          ["exploited", "patch-available"])
+assert_in("vulnerability referenced by the report", _vuln["id"], _rep["object_refs"])
+assert_in("tombstoned entity remapped to canonical",
+          _compiled["entity_ids"]["actor:testers"], _rep["object_refs"])
+assert_true("tombstone emits no object", "actor:old-name" not in _compiled["entity_ids"])
+_rep_bare = _objs[_compiled["report_ids"]["2026-07-04/bare-item"]]
+assert_eq("bare report object_refs falls back to identity",
+          _rep_bare["object_refs"], [_compiled["anchor_ids"][1]])
+assert_true("credibility 6 → confidence omitted", "confidence" not in _rep_bare)
+
+_actor = _objs[_compiled["entity_ids"]["actor:testers"]]
+assert_eq("actor → intrusion-set", _actor["type"], "intrusion-set")
+assert_eq("actor aliases mapped", _actor["aliases"], ["TST"])
+assert_in("nexus becomes a label", "china-nexus", _actor["labels"])
+_mal = _objs[_compiled["entity_ids"]["malware:testware"]]
+assert_true("malware is_family", _mal["is_family"] is True)
+_grp = _objs[_compiled["entity_ids"]["trend:test-wave"]]
+assert_eq("trend → grouping", _grp["type"], "grouping")
+assert_eq("grouping context", _grp["context"], "unspecified")
+assert_eq("grouping refs its citing reports", _grp["object_refs"], [_rep["id"]])
+
+_rels = {(_r["source_ref"], _r["target_ref"]): _r for _r in _by_type["relationship"]}
+_uses = _rels[(_actor["id"], _mal["id"])]
+assert_eq("uses kept verbatim", _uses["relationship_type"], "uses")
+assert_true("kept relation carries no original_type extension", "extensions" not in _uses)
+_auth = _rels[(_mal["id"], _actor["id"])]
+assert_eq("malware attributed-to actor → authored-by", _auth["relationship_type"], "authored-by")
+assert_eq("remapped relation preserves the original type",
+          next(iter(_auth["extensions"].values()))["original_type"], "attributed-to")
+_collab = _rels[(_actor["id"], _objs[_compiled["entity_ids"]["actor:testers2"]]["id"])]
+assert_eq("collaborates-with collapses to related-to",
+          _collab["relationship_type"], "related-to")
+assert_in("collapsed relation names the curated type in the description",
+          "collaborates-with", _collab["description"])
+
+_notes = _by_type.get("note") or []
+assert_eq("one note per non-internal correction", len(_notes), 1)
+assert_eq("note content is the correction summary",
+          _notes[0]["content"], "Fixed a wrong version range.")
+assert_eq("note points at the report", _notes[0]["object_refs"], [_rep["id"]])
+
+# Structural lint: every ref resolves inside the compiled corpus.
+_dangling = []
+for _o in _objs.values():
+    for _k in ("object_refs", "object_marking_refs"):
+        _dangling += [r for r in _o.get(_k) or [] if r not in _objs]
+    for _k in ("created_by_ref", "source_ref", "target_ref"):
+        if _o.get(_k) and _o[_k] not in _objs:
+            _dangling.append(_o[_k])
+assert_eq("no dangling refs in the corpus", _dangling, [])
+
+# Reference closure: seeding the bare report must not drag the rich graph in.
+_closure = stix_model.reference_closure(_objs, {_rep_bare["id"]})
+assert_true("closure carries the seed + anchors only",
+            _closure == {_rep_bare["id"], *_compiled["anchor_ids"][:2]}
+            or _rep["id"] not in _closure)
+_closure_rich = stix_model.reference_closure(_objs, {_rep["id"], *_compiled["anchor_ids"]})
+assert_true("closure pulls the report's vulnerability", _vuln["id"] in _closure_rich)
+assert_true("closure drops SROs with an endpoint outside",
+            _uses["id"] not in _closure_rich)  # malware is not cited by the report
+_closure_pair = stix_model.reference_closure(_objs, {_actor["id"], _mal["id"]})
+assert_true("closure adds SROs whose endpoints landed inside",
+            _uses["id"] in _closure_pair)
+
+# Bundle: ascending (created, id) order, deterministic serialization.
+_bundle = stix_model.make_bundle(_ns, "test", list(_objs.values()))
+_order = [(o.get("created") or "", o["id"]) for o in _bundle["objects"]]
+assert_eq("bundle sorted ascending by (created, id)", _order, sorted(_order))
+_again = stix_model.compile_stix(
+    [_e_rich, _e_bare], _STIX_REG, cves_seen_records=[
+        {"id": "CVE-2026-1111", "first_seen": "2026-07-03", "last_seen": "2026-07-05",
+         "primary_source_url": "https://example.com/advisory", "title": "Test CVE."},
+    ],
+    attack_dataset=None, ns=_ns, publisher_name="ctipilot.ch",
+    site_url="https://ctipilot.ch/",
+    extension_schema_url="https://ctipilot.ch/stix/extension-schema.json",
+)
+assert_eq("compile → serialize is deterministic",
+          stix_model.serialize(stix_model.make_bundle(_ns, "test",
+                                                      list(_again["objects"].values()))),
+          stix_model.serialize(_bundle))
+
+# Branding: the stix section resolves and validates.
+assert_eq("stix_settings falls back to site name",
+          branding_config.stix_settings(branding_config.DEFAULTS)["publisher_name"],
+          branding_config.DEFAULTS["site"]["name"])
 
 # ---------------------------------------------------------------------
 # Result

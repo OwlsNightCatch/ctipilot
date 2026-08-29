@@ -65,7 +65,7 @@ parts and defers to that spec for every field-level question.
                            └────────────┬───────────────┘
                                         ▼
                               GitHub Pages reader
-                              /live/ renders the entry store
+                              / (landing) renders the entry store
                               over a reader-chosen time window,
                               ordered by activity (an updated
                               entry floats back to the top)
@@ -243,8 +243,8 @@ home region, description, audience), watchlists (products with
 vendor/exposure/criticality, suppliers with relationship/criticality,
 standing free-text interests), the vulnerability-triage scheme
 (categories with id/name/criteria/response + a default), the
-national-CERT single-source carve-out list (`national_certs` — absent key
-= upstream default list, `[]` = carve-out disabled), the standing
+national-CERT single-source carve-out list (`national_certs` — required
+key, no in-code default, `[]` = carve-out disabled), the standing
 policy/regulatory watch the intel run's S2 worker sweeps (`policy_watch`),
 the `classification:`
 scheme (the NATO Admiralty code + the `triage_kinds` split), and the
@@ -557,26 +557,35 @@ pipeline's output and never writes back.
 
 A stdlib-only Python static-site generator (`site/build.py`, on top of
 `site/content_model.py`) emits a real HTML page for every URL. **The brief
-is a query**: `/live/` is the live rolling brief — a run-grouped,
-reverse-chronological timeline of the last 24 h in which **every run
-appears, including quiet (0-finding) ones**. The default window ships
+is a query, and the landing page IS the brief**: `/` renders the live
+rolling brief — a run-grouped, reverse-chronological timeline of the last
+24 h in which **every run appears, including quiet (0-finding) ones**
+(`/live/` survives only as a noindex redirect stub for legacy inbound
+links). The default window ships
 server-rendered and fully no-JS-readable; `assets/js/brief.js` re-renders
 the timeline client-side from `data/briefbook.json` (the last ~35 days of
 entries) when the reader changes the window selector (6 / 12 / 24 / 48 /
 72 h) or loads older findings. Page inventory:
 
-- `/` home · `/live/` the live rolling brief, ordered by each entry's
+- `/` the landing page = the live rolling brief, ordered by each entry's
   activity moment (`max(discovered_at, updated_at)`) so an updated finding
-  reappears at the top under the run that changed it, flagged `UPD` ·
-  `/daily/YYYY-MM-DD/` one settled page per **completed** UTC day in the
-  classic editorial section order, with § Updates to Prior Coverage
+  reappears at the top under the run that changed it, flagged `UPD` — with
+  the knowledge-base pivot band and the machine-endpoint links below the
+  feed · `/daily/YYYY-MM-DD/` one settled page per **completed** UTC day
+  in the classic editorial section order, with § Updates to Prior Coverage
   rendered from that day's changelog records (the still-rolling day lives
-  only in `/live/`) · `/daily/` the newest-first completed-day archive.
+  only on the landing page) · `/daily/` the newest-first completed-day
+  archive · `/changes/` the store-wide changelog: every visible
+  changelog record, newest first, deep-linked to its entry section.
 - `/entries/YYYY-MM-DD/<slug>/` per-entry permalinks (metadata badges,
   "first published · updated" meta, each `## <Type> — <at>` section as a
   timestamped block, a revision-history panel, producing-run link); the
   old URLs of the v3 update entries folded on 2026-08-27 are meta-refresh
-  redirect stubs to the living entry (`merged_from`).
+  redirect stubs to the living entry (`merged_from`). Every permalink also
+  publishes the entry's raw Markdown source at `<permalink>index.md`
+  (advertised via `<link rel="alternate" type="text/markdown">` and
+  `markdown_url` in `data/briefbook.json`) — the machine-readable twin
+  for AI agents.
 - `/entities/<key>/` unified entity pages from the registry + CVE
   universe — including the derived ATT&CK-technique section and a
   per-entity Navigator layer (`attack-layer.json`); `/cves/` and
@@ -591,26 +600,37 @@ entries) when the reader changes the window selector (6 / 12 / 24 / 48 /
   the full telemetry panel + the record's verification & coverage notes,
   linked from the live timeline's run dividers and the ops run log),
   `/feeds/`, `/about/**` (README, docs, prompts rendered as pages).
-- Ten RSS feeds: `feed.xml` (one item per day page), `feed-items.xml` (one
+- RSS feeds: `feed.xml` (one item per day page), `feed-items.xml` (one
   item per entry — `<pubDate>` is the entry's `discovered_at`, true
   discovery latency, not commit time — plus one item per changelog record,
-  `guid` `<entry url>#update-<at>`, `<pubDate>` the record's `at`) + eight
-  sector slices (`feed-public-sector.xml`, `feed-healthcare.xml`,
-  `feed-finance.xml`, `feed-energy.xml`, `feed-ot-ics.xml`,
-  `feed-defense.xml`, `feed-telco.xml`, `feed-education.xml`).
-- Data islands: `data/briefbook.json` (the `/live/` client payload —
+  `guid` `<entry url>#update-<at>`, `<pubDate>` the record's `at`) + the
+  sector slices from `config/branding.yaml` `feeds.sector_slices` — the
+  config list is the complete set, no in-code default (this deployment:
+  `feed-public-sector.xml`).
+- Data islands: `data/briefbook.json` (the landing page's client payload —
   Phase 7 polls it for the run id), `data/alerts.json` (last 7 days by
   activity moment of `critical`/`high` entries with headline, summary,
   `immediate_action`, entities, CVEs, `updated_at` + compact changelog —
   the notification-hook surface), `data/search.json`,
   `data/site.json`.
+- STIX 2.1 bundle endpoints under `/stix/` (`site/stix_model.py`, a pure
+  derived layer compiled on every build): `bundle.json` (full corpus),
+  `recent.json` (rolling-window activity, reference-closed — the pull
+  target for TIP platforms), `entities.json` (core entity graph),
+  `sector-<slug>.json` (same slices as the sector RSS feeds),
+  `extension-schema.json`. Deterministic uuid5 ids over the permanent
+  store keys make re-ingestion idempotent; no TAXII server (static
+  hosting cannot satisfy the TAXII 2.1 MUSTs) — docs on the rendered
+  `/stix/` page and in [`site/README.md`](../site/README.md).
 
 The site is read-only with respect to the rest of the repo: it reads
 `entries/`, `entities/`, `runs/`, `state/`, `sources/`, `README.md`,
 `docs/*.md`, `prompts/*.md` and `site/taxonomy.yaml`, and writes only
 under `site/_site/` (gitignored locally; force-pushed to `gh-pages` by
 CI). JavaScript only enhances — with JS disabled every page, including
-the default `/live/` window, is fully readable. Internals:
+the landing page's default window, is fully readable. `/llms.txt` gives
+AI agents a one-fetch map of the reading surfaces and machine endpoints.
+Internals:
 [`site/README.md`](../site/README.md).
 
 [`site/taxonomy.yaml`](../site/taxonomy.yaml) is the controlled vocabulary

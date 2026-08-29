@@ -63,22 +63,10 @@ TARGETS: list[tuple[str, list[str]]] = [
     (".claude/agents/cti-verification.md", ["verify-context"]),
 ]
 
-# Upstream defaults for the optional org-profile keys below — used when the
-# key is ABSENT from config/org-profile.yaml (an explicit empty list is a
-# deliberate "disable" and is honoured as such).
-DEFAULT_NATIONAL_CERTS: list[str] = [
-    "NCSC-CH", "GovCERT.ch", "CERT-EU", "ENISA", "BSI", "ANSSI/CERT-FR",
-    "NCSC-UK", "NCSC-NL", "CISA", "CCN-CERT", "AGID-CSIRT-IT", "CERT.at",
-    "CERT-PL",
-]
-DEFAULT_POLICY_WATCH: list[str] = [
-    "NCSC.ch announcements (use `tools/fetch_source.py` — direct WebFetch 403s)",
-    "FINMA guidance",
-    "EU NIS2 / DORA / CRA developments (transposition steps, implementation deadlines)",
-    "OFCOM / BAKOM publications",
-    "Council of Europe cybercrime convention items",
-    "sanctions and law-enforcement actions affecting publicly-known threat-actor infrastructure",
-]
+# NOTE: there are deliberately NO in-code default lists for national_certs
+# or policy_watch (removed 2026-08-29, operator directive): the config file
+# is the single source. Both keys are REQUIRED in config/org-profile.yaml;
+# an explicit empty list [] disables the feature.
 
 ALLOWED_EXPOSURE = {"internet-facing", "internal", "endpoint", "cloud-saas", "ot"}
 ALLOWED_CRITICALITY = {"high", "medium", "low"}
@@ -464,34 +452,43 @@ def validate_profile(profile: dict[str, Any],
                 f"classification.intel_classification.default {ic_default!r} is not a defined "
                 "<reliability><credibility> code pair")
 
-    # deployment — optional section; only the publish-polling site URL now.
+    # deployment — required section; only the publish-polling site URL now
+    # (no in-code default: `""` is the explicit way to disable site polling).
     # There is no visibility / TLP gate: this pipeline never filters on TLP or
     # a public/private flag (everything readable, including intel/, is fair
     # game to process into entries and reports).
-    dep = profile.get("deployment", {})
+    dep = profile.get("deployment")
+    if dep is None:
+        raise ProfileError(
+            "deployment: section is required (set deployment.site_url; \"\" disables site polling)")
     if not isinstance(dep, dict):
         raise ProfileError("deployment: must be a mapping")
     if "visibility" in dep:
         raise ProfileError(
             "deployment.visibility is no longer supported — this pipeline does not filter on "
             "TLP or a public/private flag; remove the key from config/org-profile.yaml")
-    site_url = str(dep.get("site_url", "https://ctipilot.ch/")).strip()
+    if "site_url" not in dep:
+        raise ProfileError(
+            "deployment.site_url is required (\"\" disables site polling — there is no default)")
+    site_url = str(dep.get("site_url") or "").strip()
     if site_url and not re.match(r"^https?://\S+$", site_url):
         raise ProfileError(f"deployment.site_url {site_url!r} must be an http(s) URL or empty")
 
-    # national_certs / policy_watch — optional lists of strings; an absent
-    # key keeps the upstream default, an explicit [] disables the feature.
-    def _opt_str_list(key: str, default: list[str]) -> list[str]:
+    # national_certs / policy_watch — REQUIRED lists of strings; there is no
+    # in-code default. An explicit [] disables the feature.
+    def _req_str_list(key: str) -> list[str]:
         raw = profile.get(key)
         if raw is None:
-            return list(default)
+            raise ProfileError(
+                f"{key}: key is required in config/org-profile.yaml "
+                "(an explicit empty list [] disables the feature; there is no default)")
         if not isinstance(raw, list) or not all(
                 isinstance(x, str) and x.strip() for x in raw):
-            raise ProfileError(f"{key}: must be a list of non-empty strings (or omitted)")
+            raise ProfileError(f"{key}: must be a list of non-empty strings")
         return [x.strip() for x in raw]
 
-    national_certs = _opt_str_list("national_certs", DEFAULT_NATIONAL_CERTS)
-    policy_watch = _opt_str_list("policy_watch", DEFAULT_POLICY_WATCH)
+    national_certs = _req_str_list("national_certs")
+    policy_watch = _req_str_list("policy_watch")
 
     return {
         "profile_version": 1,
@@ -1075,6 +1072,12 @@ classification:
         definition: "Probably true"
       - code: "3"
         definition: "Possibly true"
+national_certs:
+  - "TEST-CERT"
+policy_watch:
+  - "Test policy watch item"
+deployment:
+  site_url: "https://test.example/"
 """
 
 
@@ -1106,8 +1109,15 @@ def selftest() -> int:
     profile = validate_profile(parsed, tax)
     check(profile["vulnerability_triage"]["default_category"] == "P2", "triage default")
     import copy as _copy
-    check(profile["deployment"] == {"site_url": "https://ctipilot.ch/"},
-          "deployment defaults when section absent (no visibility key)")
+    check(profile["deployment"] == {"site_url": "https://test.example/"},
+          "deployment.site_url taken from the config (no default)")
+    dep_missing = _copy.deepcopy(parsed)
+    del dep_missing["deployment"]
+    try:
+        validate_profile(dep_missing, tax)
+        check(False, "absent deployment section is an error (no fallback)")
+    except ProfileError:
+        check(True, "absent deployment section is an error (no fallback)")
     dep_variant = _copy.deepcopy(parsed)
     dep_variant["deployment"] = {"site_url": ""}
     dp = validate_profile(dep_variant, tax)
@@ -1193,22 +1203,30 @@ def selftest() -> int:
     check("public-private gate" in blocks_a["org-data"] and "TLP:CLEAR" not in blocks_a["org-data"],
           "TLP gate language removed from org-data")
 
-    # 4b. national_certs / policy_watch: absent key → upstream default;
-    # explicit values render; explicit [] disables.
-    check(profile["national_certs"] == DEFAULT_NATIONAL_CERTS,
-          "absent national_certs falls back to upstream default")
-    check(profile["policy_watch"] == DEFAULT_POLICY_WATCH,
-          "absent policy_watch falls back to upstream default")
-    check("NCSC-CH" in blocks_a["org-certs"], "org-certs renders the carve-out list")
-    check("FINMA guidance" in blocks_a["org-policy-watch"],
+    # 4b. national_certs / policy_watch: REQUIRED (absent key is an error —
+    # no in-code default); explicit values render; explicit [] disables.
+    check(profile["national_certs"] == ["TEST-CERT"],
+          "national_certs taken from the config (no default)")
+    check(profile["policy_watch"] == ["Test policy watch item"],
+          "policy_watch taken from the config (no default)")
+    check("TEST-CERT" in blocks_a["org-certs"], "org-certs renders the carve-out list")
+    check("Test policy watch item" in blocks_a["org-policy-watch"],
           "org-policy-watch renders the watch list")
+    for _req_key in ("national_certs", "policy_watch"):
+        variant_missing = _copy.deepcopy(parsed)
+        del variant_missing[_req_key]
+        try:
+            validate_profile(variant_missing, tax)
+            check(False, f"absent {_req_key} is an error (no fallback)")
+        except ProfileError:
+            check(True, f"absent {_req_key} is an error (no fallback)")
     variant = _copy.deepcopy(parsed)
     variant["national_certs"] = ["SingCERT"]
     variant["policy_watch"] = []
     vp = validate_profile(variant, tax)
     vb = render_blocks(vp)
-    check("SingCERT" in vb["org-certs"] and "NCSC-CH" not in vb["org-certs"],
-          "custom national_certs replaces the default list")
+    check("SingCERT" in vb["org-certs"] and "TEST-CERT" not in vb["org-certs"],
+          "custom national_certs renders verbatim")
     check("DISABLED" not in vb["org-certs"], "non-empty custom list stays enabled")
     check("No standing policy / regulatory watch configured" in vb["org-policy-watch"],
           "explicit empty policy_watch disables the watch")

@@ -12,14 +12,18 @@ Inputs (read-only · the v3 content model, see docs/pipeline.md):
     README.md / docs/*.md / prompts/*.md   rendered under /about/
 
 Outputs (written under site/_site/):
-    /                              home: live / latest-completed-day / recent-updates cards
-    /live/                         the live rolling brief: default 24 h window server-rendered;
-                                   assets/js/brief.js re-renders from data/briefbook.json
+    /                              THE landing page IS the live rolling brief: default 24 h
+                                   window server-rendered (assets/js/brief.js re-renders from
+                                   data/briefbook.json) + knowledge-base pivots below the feed
+    /live/                         noindex meta-refresh redirect stub → / (legacy inbound links)
+    /changes/                      every changelog record store-wide, newest first
     /daily/                        completed-day index (archive), newest first
     /daily/YYYY-MM-DD/             one completed UTC day (canonical daily structure)
     /entries/YYYY-MM-DD/<slug>/    per-entry permalinks (badges, changelog sections,
                                    revision history, run link); folded v3 update entries
-                                   redirect here (updates[].merged_from)
+                                   redirect here (updates[].merged_from); each permalink also
+                                   publishes its raw source at <permalink>index.md (advertised
+                                   via <link rel="alternate" type="text/markdown">)
     /entities/ /entities/<key>/    unified entity pages (registry + CVE universe)
     /cves/ /topics/                type-filtered entity list views (+ legacy redirects)
     /sources/ /sources/<id>/       source catalogue + per-source pages
@@ -31,10 +35,14 @@ Outputs (written under site/_site/):
                                    live timeline's run dividers and the ops run log)
     /feeds/ + feed*.xml            daily / per-entry (+ one item per changelog record)
                                    + 8 sector slices
+    /stix/ + /stix/*.json          STIX 2.1 bundle endpoints (full / recent /
+                                   entity graph / per-sector; via site/stix_model.py)
     /about/**                      README, docs (incl. docs/pipeline.md), prompts
     /data/briefbook.json           last-35-days entries+runs with pre-rendered card HTML
+                                   (+ each entry's markdown_url · the raw-source endpoint)
     /data/alerts.json              last-7-days critical|high entries (notification hooks)
     /data/search.json              search index (day / entry / entity / technique / source)
+    /llms.txt                      AI-agent site map: what this is + machine endpoints
     /data/site.json /data/build_manifest.json /sitemap.xml /robots.txt /404.html
 
 Design properties (unchanged from v2):
@@ -102,6 +110,7 @@ from content_model import (  # noqa: E402
 # identity literal may be reintroduced below this point. See
 # docs/customization.md.
 import branding_config  # noqa: E402  (sibling module; sys.path[0] is site/)
+import stix_model  # noqa: E402  (sibling module; the STIX 2.1 derived layer)
 
 BRANDING = branding_config.load_branding()
 
@@ -121,6 +130,7 @@ SITE_LOCALE = BRANDING["site"]["locale"].strip()
 # brief exists. Overridable via config/branding.yaml `site.nav_*`.
 NAV_LIVE_LABEL = (BRANDING["site"].get("nav_live") or "Live").strip()
 NAV_DAILY_LABEL = (BRANDING["site"].get("nav_daily") or "Daily").strip()
+NAV_CHANGES_LABEL = (BRANDING["site"].get("nav_changes") or "Changes").strip()
 LATEST_DAY_REL = "daily/"
 
 # AI-provenance bar (dismissible strip under the topbar). The label copy may
@@ -132,7 +142,7 @@ AI_BAR_HTML = (
 ).strip()
 AI_BAR_LINK_LABEL = (BRANDING["site"].get("ai_bar_link_label") or "how it works →").strip()
 
-# Home hero copy (eyebrow / headline / subtitle). Overridable via
+# Landing-page hero copy (eyebrow / headline / subtitle). Overridable via
 # config/branding.yaml `site.hero_*`; the subtitle defaults to site.lede.
 HERO_EYEBROW = (BRANDING["site"].get("hero_eyebrow") or "Continuous cyber threat intelligence").strip()
 HERO_TITLE = (BRANDING["site"].get("hero_title") or "Read the signal, not the noise.").strip()
@@ -157,6 +167,11 @@ CHART_INFO_RGB = BRANDING["charts"]["info_rgb"].strip() or "121,192,255"
 # RSS channel descriptions (channel titles derive from SITE_NAME + TAGLINE).
 FEED_DAILY_DESCRIPTION = BRANDING["feeds"]["daily_description"].strip()
 FEED_ITEMS_DESCRIPTION = BRANDING["feeds"]["items_description"].strip()
+
+# STIX 2.1 export (config/branding.yaml `stix:`). The id namespace derives
+# from the CANONICAL branding URL, never the SITE_URL env override, so a
+# preview build emits the same object ids as production.
+STIX_SETTINGS = branding_config.stix_settings(BRANDING)
 
 # RSS truncation per feed (HTML archive is unbounded). FEED_ITEMS_MAX caps
 # the COMBINED list of entry items + changelog-record items.
@@ -1175,7 +1190,7 @@ _WORDMARK_HTML = (
     + (f"<em>{_escape(WORDMARK_ACCENT)}</em>" if WORDMARK_ACCENT else "")
 )
 _FOOTER_TAGLINE_HTML = (
-    f"\n            <small>{_escape(FOOTER_TAGLINE)}</small>" if FOOTER_TAGLINE else ""
+    f"<span>{_escape(FOOTER_TAGLINE)}</span>" if FOOTER_TAGLINE else ""
 )
 _FOOTER_LEDE_HTML = "\n          ".join(
     _escape(ln) for ln in BRANDING["site"]["footer_lede"].strip().splitlines()
@@ -1186,16 +1201,19 @@ _COPYRIGHT_NOTE_HTML = "\n        ".join(
 
 
 def _nav_segments_html(pfx: str, active_nav: str) -> str:
-    """The Live / Daily segmented control. Live → the rolling brief;
-    Daily → the latest day page (LATEST_DAY_REL is set in main(); it
-    falls back to the archive index when no page exists yet)."""
+    """The Live / Daily / Changes segmented control. Live → the landing
+    page (the rolling brief renders at the site root); Daily → the latest
+    day page (LATEST_DAY_REL is set in main(); it falls back to the archive
+    index when no page exists yet); Changes → the store-wide changelog."""
     def seg(nav_key: str, href: str, label: str, live_led: bool = False) -> str:
         active = " active" if active_nav == nav_key else ""
         led = '<span class="ld"><i></i></span>' if live_led else ""
-        return f'<a class="seg-btn{active}" href="{pfx}{href}">{led}{_escape(label)}</a>'
+        target = (pfx + href) or "./"
+        return f'<a class="seg-btn{active}" href="{target}">{led}{_escape(label)}</a>'
     return (
-        seg("live", "live/", NAV_LIVE_LABEL, live_led=True)
+        seg("live", "", NAV_LIVE_LABEL, live_led=True)
         + seg("daily", LATEST_DAY_REL, NAV_DAILY_LABEL)
+        + seg("changes", "changes/", NAV_CHANGES_LABEL)
     )
 
 
@@ -1260,6 +1278,7 @@ def _more_menu_links(pfx: str, *, drawer: bool = False) -> str:
     tail = [
         (f"{pfx}about/", "About", ""),
         (f"{pfx}feeds/", "RSS feeds", "10"),
+        (f"{pfx}stix/", "STIX bundles", "2.1"),
     ]
     def row(href: str, label: str, hint: str) -> str:
         hint_html = f'<span class="mono">{_escape(hint)}</span>' if hint else ""
@@ -1538,6 +1557,7 @@ def base_template(
 <link rel="stylesheet" href="{pfx}assets/css/styles.css?v={cachebust}" />{_branding_css_links(pfx=pfx, cachebust=cachebust)}
 <link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} · Daily" href="{pfx}feed.xml" />
 <link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} · Per item" href="{pfx}feed-items.xml" />
+<link rel="alternate" type="application/stix+json" title="{_escape(SITE_NAME)} · STIX 2.1 recent" href="{pfx}stix/recent.json" />
 <link rel="sitemap" type="application/xml" href="{pfx}sitemap.xml" />
 <link rel="icon" href="{_favicon_href(pfx=pfx, cachebust=cachebust)}" />
 {alt_links}
@@ -1610,7 +1630,7 @@ def base_template(
 <main id="main" class="main"><div class="view">{body}</div></main>
 <footer class="footer" role="contentinfo">
   <div class="foot">
-    <span>© {datetime.now(timezone.utc).year} {_escape(SITE_NAME)}</span>
+    <span>© {datetime.now(timezone.utc).year} {_escape(SITE_NAME)}</span>{_FOOTER_TAGLINE_HTML}
     <a href="{pfx}about/prompts/verification/">Verification policy</a>
     <a href="{pfx}about/">How this works</a>
     <a href="{pfx}feeds/">RSS</a>
@@ -2498,9 +2518,15 @@ def render_badges(entry: dict[str, Any], *, prefix: str = "", full: bool = False
         if entry.get("kind"):
             parts.append(f'<span class="b">{_escape(str(entry["kind"]))}</span>')
         if entry.get("deep_dive"):
-            parts.append('<span class="b">deep dive</span>')
+            ddc = str(entry.get("deep_dive_category") or "").strip()
+            parts.append(f'<span class="b">deep dive{" · " + _escape(ddc) if ddc else ""}</span>')
         if entry.get("watchlist_hit"):
             parts.append('<span class="b" title="Included via an org-profile watchlist match">watchlist</span>')
+        horizon = str(entry.get("horizon") or "operational")
+        if horizon != "operational":
+            parts.append(
+                f'<span class="b" title="Legacy entry from the retired weekly strategic routine">{_escape(horizon)}</span>'
+            )
     return '<div class="badges">' + "".join(parts) + "</div>"
 
 
@@ -3297,13 +3323,17 @@ def render_live_brief_page(
     cachebust: str,
     prefix: str,
     canonical: str,
+    counts: dict[str, int] | None = None,
+    latest_day: str | None = None,
 ) -> str:
-    """/live/ · the live rolling brief. `window_entries` are the entries
-    whose ACTIVITY moment (max(discovered_at, updated_at)) falls in the
-    default 24 h window; they are server-rendered as a run-grouped timeline
-    and brief.js re-renders it client-side from data/briefbook.json when
-    the reader changes the window (the range <select> or the "load older
-    findings" button)."""
+    """/ · the landing page IS the live rolling brief. `window_entries`
+    are the entries whose ACTIVITY moment (max(discovered_at, updated_at))
+    falls in the default 24 h window; they are server-rendered as a
+    run-grouped timeline and brief.js re-renders it client-side from
+    data/briefbook.json when the reader changes the window (the range
+    <select> or the "load older findings" button). Below the feed: the
+    knowledge-base pivot band (`counts` carries the store-wide totals) and
+    the machine-endpoint line for AI agents / feed readers."""
     ops = operational_entries(window_entries)
     n = len(ops)
     n_crit = sum(1 for e in ops if e.get("priority") == "critical")
@@ -3351,7 +3381,59 @@ def render_live_brief_page(
     actnow = render_actnow(critical, prefix=prefix) if critical else ""
     timeline = _live_timeline_html(ops, window_runs, prefix=prefix)
 
+    # --- knowledge-base pivot band + machine endpoints (below the feed) --
+    c = counts or {}
+
+    def _fmt_n(key: str) -> int | None:
+        v = c.get(key)
+        return int(v) if isinstance(v, int) and v > 0 else None
+
+    pivots: list[tuple[str, str, int | None, str]] = [
+        ((f"daily/{latest_day}/" if latest_day else "daily/"), "Daily briefs", _fmt_n("days"),
+         "The settled record of each UTC day · the archive of every published brief."),
+        ("changes/", "Changes", _fmt_n("updates"),
+         "Every development, correction and improvement to prior findings, newest first."),
+        ("entities/", "Entities", _fmt_n("entities"),
+         "Actors, campaigns, malware, incidents · every key is a pivot."),
+        ("cves/", "CVEs", _fmt_n("cves"),
+         "Every vulnerability on file with its full appearance trail."),
+        ("attack/", "ATT&CK", _fmt_n("attack_techniques_covered"),
+         "Technique coverage matrix mapped from every entry, Navigator-ready."),
+        ("graph/", "Graph", None,
+         "The interactive threat graph · typed, sourced entity relationships."),
+        ("sources/", "Sources", _fmt_n("sources"),
+         "The curated source list, reliability-rated and health-probed."),
+        ("trends/", "Trends", None,
+         "Week-by-week cohort movement: ransomware, KEV, sector targeting."),
+    ]
+    pivot_tiles = "".join(
+        f'<a class="pivot" href="{prefix}{href}"><span class="pivot-h">{_escape(t)}'
+        + (f'<span class="pivot-n">{n:,}</span>' if n else "")
+        + f'</span><span class="pivot-p">{_escape(desc)}</span></a>'
+        for href, t, n, desc in pivots
+    )
+    explore_band = f"""
+<section class="explore" aria-label="Knowledge base">
+  <h2 class="section-head">Explore the knowledge base</h2>
+  <div class="pivotband">
+{pivot_tiles}
+  </div>
+  <p class="machine-line">Machine-readable:
+    <a class="mono" href="{prefix}data/briefbook.json">briefbook.json</a> ·
+    <a class="mono" href="{prefix}data/search.json">search.json</a> ·
+    <a class="mono" href="{prefix}feeds/">RSS feeds</a> ·
+    <a class="mono" href="{prefix}stix/">STIX 2.1</a> ·
+    <a class="mono" href="{prefix}llms.txt">llms.txt</a> ·
+    every entry's raw source at <span class="mono">entries/&lt;date&gt;/&lt;slug&gt;/index.md</span>
+  </p>
+</section>"""
+
     body = f"""
+<header class="hero hero--live">
+  <span class="eyebrow">{_escape(HERO_EYEBROW)}</span>
+  <h1>{_escape(HERO_TITLE)}</h1>
+  <p>{_escape(HERO_SUBTITLE)}</p>
+</header>
 <div class="livehead">
   <span class="livedot" aria-hidden="true"><em></em><i></i></span>
   <span class="streaming">STREAMING</span>
@@ -3376,12 +3458,12 @@ def render_live_brief_page(
     <div class="pulse-t pulse-t--crit{' pulse-t--zero' if not n_crit else ''}"><b data-window-crit>{n_crit}</b><span>critical</span></div>
     <div class="pulse-t pulse-t--high{' pulse-t--zero' if not n_high else ''}"><b data-window-high>{n_high}</b><span>high</span></div>
     <div class="pulse-t pulse-t--exp{' pulse-t--zero' if not n_exp else ''}"><b data-window-exp>{n_exp}</b><span>exploited in the wild</span></div>
-    <div class="pulse-t pulse-t--upd{' pulse-t--zero' if not n_upd else ''}"><b data-window-upd>{n_upd}</b><span>updates to prior coverage</span></div>
+    <a class="pulse-t pulse-t--upd{' pulse-t--zero' if not n_upd else ''}" href="{prefix}changes/" title="Open the store-wide changelog"><b data-window-upd>{n_upd}</b><span>updates to prior coverage</span></a>
   </div>
   <div class="pulsekinds"><span class="pulsekinds-l">Categories</span><span class="pulsekinds-chips" data-window-kinds>{kind_chips}</span></div>
 </section>
 <div class="feedhead feedhead--section">
-  <h1 class="feedhead-title">Latest findings</h1>
+  <h2 class="feedhead-title">Latest findings</h2>
   <div class="feedhead-tools">{render_filter_toggle()}</div>
 </div>
 {render_filter_bar(ops)}
@@ -3391,24 +3473,43 @@ def render_live_brief_page(
 </div>
 <button class="loadbtn" type="button" data-window-more><span class="plus" aria-hidden="true">+</span>Load older findings · extend the window by 24 h</button>
 <div class="loadmore end" data-window-end hidden>Reached the start of the retained window · <a href="{prefix}daily/">open the day archive ↗</a></div>
+{explore_band}
+<script src="{prefix}assets/js/spa-redirect.js?v={cachebust}"></script>
 """
     top = critical or (sorted(ops, key=entry_sort_key)[0] if ops else None)
     description = (
-        f"Live CTI brief: {n} entries in the current {DEFAULT_WINDOW_HOURS} h window."
+        f"{HOME_META_DESCRIPTION} Live now: {n} findings in the last {DEFAULT_WINDOW_HOURS} h."
         + (f" Top: {top.get('headline') or ''}" if top else "")
     )[:300]
+    # The landing page carries the WebSite/Organization identity nodes plus
+    # a CollectionPage enumerating the current window, so search engines and
+    # answer engines get both the site identity and today's content in one
+    # fetch of the canonical root URL.
+    window_items = [
+        (site_url + entry_url_path(e), str(e.get("title") or e["id"]))
+        for e in sorted(ops, key=entry_sort_key)
+    ]
+    json_ld = _ld_home(site_url) + [
+        _ld_collection(
+            name=f"{SITE_NAME} · live brief",
+            description=f"{n} findings in the current {DEFAULT_WINDOW_HOURS} h window.",
+            canonical=canonical,
+            site_url=site_url,
+            items=window_items,
+        )
+    ]
     return base_template(
-        title=f"Live · {SITE_NAME}",
+        title=f"{SITE_NAME} · {TAGLINE}",
         description=description,
         body=body,
         canonical=canonical,
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
-        body_class="reading",
+        body_class="reading home-live",
         active_nav="live",
         extra_head=f'<script defer src="{prefix}assets/js/brief.js?v={cachebust}"></script>',
-        seo={"breadcrumb": [(SITE_NAME, site_url), ("Live", canonical)]},
+        seo={"og_type": "website", "json_ld": json_ld},
     )
 
 
@@ -3579,7 +3680,7 @@ def render_days_index_page(
     body = f"""
 <span class="eyebrow">Archive · daily briefs</span>
 <h1 class="vtitle">All daily briefs</h1>
-<p class="vsub">Every published brief, newest first · one page per UTC day. For the rolling window view, read the <a href="{prefix}live/">live brief</a>.</p>
+<p class="vsub">Every published brief, newest first · one page per UTC day. For the rolling window view, read the <a href="{prefix if prefix else './'}">live brief</a>.</p>
 <div class="toolbar" style="margin-top:22px;">
   <input class="input" id="briefs-q" type="search" placeholder="Filter by date, headline, or CVE…" autocomplete="off" spellcheck="false" data-filter-input="briefs" />
 </div>
@@ -3626,6 +3727,9 @@ def render_detail_sources(entry: dict[str, Any]) -> str:
         url = _escape(_safe_url(str(s.get("url") or "")))
         label = _escape(str(s.get("publisher") or s.get("url") or "source"))
         role = _escape(str(s.get("role") or ("primary" if i == 0 else "corroborating")))
+        s_date = str(s.get("date") or "").strip()
+        if s_date:
+            role += f" · {_escape(s_date)}"
         rows.append(
             f'<a class="src" href="{url}" target="_blank" rel="noopener noreferrer">'
             f'{label}<span class="role">{role}</span><span class="arw" aria-hidden="true">↗</span></a>'
@@ -3778,7 +3882,7 @@ def render_entry_page(
         parent_url = f"{prefix}daily/{day}/"
         parent_label = f"Daily brief {day}"
     elif is_op:
-        parent_url = f"{prefix}live/"
+        parent_url = prefix or "./"
         parent_label = "the live brief"
     else:
         parent_url = f"{prefix}daily/"
@@ -3819,49 +3923,7 @@ def render_entry_page(
         f'<ol class="revision-list">{first_li}{"".join(rev_bits)}</ol></div>'
     ) if rev_bits else ""
 
-    # --- entities ------------------------------------------------------
-    ent_bits: list[str] = []
-    for key in entry.get("entities") or []:
-        key = content_model.resolve_entity_key(registry, str(key))
-        ent = registry.get(key) or {}
-        ent_bits.append(
-            f'<a class="pill pill-tag" href="{prefix}entities/{urllib.parse.quote(str(key), safe="")}/">'
-            f'{_escape(ent.get("name") or str(key))}</a>'
-        )
-    entities_html = (
-        '<p class="entry-entities"><strong>Entities:</strong> ' + " ".join(ent_bits) + "</p>"
-    ) if ent_bits else ""
-
-    # --- actions ------------------------------------------------------
-    actions = [a for a in (entry.get("actions") or []) if isinstance(a, str) and a.strip()]
-    actions_html = (
-        '<section><h2 class="section-head">Action items</h2><ul class="action-list">'
-        + "".join(
-            f'<li class="action-list__item"><div class="action-list__body">'
-            f"{render_inline(a.strip(), base_url=canonical)}</div></li>"
-            for a in actions
-        )
-        + "</ul></section>"
-    ) if actions else ""
-
-    # --- run lineage ----------------------------------------------------
     rid = str(entry.get("run_id") or "")
-    run = runs_by_id.get(rid)
-    run_html = ""
-    if rid:
-        run_link = f'{prefix}ops/#run={urllib.parse.quote(rid, safe="")}'
-        run_meta = ""
-        if run:
-            bits = [str(run.get("kind") or "")]
-            if run.get("model"):
-                bits.append(str(run["model"]))
-            run_meta = " · ".join(b for b in bits if b)
-        run_html = (
-            '<p class="entry-run muted">Part of run '
-            f'<a class="mono" href="{_escape(run_link)}">{_escape(rid)}</a>'
-            + (f' <span class="muted">({_escape(run_meta)})</span>' if run_meta else "")
-            + "</p>"
-        )
 
     ia_html = render_immediate_action_callout(entry, prefix=prefix)
 
@@ -3869,6 +3931,11 @@ def render_entry_page(
     disc = _fmt_discovered(entry.get("discovered_at"))
     if disc:
         emeta_parts.append(f"<span>{_escape(disc)}</span>")
+    ev_date = str(entry.get("event_date") or "").strip()
+    if ev_date:
+        emeta_parts.append(
+            f'<span title="Date of the underlying event or primary publication">event {_escape(ev_date)}</span>'
+        )
     upd_stamp = _fmt_updated(entry.get("updated_at")) if entry.get("updated_at") else ""
     if upd_stamp:
         emeta_parts.append(
@@ -3883,6 +3950,19 @@ def render_entry_page(
         emeta_parts.append(f'<span>{nsrc} source' + ("" if nsrc == 1 else "s") + "</span>")
     v_class, v_label = _verif_meta(entry)
     emeta_parts.append(f'<span class="{v_class}">{_escape(v_label)}</span>')
+    # The entry's raw Markdown source — the stable machine-readable twin of
+    # this permalink (also advertised via <link rel="alternate"> in the head
+    # and as markdown_url in data/briefbook.json).
+    emeta_parts.append(
+        '<a class="mono emeta-md" href="index.md" type="text/markdown" '
+        'title="Raw Markdown source of this entry (frontmatter + body)">raw .md</a>'
+    )
+    mig = str(entry.get("migrated_from") or "").strip()
+    if mig:
+        emeta_parts.append(
+            '<span title="Imported from the retired v2 brief store: metadata may be lower-fidelity '
+            f'(placeholder evidence, sparse entities/techniques)">migrated from {_escape(mig)}</span>'
+        )
     emeta = (
         '<div class="emeta">' + "".join(emeta_parts)
         + '<button class="share" type="button" data-copy-link aria-label="Copy link to this finding">'
@@ -3924,10 +4004,26 @@ def render_entry_page(
             for st in (cv.get("status") or [])
         )
         cvss = f'<span class="mono muted">CVSS {_escape(str(cv["cvss"]))}</span>' if cv.get("cvss") else ""
+        meta_bits: list[str] = []
+        if cv.get("epss") not in (None, ""):
+            meta_bits.append(f"EPSS {cv['epss']}")
+        for k in ("type", "vector", "auth"):
+            if cv.get(k):
+                meta_bits.append(str(cv[k]))
+        meta_html = (
+            f'<div class="erail-cve__meta">{_escape(" · ".join(meta_bits))}</div>'
+        ) if meta_bits else ""
+        ver_html = "".join(
+            f'<div class="erail-cve__ver"><span class="erail-cve__vl">{lbl}</span> {_escape(str(cv[k]))}</div>'
+            for lbl, k in (("Affected", "affected"), ("Fixed", "fixed"))
+            if cv.get(k)
+        )
         cve_rows.append(
             '<div class="erail-cve">'
             f'<a class="mono" href="{prefix}cves/{_escape(cid)}/">{_escape(cid)}</a> {cvss}'
+            + meta_html
             + (f'<div class="erail-cve__st">{st_chips}</div>' if st_chips else "")
+            + ver_html
             + "</div>"
         )
     rail_cves = _rail_group("CVEs", "".join(cve_rows))
@@ -3971,6 +4067,27 @@ def render_entry_page(
     # state), so the rail — and the two-column detail layout — is universal.
     rail_assess = _rail_group("Assessment", render_detail_assessment(entry))
 
+    # Deck: the headline (bold) + standalone summary — the entry's own
+    # digest, visible on the permalink, not just in feeds and list views.
+    headline = str(entry.get("headline") or "").strip()
+    summary = str(entry.get("summary") or "").strip()
+    deck_html = ""
+    if headline or summary:
+        deck_html = (
+            '<p class="edeck">'
+            + (f"<strong>{_escape(headline)}</strong> " if headline else "")
+            + _escape(summary) + "</p>"
+        )
+
+    refs = [str(r) for r in (entry.get("references") or [])]
+    refs_html = ""
+    if refs:
+        ref_links = " · ".join(
+            f'<a class="mono" href="{_escape(prefix)}entries/{_escape(r)}/">{_escape(r)}</a>'
+            for r in refs
+        )
+        refs_html = f'<p class="entry-references"><strong>Builds on:</strong> {ref_links}</p>'
+
     rail = (
         '<aside class="erail" aria-label="Assessment &amp; pivots">'
         + rail_assess + rail_cves + rail_entities + rail_tech + rail_products + rail_tax
@@ -3984,11 +4101,13 @@ def render_entry_page(
 {render_badges(entry, prefix=prefix, full=True)}
 <h1 class="etitle">{_escape(entry.get("title") or entry["id"])}</h1>
 {emeta}
+{deck_html}
 <div class="ebody">
 {ia_html}
 {body_html}
 {render_entry_evidence(entry)}
 {updates_html}
+{refs_html}
 </div>
 {actions_html}
 {revision_html}
@@ -4007,10 +4126,17 @@ def render_entry_page(
         trail.append(("Daily", site_url + "daily/"))
         trail.append((day, site_url + f"daily/{day}/"))
     elif is_op:
-        trail.append(("Live", site_url + "live/"))
+        trail.append(("Live", site_url))
     else:
         trail.append(("Daily", site_url + "daily/"))
     trail.append((entry.get("title") or entry["id"], canonical))
+    entry_ld = _ld_article(entry, canonical=canonical, site_url=site_url, registry=registry)
+    # Point answer engines at the raw-source twin of this permalink.
+    entry_ld["encoding"] = {
+        "@type": "MediaObject",
+        "contentUrl": canonical + "index.md",
+        "encodingFormat": "text/markdown",
+    }
     return base_template(
         title=entry.get("title") or entry["id"],
         description=description,
@@ -4021,6 +4147,9 @@ def render_entry_page(
         home_relative_prefix=prefix,
         body_class="reading entry-detail",
         active_nav="daily",
+        rel_alternate=[
+            ("text/markdown", "Raw Markdown source", canonical + "index.md"),
+        ],
         seo={
             "og_type": "article",
             "breadcrumb": trail,
@@ -4030,9 +4159,7 @@ def render_entry_page(
                 "section": entry.get("kind"),
                 "tags": list(entry.get("tags") or []) + list(entry.get("regions") or []),
             },
-            "json_ld": [
-                _ld_article(entry, canonical=canonical, site_url=site_url, registry=registry)
-            ],
+            "json_ld": [entry_ld],
         },
     )
 
@@ -4101,213 +4228,109 @@ def render_embedded_entries_section(
     )
 
 
-# === HOME (v3) =========================================================
+# === CHANGES (store-wide changelog) ====================================
 
 
-def _home_tldr_list(picked: list[dict[str, Any]], *, cap_chars: int = 240) -> str:
-    """Compact TL;DR bullet list for a home feature card · headline +
-    (length-capped) summary + a permalink arrow, one bullet per picked
-    entry."""
-    lis: list[str] = []
-    for e in picked:
-        url = entry_url_path(e)
-        headline = _strip_md_emphasis(e.get("headline") or e.get("title") or e["id"]).rstrip(".")
-        summ = (e.get("summary") or "").strip()
-        if len(summ) > cap_chars:
-            summ = summ[: cap_chars - 1].rstrip() + "…"
-        lis.append(
-            "<li>"
-            f"<strong>{_inline_text(headline)}.</strong> "
-            f"{_inline_text(summ)} "
-            f'<a href="{_escape(url)}">→</a>'
-            "</li>"
-        )
-    return f"<ul>{''.join(lis)}</ul>" if lis else ""
-
-
-def render_home_page(
+def render_changes_page(
+    entries: list[dict[str, Any]],
     *,
-    today: str | None,
-    today_entries: list[dict[str, Any]],
-    prev_day: str | None,
-    prev_day_entries: list[dict[str, Any]],
-    recent_updates: list[dict[str, Any]] | None = None,
     site_url: str,
     cachebust: str,
+    prefix: str,
     canonical: str,
-    counts: dict[str, int] | None = None,
-    last_updated: str = "",
+    max_records: int = 400,
 ) -> str:
-    """Home · hero (copy + live platform-status panel), three cards
-    (Live / Daily / Recent updates & corrections), and the knowledge-base
-    pivot band. `recent_updates` are the entries whose latest activity is a
-    changelog record, newest activity first (the card shows the top few).
-    `counts` carries the store-wide totals (entries/entities/cves/sources)
-    and `last_updated` the reference timestamp string shown in the status
-    panel."""
-    redirect_js = f'<script src="assets/js/spa-redirect.js?v={cachebust}"></script>'
+    """/changes/ · the store-wide changelog: every visible (non-internal)
+    changelog record across all entries, newest first, grouped by UTC day.
+    One living entry per finding (docs/pipeline.md § Entry lifecycle) means
+    this page IS the site-wide "what changed" surface; each row links to
+    the exact `## <Type> — <at>` section on the entry permalink. New
+    findings are not repeated here — they land on the live brief and the
+    day pages."""
+    rows: list[tuple[str, dict[str, Any], dict[str, Any]]] = []
+    for e in entries:
+        for rec in visible_updates(e):
+            at = str(rec.get("at") or "")
+            if at:
+                rows.append((at, rec, e))
+    rows.sort(key=lambda r: (r[0], r[2]["id"]), reverse=True)
+    total = len(rows)
+    n_entries = len({e["id"] for _, _, e in rows})
+    rows = rows[:max_records]
 
-    def _lead(entries: list[dict[str, Any]]) -> tuple[str, str] | None:
-        picked = select_tldr_entries(entries)
-        if not picked:
-            return None
-        e = picked[0]
-        head = _strip_md_emphasis(e.get("headline") or e.get("title") or "").rstrip(".")
-        return head, (e.get("summary") or "").strip()
+    by_day: dict[str, list[tuple[str, dict[str, Any], dict[str, Any]]]] = {}
+    for at, rec, e in rows:
+        by_day.setdefault(at[:10], []).append((at, rec, e))
 
-    # (1) Live — the current day's rolling window.
-    live_ops = sorted(operational_entries(today_entries or []), key=entry_sort_key)
-    n_live = len(live_ops)
-    crit_live = sum(1 for e in live_ops if e.get("priority") == "critical")
-    lead = _lead(live_ops)
-    if lead and lead[0]:
-        live_bp = f'<b>If you read one thing:</b> {_inline_text(lead[0])}' + (f" · {_inline_text(lead[1])}" if lead[1] else "")
-    else:
-        live_bp = "The rolling brief · everything verified in the last 24 hours, held to a constant relevance bar."
-    live_go = (
-        (f"{n_live} findings" + (f" · {crit_live} critical" if crit_live else "") + " · rolling 24h →")
-        if n_live else "rolling 24h →"
+    day_blocks: list[str] = []
+    for day in sorted(by_day, reverse=True):
+        lis: list[str] = []
+        for at, rec, e in by_day[day]:
+            rtype = str(rec.get("type") or "update")
+            rid = str(rec.get("run_id") or "")
+            eurl = f"{prefix}{entry_url_path(e)}"
+            lis.append(
+                f'<li class="chg chg--{_escape(rtype)}">'
+                f'<a class="chg-badge" href="{_escape(eurl)}#update-{_escape(at)}">'
+                f'<span class="b upd upd--{_escape(rtype)}">{_escape(_update_type_label(rtype))}</span></a>'
+                f'<time class="mono chg-t" datetime="{_escape(at)}">{_escape(_fmt_stamp(at))}</time>'
+                '<div class="chg-b">'
+                f'<a class="chg-e" href="{_escape(eurl)}">{_escape(str(e.get("title") or e["id"]))}</a>'
+                f'<p class="chg-s">{_inline_text(str(rec.get("summary") or ""))}'
+                + (f' <a class="mono chg-run" href="{prefix}runs/{_escape(rid)}/">{_escape(rid)}</a>' if rid else "")
+                + "</p></div></li>"
+            )
+        day_blocks.append(
+            f'<section class="chg-day"><h2 class="section-head mono">{_escape(day)}</h2>'
+            f'<ol class="chg-list">{"".join(lis)}</ol></section>'
+        )
+    listing = "".join(day_blocks) or (
+        '<div class="section-empty">No changelog records yet · every future '
+        "development, correction or improvement to a published finding lands here.</div>"
     )
-    live_card = (
-        '<a class="bcard live" href="live/">'
-        '<div class="bh"><span class="livedot" aria-hidden="true"><em></em><i></i></span>'
-        '<span class="bt">Live</span><span class="bm">rolling 24h</span></div>'
-        f'<p class="bp">{live_bp}</p>'
-        f'<span class="bgo">{_escape(live_go)}</span></a>'
-    )
-
-    # (2) Latest completed day.
-    if prev_day:
-        day_ops = sorted(operational_entries(prev_day_entries), key=entry_sort_key)
-        n_day = len(day_ops)
-        day_card = (
-            f'<a class="bcard" href="daily/{_escape(prev_day)}/">'
-            f'<div class="bh"><span class="bt">Daily</span><span class="bm">{_escape(prev_day)}</span></div>'
-            '<p class="bp">The settled record of the day · Active Threats, Trending Vulnerabilities, '
-            'Research &amp; Updates in the classic brief order.</p>'
-            f'<span class="bgo">{n_day} finding' + ("" if n_day == 1 else "s") + ' · UTC day →</span></a>'
-        )
-    else:
-        day_card = (
-            '<a class="bcard" href="daily/">'
-            '<div class="bh"><span class="bt">Daily</span><span class="bm">archive</span></div>'
-            '<p class="bp">The settled per-day record · each UTC day\'s findings in the classic brief order.</p>'
-            '<span class="bgo">open the day archive →</span></a>'
-        )
-
-    # (3) Recent updates & corrections — entries whose latest activity is a
-    # changelog record (docs/pipeline.md § Entry lifecycle), newest first.
-    upd_rows: list[str] = []
-    for e in (recent_updates or [])[:4]:
-        act = entry_activity(e)
-        rec = act["record"] or {}
-        rtype = str(rec.get("type") or "update")
-        upd_rows.append(
-            '<li class="bupd">'
-            f'<span class="b upd upd--{_escape(rtype)}">{_escape(_update_type_label(rtype))}</span>'
-            f'<span class="mono muted">{_escape(_fmt_stamp(act["at"]))}</span> '
-            f'<a href="{_escape(entry_url_path(e))}">{_escape(str(e.get("title") or e["id"]))}</a>'
-            f'<span class="bupd-s">{_inline_text(str(rec.get("summary") or ""))}</span></li>'
-        )
-    if upd_rows:
-        updates_card = (
-            '<div class="bcard bcard--updates">'
-            '<div class="bh"><span class="bt">Updates</span><span class="bm">recent corrections &amp; developments</span></div>'
-            f'<ul class="bupd-list">{"".join(upd_rows)}</ul>'
-            '<a class="bgo" href="live/">every update floats back into the live brief →</a></div>'
-        )
-    else:
-        updates_card = (
-            '<a class="bcard bcard--updates" href="live/">'
-            '<div class="bh"><span class="bt">Updates</span><span class="bm">corrections &amp; developments</span></div>'
-            '<p class="bp">One living entry per finding: developments, corrections and improvements are appended to the original entry with a dated changelog, and float it back into the live brief.</p>'
-            '<span class="bgo">open the live brief →</span></a>'
-        )
-
-    # --- Platform-status panel (right of the hero copy) -----------------
-    c = counts or {}
-    n_crit_live = crit_live
-    n_high_live = sum(1 for e in live_ops if e.get("priority") == "high")
-    win_mix = []
-    if n_crit_live:
-        win_mix.append(f'<span class="hs-crit">{n_crit_live} critical</span>')
-    if n_high_live:
-        win_mix.append(f'<span class="hs-high">{n_high_live} high</span>')
-    win_mix_html = " · ".join(win_mix) if win_mix else '<span class="muted">no critical items</span>'
-    stat_rows = [
-        ("live/", f"{n_live}", "findings · last 24 h", win_mix_html),
-    ]
-    for href, key, label in (
-        ("entities/", "entities", "tracked entities"),
-        ("cves/", "cves", "CVEs on file"),
-        ("sources/", "sources", "curated sources"),
-    ):
-        if c.get(key):
-            stat_rows.append((href, f"{c[key]:,}", label, ""))
-    status_lis = "".join(
-        f'<a class="hs-row" href="{href}"><span class="hs-v">{v}</span>'
-        f'<span class="hs-l">{_escape(label)}'
-        + (f'<span class="hs-sub">{sub}</span>' if sub else "")
-        + "</span></a>"
-        for href, v, label, sub in stat_rows
-    )
-    status_panel = (
-        '<aside class="hero-status" aria-label="Platform status">'
-        '<div class="hs-head"><span class="livedot" aria-hidden="true"><em></em><i></i></span>'
-        '<span class="hs-t">Platform status</span>'
-        + (f'<span class="hs-stamp">updated {_escape(last_updated)}</span>' if last_updated else "")
-        + f"</div>{status_lis}</aside>"
-    )
-
-    # --- Knowledge-base pivot band --------------------------------------
-    pivots = [
-        ("entities/", "Entities", c.get("entities"),
-         "Actors, campaigns, malware, incidents · every key is a pivot."),
-        ("cves/", "CVEs", c.get("cves"),
-         "Every vulnerability on file with its full appearance trail."),
-        ("sources/", "Sources", c.get("sources"),
-         "The curated source list, reliability-rated and health-probed."),
-        ("trends/", "Trends", None,
-         "Week-by-week cohort movement: ransomware, KEV, sector targeting."),
-        ("ops/", "Operations", None,
-         "Pipeline telemetry: runs, models, verification verdicts."),
-    ]
-    pivot_tiles = "".join(
-        f'<a class="pivot" href="{href}"><span class="pivot-h">{_escape(t)}'
-        + (f'<span class="pivot-n">{n:,}</span>' if n else "")
-        + f'</span><span class="pivot-p">{_escape(desc)}</span></a>'
-        for href, t, n, desc in pivots
+    capped_note = (
+        f" Showing the latest {len(rows)} of {total} records — older ones stay on each entry's revision history."
+        if total > len(rows) else ""
     )
 
     body = f"""
-<div class="hero hero--split">
-  <div class="hero-copy">
-    <span class="eyebrow">{_escape(HERO_EYEBROW)}</span>
-    <h1>{_escape(HERO_TITLE)}</h1>
-    <p>{_escape(HERO_SUBTITLE)}</p>
-  </div>
-  {status_panel}
-</div>
-<div class="briefgrid">
-{live_card}
-{day_card}
-{updates_card}
-</div>
-<div class="pivotband" aria-label="Knowledge base">
-{pivot_tiles}
-</div>
-{redirect_js}
+<span class="eyebrow">Changelog · all entries</span>
+<h1 class="vtitle">Recent changes</h1>
+<p class="vsub">One living entry per finding: developments, corrections and improvements are appended to the original entry as dated changelog records, never published as duplicates. This is the store-wide record — {total} record{"" if total == 1 else "s"} across {n_entries} entr{"y" if n_entries == 1 else "ies"}, newest first.{_escape(capped_note)} Every record is also an item in the <a href="{prefix}feeds/">per-entry RSS feed</a>. New findings appear on the <a href="{prefix}">live brief</a> and the <a href="{prefix}daily/">day pages</a>.</p>
+{listing}
 """
+    description = (
+        f"Store-wide changelog: {total} dated developments, corrections and "
+        f"improvements across {n_entries} published findings, newest first."
+    )
+    seen: set[str] = set()
+    items: list[tuple[str, str]] = []
+    for _, _, e in rows:
+        if e["id"] not in seen:
+            seen.add(e["id"])
+            items.append((site_url + entry_url_path(e), str(e.get("title") or e["id"])))
     return base_template(
-        title=f"{SITE_NAME} · {TAGLINE}",
-        description=HOME_META_DESCRIPTION,
+        title=f"Recent changes · {SITE_NAME}",
+        description=description,
         body=body,
         canonical=canonical,
         site_url=site_url,
         cachebust=cachebust,
-        home_relative_prefix="",
-        body_class="home",
-        seo={"og_type": "website", "json_ld": _ld_home(site_url)},
+        home_relative_prefix=prefix,
+        body_class="reading",
+        active_nav="changes",
+        seo={
+            "breadcrumb": [(SITE_NAME, site_url), ("Changes", canonical)],
+            "json_ld": [
+                _ld_collection(
+                    name=f"Recent changes · {SITE_NAME}",
+                    description=description,
+                    canonical=canonical,
+                    site_url=site_url,
+                    items=items,
+                )
+            ],
+        },
     )
 
 
@@ -4328,8 +4351,10 @@ def build_briefbook(
     server-rendered card HTML the day pages use plus its changelog
     (`updates`, `updated_at`, `activity_at`, `activity_run_id`,
     `activity_is_update`) so the client timeline can group an updated
-    entry under the run that updated it. `prefix` is /live/'s path back to
-    the site root (the only consumer of the embedded HTML)."""
+    entry under the run that updated it. `prefix` is the path from
+    data/briefbook.json back to the site root ("../"), so the embedded
+    URLs also resolve for consumers reading the file in place; brief.js
+    strips it and re-applies the reading page's own prefix."""
     since = ref_ts - timedelta(days=BRIEFBOOK_WINDOW_DAYS)
     window = content_model.entries_in_window(entries, since, None, activity=True)
     by_id = {e["id"]: e for e in entries}
@@ -4372,6 +4397,9 @@ def build_briefbook(
         out_entries.append({
             "id": e["id"],
             "url": prefix + entry_url_path(e),
+            # The entry's raw Markdown source (frontmatter + body) — the
+            # machine-readable twin of the HTML permalink.
+            "markdown_url": prefix + entry_url_path(e) + "index.md",
             "date": e["date"],
             "discovered_at": e.get("discovered_at"),
             "kind": e.get("kind"),
@@ -5074,109 +5102,20 @@ def render_index_page(
 # === TRENDS DASHBOARD ====================================
 
 # Trend "cohorts" — each tile on /trends/ aggregates by week the count of
-# items whose footer carries any of the listed taxonomy values. Cohorts
-# match the audience's mental model (a SOC manager skimming the site
-# monthly) rather than every taxonomy value verbatim. Add cohorts here
-# as the brief's coverage shifts; never silently rename one (entity URLs
+# items whose footer carries any of the listed taxonomy values. The cohort
+# set lives ONLY in config/branding.yaml `trends.cohorts` (no in-code
+# default, no fallback); never silently rename a cohort key (entity URLs
 # don't move, but the trend chart's labels do).
-_DEFAULT_TREND_COHORTS: list[dict[str, Any]] = [
-    {
-        "key": "ransomware",
-        "title": "Ransomware items / week",
-        "tags": ("ransomware",),
-        "sectors": (),
-        "regions": (),
-        "match": "any",
-    },
-    {
-        "key": "actively-exploited",
-        "title": "Actively-exploited vulnerabilities / week",
-        "tags": ("actively-exploited", "vulnerabilities"),
-        "sectors": (),
-        "regions": (),
-        "match": "all",
-    },
-    {
-        "key": "public-sector",
-        "title": "Public-sector items / week",
-        "tags": (),
-        "sectors": ("public-sector",),
-        "regions": (),
-        "match": "any",
-    },
-    {
-        "key": "ot-ics",
-        "title": "OT / ICS items / week",
-        "tags": ("ot-ics",),
-        "sectors": ("energy", "water", "manufacturing", "transport"),
-        "regions": (),
-        "match": "any",
-    },
-    {
-        "key": "supply-chain",
-        "title": "Supply-chain items / week",
-        "tags": ("supply-chain",),
-        "sectors": (),
-        "regions": (),
-        "match": "any",
-    },
-    {
-        "key": "ai-abuse",
-        "title": "AI-abuse items / week",
-        "tags": ("ai-abuse",),
-        "sectors": (),
-        "regions": (),
-        "match": "any",
-    },
-    {
-        "key": "ch-eu",
-        "title": "Switzerland + Europe items / week",
-        "tags": (),
-        "sectors": (),
-        "regions": ("switzerland", "dach", "europe"),
-        "match": "any",
-    },
-    {
-        "key": "nation-state",
-        "title": "Nation-state items / week",
-        "tags": ("nation-state", "espionage",
-                 "china-nexus", "russia-nexus",
-                 "north-korea-nexus", "iran-nexus"),
-        "sectors": (),
-        "regions": (),
-        "match": "any",
-    },
-]
-
-# config/branding.yaml `trends.cohorts` replaces the default cohort set
-# wholesale when non-empty (a fork tracking a different region/sector lens
-# redefines the tiles without touching this file).
-TREND_COHORTS: list[dict[str, Any]] = branding_config.trend_cohorts(
-    BRANDING, _DEFAULT_TREND_COHORTS
-)
+TREND_COHORTS: list[dict[str, Any]] = branding_config.trend_cohorts(BRANDING)
 
 TRENDS_PAGE_DESCRIPTION = (
-    "Weekly trend dashboard across all CTI briefs · ransomware, "
-    "actively-exploited vulnerabilities, public-sector, OT/ICS, "
-    "supply-chain, AI-abuse, Switzerland + Europe, nation-state."
-    if TREND_COHORTS is _DEFAULT_TREND_COHORTS
-    else "Weekly trend dashboard across all CTI briefs · "
+    "Weekly trend dashboard across all CTI briefs · "
     + ", ".join(c["title"] for c in TREND_COHORTS) + "."
 )
 
 
 def _trends_cohort_note(prefix: str) -> str:
-    """Explanatory paragraph under the trends grid. The upstream default
-    prose names the default cohorts' framing; a custom cohort set gets a
-    neutral line instead."""
-    if TREND_COHORTS is _DEFAULT_TREND_COHORTS:
-        return (
-            "<p>The cohorts are coarse on purpose: they're the questions a "
-            "Swiss / EU public-sector SOC manager would ask scanning the site "
-            'monthly ("are we seeing more ransomware?", "is OT/ICS '
-            'escalating?", "did public-sector targeting move?"). For finer '
-            f'slicing, use the per-tag list pages under <a href="{prefix}tags/">/tags/</a>.</p>'
-        )
+    """Explanatory paragraph under the trends grid."""
     return (
         "<p>The cohorts are coarse on purpose · they mirror the deployment's "
         "trend cohorts in config/branding.yaml. For finer slicing, use the "
@@ -5301,6 +5240,11 @@ def render_feeds_page(*, site_url: str, cachebust: str,
 <section style="margin-top:1.6rem">
   <h2 class="section-head">Autodiscovery</h2>
   <p>Every page on this site advertises the two main feeds via <code>&lt;link rel="alternate" type="application/rss+xml"&gt;</code> in the document head, so any feed reader pointed at the homepage finds them automatically. The eight sector slices are accessible through this page.</p>
+</section>
+
+<section style="margin-top:1.6rem">
+  <h2 class="section-head">STIX 2.1</h2>
+  <p>For TIP platforms (OpenCTI and friends) the same content ships as pull-model <a href="{prefix}stix/">STIX 2.1 bundle endpoints</a> · full corpus, rolling window, entity graph, and the same sector slices · with deterministic object ids, so re-ingestion is idempotent.</p>
 </section>
 """
     return base_template(
@@ -5448,7 +5392,8 @@ def _rewrite_about_links(html: str, *, prefix: str) -> str:
         if p in ("briefs/", "briefs", "daily/", "daily"):
             return prefix + "daily/" + frag
         if p in ("brief/", "brief", "live/", "live"):
-            return prefix + "live/" + frag
+            # The live brief renders at the site root.
+            return (prefix or "./") + frag
         if p in ("entries/", "entries"):
             return prefix + "daily/" + frag
         if p in ("runs/", "runs"):
@@ -7972,81 +7917,18 @@ def _channel_rss(
 # One feed per audience sector. Each is a filtered slice of build_items_feed
 # (per-H3 entries) where the item's footer Sector / Tags carry the relevant
 # value. Subscribers filter at the feed layer instead of trying to parse the
-# brief.
+# brief. The slice set lives ONLY in config/branding.yaml
+# `feeds.sector_slices` (no in-code default, no fallback).
 #
 # (sector_filename, [accept_sectors], [accept_tags], title_suffix, description)
-_DEFAULT_SECTOR_FEED_SLICES: list[tuple[str, tuple[str, ...], tuple[str, ...], str, str]] = [
-    (
-        "feed-public-sector.xml",
-        ("public-sector",),
-        (),
-        "Public sector",
-        "Items affecting public-sector environments (national / cantonal / federal administration, regulators, public-sector technology suppliers).",
-    ),
-    (
-        "feed-healthcare.xml",
-        ("healthcare",),
-        (),
-        "Healthcare",
-        "Items affecting healthcare providers, hospitals, public health, medical devices.",
-    ),
-    (
-        "feed-finance.xml",
-        ("finance",),
-        (),
-        "Finance",
-        "Items affecting financial services, banks, insurance, fintech.",
-    ),
-    (
-        "feed-energy.xml",
-        ("energy",),
-        (),
-        "Energy",
-        "Items affecting energy operators, utilities, grid infrastructure.",
-    ),
-    (
-        "feed-ot-ics.xml",
-        ("energy", "water", "manufacturing", "transport"),
-        ("ot-ics",),
-        "OT / ICS",
-        "Items affecting operational-technology / industrial-control-system environments · energy, water, manufacturing, transport, and any item tagged ot-ics.",
-    ),
-    (
-        "feed-defense.xml",
-        ("defense",),
-        (),
-        "Defense",
-        "Items affecting defense, intelligence, military supply chain.",
-    ),
-    (
-        "feed-telco.xml",
-        ("telco",),
-        (),
-        "Telecommunications",
-        "Items affecting telecommunications operators and infrastructure.",
-    ),
-    (
-        "feed-education.xml",
-        ("education",),
-        (),
-        "Education",
-        "Items affecting education institutions, ed-tech platforms, research universities.",
-    ),
-]
-
-# config/branding.yaml `feeds.sector_slices` replaces the default slice set
-# wholesale when non-empty.
 SECTOR_FEED_SLICES: list[tuple[str, tuple[str, ...], tuple[str, ...], str, str]] = (
-    branding_config.sector_feed_slices(BRANDING, _DEFAULT_SECTOR_FEED_SLICES)
+    branding_config.sector_feed_slices(BRANDING)
 )
 
 FEEDS_PAGE_DESCRIPTION = (
-    "All RSS feeds · daily, per item (incl. updates), plus eight sector-specific "
-    "slices (public sector, healthcare, finance, energy, OT/ICS, defense, "
-    "telco, education)."
-    if SECTOR_FEED_SLICES is _DEFAULT_SECTOR_FEED_SLICES
-    else "All RSS feeds · daily, per item (incl. updates), plus "
-    f"{len(SECTOR_FEED_SLICES)} sector-specific slices "
+    "All RSS feeds · daily, per item (incl. updates), plus "
+    f"{len(SECTOR_FEED_SLICES)} sector-specific "
+    f"slice{'' if len(SECTOR_FEED_SLICES) == 1 else 's'} "
     "(" + ", ".join(s[3] for s in SECTOR_FEED_SLICES) + ")."
 )
 
@@ -8267,6 +8149,188 @@ def build_sector_feeds(
         )
         out.append((fname, feed, most_recent))
     return out
+
+
+# === STIX 2.1 EXPORT ====================================================
+#
+# /stix/ — machine-readable STIX 2.1 bundle endpoints, consumed on a pull
+# model exactly like the RSS feeds (compiler: the sibling stix_model
+# module; every object id is deterministic, so re-ingestion is
+# idempotent). GitHub Pages cannot serve the TAXII 2.1 media type,
+# X-TAXII-* headers or query filtering the spec MUSTs (operator decision
+# 2026-08-29: bundle URLs only, no TAXII-shaped surface) — consumers poll
+# the bundle URLs (OpenCTI: an external-import connector or feed
+# ingestion; anything else: HTTP GET + any STIX 2.1 tooling).
+
+
+def write_stix_outputs(
+    entries: list[dict[str, Any]],
+    registry: dict[str, Any],
+    cves_raw: dict[str, Any],
+    *,
+    site_url: str,
+    ref: datetime,
+) -> tuple[dict[str, str], dict[str, Any], list[tuple[str, str, str, int]]]:
+    """Compile the store to STIX 2.1 and write the /stix/ endpoints:
+
+        stix/bundle.json            full corpus
+        stix/recent.json            activity in the briefbook window, ref-closed
+        stix/entities.json          the core entity graph (SDOs + SROs)
+        stix/sector-<slug>.json     one per sector feed slice, ref-closed
+        stix/extension-schema.json  JSON Schema behind the extension-definition
+
+    Returns (sha256 map for the manifest, counts, page rows for
+    render_stix_page). Windowed/filtered bundles ship the reference
+    closure of their reports — a bundle never carries a dangling ref."""
+    ns = stix_model.make_namespace(DEFAULT_SITE_URL, STIX_SETTINGS["id_namespace"])
+    compiled = stix_model.compile_stix(
+        entries, registry,
+        cves_seen_records=cves_raw.get("cves") or [],
+        attack_dataset=ATTACK or None,
+        ns=ns,
+        publisher_name=STIX_SETTINGS["publisher_name"],
+        site_url=site_url,
+        extension_schema_url=site_url + "stix/extension-schema.json",
+    )
+    objects = compiled["objects"]
+    anchor_ids = set(compiled["anchor_ids"])
+    report_ids = compiled["report_ids"]
+
+    hashes: dict[str, str] = {}
+    rows: list[tuple[str, str, str, int]] = []
+
+    def _emit(fname: str, title: str, desc: str, doc: dict, n_objects: int) -> None:
+        text = stix_model.serialize(doc)
+        atomic_write_text(OUT / "stix" / fname, text)
+        hashes[f"stix/{fname}"] = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        rows.append((fname, title, desc, n_objects))
+
+    def _closure_bundle(name: str, seed_report_ids: set[str]) -> tuple[dict, int]:
+        closure = stix_model.reference_closure(objects, seed_report_ids | anchor_ids)
+        objs = [objects[i] for i in sorted(closure)]
+        return stix_model.make_bundle(ns, name, objs), len(objs)
+
+    all_objs = list(objects.values())
+    _emit(
+        "bundle.json", "Full corpus",
+        "Every exported object: one report per entry, the entity SDOs, one "
+        "vulnerability per analysed CVE, the cited ATT&amp;CK attack-patterns, "
+        "the curated relationships, and correction notes.",
+        stix_model.make_bundle(ns, "all", all_objs), len(all_objs),
+    )
+
+    cutoff = (ref - timedelta(days=BRIEFBOOK_WINDOW_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    recent_ids = {
+        report_ids[e["id"]] for e in entries
+        if (content_model.entry_activity_ts(e) or "") >= cutoff
+    }
+    bundle, n = _closure_bundle("recent", recent_ids)
+    _emit(
+        "recent.json", f"Recent · last {BRIEFBOOK_WINDOW_DAYS} days",
+        "Reports first published or updated inside the rolling window, plus "
+        "everything they reference (reference closure). The endpoint to poll.",
+        bundle, n,
+    )
+
+    # The core entity graph: SDO types without object_refs (their citing
+    # reports would otherwise cascade the whole corpus in) + the SROs
+    # connecting them. trend/policy/report registry entities travel in the
+    # full and windowed bundles instead.
+    graph_ids = {
+        oid for oid, o in objects.items()
+        if o["type"] in ("intrusion-set", "campaign", "malware", "tool", "incident")
+    }
+    graph_ids |= {
+        oid for oid, o in objects.items()
+        if o["type"] == "relationship"
+        and o["source_ref"] in graph_ids and o["target_ref"] in graph_ids
+    }
+    graph_objs = [objects[i] for i in sorted(graph_ids | anchor_ids)]
+    _emit(
+        "entities.json", "Entity graph",
+        "The registry's actors (intrusion sets), campaigns, malware, tools "
+        "and incidents with the curated typed relationships between them — "
+        "no reports.",
+        stix_model.make_bundle(ns, "entities", graph_objs), len(graph_objs),
+    )
+
+    for fname, accept_sectors, accept_tags, title_suffix, description in SECTOR_FEED_SLICES:
+        slug = fname[len("feed-"):-len(".xml")] if fname.startswith("feed-") else fname
+        accept_sectors_set, accept_tags_set = set(accept_sectors), set(accept_tags)
+        seed = {
+            report_ids[e["id"]] for e in entries
+            if (set(e.get("sectors") or []) & accept_sectors_set)
+            or (set(e.get("tags") or []) & accept_tags_set)
+        }
+        bundle, n = _closure_bundle(f"sector:{slug}", seed)
+        _emit(f"sector-{slug}.json", f"Sector · {title_suffix}",
+              _escape(description), bundle, n)
+
+    schema_doc = stix_model.extension_schema(
+        stix_model.sid(ns, "extension-definition", "extension-definition:entry-metadata")
+    )
+    text = json.dumps(schema_doc, indent=2, sort_keys=True)
+    atomic_write_text(OUT / "stix" / "extension-schema.json", text)
+    hashes["stix/extension-schema.json"] = hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+    counts = {
+        "stix_objects": len(objects),
+        "stix_files": len(hashes),
+    }
+    return hashes, counts, rows
+
+
+def render_stix_page(rows: list[tuple[str, str, str, int]], *, site_url: str,
+                     cachebust: str, prefix: str, canonical: str) -> str:
+    """Human discovery page for the /stix/ bundle endpoints — what a
+    consuming platform needs to know without reading the pipeline docs."""
+
+    def _row(fname: str, title: str, description: str, n: int) -> str:
+        return (
+            '<li class="feeds-row">'
+            f'<div class="feeds-row__head">'
+            f'<a class="feeds-row__title" href="{prefix}stix/{fname}">{_escape(title)}</a>'
+            f'<a class="feeds-row__url mono" href="{prefix}stix/{fname}">/stix/{fname}</a>'
+            f'</div>'
+            f'<p class="feeds-row__desc">{description} <span class="mono muted">{n} objects</span></p>'
+            '</li>'
+        )
+
+    body = f"""
+<header>
+  <h1>STIX 2.1 bundles</h1>
+  <p class="subtitle">The knowledge base as machine-readable STIX 2.1, rebuilt on every publish and consumed on a pull model like the RSS feeds. One <code>report</code> per entry; registry entities as <code>intrusion-set</code> / <code>campaign</code> / <code>malware</code> / <code>tool</code> / <code>incident</code> (trends as <code>grouping</code>, policy items as <code>report</code>); one shared <code>vulnerability</code> per CVE; cited techniques as MITRE's canonical <code>attack-pattern</code> objects; the curated entity relationships as SROs. No indicators and no observables · this store is IOC-free by design.</p>
+</header>
+
+<section style="margin-top:1.4rem">
+  <h2 class="section-head">Endpoints</h2>
+  <ul class="feeds-list">{''.join(_row(*r) for r in rows)}</ul>
+</section>
+
+<section style="margin-top:1.6rem">
+  <h2 class="section-head">Identity &amp; versioning guarantees</h2>
+  <ul>
+    <li><strong>Stable ids.</strong> Every STIX id is UUIDv5 over the permanent store key (entry id, registry key, CVE id), so one finding / entity / CVE keeps one id forever and re-ingestion is idempotent. Two reports touching the same actor or CVE reference the same object — that shared-object graph is how a consuming platform connects coverage across briefs without duplicates.</li>
+    <li><strong>Versioning.</strong> A report's <code>modified</code> follows the entry's changelog (every update, correction or improvement); corrections additionally ship as <code>note</code> objects attached to the report. Objects are never deleted; superseded registry entities are merged into their canonical object.</li>
+    <li><strong>Confidence.</strong> <code>confidence</code> maps the entry's NATO Admiralty credibility digit per STIX 2.1 Appendix A (1→90, 2→70, 3→50, 4→30, 5→10; 6 and unrated → omitted). The reliability letter, verification tier, kind, priority and permanent ids travel in a property extension (schema: <a class="mono" href="{prefix}stix/extension-schema.json">/stix/extension-schema.json</a>).</li>
+    <li><strong>Marking.</strong> Everything is TLP:WHITE.</li>
+  </ul>
+</section>
+
+<section style="margin-top:1.6rem">
+  <h2 class="section-head">Ingesting</h2>
+  <p>Poll <a class="mono" href="{prefix}stix/recent.json">/stix/recent.json</a> (reference-closed · never a dangling ref) on your schedule and import it as a standard STIX 2.1 bundle; seed once from <a class="mono" href="{prefix}stix/bundle.json">/stix/bundle.json</a>. For OpenCTI, a minimal external-import connector fetching the URL and pushing the bundle via pycti is all that's needed — deterministic ids make every re-import an upsert. These are plain JSON files on a static host: there is <strong>no TAXII server</strong> here (a static host cannot satisfy the TAXII 2.1 media-type and header requirements), and no authentication.</p>
+</section>
+"""
+    return base_template(
+        title=f"STIX 2.1 bundles · {SITE_NAME}",
+        active_page="feeds",
+        description=f"STIX 2.1 bundle endpoints for {SITE_NAME}: full corpus, rolling window, entity graph, and per-sector slices — pull-model ingestion for TIP platforms.",
+        body=body,
+        canonical=canonical, site_url=site_url, cachebust=cachebust,
+        home_relative_prefix=prefix,
+        seo={"breadcrumb": [(SITE_NAME, site_url), ("STIX 2.1 bundles", canonical)]},
+    )
 
 
 # Stable colour palette for non-model legend swatches (donut slices,
@@ -10558,6 +10622,59 @@ def write_security_txt(out_path: Path, *, repo: str, expires: str, site_url: str
     atomic_write_text(out_path, body)
 
 
+def write_llms_txt(
+    out_path: Path,
+    *,
+    site_url: str,
+    counts: dict[str, int],
+    latest_day: str | None,
+    generated: str,
+) -> None:
+    """/llms.txt — the AI-agent site map (https://llmstxt.org convention).
+
+    One fetch tells an agent what this site is, where the content lives,
+    and which machine endpoints to prefer over HTML scraping. All identity
+    values come from config/branding.yaml; the endpoint map mirrors the
+    build's actual outputs (keep in sync with the module docstring)."""
+    n = counts or {}
+    body = f"""# {SITE_NAME}
+
+> {TAGLINE}. {HOME_META_DESCRIPTION}
+
+Fully AI-generated cyber threat intelligence with no human review; every finding
+cites its primary sources and carries a NATO Admiralty reliability/credibility
+rating. Audience: Tier 2/3 incident responders, threat hunters and detection
+engineers — and automated SOC/triage agents. No IOCs are published: entries are
+TTP/behavior-level knowledge, ATT&CK-mapped in frontmatter. One permalink per
+finding for its whole life; later developments and corrections are appended as
+dated changelog records on the same entry, never as duplicates.
+Generated {generated} · {n.get("entries", 0)} entries · {n.get("entities", 0)} entities · {n.get("cves", 0)} CVEs on file.
+
+## Reading surfaces
+
+- [Live brief]({site_url}): the landing page — everything verified or updated in the last 24 h, newest first
+- [Daily briefs]({site_url}daily/): the settled record of each UTC day{f" (latest: {site_url}daily/{latest_day}/)" if latest_day else ""}
+- [Recent changes]({site_url}changes/): every dated development, correction and improvement, store-wide
+- [Entries]({site_url}entries/YYYY-MM-DD/slug/): one permalink per finding with full changelog and revision history
+- [Entities]({site_url}entities/): actors, campaigns, malware, incidents — with typed, sourced relationships
+- [CVEs]({site_url}cves/): every vulnerability on file with its appearance trail
+- [ATT&CK]({site_url}attack/): technique coverage matrix, Navigator-layer exports
+- [Sources]({site_url}sources/): the curated source catalogue, reliability-rated
+- [About]({site_url}about/): how the pipeline works, docs and the runtime prompts
+
+## Machine endpoints (prefer these over scraping HTML)
+
+- [briefbook.json]({site_url}data/briefbook.json): last 35 days of entries + runs as JSON; each entry carries `url` and `markdown_url`
+- Raw entry Markdown: append `index.md` to any entry permalink ({site_url}entries/YYYY-MM-DD/slug/index.md) for the exact source file, frontmatter + body
+- [search.json]({site_url}data/search.json): site-wide search index (days, entries, entities, techniques, sources)
+- [alerts.json]({site_url}data/alerts.json): last-7-days critical/high entries
+- [RSS]({site_url}feeds/): daily digest, per-entry (one item per changelog record too), and sector-sliced feeds
+- [STIX 2.1]({site_url}stix/): full / recent / entity-graph / per-sector bundles with stable ids
+- [sitemap.xml]({site_url}sitemap.xml)
+"""
+    atomic_write_text(out_path, body)
+
+
 
 # === SELF-CHECK =========================================================
 
@@ -10909,9 +11026,12 @@ def main() -> int:
         if index:
             sitemap.append((site_url + rel_url, lastmod))
 
-    # ---- /live/ — the dynamic window brief + briefbook -----------------
+    # ---- the live window + briefbook -----------------------------------
     # Window membership is by ACTIVITY (max(discovered_at, updated_at)): an
-    # updated entry floats back into the live window.
+    # updated entry floats back into the live window. The rolling brief
+    # itself renders at the site ROOT (emitted below, once the store-wide
+    # counts for its knowledge-base band are known); /live/ stays alive as
+    # a redirect stub for legacy inbound links.
     card_html_by_id: dict[str, str] = {}
     briefbook = build_briefbook(
         entries, runs, ref_ts=ref, prefix="../", card_html_by_id=card_html_by_id
@@ -10921,18 +11041,13 @@ def main() -> int:
     window_runs = runs_in_window(runs, window_since, None)
     emit_html(
         "live/",
-        render_live_brief_page(
-            window_entries, window_runs,
-            all_entries=entries, all_runs=runs,
-            ref_ts=ref,
-            entries_by_id=entries_by_id,
-            card_html_by_id=card_html_by_id,
+        render_redirect_page(
+            target_url="/",
+            title=f"Live · {SITE_NAME}",
             site_url=site_url,
             cachebust=cachebust,
-            prefix="../",
-            canonical=site_url + "live/",
         ),
-        lastmod=ref.strftime("%Y-%m-%d"),
+        index=False,  # noindex meta-refresh redirect — the canonical live URL is /
     )
 
     # ---- Day pages + index ---------------------------------------------
@@ -10991,6 +11106,19 @@ def main() -> int:
             ),
             lastmod=(str(e.get("updated_at") or "")[:10] or e["date"]),
         )
+        # Raw Markdown twin of the permalink: the entry's exact source file
+        # (frontmatter + body) at <permalink>index.md — advertised via
+        # <link rel="alternate" type="text/markdown">, the entry meta line,
+        # and markdown_url in data/briefbook.json.
+        src_md = ROOT / e["path"]
+        try:
+            atomic_write_text(
+                OUT / rel_url / "index.md",
+                src_md.read_text(encoding="utf-8"),
+            )
+        except OSError as exc:
+            print(f"warning: raw markdown for {e['id']} not published: {exc}",
+                  file=sys.stderr)
         for t in e.get("tags") or []:
             tag_index[t].append(e)
         for r in e.get("regions") or []:
@@ -11146,26 +11274,14 @@ def main() -> int:
         ),
     )
 
-    # ---- Home -------------------------------------------------------------
-    # "today" = the newest day that fired (the live, still-appended day) —
-    # including an all-quiet day, so the "Live — today" card reflects the
-    # most recent run even when it published nothing; "prev_day" = the most
-    # recent completed day before it. Entry lists come from `days`, so a
-    # quiet day renders the card's built-in "quiet day so far" copy.
-    # Home cards: Live = the rolling window (window_entries); Daily = the
-    # latest COMPLETED day page (day_pages already excludes the rolling day).
+    # ---- Landing page: the live rolling brief at the site root -------------
+    # The brief IS the home page — content on the first paint, zero clicks.
+    # The store-wide counts feed the knowledge-base pivot band below the
+    # feed; `latest_day` points its Daily tile at the newest completed day.
     day_keys = sorted(day_pages, reverse=True)
     latest_completed = day_keys[0] if day_keys else None
-    today = latest_completed          # unused for display; kept for signature
-    prev_day = latest_completed
     recent_entries = sorted(
         entries, key=lambda e: (str(e.get("discovered_at") or ""), e["id"]), reverse=True
-    )
-    # Entries whose latest activity is a changelog record, newest first —
-    # the home "Updates" card.
-    recent_updates = sorted(
-        (e for e in operational_entries(entries) if entry_activity(e)["is_update"]),
-        key=lambda e: (content_model.entry_activity_ts(e) or "", e["id"]), reverse=True,
     )
     counts = {
         "entries": len(entries),
@@ -11178,19 +11294,37 @@ def main() -> int:
     }
     emit_html(
         "",
-        render_home_page(
-            today=today,
-            today_entries=window_entries,
-            prev_day=prev_day,
-            prev_day_entries=days.get(prev_day, []) if prev_day else [],
-            recent_updates=recent_updates,
+        render_live_brief_page(
+            window_entries, window_runs,
+            all_entries=entries, all_runs=runs,
+            ref_ts=ref,
+            entries_by_id=entries_by_id,
+            card_html_by_id=card_html_by_id,
             site_url=site_url,
             cachebust=cachebust,
+            prefix="",
             canonical=site_url,
             counts=counts,
-            last_updated=ref.strftime("%d %b %H:%M UTC"),
+            latest_day=latest_completed,
         ),
         lastmod=ref.strftime("%Y-%m-%d"),
+    )
+
+    # ---- /changes/ — the store-wide changelog ------------------------------
+    all_update_dates = [
+        str(rec.get("at") or "")[:10]
+        for e in entries for rec in visible_updates(e)
+    ]
+    emit_html(
+        "changes/",
+        render_changes_page(
+            entries,
+            site_url=site_url,
+            cachebust=cachebust,
+            prefix="../",
+            canonical=site_url + "changes/",
+        ),
+        lastmod=max(all_update_dates) if all_update_dates else ref.strftime("%Y-%m-%d"),
     )
 
     # ---- /about/** static docs ------------------------------------------
@@ -11434,16 +11568,16 @@ def main() -> int:
     <h3 style="margin-top:0">Common ways here</h3>
     <ul style="margin-top:0.4rem">
       <li><strong>Renamed CVE / source / entity page.</strong> Use the search box above (also at the top of every page).</li>
-      <li><strong>Reading the brief.</strong> The rolling window is at <code>/live/</code>, completed days at <code>/daily/</code>; every finding has one permalink under <code>/entries/</code> that carries its updates and corrections.</li>
+      <li><strong>Reading the brief.</strong> The rolling window is the <a href="{site_base_path}">landing page</a>, completed days live at <code>/daily/</code>, every change at <code>/changes/</code>; every finding has one permalink under <code>/entries/</code> that carries its updates and corrections.</li>
       <li><strong>Multi-CVE link from an older entry.</strong> Each CVE has its own page; use the search box or the
         <a href="{site_base_path}cves/">full CVE list</a>.</li>
     </ul>
   </div>
 
   <div class="row" style="gap:0.8rem;flex-wrap:wrap;margin-top:1.4rem">
-    <a class="cta" href="{site_base_path}">Return home</a>
-    <a class="cta cta--secondary" href="{site_base_path}live/">Live brief</a>
+    <a class="cta" href="{site_base_path}">Live brief</a>
     <a class="cta cta--secondary" href="{site_base_path}daily/">Day archive</a>
+    <a class="cta cta--secondary" href="{site_base_path}changes/">Recent changes</a>
     <a class="cta cta--secondary" href="{site_base_path}entities/">Entities</a>
     <a class="cta cta--secondary" href="{site_base_path}ops/">Operations</a>
   </div>
@@ -11489,6 +11623,13 @@ def main() -> int:
         expires="2027-05-08T00:00:00Z",
         site_url=site_url,
     )
+    write_llms_txt(
+        OUT / "llms.txt",
+        site_url=site_url,
+        counts=counts,
+        latest_day=latest_completed,
+        generated=ref.strftime("%Y-%m-%d %H:%M UTC"),
+    )
     cname_src = ROOT / "CNAME"
     if cname_src.exists():
         atomic_write_text(OUT / "CNAME", _read_text_capped(cname_src, 1024))
@@ -11511,6 +11652,20 @@ def main() -> int:
         OUT / "data" / "graph.json", json.dumps(graph_payload, sort_keys=True)
     )
 
+    # ---- STIX 2.1 bundle endpoints (/stix/) ------------------------------
+    stix_hashes, stix_counts, stix_rows = write_stix_outputs(
+        entries, registry, cves_raw, site_url=site_url, ref=ref
+    )
+    emit_html(
+        "stix/",
+        render_stix_page(
+            stix_rows,
+            site_url=site_url, cachebust=cachebust,
+            prefix="../", canonical=site_url + "stix/",
+        ),
+        lastmod=ref.strftime("%Y-%m-%d"),
+    )
+
     # ---- Manifest --------------------------------------------------------
     manifest = {
         "version": 3,
@@ -11522,7 +11677,9 @@ def main() -> int:
             **sector_feed_hashes,
         },
         "pages": manifest_pages,
-        "counts": dict(counts, tags=len(tag_index), regions=len(region_index)),
+        "stix": stix_hashes,
+        "counts": dict(counts, tags=len(tag_index), regions=len(region_index),
+                       **stix_counts),
     }
     atomic_write_text(OUT / "data" / "build_manifest.json", json.dumps(manifest, indent=2, sort_keys=True))
 
@@ -11619,6 +11776,7 @@ def main() -> int:
         f"updates={counts['updates']} entities={counts['entities']} "
         f"cves={counts['cves']} sources={counts['sources']} "
         f"tags={manifest['counts']['tags']} regions={manifest['counts']['regions']} "
+        f"stix_objects={stix_counts['stix_objects']} "
         f"cachebust={cachebust} "
         f"· writes={_WRITE_COUNTER['writes']} skips={_WRITE_COUNTER['skips']}"
     )

@@ -4,6 +4,26 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.4 — 2026-08-29 (constituency narrowed to the Swiss public sector — vertical CI sectors leave the mission, the prompts, and the source roster)
+
+### Why
+
+Operator directive, 2026-08-29: the deployment defends Swiss public-sector critical infrastructure only — national (federal), cantonal and communal administration, emergency services (national and cantonal police, fire and rescue, emergency medical services), the armed forces and civil protection, and the technology suppliers keeping these organizations running. Healthcare, energy, water, transport, finance and telco leave the mission everywhere it is stated. Sector *tags* on entries remain full taxonomy values (categorizing a briefing by the sectors it touches stays correct information); what changes is what the pipeline hunts for and who it writes for.
+
+### What changed
+
+- **`config/org-profile.yaml`:** `additional_sectors` → `[]`; `region_focus` and `description` rewritten to the Swiss public sector; `policy_watch` drops FINMA guidance, DORA and OFCOM/BAKOM, adds the Swiss Information Security Act (ISG) and Swiss e-government / digital public services developments. ORG-PROFILE blocks re-composed everywhere.
+- **Config is the single source for the constituency — the prompts carry NO constituency literal (operator directive 2026-08-29).** The hand-written "Swiss / European critical infrastructure and government" phrases in `cti-run.md` (PD-11 breach gate, S4 row), `.claude/agents/cti-research.md` (S4 relevance filter, ground (c)) and `.claude/agents/cti-verification.md` (check 5) are replaced by generic references to the composed § Organization profile block — a future focus change is a config edit + `compose_prompts.py --write`, never a prompt edit. The S3 row drops "OT/ICS research"; `ot-ics` leaves the deep-dive category rotation (existing `deep_dive_category: ot-ics` entries stay valid history); the research example's `sector: "telco, public-sector"` → `"public-sector"`.
+- **`tools/compose_prompts.py` — upstream defaults removed entirely (no fallbacks):** `DEFAULT_NATIONAL_CERTS` and `DEFAULT_POLICY_WATCH` are deleted; `national_certs`, `policy_watch`, and `deployment.site_url` are now REQUIRED config keys (absent key = validation error; explicit `[]` / `""` still disables the feature).
+- **`sources/sources.json`:** the vertical-purpose feeds are removed (OT/ICS set: certvde, claroty-team82, dragos, industrialcyber-co, nozomi-networks, sans-ics, siemens-productcert-csaf, kaspersky-ics-cert, forescout-vedere; crypto candidates: cryptotimes, coinspect-research); `fbi-cyber-alerts` stays (gov / active-breaking) without its `ot-ics` category; stale notes citing the removed sector list corrected.
+- **Site config (`config/branding.yaml`) — no in-code defaults:** `feeds.sector_slices` (single public-sector slice) and `trends.cohorts` (seven cohorts, without ot-ics) are now defined explicitly in the config and are the COMPLETE sets; `site/build.py`'s `_DEFAULT_SECTOR_FEED_SLICES` / `_DEFAULT_TREND_COHORTS` constants and the default-branch page prose are deleted (an empty config list builds none — no fallback). docs/README updated to match.
+
+### What stays
+
+`site/taxonomy.yaml` sectors are untouched — entries keep tagging every sector a finding touches, and historical entries/tag pages remain valid. The PD-11 gate mechanics, the breach-gate grounds (a)–(d), watchlists, the national-CERT carve-out list, and everything else in both prompts are unchanged. The audit prompt has no content change (lockstep bump only).
+
+---
+
 ## 4.3 — 2026-08-28 (entry content is modifiable when changelog-tracked — the residual immutability guard on earlier sections is dropped)
 
 ### Why

@@ -26,5 +26,6 @@
   m = h.match(/^#\/topics\/(.+)$/);
   if (m) { window.location.replace('topics/' + decodeURIComponent(m[1]) + '/'); return; }
   m = h.match(/^#\/(live|daily|weekly|cves|topics|sources|ops|about)$/);
-  if (m) { window.location.replace(m[1] + '/'); return; }
+  // The live brief renders at the site root now.
+  if (m) { window.location.replace(m[1] === 'live' ? './' : m[1] + '/'); return; }
 })();

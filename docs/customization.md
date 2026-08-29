@@ -2,7 +2,8 @@
 
 This repository is a **framework**: an autonomous CTI pipeline whose
 intelligence lens, visual identity, analytics, and publishing surface are all
-parameterized. The upstream deployment (ctipilot.ch, Swiss federal SOC lens)
+parameterized. The upstream deployment (ctipilot.ch, the "Swiss Government
+Entities" example lens)
 is just the default parameter set. A downstream fork customizes **only the
 files listed below** and keeps merging upstream — new features, prompt
 improvements, build/site upgrades — without touching its customizations.
@@ -25,6 +26,14 @@ ctipilot.ch deployment. An absent key (or empty string / empty list, where
 documented) means "inherit upstream". The default configs build a
 **byte-identical** site and compose byte-identical prompts — customization is
 strictly opt-in, per value.
+
+**Exception — deployment-scoped lists (no in-code default, no fallback):**
+`feeds.sector_slices` and `trends.cohorts` in `config/branding.yaml`, and
+`national_certs`, `policy_watch` and `deployment.site_url` in
+`config/org-profile.yaml`, live ONLY in the config. The config list is the
+complete set (an empty list means none / disabled); the org-profile keys are
+required and an absent key fails validation. Changing the deployment's lens
+touches only these config files — never code, never the prompts.
 
 ## Downstream-owned vs upstream-owned files
 
@@ -111,8 +120,8 @@ Everything lives in `config/org-profile.yaml`:
   entry then carries a structured `org_triage: {category, rationale}`
   frontmatter block in your scheme.
 - `national_certs:` — which national CERTs / government authorities your
-  deployment trusts as single sources for their own disclosures. Omit the
-  key for the upstream default list; `[]` disables the carve-out entirely.
+  deployment trusts as single sources for their own disclosures. Required
+  key with no in-code default; `[]` disables the carve-out entirely.
 - `policy_watch:` — the regulators and directives whose changes alter your
   obligations (drives the intel run's S2 home-region & sector sweep; a
   regulatory action with a transferable obligation publishes as a `policy`
@@ -123,9 +132,17 @@ static prompt prose is org-neutral by design — it always defers to these
 managed blocks, so a lens change is a config change, never a prompt edit.
 
 Site-side lens knobs live in `config/branding.yaml`: `feeds.sector_slices`
-(which per-sector RSS feeds exist) and `trends.cohorts` (which /trends/
-tiles are tracked). `site/taxonomy.yaml` is the controlled vocabulary both
-draw from; extend it if your sector/region isn't represented.
+(which per-sector RSS feeds exist — the STIX sector bundles under `/stix/`
+follow the same list) and `trends.cohorts` (which /trends/ tiles are
+tracked). `site/taxonomy.yaml` is the controlled vocabulary both draw
+from; extend it if your sector/region isn't represented.
+
+STIX export knobs (`config/branding.yaml` `stix:`): `id_namespace` — the
+uuid5 namespace behind every exported STIX id; empty derives it from
+`site.url`. **Pin a UUID before your first publish if you fork**: ids
+then survive a later domain move, whereas changing the namespace (or the
+derived URL) re-mints every object id for downstream consumers.
+`publisher_name` names the STIX identity SDO (empty → `site.name`).
 
 ### Custom domain / hosting
 

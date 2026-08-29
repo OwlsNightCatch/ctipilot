@@ -13,7 +13,7 @@ Block at the network layer if you don't want to be counted: `cloud.umami.is` and
 
 ## Per-page coverage
 
-Every emitted HTML page on the site loads the Umami snippet exactly once: the home page, the dynamic brief at `/live/`, every day page, every entry permalink, every entity / source page, every tag and region index, the operations dashboard, the about pages, and the 404 fallback. The build's self-check verifies the snippet is present on every page.
+Every emitted HTML page on the site loads the Umami snippet exactly once: the landing page (the dynamic brief at `/`), the changes page, every day page, every entry permalink, every entity / source page, every tag and region index, the operations dashboard, the about pages, and the 404 fallback. The build's self-check verifies the snippet is present on every page.
 
 Each click registers as a normal Umami pageview because every URL is a real HTML page (the site is a static-site generator, not a SPA). The legacy `#/...` hash-routes from the previous SPA still work via the home page's redirect bootstrap, but the redirect resolves to a clean URL before Umami sees it — so the indexed-old-URL → clean-URL transition is a single normal pageview from Umami's perspective.
 
