@@ -76,6 +76,13 @@ article -> rail and the phone order comes out right without `order`).
   `.elede` and is **suppressed when it merely restates the title** (723 of
   1222 entries). The stored `summary` is never repeated here, the reader
   read it on the page that linked in.
+- **The gap under the header belongs to the header.** `.ehead` carries
+  `margin-bottom: 34px` and BOTH columns zero their first child
+  (`.entry-main > :first-child`, `.erail > :first-child`), so the callout,
+  the first `.esec` and the rail all start on the same line and an entry
+  with no immediate action is spaced exactly like one with it. Putting the
+  margin on `.immediate-action` instead gave 0px with a callout and 34px
+  without one.
 - **One measure.** `--entry-col` / `--entry-rail` / `--entry-gap` live on
   `body.entry-detail` INSIDE the >=1100px query; `.view` max-width is derived
   from them and `.elede` / `.emeta` borrow `--entry-col` (fallback 100%), so
