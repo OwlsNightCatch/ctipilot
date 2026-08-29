@@ -19,3 +19,39 @@ Invariants learned the hard way:
 - Verification flags render neutral — red is reserved for priority/exploited.
 - Classification badges/scheme text are config-driven (`_load_classification_scheme()`); never re-hardcode doctrine. `_chrome_text()` sanitizes config strings for chrome (em dash → `·`, per [[ui-writing-style]]).
 - Routes: `/live/` (rolling, ordered by activity; only non-internal `type: update` records re-float) and `/daily/` (completed days). `/weekly/` was removed 2026-08-27 with the weekly routine; entry pages carry timestamped `## <Type> — <at>` blocks + a revision-history panel.
+
+## Document contract (2026-08-29 design pass)
+
+Rendering invariants a `site/build.py` change must not regress. All three are
+mechanically checkable across the emitted store, so re-check them after any
+renderer edit:
+
+- **One heading outline per page.** Exactly one `<h1>` (redirect stubs excepted
+  — `/cves/*`, `/topics/*`, folded entries and `/live/` are meta-refresh pages
+  with none), no skipped levels. Embedded markdown never keeps its own level:
+  `render_markdown(..., heading_base=N)` pins a document's own top heading to
+  N whatever it was authored at (records open at `#` OR `##`, so a fixed
+  `heading_offset` skips a level in half of them). Run notes pass
+  `head_level`; entry bodies pin to h2. Day-brief section headers are `<h2
+  class="sect">`, not divs.
+- **Ids are unique per page and every `#anchor` resolves.** Heading anchors
+  take `anchor_prefix` (run id) and de-duplicate within a document
+  (`_unique_anchor`); `#update-<at>` is emitted only on the entry permalink
+  (`anchor=False` everywhere else); finding anchors use the entry id, not the
+  slug (two dates can share a slug); the ATT&CK directory gives the bare
+  `#T…` to the first occurrence and namespaces tactic repeats; a matrix cell
+  is a link only when its directory row exists.
+- **AA contrast in BOTH themes, measured with alpha compositing.** Translucent
+  tints must be composited before the ratio means anything. `--text-muted` is
+  the most-used text colour — it has to clear 4.5:1 on `--bg`, `--bg-elev`,
+  `--bg-elev-2` AND `--kbd-bg`. Heat/tint surfaces (ATT&CK cells) fail from
+  opposite directions per theme; page-text colour is the only value that
+  clears both. Never de-emphasise with `opacity` (0.45 = ~2.5:1) — use
+  `--text-muted`.
+
+Traps: `var(--muted)` is NOT a token (five rules once asked for it and
+silently inherited `--text`); a class rule loses to `.view h2` / `.brief-prose
+h2` unless it carries two classes; `a.trends-card { display: block }` beat the
+card's own flex; the CSS orphan check must account for classes built by
+concatenation (`cls-{tier}`, `sel-{i}`, `upd--{rtype}`, `runs-row__kind--{kind}`)
+before deleting anything.
