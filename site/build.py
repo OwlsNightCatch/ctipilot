@@ -957,7 +957,10 @@ def render_markdown(md: str, *, base_url: str | None = None,
     an offset so the document keeps one heading outline instead of sprouting
     a second ``<h1>``. ``heading_base`` says it the other way round: render
     the document's *own* top heading at that level and everything below it
-    relative to that. Records differ in whether they open at `#` or `##`, so
+    on consecutive levels (its distinct authored levels are mapped onto
+    ``heading_base``, ``heading_base + 1``, ... so an authoring gap can
+    never emit a skipped level). Records differ in whether they open at
+    `#` or `##`, so
     a fixed offset leaves a level skipped in half of them; a base does not.
 
     ``anchor_prefix`` namespaces the generated heading ids. Several run notes
@@ -975,10 +978,17 @@ def render_markdown(md: str, *, base_url: str | None = None,
     md = _strip_controls(md)
     md = dedash_markdown(md)   # see render_inline
     lines = md.replace("\r\n", "\n").split("\n")
-    if heading_base is not None:
-        levels = [len(m.group(1)) for m in
-                  (re.match(r"^(#{1,6})\s+\S", ln) for ln in lines) if m]
-        heading_offset = heading_base - min(levels) if levels else 0
+    # With `heading_base` the document's headings are re-levelled in reading
+    # order: the first one lands on `heading_base`, and each following one is
+    # a sibling of, or exactly one level below, its nearest shallower
+    # ancestor. Relative nesting survives; an authoring gap (an entry whose
+    # first heading is `####` while `###` appears only later) can never emit
+    # a skipped level, which a fixed offset would.
+    heading_stack: list[tuple[int, int]] | None = (
+        [] if heading_base is not None else None
+    )
+    if heading_stack is not None:
+        heading_offset = 0
     out: list[str] = []
     used_anchors: set[str] = set()
     i = 0
@@ -1007,7 +1017,17 @@ def render_markdown(md: str, *, base_url: str | None = None,
         # ATX heading
         m = re.match(r"^(#{1,6})\s+(.*?)\s*#*\s*$", line)
         if m:
-            level = min(len(m.group(1)) + heading_offset, 6)
+            raw_level = len(m.group(1))
+            if heading_stack is not None:
+                while heading_stack and heading_stack[-1][0] >= raw_level:
+                    heading_stack.pop()
+                level = min(
+                    (heading_stack[-1][1] + 1) if heading_stack else heading_base,
+                    6,
+                )
+                heading_stack.append((raw_level, level))
+            else:
+                level = min(raw_level + heading_offset, 6)
             text = m.group(2)
             anchor = _unique_anchor(anchor_prefix + slugify(text), used_anchors)
             rendered = render_inline(text, base_url=base_url)
@@ -2571,20 +2591,23 @@ def runs_in_window(runs: list[dict[str, Any]], since: datetime,
 # brief.js only ever regroups + concatenates — no client-side Markdown).
 
 
+def _fmt_utc_stamp(ts_str: str | None) -> str:
+    """`2026-07-03T04:21:09Z` → `2026-07-03 04:21 UTC` · the bare stamp for
+    a labelled metadata row (the label supplies the word, not the value)."""
+    ts = parse_ts(ts_str)
+    return ts.strftime("%Y-%m-%d %H:%M") + " UTC" if ts else ""
+
+
 def _fmt_discovered(ts_str: str | None) -> str:
     """`2026-07-03T04:21:09Z` → `first published 2026-07-03 04:21 UTC`."""
-    ts = parse_ts(ts_str)
-    if ts is None:
-        return ""
-    return "first published " + ts.strftime("%Y-%m-%d %H:%M") + " UTC"
+    stamp = _fmt_utc_stamp(ts_str)
+    return ("first published " + stamp) if stamp else ""
 
 
 def _fmt_updated(ts_str: str | None) -> str:
     """`2026-08-24T09:50:00Z` → `updated 2026-08-24 09:50 UTC`."""
-    ts = parse_ts(ts_str)
-    if ts is None:
-        return ""
-    return "updated " + ts.strftime("%Y-%m-%d %H:%M") + " UTC"
+    stamp = _fmt_utc_stamp(ts_str)
+    return ("updated " + stamp) if stamp else ""
 
 
 def _fmt_long_stamp(ts_str: str | None) -> str:
@@ -2712,36 +2735,28 @@ def render_entry_sources(entry: dict[str, Any], *, with_roles: bool = False) -> 
     return '<aside class="item-footer">' + "".join(parts) + "</aside>"
 
 
-def render_immediate_action_callout(entry: dict[str, Any], *, prefix: str = "") -> str:
-    """The v2 Immediate-Action bar for a `priority: critical` entry —
-    title, action, entry link, first evidence quote. brief.js rebuilds
-    this exact shape client-side via DOM APIs."""
+def render_immediate_action_callout(entry: dict[str, Any]) -> str:
+    """The Immediate-action block at the top of a `priority: critical`
+    entry permalink: the one task the reader starts before reading a word
+    of the analysis. Entry-detail only (the live brief carries its own
+    ACT NOW card), so it neither links to the page it is already on nor
+    repeats the first evidence quote that the Cited-evidence section
+    renders in full further down."""
     ia = entry.get("immediate_action")
     if not isinstance(ia, dict):
         return ""
-    url = f"{prefix}{entry_url_path(entry)}"
-    quote_html = ""
-    for ev in entry.get("evidence") or []:
-        if isinstance(ev, dict) and ev.get("quote"):
-            pub = str(ev.get("publisher") or "").strip()
-            src_by_pub = _entry_source_by_publisher(entry)
-            quote_html = (
-                '<figure class="entry-cite entry-cite--inline">'
-                f'<p class="entry-cite__quote">{_inline_text(str(ev["quote"]))}</p>'
-                f"{_cite_attribution_html(pub, src_by_pub)}"
-                "</figure>"
-            )
-            break
+    title = str(ia.get("title") or "").strip()
+    action = str(ia.get("action") or "").strip()
+    if not (title or action):
+        return ""
     return (
         '<aside class="callout callout--action immediate-action" role="note" '
         f'data-entry-id="{_escape(entry["id"])}">'
         '<span class="callout__label">Immediate action</span>'
         '<div class="callout__body">'
-        f'<p><strong>{_escape(str(ia.get("title") or ""))}</strong> · '
-        f'{_escape(str(ia.get("action") or "").strip())} '
-        f'<a href="{_escape(url)}">{_inline_text(entry.get("headline") or entry.get("title") or entry["id"])} →</a></p>'
-        f"{quote_html}"
-        "</div></aside>"
+        + (f'<p class="immediate-action__t"><strong>{_escape(title)}</strong></p>' if title else "")
+        + (f"<p>{_escape(action)}</p>" if action else "")
+        + "</div></aside>"
     )
 
 
@@ -2757,13 +2772,17 @@ def render_update_block(entry: dict[str, Any], record: dict[str, Any],
                         section: dict[str, Any] | None, *, prefix: str = "",
                         base_url: str | None = None, with_summary: bool = False,
                         entry_link: bool = False,
-                        anchor: bool = True) -> str:
+                        anchor: bool = True,
+                        with_provenance: bool = True) -> str:
     """One changelog record as a styled, timestamped block:
     `<section class="entry-update entry-update--<type>">` with a header row
-    (type badge · long stamp · run link) and the section body as HTML.
-    `with_summary` prepends the record's summary (day pages / feeds);
-    `entry_link` appends an "open finding" link (day pages). Callers pass
-    only visible (non-internal) records."""
+    (type badge · long stamp · run link · changed fields) and the section
+    body as HTML. `with_summary` prepends the record's summary (day pages /
+    feeds); `entry_link` appends an "open finding" link (day pages).
+    `with_provenance` carries the run link and the raw changed-field names;
+    the entry permalink turns it OFF, because those are pipeline internals
+    and its own Revision-history panel is where the audit trail belongs.
+    Callers pass only visible (non-internal) records."""
     rtype = str(record.get("type") or "update")
     at = str(record.get("at") or "")
     rid = str(record.get("run_id") or "")
@@ -2771,7 +2790,7 @@ def render_update_block(entry: dict[str, Any], record: dict[str, Any],
     body_html = enhance_brief_item_html(render_markdown(body_md, base_url=base_url)) if body_md else ""
     run_html = (
         f'<a class="mono entry-update__run" href="{_escape(prefix)}runs/{_escape(rid)}/">run {_escape(rid)}</a>'
-        if rid else ""
+        if rid and with_provenance else ""
     )
     summary_html = (
         f'<p class="entry-update__summary">{_inline_text(str(record.get("summary") or ""))}</p>'
@@ -2787,7 +2806,7 @@ def render_update_block(entry: dict[str, Any], record: dict[str, Any],
         '<span class="entry-update__fields">'
         + "".join(f'<span class="echip echip--muted">{_escape(f)}</span>' for f in fields)
         + "</span>"
-    ) if fields else ""
+    ) if (fields and with_provenance) else ""
     return (
         f'<section class="entry-update entry-update--{_escape(rtype)}" '
         # `#update-<at>` belongs to the entry permalink: /changes/, the
@@ -2808,7 +2827,8 @@ def render_update_block(entry: dict[str, Any], record: dict[str, Any],
 
 def render_update_sections(entry: dict[str, Any], *, prefix: str = "",
                            base_url: str | None = None,
-                           anchor: bool = True) -> str:
+                           anchor: bool = True,
+                           with_provenance: bool = True) -> str:
     """Every changelog record of the entry as a styled block, in order,
     paired with its body section by `at`. Internal records never render."""
     recs = visible_updates(entry)
@@ -2817,7 +2837,8 @@ def render_update_sections(entry: dict[str, Any], *, prefix: str = "",
     by_at = update_sections_by_at(entry)
     return '<div class="entry-updates">' + "".join(
         render_update_block(entry, r, by_at.get(str(r.get("at") or "")),
-                            prefix=prefix, base_url=base_url, anchor=anchor)
+                            prefix=prefix, base_url=base_url, anchor=anchor,
+                            with_provenance=with_provenance)
         for r in recs
     ) + "</div>"
 
@@ -3210,6 +3231,12 @@ def _inline_text(s: str) -> str:
     # a field-leading `*Word` with no matching closer is a broken emphasis
     # opener from the (immutable) source, not prose — drop the marker
     return re.sub(r"^\*+(?=\w)", "", out)
+
+
+def _text_key(s: str) -> str:
+    """Case/punctuation-insensitive comparison key for two pieces of prose ·
+    used to spot a headline that merely restates the title."""
+    return re.sub(r"[^a-z0-9]+", " ", _strip_md_emphasis(s or "").lower()).strip()
 
 
 def _strip_md_emphasis(s: str) -> str:
@@ -4303,7 +4330,11 @@ def render_detail_sources(entry: dict[str, Any]) -> str:
         rows.append(f'<span class="src">{label}<span class="role">closed source</span></span>')
     if not rows:
         return ""
-    return '<div class="esec"><h2 class="esec-h">Sources</h2><div class="srclist">' + "".join(rows) + "</div></div>"
+    return (
+        '<section class="esec" id="sources"><h2 class="esec-h">Sources'
+        f'<span class="esec-n">{len(rows)}</span></h2>'
+        '<div class="srclist">' + "".join(rows) + "</div></section>"
+    )
 
 
 def render_entry_attack_section(entry: dict[str, Any], *, prefix: str) -> str:
@@ -4352,63 +4383,250 @@ def render_entry_attack_section(entry: dict[str, Any], *, prefix: str) -> str:
         f"mapped from the cited reporting · MITRE ATT&CK v{_escape(ATTACK_VERSION)}</p>"
     )
     return (
-        '<div class="esec esec--attack" id="attack-mapping">'
-        '<h2 class="esec-h">ATT&amp;CK mapping</h2>'
-        + intro + "".join(rows_by_group) + "</div>"
+        '<section class="esec esec--attack" id="attack-mapping">'
+        '<h2 class="esec-h">ATT&amp;CK mapping'
+        f'<span class="esec-n">{len(tids)}</span></h2>'
+        + intro + "".join(rows_by_group) + "</section>"
+    )
+
+
+def _fact_row(label: str, value_html: str, *, title: str = "",
+              value_cls: str = "") -> str:
+    """One labelled row in an entry-detail fact table (`.frow`). The label
+    supplies the noun, the value carries only the fact — so a column of
+    rows reads as a table, not as a run-on mono line."""
+    t = f' title="{_escape(_chrome_text(title))}"' if title else ""
+    vc = f" {value_cls}" if value_cls else ""
+    return (
+        f'<div class="frow"{t}>'
+        f'<span class="frow__l">{_escape(label)}</span>'
+        f'<span class="frow__v{vc}">{value_html}</span></div>'
     )
 
 
 def render_detail_assessment(entry: dict[str, Any]) -> str:
-    """The `Assessment` group at the top of the entry-detail pivot rail —
-    the one-glance answer to "how reliable is this?": the Admiralty
+    """The `Assessment` fact table in the entry-detail rail — the
+    one-glance answer to "how far do I trust this?": the Admiralty
     classification spelled out per axis (or the org-triage rating on
-    triage-kind entries), then the verification state and the analyst
+    triage-kind entries), the verification state and the analyst
     confidence. The sourcing note, when present, explains the rating."""
     rows: list[str] = []
     meta = classification_meta(entry.get("classification"))
     if meta:
         rows.append(
-            '<div class="assess-code">'
+            '<div class="fact-code">'
             + render_classification_badge(entry.get("classification"))
-            + f'<span class="assess-scheme">{_escape(CLASSIFICATION_SCHEME_NAME)}</span></div>'
+            + f'<span class="fact-scheme">{_escape(CLASSIFICATION_SCHEME_NAME)}</span></div>'
         )
-        rows.append(
-            f'<div class="assess-row" title="{_escape(_chrome_text(meta["reliability_def"]))}">'
-            f'<span class="assess-l">Source reliability</span>'
-            f'<span class="assess-v"><b class="mono">{_escape(meta["reliability"])}</b> '
-            f'{_escape(meta["reliability_short"])}</span></div>'
-        )
-        rows.append(
-            f'<div class="assess-row" title="{_escape(_chrome_text(meta["credibility_def"]))}">'
-            f'<span class="assess-l">Info credibility</span>'
-            f'<span class="assess-v"><b class="mono">{_escape(meta["credibility"])}</b> '
-            f'{_escape(meta["credibility_short"])}</span></div>'
-        )
+        rows.append(_fact_row(
+            "Source reliability",
+            f'<b class="mono">{_escape(meta["reliability"])}</b> '
+            f'{_escape(meta["reliability_short"])}',
+            title=meta["reliability_def"],
+        ))
+        rows.append(_fact_row(
+            "Info credibility",
+            f'<b class="mono">{_escape(meta["credibility"])}</b> '
+            f'{_escape(meta["credibility_short"])}',
+            title=meta["credibility_def"],
+        ))
     ot = entry.get("org_triage")
     if isinstance(ot, dict) and ot.get("category"):
-        rows.append(
-            '<div class="assess-code">' + render_org_triage_badge(ot) + "</div>"
-        )
+        rows.append('<div class="fact-code">' + render_org_triage_badge(ot) + "</div>")
         if ot.get("rationale"):
-            rows.append(
-                f'<div class="assess-row"><span class="assess-l">Rationale</span>'
-                f'<span class="assess-v">{_escape(str(ot["rationale"]))}</span></div>'
-            )
+            rows.append(_fact_row("Rationale", _escape(str(ot["rationale"]))))
     v_class, v_label = _verif_meta(entry)
-    rows.append(
-        f'<div class="assess-row"><span class="assess-l">Verification</span>'
-        f'<span class="assess-v {v_class}">{_escape(v_label)}</span></div>'
-    )
+    rows.append(_fact_row("Verification", _escape(v_label), value_cls=v_class))
     conf = str(entry.get("confidence") or "").strip()
     if conf:
-        rows.append(
-            f'<div class="assess-row"><span class="assess-l">Confidence</span>'
-            f'<span class="assess-v">{_escape(conf)}</span></div>'
-        )
+        rows.append(_fact_row("Confidence", _escape(conf)))
     note = str(entry.get("sourcing_note") or "").strip()
     if note:
-        rows.append(f'<p class="assess-note">{_escape(note)}</p>')
+        rows.append(f'<p class="fact-note">{_escape(note)}</p>')
     return "".join(rows)
+
+
+def render_detail_record(entry: dict[str, Any], *, prefix: str) -> str:
+    """The `Record` fact table at the FOOT of the entry-detail rail — the
+    bookkeeping a reader almost never needs mid-triage: publication and
+    event stamps, the source count, the raw-Markdown twin, the run that
+    produced the entry and (on imported entries) where it came from.
+    Deliberately the last group in the rail: the run-dashboard link is
+    provenance, not a reading path, and has no business under the title."""
+    rows: list[str] = []
+    pub = _fmt_utc_stamp(entry.get("discovered_at"))
+    if pub:
+        rows.append(_fact_row(
+            "Published",
+            f'<time datetime="{_escape(str(entry.get("discovered_at") or ""))}">{_escape(pub)}</time>',
+        ))
+    upd = _fmt_utc_stamp(entry.get("updated_at")) if entry.get("updated_at") else ""
+    if upd:
+        rows.append(_fact_row(
+            "Updated",
+            f'<a href="#revision-history"><time datetime="{_escape(str(entry.get("updated_at")))}">'
+            f"{_escape(upd)}</time></a>",
+        ))
+    ev_date = str(entry.get("event_date") or "").strip()
+    if ev_date:
+        rows.append(_fact_row(
+            "Event date", f'<time datetime="{_escape(ev_date)}">{_escape(ev_date)}</time>',
+            title="Date of the underlying event or primary publication",
+        ))
+    nsrc = _source_count(entry)
+    if nsrc:
+        rows.append(_fact_row("Sources", f'<a href="#sources">{nsrc}</a>'))
+    rows.append(_fact_row(
+        "Raw source",
+        '<a class="mono" href="index.md" type="text/markdown">index.md</a>',
+        title="This entry's exact Markdown source: frontmatter plus body",
+    ))
+    rid = str(entry.get("run_id") or "")
+    if rid:
+        rows.append(_fact_row(
+            "Produced by",
+            f'<a class="mono" href="{prefix}ops/#run={urllib.parse.quote(rid, safe="")}">'
+            f"{_escape(rid)}</a>",
+            title="The pipeline run that first published this entry",
+        ))
+    mig = str(entry.get("migrated_from") or "").strip()
+    if mig:
+        rows.append(_fact_row(
+            "Imported from", f'<span class="mono">{_escape(mig)}</span>',
+            title="Imported from the retired v2 brief store: metadata may be "
+                  "lower-fidelity (placeholder evidence, sparse entities/techniques)",
+        ))
+    return "".join(rows)
+
+
+def render_entry_rail(
+    entry: dict[str, Any],
+    *,
+    prefix: str,
+    registry: dict[str, dict[str, Any]],
+    entries_by_id: dict[str, dict[str, Any]],
+) -> str:
+    """The entry-detail rail: EVERY piece of metadata the entry carries,
+    in one column, grouped and ordered by how a responder uses it —
+    identifiers and exposure first (CVEs, affected products), then trust
+    (assessment), then the pivots (entities, ATT&CK, related entries,
+    taxonomy), then the bookkeeping (record). Nothing here scrolls on its
+    own: the rail is fully expanded and the page has exactly one
+    scrollbar."""
+    groups: list[str] = []
+
+    def group(label: str, inner: str) -> None:
+        if inner:
+            groups.append(
+                f'<section class="erail-group"><h3 class="erail-l">{_escape(label)}</h3>'
+                f"{inner}</section>"
+            )
+
+    def chips(inner: str) -> str:
+        return f'<div class="echips">{inner}</div>' if inner else ""
+
+    # --- CVEs: the hard identifiers, each with its own exposure block ----
+    cve_rows: list[str] = []
+    for cv in entry.get("cves") or []:
+        if not isinstance(cv, dict) or not cv.get("id"):
+            continue
+        cid = str(cv["id"])
+        head_bits = [
+            f'<a class="mono erail-cve__id" href="{prefix}cves/{_escape(cid)}/">{_escape(cid)}</a>'
+        ]
+        if cv.get("cvss"):
+            head_bits.append(
+                f'<span class="mono erail-cve__cvss">CVSS {_escape(str(cv["cvss"]))}</span>'
+            )
+        st_chips = "".join(
+            f'<span class="b{" exp" if str(st) in ("exploited", "cisa-kev") else ""}">'
+            f"{_escape(str(st))}</span>"
+            for st in (cv.get("status") or [])
+        )
+        detail: list[str] = []
+        if cv.get("epss") not in (None, ""):
+            detail.append(_fact_row("EPSS", f'<span class="mono">{_escape(str(cv["epss"]))}</span>'))
+        for label, key in (("Type", "type"), ("Vector", "vector"), ("Auth", "auth")):
+            if cv.get(key):
+                detail.append(_fact_row(label, _escape(str(cv[key]))))
+        for label, key in (("Affected", "affected"), ("Fixed", "fixed")):
+            if cv.get(key):
+                detail.append(_fact_row(label, _escape(str(cv[key]))))
+        cve_rows.append(
+            '<article class="erail-cve">'
+            f'<div class="erail-cve__head">{"".join(head_bits)}</div>'
+            + (f'<div class="erail-cve__st">{st_chips}</div>' if st_chips else "")
+            + ("".join(detail))
+            + "</article>"
+        )
+    group("CVEs", "".join(cve_rows))
+
+    group("Affected products", chips("".join(
+        f'<span class="echip">{_escape(str(p))}</span>'
+        for p in entry.get("affected_products") or []
+    )))
+
+    # The assessment always renders (every entry has a verification state),
+    # so the rail — and with it the two-column layout — is universal.
+    group("Assessment", render_detail_assessment(entry))
+
+    # Entity chips carry their registry type: on a rail, "ShieldBreak" and
+    # "Nightmare Eclipse" are indistinguishable without it, and tool vs actor
+    # is the first thing a hunter needs from the name.
+    ent_chips: list[str] = []
+    for key in entry.get("entities") or []:
+        rec = registry.get(key) or {}
+        kind = str(rec.get("type") or str(key).split(":", 1)[0] or "").strip()
+        ent_chips.append(
+            f'<a class="echip echip--ent" href="{prefix}entities/{urllib.parse.quote(str(key), safe="")}/">'
+            + (f'<span class="echip-k">{_escape(kind)}</span>' if kind else "")
+            + f'{_escape(str(rec.get("name") or key))}</a>'
+        )
+    group("Entities", chips("".join(ent_chips)))
+
+    # Effective ids (frontmatter ∪ prose, revoked resolved forward) with
+    # resolved names — a T-number alone is not a visible mapping. Chips jump
+    # to the in-body mapping section, where the MITRE links live.
+    group("ATT&CK techniques", chips("".join(
+        f'<a class="echip echip--tech" href="#attack-mapping">'
+        f'<span class="mono">{_escape(tid)}</span> {_escape(attack_technique_label(tid))}</a>'
+        for tid in content_model.entry_technique_ids(entry, ATTACK_TECHNIQUES)
+    )))
+
+    # `references[]` — the earlier entries this finding builds on, shown by
+    # title rather than by raw id so the link is readable.
+    ref_rows: list[str] = []
+    for r in entry.get("references") or []:
+        rid_ = str(r)
+        other = entries_by_id.get(rid_)
+        label = _short_entry_label(other) if other else rid_
+        ref_rows.append(
+            f'<a class="erail-ref" href="{prefix}entries/{_escape(rid_)}/">'
+            f'<span class="erail-ref__t">{_escape(label)}</span>'
+            f'<span class="mono erail-ref__id">{_escape(rid_)}</span></a>'
+        )
+    group("Builds on", "".join(ref_rows))
+
+    group("Tags", chips("".join(
+        f'<a class="echip" href="{prefix}tags/{_escape(str(t))}/">{_escape(str(t))}</a>'
+        for t in entry.get("tags") or []
+    )))
+    group("Regions", chips("".join(
+        f'<a class="echip" href="{prefix}regions/{_escape(str(r))}/">{_escape(str(r))}</a>'
+        for r in entry.get("regions") or []
+    )))
+    group("Sectors", chips("".join(
+        f'<span class="echip echip--muted">{_escape(str(sc))}</span>'
+        for sc in entry.get("sectors") or []
+    )))
+
+    group("Record", render_detail_record(entry, prefix=prefix))
+
+    return (
+        '<aside class="erail" aria-labelledby="entry-facts-h">'
+        '<h2 class="erail-h" id="entry-facts-h">Key facts</h2>'
+        + "".join(groups) + "</aside>"
+    )
 
 
 def render_entry_page(
@@ -4423,20 +4641,35 @@ def render_entry_page(
     prefix: str,
     canonical: str,
 ) -> str:
-    """/entries/YYYY-MM-DD/<slug>/ · full metadata badge block, the main
-    analysis, evidence, every changelog record as a styled timestamped
-    block, actions, sources with roles, the Revision history panel, entity
-    links, and the part-of-run link. Legacy strategic entries (the retired
-    weekly routine's output) render the same way and link back to the
-    daily archive."""
+    """/entries/YYYY-MM-DD/<slug>/ · a header (status badges, title,
+    headline lede, dateline), a rail holding every piece of metadata the
+    entry carries, and a body that runs actionable-first: immediate
+    action, defender actions, the analysis, the cited evidence, each
+    changelog record as a timestamped block, the ATT&CK mapping, the
+    sources, the revision history and the provenance note. Legacy
+    strategic entries (the retired weekly routine's output) render the
+    same way and link back to the daily archive."""
+    # The permalink is a sequence of h2 sections (Analysis, Cited evidence,
+    # Updates, ATT&CK mapping, Sources, Revision history), so the body's own
+    # headings — authored at `##` in most entries, `####` in some older ones
+    # — are pinned one level below the Analysis heading that introduces them.
     body_html = enhance_brief_item_html(
-        # Entry bodies are authored with their own top level (`##` in most,
-        # `####` in some older ones): pin it to h2, directly under the
-        # entry's h1, whatever the author wrote.
         render_markdown(_entry_body_markdown(entry), base_url=canonical,
-                        heading_base=2)
+                        heading_base=3)
     )
-    updates_html = render_update_sections(entry, prefix=prefix, base_url=canonical)
+    analysis_html = (
+        '<section class="esec esec--analysis"><h2 class="esec-h">Analysis</h2>'
+        f'<div class="ebody">{body_html}</div></section>'
+    )
+    upd_records = visible_updates(entry)
+    updates_html = render_update_sections(entry, prefix=prefix, base_url=canonical,
+                                          with_provenance=False)
+    if updates_html:
+        updates_html = (
+            '<section class="esec esec--updates" id="updates">'
+            f'<h2 class="esec-h">Updates<span class="esec-n">{len(upd_records)}</span></h2>'
+            + updates_html + "</section>"
+        )
     is_op = (entry.get("horizon") or "operational") == "operational"
     day = entry["date"]
     # Operational entries from a completed day link back to that day page;
@@ -4483,205 +4716,101 @@ def render_entry_page(
         + "</li>"
     )
     revision_html = (
-        '<div class="esec revision-history" id="revision-history">'
+        '<section class="esec revision-history" id="revision-history">'
         '<h2 class="esec-h">Revision history</h2>'
-        f'<ol class="revision-list">{first_li}{"".join(rev_bits)}</ol></div>'
+        f'<ol class="revision-list">{first_li}{"".join(rev_bits)}</ol></section>'
     ) if rev_bits else ""
 
-    rid = str(entry.get("run_id") or "")
-
-    ia_html = render_immediate_action_callout(entry, prefix=prefix)
-
-    emeta_parts: list[str] = []
+    # --- header ---------------------------------------------------------
+    # Under the title sits ONE dateline and nothing else: the stamps a
+    # reader dates the finding by, plus the share control. Every other
+    # scrap of metadata (run id, raw source, source count, event date)
+    # lives in the rail, where it is labelled instead of dot-separated.
+    meta_bits: list[str] = []
     disc = _fmt_discovered(entry.get("discovered_at"))
     if disc:
-        emeta_parts.append(f"<span>{_escape(disc)}</span>")
-    ev_date = str(entry.get("event_date") or "").strip()
-    if ev_date:
-        emeta_parts.append(
-            f'<span title="Date of the underlying event or primary publication">event {_escape(ev_date)}</span>'
+        meta_bits.append(
+            f'<time datetime="{_escape(first_pub)}">{_escape(disc)}</time>'
         )
-    upd_stamp = _fmt_updated(entry.get("updated_at")) if entry.get("updated_at") else ""
-    if upd_stamp:
-        emeta_parts.append(
-            f'<a class="emeta-updated" href="#revision-history">{_escape(upd_stamp)}</a>'
-        )
-    if rid:
-        emeta_parts.append(
-            f'<a class="mono" href="{prefix}ops/#run={urllib.parse.quote(rid, safe="")}">run {_escape(rid)}</a>'
-        )
-    nsrc = _source_count(entry)
-    if nsrc:
-        emeta_parts.append(f'<span>{nsrc} source' + ("" if nsrc == 1 else "s") + "</span>")
-    v_class, v_label = _verif_meta(entry)
-    emeta_parts.append(f'<span class="{v_class}">{_escape(v_label)}</span>')
-    # The entry's raw Markdown source — the stable machine-readable twin of
-    # this permalink (also advertised via <link rel="alternate"> in the head
-    # and as markdown_url in data/briefbook.json).
-    emeta_parts.append(
-        '<a class="mono emeta-md" href="index.md" type="text/markdown" '
-        'title="Raw Markdown source of this entry (frontmatter + body)">raw .md</a>'
-    )
-    mig = str(entry.get("migrated_from") or "").strip()
-    if mig:
-        emeta_parts.append(
-            '<span title="Imported from the retired v2 brief store: metadata may be lower-fidelity '
-            f'(placeholder evidence, sparse entities/techniques)">migrated from {_escape(mig)}</span>'
+    if entry.get("updated_at"):
+        upd_stamp = _fmt_updated(entry.get("updated_at"))
+        # Jump straight to the newest changelog section when the entry has
+        # one; fall back to the revision list for metadata-only records.
+        sections = update_sections_by_at(entry)
+        latest_sec = ""
+        for rec in visible_updates(entry):
+            at = str(rec.get("at") or "")
+            if at in sections:
+                latest_sec = at
+        target = f"#update-{latest_sec}" if latest_sec else "#revision-history"
+        meta_bits.append(
+            f'<a class="emeta-updated" href="{target}">'
+            f'<time datetime="{_escape(str(entry.get("updated_at")))}">{_escape(upd_stamp)}</time></a>'
         )
     emeta = (
-        '<div class="emeta">' + "".join(emeta_parts)
+        '<div class="emeta">'
+        + '<div class="emeta__stamps">' + "".join(meta_bits) + "</div>"
         + '<button class="share" type="button" data-copy-link aria-label="Copy link to this finding">'
         '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">'
         '<path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"></path></svg>Copy link</button></div>'
     )
 
+    # The headline is the entry's own one-line lede. The `summary` is NOT
+    # repeated here: the reader just read it on the page that linked here.
+    # On most imported entries the headline IS the title, word for word —
+    # printing it twice is noise, so it renders only when it says something
+    # the h1 above it does not.
+    headline = str(entry.get("headline") or "").strip()
+    lede_html = ""
+    if headline and _text_key(headline) != _text_key(str(entry.get("title") or "")):
+        lede_html = f'<p class="elede">{_inline_text(headline)}</p>' 
+
+    head_html = (
+        '<header class="ehead">'
+        + render_badges(entry, prefix=prefix, full=True)
+        + f'<h1 class="etitle">{_escape(entry.get("title") or entry["id"])}</h1>'
+        + lede_html + emeta
+        + "</header>"
+    )
+
+    # --- body -----------------------------------------------------------
     actions = [a for a in (entry.get("actions") or []) if isinstance(a, str) and a.strip()]
     actions_html = (
-        '<div class="esec"><h2 class="esec-h">Defender actions</h2><ul class="action-list">'
+        '<section class="esec esec--actions"><h2 class="esec-h">Defender actions</h2>'
+        '<ul class="action-list">'
         + "".join(
             '<li class="action-list__item"><div class="action-list__body">'
             f"{render_inline(a.strip(), base_url=canonical)}</div></li>"
             for a in actions
         )
-        + "</ul></div>"
+        + "</ul></section>"
     ) if actions else ""
 
-    # --- Pivot rail (sticky aside on wide screens) ----------------------
-    # Every hunting pivot the entry carries, grouped and linked: CVEs with
-    # their status, entities, ATT&CK techniques (→ MITRE), affected
-    # products, tags / regions / sectors. On narrow screens the rail
-    # stacks below the body.
-    def _rail_group(label: str, inner: str) -> str:
-        if not inner:
-            return ""
-        return (
-            f'<div class="erail-group"><h2 class="erail-l">{_escape(label)}</h2>'
-            f"{inner}</div>"
+    evidence_html = render_entry_evidence(entry)
+    if evidence_html:
+        evidence_html = (
+            '<section class="esec esec--cites"><h2 class="esec-h">Cited evidence</h2>'
+            + evidence_html + "</section>"
         )
 
-    cve_rows: list[str] = []
-    for cv in entry.get("cves") or []:
-        if not isinstance(cv, dict) or not cv.get("id"):
-            continue
-        cid = str(cv["id"])
-        st_chips = "".join(
-            f'<span class="b{" exp" if str(st) in ("exploited", "cisa-kev") else ""}">{_escape(str(st))}</span>'
-            for st in (cv.get("status") or [])
-        )
-        cvss = f'<span class="mono muted">CVSS {_escape(str(cv["cvss"]))}</span>' if cv.get("cvss") else ""
-        meta_bits: list[str] = []
-        if cv.get("epss") not in (None, ""):
-            meta_bits.append(f"EPSS {cv['epss']}")
-        for k in ("type", "vector", "auth"):
-            if cv.get(k):
-                meta_bits.append(str(cv[k]))
-        meta_html = (
-            f'<div class="erail-cve__meta">{_escape(" · ".join(meta_bits))}</div>'
-        ) if meta_bits else ""
-        ver_html = "".join(
-            f'<div class="erail-cve__ver"><span class="erail-cve__vl">{lbl}</span> {_escape(str(cv[k]))}</div>'
-            for lbl, k in (("Affected", "affected"), ("Fixed", "fixed"))
-            if cv.get(k)
-        )
-        cve_rows.append(
-            '<div class="erail-cve">'
-            f'<a class="mono" href="{prefix}cves/{_escape(cid)}/">{_escape(cid)}</a> {cvss}'
-            + meta_html
-            + (f'<div class="erail-cve__st">{st_chips}</div>' if st_chips else "")
-            + ver_html
-            + "</div>"
-        )
-    rail_cves = _rail_group("CVEs", "".join(cve_rows))
-
-    ent_chips = "".join(
-        f'<a class="echip" href="{prefix}entities/{urllib.parse.quote(str(key), safe="")}/">'
-        f'{_escape((registry.get(key) or {}).get("name") or str(key))}</a>'
-        for key in entry.get("entities") or []
-    )
-    rail_entities = _rail_group("Entities", f'<div class="echips">{ent_chips}</div>' if ent_chips else "")
-
-    # Effective ids (frontmatter ∪ prose, revoked → forward) with resolved
-    # names — a T-number alone is not a visible mapping. Chips jump to the
-    # in-body mapping section; the MITRE links live there.
-    tech_chips = "".join(
-        f'<a class="echip echip--tech" href="#attack-mapping">'
-        f'<span class="mono">{_escape(tid)}</span> {_escape(attack_technique_label(tid))}</a>'
-        for tid in content_model.entry_technique_ids(entry, ATTACK_TECHNIQUES)
-    )
-    rail_tech = _rail_group("ATT&CK techniques", f'<div class="echips">{tech_chips}</div>' if tech_chips else "")
-
-    prod_chips = "".join(
-        f'<span class="echip">{_escape(str(p))}</span>'
-        for p in entry.get("affected_products") or []
-    )
-    rail_products = _rail_group("Affected products", f'<div class="echips">{prod_chips}</div>' if prod_chips else "")
-
-    tax_chips = "".join(
-        f'<a class="echip" href="{prefix}tags/{_escape(t)}/">{_escape(t)}</a>'
-        for t in entry.get("tags") or []
-    ) + "".join(
-        f'<a class="echip" href="{prefix}regions/{_escape(r)}/">{_escape(r)}</a>'
-        for r in entry.get("regions") or []
-    ) + "".join(
-        f'<span class="echip echip--muted">{_escape(str(sc))}</span>'
-        for sc in entry.get("sectors") or []
-    )
-    rail_tax = _rail_group("Tags · regions · sectors", f'<div class="echips">{tax_chips}</div>' if tax_chips else "")
-
-    # The assessment group always renders (every entry has a verification
-    # state), so the rail — and the two-column detail layout — is universal.
-    rail_assess = _rail_group("Assessment", render_detail_assessment(entry))
-
-    # Deck: the headline (bold) + standalone summary — the entry's own
-    # digest, visible on the permalink, not just in feeds and list views.
-    headline = str(entry.get("headline") or "").strip()
-    summary = str(entry.get("summary") or "").strip()
-    deck_html = ""
-    if headline or summary:
-        deck_html = (
-            '<div class="edeck">'
-            + (f'<p class="edeck-h">{_inline_text(headline)}</p>' if headline else "")
-            + (f'<p class="edeck-s">{_inline_text(summary)}</p>' if summary else "")
-            + "</div>"
-        )
-
-    refs = [str(r) for r in (entry.get("references") or [])]
-    refs_html = ""
-    if refs:
-        ref_links = " · ".join(
-            f'<a class="mono" href="{_escape(prefix)}entries/{_escape(r)}/">{_escape(r)}</a>'
-            for r in refs
-        )
-        refs_html = f'<p class="entry-references"><strong>Builds on:</strong> {ref_links}</p>'
-
-    rail = (
-        '<aside class="erail" aria-label="Assessment &amp; pivots">'
-        + rail_assess + rail_cves + rail_entities + rail_tech + rail_products + rail_tax
-        + "</aside>"
-    )
+    sources_html = render_detail_sources(entry)
 
     body = f"""
 <a class="back" href="{_escape(parent_url)}">← Back to {_escape(parent_label)}</a>
 <div class="entry-layout entry-layout--rail">
+{head_html}
 <div class="entry-main">
-{render_badges(entry, prefix=prefix, full=True)}
-<h1 class="etitle">{_escape(entry.get("title") or entry["id"])}</h1>
-{emeta}
-{deck_html}
-<div class="ebody">
-{ia_html}
-{body_html}
-{render_entry_evidence(entry)}
-{updates_html}
-{refs_html}
-</div>
+{render_immediate_action_callout(entry)}
 {actions_html}
-{revision_html}
+{analysis_html}
+{evidence_html}
+{updates_html}
 {render_entry_attack_section(entry, prefix=prefix)}
-{render_detail_sources(entry)}
+{sources_html}
+{revision_html}
 <div class="verif"><div class="vh">PROVENANCE</div><p>AI-generated · no human review · this permalink is the shareable record for the finding · verify operationally critical claims against the linked primary source.</p></div>
 </div>
-{rail}
+{render_entry_rail(entry, prefix=prefix, registry=registry, entries_by_id=entries_by_id)}
 </div>
 """
     description = (entry.get("summary") or "").strip()[:280] or (entry.get("headline") or "")[:280]

@@ -31,8 +31,12 @@ renderer edit:
   with none), no skipped levels. Embedded markdown never keeps its own level:
   `render_markdown(..., heading_base=N)` pins a document's own top heading to
   N whatever it was authored at (records open at `#` OR `##`, so a fixed
-  `heading_offset` skips a level in half of them). Run notes pass
-  `head_level`; entry bodies pin to h2. Day-brief section headers are `<h2
+  `heading_offset` skips a level in half of them). `heading_base` now
+  RE-LEVELS in reading order (first heading lands on the base; each later one
+  is a sibling of, or one below, its nearest shallower ancestor), so an
+  authoring gap (an entry opening at `####` whose `###` appears only later)
+  can never emit a skipped level. Run notes pass `head_level`; entry bodies
+  pin to h3, under the Analysis section's h2. Day-brief section headers are `<h2
   class="sect">`, not divs.
 - **Ids are unique per page and every `#anchor` resolves.** Heading anchors
   take `anchor_prefix` (run id) and de-duplicate within a document
@@ -48,6 +52,47 @@ renderer edit:
   opposite directions per theme; page-text colour is the only value that
   clears both. Never de-emphasise with `opacity` (0.45 = ~2.5:1) — use
   `--text-muted`.
+
+## Entry permalink (2026-08-29 rebuild)
+
+`render_entry_page` is a header + a reading column + a rail, in one grid:
+`.ehead` spans both columns, `.entry-main` is column 1, `.erail` is column 2
+(explicit `grid-column` / `grid-row`, so the source order stays header ->
+article -> rail and the phone order comes out right without `order`).
+
+- **All metadata lives in the rail, labelled.** `render_entry_rail` groups it
+  in use order: CVEs, Affected products, Assessment, Entities, ATT&CK
+  techniques, Builds on, Tags, Regions, Sectors, and **Record last** (published
+  / event / sources / raw `index.md` / producing run / imported-from). The
+  run-dashboard link belongs in Record, never under the title (operator
+  directive 2026-08-29). Every table row is a `.frow` (`__l` label / `__v`
+  value); `.assess-*` and `.erail-cve__meta|__ver|__vl` are retired.
+- **The rail never scrolls on its own and is never sticky.** A metadata column
+  the reader has to scroll separately is a second document. One page, one
+  scrollbar.
+- **Under the title: one dateline and the share button.** `.emeta__stamps`
+  carries published + updated (the updated stamp deep-links to the newest
+  `#update-<at>`), nothing else. `.edeck` is gone; the headline renders as
+  `.elede` and is **suppressed when it merely restates the title** (723 of
+  1222 entries). The stored `summary` is never repeated here, the reader
+  read it on the page that linked in.
+- **One measure.** `--entry-col` / `--entry-rail` / `--entry-gap` live on
+  `body.entry-detail` INSIDE the >=1100px query; `.view` max-width is derived
+  from them and `.elede` / `.emeta` borrow `--entry-col` (fallback 100%), so
+  header and body share both edges at every width.
+- **Body order is actionable-first:** immediate action, Defender actions,
+  Analysis, Cited evidence, Updates, ATT&CK mapping, Sources, Revision
+  history and provenance, every one an `.esec` with an `h2.esec-h` (count in
+  `.esec-n`), so the page is a sequence of equal sections.
+- **A quote appears once.** The immediate-action callout carries neither the
+  first evidence quote (Cited evidence owns every quote) nor a link to the
+  page it is already on. `.entry-cite--inline` is retired.
+- **Pipeline internals stay out of the reading flow.** `render_update_block`
+  takes `with_provenance`; the permalink passes False, so the run link and the
+  raw changed-field names appear only in the Revision-history panel. Day pages
+  and feeds keep them (no history panel there).
+- **`.erail .erail-h` needs two classes** or `.view h2` steals its size and
+  margin, the same trap as everything else in this file.
 
 Traps: `var(--muted)` is NOT a token (five rules once asked for it and
 silently inherited `--text`); a class rule loses to `.view h2` / `.brief-prose

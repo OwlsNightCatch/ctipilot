@@ -160,6 +160,19 @@ assert_in("list rendered", "<li>a</li>", md_html)
 assert_in("fence rendered", "<pre><code", md_html)
 assert_not_in("no raw bold survives", "**b**", md_html)
 
+# `heading_base` re-levels an embedded document in reading order: the first
+# heading lands on the base and nothing below it can skip a level, however
+# the author numbered their hashes.
+_hb = render_markdown("## A\n\nx\n\n### A1\n\ny\n\n## B\n", heading_base=3)
+assert_eq("heading_base re-levels a well-formed document",
+          re.findall(r"<h([1-6])", _hb), ["3", "4", "3"])
+_gap = render_markdown("#### First\n\nx\n\n#### Second\n\ny\n\n### Later\n",
+                       heading_base=3)
+assert_eq("an authoring gap never emits a skipped level",
+          re.findall(r"<h([1-6])", _gap), ["3", "3", "3"])
+_deep = render_markdown("# T\n\n## S\n\n### D\n", heading_base=5)
+assert_eq("re-levelling caps at h6", re.findall(r"<h([1-6])", _deep), ["5", "6", "6"])
+
 print("== enhance_brief_item_html (Defender-takeaway callout) ==")
 lead_html = enhance_brief_item_html(
     "<p><strong>Defender takeaway:</strong> patch now.</p>"
@@ -610,7 +623,9 @@ epage = render_entry_page(
     prefix="../../../", canonical="https://x.example/entries/2026-07-03/coolify-rce/",
 )
 assert_in("meta: first published", "first published 2026-07-03 04:21 UTC", epage)
-assert_in("meta: updated", ">updated 2026-07-03 08:00 UTC</a>", epage)
+assert_in("meta: updated", ">updated 2026-07-03 08:00 UTC</time></a>", epage)
+assert_in("updated stamp jumps to the newest changelog section",
+          'class="emeta-updated" href="#update-' + UPD_AT + '"', epage)
 assert_in("revision history panel", 'id="revision-history"', epage)
 assert_in("revision history lists the publish event", '<span class="b">Published</span>', epage)
 assert_in("revision history lists the record", 'class="revision revision--update"', epage)
@@ -626,6 +641,7 @@ plain_page = render_entry_page(
 )
 assert_not_in("never-updated entry has no revision history", 'id="revision-history"', plain_page)
 assert_not_in("never-updated entry has no updated meta", "emeta-updated", plain_page)
+assert_not_in("never-updated entry has no Updates section", 'class="esec esec--updates"', plain_page)
 strat_page = render_entry_page(
     E_STRAT, entries_by_id=by_id, registry={}, runs_by_id={}, day_pages=set(),
     site_url="https://x.example/", cachebust="t", prefix="../../../",
@@ -633,21 +649,64 @@ strat_page = render_entry_page(
 )
 assert_in("legacy strategic entry links the daily archive", "Back to the daily archive", strat_page)
 assert_not_in("no /weekly/ link on legacy strategic entries", "weekly/", strat_page.split("<main")[-1] if "<main" in strat_page else strat_page.replace("weekly-policy-item", ""))
-# Metadata completeness on the permalink: event date, deck, CVE detail
-# fields, source dates, references, migration provenance, horizon badge.
-assert_in("meta: event date", ">event 2026-07-03</span>", epage)
-assert_in("deck: headline + summary visible on the permalink",
-          '<p class="edeck-h">Headline coolify-rce</p><p class="edeck-s">Summary coolify-rce.</p>', epage)
-assert_in("rail CVE detail line (type · vector · auth)",
-          '<div class="erail-cve__meta">rce · zero-click · post-auth</div>', epage)
+# Metadata completeness on the permalink. Everything except the two stamps
+# and the share control now lives in the labelled rail; the dateline under
+# the title carries nothing else (the run link in particular is Record, at
+# the foot of the rail).
+assert_in("rail: event date", ">Event date</span>", epage)
+assert_in("rail: event date value", '<time datetime="2026-07-03">2026-07-03</time>', epage)
+assert_in("lede is the headline", '<p class="elede">Headline coolify-rce</p>', epage)
+_same = copy.deepcopy(E_HIGH)
+_same["headline"] = _same["title"]
+_same_page = render_entry_page(
+    _same, entries_by_id=by_id, registry={}, runs_by_id={}, day_pages=set(),
+    site_url="https://x.example/", cachebust="t", prefix="../../../",
+    canonical="https://x.example/entries/2026-07-03/fortibleed-campaign/",
+)
+assert_not_in("a headline that restates the title is not printed twice",
+              'class="elede"', _same_page)
+assert_not_in("summary is not repeated on the permalink", "Summary coolify-rce.", epage.split("</head>")[-1])
+assert_in("body renders inside a titled Analysis section",
+          '<section class="esec esec--analysis"><h2 class="esec-h">Analysis</h2>', epage)
+assert_in("rail CVE type", '<span class="frow__l">Type</span><span class="frow__v">rce</span>', epage)
+assert_in("rail CVE vector", '<span class="frow__l">Vector</span><span class="frow__v">zero-click</span>', epage)
+assert_in("rail CVE auth", '<span class="frow__l">Auth</span><span class="frow__v">post-auth</span>', epage)
 assert_in("rail CVE fixed version",
-          '<span class="erail-cve__vl">Fixed</span> v4.0.0-beta.469', epage)
+          '<span class="frow__l">Fixed</span><span class="frow__v">v4.0.0-beta.469</span>', epage)
 assert_in("rail CVE affected versions",
-          '<span class="erail-cve__vl">Affected</span> ≤ v4.0.0-beta.420', epage)
+          '<span class="frow__l">Affected</span><span class="frow__v">≤ v4.0.0-beta.420</span>', epage)
 assert_in("source date rides the role label", "primary · 2026-07-03", epage)
 assert_in("entry advertises its raw markdown twin in the head",
           'rel="alternate" type="text/markdown"', epage)
-assert_in("entry meta line links the raw source", ">raw .md</a>", epage)
+assert_in("rail Record links the raw source", '>index.md</a>', epage)
+assert_in("rail Record carries the producing run",
+          '<span class="frow__l">Produced by</span>', epage)
+assert_not_in("no run-dashboard link under the title",
+              'ops/#run=', epage.split('<div class="ebody">')[0].split('class="emeta"')[-1])
+assert_in("key-facts rail is labelled", '<h2 class="erail-h" id="entry-facts-h">Key facts</h2>', epage)
+assert_not_in("rail never scrolls on its own", "erail-scroll", epage)
+# The immediate-action block leads the permalink and carries neither a link
+# to the page it is already on nor a copy of the first evidence quote (the
+# Cited-evidence section owns every quote, once).
+assert_in("critical entry leads with the immediate action",
+          '<span class="callout__label">Immediate action</span>', epage)
+assert_not_in("immediate action does not repeat an evidence quote",
+              "entry-cite--inline", epage)
+assert_eq("evidence quote appears exactly once",
+          epage.count('class="entry-cite__quote"'),
+          len([e for e in (E_CRIT.get("evidence") or []) if e.get("quote")]))
+assert_not_in("immediate action never links to its own permalink",
+              '<a href="../../../entries/2026-07-03/coolify-rce/"', epage)
+# Changelog records read as content on the permalink: the raw changed-field
+# names and the run link are pipeline internals and stay in Revision history.
+assert_in("permalink groups the changelog under one heading",
+          '<h2 class="esec-h">Updates<span class="esec-n">1</span></h2>', epage)
+assert_not_in("no changed-field chips in the reading flow",
+              'class="entry-update__fields"', epage)
+assert_not_in("no run link on the in-flow changelog block",
+              'class="mono entry-update__run"', epage)
+assert_in("revision history keeps the changed-field audit trail",
+          'class="revision__fields muted">Changed: ', epage)
 assert_in("entry JSON-LD points at the markdown encoding",
           '"encodingFormat":"text/markdown"', epage)
 assert_in("deep-dive badge carries the category",
@@ -657,10 +716,12 @@ strat2_page = render_entry_page(
     site_url="https://x.example/", cachebust="t", prefix="../../../",
     canonical="https://x.example/entries/2026-06-28/weekly-synthesis/",
 )
-assert_in("references render as Builds on", "Builds on:", strat2_page)
+assert_in("references render as a Builds on rail group", ">Builds on</h3>", strat2_page)
 assert_in("builds-on links the referenced entry",
           'href="../../../entries/2026-07-01/old-item/"', strat2_page)
-assert_in("migration provenance in the meta line", "migrated from briefs/2026-06-28.md", strat2_page)
+assert_in("migration provenance sits in the rail Record group",
+          '<span class="frow__l">Imported from</span>', strat2_page)
+assert_in("migration provenance names the source", "briefs/2026-06-28.md", strat2_page)
 assert_in("non-operational horizon badge", ">strategic</span>", strat2_page)
 
 print("== landing page (live brief at the site root) ==")
