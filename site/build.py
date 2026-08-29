@@ -1646,11 +1646,10 @@ _WORDMARK_HTML = (
 _FOOTER_TAGLINE_HTML = (
     f"<span>{_escape(FOOTER_TAGLINE)}</span>" if FOOTER_TAGLINE else ""
 )
-_FOOTER_LEDE_HTML = "\n          ".join(
-    _escape(ln) for ln in BRANDING["site"]["footer_lede"].strip().splitlines()
-)
-_COPYRIGHT_NOTE_HTML = "\n        ".join(
-    _escape(ln) for ln in BRANDING["site"]["copyright_note"].strip().splitlines()
+# `site.footer_lede` has no slot in the single-row footer; it stays in the
+# branding contract for a fork that restores a taller one.
+_COPYRIGHT_NOTE_HTML = _escape(
+    " ".join(BRANDING["site"]["copyright_note"].split())
 )
 
 
@@ -2084,7 +2083,7 @@ def base_template(
 <main id="main" class="main"><div class="view">{body}</div></main>
 <footer class="footer" role="contentinfo">
   <div class="foot">
-    <span>© {datetime.now(timezone.utc).year} {_escape(SITE_NAME)}</span>{_FOOTER_TAGLINE_HTML}
+    <span>© {datetime.now(timezone.utc).year} {_escape(SITE_NAME)}{" · " + _COPYRIGHT_NOTE_HTML if _COPYRIGHT_NOTE_HTML else ""}</span>{_FOOTER_TAGLINE_HTML}
     <a href="{pfx}about/prompts/verification/">Verification policy</a>
     <a href="{pfx}about/">How this works</a>
     <a href="{pfx}feeds/">RSS</a>

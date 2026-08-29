@@ -78,7 +78,10 @@ its own.
 
 1. `config/branding.yaml` → `site:` — set `name`, `wordmark_strong` /
    `wordmark_accent`, `tagline`, `lede`, `meta_description`,
-   `footer_tagline`, `footer_lede`, `copyright_note`, `url`, `github_repo`.
+   `footer_tagline`, `copyright_note`, `url`, `github_repo`. `tagline`
+   follows `name` in every page title, so it should say what the site *is*
+   rather than repeat the name. (`footer_lede` is still a valid key but the
+   current single-row footer does not render it.)
 2. `theme:` — set any subset of the ~25 documented tokens (dark + light
    palettes, radii, font stacks). Empty = inherit the upstream design. The
    build emits `assets/css/branding.css` after `styles.css`, so your values
