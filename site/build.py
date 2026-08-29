@@ -10066,7 +10066,7 @@ def render_entity_page(
         + _ops_kpi_tile(
             "Co-occurring entities",
             str(len(entity.get("related_entities", []) or [])),
-            sub="see Related entities below" if entity.get("related_entities") else "no co-occurrence",
+            sub="see Co-occurring entities below" if entity.get("related_entities") else "no co-occurrence",
             kind="neutral",
         )
         + _ops_kpi_tile(
@@ -10257,13 +10257,6 @@ def render_entity_page(
         f'<span class="badge" title="Verification status seen on referencing entries">{_escape(f.lower())}</span>'
         for f in (entity.get("flags") or [])
     )
-    alias_html = ""
-    if entity.get("aliases"):
-        alias_html = (
-            '<p class="muted">Aliases: '
-            + ", ".join(_escape(a) for a in entity["aliases"])
-            + "</p>"
-        )
     summary_html = (
         f'<p class="subtitle" style="max-width:60rem">{_escape(entity["summary"])}</p>'
         if entity.get("summary") else ""
@@ -10287,7 +10280,17 @@ def render_entity_page(
     tech_counts: dict[str, int] = {}
     prod_counts: dict[str, int] = {}
     tag_counts: dict[str, int] = {}
+    cve_counts: dict[str, int] = {}
+    cve_exploited: set[str] = set()
+    release_counts: dict[str, int] = {}
     for me in (matching_entries or []):
+        for cv in me.get("cves") or []:
+            if not isinstance(cv, dict) or not cv.get("id"):
+                continue
+            cid = str(cv["id"])
+            cve_counts[cid] = cve_counts.get(cid, 0) + 1
+            if any(str(st) in ("exploited", "cisa-kev") for st in (cv.get("status") or [])):
+                cve_exploited.add(cid)
         for t in me.get("techniques") or []:
             t = str(t).strip()
             if t:
@@ -10318,18 +10321,27 @@ def render_entity_page(
             f'<a class="echip echip--tech" href="{_escape(mitre)}" target="_blank" '
             f'rel="noopener noreferrer" title="Open {_escape(t)} on attack.mitre.org">{_escape(t)}{cnt}</a>'
         )
-    # Each affected-product string links to the product entity that folds
-    # every release of it onto one page. The entity's own product (on a
-    # product page) is dropped: a page does not pivot to itself.
+    # Affected products, as a pivot, answers "what does this actor/campaign
+    # hit?" — a real question on every entity type EXCEPT a product, where
+    # the same list would just be the other products named in the same
+    # entries. That is co-occurrence, and the Co-occurring entities section
+    # below already owns it. A product page shows its own metadata instead:
+    # the release spellings the store actually used for it, and the CVEs
+    # carried by the entries that named it.
     _reg = registry or {}
     _prod_aliases = content_model.product_alias_index(_reg)
-    prod_chips = []
+    prod_chips: list[str] = []
     for p, _n in sorted(prod_counts.items(), key=lambda kv: (-kv[1], kv[0])):
         pkey = content_model.resolve_entity_key(
             _reg, content_model.product_key(p, _prod_aliases))
-        if pkey and pkey == key:
-            continue
         cnt = f' <span class="echip-n">×{_n}</span>' if _n > 1 else ""
+        if etype == "product":
+            # On a product page every string that resolves HERE is one of
+            # this product's own covered releases; anything else is another
+            # product and belongs to co-occurrence.
+            if pkey == key:
+                release_counts[p] = _n
+            continue
         if pkey and pkey in _reg:
             prod_chips.append(
                 f'<a class="echip" href="{prefix}entities/'
@@ -10339,6 +10351,44 @@ def render_entity_page(
             prod_chips.append(f'<span class="echip">{_escape(p)}{cnt}</span>')
         if len(prod_chips) >= 16:
             break
+
+    # The exact `affected_products[]` spellings entries used for this
+    # product: which releases the coverage actually names, rather than the
+    # record's full alias list (which also carries merge instructions no
+    # entry has used yet).
+    release_chips = [
+        f'<span class="echip">{_escape(r)}'
+        + (f' <span class="echip-n">×{n}</span>' if n > 1 else "") + "</span>"
+        for r, n in sorted(release_counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    ]
+    # Aliases the reader has not already met as a covered release: on a
+    # product page the record's aliases ARE release spellings, and repeating
+    # the ones the Releases-covered row lists (with counts, and with the
+    # evidence behind them) would say the same thing twice. What survives is
+    # the genuinely new information: the spellings this record answers to
+    # that no entry has used yet.
+    _shown = {r.lower() for r in release_counts}
+    _extra_aliases = [a for a in (entity.get("aliases") or [])
+                      if str(a).lower() not in _shown]
+    alias_html = ""
+    if _extra_aliases:
+        alias_html = (
+            f'<p class="muted">{"Also known as" if etype == "product" else "Aliases"}: '
+            + ", ".join(_escape(a) for a in _extra_aliases)
+            + "</p>"
+        )
+
+    # Every CVE the coverage carries, exploited ones first — the answer to
+    # "what is known-broken in this product?" in one row.
+    cve_chips = [
+        f'<a class="echip{" echip--exp" if c in cve_exploited else ""}" '
+        f'href="{prefix}cves/{_escape(c)}/"'
+        + (' title="Reported exploited"' if c in cve_exploited else "")
+        + f">{_escape(c)}"
+        + (f' <span class="echip-n">×{n}</span>' if n > 1 else "") + "</a>"
+        for c, n in sorted(cve_counts.items(),
+                           key=lambda kv: (kv[0] not in cve_exploited, -kv[1], kv[0]))[:24]
+    ]
     tag_chips = [
         f'<a class="echip" href="{prefix}tags/{_escape(tg)}/">{_escape(tg)}'
         + (f' <span class="echip-n">×{n}</span>' if n > 1 else "") + "</a>"
@@ -10346,7 +10396,9 @@ def render_entity_page(
     ]
     pivot_block = ""
     pivot_rows = (
-        _chiprow("ATT&CK techniques", tech_chips)
+        _chiprow("CVEs", cve_chips if etype == "product" else [])
+        + _chiprow("Releases covered", release_chips)
+        + _chiprow("ATT&CK techniques", tech_chips)
         + _chiprow("Affected products", prod_chips)
         + _chiprow("Tags", tag_chips)
     )

@@ -61,4 +61,23 @@ pipeline populating the field, which the prompts already require.
 - `check_run.py --all` gains `product-entities` (WARN, never FAIL: an
   unregistered spelling is one `sync_products.py` away).
 
+## The product page's own pivots (2026-08-29)
+
+"Affected products" on a PRODUCT page listed the other products named in the
+same entries — co-occurrence wearing the wrong label, and the Co-occurring
+entities section already owns that. The row is suppressed on `type: product`
+and replaced by two rows that are actually about the product:
+
+- **CVEs** — every CVE the matching entries carry, exploited/KEV first and
+  red (`.echip--exp`), capped at 24. The answer to "what is known-broken in
+  this product?".
+- **Releases covered** — the exact `affected_products[]` spellings entries
+  used, with counts. Better than the record's alias list, which also carries
+  merge instructions no entry has used yet.
+
+The alias line then shows only what the releases row did not
+("Also known as: NetScaler ADC, NetScaler Gateway"), so nothing is said
+twice. Non-product pages keep "Affected products" unchanged — on an actor or
+campaign it answers "what does this hit?", which is a real question.
+
 Related: [[entity-registry-graph]], [[design-system]], [[customization-framework]].
