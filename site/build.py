@@ -2735,6 +2735,23 @@ def _fmt_stamp(ts_str: str | None) -> str:
     return ts.strftime("%d %b %H:%MZ") if ts else ""
 
 
+def _rail_stamp_html(stamp: str) -> str:
+    """The timeline rail's stamp as an explicit date-over-time block.
+    `03 Jul 04:21Z` needs ~105px and the rail gutter offers ~80, so it wraps
+    at every desktop width; splitting it in the markup makes the break
+    deliberate and identical everywhere instead of a function of the font.
+    Mirrored client-side by brief.js `railStamp` — keep the two in sync."""
+    if not stamp:
+        return ""
+    day, _, clock = stamp.rpartition(" ")
+    if not day:
+        return _escape(stamp)
+    return (
+        f'<span class="d">{_escape(day)}</span>'
+        f'<span class="t">{_escape(clock)}</span>'
+    )
+
+
 def render_prov_row(entry: dict[str, Any], *, prefix: str = "",
                     open_label: str = "Open finding ↗") -> str:
     """The mono provenance strip under a finding: kind · stamp ·
@@ -2902,7 +2919,7 @@ def render_timeline_item(entry: dict[str, Any], *, prefix: str = "", is_new: boo
     return (
         f'<div class="tl-item{" tl-item--updated" if is_update else ""}" data-entry-id="{_escape(entry["id"])}">'
         f'<div class="tl-rail"><span class="tl-node" style="background:{_pri_dot(entry)}"></span>'
-        f'<span class="time">{_escape(stamp)}</span>'
+        f'<span class="time">{_rail_stamp_html(stamp)}</span>'
         f'<span class="flag" style="{flag_style}">{_escape(flag)}</span></div>'
         '<div class="tl-body">'
         f"{render_badges(entry, prefix=prefix)}"
@@ -3011,11 +3028,13 @@ def render_tldr_bullets(picked: list[dict[str, Any]], *, prefix: str = "") -> st
     for e in picked:
         url = f"{prefix}{entry_url_path(e)}"
         headline = _strip_md_emphasis(e.get("headline") or e.get("title") or e["id"]).rstrip(".")
+        tail = _keep_arrow_attached(
+            _inline_text(e.get("summary") or ""), f'<a href="{_escape(url)}">→</a>'
+        )
         lis.append(
             "<li>"
             f"<strong>{_inline_text(headline)}.</strong> "
-            f'{_inline_text(e.get("summary") or "")} '
-            f'<a href="{_escape(url)}">→</a>'
+            f"{tail}"
             "</li>"
         )
     return f"<ul>{''.join(lis)}</ul>" if lis else _empty_stub_html()
@@ -3090,6 +3109,20 @@ def _secnav_html(items: list[tuple[str, int]]) -> str:
     return f'<nav class="secnav" aria-label="Sections">{chips}</nav>'
 
 
+def _keep_arrow_attached(html: str, link_html: str) -> str:
+    """Join a trailing arrow link to the last word so it can never wrap onto
+    a line of its own. A lone `→` under a paragraph reads as a broken list
+    item; bound to the final word it reads as the end of the sentence."""
+    body = html.rstrip()
+    cut = body.rfind(" ")
+    if cut < 0:
+        return f'<span class="nowrap-tail">{body} {link_html}</span>'
+    return (
+        body[:cut]
+        + f' <span class="nowrap-tail">{body[cut + 1:]} {link_html}</span>'
+    )
+
+
 def render_tldr_list(
     picked: list[dict[str, Any]], *, prefix: str = "",
     eyebrow: str = "TL;DR · the day in one read",
@@ -3102,10 +3135,10 @@ def render_tldr_list(
         url = f"{prefix}{entry_url_path(e)}"
         headline = _strip_md_emphasis(e.get("headline") or e.get("title") or e["id"]).rstrip(".")
         summ = _inline_text(e.get("summary") or "")
+        tail = _keep_arrow_attached(summ, f'<a href="{_escape(url)}">→</a>')
         lis.append(
             f'<li><span class="num">{i:02d}</span>'
-            f"<span><b>{_inline_text(headline)}.</b> {summ} "
-            f'<a href="{_escape(url)}">→</a></span></li>'
+            f"<span><b>{_inline_text(headline)}.</b> {tail}</span></li>"
         )
     return (
         '<div class="tldr">'
@@ -3450,13 +3483,16 @@ def render_actnow(entry: dict[str, Any], *, prefix: str = "") -> str:
     ia = entry.get("immediate_action")
     imp = ""
     if isinstance(ia, dict) and str(ia.get("action") or "").strip():
-        imp = f' <span class="imp">{_inline_text(str(ia["action"]).strip())}</span>'
+        # Its own block, not a clause welded onto the summary: the reader
+        # scanning for what to do should find it without reading the
+        # paragraph above it first.
+        imp = f'<p class="imp">{_inline_text(str(ia["action"]).strip())}</p>'
     return (
         f'<a class="actnow" href="{_escape(url)}">'
         '<div class="actnow-strip"><span class="adot" aria-hidden="true"></span>ACT NOW · CRITICAL'
         f'<span class="meta">{_escape(" · ".join(meta_bits))}</span></div>'
         f'<div class="actnow-body"><h2>{title}</h2>'
-        f"<p>{summary}{imp}</p>"
+        f"<p>{summary}</p>{imp}"
         '<span class="go">Open the full advisory to act →</span></div></a>'
     )
 
@@ -3743,8 +3779,8 @@ def render_live_brief_page(
 </section>"""
 
     body = f"""
-<header class="briefhead">
-  <h1 class="briefhead-h">{_escape(LIVE_TITLE)}</h1>
+<header class="livehead">
+  <h1 class="livehead-h">{_escape(LIVE_TITLE)}</h1>
   <div class="briefstat">
     <span class="livedot" aria-hidden="true"><em></em><i></i></span>
     <span class="streaming">LIVE</span>
@@ -4377,9 +4413,10 @@ def render_entry_page(
     deck_html = ""
     if headline or summary:
         deck_html = (
-            '<p class="edeck">'
-            + (f"<strong>{_escape(headline)}</strong> " if headline else "")
-            + _escape(summary) + "</p>"
+            '<div class="edeck">'
+            + (f'<p class="edeck-h">{_inline_text(headline)}</p>' if headline else "")
+            + (f'<p class="edeck-s">{_inline_text(summary)}</p>' if summary else "")
+            + "</div>"
         )
 
     refs = [str(r) for r in (entry.get("references") or [])]
@@ -4579,9 +4616,9 @@ def render_changes_page(
                 f'<time class="mono chg-t" datetime="{_escape(at)}">{_escape(_fmt_stamp(at))}</time>'
                 '<div class="chg-b">'
                 f'<a class="chg-e" href="{_escape(eurl)}">{_escape(str(e.get("title") or e["id"]))}</a>'
-                f'<p class="chg-s">{_inline_text(str(rec.get("summary") or ""))}'
-                + (f' <a class="mono chg-run" href="{prefix}runs/{_escape(rid)}/">{_escape(rid)}</a>' if rid else "")
-                + "</p></div></li>"
+                f'<p class="chg-s">{_inline_text(str(rec.get("summary") or ""))}</p>'
+                + (f'<p class="chg-meta"><a class="mono chg-run" href="{prefix}runs/{_escape(rid)}/">run {_escape(rid)}</a></p>' if rid else "")
+                + "</div></li>"
             )
         day_blocks.append(
             f'<section class="chg-day"><h2 class="section-head mono">{_escape(day)}</h2>'

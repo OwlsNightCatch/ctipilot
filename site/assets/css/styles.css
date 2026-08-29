@@ -41,6 +41,16 @@
   --shadow:       0 1px 0 rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.35);
   --radius:       6px;
   --radius-lg:    10px;
+  /* The stacked panels on the live brief (ACT NOW, Do now, window pulse)
+     share one corner and one inner edge, so their text sits on a single
+     vertical however their borders differ. */
+  --card-radius:  12px;
+  --card-pad:     18px;
+  /* Live-timeline rail: the stamp gutter and the gap to the finding text.
+     The dividers, the rows and the feed's footer controls all derive from
+     these two, so nothing can drift off the rail. */
+  --rail-w:       96px;
+  --rail-gap:     22px;
   --topbar-h:     56px;
   /* RGB triples for translucent accent/info fills (badges, focus rings,
      callouts, chart SVGs). Kept in sync with --accent / --info above. */
@@ -70,6 +80,13 @@
     --topbar-bg:    rgba(255, 255, 255, 0.92);
     --shadow:       0 1px 0 rgba(27, 31, 35, 0.04), 0 8px 24px rgba(140, 149, 159, 0.2);
     --accent-rgb:   182, 43, 70;
+    /* Status colours need their own light values: the dark palette's
+       bright-on-dark yellow/red/green fall to 1.4-2.8:1 on white. */
+    --warn:         #9a6700;
+    --crit:         #cf222e;
+    --ok:           #1a7f37;
+    --info:         #0969da;
+    --info-rgb:     9, 105, 218;
   }
 }
 :root[data-theme="light"] {
@@ -91,6 +108,12 @@
   --topbar-bg:    rgba(255, 255, 255, 0.92);
   --shadow:       0 1px 0 rgba(27, 31, 35, 0.04), 0 8px 24px rgba(140, 149, 159, 0.2);
   --accent-rgb:   182, 43, 70;
+  /* Keep in sync with the prefers-color-scheme block above. */
+  --warn:         #9a6700;
+  --crit:         #cf222e;
+  --ok:           #1a7f37;
+  --info:         #0969da;
+  --info-rgb:     9, 105, 218;
 }
 
 /* ── opt-in reader accommodations (set as attributes on <html> by
@@ -747,19 +770,24 @@ body.reading .main { padding-top: 2.2rem; }
   display: block;
 }
 .eyebrow--muted { color: var(--text-muted); }
-.vtitle {
-  font-size: 40px; line-height: 1.04; font-weight: 800;
-  letter-spacing: -0.035em; margin: 8px 0 0; color: var(--text);
+.view h1.vtitle {
+  font-size: clamp(1.5rem, 1.15rem + 1.5vw, 2rem); line-height: 1.08;
+  font-weight: 700; letter-spacing: -0.03em; margin: 8px 0 0; color: var(--text);
 }
 .vsub { font-size: 16px; line-height: 1.6; color: var(--text-soft); margin: 12px 0 0; max-width: 620px; }
 
 /* ── live brief head ────────────────────────────────────────────────
    The landing page leads with the findings, so the head is one quiet
    line: what this is, whether it is live, and the reading window. */
-.briefhead { margin: 0 0 18px; }
+/* NOT `.briefhead` — that class is the day page's date-nav row, and reusing
+   the name silently handed this block that row's flex rules. */
+.livehead {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px 14px; flex-wrap: wrap; margin: 0 0 18px;
+}
 /* `.view h1` sets a display-sized clamp for editorial pages; the landing
    h1 is a label, so it opts out explicitly. */
-.view h1.briefhead-h {
+.view h1.livehead-h {
   margin: 0; font-size: 19px; font-weight: 700; letter-spacing: -0.015em;
   color: var(--text); line-height: 1.25;
 }
@@ -781,19 +809,23 @@ body.reading .main { padding-top: 2.2rem; }
 .actnow {
   display: block; text-decoration: none;
   border: 1px solid rgba(var(--accent-rgb), 0.42);
-  border-radius: 13px; overflow: hidden; margin: 26px 0 44px;
+  border-radius: var(--card-radius); overflow: hidden; margin: 26px 0 44px;
   box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.06);
   cursor: pointer; user-select: none;
   transition: box-shadow 0.14s, border-color 0.14s;
 }
 .actnow:hover { box-shadow: 0 0 0 5px rgba(var(--accent-rgb), 0.1); border-color: var(--accent); text-decoration: none; }
-.actnow-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; background: var(--accent); color: var(--accent-fg); padding: 9px 18px; font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: 0.11em; }
+.actnow-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; background: var(--accent); color: var(--accent-fg); padding: 9px var(--card-pad); font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: 0.11em; }
 .actnow-strip .adot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-fg); animation: ctiPulse 1.5s ease-in-out infinite; }
 .actnow-strip .meta { margin-left: auto; font-weight: 500; letter-spacing: 0.04em; opacity: 0.85; }
-.actnow-body { padding: 17px 20px 18px; background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.09), transparent); }
+.actnow-body { padding: 17px var(--card-pad) 18px; background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.09), transparent); }
 .actnow-body h2 { margin: 0 0 8px; font-size: 23px; line-height: 1.24; font-weight: 700; letter-spacing: -0.02em; color: var(--text); border: 0; padding: 0; }
 .actnow-body p { margin: 0; font-size: 15.5px; line-height: 1.65; color: var(--text-soft); }
-.actnow-body .imp { color: var(--text); font-weight: 600; }
+.actnow-body p.imp {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid rgba(var(--accent-rgb), 0.28);
+  color: var(--text); font-weight: 600;
+}
 .actnow-body .go { display: inline-flex; align-items: center; gap: 5px; margin-top: 12px; font-family: var(--mono); font-size: 12px; color: var(--accent-soft); font-weight: 600; }
 /* Flat "act now" variant (formerly the weekly lead; kept for the callout style). */
 .actnow--flat { border-color: var(--border); box-shadow: none; cursor: default; }
@@ -841,12 +873,15 @@ body.reading .main { padding-top: 2.2rem; }
    when the window actually carries work, so it never becomes furniture
    the reader learns to scroll past. */
 .donow {
-  margin: 0 0 30px; padding: 15px 17px 6px;
+  margin: 0 0 30px;
+  /* The 3px accent rule replaces the 1px border on that edge, so the inner
+     text still lands on the same vertical as every other card's. */
+  padding: 15px var(--card-pad) 6px calc(var(--card-pad) - 2px);
   background: var(--bg-elev); border: 1px solid var(--border);
-  border-left: 3px solid var(--accent); border-radius: 12px;
+  border-left: 3px solid var(--accent); border-radius: var(--card-radius);
 }
 .donow[hidden] { display: none; }
-.donow-h {
+.view h2.donow-h {
   display: flex; align-items: center; gap: 9px; margin: 0 0 4px;
   font-family: var(--mono); font-size: 11.5px; font-weight: 700;
   letter-spacing: 0.12em; text-transform: uppercase; color: var(--text);
@@ -857,21 +892,28 @@ body.reading .main { padding-top: 2.2rem; }
   color: var(--accent-fg); background: var(--accent);
   border-radius: 999px; padding: 1px 7px;
 }
-.donow .action-list { margin: 0; }
+.donow .action-list { margin: 0; padding-left: 0; list-style: none; }
+.donow .action-list__item { position: relative; padding-left: 15px; }
+.donow .action-list__item::before {
+  content: ""; position: absolute; left: 0; top: 0.62em;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+}
 
 /* ── timeline (live rolling brief) ──────────────────────────────── */
-.tl-item, .tl-run { display: grid; grid-template-columns: 96px 1fr; }
-.tl-rail { position: relative; border-right: 2px solid var(--border); padding: 0 18px 30px 0; text-align: right; }
+.tl-item, .tl-run { display: grid; grid-template-columns: var(--rail-w) 1fr; }
+.tl-rail { position: relative; border-right: 2px solid var(--border); padding: 0 16px 30px 0; text-align: right; }
 .tl-rail .time { font-family: var(--mono); font-size: 11px; color: var(--text); display: block; }
+.tl-rail .time .d, .tl-rail .time .t { display: block; }
+.tl-rail .time .t { color: var(--text-soft); }
 .tl-rail .flag { font-family: var(--mono); font-size: 9px; font-weight: 600; display: block; margin-top: 3px; }
 .tl-node { position: absolute; right: -7px; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg); background: var(--text-muted); }
-.tl-body { padding: 0 0 30px 22px; min-width: 0; cursor: pointer; text-decoration: none; display: block; }
+.tl-body { padding: 0 0 30px var(--rail-gap); min-width: 0; cursor: pointer; text-decoration: none; display: block; }
 .tl-body:hover { text-decoration: none; }
 .tl-body h3 { margin: 0 0 7px; font-size: 19px; line-height: 1.3; font-weight: 700; letter-spacing: -0.015em; color: var(--text); transition: color 0.12s; border: 0; }
 .tl-body:hover h3 { color: var(--accent-soft); }
 .tl-body p { margin: 0; font-size: 15px; line-height: 1.62; color: var(--text-soft); }
 .tl-run .rail-e { border-right: 2px solid var(--border); }
-.tl-run .run-h { padding: 0 0 16px 22px; display: flex; align-items: center; gap: 10px; }
+.tl-run .run-h { padding: 0 0 16px var(--rail-gap); display: flex; align-items: center; gap: 10px; }
 .tl-run .run-h .rl { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--text); }
 /* linked run label (→ /runs/<run-id>/): identical rendering to the plain
    span; affordance only on hover/focus so the timeline's look is unchanged */
@@ -879,6 +921,11 @@ body.reading .main { padding-top: 2.2rem; }
 .tl-run .run-h a.rl:hover, .tl-run .run-h a.rl:focus-visible { color: var(--accent-soft); text-decoration: underline; }
 .tl-run .run-h .rg { font-family: var(--mono); font-size: 10.5px; color: var(--text-muted); }
 .runnode { position: absolute; right: -6px; top: 3px; width: 10px; height: 10px; border-radius: 2px; background: var(--text-muted); border: 2px solid var(--bg); }
+/* The rail ends with the feed, so let it fade rather than stop mid-air. */
+#brief-timeline > :last-child .tl-rail {
+  border-right-color: transparent;
+  background: linear-gradient(to bottom, var(--border), transparent) right top / 2px 100% no-repeat;
+}
 
 .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; align-items: center; }
 .b { font-family: var(--mono); font-size: 10.5px; padding: 2px 8px; border-radius: 5px; border: 1px solid var(--border); color: var(--text-soft); background: var(--bg-elev-2); text-decoration: none; }
@@ -910,10 +957,10 @@ a.b:hover { border-color: var(--accent-soft); color: var(--text); text-decoratio
 .prov .refs { margin-left: auto; color: var(--link); text-decoration: none; cursor: pointer; }
 .prov .refs:hover { text-decoration: underline; }
 
-.loadmore { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 26px 0 0; margin-left: 96px; font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+.loadmore { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 26px 0 0; margin-left: calc(var(--rail-w) + var(--rail-gap)); font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
 .loadmore .sp { width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: ctiSpin 0.8s linear infinite; }
 .loadmore.end a { color: var(--link); text-decoration: none; cursor: pointer; }
-.loadbtn { display: inline-flex; align-items: center; gap: 9px; margin: 26px 0 0 96px; padding: 12px 20px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; color: var(--text-soft); font-family: var(--mono); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: border-color 0.12s, color 0.12s; user-select: none; }
+.loadbtn { display: inline-flex; align-items: center; gap: 9px; margin: 26px 0 0 calc(var(--rail-w) + var(--rail-gap)); padding: 12px 20px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; color: var(--text-soft); font-family: var(--mono); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: border-color 0.12s, color 0.12s; user-select: none; }
 .loadbtn:hover { border-color: var(--accent); color: var(--text); }
 .loadbtn .plus { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--bg-elev-2); color: var(--accent-soft); font-size: 13px; }
 
@@ -965,12 +1012,19 @@ a.b:hover { border-color: var(--accent-soft); color: var(--text); text-decoratio
 /* ── entry detail (shareable permalink) ─────────────────────────── */
 .back { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 12px; color: var(--text-muted); text-decoration: none; cursor: pointer; margin-bottom: 22px; }
 .back:hover { color: var(--text); text-decoration: none; }
-.etitle { font-size: 33px; line-height: 1.14; font-weight: 800; letter-spacing: -0.03em; margin: 12px 0 0; color: var(--text); }
+.view h1.etitle { font-size: clamp(1.5rem, 1.15rem + 1.5vw, 2rem); line-height: 1.14; font-weight: 700; letter-spacing: -0.03em; margin: 12px 0 0; color: var(--text); }
 .emeta { display: flex; align-items: center; gap: 13px; flex-wrap: wrap; margin: 16px 0 0; font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+/* Separators trail their own item (::after, never ::before): a wrapped row
+   must never open with a lone dot masquerading as a bullet. */
+.emeta > :not(.share):not(:nth-last-child(2))::after {
+  content: "·"; color: var(--border); margin-left: 13px;
+}
 .emeta .share { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; color: var(--text); font-family: var(--mono); font-size: 12px; cursor: pointer; }
 .emeta .share:hover { border-color: var(--accent); color: var(--accent-soft); }
-.edeck { font-size: 15px; line-height: 1.62; color: var(--text-muted); margin: 14px 0 0; max-width: 640px; }
-.edeck strong { color: var(--text-soft); font-weight: 600; }
+.edeck { margin: 14px 0 0; max-width: 640px; }
+.edeck p { margin: 0; font-size: 15px; line-height: 1.62; }
+.edeck-h { color: var(--text-soft); font-weight: 600; }
+.edeck-s { margin-top: 8px !important; color: var(--text-muted); }
 .ebody { margin-top: 26px; }
 .ebody > p { font-size: 17px; line-height: 1.78; color: var(--text-soft); margin: 0 0 16px; max-width: 640px; }
 .ebody .cve:not(.b) { font-family: var(--mono); font-size: 15px; color: var(--info); }
@@ -1041,6 +1095,8 @@ a.b:hover { border-color: var(--accent-soft); color: var(--text); text-decoratio
 .entry-cite { margin: 16px 0; padding: 12px 16px; background: var(--bg-elev); border: 1px solid var(--border-soft); border-left: 3px solid var(--border); border-radius: 0 8px 8px 0; }
 .entry-cite__quote { margin: 0 0 6px; font-size: 15px; line-height: 1.6; color: var(--text); }
 .entry-cite figcaption, .entry-cite__cite { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+.finding > .entry-references,
+.ebody .entry-references,
 .entry-references { font-family: var(--mono); font-size: 12px; color: var(--text-muted); margin-top: 12px; }
 .entry-references a { color: var(--link); }
 
@@ -1583,7 +1639,7 @@ button.chip-section[aria-pressed="false"] {
   margin-top: 44px; padding-top: 26px;
   border-top: 1px solid var(--border-soft);
 }
-.sitenote-h {
+.view h2.sitenote-h {
   margin: 8px 0 0; font-size: 24px; line-height: 1.2; font-weight: 700;
   letter-spacing: -0.025em; color: var(--text); border: 0; padding: 0;
 }
@@ -1622,6 +1678,7 @@ a.pulse-t:hover b { color: var(--accent-soft); }
 .chg-e { display: block; font-size: 14.5px; font-weight: 600; color: var(--text); text-decoration: none; }
 .chg-e:hover { color: var(--accent-soft); }
 .chg-s { margin: 3px 0 0; color: var(--text-soft); line-height: 1.55; }
+.chg-meta { margin: 6px 0 0; }
 .chg-run { font-size: 11px; color: var(--text-muted); text-decoration: none; white-space: nowrap; }
 .chg-run:hover { color: var(--link); }
 @media (max-width: 640px) {
@@ -3883,7 +3940,7 @@ body::after {
   color: var(--text-muted);
   letter-spacing: 0.01em;
 }
-.entry-cite__attr::before { content: "· "; color: var(--text-muted); }
+.entry-cite__attr::before { content: none; }
 .entry-cite__attr a {
   color: var(--text-soft);
   text-decoration: none;
@@ -3893,10 +3950,6 @@ body::after {
 .entry-cite__date { color: var(--text-muted); font-size: 0.72rem; margin-left: 0.3rem; }
 
 .update-lead { margin: 0 0 0.5rem; }
-.entry-references { font-size: 0.82rem; }
-
-.update-lead { margin: 0 0 0.5rem; }
-.entry-references { font-size: 0.82rem; }
 
 /* Below-the-entry taxonomy pills (tags / regions / CVEs) — the v2 footer
    placement, restored under each item; the top strip keeps only
@@ -4309,10 +4362,11 @@ a.b.cve:hover { border-color: var(--info); color: var(--info); text-decoration: 
 
 /* Live: "Latest findings" as a clear, well-separated section heading. */
 .feedhead--section { margin-top: 34px; }
-.feedhead-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); font-family: var(--sans); text-transform: none; border: 0; }
+.feedhead-title { margin: 0; }
 
-/* Quiet (0-finding) run divider reads muted. */
-.tl-run--quiet .rl { color: var(--text-muted); font-weight: 500; }
+/* Quiet (0-finding) run divider reads muted. Needs the same specificity as
+   `.tl-run .run-h .rl` above, which sets the loud default. */
+.tl-run--quiet .run-h .rl { color: var(--text-muted); font-weight: 500; }
 
 @media (max-width: 860px) {
   .feedhead { gap: 10px; align-items: center; }
@@ -4442,8 +4496,6 @@ details.verif[open] > summary .verif-chev { transform: rotate(180deg); }
 /* ---------- display typography: modern sans headlines ---------- */
 .view h1,
 .brief-page-head h1,
-.home-hero h1,
-.hero h1,
 .brief-prose h2,
 .brief-prose .item-header h3,
 .brief-prose .brief-item > h3 {
@@ -4512,7 +4564,7 @@ details.verif[open] > summary .verif-chev { transform: rotate(180deg); }
    is re-rendered client-side by brief.js when the window changes. */
 .pulsepanel {
   background: var(--bg-elev); border: 1px solid var(--border-soft);
-  border-radius: 13px; padding: 16px 18px 13px;
+  border-radius: var(--card-radius); padding: 16px var(--card-pad) 13px;
   margin: 14px 0 26px;
 }
 .pulsegrid {
@@ -4992,6 +5044,9 @@ a.trends-card:hover .trends-card__go { text-decoration: underline; }
     border-right: 0; padding: 0 0 7px; text-align: left;
   }
   .tl-rail .time, .tl-rail .flag { display: inline-block; margin: 0; }
+  /* One line again on phone: the rail is gone, so the stamp has room. */
+  .tl-rail .time .d, .tl-rail .time .t { display: inline; }
+  .tl-rail .time .t::before { content: " "; }
   .tl-rail .flag { letter-spacing: 0.08em; }
   .tl-node {
     position: static; width: 8px; height: 8px; border-width: 0;
@@ -5015,8 +5070,8 @@ a.trends-card:hover .trends-card__go { text-decoration: underline; }
   #brief-timeline .section-empty { margin-left: 0 !important; }
 
   /* ── head + status ── */
-  .briefhead { margin-bottom: 14px; }
-  .view h1.briefhead-h { font-size: 17px; }
+  .livehead { margin-bottom: 14px; }
+  .view h1.livehead-h { font-size: 17px; }
   .briefstat { gap: 7px 8px; }
   .briefstat .live-updated { margin-right: 0; }
   /* The window control wraps to its own line at this width; keep it on the
@@ -5039,7 +5094,7 @@ a.trends-card:hover .trends-card__go { text-decoration: underline; }
 
   /* ── Do now ── */
   .donow { padding: 13px 14px 4px; margin-bottom: 24px; border-radius: 11px; }
-  .donow-h { font-size: 11px; }
+  .view h2.donow-h { font-size: 11px; }
 
   /* ── window pulse: three columns of small numbers, not five of big ── */
   .pulsepanel { padding: 11px 13px 10px; margin: 0 0 20px; border-radius: 11px; }
@@ -5064,6 +5119,13 @@ a.trends-card:hover .trends-card__go { text-decoration: underline; }
   .seg-btn { min-height: 42px; }
   .drawer a { min-height: 44px; }
   .brand { padding: 7px 0; }
+  /* The share button was floating alone on a right-aligned last row once
+     the meta wrapped; on phone it is a full-width control under the facts. */
+  /* One fact per line on phone: at this width the row wraps to four lines
+     anyway, and a stack is easier to scan than a wrapped run-on. */
+  .emeta { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .emeta > ::after { content: none !important; }
+  .emeta .share { margin-left: 0; margin-top: 6px; width: 100%; justify-content: center; min-height: 42px; }
   .aiclose { min-width: 40px; min-height: 40px; }
   /* The <select> itself is the tap target, so it fills its chrome rather
      than sitting 15px tall inside a 36px box. */
@@ -5075,7 +5137,7 @@ a.trends-card:hover .trends-card__go { text-decoration: underline; }
 
   /* ── the site note reads as a footer, not a headline ── */
   .sitenote { margin-top: 34px; padding-top: 22px; }
-  .sitenote-h { font-size: 20px; }
+  .view h2.sitenote-h { font-size: 20px; }
   .sitenote-p { font-size: 14.5px; }
 
   .explore { margin-top: 34px; padding-top: 22px; }
@@ -5094,3 +5156,7 @@ a.trends-card:hover .trends-card__go { text-decoration: underline; }
 @media (max-width: 639px) {
   .aibar-in { padding: 6px 14px; font-size: 10px; }
 }
+
+/* A trailing arrow link stays bound to the word before it: a lone "→" on
+   its own line reads as a broken list item. */
+.nowrap-tail { white-space: nowrap; }

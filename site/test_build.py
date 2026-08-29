@@ -596,7 +596,7 @@ assert_true("new entry sits under its publishing run", pos_high > pos_run1)
 assert_in("updated row flagged UPD", 'style="color:var(--warn)">UPD</span>', tl)
 assert_in("updated row carries the record line", 'class="tl-update tl-update--update"', tl)
 assert_in("updated row shows the record summary", "A public PoC has now surfaced and CISA added", tl)
-assert_in("updated row stamped with the record time", "03 Jul 08:00Z", tl)
+assert_in("updated row stamped with the record time", '<span class="d">03 Jul</span><span class="t">08:00Z</span>', tl)
 assert_in("updated row marks the item", 'class="tl-item tl-item--updated"', tl)
 row = render_timeline_item(E_HIGH, prefix="", is_new=True)
 assert_in("new row flagged NEW", 'style="color:var(--ok)">NEW</span>', row)
@@ -637,7 +637,7 @@ assert_not_in("no /weekly/ link on legacy strategic entries", "weekly/", strat_p
 # fields, source dates, references, migration provenance, horizon badge.
 assert_in("meta: event date", ">event 2026-07-03</span>", epage)
 assert_in("deck: headline + summary visible on the permalink",
-          '<p class="edeck"><strong>Headline coolify-rce</strong> Summary coolify-rce.</p>', epage)
+          '<p class="edeck-h">Headline coolify-rce</p><p class="edeck-s">Summary coolify-rce.</p>', epage)
 assert_in("rail CVE detail line (type · vector · auth)",
           '<div class="erail-cve__meta">rce · zero-click · post-auth</div>', epage)
 assert_in("rail CVE fixed version",
@@ -678,7 +678,7 @@ landing = render_live_brief_page(
 )
 assert_in("landing is canonical at the root", '<link rel="canonical" href="https://x.example/" />', landing)
 assert_in("landing carries the server-rendered timeline", "data-brief-timeline", landing)
-assert_in("landing h1 is the functional brief title", '<h1 class="briefhead-h">', landing)
+assert_in("landing h1 is the functional brief title", '<h1 class="livehead-h">', landing)
 assert_not_in("feed heading stays a h2", '<h1 class="feedhead-title">', landing)
 assert_in("positioning copy renders at the foot, not the top", 'class="sitenote"', landing)
 assert_not_in("no marketing hero above the findings", 'class="hero hero--live"', landing)

@@ -35,6 +35,9 @@
 
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
   function stamp(d) { return pad(d.getUTCDate()) + ' ' + MONTHS[d.getUTCMonth()] + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + 'Z'; }
+  // Mirrors _rail_stamp_html in site/build.py: the rail stamp breaks
+  // date-over-time deliberately, not wherever the gutter runs out.
+  function railStamp(d) { return '<span class="d">' + pad(d.getUTCDate()) + ' ' + MONTHS[d.getUTCMonth()] + '</span><span class="t">' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + 'Z</span>'; }
   function euro(d) { return pad(d.getUTCDate()) + '.' + pad(d.getUTCMonth() + 1) + '.' + d.getUTCFullYear() + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()); }
   function esc(s) {
     return String(s == null ? '' : s)
@@ -169,7 +172,7 @@
       }
       return '<div class="tl-item' + (isUpd ? ' tl-item--updated' : '') + '" data-entry-id="' + esc(e.id) + '">'
         + '<div class="tl-rail"><span class="tl-node" style="background:' + (PRI_DOT[e.priority] || 'var(--text-muted)') + '"></span>'
-        + '<span class="time">' + esc(stamp(d)) + '</span><span class="flag" style="' + flagStyle + '">' + esc(flag) + '</span></div>'
+        + '<span class="time">' + railStamp(d) + '</span><span class="flag" style="' + flagStyle + '">' + esc(flag) + '</span></div>'
         + '<div class="tl-body">'
         + badgesHtml(e)
         + '<h3 class="tl-title"><a href="' + esc(sitePrefix() + relUrl(e)) + '">' + esc(e.title || e.id) + '</a></h3>'
