@@ -4,6 +4,25 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.7 — 2026-08-29 (the legacy-strategic entries are deleted, and the schema that carried them with them)
+
+### Why
+
+Operator directive, 2026-08-29: delete the legacy-strategic entries and all their references, once and for all. v4.0 retired the weekly strategic routine on 2026-08-27 but kept its 393 `horizon: strategic` entries as archived permalinks, and kept the schema that described them — the `horizon` axis, the `weekly_section` field, the `synthesis` and `outlook` kinds, and a render path in the site for each. Nothing wrote them any more, so every one of those was a branch that could only ever be taken by history, and history the operator no longer wants kept.
+
+### What changed
+
+- **The 393 entries are gone**, and with them 12 `references[]` links from 11 surviving entries, 24 typed registry relations whose `source` was one of them, and 38 product entities that no surviving entry names. A relation is only as good as the entry whose reporting states it: with the evidence deleted the edge does not survive as an unsourced claim.
+- **`horizon` and `weekly_section` are deleted fields**, stripped from every remaining entry's frontmatter and out of `content_model` (`HORIZONS`, `WEEKLY_SECTIONS`, both `ENTRY_DEFAULTS` keys, both validators). `KINDS` drops `synthesis` and `outlook`; `ACTIVE_KINDS` is now `KINDS`; no kind maps to no section.
+- **`prompts/cti-run.md`:** the frontmatter contract no longer lists `horizon`, § 1 no longer says entries are `horizon: operational` (there is nothing else they could be), and the Phase 5.5 `legacy-shape` description now reads as what the check became — a guard against an entry re-growing a deleted field, not a filter separating two live shapes.
+- Site-side, outside the prompts: `build.operational_entries` / `strategic_entries` are gone (an identity filter and an empty one), along with the horizon badge, the run panel's Strategic tile, the strategic permalink branch, `briefbook.json`'s `horizon` field and `brief.js`'s two horizon filters. `check_run.py`'s `legacy-shape` now FAILs any entry carrying `horizon` or `weekly_section` at all.
+
+### What stays
+
+The 21 weekly run records, their `work/` snapshots and the audit reports that cite them: they record fires that actually happened, and run-record transparency is a hard invariant. `weekly` therefore stays in `RUN_KINDS` so that history keeps validating, and stays out of `ACTIVE_RUN_KINDS` so no fire can claim it. All 1119 non-product registry keys stay — keys are permanent — including the 39 that no entry references any more.
+
+---
+
 ## 4.6 — 2026-08-29 (affected software becomes an entity: products get a page, a coverage timeline and a graph node)
 
 ### Why

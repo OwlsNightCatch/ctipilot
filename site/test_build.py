@@ -311,13 +311,11 @@ REF_TS = datetime(2026, 7, 3, 12, 0, 0, tzinfo=timezone.utc)
 
 
 def mk_entry(slug, *, day="2026-07-03", ts="2026-07-03T04:21:09Z",
-             kind="vulnerability", priority="notable",
-             horizon="operational", **kw):
+             kind="vulnerability", priority="notable", **kw):
     e = copy.deepcopy(content_model.ENTRY_DEFAULTS)
     e.update({
         "schema": 1,
         "kind": kind,
-        "horizon": horizon,
         "title": f"Title {slug}",
         "headline": f"Headline {slug}",
         "summary": f"Summary {slug}.",
@@ -435,19 +433,21 @@ E_OLD = mk_entry(
          "The original stated 12 hospitals; the regulator's notice names 8 "
          "([Example PSIRT, 2026-07-03](https://example.com/advisory-old-item)).",
 )
-E_STRAT = mk_entry(
-    "weekly-policy-item", day="2026-06-28", ts="2026-06-28T10:00:00Z",
-    kind="policy", priority="high", horizon="strategic",
+E_POLICY = mk_entry(
+    "policy-item", day="2026-06-28", ts="2026-06-28T10:00:00Z",
+    kind="policy", priority="high",
 )
-E_STRAT2 = mk_entry(
-    "weekly-synthesis", day="2026-06-28", ts="2026-06-28T11:00:00Z",
-    kind="synthesis", priority="notable", horizon="strategic",
-    weekly_section="weekly-long-running",
+# Carries the two rail features that need a fixture of their own: a
+# `references[]` link (the Builds on group) and `migrated_from` (the
+# Record group's Imported from row).
+E_BUILDS_ON = mk_entry(
+    "builds-on-item", day="2026-06-28", ts="2026-06-28T11:00:00Z",
+    kind="research", priority="notable",
     references=["2026-07-01/old-item"],
     migrated_from="briefs/2026-06-28.md",
 )
 ALL_ENTRIES = sorted(
-    [E_CRIT, E_HIGH, E_NOTE, E_DEEP, E_OLD, E_STRAT, E_STRAT2],
+    [E_CRIT, E_HIGH, E_NOTE, E_DEEP, E_OLD, E_POLICY, E_BUILDS_ON],
     key=lambda e: (e["discovered_at"], e["id"]),
 )
 RUN = mk_run()
@@ -690,13 +690,13 @@ plain_page = render_entry_page(
 assert_not_in("never-updated entry has no revision history", 'id="revision-history"', plain_page)
 assert_not_in("never-updated entry has no updated meta", "emeta-updated", plain_page)
 assert_not_in("never-updated entry has no Updates section", 'class="esec esec--updates"', plain_page)
-strat_page = render_entry_page(
-    E_STRAT, entries_by_id=by_id, registry={}, runs_by_id={}, day_pages=set(),
+policy_page = render_entry_page(
+    E_POLICY, entries_by_id=by_id, registry={}, runs_by_id={}, day_pages=set(),
     site_url="https://x.example/", cachebust="t", prefix="../../../",
-    canonical="https://x.example/entries/2026-06-28/weekly-policy-item/",
+    canonical="https://x.example/entries/2026-06-28/policy-item/",
 )
-assert_in("legacy strategic entry links the daily archive", "Back to the daily archive", strat_page)
-assert_not_in("no /weekly/ link on legacy strategic entries", "weekly/", strat_page.split("<main")[-1] if "<main" in strat_page else strat_page.replace("weekly-policy-item", ""))
+assert_in("entry with no day page yet links the live brief",
+          "Back to the live brief", policy_page)
 # Metadata completeness on the permalink. Everything except the two stamps
 # and the share control now lives in the labelled rail; the dateline under
 # the title carries nothing else (the run link in particular is Record, at
@@ -759,18 +759,17 @@ assert_in("entry JSON-LD points at the markdown encoding",
           '"encodingFormat":"text/markdown"', epage)
 assert_in("deep-dive badge carries the category",
           "deep dive · edge-infrastructure", build.render_badges(E_DEEP, full=True))
-strat2_page = render_entry_page(
-    E_STRAT2, entries_by_id=by_id, registry={}, runs_by_id={}, day_pages=set(),
+builds_on_page = render_entry_page(
+    E_BUILDS_ON, entries_by_id=by_id, registry={}, runs_by_id={}, day_pages=set(),
     site_url="https://x.example/", cachebust="t", prefix="../../../",
-    canonical="https://x.example/entries/2026-06-28/weekly-synthesis/",
+    canonical="https://x.example/entries/2026-06-28/builds-on-item/",
 )
-assert_in("references render as a Builds on rail group", ">Builds on</h3>", strat2_page)
+assert_in("references render as a Builds on rail group", ">Builds on</h3>", builds_on_page)
 assert_in("builds-on links the referenced entry",
-          'href="../../../entries/2026-07-01/old-item/"', strat2_page)
+          'href="../../../entries/2026-07-01/old-item/"', builds_on_page)
 assert_in("migration provenance sits in the rail Record group",
-          '<span class="frow__l">Imported from</span>', strat2_page)
-assert_in("migration provenance names the source", "briefs/2026-06-28.md", strat2_page)
-assert_in("non-operational horizon badge", ">strategic</span>", strat2_page)
+          '<span class="frow__l">Imported from</span>', builds_on_page)
+assert_in("migration provenance names the source", "briefs/2026-06-28.md", builds_on_page)
 
 print("== landing page (live brief at the site root) ==")
 by_id_all = {e["id"]: e for e in ALL_ENTRIES}
@@ -814,7 +813,7 @@ assert_in("changes row deep-links the entry section",
 assert_in("changes row links the run record", 'href="../runs/' + RUN2_ID + '/"', changes)
 assert_in("changes are grouped by UTC day", ">2026-07-03<", changes)
 changes_empty = render_changes_page(
-    [E_STRAT], site_url="https://x.example/", cachebust="t",
+    [E_POLICY], site_url="https://x.example/", cachebust="t",
     prefix="../", canonical="https://x.example/changes/",
 )
 assert_in("changes page explains itself when empty", "No changelog records yet", changes_empty)
@@ -837,11 +836,12 @@ assert_in("single-source badge rendered", "single-source · national CERT", ss_c
 # ---------------------------------------------------------------------
 print("== grouping ==")
 days = entries_by_day(ALL_ENTRIES)
-assert_eq("day pages: operational dates only", sorted(days), ["2026-07-01", "2026-07-03"])
-assert_eq("2026-07-03 has 4 operational entries", len(days["2026-07-03"]), 4)
+assert_eq("day pages: one per entry date", sorted(days),
+          ["2026-06-28", "2026-07-01", "2026-07-03"])
+assert_eq("2026-07-03 has 4 entries", len(days["2026-07-03"]), 4)
 assert_eq("deep dive routes to deep-dive", entry_section_key(E_DEEP), "deep-dive")
-assert_eq("policy routes to the research section", entry_section_key(E_STRAT), "research")
-assert_eq("legacy synthesis kind has no section", entry_section_key(E_STRAT2), None)
+assert_eq("policy routes to the research section", entry_section_key(E_POLICY), "research")
+assert_eq("research routes to the research section", entry_section_key(E_BUILDS_ON), "research")
 assert_eq("updated entry keeps its kind section (updates are derived)",
           entry_section_key(E_CRIT), "trending-vulnerabilities")
 picked = select_tldr_entries([E_NOTE, E_HIGH, E_CRIT])
@@ -1048,7 +1048,7 @@ assert_eq("briefbook window_days", book["window_days"], 35)
 assert_eq("briefbook generated_at", book["generated_at"], "2026-07-03T12:00:00Z")
 assert_eq("briefbook carries all fixture entries", len(book["entries"]), len(ALL_ENTRIES))
 be = {x["id"]: x for x in book["entries"]}[E_CRIT["id"]]
-for field in ("id", "url", "date", "discovered_at", "kind", "horizon", "priority",
+for field in ("id", "url", "date", "discovered_at", "kind", "priority",
               "headline", "summary", "title", "tags", "regions", "sectors",
               "entities", "cve_ids", "cve_status", "updated_at", "activity_at",
               "activity_run_id", "activity_is_update", "updates", "update_count",
@@ -1077,10 +1077,9 @@ assert_in("briefbook run html rendered", "<p>", br["html"])
 
 alerts = build_alerts(ALL_ENTRIES, ref_ts=REF_TS, site_url="https://x.example/")
 assert_true("alerts documents itself", alerts["_comment"].startswith("Notification-hook"))
-# Both horizons alert — a strategic `high` is still notification-worthy.
 assert_eq("alerts: only critical|high in window",
           sorted(a["id"] for a in alerts["alerts"]),
-          sorted([E_CRIT["id"], E_HIGH["id"], E_STRAT["id"]]))
+          sorted([E_CRIT["id"], E_HIGH["id"], E_POLICY["id"]]))
 al = {a["id"]: a for a in alerts["alerts"]}
 assert_eq("alerts: critical carries immediate_action",
           al[E_CRIT["id"]]["immediate_action"]["title"], "Patch Coolify now")
@@ -1203,25 +1202,20 @@ assert_true("unconnected historical CVE stays out of the graph",
 assert_true("relation vocabulary ships in the payload",
             graph["relation_types"].get("uses", {}).get("inverse") == "used by")
 
-# Derived-edge evidence gate: strategic synthesis and annual-report
-# roundups reference many unrelated entities — they must never create
-# co-occurrence edges. Curated relations are unaffected.
-E_ROUNDUP_W = mk_entry(
-    "weekly-roundup-fixture", kind="synthesis", priority="notable",
-    ts="2026-07-03T09:00:00Z", horizon="strategic",
-    entities=["actor:testfox", "tool:foxkit"],
-)
+# Derived-edge evidence gate: annual-report roundups reference many
+# unrelated entities — they must never create co-occurrence edges.
+# Curated relations are unaffected.
 E_ROUNDUP_A = mk_entry(
     "annual-roundup-fixture", kind="annual-report", priority="notable",
     ts="2026-07-03T10:00:00Z",
     entities=["actor:testfox", "tool:foxkit"],
 )
 ents2, matched2 = build_entities(
-    REGISTRY, ALL_ENTRIES + [E_ROUNDUP_W, E_ROUNDUP_A],
+    REGISTRY, ALL_ENTRIES + [E_ROUNDUP_A],
     CVES_SEEN, SOURCES_RAW, day_pages)
 co2 = compute_related_entities(ents2, matched2)
 fox2 = {e["key"]: e for e in ents2}["actor:testfox"]
-assert_true("strategic/annual-report entries create no co-occurrence",
+assert_true("annual-report entries create no co-occurrence",
             co2.get("actor:testfox", {}).get("tool:foxkit", 0) == 0
             and not any(r["key"] == "tool:foxkit" for r in fox2["related_entities"]))
 graph2 = build_graph_payload(ents2, matched2, co2, generated_at="2026-07-03T00:00:00Z")

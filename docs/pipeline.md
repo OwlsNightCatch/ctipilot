@@ -10,9 +10,10 @@ wins and the code is the bug.
 
 **v4.0 (2026-08-27) in one paragraph.** Two routines remain — the intel run
 (`prompts/cti-run.md`, any cadence) and the quality audit
-(`prompts/quality-audit.md`); the weekly strategic routine is retired and
-its `/weekly/` pages are gone (its `horizon: strategic` entries stay in the
-store as archived permalinks). A finding has exactly **one** entry for its
+(`prompts/quality-audit.md`); the weekly strategic routine is retired, its
+`/weekly/` pages are gone, and its entries were deleted outright on
+2026-08-29 (with them went the `horizon` axis, the `weekly_section` field
+and the `synthesis`/`outlook` kinds). A finding has exactly **one** entry for its
 whole life: developments, corrections and improvements are appended to that
 entry as timestamped `updates[]` changelog records with matching body
 sections, `updated_at` floats the entry back to the top of the live brief,
@@ -129,7 +130,6 @@ literals, full-line comments only. Producers MUST stay inside this subset;
 ---
 schema: 1
 kind: vulnerability            # see § Kinds
-horizon: operational           # always `operational` on v4+ entries (`strategic` = legacy weekly entries)
 title: "CVE-2026-34038 — Coolify: authenticated command injection to RCE (CVSS 9.9)"
 headline: "Coolify ships an emergency fix for a CVSS 9.9 authenticated command-injection RCE"
 summary: >
@@ -193,7 +193,6 @@ confidence: high               # high | medium | low
 references: []                 # entry ids this entry builds on (a distinct finding that shares a CVE
                                # with an older entry MUST list it here — the explicit, gate-checked
                                # statement that it is not a duplicate; see § Dedup)
-weekly_section: null           # LEGACY (pre-v4 strategic entries only) — a v4+ entry never sets it
 deep_dive: false               # true ⇒ this entry IS the deep-dive treatment
 deep_dive_category: null       # taxonomy-free rotation slug when deep_dive: true (see prompt)
 org_triage: null               # or {category: P1, rationale: "…"} on triage-kind entries when a scheme is defined
@@ -360,17 +359,15 @@ independently clears every element of the bar.
 | `research` | § Research, Reports & Policy | yes |
 | `annual-report` | § Research, Reports & Policy (one-time treatment per PD-9) | yes |
 | `policy` | § Research, Reports & Policy — a regulatory action or deadline with a transferable obligation for the constituency (PD-11 c) | yes |
-| `synthesis` | — (legacy weekly kind; archived entries only) | **no** |
-| `outlook` | — (legacy weekly kind; archived entries only) | **no** |
 
-`content_model.ACTIVE_KINDS` is the writable set; `check_run.py` FAILs a
-v4+ entry with a legacy kind, `horizon: strategic` or a `weekly_section`.
-Orthogonal flags relocate an entry at render time: `deep_dive: true` ⇒
-§ Deep Dive (and not its kind section); an entry with a changelog record
-dated inside the rendered day/window additionally appears in § Updates to
-Prior Coverage (rendered from that record — see § Rendering). The legacy
-`horizon: strategic` entries are archived history: reachable by permalink,
-entity page, CVE page, tag/region index and search, rendered in no brief.
+Every kind is writable — `content_model.ACTIVE_KINDS` is `KINDS`. The
+weekly routine's own kinds (`synthesis`, `outlook`) went with its entries
+on 2026-08-29, along with the `horizon` axis and `weekly_section`;
+`check_run.py` FAILs an entry that re-grows any of them. Orthogonal flags
+relocate an entry at render time: `deep_dive: true` ⇒ § Deep Dive (and not
+its kind section); an entry with a changelog record dated inside the
+rendered day/window additionally appears in § Updates to Prior Coverage
+(rendered from that record — see § Rendering).
 
 ## Entry lifecycle — one living entry per finding
 
@@ -689,12 +686,11 @@ has exactly two edge classes, and every edge's derivation is explicit:
    the derived TTP profiles (§ The ATT&CK layer). Derived edges are
    recomputed on every build and always carry their supporting entry ids —
    they can never drift from the store. **Evidence-quality gate**
-   (`build.derived_edge_qualified`): only focused operational reporting
-   creates a derived edge — `horizon: strategic` entries (weekly
-   synthesis, outlooks, policy roundups) and `annual-report` treatments
-   are excluded, because they mention many unrelated entities by
-   construction: two names sharing a weekly recap or a quarterly
-   ransomware ranking is summarization, not a connection. Curated edges
+   (`build.derived_edge_qualified`): only focused reporting creates a
+   derived edge — `annual-report` treatments are excluded, because they
+   mention many unrelated entities by construction: two names sharing a
+   quarterly ransomware ranking is summarization, not a connection.
+   Curated edges
    are unaffected (each carries its own establishing entry).
 
 Curated edges assert *what happened*; derived edges surface *what the
@@ -1066,8 +1062,8 @@ and source-entry resolution — § Relationships);
 the entry lifecycle (`updates[]` shape, `updated_at` mirror, strictly
 increasing `at`, 1:1 body-section pairing, record `run_id` resolution, no
 silent edit — an entry modified without a record for the modifying run
-FAILs; `update_of` retired — any non-null value FAILs; v4+ entries carry no
-legacy kind / horizon / weekly_section); `references[]` resolution;
+FAILs; `update_of` retired — any non-null value FAILs; entries carry no
+deleted legacy field); `references[]` resolution;
 cross-run dedup (store-wide CVE overlap FAILs unless declared in
 `references[]`); run counters vs disk (`entries_published`,
 `entries_updated` + `updated_entry_ids`, `deep_dive`); rolling-24 h

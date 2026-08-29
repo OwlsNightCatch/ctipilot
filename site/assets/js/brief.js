@@ -205,7 +205,6 @@
       // Window membership + ordering are by ACTIVITY: an entry updated inside
       // the window is in the window even if first published long before it.
       var ops = (data.entries || []).filter(function (e) {
-        if ((e.horizon || 'operational') !== 'operational') return false;
         var d = (e.activity_at || e.discovered_at) ? activityDate(e) : null;
         if (!d || d < since || d > refTs) return false;
         return passesFilter(e);
@@ -218,7 +217,6 @@
 
       // has-older ignores active filters (it's a window boundary, not a filter).
       var hasOlder = (data.entries || []).some(function (e) {
-        if ((e.horizon || 'operational') !== 'operational') return false;
         var d = (e.activity_at || e.discovered_at) ? activityDate(e) : null;
         return d && d < since;
       });

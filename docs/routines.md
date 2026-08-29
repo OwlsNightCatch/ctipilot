@@ -56,7 +56,7 @@ reported as such.
 > **Retired routine (2026-08-27).** A weekly strategic run (`Read prompts/weekly-summary.md and
 > execute it.`) and its backup routine used to be the third and fourth entries here. Both were
 > removed by operator decision along with the prompt file, the `/weekly/` pages and the weekly feed;
-> the `horizon: strategic` entries they produced stay in the store as archived permalinks. **If the
+> the entries they produced were deleted on 2026-08-29. **If the
 > live routine config still carries either, delete them** — the prompt they `Read` no longer exists.
 
 **Optional: an intel-run backup.** There is no intel backup configured, and one is rarely needed —

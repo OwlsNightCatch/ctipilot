@@ -1481,30 +1481,30 @@ def check_silent_edits(run: dict[str, Any] | None, run_id: str,
 
 
 def check_legacy_shape(run: dict[str, Any] | None, new_entries: list[dict]) -> None:
-    """v4.0 retired the weekly strategic routine: a v4+ fire is `intel` or
-    `audit`, and its new entries are `horizon: operational`, carry a kind
-    from content_model.ACTIVE_KINDS (synthesis/outlook were the weekly's),
-    and never set `weekly_section`. FAIL on v4.0+ runs; earlier records are
-    history and pass silently."""
+    """v4.0 retired the weekly strategic routine and its entries are now
+    deleted: a fire is `intel` or `audit`, and no entry carries a legacy
+    field. `horizon`, `weekly_section` and the weekly-only kinds no longer
+    exist in the schema, so the only thing left to guard is the run kind
+    and the fact that no entry re-grows a retired field. FAIL on v4.0+
+    runs; earlier records are history and pass silently."""
     if run is None or not _lifecycle_enforced(run):
         ok("legacy-shape", "n/a (pre-v4.0 record or no run record)")
         return
     bad: list[str] = []
     if run.get("kind") not in cm.ACTIVE_RUN_KINDS:
-        bad.append(f"run record kind {run.get('kind')!r} — v4+ fires are {cm.ACTIVE_RUN_KINDS} "
+        bad.append(f"run record kind {run.get('kind')!r} — a fire is {cm.ACTIVE_RUN_KINDS} "
                    "(the weekly routine was retired)")
     for e in new_entries:
         if e.get("kind") not in cm.ACTIVE_KINDS:
-            bad.append(f"{e['id']}: kind {e.get('kind')!r} is a retired weekly kind — v4+ entries "
-                       f"use {cm.ACTIVE_KINDS}")
-        if (e.get("horizon") or "operational") != "operational":
-            bad.append(f"{e['id']}: horizon {e.get('horizon')!r} — every v4+ entry is operational")
-        if e.get("weekly_section") is not None:
-            bad.append(f"{e['id']}: weekly_section is a legacy field — never set on v4+ entries")
+            bad.append(f"{e['id']}: kind {e.get('kind')!r} is not a kind — use {cm.ACTIVE_KINDS}")
+        for legacy in ("horizon", "weekly_section"):
+            if e.get(legacy) is not None:
+                bad.append(f"{e['id']}: `{legacy}` is a deleted field — it went with the weekly "
+                           "routine's entries and never comes back")
     for b in bad:
         fail("legacy-shape", b)
     if not bad:
-        ok("legacy-shape", "run kind and every new entry's kind/horizon are v4-shaped")
+        ok("legacy-shape", "run kind and every new entry's kind are current; no legacy field")
 
 
 def report_rolling_composition(run: dict[str, Any], all_entries: list[dict]) -> None:
@@ -1530,7 +1530,7 @@ def report_rolling_composition(run: dict[str, Any], all_entries: list[dict]) -> 
         ts = cm.parse_ts(e.get("discovered_at"))
         if ts is not None and lo < ts <= completed:
             window.append(e)
-    operational = [e for e in window if (e.get("horizon") or "operational") == "operational"]
+    operational = list(window)
     dd_today = [e for e in all_entries
                 if e.get("deep_dive") is True and e.get("date") == run.get("date")]
     critical = [e for e in window if e.get("priority") == "critical"]
@@ -1547,7 +1547,7 @@ def report_rolling_composition(run: dict[str, Any], all_entries: list[dict]) -> 
     # the baseline the current window is reported against, so a drift is
     # visible to the operator without anyone having to recompute it.
     def _rates(rows: list[dict]) -> tuple[int, float, float, float]:
-        ops = [e for e in rows if (e.get("horizon") or "operational") == "operational"]
+        ops = list(rows)
         if not ops:
             return 0, 0.0, 0.0, 0.0
         highs = sum(1 for e in ops if e.get("priority") == "high")
@@ -2350,17 +2350,17 @@ CLOCK_INTEGRITY_FROM = (3, 33)
 # with a `## <Type> — <at>` body section. From v4.0 the gate FAILs: an entry
 # modified in the working tree without a record for the modifying run
 # (`silent-edit`), a run record lacking `updated_entry_ids`, more than one
-# record per entry per fire, a new entry with a legacy kind / horizon /
-# weekly_section, and a run record whose kind is not intel|audit (the weekly
-# routine was retired). Pre-v4 history is validated structurally only.
+# record per entry per fire, a new entry carrying a deleted legacy field,
+# and a run record whose kind is not intel|audit (the weekly routine was
+# retired). Pre-v4 history is validated structurally only.
 ENTRY_LIFECYCLE_FROM = (4, 0)
 
 # ATT&CK completeness by kind: these kinds inherently describe attacker
 # behavior (a campaign, an intrusion, an exploitable vulnerability's access
 # vector), so an empty `techniques[]` is a composition defect, never a
 # judgment call. Research/annual-report usually map but may legitimately
-# carry no TTP content (statistics, governance) → WARN. Policy entries and
-# the legacy weekly kinds (synthesis, outlook) may map nothing at all.
+# carry no TTP content (statistics, governance) → WARN. Policy entries may
+# map nothing at all.
 ATTACK_REQUIRED_KINDS = {"threat", "incident", "vulnerability"}
 ATTACK_EXPECTED_KINDS = {"research", "annual-report"}
 
@@ -3244,7 +3244,7 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
     print("\n== entry lifecycle — no silent edits ==")
     check_silent_edits(run, run_id, entries_by_id, content_root)
 
-    print("\n== v4 shape (retired weekly kinds / horizon / run kind) ==")
+    print("\n== v4 shape (retired weekly fields / run kind) ==")
     check_legacy_shape(run, new_entries)
 
     if run is not None:

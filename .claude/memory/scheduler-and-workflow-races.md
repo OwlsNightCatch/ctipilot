@@ -11,6 +11,15 @@ type: project
 - **Cadence is operator-owned and variable at will** (2026-07-18): work off the gap to the last run; a changed cadence is never a finding. Only a *record-less* gap on a schedule that should have fired is an availability signal (2026-07-07: confirmed 62 h scheduler outage; missing `runs/<date>/` + clean previous fire = scheduler-side; the gap-derived window self-heals coverage — surface big gaps, don't re-diagnose the repo).
 - Runaway/stalled runs are container-side (worst: 53 h). The ~3 h main-run watchdog stands: past it, land the run — no new research.
 
+## Two local sessions, one working tree (2026-08-29)
+
+Interactive sessions on this repo can run CONCURRENTLY IN THE SAME WORKING TREE (`ListAgents` shows the peers). During the legacy-strategic purge a peer session saw the store drop 1222 -> 829 files mid-build, read it as filesystem corruption, and ran `git checkout HEAD -- entries/ entities/registry.yaml`, which discarded a staged 393-file deletion and every unstaged edit under those paths in one shot.
+
+- **Commit destructive work the moment it is coherent.** A commit is the only thing a peer's `git checkout` cannot undo; a staged deletion is not safe.
+- Before restoring anything that looks like corruption, run `git status` and look for staged deletions — another session may be mid-task.
+- `ListAgents` + `SendMessage` to the peer name is the coordination channel; agree on path ownership up front (they kept `site/build.py`+assets, I took `entries/`, `entities/`, `state/`, `tools/`).
+- Untracked conflict copies (`site/build 2.py`, `styles 2.css`) live in this tree and make a healthy repo look corrupted. They are noise, not signal.
+
 ## Overtaken-run recovery (worst case 2026-08-22: 3 fires past, 8 of 16 entries stood down)
 
 - An overtaking fire's window is gap-to-last-**published**-run, so it swallows yours whole. Check `origin/main` at every phase boundary, not only Phase 6.

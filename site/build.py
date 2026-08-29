@@ -2427,14 +2427,6 @@ def entry_sort_key(entry: dict[str, Any]) -> tuple:
     )
 
 
-def operational_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [e for e in entries if (e.get("horizon") or "operational") == "operational"]
-
-
-def strategic_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [e for e in entries if e.get("horizon") == "strategic"]
-
-
 def entries_in_window(entries: list[dict[str, Any]], since: datetime,
                       until: datetime | None = None) -> list[dict[str, Any]]:
     return content_model.entries_in_window(entries, since, until)
@@ -2444,7 +2436,7 @@ def entries_by_day(entries: list[dict[str, Any]]) -> dict[str, list[dict[str, An
     """Group OPERATIONAL entries by their UTC folder date. A day page
     exists iff the date has at least one operational entry."""
     out: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for e in operational_entries(entries):
+    for e in list(entries):
         out[e["date"]].append(e)
     return dict(sorted(out.items()))
 
@@ -3020,11 +3012,6 @@ def render_badges(entry: dict[str, Any], *, prefix: str = "", full: bool = False
             parts.append(f'<span class="b">deep dive{" · " + _escape(ddc) if ddc else ""}</span>')
         if entry.get("watchlist_hit"):
             parts.append('<span class="b" title="Included via an org-profile watchlist match">watchlist</span>')
-        horizon = str(entry.get("horizon") or "operational")
-        if horizon != "operational":
-            parts.append(
-                f'<span class="b" title="Legacy entry from the retired weekly strategic routine">{_escape(horizon)}</span>'
-            )
     return '<div class="badges">' + "".join(parts) + "</div>"
 
 
@@ -3432,7 +3419,7 @@ def render_brief_sections(
     """THE shared server-side assembler for the canonical daily brief
     structure · used by every day page and the daily RSS bodies (the live
     view is the run-grouped timeline, not these sections). `entries` must
-    already be scoped to the day (operational horizon, by discovered_at).
+    already be scoped to the day (by discovered_at).
     `runs` are the day's run records (their bodies become § Verification).
     Sections render only when non-empty.
 
@@ -3447,7 +3434,7 @@ def render_brief_sections(
     `card_html_by_id` lets a caller inject pre-rendered card HTML (the
     briefbook path renders each card exactly once and reuses it here).
     """
-    ops = operational_entries(entries)
+    ops = list(entries)
     by_id = entries_by_id or {e["id"]: e for e in ops}
 
     buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -3462,8 +3449,6 @@ def render_brief_sections(
     update_hits: list[tuple[dict[str, Any], dict[str, Any]]] = []
     since, until = updates_window if updates_window else (None, None)
     for e in updated_entries if updated_entries is not None else []:
-        if (e.get("horizon") or "operational") != "operational" and not updated_entries:
-            continue
         for rec in update_records_in(e, since, until, day=updates_day):
             update_hits.append((e, rec))
     update_hits.sort(key=lambda er: (str(er[1].get("at") or ""), er[0]["id"]), reverse=True)
@@ -3625,13 +3610,9 @@ def render_runs_overview(
     carry in frontmatter. Static (window-independent) · the panel is the
     same whatever reading window the visitor picks."""
     counts_by_run: dict[str, Counter] = defaultdict(Counter)
-    strategic_by_run: Counter = Counter()
     for e in all_entries:
         rid = e.get("run_id")
         if not rid:
-            continue
-        if (e.get("horizon") or "operational") != "operational":
-            strategic_by_run[rid] += 1
             continue
         skey = entry_section_key(e)
         if skey:
@@ -3652,7 +3633,7 @@ def render_runs_overview(
         when = ts.strftime("%d.%m.%Y&nbsp;%H:%M") if ts else "·"
         kind = str(r.get("kind") or "intel")
         counts = counts_by_run.get(rid, Counter())
-        total = sum(counts.values()) + strategic_by_run.get(rid, 0)
+        total = sum(counts.values())
 
         cats: list[str] = []
         for key, _title in DAILY_SECTIONS:
@@ -3662,11 +3643,6 @@ def render_runs_overview(
                     f'<span class="runs-cat"><span class="runs-cat__n">{c}</span>'
                     f'{_escape(SECTION_SHORT.get(key, key))}</span>'
                 )
-        if strategic_by_run.get(rid):
-            cats.append(
-                f'<span class="runs-cat"><span class="runs-cat__n">'
-                f'{strategic_by_run[rid]}</span>Strategic</span>'
-            )
         breakdown = (
             "".join(cats)
             if cats
@@ -3924,7 +3900,7 @@ def render_live_brief_page(
     <select> or the "load older findings" button). Below the feed: the
     knowledge-base pivot band (`counts` carries the store-wide totals) and
     the machine-endpoint line for AI agents / feed readers."""
-    ops = operational_entries(window_entries)
+    ops = list(window_entries)
     n = len(ops)
     n_crit = sum(1 for e in ops if e.get("priority") == "critical")
     n_high = sum(1 for e in ops if e.get("priority") == "high")
@@ -4141,7 +4117,7 @@ def render_day_page(
     editorial structure, § Updates to Prior Coverage from every changelog
     record dated that day (`updated_entries` = the entries carrying one),
     plus that day's run-record notes."""
-    ops = sorted(operational_entries(day_entries), key=entry_sort_key)
+    ops = sorted(list(day_entries), key=entry_sort_key)
     n = len(ops)
     n_upd = sum(len(update_records_in(e, None, None, day=day)) for e in (updated_entries or []))
     n_runs = len(day_runs)
@@ -4617,9 +4593,7 @@ def render_entry_page(
     entry carries, and a body that runs actionable-first: immediate
     action, defender actions, the analysis, the cited evidence, each
     changelog record as a timestamped block, the ATT&CK mapping, the
-    sources, the revision history and the provenance note. Legacy
-    strategic entries (the retired weekly routine's output) render the
-    same way and link back to the daily archive."""
+    sources, the revision history and the provenance note."""
     # The permalink is a sequence of h2 sections (Analysis, Cited evidence,
     # Updates, ATT&CK mapping, Sources, Revision history), so the body's own
     # headings — authored at `##` in most entries, `####` in some older ones
@@ -4641,20 +4615,15 @@ def render_entry_page(
             f'<h2 class="esec-h">Updates<span class="esec-n">{len(upd_records)}</span></h2>'
             + updates_html + "</section>"
         )
-    is_op = (entry.get("horizon") or "operational") == "operational"
     day = entry["date"]
-    # Operational entries from a completed day link back to that day page;
-    # entries from the still-rolling day (no day page yet) link to Live;
-    # legacy strategic entries link to the daily archive.
-    if is_op and day in day_pages:
+    # An entry from a completed day links back to that day page; one from
+    # the still-rolling day (no day page yet) links to Live.
+    if day in day_pages:
         parent_url = f"{prefix}daily/{day}/"
         parent_label = f"Daily brief {day}"
-    elif is_op:
+    else:
         parent_url = prefix or "./"
         parent_label = "the live brief"
-    else:
-        parent_url = f"{prefix}daily/"
-        parent_label = "the daily archive"
 
     # --- revision history (the changelog, as a list) -------------------
     rev_bits: list[str] = []
@@ -4787,13 +4756,11 @@ def render_entry_page(
     # Breadcrumb trail (absolute URLs) mirroring the entry's real parent
     # navigation — every crumb points at a page that exists.
     trail: list[tuple[str, str]] = [(SITE_NAME, site_url)]
-    if is_op and day in day_pages:
+    if day in day_pages:
         trail.append(("Daily", site_url + "daily/"))
         trail.append((day, site_url + f"daily/{day}/"))
-    elif is_op:
-        trail.append(("Live", site_url))
     else:
-        trail.append(("Daily", site_url + "daily/"))
+        trail.append(("Live", site_url))
     trail.append((entry.get("title") or entry["id"], canonical))
     entry_ld = _ld_article(entry, canonical=canonical, site_url=site_url, registry=registry)
     # Point answer engines at the raw-source twin of this permalink.
@@ -5011,8 +4978,8 @@ def build_briefbook(
     card_html_by_id: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """data/briefbook.json · the last BRIEFBOOK_WINDOW_DAYS days of
-    entries BY ACTIVITY (max(discovered_at, updated_at); both horizons —
-    brief.js filters operational) and runs, each entry carrying the SAME
+    entries BY ACTIVITY (max(discovered_at, updated_at)) and runs, each
+    entry carrying the SAME
     server-rendered card HTML the day pages use plus its changelog
     (`updates`, `updated_at`, `activity_at`, `activity_run_id`,
     `activity_is_update`) so the client timeline can group an updated
@@ -5068,7 +5035,6 @@ def build_briefbook(
             "date": e["date"],
             "discovered_at": e.get("discovered_at"),
             "kind": e.get("kind"),
-            "horizon": e.get("horizon") or "operational",
             "priority": e.get("priority") or "notable",
             "headline": e.get("headline") or "",
             "summary": (e.get("summary") or "").strip(),
@@ -6147,7 +6113,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
     doing actor tracking actually pivots on: a cohort × week matrix,
     entity momentum (most-active + first-seen), and ATT&CK technique
     momentum — each row linking to its entity / tag / matrix page."""
-    ops = operational_entries(entries)
+    ops = list(entries)
     if not ops:
         body = (
             "<h1>Trends</h1>"
@@ -8628,7 +8594,7 @@ def build_daily_feed(
     items_xml: list[str] = []
     most_recent = datetime.fromtimestamp(0, tz=timezone.utc)
     for day in sorted(days.keys(), reverse=True)[:FEED_DAILY_MAX]:
-        day_entries = sorted(operational_entries(days[day]), key=entry_sort_key)
+        day_entries = sorted(days[day], key=entry_sort_key)
         url = f"{site_url}daily/{day}/"
         by_id = {e["id"]: e for e in day_entries}
         body_html = render_brief_sections(
@@ -9648,8 +9614,7 @@ def _phrase_hits(haystack_folded: str, haystack_raw: str,
 
 
 def _entry_appearance(entry: dict[str, Any]) -> dict[str, Any]:
-    skey = entry_section_key(entry) if (entry.get("horizon") or "operational") == "operational" \
-        else "legacy-strategic"
+    skey = entry_section_key(entry)
     return {
         "date": entry["date"],
         "section": skey or "",
@@ -9855,14 +9820,12 @@ def build_entities(
 
 def derived_edge_qualified(entry: dict[str, Any]) -> bool:
     """Evidence-quality gate for DERIVED graph edges (entity co-occurrence
-    and entity↔CVE): only focused operational reporting creates them.
-    Strategic entries (weekly synthesis, outlooks, policy roundups) and
-    annual/periodic-report treatments mention many unrelated entities by
-    construction — two names sharing a weekly recap or a quarterly
-    ransomware ranking is summarization, not a connection. Curated
-    `relations[]` are untouched: they carry their own source entry."""
-    return (entry.get("horizon") or "operational") == "operational" \
-        and (entry.get("kind") or "") != "annual-report"
+    and entity↔CVE): only focused reporting creates them. Annual and
+    periodic-report treatments mention many unrelated entities by
+    construction — two names sharing a quarterly ransomware ranking is
+    summarization, not a connection. Curated `relations[]` are untouched:
+    they carry their own source entry."""
+    return (entry.get("kind") or "") != "annual-report"
 
 
 def compute_related_entities(
@@ -9879,8 +9842,8 @@ def compute_related_entities(
       type, reading label, note, and the establishing source entry.
     - `related_entities` — the DERIVED co-occurrence list: two entities
       referenced by the same QUALIFIED entry (`derived_edge_qualified` —
-      focused operational reporting only; weekly synthesis, outlooks and
-      annual-report roundups never create derived edges); score = count
+      focused reporting only; annual-report roundups never create derived
+      edges); score = count
       of distinct shared entries, top 8. Curated neighbours are marked
       (`curated: True`) so the renderer can dedupe, but they no longer
       masquerade as co-occurrence rows — the typed edge is its own
@@ -11204,8 +11167,8 @@ def render_graph_page(
   Solid edges are <strong>curated relationships</strong>: typed, source-stated connections
   ("attributed to", "uses", "exploits", …), each citing the entry that establishes it.
   Dashed edges are <strong>derived</strong>: entities referenced by the same focused
-  operational entry, or an entity and a CVE carried by the same entry (weekly summaries,
-  outlooks and report roundups never create derived edges). Click a node for its detail
+  entry, or an entity and a CVE carried by the same entry (report roundups never
+  create derived edges). Click a node for its detail
   panel; shift-click a second node to trace the shortest path between them.
 </p>
 <p class="muted">
@@ -11751,7 +11714,7 @@ def main() -> int:
     # Entries with a changelog record dated on a given UTC day — the day
     # page's § Updates to Prior Coverage (docs/pipeline.md § Entry lifecycle).
     updates_by_day: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for e in operational_entries(entries):
+    for e in list(entries):
         for rec in visible_updates(e):
             if isinstance(rec.get("at"), str):
                 d_ = rec["at"][:10]

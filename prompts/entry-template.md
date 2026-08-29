@@ -46,7 +46,6 @@ omitted entirely when the sources give no honest basis for one.
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CVE-YYYY-NNNNN — {Vendor} {Product}: {one-line description} (CVSS N.N)"
 headline: "{Vendor} patches {an actively-exploited pre-auth RCE} in {Product}"
 summary: >

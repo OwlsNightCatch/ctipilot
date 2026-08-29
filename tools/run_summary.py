@@ -184,8 +184,6 @@ def build_summary(now: datetime, recent_days: int, gap_runs: int,
         ts = cm.parse_ts(e.get("discovered_at"))
         if ts is None or ts < since or ts > now + timedelta(minutes=5):
             continue
-        if e.get("horizon") != "operational":
-            continue
         operational += 1
         by_kind[e.get("kind", "?")] = by_kind.get(e.get("kind", "?"), 0) + 1
         if e.get("priority") == "critical":

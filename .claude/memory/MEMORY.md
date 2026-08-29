@@ -8,14 +8,14 @@ Conventions: one topic per file, kebab-case filename, YAML front block (`name`, 
 
 - [Operator directives 2026-08-28](operator-directives-2026-08-28.md) — internal records, only `update` floats updated_at, no internals in reader text, quality>quantity, English-only quotes, v4.3 modifiability, xhigh effort, minimal plugins/skills
 - [Permission rules: Edit covers Write](permission-rules-edit-covers-write.md) — Write(path) allow rules are dead; only Edit(path) matches file tools
-- [Entry lifecycle](entry-lifecycle-v4.md) — one living entry per finding; changelog records + sections; what stays untouchable; composition traps
+- [Entry lifecycle](entry-lifecycle-v4.md) — one living entry per finding; changelog records + sections; what stays untouchable; the weekly's entries and schema are deleted (2026-08-29)
 - [STIX export layer](stix-export-layer.md) — /stix/ bundles, uuid5 id-stability contract, relation collapse table, canonical ATT&CK ids, no TAXII by decision
 - [Routine model assignment](routine-model-assignment.md) — Sonnet 5 intel / Opus 5 audit, generic `sonnet` pins at xhigh, single verifier, double-CLEAN; self-ID protocol (prompt line, not env vars)
 - [Verification lessons](verification-lessons.md) — aiming iterations, testing findings before applying, inverted claims, unsourced status flags, quote fidelity, composing-from-entries traps
 - [Source fetch blocks & recipes](source-fetch-blocks.md) — fetch ladder, blocked-host recipes, jina pool rules, PDF extraction honesty, probe/health traps
 - [CSAF/MSRC/CVE transcription](csaf-msrc-transcription.md) — structured fields over prose; verdict vs membership; base vs temporal CVSS; CNA vs ADP vs NVD
 - [Dedup: store-wide CVE index](dedup-store-wide-cve-index.md) — 14-day read is a floor; check `cves.ids` store-wide; read the covered entry's body
-- [Scheduler & workflow races](scheduler-and-workflow-races.md) — operator-owned cadence, overtaken-run recovery, coverage_backlog conflicts, pre-v3.33 durations are floors
+- [Scheduler & workflow races](scheduler-and-workflow-races.md) — operator-owned cadence, overtaken-run recovery, two local sessions in one worktree, pre-v3.33 durations are floors
 - [Classifier trips on spawns](classifier-trips-on-spawns.md) — safeguards-flagged spawns: framing + checkpointing + pointer-not-enumeration; quiet output ≠ dead spawn
 - [Classification policy](classification-policy.md) — one rating per entry; a press write-up of one lab report is not a second source
 - [ATT&CK layer](attack-layer.md) — pinned dataset, revoked-id forwarding, evidence floor on mandatory mappings, never hardcode tactic tables

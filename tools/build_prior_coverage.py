@@ -24,7 +24,7 @@ key match. Coverage OUTSIDE this window is caught by the store-wide metadata
 check (state/cves_seen.json + the mechanical gate), not by this file.
 
 Full record shape (one per entry):
-  {id, kind, horizon, date, discovered_at, updated_at, update_count,
+  {id, kind, date, discovered_at, updated_at, update_count,
    last_update: {at, type, summary} | null, priority, title, headline,
    summary, cves[], entities[], primary_source_url, deep_dive,
    deep_dive_category}
@@ -74,7 +74,6 @@ def build_records(window_days: int, today: str) -> list:
         records.append({
             "id": e["id"],
             "kind": e.get("kind"),
-            "horizon": e.get("horizon"),
             "date": e.get("date"),
             "discovered_at": e.get("discovered_at"),
             "updated_at": e.get("updated_at"),

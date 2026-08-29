@@ -121,8 +121,7 @@ The two master prompts (intel run, quality audit) plus the runtime-policy / temp
   `correction` / `improvement` changelog records appended to the entries it
   found wrong or thin. (The weekly strategic routine that used to sit
   beside these two — `prompts/weekly-summary.md` — was retired on
-  2026-08-27; its `horizon: strategic` entries stay in the store as
-  archived permalinks.)
+  2026-08-27, and its entries were deleted on 2026-08-29.)
 - [`prompts/CHANGELOG.md`](../prompts/CHANGELOG.md) — the version history of
   the prompts. Treat as the audit trail for editorial-policy changes.
 - [`prompts/verification.md`](../prompts/verification.md) — the editorial /
