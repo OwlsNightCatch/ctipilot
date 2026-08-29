@@ -104,7 +104,8 @@ UPDATE_HEADING_RE = re.compile(
     r"^## (Update|Correction|Improvement) — (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\s*$",
     re.MULTILINE,
 )
-ENTITY_TYPES = ("actor", "campaign", "malware", "tool", "incident", "report", "trend", "policy")
+ENTITY_TYPES = ("actor", "campaign", "malware", "tool", "incident", "report",
+                "trend", "policy", "product")
 SOURCE_ROLES = ("primary", "corroborating")
 
 # Typed entity relationships — the registry's curated threat-graph edges
@@ -130,9 +131,18 @@ RELATION_TYPES = {
     },
     "exploits": {
         "subjects": ("actor", "campaign", "incident"),
-        "objects": ("trend",),
+        "objects": ("trend", "product"),
         "symmetric": False, "same_type": False,
         "label": "exploits", "inverse": "exploited by",
+    },
+    # A product is the thing attacked, never the attacker: `affects` is the
+    # only edge that points AT one, and nothing points out of a product
+    # except `related-to` / `documented-in`.
+    "affects": {
+        "subjects": ("campaign", "incident", "malware", "tool", "trend"),
+        "objects": ("product",),
+        "symmetric": False, "same_type": False,
+        "label": "affects", "inverse": "affected by",
     },
     "part-of": {
         "subjects": ("incident", "campaign"),
@@ -199,7 +209,8 @@ DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 TS_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9:TZ-]{3,63}$")
 ENTITY_KEY_RE = re.compile(
-    r"^(actor|campaign|malware|tool|incident|report|trend|policy):[a-z0-9][a-z0-9-]{0,79}$"
+    r"^(actor|campaign|malware|tool|incident|report|trend|policy|product):"
+    r"[a-z0-9][a-z0-9-]{0,79}$"
 )
 ENTRY_ID_RE = re.compile(r"^\d{4}-\d{2}-\d{2}/[a-z0-9][a-z0-9-]{0,59}$")
 CVE_ID_RE = re.compile(r"^CVE-\d{4}-\d{4,7}$")
@@ -860,6 +871,123 @@ def resolve_entity_key(registry: dict, key: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Affected products as entities (docs/pipeline.md § Products)
+# ---------------------------------------------------------------------------
+#
+# `affected_products[]` is authored per entry with the precision a triage
+# reader needs ("Microsoft SharePoint Server 2019"), which is exactly the
+# wrong granularity for a pivot: nobody wants one page per release. So the
+# string resolves to a PRODUCT ENTITY key, and the entry keeps its precise
+# string. Resolution is two-stage:
+#
+#   1. the registry's own `product:` records — their `name` and `aliases`
+#      are the curated merge surface, so an operator merges two spellings by
+#      adding an alias, never by rewriting entries;
+#   2. a mechanical fallback that drops a trailing release year, dotted
+#      version or edition word and slugifies the rest.
+#
+# Bare integers are NEVER stripped: "Microsoft 365" and "Dynamics 365" are
+# product names, not versions, and the 4-digit rule keeps them intact while
+# still folding "…Server 2019" and "ColdFusion 2025".
+
+_PRODUCT_VERSION_TAIL = re.compile(
+    r"\s+((?:19|20)\d{2}|\d+\.\d+(?:\.\d+)*[a-z]?|v\d+(?:\.\d+)*|r\d+)$",
+    re.IGNORECASE,
+)
+_PRODUCT_EDITION_TAIL = re.compile(
+    r"\s+(subscription edition|standard edition|enterprise edition"
+    r"|community edition|server core|lts|esr)$",
+    re.IGNORECASE,
+)
+# Strings that name a vendor or a delivery channel rather than a product.
+# They stay in `affected_products[]` (the entry said what it said) but never
+# become an entity: a "Microsoft" node would attach to a third of the store.
+PRODUCT_NON_ENTITIES = frozenset({
+    "microsoft", "google", "apple", "cisco", "oracle", "sap", "adobe",
+    "siemens", "vmware", "fortinet", "citrix", "ibm", "linux", "windows",
+    "various", "multiple", "unknown", "n/a",
+})
+
+
+def product_display_name(raw: str) -> str:
+    """`Microsoft SharePoint Server 2019` → `Microsoft SharePoint Server` ·
+    the mechanical family name behind one precise product string."""
+    name = re.sub(r"\s+", " ", str(raw or "")).strip()
+    prev = None
+    while prev != name:
+        prev = name
+        name = _PRODUCT_EDITION_TAIL.sub("", name).strip()
+        name = _PRODUCT_VERSION_TAIL.sub("", name).strip()
+    return name
+
+
+def _fold_product_label(label: str) -> str:
+    """Comparison key for a product label: case, punctuation and spacing
+    all collapse, so `SonicWall SMA1000` and `SonicWall SMA 1000` meet."""
+    return re.sub(r"[^a-z0-9]+", "", str(label or "").lower())
+
+
+def product_alias_index(registry: dict) -> dict:
+    """folded label → canonical `product:` key, from every product record's
+    name and aliases. Tombstones resolve to their surviving record, so a
+    merge never orphans the entries that named the old spelling."""
+    index: dict = {}
+    for key, ent in (registry or {}).items():
+        if not isinstance(ent, dict) or str(ent.get("type") or "") != "product":
+            continue
+        canonical = resolve_entity_key(registry, key)
+        for label in [ent.get("name"), key.split(":", 1)[-1]] + list(ent.get("aliases") or []):
+            folded = _fold_product_label(label if isinstance(label, str) else "")
+            if folded:
+                index.setdefault(folded, canonical)
+    return index
+
+
+def product_key(raw: str, alias_index: dict | None = None) -> str:
+    """The `product:<slug>` key one `affected_products[]` string resolves
+    to, or "" when the string names a vendor rather than a product."""
+    raw = re.sub(r"\s+", " ", str(raw or "")).strip()
+    if not raw:
+        return ""
+    if alias_index:
+        hit = alias_index.get(_fold_product_label(raw))
+        if hit:
+            return hit
+    name = product_display_name(raw)
+    if not name or name.lower() in PRODUCT_NON_ENTITIES:
+        return ""
+    if alias_index:
+        hit = alias_index.get(_fold_product_label(name))
+        if hit:
+            return hit
+    slug = _cap_slug(slugify(name))
+    return f"product:{slug}" if slug else ""
+
+
+def _cap_slug(slug: str, limit: int = 80) -> str:
+    """Registry keys allow 80 slug characters. A product string that
+    carries a whole clause ("… OEM rebrand lineage match, implant presence
+    unconfirmed") is truncated at a word boundary rather than rejected, so
+    one over-long authoring choice never costs the product its entity."""
+    if len(slug) <= limit:
+        return slug
+    cut = slug[:limit]
+    head, sep, _tail = cut.rpartition("-")
+    return (head if sep and len(head) >= limit // 2 else cut).rstrip("-")
+
+
+def entry_product_keys(entry: dict, alias_index: dict | None = None) -> list:
+    """Every product entity an entry attaches to, in first-seen order and
+    de-duplicated (two release-precise strings collapse to one product)."""
+    out: list = []
+    for raw in (entry or {}).get("affected_products") or []:
+        key = product_key(raw, alias_index)
+        if key and key not in out:
+            out.append(key)
+    return out
+
+
+# ---------------------------------------------------------------------------
 # MITRE ATT&CK dataset (attack/enterprise-attack.json — see attack/README.md)
 # ---------------------------------------------------------------------------
 
@@ -1257,7 +1385,12 @@ def validate_registry(registry: dict, entry_ids=None) -> list:
             errs.append(f"{key}: type {ent.get('type')!r} does not match key prefix")
         if not _is_str(ent.get("name")):
             errs.append(f"{key}: name missing")
-        if not _is_str(ent.get("summary")):
+        # A product record is an index node derived from the entry store's
+        # `affected_products[]`, not an analytical claim, so it carries a
+        # summary only when an operator has written one. Every curated type
+        # still must: the summary is what makes an actor or a campaign
+        # record worth having.
+        if etype != "product" and not _is_str(ent.get("summary")):
             errs.append(f"{key}: summary missing")
         aliases = ent.get("aliases")
         if aliases is not None and not _is_str_list(aliases):

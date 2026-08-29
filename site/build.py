@@ -4337,59 +4337,6 @@ def render_detail_sources(entry: dict[str, Any]) -> str:
     )
 
 
-def render_entry_attack_section(entry: dict[str, Any], *, prefix: str) -> str:
-    """The entry-detail `ATT&CK mapping` section: every technique the entry
-    maps (frontmatter `techniques[]` ∪ prose T-ids, revoked ids resolved
-    forward), grouped by tactic in official matrix order. Each row carries
-    the resolved technique name, the pinned release's definition, the MITRE
-    page, and a jump into the site's own overlap matrix — the mapped
-    behavior readable in one place, not a bare id list."""
-    tids = content_model.entry_technique_ids(entry, ATTACK_TECHNIQUES)
-    if not tids or not ATTACK_TECHNIQUES:
-        return ""
-    rows_by_group: list[str] = []
-    for tac, group_tids in group_techniques_by_tactic(tids):
-        rows: list[str] = []
-        for tid in group_tids:
-            rec = ATTACK_TECHNIQUES.get(tid) or {}
-            definition = str(rec.get("definition") or "").strip()
-            def_html = f"<p>{_escape(definition)}</p>" if definition else ""
-            links: list[str] = [
-                f'<a href="{prefix}attack/#{_escape(tid)}">overlap matrix</a>'
-            ]
-            if rec.get("url"):
-                links.append(
-                    f'<a href="{_escape(_safe_url(str(rec.get("url") or "")))}" '
-                    'target="_blank" rel="noopener noreferrer">ATT&CK page ↗</a>'
-                )
-            rows.append(
-                '<details class="atk-row">'
-                f'<summary><span class="mono atk-id">{_escape(tid)}</span>'
-                f'<span class="atk-name">{_escape(attack_technique_label(tid))}</span>'
-                f"{_attack_lifecycle_badge(tid)}</summary>"
-                f'<div class="atk-def">{def_html}'
-                f'<p class="muted">{" · ".join(links)}</p>'
-                "</div></details>"
-            )
-        rows_by_group.append(
-            '<div class="atk-group">'
-            f'<h3 class="atk-tactic">{_escape(str(tac.get("name") or ""))}'
-            + (f' <span class="mono muted">{_escape(str(tac.get("id") or ""))}</span>'
-               if tac.get("id") else "")
-            + f"</h3>{''.join(rows)}</div>"
-        )
-    intro = (
-        f'<p class="muted atk-intro">{len(tids)} technique{"s" if len(tids) != 1 else ""} '
-        f"mapped from the cited reporting · MITRE ATT&CK v{_escape(ATTACK_VERSION)}</p>"
-    )
-    return (
-        '<section class="esec esec--attack" id="attack-mapping">'
-        '<h2 class="esec-h">ATT&amp;CK mapping'
-        f'<span class="esec-n">{len(tids)}</span></h2>'
-        + intro + "".join(rows_by_group) + "</section>"
-    )
-
-
 def _fact_row(label: str, value_html: str, *, title: str = "",
               value_cls: str = "") -> str:
     """One labelled row in an entry-detail fact table (`.frow`). The label
@@ -4561,10 +4508,25 @@ def render_entry_rail(
         )
     group("CVEs", "".join(cve_rows))
 
-    group("Affected products", chips("".join(
-        f'<span class="echip">{_escape(str(p))}</span>'
-        for p in entry.get("affected_products") or []
-    )))
+    # Each product string keeps the release precision the entry authored,
+    # and links to the product entity that folds every release onto one
+    # page (every vulnerability, incident and campaign touching it).
+    prod_aliases = content_model.product_alias_index(registry)
+    prod_chips: list[str] = []
+    for p in entry.get("affected_products") or []:
+        label = _escape(str(p))
+        pkey = content_model.resolve_entity_key(
+            registry, content_model.product_key(str(p), prod_aliases))
+        if pkey and pkey in registry:
+            prod_chips.append(
+                f'<a class="echip" href="{prefix}entities/'
+                f'{urllib.parse.quote(pkey, safe="")}/" '
+                f'title="Everything covered for {_escape(str((registry.get(pkey) or {}).get("name") or pkey))}">'
+                f"{label}</a>"
+            )
+        else:
+            prod_chips.append(f'<span class="echip">{label}</span>')
+    group("Affected products", chips("".join(prod_chips)))
 
     # The assessment always renders (every entry has a verification state),
     # so the rail — and with it the two-column layout — is universal.
@@ -4580,15 +4542,24 @@ def render_entry_rail(
         ent_chips.append(
             f'<a class="echip echip--ent" href="{prefix}entities/{urllib.parse.quote(str(key), safe="")}/">'
             + (f'<span class="echip-k">{_escape(kind)}</span>' if kind else "")
-            + f'{_escape(str(rec.get("name") or key))}</a>'
+            # The name is its own element: an anonymous text node inside a
+            # flex chip cannot shrink, and a long entity name then spills
+            # back over the type label instead of wrapping.
+            + f'<span class="echip-t">{_escape(str(rec.get("name") or key))}</span></a>'
         )
     group("Entities", chips("".join(ent_chips)))
 
     # Effective ids (frontmatter ∪ prose, revoked resolved forward) with
     # resolved names — a T-number alone is not a visible mapping. Chips jump
     # to the in-body mapping section, where the MITRE links live.
+    # Every technique the entry maps (frontmatter ∪ prose, revoked ids
+    # resolved forward) with its resolved name — a T-number alone is not a
+    # visible mapping. Each chip pivots into the site's own ATT&CK matrix,
+    # where the definition, the MITRE page and every other entry mapping
+    # the technique already live.
     group("ATT&CK techniques", chips("".join(
-        f'<a class="echip echip--tech" href="#attack-mapping">'
+        f'<a class="echip echip--tech" href="{prefix}attack/#{_escape(tid)}" '
+        f'title="{_escape(_chrome_text(str((ATTACK_TECHNIQUES.get(tid) or {}).get("definition") or "")[:220]))}">'
         f'<span class="mono">{_escape(tid)}</span> {_escape(attack_technique_label(tid))}</a>'
         for tid in content_model.entry_technique_ids(entry, ATTACK_TECHNIQUES)
     )))
@@ -4805,7 +4776,6 @@ def render_entry_page(
 {analysis_html}
 {evidence_html}
 {updates_html}
-{render_entry_attack_section(entry, prefix=prefix)}
 {sources_html}
 {revision_html}
 <div class="verif"><div class="vh">PROVENANCE</div><p>AI-generated · no human review · this permalink is the shareable record for the finding · verify operationally critical claims against the linked primary source.</p></div>
@@ -9482,7 +9452,7 @@ def render_entities_index_page(
 
     body = f"""
 <h1>Entities</h1>
-<p class="subtitle">{len(entities)} CVEs, actors, campaigns, incidents, tools, advisories, and reports tracked across briefs. The ×N marker counts entries referencing an entity · multi-entry entities are the "stories that unfolded".</p>
+<p class="subtitle">{len(entities)} CVEs, products, actors, campaigns, incidents, tools, advisories, and reports tracked across briefs. The ×N marker counts entries referencing an entity · multi-entry entities are the "stories that unfolded".</p>
 
 {chart_block}
 
@@ -9723,18 +9693,43 @@ def build_entities(
     for key, ent in registry.items():
         if ent.get("merged_into"):
             continue
+        # Products never phrase-match prose. A product name is ordinary
+        # technical vocabulary — an entry that says "a PHP deserialization
+        # bug" is not coverage OF PHP — so prose matching would attach a
+        # third of the store to a handful of generic nodes and drown the
+        # actor/campaign graph in them. `affected_products[]` is the
+        # entry's own statement that the product is in scope, and it is the
+        # only thing that attaches one.
+        if str(ent.get("type") or "") == "product":
+            continue
         folded, acronyms = _registry_phrases(ent)
         specs.append((key, folded, acronyms))
+    # `affected_products[]` attaches an entry to its product entities the
+    # same way `entities[]` does — the strings are release-precise and the
+    # registry's product aliases fold them onto one key, so a reader asking
+    # "what has happened to SharePoint?" gets every release on one page
+    # without any entry being rewritten.
+    product_aliases = content_model.product_alias_index(registry)
     for e in entries:
         explicit = set(
             content_model.resolve_entity_key(registry, str(k))
             for k in (e.get("entities") or [])
+        )
+        explicit.update(
+            content_model.resolve_entity_key(registry, k)
+            for k in content_model.entry_product_keys(e, product_aliases)
         )
         haystack_raw = ((e.get("title") or "") + "\n" + (e.get("headline") or "")
                         + "\n" + (e.get("body") or ""))
         haystack = haystack_raw.lower()
         for key, folded, acronyms in specs:
             if key in explicit or _phrase_hits(haystack, haystack_raw, folded, acronyms):
+                matched[key].append(e)
+        # Products attach on the entry's own statement of scope only (the
+        # specs loop above deliberately excludes them from prose matching).
+        for key in explicit:
+            if key.startswith("product:") and key in registry \
+                    and not registry[key].get("merged_into"):
                 matched[key].append(e)
 
     # --- CVE entities ---------------------------------------------------
@@ -9973,6 +9968,7 @@ def render_entity_page(
     *,
     matching_entries: list[dict[str, Any]] | None = None,
     entries_by_id: dict[str, dict[str, Any]] | None = None,
+    registry: dict[str, dict[str, Any]] | None = None,
     site_url: str,
     cachebust: str,
     prefix: str,
@@ -10322,10 +10318,27 @@ def render_entity_page(
             f'<a class="echip echip--tech" href="{_escape(mitre)}" target="_blank" '
             f'rel="noopener noreferrer" title="Open {_escape(t)} on attack.mitre.org">{_escape(t)}{cnt}</a>'
         )
-    prod_chips = [
-        f'<span class="echip">{_escape(p)}</span>'
-        for p, _n in sorted(prod_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:16]
-    ]
+    # Each affected-product string links to the product entity that folds
+    # every release of it onto one page. The entity's own product (on a
+    # product page) is dropped: a page does not pivot to itself.
+    _reg = registry or {}
+    _prod_aliases = content_model.product_alias_index(_reg)
+    prod_chips = []
+    for p, _n in sorted(prod_counts.items(), key=lambda kv: (-kv[1], kv[0])):
+        pkey = content_model.resolve_entity_key(
+            _reg, content_model.product_key(p, _prod_aliases))
+        if pkey and pkey == key:
+            continue
+        cnt = f' <span class="echip-n">×{_n}</span>' if _n > 1 else ""
+        if pkey and pkey in _reg:
+            prod_chips.append(
+                f'<a class="echip" href="{prefix}entities/'
+                f'{urllib.parse.quote(pkey, safe="")}/">{_escape(p)}{cnt}</a>'
+            )
+        else:
+            prod_chips.append(f'<span class="echip">{_escape(p)}{cnt}</span>')
+        if len(prod_chips) >= 16:
+            break
     tag_chips = [
         f'<a class="echip" href="{prefix}tags/{_escape(tg)}/">{_escape(tg)}'
         + (f' <span class="echip-n">×{n}</span>' if n > 1 else "") + "</a>"
@@ -11153,7 +11166,7 @@ def render_graph_page(
 <div class="graph-shell panel" data-graph-shell hidden>
   <div class="graph-toolbar">
     <input id="graph-q" type="search" autocomplete="off" spellcheck="false"
-           placeholder="Start here: find an actor / campaign / malware / CVE / technique…" />
+           placeholder="Start here: find an actor / campaign / malware / product / CVE / technique…" />
     <ul class="atk-suggest" data-graph-suggest hidden></ul>
     <div class="graph-toggles" role="group" aria-label="Reach from the starting points">
       <button type="button" class="mini-btn active" data-graph-reach="1" title="Direct neighbours only · grow further by double-clicking nodes">1 hop</button>
@@ -11956,6 +11969,7 @@ def main() -> int:
                 ent,
                 matching_entries=entries_by_entity_key.get(ekey, []),
                 entries_by_id=entries_by_id,
+                registry=registry,
                 site_url=site_url,
                 cachebust=cachebust,
                 prefix="../../",

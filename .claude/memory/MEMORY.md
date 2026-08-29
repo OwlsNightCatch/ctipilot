@@ -19,6 +19,7 @@ Conventions: one topic per file, kebab-case filename, YAML front block (`name`, 
 - [Classifier trips on spawns](classifier-trips-on-spawns.md) — safeguards-flagged spawns: framing + checkpointing + pointer-not-enumeration; quiet output ≠ dead spawn
 - [Classification policy](classification-policy.md) — one rating per entry; a press write-up of one lab report is not a second source
 - [ATT&CK layer](attack-layer.md) — pinned dataset, revoked-id forwarding, evidence floor on mandatory mappings, never hardcode tactic tables
+- [Product entities](product-entities.md) — affected_products[] resolves to `product:` keys at render; alias-merge not migration; products never phrase-match prose
 - [Entity registry graph](entity-registry-graph.md) — typed relations[], tombstones, alias discipline, only relate what a source states
 - [Triage-ready entries](triage-ready-entries.md) — actionability shape footnotes: migrated tier, vector vs auth semantics
 - [State-file serialization](state-file-serialization.md) — derive JSON format from the live file, `git diff --stat` after; the constant has flipped twice

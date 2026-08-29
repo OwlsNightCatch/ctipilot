@@ -2925,6 +2925,42 @@ def check_entry_id_uniqueness(entries: list[dict]) -> None:
         ok("entry-ids", f"{len(seen)} entry id(s) unique")
 
 
+def check_product_sync(entries: list[dict], registry: dict) -> None:
+    """Every `affected_products[]` string resolves to a registry `product:`
+    record, so a reader landing on the product entity sees every release of
+    it in one place and the threat graph carries the node.
+
+    WARN, never FAIL: an entry naming a product the registry has not met yet
+    is a sync away from correct (`python3 tools/sync_products.py`), and the
+    entry itself is not wrong — it said exactly what was affected. Vendor-only
+    strings ("Microsoft") are deliberately not entities and never warn."""
+    aliases = cm.product_alias_index(registry)
+    missing: dict[str, list[str]] = {}
+    n_linked = 0
+    for e in entries:
+        for raw in e.get("affected_products") or []:
+            key = cm.product_key(str(raw), aliases)
+            if not key:
+                continue  # vendor-only string, by design not an entity
+            if key in registry:
+                n_linked += 1
+            else:
+                missing.setdefault(str(raw), []).append(e["id"])
+    if missing:
+        shown = sorted(missing)[:6]
+        warn("product-entities",
+             f"{len(missing)} affected_products[] spelling(s) resolve to no registry "
+             f"product record ({', '.join(shown)}"
+             + (", …" if len(missing) > len(shown) else "")
+             + ") — run `python3 tools/sync_products.py`")
+    else:
+        n_products = sum(1 for v in registry.values()
+                         if isinstance(v, dict) and v.get("type") == "product")
+        ok("product-entities",
+           f"{n_linked} affected_products[] reference(s) resolve to "
+           f"{n_products} product entit{'y' if n_products == 1 else 'ies'}")
+
+
 def check_references_resolve(entries: list[dict], entries_by_id: dict[str, dict]) -> None:
     """--all: every references[] value must resolve to an existing entry file
     (globally). Per-run mode covers a new entry's references via the dedup
@@ -3077,6 +3113,9 @@ def run_all_checks(entries: list[dict], runs: list[dict], taxonomy: dict,
 
     print("\n== all: CVE sync ==")
     check_cve_sync(entries, parsed_state.get("cves_seen.json"), scope_label="store")
+
+    print("\n== all: product entities ==")
+    check_product_sync(entries, registry)
 
     print("\n== all: ATT&CK dataset + techniques[] ids ==")
     attack_ds = check_attack_dataset()

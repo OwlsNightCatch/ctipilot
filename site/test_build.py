@@ -616,6 +616,54 @@ assert_in("new row flagged NEW", 'style="color:var(--ok)">NEW</span>', row)
 assert_not_in("new row has no update line", "tl-update", row)
 assert_eq("timeline appears once per entry", tl.count('data-entry-id="' + E_CRIT["id"] + '"'), 1)
 
+print("== products as entities ==")
+# `affected_products[]` is authored release-precise; the product entity is
+# what folds those releases onto one pivot, without any entry being rewritten.
+assert_eq("release year stripped",
+          content_model.product_display_name("Microsoft SharePoint Server 2019"),
+          "Microsoft SharePoint Server")
+assert_eq("edition word stripped",
+          content_model.product_display_name("GitLab Community Edition"), "GitLab")
+assert_eq("dotted version stripped",
+          content_model.product_display_name("Acme Gateway 7.0"), "Acme Gateway")
+assert_eq("a bare integer is part of the name, not a version",
+          content_model.product_display_name("Microsoft 365"), "Microsoft 365")
+assert_eq("vendor-only strings never become entities",
+          content_model.product_key("Microsoft"), "")
+assert_eq("mechanical key", content_model.product_key("Adobe ColdFusion 2025"),
+          "product:adobe-coldfusion")
+_preg = {
+    "product:microsoft-sharepoint": {
+        "type": "product", "name": "Microsoft SharePoint",
+        "aliases": ["Microsoft SharePoint Server", "Microsoft SharePoint Server 2019"],
+    },
+    "product:old-name": {"type": "product", "name": "Old Name", "aliases": [],
+                         "merged_into": "product:microsoft-sharepoint"},
+}
+_pidx = content_model.product_alias_index(_preg)
+assert_eq("registry aliases win over the mechanical rule",
+          content_model.product_key("Microsoft SharePoint Server 2019", _pidx),
+          "product:microsoft-sharepoint")
+assert_eq("a tombstoned product resolves to its canonical record",
+          content_model.product_key("Old Name", _pidx), "product:microsoft-sharepoint")
+assert_eq("two release spellings collapse to one product on an entry",
+          content_model.entry_product_keys(
+              {"affected_products": ["Microsoft SharePoint Server",
+                                     "Microsoft SharePoint Server 2019",
+                                     "Microsoft"]}, _pidx),
+          ["product:microsoft-sharepoint"])
+assert_true("an over-long product string still gets a legal key",
+            content_model.ENTITY_KEY_RE.match(
+                content_model.product_key("Thermo Fisher Applied Biosystems SeqStudio "
+                                          "Genetic Analyzer Data Collection Software")) is not None)
+assert_true("product is an entity type", "product" in content_model.ENTITY_TYPES)
+assert_eq("a product is a target, never an attacker: only documented-in leaves one",
+          sorted(t for t, spec in content_model.RELATION_TYPES.items()
+                 if "product" in spec["subjects"] and not spec["symmetric"]),
+          ["documented-in"])
+assert_eq("affects points at a product",
+          content_model.RELATION_TYPES["affects"]["objects"], ("product",))
+
 print("== entry page ==")
 epage = render_entry_page(
     E_CRIT, entries_by_id=by_id, registry={}, runs_by_id={RUN["run_id"]: RUN, RUN2_ID: RUN2},
@@ -1631,23 +1679,30 @@ if build.ATTACK_TECHNIQUES:
     assert_eq("payload tactic order matches the pin",
               [t["shortname"] for t in _payload["tactics"]],
               [t["shortname"] for t in build.ATTACK_TACTICS])
-    # Entry-detail ATT&CK mapping section: every mapped technique with its
-    # resolved name + definition, grouped by tactic — visible on the report
-    # itself, not just as a bare id list.
+    # The entry permalink maps ATT&CK in the rail only: every mapped
+    # technique (frontmatter ∪ prose, revoked resolved forward) with its
+    # resolved name, pivoting into the site's own matrix, which already
+    # carries the definition, the MITRE page and every other mapping entry.
     _e_atk = mk_entry("atk-mapped", kind="incident", techniques=["T1190"],
                       body="Initial access via exploitation. Execution via T1059 scripts.")
-    _esec = build.render_entry_attack_section(_e_atk, prefix="../../")
-    assert_in("entry section anchors for the rail chips", 'id="attack-mapping"', _esec)
-    assert_in("entry section carries the technique id", ">T1190</span>", _esec)
-    assert_in("entry section resolves the technique name",
-              build.attack_technique_label("T1190"), _esec)
-    assert_in("entry section includes prose-derived ids", ">T1059</span>", _esec)
-    assert_in("entry section groups by tactic", 'class="atk-tactic"', _esec)
-    assert_in("entry section links the overlap matrix", "attack/#T1190", _esec)
-    assert_in("entry section links the MITRE page", "attack.mitre.org", _esec)
-    assert_in("entry section carries the pinned version", build.ATTACK_VERSION, _esec)
-    assert_eq("no techniques → no section",
-              build.render_entry_attack_section(mk_entry("no-atk"), prefix=""), "")
+    _atk_page = render_entry_page(
+        _e_atk, entries_by_id={}, registry={}, runs_by_id={}, day_pages=set(),
+        site_url="https://x.example/", cachebust="t", prefix="../../../",
+        canonical="https://x.example/entries/2026-07-03/atk-mapped/",
+    )
+    assert_not_in("no duplicate in-body ATT&CK section", 'id="attack-mapping"', _atk_page)
+    assert_in("rail chip carries the technique id", ">T1190</span>", _atk_page)
+    assert_in("rail chip resolves the technique name",
+              build.attack_technique_label("T1190"), _atk_page)
+    assert_in("rail chip includes prose-derived ids", ">T1059</span>", _atk_page)
+    assert_in("rail chip pivots into the overlap matrix",
+              'href="../../../attack/#T1190"', _atk_page)
+    assert_not_in("an unmapped entry has no ATT&CK rail group", ">ATT&amp;CK techniques</h3>",
+                  render_entry_page(
+                      mk_entry("no-atk"), entries_by_id={}, registry={}, runs_by_id={},
+                      day_pages=set(), site_url="https://x.example/", cachebust="t",
+                      prefix="../../../",
+                      canonical="https://x.example/entries/2026-07-03/no-atk/"))
 else:
     print("  (skipped — attack/enterprise-attack.json not present)")
 

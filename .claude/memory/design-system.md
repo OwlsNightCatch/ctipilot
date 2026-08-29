@@ -87,6 +87,17 @@ article -> rail and the phone order comes out right without `order`).
 - **A quote appears once.** The immediate-action callout carries neither the
   first evidence quote (Cited evidence owns every quote) nor a link to the
   page it is already on. `.entry-cite--inline` is retired.
+- **No in-body ATT&CK section** (removed 2026-08-29): the rail lists every
+  mapped technique and each chip pivots to `{prefix}attack/#<tid>`, which
+  already carries the definition, the MITRE page and every other entry
+  mapping it. `render_entry_attack_section` is deleted;
+  `render_entity_attack_section` (entity pages) stays.
+- **A chip must be able to shrink.** An entity name as a bare text node
+  inside an inline-flex chip cannot wrap and spills back over the type
+  label; the name needs its own `.echip-t` span with `min-width: 0`, and
+  `.echip` needs `max-width: 100%`.
+- **Affected-product chips link to the product entity** ([[product-entities]]);
+  the entity page's own pivot row does too, minus the page's own product.
 - **Pipeline internals stay out of the reading flow.** `render_update_block`
   takes `with_provenance`; the permalink passes False, so the run link and the
   raw changed-field names appear only in the Revision-history panel. Day pages

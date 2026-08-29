@@ -562,7 +562,8 @@ extends it (same commit as the entries that need the new key).
 schema: 1
 entities:
   - key: actor:shinyhunters
-    type: actor                # actor | campaign | malware | tool | incident | report
+    type: actor                # actor | campaign | malware | tool | incident
+                               # | report | trend | policy | product
     name: "ShinyHunters"
     aliases: ["UNC6240"]       # every public alias; dedup checks match against these too
     nexus: null                # taxonomy nexus value when publicly attributed, else null
@@ -620,6 +621,53 @@ pointed at the loser); a tombstone carries no relations, and no relation
 targets one. An entity referenced by zero entries (orphan) that turns out
 to be a duplicate may simply be deleted — fold its names into the
 canonical record's `aliases` and migrate its edges first.
+
+## Products — affected software as entities
+
+`affected_products[]` names the software an entry concerns, at the precision
+a responder needs: "Microsoft SharePoint Server 2019", "Microsoft SharePoint
+Server Subscription Edition". That is exactly the wrong granularity for a
+pivot — nobody wants one page per release — so every string ALSO resolves to
+a **product entity**, and a product then sits beside actors, malware and
+campaigns: its own permalink under `/entities/product:<slug>/`, a coverage
+timeline of every vulnerability, incident and campaign that touched it, an
+aggregated ATT&CK profile, and a node in `/graph/`.
+
+**The entry is never rewritten.** Resolution happens at render time, in two
+stages (`content_model.product_key`):
+
+1. **the registry's own `product:` records** — their `name` and `aliases` are
+   the curated merge surface. Six spellings of SharePoint fold onto
+   `product:microsoft-sharepoint` because that record lists them as aliases;
+2. **a mechanical fallback** — drop a trailing release year, dotted version
+   or edition word, then slugify. Bare integers are never stripped, so
+   "Microsoft 365" and "Dynamics 365" survive intact while "…Server 2019"
+   and "ColdFusion 2025" fold.
+
+`tools/sync_products.py` keeps the registry's product block in step with the
+store: it reads every `affected_products[]` string, upserts one record per
+product, and **preserves every curated field** it finds (name, summary,
+aliases, relations, merged_into). `--check` reports drift and exits 1;
+`check_run.py --all` warns when a spelling resolves to no record.
+
+Two consequences worth stating plainly:
+
+- **Merging two products is an edit, not a migration.** Add the loser's
+  spelling to the winner's `aliases` (or tombstone it with `merged_into`) and
+  re-run the tool. Every entry that named the old spelling follows, because
+  none of them ever stored the key.
+- **Products never phrase-match prose.** A product name is ordinary technical
+  vocabulary — an entry that says "a PHP deserialization bug" is not coverage
+  *of* PHP — so unlike every curated entity type, a product attaches only
+  where the entry itself declared it in `affected_products[]`. That keeps the
+  actor/campaign graph from drowning in generic software nodes.
+
+A product record carries no `summary` unless an operator writes one: it is a
+derived index node, not an analytical claim. Vendor-only strings
+("Microsoft", "Linux") never become entities — a node attached to a third of
+the store is not a pivot. Products are absent from the STIX export: the
+faithful STIX shape is the `software` SCO, which carries none of the SDO
+properties the export writes.
 
 ## Relationships — the threat graph
 
@@ -681,7 +729,8 @@ record and `to` names the object. Renderers show every edge from both ends
 |---|---|---|
 | `attributed-to` | campaign, incident, malware, tool → actor | subject is attributed to actor (actor's attributed activity) |
 | `uses` | actor, campaign, incident → malware, tool | subject deploys/operates the malware or tool (used by) |
-| `exploits` | actor, campaign, incident → trend | subject exploits the named vulnerability/technique wave (exploited by). CVE-level exploitation is a **derived** edge — the entry that carries both the entity and the `cves[]` record is the evidence; CVEs are not registry entities. |
+| `exploits` | actor, campaign, incident → trend, product | subject exploits the named vulnerability/technique wave, or the product itself (exploited by). CVE-level exploitation is a **derived** edge — the entry that carries both the entity and the `cves[]` record is the evidence; CVEs are not registry entities. |
+| `affects` | campaign, incident, malware, tool, trend → product | subject reaches the named software (affected by). A product is the thing attacked, never the attacker: nothing points *out* of one except `related-to` / `documented-in`. |
 | `part-of` | incident, campaign → campaign, trend | subject belongs to the larger campaign/wave (includes) |
 | `variant-of` | malware, tool → malware, tool | subject is a variant/fork/derivative of the object (has variant) |
 | `successor-of` | actor→actor, campaign→campaign, malware→malware, tool→tool, policy→policy | subject continues/rebrands/replaces the object (succeeded by) |

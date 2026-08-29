@@ -80,6 +80,11 @@ ENTITY_SDO_TYPES = {
     "report": "report",
     "trend": "grouping",
     "policy": "report",
+    # `product` is deliberately absent. Its natural STIX shape is the
+    # `software` SCO, which carries none of the SDO properties this export
+    # writes (created/modified/description/external references), so a
+    # product would have to be exported as something it is not. Products
+    # stay a site-side index surface until a faithful mapping exists.
 }
 
 # SDO types that define an `aliases` property (2.1 §4; incident is a stub
@@ -367,8 +372,13 @@ def entity_relationships(registry: dict, *, ns: uuid.UUID, ctx: dict) -> list[di
         tgt_id = ctx["entity_ids"].get(obj_key)
         if not src_id or not tgt_id or src_id == tgt_id:
             continue
-        src_sdo = ENTITY_SDO_TYPES[str(registry[subj]["type"])]
-        tgt_sdo = ENTITY_SDO_TYPES[str(registry[obj_key]["type"])]
+        # A type with no SDO mapping (product — a derived index node, not a
+        # STIX SDO) is not exported, so an edge touching one is skipped
+        # rather than emitted with a dangling ref.
+        src_sdo = ENTITY_SDO_TYPES.get(str(registry[subj]["type"]))
+        tgt_sdo = ENTITY_SDO_TYPES.get(str(registry[obj_key]["type"]))
+        if not src_sdo or not tgt_sdo:
+            continue
         orig = rel["type"]
         stix_type = SPEC_REL_MAP.get((orig, src_sdo, tgt_sdo), "related-to")
         source_entry = ctx["entries_by_id"].get(str(rel.get("source") or ""))

@@ -75,13 +75,13 @@
   var TYPE_COLOR_VARS = {
     actor: '--g-actor', campaign: '--g-campaign', malware: '--g-malware',
     tool: '--g-tool', incident: '--g-incident', report: '--g-report',
-    trend: '--g-trend', policy: '--g-policy', cve: '--g-cve',
-    technique: '--g-technique'
+    trend: '--g-trend', policy: '--g-policy', product: '--g-product',
+    cve: '--g-cve', technique: '--g-technique'
   };
   var TYPE_FALLBACK = {
     actor: '#e5534b', campaign: '#e09b13', malware: '#b83db8', tool: '#9a6ee2',
     incident: '#2f81f7', report: '#6e7781', trend: '#1a7f37', policy: '#0d7d8c',
-    cve: '#cf222e', technique: '#57606a'
+    product: '#d1478a', cve: '#cf222e', technique: '#57606a'
   };
 
   function init() {

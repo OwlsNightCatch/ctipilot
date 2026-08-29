@@ -4,6 +4,24 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.6 — 2026-08-29 (affected software becomes an entity: products get a page, a coverage timeline and a graph node)
+
+### Why
+
+Operator directive, 2026-08-29: "I want to see all vulnerabilities and incidents for a certain software, also in the graph. E.g. I want to see everything for SharePoint on a similar page as the actors and tools and incidents." `affected_products[]` already carried the answer on 278 entries, but only as a chip on the entry that named it: six spellings of one product (`Microsoft SharePoint`, `Microsoft SharePoint Server`, `… Server 2019`, `… Enterprise Server 2016`, `… Subscription Edition`) with nowhere to land, and nothing in the graph.
+
+### What changed
+
+- **`prompts/cti-run.md` § Frontmatter + Phase 4 checklist:** `affected_products[]` now states that each string ALSO resolves to a product entity with its own page and graph node. The release-precise spelling stays right (the registry folds releases onto one product), but the field carries the vendor's own product NAME, never a clause or a caveat, and a bare vendor name ("Microsoft") is not a product.
+- **`prompts/cti-run.md` Phase 5.5:** the gate block gains `python3 tools/sync_products.py` ahead of `check_run.py`. It is idempotent, a no-op when the run named no new product, never rewrites an entry and never renames a key; its registry change ships with the run.
+- Site-side, outside the prompts: `product` joins the entity types; `content_model.product_key` resolves a string through the registry's product aliases first and a mechanical release/edition stripper second; `tools/sync_products.py` upserts the registry's product block (481 products from 520 spellings) while preserving curated fields; `check_run.py --all` gains `product-entities`; products attach only where an entry declared them (never by prose match), so the actor/campaign graph does not drown in generic software nodes. The entry permalink drops its in-body ATT&CK mapping section: the rail already lists every mapped technique, and each chip now pivots into the site's own `/attack/` matrix, which carries the definition and the MITRE page.
+
+### What stays
+
+No entry was rewritten and none needs to be: product membership is derived from `affected_products[]` at render time, which is why merging two products later is an alias edit rather than a migration. The entry lifecycle, the dedup contract, the relevance gate, the classification requirement, the verification loop and the publishing chain are untouched. Products carry no `summary` unless an operator writes one (a derived index node is not an analytical claim) and are absent from the STIX export until a faithful `software` mapping exists.
+
+---
+
 ## 4.5 — 2026-08-29 (no em dash in reader-facing text; the landing page leads with findings, not positioning)
 
 ### Why
