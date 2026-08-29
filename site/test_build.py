@@ -1295,7 +1295,10 @@ with tempfile.TemporaryDirectory() as _td:
     assert_eq("override: site.name replaced", _fork["site"]["name"], "acme-cti.example")
     assert_eq(
         "override: unset tagline inherits upstream default",
-        _fork["site"]["tagline"], "Swiss Government Entities",
+        # Compare against DEFAULTS rather than a literal: the identity string
+        # is config-owned (docs/customization.md), the INHERITANCE is what
+        # this test is about.
+        _fork["site"]["tagline"], branding_config.DEFAULTS["site"]["tagline"],
     )
     assert_eq("override: analytics off", _fork["analytics"]["provider"], "none")
     _css = branding_config.render_branding_css(_fork)
