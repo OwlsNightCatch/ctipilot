@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: Two concurrent npm dependency-confusion campaigns target internal corporate namespaces
 headline: Two concurrent npm dependency-confusion campaigns target internal corporate namespaces
 summary: "**Two concurrent npm dependency-confusion campaigns target internal corporate package namespaces** — Microsoft (45 packages across nine organisational scopes) and Sonatype (176 packages) document recon/staging payloads that win npm's version race against private registries when .npmrc is not scope-locked (Microsoft, 2026-05-30 · Sonatype, 2026-05-28). Distinct from the Mini Shai-Hulud / TrapDoor activity covered last week."

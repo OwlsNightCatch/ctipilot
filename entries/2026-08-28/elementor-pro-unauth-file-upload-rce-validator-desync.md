@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Elementor Pro (WordPress): unauthenticated arbitrary file upload to RCE via a validator/mover desynchronization in the Forms File Upload field (CVE-2026-32475, CVSS 9.0)"
 headline: "Two loops in the same file disagree about what an empty upload field means, and the disagreement is remote code execution"
 summary: >

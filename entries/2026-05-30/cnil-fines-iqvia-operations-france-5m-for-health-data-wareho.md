@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "CNIL fines IQVIA Operations France €5M for health data warehouse security failures: no MFA, no log monitoring, no network segmentation"
 headline: "CNIL fines IQVIA Operations France €5M for health data warehouse security failures: no MFA, no log monitoring, no network segmentation"
 summary: "France's CNIL fined IQVIA Operations France €5 million on 26 May 2026 for systematic GDPR violations across two authorised health data warehouses, LRX (fed by ~14,000 pharmacies) and EMR (fed by thousands of GPs) (CNIL, 2026-05-28)."

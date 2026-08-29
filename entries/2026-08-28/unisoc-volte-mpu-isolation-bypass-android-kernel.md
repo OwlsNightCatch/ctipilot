@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Unisoc T606/T612/T7250 modems: a single answered video call can escalate from modem-level RCE to full Android kernel access via an ARM Memory Protection Unit isolation bypass — no CVE, no patch, vendor unresponsive"
 headline: "Answering a video call is the only user action needed to hand an attacker root-level access on affected Android devices"
 summary: >

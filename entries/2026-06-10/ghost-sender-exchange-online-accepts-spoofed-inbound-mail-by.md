@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "\"Ghost-Sender\": Exchange Online accepts spoofed inbound mail bypassing SPF/DKIM/DMARC when a third-party MX fronts the tenant — no vendor patch"
 headline: "\"Ghost-Sender\": Exchange Online accepts spoofed inbound mail bypassing SPF/DKIM/DMARC when a third-party MX fronts the tenant — no vendor patch"
 summary: "\"Ghost-Sender\" lets attackers spoof any sender into Exchange Online inboxes, bypassing SPF/DKIM/DMARC — no vendor patch. Swiss firm InfoGuard disclosed the configuration flaw affecting tenants that front EXO with a third-party MX; NCSC-CH issued an advisory (InfoGuard, 2026-06-09)."

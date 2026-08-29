@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "GoSerpent evolves: staged collect-then-return espionage against Southeast Asian government and diplomatic targets"
 headline: "Kaspersky details GoSerpent's re-tooled chain — ChaCha20 C2, a file-harvesting Windows service, and a weeks-long silent-collection stage before exfiltration"
 summary: >

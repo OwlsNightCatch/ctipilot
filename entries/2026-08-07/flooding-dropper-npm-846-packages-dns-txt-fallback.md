@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Flooding Dropper: 846 npm packages published from disposable accounts, with a dropper that falls back to DNS TXT records when its download hosts are blocked"
 headline: "An npm campaign built for attrition — throwaway publisher accounts, per-package payload variation, and a DNS fallback that survives host blocking"
 summary: >

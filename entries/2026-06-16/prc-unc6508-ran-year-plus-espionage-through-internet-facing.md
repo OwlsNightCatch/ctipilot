@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: PRC UNC6508 ran year-plus espionage through internet-facing REDCap servers and a Google Workspace BCC rule
 headline: PRC UNC6508 ran year-plus espionage through internet-facing REDCap servers and a Google Workspace BCC rule
 summary: "PRC actor UNC6508 ran year-plus espionage through internet-facing REDCap research servers and abused a Google Workspace content-compliance rule to silently BCC research/defence email to attacker Gmail — REDCap is widely run at Swiss/EU academic medical centres. (Google GTIG, 2026-06-15)"

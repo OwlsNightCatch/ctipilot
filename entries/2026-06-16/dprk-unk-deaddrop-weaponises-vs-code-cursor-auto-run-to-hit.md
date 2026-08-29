@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "DPRK UNK_DeadDrop weaponises VS Code / Cursor auto-run to hit developers, including EU targets"
 headline: "DPRK UNK_DeadDrop weaponises VS Code / Cursor auto-run to hit developers, including EU targets"
 summary: "Proofpoint details UNK_DeadDrop, a North-Korea-aligned cluster (related to but distinct from Contagious Interview / Famous Chollima) that sent 250+ recruitment-themed phishing emails to ~100 finance, crypto, education and technology organisations over April–May 2026 (Proofpoint, 2026-06-15); the targeted …"

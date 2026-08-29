@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: annual-report
-horizon: operational
 title: "Wiz Cloud Threat Highlights H1 2026: LiteLLM had four separate security events in six months, unauthenticated MCP endpoints turned up across hundreds of environments, and a new extortion actor goes after service accounts rather than people"
 headline: "The AI toolchain became a cloud attack surface with its own recurring vulnerability cadence, and the credentials it holds are non-human"
 summary: >

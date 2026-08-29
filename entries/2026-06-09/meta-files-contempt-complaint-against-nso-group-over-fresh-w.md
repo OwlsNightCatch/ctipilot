@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: Meta files contempt complaint against NSO Group over fresh WhatsApp spyware phishing
 headline: Meta files contempt complaint against NSO Group over fresh WhatsApp spyware phishing
 summary: "Meta disclosed it detected and disrupted a new spear-phishing campaign linked to NSO Group's Pegasus operation, and filed a federal contempt-of-court complaint arguing the activity violates the 2025 permanent injunction barring NSO from targeting WhatsApp or its users (Meta, 2026-06-08; CyberScoop, 2026-06-08)."

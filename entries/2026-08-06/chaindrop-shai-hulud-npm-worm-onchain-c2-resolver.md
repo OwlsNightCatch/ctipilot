@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: >
   CHAINDROP — the Shai-Hulud npm worm returns through the keyv maintainer, backdoors 400+
   packages, and resolves its exfiltration endpoint from an Ethereum smart contract
@@ -98,7 +97,6 @@ sourcing_note: >
   write-up carries the fuller execution-chain and C2 detail and is used as the primary.
 confidence: high
 references: []
-weekly_section: null
 deep_dive: true
 deep_dive_category: supply-chain
 org_triage: null

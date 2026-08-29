@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "ShinyHunters' Odido (NL telecom) breach: Dutch police voice analysis points to Dutch-national involvement; same vishing-into-spoofed-portal playbook, now against an EU telco"
 headline: "Dutch police tie ShinyHunters' Odido telecom breach to Dutch nationals via voice analysis — the vishing-to-spoofed-portal playbook now hits an EU telco"
 summary: >

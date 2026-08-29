@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   UK Department for Education confirms a breach of two public-facing portals and a police legal
   database, claimed by ExfilSquad — a five-day-old extortion brand whose other 14 claims look
@@ -155,7 +154,6 @@ sourcing_note: >
   response.
 confidence: medium
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

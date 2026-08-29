@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CISA ICS batch (14 Jul): Rockwell 1715-AENTR unauthenticated debug-port takeover (CVE-2026-10577, CVSS 10.0, fixed in firmware 3.011) and a Swiss-vendor ABB T-MAC Plus auth chain (CVSS 9.9)"
 headline: "CISA republishes four Rockwell/ABB OT advisories led by a CVSS 10.0 debug-port takeover on an energy/water EtherNet/IP adapter, fixed in firmware 3.011"
 summary: >

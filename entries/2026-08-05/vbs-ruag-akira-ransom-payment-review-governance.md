@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: policy
-horizon: operational
 title: "Swiss Defence Department closes its RUAG review: the Akira ransom payment broke no law, but the risk weighing and the owner notification were deficient — and the federal no-payment recommendation stands"
 headline: "Bern rules a federally-owned firm's ransom payment lawful, faults the governance, and reaffirms not to pay"
 summary: >

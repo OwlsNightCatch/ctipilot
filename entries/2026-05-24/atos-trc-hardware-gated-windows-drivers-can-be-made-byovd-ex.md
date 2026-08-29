@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Atos TRC: \"hardware-gated\" Windows drivers can be made BYOVD-exploitable in software"
 headline: "Atos TRC: \"hardware-gated\" Windows drivers can be made BYOVD-exploitable in software"
 summary: "Research from the Atos Trusted Research Center (referenced by NDSS Symposium 2026 paper 2026-s1491), resurfaced in in-window reporting on 2026-05-22, argues that a large class of Windows kernel-mode drivers previously treated as BYOVD-resistant — because triggering their vulnerable IOCTL paths supposedly required …"

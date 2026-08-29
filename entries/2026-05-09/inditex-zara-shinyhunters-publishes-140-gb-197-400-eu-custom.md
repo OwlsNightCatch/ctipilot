@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Inditex (Zara) — ShinyHunters publishes 140 GB; 197,400 EU customer records confirmed via third-party analytics compromise"
 headline: "Inditex (Zara) — ShinyHunters publishes 140 GB; 197,400 EU customer records confirmed via third-party analytics compromise"
 summary: "Have I Been Pwned confirmed on 2026-05-08 that 197,400 unique email addresses from Inditex (Zara's parent, headquartered in A Coruña, Spain) were exposed following a breach of a former third-party analytics provider."

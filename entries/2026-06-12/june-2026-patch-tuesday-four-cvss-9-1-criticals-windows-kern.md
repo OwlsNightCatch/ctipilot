@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "June 2026 Patch Tuesday: four CVSS ≥ 9.1 criticals — Windows kernel TCP/IP RCE, Nuance PowerScribe, Azure Stack Edge, Exchange Online"
 headline: "June 2026 Patch Tuesday: four CVSS ≥ 9.1 criticals — Windows kernel TCP/IP RCE, Nuance PowerScribe, Azure Stack Edge, Exchange Online"
 summary: "June 2026 Patch Tuesday carries four CVSS ≥ 9.1 criticals, led by CVE-2026-45657 — an unauthenticated use-after-free RCE in the Windows kernel TCP/IP path reachable by crafted network traffic (Microsoft MSRC, 2026-06-09)."

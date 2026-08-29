@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "\"Agentjacking\": Tenet Security hijacks AI coding agents via forged Sentry error events"
 headline: "\"Agentjacking\": Tenet Security hijacks AI coding agents via forged Sentry error events"
 summary: "Tenet Security documented an MCP-injection attack class that abuses the implicit trust between AI coding agents and the Sentry error-tracking integration (The Hacker News, 2026-06-12)."

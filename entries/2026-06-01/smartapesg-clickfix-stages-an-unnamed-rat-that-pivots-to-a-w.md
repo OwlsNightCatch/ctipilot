@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: SmartApeSG ClickFix stages an unnamed RAT that pivots to a weaponised NetSupport Manager
 headline: SmartApeSG ClickFix stages an unnamed RAT that pivots to a weaponised NetSupport Manager
 summary: "SmartApeSG ClickFix lures now stage a custom RAT that then drops NetSupport Manager — a same-day SANS ISC forensic diary maps a processor.vbs → token.bat → setup.cab chain that self-deletes its droppers and persists a weaponised NetSupport build (SANS ISC, 2026-06-01)."

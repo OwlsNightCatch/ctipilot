@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Microsoft: two parallel ACR Stealer intrusion chains — WebDAV/rundll32/Python with blockchain dead-drop C2, and a fileless MSHTA/steganography chain — both rooted in ClickFix"
 headline: "Microsoft documents two ClickFix-rooted ACR Stealer chains: WebDAV+EtherHiding and fileless MSHTA+steganography, both ending in DPAPI browser-credential theft"
 summary: >

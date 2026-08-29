@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "'Comment stuffing' — HTML phishing attachments padded to ~2.5 MB to dilute or exhaust AI/NLP email scanners"
 headline: "SANS ISC: a phishing page pads itself with ~430k repeated characters to dilute the payload below an AI classifier's threshold or exhaust an LLM's token budget"
 summary: >

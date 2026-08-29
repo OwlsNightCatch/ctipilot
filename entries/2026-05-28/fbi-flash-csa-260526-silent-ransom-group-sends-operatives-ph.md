@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: FBI FLASH CSA 260526 — Silent Ransom Group sends operatives physically into US law-firm offices to insert USB exfiltration devices when remote social engineering fails
 headline: FBI FLASH CSA 260526 — Silent Ransom Group sends operatives physically into US law-firm offices to insert USB exfiltration devices when remote social
 summary: "The FBI issued CSA 260526 on 2026-05-26 warning that Silent Ransom Group (SRG; tracked variously across cited sources as Luna Moth, Chatty Spider and UNC3753, with the Storm-0252 designation specifically referenced by CyberScoop) — a Russia-linked extortion-only gang that does not deploy ransomware — has escalated its …"

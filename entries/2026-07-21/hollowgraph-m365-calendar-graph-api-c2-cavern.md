@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: >
   HOLLOWGRAPH: a Cavern-framework backdoor that turns a compromised Microsoft 365 calendar into a
   Graph-API dead-drop C2
@@ -98,7 +97,6 @@ sourcing_note: >
   is stated at low confidence and is not framed here as attribution.
 confidence: high
 references: []
-weekly_section: null
 deep_dive: true
 deep_dive_category: identity-infra
 org_triage: null

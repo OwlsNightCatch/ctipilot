@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Jewelbug: one script tag in a shared government webmail template put a watering hole on 15+ ministry tenants at once, and the browser extension it drops escapes the sandbox through a native-messaging host named after Microsoft Edge"
 headline: "A hack-for-hire group hit 15+ government webmail tenants with one script tag, then escaped the browser via a fake Edge helper"
 summary: >
@@ -56,7 +55,7 @@ sourcing_note: >
   name. Victim countries are described by region only, as the source does.
 confidence: high
 update_of: null
-references: [2026-05-04/uat-8302-china-nexus-talos-se-european-government-victims]
+references: []
 deep_dive: true
 deep_dive_category: apt-campaign
 org_triage: null

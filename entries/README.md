@@ -6,8 +6,7 @@ Every fire of the intel run (`prompts/cti-run.md`) — on whatever cadence the
 operator sets — adds only the *new* findings since the previous fire and
 appends dated updates to the entries it already published; the quality
 audit (`prompts/quality-audit.md`) appends corrections and improvements the
-same way. (`horizon: strategic` entries are archived output of the weekly
-routine retired on 2026-08-27; no new ones are written.)
+same way.
 
 The full normative contract (frontmatter schema, kinds, priority semantics,
 the entry lifecycle, relevance discipline) lives in [`docs/pipeline.md`](../docs/pipeline.md).

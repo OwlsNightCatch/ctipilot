@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Romanian public university UVVG Arad confirms a cyberattack on its IT infrastructure; a Qilin leak-site listing is the only thing linking an actor to it"
 headline: "West University Vasile Goldis Arad notifies DNSC, the data-protection authority and prosecutors after an attack on academic and administrative systems"
 summary: >

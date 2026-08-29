@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: Cisco Talos maps the DICOM-format attack surface against Orthanc PACS — network-ingested medical images as a heap out-of-bounds-write primitive
 headline: Cisco Talos maps the DICOM-format attack surface against Orthanc PACS — network-ingested medical images as a heap out-of-bounds-write primitive
 summary: "Cisco Talos published a technical study of the DICOM image-format attack surface against Orthanc, the open-source PACS server widely deployed in CH/EU hospital radiology — auto-ingestion of network-received DICOM files turns a malformed study into a heap out-of-bounds write primitive (Cisco Talos, 2026-05-28). No CVE/PoC in the public post; relevant to hospital-segmentation and modality-allowlisting posture."

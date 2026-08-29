@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Unit 42: Gremlin Stealer evolved with .NET-resource XOR obfuscation, real-time crypto-clipper, and WebSocket browser-process session-hijack module"
 headline: "Unit 42: Gremlin Stealer evolved with .NET-resource XOR obfuscation, real-time crypto-clipper, and WebSocket browser-process session-hijack module"
 summary: "Palo Alto Networks Unit 42 published on 2026-05-15 an analysis of evolved variants of the Gremlin information stealer, adding three new capability tiers operationally relevant to defenders running endpoint detections tuned for older Gremlin samples (Palo Alto Networks Unit 42, 2026-05-15)."

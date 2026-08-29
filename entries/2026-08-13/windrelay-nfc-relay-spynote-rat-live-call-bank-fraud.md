@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "WindRelay — a purpose-built Android NFC-relay malware installed silently by a companion remote-access trojan during the fraud call itself, with per-victim app names carrying the victim's own name"
 headline: "Group-IB documents an NFC-relay family whose install step needs no victim interaction because a paired remote-access trojan performs it mid-call"
 summary: >

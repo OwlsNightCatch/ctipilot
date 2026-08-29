@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "ScarCruft (APT37) delivers NarwhalRAT behind fake Microsoft OTP \"security alert\" lures"
 headline: "ScarCruft (APT37) delivers NarwhalRAT behind fake Microsoft OTP \"security alert\" lures"
 summary: "ScarCruft (APT37) deploys NarwhalRAT behind fake Microsoft OTP alerts; China arrests 67 Silver Fox/ValleyRAT operators. North Korean spearphishing impersonating Microsoft MFA notices delivers a compiled-Python RAT with a pCloud dead-drop resolver (Genians, 2026-06-16); separately, Chinese police dismantled the supply chain behind the Winos/ValleyRAT operator network."

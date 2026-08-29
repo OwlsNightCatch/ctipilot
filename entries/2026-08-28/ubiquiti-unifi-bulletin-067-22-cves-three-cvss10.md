@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Ubiquiti UniFi ecosystem: 22 CVEs in one bulletin, three at CVSS 10.0 — unauthenticated CRLF-injection auth bypass, and unauthenticated command injection in UniFi Protect and UniFi Talk"
 headline: "Ubiquiti's August bulletin carries three separate unauthenticated maximum-severity flaws across its OS, video and telephony product lines in one release"
 summary: >

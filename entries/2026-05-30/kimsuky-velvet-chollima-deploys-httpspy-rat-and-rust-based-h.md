@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: Kimsuky (Velvet Chollima) deploys HTTPSpy RAT and Rust-based HelloDoor via VS Code Remote Tunnel and Cloudflare Quick Tunnel C2
 headline: Kimsuky (Velvet Chollima) deploys HTTPSpy RAT and Rust-based HelloDoor via VS Code Remote Tunnel and Cloudflare Quick Tunnel C2
 summary: "ENKI WhiteHat and The Hacker News documented Kimsuky campaigns in March and April 2026 targeting South Korean military personnel and corporate entities with two malware chains (The Hacker News, 2026-05-29; ENKI WhiteHat, 2026-05-27)."

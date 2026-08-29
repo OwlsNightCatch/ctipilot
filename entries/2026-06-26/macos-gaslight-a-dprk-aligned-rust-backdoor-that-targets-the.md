@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: macOS.Gaslight — a DPRK-aligned Rust backdoor that targets the LLM-assisted analyst
 headline: macOS.Gaslight — a DPRK-aligned Rust backdoor that targets the LLM-assisted analyst
 summary: "macOS.Gaslight — a DPRK-aligned Rust backdoor that aims its evasion at the analyst, not the sandbox — SentinelLABS documents a 3.5 KB blob of 38 fabricated \"system\" messages embedded to derail LLM-assisted triage, alongside Telegram Bot-API C2 and a com.apple.system.services.activity LaunchAgent (SentinelLABS, 2026-06-23)."

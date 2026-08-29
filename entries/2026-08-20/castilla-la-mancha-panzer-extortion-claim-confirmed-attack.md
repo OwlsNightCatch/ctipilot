@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Spain's Castilla-La Mancha regional government confirms a cyberattack after the Panzer extortion group lists it — the government confirms the intrusion, not the group's data claims"
 headline: "A regional administration confirms it was attacked; everything about what was taken is still the attacker's own assertion"
 summary: >

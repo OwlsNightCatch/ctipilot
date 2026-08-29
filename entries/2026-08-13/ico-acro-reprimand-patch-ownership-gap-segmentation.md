@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "UK ICO reprimands the national criminal-records office over a seven-month website compromise — outsourced patching with no internal owner was the cause, and network segmentation is what capped the damage"
 headline: "A regulator publishes the root cause of a government-body breach: patch management was contracted out, accountability for spotting critical updates was not"
 summary: >

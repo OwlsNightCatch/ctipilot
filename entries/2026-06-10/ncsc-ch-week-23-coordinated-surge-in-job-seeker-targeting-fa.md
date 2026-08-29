@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "NCSC-CH Week 23: coordinated surge in job-seeker targeting — fake interviews, reshipping identity theft, and LinkedIn-to-GitHub infostealer delivery"
 headline: "NCSC-CH Week 23: coordinated surge in job-seeker targeting — fake interviews, reshipping identity theft, and LinkedIn-to-GitHub infostealer delivery"
 summary: "NCSC Switzerland's Week 23 report (9 June) documents three concurrent technique chains aimed at job seekers in Switzerland (NCSC-CH, 2026-06-09). The first sends fake interview-confirmation emails for plausible Swiss employers, linking to a counterfeit Google login that harvests credentials (T1566.002, T1078)."

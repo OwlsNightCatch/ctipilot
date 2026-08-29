@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Kimwolf / \"Dort\" DDoS-for-hire operator arrested — 30+ Tbps IoT botnet, U.S. DoD-range targeting, AISURU variant"
 headline: "Kimwolf / \"Dort\" DDoS-for-hire operator arrested — 30+ Tbps IoT botnet, U.S. DoD-range targeting, AISURU variant"
 summary: "Kimwolf / \"Dort\" arrested in Ottawa — 30+ Tbps DDoS-for-hire infrastructure. Jacob Butler, 23, charged in U.S. and Canada for operating the AISURU-variant Kimwolf botnet; >25,000 attack commands including against DoD IP space; coordinated C2 takedown March 2026 dismantled Kimwolf alongside AISURU/JackSkid/Mossad (KrebsOnSecurity, 2026-05-22)."

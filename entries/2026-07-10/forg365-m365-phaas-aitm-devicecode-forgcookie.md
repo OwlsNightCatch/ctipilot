@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Forg365: a commercial Microsoft 365 phishing-as-a-service kit bundling device-code + AiTM phishing, in-panel AI lure drafting, and a browser extension for SSO-cookie persistence"
 headline: "ZeroBEC details Forg365 — a Telegram-sold M365 PhaaS that survives MFA and keeps operator access alive via a ForgCookie browser extension"
 summary: >

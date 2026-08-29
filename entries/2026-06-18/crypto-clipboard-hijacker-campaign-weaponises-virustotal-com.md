@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: Crypto clipboard-hijacker campaign weaponises VirusTotal community reputation to suppress detection
 headline: Crypto clipboard-hijacker campaign weaponises VirusTotal community reputation to suppress detection
 summary: "Check Point Research detailed a Rust-based clipboard-hijacker campaign against cryptocurrency users whose distinguishing feature is the systematic manipulation of security-tool reputation signals (Check Point Research, 2026-06-17)."

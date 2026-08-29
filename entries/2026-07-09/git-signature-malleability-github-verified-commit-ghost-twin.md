@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Git commit-signature malleability mints a second \"Verified\" GitHub commit with a different hash — defeating hash-based blocklists"
 headline: "Research: signature malleability lets anyone forge a second \"Verified\" GitHub commit under a new hash, bypassing SHA-based supply-chain controls"
 summary: >

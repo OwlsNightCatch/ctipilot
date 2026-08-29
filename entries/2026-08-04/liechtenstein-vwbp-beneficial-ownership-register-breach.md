@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   Liechtenstein's beneficial-ownership register breached: copies of ~31,000 legal entities'
   records taken, and four more e-government systems pulled offline as a precaution
@@ -91,7 +90,6 @@ sourcing_note: >
   cited source states how access was obtained, so no access-vector technique is mapped.
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

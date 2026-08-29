@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: >
   CVE-2026-61425 — Balbooa Gridbox for Joomla: a client-supplied cookie is accepted as proof of
   identity, giving anonymous Super User access
@@ -183,7 +182,6 @@ sourcing_note: >
   and proof-of-concept code under a fix-first policy, so there is no public exploitation signal.
 confidence: medium
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "A Flemish Government agency confirms a DPRK compromise reached it through a contractor's workstation — one of 1,640 organisations a researcher counted from inside the actors' own servers"
 headline: "Two years inside North Korean C2 infrastructure produces a victim count, an EU government confirmation, and a contractor with access to 30 companies"
 summary: >

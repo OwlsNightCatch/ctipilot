@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "PraisonAI agent framework: three CVEs — unsandboxed LLM code execution, tool-call RCE, and vector-store DDL injection"
 headline: "PraisonAI: three critical CVEs — unsandboxed LLM code execution leaks all env secrets, plus tool-call RCE and DDL injection"
 summary: >

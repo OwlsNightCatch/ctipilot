@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "SUEZ Eau France notifies customers of a technical service provider's breach — identity, contract and, for some customers, bank and identity-document data exposed"
 headline: "A French water utility's supplier breach reaches customer identity documents and bank details, sourced only through specialist trackers"
 summary: >

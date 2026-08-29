@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "German BKA dismantles Kratos, the Sneaky2FA-derived AiTM phishing-as-a-service platform behind ~15,000 monthly Microsoft 365 credential-theft campaigns"
 headline: "A German-led takedown removes Kratos's infrastructure — but the AiTM tradecraft and affiliate base survive, as Tycoon2FA already showed"
 summary: >

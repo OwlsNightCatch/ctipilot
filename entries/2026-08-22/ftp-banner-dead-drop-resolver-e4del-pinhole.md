@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "A malware stager is reading its next instruction out of an FTP server's pre-login greeting — and the researchers who found it point out this is the rare command channel that is easier to catch, not harder"
 headline: "One of the two RATs it delivers replaces the code inside a legitimately signed desktop application without touching its signature"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Microsoft Defender Experts — AI-chatbot search-poisoning extends SEO-poisoning lure; GPU-utility lookalikes drop ScreenConnect, then process-hollowed miners under signed Microsoft binary"
 headline: "Microsoft Defender Experts — AI-chatbot search-poisoning extends SEO-poisoning lure; GPU-utility lookalikes drop ScreenConnect, then process-hollowed miners"
 summary: "Microsoft Defender Experts documented an active cryptojacking campaign dating from March 2026 that uses GPU-utility brand impersonation (CrystalDiskInfo, HWMonitor, Display Driver Uninstaller, FurMark, K-Lite Codec Pack, PDFgear) as initial delivery via SEO poisoning (Microsoft Security Blog, 2026-05-26; The Hacker …"

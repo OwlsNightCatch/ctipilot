@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "CCI Nice Côte d'Azur: a compromised administrator account on the chamber's jobseeker platform was used to run the platform's own export function"
 headline: "A French public-law chamber of commerce confirms bulk candidate-data exports run from a hijacked admin account, with the takeover route undisclosed"
 summary: >

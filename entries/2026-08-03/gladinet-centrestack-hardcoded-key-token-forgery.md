@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CVE-2026-54363 and five siblings — Gladinet CentreStack: one cryptographic key shared across every installation forges a domain-administrator token, completing an unauthenticated RCE chain"
 headline: "Six unauthenticated flaws in Gladinet CentreStack; a key identical in every install forges admin tokens"
 summary: >

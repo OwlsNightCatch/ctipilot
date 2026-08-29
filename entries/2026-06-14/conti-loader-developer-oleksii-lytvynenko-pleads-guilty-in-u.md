@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: Conti loader developer Oleksii Lytvynenko pleads guilty in US federal court after extradition from Ireland
 headline: Conti loader developer Oleksii Lytvynenko pleads guilty in US federal court after extradition from Ireland
 summary: "Oleksii Oleksiyovych Lytvynenko, a 44-year-old Ukrainian national, pleaded guilty on 12 June in the Middle District of Tennessee to conspiracy to commit wire fraud for his role in the Conti ransomware operation, which he joined around September 2021 to develop a malware loader component (CyberScoop, 2026-06-12)."

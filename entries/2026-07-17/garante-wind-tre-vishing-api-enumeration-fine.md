@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Garante fines Wind Tre EUR 1.7M over a vishing-enabled API-enumeration breach that exposed 365,048 telco customers"
 headline: "Italian DPA fines Wind Tre EUR 1.7M — retail-staff vishing led to enumeration of an unprotected secondary API (365,048 customers)"
 summary: >

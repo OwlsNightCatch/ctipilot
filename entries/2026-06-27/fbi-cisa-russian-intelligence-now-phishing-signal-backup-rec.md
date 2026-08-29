@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: >
   FBI/CISA: Russian intelligence now phishing Signal Backup Recovery Keys for persistent account
   takeover
@@ -59,7 +58,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

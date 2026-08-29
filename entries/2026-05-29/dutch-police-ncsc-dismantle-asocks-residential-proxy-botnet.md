@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Dutch Police + NCSC dismantle Asocks residential-proxy botnet (~17 M devices, 200 NL-hosted servers seized)"
 headline: "Dutch Police + NCSC dismantle Asocks residential-proxy botnet (~17 M devices, 200 NL-hosted servers seized)"
 summary: "Dutch Police and NCSC seize 200 servers and dismantle the Asocks residential-proxy botnet (~17 million enrolled devices, NL-hosted C2). Asocks joins the recent string of disrupted residential-proxy networks — SocksEscort, Aisuru/Kimwolf, FirstVPN, IPIDEA, RapperBot — and defenders relying on Asocks exit-node blocklists should re-tune residential-proxy correlation rules now that the network is offline."

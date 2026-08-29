@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Symantec: five-month, low-and-slow mailbox-espionage campaign against a global stock exchange"
 headline: "Symantec: five-month, low-and-slow mailbox-espionage campaign against a global stock exchange"
 summary: "Broadcom's Symantec and Carbon Black documented a targeted espionage operation (Oct 2025–Mar 2026) against a senior executive at an unnamed global stock exchange (Broadcom/Symantec, 2026-06-03 · SecurityWeek, 2026-06-03)."

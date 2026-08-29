@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "EDPB adopts a harmonised GDPR Article 33 breach-notification template; consultation open to 5 August"
 headline: "EDPB adopts a harmonised GDPR Article 33 breach-notification template; consultation open to 5 August"
 summary: "The European Data Protection Board adopted a common EU/EEA template for personal-data-breach notifications under GDPR Article 33 at its 10 June 2026 plenary, opening it for public consultation until 5 August 2026 (EDPB, 2026-06-10)."

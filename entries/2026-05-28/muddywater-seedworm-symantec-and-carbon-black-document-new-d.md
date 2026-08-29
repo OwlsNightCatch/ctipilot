@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "MuddyWater / Seedworm — Symantec and Carbon Black document new DLL-side-loading pair via signed Fortemedia and SentinelOne binaries, ChromElevator for Chromium App-Bound Encryption bypass, Node.js orchestration"
 headline: "MuddyWater / Seedworm — Symantec and Carbon Black document new DLL-side-loading pair via signed Fortemedia and SentinelOne binaries, ChromElevator for Chromium"
 summary: "Symantec's Threat Hunter Team and Broadcom's Carbon Black published findings on 2026-05-12 documenting a Q1 2026 MuddyWater (a.k.a. Seedworm, Static Kitten, MERCURY, TEMP.Zagros — attributed to Iran's Ministry of Intelligence and Security) espionage campaign across at least nine organisations on four continents."

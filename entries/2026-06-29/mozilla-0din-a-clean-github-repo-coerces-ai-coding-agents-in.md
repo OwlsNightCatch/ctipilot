@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Mozilla 0DIN: a \"clean\" GitHub repo coerces AI coding agents into a reverse shell via three-stage indirection"
 headline: "Mozilla 0DIN: a \"clean\" GitHub repo coerces AI coding agents into a reverse shell via three-stage indirection"
 summary: "A novel indirect prompt-injection class turns a \"clean\" GitHub repo into a reverse shell against AI coding agents. Mozilla's 0DIN shows a three-step indirection — repo instructions → a deliberately failing Python package → an init command that fetches and runs a DNS TXT record as a shell command — with no malicious code in the repo to flag on static analysis. Relevant to any environment where AI coding agents (Claude Code, Copilot Workspace, Cursor) have repository and shell access (Mozilla 0DIN, 2026-06-25; BleepingComputer, 2026-06-27)."

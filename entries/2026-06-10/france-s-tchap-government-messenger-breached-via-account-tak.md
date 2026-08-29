@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "France's Tchap government messenger breached via account takeover — 73,467 civil servants' metadata scraped, CNIL notified"
 headline: "France's Tchap government messenger breached via account takeover — 73,467 civil servants' metadata scraped, CNIL notified"
 summary: "France's sovereign government messenger Tchap breached — 73,467 civil servants exposed, CNIL notified. A single account takeover on the education shard was pivoted via the Matrix user-directory to scrape user metadata across the federation; DINUM confirms name, email and employing entity exposed (DINUM, 2026-06-08)."

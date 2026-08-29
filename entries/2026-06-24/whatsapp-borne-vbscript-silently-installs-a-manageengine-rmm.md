@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: WhatsApp-borne VBScript silently installs a ManageEngine RMM agent for living-off-the-land remote control
 headline: WhatsApp-borne VBScript silently installs a ManageEngine RMM agent for living-off-the-land remote control
 summary: "A globally active campaign pushes obfuscated VBScript through WhatsApp Desktop/Web that disables UAC and silently installs a ManageEngine Endpoint Central RMM agent pointed at attacker infrastructure — living-off-the-land remote control with no bespoke malware. (Kaspersky, 2026-06-22)."

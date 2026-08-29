@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "CrowdStrike catalogues 21 working command-obfuscation techniques inside VMware ESXi's BusyBox ash shell — and shell logs record the command before expansion, so the logged string is not what ran"
 headline: "ESXi's minimal shell is expressive enough to hide commands, and its logging captures the parsing stage rather than the result"
 summary: >

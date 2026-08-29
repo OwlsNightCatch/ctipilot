@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Kaspersky: community AI-agent \"skills\" are an emerging supply-chain surface — OpenClaw marketplace still distributing malicious skills"
 headline: "Kaspersky: community AI-agent \"skills\" are an emerging supply-chain surface — OpenClaw marketplace still distributing malicious skills"
 summary: "Kaspersky published fresh detection telemetry (through mid-June 2026) on OpenClaw, an AI-agent framework whose agents load \"skills\" — plaintext SKILL.md natural-language instruction files, some with embedded code — from a community marketplace (\"ClawHub\"), typically running with file-system access and the …"

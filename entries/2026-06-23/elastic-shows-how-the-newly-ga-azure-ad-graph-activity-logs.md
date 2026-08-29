@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: Elastic shows how the newly-GA Azure AD Graph Activity Logs close a long-standing Entra enumeration blind spot
 headline: Elastic shows how the newly-GA Azure AD Graph Activity Logs close a long-standing Entra enumeration blind spot
 summary: "Elastic Security Labs published a detection-engineering guide (2026-06-19) on ingesting the newly generally-available AADGraphActivityLogs into SIEM/XDR to catch tooling that has historically been invisible (Elastic Security Labs, 2026-06-19)."

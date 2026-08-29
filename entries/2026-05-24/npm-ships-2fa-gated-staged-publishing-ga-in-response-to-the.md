@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "npm ships 2FA-gated \"staged publishing\" GA in response to the 2026 supply-chain worm waves"
 headline: "npm ships 2FA-gated \"staged publishing\" GA in response to the 2026 supply-chain worm waves"
 summary: "UPDATE (supply-chain worm wave, originally covered 2026-05-23): GitHub announced on 2026-05-22 that npm staged publishing is now Generally Available — a maintainer must run npm stage publish (npm CLI 11.15.0+), which uploads the version to a consumer-invisible staging queue, then pass a separate 2FA …"

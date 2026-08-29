@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Connor Moucka pleads guilty over the 2024 SaaS-tenant mass-extortion campaign — 165+ victim organisations reached with stolen credentials and no vulnerability in the platform"
 headline: "Law-enforcement closure on the campaign that set the template for cloud-tenant compromise, with the access path entirely credential-based"
 summary: >

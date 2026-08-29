@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: annual-report
-horizon: operational
 title: "ESET Threat Report H1 2026: first Android malware using generative AI at runtime, ClickFix detections more than double, record QR-phishing, 100+ EDR-killers"
 headline: "ESET Threat Report H1 2026: PromptSpy runs Gemini in its own execution flow, ClickFix 2x, QR-phishing at record levels, 100+ EDR-killers catalogued"
 summary: >

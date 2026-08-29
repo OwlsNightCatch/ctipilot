@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Iran MOIS attributed to LACMTA destructive breach via \"Ababil of Minab\" hacktivist front — 700 GB exfiltrated, backups and VMs deliberately destroyed"
 headline: "Iran MOIS attributed to LACMTA destructive breach via \"Ababil of Minab\" hacktivist front — 700 GB exfiltrated, backups and VMs deliberately destroyed"
 summary: "Gambit Security (Israeli threat-intelligence firm) published a technical report on 2026-05-26 attributing the March 2026 breach of Los Angeles County Metropolitan Transportation Authority (LACMTA / LA Metro) to an Iran-MOIS-linked cluster operating under the hacktivist persona Ababil of Minab (Gambit Security …"

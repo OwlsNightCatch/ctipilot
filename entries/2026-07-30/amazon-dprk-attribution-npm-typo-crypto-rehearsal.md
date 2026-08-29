@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Amazon attributes the axios, debug and chalk npm compromises to a DPRK-linked cluster with medium confidence, and names a small 2025 package compromise as the rehearsal"
 headline: "Amazon Threat Intelligence traces three major npm compromises to one DPRK-linked actor, and describes a payload that only detonates on a specific input"
 summary: >

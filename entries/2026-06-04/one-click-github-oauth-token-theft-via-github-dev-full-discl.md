@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "One-click GitHub OAuth-token theft via github.dev, full-disclosed with PoC; Microsoft patched 3 June"
 headline: "One-click GitHub OAuth-token theft via github.dev, full-disclosed with PoC; Microsoft patched 3 June"
 summary: "Independent researcher Ammar Askar published full details and a PoC for a one-click attack on GitHub's browser editor github.dev that extracts the victim's full-scope GitHub OAuth token (read/write to all repos, including private) (Ammar Askar, 2026-06-02 · The Hacker News, 2026-06-04)."

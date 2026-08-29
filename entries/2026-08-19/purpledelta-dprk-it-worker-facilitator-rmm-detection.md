@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "PurpleDelta: Insikt Group gets inside a North Korean IT-worker operation and finds the detectable half is on the endpoint — a second remote-management tool on the company laptop, and a device whose location never matches the login"
 headline: "The fraud is a hiring problem; the evidence sits in RMM inventory and laptop geolocation"
 summary: >

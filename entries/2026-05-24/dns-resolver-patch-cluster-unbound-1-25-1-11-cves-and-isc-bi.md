@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: DNS-resolver patch cluster — Unbound 1.25.1 (11 CVEs) and ISC BIND 9.18.49 / 9.20.23
 headline: DNS-resolver patch cluster — Unbound 1.25.1 (11 CVEs) and ISC BIND 9.18.49 / 9.20.23
 summary: "A DNS-resolver patch cluster landed the same week — Unbound 1.25.1 fixes 11 CVEs including a CVSS 9.8 pre-auth DNSSEC use-after-free (CVE-2026-33278), and ISC BIND 9.18.49/9.20.23 fix a DoH use-after-free (CVE-2026-3593) and a single-query DoS (CVE-2026-5946). No exploitation reported; patch recursive infrastructure."

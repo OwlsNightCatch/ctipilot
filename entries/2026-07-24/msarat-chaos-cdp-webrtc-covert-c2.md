@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "msaRAT: Chaos ransomware's Rust RAT builds C2 through the Chrome DevTools Protocol so the malware process never opens a socket"
 headline: "Talos dissects a RAT that offloads all C2 into a headless browser via CDP and WebRTC — process-to-socket attribution sees only Chrome"
 summary: >

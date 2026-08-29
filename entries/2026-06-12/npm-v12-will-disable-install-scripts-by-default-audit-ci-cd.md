@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: npm v12 will disable install scripts by default — audit CI/CD pipelines before July
 headline: npm v12 will disable install scripts by default — audit CI/CD pipelines before July
 summary: "GitHub announced that npm v12 (expected July 2026) disables dependency lifecycle scripts (preinstall/install/postinstall, including implicit node-gyp builds) by default, requires npm approve-scripts for explicit opt-in, and blocks Git/remote-URL dependencies without --allow-git/--allow-remote (GitHub …"

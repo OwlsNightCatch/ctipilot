@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: >
   Unit 42 — Iran's Screening Serpens (UNC1549 / Smoke Sandstorm / Nimbus Manticore):
   AppDomainManager hijacking silently disables ETW + strong-name checks in six new RATs
@@ -57,7 +56,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: Microsoft disrupts StegoAd — 119 Edge extensions hid payloads in image and font files via steganography
 headline: Microsoft disrupts StegoAd — 119 Edge extensions hid payloads in image and font files via steganography
 summary: "Microsoft's Edge security team detailed and disrupted StegoAd, 119 malicious extensions across 90+ developer accounts with a combined ~2.6M installs, masquerading as ad blockers, VPNs, translators, and downloaders (Microsoft Edge Security, 2026-06-16 · Risky Biz News, 2026-06-29)."

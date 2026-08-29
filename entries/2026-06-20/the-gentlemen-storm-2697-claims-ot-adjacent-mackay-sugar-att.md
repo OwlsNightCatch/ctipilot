@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "The Gentlemen (Storm-2697) claims OT-adjacent Mackay Sugar attack; operator attributed to a Russian national"
 headline: "The Gentlemen (Storm-2697) claims OT-adjacent Mackay Sugar attack; operator attributed to a Russian national"
 summary: "UPDATE (originally covered 2026-06-19): Following ESET's 2026-06-19 documentation of the group's GentleKiller EDR-killer framework, The Gentlemen ransomware group has claimed an OT-adjacent attack on Mackay Sugar (Australia's second-largest sugar producer), which confirmed on 2026-06-18 that an external party …"

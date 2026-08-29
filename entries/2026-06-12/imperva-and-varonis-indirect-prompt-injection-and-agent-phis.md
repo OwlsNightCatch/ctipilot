@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Imperva and Varonis: indirect prompt injection and \"agent phishing\" against the OpenClaw AI agent — fixed in v2026.4.23, but the attack class generalises"
 headline: "Imperva and Varonis: indirect prompt injection and \"agent phishing\" against the OpenClaw AI agent — fixed in v2026.4.23, but the attack class generalises"
 summary: "Two independent teams published complementary findings against OpenClaw, the self-hosted AI-agent platform that plugs into messaging systems, mailboxes, file systems and APIs."

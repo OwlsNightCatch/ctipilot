@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Unit 42: cloud-bucket hijacking via global-namespace reuse silently redirects log and replication streams"
 headline: "Unit 42: cloud-bucket hijacking via global-namespace reuse silently redirects log and replication streams"
 summary: "Unit 42 detailed an architectural attack abusing the global uniqueness of object-storage bucket names across AWS S3, Google Cloud Storage and (less so) Azure Blob Storage (Unit 42, 2026-06-22)."

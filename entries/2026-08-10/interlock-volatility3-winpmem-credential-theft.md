@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Interlock ran Volatility3 and WinPmem against a live endpoint to harvest credentials — the responder's own memory-forensics toolkit used in place of a commodity dumper"
 headline: "A ransomware operator acquired a memory image and ran hashdump and cachedump offline against it, leaving traces that look like an IR engagement"
 summary: >

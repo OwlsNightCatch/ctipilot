@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "One compromised contract-logistics processor put ten organisations into breach notification at once — CEVA Logistics, eight European warehouses, and a bank, a retailer and a games platform all learning from their supplier"
 headline: "Ten organisations filed Dutch breach reports over one logistics provider's order-processing intrusion"
 summary: >

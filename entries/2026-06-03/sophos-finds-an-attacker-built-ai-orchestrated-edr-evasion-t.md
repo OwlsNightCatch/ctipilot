@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Sophos finds an attacker-built, AI-orchestrated EDR-evasion testing lab during incident response"
 headline: "Sophos finds an attacker-built, AI-orchestrated EDR-evasion testing lab during incident response"
 summary: "Sophos X-Ops disclosed an EDR-evasion development-and-testing environment recovered during an incident-response engagement and linked to an active (unnamed, still-under-investigation) ransomware group (Sophos X-Ops, 2026-06-02)."

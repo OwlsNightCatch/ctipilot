@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "ShinyHunters used a single vishing call into the company's identity platform to breach Madison Square Garden"
 headline: "ShinyHunters used a single vishing call into the company's identity platform to breach Madison Square Garden"
 summary: "ShinyHunters breached Madison Square Garden through a single vishing call into the company's identity platform — 404 Media's review of the stolen data confirms a low-level employee was talked into letting the operators into MSG's systems, the same vishing → identity-platform (Entra/Okta) → MFA-enrollment kill chain that works equally well against EU public-sector tenants (404 Media, 2026-06-24)."

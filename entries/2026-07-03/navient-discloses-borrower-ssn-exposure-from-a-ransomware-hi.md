@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: Navient discloses borrower SSN exposure from a ransomware hit on its outside law firm
 headline: Navient discloses borrower SSN exposure from a ransomware hit on its outside law firm
 summary: "Two US SEC 8-K disclosures reinforce the third-/fourth-party access boundary: AdaptHealth was breached via a social-engineered hijack of a third-party contractor's session into cloud patient-management apps (SEC 8-K, 2026-07-02); Navient disclosed borrower SSN exposure from a ransomware hit on its outside law firm (SEC 8-K, 2026-07-02)."

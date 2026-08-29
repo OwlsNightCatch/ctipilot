@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Red Canary: Microsoft Entra Agent ID abuse — OBO OAuth flow turns a compromised AI agent into a delegated phishing sender"
 headline: "Red Canary: Microsoft Entra Agent ID abuse — OBO OAuth flow turns a compromised AI agent into a delegated phishing sender"
 summary: "Red Canary's latest Entra ID AI-agent analysis examines the On-Behalf-Of (OBO) OAuth flow exploited through assistive agents (Red Canary, 2026-06-08)."

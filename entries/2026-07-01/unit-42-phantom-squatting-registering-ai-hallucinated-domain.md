@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Unit 42: \"Phantom Squatting\" — registering AI-hallucinated domains to poison LLM-driven URL delivery"
 headline: "Unit 42: \"Phantom Squatting\" — registering AI-hallucinated domains to poison LLM-driven URL delivery"
 summary: "Palo Alto Networks Unit 42 described phantom squatting, a supply-chain attack class in which adversaries systematically probe production LLMs to learn which non-existent brand/vendor domains a model hallucinates when asked for URLs, then pre-register those specific domains before defenders or brand owners react …"

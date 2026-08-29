@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Prepare emergency Drupal patch window for today 17:00–21:00 UTC"
 headline: "Prepare emergency Drupal patch window for today 17:00–21:00 UTC"
 summary: "Drupal core \"highly critical\" (20/25) pre-patch warning — patch lands today 17:00–21:00 UTC; exploits expected within hours. Pre-auth full-site compromise across all supported branches (10.5.x, 10.6.x, 11.2.x, 11.3.x) plus EOL 8.9 / 9.5 / 10.4 / 11.1 patch files. Drupal Security Team explicitly warns \"exploits might be developed within hours or days\" (Drupal PSA-2026-05-18 · NCSC.ch Security Hub 12584, 2026-05-19). High Swiss/EU public-sector exposure — federal, cantonal, municipal portals, universities. See Immediate Action callout below and § 6."

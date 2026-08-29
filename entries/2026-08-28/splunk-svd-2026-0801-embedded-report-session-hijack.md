@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Splunk Enterprise August 2026 hardening release (SVD-2026-0801): three unauthenticated CVSS 9.4 flaws let anyone holding an embedded-report token hijack the report owner's session, admins included"
 headline: "Splunk patches 60 CVEs; the headline path turns a shared dashboard link into a session-hijack primitive against the SIEM itself"
 summary: >

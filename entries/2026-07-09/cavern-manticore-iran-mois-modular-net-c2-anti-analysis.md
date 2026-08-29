@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Check Point: Iran MOIS-linked \"Cavern Manticore\" ships a modular .NET C2 that uses three compilation formats as an anti-analysis layer, delivered via SysAid RMM abuse"
 headline: "Cavern Manticore's C2 splits across IL, Mixed-Mode and NativeAOT binaries to break RE toolchains — pushed through SysAid's legitimate deployment feature"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Cisco Talos: UAT-11795 deploys the Python-based Starland RAT and a bespoke PowerShell C2 implant (WLDR), resolving fallback C2 through a Polygon blockchain dead-drop"
 headline: "Talos details UAT-11795 — ClickFix-delivered Starland RAT with a blockchain dead-drop C2 and a bespoke WLDR PowerShell implant"
 summary: >

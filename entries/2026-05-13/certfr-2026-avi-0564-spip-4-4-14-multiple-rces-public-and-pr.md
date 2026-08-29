@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CERTFR-2026-AVI-0564 — SPIP < 4.4.14: multiple RCEs (public and private area)"
 headline: "CERTFR-2026-AVI-0564 — SPIP < 4.4.14: multiple RCEs (public and private area)"
 summary: "CERT-FR's advisory CERTFR-2026-AVI-0564 (2026-05-12) covers multiple remote code execution flaws in SPIP — the open-source CMS that powers a substantial share of French ministry, université and francophone Swiss canton web sites (CERT-FR CERTFR-2026-AVI-0564, 2026-05-12; SPIP security bulletin, 2026-05-12)."

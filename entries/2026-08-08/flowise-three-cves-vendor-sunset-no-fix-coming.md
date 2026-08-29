@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: >
   Flowise ships three new CVEs into a sunset — an unauthenticated auth bypass that defeats an
   earlier fix, and cross-workspace credential access, with no vendor left to patch them
@@ -130,7 +129,6 @@ sourcing_note: >
   authority governs. BSI publishes a single advisory-level score of 7.7 and no per-CVE breakdown.
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "CaptiveCrunch: an SVR-linked sub-cluster hijacks hotel and conference captive portals to serve fake update lures, a Go RAT and a token-stealing PowerShell module to travelling staff"
 headline: "Microsoft attributes worldwide captive-portal traffic manipulation to Storm-2945, delivering the CornFlake RAT and ChocoShell stealer to travellers"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Braintrust AI evaluation platform AWS account breach — multi-tenant LLM-provider keys and SaaS credentials at risk; mandatory key rotation across customer base"
 headline: "Braintrust AI evaluation platform AWS account breach — multi-tenant LLM-provider keys and SaaS credentials at risk; mandatory key rotation across customer base"
 summary: "Braintrust, a US-based AI evaluation and observability platform, confirmed on 2026-05-06 that an attacker accessed one of its AWS accounts on 2026-05-04 (TechCrunch, 2026-05-06 · SecurityWeek, 2026-05-08)."

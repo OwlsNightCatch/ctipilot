@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "A lone actor used a jailbroken Gemini CLI to autonomously rebuild and redeploy C2 infrastructure in six minutes (\"Patriot Bait\")"
 headline: "Trend Micro documents a jailbroken Gemini agent rebuilding attacker C2 infrastructure from a 5 KB skill file in six minutes, ~90% of the work AI-driven"
 summary: >

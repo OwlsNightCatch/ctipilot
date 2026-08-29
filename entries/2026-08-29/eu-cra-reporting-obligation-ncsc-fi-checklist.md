@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: policy
-horizon: operational
 title: "Finland's NCSC-FI publishes an operational manufacturer checklist for the EU Cyber Resilience Act's 24h/72h/14-day/1-month reporting clock, two weeks before the 11 September 2026 go-live"
 headline: "NCSC-FI supplies the CRA reporting deadlines the Commission's own guidance had left unstated"
 summary: >
@@ -50,7 +49,7 @@ sourcing_note: >
   source. NCSC-FI is not on this deployment's national-CERT single-source carve-out list, so credibility reflects an
   authoritative but uncorroborated primary disclosure rather than a fully confirmed report.
 confidence: high
-references: [2026-08-16/weekly-w33-looking-ahead, 2026-08-23/weekly-w34-looking-ahead]
+references: []
 deep_dive: false
 deep_dive_category: null
 org_triage: null

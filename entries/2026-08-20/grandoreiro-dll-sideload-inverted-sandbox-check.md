@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Grandoreiro's loader decides it is in a sandbox when it finds seven ordinary desktop shortcuts — an inverted environment check, behind a two-hop DLL sideload"
 headline: "The evasion logic is backwards on purpose: a clean, well-stocked desktop is what makes this malware quit"
 summary: >

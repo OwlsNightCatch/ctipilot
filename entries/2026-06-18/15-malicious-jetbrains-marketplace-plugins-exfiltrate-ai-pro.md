@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "15 malicious JetBrains Marketplace plugins exfiltrate AI provider API keys on \"Apply\""
 headline: "15 malicious JetBrains Marketplace plugins exfiltrate AI provider API keys on \"Apply\""
 summary: "Aikido Security documented a coordinated campaign of at least 15 IDE plugins published under seven vendor accounts on the JetBrains Marketplace between October 2025 and June 2026, posing as AI coding assistants (built on DeepSeek, OpenAI, SiliconFlow) with roughly 70,000 combined installs (Aikido Security, 2026-06-16)."

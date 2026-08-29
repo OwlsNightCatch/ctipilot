@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Chaotic Eclipse Windows zero-days — MiniPlasma is third PoC in series; cldflt.sys CfAbortHydration path, claimed re-exploitable CVE-2020-17103 regression"
 headline: "Chaotic Eclipse Windows zero-days — MiniPlasma is third PoC in series; cldflt.sys CfAbortHydration path, claimed re-exploitable CVE-2020-17103 regression"
 summary: "UPDATE (originally covered 2026-05-15): Researcher \"Chaotic Eclipse\" / \"Nightmare Eclipse\" released a third unpatched Windows LPE PoC on 2026-05-17 — MiniPlasma — extending the YellowKey and GreenPlasma series covered in the 2026-05-15 daily (BleepingComputer, 2026-05-17; The Hacker News, 2026-05-18)."

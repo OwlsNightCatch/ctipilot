@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Kairos claims 77.6 GB from a second Madrid-region municipality in three months, and the town hall confirms a security incident while stating it cannot yet confirm that any data was actually accessed or taken"
 headline: "An encryption-free extortion brand is working through Spanish municipal administrations, where the first visible symptom is the claim itself"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "PATCHCORD, SHEETCORD and HACKERAI — one espionage cluster runs three different command-and-control channels, two of them inside Google Sheets and GitHub, and persists by rewriting the victim's browser shortcuts"
 headline: "Espionage implants run command-and-control through the Google Sheets API and persist by rewriting browser shortcuts"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Manchester Airports Group confirms a breach touching roughly 8.7 million customers across Manchester, Stansted and East Midlands — car-park, lounge and airport-WiFi sign-up data taken, no operational or payment-card impact, no actor named"
 headline: "One of Europe's largest airport-group operators discloses an 8.7M-record breach with no access vector confirmed"
 summary: >

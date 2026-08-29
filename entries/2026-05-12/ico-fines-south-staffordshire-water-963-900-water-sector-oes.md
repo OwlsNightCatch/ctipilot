@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "ICO fines South Staffordshire Water £963,900 — water-sector OES with partial SIEM coverage; Cl0p attribution and ZeroLogon kill-chain detail sourced to The Record"
 headline: "ICO fines South Staffordshire Water £963,900 — water-sector OES with partial SIEM coverage; Cl0p attribution and ZeroLogon kill-chain detail sourced to The"
 summary: "ICO fines South Staffordshire Water £963,900 for the 2020–2022 Cl0p intrusion. Regulator-side findings call out inadequate vulnerability management, unpatched critical systems, obsolete unsupported software (Windows Server 2003) and partial SIEM coverage; 633,887 individuals' data was published on the dark web from a total holding of about 1.85 million customer records (ICO notice, 2026-05-11). Reporting by The Record adds the ZeroLogon / two-DC kill-chain detail"

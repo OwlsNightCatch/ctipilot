@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "French Éducation nationale: a hijacked staff account reached the agent-training system, exposing identity and NIR data for everyone who has worked in an académie since 2001"
 headline: "France's education ministry confirms a third 2026 data incident, this one reached through a hijacked staff account"
 summary: >

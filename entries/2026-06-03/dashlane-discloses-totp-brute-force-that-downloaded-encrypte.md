@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: Dashlane discloses TOTP brute-force that downloaded encrypted vaults of fewer than 20 users
 headline: Dashlane discloses TOTP brute-force that downloaded encrypted vaults of fewer than 20 users
 summary: "Dashlane discloses a TOTP brute-force that downloaded the encrypted vaults of fewer than 20 personal-plan users — attackers exhausted the bounded six-digit TOTP keyspace to register a new trusted device, the same new-device-registration kill chain as the 2022 LastPass breach. Vaults stay master-password-encrypted but face offline cracking (TechCrunch, 2026-06-02)."

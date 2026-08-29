@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Thirteen CVEs in ATutor, none of which will ever be fixed — including an unauthenticated auto-login token forgery that authenticates as any account, administrators included"
 headline: "**CERT Polska discloses 13 ATutor flaws against an end-of-life product** — one is pre-auth to administrator, and no fix is coming"
 summary: >

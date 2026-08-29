@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Fourteen trojanized npm packages drop RedC2 4.0's RedShell Linux implant from a module-load-time loader that needs no install hook, defeating --ignore-scripts entirely"
 headline: "A plain `import` of a trojanized npm package is the whole exploit — no install hook, no exported call, no coverage from --ignore-scripts"
 summary: >

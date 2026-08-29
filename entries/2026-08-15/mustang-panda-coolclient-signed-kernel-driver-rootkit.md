@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: >
   Mustang Panda's CoolClient backdoor gains a kernel driver signed with a 2013 certificate that
   expired in 2014 — and it hides the malware's own C2 traffic by hooking the driver Windows uses
@@ -109,7 +108,6 @@ sourcing_note: >
 confidence: high
 references:
   - 2026-08-17/patchcord-sheetcord-google-sheets-c2-browser-shortcut-hijack
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

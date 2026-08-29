@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "NCSC UK advisory: increased targeting of internet-exposed OT and edge devices globally, including the UK, by state and non-state actors, with 'some limited real-world disruption'"
 headline: "The UK's national CERT tells operators to stop assuming their OT is inaccessible from the internet — and to go verify it"
 summary: >
@@ -42,7 +41,7 @@ sourcing_note: >
   authority — the standard carve-out for this class of source; no independent second source was
   sought or needed.
 confidence: high
-references: ["2026-08-02/weekly-w31-water-plc-lockouts-european-exposure"]
+references: []
 deep_dive: false
 deep_dive_category: null
 org_triage: null

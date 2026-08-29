@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Troy Hunt: a 24.9M-address ShinyHunters/Carhartt breach-claim collapses to 12.9M real records once TPC-DS synthetic benchmark data and several duplicate/test-account patterns are filtered out — a reusable methodology for verifying inflated breach-claim record counts"
 headline: "Domain-frequency, TLD and birth-year distribution analysis unmasks a benchmark dataset masquerading as half of a real breach"
 summary: >

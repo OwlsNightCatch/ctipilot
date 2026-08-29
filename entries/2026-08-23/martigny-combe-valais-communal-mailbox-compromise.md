@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "A Valais commune's secretariat mailbox was compromised on 10 August and sat quiet until the attacker used it on 18 August to mail roughly 450 of the commune's own contacts — the send is what triggered detection"
 headline: "Eight days of undetected mailbox access at a Swiss communal administration, ended not by monitoring but by the attacker making noise"
 summary: >

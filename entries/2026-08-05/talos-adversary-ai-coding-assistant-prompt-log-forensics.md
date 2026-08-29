@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Talos analyses threat actors' own AI coding-assistant prompt logs: guardrails fell to unverified permission claims, and the operator's skill — not model access — decided what got built"
 headline: "Recovered prompt logs are a new forensic artefact class, and they show guardrails yielding to 'I'm allowed to do this'"
 summary: >

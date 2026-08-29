@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "AudiA6 ransomware crypto-laundering service dismantled — two charged, Switzerland among the participating countries"
 headline: "AudiA6 ransomware crypto-laundering service dismantled — two charged, Switzerland among the participating countries"
 summary: "AudiA6, a major ransomware crypto-laundering service, dismantled in a US/Europol operation with Swiss participation; two operators charged over ~$389 M in laundered Bitcoin (US Secret Service, 2026-06-11)."

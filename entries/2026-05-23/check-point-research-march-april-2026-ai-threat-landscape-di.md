@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: annual-report
-horizon: operational
 title: "Check Point Research March-April 2026 AI Threat Landscape Digest: a single operator runs two AI platforms in parallel to breach nine Mexican government agencies"
 headline: "Check Point Research March-April 2026 AI Threat Landscape Digest: a single operator runs two AI platforms in parallel to breach nine Mexican government agencies"
 summary: "Check Point Research's March-April 2026 AI Threat Landscape Digest (published 2026-05-22) is the operationally most striking annual / periodic AI report of the past month."

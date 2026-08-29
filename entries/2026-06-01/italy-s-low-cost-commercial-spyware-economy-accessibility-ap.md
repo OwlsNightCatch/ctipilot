@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Italy's low-cost commercial spyware economy: Accessibility-API abuse as the cheap alternative to zero-days"
 headline: "Italy's low-cost commercial spyware economy: Accessibility-API abuse as the cheap alternative to zero-days"
 summary: "Deep dive: Italy's low-cost commercial spyware economy — Morpheus (IPS Intelligence) abuses the Android Accessibility API, overlay permissions and ADB to self-grant rights and kill mobile AV, no zero-day required; sibling tool Spyrtacus (SIO) leans on DexGuard obfuscation. EU law-enforcement is the named customer base (EDRi, 2026-05-28)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Wiz CIRT names JINX-0164 — LinkedIn-recruiter lures, AUDIOFIX macOS infostealer, MINIRAT npm pivot into CI/CD"
 headline: "Wiz CIRT names JINX-0164 — LinkedIn-recruiter lures, AUDIOFIX macOS infostealer, MINIRAT npm pivot into CI/CD"
 summary: "Wiz CIRT identified and named JINX-0164 on 2026-05-27, a financially motivated cluster active since mid-2025 against cryptocurrency organisations."

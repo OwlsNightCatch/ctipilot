@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CERTFR-2026-AVI-0572 — Centreon Infra Monitoring: RCE / SQLi / XSS cluster (April 2026 bulletin)"
 headline: "CERTFR-2026-AVI-0572 — Centreon Infra Monitoring: RCE / SQLi / XSS cluster (April 2026 bulletin)"
 summary: "CERT-FR's CERTFR-2026-AVI-0572 (2026-05-12) consolidates the April 2026 monthly security bulletin for Centreon Infra Monitoring — the enterprise monitoring platform widely deployed in French and EU public-sector NOCs and government ISPs (CERT-FR CERTFR-2026-AVI-0572, 2026-05-12; Centreon security bulletin, 2026-05-12)."

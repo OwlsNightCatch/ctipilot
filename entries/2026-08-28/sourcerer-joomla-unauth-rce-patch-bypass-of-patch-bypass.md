@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Sourcerer for Joomla: unauthenticated RCE exploited in the wild since before a working fix existed — the vendor's first two patches did not close it, and the CVE was re-scoped in place to widen the affected range"
 headline: "Every site that 'patched' Sourcerer between 17 and 26 August was exploitable the entire time, and its own extension manager said otherwise"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Sophos X-Ops: underground AI adoption is cautious but concrete — LLM-assisted packers, LLM C2 orchestration, NLP-triaged leak markets"
 headline: "Sophos X-Ops: underground AI adoption is cautious but concrete — LLM-assisted packers, LLM C2 orchestration, NLP-triaged leak markets"
 summary: "Sophos Counter Threat Unit's underground-forum monitoring paints a nuanced picture of criminal AI adoption rather than the hype-or-nothing framing common elsewhere (Sophos X-Ops, 2026-06-17)."

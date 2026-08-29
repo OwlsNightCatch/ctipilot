@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Citizen Lab: Cellebrite UFED used by Russian authorities three months after the vendor's Russia pull-out"
 headline: "Citizen Lab: Cellebrite UFED used by Russian authorities three months after the vendor's Russia pull-out"
 summary: "Citizen Lab published a forensic investigation (2026-06-25) confirming that Russian authorities used Cellebrite UFED / UFED 4PC / UFED Physical Analyzer to extract data from the iPhone 12 of opposition activist Andrey Pivovarov on 17 June 2021 — three months after Cellebrite cancelled its Russian contracts in …"

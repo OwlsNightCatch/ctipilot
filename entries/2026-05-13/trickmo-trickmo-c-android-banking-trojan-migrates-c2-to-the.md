@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "TrickMo \"TrickMo C\" — Android banking trojan migrates C2 to The Open Network blockchain, adds SOCKS5 / SSH device-as-pivot"
 headline: "TrickMo \"TrickMo C\" — Android banking trojan migrates C2 to The Open Network blockchain, adds SOCKS5 / SSH device-as-pivot"
 summary: "ThreatFabric's 2026-05-11 research identifies a substantially redesigned TrickMo variant active across January–February 2026 in campaigns against banking and fintech users in France, Italy and Austria (ThreatFabric, 2026-05-11; The Hacker News, 2026-05-12; Security Affairs, 2026-05-12)."

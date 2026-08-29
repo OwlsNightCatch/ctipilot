@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Netcraft: Bluekit PhaaS uses Browser-in-the-Middle to defeat FIDO2 and Device Bound Session Credentials"
 headline: "Netcraft: Bluekit PhaaS uses Browser-in-the-Middle to defeat FIDO2 and Device Bound Session Credentials"
 summary: "Netcraft published a technical breakdown (2026-06-25) of Bluekit, a phishing-as-a-service platform first documented by Varonis Threat Labs (2026-04-29) and now seen by Netcraft at scale (~70 active hostnames in a single week) (Netcraft, 2026-06-25; Varonis, 2026-04-29)."

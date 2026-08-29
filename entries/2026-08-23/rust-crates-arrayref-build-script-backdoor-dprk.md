@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "A hijacked crates.io account added the first dependency arrayref has taken in ten years, and that dependency ran a backdoor at compile time — every machine that built an affected project during a ninety-minute window must be treated as compromised"
 headline: "Build scripts execute before the crate's own code, so `cargo build` was the whole exploit; Wiz ties the infrastructure to two DPRK-linked npm campaigns"
 summary: >

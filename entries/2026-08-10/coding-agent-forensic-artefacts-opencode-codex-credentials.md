@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "CERT Intrinsec maps where autonomous coding agents leave evidence on disk — the same session databases and token files an investigator needs are a credential-collection target"
 headline: "OpenCode and OpenAI Codex write prompt history, per-session logs and plaintext API keys to predictable per-user paths"
 summary: >

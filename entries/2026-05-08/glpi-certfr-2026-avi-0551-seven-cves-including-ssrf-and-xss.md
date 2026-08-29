@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: GLPI CERTFR-2026-AVI-0551 — Seven CVEs including SSRF and XSS in EU ITSM platform (advisory 2026-04-29)
 headline: GLPI CERTFR-2026-AVI-0551 — Seven CVEs including SSRF and XSS in EU ITSM platform (advisory 2026-04-29)
 summary: "France's CERT-FR published CERTFR-2026-AVI-0551 (April 29, 2026) covering seven CVEs in GLPI, the open-source IT Service Management platform widely deployed in European public-sector organisations and healthcare networks."

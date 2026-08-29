@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: Novo Nordisk discloses theft of clinical-trial and healthcare-professional data
 headline: Novo Nordisk discloses theft of clinical-trial and healthcare-professional data
 summary: >
@@ -61,7 +60,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

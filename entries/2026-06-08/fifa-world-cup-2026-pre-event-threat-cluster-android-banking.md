@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "FIFA World Cup 2026 pre-event threat cluster: Android banking trojans in pirated streaming apps, plus a 13,000-domain fraud layer, ahead of the 11 June kick-off"
 headline: "FIFA World Cup 2026 pre-event threat cluster: Android banking trojans in pirated streaming apps, plus a 13,000-domain fraud layer, ahead of the 11 June kick-off"
 summary: "FIFA World Cup 2026 threat cluster ahead of the 11 June kick-off. Beyond the previously-flagged phishing-domain layer, ThreatFabric documents Android banking trojans (Massiv, Perseus) bound into counterfeit streaming apps with full device-takeover and SMS/push MFA interception (ThreatFabric, 2026-06-04) — a direct risk to travelling staff and BYOD fleets."

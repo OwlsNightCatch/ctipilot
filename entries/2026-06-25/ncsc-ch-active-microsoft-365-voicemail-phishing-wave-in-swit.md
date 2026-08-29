@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "NCSC-CH: active Microsoft 365 \"voicemail\" phishing wave in Switzerland delivers infostealers and harvests M365 credentials"
 headline: "NCSC-CH: active Microsoft 365 \"voicemail\" phishing wave in Switzerland delivers infostealers and harvests M365 credentials"
 summary: "NCSC-CH flags an active Microsoft 365 \"voicemail\" phishing wave in Switzerland — Week 25 review documents dual-path ZIP-borne infostealer / fake-login credential theft against M365 tenants, with downstream BEC and chain-phishing once a mailbox is taken; the ZIP-as-audio lure is the key detection discriminator (NCSC-CH, 2026-06-23)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Texas Parks & Wildlife: 3.08M licence holders exposed via an unnamed third-party vendor — with a public-vs-AG-filing SSN contradiction"
 headline: "Texas Parks & Wildlife: 3.08M licence holders exposed via an unnamed third-party vendor — with a public-vs-AG-filing SSN contradiction"
 summary: "Two more third-party-vendor breaches land on public-sector and healthcare bodies: 3.08M Texas hunting/fishing-licence holders (with a public-vs-AG-filing contradiction over whether SSNs were taken) and Amazon's One Medical Seniors archive (with ShinyHunters' unverified 8.8TB claim and a deadline that expires today) (BleepingComputer, 2026-06-19)."

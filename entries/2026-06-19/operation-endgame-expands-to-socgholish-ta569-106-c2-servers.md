@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Operation Endgame expands to SocGholish/TA569 — 106 C2 servers down, FakeUpdates loader stripped from 14,971 WordPress sites"
 headline: "Operation Endgame expands to SocGholish/TA569 — 106 C2 servers down, FakeUpdates loader stripped from 14,971 WordPress sites"
 summary: "Law enforcement extended Operation Endgame to SocGholish/TA569, taking down 106 C2 servers and stripping the FakeUpdates loader from 14,971 compromised WordPress sites in a Dutch-led, Europol-coordinated action (Politie, 2026-06-18)."

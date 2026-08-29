@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CVE-2026-48449 — Adobe Campaign Classic: an authorization flaw gives unauthenticated arbitrary code execution (CVSS 10.0), on-premise and hybrid deployments only"
 headline: "Adobe ships a priority-1 fix for a CVSS 10.0 unauthenticated code-execution flaw in Campaign Classic — only self-hosted and hybrid installs need action"
 summary: >

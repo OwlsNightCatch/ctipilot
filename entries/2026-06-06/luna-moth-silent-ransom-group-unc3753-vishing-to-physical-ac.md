@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Luna Moth / Silent Ransom Group (UNC3753): vishing-to-physical-access data-theft extortion against legal and professional services"
 headline: "Luna Moth / Silent Ransom Group (UNC3753): vishing-to-physical-access data-theft extortion against legal and professional services"
 summary: "Luna Moth / Silent Ransom Group (UNC3753) escalates to sending operatives into victim offices with USB drives — Mandiant documents a Jan–May 2026 vishing-to-data-theft extortion campaign against legal/financial firms with sub-one-hour exfiltration; one victim reportedly paid ~$20 M (Mandiant, 2026-06-05). Deep dive in § 5."

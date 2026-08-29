@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Phishing kits are registering browser service workers to build in-page transparent proxies — relaying credentials and live MFA codes from a fake browser window on trusted cloud hosting"
 headline: "A service worker turns the victim's own browser into the adversary-in-the-middle proxy, on hosting you cannot block"
 summary: >

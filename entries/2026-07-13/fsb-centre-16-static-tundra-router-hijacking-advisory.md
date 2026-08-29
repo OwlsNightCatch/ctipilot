@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: >
   FSB Centre 16 (Static Tundra) router-hijacking campaign: 19-agency joint advisory, formal Poland
   energy-grid attribution and first joint EU/UK cyber sanctions
@@ -159,7 +158,6 @@ sourcing_note: >
   is a parent unit spanning multiple tracked clusters, not a single group.
 confidence: high
 references: []
-weekly_section: null
 deep_dive: true
 deep_dive_category: apt-campaign
 org_triage: null

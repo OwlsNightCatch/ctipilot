@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Bouncy Castle for Java 1.85 — 32 CVEs published three weeks after the silent fix: three certificate-validation bypasses and a static Diffie-Hellman key-recovery flaw rated critical"
 headline: "Bouncy Castle publishes 32 CVE write-ups for a July release — three break certificate validation, one leaks a static DH key"
 summary: >

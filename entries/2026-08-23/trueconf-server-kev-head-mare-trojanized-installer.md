@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CVE-2026-72529 and CVE-2026-72530 — a pre-auth chain on TrueConf Server's port 4307 reaches SYSTEM, and the operators use it to replace the client installer the server hands to everyone who joins a meeting"
 headline: "Both flaws are now catalogued as exploited; the reach extends to organisations that run no TrueConf server of their own"
 summary: >

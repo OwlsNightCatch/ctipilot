@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: >
   ShieldBreak — a public proof-of-concept defeats Microsoft's July fix for the RoguePlanet
   Defender flaw, claims 100% reliability where the original was a coin flip, and now covers
@@ -147,7 +146,6 @@ sourcing_note: >
   far uncorroborated by any vendor or independent analysis.
 confidence: medium
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

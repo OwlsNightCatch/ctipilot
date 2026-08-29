@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   Groupe 3R (Réseau Radiologique Romand) — Akira ransomware claims 48 GB; 20 imaging centres
   across seven Swiss cantons, second attack in twelve months
@@ -59,7 +58,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

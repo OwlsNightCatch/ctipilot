@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Škoda Auto Deutschland online-shop breach exposes customer PII and password hashes; logging gap prevents exfiltration confirmation"
 headline: "Škoda Auto Deutschland online-shop breach exposes customer PII and password hashes; logging gap prevents exfiltration confirmation"
 summary: "Škoda Auto Deutschland GmbH disclosed on 2026-05-11 that an unauthorised actor exploited a vulnerability in the standard shop-software platform underlying its German online-retail store, accessing customer names, postal addresses, email addresses, telephone numbers, order history, account data and password hashes …"

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Check Point chains SQL injection to RCE in LangGraph's checkpointer (CVE-2025-67644 + CVE-2026-28277)"
 headline: "Check Point chains SQL injection to RCE in LangGraph's checkpointer (CVE-2025-67644 + CVE-2026-28277)"
 summary: "Check Point Research disclosed a vulnerability chain in LangGraph, the open-source stateful-agent framework published under LangChain (Check Point Research, 2026-06-11)."

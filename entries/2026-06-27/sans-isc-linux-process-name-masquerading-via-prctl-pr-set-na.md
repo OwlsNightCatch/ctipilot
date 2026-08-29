@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "SANS ISC: Linux process-name masquerading via prctl(PR_SET_NAME) and how to detect it"
 headline: "SANS ISC: Linux process-name masquerading via prctl(PR_SET_NAME) and how to detect it"
 summary: "A SANS Internet Storm Center diary (2026-06-24) documents how Linux malware masquerades its process name via prctl(PR_SET_NAME, …), which writes the 15-character comm field in /proc/<pid>/comm — letting a process running ./ps-masquerade appear in ps/top/pgrep as a kernel worker thread such as …"

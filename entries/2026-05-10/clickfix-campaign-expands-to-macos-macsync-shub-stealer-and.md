@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "ClickFix campaign expands to macOS — Macsync, Shub Stealer and AMOS delivered via Base64 Terminal commands that bypass Gatekeeper"
 headline: "ClickFix campaign expands to macOS — Macsync, Shub Stealer and AMOS delivered via Base64 Terminal commands that bypass Gatekeeper"
 summary: "Microsoft Threat Intelligence on 2026-05-06 documented an active ClickFix social-engineering campaign now targeting macOS users via fake utility-installation guides hosted on Medium, Squarespace, and Craft-built blogs (Microsoft Security Blog, 2026-05-06 · Malwarebytes — Shub Stealer earlier wave, 2026-03)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "CrowdStrike, Google and Shadowserver simultaneously sever all four C2 channels of the GlassWorm developer-targeting botnet (not to be confused with the Nx Console / TanStack GitHub-publish chain in § 5) — Russia-attributed, active since early 2025"
 headline: "CrowdStrike, Google and Shadowserver simultaneously sever all four C2 channels of the GlassWorm developer-targeting botnet (not to be confused with the Nx"
 summary: "CrowdStrike, Google and Shadowserver simultaneously severed all four C2 channels of the GlassWorm developer-targeting botnet. The campaign — active since early 2025, attributed by CrowdStrike to likely Russia-based operators on the basis of CIS-locale exit checks — used Solana blockchain memo fields, BitTorrent DHT, Google Calendar event titles, and traditional VPS C2 in parallel for resilience; takedown required cutting all four at once. Infections persist on developer endpoints and post-compromise credential rotation is required (CrowdStrike, 2026-05-27; TechCrunch, 2026-05-27)."

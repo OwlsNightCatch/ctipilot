@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   DragonForce lists Geneva's IFAGE adult-education foundation on its leak site, claiming 850 GB —
   an attribution and volume IFAGE has not confirmed
@@ -74,7 +73,6 @@ sourcing_note: >
   Zürich Baudirektion item (2026-07-02).
 confidence: low
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

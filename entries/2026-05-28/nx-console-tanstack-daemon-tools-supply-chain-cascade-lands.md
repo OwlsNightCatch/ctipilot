@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: Nx Console / TanStack / DAEMON Tools supply-chain cascade lands three CISA KEV entries
 headline: Nx Console / TanStack / DAEMON Tools supply-chain cascade lands three CISA KEV entries
 summary: "CISA added three supply-chain CVEs to KEV on 2026-05-27 — the Nx Console / TanStack / DAEMON Tools cascade. The Nx Console v18.95.0 VS Code extension compromise (CVE-2026-48027) ultimately traces to a TanStack Router npm supply-chain bug (CVE-2026-45321) that exfiltrated a contributor's GitHub CLI OAuth token; GitHub later confirmed that roughly 3,800 internal repositories and Grafana Labs were also breached. Separately, CVE-2026-8398 covers a six-week trojanisation of signed DAEMON Tools Lite builds 12.5.0.2421–12.5.0.2434 from the official vendor build pipeline."

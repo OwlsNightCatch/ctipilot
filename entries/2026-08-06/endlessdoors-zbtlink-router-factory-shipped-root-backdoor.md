@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "ENDLESSDOORS (CVE-2026-66747) — twenty Zbtlink router models ship from the factory with an unauthenticated root-command backdoor, and the discloser's remedy is replacement"
 headline: "The implant is not an intrusion — it is a vendor component started by the vendor's own init script"
 summary: >

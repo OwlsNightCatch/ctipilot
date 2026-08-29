@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: NYT investigation gives first named attribution for the Jaguar Land Rover ransomware attack — a Russian state-linked criminal group
 headline: NYT investigation gives first named attribution for the Jaguar Land Rover ransomware attack — a Russian state-linked criminal group
 summary: "A New York Times investigation provides the first named attribution for the August 2025 Jaguar Land Rover ransomware attack — a Russian state-linked criminal group — in an incident that halted JLR production for ~six weeks and is estimated at ~£1.9 bn / $2.5 bn in UK economic impact. Attribution is the investigators' assessment, not an official UK government statement (TechCrunch, 2026-06-26)."

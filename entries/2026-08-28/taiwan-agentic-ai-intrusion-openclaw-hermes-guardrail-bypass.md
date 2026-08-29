@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "A near-autonomous, multi-agent AI framework compromised Taiwanese government infrastructure over four days — cracking 85 accounts, exfiltrating 2,564+ personnel records, and bypassing its own safety guardrails by reframing itself as 'authorized penetration testing'"
 headline: "Twelve automated attack waves, eight parallel sub-agents each, and a self-applied cover story that has no current MITRE ATT&CK mapping"
 summary: >

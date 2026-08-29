@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Nintendo employee data stolen from third-party HR-survey SaaS (TinyPulse), not Nintendo's own systems"
 headline: "Nintendo employee data stolen from third-party HR-survey SaaS (TinyPulse), not Nintendo's own systems"
 summary: "Nintendo of America confirmed that the extortion group Shadowbyt3$ stole a trove of employee data — not from Nintendo's perimeter, but from TinyPulse, an employee-engagement / pulse-survey SaaS owned by WebMD Health Services (BleepingComputer, 2026-06-18)."

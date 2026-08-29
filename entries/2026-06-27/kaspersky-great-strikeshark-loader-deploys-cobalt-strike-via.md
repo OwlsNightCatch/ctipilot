@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Kaspersky GReAT: \"StrikeShark\" loader deploys Cobalt Strike via \"Perfect DLL Hijacking\" against government targets"
 headline: "Kaspersky GReAT: \"StrikeShark\" loader deploys Cobalt Strike via \"Perfect DLL Hijacking\" against government targets"
 summary: "Kaspersky GReAT published a full technical analysis (2026-06-26) of SharkLoader, an undocumented loader used in a cluster it tracks as StrikeShark and assesses with low confidence as a Chinese-speaking actor (based on the Chinese-authored FScan/Searchall/Pillager toolkit it deploys) (Kaspersky …"

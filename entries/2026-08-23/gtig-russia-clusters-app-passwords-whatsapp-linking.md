@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Three Russia-nexus espionage clusters compromise European diplomats and academics without malware — by talking targets through app passwords, device-code approvals and WhatsApp device-linking, all of which are legitimate features working as designed"
 headline: "No exploit and no payload — the victim approves the attacker's session, or issues a credential the second factor never sees"
 summary: >

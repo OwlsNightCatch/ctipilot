@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Keycloak 26.6.3: privilege escalation via OAuth token-exchange and SSRF in the EU public sector's reference identity platform"
 headline: "Keycloak 26.6.3: privilege escalation via OAuth token-exchange and SSRF in the EU public sector's reference identity platform"
 summary: "Keycloak 26.6.3 patches 16 CVEs in the EU public sector's reference IAM, led by a token-exchange privilege escalation. CVE-2026-9704 lets a low-privilege client silently omit the subject_token parameter in an OAuth 2.0 token exchange so Keycloak issues a token under the requesting client's identity, and CVE-2026-4874 turns the OIDC token endpoint into an SSRF primitive. No known in-the-wild exploitation; patch-priority for any internet-reachable Keycloak underpinning e-government SSO (Keycloak, 2026-06-04). Full treatment in § 5."

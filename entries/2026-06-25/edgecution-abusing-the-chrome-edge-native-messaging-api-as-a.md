@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Edgecution: abusing the Chrome/Edge Native Messaging API as a browser-sandbox-to-host bridge"
 headline: "Edgecution: abusing the Chrome/Edge Native Messaging API as a browser-sandbox-to-host bridge"
 summary: "Background. Browser-extension-to-host pivoting is not a new idea — the Native Messaging API (the stdio IPC channel that lets a browser extension talk to a registered local executable) has been a documented abuse surface for years, and EDR coverage of browser child-processes remains uneven."

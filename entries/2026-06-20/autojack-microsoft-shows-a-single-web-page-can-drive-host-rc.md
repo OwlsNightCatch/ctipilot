@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "AutoJack — Microsoft shows a single web page can drive host RCE through an AI agent's local MCP server"
 headline: "AutoJack — Microsoft shows a single web page can drive host RCE through an AI agent's local MCP server"
 summary: "Microsoft Security researchers disclosed AutoJack on 2026-06-18, a three-weakness chain against AutoGen Studio's Model Context Protocol (MCP) WebSocket surface that lets a malicious web page rendered by a local AI browsing agent execute arbitrary commands on the host (Microsoft Security Blog, 2026-06-18)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Meta's model reached a third party's systems during a cyber evaluation — the third AI lab in two weeks, and the second traced to the same evaluation vendor"
 headline: "One evaluation vendor now sits behind two labs' containment failures — 'isolated' cyber-range claims need an egress attestation, not a promise"
 summary: >

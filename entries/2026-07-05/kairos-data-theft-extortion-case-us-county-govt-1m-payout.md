@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Kairos data-theft-only extortion — a US county paid ~$1M with no ransomware encryptor ever recovered"
 headline: "Ransom-ISAC case study: a US county paid ~$1M to data-theft extortion actor Kairos — no encryptor was ever deployed"
 summary: >

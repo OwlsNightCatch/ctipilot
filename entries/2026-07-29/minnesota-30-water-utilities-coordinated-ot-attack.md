@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   Coordinated two-day cyberattack disrupts operational technology at 30+ Minnesota water and
   wastewater utilities — no authority has attributed it
@@ -169,7 +168,6 @@ sourcing_note: >
 confidence: medium
 references:
   - 2026-07-24/cyberav3ngers-plc-aa26-097a-schneider-siemens-expansion
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

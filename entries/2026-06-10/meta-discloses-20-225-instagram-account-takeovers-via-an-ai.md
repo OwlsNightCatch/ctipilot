@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Meta discloses 20,225 Instagram account takeovers via an AI support-tool logic flaw; Maine AG notification filed 8 June"
 headline: "Meta discloses 20,225 Instagram account takeovers via an AI support-tool logic flaw; Maine AG notification filed 8 June"
 summary: "Meta filed a breach notification with the Maine Attorney General on 8 June disclosing that a logic flaw in its AI-assisted account-recovery tool (\"High Touch Support\") allowed unauthorised actors to hijack 20,225 Instagram accounts between 17 April and 31 May 2026 (BleepingComputer, 2026-06-08)."

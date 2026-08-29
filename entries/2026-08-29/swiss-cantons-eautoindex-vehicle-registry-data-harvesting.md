@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Six Swiss cantons disclose bulk-harvesting of vehicle-owner data after an unknown actor bypassed per-person rate limits on public lookup portals, with extortion attempts against the platform operator and canton Vaud"
 headline: "An attacker defeated Switzerland's cantonal vehicle-registry rate limits at scale, and two operators were then extorted"
 summary: >

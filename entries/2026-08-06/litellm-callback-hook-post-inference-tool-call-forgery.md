@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "LiteLLM callback hooks let an attacker who already holds gateway admin forge tool calls after inference — downstream of every prompt-level defence"
 headline: "The AI gateway's own extension points become the tamper surface, and reverting the config removes the evidence"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: FBI PSA260521 — Kali365 OAuth device-code PhaaS bypasses M365 MFA without credential capture
 headline: FBI PSA260521 — Kali365 OAuth device-code PhaaS bypasses M365 MFA without credential capture
 summary: "FBI PSA260521 warns on Kali365 — OAuth device-code PhaaS bypassing M365 MFA without credential capture. $250/month Telegram-distributed kit issues device codes via lures impersonating Adobe/DocuSign/SharePoint; secondary AiTM mode proxies session cookies; observed outcomes since April 2026 include mailbox exfiltration, lateral phishing, BEC fraud and ransomware pre-staging (The Register, 2026-05-22 · Help Net Security, 2026-05-22)."

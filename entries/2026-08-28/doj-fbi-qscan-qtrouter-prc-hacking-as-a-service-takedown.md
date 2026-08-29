@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "DOJ/FBI seize domains behind QScan and QTRouter, the hacking-as-a-service platforms a PRC contractor sold to China's MSS and PLA — NASA, the Federal Reserve, DOJ, HHS, NIH and the US Senate named among the victims of activity DOJ dates to at least 2018, with European infrastructure among Lumen's own profiled targets"
 headline: "A PRC state-enablement platform leasing commercial proxy subscriptions as anonymisation infrastructure has been seized — but blocklisting won't be durable"
 summary: >

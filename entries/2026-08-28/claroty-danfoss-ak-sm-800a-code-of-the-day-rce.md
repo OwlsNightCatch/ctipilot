@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Claroty Team82: Danfoss AK-SM 800A refrigeration system managers — undocumented 'code-of-the-day' authentication bypass and post-authentication command-injection RCE across thousands of internet-exposed devices"
 headline: "A hidden authentication mechanism discloses internal network layout before an attacker even needs the two post-auth flaws that follow it"
 summary: >

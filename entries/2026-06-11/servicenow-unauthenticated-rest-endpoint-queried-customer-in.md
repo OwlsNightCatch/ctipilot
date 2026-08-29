@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: ServiceNow unauthenticated REST endpoint queried customer instance tables before a silent 5 June patch
 headline: ServiceNow unauthenticated REST endpoint queried customer instance tables before a silent 5 June patch
 summary: "ServiceNow shipped a Scripted REST endpoint (/api/now/related_list_edit/create) with requires_authentication=false, and attackers queried customer instance tables unauthenticated between 2–4 June before a silent server-side patch on 5 June (BleepingComputer, 2026-06-09). NCSC-CH GovCERT flags it \"Actively Exploited\"; ServiceNow's own read is that the activity was \"likely tied to security researchers\" — either way, instance tables holding tickets, tokens and PII were reachable without credentials. No CVE."

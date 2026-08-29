@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Operation XENOFISCAL: SideCopy (APT36) hits provincial treasury officials with XenoRAT via an mshta/HTA chain"
 headline: "Operation XENOFISCAL: SideCopy (APT36) hits provincial treasury officials with XenoRAT via an mshta/HTA chain"
 summary: "Seqrite Labs documented Operation XENOFISCAL, a SideCopy (Transparent Tribe / APT36, Pakistan-attributed) campaign against finance officials across Afghanistan's 34 provincial treasury directorates (Mustoufiats) (Seqrite Labs, 2026-05-29)."

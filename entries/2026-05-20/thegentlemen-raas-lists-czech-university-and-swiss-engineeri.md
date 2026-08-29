@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: TheGentlemen RaaS lists Czech university and Swiss engineering firm on leak site
 headline: TheGentlemen RaaS lists Czech university and Swiss engineering firm on leak site
 summary: "UPDATE (originally covered 2026-05-14 backend database leak analysis): The TheGentlemen RaaS group's leak site listed two new European victims this week: University of Finance and Administration (VSFS, vsfs.cz) in the Czech Republic on 2026-05-19 and Swiss engineering firm DEVO-Tech AG (devo-tech.ch …"

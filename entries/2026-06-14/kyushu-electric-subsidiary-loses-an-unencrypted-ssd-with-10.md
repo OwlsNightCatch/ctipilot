@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Kyushu Electric subsidiary loses an unencrypted SSD with 10.9 million customer records — reportedly Japan's largest personal-data breach"
 headline: "Kyushu Electric subsidiary loses an unencrypted SSD with 10.9 million customer records — reportedly Japan's largest personal-data breach"
 summary: "Kyushu Electric Power Transmission and Distribution disclosed on 8 June that a palm-sized portable SSD holding personal records for roughly 10.9 million customers went missing from a restricted server room; a contractor had backed up data to the drive on 27 April and stored it in a cabinet that was found unlocked and …"

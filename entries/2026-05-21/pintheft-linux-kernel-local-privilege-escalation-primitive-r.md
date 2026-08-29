@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "PinTheft — Linux kernel local-privilege-escalation primitive (RDS zerocopy double-free + io_uring fixed-buffer page-cache overwrite), PoC public, Arch Linux default-loaded"
 headline: "PinTheft — Linux kernel local-privilege-escalation primitive (RDS zerocopy double-free + io_uring fixed-buffer page-cache overwrite), PoC public, Arch Linux"
 summary: "Aaron Esau (V12 Security) disclosed PinTheft on 2026-05-19 via the oss-security mailing list — a Linux kernel local privilege escalation that chains an RDS (Reliable Datagram Sockets) zerocopy double-free with io_uring fixed-buffer reference manipulation to overwrite the page cache of a SUID-root binary and gain …"

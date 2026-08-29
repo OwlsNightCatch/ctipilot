@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Truffle Security re-tested 10,616 leaked AWS key pairs and 88% still authenticate — 768 of them give full control of a company account, and none of the measured leak surfaces is the current working tree"
 headline: "88% of leaked AWS keys still authenticate, and the measured leak surfaces are Git history, dataset repos, images, registries and CI logs — not the working tree"
 summary: >

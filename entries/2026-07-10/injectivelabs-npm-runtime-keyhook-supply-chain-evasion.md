@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "npm supply-chain payload hides as runtime 'telemetry' with no install hook — defeating install-time dependency scanners"
 headline: "Aikido: compromised @injectivelabs npm package hooks key-derivation at runtime, carries no postinstall script, and exfiltrates disguised as normal SDK traffic"
 summary: >

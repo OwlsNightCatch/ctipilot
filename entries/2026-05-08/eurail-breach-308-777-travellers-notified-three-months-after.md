@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Eurail breach: 308 777 travellers notified three months after December 2025 compromise; Dutch DPA and EDPS open reviews"
 headline: "Eurail breach: 308 777 travellers notified three months after December 2025 compromise; Dutch DPA and EDPS open reviews"
 summary: "Eurail began notifying 308 777 travellers three months after a December 2025 breach that exposed passport numbers, IBANs, and DiscoverEU pass data. Dutch DPA and EDPS have opened reviews of the delayed notification."

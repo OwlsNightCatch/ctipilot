@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Beacon CRM tells around 1,500 UK charities to assume everything they stored was taken — a compromised access key, exfiltrated backups, and encryption its experts think the attacker could undo"
 headline: "A charity-sector CRM breach reaches hospices, NHS-linked charities and Victim Support, with the vendor advising customers to assume total data loss"
 summary: >

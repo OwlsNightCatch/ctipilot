@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "ESET: the Gentlemen RaaS gang centrally builds and maintains its affiliates' EDR-killer framework"
 headline: "ESET: the Gentlemen RaaS gang centrally builds and maintains its affiliates' EDR-killer framework"
 summary: "ESET's months-long investigation into the Gentlemen ransomware-as-a-service operation reveals a structural departure from the affiliate norm: rather than each affiliate sourcing its own evasion tooling, the operators build, maintain and distribute a modular EDR-killing framework — GentleKiller — centrally (ESET …"

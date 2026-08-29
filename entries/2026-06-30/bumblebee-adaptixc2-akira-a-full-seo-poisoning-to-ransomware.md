@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Bumblebee → AdaptixC2 → Akira: a full SEO-poisoning-to-ransomware kill chain with a parallel Swiss intrusion"
 headline: "Bumblebee → AdaptixC2 → Akira: a full SEO-poisoning-to-ransomware kill chain with a parallel Swiss intrusion"
 summary: The DFIR Report published (2026-06-29) the full reconstruction of an intrusion that began with SEO poisoning and ended in Akira ransomware in under three days.

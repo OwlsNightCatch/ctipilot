@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "The Gentlemen RaaS — backend \"Rocket\" database leaked (16.22 GB), Check Point analysis exposes operator handles, ZeroPulse C2 internals, 1,570+ victims, decryptor published on GitHub"
 headline: "The Gentlemen RaaS — backend \"Rocket\" database leaked (16.22 GB), Check Point analysis exposes operator handles, ZeroPulse C2 internals, 1,570+ victims"
 summary: "The Gentlemen RaaS backend dumped — Check Point exposes operator handles and tooling; SystemBC C&C reveals 1,570+ victims vs. 332 on the public leak site; decryptor on GitHub. Check Point Research's 2026-05-13 analysis of a 44.4 MB extract from the group's leaked \"Rocket\" backend (16.22 GB total, posted to the cybercrime forum Breached on 4 May after the group's infrastructure was compromised) maps nine operator handles, the EDR-suppression toolchain (EDRStartupHinder, gfreeze, glinker), the ZeroPulse C2 framework, and a separately-exposed SystemBC C&C server holding 1,570+ victim entries against 332 publicly listed in the first five months of 2026 — large under-reporting of true scope. The decryptor is public on GitHub per BankInfoSecurity, making decryption the first action for any in-flight Gentlemen incident (Check Point Research, 2026-05-13; BankInfoSecurity, 2026-05-11)."

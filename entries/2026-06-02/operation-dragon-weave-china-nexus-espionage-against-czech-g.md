@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Operation Dragon Weave: China-nexus espionage against Czech government with Azure Blob Storage dead-drop C2"
 headline: "Operation Dragon Weave: China-nexus espionage against Czech government with Azure Blob Storage dead-drop C2"
 summary: "China-nexus Operation Dragon Weave targets Czech and Taiwanese government, academic and financial organisations with a Rust loader and an AdaptixC2 agent that routes C2 through Microsoft Azure Blob Storage as a dead-drop — today's deep dive (Seqrite Labs, 2026-06-01)."

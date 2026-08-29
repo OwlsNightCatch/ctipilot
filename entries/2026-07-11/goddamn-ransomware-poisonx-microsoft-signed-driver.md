@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "GodDamn ransomware (Beast/Monster rebrand) blinds EDR with 'PoisonX', a malicious kernel driver Microsoft signed"
 headline: "Symantec: a driver built malicious from the outset — yet WHCP-signed — defeats code-signing allowlisting to kill EDR before GodDamn encrypts"
 summary: >

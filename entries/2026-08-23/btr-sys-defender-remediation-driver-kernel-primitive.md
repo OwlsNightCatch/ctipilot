@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Windows Defender ships its own kernel write primitive: BTR.sys, the signed boot-time remediation driver, takes an encrypted job list from an alternate data stream and will delete or create any file or registry value asked of it"
 headline: "No exploit, no vulnerability, nothing to blocklist — the driver is a required Defender component, and its instructions live in a hidden stream on its own file"
 summary: >

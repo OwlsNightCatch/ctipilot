@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "FakeAgent — malvertising hosts a fake AI-desktop-app download page on the vendor's own trusted domain, delivering SectopRAT by DLL side-loading"
 headline: "A search ad pointed at a legitimate vendor domain: the lure page was a user-created artifact on the platform itself"
 summary: >

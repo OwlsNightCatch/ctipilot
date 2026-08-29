@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: >
   CVE-2026-17583 — Thermo Fisher Applied Biosystems genetic analyzers write DNA result files with
   no integrity checking, so results can be altered after the run and no vendor fix is offered
@@ -95,7 +94,6 @@ sourcing_note: >
   the time of writing.
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "RedHook Android RAT abuses ADB Wireless Debugging to self-grant shell (uid 2000) privileges without an exploit"
 headline: "RedHook shows a no-exploit Android privilege path: Accessibility automation silently enables Wireless Debugging for a shell-uid helper"
 summary: >

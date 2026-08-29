@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Threema and its Swiss colocation partner were hit by the same adaptive DDoS wave — the attack moved to the hosting layer, and only the self-hosted customers stayed up"
 headline: "Swiss messenger Threema loses four hours to a DDoS campaign that also hit its colocation partner; availability only, no access to systems or data"
 summary: >

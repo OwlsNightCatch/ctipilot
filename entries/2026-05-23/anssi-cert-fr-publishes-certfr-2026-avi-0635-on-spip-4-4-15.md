@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "ANSSI / CERT-FR publishes CERTFR-2026-AVI-0635 on SPIP < 4.4.15 — security-policy bypass in the dominant French public-administration CMS"
 headline: "ANSSI / CERT-FR publishes CERTFR-2026-AVI-0635 on SPIP < 4.4.15 — security-policy bypass in the dominant French public-administration CMS"
 summary: "ANSSI / CERT-FR issued CERTFR-2026-AVI-0635 on 2026-05-22 covering a security-policy bypass vulnerability in SPIP (Système de Publication pour l'Internet) versions prior to 4.4.15; SPIP 4.4.15 was released the same day (SPIP blog, 2026-05-22)."

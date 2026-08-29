@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Nx Console VS Code extension (2.2 M installs) compromised via stolen publisher credentials — 11-minute window 2026-05-18 12:36–12:47 UTC"
 headline: "Nx Console VS Code extension (2.2 M installs) compromised via stolen publisher credentials — 11-minute window 2026-05-18 12:36–12:47 UTC"
 summary: "On 2026-05-18 between 12:36 and 12:47 UTC, version 18.95.0 of the Nx Console VS Code extension (nrwl.angular-console, 2.2+ million installs) was pushed to the Visual Studio Marketplace using stolen publisher credentials."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Attackers social-engineer Meta's AI support chatbot into resetting Instagram passwords"
 headline: "Attackers social-engineer Meta's AI support chatbot into resetting Instagram passwords"
 summary: "Over the weekend of 31 May–1 June, instructions circulated on Telegram showing how to coax Meta's conversational \"AI support assistant\" into linking an attacker-controlled email to a target Instagram account and triggering a password reset, bypassing Instagram's normal account-recovery friction (Krebs on Security …"

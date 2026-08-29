@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: Cyber Europe 2026 tests the revised EU Cyber Blueprint and triggers the first live activation of the EU Cybersecurity Reserve
 headline: Cyber Europe 2026 tests the revised EU Cyber Blueprint and triggers the first live activation of the EU Cybersecurity Reserve
 summary: "EU ran Cyber Europe 2026 and activated the Cybersecurity Reserve for the first time; Switzerland participated as a partner country. The exercise tested the 2025 EU Cyber Blueprint against a cross-border rail/maritime OT crisis scenario (ENISA, 2026-06-11)."

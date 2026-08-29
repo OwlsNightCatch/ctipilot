@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Unit 42: Microsoft Teams external-chat now a primary phishing surface for APT29 and UNC6692"
 headline: "Unit 42: Microsoft Teams external-chat now a primary phishing surface for APT29 and UNC6692"
 summary: "Microsoft Teams external chat is now ~42% of phishing alerts in Cortex, driven by APT29 (Cloaked Ursa) and UNC6692 IT-support impersonation — a configuration-hardening problem, not a patch (Unit 42, 2026-06-08)."

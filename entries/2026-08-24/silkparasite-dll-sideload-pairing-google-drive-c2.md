@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "SilkParasite runs seven RAT families behind six signed-application side-loading pairs — and the reusable detection is the pairing itself, not any DLL name: a signed binary loading a library placed beside it from an unusual location"
 headline: "SilkParasite gets five named RAT families and one reusable detection: the side-loading pairing, not the DLL name"
 summary: >
@@ -61,7 +60,7 @@ sourcing_note: >
   families as registry entities, and the side-loading pairing discriminator, none of which those entries carry.
 confidence: medium
 update_of: null
-references: [2026-08-23/weekly-w34-c2-rendezvous-moved-to-services-you-cannot-block, 2026-08-23/weekly-w34-ai-bought-throughput-not-capability]
+references: []
 deep_dive: false
 deep_dive_category: null
 org_triage: null

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "AdaptHealth breached via a social-engineered hijack of a third-party contractor's session"
 headline: "AdaptHealth breached via a social-engineered hijack of a third-party contractor's session"
 summary: DME and home-healthcare provider AdaptHealth Corp.

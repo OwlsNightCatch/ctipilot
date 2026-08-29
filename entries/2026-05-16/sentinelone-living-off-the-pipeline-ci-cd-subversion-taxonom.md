@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "SentinelOne: \"Living Off the Pipeline\" — CI/CD subversion taxonomy with three real intrusion cases (TeamCity, GitLab service-account pivot, Contagious Interview)"
 headline: "SentinelOne: \"Living Off the Pipeline\" — CI/CD subversion taxonomy with three real intrusion cases (TeamCity, GitLab service-account pivot, Contagious"
 summary: "SentinelOne published on 2026-05-15 a practitioner-focused taxonomy of CI/CD pipeline subversion techniques, illustrated with three real intrusion case studies that are immediately useful for SOC and DevSecOps teams running JetBrains TeamCity, GitLab, or GitHub Actions (SentinelOne, 2026-05-15)."

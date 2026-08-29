@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "South Korea's Foreign Ministry: a ~10-month zero-day intrusion into the Diplomatic Academy's e-learning platform exposed records on nearly all diplomats"
 headline: "An overlooked externally-facing staff e-learning platform gave attackers a 10-month foothold into a G20 foreign ministry"
 summary: >

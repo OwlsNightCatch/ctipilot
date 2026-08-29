@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "\"Miasma\" worm backdoors 32 Red Hat Cloud Services npm packages via OIDC trusted-publishing abuse"
 headline: "\"Miasma\" worm backdoors 32 Red Hat Cloud Services npm packages via OIDC trusted-publishing abuse"
 summary: >
@@ -64,7 +63,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "'Helix' data-extortion cluster pairs manager-impersonation vishing with device-code phishing and automated SharePoint exfiltration"
 headline: "ReliaQuest: new 'Helix' extortion cluster (BlackFile/ShinyHunters lineage) vishes staff into device-code sign-ins, then bulk-loots SharePoint"
 summary: >

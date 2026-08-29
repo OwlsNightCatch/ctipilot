@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Three misp-stix flaws put the CTI pipeline itself in scope: a crafted STIX document can set its own MISP distribution and sharing fields, kill a long-running importer, or bleed data into the next event"
 headline: "The library that converts STIX into MISP decided a document was trustworthy using markers the sender controls — and the fix exists only as commits"
 summary: >

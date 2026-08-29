@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Unit 42: Factory-v3 loader-builder abuses fraudulent code-signing and 491 MB file inflation to smuggle Vidar and XMRig past sandboxes"
 headline: "Unit 42: Factory-v3 loaders use fake Authenticode signing and 491 MB file inflation to evade sandboxes"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "HCSEC-2026-23 — HashiCorp Terraform MCP Server leaks its own bearer token to an attacker-supplied address, and its credential cache crosses sessions and tenants (CVE-2026-14869, CVE-2026-16496, CVE-2026-16498)"
 headline: "A query parameter the middleware forgot to validate makes the Terraform MCP server hand its bearer token to any unauthenticated caller"
 summary: >

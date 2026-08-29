@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "NHS Blood and Transplant sent organ-offer messages naming recipients over an unencrypted pager network — and because pager broadcasts leave no receiver log, it cannot scope who received them"
 headline: "A BBC investigation forces NHSBT to report a breach: transplant-patient identifiers broadcast in clear over a legacy paging network"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: Ubiquiti UniFi OS triple-flaw chain to unauthenticated root (CVE-2026-34908 / -34909 / -34910)
 headline: Ubiquiti UniFi OS triple-flaw chain to unauthenticated root (CVE-2026-34908 / -34909 / -34910)
 summary: "CISA KEV-listed three maximum-severity Ubiquiti UniFi OS flaws (CVE-2026-34908 / -34909 / -34910) on 2026-06-23 — chained, an unauthenticated attacker reaches OS command execution as root on internet-reachable UniFi gateways, consoles and NVRs. Patched — apply UniFi OS 5.0.8 for UniFi OS Server and the current fixed build for each appliance per Ubiquiti's advisory; UniFi is dense across DACH/EU schools, clinics and local government. Today's deep dive — § 5."

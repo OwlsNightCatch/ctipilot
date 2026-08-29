@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: Pro-Russian hacktivists modify OT pump settings at five Polish water treatment facilities
 headline: Pro-Russian hacktivists modify OT pump settings at five Polish water treatment facilities
 summary: >
@@ -43,7 +42,6 @@ verification: single-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

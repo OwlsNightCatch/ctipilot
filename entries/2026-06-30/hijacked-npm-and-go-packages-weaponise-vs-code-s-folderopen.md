@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Hijacked npm and Go packages weaponise VS Code's folderOpen task autorun to drop a credential-stealing Python implant"
 headline: "Hijacked npm and Go packages weaponise VS Code's folderOpen task autorun to drop a credential-stealing Python implant"
 summary: "JFrog Security Research disclosed two compromised npm packages (html-to-gutenberg v4.2.11, fetch-page-assets v1.2.9, uploaded 2026-05-25) plus 16 malicious Go packages carrying an identical chain (JFrog Security Research, 2026-06-24 · The Hacker News, 2026-06-29)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Kaspersky: the HelloNet campaign blinds user-mode security tools by hooking raw AFD IOCTLs, persisting via DLL-sideload into a secure-network product's own auto-updater"
 headline: "HelloNet chains trusted-updater DLL sideloading with raw AFD-IOCTL interception to hide network C2 from user-mode EDR"
 summary: >

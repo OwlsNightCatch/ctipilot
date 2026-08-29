@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "The '2,500-organisation LiteLLM breach' was mostly not LiteLLM: 95% of the identified victims were collected before the poisoned packages existed, through the Trivy scanner their pipelines pulled unpinned"
 headline: "SOCRadar's row-level re-analysis moves the blast radius upstream to a compromised security scanner — which changes what a CI/CD estate has to audit"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Dragos Q1 2026 Industrial Ransomware Analysis: 1,020 industrial incidents, The Gentleman's 4× surge against Romanian energy, and the IT-adjacent intrusion pattern"
 headline: "Dragos Q1 2026 Industrial Ransomware Analysis: 1,020 industrial incidents, The Gentleman's 4× surge against Romanian energy, and the IT-adjacent intrusion"
 summary: "Dragos' quarterly industrial-ransomware report (published 3 June) is the single periodic landscape report treated in this brief; the focus below is only on what changes a Swiss/EU public-sector and critical-infrastructure SOC's posture, not the full survey (Dragos, 2026-06-03)."

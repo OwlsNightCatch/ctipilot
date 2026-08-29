@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Latvia's vehicle-registration authority lost payment records on two-thirds of the country's population — and the provider contractually watching its infrastructure round the clock did not notice"
 headline: "CSDD's own staff found the intrusion and stopped it in hours; the outsourced monitoring never raised it, and the supervisory board has resigned"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "NCSC Switzerland warns of cyber operations around the G7 Évian summit (15–17 June)"
 headline: "NCSC Switzerland warns of cyber operations around the G7 Évian summit (15–17 June)"
 summary: "NCSC Switzerland issues a pre-event cyber advisory ahead of the G7 Évian summit (15–17 June) — the NCSC explicitly anticipates hacktivist DDoS against Swiss organisations (NCSC Switzerland, 2026-06-01); an independent threat map additionally flags state intelligence collection against hotel/telecom infrastructure and mobile-device targeting, echoing the NoName057(16) DDoS waves seen during Bürgenstock 2024 (ZENDATA, 2026-05-03). Most delegations transit Swiss infrastructure (Geneva–Vaud corridor)."

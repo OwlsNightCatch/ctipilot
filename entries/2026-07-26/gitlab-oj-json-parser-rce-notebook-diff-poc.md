@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "GitLab CE/EE RCE via the Jupyter-notebook diff renderer and two ~5-year-old Oj Ruby-parser memory-corruption bugs — public PoC, silent patch, no CVE"
 headline: "Public PoC chains two Oj Ruby-parser bugs to code execution on self-managed GitLab; the fix shipped as an unlabeled dependency bump"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Adobe Campaign Classic APSB26-120 — three more unauthenticated CVSS 10.0 code-execution flaws, and last week's build 9398 is the version they affect"
 headline: "Adobe ships a second Campaign Classic emergency fix in five days — build 9398 was the patch, and build 9398 is vulnerable"
 summary: >

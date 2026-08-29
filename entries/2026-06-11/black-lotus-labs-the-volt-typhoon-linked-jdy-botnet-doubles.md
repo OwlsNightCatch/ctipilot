@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Black Lotus Labs: the Volt Typhoon-linked JDY botnet doubles to 1,500+ devices and weaponises CVE disclosures within hours"
 headline: "Black Lotus Labs: the Volt Typhoon-linked JDY botnet doubles to 1,500+ devices and weaponises CVE disclosures within hours"
 summary: "Lumen's Black Lotus Labs reports that the JDY botnet — the reconnaissance cluster that survived the 2024 KV-botnet takedown and is assessed with high confidence to support multiple China-nexus actors including Volt Typhoon — has more than doubled from roughly 650 bots in January 2024 to over 1,500 compromised SOHO and …"

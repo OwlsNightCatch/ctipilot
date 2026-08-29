@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "GhostApproval (CVE-2026-12958, CVE-2026-50549) — symlink + confirmation-UI misrepresentation lets a malicious repo write outside six AI coding assistants' workspace sandbox"
 headline: "Wiz \"GhostApproval\": malicious repos escape the workspace sandbox of six AI coding assistants via symlink + fake confirmation dialog"
 summary: >

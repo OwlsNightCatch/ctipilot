@@ -50,33 +50,12 @@ KINDS = (
     "research",
     "annual-report",
     "policy",
-    "synthesis",
-    "outlook",
 )
-# `strategic` is a LEGACY value: the weekly strategic routine was retired in
-# v4.0 (2026-08-27). Every entry a v4+ run writes is `operational`; the
-# historical strategic entries stay valid, archived records.
-HORIZONS = ("operational", "strategic")
-# Entry kinds a v4+ run may write. `synthesis` and `outlook` were the weekly
-# routine's kinds and are retired for new entries (kept in KINDS so the
-# historical store validates); `policy` stays first-class — a regulatory
-# action with a transferable lesson is an intel-run finding (PD-11 c).
-ACTIVE_KINDS = ("threat", "incident", "vulnerability", "research", "annual-report", "policy")
-# LEGACY (v4.0): `weekly_section` values carried by pre-v4 strategic entries.
-# No renderer keys on them any more; the vocabulary stays so the archived
-# entries keep validating. A v4+ entry never sets weekly_section.
-WEEKLY_SECTIONS = (
-    "weekly-top-stories",
-    "weekly-multi-day",
-    "weekly-vuln-rollup",
-    "weekly-sector-patterns",
-    "weekly-incidents-recap",
-    "weekly-research",
-    "weekly-annual-reports",
-    "weekly-long-running",
-    "weekly-policy",
-    "weekly-looking-ahead",
-)
+# Every kind in KINDS is writable. The weekly routine's own kinds
+# (`synthesis`, `outlook`), its `horizon` axis and its `weekly_section`
+# vocabulary were deleted along with its entries; nothing in the store
+# carries them and no parser accepts them.
+ACTIVE_KINDS = KINDS
 PRIORITIES = ("critical", "high", "notable", "routine")
 VERIFICATIONS = (
     "multi-source",
@@ -191,8 +170,7 @@ RELATION_TYPES = {
 # Which brief render section a kind maps to. Orthogonal override at render
 # time: deep_dive -> "deep-dive". The "updates" section is derived from the
 # entries' `updates[]` changelog (entries updated in the window/day), not
-# from a kind. The legacy weekly-only kinds (synthesis, outlook) map to None
-# — they are archived history reachable by permalink, entity and search.
+# from a kind. Every kind maps to a section.
 KIND_DAILY_SECTION = {
     "threat": "active-threats",
     "incident": "active-threats",
@@ -200,8 +178,6 @@ KIND_DAILY_SECTION = {
     "research": "research",
     "annual-report": "research",
     "policy": "research",
-    "synthesis": None,
-    "outlook": None,
 }
 
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,59}$")
@@ -649,7 +625,6 @@ def parse_taxonomy(path: Path = TAXONOMY_PATH) -> dict:
 # ---------------------------------------------------------------------------
 
 ENTRY_DEFAULTS = {
-    "horizon": "operational",
     "priority": "notable",
     "immediate_action": None,
     "event_date": None,
@@ -670,7 +645,6 @@ ENTRY_DEFAULTS = {
     "updates": [],
     "update_of": None,       # RETIRED (v4.0) — accepted only as null on legacy files
     "references": [],
-    "weekly_section": None,  # LEGACY (v4.0) — pre-v4 strategic entries only
     "deep_dive": False,
     "deep_dive_category": None,
     "org_triage": None,
@@ -1116,8 +1090,6 @@ def validate_entry(entry: dict, taxonomy: dict, registry_keys=None) -> list:
             err(f"required field `{field}` missing or empty")
     if entry.get("kind") not in KINDS:
         err(f"kind {entry.get('kind')!r} not in {KINDS}")
-    if entry.get("horizon") not in HORIZONS:
-        err(f"horizon {entry.get('horizon')!r} not in {HORIZONS}")
     if entry.get("priority") not in PRIORITIES:
         err(f"priority {entry.get('priority')!r} not in {PRIORITIES}")
     if entry.get("verification") not in VERIFICATIONS:
@@ -1329,13 +1301,6 @@ def validate_entry(entry: dict, taxonomy: dict, registry_keys=None) -> list:
 
     if entry.get("deep_dive") and not _is_str(entry.get("deep_dive_category")):
         err("deep_dive: true requires deep_dive_category")
-
-    ws = entry.get("weekly_section")  # LEGACY (v4.0): pre-v4 strategic entries only
-    if ws is not None:
-        if ws not in WEEKLY_SECTIONS:
-            err(f"weekly_section {ws!r} not in {WEEKLY_SECTIONS}")
-        if entry.get("horizon") != "strategic":
-            err("weekly_section is only valid on horizon: strategic entries")
 
     ot = entry.get("org_triage")
     if ot is not None and (not isinstance(ot, dict) or not _is_str(ot.get("category"))):

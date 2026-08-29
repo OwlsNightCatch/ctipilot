@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   Everest ransomware breaches a Stadler Rail supplier data-exchange platform, demands CHF 10
   million — the Swiss rail manufacturer refuses to pay
@@ -86,7 +85,6 @@ sourcing_note: >
   intrusion-mechanism details were disclosed.
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

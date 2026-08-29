@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "ESET: OceanLotus (APT32) compromises a stock-trading platform's update server — selective SPECTRALVIPER delivery, no integrity checks to defeat"
 headline: "ESET: OceanLotus (APT32) compromises a stock-trading platform's update server — selective SPECTRALVIPER delivery, no integrity checks to defeat"
 summary: "ESET documents two SPECTRALVIPER-delivered OceanLotus (APT32) intrusions running from mid-2024 into 2026: a long-dwell espionage compromise of a Vietnamese infrastructure/transport construction firm (likely via RCE on a public-facing Microsoft SQL Server, T1190) and — more transferable — a supply-chain attack on …"

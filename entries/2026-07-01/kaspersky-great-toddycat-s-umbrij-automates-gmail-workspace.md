@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Kaspersky GReAT: ToddyCat's \"Umbrij\" automates Gmail/Workspace OAuth-token theft via Chromium remote-debugging abuse"
 headline: "Kaspersky GReAT: ToddyCat's \"Umbrij\" automates Gmail/Workspace OAuth-token theft via Chromium remote-debugging abuse"
 summary: "Kaspersky GReAT documented Umbrij, a .NET tool used by the ToddyCat APT that automates theft of Google Workspace OAuth tokens through a technique GReAT calls Shadow Token via Remote Debug (STRD) (Kaspersky Securelist, 2026-06-30)."

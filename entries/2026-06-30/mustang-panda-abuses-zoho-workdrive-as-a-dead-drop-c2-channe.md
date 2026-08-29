@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: Mustang Panda abuses Zoho WorkDrive as a dead-drop C2 channel (ZOHOMURK) against government and energy targets
 headline: Mustang Panda abuses Zoho WorkDrive as a dead-drop C2 channel (ZOHOMURK) against government and energy targets
 summary: "Acronis Threat Research Unit documented two coordinated June 12–22 campaigns by China-aligned Mustang Panda (also tracked TA416 / HIVE0154 / BRONZE PRESIDENT) against Indian government bodies and hydropower-sector entities (Acronis TRU, 2026-06-29 · The Hacker News, 2026-06-29)."

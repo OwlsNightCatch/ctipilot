@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "MZ Automation libIEC61850: unauthenticated heap-overflow RCE via crafted MMS Initiate (CVE-2026-49035) plus four sibling OT-library flaws"
 headline: "A pre-auth RCE in the widely-embedded libIEC61850 substation library — energy and water OEMs, not a single product, are affected"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Shared booking-software breach exposes guests at 100+ Dutch, Belgian and Irish hotels; phishing wave already underway"
 headline: "Shared booking-software breach exposes guests at 100+ Dutch, Belgian and Irish hotels; phishing wave already underway"
 summary: "A shared hotel-booking SaaS breach exposed guests at 100+ Dutch, Belgian and Irish hotels, and a separate UN World Food Programme breach exposed ~600,000 Gaza households' IDs and locations — both already weaponised for follow-on fraud / physical-safety risk."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "CISA replaces the KEV 14-day rule: BOD 26-04 introduces risk-tiered remediation with a 3-day class for the worst exposures"
 headline: "CISA replaces the KEV 14-day rule: BOD 26-04 introduces risk-tiered remediation with a 3-day class for the worst exposures"
 summary: "CISA issued Binding Operational Directive 26-04 (\"Prioritizing Security Updates Based on Risk\") on 10 June, superseding and revoking BOD 19-02 and BOD 22-01 — the directive that created the flat KEV remediation deadlines (CISA, 2026-06-10)."

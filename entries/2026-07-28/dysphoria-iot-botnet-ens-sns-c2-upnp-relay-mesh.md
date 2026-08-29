@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Dysphoria: an IoT botnet that resolves its C2 through Ethereum and Solana name services and turns its own victims into the relay mesh"
 headline: "Dysphoria botnet moves C2 resolution onto blockchain name services and rebuilds its infrastructure from victim devices"
 summary: >

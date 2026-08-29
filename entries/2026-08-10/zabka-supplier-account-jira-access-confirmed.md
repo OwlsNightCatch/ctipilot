@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Żabka confirms an external service-provider account reached its ticketing system — the claimed pivot from Jira into source control and production is the seller's assertion, not the company's"
 headline: "A supplier account reached Jira at a Polish convenience-store chain; the interesting part of the story is the part nobody has confirmed"
 summary: >

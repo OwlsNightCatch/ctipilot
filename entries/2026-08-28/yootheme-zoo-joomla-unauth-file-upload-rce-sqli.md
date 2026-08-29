@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "YOOtheme ZOO for Joomla: unauthenticated file-upload RCE (CVSS 10.0) plus a precondition-free SQL injection reachable with no submission form at all — three releases in three days, and the 3.x line has no fix"
 headline: "A Joomla content extension trusts the client's own Content-Type header to decide what an anonymous visitor can upload"
 summary: >

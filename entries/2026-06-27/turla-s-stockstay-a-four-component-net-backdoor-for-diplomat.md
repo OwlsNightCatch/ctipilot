@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Turla's STOCKSTAY: a four-component .NET backdoor for diplomatic intelligence collection"
 headline: "Turla's STOCKSTAY: a four-component .NET backdoor for diplomatic intelligence collection"
 summary: "Background. Google Threat Intelligence Group (GTIG, formerly Mandiant) published a full technical analysis of STOCKSTAY on 2026-06-25, a modular .NET backdoor it attributes with high confidence to Turla — also tracked as Secret Blizzard, SUMMIT and FSB Center 16 — with activity dating to December 2022 (Google …"

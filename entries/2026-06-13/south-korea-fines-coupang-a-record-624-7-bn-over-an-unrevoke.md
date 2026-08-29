@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "South Korea fines Coupang a record ₩624.7 bn over an unrevoked signing key held by a former employee"
 headline: "South Korea fines Coupang a record ₩624.7 bn over an unrevoked signing key held by a former employee"
 summary: "South Korea's Personal Information Protection Commission (PIPC) issued its largest-ever data-protection penalty against e-commerce platform Coupang, attributing a breach of tens of millions of customer records to a former engineer who developed the company's alternative authentication system, retained its signing key …"

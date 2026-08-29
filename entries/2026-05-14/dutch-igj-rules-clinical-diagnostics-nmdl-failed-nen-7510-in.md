@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Dutch IGJ rules Clinical Diagnostics/NMDL failed NEN 7510 information-security standard at time of July 2025 ransomware breach; ~941,000 patients affected, cervical-cancer screening data exposed"
 headline: "Dutch IGJ rules Clinical Diagnostics/NMDL failed NEN 7510 information-security standard at time of July 2025 ransomware breach; ~941,000 patients affected"
 summary: "Dutch IGJ rules Clinical Diagnostics/NMDL failed mandatory NEN 7510 information-security standard at time of July 2025 ransomware breach. The Dutch Health & Youth Care Inspectorate's 2026-05-13 finding cites two specific failures: no independent information-security audit, and no periodic processing-risk assessments — meaning the laboratory could not determine which controls were required. The breach exposed approximately 941,000 patients' records, including results of the national cervical-cancer screening programme (Bevolkingsonderzoek Nederland). IGJ has no fining power but has demanded independent certification and signalled sector-wide enforcement; Autoriteit Persoonsgegevens (AP) holds a parallel GDPR investigation that can. NEN 7510 (Dutch healthcare security baseline) is the structural analogue of Switzerland's EPDG security profile — same gap, same regulator pattern (IGJ, 2026-05-13; Computable, 2026-05-13)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "SynkLoader: a Teams message from a lookalike tenant, an MSI called 'PowerShell Cleaner', and a six-module toolkit whose fake lock screen harvests the domain password its own tunnel then uses from the victim's IP"
 headline: "SynkLoader pairs a fake Windows lock screen with a backconnect proxy, so the stolen domain password is used from the victim's own address"
 summary: >

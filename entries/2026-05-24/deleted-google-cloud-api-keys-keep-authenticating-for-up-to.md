@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: Deleted Google Cloud API keys keep authenticating for up to 23 minutes
 headline: Deleted Google Cloud API keys keep authenticating for up to 23 minutes
 summary: "Deleted Google Cloud API keys keep authenticating for up to 23 minutes due to GCP IAM eventual consistency — key revocation is not an immediate containment action; update GCP incident-response runbooks accordingly (Aikido, 2026-05-21)."

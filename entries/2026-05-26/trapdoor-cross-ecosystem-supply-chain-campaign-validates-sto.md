@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "\"TrapDoor\" cross-ecosystem supply-chain campaign validates stolen tokens before exfil and poisons AI-assistant config files"
 headline: "\"TrapDoor\" cross-ecosystem supply-chain campaign validates stolen tokens before exfil and poisons AI-assistant config files"
 summary: "\"TrapDoor\" is a coordinated cross-ecosystem supply-chain campaign (34+ packages, 384+ versions across npm, PyPI and Crates.io) that validates stolen AWS/GitHub tokens before exfiltrating and poisons AI coding-assistant config files — npm postinstall harvester, PyPI import-time execution, Rust build.rs wallet-keystore theft; novel vector writes hidden prompt-injection into .cursorrules and CLAUDE.md using zero-width Unicode so a human sees clean text while the AI tool parses attacker instructions (Socket, 2026-05-24)."

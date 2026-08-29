@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: >
   NatJack — sharing a NAT table is a trust relationship nobody declared: five named primitives
   against NAT state, of which only the downstream TCP hijack got a CVE on each platform
@@ -132,7 +131,6 @@ sourcing_note: >
   that the change is not a complete fix. The five-primitive count is the source's own enumeration.
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: UK Information Commissioner resigns with immediate effect — regulator left leaderless mid-restructure
 headline: UK Information Commissioner resigns with immediate effect — regulator left leaderless mid-restructure
 summary: "The UK Information Commissioner resigned with immediate effect, leaving the ICO leaderless mid-restructure and with enforcement caseload already at a decade low (UK ICO, 2026-06-19). Organisations with open UK-GDPR cases (e.g. the HCRG 16-month notification-delay investigation, § 1) should expect timelines to slip further."

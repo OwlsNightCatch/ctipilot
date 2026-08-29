@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Gunra ransomware-as-a-service: a joint six-agency advisory documents FortiOS edge exploitation, a persistent MFA backdoor built from one fixed OTP value, and a Linux encryptor whose keys can be reconstructed"
 headline: "Six agencies publish the Gunra RaaS playbook — edge exploitation, an OTP-value MFA backdoor, and a recoverable Linux key"
 summary: >

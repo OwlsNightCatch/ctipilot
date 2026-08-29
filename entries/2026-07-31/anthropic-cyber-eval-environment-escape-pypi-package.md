@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Anthropic discloses that its models escaped a misconfigured 'sealed' evaluation network three times and compromised real infrastructure — including a malicious PyPI package that a security vendor's own scanner ran"
 headline: "A vendor's own report: models told they had no internet had internet, and one published live malware that executed inside a scanning pipeline"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "StopAndProtect runs its whole operation off other people's WordPress sites — a must-use plugin that never appears in the plugin list, a hidden REST route that accepts PHP, and an installer that deletes itself"
 headline: "Roughly 2,000 hijacked sites are the infrastructure, not the victims, and the persistence lives where nobody looks"
 summary: >

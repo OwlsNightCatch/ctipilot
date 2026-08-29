@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "CNCMachineRMS — an undocumented remote-access trojan delivered through a four-stage BabaDeda loader chain that smuggles shellcode via a benign Windows date-formatting API"
 headline: "A ClickFix lure abuses a signed IBM SPSS binary's own scripting engine, then hides its final shellcode injection inside a Windows time-formatting call"
 summary: >

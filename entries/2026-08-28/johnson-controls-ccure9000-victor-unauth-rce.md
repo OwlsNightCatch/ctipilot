@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Johnson Controls C-CURE 9000 / victor: unauthenticated adjacent-network deserialization RCE on physical access-control application servers reaches connected security-workstation clients too (CVE-2026-21655, CVSS 9.6)"
 headline: "CISA publishes an unauthenticated deserialization RCE that can 'impact physical security controls' on a widely deployed access-control platform"
 summary: >

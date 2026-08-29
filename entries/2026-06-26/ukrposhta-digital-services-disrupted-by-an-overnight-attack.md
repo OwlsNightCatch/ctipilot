@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Ukrposhta digital services disrupted by an overnight attack; pro-Russian hacktivists claim a prior data theft"
 headline: "Ukrposhta digital services disrupted by an overnight attack; pro-Russian hacktivists claim a prior data theft"
 summary: "Ukraine's national postal operator Ukrposhta confirmed on 25 June that an overnight \"hostile cyberattack\" on its IT systems disrupted its mobile app and digital services, with engineers restoring functionality through the day (The Record, 2026-06-25; New Voice of Ukraine, 2026-06-25)."

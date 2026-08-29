@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "WordPress supply-chain compromise via Awesome Motive's CDN backdoors ~1.2M sites"
 headline: "WordPress supply-chain compromise via Awesome Motive's CDN backdoors ~1.2M sites"
 summary: "WordPress supply-chain compromise via Awesome Motive's shared CDN tampered OptinMonster / TrustPulse / PushEngage scripts on ~1.2M sites to auto-create rogue admins and a self-hiding backdoor plugin — \"update your plugins\" did not protect the exposure window. (Sansec, 2026-06-13)"

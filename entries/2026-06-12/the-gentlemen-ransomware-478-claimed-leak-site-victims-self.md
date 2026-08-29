@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "The Gentlemen ransomware: 478 claimed leak-site victims, self-propagating Go encryptor, operator publicly named"
 headline: "The Gentlemen ransomware: 478 claimed leak-site victims, self-propagating Go encryptor, operator publicly named"
 summary: "The Gentlemen RaaS claims 478 leak-site victims (concentrated in Thailand, the UK, Brazil, Germany and India per THN); Krebs publishes an operator deanonymisation, and Microsoft's dissection details the encryptor's --spread worm mode (KrebsOnSecurity, 2026-06-10)."

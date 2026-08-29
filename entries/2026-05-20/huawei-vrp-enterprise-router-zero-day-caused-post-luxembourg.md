@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: Huawei VRP enterprise-router zero-day caused POST Luxembourg nationwide telecom outage (July 2025) — no CVE filed 10 months later
 headline: Huawei VRP enterprise-router zero-day caused POST Luxembourg nationwide telecom outage (July 2025) — no CVE filed 10 months later
 summary: "Recorded Future News disclosed on 2026-05-19 that a zero-day vulnerability in Huawei VRP (Versatile Routing Platform) operating-system software on enterprise routers was the root cause of the POST Luxembourg nationwide telecom outage of 23 July 2025 — disruption of landline, 4G, and 5G networks for more than …"

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "TeamPCP (UNC6780 / PCPJack ecosystem) backdoors the Checkmarx Jenkins AST plugin — third Checkmarx supply-chain compromise in three months, SANDCLOCK exfiltrates every CI secret reachable from the runner"
 headline: "TeamPCP (UNC6780 / PCPJack ecosystem) backdoors the Checkmarx Jenkins AST plugin — third Checkmarx supply-chain compromise in three months, SANDCLOCK"
 summary: "TeamPCP (UNC6780) backdoors the Checkmarx Jenkins AST plugin — third Checkmarx supply-chain compromise in three months. Malicious plugin build 2026.5.09 published to the Jenkins Marketplace on 2026-05-09–10 deploys SANDCLOCK to exfiltrate every CI secret reachable from the runner (cloud keys, container-registry credentials, Checkmarx API tokens) (The Hacker News, 2026-05-11; Checkmarx — Ongoing Security Updates, last update 2026-05-09). Treat any pipeline that auto-updated in the window as a full secrets-compromise event."

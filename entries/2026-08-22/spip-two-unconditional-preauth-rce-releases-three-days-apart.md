@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: >
   SPIP shipped two emergency releases in three days, each fixing an unconditional
   pre-authentication RCE the vendor says is already being exploited — and only the first one has a
@@ -122,7 +121,6 @@ sourcing_note: >
   security advisory among its references.
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

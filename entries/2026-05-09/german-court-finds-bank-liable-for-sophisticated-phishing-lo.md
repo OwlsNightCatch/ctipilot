@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: German court finds bank liable for sophisticated phishing loss — PSD2/IP-analytics obligations clarified
 headline: German court finds bank liable for sophisticated phishing loss — PSD2/IP-analytics obligations clarified
 summary: "On 2026-04-22 the Landgericht Berlin II (Civil Chamber 38, case 38 O 293/25; not yet final pending appeal) ordered Deutsche Apotheker- und Ärztebank (Apobank) to reimburse €218,000+ in losses from a sophisticated phishing attack that combined forged physical bank letters, manipulated online banking interfaces, and …"

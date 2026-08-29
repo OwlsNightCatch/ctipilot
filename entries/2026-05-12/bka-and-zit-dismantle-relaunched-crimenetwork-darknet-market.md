@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "BKA and ZIT dismantle relaunched Crimenetwork darknet marketplace; German operator arrested in Mallorca on European Arrest Warrant"
 headline: "BKA and ZIT dismantle relaunched Crimenetwork darknet marketplace; German operator arrested in Mallorca on European Arrest Warrant"
 summary: "BKA + ZIT dismantle relaunched Crimenetwork darknet marketplace; German operator arrested in Mallorca. Operator arrested on a European Arrest Warrant on 2026-05-08; the rebooted platform had reached ~22,000 users and 100+ vendors with ~€3.6 M cumulative commissions before being seized (BKA — Deutscher Betreiber von \"Crimenetwork\" auf Mallorca verhaftet, 2026-05-08). Second BKA/ZIT/Spanish-Police takedown of the same brand inside 18 months."

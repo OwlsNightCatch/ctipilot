@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   NAIC breached via Oracle PeopleSoft zero-day; ShinyHunters publishes 3.1 TB of US
   insurance-regulatory data and rating-agency feeds pause
@@ -78,7 +77,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

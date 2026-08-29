@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Claroty Team82: 23 vulnerabilities in Copeland XWEB Pro supervisory refrigeration controllers chain to unauthenticated root RCE — a deterministic admin password derived from the device's own MAC address is one of THREE independent pre-auth paths"
 headline: "An attacker can reconstruct admin credentials for an exposed refrigeration controller offline, then silently disable cooling while the display reports normal"
 summary: >

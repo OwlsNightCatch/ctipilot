@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "West Pharmaceutical Services — 8-K/A confirms full operational restoration, data investigation ongoing"
 headline: "West Pharmaceutical Services — 8-K/A confirms full operational restoration, data investigation ongoing"
 summary: "UPDATE (originally covered 2026-W21): West Pharmaceutical Services (NYSE: WST) filed an 8-K/A amendment under SEC Item 1.05 on 2026-05-20 confirming full operational restoration across all manufacturing, supply chain, and commercial sites globally after the May 4 ransomware intrusion (SEC EDGAR 8-K/A, 2026-05-20)."

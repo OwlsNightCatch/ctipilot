@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: California AG sues former 23andMe (Chrome Holding Co.) over the 2023 genetic-data breach — bulk-enumeration coding error plus absent credential-stuffing defences
 headline: California AG sues former 23andMe (Chrome Holding Co.) over the 2023 genetic-data breach — bulk-enumeration coding error plus absent credential-stuffing
 summary: "California's Attorney General sued the former 23andMe (now Chrome Holding Co.) over the 2023 genetic-data breach, alleging a DNA-Relatives bulk-enumeration coding error and an absence of credential-stuffing defences amplified ~14,000 stuffed accounts into ~6.9M exposed records (California OAG, 2026-05-28). A second jurisdiction's enforcement after the UK ICO's 2025 fine; the failure pattern transfers directly to special-category-data registries."

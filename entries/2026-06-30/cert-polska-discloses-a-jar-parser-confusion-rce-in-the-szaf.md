@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: CERT Polska discloses a JAR parser-confusion RCE in the SzafirHost e-signature client (CVE-2026-13165)
 headline: CERT Polska discloses a JAR parser-confusion RCE in the SzafirHost e-signature client (CVE-2026-13165)
 summary: "A Polish e-signature client, SzafirHost from Krajowa Izba Rozliczeniowa (CVE-2026-13165), carries a JAR parser-confusion RCE that smuggles a malicious native library past signature verification (CERT Polska, 2026-06-29); and China-nexus Mustang Panda is abusing Zoho WorkDrive as a dead-drop C2 channel against government and energy targets — both with directly transferable lessons for EU public-sector defenders (qualified e-signature tooling; SaaS-as-C2)."

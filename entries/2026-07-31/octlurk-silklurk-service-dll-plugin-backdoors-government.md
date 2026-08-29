@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "OctLurk and SilkLurk — sibling plugin backdoors whose loaders key their payload decryption to the victim machine itself, deployed against Central Asian and Syrian government bodies"
 headline: "Kaspersky documents loaders that cannot be unpacked away from the host they infected, delivering in-memory-only plugins"
 summary: >

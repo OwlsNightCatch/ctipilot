@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: Large-scale ClickFix campaign mass-compromises self-hosted Ghost CMS sites via CVE-2026-26980
 headline: Large-scale ClickFix campaign mass-compromises self-hosted Ghost CMS sites via CVE-2026-26980
 summary: "XLab researchers at Qianxin documented an active, large-scale campaign weaponising the unauthenticated SQL-injection flaw CVE-2026-26980 against self-hosted Ghost CMS instances, with more than 700 compromised domains observed — among them university portals (Harvard, Oxford and Auburn are named), AI/SaaS companies …"

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CISA publishes five protocol-level flaws in CPDLC over ATN-B1, reported by a Swiss armasuisse researcher — no mitigation available, and CISA assesses exploitation unlikely outside a lab"
 headline: "The controller-to-cockpit data link has no authentication by design, so the advisory has a remediation status of none-available"
 summary: >

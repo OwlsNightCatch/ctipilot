@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "BSI and NCSC-NL withdraw SQLite advisories built on LLM-fabricated CVEs — and GitHub's advisory database was still serving one of them"
 headline: "Two national CERTs retract SQLite advisories because the CVEs describe bugs that do not exist, while the same records stay live downstream"
 summary: >

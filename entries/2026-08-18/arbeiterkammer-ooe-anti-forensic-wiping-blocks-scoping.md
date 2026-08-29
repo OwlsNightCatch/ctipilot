@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Arbeiterkammer Oberösterreich cannot scope its own breach because the attackers wiped the traces — so every member is being notified under Article 34 as a precaution"
 headline: "Deliberate trace removal turned a scoped breach notification into a blanket one at an Austrian public-law body"
 summary: >

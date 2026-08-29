@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Espionage actors weaponise a citizen-facing e-government complaint portal as a watering hole, serving a fake 'portal update' that reflectively loads a RAT"
 headline: "SentinelLabs: a nation-state actor turned a citizen-and-staff e-government portal into a watering hole with a disguised 'portal update' RAT loader"
 summary: >

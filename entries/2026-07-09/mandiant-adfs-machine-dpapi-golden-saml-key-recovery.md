@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Mandiant \"Ghost in the Database\": recovering an active ADFS token-signing key from Machine DPAPI when the WID/DKM Golden SAML path fails"
 headline: "Mandiant recovers a live ADFS signing key from Machine DPAPI — a Golden SAML variant that sidesteps the WID/DKM path and LSASS-watching detection"
 summary: >

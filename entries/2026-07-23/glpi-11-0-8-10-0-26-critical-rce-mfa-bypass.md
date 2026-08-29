@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "GLPI 11.0.8 / 10.0.26 — critical RCE via form import and complete MFA bypass in the public-sector ITSM platform"
 headline: "GLPI patches a critical form-import RCE and a full MFA bypass in the ITSM/asset platform widely run by EU public-sector, education and healthcare"
 summary: >

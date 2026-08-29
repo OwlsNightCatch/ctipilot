@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: >
   TELESHIM / MIXEDKEY / BINDCLOAK — DLL side-loading under a legitimate vendor binary,
   Telegram-API C2 and volume-serial environmental keying against government networks
@@ -88,7 +87,6 @@ sourcing_note: >
   further technical and attribution detail is expected.
 confidence: medium
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

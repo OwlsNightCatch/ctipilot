@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "NCSC Switzerland: Booking.com breach feeds two-pronged WhatsApp hotel-booking phishing against Swiss travellers"
 headline: "NCSC Switzerland: Booking.com breach feeds two-pronged WhatsApp hotel-booking phishing against Swiss travellers"
 summary: "NCSC Switzerland warns of Booking.com-fuelled WhatsApp hotel-booking phishing spoofing TWINT and Swiss bank portals, plus hotel-system account-takeover impersonation that arrives through legitimate booking channels (NCSC-CH, 2026-06-02)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "ICO secures Proceeds-of-Crime confiscation from former RAC employees who sold ~30,000 customer records"
 headline: "ICO secures Proceeds-of-Crime confiscation from former RAC employees who sold ~30,000 customer records"
 summary: "ICO uses criminal asset-recovery against insider data theft. The UK regulator secured £118,852 in Proceeds-of-Crime confiscation orders from two former RAC employees who sold ~30,000 customer records — a reminder that insider exfiltration of even modest volumes attracts prosecution and clawback years later (POCA orders, Nov 2025 + 29 May 2026; ICO)."

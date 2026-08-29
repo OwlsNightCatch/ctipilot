@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "University of Toronto / Vector Institute: a self-propagating worm that runs open-weight LLMs on compromised hosts to synthesise per-target exploits"
 headline: "University of Toronto / Vector Institute: a self-propagating worm that runs open-weight LLMs on compromised hosts to synthesise per-target exploits"
 summary: "A team from CleverHans Lab (University of Toronto), the Vector Institute, Cambridge and ServiceNow Research published a proof-of-concept worm (arXiv:2606.03811) on 2 June 2026, picked up this week by the German technical press (arXiv, 2026-06-02; heise online, 2026-06-04)."

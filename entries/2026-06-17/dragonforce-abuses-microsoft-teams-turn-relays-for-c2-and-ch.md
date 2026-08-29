@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: DragonForce abuses Microsoft Teams TURN relays for C2 and chains four vulnerable drivers (BYOVD)
 headline: DragonForce abuses Microsoft Teams TURN relays for C2 and chains four vulnerable drivers (BYOVD)
 summary: "DragonForce ransomware ran C2 through Microsoft Teams TURN relays — first in-the-wild abuse of Teams relay infrastructure to hide C2 in legitimate Microsoft traffic, plus a four-driver BYOVD chain; two-month dwell at a services firm (Deep Dive, § 5)."

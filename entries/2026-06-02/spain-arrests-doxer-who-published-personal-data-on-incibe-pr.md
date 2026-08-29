@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Spain arrests doxer who published personal data on INCIBE, prosecutorial and security-service staff"
 headline: "Spain arrests doxer who published personal data on INCIBE, prosecutorial and security-service staff"
 summary: "Spain's National Police arrested a doxer who published personal data on staff of INCIBE, the State Attorney General, the Civil Guard and the National Security Council (BleepingComputer, 2026-06-01); separately, attackers socially engineered Meta's AI support chatbot into resetting Instagram passwords, bypassing the account-recovery MFA envelope (Krebs on Security, 2026-06-01)."

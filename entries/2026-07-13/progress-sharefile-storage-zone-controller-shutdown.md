@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   Progress orders ShareFile Storage Zone Controller shutdown over a 'credible external threat' —
   day three, no patch or root cause disclosed
@@ -136,7 +135,6 @@ sourcing_note: >
   attribution.
 confidence: medium
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

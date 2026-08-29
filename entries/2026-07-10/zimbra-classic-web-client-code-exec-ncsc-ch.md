@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Zimbra Classic Web Client: crafted-email code execution fixed in ZCS 10.1.19, surfaced by NCSC-CH (no CVE, exploitation unknown)"
 headline: "NCSC-CH flags a Zimbra Classic Web Client flaw where opening a crafted email runs script in the webmail session — patch to ZCS 10.1.19"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: annual-report
-horizon: operational
 title: "Talos IR Trends Q2 2026: ransomware operators ran their command-and-control through legitimate RMM agents, authentication abuse hit two-thirds of engagements, and missing logs stopped root-cause determination outright"
 headline: "Cisco Talos IR's quarterly report puts three named intrusion chains on record, led by Sinobi running its command-and-control through a trojanized MeshAgent"
 summary: >

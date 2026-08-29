@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "NHS England issues insider-access controls after staff 'snooping' on high-profile patients' records"
 headline: "NHS England presses trusts toward RBAC scoping, MFA and real-time audit alerting on EPR access after staff viewed crime-victims' records"
 summary: >

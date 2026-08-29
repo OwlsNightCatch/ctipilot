@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: DHS confirms a breach of the Homeland Security Information Network (HSIN)
 headline: DHS confirms a breach of the Homeland Security Information Network (HSIN)
 summary: "DHS confirmed a cyber incident affecting the Homeland Security Information Network — a platform federal, state, local, international and private-sector partners use to exchange sensitive-but-unclassified information and coordinate incident response."

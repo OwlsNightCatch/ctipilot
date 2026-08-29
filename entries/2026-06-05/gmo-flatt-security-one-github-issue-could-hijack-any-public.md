@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "GMO Flatt Security: one GitHub issue could hijack any public repo running Anthropic's claude-code-action — and could have poisoned the action itself"
 headline: "GMO Flatt Security: one GitHub issue could hijack any public repo running Anthropic's claude-code-action — and could have poisoned the action itself"
 summary: "One malicious GitHub issue could hijack any public repo using Anthropic's claude-code-action — and could have poisoned the action itself. A [bot]-suffix actor check trusted any attacker-registered GitHub App, and indirect prompt injection chained to /proc/self/environ secret theft. Fixed in v1.0.94 (GMO Flatt Security, 2026-06-04)."

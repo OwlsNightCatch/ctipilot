@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Carnival Corporation confirms 5.99 M-record ShinyHunters breach — passport + driver's-licence numbers exposed across four cruise brands"
 headline: "Carnival Corporation confirms 5.99 M-record ShinyHunters breach — passport + driver's-licence numbers exposed across four cruise brands"
 summary: "Carnival Corporation files substitute notices confirming a breach affecting 5,995,277 individuals (Maine AG filing; driver's-licence + passport numbers exposed across Princess / Holland America / Cunard / Costa per The Record). Maine AG records the breach occurring 2026-04-10 and discovered 2026-04-14 (single-employee-account social engineering); ShinyHunters claimed and ultimately published when ransom was refused."

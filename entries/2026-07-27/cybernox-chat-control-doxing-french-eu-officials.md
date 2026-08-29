@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Chat Control backlash turns operational: a hacktivist compiles targeting dossiers on French and EU officials out of old breach data, not a new intrusion"
 headline: "Officials doxxed over the EU Chat Control file — dossiers assembled from years of unrelated breach data"
 summary: >

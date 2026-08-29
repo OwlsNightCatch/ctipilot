@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Cisco Talos: China-nexus UAT-7810 expands its ORB network with LONGLEASH/DOGLEASH/JARLEASH via unpatched Ruckus and ASUS routers"
 headline: "Talos: China-nexus UAT-7810 builds ORB relay networks from unpatched Ruckus/ASUS routers for secondary APTs"
 summary: >

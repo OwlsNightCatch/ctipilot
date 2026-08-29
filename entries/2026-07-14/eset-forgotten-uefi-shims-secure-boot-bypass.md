@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CVE-2026-8863, CVE-2026-10797 — forgotten pre-0.9 UEFI shims bypass Secure Boot via a signature-length validation mismatch"
 headline: "ESET details 11 Microsoft-signed pre-0.9 UEFI shims that bypass Secure Boot on any machine trusting the third-party UEFI CA"
 summary: >

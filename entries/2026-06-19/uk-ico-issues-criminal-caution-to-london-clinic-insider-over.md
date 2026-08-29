@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: UK ICO issues criminal caution to London Clinic insider over Princess of Wales medical-record access
 headline: UK ICO issues criminal caution to London Clinic insider over Princess of Wales medical-record access
 summary: "The UK Information Commissioner's Office closed a two-year criminal investigation into the deliberate misuse of Catherine, Princess of Wales' medical records at The London Clinic, issuing a formal caution to a former staff member under s.170(5) of the Data Protection Act 2018 (ICO, 2026-06; Infosecurity Magazine …"

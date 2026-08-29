@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Stolen AI API tokens reach a reselling proxy within minutes — Unit 42 documents the 'transfer station' market and the account-takeover variant that mints its own keys"
 headline: "An exposed AI API key is a billing incident on a clock: Unit 42 saw one reach a reseller in minutes and run up nearly a million dollars"
 summary: >

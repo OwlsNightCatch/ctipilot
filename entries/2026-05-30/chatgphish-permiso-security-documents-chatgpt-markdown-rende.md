@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "ChatGPhish: Permiso Security documents ChatGPT Markdown renderer trusting third-party image URLs and links — used for IP exfiltration and phishing via legitimate chatgpt.com"
 headline: "ChatGPhish: Permiso Security documents ChatGPT Markdown renderer trusting third-party image URLs and links — used for IP exfiltration and phishing via"
 summary: "Permiso Security's P0 Labs (researcher Andi Ahmeti) disclosed on 29 May 2026 that ChatGPT's web summarisation feature unconditionally trusts and renders Markdown image URLs and links extracted from third-party pages, executing them inside the trusted chatgpt.com UI (Permiso Security P0 Labs, 2026-05-29; The Hacker …"

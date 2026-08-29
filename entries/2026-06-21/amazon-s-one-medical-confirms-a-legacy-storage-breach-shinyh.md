@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Amazon's One Medical confirms a legacy-storage breach; ShinyHunters' 8.8TB claim is unverified and its deadline expires today"
 headline: "Amazon's One Medical confirms a legacy-storage breach; ShinyHunters' 8.8TB claim is unverified and its deadline expires today"
 summary: "One Medical (Amazon) confirmed on 2026-06-13 that an unauthorised party accessed a legacy third-party file-storage system retaining archived records for One Medical Seniors (formerly Iora Health), during a 2026-06-08 to 2026-06-11 window, affecting demographic and clinical records for patients at nine clinics …"

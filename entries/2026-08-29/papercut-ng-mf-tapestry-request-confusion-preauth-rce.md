@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CVE-2026-82078 / CVE-2026-81578 — PaperCut NG/MF: an Apache Tapestry request-routing confusion chains an unauthenticated config rewrite to arbitrary code execution, exploited before a patch existed"
 headline: "PaperCut ships an emergency patch for a pre-auth RCE chain already used against live customers — and a second emergency release after the first one was bypassed"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Unit 42: malicious skills on the OpenClaw \"ClawHub\" agent marketplace deliver macOS infostealers and weaponise AI agents for financial fraud"
 headline: "Unit 42: malicious skills on the OpenClaw \"ClawHub\" agent marketplace deliver macOS infostealers and weaponise AI agents for financial fraud"
 summary: "Palo Alto Networks Unit 42 (2026-06-23) documented five malicious skills published to ClawHub, the third-party skill marketplace for the OpenClaw AI-agent platform, active February–May 2026 (Unit 42, 2026-06-23; corroborated by Trend Micro)."

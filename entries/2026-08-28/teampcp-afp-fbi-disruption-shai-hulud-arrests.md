@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "AFP-FBI-WAPF disrupt TeamPCP: two Western Australia men charged over the npm/GitHub supply-chain worm operation AFP estimates compromised 1,000+ organisations, 500,000+ credentials and 300+ GB of data"
 headline: "The first law-enforcement disruption of the Shai-Hulud npm-worm operator, with AFP's own scale estimate now on the public record"
 summary: >

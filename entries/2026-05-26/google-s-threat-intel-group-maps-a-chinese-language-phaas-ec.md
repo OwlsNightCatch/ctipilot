@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Google's threat-intel group maps a Chinese-language PhaaS ecosystem doing real-time OTP relay over RCS/iMessage"
 headline: "Google's threat-intel group maps a Chinese-language PhaaS ecosystem doing real-time OTP relay over RCS/iMessage"
 summary: "Google's threat-intel group details a Chinese-language PhaaS ecosystem performing real-time OTP relay over RCS/iMessage that defeats TOTP and SMS MFA — a live admin panel re-submits the victim's OTP on the real portal inside its validity window, and end-to-end-encrypted RCS/iMessage delivery bypasses carrier SMS filtering; Europe is explicitly named as a targeted region. FIDO2/WebAuthn is the countermeasure that removes the exposure (Google Threat Intelligence Group, 2026-05-25)."

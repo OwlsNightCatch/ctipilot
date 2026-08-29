@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Netherlands FIOD arrests two over EU sanctions evasion for Stark Industries front; 800 servers seized; NoName057(16) DDoS plumbing dismantled"
 headline: "Netherlands FIOD arrests two over EU sanctions evasion for Stark Industries front; 800 servers seized; NoName057(16) DDoS plumbing dismantled"
 summary: "Dutch FIOD seizes 800 servers from Stark Industries proxy hoster — among the first publicly reported EU criminal enforcement actions against a sanctions-shielding bulletproof host. Suspects connected to WorkTitans B.V. and MIRhosting arrested for sustaining the infrastructure that fronted NoName057(16) DDoS operations against EU and Swiss public-sector targets (FIOD, 2026-05-22 · BleepingComputer, 2026-05-22)."

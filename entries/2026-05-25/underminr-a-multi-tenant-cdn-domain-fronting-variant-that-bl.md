@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "\"Underminr\": a multi-tenant-CDN domain-fronting variant that blinds DNS-layer filtering"
 headline: "\"Underminr\": a multi-tenant-CDN domain-fronting variant that blinds DNS-layer filtering"
 summary: "\"Underminr\" is a new domain-fronting variant that defeats DNS-layer filtering on multi-tenant CDNs — ADAMnetworks showed an attacker can present an allow-listed domain's SNI/Host while the shared CDN edge routes the request to a different tenant's (attacker) origin on the same IP, blinding DNS filtering and edge-terminated TLS inspection. No CVE (architectural); ~88M domains on shared infrastructure are potentially in scope (SecurityWeek, 2026-05-23)."

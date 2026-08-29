@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "ICO secures £355,880 POCA confiscation against former Markerstudy Insurance employee for off-hours bulk record access and sale"
 headline: "ICO secures £355,880 POCA confiscation against former Markerstudy Insurance employee for off-hours bulk record access and sale"
 summary: "The UK Information Commissioner's Office announced on 2026-05-21 a £355,880.10 confiscation order at Manchester Crown Court under the Proceeds of Crime Act against Rizwan Manjra, a former Markerstudy Insurance Services Limited employee (ICO, 2026-05-21)."

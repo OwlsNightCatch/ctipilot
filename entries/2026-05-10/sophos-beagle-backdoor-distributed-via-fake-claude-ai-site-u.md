@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Sophos: \"Beagle\" backdoor distributed via fake Claude AI site using DonutLoader + DLL sideloading on a signed G DATA AV updater"
 headline: "Sophos: \"Beagle\" backdoor distributed via fake Claude AI site using DonutLoader + DLL sideloading on a signed G DATA AV updater"
 summary: "Sophos X-Ops (cluster STAC4713) published a write-up on 2026-05-07 of a malvertising campaign using the counterfeit claude-pro[.]com site to distribute a previously-undocumented Windows backdoor named Beagle (Sophos X-Ops, 2026-05-07 · Malwarebytes, 2026-04-10 (earlier wave))."

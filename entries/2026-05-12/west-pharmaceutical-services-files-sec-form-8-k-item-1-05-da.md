@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "West Pharmaceutical Services files SEC Form 8-K Item 1.05 — data exfiltrated, systems encrypted, global operations partially restarted"
 headline: "West Pharmaceutical Services files SEC Form 8-K Item 1.05 — data exfiltrated, systems encrypted, global operations partially restarted"
 summary: "West Pharmaceutical Services Inc. (NYSE: WST), a US-headquartered global manufacturer of drug-delivery and packaging components, filed a Form 8-K on 2026-05-11 disclosing a material cybersecurity incident under Item 1.05 (SEC EDGAR — WST 8-K, 2026-05-11)."

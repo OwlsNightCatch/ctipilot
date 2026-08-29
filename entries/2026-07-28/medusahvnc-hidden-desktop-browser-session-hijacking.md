@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "MedusaHVNC: a malware-as-a-service RAT that drives the victim's own logged-in browser on an invisible second Windows desktop"
 headline: "MedusaHVNC rides real logged-in browser sessions on a hidden Windows desktop, defeating device-based fraud checks"
 summary: >

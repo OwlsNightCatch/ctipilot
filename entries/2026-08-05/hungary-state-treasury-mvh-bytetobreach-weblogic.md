@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "ByteToBreach hits Hungary's State Treasury after Romania's land registry — the reported entry point is an Oracle WebLogic server left unpatched since a 2017 patch cycle"
 headline: "The actor who wiped Romania's cadastre reaches a second EU government body through legacy WebLogic"
 summary: >
@@ -53,7 +52,6 @@ sourcing_note: "No source names a CVE — Telex.hu links to an Oracle October 20
 confidence: medium
 update_of: null
 references:
-  - 2026-07-26/weekly-w30-ch-eu-public-sector-third-party-incidents
   - 2026-07-19/ancpi-romania-cadastre-cyberattack-bytetobreach
 deep_dive: false
 deep_dive_category: null

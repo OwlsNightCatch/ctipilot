@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "ARWINI (Lower Saxony statutory-prescription audit body) — investigators confirm data exfiltration after 4 May intrusion; Kairos ransomware group claims 2.87 TB; ~70,000 GDPR Art. 9 records in scope"
 headline: "ARWINI (Lower Saxony statutory-prescription audit body) — investigators confirm data exfiltration after 4 May intrusion; Kairos ransomware group claims 2.87"
 summary: "ARWINI prescription-review body (Lower Saxony) — investigators confirm data exfiltration, ~70,000 GDPR Art. 9 patient records likely affected; Kairos ransomware group claims theft of 2.87 TB (Deutsches Ärzteblatt, 2026-05-18; Heise Security, 2026-05-18). Statutory health-insurance auditor for KVN/AOK; Polizeidirektion Hannover is the investigating authority; data offered for sale on Kairos leak site."

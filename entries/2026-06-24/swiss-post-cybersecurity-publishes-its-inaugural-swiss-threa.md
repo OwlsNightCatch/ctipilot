@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: Swiss Post Cybersecurity publishes its inaugural Swiss Threat Landscape Report
 headline: Swiss Post Cybersecurity publishes its inaugural Swiss Threat Landscape Report
 summary: "Swiss Post Cybersecurity released its first Swiss Threat Landscape Report on 2026-06-23, presented at its Hack'Events conference, drawing on the firm's own SOC, incident-response and offensive-security engagement data rather than global aggregates (Swiss Post Cybersecurity, 2026-06-23)."

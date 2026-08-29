@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Akira blinds EDR by rebooting a victim host into Safe Mode with Networking — the operator's first observed use of the technique, and the stripped-down boot starved its own encryptor"
 headline: "Akira reboots a SonicWall-VPN victim into Safe Mode to strip EDR — and starves its own encryptor"
 summary: >

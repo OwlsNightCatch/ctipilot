@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Dead-drop command-and-control went commodity: three of four new entrants on Red Canary's monthly list resolve their C2 from a dead drop, two of them from a public blockchain, and the fourth is a GUI for Entra ID device-code phishing"
 headline: "Dead-drop C2 moved from novelty to routine, and the control is an egress baseline rather than a blocklist"
 summary: >

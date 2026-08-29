@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Kaspersky GReAT documents Kimsuky's Rust-based HelloDoor and TryCloudflare-tunnel C2 added to the PebbleDash toolkit"
 headline: "Kaspersky GReAT documents Kimsuky's Rust-based HelloDoor and TryCloudflare-tunnel C2 added to the PebbleDash toolkit"
 summary: "Kaspersky's Global Research and Analysis Team published a deep technical disclosure on 2026-05-14 covering Kimsuky (Ruby Sleet / APT43) campaigns observed during late 2025 and Q1 2026, documenting six malware families the actor is currently rotating (Kaspersky Securelist, 2026-05-14)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: PostCSS npm typosquats deliver a Nuitka-compiled Python RAT with Chrome DPAPI credential theft
 headline: PostCSS npm typosquats deliver a Nuitka-compiled Python RAT with Chrome DPAPI credential theft
 summary: "Three malicious npm packages typosquatting postcss-selector-parser (150M weekly downloads) ship an AES-256-GCM-encrypted dropper that pulls a Nuitka-compiled Python RAT with Chrome DPAPI credential theft and Run-key persistence. Any CI runner or developer host that installed postcss-minify-selector(-parser) or aes-decode-runner-pro should be treated as compromised (JFrog, 2026-06-22)."

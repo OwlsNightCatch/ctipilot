@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "IronWorm: Rust-built npm worm ships an eBPF kernel rootkit, Tor C2 and a cloud/AI-credential sweep"
 headline: "IronWorm: Rust-built npm worm ships an eBPF kernel rootkit, Tor C2 and a cloud/AI-credential sweep"
 summary: "Two distinct self-propagating npm worms hit the JavaScript supply chain in the same window — the new Rust-built IronWorm (eBPF kernel rootkit + Tor C2, ~36 packages, cloud/AI-key sweep) (JFrog, 2026-06-03), and a fresh Miasma variant that reached 73 Microsoft GitHub repositories including the Azure Durable Task ecosystem (§ 4). Both abuse install-time scripts and stolen publishing credentials."

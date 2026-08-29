@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Red Canary: detecting Entra Agent ID privilege escalation — credential injection into agent blueprints enables lateral movement across the entire tenant"
 headline: "Red Canary: detecting Entra Agent ID privilege escalation — credential injection into agent blueprints enables lateral movement across the entire tenant"
 summary: "Red Canary published a detection-engineering primer on 27 May 2026 on the AgentIdentityBlueprint.AddRemoveCreds.All role in Microsoft Entra's new Agent ID identity class — autonomous app identities that act in a tenant without human interaction (Red Canary, 2026-05-27)."

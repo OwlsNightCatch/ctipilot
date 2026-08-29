@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "TA4922 adds PackClient, a Telegram-sold modular RAT/C2 framework, to its toolkit — dual-channel C2, registry-resident configuration, and tax-themed lures against mainland China and India"
 headline: "A China-nexus financially-motivated cluster already tracked for EU expansion picks up a commodity, Telegram-proliferated RAT"
 summary: >

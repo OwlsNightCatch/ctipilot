@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "actions-cool/issues-helper GitHub Action compromised — 53 tags moved to imposter commit reading Runner.Worker /proc/PID/mem; linked to Mini Shai-Hulud"
 headline: "actions-cool/issues-helper GitHub Action compromised — 53 tags moved to imposter commit reading Runner.Worker /proc/PID/mem; linked to Mini Shai-Hulud"
 summary: "Two more CI/CD supply-chain incidents — actions-cool/issues-helper GitHub Action (exfil infrastructure overlapping with the Mini Shai-Hulud cluster per Socket) and Nx Console VS Code extension (stolen publisher credentials, no cluster attribution). 53 issues-helper tags moved to imposter commit 1c9e803 reading /proc/<PID>/mem of Runner.Worker for secrets exfil (StepSecurity, 2026-05-18). Nx Console 18.95.0 (2.2 M installs) compromised via stolen publisher credentials for an 11-minute window 2026-05-18 12:36–12:47 UTC (The Hacker News, 2026-05-19)."

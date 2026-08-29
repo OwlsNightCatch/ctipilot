@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   Abbott confirms a Cancer Diagnostics cyber incident; ShinyHunters claims a vished Entra SSO
   account and 30M+ records
@@ -101,7 +100,6 @@ sourcing_note: >
   method and scope are a claim.
 confidence: medium
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Unit 42 Operation FlutterBridge: notarized macOS backdoor hides its logic in a remote WebView and exfiltrates documents through an \"AI summarise\" feature"
 headline: "Unit 42 Operation FlutterBridge: notarized macOS backdoor hides its logic in a remote WebView and exfiltrates documents through an \"AI summarise\" feature"
 summary: "Unit 42 details Operation FlutterBridge, the evolution of cluster CL-CRI-1089 (active since August 2025), which distributes macOS backdoors disguised as productivity apps (PodcastsLounge, PDF-Brain, PDF-Ninja) via hundreds of Google Ads bought through verified shell companies (Unit 42, 2026-06-02; The Hacker News …"

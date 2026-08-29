@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Cisco Talos: \"demo.pdb\" BadIIS variant now a commodity MaaS IIS ISAPI backdoor; lwxat developer alias, builder tool recovered"
 headline: "Cisco Talos: \"demo.pdb\" BadIIS variant now a commodity MaaS IIS ISAPI backdoor; lwxat developer alias, builder tool recovered"
 summary: Cisco Talos published on 2026-05-19 the first MaaS-ecosystem analysis of a BadIIS variant identifiable by embedded demo.pdb path strings in the ISAPI DLL binary.

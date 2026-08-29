@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: annual-report
-horizon: operational
 title: "ESET's 2025 Gamaredon paper: exfil and C2 moved wholesale onto trusted cloud services (ANNUAL REPORT)"
 headline: "ESET's 2025 Gamaredon paper: exfil and C2 moved wholesale onto trusted cloud services (ANNUAL REPORT)"
 summary: "ESET's 2025 Gamaredon paper shows the FSB group's exfil and C2 moving entirely onto trusted cloud services — S3-compatible object storage (Wasabi/Tebi/Intercolo) via rclone and Cloudflare-tunnel/Workers/DevTunnel C2 that blends with legitimate egress; targeting stayed exclusively Ukrainian, but the tradecraft is the transferable part (ESET, 2026-06-25)."

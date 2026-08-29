@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Megalodon mass-poisons 5,561 GitHub repos in a 6-hour window; SysDiag + Optimize-Build workflows exfiltrate cloud credentials and OIDC tokens"
 headline: "Megalodon mass-poisons 5,561 GitHub repos in a 6-hour window; SysDiag + Optimize-Build workflows exfiltrate cloud credentials and OIDC tokens"
 summary: "Megalodon automated-poisoned 5,561 GitHub repos on 2026-05-18. Automated commits inject SysDiag and Optimize-Build GitHub Actions workflows that exfiltrate AWS/GCP/Azure credentials, OIDC tokens and SSH keys from CI runners; the @tiledesk/tiledesk-server npm package 2.18.6–2.18.12 carries the dormant Optimize-Build variant (SafeDep, 2026-05-21 · OX Security, 2026-05-21)."

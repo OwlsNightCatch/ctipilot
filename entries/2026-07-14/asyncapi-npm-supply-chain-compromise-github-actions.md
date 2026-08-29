@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   AsyncAPI npm packages backdoored via a GitHub Actions pull_request_target token theft,
   delivering a multi-stage IPFS implant (M-RED-TEAM)
@@ -98,7 +97,6 @@ sourcing_note: >
   confirmed mass theft.
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

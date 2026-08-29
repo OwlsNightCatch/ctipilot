@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Huntress: a three-day credential-stuffing run logged into 92 SonicWall VPN and firewall accounts across 30 organisations, with no follow-on activity observed"
 headline: "Valid credentials, not a CVE, opened 92 SonicWall remote-access accounts in 41 hours — and nobody came back to use them"
 summary: >

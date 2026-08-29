@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: annual-report
-horizon: operational
 title: "Rapid7's Q2 2026 quarterly report: high- and critical-severity disclosures doubled year on year to 8,539 while the number newly exploited held flat at 40 — and 62% of what was exploited needed no user interaction at all"
 headline: "Rapid7 Q2 2026: disclosure volume doubled, exploitation did not — and missing-authentication disclosures rose 247%"
 summary: >

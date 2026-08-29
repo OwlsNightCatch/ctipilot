@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: BSI flags 13 vulnerabilities patched in Zammad 7.1 — admin privilege escalation in a DACH public-sector helpdesk platform
 headline: BSI flags 13 vulnerabilities patched in Zammad 7.1 — admin privilege escalation in a DACH public-sector helpdesk platform
 summary: "BSI CERT-Bund advisory WID-SEC-2026-1981 (2026-06-17) rates the aggregate severity of the Zammad 7.1 release as \"hoch\" (high): an attacker can chain the patched flaws to gain administrator privileges, bypass security controls, manipulate or disclose data, or trigger denial-of-service (BSI CERT-Bund, 2026-06-17)."

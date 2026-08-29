@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "VerdantBamboo (UNC5221 / WARP PANDA): an 18-month China-nexus intrusion that lived entirely on EDR-blind edge appliances and proxied into Microsoft 365 past Conditional Access"
 headline: "VerdantBamboo (UNC5221 / WARP PANDA): an 18-month China-nexus intrusion that lived entirely on EDR-blind edge appliances and proxied into Microsoft 365 past"
 summary: "Volexity names VerdantBamboo (UNC5221 / WARP PANDA), an 18-month China-nexus espionage intrusion that entered a European organisation through its MSP and lived exclusively on EDR-blind edge devices — pfSense firewall, a Synology NAS, and an Egnyte Storage Sync VM whose egress IP was proxied to slip into the victim's Microsoft 365 tenant past Conditional Access. Two new implants (AGENTPSD, PLENET/GRIMBOLT) joined BRICKSTORM (Volexity, 2026-06-04)."

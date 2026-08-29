@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "\"GreatXML\": unpatched BitLocker bypass via crafted XML on the recovery partition — PoC public, practical severity contested"
 headline: "\"GreatXML\": unpatched BitLocker bypass via crafted XML on the recovery partition — PoC public, practical severity contested"
 summary: "\"GreatXML\": unpatched BitLocker bypass with public PoC — crafted XML files on the recovery partition yield a SYSTEM shell in WinRE; severity is contested (an initial Defender offline scan, which requires admin, must have run once) (SecurityWeek, 2026-06-11)."

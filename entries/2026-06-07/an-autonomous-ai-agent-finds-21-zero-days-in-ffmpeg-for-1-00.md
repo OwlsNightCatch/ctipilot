@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "An autonomous AI agent finds 21 zero-days in FFmpeg for ~$1,000 — nine numbered (CVE-2026-39210 to -39218), parser bugs up to 23 years old"
 headline: "An autonomous AI agent finds 21 zero-days in FFmpeg for ~$1,000 — nine numbered (CVE-2026-39210 to -39218), parser bugs up to 23 years old"
 summary: "An autonomous AI agent found 21 zero-days in FFmpeg for roughly $1,000, nine already numbered (CVE-2026-39210–39218). The bugs are heap/stack overflows in parsers and demuxers — one dating to 2003 — and FFmpeg is embedded across government media, surveillance and conferencing stacks. PoCs exist; no in-the-wild exploitation (depthfirst, 2026-06-02)."

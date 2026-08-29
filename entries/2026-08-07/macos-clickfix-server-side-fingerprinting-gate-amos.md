@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "The macOS ClickFix chain now qualifies visitors server-side before showing the lure, with anti-analysis probes that detect a console rather than a sandbox"
 headline: "Microsoft documents the cloaking layer in front of a ClickFix campaign — researchers and scanners get a decoy, qualified Macs get the payload"
 summary: >

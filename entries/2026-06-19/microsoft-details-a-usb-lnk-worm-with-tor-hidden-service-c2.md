@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: Microsoft details a USB-LNK worm with Tor hidden-service C2 driving a cryptocurrency clipboard hijacker
 headline: Microsoft details a USB-LNK worm with Tor hidden-service C2 driving a cryptocurrency clipboard hijacker
 summary: "Microsoft Threat Intelligence documented a multi-component campaign (detected as Trojan:Win32/CryptoBandits.A/B and Trojan:JS/CryptoBandits.A/B), active since at least February 2026, that pairs a removable-media worm with a Tor-fronted clipboard hijacker (Microsoft Security, 2026-06-17; The Hacker News …"

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Red Lamassu (Calypso/Bronze Medley): Showboat + JFMBackdoor telco espionage implant pair"
 headline: "Red Lamassu (Calypso/Bronze Medley): Showboat + JFMBackdoor telco espionage implant pair"
 summary: "Background. Calypso (also tracked as Red Lamassu and Bronze Medley) is a China-aligned espionage cluster active since at least mid-2022 based on Lumen's binary upload and victim telemetry — the Showboat/JFMBackdoor campaign dates to this period."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Webworm (China-aligned) shifts to EU government targets — EchoCreep (Discord C2) and GraphWorm (Microsoft Graph / OneDrive C2) backdoors documented by ESET, with Belgian, Italian, Serbian, Polish and Spanish governmental victims"
 headline: Webworm (China-aligned) shifts to EU government targets — EchoCreep (Discord C2) and GraphWorm (Microsoft Graph / OneDrive C2) backdoors documented by ESET
 summary: "Webworm (China-aligned) targets Belgian, Italian, Serbian and Polish government organisations with two new custom backdoors — EchoCreep (Discord C2) and GraphWorm (Microsoft Graph / OneDrive C2). ESET also documents Spanish and Italian governmental documents exfiltrated to a compromised AWS S3 bucket (ESET Research, 2026-05-20)."

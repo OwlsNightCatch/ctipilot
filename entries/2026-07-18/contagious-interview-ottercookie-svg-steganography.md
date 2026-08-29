@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Contagious Interview (DPRK) hides an OTTERCOOKIE-aligned payload in SVG-comment steganography inside fake coding-interview repos"
 headline: "Elastic finds a new Contagious Interview chain that splits its payload across Base64 comments in every SVG flag image and reassembles it via eval()"
 summary: >

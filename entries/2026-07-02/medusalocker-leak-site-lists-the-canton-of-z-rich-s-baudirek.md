@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "MedusaLocker leak site lists the Canton of Zürich's Baudirektion — unconfirmed claim"
 headline: "MedusaLocker leak site lists the Canton of Zürich's Baudirektion — unconfirmed claim"
 summary: "A Swiss cantonal government department appears on a ransomware leak site. MedusaLocker's site listed the Baudirektion of the Canton of Zürich (bd.zh.ch) on 1 July, claiming 772 extracted emails — unconfirmed by the Canton and uncorroborated by any press or NCSC.ch advisory as of this run (Ransomware.live). Treat as a watch item, not a confirmed breach."

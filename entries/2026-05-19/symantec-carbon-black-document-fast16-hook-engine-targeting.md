@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Symantec / Carbon Black document Fast16 hook engine targeting LS-DYNA/AUTODYN nuclear-simulation codes; Kim Zetter corrects \"pre-Stuxnet\" framing to contemporaneous-and-simulation-sabotage"
 headline: "Symantec / Carbon Black document Fast16 hook engine targeting LS-DYNA/AUTODYN nuclear-simulation codes; Kim Zetter corrects \"pre-Stuxnet\" framing to"
 summary: Background. Fast16 — a Lua-based sabotage framework — was first disclosed by SentinelOne at LABScon 2026 in April 2026 and originally framed as a Stuxnet predecessor by approximately two years. Earlier reporting also speculated that the malware operated against physical centrifuge equipment.

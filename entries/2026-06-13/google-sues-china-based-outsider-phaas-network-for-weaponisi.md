@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: >
   Google sues China-based "Outsider" PhaaS network for weaponising Gemini to mass-produce phishing
   pages
@@ -56,7 +55,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

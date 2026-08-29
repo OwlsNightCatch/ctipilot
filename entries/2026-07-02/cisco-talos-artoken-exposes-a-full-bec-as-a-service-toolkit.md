@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Cisco Talos: \"ARToken\" exposes a full BEC-as-a-service toolkit on top of Microsoft 365 device-code phishing"
 headline: "Cisco Talos: \"ARToken\" exposes a full BEC-as-a-service toolkit on top of Microsoft 365 device-code phishing"
 summary: "A full BEC-as-a-service panel for Microsoft 365 surfaces. Cisco Talos documented \"ARToken,\" an EvilTokens-lineage phishing-as-a-service platform whose 80+ API endpoints automate device-code phishing, Primary Refresh Token persistence that survives password resets, and mailbox/SharePoint exfiltration against M365 tenants (Cisco Talos)."

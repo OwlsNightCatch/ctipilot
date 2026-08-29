@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: Calypso/Red Lamassu (Bronze Medley) deploys Showboat (Linux) and JFMBackdoor (Windows) against telecoms — new implant pair disclosed by Lumen Black Lotus Labs and PwC Threat Intelligence
 headline: Calypso/Red Lamassu (Bronze Medley) deploys Showboat (Linux) and JFMBackdoor (Windows) against telecoms — new implant pair disclosed by Lumen Black Lotus Labs
 summary: "Calypso/Red Lamassu deploys Showboat (Linux) + JFMBackdoor (Windows) against telecoms — multi-year Chinese espionage campaign targeting ISPs in Middle East, Central Asia; kworker-masquerading ELF implant with SOCKS5 proxy and Pastebin dead-drop rootkit loader; Lumen Black Lotus Labs + PwC joint disclosure (BleepingComputer, 2026-05-21)."

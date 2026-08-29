@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Canton Graubünden discloses a SharePoint server breach a day after the Confederation did — the on-premises wave has reached Swiss cantonal government"
 headline: "A second Swiss public-sector SharePoint victim in 48 hours, and the intrusion sat unnoticed for a week"
 summary: >

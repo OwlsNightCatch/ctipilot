@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: annual-report
-horizon: operational
 title: "Switzerland's federal cyber authority reports the public sector as still the largest share of mandatory critical-infrastructure notifications, and devotes its half-year report to two things a Swiss defender can act on: the anatomy of the Polish energy sabotage, and a crypto-theft playbook that recruits its victims on LinkedIn"
 headline: "BACS report: the public sector remains the largest share of Swiss mandatory CI reports at 19.4%, and basic hygiene would have stopped the Poland sabotage"
 summary: >

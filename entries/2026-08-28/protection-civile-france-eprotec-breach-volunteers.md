@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "La Protection Civile (France): eProtec volunteer-management platform breach, 525,000+ profiles including minors, intrusion dated to March 2026 discovered mid-August"
 headline: "A French civil-security federation confirms a five-month-old intrusion the same week several comparable sports federations were also hit"
 summary: >

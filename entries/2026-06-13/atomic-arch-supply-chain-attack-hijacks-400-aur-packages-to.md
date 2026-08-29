@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "\"Atomic Arch\" supply-chain attack hijacks 400+ AUR packages to drop a credential stealer and eBPF rootkit"
 headline: "\"Atomic Arch\" supply-chain attack hijacks 400+ AUR packages to drop a credential stealer and eBPF rootkit"
 summary: "\"Atomic Arch\" hijacked 400+ orphaned Arch Linux AUR packages to drop a Rust credential stealer and an eBPF rootkit that hides processes/files via pinned BPF maps; injection rides a malicious atomic-lockfile npm dependency added to PKGBUILD (Sonatype, 2026-06-11)."

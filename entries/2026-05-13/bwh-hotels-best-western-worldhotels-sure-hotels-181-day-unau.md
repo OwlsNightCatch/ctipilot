@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "BWH Hotels (Best Western, WorldHotels, Sure Hotels) — 181-day unauthorised access to a guest-reservation web application, six EU brands in scope"
 headline: "BWH Hotels (Best Western, WorldHotels, Sure Hotels) — 181-day unauthorised access to a guest-reservation web application, six EU brands in scope"
 summary: "BWH Hotels — the parent operating Best Western Hotels & Resorts, WorldHotels and Sure Hotels — disclosed that an unauthorised third party had access to a guest-reservation web application from 2025-10-14 to 2026-04-22, a 181-day dwell, before detection on 2026-04-22 prompted BWH to take the affected application …"

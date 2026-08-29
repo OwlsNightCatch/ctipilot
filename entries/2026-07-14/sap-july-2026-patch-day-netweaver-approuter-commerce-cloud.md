@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "SAP July 2026 Security Patch Day: three CVSS ≥9.1 flaws in NetWeaver AS ABAP, Approuter and Commerce Cloud — two reachable without authentication"
 headline: "SAP patches an unauthenticated Approuter request-smuggling flaw and a Commerce Cloud public-default-credential exposure; NCSC-CH flags all three"
 summary: >

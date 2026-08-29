@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   ShinyHunters Salesforce campaign — Charter and 7-Eleven both confirm; 7-Eleven count put at
   ~185,000 affected
@@ -67,7 +66,6 @@ verification: multi-source
 sourcing_note: "migration: update target unresolved (originally covered 2026-05-24)"
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

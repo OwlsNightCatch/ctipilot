@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: ACR Stealer distributed through counterfeit Claude AI download pages promoted by malicious search ads
 headline: ACR Stealer distributed through counterfeit Claude AI download pages promoted by malicious search ads
 summary: "SANS ISC handler Brad Duncan documented a delivery chain that impersonates Anthropic's Claude desktop app via counterfeit \"Download for Windows\" pages, promoted through malicious search ads hosted on sites.google.com, ultimately dropping ACR Stealer (SANS Internet Storm Center, 2026-05-26)."

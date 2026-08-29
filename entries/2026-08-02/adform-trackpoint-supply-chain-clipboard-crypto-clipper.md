@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Adform: the shared tracking script every customer site embeds was trojanised with a clipboard-rewriting crypto-clipper, and no antivirus engine flagged it"
 headline: "A European ad-tech vendor served malware to its customers' visitors through the one JavaScript file they all embed"
 summary: >

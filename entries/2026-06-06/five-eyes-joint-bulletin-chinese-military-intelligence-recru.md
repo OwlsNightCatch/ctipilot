@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Five Eyes joint bulletin: Chinese military intelligence recruiting cleared personnel through LinkedIn and job platforms"
 headline: "Five Eyes joint bulletin: Chinese military intelligence recruiting cleared personnel through LinkedIn and job platforms"
 summary: "Five Eyes issue a rare joint bulletin on Chinese intelligence recruiting via LinkedIn and job platforms — targeting cleared personnel, researchers and policy staff; directly relevant to Swiss/EU public-sector personnel security (The Record, 2026-06-03)."

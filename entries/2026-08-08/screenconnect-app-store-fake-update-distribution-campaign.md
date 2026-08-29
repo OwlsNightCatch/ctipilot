@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "A ScreenConnect distribution campaign fronts fake Microsoft Store and App Store update dialogs, and binds each installer to its operator's relay with an embedded key"
 headline: "Interactive fake-update modals, cloud-hosted payloads and self-registering RMM installers deployed at guest permission to stay quiet"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: EU Cyber Resilience Act reaches its first hard deadline — notifying-authority designation due 11 June
 headline: EU Cyber Resilience Act reaches its first hard deadline — notifying-authority designation due 11 June
 summary: "UPDATE (originally covered 2026-W23 weekly): 11 June 2026 is the CRA's first mandatory operational milestone: under Chapter IV, member states must have designated the national authority responsible for notifying conformity-assessment bodies (CABs) for higher-risk product classes (European Commission, 2026-06-10)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Qilin ransomware hits Die Linke (Germany): 1.5 TB claimed, DPA notified (~April 2026, first coverage)"
 headline: "Qilin ransomware hits Die Linke (Germany): 1.5 TB claimed, DPA notified (~April 2026, first coverage)"
 summary: "The German federal party Die Linke confirmed in April 2026 that the Qilin ransomware group (also known as Agenda, a Rust-based RaaS platform known for double extortion) encrypted and exfiltrated its systems, with the gang claiming 1.5 TB of internal data."

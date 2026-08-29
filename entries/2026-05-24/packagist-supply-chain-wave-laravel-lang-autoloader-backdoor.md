@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Packagist supply-chain wave: Laravel-Lang autoloader backdoor and the cross-ecosystem postinstall strand"
 headline: "Packagist supply-chain wave: Laravel-Lang autoloader backdoor and the cross-ecosystem postinstall strand"
 summary: "A Packagist (PHP/Composer) supply-chain wave hit the Laravel-Lang ecosystem — 700+ version tags rewritten to point at attacker forks, an autoload.files backdoor that executes on every request, and a separate 8-package package.json postinstall strand dropping a Linux implant. Full mechanics in today's deep dive (Socket, 2026-05-23)."

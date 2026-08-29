@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "SANS ISC — Akira ransomware kill chain reconstructed entirely from SSLVPN syslog and Windows EVTX, no EDR"
 headline: "SANS ISC — Akira ransomware kill chain reconstructed entirely from SSLVPN syslog and Windows EVTX, no EDR"
 summary: "SANS ISC handler Manuel Humberto Santander Pelaez published a forensic walkthrough on 2026-05-27 reconstructing an Akira ransomware intrusion using only two log sources — SSLVPN syslog and Windows EVTX exports — joined by source IP and normalised time (SANS Internet Storm Center, 2026-05-27). [SINGLE-SOURCE] …"

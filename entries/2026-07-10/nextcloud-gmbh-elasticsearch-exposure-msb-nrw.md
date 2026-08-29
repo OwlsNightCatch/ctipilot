@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Nextcloud GmbH's own hosting infrastructure exposed 367K internal records via a misconfigured public Elasticsearch cluster, including client setup scripts with hardcoded credentials"
 headline: "Nextcloud GmbH exposed 367K internal records — client setup scripts with hardcoded DB credentials, a German ministry contact — via open Elasticsearch"
 summary: >

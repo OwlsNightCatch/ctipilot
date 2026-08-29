@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Apereo CAS version 7.3.7.1 patches an OIDC-provider flaw reported by Coop Switzerland; CERT-FR issues advisory CERTFR-2026-AVI-0654"
 headline: "Apereo CAS version 7.3.7.1 patches an OIDC-provider flaw reported by Coop Switzerland; CERT-FR issues advisory CERTFR-2026-AVI-0654"
 summary: The Apereo Foundation released CAS version 7.3.7.1 on 2026-05-27 fixing an unspecified vulnerability in the OpenID Connect identity-provider component of its Central Authentication Service.

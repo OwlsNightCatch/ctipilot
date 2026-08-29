@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "LLMShare malvertising campaign: attackers embed fake outage pages in ChatGPT share links and serve infostealer downloads via Google Ads"
 headline: "LLMShare malvertising campaign: attackers embed fake outage pages in ChatGPT share links and serve infostealer downloads via Google Ads"
 summary: "Push Security documented LLMShare, a malvertising campaign in which attackers buy Google Ads targeting \"ChatGPT\" and \"ChatGPT download\" queries (Push Security, 2026-05-29; BleepingComputer, 2026-05-29)."

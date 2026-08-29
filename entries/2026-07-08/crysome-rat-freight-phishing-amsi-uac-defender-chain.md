@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "CrySome RAT freight-phishing chain: AMSI bypass, ICMLuaUtil UAC bypass and an open-source Defender-disruption tool"
 headline: "CrySome RAT delivered via freight-rate phishing, chaining AMSI bypass, ICMLuaUtil UAC bypass and WinDefCtl"
 summary: >

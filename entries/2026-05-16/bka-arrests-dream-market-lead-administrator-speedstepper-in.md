@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "BKA arrests Dream Market lead administrator \"Speedstepper\" in Germany — cryptocurrency-to-physical-gold OPSEC failure after seven years at large"
 headline: "BKA arrests Dream Market lead administrator \"Speedstepper\" in Germany — cryptocurrency-to-physical-gold OPSEC failure after seven years at large"
 summary: "Owe Martin Andresen, a 49-year-old German national alleged by US and German prosecutors to be \"Speedstepper\" — the lead administrator of the Dream Market darknet narcotics marketplace from 2013 until its 2019 voluntary shutdown — was arrested in Germany on 2026-05-07 and publicly identified on 2026-05-13–14 (The …"

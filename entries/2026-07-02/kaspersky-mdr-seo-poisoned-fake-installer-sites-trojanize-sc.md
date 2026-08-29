@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Kaspersky MDR: SEO-poisoned fake-installer sites trojanize ScreenConnect to deploy AsyncRAT"
 headline: "Kaspersky MDR: SEO-poisoned fake-installer sites trojanize ScreenConnect to deploy AsyncRAT"
 summary: "Kaspersky's MDR team pivoted from a single flagged incident (suspicious PowerShell/VBS spawned by a ScreenConnect process) into a \"massive, multi-domain, multi-language\" campaign running since at least August 2025, using 90+ spoofed sites in ten languages — including German and French — impersonating free software …"

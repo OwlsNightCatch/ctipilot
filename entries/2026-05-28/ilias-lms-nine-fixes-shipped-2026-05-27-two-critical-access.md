@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "ILIAS LMS — nine fixes shipped 2026-05-27, two critical access-control gaps (CVSS 9.8 + 9.3), NCSC.ch flags SOAP interface as primary unauthenticated attack surface"
 headline: "ILIAS LMS — nine fixes shipped 2026-05-27, two critical access-control gaps (CVSS 9.8 + 9.3), NCSC.ch flags SOAP interface as primary unauthenticated attack"
 summary: "ILIAS LMS — critical patch cluster: unauthenticated TileImageUploadHandler write (CVSS 9.8) plus SOAP access-bypass and multiple SQL-injection bugs. The open-source LMS dominant in Swiss federal training, Swiss/German universities, and DACH public-sector vocational portals shipped nine fixes on 2026-05-27 across the 9.20 / 10.8 / 11.1 branches; NCSC Switzerland published an advisory the same day flagging the SOAP interface as the primary unauthenticated attack surface (ILIAS Security Blog, 2026-05-27; NCSC-CH, 2026-05-27; BSI CERT-Bund WID-SEC-2026-1689, 2026-05-27). Per-bug CVSS not in NVD yet — vendor and BSI advisories are primary."

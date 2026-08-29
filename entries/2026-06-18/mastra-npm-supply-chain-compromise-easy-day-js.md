@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: Mastra npm supply-chain compromise (easy-day-js)
 headline: Mastra npm supply-chain compromise (easy-day-js)
 summary: >
@@ -52,7 +51,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: true
 deep_dive_category: supply-chain
 org_triage: null

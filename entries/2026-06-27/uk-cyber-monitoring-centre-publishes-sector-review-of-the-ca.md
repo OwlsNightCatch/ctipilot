@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "UK Cyber Monitoring Centre publishes sector review of the Canvas/Instructure LMS breach — 160 universities, ShinyHunters extortion, ransom paid"
 headline: "UK Cyber Monitoring Centre publishes sector review of the Canvas/Instructure LMS breach — 160 universities, ShinyHunters extortion, ransom paid"
 summary: "The UK Cyber Monitoring Centre (CMC) published a post-incident sector review on 2026-06-25 of the April 2026 ShinyHunters (UNC6240) breach of Instructure's Canvas learning-management platform, which affected roughly 160 UK higher-education institutions (Computer Weekly, 2026-06-25)."

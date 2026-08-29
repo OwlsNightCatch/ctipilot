@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Three new PTC Windchill and FlexPLM CVEs land on the product line already under mass extortion — all three unauthenticated and flagged red by the vendor, and only one has a fixed version anyone outside PTC's login wall can find"
 headline: "The advisory records carry no version data at all; a national CERT's structured copy yields the one fixed release"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Microsoft maps three ShinyHunters-tradecraft OAuth-abuse paths against Salesforce customers — none exploiting a Salesforce vulnerability"
 headline: "Microsoft maps a year of Salesforce OAuth abuse — vishing consent, supply-chain secret reuse, guest-access Aura abuse — invisible to sign-in detection"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "CERT Polska: a second Polish CHP plant was shut down on 29 December 2025 through the distribution operator's private APN — the first real-world use of that path into an OT network"
 headline: "A mobile-carrier private APN, shared by a wind farm and a heat plant, carried an attacker from a substation firewall to the turbine controls"
 summary: >

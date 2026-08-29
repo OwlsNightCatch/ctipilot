@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "22 CVEs in Tobit TeamDavid, a DACH-region self-hosted Microsoft 365 alternative: an unauthenticated heap leak hands over stored mailbox passwords, and the vendor stopped responding"
 headline: "One unauthenticated endpoint returns uninitialised heap memory containing user credentials — roughly 12,000 TeamDavid instances are internet-facing"
 summary: >

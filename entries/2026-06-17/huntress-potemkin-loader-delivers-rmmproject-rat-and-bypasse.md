@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Huntress: Potemkin loader delivers RMMProject RAT and bypasses Chromium App-Bound Encryption"
 headline: "Huntress: Potemkin loader delivers RMMProject RAT and bypasses Chromium App-Bound Encryption"
 summary: "Huntress documented a ClickFix chain delivering a previously undocumented x64 loader named Potemkin (active since at least February 2026): a ClickFix lure installs an MSI that drops Potemkin via an HTA payload; the loader uses a domain-generation algorithm for C2 and reflectively loads follow-on modules in memory …"

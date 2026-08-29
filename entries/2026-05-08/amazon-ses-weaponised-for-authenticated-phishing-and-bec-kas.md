@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Amazon SES weaponised for authenticated phishing and BEC (Kaspersky, 2026-05-04, ~96 h)"
 headline: "Amazon SES weaponised for authenticated phishing and BEC (Kaspersky, 2026-05-04, ~96 h)"
 summary: Kaspersky researchers documented a campaign technique using legitimate Amazon Simple Email Service (SES) accounts to deliver attacker-crafted phishing and business-email-compromise (BEC) lures.

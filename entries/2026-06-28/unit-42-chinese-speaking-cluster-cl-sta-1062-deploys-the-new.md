@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Unit 42: Chinese-speaking cluster CL-STA-1062 deploys the new TinyRCT .NET backdoor against SE-Asian government and energy targets via AppDomainManager injection"
 headline: "Unit 42: Chinese-speaking cluster CL-STA-1062 deploys the new TinyRCT .NET backdoor against SE-Asian government and energy targets via AppDomainManager"
 summary: "Palo Alto Unit 42 (2026-06-25) documented CL-STA-1062, a Chinese-speaking cluster overlapping with Cisco Talos's UAT-7237, targeting government and state-owned energy infrastructure across Southeast Asia (Unit 42, 2026-06-25; The Hacker News, 2026-06-26)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "BSI flags Netgate pfSense Community Edition as critical-unpatched — CVE-2025-69690 / CVE-2025-69691 authenticated root RCE, vendor refuses to fix"
 headline: "BSI flags Netgate pfSense Community Edition as critical-unpatched — CVE-2025-69690 / CVE-2025-69691 authenticated root RCE, vendor refuses to fix"
 summary: "BSI flags Netgate pfSense Community Edition as critical-unpatched. Netgate refuses to patch two authenticated root-RCE CVEs (CVE-2025-69690 / CVE-2025-69691) on the grounds that admins are expected to have shell privilege — BSI's WID-SEC-2026-1435 advisory (2026-05-08) explicitly rates the unpatched state \"kritisch\" (Full Disclosure, 2026-02-16). Relevant for DACH cantonal / municipal / SME deployments using the free CE build."

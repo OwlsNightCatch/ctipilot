@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Mautic 7.1.2 / 6.0.9 — seven authenticated flaws, including two post-auth RCE paths (SSTI and path-traversal-to-PHP-RCE), an SSRF and an API authorization bypass"
 headline: "Mautic 7.1.2 / 6.0.9 — seven authenticated flaws, including two post-auth RCE paths (SSTI and path-traversal-to-PHP-RCE), an SSRF and an API authorization"
 summary: "Mautic open-source marketing-automation platform ships 7.1.2 / 6.0.9 fixing seven authenticated flaws — including two post-auth remote-code-execution paths (CVE-2026-9558 server-side template injection; CVE-2026-9559 path-traversal-to-PHP-RCE) plus a Focus-component SSRF (CVE-2026-9557) reaching internal services and cloud metadata. BSI CERT-Bund rated the cluster HIGH; the platform is used across European universities, cantonal administrations, NGOs and political parties for GDPR-compliant campaign mail (BSI CERT-Bund WID-SEC-2026-1724, 2026-05-29). No in-the-wild exploitation reported; patch now and tighten Mautic-server egress and role permissions."

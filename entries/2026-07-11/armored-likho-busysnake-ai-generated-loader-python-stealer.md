@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Armored Likho: new APT hits government and electric-power targets with an AI-generated loader and the Python 'BusySnake' stealer"
 headline: "Kaspersky names Armored Likho — spear-phishing into an LLM-written loader chain that stages a full Python runtime and a PyArmor-protected stealer"
 summary: >

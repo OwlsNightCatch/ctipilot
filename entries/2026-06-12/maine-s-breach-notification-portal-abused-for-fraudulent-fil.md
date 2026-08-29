@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   Maine's breach-notification portal abused for fraudulent filings against VRChat and Discord —
   both companies deny any breach
@@ -48,7 +47,6 @@ verification: single-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Sygnia: an AI-orchestrated AWS intrusion reached broad compromise in ~72 hours — four keys from four accounts used from one source in the same second"
 headline: "Sygnia IR: an AI-assisted AWS intrusion ran four parallel workstreams per stolen key and used four accounts' keys in one second"
 summary: >

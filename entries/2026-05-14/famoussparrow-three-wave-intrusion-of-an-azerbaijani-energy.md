@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "FamousSparrow Three-Wave Intrusion of an Azerbaijani Energy Operator: ProxyNotShell Re-exploitation and a Wave-1 DLL-Sideload Loader That Overrides Two Hamachi Exports to Defeat Sandbox Analysis"
 headline: "FamousSparrow Three-Wave Intrusion of an Azerbaijani Energy Operator: ProxyNotShell Re-exploitation and a Wave-1 DLL-Sideload Loader That Overrides Two Hamachi"
 summary: "Deep dive — FamousSparrow (UAT-9244) ran a three-wave intrusion against an Azerbaijani oil & gas operator December 2025–February 2026, re-exploiting the same ProxyNotShell Exchange chain across all three waves despite the victim's attempted remediation, and in Wave 1 deployed Deed RAT via a novel DLL-sideloading technique against a signed LogMeIn Hamachi binary — overriding two specific exported functions (Init, ComMain) and patching StartServiceCtrlDispatcherW so payload execution only fires when the legitimate application's own start-up flow runs. Bitdefender characterises Azerbaijan as a strategic post-Ukraine-transit gas supplier whose deliveries have expanded to 13 European countries (including new flows to Germany and Austria) — making Azerbaijani energy infrastructure a high-value collection target for Chinese state actors monitoring European energy supply dependencies (Bitdefender Labs, 2026-05-13; The Hacker News, 2026-05-13)."

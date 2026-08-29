@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "GoCaracal: Dark Caracal's new Go-based malware framework uses an Ethereum smart contract as a resilient fallback channel to deliver replacement C2 addresses without redeploying the implant"
 headline: "A malware family reads its own next command-and-control address off the public blockchain — infrastructure no defender or ISP is going to block wholesale"
 summary: >

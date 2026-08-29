@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "iCagenda Calendar module for Joomla: unauthenticated SQL injection via com_ajax needs no session, token or account (CVE-2026-67365, CVSS 9.2) — and the vulnerable module's own version number does not track the package version"
 headline: "A Joomla events extension's bundled Calendar module can stay vulnerable for three package releases without the extension manager ever showing it"
 summary: >

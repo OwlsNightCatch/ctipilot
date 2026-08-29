@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "CitrixBleed 2 (CVE-2025-5777) weaponised into a repeatable IAB kill chain ending in DragonForce ransomware (STAC3725)"
 headline: "Huntress reconstructs a productised CitrixBleed 2-to-DragonForce runbook: token theft, a registry-symlink SYSTEM escalation, then ransomware"
 summary: >

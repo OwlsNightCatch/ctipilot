@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Ghostwriter / UAC-0057 / FrostyNeighbor — CERT-UA documents new OYSTERFRESH → OYSTERBLUES → OYSTERSHUCK implant chain via Prometheus learning-platform lures"
 headline: "Ghostwriter / UAC-0057 / FrostyNeighbor — CERT-UA documents new OYSTERFRESH → OYSTERBLUES → OYSTERSHUCK implant chain via Prometheus learning-platform lures"
 summary: "UPDATE (originally covered weekly 2026-W21): CERT-UA published a bulletin (surfaced 2026-05-22) on a spring-2026 phishing campaign by Ghostwriter (a.k.a."

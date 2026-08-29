@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "GemStuffer — RubyGems weaponised as a one-way exfiltration channel scraping UK local-authority ModernGov portals; new abuse pattern targets the asymmetric monitoring gap between package pull and push"
 headline: "GemStuffer — RubyGems weaponised as a one-way exfiltration channel scraping UK local-authority ModernGov portals; new abuse pattern targets the asymmetric"
 summary: "GemStuffer weaponises RubyGems as a one-way exfiltration channel scraping UK local-authority ModernGov portals. Socket published 2026-05-13 documenting 155+ malicious gems that override HOME to a fabricated /tmp/gemhome/ directory carrying hard-coded API credentials, scrape Lambeth, Wandsworth and Southwark council committee calendars and officer contacts, and publish the captured HTML inside valid .gem archives via gem push. Pattern is novel: most CI/CD monitoring instruments inbound package pulls, not outbound publish operations — and gem push from a build agent that does not own a publish role is the structural detection. Socket notes RubyGems temporarily disabled new account registration in connection with the broader account-abuse pattern (Socket, 2026-05-13; The Hacker News, 2026-05-13)."

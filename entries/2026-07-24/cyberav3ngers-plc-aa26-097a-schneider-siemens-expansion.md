@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "US agencies expand the Iranian PLC-intrusion advisory (AA26-097A) to Schneider Electric and Siemens controllers, with new project-file tampering detection"
 headline: "Iran-linked PLC intrusions now hit Schneider and Siemens gear — the fix is exposure and integrity checking, not a patch"
 summary: >
@@ -44,7 +43,7 @@ verification: multi-source
 sourcing_note: "The advisory (AA26-097A) is a US-jurisdiction warning with no stated European victims; included for the transferable TTP and vendor-agnostic detection value to Swiss/EU energy and water operators running the same Schneider Electric and Siemens controller families."
 confidence: high
 update_of: null
-references: [2026-07-19/weekly-w29-ai-tradecraft-accelerant]
+references: []
 deep_dive: false
 deep_dive_category: null
 org_triage: null

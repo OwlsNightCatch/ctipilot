@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Proofpoint: OAuth client ID spoofing validates stolen Entra ID credentials at scale without writing a successful sign-in log"
 headline: "A fake client_id on Entra ID's ROPC token endpoint lets attackers enumerate and validate credentials while leaving a blank application name in the sign-in log"
 summary: >

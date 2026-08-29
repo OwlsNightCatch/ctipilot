@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "An MDR vendor denies a circulating compromise claim and publishes what actually happened: a phone-call phishing attempt that got one MFA push approved, and a device-trust policy that made the resulting session useless"
 headline: "ReliaQuest denies a compromise claim and documents a vishing call that got one MFA push approved — device-trust binding is what capped it"
 summary: >

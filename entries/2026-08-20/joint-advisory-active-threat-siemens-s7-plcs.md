@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: >
   Five US agencies warn of an active threat to Siemens S7 PLCs — AI-written Python tooling built
   on the standard S7 libraries, dressed as legitimate OT monitoring software
@@ -101,7 +100,6 @@ confidence: medium
 references:
   - 2026-08-09/cert-polska-private-apn-pivot-into-ot-chp-plant-shutdown
   - 2026-08-13/cve-2026-58115-simatic-iot2050-node-red-unauth-root
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

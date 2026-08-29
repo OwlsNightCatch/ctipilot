@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "NCSC-UK — \"10 questions to ask when using AI models to find vulnerabilities\""
 headline: "NCSC-UK — \"10 questions to ask when using AI models to find vulnerabilities\""
 summary: "NCSC-UK published an operational 10-question checklist on 2026-05-11 (authored by Ruth C, Head of Vulnerability Management Group) for organisations evaluating or deploying AI / LLM tooling for vulnerability discovery (NCSC-UK blog, 2026-05-11)."

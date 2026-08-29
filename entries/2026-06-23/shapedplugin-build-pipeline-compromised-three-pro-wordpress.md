@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "ShapedPlugin build pipeline compromised — three Pro WordPress plugins backdoored to steal credentials, 2FA secrets and drop a web shell"
 headline: "ShapedPlugin build pipeline compromised — three Pro WordPress plugins backdoored to steal credentials, 2FA secrets and drop a web shell"
 summary: "Attackers compromised ShapedPlugin's Easy Digital Downloads update pipeline and backdoored three paid WordPress plugins (Product Slider Pro, Real Testimonials Pro, Smart Post Show Pro), harvesting admin credentials and 2FA secrets and dropping a self-deleting web-shell loader (CVE-2026-10735). Any site that took a Pro update between ~21 May and mid-June should be treated as fully compromised, not merely patched (Wordfence, 2026-06-22)."

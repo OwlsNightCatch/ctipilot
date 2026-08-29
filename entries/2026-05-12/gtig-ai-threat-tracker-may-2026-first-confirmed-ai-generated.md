@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "GTIG AI Threat Tracker (May 2026): First Confirmed AI-Generated Zero-Day Exploit ITW and the Behavioural Class of AI-Augmented Malware"
 headline: "GTIG AI Threat Tracker (May 2026): First Confirmed AI-Generated Zero-Day Exploit ITW and the Behavioural Class of AI-Augmented Malware"
 summary: "Google Threat Intelligence Group confirms first AI-generated zero-day exploit observed in the wild. A criminal campaign used an LLM-generated Python exploit (semantic-logic 2FA bypass in an unnamed widely-deployed open-source sysadmin tool) before responsible disclosure cut it short (Google Cloud Threat Intelligence, 2026-05-11). Same report documents AI-augmented malware families (CANFAIL, LONGSTREAM, PROMPTFLUX, HONESTCUE) and state-actor Gemini abuse — full treatment in § 5 Deep Dive."

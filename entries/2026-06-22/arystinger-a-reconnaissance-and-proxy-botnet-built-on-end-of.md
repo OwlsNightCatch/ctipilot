@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "AryStinger: a reconnaissance-and-proxy botnet built on end-of-life D-Link routers and QNAP NAS"
 headline: "AryStinger: a reconnaissance-and-proxy botnet built on end-of-life D-Link routers and QNAP NAS"
 summary: "A previously-undocumented botnet, AryStinger, has conscripted 4,300+ end-of-life D-Link routers (DIR-850L, DIR-818LW) and QNAP NAS devices into a distributed reconnaissance-and-proxy network — and Sweden is its third-largest victim pool at 6.4%. Initial access is three public CVEs (two decade-old D-Link RCEs plus a 2025 QNAP code-injection), after which each node gets a Dropbear SSH backdoor and is tasked with distributed DNS brute-forcing and traffic tunnelling that launders the operator's attack traffic (QiAnXin XLab, 2026-06-17). EoL D-Link models have no patch path — replacement is the only fix."

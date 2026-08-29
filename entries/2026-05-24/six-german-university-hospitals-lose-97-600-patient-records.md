@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Six German university hospitals lose ~97,600+ patient records to a breach at billing processor Unimed"
 headline: "Six German university hospitals lose ~97,600+ patient records to a breach at billing processor Unimed"
 summary: "Attackers exfiltrated ~97,600+ patient records from six German university hospitals (Cologne, Freiburg, Heidelberg, Tübingen, Ulm, Mannheim) via Saarland billing processor Unimed — GDPR Art. 9 health data plus bank-account data in some cases, no clinical-system encryption. The Unimed perpetrator is unattributed; the pattern echoes the Kairos-linked ARWINI breach covered 2026-05-19, but that overlap is an analyst observation, not a sourced attribution (The Record, 2026-05-22)."

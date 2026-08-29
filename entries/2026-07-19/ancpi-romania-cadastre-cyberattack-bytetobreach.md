@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   Romania's national cadastre agency ANCPI hit by a multi-day cyberattack; ByteToBreach claims
   citizen-data and e-Terra source-code theft plus ransomware
@@ -113,7 +112,6 @@ sourcing_note: >
   confirmed reconstruction of this intrusion.
 confidence: medium
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

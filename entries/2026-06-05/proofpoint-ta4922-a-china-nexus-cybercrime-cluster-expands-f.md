@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Proofpoint TA4922: a China-nexus cybercrime cluster expands from Japan into Germany, the UK and Italy with native-language lures and DLL-side-loaded Atlas RAT"
 headline: "Proofpoint TA4922: a China-nexus cybercrime cluster expands from Japan into Germany, the UK and Italy with native-language lures and DLL-side-loaded Atlas RAT"
 summary: "Proofpoint's TA4922 — a China-nexus financially-motivated cluster now running the highest campaign tempo it tracks — has pivoted from Japan to Germany, the UK and Italy with native-language HR/payroll/tax lures, DLL-side-loaded Atlas RAT, and a deliberate move to LINE/WhatsApp/Teams to escape email controls (The Hacker News, 2026-06-04)."

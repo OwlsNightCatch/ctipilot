@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "WP-SHELLSTORM: an exposed webshell-brokerage toolkit reveals 27 weaponized CVEs fired at 1.4M WordPress/Joomla sites plus a parallel Nacos/Spring Boot credential-theft track"
 headline: "SOCRadar finds a webshell-brokerage crew's own open staging server — 5,700+ live shells, 27 weaponized CVEs, and a parallel Nacos/Spring Boot credential heist"
 summary: >

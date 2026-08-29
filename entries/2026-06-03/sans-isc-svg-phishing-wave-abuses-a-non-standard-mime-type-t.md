@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "SANS ISC: SVG phishing wave abuses a non-standard MIME type to slip past WAF/email pattern-matching"
 headline: "SANS ISC: SVG phishing wave abuses a non-standard MIME type to slip past WAF/email pattern-matching"
 summary: "SANS ISC handler Xavier Mertens documented a fresh wave of phishing emails carrying SVG attachments whose embedded JavaScript is obfuscated with combined Base64 + XOR encoding and, on decode, redirects the victim via window.location.href to a credential-harvesting page (SANS ISC, 2026-06-02)."

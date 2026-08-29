@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Pass-ta-key: unprivileged malware forges Chrome synced-passkey assertions, registers its own user-verification key, and can steal the master secret that decrypts every passkey"
 headline: "Unit 42 shows three ways endpoint malware defeats Google synced passkeys without elevation, unlock or user interaction — and one of them cannot be revoked"
 summary: >

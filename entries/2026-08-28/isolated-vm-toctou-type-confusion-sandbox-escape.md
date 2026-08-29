@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "isolated-vm sandbox escape (GHSA-864f-rcv7-6rh4): a TOCTOU type-confusion in ExternalCopy's transferList marshaling breaks the V8 Isolate guest/host boundary — the sandbox underneath a wide range of AI-agent and low-code automation platforms"
 headline: "The V8 Isolate held; the code that carries data across it did not, and a guest can turn that into full host control-flow hijacking"
 summary: >

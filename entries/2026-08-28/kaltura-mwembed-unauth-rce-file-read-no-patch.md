@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Kaltura mwEmbed/html5lib video player: unauthenticated RCE and arbitrary file read via an undocumented ServiceUrl parameter — no vendor response, no patch, 630+ exposed instances found by the discoverer"
 headline: "A single undocumented request parameter lets an unauthenticated visitor control what a shared, multi-tenant media platform fetches and deserializes"
 summary: >

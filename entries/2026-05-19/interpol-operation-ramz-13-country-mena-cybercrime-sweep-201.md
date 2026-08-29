@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "INTERPOL Operation Ramz — 13-country MENA cybercrime sweep: 201 arrests, 53 servers seized, Algerian PhaaS server takedown"
 headline: "INTERPOL Operation Ramz — 13-country MENA cybercrime sweep: 201 arrests, 53 servers seized, Algerian PhaaS server takedown"
 summary: "INTERPOL announced on 2026-05-18 the completion of Operation Ramz — described as the first cyber operation of its scale coordinated by INTERPOL specifically targeting the MENA region — running October 2025 through 2026-02-28 across 13 countries (Algeria, Bahrain, Egypt, Iraq, Jordan, Lebanon, Libya, Morocco, Oman …"

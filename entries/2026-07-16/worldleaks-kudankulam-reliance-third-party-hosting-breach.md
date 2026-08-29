@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "World Leaks posts ~858,000 files tied to India's Kudankulam nuclear-plant contractor; Reliance confirms a third-party-hosting breach"
 headline: "World Leaks leaks ~858k files from a Kudankulam nuclear-plant contractor breached at a third-party data-centre host — a lesson for energy-CI operators"
 summary: >

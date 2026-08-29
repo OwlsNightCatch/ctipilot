@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "WALLIX Bastion's REST API hands full appliance administration to an unauthenticated caller (CVSS 4.0 10.0) — the credential vault and session recordings included, with public technical details due in September"
 headline: "An unauthenticated request to a PAM appliance's REST API yields product-administrator control of the vault it exists to protect"
 summary: >

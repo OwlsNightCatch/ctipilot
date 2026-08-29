@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Zimperium: Rokarolla Android banking trojan targets 217 apps with full device takeover"
 headline: "Zimperium: Rokarolla Android banking trojan targets 217 apps with full device takeover"
 summary: "Zimperium zLabs detailed Rokarolla, a new Android banking trojan distributed via sideloading from sites impersonating TikTok/Chrome, using a dropper that masquerades as Google Play Protect to obtain Accessibility Service permissions (Zimperium zLabs, 2026-06-16)."

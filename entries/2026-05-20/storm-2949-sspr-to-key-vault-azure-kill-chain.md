@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: Storm-2949 SSPR-to-Key-Vault Azure kill chain
 headline: Storm-2949 SSPR-to-Key-Vault Azure kill chain
 summary: "Storm-2949 turns one SSPR-abused identity into a cloud-wide breach across Entra ID → M365 → App Service → Key Vault → SQL → Storage → Azure VMs — no malware required. Microsoft Threat Intelligence published the full incident analysis on 2026-05-18;."

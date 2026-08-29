@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Medtronic notifies ~9 million people of a ShinyHunters-claimed corporate-IT breach — 2.5 months after containment"
 headline: "Medtronic notifies ~9 million people of a ShinyHunters-claimed corporate-IT breach — 2.5 months after containment"
 summary: "Medtronic is notifying ~9 million people of a ShinyHunters-claimed April breach of corporate IT systems (names, DOB, SSNs, health data), 2.5 months after containment; it says medical devices were unaffected and segregated from the compromised networks (BleepingComputer, 2026-07-02)."

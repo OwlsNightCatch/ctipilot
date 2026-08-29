@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Adobe August 2026 Patch Day: ColdFusion ships a CVSS 10.0 unauthenticated OS command injection, and Campaign Classic ships two more unauthenticated CVSS 10.0 flaws in the same release"
 headline: "Adobe's August bulletins carry three separate unauthenticated, maximum-severity code-execution flaws across ColdFusion and Campaign Classic"
 summary: >

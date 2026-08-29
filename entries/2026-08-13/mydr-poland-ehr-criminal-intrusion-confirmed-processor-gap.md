@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   MyDr, a Polish electronic health record platform serving thousands of clinics, confirms a
   deliberate criminal intrusion — and because it is a processor, not a controller, the people
@@ -94,7 +93,6 @@ sourcing_note: >
   titles are Polish; quotes are reproduced in the original with English glosses in the body.
 confidence: medium
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

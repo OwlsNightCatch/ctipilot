@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: >
   ShinyHunters Oracle PeopleSoft campaign: gadget-chain access, SSH default-credential lateral
   movement, mass exfiltration
@@ -112,7 +111,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: true
 deep_dive_category: ransomware-affiliate
 org_triage: null

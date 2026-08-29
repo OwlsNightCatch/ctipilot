@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Kaspersky documents living-off-the-land BitLocker extortion across two Latin America incidents; the second self-identifies as 'XEntry Team'"
 headline: "BitLocker-for-impact extortion via exposed RDP, MSSQL and RMM/GPO — no encryptor ships, and one crew brands itself 'XEntry Team'"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "A German federal- and state-funded memorial foundation is rebuilding its entire IT from scratch after ransomware — all seven sites offline, data assumed exfiltrated, no actor named"
 headline: "Stiftung Brandenburgische Gedenkstätten confirms encryption across every site and chooses full reconstruction over restoring from backup"
 summary: >

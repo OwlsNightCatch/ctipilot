@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "SANDWORM_MODE — an npm supply-chain worm that 'lives off the AI toolchain', poisoning MCP servers in AI coding assistants to steal developer credentials"
 headline: "CrowdStrike documents SANDWORM_MODE, an npm worm that abuses AI coding-assistant MCP configs and git hooks to harvest developer credentials"
 summary: >

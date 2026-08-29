@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Island: \"BadBlocker\" — an 11M-user Chrome ad-blocker is one server config change away from arbitrary JavaScript on any site"
 headline: "Island: \"BadBlocker\" — an 11M-user Chrome ad-blocker is one server config change away from arbitrary JavaScript on any site"
 summary: "Island researchers documented (2026-06-25) a dormant but architecturally complete arbitrary-JavaScript-execution capability in \"Adblock for YouTube\" (11M+ installs) (Island, 2026-06-25; The Hacker News, 2026-06-25)."

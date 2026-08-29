@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Belgium's eID signing extension handed any web page the card, the PIN and a drive-by RCE — an eIDAS Qualified Trust Service Provider's browser bridge that never checked the caller's origin"
 headline: "An eIDAS-qualified eID browser bridge let any website read the card, recover the PIN and load an arbitrary DLL"
 summary: >

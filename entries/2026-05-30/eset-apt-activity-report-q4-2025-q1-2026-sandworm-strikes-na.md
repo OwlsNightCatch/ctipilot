@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: annual-report
-horizon: operational
 title: "ESET APT Activity Report Q4 2025–Q1 2026: Sandworm strikes NATO energy, Lazarus targets EU drone sector, UNC5221 pivots to Ivanti SPAWN toolset"
 headline: "ESET APT Activity Report Q4 2025–Q1 2026: Sandworm strikes NATO energy, Lazarus targets EU drone sector, UNC5221 pivots to Ivanti SPAWN toolset"
 summary: "ESET APT Activity Report Q4 2025–Q1 2026: Sandworm wiper targets Polish NATO energy company; Lazarus targets European drone manufacturers; UNC5221 deploys a new SPAWN toolset implant against Ivanti VPN appliances (ESET WeLiveSecurity, 2026-05-28)."

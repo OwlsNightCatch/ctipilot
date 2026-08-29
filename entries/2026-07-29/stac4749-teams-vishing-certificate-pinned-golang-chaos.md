@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "STAC4749 runs Teams helpdesk vishing from attacker-owned .top domains into certificate-pinned Golang implants and Chaos ransomware in under 17 hours"
 headline: "Sophos tracks a Teams-vishing cluster that abandoned tenant spoofing for its own domains and pins its C2 to hardcoded issuer certificates"
 summary: >

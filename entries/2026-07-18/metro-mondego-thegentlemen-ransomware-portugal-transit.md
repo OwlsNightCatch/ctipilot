@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "TheGentlemen ransomware hits Portugal's Metro Mondego (Coimbra light-rail); operator confirms attack, notifies CNCS and CNPD"
 headline: "Metro Mondego confirms a 6 July ransomware attack on internal systems — transport operation unaffected; TheGentlemen claims data theft"
 summary: >

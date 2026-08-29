@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Cisco Talos maps the full taxonomy of Python-package build-time and import-time code execution (\"The Serpent's Tongue\")"
 headline: "Talos catalogues where malicious Python packages execute code across the install lifecycle, including persistent .pth and site-hook footholds"
 summary: >

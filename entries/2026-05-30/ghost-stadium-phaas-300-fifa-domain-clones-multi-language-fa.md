@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Ghost Stadium PhaaS — 300+ FIFA domain clones, multi-language fake SSO, targeting UK/Germany/Portugal/Spain fan credentials before June 11 kickoff"
 headline: "Ghost Stadium PhaaS — 300+ FIFA domain clones, multi-language fake SSO, targeting UK/Germany/Portugal/Spain fan credentials before June 11 kickoff"
 summary: "Ghost Stadium PhaaS — 300+ pixel-perfect FIFA domain clones targeting UK, Germany, Portugal, Spain fan credentials ahead of 11 June kickoff (FBI IC3 PSA260527, 2026-05-27); Chinese-speaking operator running multi-language fake SSO."

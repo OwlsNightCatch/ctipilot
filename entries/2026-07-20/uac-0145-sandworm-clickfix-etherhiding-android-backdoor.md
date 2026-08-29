@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "CERT-UA: Sandworm subcluster UAC-0145 pairs ClickFix fake-CAPTCHA with Ethereum-smart-contract C2 resolution and a Signal-delivered Android backdoor"
 headline: "GRU's Sandworm adopts ClickFix, blockchain-hidden C2 (EtherHiding) and a Signal-lured Android backdoor — transferable tradecraft for EU CI defenders"
 summary: >

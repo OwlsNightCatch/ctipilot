@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CVE-2026-18885 / CVE-2026-18886 / CVE-2026-74820 / CVE-2026-6876 — ServiceNow AI Platform: three unauthenticated CVSS 10.0 flaws plus a related Now Platform sandbox escape"
 headline: "ServiceNow patches four unauthenticated flaws in its AI Platform and Now Platform, three of them maximum severity"
 summary: >

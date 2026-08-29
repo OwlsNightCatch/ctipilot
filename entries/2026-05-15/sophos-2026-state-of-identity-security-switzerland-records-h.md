@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Sophos 2026 State of Identity Security: Switzerland records highest identity-breach incidence globally; energy and federal government hardest-hit sectors"
 headline: "Sophos 2026 State of Identity Security: Switzerland records highest identity-breach incidence globally; energy and federal government hardest-hit sectors"
 summary: "Sophos published its _State of Identity Security 2026_ survey on 2026-05-14, drawing on responses from IT and cybersecurity leaders across 17 countries (Help Net Security, 2026-05-14)."

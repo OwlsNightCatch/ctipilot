@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "CISA contractor (Nightwing) exposed AWS GovCloud admin keys and internal credentials in public GitHub repo for ~6 months"
 headline: "CISA contractor (Nightwing) exposed AWS GovCloud admin keys and internal credentials in public GitHub repo for ~6 months"
 summary: "CISA contractor (Nightwing) exposed AWS GovCloud admin keys and internal credentials for ~6 months via public GitHub repo (Krebs on Security, 2026-05-18). GitGuardian found credentials to three GovCloud accounts, plaintext passwords for dozens of internal CISA systems, and the LZ-DSO Artifactory build-package repo; keys validated live 48h after takedown."

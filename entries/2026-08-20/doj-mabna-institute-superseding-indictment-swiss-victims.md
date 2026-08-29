@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "DOJ's superseding indictment against Iran's Mabna Institute names Switzerland twice — among the countries whose universities were compromised, and among those whose companies had employee mailboxes taken"
 headline: "Eight more defendants, a password-spray campaign against government entities, and a victim list a Swiss reader is on"
 summary: >

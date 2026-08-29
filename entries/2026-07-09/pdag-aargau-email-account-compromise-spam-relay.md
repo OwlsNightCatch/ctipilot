@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Psychiatrische Dienste Aargau (PDAG) email accounts compromised via phishing and abused to relay spam"
 headline: "Swiss cantonal psychiatric provider PDAG discloses phishing-driven takeover of staff mailboxes used to send outbound spam/phishing"
 summary: >

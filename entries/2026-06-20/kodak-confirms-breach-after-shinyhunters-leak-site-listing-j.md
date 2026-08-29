@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Kodak confirms breach after ShinyHunters leak-site listing; June 18 deadline passed without publication"
 headline: "Kodak confirms breach after ShinyHunters leak-site listing; June 18 deadline passed without publication"
 summary: "Eastman Kodak acknowledged on 17 June 2026 that \"an unauthorized third party illegally gained access to a limited amount of company data,\" after ShinyHunters listed it on their dark-web leak site on 15 June claiming 2.2 million PII records and set an 18 June contact deadline (SecurityWeek, 2026-06-18 …"

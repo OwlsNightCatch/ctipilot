@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "SEPPmail Secure Email Gateway: CVSS 9.3 Unauthenticated RCE Cluster in Swiss-Made Email Infrastructure"
 headline: "SEPPmail Secure Email Gateway: CVSS 9.3 Unauthenticated RCE Cluster in Swiss-Made Email Infrastructure"
 summary: "Primary CVE: CVE-2026-44128 | CVSS: 9.3 | Auth: Pre-auth | Status: Patch available (v15.0.4 / 15.0.4.1) | Exploitation: None confirmed | Advisory: NCSC-CH 12551, 2026-05-08"

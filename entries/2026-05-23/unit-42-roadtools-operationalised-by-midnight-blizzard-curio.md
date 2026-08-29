@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Unit 42 — ROADtools operationalised by Midnight Blizzard, Curious Serpens and UTA0355 for Entra ID device registration, token theft and tenant enumeration"
 headline: "Unit 42 — ROADtools operationalised by Midnight Blizzard, Curious Serpens and UTA0355 for Entra ID device registration, token theft and tenant enumeration"
 summary: "Unit 42 documents (2026-05-22) systematic nation-state operationalisation of ROADtools — the open-source Python Entra ID attack/defence framework hosted at github.com/dirkjanm/ROADtools — by three named clusters: Cloaked Ursa / Midnight Blizzard / APT29 / NOBELIUM (Russia), **Curious Serpens / Peach …"

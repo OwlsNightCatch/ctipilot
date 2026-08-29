@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   Ernst & Young discloses a breach of a third-party IT support-ticket platform used by its tax
   practice, exposing client tax and financial documents
@@ -81,7 +80,6 @@ sourcing_note: >
   rated 2 for that undisclosed scope.
 confidence: medium
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

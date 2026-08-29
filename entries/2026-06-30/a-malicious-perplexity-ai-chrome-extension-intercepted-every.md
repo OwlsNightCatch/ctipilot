@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "A malicious \"Perplexity AI\" Chrome extension intercepted every address-bar keystroke via a search-suggest override"
 headline: "A malicious \"Perplexity AI\" Chrome extension intercepted every address-bar keystroke via a search-suggest override"
 summary: "Microsoft Defender researchers found a malicious Chrome extension (\"Search for perplexity ai\") that abused Chrome's search-settings override API — specifically the suggest_url parameter — to exfiltrate every character typed into the address bar in real time before redirecting to legitimate results (Microsoft …"

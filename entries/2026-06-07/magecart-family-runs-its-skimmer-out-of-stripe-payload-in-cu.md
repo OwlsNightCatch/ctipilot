@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Magecart family runs its skimmer out of Stripe — payload in customer metadata, stolen cards exfiltrated back through api.stripe.com"
 headline: "Magecart family runs its skimmer out of Stripe — payload in customer metadata, stolen cards exfiltrated back through api.stripe.com"
 summary: "A Magecart variant hides its skimmer inside Stripe customer metadata and exfiltrates stolen cards back through api.stripe.com as fake customer records — defeating CSP and WAF rules that universally allow-list Stripe. Detection must shift to server-side GTM-container integrity (Sansec, 2026-06-04)."

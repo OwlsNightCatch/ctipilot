@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Wiz's autonomous AI red-teaming agent found and exploited a GitHub Actions command-injection flaw in Snowflake's public connector repo, exfiltrating live Jira credentials via an out-of-band callback"
 headline: "An AI red-team agent hit a syntax error mid-exploit, diagnosed it, fixed its own payload, and retried — without a human in the loop"
 summary: >

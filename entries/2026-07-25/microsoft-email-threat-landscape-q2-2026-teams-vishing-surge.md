@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: annual-report
-horizon: operational
 title: "Microsoft Email Threat Landscape Q2 2026: phishing moves off email into Teams vishing, and attachment lures drift PDF → DOCX"
 headline: "Microsoft's quarterly email report flags a sustained shift of social engineering into Teams voice-phishing"
 summary: >

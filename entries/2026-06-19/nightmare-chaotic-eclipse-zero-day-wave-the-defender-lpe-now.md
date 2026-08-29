@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Nightmare/Chaotic Eclipse zero-day wave — the Defender LPE now carries a CVE, a public PoC, and Microsoft's \"Exploitation More Likely\" rating, with no patch"
 headline: "Nightmare/Chaotic Eclipse zero-day wave — the Defender LPE now carries a CVE, a public PoC, and Microsoft's \"Exploitation More Likely\" rating, with no patch"
 summary: "ESET detailed GentleKiller, an operator-maintained EDR-killer framework run centrally by the Gentlemen RaaS gang — eight BYOVD driver variants against 400+ security processes across 48 product families, with confirmed Western-European targeting (ESET, 2026-06-18). Microsoft's Defender LPE zero-day from the Nightmare Eclipse wave now carries a CVE (CVE-2026-50656) with a public PoC and no patch."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "\"Mistic\" backdoor: signed-Defender DLL sideloading and in-memory tradecraft by access broker Woodgnat/KongTuke"
 headline: "\"Mistic\" backdoor: signed-Defender DLL sideloading and in-memory tradecraft by access broker Woodgnat/KongTuke"
 summary: "Two new initial-access-broker toolsets surface — Mistic and Edgecution — Symantec details Mistic, sideloaded via a signed Microsoft Defender binary so its activity reads as legitimate Defender behaviour (Symantec, 2026-06-24); Zscaler details Edgecution, a malicious Edge extension that bridges the browser sandbox to a host Python backdoor via the Native Messaging API (today's deep dive) (Zscaler, 2026-06-23)."

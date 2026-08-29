@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "THORChain GG20 Threshold Signature Scheme vault drain — ~$11M across nine chains; Switzerland-based protocol"
 headline: "THORChain GG20 Threshold Signature Scheme vault drain — ~$11M across nine chains; Switzerland-based protocol"
 summary: "THORChain — Switzerland-based cross-chain liquidity protocol — drained of ~$11M across nine blockchains via a suspected GG20 Threshold-Signature-Scheme implementation flaw. A malicious newly-churned validator node is reported to have gradually leaked vault key shards over multiple keygen/signing rounds before forging outbound signatures; The Record reports user funds were unaffected and only protocol-owned assets were impacted (The Record, 2026-05-15; TRM Labs, 2026-05-15)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "\"Squidbleed\" — a 29-year-old heap over-read in Squid's FTP gateway leaks other users' cleartext HTTP credentials (CVE-2026-47729)"
 headline: "\"Squidbleed\" — a 29-year-old heap over-read in Squid's FTP gateway leaks other users' cleartext HTTP credentials (CVE-2026-47729)"
 summary: "A 29-year-old heap over-read in Squid's FTP gateway (\"Squidbleed\", CVE-2026-47729) lets an attacker-controlled FTP server leak other proxy users' cleartext HTTP credentials and cookies; the upstream fix version is disputed (the maintainer cited 7.6 then 7.7, while SecurityWeek and Debian indicate the commit is already in 7.6, released 8 June). Shared school/university/government proxies are the exposure class (Calif.io, 2026-06-18)."

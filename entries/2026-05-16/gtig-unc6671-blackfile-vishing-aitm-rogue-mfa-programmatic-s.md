@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "GTIG: UNC6671 \"BlackFile\" vishing → AiTM → rogue-MFA → programmatic SharePoint exfiltration of 1M+ files per victim; DLS shutdown signals probable rebrand"
 headline: "GTIG: UNC6671 \"BlackFile\" vishing → AiTM → rogue-MFA → programmatic SharePoint exfiltration of 1M+ files per victim; DLS shutdown signals probable rebrand"
 summary: "GTIG analyses UNC6671 \"BlackFile\" vishing-driven AiTM extortion: real-time helpdesk impersonation → attacker-registered lookalike SSO portals → MFA token capture and rogue MFA device registration → programmatic SharePoint exfiltration of 1M+ files per victim via Python requests spoofing the Microsoft Office ClientAppId; DLS shutdown signals probable rebrand (Google Threat Intelligence Group, 2026-05-15)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "MuddyWater (Iran/MOIS) deploys Chaos ransomware as false flag; harvests credentials via Teams"
 headline: "MuddyWater (Iran/MOIS) deploys Chaos ransomware as false flag; harvests credentials via Teams"
 summary: "Security researchers documented a refreshed campaign by MuddyWater (attributed to Iran's Ministry of Intelligence and Security, MOIS), targeting government contractors and defence-adjacent organisations in Europe and the Middle East."

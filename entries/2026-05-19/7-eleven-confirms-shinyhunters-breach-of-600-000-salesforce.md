@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   7-Eleven confirms ShinyHunters breach of 600,000+ Salesforce franchise-application records —
   same campaign as Instructure, Vimeo, Wynn Resorts, Vercel, Medtronic
@@ -64,7 +63,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Deutsche Bank confirms a third-party vendor incident after 'Unsafe' ransomware group posts alleged employee data"
 headline: "Deutsche Bank says its own network is untouched, pointing to a German marketing-platform vendor, after 'Unsafe' claims a breach and leaks employee records"
 summary: >

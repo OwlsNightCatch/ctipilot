@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Dragos 2025 OT Cybersecurity Year in Review: 81% of IR engagements found flat IT/OT network architecture"
 headline: "Dragos 2025 OT Cybersecurity Year in Review: 81% of IR engagements found flat IT/OT network architecture"
 summary: Dragos released its 2025 OT Cybersecurity Year in Review — Frontlines IR Edition synthesising findings from industrial incident response engagements.

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: HCRG Care Group first notifies patients of a February 2025 Medusa breach — 16 months on
 headline: HCRG Care Group first notifies patients of a February 2025 Medusa breach — 16 months on
 summary: "HCRG Care Group, described by the cited source as a major UK-based healthcare services provider, has begun notifying patients in June 2026 of a Medusa ransomware attack that occurred in February 2025 — more than 16 months after the incident (HIPAA Pulse, 2026-06-18)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: OFAC sanctions Nobitex and three Iranian exchanges as conduits for IRGC-affiliated ransomware proceeds
 headline: OFAC sanctions Nobitex and three Iranian exchanges as conduits for IRGC-affiliated ransomware proceeds
 summary: "On 2 June, OFAC designated Nobitex — Iran's largest crypto exchange, handling >50% of Iranian digital-asset inflows in 2025 — plus Wallex, Bitpin and Ramzinex under EO 13224/13902, explicitly for \"facilitating payments tied to … IRGC-affiliated ransomware actors\" and Central Bank of Iran sanctions evasion (US Treasury …"

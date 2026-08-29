@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "CrashStealer — a native-C++ macOS infostealer using a notarized dropper and local dscl password validation to raid keychain, browsers and wallets"
 headline: "CrashStealer: notarized-dropper macOS stealer validates stolen passwords with dscl before harvesting keychain and browser data"
 summary: >

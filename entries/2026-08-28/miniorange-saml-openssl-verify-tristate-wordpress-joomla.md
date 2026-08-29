@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "miniOrange's SAML2Core library ships the same openssl_verify() tri-state authentication bypass across both its WordPress and Joomla SAML SSO products — one vendor code defect, two ecosystems, exploitation already attempted against the WordPress line"
 headline: "PHP's openssl_verify() can return -1 for 'error', and treating that as valid is an unauthenticated admin login on two platforms"
 summary: >

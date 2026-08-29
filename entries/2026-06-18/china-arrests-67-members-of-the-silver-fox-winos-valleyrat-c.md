@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: China arrests 67 members of the Silver Fox (Winos/ValleyRAT) cybercrime network
 headline: China arrests 67 members of the Silver Fox (Winos/ValleyRAT) cybercrime network
 summary: "Chinese police arrested 67 suspects across five provinces in a June 2026 operation against Silver Fox — also tracked as Void Arachne, UTG-Q-1000 and TA4922 — assessed as one of the most active crimeware operations targeting Chinese-speaking users (Risky Biz News, 2026-06-17)."

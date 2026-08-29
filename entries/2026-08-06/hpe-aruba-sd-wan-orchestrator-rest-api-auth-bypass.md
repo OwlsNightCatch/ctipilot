@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CVE-2026-63455 / CVE-2026-63456 — HPE Aruba Networking SD-WAN Orchestrator: spoofed HTTP headers bypass REST API authentication (CVSS 9.8), with the vendor and CERT-FR scoping the affected branches differently"
 headline: "Another SD-WAN orchestration management plane takes an unauthenticated authentication bypass"
 summary: >

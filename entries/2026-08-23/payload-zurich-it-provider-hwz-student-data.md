@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "A Zurich business school tells students their bank details and sick-leave records were stolen — not from its own systems, but through the infrastructure of an IT service provider whose leak-site listing names seven other Swiss customers alongside it, and does not close the list"
 headline: "HWZ confirms the theft and names no provider; the only source connecting a provider to it is the extortion group's own leak-site listing"
 summary: >

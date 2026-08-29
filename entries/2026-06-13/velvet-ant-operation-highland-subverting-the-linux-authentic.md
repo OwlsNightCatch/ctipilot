@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Velvet Ant \"Operation Highland\": subverting the Linux authentication stack for a decade"
 headline: "Velvet Ant \"Operation Highland\": subverting the Linux authentication stack for a decade"
 summary: "China-nexus Velvet Ant lived inside an air-gapped network for ~10 years by trojanising the Linux login stack itself — nine backdoored pam_unix.so variants and a credential-logging sshd, invisible to EDR. Today's deep dive is a binary-integrity hunt playbook for any Linux fleet (The Hacker News, 2026-06-12)."

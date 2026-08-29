@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: >
   Sekoia consolidates Gamaredon tooling under GammaPhish / GammaWorm, details an NTFS-ADS
   USB+network worm
@@ -66,7 +65,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

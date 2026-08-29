@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: >
   DENIC .de DNSSEC outage — faulty key rollover; 3.5 h disruption for German government and
   public-sector .de domains
@@ -54,7 +53,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

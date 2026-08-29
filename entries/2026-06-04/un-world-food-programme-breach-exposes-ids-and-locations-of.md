@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "UN World Food Programme breach exposes IDs and locations of ~600,000 Gaza households"
 headline: "UN World Food Programme breach exposes IDs and locations of ~600,000 Gaza households"
 summary: "WFP confirmed on 2 June that unauthorised actors accessed its Palestine Self-Registration Application (breach dated 14 May), exposing names, national ID numbers, mobile numbers and location data for roughly 600,000 registered households — described as potentially the largest-ever breach of humanitarian beneficiary …"

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Swiss Federal Audit Office: federal cyber-governance split leaves strategic oversight without a complete incident picture"
 headline: "Swiss Federal Audit Office: federal cyber-governance split leaves strategic oversight without a complete incident picture"
 summary: "Switzerland's Federal Audit Office (EFK) found that the two-year-old federal cyber-governance split leaves the strategic-oversight body (FS BIS/SEPOS) without a complete picture of incidents in federal systems, because BACS has no legal authority to forward incident reports independently and agencies must opt in to sharing via the Cyber Security Hub (SwissCybersecurity.net, 2026-06-19). The operational consequence: SEPOS-level threat analysis may be blind to incidents BACS already holds."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: Xsolis healthcare-AI vendor breach exposes 1.4M patients across seven US health systems — third-party processor pattern
 headline: Xsolis healthcare-AI vendor breach exposes 1.4M patients across seven US health systems — third-party processor pattern
 summary: "Xsolis, a Tennessee-based healthcare-AI vendor supplying utilization-management software to hospitals, disclosed that a phishing-driven intrusion on 2026-01-20/22 gave an attacker access to a limited environment, exposing data on 1,396,519 patients across at least seven US health systems (HIPAA Journal, 2026-06-23 …"

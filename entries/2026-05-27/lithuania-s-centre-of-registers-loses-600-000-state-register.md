@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Lithuania's Centre of Registers loses ~600,000 state-register records to abused institutional credentials; foreign-state actor suspected"
 headline: "Lithuania's Centre of Registers loses ~600,000 state-register records to abused institutional credentials; foreign-state actor suspected"
 summary: "Lithuania's Centre of Registers breached — ~600,000 property and legal-entity records exfiltrated. Attackers abused login credentials issued to institutions authorised to query the Real Estate Register and Register of Legal Entities, querying from foreign-administered infrastructure; Vilnius's prosecutors suspect a foreign-state actor and the agency head resigned within days (The Record, 2026-05-26). The same register architecture exists in every EU member state."

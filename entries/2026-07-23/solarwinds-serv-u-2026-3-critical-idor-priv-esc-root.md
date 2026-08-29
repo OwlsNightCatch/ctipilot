@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "SolarWinds Serv-U 2026.3 — 15 critical IDOR flaws let authenticated users escalate to root RCE on the file-transfer server (CVSS 9.1)"
 headline: "SolarWinds patches 15 critical IDOR-to-root flaws in the internet-facing Serv-U managed-file-transfer server"
 summary: >

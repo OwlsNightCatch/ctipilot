@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Swiss autism-support foundation Stiftung Autismuslink confirms data-theft cyberattack; INC Ransom claims it"
 headline: "Bern foundation's own notice confirms exfiltration and server encryption; INC Ransom posts a leak-site claim"
 summary: >

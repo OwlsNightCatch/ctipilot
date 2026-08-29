@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Mirage Kitten (UNC1549) fields the NightLedger backdoor and two WebSocket tunnelers, one of them built to negotiate through corporate proxies with the victim's own SSO"
 headline: "Kaspersky documents an Iran-nexus toolset that loads under a legitimate vendor binary via RPC delay-load and tunnels out through authenticated proxies"
 summary: >

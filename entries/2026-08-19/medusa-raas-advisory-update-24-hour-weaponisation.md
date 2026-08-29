@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Medusa's joint advisory update puts a number on the patch race: affiliates weaponise newly announced flaws within 24 hours, and the agencies find no sign the group develops any of them itself"
 headline: "A ransomware crew that develops no zero-days still beats the patch window, on exploits it obtains from sources the agencies cannot identify"
 summary: >

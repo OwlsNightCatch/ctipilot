@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "\"Cordyceps\" — the GitHub Actions pull_request_target pwn-request class is still widely exploitable at scale"
 headline: "\"Cordyceps\" — the GitHub Actions pull_request_target pwn-request class is still widely exploitable at scale"
 summary: "\"Cordyceps\" shows the GitHub Actions pull_request_target pwn-request class is still widely live — 300+ of 30,000 scanned high-impact repos were fully exploitable from a single unauthenticated PR, including Microsoft Azure Sentinel and Google's ADK; actions/checkout v7 ships safer defaults but pinned older workflows remain exposed (Novee Security, 2026-06-23)."

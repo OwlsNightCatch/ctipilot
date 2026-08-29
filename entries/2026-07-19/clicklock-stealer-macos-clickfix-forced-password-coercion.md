@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "ClickLock Stealer — a macOS ClickFix infostealer that force-kills every visible app until the victim types their login password"
 headline: "ClickLock: a modular macOS stealer that locks the desktop by killing every app until the user surrenders their password — Europe is the top victim region"
 summary: >

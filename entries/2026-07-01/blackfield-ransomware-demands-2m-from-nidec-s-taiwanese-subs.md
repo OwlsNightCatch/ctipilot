@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Blackfield ransomware demands $2M from Nidec's Taiwanese subsidiary after a 22 June server compromise"
 headline: "Blackfield ransomware demands $2M from Nidec's Taiwanese subsidiary after a 22 June server compromise"
 summary: "Nidec Corporation's own investor-relations disclosure (2026-06-24, Tokyo Stock Exchange 6594) confirmed that its Taiwanese subsidiary Nidec Chaun Choung Technology suffered \"ransomware-originated damage\" to part of a subsidiary server on 2026-06-22, that the affected server and network were shut down as an emergency …"

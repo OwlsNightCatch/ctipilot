@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "\"The Gentlemen\" ransomware claims 478 victims and adds worm propagation — Switzerland the second-most-targeted European country"
 headline: "\"The Gentlemen\" ransomware claims 478 victims and adds worm propagation — Switzerland the second-most-targeted European country"
 summary: "\"The Gentlemen\" ransomware: Switzerland is the second-most-targeted European country (Check Point data via Swiss press), against a group profile of 478 claimed victims and an SMB --spread worm capability (inside-it.ch, 2026-06-26)."

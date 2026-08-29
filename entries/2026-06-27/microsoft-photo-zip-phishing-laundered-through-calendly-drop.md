@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Microsoft: \"Photo ZIP\" phishing laundered through Calendly drops Node.js TonRAT against European hospitality front desks"
 headline: "Microsoft: \"Photo ZIP\" phishing laundered through Calendly drops Node.js TonRAT against European hospitality front desks"
 summary: "Microsoft Threat Intelligence documented an active, since-April-2026 campaign against hospitality front-desk systems across Europe and Asia (Microsoft Threat Intelligence, 2026-06-25)."

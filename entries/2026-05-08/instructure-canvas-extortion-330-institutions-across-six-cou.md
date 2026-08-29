@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   Instructure/Canvas extortion: 330 institutions across six countries; May 12 extortion deadline;
   44 Dutch institutions confirmed
@@ -68,7 +67,6 @@ verification: single-source
 sourcing_note: "migration: update target unresolved (no originally-covered date in v2 body)"
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

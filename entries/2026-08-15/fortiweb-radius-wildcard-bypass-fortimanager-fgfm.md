@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CVE-2026-26035 — FortiWeb: one non-default RADIUS admin setting turns any username and password into a valid GUI/CLI login, alongside an FGFM impersonation bug and a FortiClient flaw reachable by anyone who can answer a laptop's DNS"
 headline: "Fortinet patches a FortiWeb admin-login bypass gated on a 'Wildcard' option, an FGFM impersonation flaw, and a FortiClient RCE reached via crafted DNS"
 summary: >

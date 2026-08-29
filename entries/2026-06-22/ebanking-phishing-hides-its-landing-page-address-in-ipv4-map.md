@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: eBanking phishing hides its landing-page address in IPv4-mapped IPv6 notation to slip past URL scanners
 headline: eBanking phishing hides its landing-page address in IPv4-mapped IPv6 notation to slip past URL scanners
 summary: "A live eBanking phishing campaign against a Belgian bank hides its landing-page address in IPv4-mapped IPv6 notation ([::ffff:…]), which browsers resolve normally but regex-based URL scanners and DNS-reputation lookups miss entirely (SANS ISC, 2026-06-19). Email-gateway and proxy teams should test whether their URL extractors handle the [::ffff:…] form."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Accenture confirms a data-theft incident after '888' advertises 35 GB of internal source code, keys and Azure credentials"
 headline: "Accenture confirms a data-theft incident; '888' claims 35 GB of source code, RSA/SSH keys and Azure credentials"
 summary: >

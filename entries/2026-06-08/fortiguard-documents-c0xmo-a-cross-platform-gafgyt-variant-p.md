@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "FortiGuard documents C0XMO, a cross-platform Gafgyt variant propagating through a five-year-old DD-WRT UPnP flaw"
 headline: "FortiGuard documents C0XMO, a cross-platform Gafgyt variant propagating through a five-year-old DD-WRT UPnP flaw"
 summary: "FortiGuard Labs analysed C0XMO, a new Gafgyt-derived DDoS botnet that propagates by exploiting an old stack buffer overflow in the UPnP/SSDP parser of DD-WRT router firmware — sending an oversized ST value in a crafted M-SEARCH packet to UDP 1900 to drop its payload (FortiGuard Labs, 2026-06-03 …"

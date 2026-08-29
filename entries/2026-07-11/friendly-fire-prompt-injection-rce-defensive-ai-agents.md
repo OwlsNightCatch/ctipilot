@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "'Friendly Fire': prompt injection hijacks AI coding agents' defensive auto-review into remote code execution"
 headline: "AI Now Institute PoC turns an untrusted library's own files into RCE when Claude Code or Codex CLI review it in auto-mode — no hooks or config needed"
 summary: >

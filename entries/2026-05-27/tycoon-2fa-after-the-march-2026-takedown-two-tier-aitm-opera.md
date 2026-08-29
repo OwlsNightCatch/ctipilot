@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Tycoon 2FA after the March 2026 takedown: two-tier AiTM operator architecture and the OAuth device-code variant"
 headline: "Tycoon 2FA after the March 2026 takedown: two-tier AiTM operator architecture and the OAuth device-code variant"
 summary: "Tycoon 2FA adapted within weeks of the March 2026 takedown. Elastic Security Labs maps a two-tier operator architecture and a Microsoft-only OAuth device-code-grant variant that mints and replays Primary Refresh Tokens; today's deep dive covers the Entra ID / Google Workspace detection logic and a documented Identity Protection false-negative gap."

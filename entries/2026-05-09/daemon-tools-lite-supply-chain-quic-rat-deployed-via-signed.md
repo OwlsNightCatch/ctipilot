@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "DAEMON Tools Lite supply chain — QUIC RAT deployed via signed installer; EU governments among targeted victims"
 headline: "DAEMON Tools Lite supply chain — QUIC RAT deployed via signed installer; EU governments among targeted victims"
 summary: "DAEMON Tools supply chain compromise — QUIC RAT delivered via signed, legitimate-looking Lite installer since 8 April 2026; Germany, France, Spain, and Italy among top victim countries; ~10% of infections on enterprise systems with government/scientific sector specifically targeted (Kaspersky Securelist, 2026-05-05 updated 2026-05-08)."

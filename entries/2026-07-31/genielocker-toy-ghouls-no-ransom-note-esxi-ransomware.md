@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "GenieLocker — a Windows and ESXi ransomware built to leave no ransom note on disk, gated behind a hashed command-line secret so it will not run in a sandbox"
 headline: "Kaspersky analyses a ransomware family that deliberately drops no readme files, because that is what mass-note detection keys on"
 summary: >

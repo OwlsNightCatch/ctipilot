@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Mini Shai-Hulud's GitHub Actions Pwn-Request → OIDC Token Theft Chain"
 headline: "Mini Shai-Hulud's GitHub Actions Pwn-Request → OIDC Token Theft Chain"
 summary: Background. Mini Shai-Hulud (the TeamPCP self-propagating npm worm) first surfaced in coverage on 2026-05-10 as a SAP CAP-package compromise.

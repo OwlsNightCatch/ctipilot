@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "AIVD/MIVD: Russia-linked actors hijack default-credential IP cameras along NATO military-supply routes to monitor Ukraine-bound shipments"
 headline: "Dutch intelligence: Russia hijacked default-credential internet cameras along military-supply routes; four EU states summon Russian ambassadors"
 summary: >

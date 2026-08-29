@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Cisco Talos batch disclosure: wolfSSL PKI name-constraint bypasses, GeoVision command injection, and a VTK-DICOM heap overflow (41 CVEs)"
 headline: "Talos discloses 41 patched CVEs: wolfSSL silently ignores IP/registeredID cert name constraints, GeoVision GV-I/O boxes take a high-privilege command injection"
 summary: >

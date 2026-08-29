@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Oracle July 2026 CPU — nine unauthenticated CVSS 10.0 flaws in Fusion Middleware, with NCSC-NL assessing large-scale abuse as very likely in the short term"
 headline: "Two national CERTs escalated the July Oracle cycle: 219 of the Fusion Middleware fixes need no authentication at all"
 summary: >

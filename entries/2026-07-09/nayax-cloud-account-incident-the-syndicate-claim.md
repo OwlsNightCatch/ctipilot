@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   Nayax (Bank-of-Lithuania-licensed EEA payment institution) discloses a cloud-account incident;
   "The Syndicate" claims 1B card records — claim unverified and contradicted by the filing
@@ -82,7 +81,6 @@ sourcing_note: >
   licence and EEA service scope are cited to Nayax's own licensing announcement.
 confidence: medium
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

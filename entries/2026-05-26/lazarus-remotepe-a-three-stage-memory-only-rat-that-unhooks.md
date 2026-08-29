@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Lazarus \"RemotePE\": a three-stage memory-only RAT that unhooks EDR and blinds ETW"
 headline: "Lazarus \"RemotePE\": a three-stage memory-only RAT that unhooks EDR and blinds ETW"
 summary: "Deep dive: Fox-IT/NCC Group dissects \"RemotePE\", a three-stage memory-only Lazarus RAT that DPAPI-keys its loader to one host, fetches its final stage into memory only (never on disk), and pairs HellsGate/TartarusGate syscall unhooking with an ETW patch to blind userland EDR telemetry — product-agnostic detection-engineering content for hunters (§ 5) (Fox-IT, 2026-05-22)."

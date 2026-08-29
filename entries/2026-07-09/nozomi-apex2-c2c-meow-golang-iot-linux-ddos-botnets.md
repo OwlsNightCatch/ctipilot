@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Nozomi documents two new Golang IoT/Linux DDoS botnets (Apex2, c2c/meow) built for speed and reuse over sophistication"
 headline: "Two Golang DDoS botnets, Apex2 and c2c/meow, flood exposed Telnet/SSH Linux and IoT with fake-systemd persistence and passwordless-sudo escalation"
 summary: >

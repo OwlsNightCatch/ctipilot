@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Foxconn confirms Nitrogen ransomware crippled North-American manufacturing sites; 8 TB / 11M files claimed"
 headline: "Foxconn confirms Nitrogen ransomware crippled North-American manufacturing sites; 8 TB / 11M files claimed"
 summary: "Foxconn confirms Nitrogen ransomware crippled North-American factories. Foxconn's statement on 2026-05-12 acknowledges the network collapse that began at the Mount Pleasant, Wisconsin plant on May 1 and the operational disruption since; Nitrogen claims 8 TB / 11M files exfiltrated, alleged to include design documentation for Apple, Nvidia, Intel, Google and Dell projects. Coveware previously published a programming bug in Nitrogen's ESXi encryptor that makes decryption mathematically impossible even after payment — relevant to anyone evaluating the recovery path (The Register, 2026-05-12; The Record, 2026-05-12)."

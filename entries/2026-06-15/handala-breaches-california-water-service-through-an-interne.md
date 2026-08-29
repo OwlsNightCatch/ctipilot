@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Handala breaches California Water Service through an internet-exposed RTKBase GNSS platform — billing PII for ~2M customers leaked, no OT access"
 headline: "Handala breaches California Water Service through an internet-exposed RTKBase GNSS platform — billing PII for ~2M customers leaked, no OT access"
 summary: "Iran-aligned Handala breached a large water utility by walking in through an internet-exposed RTKBase GNSS correction server, not the OT network. The actor harvested NTRIP caster credentials from a public-facing RTKBase instance and pivoted to a customer billing database (~2 million customers); independent analysis confirms no SCADA/PLC access. The transferable lesson for European water, energy and survey operators: inventory your external attack surface for internet-facing GNSS/NTRIP and industrial-IoT platforms running on stale credentials (Security Magazine, 2026-06-12)."

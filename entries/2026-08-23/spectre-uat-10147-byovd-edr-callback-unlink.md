@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "SPECTRE unlinks EDR's kernel callbacks one at a time using a two-driver BYOVD toolkit and an offset table for thirteen Windows builds — and its Linux half hides through ftrace rather than the syscall table"
 headline: "A cross-platform implant that blinds named endpoint products to process, thread and image-load events for the rest of the session"
 summary: >

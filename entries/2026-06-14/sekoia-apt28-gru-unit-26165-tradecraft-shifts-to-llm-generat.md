@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Sekoia: APT28 (GRU Unit 26165) tradecraft shifts to LLM-generated payloads and cloud-native C2"
 headline: "Sekoia: APT28 (GRU Unit 26165) tradecraft shifts to LLM-generated payloads and cloud-native C2"
 summary: "APT28 (GRU Unit 26165) tradecraft has moved to LLM-driven and cloud-native evasion. Sekoia documents LameHug — the first APT28 stealer that generates exfiltration code at runtime via a hosted LLM — plus BeardShell C2 over consumer cloud-storage providers and the FrostArmada SOHO-router DNS-hijack AiTM campaign against Microsoft 365 (Sekoia TDR, 2026-06-11)."

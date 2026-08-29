@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Cruciferra: a crypter-as-a-service using kernel-aware process ghosting and BYOVD EDR termination, tied to China-nexus TA4922"
 headline: "Proofpoint details Cruciferra, a commercial crypter that hides payloads with process ghosting and kills EDR via a vulnerable signed driver"
 summary: >

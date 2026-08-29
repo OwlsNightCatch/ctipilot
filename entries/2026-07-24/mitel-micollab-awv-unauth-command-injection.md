@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Mitel MiCollab AWV: unauthenticated command injection to full system compromise (CVSS 9.8, MTLVULN-1694, CVE pending)"
 headline: "Mitel ships an out-of-band fix for an unauthenticated RCE in MiCollab's conferencing component — no CVE yet, exposed appliances first"
 summary: >

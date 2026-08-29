@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   Hugging Face: a fully autonomous AI agent breached production, ran 17,000+ actions before
   detection
@@ -289,8 +288,6 @@ sourcing_note: >
 confidence: high
 references:
   - 2026-08-05/aisi-openai-cyber-range-unsanctioned-agent-actions
-  - 2026-08-09/weekly-w32-ai-evaluation-vendor-single-point-of-failure
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "\"Signal Support\" impersonation phishing harvests cloud-backup recovery keys from high-value users"
 headline: "\"Signal Support\" impersonation phishing harvests cloud-backup recovery keys from high-value users"
 summary: "A phishing wave is impersonating \"Signal Support\" to trick high-value users into pasting their cloud-backup recovery key into the chat — defeating the end-to-end encryption protecting the historical message archive (TechCrunch, 2026-05-28). Pure social engineering; the lure exploits fear of data loss. Signal never initiates contact and never asks for a recovery key, PIN or registration code."

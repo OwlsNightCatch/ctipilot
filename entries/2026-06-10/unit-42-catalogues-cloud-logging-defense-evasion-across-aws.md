@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: Unit 42 catalogues cloud-logging defense-evasion across AWS CloudTrail and Google Cloud Logging — with concrete detection mappings
 headline: Unit 42 catalogues cloud-logging defense-evasion across AWS CloudTrail and Google Cloud Logging — with concrete detection mappings
 summary: "Unit 42 enumerates seven cloud-logging attack categories — five evasion, two visibility (Unit 42, 2026-06-09)."

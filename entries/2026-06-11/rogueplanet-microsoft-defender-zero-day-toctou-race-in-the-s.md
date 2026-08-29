@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "\"RoguePlanet\" Microsoft Defender zero-day: TOCTOU race in the scan engine yields a SYSTEM shell, no CVE, no patch"
 headline: "\"RoguePlanet\" Microsoft Defender zero-day: TOCTOU race in the scan engine yields a SYSTEM shell, no CVE, no patch"
 summary: "A new Microsoft Defender SYSTEM-LPE zero-day, \"RoguePlanet,\" dropped as a public PoC hours after June Patch Tuesday — a TOCTOU race in the Defender scan engine, no CVE and no patch (BleepingComputer, 2026-06-09). No in-the-wild use reported yet; monitoring is the only mitigation."

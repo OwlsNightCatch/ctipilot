@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Enclave: a single debug flag left on in six Microsoft 365 Android apps allowed silent OAuth-token theft"
 headline: "Enclave: a single debug flag left on in six Microsoft 365 Android apps allowed silent OAuth-token theft"
 summary: "Researchers at Enclave found a shared Android SDK across six Microsoft 365 apps shipped setIsDebugMode(true) in production, disabling the AccountManager check that restricts token sharing to trusted Microsoft apps — so any co-installed third-party app could silently obtain long-lived OAuth tokens for the signed-in …"

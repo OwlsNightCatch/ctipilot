@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Rhysida claims Stuttgart municipal-data theft for 5 BTC; city denies a confirmed incident"
 headline: "Rhysida claims Stuttgart municipal-data theft for 5 BTC; city denies a confirmed incident"
 summary: "The Rhysida ransomware-as-a-service group listed Landeshauptstadt Stuttgart — the Baden-Württemberg state capital (~600,000 residents) — on its dark-web leak site in mid-May 2026 (DeXpose dates the listing to 2026-05-19; Heise (2026-05-21) covers the leak-site listing and Stuttgart's response without anchoring the …"

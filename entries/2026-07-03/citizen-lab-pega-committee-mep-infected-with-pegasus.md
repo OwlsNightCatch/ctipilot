@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Citizen Lab: a European Parliament spyware-inquiry member was himself infected twice with Pegasus"
 headline: "Citizen Lab confirms Pegasus infected a PEGA-Committee MEP via the PWNYOURHOME zero-click chain"
 summary: "Citizen Lab forensically confirmed that the iPhone of former MEP Stelios Kouloglou — a member of the European Parliament's PEGA committee investigating commercial-spyware abuse — was infected with NSO Group's Pegasus twice while he served on that committee (Oct 2022 via the PWNYOURHOME zero-click HomeKit→BlastDoor chain, and Mar 2023). The infections are unattributed but overlap a Pegasus operator also targeting Russian/Belarusian-speaking exiles in Europe. For SOCs protecting officials and oversight staff, the actionable surface is proactive mobile forensic triage and enforced device hardening, not endpoint alerting — the chain is zero-click."

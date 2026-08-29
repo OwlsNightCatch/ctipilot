@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "DesckVB RAT malspam launders through Google DoubleClick and blinds AMSI/ETW, with German-language lures aimed at DACH"
 headline: "DesckVB RAT malspam launders through Google DoubleClick and blinds AMSI/ETW, with German-language lures aimed at DACH"
 summary: "Huntress documented a DesckVB RAT chain from a May 2026 IR engagement that abuses Google DoubleClick Campaign Manager click-tracking for reputation laundering: a German-named HTML attachment (Bestellung_2026.html — \"order\") does a zero-second meta-refresh to a high-reputation ad.doubleclick.net URL that …"

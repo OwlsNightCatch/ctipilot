@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "German mobile carriers leaked callees' IMEI, device model and OS version to callers during call setup — GSMA confirmed the flaw and warned its 1,000+ member operators worldwide"
 headline: "A phone call alone could fingerprint the callee's device and patch level, and GSMA's warning suggests the gap is not Germany-specific"
 summary: >

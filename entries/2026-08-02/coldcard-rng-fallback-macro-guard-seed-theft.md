@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "COLDCARD: a preprocessor guard that tested whether a macro was defined rather than what it was set to routed key generation to a software PRNG for five years, and the keys are now being emptied"
 headline: "A build-time macro check silently disabled a hardware TRNG in shipped firmware, and the vendor assumes an AI code review is what found it"
 summary: >

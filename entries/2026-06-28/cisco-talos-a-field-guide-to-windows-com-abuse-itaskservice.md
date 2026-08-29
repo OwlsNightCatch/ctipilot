@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Cisco Talos: a field guide to Windows COM abuse — ITaskService, BITS, WMI and DCOM as EDR-evasion primitives"
 headline: "Cisco Talos: a field guide to Windows COM abuse — ITaskService, BITS, WMI and DCOM as EDR-evasion primitives"
 summary: "Cisco Talos published a reverse-engineering primer (2026-06-25) on how Windows threats weaponise Component Object Model (COM) interfaces to hide operations inside legitimate service call stacks (Cisco Talos, 2026-06-25)."

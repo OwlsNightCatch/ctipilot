@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Abacus ERP: unauthenticated RCE (CVSS 9.8, no CVE) and authenticated path traversal in a widely-deployed Swiss ERP platform — flagged by NCSC-CH"
 headline: "NCSC-CH flags an unauthenticated RCE (CVSS 9.8) in Abacus ERP — reachable endpoint is the only prerequisite"
 summary: >

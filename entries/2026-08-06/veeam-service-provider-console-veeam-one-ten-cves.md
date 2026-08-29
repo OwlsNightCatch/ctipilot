@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Veeam Service Provider Console and Veeam ONE — ten CVEs, headed by an unauthenticated CVSS 10.0 remote code execution on the Veeam ONE agent host"
 headline: "Veeam patches ten flaws across the console that manages backups and the platform that monitors them"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: TechCrunch finds 100 K passport scans and selfies on a public-read S3 bucket behind a UK Visa Portal lookalike
 headline: TechCrunch finds 100 K passport scans and selfies on a public-read S3 bucket behind a UK Visa Portal lookalike
 summary: "TechCrunch reported on 2026-05-27 that ukvisaportal.com — a third-party site marketed as an immigration portal but not affiliated with the UK Government — exposed roughly 100,000 documents via a misconfigured Amazon S3 bucket."

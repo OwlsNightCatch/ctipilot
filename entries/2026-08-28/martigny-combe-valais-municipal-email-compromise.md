@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Martigny-Combe (Valais) municipal email account compromised and used to send a fraudulent message to administration contacts — second Valais municipality hit in 2026"
 headline: "A Swiss communal administration's business mailbox is compromised and weaponised against its own contact list"
 summary: >

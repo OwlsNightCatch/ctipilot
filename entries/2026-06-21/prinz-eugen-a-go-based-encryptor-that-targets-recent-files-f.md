@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Prinz Eugen: a Go-based encryptor that targets recent files first and leaves no ransom note"
 headline: "Prinz Eugen: a Go-based encryptor that targets recent files first and leaves no ransom note"
 summary: "A new Go-based ransomware family, Prinz Eugen, encrypts most-recently-modified files first and drops no ransom note — confirmed against a French public-sector workforce agency. Initial access is stolen RDP credentials, followed by backdoor admin-account creation and RemotePC RMM abuse for lateral movement (Malwarebytes ThreatDown, 2026-06-17). The no-note, out-of-band-extortion model defeats ransom-note-based detection — hunt on RDP-logon-then-admin-account-creation and .prinzeugen write fan-out instead."

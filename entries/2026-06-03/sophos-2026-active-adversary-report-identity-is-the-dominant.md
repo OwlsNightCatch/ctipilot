@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: annual-report
-horizon: operational
 title: "Sophos 2026 Active Adversary Report: identity is the dominant intrusion root cause"
 headline: "Sophos 2026 Active Adversary Report: identity is the dominant intrusion root cause"
 summary: "Sophos published its 2026 Active Adversary Report (drawing on 661 IR/MDR cases) on 2026-06-02 (Sophos X-Ops, 2026-06-02)."

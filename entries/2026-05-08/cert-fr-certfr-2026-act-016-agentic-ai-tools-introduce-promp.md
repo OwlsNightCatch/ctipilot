@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "CERT-FR CERTFR-2026-ACT-016: Agentic AI tools introduce prompt-injection and supply-chain attack surfaces"
 headline: "CERT-FR CERTFR-2026-ACT-016: Agentic AI tools introduce prompt-injection and supply-chain attack surfaces"
 summary: "France's CERT-FR published advisory CERTFR-2026-ACT-016 warning that deploying agentic AI orchestration platforms (LLM-driven workflows with tool-calling, MCP server integration, or autonomous execution capabilities) introduces novel attack vectors."

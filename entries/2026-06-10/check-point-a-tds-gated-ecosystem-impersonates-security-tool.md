@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Check Point: a TDS-gated ecosystem impersonates security tools (Ghidra, dnSpy, ILSpy) to deliver SessionGate, RemusStealer and a clipboard hijacker"
 headline: "Check Point: a TDS-gated ecosystem impersonates security tools (Ghidra, dnSpy, ILSpy) to deliver SessionGate, RemusStealer and a clipboard hijacker"
 summary: "Check Point Research details a malware-distribution operation that impersonates open-source reversing tools using CloudFront-hosted JavaScript to hijack download clicks and route victims through a Traffic Distribution System enforcing geo/device/VPN/frequency filtering before delivering one of three payloads (Check …"

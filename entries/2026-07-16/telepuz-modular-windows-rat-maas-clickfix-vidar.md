@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "TELEPUZ — a modular Windows RAT/MaaS spread through ClickFix→Vidar chains, executing syscalls from patched trusted DLLs"
 headline: "Elastic details TELEPUZ, a MaaS RAT hiding syscalls in patched Windows DLLs, with C2 discovery via Telegram, Steam, DNS and a Polygon smart contract"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Huntress: Windows search: URI handler leaks NTLMv2 hashes — Microsoft declines to patch"
 headline: "Huntress: Windows search: URI handler leaks NTLMv2 hashes — Microsoft declines to patch"
 summary: "Huntress detailed an unpatched NTLMv2-leak in the Windows search: protocol handler: a crafted link with a crumb=location: parameter pointing at an attacker UNC path makes Windows open an outbound SMB (TCP 445) connection and expose the user's Net-NTLMv2 challenge-response for offline cracking or relay (Huntress …"

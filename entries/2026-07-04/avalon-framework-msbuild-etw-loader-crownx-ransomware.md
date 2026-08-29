@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Blackpoint Cyber documents \"Avalon\": a modular framework bundling credential theft, lateral movement and CrownX ransomware behind an MSBuild loader"
 headline: "**Avalon** framework chains a signed-binary MSBuild loader, ETW/AMSI patching and the CrownX ransomware payload in one implant"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: annual-report
-horizon: operational
 title: "Check Point Annual AI Security Report 2026 — AI shifts from attack accelerant to autonomous operator, with the agent's trusted config store as the new persistence surface"
 headline: "Check Point AI Security Report 2026: AI moves from assistant to operator; planted config files become the durable agent bypass"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "CERT Polska: UNC1151/Ghostwriter shifts to Gmail with real-time 2FA-relay phishing against officials and public administration"
 headline: "CERT-PL: Ghostwriter/UNC1151 now phishes Gmail with a live 2FA-relay panel that defeats TOTP and SMS"
 summary: >

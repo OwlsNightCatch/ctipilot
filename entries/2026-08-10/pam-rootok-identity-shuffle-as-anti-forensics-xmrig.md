@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "An intruder used pam_rootok to move between low-privileged identities as a deliberate forensic smokescreen — inverting what a responder infers from the authentication trail"
 headline: "Root escalated once, then spent the intrusion impersonating ordinary users so the audit trail would look ordinary"
 summary: >

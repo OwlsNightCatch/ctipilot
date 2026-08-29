@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "node-ipc npm package backdoored via expired-domain account takeover — 90+ credential categories exfiltrated, three malicious versions, ~3-minute window to detection"
 headline: "node-ipc npm package backdoored via expired-domain account takeover — 90+ credential categories exfiltrated, three malicious versions, ~3-minute window to"
 summary: "node-ipc npm package (widely-used Node.js IPC library) hijacked via expired-domain account takeover; three malicious versions (9.1.6, 9.2.3, 12.0.1) exfiltrate ~90 categories of cloud / CI/CD / SSH / Keychain credentials over DNS TXT and HTTPS to attacker C2; rotate any secret accessible from a workstation that installed the package on 2026-05-14 (Socket Security, 2026-05-14 · StepSecurity, 2026-05-14)."

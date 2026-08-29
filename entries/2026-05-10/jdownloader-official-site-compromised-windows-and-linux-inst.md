@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "JDownloader official site compromised — Windows and Linux installers swapped for a Python RAT for ~48 hours"
 headline: "JDownloader official site compromised — Windows and Linux installers swapped for a Python RAT for ~48 hours"
 summary: "The official download page of JDownloader, a German-developed (AppWork GmbH) Java-based download manager popular across European user bases, was compromised between approximately 2026-05-06 and 2026-05-08; attackers replaced the Windows and Linux installers with malicious counterparts (PiunikaWeb, 2026-05-08 · …"

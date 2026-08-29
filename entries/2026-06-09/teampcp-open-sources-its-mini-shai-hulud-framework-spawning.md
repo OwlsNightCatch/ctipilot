@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "TeamPCP open-sources its Mini Shai-Hulud framework, spawning a new \"Phantom Gyp\" derivative"
 headline: "TeamPCP open-sources its Mini Shai-Hulud framework, spawning a new \"Phantom Gyp\" derivative"
 summary: >
@@ -53,7 +52,6 @@ verification: multi-source
 sourcing_note: "migration: update target unresolved (originally covered 2026-06-06)"
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

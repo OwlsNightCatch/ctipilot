@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Unit 42 \"Pickle in the Middle\": cross-tenant code execution in Google Vertex AI via predictable staging buckets (CVE-2026-2473)"
 headline: "Unit 42 \"Pickle in the Middle\": cross-tenant code execution in Google Vertex AI via predictable staging buckets (CVE-2026-2473)"
 summary: "Unit 42 disclosed a cross-tenant RCE class in the Google Cloud Vertex AI SDK for Python (Unit 42, 2026-06-16)."

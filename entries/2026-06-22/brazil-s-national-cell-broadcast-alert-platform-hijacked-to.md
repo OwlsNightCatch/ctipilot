@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Brazil's national Cell Broadcast alert platform hijacked to push fake \"Extreme Alert\" messages to ~30M phones"
 headline: "Brazil's national Cell Broadcast alert platform hijacked to push fake \"Extreme Alert\" messages to ~30M phones"
 summary: "Brazil's national Cell Broadcast emergency-alert platform was hijacked overnight 19–20 June to push fake \"Extreme Alert\" notifications to ~30M phones across seven states, forcing the system offline. Cell Broadcast deliberately bypasses opt-outs and silent mode, so an administrative-plane compromise is a high-impact leverage point — the same EU-mandated technology underpins Switzerland's ALERTSWISS (The Next Web, 2026-06-20)."

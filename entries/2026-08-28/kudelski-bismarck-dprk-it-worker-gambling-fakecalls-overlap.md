@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Kudelski Security: North Korean IT-worker infrastructure overlaps a Bismarck-linked gambling-platform operation and the FakeCalls Android banking trojan"
 headline: "A Swiss research lab traces a stealer-log leak into DPRK gambling infrastructure and the fake-IT-worker university pipelines behind it"
 summary: >

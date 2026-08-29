@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Nightmare Eclipse / Chaotic Eclipse — Microsoft's Digital Crimes Unit threatens criminal action; GreenPlasma and MiniPlasma (cldflt.sys SYSTEM escalation) remain unpatched; researcher announces July 14 drop"
 headline: "Nightmare Eclipse / Chaotic Eclipse — Microsoft's Digital Crimes Unit threatens criminal action; GreenPlasma and MiniPlasma (cldflt.sys SYSTEM escalation)"
 summary: "UPDATE (originally covered 2026-W21): Microsoft's Digital Crimes Unit issued a formal public statement on 28–29 May 2026 calling uncoordinated zero-day releases \"never justifiable\" and warning its DCU would \"continue bringing cases against these actors and those that enable their criminal activity\" (The Record …"

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Microsoft Threat Intelligence: AI-brand impersonation drives Lumma Stealer and Vidar delivery via signed binaries"
 headline: "Microsoft Threat Intelligence: AI-brand impersonation drives Lumma Stealer and Vidar delivery via signed binaries"
 summary: "Microsoft Threat Intelligence documents a campaign by Storm-3075 (initial-access broker) and Fox Tempest (malware-signing-as-a-service operator) that weaponises public enthusiasm for AI tools, impersonating ChatGPT, Claude, DeepSeek and Microsoft Copilot through SEO poisoning, malvertising and multi-stage redirection …"

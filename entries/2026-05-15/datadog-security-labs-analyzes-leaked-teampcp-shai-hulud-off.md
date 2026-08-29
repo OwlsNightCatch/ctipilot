@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Datadog Security Labs analyzes leaked TeamPCP \"Shai-Hulud\" offensive framework source code"
 headline: "Datadog Security Labs analyzes leaked TeamPCP \"Shai-Hulud\" offensive framework source code"
 summary: "UPDATE (2026-05-13 — follows TeamPCP coverage 2026-05-13): Datadog Security Labs published an analysis of the TeamPCP \"Shai-Hulud\" offensive worm source code on 2026-05-13, after the complete framework was briefly accessible as a public GitHub repository on 2026-05-12 before the account was removed (Datadog …"

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: >
   LegacyHive: a public Windows technique that redirects a profile's Local AppData into the NT
   Object Manager namespace via offline hive edits, reproduced on fully patched systems
@@ -120,7 +119,6 @@ sourcing_note: >
   capability on offer, even though it is not escalation from a standing start.
 confidence: medium
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

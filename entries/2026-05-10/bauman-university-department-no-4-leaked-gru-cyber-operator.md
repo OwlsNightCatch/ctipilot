@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Bauman University \"Department No. 4\" — leaked GRU cyber-operator training pipeline reveals direct line to Sandworm and APT28 operations against European targets"
 headline: "Bauman University \"Department No. 4\" — leaked GRU cyber-operator training pipeline reveals direct line to Sandworm and APT28 operations against European targets"
 summary: "A six-publisher investigative consortium (The Insider, The Guardian, Le Monde, Der Spiegel, VSquare, Frontstory) published more than 2 000 leaked internal documents from Bauman Moscow State Technical University on 2026-05-07 detailing a structured GRU recruitment-and-training pipeline operating under the cover of …"

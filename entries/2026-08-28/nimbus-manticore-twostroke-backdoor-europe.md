@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Nimbus Manticore (Iranian IRGC-affiliated APT, aka Tortoiseshell/UNC1549/Smoke Sandstorm/Mirage Kitten) deploys a third 2026 toolset refresh — a TWOSTROKE-like backdoor abusing DLL search-order hijacking, paired with a reverse SSH tunneler — with confirmed expansion into the UK, France, Albania and Belarus"
 headline: "An Iranian espionage actor already tracked for aerospace and telecom targeting adds a new backdoor and materially widens its named European footprint"
 summary: >

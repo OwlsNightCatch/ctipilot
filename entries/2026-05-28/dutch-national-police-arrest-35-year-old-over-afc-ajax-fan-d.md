@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Dutch National Police arrest 35-year-old over AFC Ajax fan-data breach — misconfigured API access-control and shared keys exposed 300,000+ accounts and 42,000 season-ticket records"
 headline: "Dutch National Police arrest 35-year-old over AFC Ajax fan-data breach — misconfigured API access-control and shared keys exposed 300,000+ accounts and 42,000"
 summary: "Dutch National Police arrested a 35-year-old from Buren over the AFC Ajax data breach. Per BleepingComputer and The Record (citing the Dutch police release), the underlying API access-control flaw and shared keys exposed ~300,000 fan accounts and ~42,000 season-ticket records; Ajax filed Article 33 to the Dutch DPA following the original March 2026 disclosure (BleepingComputer, 2026-05-27; The Record, 2026-05-27; Ajax victim statement, 2026-03-25). The recurring pattern — REST/mobile-app backend with shared-key API access-control — is directly transferable to public-sector citizen portals."

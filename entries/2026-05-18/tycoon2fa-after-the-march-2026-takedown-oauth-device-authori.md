@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: Tycoon2FA after the March 2026 takedown — OAuth Device Authorization Grant abuse on Microsoft 365
 headline: Tycoon2FA after the March 2026 takedown — OAuth Device Authorization Grant abuse on Microsoft 365
 summary: "Tycoon2FA PhaaS pivots from credential-relay AiTM to OAuth 2.0 Device Authorization Grant abuse against Microsoft 365. Victims paste an attacker-supplied device code into the legitimate microsoft.com/devicelogin endpoint; MFA succeeds on the real Microsoft endpoint and tokens are issued to the attacker's registered device. eSentire documented the campaign with a four-layer browser chain ending in a fake Microsoft CAPTCHA (BleepingComputer, 2026-05-17; eSentire TRU, 2026-05-12)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: Oxford University CareerConnect (Group GTI) breach exposes students at multiple UK universities
 headline: Oxford University CareerConnect (Group GTI) breach exposes students at multiple UK universities
 summary: "The University of Oxford disclosed a breach after Group GTI, the third-party provider of the CareerConnect career-services platform, reported its systems were compromised on 28 May 2026 (BleepingComputer, 2026-06-08; Oxford Careers Service, 2026-06-01)."

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   France's tax authority cut the intruders' accounts in June and July and found no data theft — it
   took the criminal's sale listing two months later to establish that 678,000 records had already
@@ -84,9 +83,7 @@ sourcing_note: >
   the government disputed the retained-access claim and its published statement addresses neither
   of the others, and each is attributed to the source that carries it.
 confidence: high
-references:
-  - 2026-08-16/weekly-w33-compromised-party-was-not-the-notifying-party
-weekly_section: null
+references: []
 deep_dive: false
 deep_dive_category: null
 org_triage: null

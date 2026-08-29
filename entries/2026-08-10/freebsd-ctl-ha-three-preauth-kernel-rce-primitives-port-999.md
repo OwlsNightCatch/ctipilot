@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "FreeBSD CTL HA — three independent pre-authentication remote kernel-code-execution primitives behind an unauthenticated failover port, and the project's answer is a manpage warning rather than a patch"
 headline: "FreeBSD's storage-failover interconnect trusts whatever connects to TCP/999, and three published primitives each reach root from the wire"
 summary: >

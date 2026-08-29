@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Cisco IOS XE August 2026 hardening release — seven CVEs that each stand for a whole class of internally found bugs, no workarounds, and frontier AI models among the discovery tools"
 headline: "Cisco ships one CVE per CWE class rather than per bug, so no IOS XE device can be triaged flaw-by-flaw — only by release"
 summary: >

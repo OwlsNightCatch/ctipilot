@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Keycloak 26.6.2 — 16 CVEs including OIDC session fixation (CVE-2026-7507), WebAuthn execute-actions token replay (CVE-2026-37982), introspection audience bypass (CVE-2026-37979) and cross-realm IDOR in Authorization Services (CVE-2026-4630)"
 headline: "Keycloak 26.6.2 — 16 CVEs including OIDC session fixation (CVE-2026-7507), WebAuthn execute-actions token replay (CVE-2026-37982), introspection audience"
 summary: "The Keycloak project shipped 26.6.2 on 2026-05-19, fixing 16 CVEs across identity, authentication and authorisation subsystems; BSI's CERT-Bund issued advisory WID-SEC-2026-1612 on 2026-05-20 classifying the batch as HIGH risk (Keycloak Project, 2026-05-19; BSI CERT-Bund, 2026-05-20)."

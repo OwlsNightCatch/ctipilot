@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "cPanel/WHM second emergency TSR in 10 days — embargo lifted on CVE-2026-29202 (post-auth Perl RCE, CVSS 8.8), CVE-2026-29203 (CVSS 8.8), CVE-2026-29201 (CVSS 4.3)"
 headline: "cPanel/WHM second emergency TSR in 10 days — embargo lifted on CVE-2026-29202 (post-auth Perl RCE, CVSS 8.8), CVE-2026-29203 (CVSS 8.8), CVE-2026-29201 (CVSS"
 summary: "cPanel embargo lifted on second emergency TSR in 10 days — CVE-2026-29202 (CVSS 8.8) is post-auth Perl execution in the create_user API; CVE-2026-29203 (CVSS 8.8) is unsafe symlink chmod abuse; CVE-2026-29201 (CVSS 4.3) is arbitrary feature-file read. No confirmed ITW yet, but the prior CVE-2026-41940 wave compromised ~44 000 hosts across two months, so a freshly recovered fleet now faces fresh CVEs before remediation completes."

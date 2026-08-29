@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Hijacked polyfill[.]io domain reactivates, surfacing native browser credential prompts on sites that never removed legacy script tags"
 headline: "Hijacked polyfill[.]io domain reactivates, surfacing native browser credential prompts on sites that never removed legacy script tags"
 summary: "The hijacked polyfill[.]io CDN domain reactivated and is throwing HTTP 401 prompts, surfacing native browser credential dialogs on sites that never stripped legacy script tags. Toshiba and Muji issued public warnings; audit web properties for residual polyfill[.]io references (BleepingComputer, 2026-06-05)."

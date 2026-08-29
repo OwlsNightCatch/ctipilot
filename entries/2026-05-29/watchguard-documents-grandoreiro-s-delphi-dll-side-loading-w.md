@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "WatchGuard documents Grandoreiro's Delphi-DLL-side-loading + WebSocket/STUN C2 against Portuguese & Spanish banks; ESET maps parallel Android BTMOB MaaS"
 headline: "WatchGuard documents Grandoreiro's Delphi-DLL-side-loading + WebSocket/STUN C2 against Portuguese & Spanish banks; ESET maps parallel Android BTMOB MaaS"
 summary: "WatchGuard's Secplicity team published telemetry on 2026-05-26 covering a sustained 2026 Grandoreiro banking-trojan campaign against banks in Portugal and Spain (and across Latin America)."

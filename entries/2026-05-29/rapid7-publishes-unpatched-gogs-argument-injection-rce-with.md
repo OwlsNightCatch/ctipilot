@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Rapid7 publishes unpatched Gogs argument-injection RCE with a Metasploit module; maintainer non-responsive"
 headline: "Rapid7 publishes unpatched Gogs argument-injection RCE with a Metasploit module; maintainer non-responsive"
 summary: "Rapid7 ships a working Metasploit module against an unpatched Gogs zero-day (argument injection via git rebase --exec in the rebase-merge code path; CVSSv4 9.4). The maintainer did not respond to coordinated disclosure within 90 days; ~1,141 internet-facing instances visible on Shodan. No patch. Mitigate by disabling self-registration and the rebase-merge strategy."

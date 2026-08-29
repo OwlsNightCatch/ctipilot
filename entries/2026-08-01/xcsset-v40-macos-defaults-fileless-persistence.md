@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "XCSSET v40 turns the macOS `defaults` preference system into a fileless re-infection store and holds an exclusive lock on the XProtect signature database"
 headline: "Unit 42 documents an XCSSET rebuild that lives in memory and disables macOS's own update, telemetry and signature-database channels"
 summary: >

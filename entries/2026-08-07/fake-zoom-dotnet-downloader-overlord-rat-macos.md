@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "A fake Zoom installer stages Overlord RAT through the first .NET macOS downloader Jamf has observed — PE-format DLLs bundled inside a Mach-O binary"
 headline: "macOS malware picks up .NET: one downloader codebase now targets Mac and Windows, and the Go payload is Garble-obfuscated to break static analysis"
 summary: >

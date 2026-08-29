@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: >
   VMSA-2026-0006 — VMware vCenter: unauthenticated Directory Service auth bypass and Syslog
   traversal RCE (both CVSS 9.8), plus a VMXNET3 guest-to-host escape
@@ -199,7 +198,6 @@ sourcing_note: >
   details and references without any segmentation recommendation.
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

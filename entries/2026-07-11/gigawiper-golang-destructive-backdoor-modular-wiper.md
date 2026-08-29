@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "GigaWiper: a Golang backdoor that folds a disk wiper, fake-ransomware encryptor and secure-wipe module into one modular implant"
 headline: "Microsoft dissects GigaWiper — destruction dressed as extortion, driven over RabbitMQ/Redis/MinIO with an 'OneDrive Update' persistence tell"
 summary: >

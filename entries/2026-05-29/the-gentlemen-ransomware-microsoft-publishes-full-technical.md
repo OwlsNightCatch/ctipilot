@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: The Gentlemen ransomware — Microsoft publishes full technical dissection of the Storm-2697 Go-encryptor
 headline: The Gentlemen ransomware — Microsoft publishes full technical dissection of the Storm-2697 Go-encryptor
 summary: "UPDATE (originally covered 2026-05-20; consolidated in weekly W21): Microsoft Threat Intelligence published a full dissection of The Gentlemen ransomware on 2026-05-28, giving Storm-2697 a much sharper technical profile than the victim-list reporting available in week 21."

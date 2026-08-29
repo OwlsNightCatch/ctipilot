@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "UNC6671 kept operating after BlackFile's announced retirement, across four further extortion brands — and its vishing pretext is now an urgent order to enroll a FIDO2 passkey"
 headline: "The group behind BlackFile never stopped: GTIG ties four newer extortion brands to one operator whose lure attacks passkey enrolment, not the passkey"
 summary: >

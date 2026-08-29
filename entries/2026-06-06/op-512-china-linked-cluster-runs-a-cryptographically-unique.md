@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "OP-512: China-linked cluster runs a cryptographically-unique, self-reporting IIS web-shell framework against legacy .NET servers"
 headline: "OP-512: China-linked cluster runs a cryptographically-unique, self-reporting IIS web-shell framework against legacy .NET servers"
 summary: "ReliaQuest documented OP-512, a previously-unreported China-linked espionage cluster targeting internet-facing Microsoft IIS servers running end-of-life .NET Framework 4.0 (ReliaQuest, 2026-06-05) [SINGLE-SOURCE — ReliaQuest original disclosure]."

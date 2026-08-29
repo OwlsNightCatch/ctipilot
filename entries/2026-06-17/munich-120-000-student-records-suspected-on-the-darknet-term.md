@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Munich: ~120,000 student records suspected on the darknet — terminated employee under investigation"
 headline: "Munich: ~120,000 student records suspected on the darknet — terminated employee under investigation"
 summary: "120,000 Munich student records suspected on the darknet — a City-of-Munich IT subsidiary reports a suspected insider-threat mass export; Bavarian DPA notified, criminal complaint filed — a direct EU public-sector deprovisioning lesson (§ 1)."

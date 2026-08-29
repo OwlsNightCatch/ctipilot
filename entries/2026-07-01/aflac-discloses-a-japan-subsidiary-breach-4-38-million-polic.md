@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Aflac discloses a Japan-subsidiary breach — 4.38 million policyholders and agents, ~10-day dwell before detection"
 headline: "Aflac discloses a Japan-subsidiary breach — 4.38 million policyholders and agents, ~10-day dwell before detection"
 summary: "Aflac discloses a Japan-subsidiary breach exposing ~4.38 M policyholders and agents after a roughly ten-day undetected intrusion into a customer web portal (SecurityWeek, 2026-06-30)."

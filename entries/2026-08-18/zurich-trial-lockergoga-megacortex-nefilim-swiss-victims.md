@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Zurich District Court opens the LockerGoga / MegaCortex / Nefilim trial: four named Swiss victims, CHF 100m+ in damage, and an indictment that describes the intrusion pattern step by step"
 headline: "Six years on, the charge sheet for the Stadler Rail ransomware attacks is public — disable monitoring, encrypt servers and workstations, encrypt the backups too"
 summary: >

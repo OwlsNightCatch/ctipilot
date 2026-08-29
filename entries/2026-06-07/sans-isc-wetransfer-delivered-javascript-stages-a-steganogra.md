@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "SANS ISC: WeTransfer-delivered JavaScript stages a steganographic image loader (\"Evil MSI background\") on Cloudflare Workers and R2"
 headline: "SANS ISC: WeTransfer-delivered JavaScript stages a steganographic image loader (\"Evil MSI background\") on Cloudflare Workers and R2"
 summary: "SANS ISC handler Xavier Mertens documented a resurgence of an image-steganography delivery chain (SANS ISC, 2026-06-05)."

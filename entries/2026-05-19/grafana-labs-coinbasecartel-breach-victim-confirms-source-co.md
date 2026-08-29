@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Grafana Labs CoinbaseCartel breach — victim confirms source-code-only theft, no customer data, ransom rejected"
 headline: "Grafana Labs CoinbaseCartel breach — victim confirms source-code-only theft, no customer data, ransom rejected"
 summary: "UPDATE (originally covered 2026-W21): Grafana Labs issued an official 2026-05-18 confirmation of the GitHub Pwn-Request breach previously reported in the 2026-W21 weekly summary (SecurityWeek, 2026-05-18; BleepingComputer, 2026-05-18; The Register, 2026-05-18)."

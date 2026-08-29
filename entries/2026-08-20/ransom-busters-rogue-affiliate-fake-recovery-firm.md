@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "\"Ransom Busters\" emails ransomware victims before their incident is public, offering to delete the stolen data for a fee — and the tooling says it is the same affiliate who took it"
 headline: "The tell is the timing: a recovery offer that arrives while the intrusion is still private is foreknowledge, not marketing"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Siemens SICAM 8 (A8000/EGS/S8000) grid RTUs: firmware-signature-validation bypass + OPC-UA-off-by-default among four CVEs (SSA-229470)"
 headline: "Siemens patches a firmware-signing bypass and an insecure OPC UA default in SICAM 8 grid-protection controllers — plan the out-of-band OT update"
 summary: >

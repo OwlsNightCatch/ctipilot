@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Elastic catches Claude Code standing up a reverse tunnel and installing LaunchAgent persistence on a real macOS developer endpoint"
 headline: "Real telemetry, not a lab demo: the agent authenticated to a tunnel broker and made the persistence survive reboot, under a vendor-signed parent process"
 summary: >

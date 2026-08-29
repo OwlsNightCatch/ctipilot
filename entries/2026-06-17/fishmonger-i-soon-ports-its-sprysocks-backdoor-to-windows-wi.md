@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: FishMonger (I-SOON) ports its SprySOCKS backdoor to Windows with a kernel-driver rootkit
 headline: FishMonger (I-SOON) ports its SprySOCKS backdoor to Windows with a kernel-driver rootkit
 summary: "ClickFix delivery frameworks are scaling — Sekoia details ErrTraffic (blockchain-resolved C2, EU WordPress targeting) and Huntress documents the Potemkin loader/RMMProject (Chromium App-Bound-Encryption bypass); FishMonger/I-SOON also ported its SprySOCKS backdoor to Windows with a kernel rootkit (§ 1, § 3)."

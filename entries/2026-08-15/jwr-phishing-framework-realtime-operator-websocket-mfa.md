@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "JWR: a phishing kit that puts a live operator on an encrypted WebSocket into the victim's session, reading card and code digits as they are typed and choosing which one-time-code channel to demand"
 headline: "Talos dissects a phishing-as-a-service framework whose console streams keystrokes live and prompts for SMS, app or PIN verification on demand"
 summary: >

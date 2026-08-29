@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Jamf Threat Labs documents \"PamStealer\": a macOS infostealer that validates the victim's password via the PAM API before exfiltrating it"
 headline: "**PamStealer** impersonates the Maccy clipboard app and confirms a stolen macOS password through pam_authenticate before sending it"
 summary: >

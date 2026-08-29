@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: >
   Two 2026 M365 account-takeover campaigns (Railway device-code phishing, LSHIY ROPC spray) beat
   Conditional Access without breaking MFA
@@ -85,7 +84,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

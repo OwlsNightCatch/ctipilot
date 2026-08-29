@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: iRhythm discloses data theft via social engineering of a third-party-hosted application (SEC 8-K)
 headline: iRhythm discloses data theft via social engineering of a third-party-hosted application (SEC 8-K)
 summary: "Cardiac-monitoring medtech firm iRhythm filed an SEC Form 8-K Item 1.05 on 2026-06-15 reporting that a threat actor used social engineering against business applications hosted by a third party, exfiltrated PHI, PII and proprietary data, and sent a ransom demand on 9 June; the company made its materiality …"

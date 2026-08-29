@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Pwn2Own Berlin 2026: Master-of-Pwn outcomes, the new AI Agents category, and the compound-Exchange-threat picture for European defenders"
 headline: "Pwn2Own Berlin 2026: Master-of-Pwn outcomes, the new AI Agents category, and the compound-Exchange-threat picture for European defenders"
 summary: "Pwn2Own Berlin 2026 wraps — 47 unique zero-days, $1,298,250 awarded. DEVCORE's Orange Tsai chained three undisclosed Exchange bugs to SYSTEM-level unauthenticated RCE on Day 2 ($200K, 90-day embargo); STARLabs SG burned a memory-corruption ESXi hypervisor escape for another $200K on Day 3; the new AI Agents category produced exploits or collisions across all entered targets — OpenAI Codex (Compass Security CWE-150, $40K), Cursor (Compass Security, $15K), LM Studio (OtterSec code-injection Day 2; STARLabs SG separately ran an SSRF+code-injection 5-bug chain on Day 1), LiteLLM (k3vg3n SSRF+code-injection), with Claude Code, Chroma, Megatron Bridge and Ollama producing collisions (ZDI Day 3, 2026-05-16)."

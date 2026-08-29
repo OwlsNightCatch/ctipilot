@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Coding-agent CI harnesses broke on the same trust boundary three different ways — and the two findings that matter most carry no CVE at all"
 headline: "A validator that strips quoted text before inspecting it, and an agent instruction file rewritten between two passes of one shared checkout"
 summary: >

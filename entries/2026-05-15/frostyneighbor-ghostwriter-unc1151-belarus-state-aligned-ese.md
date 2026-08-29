@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "FrostyNeighbor / Ghostwriter (UNC1151, Belarus state-aligned): ESET documents March–May 2026 campaign targeting Polish, Lithuanian, and Ukrainian government and industrial sectors"
 headline: "FrostyNeighbor / Ghostwriter (UNC1151, Belarus state-aligned): ESET documents March–May 2026 campaign targeting Polish, Lithuanian, and Ukrainian government"
 summary: "ESET published a new technical report on 2026-05-14 documenting fresh operational activity from FrostyNeighbor — a cluster ESET and Mandiant track as Ghostwriter / UNC1151 / UAC-0057, assessed as apparently Belarus state-aligned — against Polish, Lithuanian, and Ukrainian government and industrial organisations across …"

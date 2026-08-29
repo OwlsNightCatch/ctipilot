@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "macOS ClickFix evolves: hdiutil attach -nobrowse mounts the malicious DMG invisibly before dropping AMOS"
 headline: "macOS ClickFix evolves: hdiutil attach -nobrowse mounts the malicious DMG invisibly before dropping AMOS"
 summary: "A new macOS ClickFix variant (Palo Alto Unit 42, via BleepingComputer 2026-06-23) drops the visible-DMG step: the fake-CAPTCHA Terminal lure now has the user paste a curl command that uses hdiutil attach -nobrowse to mount the disk image without it appearing in Finder or on the desktop, then launches a self-signed …"

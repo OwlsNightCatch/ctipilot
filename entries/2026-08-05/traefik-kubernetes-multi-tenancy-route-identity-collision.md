@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Traefik 3.7.10 / 3.6.25 / 2.11.54 — a route identity built by joining names with hyphens lets one Kubernetes namespace silently take over another's traffic on a shared Gateway"
 headline: "Traefik patches three tenant-isolation failures; the worst hijacks another namespace's routes invisibly"
 summary: >

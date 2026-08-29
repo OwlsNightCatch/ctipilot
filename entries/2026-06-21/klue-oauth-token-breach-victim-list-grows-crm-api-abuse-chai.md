@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Klue OAuth-token breach — victim list grows, CRM-API abuse chain detailed"
 headline: "Klue OAuth-token breach — victim list grows, CRM-API abuse chain detailed"
 summary: >
@@ -74,7 +73,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

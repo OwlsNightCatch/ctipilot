@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: annual-report
-horizon: operational
 title: "CrowdStrike 2026 Technology Threat Landscape Report: technology is now the most-targeted sector"
 headline: "CrowdStrike 2026 Technology Threat Landscape Report: technology is now the most-targeted sector"
 summary: "CrowdStrike published its 2026 Technology Threat Landscape Report on 9 June 2026 (CrowdStrike, 2026-06-09)."

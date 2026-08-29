@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Oracle's August 2026 Critical Security Patch Update carries three unauthenticated CVSS 10.0 flaws — one of them in the LDAP server of Oracle Internet Directory"
 headline: "943 patches in a monthly release, and the ones that decide the sequencing are the three needing no credential and no user interaction at all"
 summary: >

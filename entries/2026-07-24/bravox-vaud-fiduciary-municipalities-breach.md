@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "BravoX ransomware leaks 220 GB from a Vaud fiduciary, exposing ~15 municipalities' data and a cantonal minister's tax file"
 headline: "A breached Vaud accounting firm spilled 15 municipalities' administrative data — the fiduciary was the pivot, not any government network"
 summary: >

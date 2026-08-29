@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: >
   FortiBleed — 73,932 internet-facing FortiGate devices exposed, Russian-speaking group cracking
   credentials into Active Directory
@@ -78,7 +77,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

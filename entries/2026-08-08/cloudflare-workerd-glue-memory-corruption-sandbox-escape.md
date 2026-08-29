@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: research
-horizon: operational
 title: "Check Point breaks out of Cloudflare's Code Mode sandbox through a use-after-free in workerd's native glue — prompt injection to native host code, and a cross-tenant heap read"
 headline: "Five bugs in the C++ layer between JavaScript and native code turn an agent prompt injection into host execution"
 summary: >

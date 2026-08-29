@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "CVE-2026-7849 and 19 more — Phoenix Contact CHARX SEC-3xxx EV charging controllers: unauthenticated command injection as root, unsigned firmware updates, and no fix released at disclosure"
 headline: "CERT@VDE publishes 20 CVEs in Phoenix Contact EV charging controllers with the fixing firmware unreleased — segmentation is the only control to 12 August"
 summary: >

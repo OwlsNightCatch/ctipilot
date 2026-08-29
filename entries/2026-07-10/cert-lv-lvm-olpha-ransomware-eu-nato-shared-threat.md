@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "CERT.LV: ransomware crew breaches Latvia's state forestry operator LVM via a 2-year-unpatched system, hits essential-services provider Olpha, and is probing other EU/NATO institutions"
 headline: "CERT.LV warns a financially-motivated crew that breached Latvian state forestry and an essential-services provider is targeting other EU/NATO state institutions"
 summary: >

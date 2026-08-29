@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Zimbra Collaboration Suite 10.1.20 — permanent fix for an SNMP command-injection RCE plus four stored-XSS bugs; NCSC-CH and BSI both flag the release"
 headline: "Zimbra ships 10.1.20 with the permanent fix for an SNMP command-injection RCE; NCSC-CH and BSI flag it for on-prem mail operators"
 summary: >

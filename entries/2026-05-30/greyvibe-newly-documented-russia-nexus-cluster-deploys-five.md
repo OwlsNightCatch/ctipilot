@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: GREYVIBE — newly documented Russia-nexus cluster deploys five parallel attack chains against Ukraine with AI-generated lures and two PowerShell RATs
 headline: GREYVIBE — newly documented Russia-nexus cluster deploys five parallel attack chains against Ukraine with AI-generated lures and two PowerShell RATs
 summary: "WithSecure Labs disclosed GREYVIBE on 28–29 May 2026, a previously-unnamed Russia-nexus threat cluster active since at least August 2025, targeting Ukrainian military, government, civilians, and businesses (WithSecure Labs, 2026-05-29; SecurityWeek, 2026-05-28)."

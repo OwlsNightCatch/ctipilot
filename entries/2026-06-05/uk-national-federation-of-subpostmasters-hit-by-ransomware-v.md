@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "UK National Federation of Subpostmasters hit by ransomware via a cPanel flaw; disruption persists into June"
 headline: "UK National Federation of Subpostmasters hit by ransomware via a cPanel flaw; disruption persists into June"
 summary: "The UK National Federation of Subpostmasters (NFSP) was struck by ransomware around 30 April 2026 after attackers exploited a vulnerability in cPanel to gain initial access, manipulate server-side files, and lock out administrative accounts before deploying ransomware (Computer Weekly, 2026-06-04; Risky …"

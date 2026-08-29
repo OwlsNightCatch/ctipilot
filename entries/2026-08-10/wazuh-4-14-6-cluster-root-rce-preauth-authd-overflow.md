@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: vulnerability
-horizon: operational
 title: "Wazuh 4.14.6 — two cluster-protocol paths to root that bypass the CVE-2026-25770 fix, a DAPI deserialization RCE, and a pre-auth stack overflow on the enrollment port"
 headline: "Wazuh patches root-RCE chains in the cluster protocol and a pre-auth overflow reachable on TCP/1515 under stock defaults"
 summary: >

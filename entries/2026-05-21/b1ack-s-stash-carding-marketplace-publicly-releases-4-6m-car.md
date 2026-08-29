@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "B1ack's Stash carding marketplace publicly releases 4.6M card records — SOCRadar attributes collection to e-skimming and phishing; not confirmed by issuing banks"
 headline: "B1ack's Stash carding marketplace publicly releases 4.6M card records — SOCRadar attributes collection to e-skimming and phishing; not confirmed by issuing"
 summary: "The dark-web carding marketplace B1ack's Stash — operational since at least 2023, with prior free-release waves of 1M cards in April 2024 and 4M in February 2025 — announced the free release of approximately 4.6 million stolen credit and debit card records on 2026-05-18 as a punitive action against vendors that …"

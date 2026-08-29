@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: >
   JADEPUFFER — Sysdig documents an autonomous, LLM-driven ransomware operation entering via
   Langflow CVE-2025-3248
@@ -89,7 +88,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

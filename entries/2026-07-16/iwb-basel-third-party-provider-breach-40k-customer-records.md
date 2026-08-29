@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Basel utility IWB: ~40,000 customer records exfiltrated in a breach of a third-party service provider"
 headline: "Swiss municipal energy/water/telecom utility IWB discloses a third-party-provider breach exposing ~40,000 customer meter records"
 summary: >

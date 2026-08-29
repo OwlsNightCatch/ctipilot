@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "BigBlueButton bbb-web < 3.0.21 / < 3.0.23 — three flaws in EU education and government virtual-classroom platform: weak session-token randomness, API checksum bypass, SSRF"
 headline: "BigBlueButton bbb-web < 3.0.21 / < 3.0.23 — three flaws in EU education and government virtual-classroom platform: weak session-token randomness, API checksum"
 summary: "BigBlueButton ≥ 3.0.21 / 3.0.23 fix three flaws in widely-deployed EU academic & government virtual-classroom platform (BBB GHSA-7959-pf2v-xc4h, 2026-05-17). Weak sessionToken randomness (CVE-2026-46351, CVSS 8.1), presentationUploadExternalUrl checksum bypass (CVE-2026-46353, CVSS 8.1), SSRF in presentation URL validation (CVE-2026-46404, CVSS 6.8); BSI corroborated 2026-05-18."

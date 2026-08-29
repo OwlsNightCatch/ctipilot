@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "Germany's federal cabinet approves the Cybersicherheitsstärkungsgesetz — BKA, BSI and Federal Police gain authority to redirect traffic and disable attacker infrastructure"
 headline: "Germany's federal cabinet approves the Cybersicherheitsstärkungsgesetz — BKA, BSI and Federal Police gain authority to redirect traffic and disable attacker"
 summary: "The German federal cabinet approved the Cybersicherheitsstärkungsgesetz (Law to Strengthen Cybersecurity) on 2026-05-27, granting three federal agencies — the Bundeskriminalamt (BKA), the Bundesamt für Sicherheit in der Informationstechnik (BSI) and the Bundespolizei — new authority to conduct what the government …"

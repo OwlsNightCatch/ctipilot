@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Qilin compromised Italian telecommunications and cloud operator Retelit on 8 June — the company confirmed it only after an investigation forced the question, and one of the three affected data centres was its certified backup site"
 headline: "A European carrier serving 193 public administrations disclosed a two-month-old Qilin intrusion in a right-of-reply, not a press release"
 summary: >

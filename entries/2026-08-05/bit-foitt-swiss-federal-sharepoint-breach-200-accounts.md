@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Switzerland's federal IT provider BIT confirms a SharePoint Server intrusion: ~200 federal user and technical accounts compromised while the July patches were already being installed"
 headline: "Swiss federal SharePoint servers breached mid-patching — ~200 accounts taken, servers now being rebuilt"
 summary: >

@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: incident
-horizon: operational
 title: "Nozomi Networks/CBC: Winnipeg's largest hospital network loses HVAC and door-access central monitoring to a ransomware incident with no named actor, access vector, or ransomware family disclosed 18 days later"
 headline: "IT/OT segmentation held for patient care, but the hospital's own building-management network was one ransomware incident from a ventilation failure"
 summary: >

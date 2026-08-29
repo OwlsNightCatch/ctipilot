@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: >
   Drupal core "highly critical" pre-patch warning — unauthenticated, zero-complexity, patch window
   today 17:00–21:00 UTC
@@ -102,7 +101,6 @@ verification: multi-source
 sourcing_note: null
 confidence: high
 references: []
-weekly_section: null
 deep_dive: false
 deep_dive_category: null
 org_triage: null

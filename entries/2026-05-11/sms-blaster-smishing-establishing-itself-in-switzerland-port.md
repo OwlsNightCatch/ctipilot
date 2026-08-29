@@ -1,7 +1,6 @@
 ---
 schema: 1
 kind: threat
-horizon: operational
 title: "SMS-blaster smishing establishing itself in Switzerland — portable IMSI-catchers force 2G downgrade, bypass operator SMS filtering"
 headline: "SMS-blaster smishing establishing itself in Switzerland — portable IMSI-catchers force 2G downgrade, bypass operator SMS filtering"
 summary: "SMS-blaster smishing fraud establishing itself in Switzerland. ebas.ch (Swiss banking + HSLU) reports portable IMSI-catcher devices broadcasting as rogue base stations and forcing nearby smartphones within several hundred metres to attach and downgrade from 4G/5G to 2G, then delivering smishing payloads that bypass operator SMS filtering (ebas.ch, 2026-05-07). Banking and credit-card credentials are the primary target — relevant for federal mobile-security policy guidance."
