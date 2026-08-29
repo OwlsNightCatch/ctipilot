@@ -229,6 +229,54 @@ print("== _strip_controls ==")
 assert_eq("nul stripped", _strip_controls("a\x00b"), "ab")
 assert_eq("tab/newline kept", _strip_controls("a\tb\nc"), "a\tb\nc")
 
+print("== dedash (no em dash reaches a reader) ==")
+DASH = "\u2014"
+assert_eq("appositive takes a comma",
+          build.dedash("the assessment " + DASH + " an archive containing a shortcut file"),
+          "the assessment, an archive containing a shortcut file")
+assert_eq("independent clause takes a semicolon",
+          build.dedash("no fix for v23 and earlier " + DASH + " vendor recommends upgrading"),
+          "no fix for v23 and earlier; vendor recommends upgrading")
+assert_eq("a leading conjunction stays a comma",
+          build.dedash("needs 7.1.5 " + DASH + " so a fleet on 7.1.0 is still exposed"),
+          "needs 7.1.5, so a fleet on 7.1.0 is still exposed")
+assert_eq("a participle opens an adjunct, not a clause",
+          build.dedash("shared the method with BR " + DASH + " suggesting the gap is not operator-specific"),
+          "shared the method with BR, suggesting the gap is not operator-specific")
+assert_eq("a paired dash becomes a parenthetical",
+          build.dedash("the report " + DASH + " its semi-annual review " + DASH + " landed on 2026-08-24."),
+          "the report (its semi-annual review) landed on 2026-08-24.")
+assert_eq("a bold term takes a colon",
+          build.dedash_markdown("- **Geographic anomalies** " + DASH + " connections from unused ranges."),
+          "- **Geographic anomalies**: connections from unused ranges.")
+assert_eq("code spans are verbatim (the changelog heading is normative syntax)",
+          build.dedash_markdown("the heading `## <Type> " + DASH + " <at>` pairs the section"),
+          "the heading `## <Type> " + DASH + " <at>` pairs the section")
+assert_eq("a code span spanning two lines does not swallow prose",
+          build.dedash_markdown("prompt (`named " + DASH + "\nthe id`) " + DASH + " it is generated per agent"),
+          "prompt (`named " + DASH + "\nthe id`); it is generated per agent")
+assert_eq("fenced code is verbatim",
+          build.dedash_markdown("```\na " + DASH + " b\n```"),
+          "```\na " + DASH + " b\n```")
+assert_eq("the changelog heading survives normalisation",
+          build.dedash_markdown("## Update " + DASH + " 2026-07-05T04:40:12Z"),
+          "## Update " + DASH + " 2026-07-05T04:40:12Z")
+assert_true("dedash is idempotent",
+            build.dedash(build.dedash("a " + DASH + " b is here")) == build.dedash("a " + DASH + " b is here"))
+assert_eq("text without a dash is returned untouched",
+          build.dedash("nothing to do here"), "nothing to do here")
+assert_eq("newline count is preserved",
+          build.dedash_markdown("a " + DASH + " b is here\nc " + DASH + " d").count("\n"), 1)
+_e = build.normalise_entry_text(
+    {"title": "x " + DASH + " y is here", "url": "https://a/b" + DASH + "c",
+     "sources": [{"publisher": "P " + DASH + " Q is here", "url": "https://x" + DASH}]})
+assert_eq("entry prose normalised", _e["title"], "x; y is here")
+assert_eq("identifiers stay verbatim", _e["url"], "https://a/b" + DASH + "c")
+assert_eq("a publisher name inside a skipped container is still prose",
+          _e["sources"][0]["publisher"], "P; Q is here")
+assert_eq("a url inside a skipped container stays verbatim",
+          _e["sources"][0]["url"], "https://x" + DASH)
+
 print("== scan_for_secrets ==")
 assert_true("github classic token detected",
             scan_for_secrets("ghp_" + "A" * 40))
@@ -630,8 +678,11 @@ landing = render_live_brief_page(
 )
 assert_in("landing is canonical at the root", '<link rel="canonical" href="https://x.example/" />', landing)
 assert_in("landing carries the server-rendered timeline", "data-brief-timeline", landing)
-assert_in("landing hero is the one h1", "<h1>", landing)
-assert_not_in("feed heading demoted below the hero h1", '<h1 class="feedhead-title">', landing)
+assert_in("landing h1 is the functional brief title", '<h1 class="briefhead-h">', landing)
+assert_not_in("feed heading stays a h2", '<h1 class="feedhead-title">', landing)
+assert_in("positioning copy renders at the foot, not the top", 'class="sitenote"', landing)
+assert_not_in("no marketing hero above the findings", 'class="hero hero--live"', landing)
+assert_in("§ Do now aggregates the window's actions", 'data-donow', landing)
 assert_in("knowledge-base pivot band below the feed", 'class="pivotband"', landing)
 assert_in("pivot band links the daily archive at the latest day", 'href="daily/2026-07-01/"', landing)
 assert_in("pivot band links the changelog", 'href="changes/"', landing)

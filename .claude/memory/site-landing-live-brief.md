@@ -1,6 +1,6 @@
 ---
 name: site-landing-live-brief
-description: 2026-08-29 operator-directed site restructure — the landing page IS the live brief; /changes/, raw-md entry twins, llms.txt; what replaced the old home page
+description: "2026-08-29 landing-page structure: / IS the live brief, findings lead and positioning sits at the foot, § Do now, phone-first timeline, /changes/, raw-md twins"
 metadata:
   type: project
 ---
@@ -11,9 +11,28 @@ content, first-class AI-agent readability, mobile-friendly.
 - **`/` IS the live rolling brief** (`render_live_brief_page`, prefix `""`,
   canonical = site root). The old card home (`render_home_page`) is deleted;
   its pivot band + counts moved BELOW the timeline (`.explore` band reusing
-  `.pivotband`), the hero is the compact `.hero--live` variant (h1 = branding
-  `hero_title`; "Latest findings" is an h2). Root JSON-LD: `WebSite` +
-  `Organization` + `CollectionPage`/ItemList of the current window.
+  `.pivotband`). Root JSON-LD: `WebSite` + `Organization` +
+  `CollectionPage`/ItemList of the current window.
+- **Findings lead, positioning follows (2026-08-29, second directive: "less
+  prominent info blocks, focus on content not marketing").** Top of `/` is now
+  `.briefhead` only: h1 = branding `live_title` (default "Live threat brief",
+  19px), then a one-line `.briefstat` (LIVE dot, updated stamp, window
+  `<select>`). The marketing hero (`hero_eyebrow` / `hero_title` /
+  `hero_subtitle`) renders at the FOOT as `.sitenote`, below `.explore`. The
+  old `.hero--live`, `.livehead`, `.live-lede` and `.rangebar` blocks are
+  retired in build.py AND in the CSS — do not reintroduce them. Window bounds
+  moved into `.pulsewindow` at the foot of the pulse panel.
+- **§ Do now (`render_donow`, `.donow`)** sits between ACT NOW and the pulse
+  panel: every `actions[]` task in the reader's window, aggregated into the
+  `.action-list` markup the day pages use. It hides itself when the window
+  carries no actions. brief.js `donowHtml()` mirrors it on window/filter
+  change — keep the two in sync, same as `runItem`/`runDivider`.
+- **Phone pass (≤639px, appended last in styles.css).** The timeline drops its
+  96px rail: `.tl-item`/`.tl-run` go single-column, the stamp+flag ride above
+  the badges as one meta line, and a hairline carries the run rhythm. The
+  pulse grid becomes a wrapping stat row. Safe-area insets on `.main`. The
+  empty-window stub no longer hard-codes `margin-left:96px` (build.py AND
+  brief.js).
 - **`/live/` is a noindex meta-refresh stub → `/`** (`index=False`, out of the
   sitemap). Never reintroduce a full page there — one canonical URL for the brief.
 - **`/changes/`** (`render_changes_page`): every visible `updates[]` record
@@ -37,5 +56,5 @@ brief + identity + machine endpoints in one fetch of `/`.
 **How to apply:** internal links to the brief use the page prefix alone
 (`prefix or "./"`), never `live/`. briefbook.json URLs stay `../`-prefixed
 (correct relative to the file; brief.js strips and re-applies `cti-site-prefix`).
-See [[design-system]], [[customization-framework]] (nav labels/hero stay
-branding-driven, no identity literals in build.py).
+See [[design-system]], [[customization-framework]] (nav labels/hero/live_title
+stay branding-driven, no identity literals in build.py), [[ui-writing-style]].

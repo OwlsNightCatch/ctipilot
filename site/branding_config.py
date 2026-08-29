@@ -103,10 +103,13 @@ DEFAULTS: dict[str, Any] = {
         "nav_daily": "",
         "nav_changes": "",
         # Home hero copy. Empty → the built-in defaults (hero_subtitle
-        # inherits `lede` when empty).
+        # inherits `lede` when empty). The hero renders at the FOOT of the
+        # landing page (positioning, below the findings); `live_title` is
+        # the functional <h1> at the top.
         "hero_eyebrow": "",
         "hero_title": "",
         "hero_subtitle": "",
+        "live_title": "",
         # Dismissible AI-provenance bar under the topbar. ai_bar_html may
         # carry inline HTML (e.g. a bold lead-in). Empty → built-in copy.
         "ai_bar_html": "",

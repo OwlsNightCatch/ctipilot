@@ -69,7 +69,7 @@
   var HINT_DEFAULT = 'Double-click a node to pull in its neighbours · scroll to zoom · ' +
     'drag the canvas to pan · drag a node to pin it · click = details · ' +
     'shift-click a second node = shortest path · Esc = clear.';
-  var HINT_EMPTY = 'Nothing is drawn until you pick a starting point — search above, or ' +
+  var HINT_EMPTY = 'Nothing is drawn until you pick a starting point: search above, or ' +
     'pick one of the most-connected entities below. The view then shows everything connected to it.';
 
   var TYPE_COLOR_VARS = {
@@ -113,7 +113,7 @@
         if (!restoreFromUrl()) { refreshVisible(); }
       })
       .catch(function (err) {
-        if (statusEl) statusEl.textContent = 'Could not load the graph dataset (' + err.message + ') — the directory below still works.';
+        if (statusEl) statusEl.textContent = 'Could not load the graph dataset (' + err.message + '); the directory below still works.';
         shell.hidden = false;
       });
   }
@@ -253,7 +253,7 @@
     if (!statusEl) return;
     if (!seeds.length) { statusEl.textContent = HINT_EMPTY; return; }
     var reachLabel = reach === Infinity ? 'full connected graph' : reach + ' hop' + (reach === 1 ? '' : 's');
-    statusEl.textContent = visN.length + ' node(s) · ' + visE.length + ' edge(s) — ' +
+    statusEl.textContent = visN.length + ' node(s) · ' + visE.length + ' edge(s) · ' +
       reachLabel + ' from ' + seeds.map(function (id) {
         return (nodeById[id] || {}).label || id;
       }).join(', ') + '. ' + HINT_DEFAULT;
@@ -354,9 +354,9 @@
       ctx.font = '14px ' + '-apple-system, BlinkMacSystemFont, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('Pick a starting point — search above or choose an entity below.', w / 2, h / 2 - 12);
+      ctx.fillText('Pick a starting point: search above or choose an entity below.', w / 2, h / 2 - 12);
       ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillText('The graph then shows everything connected to it — and nothing else.', w / 2, h / 2 + 12);
+      ctx.fillText('The graph then shows everything connected to it, and nothing else.', w / 2, h / 2 + 12);
       ctx.textAlign = 'left';
       return;
     }
@@ -580,7 +580,7 @@
       .slice(0, CONN_CAP)
       .map(function (a) {
         var off = visSet.has(a.other.id) ? '' :
-          ' <span class="muted" title="Not drawn yet — jumping pulls it into the view">(not in view)</span>';
+          ' <span class="muted" title="Not drawn yet · jumping pulls it into the view">(not in view)</span>';
         return '<li><button type="button" class="g-jump" data-jump="' + esc(a.other.id) + '">' +
           esc(a.other.label || a.other.id) + '</button>' + off + ' ' + edgeExplain(a.edge, n.id) + '</li>';
       }).join('');
@@ -593,7 +593,7 @@
     var isSeed = seeds.indexOf(n.id) !== -1;
     panel.innerHTML =
       '<div class="g-panel-head">' +
-      '<strong>' + esc(n.title && n.title !== n.label ? n.label + ' — ' + n.title : n.label) + '</strong>' +
+      '<strong>' + esc(n.title && n.title !== n.label ? n.label + ' · ' + n.title : n.label) + '</strong>' +
       '<button type="button" class="mini-btn" data-panel-close aria-label="Close">×</button></div>' +
       '<div class="g-panel-meta">' + meta.join(' ') + '</div>' +
       '<div class="g-panel-actions">' +
@@ -617,7 +617,7 @@
       '<ul class="g-conn">' + (rows || '<li class="muted">none</li>') +
       (conns.length > CONN_CAP
         ? '<li class="muted">… showing the first ' + CONN_CAP + ' of ' + conns.length +
-          ' — the <a href="' + pageUrl + '">entity page</a> lists them all</li>'
+          ': the <a href="' + pageUrl + '">entity page</a> lists them all</li>'
         : '') + '</ul>';
     panel.hidden = false;
   }
@@ -845,7 +845,7 @@
       pathIds = res.ids; pathEdgeSet = res.edges;
       if (statusEl) statusEl.textContent =
         'Shortest path: ' + (nodeById[a].label) + ' → ' + (nodeById[b].label) + ' = ' +
-        (res.ids.size - 1) + ' hop(s). Every hop is an evidence-backed edge — click nodes along it for details. Esc to clear.';
+        (res.ids.size - 1) + ' hop(s). Every hop is an evidence-backed edge: click nodes along it for details. Esc to clear.';
     } else {
       pathIds = null; pathEdgeSet = null;
       if (statusEl) statusEl.textContent =

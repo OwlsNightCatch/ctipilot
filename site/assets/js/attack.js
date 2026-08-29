@@ -128,7 +128,7 @@
     if (clr) clr.hidden = !selected.length;
     if (!st) return;
     if (!selected.length) {
-      st.textContent = 'No selection — cells show store-wide coverage heat.';
+      st.textContent = 'No selection · cells show store-wide coverage heat.';
       return;
     }
     var label = mode === 'all' ? 'common to all ' + selected.length

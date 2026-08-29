@@ -4,6 +4,24 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.5 — 2026-08-29 (no em dash in reader-facing text; the landing page leads with findings, not positioning)
+
+### Why
+
+Operator directive, 2026-08-29, on the rendered product: the em dash never appears anywhere a reader sees it, the information blocks at the top of the landing page were louder than the intelligence under them, and the phone is where the brief is actually read. The prompt change is the source half of the first point: the site now normalises em dashes at render, so an em dash in an entry is a silent style defect rather than a visible one, and the composition rule is what keeps the store itself clean going forward.
+
+### What changed
+
+- **`prompts/cti-run.md` § Style rules:** a new rule, **never an em dash**. Reader-facing text (title, headline, summary, sourcing_note, body, every changelog section) takes a comma, a semicolon or a colon where an em dash would go, and parentheses for a true aside; hyphenated compounds and en-dash ranges are unaffected.
+- **`prompts/cti-run.md` Phase 0:** the `prior_coverage.json` comment line loses its em dash (it renders as prose on `/about/prompts/cti-run/`, where the surrounding fence is not recognised inside a list item).
+- Site-side, outside the prompts: `site/build.py` normalises em dashes in every rendered surface (entries, run records, registry, state files, the pinned ATT&CK dataset, docs and prompt pages), the build self-check FAILs on any that reach an HTML/XML text node, and the landing page moves its positioning copy below the findings while gaining a § Do now panel and a phone-first timeline layout. Verbatim `<pre>`/`<code>` specimens keep their punctuation: the changelog heading format `## <Type> — <at>` is normative syntax, not copy.
+
+### What stays
+
+The entry lifecycle, the dedup contract, the relevance gate, the classification requirement, the verification loop and the publishing chain are untouched. `## <Type> — <at>` remains the changelog section heading in the content store: the em-dash rule governs prose, never the data model.
+
+---
+
 ## 4.4 — 2026-08-29 (constituency narrowed to the Swiss public sector — vertical CI sectors leave the mission, the prompts, and the source roster)
 
 ### Why

@@ -108,6 +108,36 @@
 
     var TYPE_LABEL = { update: 'Update', correction: 'Correction', improvement: 'Improvement' };
 
+    // § Do now: every actions[] task in the window, aggregated. Mirrors
+    // render_donow in site/build.py; the panel hides itself when the window
+    // carries no work (a healthy window, not a gap).
+    function shortLabel(e) {
+      var ids = e.cve_ids || [];
+      if (ids.length) return ids[0] + (ids.length > 1 ? ' +' + (ids.length - 1) : '');
+      var t = String(e.headline || e.title || e.id || '').replace(/\*\*/g, '');
+      return t.length <= 52 ? t : t.slice(0, 52).replace(/\s\S*$/, '') + '…';
+    }
+
+    function donowHtml(ops) {
+      var rows = [];
+      ops.forEach(function (e) {
+        (e.actions || []).forEach(function (a) {
+          if (typeof a !== 'string' || !a.trim()) return;
+          var url = esc(sitePrefix() + relUrl(e));
+          rows.push('<li class="action-list__item" data-entry-id="' + esc(e.id) + '">'
+            + '<div class="action-list__body">' + esc(a.trim()) + '</div>'
+            + '<a class="action-ref" href="' + url + '" aria-label="Open finding: ' + esc(shortLabel(e)) + '">'
+            + '<span class="action-ref__tag">Finding</span>'
+            + '<span class="action-ref__label">' + esc(shortLabel(e)) + '</span>'
+            + '<span class="action-ref__go" aria-hidden="true">→</span></a>'
+            + '</li>');
+        });
+      });
+      if (!rows.length) return '';
+      return '<h2 class="donow-h">Do now<span class="donow-n" data-donow-count>' + rows.length + '</span></h2>'
+        + '<ul class="action-list">' + rows.join('') + '</ul>';
+    }
+
     function activityDate(e) {
       var a = e.activity_at || e.discovered_at;
       return a ? new Date(a) : refTs;
@@ -219,7 +249,7 @@
       var activeCount = filterSets.priority.length + filterSets.kind.length + filterSets.tag.length + filterSets.region.length;
       var html = '';
       if (!keys.length) {
-        html = '<div class="section-empty" style="padding:40px 0 0;margin-left:96px;">'
+        html = '<div class="section-empty" style="padding:40px 0 0;">'
           + 'No runs in this window' + (activeCount ? ' matching the active filters' : '')
           + '. Load older findings to reach further back.</div>';
       } else {
@@ -238,6 +268,13 @@
         });
       }
       container.innerHTML = html;
+
+      var donowEl = document.querySelector('[data-donow]');
+      if (donowEl) {
+        var dn = donowHtml(ops);
+        donowEl.innerHTML = dn;
+        donowEl.hidden = !dn;
+      }
 
       if (fromEl) fromEl.textContent = euro(since);
       if (statusEl) statusEl.textContent = 'last ' + hours + 'h';

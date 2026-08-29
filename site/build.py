@@ -137,8 +137,8 @@ LATEST_DAY_REL = "daily/"
 # carry inline HTML (e.g. a bold lead-in); the link points at the About page.
 AI_BAR_HTML = (
     BRANDING["site"].get("ai_bar_html")
-    or "<b>AI-generated · no human review</b> · verify operationally critical "
-    "claims against the linked primary source."
+    or "<b>AI-generated · no human review</b> · verify critical claims "
+    "against the linked source."
 ).strip()
 AI_BAR_LINK_LABEL = (BRANDING["site"].get("ai_bar_link_label") or "how it works →").strip()
 
@@ -147,6 +147,10 @@ AI_BAR_LINK_LABEL = (BRANDING["site"].get("ai_bar_link_label") or "how it works 
 HERO_EYEBROW = (BRANDING["site"].get("hero_eyebrow") or "Continuous cyber threat intelligence").strip()
 HERO_TITLE = (BRANDING["site"].get("hero_title") or "Read the signal, not the noise.").strip()
 HERO_SUBTITLE = (BRANDING["site"].get("hero_subtitle") or HOME_LEDE).strip()
+# The landing page's own <h1>. The hero copy above is positioning, and it
+# renders at the FOOT of the page (§ sitenote) so the findings lead; this is
+# the functional title of what the reader is actually looking at.
+LIVE_TITLE = (BRANDING["site"].get("live_title") or "Live threat brief").strip()
 
 DEFAULT_SITE_URL = BRANDING["site"]["url"].rstrip("/") + "/"
 DEFAULT_GITHUB_REPO = BRANDING["site"]["github_repo"].strip()
@@ -504,12 +508,268 @@ def _safe_url(url: str) -> str:
 _CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]")
 
 
+def _strip_line_comment(line: str) -> str:
+    """Drop a JS `//` line comment, including a trailing one. Quote state is
+    tracked so a `//` inside a string literal (`"https://…"`) survives."""
+    quote = ""
+    i = 0
+    while i < len(line):
+        ch = line[i]
+        if quote:
+            if ch == "\\":
+                i += 2
+                continue
+            if ch == quote:
+                quote = ""
+        elif ch in "\"'`":
+            quote = ch
+        elif ch == "/" and line[i + 1:i + 2] == "/":
+            return line[:i]
+        i += 1
+    return line
+
+
 def _strip_controls(text: str) -> str:
     """Strip ASCII control characters that have no place in Markdown
     input. Tab / newline / carriage-return are preserved."""
     if not text:
         return text
     return _CONTROL_CHAR_RE.sub("", text)
+
+
+# === EM-DASH NORMALISATION =============================================
+#
+# House rule (operator directive 2026-08-29): the em dash never appears in
+# anything the site renders — chrome copy AND finding prose. Site chrome is
+# written without one; entry prose is normalised here, at the presentation
+# boundary, because the content store holds ~10k of them across the whole
+# archive and an entry is only ever modifiable through its changelog.
+#
+# The rewrite is punctuation-only and never drops words:
+#   · a PAIRED dash inside one sentence becomes a parenthetical — the only
+#     substitution that cannot merge an inner list into the outer sentence;
+#   · a SINGLE dash becomes a semicolon when what follows is an independent
+#     clause (it carries a finite verb and does not open with a conjunction
+#     or a relative pronoun), and a comma otherwise (appositive, gloss,
+#     figure, trailing clause);
+#   · a leading dash on a line or list item is simply dropped.
+#
+# Code spans, fenced code and verbatim source quotes are never touched —
+# see `normalise_entry_text` for the quote carve-out.
+_EM_DASH = "—"
+# The neutral "no value" mark in tables, KPI tiles and meta rows. A lone
+# dash used to fill that slot; the design's dot does the same job without
+# reintroducing the character this module exists to remove.
+NO_VALUE = "·"
+
+# Openers after which the following text is NOT an independent clause:
+# coordinating conjunctions, subordinators and relative pronouns all attach
+# the clause to what came before, so a comma is the correct joint.
+_CLAUSE_ATTACHERS = frozenset("""
+and but so or yet nor then than while whilst although though because since
+unless until whereas which who whom whose where when that as if
+with without including includes namely ie eg i.e. e.g. per via from to for
+""".split())
+
+# Finite verbs / auxiliaries. Their presence early in the following clause
+# is the signal that it stands on its own and wants a semicolon.
+_FINITE_VERBS = frozenset("""
+is are was were be been being has have had does do did will would can could
+should shall must may might needs need requires require remains remain stays
+stay ships ship adds add brings bring means mean leaves leave recommends
+recommend ran runs run gives give makes make takes take treats treat applies
+apply confirms confirm reports report states state notes note warns warn
+lacks lack carries carry sits sit lands land breaks break fails fail works
+work exists exist affects affect covers cover follows follow supersedes
+supersede replaces replace expects expect assumes assume
+""".split())
+
+_WORD_RE = re.compile(r"[A-Za-z][A-Za-z.'’-]*")
+# Sentence split that keeps the terminator with its sentence. Deliberately
+# naive (no abbreviation table): a mis-split only changes whether two dashes
+# are seen as a pair, never the words themselves.
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def _clause_wants_semicolon(tail: str) -> bool:
+    """True when `tail` (the text right after a single em dash) reads as an
+    independent clause: it does not open with a conjunction / relative
+    pronoun and it carries a finite verb within its first clause."""
+    head = re.split(r"[,;:.!?()]", tail, maxsplit=1)[0]
+    words = _WORD_RE.findall(head)[:12]
+    if not words:
+        return False
+    first = words[0].lower().rstrip(".")
+    if first in _CLAUSE_ATTACHERS:
+        return False
+    # A present participle opens an adjunct ("…, suggesting the gap is
+    # not specific to…"), never an independent clause, however many finite
+    # verbs its own subordinate clauses carry.
+    if first.endswith("ing"):
+        return False
+    return any(w.lower() in _FINITE_VERBS for w in words[1:])
+
+
+def _dedash_sentence(sentence: str) -> str:
+    """Rewrite every em dash in one sentence."""
+    if _EM_DASH not in sentence:
+        return sentence
+    # A dash opening a line / list item is decoration, not punctuation.
+    sentence = re.sub(rf"^\s*{_EM_DASH}\s*", "", sentence)
+    if _EM_DASH not in sentence:
+        return sentence
+    parts = sentence.split(_EM_DASH)
+    # Exactly two dashes wrapping an interior span → parenthesis pair, so a
+    # comma-bearing aside can never merge into the surrounding sentence.
+    if len(parts) == 3:
+        before, inner, after = parts
+        inner_s = inner.strip()
+        if inner_s and "(" not in inner_s and ")" not in inner_s:
+            tail = after.lstrip()
+            gap = "" if tail[:1] in {",", ".", ";", ":", "!", "?", ""} else " "
+            return f"{before.rstrip()} ({inner_s}){gap}{tail}"
+    out = parts[0]
+    for tail in parts[1:]:
+        joint = "; " if _clause_wants_semicolon(tail.lstrip()) else ", "
+        left = out.rstrip()
+        # Never stack punctuation: an existing terminator already joins.
+        if left.endswith((",", ";", ":", ".", "!", "?", "(", "[")):
+            joint = " "
+        out = left + joint + tail.lstrip()
+    return out
+
+
+def dedash(text: str) -> str:
+    """Remove every em dash from a run of prose (see the module note).
+    Idempotent; text without an em dash is returned unchanged."""
+    if not text or _EM_DASH not in text:
+        return text
+    return "".join(
+        _dedash_sentence(chunk) if _EM_DASH in chunk else chunk
+        for chunk in _split_keeping_newlines(text)
+    )
+
+
+def _split_keeping_newlines(text: str) -> list[str]:
+    """Split prose into sentence-ish chunks without losing a byte: line
+    breaks bound a chunk (a Markdown line is never mid-sentence for our
+    purposes) and so does sentence-final punctuation."""
+    chunks: list[str] = []
+    for i, line in enumerate(text.split("\n")):
+        if i:
+            chunks.append("\n")
+        pos = 0
+        for m in _SENTENCE_SPLIT_RE.finditer(line):
+            chunks.append(line[pos:m.end()])
+            pos = m.end()
+        chunks.append(line[pos:])
+    return chunks
+
+
+_CODE_FENCE_RE = re.compile(r"^\s*(```|~~~)")
+_CODE_SPAN_RE = re.compile(r"`[^`]*`", re.DOTALL)
+# `## Update — 2026-08-29T04:09:00Z` is STRUCTURE, not prose: the changelog
+# heading is how a body section pairs with its `updates[]` record
+# (content_model.UPDATE_HEADING_RE). Rewriting its dash would orphan every
+# section on the site. The heading is never rendered as text anyway — the
+# renderer replaces it with the styled `.entry-update__head` row.
+_UPDATE_HEADING_RE = content_model.UPDATE_HEADING_RE
+# `- **Geographic anomalies** — connections from …`: a bolded term followed
+# by a dash is a definition, and a colon is what a definition takes.
+_DEFN_TERM_RE = re.compile(
+    rf"^(\s*(?:[-*+]|\d+[.)])\s+)?(\*\*[^*\n]+\*\*)\s*{_EM_DASH}\s*"
+)
+
+
+def dedash_markdown(md: str) -> str:
+    """`dedash` over Markdown: fenced code blocks and code spans are passed
+    through byte-for-byte. Code spans are matched over the WHOLE segment, not
+    per line: a span may wrap across lines, and pairing backticks line by line
+    would mistake a closing backtick for an opening one and eat the prose
+    between two unrelated spans."""
+    if not md or _EM_DASH not in md:
+        return md
+    # Split into alternating non-fence / fence segments, keeping every byte.
+    segments: list[tuple[bool, list[str]]] = []
+    in_fence = False
+    for line in md.split("\n"):
+        if _CODE_FENCE_RE.match(line):
+            segments.append((in_fence, [line]))
+            in_fence = not in_fence
+            continue
+        if segments and segments[-1][0] == in_fence and len(segments[-1][1]) and not _CODE_FENCE_RE.match(segments[-1][1][-1]):
+            segments[-1][1].append(line)
+        else:
+            segments.append((in_fence, [line]))
+    out: list[str] = []
+    for fenced, lines in segments:
+        text = "\n".join(lines)
+        if fenced or _EM_DASH not in text:
+            out.append(text)
+            continue
+        spans: list[str] = []
+
+        def stash(m: re.Match) -> str:
+            # Code spans stay byte-for-byte. In the /about/ documentation an
+            # em dash inside backticks is often normative SYNTAX (the
+            # changelog heading format `## <Type> — <at>`), and rewriting it
+            # would publish a wrong spec.
+            spans.append(m.group(0))
+            return f"\x00S{len(spans) - 1}\x00"
+
+        stashed = _CODE_SPAN_RE.sub(stash, text)
+        rewritten = "\n".join(
+            ln if _UPDATE_HEADING_RE.match(ln)
+            else dedash(_DEFN_TERM_RE.sub(
+                lambda m: (m.group(1) or "") + m.group(2) + ": ", ln))
+            for ln in stashed.split("\n")
+        )
+        for i, span in enumerate(spans):
+            rewritten = rewritten.replace(f"\x00S{i}\x00", span)
+        out.append(rewritten)
+    return "\n".join(out)
+
+
+# Keys whose value is a machine identifier, not prose: ids, URLs, dates,
+# codes. Evidence quotes are NOT on this list — the house rule is absolute,
+# so a quoted em dash is rewritten like any other, punctuation only, with
+# the byte-exact original still published at the entry's `index.md` twin
+# and at the cited source URL.
+_DEDASH_SKIP_KEYS = frozenset({
+    "url", "id", "run_id", "slug", "path", "date", "discovered_at",
+    "updated_at", "at", "markdown_url", "key", "merged_into", "cve", "cves",
+    "techniques", "sources", "closed_sources", "evidence", "classification",
+    "org_triage", "verification",
+})
+
+
+def _dedash_value(value, *, key: str = ""):
+    """Recursively normalise prose inside a loaded content structure.
+    A SCALAR under a skipped key is left byte-for-byte (verbatim quotes,
+    ids, URLs, codes); a CONTAINER under one is still walked, so its own
+    prose sub-keys (a source's `publisher`, a CVE's `affected`) normalise
+    like any other prose."""
+    if isinstance(value, str):
+        return dedash_markdown(value) if key == "body" else dedash(value)
+    if isinstance(value, list):
+        return [_dedash_value(v, key=key) for v in value]
+    if isinstance(value, dict):
+        out = {}
+        for k, v in value.items():
+            if k in _DEDASH_SKIP_KEYS:
+                out[k] = _dedash_value(v, key="") if isinstance(v, (list, dict)) else v
+            else:
+                out[k] = _dedash_value(v, key=k)
+        return out
+    return value
+
+
+def normalise_entry_text(record: dict) -> dict:
+    """Presentation-boundary normalisation for one loaded entry / run /
+    registry record. Content on disk is untouched: `entries/**/*.md` stays
+    the canonical source and is still published verbatim as each entry's
+    `index.md` twin."""
+    return _dedash_value(record)
 
 
 def render_inline(s: str, *, base_url: str | None = None) -> str:
@@ -524,6 +784,12 @@ def render_inline(s: str, *, base_url: str | None = None) -> str:
     # \x00 — keeping that byte out of the input keeps the substitution
     # loop unambiguous.
     s = _strip_controls(s)
+    # House rule: no em dash reaches a reader. Entry / run text is already
+    # normalised at load; this catches everything else that renders through
+    # the Markdown path (docs and prompt pages, the pinned ATT&CK dataset's
+    # technique descriptions, README excerpts). `dedash_markdown` is
+    # idempotent, so text normalised at load passes through unchanged.
+    s = dedash_markdown(s)
     # Step 1: extract code spans first so we don't re-process their bytes.
     placeholders: dict[str, str] = {}
 
@@ -652,6 +918,7 @@ def render_markdown(md: str, *, base_url: str | None = None) -> str:
     # `\x00CODE…\x00` / `\x00LINK…\x00` placeholder markers and could
     # smuggle attacker text into the placeholder substitution loop.
     md = _strip_controls(md)
+    md = dedash_markdown(md)   # see render_inline
     lines = md.replace("\r\n", "\n").split("\n")
     out: list[str] = []
     i = 0
@@ -1735,14 +2002,14 @@ def _meaning_short(definition: str) -> str:
     """`Completely reliable — authoritative primary…` → `Completely reliable`
     (the org profile's definitions carry a long rationale after an em-dash;
     badges and legends want the short label, tooltips the full text)."""
-    return definition.split("—", 1)[0].strip() or definition.strip()
+    return definition.split(_EM_DASH, 1)[0].strip() or definition.strip()
 
 
 def _chrome_text(s: str) -> str:
-    """Sanitize a config-sourced string for UI chrome (tooltips, labels):
-    the site's chrome never uses em dashes (operator standing instruction;
-    `.claude/memory/ui-writing-style.md`) — swap them for the separator glyph."""
-    return " · ".join(part.strip() for part in s.split("—")) if "—" in s else s
+    """Normalise a config-sourced string for UI chrome (tooltips, labels).
+    The org profile's own copy may carry an em dash; site chrome never
+    does, so it takes the same rewrite as finding prose."""
+    return dedash(s)
 
 
 def reliability_tier_class(letter: str) -> str:
@@ -3102,7 +3369,7 @@ def render_runs_overview(
     for r in runs_sorted:
         rid = str(r.get("run_id"))
         ts = parse_ts(r.get("completed") or r.get("started"))
-        when = ts.strftime("%d.%m.%Y&nbsp;%H:%M") if ts else "—"
+        when = ts.strftime("%d.%m.%Y&nbsp;%H:%M") if ts else "·"
         kind = str(r.get("kind") or "intel")
         counts = counts_by_run.get(rid, Counter())
         total = sum(counts.values()) + strategic_by_run.get(rid, 0)
@@ -3194,6 +3461,46 @@ def render_actnow(entry: dict[str, Any], *, prefix: str = "") -> str:
     )
 
 
+def render_donow(entries: list[dict[str, Any]], *, prefix: str = "",
+                 base_url: str | None = None) -> str:
+    """The § Do now panel at the top of the live brief: every `actions[]`
+    task from the entries in the reader's window, aggregated into the list
+    an on-shift team can work straight down.
+
+    `actions[]` is already held to the do-now bar (one concrete, startable
+    task derived from the finding's own mechanics; empty is the normal
+    case), so this list is short by construction and needs no cap. Empty
+    across the whole window means the panel does not render at all, which
+    is a healthy window, not a gap. Mirrored client-side by brief.js
+    `donowHtml` when the reader changes the window or the filters."""
+    rows: list[str] = []
+    for e in sorted(entries, key=entry_sort_key):
+        url = f"{prefix}{entry_url_path(e)}"
+        label = _short_entry_label(e)
+        for a in e.get("actions") or []:
+            if not isinstance(a, str) or not a.strip():
+                continue
+            rows.append(
+                f'<li class="action-list__item" data-entry-id="{_escape(e["id"])}">'
+                f'<div class="action-list__body">{render_inline(a.strip(), base_url=base_url)}</div>'
+                f'<a class="action-ref" href="{_escape(url)}" '
+                f'aria-label="Open finding: {_escape(label)}">'
+                '<span class="action-ref__tag">Finding</span>'
+                f'<span class="action-ref__label">{_escape(label)}</span>'
+                '<span class="action-ref__go" aria-hidden="true">→</span></a>'
+                "</li>"
+            )
+    if not rows:
+        return '<section class="donow" data-donow hidden aria-label="Do now"></section>'
+    return (
+        '<section class="donow" data-donow aria-label="Do now">'
+        '<h2 class="donow-h">Do now'
+        f'<span class="donow-n" data-donow-count>{len(rows)}</span></h2>'
+        f'<ul class="action-list">{"".join(rows)}</ul>'
+        "</section>"
+    )
+
+
 def _filter_defs(entries: list[dict[str, Any]]) -> tuple[list[str], list[str], list[str]]:
     kinds: list[str] = []
     seen: set[str] = set()
@@ -3278,7 +3585,7 @@ def _live_timeline_html(ops: list[dict[str, Any]], runs: list[dict[str, Any]],
     keys = [k for k in (set(runs_by_id) | set(entries_by_run)) if k]
     if not keys:
         return (
-            '<div class="section-empty" style="padding:40px 0 0;margin-left:96px;">'
+            '<div class="section-empty" style="padding:40px 0 0;">'
             "No runs in this window. A quiet window is a healthy outcome; "
             "load older findings to reach further back.</div>"
         )
@@ -3379,6 +3686,7 @@ def render_live_brief_page(
     )
 
     actnow = render_actnow(critical, prefix=prefix) if critical else ""
+    donow = render_donow(ops, prefix=prefix)
     timeline = _live_timeline_html(ops, window_runs, prefix=prefix)
 
     # --- knowledge-base pivot band + machine endpoints (below the feed) --
@@ -3426,41 +3734,36 @@ def render_live_brief_page(
     <a class="mono" href="{prefix}llms.txt">llms.txt</a> ·
     every entry's raw source at <span class="mono">entries/&lt;date&gt;/&lt;slug&gt;/index.md</span>
   </p>
+</section>
+<section class="sitenote" aria-label="About this brief">
+  <span class="eyebrow eyebrow--muted">{_escape(HERO_EYEBROW)}</span>
+  <h2 class="sitenote-h">{_escape(HERO_TITLE)}</h2>
+  <p class="sitenote-p">{_escape(HERO_SUBTITLE)}</p>
+  <p class="sitenote-p sitenote-p--how">Everything verified or updated in the last {DEFAULT_WINDOW_HOURS} hours, held to a constant relevance bar. An update or correction to an earlier finding floats it back to the top under the run that made it. <a href="{prefix}about/">How this works →</a></p>
 </section>"""
 
     body = f"""
-<header class="hero hero--live">
-  <span class="eyebrow">{_escape(HERO_EYEBROW)}</span>
-  <h1>{_escape(HERO_TITLE)}</h1>
-  <p>{_escape(HERO_SUBTITLE)}</p>
-</header>
-<div class="livehead">
-  <span class="livedot" aria-hidden="true"><em></em><i></i></span>
-  <span class="streaming">STREAMING</span>
-  <span class="live-updated">· updated {updated} UTC</span>
-</div>
-<p class="vsub live-lede">Everything verified or updated in the last {DEFAULT_WINDOW_HOURS} hours, held to a constant relevance bar. An update or correction to an earlier finding floats it back to the top under the run that made it. Read top to bottom, or load older findings to reach further back.</p>
-{actnow}
-<div class="rangebar">
-  <div class="rangefields">
-    <span class="rf-label">FROM</span>
-    <span class="rf rf--date"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M3 9h18M8 2v4M16 2v4"></path></svg><span data-window-from>{from_str}</span></span>
-    <span class="rf-arrow">→</span>
-    <span class="rf-label">TO</span>
-    <span class="rf rf--date"><span data-window-to>{to_str}</span> <span class="rf-note">now</span></span>
+<header class="briefhead">
+  <h1 class="briefhead-h">{_escape(LIVE_TITLE)}</h1>
+  <div class="briefstat">
+    <span class="livedot" aria-hidden="true"><em></em><i></i></span>
+    <span class="streaming">LIVE</span>
+    <span class="live-updated">updated {updated} UTC</span>
     <span class="rf rf--select"><select data-window-select aria-label="Reading window">{options}</select></span>
   </div>
-  <span class="rf-note"><span data-window-status>last {DEFAULT_WINDOW_HOURS}h</span> · UTC</span>
-</div>
+</header>
+{actnow}
+{donow}
 <section class="pulsepanel" aria-label="Window at a glance">
   <div class="pulsegrid">
     <div class="pulse-t"><b data-window-total>{n}</b><span>findings</span></div>
     <div class="pulse-t pulse-t--crit{' pulse-t--zero' if not n_crit else ''}"><b data-window-crit>{n_crit}</b><span>critical</span></div>
     <div class="pulse-t pulse-t--high{' pulse-t--zero' if not n_high else ''}"><b data-window-high>{n_high}</b><span>high</span></div>
-    <div class="pulse-t pulse-t--exp{' pulse-t--zero' if not n_exp else ''}"><b data-window-exp>{n_exp}</b><span>exploited in the wild</span></div>
-    <a class="pulse-t pulse-t--upd{' pulse-t--zero' if not n_upd else ''}" href="{prefix}changes/" title="Open the store-wide changelog"><b data-window-upd>{n_upd}</b><span>updates to prior coverage</span></a>
+    <div class="pulse-t pulse-t--exp{' pulse-t--zero' if not n_exp else ''}"><b data-window-exp>{n_exp}</b><span>exploited</span></div>
+    <a class="pulse-t pulse-t--upd{' pulse-t--zero' if not n_upd else ''}" href="{prefix}changes/" title="Open the store-wide changelog"><b data-window-upd>{n_upd}</b><span>updated</span></a>
   </div>
   <div class="pulsekinds"><span class="pulsekinds-l">Categories</span><span class="pulsekinds-chips" data-window-kinds>{kind_chips}</span></div>
+  <p class="pulsewindow"><span data-window-from>{from_str}</span> → <span data-window-to>{to_str}</span> UTC · <span data-window-status>last {DEFAULT_WINDOW_HOURS}h</span></p>
 </section>
 <div class="feedhead feedhead--section">
   <h2 class="feedhead-title">Latest findings</h2>
@@ -4289,14 +4592,14 @@ def render_changes_page(
         "development, correction or improvement to a published finding lands here.</div>"
     )
     capped_note = (
-        f" Showing the latest {len(rows)} of {total} records — older ones stay on each entry's revision history."
+        f" Showing the latest {len(rows)} of {total} records; older ones stay on each entry's revision history."
         if total > len(rows) else ""
     )
 
     body = f"""
 <span class="eyebrow">Changelog · all entries</span>
 <h1 class="vtitle">Recent changes</h1>
-<p class="vsub">One living entry per finding: developments, corrections and improvements are appended to the original entry as dated changelog records, never published as duplicates. This is the store-wide record — {total} record{"" if total == 1 else "s"} across {n_entries} entr{"y" if n_entries == 1 else "ies"}, newest first.{_escape(capped_note)} Every record is also an item in the <a href="{prefix}feeds/">per-entry RSS feed</a>. New findings appear on the <a href="{prefix}">live brief</a> and the <a href="{prefix}daily/">day pages</a>.</p>
+<p class="vsub">One living entry per finding: developments, corrections and improvements are appended to the original entry as dated changelog records, never published as duplicates. This is the store-wide record: {total} record{"" if total == 1 else "s"} across {n_entries} entr{"y" if n_entries == 1 else "ies"}, newest first.{_escape(capped_note)} Every record is also an item in the <a href="{prefix}feeds/">per-entry RSS feed</a>. New findings appear on the <a href="{prefix}">live brief</a> and the <a href="{prefix}daily/">day pages</a>.</p>
 {listing}
 """
     description = (
@@ -4488,7 +4791,7 @@ ALERTS_COMMENT = (
     "verification, classification|null, org_triage:{category,rationale}|null}. "
     "An entry enters the window by its activity moment (max(discovered_at, "
     "updated_at)), so a critical/high entry re-enters when it receives a "
-    "changelog record — alert on new `id` values AND on a changed "
+    "changelog record: alert on new `id` values AND on a changed "
     "`updated_at`. techniques[] carries the entry's MITRE ATT&CK ids "
     "(frontmatter + prose-derived, revoked ids resolved forward); "
     "classification is the collapsed Admiralty code (e.g. B2). See docs/pipeline.md."
@@ -4581,7 +4884,7 @@ def render_cve_list_page(
         coverage = (
             f'<a href="{prefix}daily/{_escape(latest)}/" class="mono">{_escape(latest)}</a>'
             + (f' <span class="muted">+{n_days - 1} more</span>' if n_days > 1 else "")
-        ) if latest else '<span class="muted">—</span>'
+        ) if latest else '<span class="muted">·</span>'
         year = _cve_year(c["id"])
         if year:
             year_counts[year] = year_counts.get(year, 0) + 1
@@ -4683,9 +4986,9 @@ def render_topic_list_page(
             f'<span>'
             f'<a class="e-title" href="{prefix}entities/{urllib.parse.quote(t["key"], safe="")}/">{_escape(t.get("title") or t["key"])}</a>'
             f'<div class="e-meta">'
-            f'<span class="e-tag">{_escape(t.get("type", "") or "—")}</span>'
+            f'<span class="e-tag">{_escape(t.get("type", "") or "·")}</span>'
             f'<span class="mono">{_escape(t["key"])}</span>'
-            f'<span>last covered {_escape(t.get("last_covered", "") or "—")}</span>'
+            f'<span>last covered {_escape(t.get("last_covered", "") or "·")}</span>'
             + (f'<span class="badge badge--accent" title="Story unfolds across {n} briefs">×{n} appearances</span>' if n > 1 else '')
             + flag_badges
             + '</div></span>'
@@ -4829,7 +5132,7 @@ def render_source_list_page(
     )
     rel_chips = "".join(
         f'<span class="chip" data-filter-chip="source-rel" data-value="{_escape(c)}" '
-        f'title="{_escape(ADMIRALTY_RELIABILITY_MEANING.get(c, ""))}">{_escape(c)}</span>'
+        f'title="{_escape(_chrome_text(ADMIRALTY_RELIABILITY_MEANING.get(c, "")))}">{_escape(c)}</span>'
         for c in rel_order
     )
 
@@ -5606,7 +5909,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
         '<div class="data-wrap"><table class="data trend-matrix">'
         f'<thead><tr><th>Cohort</th>{head_cells}</tr></thead>'
         f'<tbody>{"".join(matrix_rows)}</tbody></table></div>'
-        f'<p class="chart-note muted">* {_escape(current_week)} is the running week — incomplete by definition, never compared against complete weeks.</p>'
+        f'<p class="chart-note muted">* {_escape(current_week)} is the running week: incomplete by definition, never compared against complete weeks.</p>'
     )
 
     # ---- entity momentum: the actor-tracking surface --------------------
@@ -5635,7 +5938,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
     def _etag(etype: str) -> str:
         return (
             f'<span class="e-tag e-tag--{_escape(etype or "none")}">'
-            f'{_escape(etype or "—")}</span>'
+            f'{_escape(etype or "·")}</span>'
         )
 
     def _delta_cell(recent: int, prior: int) -> str:
@@ -5678,7 +5981,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
     fresh_panel = (
         '<div class="ops-chart-card">'
         '<h3 class="section-head" style="margin-top:0">New entities · first tracked in the last 30 days</h3>'
-        '<p class="chart-note muted">Names that entered the knowledge base recently — the threats '
+        '<p class="chart-note muted">Names that entered the knowledge base recently: the threats '
         'a reader (human or agent) is least likely to know yet.</p>'
         '<div class="data-wrap"><table class="data">'
         '<thead><tr><th>Entity</th><th>Type</th><th>First covered</th><th class="num">Entries</th></tr></thead>'
@@ -5732,7 +6035,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
     body = f"""
 <header>
   <h1>Trends</h1>
-  <p class="subtitle muted">Momentum analysis over {len(ops)} operational entries. Deltas compare the latest <em>complete</em> ISO week against the week before it ({weeks_label}); the running week {current_week} is shown separately and never compared — a half-finished week is not a decline.</p>
+  <p class="subtitle muted">Momentum analysis over {len(ops)} operational entries. Deltas compare the latest <em>complete</em> ISO week against the week before it ({weeks_label}); the running week {current_week} is shown separately and never compared; a half-finished week is not a decline.</p>
 </header>
 <section>
   <div class="trends-grid">{''.join(cards)}</div>
@@ -5751,7 +6054,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
 </section>
 <section style="margin-top:1.5rem">
   <h2 class="section-head">How to read this</h2>
-  <p>Cohort tiles count entries whose frontmatter carries the relevant taxonomy values, bucketed by the ISO week of <code>discovered_at</code>. Entity momentum counts entries linked to each registry entity; technique momentum counts entries mapping each ATT&amp;CK id. Everything is post-hoc analytics over published entries — no separate data source.</p>
+  <p>Cohort tiles count entries whose frontmatter carries the relevant taxonomy values, bucketed by the ISO week of <code>discovered_at</code>. Entity momentum counts entries linked to each registry entity; technique momentum counts entries mapping each ATT&amp;CK id. Everything is post-hoc analytics over published entries; no separate data source.</p>
   {_trends_cohort_note(prefix)}
 </section>
 """
@@ -5782,7 +6085,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
 def _ops_format_duration(seconds: float | int | None) -> str:
     """Compact human-readable duration. 0 / None / negative → '—'."""
     if not seconds or seconds <= 0:
-        return "—"
+        return "·"
     s = int(seconds)
     if s < 90:
         return f"{s}s"
@@ -6070,7 +6373,7 @@ def _ops_color_for_model(name: str, assigned: dict[str, str]) -> str:
     """Stable palette assignment; 'unknown' always renders muted. The name is
     canonicalised first so every variant of a model shares one colour."""
     key = _ops_canonical_model(name)
-    if not key or key.lower() in ("unknown", "—"):
+    if not key or key.lower() in ("unknown", "·", "—"):
         return "var(--text-muted)"
     if key in assigned:
         return assigned[key]
@@ -6479,10 +6782,10 @@ def render_ops_page(
     # placeholder block was confusing — the operator just wants it gone).
 
     # ----- KPI tiles --------------------------------------------------------
-    last_run_label = _escape(last_run_date or "—")
+    last_run_label = _escape(last_run_date or "·")
     if days_since_last >= 0:
         last_run_label += f' <span class="muted ops-kpi__delta">({days_since_last}d ago)</span>'
-    clean_rate_str = f"{clean_rate:.0f}%" if clean_rate is not None else "—"
+    clean_rate_str = f"{clean_rate:.0f}%" if clean_rate is not None else "·"
     clean_rate_sub = f"{clean_runs}/{rated_runs} clean publish" if rated_runs else "no telemetry yet"
     if gated_runs:
         clean_rate_sub += f" · {gated_confirmed} double-confirmed"
@@ -6494,7 +6797,7 @@ def render_ops_page(
         clean_rate_kind = "warn"
     else:
         clean_rate_kind = "crit"
-    distinct_models_str = str(len(distinct_models)) if distinct_models else "—"
+    distinct_models_str = str(len(distinct_models)) if distinct_models else "·"
     distinct_models_sub = ", ".join(sorted(distinct_models)[:3]) if distinct_models else "no model recorded"
 
     # Primary row — the operator's first look: freshness, verification quality,
@@ -6545,7 +6848,7 @@ def render_ops_page(
                                               label="Entries per run"))
         + _ops_kpi_tile(
             "Double-CLEAN gate",
-            (f"{gated_confirmed}/{len(gated_runs)}" if gated_runs else "—"),
+            (f"{gated_confirmed}/{len(gated_runs)}" if gated_runs else "·"),
             sub=(
                 (f"confirmed by two consecutive CLEAN passes · {gated_residual} residual publish · "
                  f"{gated_fallopen} fail-open")
@@ -6598,13 +6901,13 @@ def render_ops_page(
 
 <section class="ops-cluster" id="runlog" data-runs-base="{prefix}runs/">
   <h2 class="ops-cluster__head">Run log</h2>
-  <p class="ops-cluster__intro">Every recorded run, newest first · duration, entries published / updated, fetch failures, source-list edits (<strong>Src Δ</strong>), publish follow-through, and verification verdict (incl. the v3.23 double-CLEAN confirmation). <strong>Each run id links to that run's detail page</strong> at <code>/runs/&lt;run-id&gt;/</code> — the full telemetry panel plus the run's verification &amp; coverage notes. Shows 10 per page by default; use the page-size selector to expand to 35 / 50 / 100 and the pager to step through the rest.</p>
+  <p class="ops-cluster__intro">Every recorded run, newest first · duration, entries published / updated, fetch failures, source-list edits (<strong>Src Δ</strong>), publish follow-through, and verification verdict (incl. the v3.23 double-CLEAN confirmation). <strong>Each run id links to that run's detail page</strong> at <code>/runs/&lt;run-id&gt;/</code> · the full telemetry panel plus the run's verification &amp; coverage notes. Shows 10 per page by default; use the page-size selector to expand to 35 / 50 / 100 and the pager to step through the rest.</p>
   {runs_table_html}
 </section>
 
 <section class="ops-cluster" id="latest">
   <h2 class="ops-cluster__head">Latest run</h2>
-  <p class="ops-cluster__intro">Everything about the most recent run in one place · sub-agent allocation + telemetry, <strong>Verification iterations</strong>, <strong>Sources changed (this run)</strong>, <strong>Coverage gaps (this run)</strong> (sources <em>this run's</em> brief needed but couldn't fetch), and <strong>Bridge invocations (this run)</strong>. Every run — including this one — has a permanent page at <code>/runs/&lt;run-id&gt;/</code> carrying the same panel plus the run's verification &amp; coverage notes; open older runs from the <a href="#runlog">Run log</a> above. Global source-accessibility action items live in the <a href="#health">Health</a> section · distinct from a single run's coverage gaps.</p>
+  <p class="ops-cluster__intro">Everything about the most recent run in one place · sub-agent allocation + telemetry, <strong>Verification iterations</strong>, <strong>Sources changed (this run)</strong>, <strong>Coverage gaps (this run)</strong> (sources <em>this run's</em> brief needed but couldn't fetch), and <strong>Bridge invocations (this run)</strong>. Every run (including this one) has a permanent page at <code>/runs/&lt;run-id&gt;/</code> carrying the same panel plus the run's verification &amp; coverage notes; open older runs from the <a href="#runlog">Run log</a> above. Global source-accessibility action items live in the <a href="#health">Health</a> section · distinct from a single run's coverage gaps.</p>
   {run_detail_html}
 </section>
 
@@ -6670,7 +6973,7 @@ def render_run_detail_page(
     )
     body = f"""
 <h1 class="mono">{_escape(rid)}</h1>
-<p class="subtitle">One pipeline fire, in full · <span class="ops-pill ops-pill--neutral">{_escape(kind)}</span> run of {_escape(date or "?")} · sub-agent allocation and telemetry, per-iteration verification verdicts and findings, source-list edits, coverage gaps, bridge invocations — and the run's own <a href="#notes">verification &amp; coverage notes</a>: what was published, what was dropped at the borderline or judged not relevant (and why), single-source carve-outs, and contradictions. Rendered from <code>runs/{_escape(date)}/{_escape(rid)}.md</code>.</p>
+<p class="subtitle">One pipeline fire, in full · <span class="ops-pill ops-pill--neutral">{_escape(kind)}</span> run of {_escape(date or "?")} · sub-agent allocation and telemetry, per-iteration verification verdicts and findings, source-list edits, coverage gaps, bridge invocations, and the run's own <a href="#notes">verification &amp; coverage notes</a>: what was published, what was dropped at the borderline or judged not relevant (and why), single-source carve-outs, and contradictions. Rendered from <code>runs/{_escape(date)}/{_escape(rid)}.md</code>.</p>
 
 <nav class="ops-nav" aria-label="Run sections">
   <span class="ops-nav__label">Jump to</span>
@@ -6685,7 +6988,7 @@ def render_run_detail_page(
 
 <section class="ops-cluster" id="notes">
   <h2 class="ops-cluster__head">Verification &amp; coverage notes</h2>
-  <p class="ops-cluster__intro">The run record's narrative body, verbatim. This is where the run accounts for its own judgement calls — every borderline drop and judged-not-relevant item with its reason, dedup decisions, single-source items and their carve-outs, contradictions, and per-source coverage gaps — so nothing the run considered disappears silently.</p>
+  <p class="ops-cluster__intro">The run record's narrative body, verbatim. This is where the run accounts for its own judgement calls: every borderline drop and judged-not-relevant item with its reason, dedup decisions, single-source items and their carve-outs, contradictions, and per-source coverage gaps, so nothing the run considered disappears silently.</p>
   {notes_html}
 </section>
 
@@ -6756,7 +7059,7 @@ def _ops_render_run_sources_changed(run: dict[str, Any], *, prefix: str) -> str:
         rows = "".join(
             f'<tr><td class="mono"><a href="{prefix}sources/{urllib.parse.quote(c.get("id", "?"), safe="")}/">{_escape(c.get("id", "?"))}</a></td>'
             f'<td><span class="ops-pill ops-pill--{_SOURCES_CHANGE_BADGE.get(c.get("change"), "neutral")}">{_escape(c.get("change", "?"))}</span></td>'
-            f'<td class="mono muted">{_escape(str(c.get("from") or "—"))} → {_escape(str(c.get("to") or "—"))}</td>'
+            f'<td class="mono muted">{_escape(str(c.get("from") or "·"))} → {_escape(str(c.get("to") or "·"))}</td>'
             f'<td class="muted">{_escape(c.get("reason", ""))}</td></tr>'
             for c in sc
         )
@@ -6830,7 +7133,7 @@ def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: s
             f'{_escape(r.get("id", "?"))}</a></td>'
             f'<td><span class="ops-pill ops-pill--{_SOURCE_STATUS_KIND.get(r.get("status"), "neutral")}">'
             f'{_escape(r.get("status") or "?")}</span></td>'
-            f'<td class="mono muted">{_escape(r.get("fetch_method") or "—")}</td>'
+            f'<td class="mono muted">{_escape(r.get("fetch_method") or "·")}</td>'
             f'<td class="mono muted">{_escape(r.get("class") or "?")}'
             f'{(" " + str(r.get("status_code"))) if r.get("status_code") else ""}</td>'
             f'<td class="muted">{_escape(r.get("action_reason") or "")}</td>'
@@ -6955,7 +7258,7 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
         url_html = (
             f'<a class="mono" href="{_escape(_safe_url(url_tried))}" target="_blank" rel="noopener noreferrer">{_escape(url_tried[:80])}</a>'
             if url_tried.startswith(("http://", "https://"))
-            else f'<span class="mono muted">{_escape(url_tried[:80] or "—")}</span>'
+            else f'<span class="mono muted">{_escape(url_tried[:80] or "·")}</span>'
         )
         mitigation_html = (
             f'<span class="mono">{_escape(mitigation[:160])}</span>'
@@ -6981,7 +7284,7 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
             + '</td>'
             f'<td>{url_html}</td>'
             f'<td>{method_chain_html}</td>'
-            f'<td>{_ops_pill(str(status_code) if status_code != "" else "—", kind=kind)}'
+            f'<td>{_ops_pill(str(status_code) if status_code != "" else "·", kind=kind)}'
             + (f' <span class="muted mono">{_escape(error_class)}</span>' if error_class != "other" else '')
             + (f'<div class="muted" style="font-size:0.72rem;margin-top:0.15rem">{_escape(error_message[:160])}</div>' if error_message else '')
             + '</td>'
@@ -7117,7 +7420,7 @@ def _ops_render_verification_iterations(
     elif status == "same-model":
         chip_blocks.append(
             '<span class="ops-pill ops-pill--warn" title="the final two iterations '
-            'returned CLEAN but ran the same verifier — legitimate only as a recorded '
+            'returned CLEAN but ran the same verifier; legitimate only as a recorded '
             'spawn-failure exception">double-CLEAN · same model</span>'
         )
     elif status == "waived":
@@ -7129,7 +7432,7 @@ def _ops_render_verification_iterations(
     elif status == "single" and conf.get("gated"):
         chip_blocks.append(
             '<span class="ops-pill ops-pill--warn" title="v3.23+ run published on a '
-            'single CLEAN with no confirmation pass and no recorded waiver — '
+            'single CLEAN with no confirmation pass and no recorded waiver: '
             'check_run flags this pre-commit">unconfirmed CLEAN</span>'
         )
     for it in iters:
@@ -7186,7 +7489,7 @@ def _ops_render_verification_iterations(
         for fd in findings:
             code = fd.get("code") or "?"
             category = fd.get("category") or _F_CODE_LABEL.get(code, "?")
-            section = fd.get("section") or "—"
+            section = fd.get("section") or "·"
             item = (fd.get("item") or "")[:80]
             url_or_quote = (fd.get("url_or_quote") or "")[:120]
             summary = (fd.get("summary") or "")[:200]
@@ -7208,7 +7511,7 @@ def _ops_render_verification_iterations(
                 f'<td><span class="e-tag">{_escape(section)}</span></td>'
                 f'<td>{_escape(item)}<div class="muted" style="font-size:0.72rem;margin-top:0.15rem">{url_html}</div></td>'
                 f'<td>{_escape(summary)}</td>'
-                f'<td><span class="mono">{_escape(rem) or "—"}</span>{(" " + _ops_pill(outcome, kind=outcome_kind)) if outcome else ""}</td>'
+                f'<td><span class="mono">{_escape(rem) or "·"}</span>{(" " + _ops_pill(outcome, kind=outcome_kind)) if outcome else ""}</td>'
                 '</tr>'
             )
 
@@ -7308,10 +7611,10 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
     pv = (run.get("prompt_version") or "?").lstrip("v")
     duration = _ops_format_duration(run.get("duration_seconds"))
     items_pub = run.get("entries_published")
-    items_pub_str = str(items_pub) if items_pub is not None else "—"
+    items_pub_str = str(items_pub) if items_pub is not None else "·"
     items_upd = run.get("entries_updated")
-    items_upd_str = str(items_upd) if items_upd is not None else "—"
-    deep_dive = run.get("deep_dive") or "—"
+    items_upd_str = str(items_upd) if items_upd is not None else "·"
+    deep_dive = run.get("deep_dive") or "·"
     failures = run.get("fetch_failures") or []
 
     # Sub-agent cards. Base slots per kind + any extra recorded keys
@@ -7422,7 +7725,7 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
     stood_down = str(run.get("stood_down") or "").strip()
     stood_down_pill = (
         f'<span class="ops-pill ops-pill--warn" title="fire aborted before Phase 1 '
-        f'spawned any workers — a stand-down still writes its run record">'
+        f'spawned any workers; a stand-down still writes its run record">'
         f'stood down: {_escape(stood_down)}</span>'
         if stood_down else ""
     )
@@ -7722,10 +8025,10 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
                         'but the site rebuild never confirmed">main-only</span>')
         elif ps == "pending":
             pub_html = ('<span class="ops-pill ops-pill--warn" title="Phase 7 never '
-                        'confirmed publication — the fire died before the amendment '
+                        'confirmed publication; the fire died before the amendment '
                         'or its push failed">pending</span>')
         else:
-            pub_html = '<span class="muted" title="pre-v3.14 record — no publish telemetry">–</span>'
+            pub_html = '<span class="muted" title="pre-v3.14 record · no publish telemetry">·</span>'
 
         # Verification verdict — residual-aware, and double-CLEAN-aware for
         # v3.23+ runs (×2 = the final two iterations CLEAN in independent
@@ -7748,14 +8051,14 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
             verif_html = (
                 '<span class="ops-pill ops-pill--warn" '
                 'title="double-CLEAN reached, but both confirming iterations ran the same '
-                'verifier — legitimate only as a recorded spawn-failure exception">'
+                'verifier; legitimate only as a recorded spawn-failure exception">'
                 'clean ×2 same-model</span>'
             )
         elif conf["gated"] and conf["status"] in ("single", "waived"):
             reason = conf["waiver"] or "no confirmation pass recorded"
             verif_html = (
                 f'<span class="ops-pill ops-pill--warn" '
-                f'title="published on a single CLEAN — {_escape(reason)}">'
+                f'title="published on a single CLEAN · {_escape(reason)}">'
                 'clean · unconfirmed</span>'
             )
         else:
@@ -7777,9 +8080,9 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
                 )
         duration = _ops_format_duration(r.get("duration_seconds"))
         items_pub = r.get("entries_published")
-        items_pub_str = str(items_pub) if items_pub is not None else "—"
+        items_pub_str = str(items_pub) if items_pub is not None else "·"
         items_upd = r.get("entries_updated")
-        items_upd_str = str(items_upd) if items_upd is not None else "—"
+        items_upd_str = str(items_upd) if items_upd is not None else "·"
         sc = [c for c in (r.get("sources_changed") or []) if isinstance(c, dict)]
         if sc:
             sc_counts = Counter(c.get("change") for c in sc)
@@ -7820,7 +8123,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
 
     table = (
         '<div class="data-wrap"><table class="data ops-runs-table">'
-        '<thead><tr><th title="Run id — links to the run\'s detail page">Run</th>'
+        '<thead><tr><th title="Run id: links to the run\'s detail page">Run</th>'
         '<th>Kind</th><th>Main model</th><th>Prompt</th><th>Duration</th>'
         '<th title="Entries published this run">Entries</th>'
         '<th title="Existing entries this run appended a changelog record to">Upd</th>'
@@ -8249,7 +8552,7 @@ def write_stix_outputs(
     _emit(
         "entities.json", "Entity graph",
         "The registry's actors (intrusion sets), campaigns, malware, tools "
-        "and incidents with the curated typed relationships between them — "
+        "and incidents with the curated typed relationships between them: "
         "no reports.",
         stix_model.make_bundle(ns, "entities", graph_objs), len(graph_objs),
     )
@@ -8310,7 +8613,7 @@ def render_stix_page(rows: list[tuple[str, str, str, int]], *, site_url: str,
 <section style="margin-top:1.6rem">
   <h2 class="section-head">Identity &amp; versioning guarantees</h2>
   <ul>
-    <li><strong>Stable ids.</strong> Every STIX id is UUIDv5 over the permanent store key (entry id, registry key, CVE id), so one finding / entity / CVE keeps one id forever and re-ingestion is idempotent. Two reports touching the same actor or CVE reference the same object — that shared-object graph is how a consuming platform connects coverage across briefs without duplicates.</li>
+    <li><strong>Stable ids.</strong> Every STIX id is UUIDv5 over the permanent store key (entry id, registry key, CVE id), so one finding / entity / CVE keeps one id forever and re-ingestion is idempotent. Two reports touching the same actor or CVE reference the same object; that shared-object graph is how a consuming platform connects coverage across briefs without duplicates.</li>
     <li><strong>Versioning.</strong> A report's <code>modified</code> follows the entry's changelog (every update, correction or improvement); corrections additionally ship as <code>note</code> objects attached to the report. Objects are never deleted; superseded registry entities are merged into their canonical object.</li>
     <li><strong>Confidence.</strong> <code>confidence</code> maps the entry's NATO Admiralty credibility digit per STIX 2.1 Appendix A (1→90, 2→70, 3→50, 4→30, 5→10; 6 and unrated → omitted). The reliability letter, verification tier, kind, priority and permanent ids travel in a property extension (schema: <a class="mono" href="{prefix}stix/extension-schema.json">/stix/extension-schema.json</a>).</li>
     <li><strong>Marking.</strong> Everything is TLP:WHITE.</li>
@@ -8319,13 +8622,13 @@ def render_stix_page(rows: list[tuple[str, str, str, int]], *, site_url: str,
 
 <section style="margin-top:1.6rem">
   <h2 class="section-head">Ingesting</h2>
-  <p>Poll <a class="mono" href="{prefix}stix/recent.json">/stix/recent.json</a> (reference-closed · never a dangling ref) on your schedule and import it as a standard STIX 2.1 bundle; seed once from <a class="mono" href="{prefix}stix/bundle.json">/stix/bundle.json</a>. For OpenCTI, a minimal external-import connector fetching the URL and pushing the bundle via pycti is all that's needed — deterministic ids make every re-import an upsert. These are plain JSON files on a static host: there is <strong>no TAXII server</strong> here (a static host cannot satisfy the TAXII 2.1 media-type and header requirements), and no authentication.</p>
+  <p>Poll <a class="mono" href="{prefix}stix/recent.json">/stix/recent.json</a> (reference-closed · never a dangling ref) on your schedule and import it as a standard STIX 2.1 bundle; seed once from <a class="mono" href="{prefix}stix/bundle.json">/stix/bundle.json</a>. For OpenCTI, a minimal external-import connector fetching the URL and pushing the bundle via pycti is all that's needed; deterministic ids make every re-import an upsert. These are plain JSON files on a static host: there is <strong>no TAXII server</strong> here (a static host cannot satisfy the TAXII 2.1 media-type and header requirements), and no authentication.</p>
 </section>
 """
     return base_template(
         title=f"STIX 2.1 bundles · {SITE_NAME}",
         active_page="feeds",
-        description=f"STIX 2.1 bundle endpoints for {SITE_NAME}: full corpus, rolling window, entity graph, and per-sector slices — pull-model ingestion for TIP platforms.",
+        description=f"STIX 2.1 bundle endpoints for {SITE_NAME}: full corpus, rolling window, entity graph, and per-sector slices, pull-model ingestion for TIP platforms.",
         body=body,
         canonical=canonical, site_url=site_url, cachebust=cachebust,
         home_relative_prefix=prefix,
@@ -8455,7 +8758,7 @@ def render_overview_charts(
     cutoff = today - _td(days=30)
 
     for e in entities:
-        t = e.get("type") or "—"
+        t = e.get("type") or "·"
         by_type[t] = by_type.get(t, 0) + 1
         appearances_total += len(e.get("appearances", []) or [])
         for h in (e.get("source_distribution") or {}).keys():
@@ -8595,7 +8898,7 @@ def render_sources_overview_charts(
     n_active = n_demoted = n_candidate = 0
 
     for s in sources:
-        status = s.get("status") or "—"
+        status = s.get("status") or "·"
         by_status[status] = by_status.get(status, 0) + 1
         if status == "active":
             n_active += 1
@@ -8603,7 +8906,7 @@ def render_sources_overview_charts(
             n_demoted += 1
         elif status == "candidate":
             n_candidate += 1
-        rel = (s.get("reliability") or "—").strip().upper()
+        rel = (s.get("reliability") or "·").strip().upper()
         by_reliability[rel] = by_reliability.get(rel, 0) + 1
         for c in s.get("category") or []:
             by_category[c] = by_category.get(c, 0) + 1
@@ -8680,7 +8983,7 @@ def render_sources_overview_charts(
         meaning = ADMIRALTY_RELIABILITY_MEANING.get(letter, "")
         label = (
             f'<span class="rel-letter rel-letter--{reliability_tier_class(letter).replace("badge--", "")}"'
-            f' title="{_escape(meaning)}">{letter}</span>'
+            f' title="{_escape(_chrome_text(meaning))}">{letter}</span>'
             f'<span class="rel-word">{_escape(meaning.split(" — ")[0] if " — " in meaning else meaning)}</span>'
         )
         rel_rows.append((label, count, rel_color[letter], "" if count else " rankbar--zero"))
@@ -8690,7 +8993,7 @@ def render_sources_overview_charts(
     rel_panel = (
         '<div class="ops-chart-card">'
         '<h3 class="section-head" style="margin-top:0">By reliability · NATO Admiralty A–F</h3>'
-        '<p class="chart-note muted">Full scale shown — zero-count letters stay visible. '
+        '<p class="chart-note muted">Full scale shown; zero-count letters stay visible. '
         'The pipeline keeps nothing below C on the active list.</p>'
         + _dist_rows(rel_rows, total)
         + '</div>'
@@ -8769,12 +9072,12 @@ def render_entities_index_page(
             '<li data-entity-type="' + _escape(etype) + '" '
             'data-entity-flags="' + _escape(",".join(e.get("flags") or [])) + '">'
             f'<span>'
-            f'<span class="e-tag e-tag--{_escape(etype or "none")}">{_escape(etype or "—")}</span> '
+            f'<span class="e-tag e-tag--{_escape(etype or "none")}">{_escape(etype or "·")}</span> '
             f'<a class="e-title" href="{url}">{_escape(e.get("title") or e["key"])}</a>'
             + (f'<span class="e-apps" title="Appears in {n} entries">×{n}</span>' if n > 1 else '')
             + f'<div class="e-meta">'
             f'<span class="mono">{_escape(e["key"])}</span>'
-            f'<span>last covered {_escape(e.get("last_covered", "") or "—")}</span>'
+            f'<span>last covered {_escape(e.get("last_covered", "") or "·")}</span>'
             + flag_badges
             + '</div></span>'
             '</li>'
@@ -9339,7 +9642,7 @@ def render_entity_page(
         p = str(me.get("priority") or "routine")
         pri_counts[p] = pri_counts.get(p, 0) + 1
     pri_order = ["critical", "high", "notable", "routine"]
-    pri_top = next((p for p in pri_order if pri_counts.get(p)), "—")
+    pri_top = next((p for p in pri_order if pri_counts.get(p)), "·")
     pri_sub = " · ".join(
         f"{pri_counts[p]} {p}" for p in pri_order if pri_counts.get(p)
     ) or "no matching entries"
@@ -9369,7 +9672,7 @@ def render_entity_page(
         + _ops_kpi_tile(
             "Sections touched",
             str(len(sd)),
-            sub=", ".join(sorted(sd.keys())[:3]) or "—",
+            sub=", ".join(sorted(sd.keys())[:3]) or "·",
             kind="neutral",
         )
         + _ops_kpi_tile(
@@ -9395,7 +9698,7 @@ def render_entity_page(
         max_v = max(v for _, v in items_sorted) or 1
         bar_rows = "".join(
             f'<li class="rankbar">'
-            f'<span class="rankbar__label">{_escape(k or "—")}</span>'
+            f'<span class="rankbar__label">{_escape(k or "·")}</span>'
             f'<span class="rankbar__track"><span class="rankbar__fill" style="width:{max(4, round(v / max_v * 100))}%"></span></span>'
             f'<span class="rankbar__value mono">{v}</span></li>'
             for k, v in items_sorted
@@ -9458,7 +9761,7 @@ def render_entity_page(
                 items.append(
                     "<li>"
                     f'<span><a class="e-title" href="{other_url}">{_escape(r["title"])}</a>'
-                    f'<div class="e-meta"><span class="e-tag e-tag--{_escape((r.get("type") or "none"))}">{_escape(r.get("type") or "—")}</span>'
+                    f'<div class="e-meta"><span class="e-tag e-tag--{_escape((r.get("type") or "none"))}">{_escape(r.get("type") or "·")}</span>'
                     f'<span class="mono">{_escape(r["key"])}</span>'
                     f'<span class="muted">evidence{src_html}</span></div>'
                     f"{note_html}</span></li>"
@@ -9471,7 +9774,7 @@ def render_entity_page(
             '<h2 class="section-head" style="margin-top:1.5rem">Relationships '
             f'<a class="mini-btn" href="{graph_url}" title="Open this entity in the interactive threat graph">explore in graph</a></h2>'
             '<p class="muted" style="margin-top:0.2rem">Typed, source-stated connections from the '
-            "entity registry — each edge cites the entry whose reporting establishes it.</p>"
+            "entity registry; each edge cites the entry whose reporting establishes it.</p>"
             + "".join(group_html)
         )
 
@@ -9494,14 +9797,14 @@ def render_entity_page(
                 "<li>"
                 f'<span><a class="e-title" href="{other_url}">{_escape(r["title"])}</a>'
                 f"{count_marker}"
-                f'<div class="e-meta"><span class="e-tag e-tag--{_escape((r.get("type") or "none"))}">{_escape(r.get("type") or "—")}</span>'
+                f'<div class="e-meta"><span class="e-tag e-tag--{_escape((r.get("type") or "none"))}">{_escape(r.get("type") or "·")}</span>'
                 f'<span class="mono">{_escape(r["key"])}</span>'
                 f"{curated_badge}</div>"
                 "</span></li>"
             )
         related_block = (
             '<h2 class="section-head" style="margin-top:1.5rem">Co-occurring entities</h2>'
-            '<p class="muted" style="margin-top:0.2rem">Derived — referenced by the same '
+            '<p class="muted" style="margin-top:0.2rem">Derived: referenced by the same '
             "focused operational entries (weekly summaries and report roundups don't count); "
             "×N counts the shared entries.</p>"
             f'<ul class="entity-list">{"".join(rows)}</ul>'
@@ -9584,7 +9887,7 @@ def render_entity_page(
         merged_html = (
             '<p class="subtitle"><span class="badge badge--accent">merged</span> '
             "This entity was merged into "
-            f'<a href="{target_url}" class="mono">{_escape(target)}</a> — '
+            f'<a href="{target_url}" class="mono">{_escape(target)}</a>; '
             "coverage continues there.</p>"
         )
 
@@ -9736,7 +10039,10 @@ def render_entity_page(
 # Everything below degrades to nothing when the dataset is absent so the
 # site still builds — tools/check_run.py is what FAILs a missing dataset.
 
-ATTACK = content_model.load_attack_dataset() or {}
+# The pinned dataset is never hand-edited (attack/README.md); MITRE's own
+# technique prose carries em dashes, so it takes the same rewrite as
+# every other string this site renders.
+ATTACK = _dedash_value(content_model.load_attack_dataset() or {})
 ATTACK_TECHNIQUES: dict[str, dict[str, Any]] = ATTACK.get("techniques") or {}
 ATTACK_TACTICS: list[dict[str, Any]] = ATTACK.get("tactics") or []
 ATTACK_VERSION: str = str(ATTACK.get("attack_version") or "")
@@ -9855,7 +10161,7 @@ def render_entity_attack_section(entity: dict[str, Any], *, prefix: str) -> str:
         '<h2 class="section-head" style="margin-top:1.5rem">ATT&CK techniques</h2>'
         '<p class="muted" style="margin-top:0.3rem">'
         f"{len(tech)} technique{'s' if len(tech) != 1 else ''} observed across "
-        f"{len(evidence_entries)} entr{'ies' if len(evidence_entries) != 1 else 'y'} — "
+        f"{len(evidence_entries)} entr{'ies' if len(evidence_entries) != 1 else 'y'}, "
         "derived from entry metadata and body evidence, never asserted without a "
         f"published entry behind it · pinned to MITRE ATT&CK v{_escape(ATTACK_VERSION)} · "
         f'<a href="{_escape(matrix_href)}">compare on the matrix</a> · '
@@ -9894,7 +10200,7 @@ def attack_navigator_layer(entity: dict[str, Any]) -> dict[str, Any] | None:
     for parent in sorted(parents_with_subs - scored):
         records.append({"techniqueID": parent, "showSubtechniques": True})
     return {
-        "name": f"{entity.get('title') or entity.get('key')} — {SITE_NAME} coverage",
+        "name": f"{entity.get('title') or entity.get('key')}, {SITE_NAME} coverage",
         "versions": {
             "attack": ATTACK_VERSION.split(".")[0],
             "layer": NAVIGATOR_LAYER_VERSION,
@@ -9988,7 +10294,7 @@ def render_attack_matrix_page(
         body = (
             "<h1>ATT&CK coverage matrix</h1>"
             '<p class="subtitle">The pinned ATT&CK dataset '
-            "(<code>attack/enterprise-attack.json</code>) is missing — run "
+            "(<code>attack/enterprise-attack.json</code>) is missing; run "
             "<code>python3 tools/attack_data.py --update</code>.</p>"
         )
         return base_template(
@@ -10137,7 +10443,7 @@ def render_attack_matrix_page(
 <h1>ATT&CK coverage matrix</h1>
 <p class="subtitle" style="max-width:64rem">
   Every technique this pipeline has evidence for, on the full MITRE ATT&CK Enterprise matrix.
-  Mappings are derived from published entries only — an entity or CVE maps a technique exactly
+  Mappings are derived from published entries only, an entity or CVE maps a technique exactly
   when a published entry ties them together. Pick entities below to compare their TTP overlap
   the way an ATT&CK Navigator layer would show it.
 </p>
@@ -10154,7 +10460,7 @@ def render_attack_matrix_page(
 
 <div class="atk-picker panel" data-attack-picker hidden>
   <div class="atk-picker-head">
-    <label for="atk-q"><strong>Compare entities</strong> — actors, campaigns, malware, incidents, CVEs</label>
+    <label for="atk-q"><strong>Compare entities</strong>: actors, campaigns, malware, incidents, CVEs</label>
     <div class="atk-modes" role="group" aria-label="Overlap mode">
       <button type="button" class="mini-btn active" data-atk-mode="any" title="Shade techniques used by at least one selected entity">union</button>
       <button type="button" class="mini-btn" data-atk-mode="overlap" title="Shade only techniques shared by two or more selected entities">overlap ≥2</button>
@@ -10166,17 +10472,17 @@ def render_attack_matrix_page(
   <ul class="atk-suggest" data-atk-suggest hidden></ul>
   <div class="atk-chips" data-atk-chips></div>
   <div class="atk-picker-foot muted">
-    <span data-atk-status>No selection — cells show store-wide coverage heat.</span>
+    <span data-atk-status>No selection · cells show store-wide coverage heat.</span>
     <button type="button" class="mini-btn" data-atk-export hidden
             title="Download the current selection as an ATT&CK Navigator layer (format {NAVIGATOR_LAYER_VERSION})">export Navigator layer</button>
     <button type="button" class="mini-btn" data-atk-clear hidden>clear</button>
   </div>
 </div>
-<noscript><p class="muted">Interactive entity comparison needs JavaScript — the coverage
+<noscript><p class="muted">Interactive entity comparison needs JavaScript; the coverage
 heat map and the per-technique evidence directory below work without it. Per-entity
 Navigator layers are downloadable from each entity page.</p></noscript>
 
-<div class="atk-matrix-wrap" tabindex="0" aria-label="ATT&CK matrix — horizontally scrollable">
+<div class="atk-matrix-wrap" tabindex="0" aria-label="ATT&CK matrix · horizontally scrollable">
   <div class="atk-matrix">{''.join(columns)}</div>
 </div>
 <p class="muted atk-legend">
@@ -10186,14 +10492,14 @@ Navigator layers are downloadable from each entity page.</p></noscript>
   ▸ marks covered/total sub-techniques. Click a cell for definition and evidence.
 </p>
 
-<h2 class="section-head" style="margin-top:2rem">Covered techniques — definitions &amp; evidence</h2>
+<h2 class="section-head" style="margin-top:2rem">Covered techniques · definitions &amp; evidence</h2>
 {''.join(directory_blocks) or '<p class="muted">No technique evidence in the store yet.</p>'}
 {data_island}
 """
     return base_template(
         title=f"ATT&CK coverage matrix · v{ATTACK_VERSION}",
         description=(
-            f"MITRE ATT&CK Enterprise v{ATTACK_VERSION} coverage matrix — "
+            f"MITRE ATT&CK Enterprise v{ATTACK_VERSION} coverage matrix, "
             "evidence-bound technique mappings for every tracked actor, campaign, "
             "malware family and CVE, with Navigator-style multi-entity overlap."
         ),
@@ -10418,13 +10724,13 @@ def render_graph_page(
     body = f"""
 <h1>Threat graph</h1>
 <p class="subtitle" style="max-width:64rem">
-  Start from an entity and see only what connects to it — nothing else is drawn.
+  Start from an entity and see only what connects to it, nothing else is drawn.
   Pick a starting point (search, or an entity below); the graph renders its direct
   neighbourhood, and grows only where you take it: double-click any node to pull in
   that node's connections (or widen the reach to 2 hops / the full connected graph).
-  Solid edges are <strong>curated relationships</strong> — typed, source-stated connections
+  Solid edges are <strong>curated relationships</strong>: typed, source-stated connections
   ("attributed to", "uses", "exploits", …), each citing the entry that establishes it.
-  Dashed edges are <strong>derived</strong> — entities referenced by the same focused
+  Dashed edges are <strong>derived</strong>: entities referenced by the same focused
   operational entry, or an entity and a CVE carried by the same entry (weekly summaries,
   outlooks and report roundups never create derived edges). Click a node for its detail
   panel; shift-click a second node to trace the shortest path between them.
@@ -10442,7 +10748,7 @@ def render_graph_page(
            placeholder="Start here: find an actor / campaign / malware / CVE / technique…" />
     <ul class="atk-suggest" data-graph-suggest hidden></ul>
     <div class="graph-toggles" role="group" aria-label="Reach from the starting points">
-      <button type="button" class="mini-btn active" data-graph-reach="1" title="Direct neighbours only — grow further by double-clicking nodes">1 hop</button>
+      <button type="button" class="mini-btn active" data-graph-reach="1" title="Direct neighbours only · grow further by double-clicking nodes">1 hop</button>
       <button type="button" class="mini-btn" data-graph-reach="2" title="Neighbours of neighbours">2 hops</button>
       <button type="button" class="mini-btn" data-graph-reach="all" title="The entire connected graph reachable from the starting points">connected graph</button>
     </div>
@@ -10459,20 +10765,20 @@ def render_graph_page(
   </div>
   <div class="graph-seeds" data-graph-seeds aria-label="Starting points"></div>
   <div class="graph-stage">
-    <canvas data-graph-canvas aria-label="Threat graph — interactive canvas"></canvas>
+    <canvas data-graph-canvas aria-label="Threat graph · interactive canvas"></canvas>
     <aside class="graph-panel" data-graph-panel hidden></aside>
   </div>
   <p class="muted graph-hint" data-graph-status>
-    Nothing is drawn until you pick a starting point — search above, or pick one of the
+    Nothing is drawn until you pick a starting point, search above, or pick one of the
     most-connected entities below. The view then shows everything connected to it.
   </p>
 </div>
-<noscript><p class="muted">The interactive graph needs JavaScript — the directory below
+<noscript><p class="muted">The interactive graph needs JavaScript; the directory below
 lists the most-connected entities; every entity page carries the same relationships in
 list form.</p></noscript>
 
 <h2 class="section-head" style="margin-top:2rem">Start from a well-connected entity</h2>
-<p class="muted" style="margin-top:0.2rem">Opens the graph seeded on that entity — its direct
+<p class="muted" style="margin-top:0.2rem">Opens the graph seeded on that entity, its direct
 neighbourhood first; grow it node by node from there.</p>
 <ul class="entity-list">{top_rows}</ul>
 {data_island}
@@ -10481,7 +10787,7 @@ neighbourhood first; grow it node by node from there.</p>
         title="Threat graph",
         description=(
             "Interactive threat graph over every tracked actor, campaign, malware family, "
-            "incident, CVE and ATT&CK technique — curated, source-stated relationships plus "
+            "incident, CVE and ATT&CK technique: curated, source-stated relationships plus "
             "derived co-occurrence edges, explorable for visual investigations."
         ),
         body=body,
@@ -10644,7 +10950,7 @@ def write_llms_txt(
 Fully AI-generated cyber threat intelligence with no human review; every finding
 cites its primary sources and carries a NATO Admiralty reliability/credibility
 rating. Audience: Tier 2/3 incident responders, threat hunters and detection
-engineers — and automated SOC/triage agents. No IOCs are published: entries are
+engineers, and automated SOC/triage agents. No IOCs are published: entries are
 TTP/behavior-level knowledge, ATT&CK-mapped in frontmatter. One permalink per
 finding for its whole life; later developments and corrections are appended as
 dated changelog records on the same entry, never as duplicates.
@@ -10652,11 +10958,11 @@ Generated {generated} · {n.get("entries", 0)} entries · {n.get("entities", 0)}
 
 ## Reading surfaces
 
-- [Live brief]({site_url}): the landing page — everything verified or updated in the last 24 h, newest first
+- [Live brief]({site_url}): the landing page, everything verified or updated in the last 24 h, newest first
 - [Daily briefs]({site_url}daily/): the settled record of each UTC day{f" (latest: {site_url}daily/{latest_day}/)" if latest_day else ""}
 - [Recent changes]({site_url}changes/): every dated development, correction and improvement, store-wide
 - [Entries]({site_url}entries/YYYY-MM-DD/slug/): one permalink per finding with full changelog and revision history
-- [Entities]({site_url}entities/): actors, campaigns, malware, incidents — with typed, sourced relationships
+- [Entities]({site_url}entities/): actors, campaigns, malware, incidents, with typed, sourced relationships
 - [CVEs]({site_url}cves/): every vulnerability on file with its appearance trail
 - [ATT&CK]({site_url}attack/): technique coverage matrix, Navigator-layer exports
 - [Sources]({site_url}sources/): the curated source catalogue, reliability-rated
@@ -10828,6 +11134,39 @@ def self_check(
                 f"(first: {utm_pages[0]}) · strip and reissue"
             )
 
+    # House rule: no em dash anywhere the site renders text. Entry prose is
+    # normalised at load (see EM-DASH NORMALISATION); this catches the other
+    # source — a chrome literal typed into build.py, the CSS or the JS. The
+    # raw `index.md` twins are excluded on purpose: they are the content
+    # store's verbatim source, not rendered copy.
+    emdash_pages: list[str] = []
+    code_span_re = re.compile(r"<(pre|code)\b[^>]*>.*?</\1>", re.DOTALL | re.IGNORECASE)
+    for path in list(OUT.rglob("*.html")) + list(OUT.rglob("*.xml")):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        # `<pre>` / `<code>` hold verbatim specimens: YAML templates, shell
+        # snippets, ASCII diagrams and format specs quoted from the repo's
+        # own docs. Their punctuation is data, not copy.
+        if _EM_DASH in code_span_re.sub("", text):
+            emdash_pages.append(str(path.relative_to(OUT)))
+    for rel in ("assets/css/styles.css", "assets/js/app.js", "assets/js/brief.js",
+                "assets/js/attack.js", "assets/js/graph.js", "assets/js/search.js",
+                "assets/js/theme.js", "assets/js/spa-redirect.js"):
+        asset = OUT / rel
+        if not asset.exists():
+            continue
+        text = asset.read_text(encoding="utf-8", errors="replace")
+        # Comments are source documentation, never rendered; only string
+        # literals and CSS `content:` values reach a reader.
+        rendered = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+        rendered = "\n".join(_strip_line_comment(ln) for ln in rendered.split("\n"))
+        if _EM_DASH in rendered:
+            emdash_pages.append(rel)
+    if emdash_pages:
+        errors.append(
+            f"em dash in {len(emdash_pages)} rendered file(s) (first: {emdash_pages[0]}) · "
+            "site copy never uses one; normalise the source literal"
+        )
+
     # No known-shape secret tokens in any emitted file. CRITICAL — failing
     # the build is always preferable to silently propagating a secret to
     # gh-pages and the RSS feeds.
@@ -10900,6 +11239,16 @@ def main() -> int:
             print(f"  · {err}", file=sys.stderr)
         return 3
 
+    # ---- Presentation-boundary text normalisation ----------------------
+    # Validation ran against the store as written; everything downstream of
+    # here (pages, feeds, briefbook.json, STIX, search) renders em-dash-free
+    # prose. The store itself and each entry's raw index.md twin are
+    # untouched. See the EM-DASH NORMALISATION note above.
+    entries = [normalise_entry_text(e) for e in entries]
+    runs = [normalise_entry_text(r) for r in runs]
+    registry = {k: normalise_entry_text(v) if isinstance(v, dict) else v
+                for k, v in registry.items()}
+
     # ---- Supporting state ----------------------------------------------
     cves_raw = {"cves": []}
     if (ROOT / "state" / "cves_seen.json").exists():
@@ -10916,6 +11265,12 @@ def main() -> int:
             source_health = json.loads(_read_text_capped(sh_src, MAX_STATE_BYTES))
         except Exception:
             source_health = None
+    # The state files carry rendered prose too (CVE titles on /cves/, source
+    # notes on /sources/), so they take the same normalisation as entries.
+    cves_raw = normalise_entry_text(cves_raw)
+    sources_raw = normalise_entry_text(sources_raw)
+    if isinstance(source_health, dict):
+        source_health = normalise_entry_text(source_health)
 
     # ---- Derived indexes -------------------------------------------------
     entries_by_id = {e["id"]: e for e in entries}
