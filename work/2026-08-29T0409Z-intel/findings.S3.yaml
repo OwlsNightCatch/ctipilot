@@ -1,0 +1,250 @@
+domain: S3
+run_id: 2026-08-29T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-29T04:13:33Z
+ended_at: 2026-08-29T04:24:20Z
+duration_seconds: 647
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 2
+  bridge_fetches: 24
+
+items:
+  - title: "VulnCheck traces the ZBT/Zbtlink router supply chain to two more implants — DARKLANTERN and SPEAKINGSTONE — and sinkholes a forgotten C2 domain to reveal a Chinese carrier-network deployment"
+    sources:
+      - { url: "https://www.vulncheck.com/blog/zbt-darklantern-speakingstone", publisher: "VulnCheck", date: "2026-08-27", role: primary }
+      - { url: "https://www.vulncheck.com/blog/zbt-endlessdoors", publisher: "VulnCheck", date: "2026-08-05", role: primary, note: "background primary — the source of the existing 2026-08-06 entry this update extends" }
+      - { url: "https://www.heise.de/news/OEM-China-Router-von-ZBT-mit-Backdoors-11433072.html", publisher: "heise Security", date: "2026-08-28", role: corroborating }
+    discovery_trace: >
+      first seen at: heise-sec (S3 essential source), URL https://www.heise.de/security/feed.xml
+      → article https://www.heise.de/news/OEM-China-Router-von-ZBT-mit-Backdoors-11433072.html
+      → primary: VulnCheck, URL https://www.vulncheck.com/blog/zbt-darklantern-speakingstone
+      → background primary (already the store's existing source): VulnCheck, URL https://www.vulncheck.com/blog/zbt-endlessdoors
+    summary: |
+      VulnCheck published a follow-up on 2026-08-27 (heise.de covered it 2026-08-28) tracing the ZBT/Zbtlink OEM
+      router supply chain further after its 2026-08-05 ENDLESSDOORS disclosure (CVE-2026-66747, already covered by
+      this store's 2026-08-06 entry). Rooting a 2019-built ZBT-WE826-T2 sold on US Amazon as "Deep Orange," VulnCheck
+      found two additional pre-installed implants: DARKLANTERN, an unauthenticated WAN-listening command backdoor,
+      and SPEAKINGSTONE, a more capable phone-home implant. DARKLANTERN runs as the service infosrvd on UDP/9992,
+      a port the router's default firewall explicitly opens to the internet; an unauthenticated 19-byte info probe
+      returns the device's model, firmware, MAC address, SSID and public IP on UDP/8897, and a command packet
+      (type 0x17) passes an operator string directly to system("/etc/exec/cmd " + payload) — a semicolon breaks out
+      of the fixed prefix into arbitrary root shell execution, with no length limit or character filtering. The only
+      gating fields are a keyed checksum computed from a hardcoded static salt ("mqonu.com", tying development to
+      the Chinese OEM MoreQuick) and a MAC-address check that is bypassed outright by sending an all-zero MAC.
+      VulnCheck's internet scanner found 203 DARKLANTERN-responsive devices across 22 countries between 18–21
+      August 2026, self-reporting across 16 different router models. SPEAKINGSTONE (process yunmgrd) instead beacons
+      outbound over UDP/10000 to ZBT's own Alibaba Cloud infrastructure with a full device fingerprint, and accepts
+      plaintext, unauthenticated commands to run arbitrary shell commands, exfiltrate WAN PPPoE credentials, write
+      or read a DNS-hijack list, or open/close a reverse SSH tunnel. VulnCheck registered SPEAKINGSTONE's abandoned
+      hardcoded backup domain and captured 392 beacons by 21 August — 390 from China, 83% on China Mobile's network,
+      and 363 of them a single carrier-CPE model — evidence VulnCheck reads as a domestic Chinese surveillance
+      deployment running on the same firmware lineage sold to Western consumers. Supply-chain tracing via FCC
+      filings, trademark records and archived web pages ties the ZBT-WE826 platform to rebrands sold in the US
+      (Deep Orange, WiFlyer), Canada (MOFI Networks), Australia (OneX), and Germany (Digineo's AC1200 Pro, ALLNET's
+      ALL-WR1200AC-WRT), among others. No CVE has been assigned to DARKLANTERN or SPEAKINGSTONE, and — as with
+      ENDLESSDOORS — VulnCheck's remediation guidance remains device replacement rather than a patch, since it
+      treats these as vendor-shipped surveillance components rather than coordinable defects ("we did not notify
+      Zbtlink").
+    region_nexus: "global supply chain with confirmed OEM rebrand presence in Germany (Digineo, ALLNET); no Swiss rebrand identified in VulnCheck's tracing to date"
+    primary_sector_nexus: "indirect"
+    sector: "telco, public-sector"
+    cves: []
+    techniques: [T1059.004, T1571, T1036, T1572, T1090]
+    affected_products: ["ZBT/Zbtlink WE826-T2 and rebrands (Deep Orange, WiFlyer)", "ZBT WE1326", "ZBT WE2426-C", "ZBT WE5926 family", "ZBT WG108", "ZBT WG3526", "Digineo AC1200 Pro (ZBT WG3526 OEM)", "ALLNET ALL-WR1200AC-WRT (ZBT WG2626 OEM)", "MOFI Networks MOFI4500-4GXeLTE", "OneX RV WIFI Route"]
+    entity_keys: ["tool:endlessdoors"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-06/endlessdoors-zbtlink-router-factory-shipped-root-backdoor"
+    evidence:
+      - quote: "The router's default firewall explicitly allows inbound connections to this port from anywhere on the internet."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/zbt-darklantern-speakingstone"
+      - quote: "Between August 18, 2026 and August 21, 2026 we've identified 203 internet-facing DARKLANTERN instances across 22 countries."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/zbt-darklantern-speakingstone"
+      - quote: "390 of 392 devices are in China. 83% are on China Mobile's network."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/zbt-darklantern-speakingstone"
+    extended_notes: |
+      Sourcing note: VulnCheck is the sole discloser of DARKLANTERN/SPEAKINGSTONE (as it was for ENDLESSDOORS);
+      heise's 2026-08-28 article is journalism relaying VulnCheck's research rather than independent technical
+      corroboration, so this remains single-source per the existing entry's own sourcing convention. Suggested
+      body detection concept: an unsolicited outbound registration from consumer-class CPE to a fixed external
+      host on UDP/10000, or an inbound-accepted UDP session on 9992/8897 from an internet-routable source, is not
+      traffic ordinary router firmware generates — egress/ingress telemetry at the site boundary surfaces this
+      even for an unmanaged device. Triage: routers legitimately make outbound connections for firmware checks,
+      NTP and vendor telemetry, so outbound-from-CPE alone is not a discriminator; the tell is a long-lived,
+      bidirectional command-carrying UDP channel to a fixed vendor-independent host on a non-standard port, or an
+      unauthenticated response to a 19-byte probe on UDP/9992.
+
+  - title: "German mobile carriers leaked callees' IMEI, device model and OS version to callers during call setup — GSMA confirmed the flaw and warned 1,000+ member operators worldwide"
+    sources:
+      - { url: "https://www.br.de/nachrichten/deutschland-welt/sicherheitsluecke-mobilfunknetze-verrieten-sensible-handydaten,VTPFtd7", publisher: "Bayerischer Rundfunk (BR24)", date: "2026-08-27", role: primary }
+      - { url: "https://www.heise.de/news/Mobilfunk-IMEI-Kennungen-gelangten-beim-Rufaufbau-unbemerkt-zu-Anrufern-11427013.html", publisher: "heise Security", date: "2026-08-27", role: corroborating }
+    discovery_trace: >
+      first seen at: heise-sec (S3 essential source), URL https://www.heise.de/security/feed.xml
+      → article https://www.heise.de/news/Mobilfunk-IMEI-Kennungen-gelangten-beim-Rufaufbau-unbemerkt-zu-Anrufern-11427013.html
+      → primary: Bayerischer Rundfunk (BR24) investigative report, URL
+      https://www.br.de/nachrichten/deutschland-welt/sicherheitsluecke-mobilfunknetze-verrieten-sensible-handydaten,VTPFtd7
+    summary: |
+      Bayerischer Rundfunk (BR) published an investigation on 2026-08-27, corroborated the same day by heise, that
+      found Germany's three mobile network operators — Deutsche Telekom, Vodafone and Telefónica/O2 — forwarded
+      device-identifying data to the calling party during call setup, before the callee ever answered. Across more
+      than 70 test calls captured with Wireshark on the caller's own device, Telekom's and O2's networks in several
+      cases forwarded the callee's full 15-digit IMEI, and Telekom's and Vodafone's networks separately exposed the
+      callee's smartphone model and OS version — specific enough to reveal whether a target device was missing a
+      given security update. The leak occurred only in certain unspecified network/device constellations rather
+      than on every call, and BR could not establish since when the gap existed; BR notified the three operators in
+      late June 2026, after which Vodafone said it had "further narrowed" transmitted call data, Telekom said in
+      mid-August it would adjust its network, and Telefónica said it had implemented technical measures — all three
+      state they otherwise meet international industry standards. The GSMA confirmed the flaw on inquiry and, per a
+      nine-page briefing BR obtained, warned its 1,000+ member operators worldwide to review their networks and
+      filter unnecessarily transmitted call-setup information — an implicit acknowledgment the same signaling gap
+      plausibly extends beyond Germany's three carriers to any GSMA member network. Germany's domestic security
+      service (BfV) assessed the flaw as "sicherheitsrelevant" (security-relevant), stating it is "nahezu sicher"
+      (near-certain) that foreign intelligence services exploit such information, citing documented state-actor
+      cyberattacks against mobile devices and a scenario in which correlating a soldier's IMEI between a domestic
+      posting and a later deployment abroad could put that individual "in the focus of a spy." HPI mobile-security
+      researcher Jiska Classen called it a serious flaw enabling mass profile-building and said it shows how poorly
+      such carrier systems are tested; SRLabs' Karsten Nohl added that device-model exposure also enables more
+      targeted attacks and IMEI cloning. BR notes the finding parallels an April-2026 discovery of a similar flaw in
+      Norwegian networks by Mnemonic researcher Harrison Sand, who shared his methodology with BR, suggesting the
+      underlying signaling gap is not carrier-specific to Germany.
+    region_nexus: "Germany confirmed (Telekom, Vodafone, Telefónica/O2); GSMA's 1,000+-member warning and the Norwegian precedent (Mnemonic, April 2026) indicate the same signaling-metadata gap plausibly extends to other European/Swiss GSMA-member operators — untested and unconfirmed for Switzerland specifically"
+    primary_sector_nexus: "indirect"
+    sector: "telco, public-sector"
+    cves: []
+    techniques: [T1592.004]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "In den Netzen von Telekom und Telefónica (O2) gelangten dabei in mehreren Fällen IMEI-Nummern zum Anrufer."
+        attribution: "Bayerischer Rundfunk (BR24)"
+        source_url: "https://www.br.de/nachrichten/deutschland-welt/sicherheitsluecke-mobilfunknetze-verrieten-sensible-handydaten,VTPFtd7"
+      - quote: "Das Bundesamt für Verfassungsschutz (BfV) wertet die von BR Recherche entdeckte Sicherheitslücke auf Anfrage als \"sicherheitsrelevant\"."
+        attribution: "Bayerischer Rundfunk (BR24)"
+        source_url: "https://www.br.de/nachrichten/deutschland-welt/sicherheitsluecke-mobilfunknetze-verrieten-sensible-handydaten,VTPFtd7"
+      - quote: "Nachdem der BR sich mit Fragen an den Verband gewandt hatte, warnte er seine mehr als 1.000 Mitgliedsunternehmen, wozu auch die deutschen Netzanbieter gehören."
+        attribution: "Bayerischer Rundfunk (BR24)"
+        source_url: "https://www.br.de/nachrichten/deutschland-welt/sicherheitsluecke-mobilfunknetze-verrieten-sensible-handydaten,VTPFtd7"
+    extended_notes: |
+      Neither BR nor heise names the precise signaling layer (SS7 interconnect field, Diameter/IMS parameter, or a
+      VoLTE SIP header) carrying the leaked data — flagged explicitly as an unknown rather than invented. Detection
+      concept for a telco SOC/network-security team: audit outbound call-setup signaling at the interconnect
+      boundary for device-identifying parameters (IMEI, UE capability/OS-version fields) reaching the calling
+      party or a foreign network, consistent with GSMA/IETF RFC 7254 and RFC 7255 guidance that such fields be
+      anonymized or stripped before leaving the home network. Hardening lever: filter/strip unnecessary
+      device-identifying call-setup parameters at the network edge per the GSMA's own briefing recommendation.
+      Defender takeaway for public-sector mobile fleets, especially personnel travelling internationally (defense,
+      diplomatic, law-enforcement): call-based device fingerprinting is a tracking vector independent of the SIM,
+      and roaming exposes it to a foreign operator by design — this is a policy/procurement question (does the
+      fleet's home carrier still leak this after the fixes described here) as much as a technical one. Swiss
+      carriers (Swisscom, Sunrise, Salt) were not tested by BR; whether they carry the same gap is unconfirmed and
+      worth a direct inquiry given the GSMA's broad member warning.
+
+  - title: "TrendAI closes this store's open coverage-backlog item: fourteen trojanized npm packages drop RedC2 4.0's Linux implant via a module-load-time loader that needs no install hook"
+    sources:
+      - { url: "https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/redc2-ai-powered-linux-implant", publisher: "TrendAI Research (Trend Micro)", date: "2026-08-20", role: primary }
+    discovery_trace: >
+      first seen at: WebSearch ("RedC2 npm trojanized packages vendor blog analysis") → pivot: The Hacker News
+      (aggregator, not cited), URL https://thehackernews.com/2026/08/14-trojanized-npm-packages-drop-redc2.html
+      → primary: TrendAI Research (Trend Micro), URL
+      https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/redc2-ai-powered-linux-implant
+    summary: |
+      TrendAI (Trend Micro) Research published a technical analysis, dated 2026-08-20, of a cluster of fourteen
+      trojanized npm packages — small, functional calendar/streak date-math utilities (streak-metrics-math,
+      kit-map-vim, streak-map-cache and eleven further near-identical names) — that each also bundle a Linux ELF
+      binary and a loader in the package's index.mjs. The loader re-exports the genuine date helpers so the package
+      works as advertised, then runs an async IIFE evaluated at module load: it chmods the bundled binary
+      executable, verifies its SHA-256 against a hardcoded constant, and spawns it detached (shell: false) so it
+      outlives the importing Node process. No install hook or exported function call is involved, so
+      --ignore-scripts provides no coverage, and a single transitive import anywhere in a dependency graph is
+      sufficient to trigger execution. The dropped binary is RedShell, the native Linux implant for RedC2 4.0, a
+      modular, actively-developed cross-platform (Windows/macOS/Linux) C2 framework marketed on Hack Forums that
+      ships an LLM-backed component called Red Agent — exposed via a /ra command in the beacon terminal — which
+      translates natural-language operator intent (e.g. "dump credentials") into an ordered chain of framework
+      beacon commands. On execution RedShell ignores SIGPIPE, double-forks to daemonize, and connects to a
+      hardcoded primary C2 host (falling back to localhost) over TCP with aggressive keepalive tuning, wrapping the
+      session in TLS with certificate verification explicitly disabled (SSL_VERIFY_NONE) and TLS 1.2 enforced as
+      the minimum version; a persistent per-host installation ID is cached in a dotfile under $HOME so re-infection
+      state survives restarts. RedShell exposes a broad Linux-native command set to the operator: interactive shell
+      execution, SSH-key and browser-credential harvesting, database discovery, bulk exfiltration over HTTP or to
+      third-party file-sharing services, fileless ELF execution via memfd_create, arbitrary shellcode execution via
+      mmap, dlopen-based shared-library loading, SOCKS5 proxying and TCP port forwarding, and cross-network
+      reverse-shell tunnelling brokered through the C2 server. Persistence is established through cron, .bashrc,
+      a user-level systemd service, or an XDG autostart entry. This item closes a gap this store's coverage backlog
+      had open (only The Hacker News' aggregator write-up had previously been located); TrendAI's analysis is the
+      first-hand reverse-engineering primary.
+    region_nexus: "global (npm ecosystem — no region-specific targeting stated)"
+    primary_sector_nexus: "indirect"
+    sector: "technology, public-sector"
+    cves: []
+    techniques: [T1195.002, T1059.004, T1053.003, T1543.002, T1572, T1620, T1552.004, T1555.003, T1573]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:redc2", type: tool, name: "RedC2", aliases: ["RedShell", "RedShell Linux", "Red Agent"],
+          summary: "A modular, actively-developed cross-platform (Windows/macOS/Linux) command-and-control framework sold on Hack Forums; version 4.0 (June 2026) added the native RedShell Linux implant, and the framework ships an LLM-backed 'Red Agent' component that converts natural-language operator intent into beacon command chains (TrendAI Research, 2026-08-20)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: >
+      TrendAI's write-up is dated 2026-08-20, well outside this run's 24h window, and no fresh in-window
+      publication was found. It is surfaced specifically because it closes a named, open entry in
+      state/coverage_backlog.md ("fourteen trojanized npm packages dropping RedC2 4.0", previously only
+      aggregator-sourced) — the main agent should weigh the recency-gate rule against the backlog-closure value.
+    evidence:
+      - quote: "One import anywhere in the dependency graph is sufficient, including from a transitive dependency the developer never selected."
+        attribution: "TrendAI Research"
+        source_url: "https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/redc2-ai-powered-linux-implant"
+      - quote: "Certificate verification is explicitly disabled via SSL_VERIFY_NONE, meaning the malware will accept any server certificate without validation"
+        attribution: "TrendAI Research"
+        source_url: "https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/redc2-ai-powered-linux-implant"
+      - quote: "RedC2 ships with an AI assistant called Red Agent, an LLM-backed command execution layer that turns natural-language intent into framework beacon commands."
+        attribution: "TrendAI Research"
+        source_url: "https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/redc2-ai-powered-linux-implant"
+    extended_notes: |
+      No IOCs carried over from the source by design (the write-up publishes a hardcoded C2 IP:port, package
+      names/versions and file hashes — package names are included above as they function like affected-product
+      identifiers for defenders auditing dependency trees; the literal C2 IP address and file hashes are
+      deliberately omitted). Detection concept: process-creation telemetry showing a Node.js/npm-installed
+      package's module import immediately spawning a detached, double-forking child process that opens an
+      outbound TLS session with an invalid/self-signed certificate accepted without validation — legitimate
+      npm packages that bundle native binaries (e.g. via prebuilt node-gyp addons) do so at install time via a
+      documented hook, not as a side effect of a plain import with no exported function called. Hardening:
+      treat --ignore-scripts as insufficient supply-chain mitigation; pin exact package hashes in CI/CD; run
+      dependency installs in network-egress-restricted sandboxes and audit transitive dependencies for bundled
+      non-JS binaries.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: hunt-io
+    reason: "Fetched via jina reader (JS-rendered Framer site; direct url/extract returned only font/CSS shell with no article links). Most recent post (Philippine nuclear/naval agency targeting, 2026-08-26) is already covered by an earlier run; next most recent (Operation CameraSwarm, Dahua cameras, 2026-08-18) is outside the 24h window. No new in-window items."
+  - source_id: searchlight-cyber
+    reason: "slcyber.io/research-center is served behind a Cookiebot consent overlay; both webfetch/jina and the bridge's extract command returned only the cookie-consent policy text, not the article listing. Needs a cookie-bypass or different entry URL (e.g. a direct /research/<slug> page) in a future run."
+  - source_id: team-cymru
+    reason: "team-cymru.com/blog resolves through an ad-tracking redirect (match.adsrvr.org) and returns only a 1x1 tracking pixel via both direct fetch and jina reader — no article content reachable this run."
+  - source_id: paradigm-shift-research
+    reason: "ps.tc is a client-side SPA that returns only a meta-refresh redirect stub via the bridge's raw fetch; no server-rendered content or feed found."
+  - source_id: sans-ics
+    reason: "sans.org/blog listing (ICS focus-area filter) resolves through the same ad-tracking redirect as team-cymru and returns only a 1x1 tracking pixel; no article content reachable via jina this run."
+  - source_id: cloudflare-cf1
+    reason: "Checked (Cloudforce One tag page); latest post is 2026-08-11 (DDoS H1 2026 report), outside the 24h window. No new in-window items."
+  - source_id: google-tag
+    reason: "Checked (blog.google/threat-analysis-group redirects to the general Security blog); latest post is 2026-08-14, outside the 24h window. No new in-window items."
+  - source_id: withsecure-labs
+    reason: "Checked; most recent substantive post (GREYVIBE Russia-nexus AI-enabled group, full technical write-up) is dated 2026-08-21, outside the 24h window. No new in-window items."
+  - source_id: ahnlab-asec
+    reason: "Checked; newest posts are July-2026 monthly trend/statistics roll-ups published 2026-08-24/28, South-Korea-focused with no direct Swiss/European nexus and no substantive new technique content beyond aggregate stats. Not surfaced as an item."
