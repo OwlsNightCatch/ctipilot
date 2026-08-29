@@ -1,0 +1,320 @@
+domain: S1
+run_id: 2026-08-29T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: "2026-08-29T04:13:14Z"
+ended_at: "2026-08-29T04:22:12Z"
+duration_seconds: 538
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 6
+  bridge_fetches: 30
+items:
+  - title: >
+      PaperCut NG/MF: unauthenticated Tapestry page/component confusion chains to pre-auth RCE,
+      actively exploited before patch (CVE-2026-82078, CVE-2026-81578)
+    sources:
+      - { url: "https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/", publisher: "PaperCut Software (vendor security bulletin)", date: "2026-08-29", role: primary }
+      - { url: "https://www.huntress.com/blog/papercut-actively-exploited", publisher: "Huntress", date: "2026-08-28", role: primary }
+      - { url: "https://www.rapid7.com/blog/post/etr-papercut-ng-mf-critical-zero-day-exploited-in-the-wild/", publisher: "Rapid7", date: "2026-08-28", role: primary }
+      - { url: "https://www.bleepingcomputer.com/news/security/papercut-warns-of-ng-mf-flaw-exploited-in-zero-day-attacks/", publisher: "BleepingComputer", date: "2026-08-27", role: corroborating }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1095/", publisher: "CERT-FR (ANSSI) advisory CERTFR-2026-AVI-1095", date: "2026-08-28", role: corroborating }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0334", publisher: "NCSC-NL advisory NCSC-2026-0334", date: "2026-08-28", role: corroborating }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3060", publisher: "BSI CERT-Bund (WID-SEC catalogue, corroborates ServiceNow — see companion item)", date: "2026-08-27", role: corroborating }
+    discovery_trace: >
+      first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12882
+      (bridge ncsc-csh recent 20, post created 2026-08-28T05:29Z, updated 2026-08-28T15:14Z with
+      CVE IDs) → primary: PaperCut vendor bulletin, URL
+      https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/ →
+      pivot: Huntress technical writeup, URL https://www.huntress.com/blog/papercut-actively-exploited
+      → pivot: Rapid7 technical writeup, URL
+      https://www.rapid7.com/blog/post/etr-papercut-ng-mf-critical-zero-day-exploited-in-the-wild/ →
+      corroboration: CERT-FR CERTFR-2026-AVI-1095, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1095/
+      → corroboration: NCSC-NL CSAF NCSC-2026-0334, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0334
+      (fetched via bridge ncsc-nl csaf).
+    summary: |
+      PaperCut disclosed on 27 August 2026 that its NG and MF print-management Application Server
+      was under active exploitation, before any CVE, patch, or technical detail existed; a
+      university customer's DFIR team supplied the reproduction data. Two CVEs now cover the
+      chain: CVE-2026-81578 (CWE-306 Missing Authentication for Critical Function, CVSS 8.8) and
+      CVE-2026-82078 (CWE-470 Unsafe Reflection / dynamic class loading, CVSS4.0 9.4). Rapid7's
+      technical analysis identifies the root cause as a request-routing confusion in the bundled
+      Apache Tapestry framework's "complex direct" service dispatch: a crafted request can name one
+      page for rendering (the public Error/Exception/Home page) while a different page's component
+      actually executes — PaperCut's authorization check validates only the rendered page. Through
+      this, an unauthenticated caller reaches the administrative ConfigEditor and UserList
+      components (POST to /app?service=direct/1/Error/ConfigEditor/quickFindForm,
+      .../ConfigEditor/$Form, and .../UserList/$QuickFind.$Form) and rewrites the external Card/ID
+      database-lookup settings (user-lookup.db-driver, user-lookup.db-url,
+      user-lookup.id-to-username-sql, user-lookup.enabled) to point at an attacker-controlled JDBC
+      target. Using PaperCut's bundled Apache Derby driver's foreignViews feature, the attacker
+      pivots to an attacker-controlled H2 JDBC URL, whose inline INIT statement creates a
+      JavaScript-backed database trigger; PaperCut's bundled Nashorn engine then executes the
+      trigger to spawn an OS process — full unauthenticated RCE as the PaperCut server process.
+      Huntress observed two live customer exploitations (26 and 27 August) using base64-encoded
+      discovery commands (whoami & ver, later whoami & ver & tasklist) delivered via a dropped
+      Java .class file that deletes its own output and the PaperCut server.log afterward; one
+      victim was still on v24.1.5, exploited before the v24 patch existed. PaperCut shipped an
+      Emergency Patch (Release 2, 28 August) for v24/25/26 after an initial Release 1 patch was
+      found bypassable via the Home-page variant of the same request; there is no fix for v23 and
+      earlier, and Huntress estimates 47% of the ~2,500 PaperCut installations it tracks run v23 or
+      older. PaperCut has a documented history of severe post-exploitation impact: the 2023
+      CVE-2023-27350 RCE was mass-exploited by Clop and LockBit ransomware operators and by
+      Iran-linked state actors, disproportionately against education-sector targets.
+    region_nexus: "global; multiple confirmed victim incidents, discovery aided by a university customer"
+    primary_sector_nexus: "direct — education and government print-management deployments are typical PaperCut customers"
+    sector: "public-sector, healthcare, finance, telco"
+    cves: [CVE-2026-82078, CVE-2026-81578]
+    techniques: [T1190, T1059, T1082, T1057, "T1070.004"]
+    affected_products: ["PaperCut NG", "PaperCut MF"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "PaperCut Software security response team is investigating active exploitation of a vulnerability affecting PaperCut NG and PaperCut MF."
+        attribution: "PaperCut Software"
+        source_url: "https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/"
+      - quote: "PaperCut's authorization check could trust the rendered page and miss the permissions required by the component behind it."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/papercut-actively-exploited"
+      - quote: "By selecting either the public Error page or Exception page for display, an attacker can bypass authentication while invoking administrative components belonging to ConfigEditor or UserList."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-papercut-ng-mf-critical-zero-day-exploited-in-the-wild/"
+      - quote: "47% of the approximately 2,500 PaperCut installations Huntress tracks are running v23 or older, for which no patch is currently available."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/papercut-actively-exploited"
+    extended_notes: |
+      Detection: correlate PaperCut Application Server web-access logs for POST requests to
+      /app?service=direct/*/Error (or Exception/Home)/ConfigEditor or .../UserList paths from
+      unauthenticated or external sources — this is not a normal PaperCut admin traversal pattern.
+      Process telemetry rooted at pc-app.exe spawning any shell/child process is a high-confidence
+      discriminator (PaperCut never legitimately spawns command interpreters). Log-integrity check:
+      an unexplained gap, truncation, or deletion of server.log, and an irregular Derby in-memory
+      database name (vendor observed "pwn") in derby.log immediately preceding a "DB URL:
+      jdbc:derby:memory:..." log line. Triage note: the absence of the two documented server.log
+      error strings does NOT rule out compromise per the vendor's own advisory.
+    borderline: false
+  - title: >
+      ServiceNow AI Platform / Now Platform: three unauthenticated CVSS 10.0 flaws (GraphQL code
+      injection, SQL injection, access-control bypass) plus one sandbox-escape CVE
+    sources:
+      - { url: "https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3152242", publisher: "ServiceNow (vendor security advisory KB3152242)", date: "2026-08-27", role: primary }
+      - { url: "https://thehackernews.com/2026/08/three-cvss-100-servicenow-flaws-could.html", publisher: "The Hacker News", date: "2026-08-28", role: primary }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3060", publisher: "BSI CERT-Bund advisory WID-SEC-2026-3060", date: "2026-08-27", role: corroborating }
+    discovery_trace: >
+      first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12898
+      (bridge ncsc-csh recent 20, post created 2026-08-28T15:04Z) → primary: ServiceNow vendor KB,
+      URL https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3152242 →
+      corroboration: The Hacker News, URL
+      https://thehackernews.com/2026/08/three-cvss-100-servicenow-flaws-could.html → corroboration:
+      BSI CERT-Bund WID-SEC-2026-3060, URL
+      https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3060 (fetched via
+      bridge bsi-csaf).
+    summary: |
+      ServiceNow's 27 August 2026 advisory (KB3152242) discloses four flaws in the AI Platform and
+      Now Platform, three rated 10.0 on CVSS v4.0, all sharing the vector
+      CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H — network-reachable, low
+      complexity, no privileges, no user interaction, high impact to the vulnerable component and
+      systems connected to it. CVE-2026-18885 is a code-injection flaw in the GraphQL Composite
+      Data API letting an unauthenticated caller execute arbitrary code and read or modify instance
+      data. CVE-2026-74820 is a SQL injection reached through a dynamic schema ORDER BY clause,
+      letting an unauthenticated caller run arbitrary SQL against the instance's own database.
+      CVE-2026-18886 is an improper-access-control flaw in the system-configuration image-upload
+      processor letting an unauthenticated caller create or modify instance data for privilege
+      escalation. A fourth flaw, CVE-2026-6876 (CVSS 8.7, vector differs only in PR:L — low
+      privileges required, and no impact scored beyond the vulnerable component), is a sandbox
+      escape in the Now Platform letting a low-privileged caller execute arbitrary code — the same
+      vulnerability class as CVE-2026-6875, a pre-auth ServiceNow sandbox escape disclosed in July
+      2026 by Searchlight Cyber that Defused initially reported as exploited in the wild before
+      correcting that the observed payload matched Searchlight's own published PoC rather than
+      independent attacker activity. ServiceNow states hosted instances are already updated;
+      self-hosted and partner-hosted customers must apply the patch themselves against a four-track
+      version matrix (Xanadu, Yokohama, Zurich, Australia releases, each with its own minimum
+      hotfix). ServiceNow reports no awareness of exploitation for any of the four flaws, and no
+      public exploit code was found as of 28 August 2026. Note for severity triage: ServiceNow is
+      its own CVE Numbering Authority, and since 15 April 2026 NIST enriches only vulnerabilities
+      that appear in CISA's KEV catalogue, affect federal government software, or are designated
+      critical under Executive Order 14028 — none of these four currently qualify, so ServiceNow's
+      self-assigned 10.0/8.7 ratings are the only severity assessment on record.
+    region_nexus: "global; ServiceNow ITSM/ITOM is widely deployed across public-sector and enterprise environments including in Switzerland and the EU"
+    primary_sector_nexus: "direct — ServiceNow is a common ITSM platform in public-sector and critical-infrastructure back-office environments"
+    sector: "public-sector, finance, healthcare, telco, energy"
+    cves: [CVE-2026-18885, CVE-2026-18886, CVE-2026-74820, CVE-2026-6876]
+    techniques: [T1190]
+    affected_products: ["ServiceNow AI Platform", "ServiceNow Now Platform"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A code injection vulnerability in the GraphQL Composite Data API that could enable an unauthenticated user to execute arbitrary code and gain access to, or modify, instance data"
+        attribution: "The Hacker News, citing ServiceNow's advisory"
+        source_url: "https://thehackernews.com/2026/08/three-cvss-100-servicenow-flaws-could.html"
+      - quote: "None of the four flaws appeared in the catalog as of August 28, 2026, leaving ServiceNow's ratings as the only severity assessment on record."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/08/three-cvss-100-servicenow-flaws-could.html"
+      - quote: "ServiceNow has remediated a SQL injection vulnerability that was identified in the ServiceNow AI platform. This vulnerability could enable an unauthenticated user, in certain circumstances, to execute arbitrary SQL statements against the instance's underlying database"
+        attribution: "ServiceNow"
+        source_url: "https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3152242"
+    extended_notes: |
+      Detection concept (telemetry-class first): ServiceNow instance/application audit logs and
+      GraphQL API access logs for anomalous or malformed Composite Data API mutations from
+      unauthenticated sessions; database-audit telemetry for ORDER BY clauses containing
+      non-schema tokens; system-configuration change-audit records for image-upload-processor
+      writes not tied to an authenticated administrative session. No public PoC exists yet, so
+      this is patch-priority guidance rather than an active-exploitation hunt.
+    borderline: false
+  - title: >
+      Microsoft Exchange Server MRSProxy auth bypass (CVE-2026-62911): public PoC now live, MSRC
+      rating of "Exploitation Less Likely" from August Patch Tuesday has not been updated
+    sources:
+      - { url: "https://www.frankysweb.de/en/exchange-public-exploit-for-critical-vulnerability-cve-2026-62911/", publisher: "Franky's Web", date: "2026-08-27", role: primary }
+      - { url: "https://advisories.ncsc.nl/rss/advisories", publisher: "NCSC-NL advisory NCSC-2026-0289 (RSS feed item, update dated 2026-08-28)", date: "2026-08-28", role: corroborating }
+    discovery_trace: >
+      first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories (bridge feed,
+      item "NCSC-2026-0289 [1.01] Kwetsbaarheden verholpen in Microsoft Exchange server", updated
+      2026-08-28T11:33Z noting public PoC for CVE-2026-62911) → pivot: WebSearch ("CVE-2026-62911
+      Exchange Server proof of concept") → primary: Franky's Web technical analysis, URL
+      https://www.frankysweb.de/en/exchange-public-exploit-for-critical-vulnerability-cve-2026-62911/
+      → corroboration: Microsoft Security Response Center vulnerability record (structured API,
+      bridge msrc cve CVE-2026-62911), URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-62911.
+    summary: |
+      CVE-2026-62911 (CWE-294 Authentication Bypass by Capture-Replay, CVSS 8.0, MSRC vector
+      CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:U/C:H/I:H/A:H) was patched in Microsoft's 11 August 2026
+      Exchange Server security release, at the time rated "Exploitation Less Likely." Working
+      exploit code was published on GitHub around 27 August 2026
+      (hypnguyen1209/cve-2026-62911, per Franky's Web), and MSRC's exploitability rating has not
+      been revised despite the public PoC — the record's only revision remains its 11 August
+      initial publication. The flaw sits in the MRSProxy endpoint Exchange exposes for mailbox
+      moves: MRSProxy accepts Negotiate authentication but never validates channel bindings, the
+      check that Extended Protection for Authentication depends on. Without that check, an attacker
+      can relay a captured Negotiate/NTLM authentication exchange to the endpoint and be treated as
+      the relayed account rather than as themselves — Microsoft's own FAQ confirms the resulting
+      access lets an attacker "take over the mailboxes of all Exchange users... send emails, read
+      emails, download attachments." The flaw was discovered by Orange Tsai of DEVCORE Research
+      Team and demonstrated at Pwn2Own Berlin 2026 as one link in a three-vulnerability chain that
+      together achieved SYSTEM-level remote code execution on Exchange (a $200,000 prize, 20 Master
+      of Pwn points); it was disclosed to Microsoft via Trend Micro's Zero Day Initiative. Affected
+      are all Exchange Server builds below the August 2026 cumulative/security update: Exchange
+      Server SE RTM before 15.2.2562.46 (KB5121573), Exchange 2019 CU15 before 15.2.1748.49
+      (KB5121574), Exchange 2019 CU14 before 15.2.1544.44 (KB5121575), and Exchange 2016 CU23
+      before 15.1.2507.72 (KB5121576). There is no Exchange Emergency Mitigation workaround; the
+      August update is the only fix, and Exchange 2016/2019 updates are gated behind Microsoft's
+      paid Extended Security Updates program for organizations without current mainstream support.
+      No in-the-wild exploitation has been reported as of this writing, but the gap between a
+      public, functioning PoC and an unrevised vendor exploitability rating is itself the
+      actionable signal here.
+    region_nexus: "global; on-premises Exchange Server remains widely deployed across Swiss and European government and enterprise mail infrastructure"
+    primary_sector_nexus: "direct — on-prem Exchange is common in public-sector and critical-infrastructure back-office email deployments"
+    sector: "public-sector, finance, healthcare, energy, telco"
+    cves: [CVE-2026-62911]
+    techniques: [T1190, T1557, T1068]
+    affected_products: ["Microsoft Exchange Server 2016", "Microsoft Exchange Server 2019", "Microsoft Exchange Server Subscription Edition"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Working exploit code has surfaced for the critical Exchange vulnerability CVE-2026-62911 from the August update."
+        attribution: "Franky's Web"
+        source_url: "https://www.frankysweb.de/en/exchange-public-exploit-for-critical-vulnerability-cve-2026-62911/"
+      - quote: "This endpoint accepts Negotiate authentication but does not check the so-called channel bindings. It is precisely this check that enforces Extended Protection."
+        attribution: "Franky's Web"
+        source_url: "https://www.frankysweb.de/en/exchange-public-exploit-for-critical-vulnerability-cve-2026-62911/"
+      - quote: "Authentication bypass by capture-replay in Microsoft Exchange Server allows an authorized attacker to elevate privileges over a network."
+        attribution: "Microsoft Security Response Center"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-62911"
+      - quote: "What privileges could be gained by an attacker who successfully exploited the vulnerability? The attacker would be able to take over the mailboxes of all Exchange users, attackers can send emails, read emails, download attachments."
+        attribution: "Microsoft Security Response Center"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-62911"
+    extended_notes: |
+      Source tension worth preserving rather than resolving: MSRC's CVSS vector scores PR:L/UI:R
+      ("authorized attacker," some user interaction), while Franky's Web's technical description
+      frames the attacker as needing no valid Exchange credentials at all, since the relay
+      mechanism supplies the "authorization." Both readings point to the same operational
+      conclusion — treat any Exchange server below the August 2026 build as exposed to
+      unauthenticated mailbox-wide access once an attacker can coerce or capture a Negotiate
+      authentication exchange directed at MRSProxy. Detection concept: authentication/session
+      telemetry for MRSProxy/EWS access under the Exchange server's own machine-account context
+      arriving from unexpected source hosts (a legitimate mailbox move originates internally, not
+      via relayed external traffic); Windows Security Event 4624 Logon Type 3 network logons in
+      that account context are the platform-specific anchor.
+    borderline: false
+cve_table:
+  - cve: CVE-2026-82078
+    product: "PaperCut NG / PaperCut MF"
+    cvss: "9.4 (CVSS4.0)"
+    epss: null
+    kev: false
+    exploited: true
+    patch: "Emergency Patch Release 2 (v24/25/26); no fix for v23 and earlier"
+    source: "https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/"
+  - cve: CVE-2026-81578
+    product: "PaperCut NG / PaperCut MF"
+    cvss: "8.8 (CVSS4.0)"
+    epss: null
+    kev: false
+    exploited: true
+    patch: "Emergency Patch Release 2 (v24/25/26); no fix for v23 and earlier"
+    source: "https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/"
+  - cve: CVE-2026-18885
+    product: "ServiceNow AI Platform"
+    cvss: "10.0 (CVSS4.0)"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "Vendor patch applied to hosted instances; self-hosted/partner customers apply per version matrix"
+    source: "https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3152242"
+  - cve: CVE-2026-18886
+    product: "ServiceNow Now Platform"
+    cvss: "10.0 (CVSS4.0)"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "Vendor patch applied to hosted instances; self-hosted/partner customers apply per version matrix"
+    source: "https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3152242"
+  - cve: CVE-2026-74820
+    product: "ServiceNow AI Platform"
+    cvss: "10.0 (CVSS4.0)"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "Vendor patch applied to hosted instances; self-hosted/partner customers apply per version matrix"
+    source: "https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3152242"
+  - cve: CVE-2026-6876
+    product: "ServiceNow Now Platform"
+    cvss: "8.7 (CVSS4.0)"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "Vendor patch applied to hosted instances; self-hosted/partner customers apply per version matrix"
+    source: "https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3152242"
+  - cve: CVE-2026-62911
+    product: "Microsoft Exchange Server (2016 / 2019 / Subscription Edition)"
+    cvss: "8.0 (CVSS3.1)"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "August 2026 Exchange cumulative/security update (KB5121573/74/75/76); public PoC now available, MSRC rating not yet revised"
+    source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-62911"
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured for this deployment; general S1 coverage sweep applied instead (essential source-list slice, all 11 records attempted)"
+candidate_sources: []
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "cisa.gov listing page (news-events/cybersecurity-advisories) returned only filter-UI chrome via the bridge cisa page command, no result list; fell back to the RSS feed (cybersecurity-advisories/all.xml) which succeeded via jina fallback but returned items with empty published dates. Newest items by ICS advisory numbering (icsa-26-239-xx) date to 2026-08-27, outside the 24h window — no in-window CISA advisory content found, not treated as a hard failure since the feed did return content."
+  - source_id: cisa-directives
+    reason: "Bridge cisa page fetch succeeded (200); page content lists the same directives already known from prior runs (ED 25-03 V1, ED 26-03 V1, BOD 26-04, BOD 26-02) with no dated in-window addition visible on the listing."
+  - source_id: cert-pl
+    reason: "RSS feed fetched successfully; newest item (dool software CVEs) published 2026-08-27T14:55, outside the 24h window from this run's 2026-08-29T04:09Z anchor — no in-window CERT Polska item."
