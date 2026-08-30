@@ -9,7 +9,7 @@ summary: >
   across Manchester, Stansted and East Midlands airports, affecting roughly 8.7 million customers
   — the large majority with only an email address exposed. MAG states no bank or payment-card
   data was held, no operational or aviation-security system was touched, and no actor has claimed
-  the incident. The UK ICO has confirmed receipt of a breach report.
+  the incident.
 discovered_at: "2026-08-28T06:10:00Z"
 updated_at: null
 event_date: "2026-08-27"
@@ -72,11 +72,26 @@ updates:
       pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
       restated the summary or padded without responder value. No factual claim changed.
     fields: [body]
+  - at: "2026-08-30T13:12:06Z"
+    run_id: 2026-08-30T1312Z-audit
+    type: correction
+    summary: >
+      The claim that the UK ICO had confirmed receipt of a breach report and was assessing it is
+      not stated by any source this entry cites and has been removed from the summary and the
+      body. What the reporting does establish is narrower: The Register says the ICO asked MAG
+      not to disclose details of the ransom note, the demands or the group name, and MAG's own
+      statement names no regulator at all. Regulator engagement is real; a confirmed filing is
+      not on the record.
+    fields: [summary, body]
 migrated_from: null
 ---
 
 Manchester Airports Group (MAG), operator of Manchester, London Stansted and East Midlands airports, confirmed on 2026-08-27 that "an unauthorised third party" obtained "a quantity of customer data" relating to car-park, lounge and Fast Track bookings and in-airport WiFi sign-ups ([Manchester Airports Group, 2026-08-27](https://www.manchesterairport.co.uk/help/data-security-incident/)). Roughly 8.7 million customers are affected, the large majority with only an email address exposed — collected during public-WiFi signup: "the overwhelming majority of those affected have only had their email addresses compromised" ([The Register, 2026-08-27](https://www.theregister.com/security/2026/08/27/cybercrooks-jet-off-with-manchester-airports-group-customer-data/5292943)) — a smaller subset also had phone numbers, vehicle registrations and postcodes taken.
 
-MAG states neither it nor the accessed system holds bank or payment-card data, and that no operational or aviation-security system was touched: "at no point has passenger safety or aviation security been compromised" ([Manchester Airports Group, 2026-08-27](https://www.manchesterairport.co.uk/help/data-security-incident/)). The group has suspended its Manage My Booking self-service portal as a precaution while investigating. The Register reports — attributed to the outlet, not confirmed by MAG's own statement — that the intrusion compromised one internal system and then pulled files from a third-party-hosted database, that the attacker's ransom demand was notably lower than the group's typical extortion demand and was not paid, and that MAG characterises the incident internally as "a hack, not a lapse." No extortion group or actor has claimed the incident publicly at time of writing, and neither MAG nor any outlet has named an access vector, an exploited product, or a CVE. The UK ICO has confirmed receipt of a breach report and is assessing it.
+MAG states neither it nor the accessed system holds bank or payment-card data, and that no operational or aviation-security system was touched: "at no point has passenger safety or aviation security been compromised" ([Manchester Airports Group, 2026-08-27](https://www.manchesterairport.co.uk/help/data-security-incident/)). The group has suspended its Manage My Booking self-service portal as a precaution while investigating. The Register reports — attributed to the outlet, not confirmed by MAG's own statement — that the intrusion compromised one internal system and then pulled files from a third-party-hosted database, that the attacker's ransom demand was notably lower than the group's typical extortion demand and was not paid, and that MAG characterises the incident internally as "a hack, not a lapse." No extortion group or actor has claimed the incident publicly at time of writing, and neither MAG nor any outlet has named an access vector, an exploited product, or a CVE. The Register reports that the Information Commissioner's Office "asked MAG not to share details of the ransom note, the extortion demands, or the group name" ([The Register, 2026-08-27](https://www.theregister.com/security/2026/08/27/cybercrooks-jet-off-with-manchester-airports-group-customer-data/5292943)); no source states that the ICO has confirmed receiving a breach report, and MAG says only that it has "informed and are working with the relevant authorities".
 
 No source states an access vector, exploited product or CVE, and no extortion actor has claimed responsibility; per The Register's reporting the data was obtained from an internal system and a third-party-hosted database. The transferable point is scale rather than mechanism: 8.7 million records exposed through apparently low-sensitivity WiFi-signup collection shows how ancillary customer-facing services (guest WiFi, parking bookings) can carry disproportionate downstream exposure.
+
+## Correction — 2026-08-30T13:12:06Z
+
+This entry stated that the UK Information Commissioner's Office had confirmed receipt of a breach report and was assessing it. No source cited here says that. MAG's own statement names no regulator, saying only that it has "informed and are working with the relevant authorities" ([Manchester Airports Group, 2026-08-27](https://www.manchesterairport.co.uk/help/data-security-incident/)), and the closest the reporting comes is The Register's account that the ICO "asked MAG not to share details of the ransom note, the extortion demands, or the group name" ([The Register, 2026-08-27](https://www.theregister.com/security/2026/08/27/cybercrooks-jet-off-with-manchester-airports-group-customer-data/5292943)). The distinction matters for anyone reading this as a regulatory-timeline signal: engagement is on the record, a confirmed statutory filing is not.

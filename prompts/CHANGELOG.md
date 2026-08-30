@@ -4,6 +4,27 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.8 — 2026-08-30 (the KEV sweep becomes a checklist, and brevity stops shrinking the ATT&CK mapping)
+
+### Why
+
+Two findings from the 2026-08-30 quality audit, both about signal a fire loses without ever noticing.
+
+**KEV.** A CISA KEV listing is jurisdiction-agnostic confirmation that a flaw is exploited in the wild (PD-13) — the pipeline's single strongest vulnerability signal. Sweeping it was purely attentional: a research sub-agent read the feed and returned what it noticed. The 2026-08-28 catch-up fire did exactly that, surfaced four in-window additions, and never mentioned CVE-2026-21962 (Oracle HTTP Server / WebLogic Server Proxy Plug-in, CVSS 10.0, exploited since January, government-sector targeting per the exposed operator's own reconnaissance list) or CVE-2026-60004 (Gitea, CVSS 9.8, confirmed exploited to drop miners) anywhere — not as entries, not as borderline drops. Nothing in the run distinguished "considered and dropped" from "never seen", so nothing downstream could catch it either. Both are recovered by the audit that found them.
+
+**Mapping density.** The v4.2 brevity hardening told the composer to say what the reader needs and stop, and the anti-hallucination rule binds `techniques[]` to behaviours *the body describes*. Together those couple mapping completeness to prose length: a shorter body mechanically shrinks the set of ids the composer believes it may map. The audit measured it — `threat`-kind entries fell from 12.6 and 11.1 mapped ids per entry over the two preceding windows to 4.3 in the window after v4.2, while `incident` and `vulnerability` kinds (whose sources genuinely describe less) stayed flat. Under-mapping never shows in the entry a reader opens; it shows in the `/attack/` matrix, the entity TTP profiles and the Navigator exports, which quietly stop carrying the technique.
+
+### What changed
+
+- **`tools/kev_window_diff.py` (new, stdlib-only).** Lists every KEV addition with `dateAdded` inside a window and marks the ids no entry and no `state/cves_seen.json` record has ever covered, checking both surfaces so an entry whose CVE never reached the index still reports covered. Reads the catalog through `tools/fetch_source.py cisa-kev` (cisa.gov 403s the routine UA), takes `--since` or `--window-hours`, and offers `--json` and `--kev-file` for scripted and offline use. Uncovered rows are information, never a gate failure — judgement stays with the agent.
+- **`prompts/cti-run.md` Phase 0 step 6b (new).** The run executes that diff once `window_hours` is known and keeps the output under `work/<run-id>/`. Every NOT COVERED row must end the run with a disposition: a new entry, an `update` record on the entry that already covers the finding, or an explicit `borderline-drop:` line. Silence on a row is a defect; an unreadable feed is a disclosed gap, not a skipped duty.
+- **`prompts/cti-run.md` § ATT&CK in metadata.** Brevity is stated to govern prose and never the mapping. `techniques[]` is bound to what the cited **sources** describe, not to how many sentences the body spends describing it, so a short entry maps as completely as a long one and the body names those behaviours densely in plain language instead of dropping them. The anti-hallucination floor is restated as what it always was — source evidence, not body length.
+- **`tools/check_run.py` — new `frontmatter-yaml` portability check.** Entry frontmatter must parse under a standards-compliant YAML parser, not only under this repo's deliberately lenient `parse_yaml_subset`. Three entries carried double-quoted scalars holding Windows paths or unescaped inner quotes that a compliant parser rejects outright while reading correctly here; the store is published as a machine-readable base for downstream triage agents, so that divergence is a real portability defect. WARN, never FAIL (the value on disk is correct — the serialization is not), scoped to entries in `--all` and to the run's own entries plus its record in run scope, and skipped with a stated reason when PyYAML is absent so the gate stays stdlib-only.
+
+### What stays
+
+Everything else. PD-13's split between the KEV *listing* (exploitation confirmation, jurisdiction-agnostic) and the KEV *remediation deadline* (a US-FCEB compliance date that never drives priority) is unchanged — step 6b surfaces rows, it does not promote them. The relevance gate (PD-11) still decides what publishes, and a KEV addition that is genuinely out of scope for this constituency is still a legitimate `borderline-drop`. The mapping's evidence floor is unchanged: an id no source supports remains a hallucination, an honest empty mapping on a `research` entry remains honest, and `threat`/`incident`/`vulnerability` entries still never ship empty. Brevity in reader-facing text is unchanged and still binding.
+
 ## 4.7 — 2026-08-29 (the legacy-strategic entries are deleted, and the schema that carried them with them)
 
 ### Why

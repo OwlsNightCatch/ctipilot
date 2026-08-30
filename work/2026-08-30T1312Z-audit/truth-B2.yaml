@@ -1,0 +1,267 @@
+# Truth pass B2 — 2026-08-30T1312Z-audit
+# Model: Sonnet 5 (claude-sonnet-5)
+# Timestamps: started_at=2026-08-30T13:17:15Z ended_at=2026-08-30T13:29:17Z duration_seconds=722
+
+- entry: adobe-august-2026-coldfusion-campaign-classic-cvss10.md
+  verdict: clean
+
+- entry: claroty-danfoss-ak-sm-800a-code-of-the-day-rce.md
+  verdict: imprecision
+  defect: >
+    Evidence quote attributed verbatim to Claroty is a lightly edited paraphrase, not a
+    contiguous verbatim substring: entry quotes "the field value being formatted into the
+    shell command is not sanitized and could include OS shell directives controlled by an
+    attacker," dropping "according to our analysis" and "potentially" and "that yield
+    subsequent commands" and changing "a potential attacker" to "an attacker."
+  ground_truth: >
+    Claroty's article states verbatim: "The field value being formatted into the shell
+    command is not sanitized according to our analysis and could potentially include OS
+    shell directives that yield subsequent commands controlled by a potential attacker."
+  ground_truth_url: "https://claroty.com/team82/research/freeze-the-controller-defrost-the-food-uncovering-vulnerabilities-in-danfoss-refrigeration-controllers"
+
+- entry: cncmachinerms-babadeda-loader-enumtimeformats-shellcode.md
+  verdict: factual-error
+  defect: >
+    Two evidence quotes attributed to LevelBlue are not contiguous verbatim substrings of
+    the source. (1) "A ClickFix lure launches a legitimately signed IBM SPSS IDE
+    executable, whose scripting engine is abused to load a malicious DLL." drops ",
+    WinWrapIDE.exe," and changes "that launches" to "launches." (2) "It takes a screenshot
+    on first contact, then beacons every 600 seconds, with seven persistence mechanisms."
+    is a fabricated composite splicing one sentence from a bullet list ("It takes a
+    screenshot on first contact, then beacons every 600 seconds.") with a phrase from a
+    separate, later paragraph's different list ("...a local account backdoor, seven
+    persistence mechanisms, and twenty typed commands...") as if it were one continuous
+    quoted sentence.
+  ground_truth: >
+    LevelBlue's article reads: "Infection starts with a ClickFix lure that launches a
+    legitimately signed IBM SPSS IDE executable, WinWrapIDE.exe, whose scripting engine is
+    abused to load a malicious DLL." Separately, under "A few other details": "It takes a
+    screenshot on first contact, then beacons every 600 seconds." appears as its own bullet,
+    and "seven persistence mechanisms" appears only in an unrelated earlier sentence: "The
+    1,200+ strings we decoded from the binary describe an interactive shell, a file
+    manager, screen capture functionality, a local account backdoor, seven persistence
+    mechanisms, and twenty typed commands for staging and running whatever the operator
+    sends next." No sentence in the source combines "beacons every 600 seconds" with
+    "seven persistence mechanisms."
+  ground_truth_url: "https://www.levelblue.com/blogs/spiderlabs-blog/cncmachinerms-the-undocumented-rat-at-the-end-of-a-babadeda-chain"
+
+- entry: cve-2026-53362-linux-kernel-ipv6-udp-fraggap-kev.md
+  verdict: factual-error
+  defect: >
+    Frontmatter cves[0].auth is "pre-auth", but the entry's own body quotes the CVSS 3.1
+    vector as "AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H" — PR:L means the attacker must already
+    hold low-level (unprivileged local user) access, which is the opposite of "pre-auth"
+    (no privileges required, PR:N). The frontmatter contradicts the entry's own cited
+    vector.
+  ground_truth: >
+    The upstream kernel fix commit (mirrored at gregkh/linux, since git.kernel.org itself
+    returns an Anubis anti-bot JS challenge to every fetch rung) and two independent CVE
+    aggregators (strix.ai, app.opencve.io) both give CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/
+    I:H/A:H, score 7.8 — "Exploitation requires only local access; any user who can open a
+    UDPv6 socket [with] MSG_MORE and MSG_SPLICE_PAGES flags simultaneously" (opencve.io),
+    i.e. an already-present unprivileged local user, not an unauthenticated remote actor.
+  ground_truth_url: "https://github.com/gregkh/linux/commit/14200d435af9a9eeb444f529fc2f689a236b7962"
+
+- entry: cve-2026-53362-linux-kernel-ipv6-udp-fraggap-kev.md
+  verdict: imprecision
+  defect: >
+    (low confidence) Entry states "no version-specific list published" / body: "no public
+    exploitation narrative, named cluster, or affected-distribution list has been located
+    beyond the KEV/EUVD listing and the upstream kernel commit itself" — but a specific
+    affected-version list does exist via NVD's CPE configuration data, mirrored
+    consistently by at least two independent third-party CVE trackers.
+  ground_truth: >
+    strix.ai and app.opencve.io (both citing "Source: NVD / NIST") give identical affected
+    ranges for CVE-2026-53362: "Linux Kernel >= 6.0, < 6.1.177", ">= 6.2, < 6.6.144", ">=
+    6.7, < 6.12.95", ">= 6.13, < 6.18.38", ">= 6.19, < 7.1.3" — a version-specific list is
+    published, just not surfaced by this run's research (NVD/MITRE cannot be the entry's
+    cited source per house rules, but the underlying fact — that such a list exists — is
+    verifiable and the entry's negative claim overstates the research gap).
+  ground_truth_url: "https://www.strix.ai/cve/CVE-2026-53362"
+
+- entry: cve-2026-66384-jfrog-artifactory-docker-cache-traversal-kev.md
+  verdict: imprecision
+  defect: >
+    Sole JFrog source URL ("https://docs.jfrog.com/releases/docs/jfrog-security-advisories")
+    is a single continuously-updated listing page carrying JFrog's entire CVE history back
+    to 2021 (60+ CVEs), not a URL scoped to CVE-2026-66384 specifically, even though the
+    page itself provides a stable in-page anchor for the specific CVE
+    ("#cve-2026-66384---authenticated-users-may-write-data-outside-the-intended-docker-cache-path")
+    that the entry did not use.
+  ground_truth: >
+    The fetched page confirms the CVE-2026-66384 section exists at that anchor with
+    matching CWE-22, "Medium" severity and the exact affected/fixed version data the entry
+    cites — the content is correct, only the citation granularity is a generic/listing-page
+    URL rather than the specific advisory anchor.
+  ground_truth_url: "https://docs.jfrog.com/releases/docs/jfrog-security-advisories#cve-2026-66384---authenticated-users-may-write-data-outside-the-intended-docker-cache-path"
+
+- entry: cve-2026-66384-jfrog-artifactory-docker-cache-traversal-kev.md
+  verdict: imprecision
+  defect: >
+    (low confidence) Frontmatter cves[0].cvss is "5.3" but the entry's own cited JFrog
+    source only states severity "Medium" — no numeric CVSS score appears anywhere on the
+    JFrog advisory page (checked in both the trafilatura extraction and the raw HTML for
+    the CVE-2026-66384 section specifically).
+  ground_truth: >
+    Third-party CVE trackers (vulnerability.circl.lu, citing cvelistv5; strix.ai) both give
+    5.3 (Medium) for CVE-2026-66384, so the number is very likely correct, but it is not
+    verifiable against the entry's own sole cited source, which never states a numeric
+    score for this CVE.
+  ground_truth_url: "https://vulnerability.circl.lu/vuln/CVE-2026-66384"
+
+- entry: gtig-avdh-agentic-vulnerability-discovery-stolen-source.md
+  verdict: clean
+
+- entry: icagenda-joomla-calendar-module-unauth-sqli.md
+  verdict: clean
+
+- entry: kaltura-mwembed-unauth-rce-file-read-no-patch.md
+  verdict: factual-error
+  defect: >
+    The entry's central framing — headline "no vendor response, no patch"; frontmatter
+    cves[].status: [no-patch] and fixed: "None available" for both CVE-2026-19912 and
+    CVE-2026-19913; body: "no vendor response or patch exists as of 2026-08-28" — is
+    contradicted by the entry's own second, cited source (CERT/CC VU#308749), whose
+    Solution section states a vendor patch now exists. The entry also omits CERT/CC's
+    scoping clarification that only the legacy Player V2 line is affected, not the
+    currently supported Kaltura Player V7.
+  ground_truth: >
+    kb.cert.org/vuls/id/308749 (successfully fetched via jina after extract/url both
+    returned corrupted binary bodies): "### Solution — Kaltura has released new patches to
+    remediate these vulnerabilities in all affected legacy Player V2 versions. Customers
+    using legacy players, including self-hosted legacy player deployments (html5lib v2.x),
+    should update to the patched version or, preferably, migrate to the newer and currently
+    supported Kaltura Player V7 platform." Also: "Notably, only versions of the legacy
+    player (Player V2) are vulnerable; these issues do not affect any versions of the
+    currently supported Kaltura Player V7." The page's own "Date Last Updated: 2026-08-28
+    19:59 UTC" is after this run's research window (04:09 UTC) and after the no-network
+    audit pass (15:00 UTC same day), which is presumably why neither caught it — but as of
+    this truth pass (2026-08-30) the entry's "no patch" claim is stale and should be
+    corrected via a changelog update.
+  ground_truth_url: "https://kb.cert.org/vuls/id/308749"
+
+- entry: kudelski-bismarck-dprk-it-worker-gambling-fakecalls-overlap.md
+  verdict: factual-error
+  defect: >
+    Body states "Kudelski's own article treats Bismarck as distinct from the already-
+    tracked PurpleDelta North Korean IT-worker cluster rather than as an alias" — this is
+    an analytical-link-as-fact claim about what the cited source itself does; the cited
+    Kudelski article never mentions "PurpleDelta" anywhere in its text.
+  ground_truth: >
+    Full text of kudelskisecurity.com/research/inside-north-koreas-cybercrime-ecosystem-
+    fake-it-workers-gambling-networks-and-malware contains no occurrence of "PurpleDelta"
+    or any comparable term; the article discusses "Bismarck," DPRK universities (Kim Chaek
+    University of Technology, Jinung Institute, PYITC) and the "Base" system, never any
+    actor called PurpleDelta.
+  ground_truth_url: "https://kudelskisecurity.com/research/inside-north-koreas-cybercrime-ecosystem-fake-it-workers-gambling-networks-and-malware"
+
+- entry: kudelski-bismarck-dprk-it-worker-gambling-fakecalls-overlap.md
+  verdict: imprecision
+  defect: >
+    The frontmatter evidence[] quote "We assess that DPRK actors may have reused IP
+    addresses from the gambling operation because the domains were purchased by the
+    associates rather than by [Bismarck directly]." alters the source's actual wording in a
+    way that changes the analytical claim, not merely redacts an IOC as the sourcing_note
+    asserts ("lightly redacted to remove literal indicators while preserving the analytic
+    claim") — no indicator was in this sentence; the phrase "or other North Korean
+    operatives" was dropped and "'Bismarck'" replaced with "[Bismarck directly]", narrowing
+    the source's claim that the purchasers were neither Bismarck NOR any other DPRK
+    operative.
+  ground_truth: >
+    Source: "We assess that DPRK actors may have reused IP addresses from the gambling
+    operation because the domains were purchased by the associates rather than by
+    "Bismarck" or other North Korean operatives."
+  ground_truth_url: "https://kudelskisecurity.com/research/inside-north-koreas-cybercrime-ecosystem-fake-it-workers-gambling-networks-and-malware"
+
+- entry: manchester-airports-group-data-breach-8-7-million.md
+  verdict: factual-error
+  defect: >
+    Both the frontmatter summary and the body state as settled fact "The UK ICO has
+    confirmed receipt of a breach report and is assessing it" with no inline citation
+    anywhere in the paragraph. None of the entry's three fetched sources (MAG's own
+    statement, The Register, Infosecurity Magazine) state that the ICO confirmed receipt of
+    a breach report; the closest supporting fact is The Register's report that "The
+    Information Commissioner's Office (ICO) asked MAG not to share details of the ransom
+    note, the extortion demands, or the group name" — engagement, not a stated confirmation
+    of receipt.
+  ground_truth: >
+    MAG's own statement page names no regulator at all ("we have informed and are working
+    with the relevant authorities"); Infosecurity Magazine does not mention the ICO;
+    The Register states only the ICO-driven non-disclosure request, never "confirmed
+    receipt of a breach report."
+  ground_truth_url: "https://www.theregister.com/security/2026/08/27/cybercrooks-jet-off-with-manchester-airports-group-customer-data/5292943"
+
+- entry: martigny-combe-valais-municipal-email-compromise.md
+  verdict: clean
+
+- entry: ncsc-uk-ot-edge-device-disruptive-targeting-advisory.md
+  verdict: imprecision
+  defect: >
+    Body sentence "It also connects topically to the prior coverage here of the
+    Minnesota/US water-utility PLC campaign and the associated European exposure count
+    (86% of 4,117 internet-facing Siemens SIMATIC S7-1200 units concentrated in four EU
+    countries, reached through mobile-carrier connectivity)" carries a specific, quantified
+    claim with no inline citation anywhere in the sentence or surrounding paragraph, and
+    `references: []` is empty despite the sentence explicitly invoking "prior coverage
+    here" (which per house convention should be declared in references[] if it is a
+    genuinely separate, linked finding).
+  ground_truth: >
+    Not evidenced against the cited NCSC UK advisory — the advisory (fully read) never
+    mentions Minnesota, a water utility, Siemens, SIMATIC S7-1200, or any specific
+    percentage/count; this content is not supported by the entry's sole listed source.
+  ground_truth_url: "https://www.ncsc.gov.uk/news/disruptive-cyber-activity-highlights-risk-from-internet-exposed-systems-and-edge-devices"
+
+- entry: nimbus-manticore-twostroke-backdoor-europe.md
+  verdict: imprecision
+  defect: >
+    Body background paragraph ("six new RAT variants (MiniUpdate/MiniJunk V2) via
+    AppDomainManager hijacking February–April 2026" and "the NightLedger backdoor with
+    BridgeHead/ArcBridge WebSocket tunnelers documented by Kaspersky in July 2026") states
+    specific facts (tool names, technique, dates, attributing outlet) with no inline
+    citation, and the two outlets those facts trace to (Unit 42 and Kaspersky Securelist)
+    are not listed in `sources: []` at all, despite the entry's `verification: single-
+    source` framing implying Group-IB alone supports the whole entry.
+  ground_truth: >
+    The facts are accurate — Unit 42 (unit42.paloaltonetworks.com, dated 2026-05-22)
+    documents "six new remote access Trojan (RAT) variants" split into "MiniUpdate" and
+    "MiniJunk V2" families using "AppDomainManager hijacking," deployed February through
+    April 2026; Securelist (securelist.com, dated 2026-07-28) documents "NightLedger,
+    a new Windows backdoor... and two custom WebSocket-based tunnelers, ArcBridge and
+    BridgeHead." Both are unlinked and uncited within the entry despite being the actual
+    source of these specific claims.
+  ground_truth_url: "https://unit42.paloaltonetworks.com/tracking-iran-apt-screening-serpens/"
+
+- entry: protection-civile-france-eprotec-breach-volunteers.md
+  verdict: factual-error
+  defect: >
+    Body sentence "the FNPC explicitly states no data belonging to people the Protection
+    Civile has rescued is involved, and that neither passwords nor banking details appear
+    in the leak" misattributes the passwords/banking claim to FNPC. The Franceinfo/AFP
+    article (FNPC's own quoted statement) never mentions passwords or banking data at all;
+    that specific, hedged non-finding comes from FrenchBreaches' own analysis of the
+    exfiltrated data, not from an FNPC statement, and FrenchBreaches hedges it as an
+    absence-of-evidence finding, not the flat categorical claim the entry states.
+  ground_truth: >
+    FrenchBreaches: "Les éléments actuellement disponibles ne permettent pas d'établir la
+    présence de mots de passe, de coordonnées bancaires ou de pièces d'identité dans les
+    données exfiltrées" (the currently available elements do not allow us to establish the
+    presence of passwords, banking details or ID documents in the exfiltrated data) — a
+    hedged non-finding by the tracker analysing leaked samples, not an FNPC statement, and
+    not a flat "neither...appear" claim.
+  ground_truth_url: "https://frenchbreaches.com/alertes/protection-civile-mt27j64epv2smy5m0g"
+
+- entry: protection-civile-france-eprotec-breach-volunteers.md
+  verdict: imprecision
+  defect: >
+    (low confidence) Body states the federation "only became aware of the breach around
+    17–18 August" — the cited Franceinfo/AFP article states a single specific day ("lundi"
+    / Monday), not a range; given the announcement was confirmed Friday 21 August, the
+    Monday referenced computes to 17 August specifically, not a 17-18 span.
+  ground_truth: >
+    Franceinfo: "Elle précise avoir pris connaissance de cette cyberattaque lundi" (it
+    states it became aware of this cyberattack on Monday), in an article headlined
+    "vendredi 21 août" (Friday 21 August) — a single named weekday, not a range.
+  ground_truth_url: "https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/la-protection-civile-annonce-avoir-ete-visee-par-une-cyberattaque-en-mars_8156621.html"
+
+- entry: splunk-svd-2026-0801-embedded-report-session-hijack.md
+  verdict: clean

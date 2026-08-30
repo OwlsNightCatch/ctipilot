@@ -64,6 +64,16 @@ updates:
       pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
       restated the summary or padded without responder value. No factual claim changed.
     fields: [body]
+  - at: "2026-08-30T13:12:06Z"
+    run_id: 2026-08-30T1312Z-audit
+    type: correction
+    summary: >
+      This entry said Kudelski's report treats Bismarck as distinct from the already-tracked
+      PurpleDelta IT-worker cluster rather than as an alias. Kudelski's report never mentions
+      PurpleDelta at all, so it makes no such judgement in either direction, and presenting a
+      silence as a stated analytic position is a claim the source does not support. Replaced with
+      what the report does and does not say.
+    fields: [body]
 migrated_from: null
 ---
 
@@ -71,4 +81,8 @@ Kudelski Security, a Swiss research lab headquartered in Cheseaux-sur-Lausanne, 
 
 Separately, a DPRK-affiliated manager's own WinSCP credential vault — stolen in a 2021 leak — held access to historical Emotet botnet loader infrastructure, and cross-referencing that infrastructure's later reuse ties it into a loader role for subsequent campaigns. The investigation names operational bases and identifies university-affiliated IT-worker pipelines at named North Korean technical universities, plus organisational entities supporting fake IT-worker placement across multiple countries — directly relevant tradecraft for this constituency's HR and identity-vetting teams screening remote-hire pipelines, where a DPRK IT worker's fabricated identity and credentials are the initial-access vector rather than a technical exploit.
 
-Kudelski's own article treats Bismarck as distinct from the already-tracked PurpleDelta North Korean IT-worker cluster rather than as an alias. This is a research/awareness finding for HR and identity-vetting process design rather than a technical exposure with a specific patch, hunt or block action.
+Kudelski does not relate Bismarck to any previously named North Korean IT-worker cluster: its report names Bismarck, several DPRK universities and the "Base" system, and makes no comparison to other tracked clusters either way. This is a research/awareness finding for HR and identity-vetting process design rather than a technical exposure with a specific patch, hunt or block action.
+
+## Correction — 2026-08-30T13:12:06Z
+
+Kudelski's report does not distinguish Bismarck from the PurpleDelta IT-worker cluster, because it never mentions PurpleDelta. This entry previously presented that distinction as the source's own analytic position. The report names Bismarck, the DPRK universities behind it and the "Base" system, and draws no comparison to any other tracked cluster ([Kudelski Security, 2026-08-26](https://kudelskisecurity.com/research/inside-north-koreas-cybercrime-ecosystem-fake-it-workers-gambling-networks-and-malware)). Whether Bismarck overlaps an existing cluster is therefore an open question, not one this reporting answers.

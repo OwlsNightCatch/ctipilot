@@ -1,0 +1,143 @@
+domain: G1
+run_id: 2026-08-30T1312Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-30T13:17:49Z
+ended_at: 2026-08-30T13:25:39Z
+duration_seconds: 470
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 6
+  bridge_fetches: 22
+
+items:
+  - title: "CVE-2026-21962 — Oracle HTTP Server / WebLogic Server Proxy Plug-in: unauthenticated access-control bypass added to CISA KEV, exploited since January against government infrastructure"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/08/24/cisa-adds-one-known-exploited-vulnerability-catalog", publisher: "CISA", date: "2026-08-24", role: "primary" }
+      - { url: "https://www.securityweek.com/cisa-warns-of-exploited-oracle-weblogic-vulnerability/", publisher: "SecurityWeek", date: "2026-08-25", role: "primary" }
+      - { url: "https://www.netspi.com/blog/executive-blog/critical-vulnerability/oracle-weblogic-server-proxy-plugin-cve-2026-21962-overview-takeaways/", publisher: "NetSPI", date: "2026-01-22", role: "corroborating" }
+      - { url: "https://socradar.io/blog/snowlight-government-chinese-campaign/", publisher: "SOCRadar", date: "2026-07-31", role: "background" }
+    discovery_trace: "first seen at: bridge:cisa-kev, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (KEV JSON feed, entries dated >= 2026-08-24) → primary: CISA alert, URL https://www.cisa.gov/news-events/alerts/2026/08/24/cisa-adds-one-known-exploited-vulnerability-catalog → pivot: SecurityWeek, URL https://www.securityweek.com/cisa-warns-of-exploited-oracle-weblogic-vulnerability/ → pivot: NetSPI technical write-up, URL https://www.netspi.com/blog/executive-blog/critical-vulnerability/oracle-weblogic-server-proxy-plugin-cve-2026-21962-overview-takeaways/ → background: SOCRadar SNOWLIGHT report, URL https://socradar.io/blog/snowlight-government-chinese-campaign/"
+    summary: |
+      CISA added CVE-2026-21962 to its Known Exploited Vulnerabilities catalog on 2026-08-24 — an improper-access-control flaw (CVSS 3.1 base 10.0) in the WebLogic Server Proxy Plug-in for Apache HTTP Server and Microsoft IIS, and in Oracle HTTP Server, which bundles the plug-in. The flaw is remotely exploitable over HTTP with no authentication, no privileges and no user interaction: an attacker sends malformed proxy-forwarding requests that bypass the plug-in's access controls, gaining unauthorized read/write access to data the proxy handles and a pivot path into backend WebLogic clusters — a component that vendor guidance (NetSPI) notes typically sits in a DMZ acting as a trusted gateway, so the flaw undermines exactly the boundary organizations rely on it for. Oracle patched the flaw in its January 2026 Critical Patch Update; CloudSEK's honeypots recorded exploitation attempts beginning 22 January 2026, immediately after a public PoC appeared, and SOCRadar's July 2026 analysis of an exposed China-nexus (UNC5174/UNC6586, SNOWLIGHT malware family) operator's staging server lists CVE-2026-21962 among nine weaponized CVEs used in a campaign SOCRadar states prioritized government-sector targets (>85% of the reconnaissance list resolved to second-level government domains across 100+ countries). SecurityWeek's 2026-08-25 coverage of the KEV listing states it is unclear which specific attacks triggered the addition. CISA instructed FCEB agencies to remediate by 2026-08-27 (BOD 26-04).
+    region_nexus: "global; SOCRadar's background reporting on the exploiting operator's target list names government infrastructure across 100+ jurisdictions as the prioritized sector — directly transferable to Swiss federal/cantonal public-sector estates running Oracle HTTP Server / WebLogic as an internet-facing proxy tier"
+    primary_sector_nexus: "direct — SOCRadar's cited campaign explicitly prioritizes government-sector (.gov-class) domains; CISA's own KEV listing targets FCEB (federal government) remediation"
+    sector: "public-sector"
+    cves: ["CVE-2026-21962"]
+    techniques: ["T1190"]
+    affected_products: ["Oracle HTTP Server", "Oracle WebLogic Server Proxy Plug-in (Apache HTTP Server and Microsoft IIS variants)"]
+    entity_keys: ["product:oracle-weblogic-server", "actor:unc5174", "actor:unc6586", "malware:snowlight"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CISA has added CVE-2026-21962 to its Known Exploited Vulnerabilities (KEV) Catalog"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/08/24/cisa-adds-one-known-exploited-vulnerability-catalog"
+      - quote: "The vulnerability has been exploited since January, with the first attacks flagged by CloudSEK."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/cisa-warns-of-exploited-oracle-weblogic-vulnerability/"
+      - quote: "Government Sector Prioritization: More than 85% of mapped reconnaissance listings target national infrastructure, resolving to second-level government domains"
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/snowlight-government-chinese-campaign/"
+      - quote: "Because these proxy plugins often sit in DMZ environments, the exposure is significant."
+        attribution: "NetSPI"
+        source_url: "https://www.netspi.com/blog/executive-blog/critical-vulnerability/oracle-weblogic-server-proxy-plugin-cve-2026-21962-overview-takeaways/"
+    extended_notes: |
+      This is a coverage GAP for the audit: not present anywhere in prior_coverage.json. Priority recommendation: high (CVSS 10.0, pre-auth, unauthenticated, months of confirmed exploitation, fresh KEV addition in-window, government-sector nexus in background reporting). Detection concept: web/proxy access logs on Oracle HTTP Server / WebLogic Proxy Plug-in hosts for malformed or anomalous forwarding requests targeting the proxy path (path traversal / header manipulation patterns per multiple secondary sources); hardening: apply Oracle's January 2026 CPU, and treat any DMZ-fronting WebLogic proxy plug-in instance as a priority patch target regardless of whether the backend WebLogic cluster itself is patched.
+    priority_recommendation: high
+
+  - title: "CVE-2026-60004 — Gitea diffpatch endpoint: unauthenticated/low-privilege Git-hook code injection added to CISA KEV, exploited to deploy crypto-mining payloads"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/08/25/cisa-adds-one-known-exploited-vulnerability-catalog", publisher: "CISA", date: "2026-08-25", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/08/26/gitea-cve-2026-60004-exploited-in-the-wild/", publisher: "Help Net Security", date: "2026-08-26", role: "primary" }
+      - { url: "https://github.com/go-gitea/gitea/security/advisories/GHSA-rcr6-4jqh-j84m", publisher: "Gitea (GitHub Security Advisory)", date: "2026-07-28", role: "primary" }
+    discovery_trace: "first seen at: bridge:cisa-kev, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (KEV JSON feed, dateAdded 2026-08-25) → primary: CISA alert, URL https://www.cisa.gov/news-events/alerts/2026/08/25/cisa-adds-one-known-exploited-vulnerability-catalog → pivot: Help Net Security, URL https://www.helpnetsecurity.com/2026/08/26/gitea-cve-2026-60004-exploited-in-the-wild/ → primary: Gitea GHSA advisory, URL https://github.com/go-gitea/gitea/security/advisories/GHSA-rcr6-4jqh-j84m"
+    summary: |
+      CISA added CVE-2026-60004 (CVSS 9.8) to its KEV catalog on 2026-08-25: a code-injection flaw in Gitea's diffpatch endpoint (services/repository/files/patch.go), which applies attacker-controlled patches inside a shared bare temporary clone. Submitting the same patch twice creates an add/add collision; Git's three-way merge fallback checks out the indexed path even under `--cached`, and because the repository root in a bare clone is $GIT_DIR, an executable file entry named as a Git hook path becomes a live hook. Git invokes that hook while writing the index, executing repository-controlled shell commands as the Gitea OS/service account. Exploitation needs only ordinary repository write access — with Gitea's default open registration, an unauthenticated visitor obtains that by self-registering and creating a repository, making this effectively unauthenticated against a default install. Help Net Security's 2026-08-26 report of a compromised self-hosted instance (via a developer's own incident writeup on Habr) shows an automated scanner registering an account, creating a repository and triggering the exploit chain end to end: the attacker wrote a "proof" of RCE into a Git branch, then downloaded a universal shell-loader followed by a crypto-miner-like dropper; the whole active phase of the attack took roughly 11 seconds. Depending on deployment isolation, exploitation can expose Gitea's main configuration file, process-environment secrets, database credentials/contents and OAuth/integration credentials. Fixed in Gitea 1.27.1 (28 July 2026); CISA ordered FCEB remediation by 2026-08-28.
+    region_nexus: "global; self-hosted Gitea instances are common in government/public-sector development and DevOps estates as a lower-cost alternative to GitHub/GitLab Enterprise"
+    primary_sector_nexus: "indirect — no sector-specific targeting reported; relevance is the self-hosted developer-tooling attack surface common across public-sector IT and software-development units"
+    sector: "public-sector"
+    cves: ["CVE-2026-60004"]
+    techniques: ["T1190"]
+    affected_products: ["Gitea"]
+    entity_keys: ["product:gitea"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An attacker with ordinary write access to a repository can execute arbitrary shell commands as the Gitea OS user."
+        attribution: "Gitea maintainers (GitHub Security Advisory)"
+        source_url: "https://github.com/go-gitea/gitea/security/advisories/GHSA-rcr6-4jqh-j84m"
+      - quote: "With open registration enabled, the attack can be performed by an unauthenticated visitor after registering a normal account and creating a repository."
+        attribution: "Gitea maintainers (GitHub Security Advisory)"
+        source_url: "https://github.com/go-gitea/gitea/security/advisories/GHSA-rcr6-4jqh-j84m"
+      - quote: "Gitea was running in Docker, so after the RCE the code ended up inside its container. The container wasn't privileged, and after restarts the process with the miner-like payload didn't survive the restart."
+        attribution: "compromised-instance operator, via Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/08/26/gitea-cve-2026-60004-exploited-in-the-wild/"
+    extended_notes: |
+      Coverage GAP — not in prior_coverage.json. Priority recommendation: high (KEV-confirmed exploitation, CVSS 9.8, effectively unauthenticated on default-configured instances, common self-hosted developer-tooling target). Detection concept: process-creation telemetry on Gitea hosts/containers for the git service account spawning shells/loaders shortly after a diffpatch/PR-diff API call; Git-hook-path anomalies (executable entries named as hook filenames appearing via patch content rather than administrator action). Hardening: upgrade to Gitea >= 1.27.1; disable open self-registration or require email confirmation/CAPTCHA on any internet-reachable instance; restrict outbound network access from the Gitea container/host.
+    priority_recommendation: high
+
+  - title: "WatchGuard Fireware OS: eleven CVEs including two pre-authentication remote-code-execution flaws in the IKE daemon (iked) and one in the deprecated Mobile Security epm endpoint — vendor 'immediate action required', no exploitation observed"
+    sources:
+      - { url: "https://www.watchguard.com/wgrd-blog/immediate-action-required-update-your-firebox-now", publisher: "WatchGuard Technologies", date: "2026-08-27", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-19313/", publisher: "WatchGuard PSIRT", date: "2026-08-27", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-19315/", publisher: "WatchGuard PSIRT", date: "2026-08-27", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-13086/", publisher: "WatchGuard PSIRT", date: "2026-08-27", role: "primary" }
+    discovery_trace: "first seen at: bsi-csaf (bridge), URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3068 (BSI CERT-Bund WID-SEC-2026-3068, published 2026-08-28) → primary: WatchGuard vendor blog, URL https://www.watchguard.com/wgrd-blog/immediate-action-required-update-your-firebox-now → primary: WatchGuard PSIRT per-CVE pages, URL https://psirt.watchguard.com/CVE-2026-19313/ and https://psirt.watchguard.com/CVE-2026-19315/ and https://psirt.watchguard.com/CVE-2026-13086/"
+    summary: |
+      WatchGuard published Fireware OS 2026.2.2 / 12.12.2 / 12.5.20 on 2026-08-27 fixing eleven reserved CVEs, titled by the vendor's own blog "Immediate Action Required — Update Your Firebox Now." Two of the flaws are pre-authentication remote-code-execution bugs in iked, the IKE daemon that handles IPsec VPN negotiation on the Firebox firewall/VPN appliance: CVE-2026-19313 is a heap buffer overflow triggered by specially crafted network traffic reaching the daemon before authentication, and CVE-2026-19315 is a type confusion reached by sending an IKE_AUTH message containing two EAP payloads, causing an out-of-bounds read followed by a free() call on an attacker-influenced pointer — WatchGuard's own advisory states this "may also present potential for further memory corruption and remote code execution beyond denial of service." CVE-2026-19314 is a related integer underflow in iked causing unauthenticated denial of service. A separate flaw, CVE-2026-13086, is a stack-based buffer overflow, reachable without authentication over JSON-RPC, in the epm (Endpoint Protection Manager) service used only by the deprecated Mobile Security feature; WatchGuard's own advisory notes the binary lacks a stack canary and is non-PIE, making return-oriented-programming exploitation "straightforward." WatchGuard states plainly it has "not seen any indication that these vulnerabilities have been exploited" and reserved the CVE IDs itself under responsible disclosure ahead of any public researcher report; credit for CVE-2026-13086 is given to Mat Powell of TrendAI Zero Day Initiative. Germany's BSI CERT-Bund relayed the advisory the following day (WID-SEC-2026-3068, rated "hoch").
+    region_nexus: "global; WatchGuard Firebox is a widely deployed SMB/enterprise/public-sector firewall and SSL-VPN appliance — internet-facing by design"
+    primary_sector_nexus: "indirect — no sector-specific targeting reported; relevance is the internet-exposed VPN/firewall attack surface"
+    sector: "public-sector"
+    cves: ["CVE-2026-19313", "CVE-2026-19315", "CVE-2026-19314", "CVE-2026-13086"]
+    techniques: ["T1190"]
+    affected_products: ["WatchGuard Firebox (Fireware OS)"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:watchguard-fireware-os", type: product, name: "WatchGuard Fireware OS", aliases: ["WatchGuard Firebox"], summary: "Firmware for WatchGuard Firebox firewall/UTM/SSL-VPN appliances; patched 2026-08-27 for eleven vendor-reserved CVEs including two pre-auth RCEs in the iked IKE daemon (WatchGuard, 2026-08-27)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "We have not seen any indication that these vulnerabilities have been exploited."
+        attribution: "WatchGuard Technologies"
+        source_url: "https://www.watchguard.com/wgrd-blog/immediate-action-required-update-your-firebox-now"
+      - quote: "Because the flaw results in an out-of-bounds read followed by a free() call on an attacker-influenced pointer value, it may also present potential for further memory corruption and remote code execution beyond denial of service."
+        attribution: "WatchGuard PSIRT"
+        source_url: "https://psirt.watchguard.com/CVE-2026-19315/"
+      - quote: "The lack of a stack canary and use of a non-PIE binary make exploitation via return-oriented programming straightforward"
+        attribution: "WatchGuard PSIRT"
+        source_url: "https://psirt.watchguard.com/CVE-2026-13086/"
+    extended_notes: |
+      Coverage GAP — not in prior_coverage.json. No confirmed exploitation, so priority recommendation is high rather than critical, but the pre-auth RCE class on an internet-facing VPN/firewall appliance plus the vendor's own "immediate action" framing puts this in the same class the store has previously prioritized for other VPN/firewall vendors (Citrix, SonicWall, Ivanti). Detection concept: iked process crash/respawn frequency on Firebox appliances (a pre-crash artifact of failed exploitation attempts against CVE-2026-19313/19315/19314); network telemetry for anomalous or malformed IKE_AUTH exchanges with duplicate/unexpected EAP payloads reaching the WAN-facing VPN interface. Hardening: upgrade to Fireware OS 2026.2.2 / 12.12.2 / 12.5.20; disable the deprecated Mobile Security feature (removes the epm/CVE-2026-13086 attack surface entirely) where not in active use.
+    priority_recommendation: high
+
+matches_already_covered:
+  - id: "2026-07-01/cve-2026-8451-citrix-netscaler-adc-gateway-pre-auth-saml-mem"
+    note: "CVE-2026-8452 KEV addition (2026-08-26) already reflected as a 2026-08-28 changelog update on this entry. NEW technical delta found but not yet in the changelog: thehackernews (2026-08-27, citing Previdian/Defused Cyber telemetry) reports 36 exploitation attempts over 12 days from 12 unique attacker IPs spanning Switzerland, Germany, Hong Kong, Japan, Netherlands, Russia, Singapore, Türkiye, US and Vietnam, with attackers dropping web shells named x.php and z.php and running discovery commands (id, echo). Source: https://thehackernews.com/2026/08/cisa-adds-six-exploited-flaws-to-kev.html — worth a follow-up changelog record given the Swiss-origin attacker IP in the telemetry, but not surfaced as a standalone item per audit dedup rules."
+  - id: "2026-08-23/spectre-uat-10147-byovd-edr-callback-unlink"
+    note: "CISA's 2026-08-26 KEV batch-add of four legacy CVEs (CVE-2022-0995 Linux kernel, CVE-2015-5287 Red Hat ABRT, CVE-2015-3246 Red Hat libuser, CVE-2021-23758 Ajax.NET Professional) traces directly to the same Cisco Talos two-part UAT-10147/SPECTRE report this entry and 2026-08-23/uat-10147-agentic-ai-exploitation-oob-confirmation already cover (confirmed via thehackernews 2026-08-24 rehash of the Talos report, and thehackernews 2026-08-27 KEV-batch article explicitly tying the four CVEs to 'a report from Cisco Talos... UAT-10147'). These are the specific Linux local-privilege-escalation exploits (following initial web-server RCE) UAT-10147 uses to reach root; MATCH, not a gap — a possible follow-up changelog naming the specific LPE chain and formal KEV status, but not a standalone new finding."
+  - id: "n/a"
+    note: "CVE-2019-1068 (Microsoft SQL Server RCE) — part of the same 2026-08-26 six-CVE KEV batch. No source found describing how it is being exploited (thehackernews 2026-08-27 explicitly states 'There is currently no public information on how CVE-2019-1068 is being exploited in the wild'). No actionable technical detail beyond the KEV listing itself; not included as a standalone item (too thin to action) and not tied to any existing entry."
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product or supplier watchlist configured for this deployment (config/org-profile.yaml) — sweep is a no-op per spawn instructions; general coverage rules applied unchanged across CISA KEV, NCSC-CH, BSI, CERT-EU, ENISA EUVD sweeps above."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "Not directly checked this run — CISA ICS-advisories landing page returned only the SPA filter shell (no server-rendered listing); used cisa-kev bridge and targeted WebSearch instead, which covered the exploitation-ground-truth surface this domain prioritizes. No CISA ICS advisory in-window was identified as a gap via WebSearch, but the ICS-advisories listing itself was not exhaustively enumerated via a structured recipe this run."
+  - source_id: ncsc-ch-weekly-review
+    reason: "Checked for a fresher 'Wochenrückblick' (week 34) beyond the already-covered Halbjahresbericht/week-33 content; https://www.ncsc.admin.ch/.../wochenrueckblick_34.html redirects to bacs.admin.ch and 404s there — likely not yet published at time of this run. Not a source-list entry, so not logged as a fetch_failures[] record."

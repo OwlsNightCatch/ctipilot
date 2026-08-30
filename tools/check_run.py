@@ -2925,6 +2925,121 @@ def check_entry_id_uniqueness(entries: list[dict]) -> None:
         ok("entry-ids", f"{len(seen)} entry id(s) unique")
 
 
+READER_FIELDS = ("title", "headline", "summary", "sourcing_note")
+
+# Production-process self-reference: the entry talking about the fire that
+# composed it instead of about the threat. `cti-run.md` § Style rules bans it
+# by name ("as of this run", "this run's own re-check" — use the date instead).
+_SELF_REF_RE = re.compile(
+    r"\b(?:as of )?th(?:is|e) (?:run|fire|pipeline|store)\b"
+    r"|\b(?:read|located|fetched|re-fetched|checked|seen) th(?:is|e) run\b",
+    re.IGNORECASE,
+)
+
+
+def check_reader_text_internals(run_entries: list[dict]) -> None:
+    """Reader-facing entry text must describe the threat, never the fire.
+
+    `prompts/cti-run.md` § Style rules scopes this to the title, headline,
+    summary, sourcing_note, body and changelog sections, and names the exact
+    shape: "referencing the production process ('as of this run', 'this run's
+    own re-check' — use the date instead)". A reader has no idea what a run is,
+    and the phrase silently dates the claim to nothing.
+
+    Deliberately RUN-SCOPE ONLY, and deliberately not applied to `--all`. The
+    2026-08-30 audit measured roughly 95 entries store-wide carrying this in a
+    `sourcing_note`, accumulated over months. Firing on all of them would light
+    up `--all` permanently and drown the zero-warning discipline in backlog;
+    what stops the bleeding is catching each fire's own entries before they
+    commit. The historical backlog is an audit sweep, one changelog record at a
+    time, not a gate.
+
+    WARN, never FAIL: the fix is always a deletion or a date substitution, and
+    no claim in the entry is wrong."""
+    flagged: list[str] = []
+    for e in run_entries:
+        for field in READER_FIELDS:
+            val = e.get(field)
+            if not isinstance(val, str):
+                continue
+            hit = _SELF_REF_RE.search(val)
+            if hit:
+                flagged.append(f"{e['id']}: {field} says {hit.group(0)!r} — "
+                               f"state the date or the fact, not the fire that found it")
+        for rec in (e.get("updates") or []):
+            if rec.get("internal"):
+                continue  # never rendered
+            summ = rec.get("summary")
+            if isinstance(summ, str):
+                hit = _SELF_REF_RE.search(summ)
+                if hit:
+                    flagged.append(
+                        f"{e['id']}: updates[{rec.get('at')}].summary says {hit.group(0)!r} — "
+                        f"record summaries render on the entry's revision history")
+
+    if flagged:
+        for f in flagged:
+            warn("reader-text-internals", f)
+    else:
+        ok("reader-text-internals",
+           f"{len(run_entries)} entr{'y' if len(run_entries) == 1 else 'ies'}: "
+           f"no production-process self-reference in reader-facing text")
+
+
+def check_frontmatter_yaml_portability(targets: list[tuple[str, Path]]) -> None:
+    """Frontmatter must parse under a standards-compliant YAML parser, not only
+    under this repo's own lenient one.
+
+    `content_model.parse_yaml_subset` is deliberately permissive, so a
+    double-quoted scalar carrying a Windows path (`"... C:\\ProgramData\\X\\"`)
+    or an unescaped inner quote (`"... a "data breach" in March"`) reads back
+    with exactly the intended value here while a compliant parser rejects the
+    whole document. Nothing inside this repo trips over it — but the entry store
+    is published as a machine-readable knowledge base for downstream triage
+    agents, and a file only this parser can read is not that.
+
+    The fix is always local to the scalar and never changes its value: quote it
+    single ('...') or use a block scalar, so backslashes and inner double quotes
+    stay literal.
+
+    WARN, never FAIL: the value on disk is correct and every consumer in this
+    repo reads it correctly — what is wrong is the serialization, and the
+    zero-warning discipline is the right deadline for it.
+
+    PyYAML is not a dependency of this gate (stdlib-only by design). When it is
+    absent the check reports itself skipped rather than passing silently."""
+    try:
+        import yaml  # noqa: PLC0415 — optional dependency; see the docstring
+    except ImportError:
+        ok("frontmatter-yaml", "PyYAML not installed — portability check skipped "
+                               "(install it to exercise this check)")
+        return
+
+    bad: list[str] = []
+    for label, path in targets:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        front, _ = cm.split_frontmatter(text)
+        if front is None:
+            continue
+        try:
+            yaml.safe_load(front)
+        except Exception as e:  # noqa: BLE001 — any parser complaint is the finding
+            first = str(e).splitlines()
+            detail = next((ln.strip() for ln in first
+                           if "found" in ln or "expected" in ln), first[0].strip())
+            bad.append(f"{label}: frontmatter is not standards-compliant YAML — {detail}")
+
+    if bad:
+        for b in bad:
+            warn("frontmatter-yaml", b)
+    else:
+        ok("frontmatter-yaml",
+           f"{len(targets)} file(s) parse under a standards-compliant YAML parser")
+
+
 def check_product_sync(entries: list[dict], registry: dict) -> None:
     """Every `affected_products[]` string resolves to a registry `product:`
     record, so a reader landing on the product entity sees every release of
@@ -3085,7 +3200,7 @@ def check_all_run_records(runs: list[dict]) -> None:
 
 def run_all_checks(entries: list[dict], runs: list[dict], taxonomy: dict,
                    registry: dict, parsed_state: dict[str, Any],
-                   *, skip_build_tests: bool) -> None:
+                   *, skip_build_tests: bool, content_root: Path = ROOT) -> None:
     """--all mode body: whole-store validation. No URL liveness (hundreds of
     historical URLs — link rot on old entries is not a commit defect), no
     rolling-24 h composition report, no per-run dedup/counter cross-checks."""
@@ -3103,6 +3218,10 @@ def run_all_checks(entries: list[dict], runs: list[dict], taxonomy: dict,
             n_err += 1
     if not n_err:
         ok("entry-schema", f"all {len(entries)} entr{'y' if len(entries) == 1 else 'ies'} pass validate_entry")
+
+    print("\n== all: frontmatter YAML portability ==")
+    check_frontmatter_yaml_portability(
+        [(e["id"], content_root / "entries" / f"{e['id']}.md") for e in entries])
 
     print("\n== all: references resolution ==")
     check_references_resolve(entries, entries_by_id)
@@ -3180,7 +3299,7 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
 
     if all_mode:
         run_all_checks(entries, runs, taxonomy, registry, parsed_state,
-                       skip_build_tests=skip_build_tests)
+                       skip_build_tests=skip_build_tests, content_root=content_root)
         print("\n== acknowledgment ledger hygiene ==")
         report_dead_ack_rows(store_mode=True)
         return _summary()
@@ -3227,6 +3346,18 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
 
         print("\n== run counters vs disk ==")
         check_run_counters(run, new_entries, updated_entries)
+
+    print("\n== reader-facing text: no production-process self-reference ==")
+    check_reader_text_internals(run_entries)
+
+    print("\n== frontmatter YAML portability ==")
+    _yaml_targets = [(e["id"], content_root / "entries" / f"{e['id']}.md")
+                     for e in run_entries]
+    if run is not None:
+        _rec = content_root / "runs" / str(run.get("date")) / f"{run_id}.md"
+        if _rec.is_file():
+            _yaml_targets.append((f"runs/{run_id}", _rec))
+    check_frontmatter_yaml_portability(_yaml_targets)
 
     print("\n== entry schema ==")
     check_entry_schema(run_entries, taxonomy, set(registry.keys()))

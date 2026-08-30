@@ -1,0 +1,186 @@
+domain: G3
+run_id: 2026-08-30T1312Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-30T13:18:16Z
+ended_at: 2026-08-30T13:27:03Z
+duration_seconds: 527
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 12
+  bridge_fetches: 35
+items:
+  - title: "Huntress documents five 2026 DPRK remote-worker intrusions with a reusable forensic methodology: PiKVM/Guermok USB hardware artifacts, laptop-farm network timelines, and identity-document forensics"
+    sources:
+      - { url: "https://www.huntress.com/blog/huntress-dprk-remote-worker-investigation", publisher: "Huntress", date: "2026-08-26", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/08/28/north-korean-remote-workers-jobs-sales-and-marketing/", publisher: "Help Net Security", date: "2026-08-28", role: "corroborating" }
+    discovery_trace: "first seen at: per-publisher research-blog sweep, URL https://www.huntress.com/blog/rss.xml (feed listing) -> primary: Huntress, URL https://www.huntress.com/blog/huntress-dprk-remote-worker-investigation -> corroborating: Help Net Security, URL https://www.helpnetsecurity.com/2026/08/28/north-korean-remote-workers-jobs-sales-and-marketing/"
+    summary: |
+      Huntress published five 2026 incident-response cases involving suspected DPRK remote workers (tracked elsewhere as Famous Chollima / Jasper Sleet / UNC5267 / Wagemole), expanding the scope beyond IT roles into healthcare, sales/marketing and finance. The report supplies a reusable, telemetry-based detection methodology rather than a single new campaign. Case 1 (Feb 2026, Australian healthcare partner): three accounts authenticating via Astrill VPN chained to IPRoyal Proxy and WorkTitans B.V. bulletproof-hosting infrastructure, distinguishing 24/7 non-business-hours activity peaking at exactly midnight UTC (09:00 in North Korea); identity-document forensics found duplicated passport issue dates/locations, identical resident-ID validity windows and issuing police stations, and matching EXIF metadata (UTC+03:00 device offset, identical iPhone 15 Pro Max camera model, capture timestamps 8 minutes apart) across two supposedly unrelated new hires. Case 2 (Aug 2026, financial services): a newly onboarded laptop showed a PiKVM V4 Mini (Raspberry Pi-based KVM-over-IP hardware giving remote control before OS boot) and a Guermok USB3 capture card (registers as a webcam, feeding attacker-controlled video into Zoom) connected within hours of the device reaching a residential address, reconstructed via Windows Registry USB enumeration keys (VID_1D6B&PID_0104&MI_04 for PiKVM; VID_345F&PID_2130&MI_00 for Guermok) and Security Event ID 6416 (external device recognized); network telemetry showed the device moving from an MSP guest network to a GL.iNet travel router to a residential SSID ("Pickle_Rick") before settling on a fixed Ethernet connection consistent with a "laptop farm" rack asset. Case 3 (proactive hunt following the Case 2 IOCs) found a third worker using Toffeeshare (P2P file transfer), Chrome tab-recording extensions, Codeshare (public code-paste site used to post Zoom meeting links with embedded passwords) and VDO.Ninja (browser-based screen-share-as-webcam tool); identity documents shared exact name, license location and birth date with a real arrestee whose mugshot photo did not match, with the signature digitally overlaid rather than handwritten.
+    region_nexus: "global; North Korean state-directed remote-worker infiltration affects any organization hiring remote developers/contractors, including Swiss public-sector-adjacent IT suppliers and cantonal/communal IT service providers using remote contractor arrangements"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1585.002, T1036.005, T1204.004, T1090.003]
+    affected_products: []
+    entity_keys: ["actor:purpledelta"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "So far in 2026, Huntress has supported investigations where a total of five individuals were identified as likely DPRK workers employed in partner organisations."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/huntress-dprk-remote-worker-investigation"
+      - quote: "Defenders can alert on Windows Security Event ID 6416 when device_description contains PiKVM or Guermok, and hunt the Windows registry path HKLM\\SYSTEM\\CurrentControlSet\\Enum\\USB, especially FriendlyName values such as PiKVM Composite Device and Guermok USB3 Video."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/huntress-dprk-remote-worker-investigation"
+      - quote: "less than 50 percent of activity observed occurred during expected business hours, and peak activity was observed at exactly midnight UTC"
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/huntress-dprk-remote-worker-investigation"
+    extended_notes: |
+      Distinct from the already-covered 2026-08-28 Kudelski Security entry (kudelski-bismarck-dprk-it-worker-gambling-fakecalls-overlap), which traces PurpleDelta/Famous Chollima infrastructure overlap into DPRK gambling platforms and the FakeCalls Android banking trojan via a stealer-log leak. This Huntress item is independent first-hand IR casework supplying hardware-artifact and identity-document forensic detection techniques not present in the Kudelski coverage. Detection concept: correlate Windows Security Event ID 6416 + USB registry enumeration (PiKVM/Guermok friendly names) with off-hours authentication patterns and VPN/proxy infrastructure (Astrill VPN, IPRoyal Proxy, WorkTitans B.V.) rather than relying on any single indicator.
+    borderline: false
+
+  - title: "Microsoft: TerminalFix — a ClickFix variant that redirects victims to Windows Terminal/PowerShell instead of Run, then chains DLL sideloading, PNG steganography and Active Directory recon into a persistent reverse-tunnel SOCKS proxy"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/08/28/terminalfix-campaign-deploys-reverse-tunnel-through-multistage-intrusion/", publisher: "Microsoft Threat Intelligence", date: "2026-08-28", role: "primary" }
+    discovery_trace: "first seen at: per-publisher research-blog sweep, URL https://www.microsoft.com/en-us/security/blog/feed/ (bridge msft-secblog recent) -> primary: Microsoft Threat Intelligence, URL https://www.microsoft.com/en-us/security/blog/2026/08/28/terminalfix-campaign-deploys-reverse-tunnel-through-multistage-intrusion/"
+    summary: |
+      Microsoft Threat Intelligence documents TerminalFix, a ClickFix variant targeting multiple industries via compromised websites showing a fake Cloudflare Turnstile CAPTCHA overlay. Unlike classic ClickFix, which directs victims to the Windows Run dialog, TerminalFix instructs the victim to paste the clipboard-seeded command into Windows Terminal or PowerShell directly, enabling more complex multi-line scripts to execute reliably (T1204.004 Malicious Copy and Paste). The command downloads a ZIP to C:\ProgramData, extracting a legitimately signed binary LockScreenContentServer.exe alongside a malicious dui70.dll (forged future timestamp of 2104) that the signed binary loads via DLL side-loading (T1574.001) — execution starts inside a trusted, signed process. The DLL's embedded resource decodes and runs entirely in memory (no second-stage payload written to disk at that step). The next stage fetches three PNG images from attacker domains (with failover between two content domains) and extracts an executable and a two-part DLL hidden in RGBA pixel channel data (the first 8 bytes of the extracted stream encode payload length as a 64-bit integer); source images are deleted afterward to reduce forensic artifacts. Persistence is dual: an HKCU Run key (T1547.001) and a scheduled task re-executing every 60 minutes (T1053.005), both under a name masquerading as the legitimate LockScreenContentServer component; the working directory is hidden via system/hidden attributes (T1564.001). Reconnaissance is extensive and locale-aware (English, Spanish, German strings observed): domain trust enumeration, domain admin group membership, AD user/computer enumeration including description-field harvesting, and targeted ping sweeps of named servers matching common infrastructure roles (domain controllers, databases, backup, gateways, mail). A persistent PowerShell file-watch loop implements an ad hoc async command channel (writes to a watch file, executes via Invoke-Expression, writes results to an output file). The final stage downloads a Python runtime plus a custom client.py implant launched via pythonw.exe with no visible window, establishing a reverse WebSocket tunnel to gitnow[.]dev:443 that gives the operator SOCKS-style TCP proxy access into the victim network (T1572 Protocol Tunneling). Microsoft states it did not observe downstream hands-on-keyboard actions in the analyzed chain but assesses the reverse tunnel is intended to enable lateral movement, credential theft, security-control disablement, data exfiltration and ransomware deployment; it explicitly recommends treating any affected device as a network pivot point.
+    region_nexus: "global; multiple industries targeted via compromised websites — any organization with users browsing the general web is exposed regardless of region"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1204.004, T1059.001, T1574.001, T1027.003, T1547.001, T1053.005, T1564.001, T1482, T1069.002, T1087.002, T1018, T1572]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "malware:terminalfix", type: malware, name: "TerminalFix", aliases: [],
+          summary: "Microsoft Threat Intelligence's designation for a ClickFix-variant multi-stage intrusion chain that redirects victims to paste a malicious command into Windows Terminal/PowerShell (rather than the Run dialog), combining DLL side-loading via a masquerading dui70.dll, PNG-steganography payload delivery, dual persistence, locale-aware Active Directory reconnaissance and a custom Python reverse-WebSocket-tunnel implant giving SOCKS-style network access (Microsoft, 2026-08-28)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "TerminalFix campaigns apply the same technique but direct users to Windows Terminal or PowerShell instead, increasing the likelihood that complex, multi-line scripts execute successfully"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/08/28/terminalfix-campaign-deploys-reverse-tunnel-through-multistage-intrusion/"
+      - quote: "establishing a reverse WebSocket tunnel to gitnow[.]dev:443 that gives the attacker full SOCKS-style TCP proxy access through the victim's network"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/08/28/terminalfix-campaign-deploys-reverse-tunnel-through-multistage-intrusion/"
+      - quote: "Organizations should treat affected devices as potential network pivot points and investigate for lateral movement and credential exposure"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/08/28/terminalfix-campaign-deploys-reverse-tunnel-through-multistage-intrusion/"
+    extended_notes: |
+      Single-source (Microsoft only at time of this sweep, published one day before window close); a second independent source may surface after publication. Detection concept: alert on LockScreenContentServer.exe execution paths outside the expected system directory, or any dui70.dll loaded from a non-System32 path; monitor for PNG downloads immediately followed by process/DLL creation from the same working directory (steganographic extraction is a strong behavioral signature); watch for pythonw.exe establishing outbound WebSocket connections with no parent Explorer/browser lineage. Benign lookalike caution: legitimate DLL side-loading of dui70.dll (Windows DirectUI Engine) occurs constantly across normal Windows UI processes — the discriminator is the *path* (application directory rather than System32) and the *masquerading name* pattern (LockScreenContentServer_<random>), not the DLL name itself.
+    borderline: false
+
+  - title: "Microsoft: three separate AI-infrastructure compromises (LiteLLM gateway, RAGFlow, Kestra) show a common attacker pattern — steal provider/proxy credentials from the gateway process, then pivot to database access, container-secret discovery or cryptomining"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/08/26/when-ai-infrastructure-becomes-target-securing-gateways-control-points/", publisher: "Microsoft Threat Intelligence", date: "2026-08-26", role: "primary" }
+    discovery_trace: "first seen at: per-publisher research-blog sweep, URL https://www.microsoft.com/en-us/security/blog/feed/ (bridge msft-secblog recent) -> primary: Microsoft Threat Intelligence, URL https://www.microsoft.com/en-us/security/blog/2026/08/26/when-ai-infrastructure-becomes-target-securing-gateways-control-points/"
+    summary: |
+      Microsoft Threat Intelligence documents three intrusions against exposed AI-stack control-plane components — a LiteLLM gateway, a RAGFlow retrieval/RAG deployment, and a Kestra workflow-orchestration environment — arguing these platforms concentrate credentials, model connectivity and execution privilege and are becoming attacker-favored control points. Case 1 (LiteLLM, high confidence): initial access via CVE-2026-42271 (authenticated command execution in LiteLLM's MCP stdio test endpoint) chained with CVE-2026-48710 (a Starlette host-header validation bypass) to reach unauthenticated RCE in exposed deployments. In containerized deployments where the gateway runs as PID 1, the attacker read /proc/1/environ to harvest the LiteLLM master key, model-provider API keys, database connection strings and UI credentials, exfiltrating via urllib/curl/wget in sequence for redundancy. Payloads were delivered as masqueraded ELF binaries with service-style naming; host-discovery commands checked for passwordless sudo, inspected listening ports and swept for competing miner/remote-access tooling. Cryptomining prep loaded the Linux MSR (Model-Specific Register) kernel module with write access enabled (RandomX/XMRig CPU-tuning behavior) and rewrote crontab to remove competing miners. A one-liner then re-read DATABASE_URL from the same PID-1 environment, connected to the Azure Database for PostgreSQL backend, and dumped LiteLLM_ProxyModelTable and LiteLLM_VerificationToken — exposing upstream provider keys and proxy-issued virtual keys — exfiltrated base64-encoded in chunks to an out-of-band callback. Persistence included an authorized_keys write under a service account plus masqueraded systemd service names. Case 2 (RAGFlow, high confidence on access path, low confidence on the specific code-execution sink): telemetry showed the RAGFlow server's own HTTP client fetching an attacker-supplied URL (Burp Collaborator callback, no child process — SSRF-shaped), followed days later by code execution in the same Flask service context; Microsoft names four candidate public vulnerabilities affecting relevant RAGFlow versions (CVE-2026-45312, CVE-2026-28797 — Jinja2 SSTI in prompt-generator/Agent workflow components; CVE-2026-24770 — MinerU parser path traversal to arbitrary file overwrite; CVE-2025-68700/GHSA-8xw3-v6c2-j84j — Canvas CodeExec sandbox bypass) without attributing the intrusion to a specific one. The payload installed a hidden runtime hook into RAGFlow's own tenant-LLM credential-configuration flow via an application-startup modification, intercepting provider API keys and endpoint metadata as they were newly configured — this compromise did not deploy a miner or reverse shell, focusing solely on credential interception. Case 3 (Kestra, high confidence): initial access via CVE-2026-49869, a critical authentication-bypass letting an unauthenticated attacker bypass login and define a malicious workflow using the Process runner to trigger worker-side shell execution; two workflow-origin shell sessions followed, accessing the mounted Docker socket to enumerate other containers' environment variables (a common source of cloud keys, DB passwords and API tokens across the whole host), deploying XMRig and performing defense-evasion file operations.
+    region_nexus: "global; affects any organization self-hosting LiteLLM gateways, RAGFlow retrieval platforms or Kestra orchestration environments — relevant to public-sector bodies standing up internal AI/LLM infrastructure"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-42271, CVE-2026-48710, CVE-2026-45312, CVE-2026-28797, CVE-2026-24770, CVE-2025-68700, CVE-2025-69286, CVE-2026-49869]
+    techniques: [T1190, T1552.001, T1613, T1610, T1552.005, T1556, T1098.004]
+    affected_products: ["LiteLLM", "RAGFlow", "Kestra"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Microsoft assesses with high confidence that initial access likely occurred through exploitation of the exposed LiteLLM gateway surface... CVE-2026-42271... CVE-2026-48710"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/08/26/when-ai-infrastructure-becomes-target-securing-gateways-control-points/"
+      - quote: "the payload reading /proc/1/environ, filtering for keywords such as master, API key, token, password, and UI-related fields, then sending collected values to attacker-controlled infrastructure"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/08/26/when-ai-infrastructure-becomes-target-securing-gateways-control-points/"
+      - quote: "Microsoft assesses with high confidence that initial access likely involved exploitation of CVE-2026-49869, a critical authentication-bypass vulnerability in Kestra"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/08/26/when-ai-infrastructure-becomes-target-securing-gateways-control-points/"
+    extended_notes: |
+      Single-source at time of this sweep (published 2026-08-26, two days before window close; no independent pickup found via search). CVE-2026-42271/CVE-2026-48710 (LiteLLM) and CVE-2026-49869 (Kestra) are not present anywhere in the 14-day prior-coverage index or the entity registry — these are the first pipeline-visible mentions of all eight CVEs in this item. Detection concept (telemetry class first): process-creation events with parent lineage rooted in the gateway/orchestration service process itself (LiteLLM/RAGFlow/Kestra spawning shell or Python children is anomalous for those workloads); file-read monitoring on /proc/1/environ or equivalent container environment-block access from an application process; Docker/container-socket access from inside a workflow-worker process; outbound connections to *.postgres.database.azure.com or other managed-DB endpoints from a process that is not the expected application server. Hardening: do not expose LiteLLM/RAGFlow/Kestra admin or execution surfaces to the internet; avoid storing provider API keys/master keys in the same process environment block that untrusted request handlers can reach; do not mount the Docker socket into workflow-worker containers.
+    borderline: false
+
+watchlist_sweep:
+  duty: none
+coverage_gaps:
+  - source_id: paradigm-shift-research
+    reason: "not reached this run (JS-shell SPA, no working recipe per prior notes; time budget did not permit a jina escalation)"
+  - source_id: team-cymru
+    reason: "listing page returned no dated article links under the extract transport this run; time did not permit drilling /post/ pages blind"
+  - source_id: withsecure-labs
+    reason: "not reached this run — prior notes flag drift risk (listing shows stale top item); time budget did not permit"
+  - source_id: trellix
+    reason: "listing returned only a stale cached top item (2026-07-14); bridge/jina escalation not attempted this run due to time"
+  - source_id: fox-it-blog
+    reason: "not reached this run (very low cadence per prior notes, low expected yield)"
+  - source_id: kudelski-security
+    reason: "not re-swept this run — already has an in-window hit in the store (2026-08-28 Bismarck/DPRK entry); not re-checked for a second in-window post"
+  - source_id: censys-blog
+    reason: "not reached this run"
+  - source_id: gambit-security
+    reason: "not reached this run"
+  - source_id: sygnia
+    reason: "not reached this run"
+  - source_id: aikido-security
+    reason: "not reached this run"
+  - source_id: akamai-sirt
+    reason: "not reached this run"
+  - source_id: csa-labs
+    reason: "not reached this run (aggregator, low expected yield per prior notes)"
+  - source_id: infoguard-ch
+    reason: "not reached this run"
+  - source_id: 0patch-blog
+    reason: "checked (feed fetched) — latest item 2026-08-17, outside the 2026-08-24 window start; no in-window items"
+  - source_id: google-tag
+    reason: "checked recipe still broken this run — https://blog.google/threat-analysis-group/ continues to resolve to Google's general security blog, not a dated TAG-specific listing (confirms the 2026-08-04 recipe-gap note)"
+  - source_id: vulncheck
+    reason: "checked — listing returns a stale cached shell (meta date 2022-11-12); WebSearch found no in-window VulnCheck posts (most recent found was the 2026-08-27 ENDLESSDOORS follow-up already in the store, dated before window)"
+  - source_id: depthfirst
+    reason: "checked — JS-shell SPA under the extract transport, no article links surfaced (matches prior note; product marketing page, not a blog listing)"
+  - source_id: exodus-intelligence
+    reason: "checked — homepage cache shows latest post 2026-05-27 (Windows Cloud Files minifilter TOCTOU), no in-window items"
+  - source_id: recordedfuture-insikt
+    reason: "checked (research + blog landing pages) — both are JS-rendered with no dated article links; WebSearch found only the 2026 State of Security annual report (no confirmed in-window publish date) and no other August 2026 Insikt post"
+  - source_id: trendmicro-research
+    reason: "checked (research.html + /26/h.html) — both JS-shell/404 on the extract transport; WebSearch found only already-covered RedC2 (TrendAI) coverage, no other in-window Trend Micro item"
+  - source_id: proofpoint-blog
+    reason: "checked (RSS = press-release feed only, threat-insight blog listing is JS-rendered with no article links); WebSearch found only the already-covered TA4922/PackClient item and pre-window items (13 Aug prompt-injection, 7 Aug Russian email-theft)"
+  - source_id: volexity
+    reason: "checked — blog listing appears cached/stale (top item dated 2026-07-17, SonicWall SMA 0-day); no in-window items surfaced"
+  - source_id: ahnlab-asec
+    reason: "checked — listing shows only Korea-focused monthly/regional statistical trend reports in-window (APT trend report ~24 Aug, ransomware trend report 28 Aug); no discrete technical finding cleared the relevance bar for this constituency within the time available"
+  - source_id: unit42
+    reason: "checked (listing + all-articles + WebSearch) — only in-window item found (AI-enabled-malware-analysis, 2026-08-28) already in the store; ChainDrop and the TheHatman/large-scale-credential-attacks threat brief are both last-updated before the window (2026-08-15 and 2026-08-18 respectively) and were not re-updated in-window at time of check"
+  - source_id: talos
+    reason: "checked (extract + WebSearch) — the two substantive technical posts found (UAT-10147/SPECTRE) are dated 2026-08-20, outside the window; remaining listed posts in-window (safety-penalty, guardrails, JavaScript obfuscation, choose-your-fighter, crime-script-analysis, curiouser-and-curiouser) are opinion/newsletter/tutorial content, not fresh technical disclosures, and were judged below the relevance bar"
+  - source_id: checkpoint-research
+    reason: "checked (feed + 24th-Aug weekly report) — own-research posts in the feed (BTR Reforged, StopAndProtect, Kriminal reference) are all dated 18-20 Aug, outside the window; no new Check Point Research post found published 2026-08-24 through 2026-08-30"
+  - source_id: sentinelone-labs
+    reason: "checked (feed) — latest item 2026-08-13, outside window; no in-window posts"
+  - source_id: welivesecurity-eset
+    reason: "checked (feed) — latest in-window item (27 Aug, AI-driven OSINT) is a general-awareness piece, not APT/technical research; no ESET Research technical post in-window"
+  - source_id: securelist-kaspersky
+    reason: "checked (feed) — two in-window items are quarterly statistics reports (industrial-automation-systems Q2 2026, 27 Aug; vulnerability-landscape Q2 2026, 26 Aug); reviewed in full, judged as recurring stats digests with no single new actionable finding distinct enough to clear the bar as a standalone item within the time available (noted for awareness, not returned as an item)"
+  - source_id: dfirreport
+    reason: "checked (feed) — latest item 2026-06-29, outside window; confirmed low-cadence publisher per prior notes"
+  - source_id: citizenlab
+    reason: "checked (feed) — latest item 2026-08-20 (Apple spyware-notification story), outside window"
+  - source_id: cloudflare-cf1
+    reason: "checked (extract) — latest tagged post 2026-08-11 (DDoS surge report), outside window"
+  - source_id: sekoia
+    reason: "checked (extract + WebSearch) — the featured post (ChocoPoCs trojanized-PoC campaign) is dated 2026-07-01, outside window; no other in-window Sekoia post surfaced"
+  - source_id: group-ib
+    reason: "not re-swept beyond the already-covered 2026-08-28 Nimbus Manticore entry; no additional Group-IB post checked this run"
+  - source_id: huntress
+    reason: "fully swept via RSS — see items above; remaining in-window Huntress posts (advanced-phishing-tradecraft, teach-yourself-to-phish, a-beginners-guide-to-phishing-simulation-training, managed-itdr-dashboard-redesigned, retail-cybersecurity-anz, ai-attack-surface, good-identity-hardening, security-incident-investigations-partner-view, papercut-actively-exploited) are either training/product content or (PaperCut) already covered by the vendor advisory already in the store"
+  - source_id: microsoft-threat-intelligence
+    reason: "fully swept via bridge msft-secblog recent 10 — see items above; remaining in-window items (what's-new-in-microsoft-security-august-2026, product/award posts) are not threat research"

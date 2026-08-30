@@ -11,9 +11,9 @@ summary: >
   command-and-control hosts and then passes whatever the server sends straight to a shell as uid 0, with no
   handshake, key exchange or authentication of any kind, and a second command opens an interactive reverse shell.
   Because this is a shipped component rather than a memory-corruption defect, VulnCheck's guidance is to replace
-  affected devices, or at minimum place them behind strict egress control and treat their LAN as untrusted. Zbtlink
-  has offered nothing: VulnCheck says it did not notify the vendor, on the reasoning that there is no patch to
-  coordinate.
+  affected devices, or at minimum place them behind strict egress control and treat their LAN as untrusted. VulnCheck says it did not notify Zbtlink, on the reasoning that there is no patch to
+  coordinate; Zbtlink itself has publicly said it is suspending sales of affected routers and pulling the affected
+  firmware while it develops updates.
 discovered_at: "2026-08-06T04:11:48Z"
 updated_at: "2026-08-29T04:09:36Z"
 event_date: "2026-08-05"
@@ -64,6 +64,9 @@ evidence:
     publisher: "VulnCheck"
   - quote: "390 of 392 devices are in China. 83% are on China Mobile's network."
     publisher: "VulnCheck"
+  - quote: "to suspend sales of affected routers and take the affected software offline while updates are being worked on (translated from German)"
+    original: "den Verkauf betroffener Router auszusetzen und die betroffene Software offline zu nehmen, während an Updates gearbeitet werde"
+    publisher: "heise Security"
 verification: single-source
 sourcing_note: >
   VulnCheck is the only party reporting this; no second researcher, CERT or vendor statement corroborates it at the
@@ -102,6 +105,19 @@ updates:
       either new implant; the follow-up post does not itself restate remediation guidance, so the original
       ENDLESSDOORS device-replacement guidance remains the only position on record.
     fields: [entities, techniques, affected_products, sources, evidence, sourcing_note, body]
+  - at: "2026-08-30T13:12:06Z"
+    run_id: 2026-08-30T1312Z-audit
+    type: correction
+    summary: >
+      This entry said Zbtlink "has offered nothing", and the 2026-08-29 update called VulnCheck's
+      device-replacement guidance "the only remediation position on record". Both are wrong, and
+      the contradicting fact was in a source this entry already cites: heise reports that Zbtlink
+      publicly announced it would suspend sales of the affected routers and take the affected
+      firmware offline while working on updates. The vendor's position is now stated where those
+      claims stood. The defender guidance does not change: no update has shipped, the statement
+      does not cover DARKLANTERN or SPEAKINGSTONE, and deployed units still need replacement or
+      strict egress control.
+    fields: [summary, evidence, body]
 migrated_from: null
 ---
 
@@ -139,8 +155,12 @@ explicit that it has not confirmed every rebrand carries the same implants
 ([VulnCheck, 2026-08-27](https://www.vulncheck.com/blog/zbt-darklantern-speakingstone)). No CVE has been assigned to either new implant. The 2026-08-27 post does not restate VulnCheck's remediation
 guidance or vendor-notification posture for DARKLANTERN/SPEAKINGSTONE specifically; VulnCheck's original ENDLESSDOORS
 guidance — device replacement rather than a patch, and no notification to Zbtlink since there is no fix to
-coordinate — is the only remediation position on record for this supply chain
-([VulnCheck, 2026-08-05](https://www.vulncheck.com/blog/zbt-endlessdoors)).
+coordinate — remains its own position ([VulnCheck, 2026-08-05](https://www.vulncheck.com/blog/zbt-endlessdoors)).
+Zbtlink has made a public statement of its own, announcing an intention "to suspend sales of affected routers and
+take the affected software offline while updates are being worked on" (translated from German)
+([heise, 2026-08-28](https://www.heise.de/news/OEM-China-Router-von-ZBT-mit-Backdoors-11433072.html)). No update has
+been published, and nothing in that statement covers DARKLANTERN or SPEAKINGSTONE, so device replacement and egress
+control stay the operative guidance for deployed units.
 
 Detection concept for the new implants: an unsolicited, long-lived, bidirectional command-carrying UDP channel from
 consumer-class CPE to a fixed external host on a non-standard port (SPEAKINGSTONE's UDP/10000 beacon), or an
@@ -149,3 +169,9 @@ generates — egress/ingress telemetry at the site boundary surfaces this even f
 routers legitimately make outbound connections for firmware checks, NTP and vendor telemetry, so outbound-from-CPE
 alone is not a discriminator; the tell is the fixed vendor-independent destination and the bidirectional
 command-carrying pattern, or an inbound-accepted session on 9992/8897 from an internet-routable source.
+
+## Correction — 2026-08-30T13:12:06Z
+
+Zbtlink did respond publicly, and this entry said it had not. heise reports that the vendor announced an intention "to suspend sales of affected routers and take the affected software offline while updates are being worked on" (translated from German) ([heise, 2026-08-28](https://www.heise.de/news/OEM-China-Router-von-ZBT-mit-Backdoors-11433072.html)) - and that article is one this entry already cited. The 2026-08-29 update compounded it by calling VulnCheck's device-replacement guidance the only remediation position on record.
+
+What this changes for a defender is small but real: there is a vendor engaged with the problem and a stated intent to ship firmware updates, so an asset owner has someone to press for a timeline. What it does not change is the guidance. No update has been published, the statement addresses ENDLESSDOORS and says nothing about DARKLANTERN or SPEAKINGSTONE, and a backdoor shipped in the factory image is not remediated by a sales pause. Deployed units still need replacement, or strict egress control with their LAN treated as untrusted.
