@@ -1,0 +1,114 @@
+domain: S1
+run_id: 2026-08-31T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-31T04:15:06Z
+ended_at: 2026-08-31T04:26:06Z
+duration_seconds: 660
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 11
+  bridge_fetches: 16
+
+items:
+  - title: "CVE-2026-77956 — ash_ai (Elixir Ash Framework AI extension): unauthenticated remote code execution via EEx evaluation of LLM prompt content (CVSS 10.0)"
+    sources:
+      - { url: "https://github.com/ash-project/ash_ai/security/advisories/GHSA-2g59-hg7m-qc83", publisher: "ash-project (GitHub Security Advisory, maintainer disclosure)", date: "2026-08-31", role: "primary" }
+      - { url: "https://euvd.enisa.europa.eu/enisa/EUVD-2026-68303", publisher: "ENISA EU Vulnerability Database (EUVD-2026-68303)", date: "2026-08-31", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, via bridge subcommand `enisa-euvd recent criticals` (entry EUVD-2026-68303, citation URL https://euvd.enisa.europa.eu/enisa/EUVD-2026-68303) → primary: GitHub Security Advisory, URL https://github.com/ash-project/ash_ai/security/advisories/GHSA-2g59-hg7m-qc83 → verified: NVD CVE API record https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-77956 (published 2026-08-31T01:16:49Z; used for identifier verification only, not cited as a Source per the NVD/MITRE per-CVE-page citation ban)"
+    summary: |
+      ash_ai — the AI/LLM-agent extension for the Elixir Ash Framework — ships an unauthenticated remote-code-execution
+      flaw in AshAi.Actions.Prompt (lib/ash_ai/actions/prompt.ex, function build_context/3). Every non-ReqLLM.Context
+      prompt is rendered through EEx.eval_string/2 — EEx is not string interpolation, a "template" is compiled and
+      executed Elixir source. The documented function-based prompt form `prompt: fn input, context -> ... end` is
+      meant to let a generic Ash action build prompt content from its own arguments; when that content derives from
+      untrusted request data (the natural implementation shown in the vendor's own PoC — a plain HTTP form field
+      mapped straight into the prompt), an unauthenticated caller's text such as `<%= System.cmd("sh", ["-c","..."]) %>`
+      is compiled and executed on the BEAM node before any LLM call is even made. The vendor's own three
+      `# sobelow_skip ["RCE.EEx"]` annotations in the module silenced the static-analysis scanner rather than
+      mitigating the flaw. Only the `ReqLLM.Context` return form bypasses EEx and is unaffected. CVSS 4.0 base score
+      10.0 (AV:N/AC:L/AT:N/PR:N/UI:N, full C/I/A both vuln and subsequent system), CWE-94. Affects ash_ai from 0.1.0
+      up to (not including) 1.0.0; fixed in 1.0.0 (commit e9948254b5659c1143b73dc2f59f457931e64514), which stops
+      evaluating function-supplied prompt content as EEx and evaluates only statically configured (compile-time
+      literal) templates. Published 2026-08-31; no in-the-wild exploitation reported by any source, but the maintainer
+      advisory itself ships a complete, working HTTP-triggered PoC (Bandit/Plug endpoint, Mix.install script), so a
+      working exploit chain is public from disclosure. This is a new instance of a pattern already recurring in this
+      constituency's threat picture — untrusted input reaching an LLM-agent framework's code-evaluation surface —
+      distinct from, but conceptually adjacent to, the agentic-AI framework and evaluation-sandbox incidents already
+      tracked (Hugging Face, Taiwan government agentic-AI intrusion, GTIG AVDH).
+    region_nexus: "global — open-source Hex.pm/GitHub package (ash-project/ash_ai); no Swiss-specific deployment confirmed by any source"
+    primary_sector_nexus: "indirect — relevant wherever an Ash Framework (Elixir/Phoenix ecosystem) service exposes an ash_ai prompt action to untrusted input; adoption inside Swiss public-sector stacks not confirmed by any source"
+    sector: "public-sector"
+    cves: ["CVE-2026-77956"]
+    techniques: ["T1190"]
+    affected_products: ["ash_ai (Elixir Ash Framework AI extension, Hex package ash_ai / GitHub ash-project/ash_ai)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "AshAi.Actions.Prompt runs every non-ReqLLM.Context prompt through EEx.eval_string/2 (lib/ash_ai/actions/prompt.ex:512 for the string form, 521-522 for the {system, user} tuple, 542/550/555 for the message-list forms). EEx is not string interpolation — a template is Elixir source"
+        attribution: "ash-project (GitHub Security Advisory GHSA-2g59-hg7m-qc83)"
+        source_url: "https://github.com/ash-project/ash_ai/security/advisories/GHSA-2g59-hg7m-qc83"
+      - quote: "That hands end-user text directly to EEx.eval_string/2. Nothing in the module escapes, sanitizes, or restricts the template; the only related markers are three # sobelow_skip [\"RCE.EEx\"] annotations (lines 487, 503, 536), which silence the scanner rather than mitigate the issue."
+        attribution: "ash-project (GitHub Security Advisory GHSA-2g59-hg7m-qc83)"
+        source_url: "https://github.com/ash-project/ash_ai/security/advisories/GHSA-2g59-hg7m-qc83"
+      - quote: "Remote code execution in the application's BEAM node. Anyone running an ash_ai prompt action behind an HTTP or other untrusted boundary whose prompt function incorporates request data is affected; no authentication or special privileges are required."
+        attribution: "ash-project (GitHub Security Advisory GHSA-2g59-hg7m-qc83)"
+        source_url: "https://github.com/ash-project/ash_ai/security/advisories/GHSA-2g59-hg7m-qc83"
+    extended_notes: |
+      Detection concept (telemetry class first, platform anchor second): (1) application/web-access-log inspection
+      of any ash_ai-backed prompt-action endpoint's request bodies for EEx delimiter sequences (`<%=`, `<%`, `%>`)
+      co-occurring with Elixir stdlib call names (System.cmd, File., Code.eval_string, :os.cmd) — ordinary free-text
+      user input is the benign lookalike, so the discriminator is a delimited, syntactically valid Elixir call
+      inside the field, not the mere presence of angle brackets. (2) process-creation telemetry on hosts running a
+      BEAM VM (beam.smp / erlang parent process): a shell (sh/bash) or OS command spawned directly from beam.smp
+      with no intervening deployment/ops tooling is anomalous for an Ash/Phoenix web service and is the actionable
+      EDR signal, since a successful exploit runs entirely inside the interpreter's memory before optionally
+      shelling out. Hardening: upgrade to ash_ai >= 1.0.0; as an interim/compensating control, audit every use of
+      the function-based `prompt: fn input, context -> ... end` DSL form for any code path that folds action
+      arguments (i.e., anything ultimately derived from an HTTP request) into the returned prompt content, and
+      either move to the vendor's now-safe static-template form or strip/refuse EEx-special characters before the
+      content reaches the prompt action. No workaround exists that leaves the function-based dynamic-prompt form
+      itself safe pre-patch.
+    borderline: true
+    borderline_reason: >
+      Genuine unauthenticated CVSS 10.0 RCE with a public working PoC, freshly disclosed (published
+      2026-08-31, roughly 3 hours before this research run) and independently corroborated (GHSA plus
+      ENISA EUVD) — but the affected ecosystem (Elixir Ash Framework AI-agent extension) is niche
+      relative to the technology stacks typically deployed in Swiss federal, cantonal and communal
+      administration, and no source confirms any Swiss public-sector or supplier deployment. Included
+      on the strength of the vulnerability class (untrusted input reaching an LLM-agent framework's
+      template/code-evaluation layer), directly relevant to this constituency's growing agentic-AI
+      exposure already tracked in prior entries; main agent should weigh stack relevance against
+      novelty of class when setting priority.
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "deployment configures no product watchlist (documented no-op per spawn message); general S1 coverage applied unchanged. All essential-tier national-CERT/authority sources (NCSC-CH CSH, BSI CERT-Bund WID, ANSSI/CERT-FR, NCSC-NL, NCSC-UK, CERT-EU, CISA KEV/ENISA EUVD) were swept for watchlist-relevant products; none had in-window signal for any specific product (see coverage_gaps / summary note on the weekend lull)."
+
+cve_table:
+  - cve: "CVE-2026-77956"
+    product: "ash_ai (Elixir Ash Framework AI extension)"
+    cvss: "10.0 (CVSS 4.0, CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H)"
+    epss: "0.0 (too freshly published for a scored EPSS estimate)"
+    kev: false
+    exploited: false
+    patch: "1.0.0 (commit e9948254b5659c1143b73dc2f59f457931e64514); affected 0.1.0 – <1.0.0"
+    source: "https://github.com/ash-project/ash_ai/security/advisories/GHSA-2g59-hg7m-qc83"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "cisa.gov cybersecurity-advisories index and cisa-directives page both return the generic served index only via the bridge (no advisory items resolvable beyond nav chrome); consistent with the source record's noted persistent 403/reader-credit-exhausted condition. CISA KEV JSON feed (separate source) fetched cleanly and is current through catalogVersion 2026.08.27 with no additions since — used as the substitute exploited-vulnerability surface per the source record's own guidance."
+  - source_id: ssd-disclosure
+    reason: "https://ssd-disclosure.com/ returned a Cloudflare 'Robot Challenge Screen' via both direct bridge and the jina reader fallback (jina rendered the challenge page itself, not the underlying content) — no content recoverable this run."
+  - source_id: msrc-blog
+    reason: "https://msrc.microsoft.com/blog redirects to https://www.microsoft.com/en-us/msrc/blog, whose listing renders only one dated item (July 2026 MVR announcement) via WebFetch's summariser; no August 2026 vulnerability-relevant posts surfaced. MSRC's actual vulnerability-disclosure channel (Update Guide / per-CVE pages) is out of scope for this source record; no in-window gap believed to exist since Patch Tuesday CVEs are covered via NVD/EUVD/KEV instead."
+  - note: "General observation, not a fetch failure: every essential-tier national-CERT/authority source in this slice (NCSC-CH Cyber Security Hub, BSI CERT-Bund WID-SEC, ANSSI/CERT-FR avis feed, NCSC-NL advisories, NCSC-UK all-RSS feed, CERT-EU security-advisories RSS, CISA KEV, ENISA EUVD exploited/criticals listings) fetched successfully but returned no item published after 2026-08-28 (NCSC-CH's freshest post, id 12898, ServiceNow AI Platform, created 2026-08-28T15:04Z, is already in prior_coverage). This is consistent with a quiet weekend (2026-08-29/30 fell on Sat/Sun) followed by an early-Monday (04:11Z) run before the German/French/Dutch/UK CERTs' business-day advisory cycle restarts. Standard/rotation-tier research blogs (0patch, Exodus Intelligence, ZDI, Censys, VulnCheck, Aikido, depthfirst, Adobe PSIRT, Apple, Chrome Releases, mySites.guru, FBI IC3) were also swept and likewise showed nothing newer than 2026-08-28 that was both genuinely new and still in-window."

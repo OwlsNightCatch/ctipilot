@@ -16,7 +16,7 @@ summary: >
   been stolen; only investigations opened after the attacker advertised the dataset on 2026-08-12
   established the theft.
 discovered_at: "2026-08-15T04:47:00Z"
-updated_at: "2026-08-21T06:45:00Z"
+updated_at: "2026-08-31T05:55:00Z"
 event_date: 2026-08-14
 run_id: 2026-08-15T0412Z-intel
 priority: high
@@ -33,7 +33,7 @@ sectors:
 entities:
   - "incident:france-dgfip-tax-breach-2026-08"
   - "actor:zerobytes"
-  - "incident:france-education-ministry-breach-2026-07"
+  - "incident:france-education-nationale-agent-training-breach-2026-07"
   - "incident:france-bloctel-breach-2026-08"
 techniques:
   - T1078
@@ -61,6 +61,14 @@ sources:
     publisher: OCCRP
     date: 2026-08-20
     role: corroborating
+  - url: "https://www.zataz.com/cyberattaque-une-rentree-scolaire-sous-tension/"
+    publisher: "ZATAZ.COM (Damien Bancal)"
+    date: "2026-08-30"
+    role: corroborating
+  - url: "https://www.radiofrance.fr/francebleu/podcasts/l-invite-ici-mayenne/blocage-des-outils-informatiques-des-professeurs-devraient-manquer-a-l-appel-dans-certaines-classes-selon-le-snes-fsu-6927930"
+    publisher: "ICI / France Bleu (Radio France)"
+    date: "2026-08-26"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "Mercredi 12 et jeudi 13 août 2026, un acteur malveillant a revendiqué des accès illégitimes au système d'information de la Direction générale des Finances publiques (DGFiP), intervenus en juin et juillet 2026, reposant sur des usurpations d'identifiants d'un agent de la DGFIP et d'un tiers habilité."
@@ -75,6 +83,14 @@ evidence:
     publisher: "Ministère de l'Education nationale, quoted by franceinfo"
   - quote: "Un accès frauduleux à un compte professionnel a permis à un cybercriminel de récupérer des fichiers contenant 3 millions de numéros de téléphone, dont 600 000 inscrits sur Bloctel."
     publisher: DGCCRF
+  - quote: "Full restoration could take around two weeks."
+    original: "Le rétablissement complet pourrait nécessiter environ deux semaines."
+    publisher: "ZATAZ.COM"
+    source_url: "https://www.zataz.com/cyberattaque-une-rentree-scolaire-sous-tension/"
+  - quote: "We risk finding ourselves on 1 September with classes lacking teachers in quite a few schools."
+    original: "On risque de se retrouver au 1ᵉʳ septembre avec des classes sans professeurs dans pas mal d'établissements scolaires"
+    publisher: "ICI / France Bleu (Radio France)"
+    source_url: "https://www.radiofrance.fr/francebleu/podcasts/l-invite-ici-mayenne/blocage-des-outils-informatiques-des-professeurs-devraient-manquer-a-l-appel-dans-certaines-classes-selon-le-snes-fsu-6927930"
 verification: multi-source
 sourcing_note: >
   The confirmed facts come from the French Ministry of Economy and Finance's own statement about
@@ -116,6 +132,17 @@ updates:
       - sources
       - body
     merged_from: 2026-08-21/zerobytes-france-education-ministry-bloctel-unattributed
+  - at: "2026-08-31T05:55:00Z"
+    run_id: 2026-08-31T0411Z-intel
+    type: update
+    summary: >
+      The Ministry of National Education's precautionary access shutdown at affected académies is
+      still disrupting the 2026 school-year start more than a month after the intrusion: as of
+      2026-08-30, Toulouse and Nantes remain significantly impacted, with professional mailboxes
+      and family access to digital workspaces cut and academies falling back to paper and phone
+      procedures. Teacher unions warn some classes may begin September without an assigned teacher
+      because substitute-assignment orders are sent by email.
+    fields: [entities, sources, evidence, body]
 migrated_from: null
 ---
 
@@ -144,3 +171,9 @@ It is worth being explicit about what is *not* established, because the opposite
 **Triage:** across the intrusions where a mechanism is stated at all, the access is a legitimate account used by someone who should not have it — an agent's and an authorised third party's credentials at DGFiP, a professional account at DGCCRF. There is no malware, no exploited vulnerability and no CVE anywhere in this cluster, so nothing here produces a detection signal on an endpoint. The discriminator is behavioural on the identity plane: a valid account performing bulk record retrieval at a volume and rate no human workflow generates, from a session that is otherwise unremarkable. The DGFiP case established the harder half of the problem — its own post-intrusion access reviews, run when the accounts were cut, did not reveal that data had already been taken. The Education Ministry case adds the same shape from the other side: the actor's claim to have been detected without being evicted is unaddressed by the ministry's published statements.
 
 **Defender takeaway:** for an administration whose exposure runs through authorised third parties, the control this cluster keeps pointing at is not authentication but **egress volume accounting on legitimate sessions** — knowing what a normal day's record access looks like per account and per third-party integration, so that a bulk export is visible while it happens rather than when a listing appears for sale. Two months elapsed between the DGFiP intrusions and the discovery that data had gone, and the discovery came from the criminal market, not from the victim. Where a third-party account holds query access to a personal-data system, the reviewable question is whether anyone would notice that account reading a hundred thousand records, and the honest answer in three separate French cases this summer was no.
+
+## Update — 2026-08-31T05:55:00Z
+
+The delta here is operational, not technical. The Ministry of National Education's precautionary decision to cut network and mailbox access for affected académies, taken after the intrusion this entry already tracks, is still causing real disruption to the 2026 school-year start more than a month later. As of 2026-08-30, most académies report normal access restored, but Toulouse and Nantes remain significantly impacted: at Toulouse, professional mailboxes and applications stay cut "until further notice," family access to the digital workspace is also suspended, the rector describes it as an unprecedented start of term, and "full restoration could take around two weeks" — all translated from French ([ZATAZ.COM, 2026-08-30](https://www.zataz.com/cyberattaque-une-rentree-scolaire-sous-tension/)) — with the digital workspace targeted for relaunch on 7 September. Because substitute-teacher assignment orders are sent by email, the mailbox shutdown has left some substitute and contract teachers without their assigned school days before term starts; teacher unions warn some classes may open in September with no assigned teacher: "we risk finding ourselves on 1 September with classes lacking teachers in quite a few schools" (translated from French) ([Thomas Cabioch, SNES-FSU Mayenne, via ICI/France Bleu, 2026-08-26](https://www.radiofrance.fr/francebleu/podcasts/l-invite-ici-mayenne/blocage-des-outils-informatiques-des-professeurs-devraient-manquer-a-l-appel-dans-certaines-classes-selon-le-snes-fsu-6927930)). Toulouse has fallen back to paper timetables and phone or messaging-app communication with families ([ZATAZ.COM, 2026-08-30](https://www.zataz.com/cyberattaque-une-rentree-scolaire-sous-tension/)). The ministry states payroll will still be paid on the usual schedule, and the Toulouse rector separately states all students will be accommodated in schools on the planned dates, allowing for possible last-minute adjustments — both translated from French ([ZATAZ.COM, 2026-08-30](https://www.zataz.com/cyberattaque-une-rentree-scolaire-sous-tension/)).
+
+**Defender takeaway:** a precautionary, security-driven access shutdown following a breach can itself become the primary operational-impact event, particularly where downstream HR and scheduling workflows — payroll routing, staff assignment, credential issuance — have no offline fallback built in. That is a business-continuity gap worth stress-testing before an incident forces the exercise, not during one: identify which HR and scheduling processes depend on email or a single digital workspace with no manual fallback, and pre-stage the paper or phone alternative for exactly the window between detection and full restoration.

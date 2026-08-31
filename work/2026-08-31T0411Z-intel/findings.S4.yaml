@@ -1,0 +1,316 @@
+domain: S4
+run_id: 2026-08-31T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-31T04:15:35Z
+ended_at: 2026-08-31T04:28:38Z
+duration_seconds: 783
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 20
+  bridge_fetches: 24
+
+items:
+  - title: "Manchester Airports Group breach: FulcrumSec claims 86GB stolen via Iterable API credentials exposed in client-side JavaScript, scope wider than MAG's own disclosure"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/fulcrumsec-claims-manchester-airports-hack-theft-of-86-gb-of-data/", publisher: "BleepingComputer", date: "2026-08-30", role: "primary" }
+      - { url: "https://securityaffairs.com/198143/cyber-crime/extortion-group-fulcrumsec-claims-86gb-manchester-airports-group-data-theft.html", publisher: "Security Affairs", date: "2026-08-30", role: "corroborating" }
+    discovery_trace: "first seen at: securityaffairs (essential/rotation slice), URL https://securityaffairs.com/ -> homepage headline -> primary: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/fulcrumsec-claims-manchester-airports-hack-theft-of-86-gb-of-data/ -> corroborating: Security Affairs full article, URL https://securityaffairs.com/198143/cyber-crime/extortion-group-fulcrumsec-claims-86gb-manchester-airports-group-data-theft.html"
+    summary: |
+      This is a material development on the already-tracked Manchester Airports Group (MAG) breach
+      (disclosed 2026-08-27, ~8.7M customers). The extortion group FulcrumSec has now claimed
+      responsibility and told BleepingComputer it stole approximately 86GB of data, considerably
+      more detailed than MAG's original disclosure suggested. FulcrumSec says it obtained access
+      using airport-specific Iterable (marketing-platform) API credentials exposed in client-side
+      JavaScript -- code that runs in the customer's browser, so anyone inspecting network calls or
+      page source with developer tools could read the credentials. BleepingComputer validated a
+      sample record against a real traveller's known purchase history (matching Fast Track bookings,
+      arrival times, terminal, amounts paid) and reports a ~21.5GB Manchester customer export
+      combining identifiers, historical booking activity and marketing classifications, plus a claim
+      of nearly 200,000 records tied to upcoming travel through the rest of 2026 (dates, times,
+      booking details linked to PII) -- none of which BleepingComputer could independently verify in
+      scope. MAG has not addressed the specific claims (exposed credentials, 86GB figure, future-
+      travel data) and continues to point to its existing customer-notification statement; no
+      payment-card or banking data is reported exposed. The defender-relevant lesson is the initial-
+      access class: a third-party marketing/analytics SaaS API key shipped in front-end JS is
+      effectively a public credential once the page is inspectable, independent of any server-side
+      hardening.
+    region_nexus: "United Kingdom; third-party SaaS (marketing-platform) API-key exposure pattern transferable to any organisation using client-side-embedded API keys, including government digital-service front-ends"
+    primary_sector_nexus: "indirect"
+    sector: "transportation/critical-infrastructure (private operator)"
+    cves: []
+    techniques: [T1552.001, T1213]
+    affected_products: []
+    entity_keys: ["incident:manchester-airports-group-data-breach-2026-08"]
+    new_entities:
+      - { key: "actor:fulcrumsec", type: actor, name: "FulcrumSec", aliases: [],
+          summary: "Financially motivated data-extortion group active since 2025 that steals corporate data and threatens publication rather than encrypting victim systems; previously claimed LexisNexis, Novo Nordisk, Global Schools Group and Avnet, and claimed the Manchester Airports Group breach on 2026-08-30 (BleepingComputer, 2026-08-30)." }
+    relation_suggestions:
+      - { subject: "incident:manchester-airports-group-data-breach-2026-08", object: "actor:fulcrumsec",
+          basis: "BleepingComputer: FulcrumSec claimed responsibility for the attack and shared samples of the allegedly stolen data as evidence (BleepingComputer, 2026-08-30)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-28/manchester-airports-group-data-breach-8-7-million"
+    evidence:
+      - quote: "The group claims it obtained access using airport-specific Iterable API credentials exposed in client-side JavaScript and that the stolen material includes nearly 200,000 records related to upcoming travel during the remainder of 2026."
+        attribution: "BleepingComputer (Ax Sharma)"
+        source_url: "https://www.bleepingcomputer.com/news/security/fulcrumsec-claims-manchester-airports-hack-theft-of-86-gb-of-data/"
+      - quote: "BleepingComputer validated one record by comparing it with the traveller's known Manchester Airport purchase history."
+        attribution: "BleepingComputer (Ax Sharma)"
+        source_url: "https://www.bleepingcomputer.com/news/security/fulcrumsec-claims-manchester-airports-hack-theft-of-86-gb-of-data/"
+      - quote: "MAG is confident that we have taken effective measures to protect our customers and we have contacted all those affected, including reaching out to all those with upcoming bookings to advise them of additional support"
+        attribution: "MAG spokesperson, via BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/fulcrumsec-claims-manchester-airports-hack-theft-of-86-gb-of-data/"
+    extended_notes: |
+      Component/prerequisite detail for defenders: the exposure class is "secret shipped in a
+      first-party web app's client-side bundle" -- not a CVE, not a misconfigured cloud bucket.
+      Any organisation embedding a third-party marketing/analytics/booking-platform API key
+      directly in browser-delivered JS (rather than proxying calls through a backend that holds
+      the credential server-side) should treat that key as effectively public. Hunt/detect angle:
+      review outbound API call patterns from public web front-ends for tokens/keys visible in
+      Network tab or bundled JS; verify with the vendor (Iterable in this case) whether the key
+      scope can be restricted to write-only/track-only actions instead of full read access to
+      customer records.
+
+  - title: "ZeroBytes claims third French government platform in three months: ~148.9M rows from Zéro Logement Vacant (beta.gouv.fr) via a compromised Metabase admin session and a cleartext production database password"
+    sources:
+      - { url: "https://www.zataz.com/zero-logement-vacant-vise-par-une-fuite-massive/", publisher: "ZATAZ.COM (Damien Bancal)", date: "2026-08-30", role: "primary" }
+      - { url: "https://www.clubic.com/actualite-627343-zero-logement-vacant-pirate-148-9-millions-de-lignes-de-donnees-revendiquees-par-zerobytes.html", publisher: "Clubic (Mélina Loupia)", date: "2026-08-30", role: "primary" }
+    discovery_trace: "first seen at: zataz-feed (rotation slice), URL https://www.zataz.com/feed/ -> article URL https://www.zataz.com/zero-logement-vacant-vise-par-une-fuite-massive/ -> corroborating/independent: Clubic, URL https://www.clubic.com/actualite-627343-zero-logement-vacant-pirate-148-9-millions-de-lignes-de-donnees-revendiquees-par-zerobytes.html (which itself cites FrenchBreaches and Cyberattaque.org as further independent trackers)"
+    summary: |
+      The actor known as ZeroBytes -- already tracked in this store for the June/July DGFiP
+      (French tax authority) credential intrusion and the claimed Ministry of National Education
+      leak -- claims a third French public-sector platform compromise in three months: Zéro
+      Logement Vacant, a housing-vacancy tool built and operated by La Fabrique numérique
+      (Ministry of Ecological Transition) together with the Agence nationale de l'habitat, hosted
+      on beta.gouv.fr and used by municipal/collectivité housing officers. Per the actor's own
+      account (relayed by ZATAZ and independently by Clubic, which also cites FrenchBreaches and
+      Cyberattaque.org), initial access was a valid Metabase (open-source BI tool) superuser
+      session, which exposed the platform's full Metabase configuration: connected databases,
+      accounts, permissions, saved queries/dashboards and stored secrets, plus the ability to run
+      native SQL against every connected database from within the tool. Metabase's at-rest secret
+      encryption was reportedly disabled, and the actor says a production PostgreSQL password was
+      stored in plaintext in a database-connection's description field, retrieved via a call to
+      Metabase's admin API. That password gave a direct, Metabase-independent read connection to
+      the production PostgreSQL instance (hosted at French cloud provider Clever Cloud) -- so
+      deleting the compromised Metabase accounts afterwards did not cut off access; the actor says
+      the PostgreSQL credentials stayed valid until rotated. Thirteen dashboards were reportedly
+      exposed with no authentication at all, some leaking email/bcrypt-hash pairs, and a JWT
+      signing key was allegedly recoverable from platform settings. The claimed haul totals
+      148,929,194 raw rows: ~82M from a national property-owner table and ~67M from a 2024
+      DGFiP/DataFoncier national file (names, dates of birth, addresses, tax/property identifiers),
+      plus ~3,500 municipal-agent accounts (bcrypt hashes, session tokens, OAuth records) and
+      several thousand unique emails/phone numbers. Deduplicated by individual identifier, the
+      actor states ~48M distinct people; by name+DOB, ~71M. The platform was taken offline after
+      the intrusion was discovered; no government confirmation of scope was located at research
+      time, but the platform takedown is a de facto acknowledgement an incident occurred. This
+      is the same actor's third strike against French government digital infrastructure since
+      June 2026 (DGFiP, then the Ministry of National Education, now Zéro Logement Vacant),
+      arriving one week after the French Prime Minister ordered ANSSI to stand up a dedicated
+      cyber crisis unit in response to the preceding two incidents.
+    region_nexus: "France; a national e-government/BI-tooling exposure pattern (BI-tool admin session + cleartext production credential stored inside the BI tool's own connection config) directly transferable to any government's internal analytics/BI deployments, including Swiss federal/cantonal e-government (agov-style) services"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1078, T1552.001, T1213]
+    affected_products: ["Metabase"]
+    entity_keys: ["actor:zerobytes", "incident:france-dgfip-tax-breach-2026-08", "incident:france-education-ministry-breach-2026-07"]
+    new_entities:
+      - { key: "incident:zero-logement-vacant-breach-2026-08", type: incident, name: "Zéro Logement Vacant data breach (France, 2026)", aliases: [],
+          summary: "ZeroBytes claims compromise of the French government's Zéro Logement Vacant housing-vacancy platform (beta.gouv.fr) on 2026-08-25 via a Metabase administrator session and a cleartext PostgreSQL production password, exfiltrating ~148.9M raw rows including DGFiP/DataFoncier property-owner records covering an estimated 48-71M individuals; platform taken offline (ZATAZ, Clubic, 2026-08-30)." }
+    relation_suggestions:
+      - { subject: "incident:zero-logement-vacant-breach-2026-08", object: "actor:zerobytes",
+          basis: "Clubic: 'ZeroBytes revendique depuis hier, le piratage du service public Zéro Logement Vacant' -- the group itself claims the breach on a criminal forum (Clubic, 2026-08-30)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Selon son récit, l'accès initial aurait été obtenu via une session administrateur Metabase valide."
+        attribution: "ZATAZ.COM (Damien Bancal) -- EN: 'According to his account, initial access was obtained via a valid Metabase administrator session.'"
+        source_url: "https://www.zataz.com/zero-logement-vacant-vise-par-une-fuite-massive/"
+      - quote: "le mot de passe PostgreSQL de production aurait été conservé en clair dans le champ de description d'une connexion à la base"
+        attribution: "ZATAZ.COM (Damien Bancal) -- EN: 'the production PostgreSQL password was allegedly stored in plaintext in the description field of a database connection'"
+        source_url: "https://www.zataz.com/zero-logement-vacant-vise-par-une-fuite-massive/"
+      - quote: "ZeroBytes frappe un troisième service public en trois mois"
+        attribution: "Clubic (Mélina Loupia) -- EN: 'ZeroBytes strikes a third public service in three months'"
+        source_url: "https://www.clubic.com/actualite-627343-zero-logement-vacant-pirate-148-9-millions-de-lignes-de-donnees-revendiquees-par-zerobytes.html"
+    extended_notes: |
+      Prerequisite/mechanism detail for defenders operating Metabase or comparable BI tools
+      against production data: (1) do not store raw database credentials in free-text fields
+      (connection "description"/"notes") readable via the tool's own admin API; (2) enable
+      at-rest secret encryption for the BI tool's connection-credential store; (3) treat BI-tool
+      admin-session compromise as equivalent to full read access on every connected data source,
+      not merely the tool's own metadata; (4) rotate the actual database credential (not just the
+      BI-tool account) immediately upon any suspected BI-platform compromise, since deleting the
+      compromised accounts alone does not invalidate an already-exfiltrated database password;
+      (5) audit BI dashboards for anonymous/unauthenticated public sharing -- 13 dashboards here
+      were reportedly reachable with no authentication at all. Hunt angle: Metabase admin-API
+      calls (`/api/database`, `/api/user`) from unfamiliar source IPs/sessions; unexpected native
+      SQL query execution through the BI tool's query editor rather than its dashboard layer.
+
+  - title: "New wave of French departmental fire-and-rescue-service (SDIS) data-leak claims hits seven more units; SDIS du Gard's board confirms intrusion and theft of staff ID copies and bank details"
+    sources:
+      - { url: "https://www.zataz.com/un-pirate-cible-a-nouveau-les-sdis-francais/", publisher: "ZATAZ.COM (Damien Bancal)", date: "2026-08-30", role: "primary" }
+      - { url: "https://www.objectifgard.com/faits-divers/gard-cyberattaque-chez-les-pompiers-des-donnees-personnelles-sensibles-derobees-168493.php", publisher: "Objectif Gard", date: "2026-08-30", role: "primary" }
+    discovery_trace: "first seen at: zataz-feed (rotation slice), URL https://www.zataz.com/feed/ -> article URL https://www.zataz.com/un-pirate-cible-a-nouveau-les-sdis-francais/ -> pivot for victim confirmation: WebSearch (\"SDIS piratage données pompiers août 2026 Somme Essonne Bas-Rhin\") -> Objectif Gard, URL https://www.objectifgard.com/faits-divers/gard-cyberattaque-chez-les-pompiers-des-donnees-personnelles-sensibles-derobees-168493.php"
+    summary: |
+      Over the last weekend of August 2026 a criminal actor published fresh data-leak claims
+      against seven more French Services départementaux d'incendie et de secours (SDIS --
+      departmental fire and rescue services): Somme, Essonne, Bas-Rhin, Bouches-du-Rhône, Gard,
+      Vosges and Moselle. This extends a campaign ZATAZ first documented in late July 2026 against
+      five other SDIS (Aisne, Alpes-de-Haute-Provence, Landes, Marne, Alpes-Maritimes), attributed
+      across different postings to three separate forum handles: ChimeraZ, Cybernox and AplaGroup.
+      Crucially, this is not merely a criminal claim: contacted directly by Objectif Gard on
+      2026-08-30, the president of SDIS du Gard's governing board confirmed the cyberattack and
+      theft of personal data on personnel, including copies of identity documents and bank
+      details -- full scope and intrusion method still under investigation. The July wave (per
+      FrenchBreaches' independent analysis) totalled at least 4,878 claimed personnel/records and
+      ~35GB of internal documents across four quantifiable SDIS, plus a claimed administrator-level
+      access to 17 named SDIS applications (incident mapping, wildfire surveillance, weather feeds,
+      GIS tools) at SDIS de l'Aisne with no confirmed exfiltration volume. No common intrusion
+      vector across the SDIS has been established; each publication appears to be a distinct claim
+      rather than one coordinated technical compromise. The pattern that matters for defenders is
+      not any single leak's volume but the aggregation risk: personnel identity, rank, assignment,
+      hierarchical role, contact details and (in some cases) technical/infrastructure access,
+      accumulated across repeated incidents against the same category of organisation, builds a
+      reconnaissance dataset usable for targeted phishing, impersonation or infrastructure mapping
+      against emergency-services personnel specifically -- the same organisational category as
+      Swiss cantonal fire/rescue services within this constituency's core.
+    region_nexus: "France; French departmental fire-and-rescue services (SDIS) -- directly analogous organisational category to Swiss cantonal/communal fire and rescue services within the profiled constituency's core (emergency services)"
+    primary_sector_nexus: "direct"
+    sector: "public-sector (emergency services)"
+    cves: []
+    techniques: [T1078, T1213]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:france-sdis-data-leaks-2026", type: campaign, name: "France SDIS (fire and rescue) data-leak campaign 2026", aliases: [],
+          summary: "Recurring series of data-theft claims and confirmed breaches against French departmental fire-and-rescue services (SDIS) since July 2026, attributed to multiple criminal forum handles (ChimeraZ, Cybernox, AplaGroup); a new wave hit seven more SDIS in late August 2026, and SDIS du Gard's board president confirmed the intrusion and theft of personnel ID documents and bank details (ZATAZ, Objectif Gard, 2026-08-30)." }
+      - { key: "actor:chimeraz", type: actor, name: "ChimeraZ", aliases: [],
+          summary: "Forum handle behind multiple data-leak postings against French departmental fire-and-rescue services (SDIS), including SDIS du Gard, Bouches-du-Rhône, Moselle, Bas-Rhin and Vosges in the July-August 2026 wave (ZATAZ, 2026-08-30)." }
+    relation_suggestions:
+      - { subject: "campaign:france-sdis-data-leaks-2026", object: "actor:chimeraz",
+          basis: "ZATAZ: messages were published minutes apart on a criminal forum by an account using the handle ChimeraZ, and the same handle is tied to the late-August SDIS du Gard and related postings (ZATAZ, 2026-08-30)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "France, not Switzerland -- included under the emergency-services organisational-category nexus (fire/rescue is explicitly part of the profiled constituency) and the reconnaissance/aggregation-risk lesson, rather than a direct Swiss/home-region tie; victim confirmation exists only for SDIS du Gard, the other six units named in this wave remain unconfirmed criminal claims."
+    evidence:
+      - quote: "Le SDIS du Gard a bien été victime d'une cyberattaque et d'un vol de données. Contacté ce dimanche 30 août par Objectif Gard, Alexandre Pissas, président du conseil d'administration du SDIS 30, confirme l'attaque informatique ainsi que le vol de données personnelles concernant les personnels."
+        attribution: "Objectif Gard -- EN: 'SDIS du Gard was indeed the victim of a cyberattack and data theft. Contacted this Sunday 30 August by Objectif Gard, Alexandre Pissas, chairman of SDIS 30's board, confirms the computer attack and the theft of personal data concerning personnel.'"
+        source_url: "https://www.objectifgard.com/faits-divers/gard-cyberattaque-chez-les-pompiers-des-donnees-personnelles-sensibles-derobees-168493.php"
+      - quote: "Parmi les informations dérobées figureraient des données particulièrement sensibles, notamment des copies de pièces d'identité et des coordonnées bancaires."
+        attribution: "Objectif Gard -- EN: 'Among the stolen information are said to be particularly sensitive data, notably copies of identity documents and bank details.'"
+        source_url: "https://www.objectifgard.com/faits-divers/gard-cyberattaque-chez-les-pompiers-des-donnees-personnelles-sensibles-derobees-168493.php"
+      - quote: "ces données peuvent contribuer à cartographier personnels, fonctions, structures techniques, relations hiérarchiques et infrastructures numériques des secours français"
+        attribution: "ZATAZ.COM (Damien Bancal) -- EN: 'this data can help map personnel, roles, technical structures, hierarchical relationships and digital infrastructure of the French rescue services.'"
+        source_url: "https://www.zataz.com/un-pirate-cible-a-nouveau-les-sdis-francais/"
+    extended_notes: |
+      No common access vector has been established across the SDIS incidents (FrenchBreaches
+      explicitly states the July wave's five cases do not establish a shared vulnerability). The
+      one case with a stated mechanism (SDIS de l'Aisne) is a claimed administrator-level account
+      compromise reaching at least 17 named line-of-business applications, with no confirmed
+      exfiltration volume. Defender takeaway for any fire/rescue or emergency-services IT function:
+      treat personnel-directory and dispatch/GIS-adjacent applications as high-value reconnaissance
+      targets even where the data itself (names, ranks, assignments, contact details) looks
+      individually low-sensitivity -- the aggregation across incidents is the actual risk, and
+      cumulative leaks build the profiling dataset an attacker needs for targeted social
+      engineering against operational staff.
+
+  - title: "France's Ministry of National Education breach: precautionary system-wide access blocks are still disrupting two académies (Toulouse, Nantes) a month later, forcing paper-based fallback at the start of the school year"
+    sources:
+      - { url: "https://www.zataz.com/cyberattaque-une-rentree-scolaire-sous-tension/", publisher: "ZATAZ.COM (Damien Bancal)", date: "2026-08-30", role: "primary" }
+      - { url: "https://www.radiofrance.fr/francebleu/podcasts/l-invite-ici-mayenne/blocage-des-outils-informatiques-des-professeurs-devraient-manquer-a-l-appel-dans-certaines-classes-selon-le-snes-fsu-6927930", publisher: "ICI / France Bleu (Radio France)", date: "2026-08-26", role: "corroborating" }
+    discovery_trace: "first seen at: zataz-feed (rotation slice), URL https://www.zataz.com/feed/ -> article URL https://www.zataz.com/cyberattaque-une-rentree-scolaire-sous-tension/ -> corroborating background: Radio France / ICI, URL https://www.radiofrance.fr/francebleu/podcasts/l-invite-ici-mayenne/blocage-des-outils-informatiques-des-professeurs-devraient-manquer-a-l-appel-dans-certaines-classes-selon-le-snes-fsu-6927930"
+    summary: |
+      This is a material update on the already-tracked France Ministry of National Education
+      breach (disclosed 31 July 2026; ZeroBytes claimed 346M raw lines on 18 August). The delta is
+      operational, not technical: the ministry's precautionary decision to cut network/mailbox
+      access for affected académies is still causing real disruption to the 2026 school-year start
+      more than a month after the initial intrusion was discovered. As of 2026-08-30, 28 of 30
+      académies report normal access restored (ENT/Pronote functioning normally), but Toulouse and
+      Nantes remain significantly impacted: at Toulouse, professional mailboxes and applications
+      stay cut "until further notice," family access to the digital workspace is also suspended,
+      and the rector describes it as an "unprecedented start of term"; full restoration may take
+      about two weeks, with digital workspace relaunch targeted for 7 September. Because
+      substitute-teacher assignment orders are sent by email, the mailbox shutdown has left some
+      titulaires en zone de remplacement and contract teachers without their assigned school days
+      before the term starts -- teacher unions (SNES-FSU, SNPDEN-Unsa) warn some classes may begin
+      September without an assigned teacher, and Toulouse has fallen back to paper timetables and
+      phone/WhatsApp for family communication. The ministry states payroll and student intake will
+      not be affected. The transferable lesson for public-sector defenders is a business-continuity
+      one: a precautionary, security-driven access shutdown following a breach can itself become
+      the primary operational-impact event, especially where downstream HR/assignment workflows
+      (payroll routing, staff scheduling, credential issuance) have no offline fallback built in --
+      worth stress-testing before an incident, not during one.
+    region_nexus: "France; French national Ministry of Education, decentralised académie administration"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector (education administration)"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: ["incident:france-education-ministry-breach-2026-07"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-15/france-dgfip-tax-authority-credential-intrusion"
+    evidence:
+      - quote: "Le rétablissement complet pourrait nécessiter environ deux semaines."
+        attribution: "ZATAZ.COM (Damien Bancal) -- EN: 'Full restoration could take around two weeks.'"
+        source_url: "https://www.zataz.com/cyberattaque-une-rentree-scolaire-sous-tension/"
+      - quote: "On risque de se retrouver au 1ᵉʳ septembre avec des classes sans professeurs dans pas mal d'établissements scolaires"
+        attribution: "Thomas Cabioch, SNES-FSU Mayenne, via ICI/France Bleu -- EN: 'We risk finding ourselves on 1 September with classes lacking teachers in quite a few schools.'"
+        source_url: "https://www.radiofrance.fr/francebleu/podcasts/l-invite-ici-mayenne/blocage-des-outils-informatiques-des-professeurs-devraient-manquer-a-l-appel-dans-certaines-classes-selon-le-snes-fsu-6927930"
+    extended_notes: |
+      novelty targets entry id 2026-08-15/france-dgfip-tax-authority-credential-intrusion
+      deliberately: per prior_coverage.json, that single entry already carries both the original
+      DGFiP intrusion and the 18-August Ministry of Education claim as a prior update record, so
+      this school-year operational-fallout delta belongs on the same entry, not a new one.
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "This deployment configures no supplier watchlist (config/org-profile.yaml has none set) -- sweep is a documented no-op per the spawn instructions. No supplier-specific fetches performed beyond the domain's normal research."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Essential-tier source. Every transport failed: direct HTTPS returned HTTP 403 (5969 B body), trafilatura extraction returned no readable body, and the jina reader proxy itself relayed an upstream block/challenge for https://www.inside-it.ch/. The RSS feed URL (https://www.inside-it.ch/rss.xml) separately returned an origin-side Cloudflare error 526 (invalid SSL certificate on inside-it.ch's own origin, not a proxy/egress issue on our end) via the jina fallback. This is now 3 consecutive fires with inside-it.ch fully unreachable. WebSearch found no corroborating coverage of the specific backlog item (Insel Gruppe / Bern hospital group delaying a ServiceNow migration due to a security incident) on any other outlet -- searched in German with several phrasings ('Insel Gruppe ServiceNow Migration Sicherheitsvorfall verschoben', 'Insel Gruppe Bern ServiceNow Sicherheitsvorfall', 'Inselspital Bern Cyberangriff 2026'); nothing found. The backlog item remains unconfirmed and un-sourced outside the original 403'ing inside-it.ch URL."
+  - source_id: heise-sec
+    reason: "Essential-tier source, fetched successfully (RSS feed direct + full Newsticker listing cross-checked). No in-window (2026-08-30T04:11Z-2026-08-31T04:11Z) items found -- heise's most recent security-relevant article is dated 2026-08-29T09:51Z (the already-covered Berlin/Rhysida story), roughly 18 hours before the window opened. Confirmed via both the RSS feed and the full 7-day Newsticker listing (which shows only a webinar-ad entry at 2026-08-30 13:00 as the newest item). Not a fetch failure -- a genuinely quiet source-window."
+  - source_id: ransom-isac
+    reason: "Bridge fetch succeeded (HTTP 200, full Next.js SSR blog listing retrieved). Newest post dated 2026-08-27 (CRPx0 ClickFix ransomware analysis); no in-window items."
+  - source_id: zaufana-trzecia-strona
+    reason: "Bridge fetch and trafilatura extraction both succeeded. Listing shows dated posts only through 2026-08-28 (Weekendowa Lektura #691); no in-window items. Two older undated items in the listing (MyDr breach, ~2026-08-13-18; Polish energy-grid follow-up, ~3 weeks old) were checked via WebSearch and confirmed outside the recency window."
+  - source_id: sec-disclosures-edgar
+    reason: "Bridge query (Item 1.05 8-K filings, 2026-08-28 to 2026-08-31) returned zero hits -- no material-cybersecurity-incident 8-K filings in or immediately before the window."
+  - source_id: infosec-magazine
+    reason: "RSS feed fetched successfully; newest item dated 2026-08-28. No in-window items."
+  - source_id: darkreading
+    reason: "RSS feed fetched successfully; newest item dated 2026-08-28T20:19Z. No in-window items."
+  - source_id: technadu
+    reason: "RSS feed fetched successfully; newest item (weekly roundup) dated 2026-08-29T13:58Z, just outside the window. No in-window items."
+  - source_id: troyhunt
+    reason: "RSS feed fetched successfully; newest item dated 2026-08-25. No in-window items."
+  - source_id: cyberscoop
+    reason: "RSS feed fetched successfully; newest item dated 2026-08-28T20:29Z. No in-window items."
+  - source_id: helpnetsecurity
+    reason: "Homepage extraction succeeded but returned only a newsletter-subscription stub with no article listing (JS-driven front page); no structured news listing recipe is recorded for this source. Recipe gap, not a transport failure -- worth a dated notes update on the source record (try helpnetsecurity's /news/ category page or an RSS path if one exists)."
+  - source_id: zataz
+    reason: "Bridge fetch of the homepage via `url` returned raw unparsed HTML with no extractable article list; switching to the documented feed method (https://www.zataz.com/feed/) resolved this cleanly and surfaced all items used in this run. Recommend updating this source's notes to point future runs straight at the feed rather than the bridge `url` homepage fetch."
+
+fetch_failures:
+  - id: inside-it-ch
+    url_tried: "https://www.inside-it.ch/ and https://www.inside-it.ch/rss.xml"
+    fetch_method: "bridge:extract, bridge:url, webfetch"
+    status_code: 403
+    error_class: transport-403
+    error_message: "direct HTTP 403 (5969 B body); trafilatura extraction: no readable body; jina reader proxy: relayed an upstream block/challenge; separately, https://www.inside-it.ch/rss.xml returned Cloudflare error 526 (invalid SSL certificate on inside-it.ch's own origin) via the jina fallback"
+    attempted_methods: [bridge:extract, bridge:url, webfetch, websearch-for-corroboration]
+    mitigation_applied: "WebSearch attempted for corroborating coverage of the specific known backlog item (Insel Gruppe ServiceNow migration delay); none found. General inside-it.ch content otherwise unreachable this run."
+    covered_anyway: false
