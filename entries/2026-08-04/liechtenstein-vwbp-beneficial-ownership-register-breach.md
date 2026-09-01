@@ -14,11 +14,12 @@ summary: >
   copied records for roughly 31,000 legal entities. Forensics released 2026-08-03 characterise it
   as a targeted attack on that register with no attacks found on other systems, but the government
   progressively took the eMWST VAT portal, the Lides reporting platform, the central account
-  register and the Intax tax system offline as a precaution. No initial-access vector has been
-  disclosed, no actor identified and no ransom demand reported; the breach is declared under GDPR
-  Article 33.
+  register and the Intax tax system offline as a precaution. The attackers reached the register
+  through a vulnerability in its reporting portal rather than the database directly, registering a
+  new user account and enumerating every record one by one; no actor has been identified and no
+  ransom demand reported. The breach is declared under GDPR Article 33.
 discovered_at: "2026-08-04T04:48:00Z"
-updated_at: "2026-08-05T04:12:23Z"
+updated_at: "2026-09-01T04:18:40Z"
 event_date: 2026-07-30
 run_id: 2026-08-04T0411Z-intel
 priority: high
@@ -37,6 +38,7 @@ entities:
   - "incident:liechtenstein-vwbp-register-breach-2026-07"
 techniques:
   - T1213
+  - T1190
 affected_products: []
 cves: []
 sources:
@@ -64,6 +66,10 @@ sources:
     publisher: Landesspiegel
     date: 2026-08-04
     role: corroborating
+  - url: "https://www.nzz.ch/wirtschaft/nach-hackerangriff-in-liechtenstein-wie-sicher-sind-heikle-finanzdaten-beim-bund-ld.10018419"
+    publisher: "Neue Zürcher Zeitung"
+    date: 2026-08-07
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "Dabei wurden Datenkopien von rund 31'000 Rechtsträgern widerrechtlich abgegriffen."
@@ -82,12 +88,19 @@ evidence:
     publisher: "Regierung des Fürstentums Liechtenstein"
   - quote: "Eine Adresse oder Telefonnummer wird nicht erfasst. Ebenso werden keinerlei finanzielle Daten der Rechtsträger wie Umsätze, Vermögen oder Dividenden erfasst."
     publisher: "Regierung des Fürstentums Liechtenstein"
+  - quote: "The attackers exploited a vulnerability in this portal, or in the interface to the actual database, to scrape the complete register. To do so, they set up a new user account and then queried every single record in the register one after another. (translated from German)"
+    original: "Die Angreifer nutzten eine Schwachstelle in diesem Portal beziehungsweise in der Schnittstelle zur eigentlichen Datenbank, um das komplette Verzeichnis abzugreifen. Sie richteten dazu ein neues Benutzerkonto ein und fragten dann jeden einzelnen Datensatz im Verzeichnis nacheinander ab."
+    publisher: "Neue Zürcher Zeitung"
+  - quote: "The interface does not allow mass queries. That is why it took several hours for the attackers to download all 31,000 records, as the head of Liechtenstein's Office for IT, Fabian Schmid, told the media. (translated from German)"
+    original: "Die Schnittstelle lässt keine Massenabfrage zu. Deshalb dauerte es mehrere Stunden, bis die Angreifer alle 31 000 Datensätze heruntergeladen hatten, wie der Leiter des Amts für Informatik in Liechtenstein, Fabian Schmid, vor den Medien sagte."
+    publisher: "Neue Zürcher Zeitung"
 verification: multi-source
 sourcing_note: >
   The government is the primary disclosing party for its own incident; The Record and SRF
-  corroborate the scope independently. The `techniques[]` mapping deliberately carries only the
-  collection behaviour the sources describe — bulk copying of records out of the register. No
-  cited source states how access was obtained, so no access-vector technique is mapped.
+  corroborate the scope independently. NZZ's 2026-08-07 reporting, sourced to a named Liechtenstein
+  IT-office official at the government's own press briefing, is the first source to state the
+  access mechanism — exploiting a vulnerability in the reporting portal, mapped alongside the
+  bulk-collection behaviour the original disclosure already established.
 confidence: high
 references: []
 deep_dive: false
@@ -119,6 +132,23 @@ updates:
       - tags
       - body
     merged_from: 2026-08-05/liechtenstein-vwbp-entry-point-identified-field-set
+  - at: "2026-09-01T04:18:40Z"
+    run_id: 2026-09-01T0411Z-intel
+    type: update
+    summary: >
+      NZZ reporting from the government's own 2026-08-04 press briefing, sourced to Liechtenstein
+      IT-office director Fabian Schmid, names the access mechanism this entry previously recorded
+      as undisclosed: the attackers reached the register through a vulnerability in its reporting
+      portal rather than the database directly, registered a new user account, and queried every
+      record individually — the interface has no bulk-query function, so downloading all 31,000
+      records took several hours.
+    fields:
+      - summary
+      - techniques
+      - sourcing_note
+      - sources
+      - evidence
+      - body
 migrated_from: null
 ---
 
@@ -126,7 +156,7 @@ The Verzeichnis wirtschaftlich berechtigter Personen (VwbP, "register of benefic
 
 The government's own timeline is worth reading as a benchmark, because detection was human and internal rather than telemetry-driven. Unauthorised digital access occurred overnight into 2026-07-30; irregularities were noticed at the Amt für Justiz during that day; the Amt für Informatik was brought in, secured the data and took the affected system off the network the same day; the government was informed on 31 July that the attack had potentially succeeded, and the first confirmed preliminary findings arrived on the afternoon of 1 August. A crisis unit convened that evening under Head of Government Brigitte Haas and Justice Minister Emanuel Schädler, was formally confirmed on 2 August, and a media conference was announced for 2026-08-04. The government states there is no indication that data in the system was altered or deleted, and the register is unavailable to external users through the LLV.li portal.
 
-The forensic update on 2026-08-03 is where the operationally interesting tension sits. First findings characterise the event as a targeted attack on the VwbP at the Amt für Justiz, and "Weitere Angriffe auf andere Systeme konnten nicht festgestellt werden" ("no further attacks on other systems could be established") — yet the government kept widening the shutdown: the eMWST VAT portal and the Lides electronic reporting and data-exchange platform came off the network on 31 July, and on 3 August the central account register and the central tax system Intax followed, explicitly as precautionary measures with no indication of unlawful access ([Regierung des Fürstentums Liechtenstein, 2026-08-03](https://www.presseportal.ch/de/pm/100000148/100941500)). Law-enforcement authorities are now engaged alongside the Amt für Informatik and external partners. No initial-access vector has been published, no actor named, and no ransom demand or criminal-market offering reported.
+The forensic update on 2026-08-03 is where the operationally interesting tension sits. First findings characterise the event as a targeted attack on the VwbP at the Amt für Justiz, and "Weitere Angriffe auf andere Systeme konnten nicht festgestellt werden" ("no further attacks on other systems could be established") — yet the government kept widening the shutdown: the eMWST VAT portal and the Lides electronic reporting and data-exchange platform came off the network on 31 July, and on 3 August the central account register and the central tax system Intax followed, explicitly as precautionary measures with no indication of unlawful access ([Regierung des Fürstentums Liechtenstein, 2026-08-03](https://www.presseportal.ch/de/pm/100000148/100941500)). Law-enforcement authorities are now engaged alongside the Amt für Informatik and external partners. No actor has been named and no ransom demand or criminal-market offering reported; the access vector is covered in the update below.
 
 **Defender takeaway:** the exposure that travels beyond Liechtenstein is the nature of the dataset. This is not a credential dump; it is an authoritative mapping of the people behind companies, foundations and trusts, and the constituency that administers those structures is largely Swiss and European — the fiduciaries, trustees, banks and advisers on the other side of the border. Anyone in that business should expect pretexted contact that cites genuine, verifiable register facts about a real client entity, which is precisely the input that makes business-email-compromise and CEO-fraud attempts survive the recipient's usual sanity check. The hunt that follows from that is in mail flow and case handling rather than on the endpoint: inbound requests referencing correct entity details, ownership structures or registration facts, arriving outside an established channel, and the mandate or payment-detail changes they lead to. The second lesson is architectural and shows in the government's own actions: taking four unrelated e-government services offline "as a precaution" is what happens when blast radius cannot be proven quickly from telemetry. Per-register segmentation and retained, exportable per-principal access logs on each data service are what make "was this one reached too?" a query rather than a shutdown decision.
 
@@ -143,3 +173,9 @@ The notification mechanics are themselves worth publishing as a defensive signal
 **Triage:** the discriminator for recipients is direction of information flow. A genuine notification in this chain tells the recipient what happened; it does not need them to supply identity details back, because the sender already holds the relationship. A message that opens with accurate register facts and then asks the recipient to verify identity, confirm ownership or authorise a change is inverting that flow, and the accuracy of the opening facts is exactly what the stolen dataset supplies.
 
 The Amt für Justiz has filed a criminal complaint against persons unknown, and law-enforcement authorities are evaluating digital traces in cooperation with European authorities.
+
+## Update — 2026-09-01T04:18:40Z
+
+The access vector this entry previously recorded as undisclosed is now named. Reporting from the Neue Zürcher Zeitung, sourced to Liechtenstein's Office for IT director Fabian Schmid speaking at the government's 2026-08-04 press briefing, states that the attackers did not reach the register's database directly: they exploited a vulnerability in the register's reporting portal, or in the interface between that portal and the database, to scrape the complete dataset ([Neue Zürcher Zeitung, 2026-08-07](https://www.nzz.ch/wirtschaft/nach-hackerangriff-in-liechtenstein-wie-sicher-sind-heikle-finanzdaten-beim-bund-ld.10018419)). To do so, they registered a new user account on the portal and then queried every one of the roughly 31,000 records individually; the interface has no bulk-query function, which is why the download took several hours ([Neue Zürcher Zeitung, 2026-08-07](https://www.nzz.ch/wirtschaft/nach-hackerangriff-in-liechtenstein-wie-sicher-sind-heikle-finanzdaten-beim-bund-ld.10018419)).
+
+**Defender takeaway:** this is a defence-in-depth failure, not a single flaw. Reporting portals that let external parties (here, the fiduciaries and companies who file beneficial-ownership data) write into a government register are a routine design pattern, and their access controls to the underlying data store are exactly where an attacker who cannot reach the database directly will look. That the interface enforced a per-request query pattern but no per-account rate limit, and produced no alert across several hours of an account querying tens of thousands of sequential records overnight, is the gap: volumetric behaviour, not a signature, was the available signal, and no control acted on it.

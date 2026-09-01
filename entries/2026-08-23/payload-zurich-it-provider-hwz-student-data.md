@@ -13,8 +13,10 @@ summary: >
   affected customer domains including the school's. No source other than that listing connects the
   named provider to the school, and HWZ itself names no provider — so the shape of the incident, a
   single managed-IT compromise reaching several unrelated downstream Swiss organisations at once, is
-  established while the provider's identity is not.
+  established while the provider's identity is not. Data from the intrusion has since been
+  published on the dark web.
 discovered_at: "2026-08-23T05:18:00Z"
+updated_at: "2026-09-01T04:35:00Z"
 event_date: "2026-08-22"
 run_id: 2026-08-23T0409Z-intel
 priority: notable
@@ -39,10 +41,21 @@ sources:
     publisher: "Ransomware.live (Payload leak-site listing)"
     date: "2026-08-20"
     role: corroborating
+  - url: "https://www.inside-it.ch/hwz-daten-landen-im-darkweb-20260831"
+    publisher: "Inside IT"
+    date: "2026-08-31"
+    role: corroborating
+  - url: "https://www.netzwoche.ch/news/2026-08-26/hacker-greifen-hwz-daten-ueber-externen-dienstleister-ab"
+    publisher: "Netzwoche"
+    date: "2026-08-26"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "Nach aktuellem Untersuchungsstand erfolgte ein Angriff über die Infrastruktur des Dienstleisters"
     publisher: "Inside Paradeplatz, quoting HWZ's letter to students"
+  - quote: "We can confirm that personal data are among the stolen data. (translated from German)"
+    original: "Wir können bestätigen, dass sich unter den entwendeten Daten auch Personendaten befinden"
+    publisher: "HWZ media office, via Inside IT"
 verification: single-source
 sourcing_note: >
   HWZ's own statement, quoted from its letter to students, is a victim disclosing its own incident and
@@ -65,6 +78,17 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
+updates:
+  - at: "2026-09-01T04:35:00Z"
+    run_id: 2026-09-01T0411Z-intel
+    type: update
+    summary: >
+      Inside IT reported on 2026-08-31 that data from the breach has been published on the dark web,
+      attributing the provider-side intrusion to a ransomware group with its own "offenbar" (apparently)
+      hedge — superseding HWZ's 2026-08-26 position, given to Netzwoche, that it had no indication the
+      stolen data had been published or misused. The provider's identity remains unnamed by any source
+      other than the leak-site listing.
+    fields: [summary, sources, evidence, body]
 migrated_from: null
 ---
 
@@ -75,3 +99,7 @@ Two days before that letter was reported, the extortion group Payload listed a S
 What *is* established is the structure, and it is the reason a Swiss federal SOC should care about a business school's mailing list. One managed-IT or hosting compromise produced simultaneous personal-data exposure at several independent organisations that had no intrusion of their own, no security failure of their own to remediate, and — in HWZ's case — no ability to tell affected people anything until the provider's investigation reached them. The named customer set is seven organisations plus one higher-education institution — and the listing ends that enumeration with "etc.", so eight is a floor rather than the full extent. That is the ordinary shape of a regional IT provider's book of business, and therefore the ordinary shape of this blast radius: the organisations that know they are affected are the ones the attacker chose to name.
 
 **Defender takeaway:** the question this incident should prompt is not whether your own network was touched but which providers hold a copy of your data, what categories they hold, and how quickly you would learn if they were compromised. HWZ was able to say precisely which data classes were taken because it could analyse the stolen set — most downstream victims of a provider compromise cannot, and inherit a notification obligation they have no facts to discharge. Contractual notification windows and a current inventory of what each supplier processes are the controls that decide whether that position is recoverable; both are procurement work rather than security work, which is why they tend to be missing when they matter. No ransomware family, encryption event or initial-access vector has been disclosed by any party, and this remains a data-theft and extortion claim rather than a confirmed encryption incident.
+
+## Update — 2026-09-01T04:35:00Z
+
+Inside IT reported on 2026-08-31, under the headline "HWZ-Daten landen im Darkweb" ("HWZ data lands on the dark web"), that data from the breach has been published; the outlet attributes the provider-side intrusion to a ransomware group but hedges that attribution itself with "offenbar" (apparently) ([Inside IT, 2026-08-31](https://www.inside-it.ch/hwz-daten-landen-im-darkweb-20260831)). That supersedes the position HWZ gave Netzwoche on 2026-08-26, when the school stated there were no indications the stolen data had been published or misused ([Netzwoche, 2026-08-26](https://www.netzwoche.ch/news/2026-08-26/hacker-greifen-hwz-daten-ueber-externen-dienstleister-ab)). HWZ's confirmation that personal data are among the stolen records — quoted by Inside IT in the same article, but itself given to a separate Inside IT report the prior week — restates rather than extends what this entry already established from HWZ's original letter to students. The named provider's identity is still established only by the extortion group's own leak-site listing, and no source has named it independently.

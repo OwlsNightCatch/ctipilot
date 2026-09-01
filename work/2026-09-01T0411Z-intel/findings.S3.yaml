@@ -1,0 +1,144 @@
+domain: S3
+run_id: 2026-09-01T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-01T04:11:32Z
+ended_at: 2026-09-01T04:25:14Z
+duration_seconds: 822
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 15
+  bridge_fetches: 22
+items:
+  - title: "ValleyRAT/Winos4.0 hides inside a re-signed Chinese wallpaper app: DLL sideloading through libcef.dll, a self-restoring svchost injection, and a kill switch for Windows Defender"
+    sources:
+      - { url: "https://securelist.com/valleyrat-backdoor-adware/121175/", publisher: "Kaspersky Securelist", date: "2026-08-31", role: primary }
+      - { url: "https://thehackernews.com/2026/08/valleyrat-backdoor-hides-in-signed.html", publisher: "The Hacker News", date: "2026-08-31", role: corroborating }
+      - { url: "https://securityaffairs.com/", publisher: "Security Affairs (listing)", date: "2026-08-31", role: discovery }
+    discovery_trace: "first seen at: securityaffairs, URL https://securityaffairs.com/ (front-page blurb naming ValleyRAT/Silver Fox) → pivot: WebSearch (\"ValleyRAT Silver Fox adware DLL sideloading securityaffairs\") → primary: Kaspersky Securelist, URL https://securelist.com/valleyrat-backdoor-adware/121175/ → corroborating: The Hacker News, URL https://thehackernews.com/2026/08/valleyrat-backdoor-hides-in-signed.html"
+    summary: |
+      Kaspersky's Securelist documents a ValleyRAT (Winos 4.0) distribution chain hidden inside a re-signed
+      copy of QN Wallpaper, a genuine Chinese adware-bundling desktop-wallpaper tool. An installer whose
+      filename carries a two-letter decoy suffix (opens DingTalk, Chrome, or a Tencent Meeting page to
+      distract the user) drops a modified QN Wallpaper build to
+      C:\Program Files\QNWallpaper\5.4.0.1662\<random>\ and adds it to autorun. Before launching the adware,
+      it flips the DisableAntiSpyware registry key to turn off Windows Defender. QnWallpaper.exe then loads a
+      malicious libcef.dll placed alongside it — classic DLL side-loading under a signed, trusted process —
+      which decrypts an AES-encrypted ValleyRAT payload (delivered either as a bundled PeLoader file or from
+      the DLL's own resources) and hands it control via DllMain. ValleyRAT's C2 configuration is stored as a
+      reversed key:value string to defeat static string scanning. Runtime protections include marking its own
+      process critical (so killing it forces a BSOD), injecting a watchdog into svchost with a
+      PAGE_NOACCESS-then-RWX toggle to relaunch itself if interrupted, and enumerating windows via EnumWindows
+      to detect security/traffic-analysis tooling before proceeding. Spyware functions run via DirectInput8
+      hooks for keystrokes and separate clipboard capture, both written to disk; on operator command the
+      backdoor can also pull and execute additional modules, using process hollowing into svchost when the
+      module is shellcode. Kaspersky recorded over 100,000 detections of ValleyRAT/associated malware in 2026
+      affecting 1,500+ unique users, concentrated in China and India, and attributes the campaign to Silver
+      Fox (the known ValleyRAT operator) on geography and payload grounds — Silver Fox has used DLL
+      side-loading via signed third-party software as an established tradecraft element in prior 2026
+      campaigns (Cato Networks documented a related technique roughly five weeks earlier against a Japanese
+      manufacturer).
+    region_nexus: "China and India primarily targeted in 2026 telemetry; no Swiss/European victims named, but the DLL-sideloading-via-signed-adware technique is a transferable detection concept for any endpoint estate that allows unmanaged third-party software installs"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1574.001, T1055.012, T1685, T1027, T1056.001, T1115, T1518.001, T1547.001]
+    affected_products: ["QN Wallpaper (Chinese desktop wallpaper/adware utility)"]
+    entity_keys: ["incident:silver-fox-arrests-china-2026"]
+    new_entities:
+      - { key: "actor:silver-fox", type: actor, name: "Silver Fox", aliases: ["Void Arachne"],
+          summary: "Chinese-nexus financially-motivated/espionage-capable actor operating the ValleyRAT (Winos 4.0) backdoor; established use of DLL side-loading through signed/legitimate applications as a delivery technique (Kaspersky Securelist, 2026-08-31; Cato Networks, 2026)." }
+      - { key: "malware:valleyrat", type: malware, name: "ValleyRAT", aliases: ["Winos 4.0", "Winos4.0"],
+          summary: "Modular Windows backdoor with keylogging, clipboard theft, screenshot, and module-download capability, distributed via DLL side-loading through trojanized signed applications; operated by Silver Fox (Kaspersky Securelist, 2026-08-31)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This attack geography, combined with the use of the ValleyRAT backdoor, points to Silver Fox, a known operator of this malware family, as the likely group behind the campaign."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/valleyrat-backdoor-adware/121175/"
+      - quote: "Over the course of 2026, we detected the ValleyRAT backdoor and its associated malware more than 100,000 times, with more than 1500 unique users affected, primarily in China and India."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/valleyrat-backdoor-adware/121175/"
+      - quote: "After unpacking, the installer uses the DisableAntiSpyware registry key to disable Windows Defender and then launches QnWallpaper.exe."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/valleyrat-backdoor-adware/121175/"
+    extended_notes: |
+      Detection angle for a SOC: process-creation telemetry showing QnWallpaper.exe or QnwPlayer.exe (or any
+      unexpected signed-but-uncommon binary) loading a libcef.dll from a non-browser install path, followed by
+      a child svchost.exe whose memory region toggles from PAGE_NOACCESS to RWX shortly after creation, is a
+      strong discriminator — legitimate Chromium Embedded Framework consumers do not exhibit that memory
+      protection flip. A process that both disables Windows Defender via DisableAntiSpyware and marks itself
+      critical (CriticalProcessFlag) in the same execution chain is a near-unambiguous malicious indicator with
+      very low false-positive risk from legitimate administration tooling. Hardening lever: block installation
+      of unmanaged desktop-customization/wallpaper utilities via application allow-listing, since the technique
+      depends entirely on the user being permitted to install arbitrary signed third-party software.
+
+  - title: "Infostealers are now specifically monetized against GenAI subscriptions: Anthropic mass-revokes Claude sessions hijacked via Vidar/LummaC2/StealC/RedLine/Acreed/AMOS"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/artificial-intelligence/anthropic-warns-infostealer-malware-is-hijacking-claude-sessions-to-drain-usage/", publisher: "BleepingComputer", date: "2026-08-30", role: primary }
+      - { url: "https://www.helpnetsecurity.com/2026/08/31/claude-accounts-compromised-through-infostealer/", publisher: "Help Net Security", date: "2026-08-31", role: corroborating }
+      - { url: "https://www.darkreading.com/cyberattacks-data-breaches/anthropic-users-infostealer-attacks-session-thefts", publisher: "Dark Reading", date: "2026-08-31", role: corroborating }
+    discovery_trace: "first seen at: darkreading, URL https://www.darkreading.com/rss.xml (feed item \"Anthropic Users Hit by Infostealer Attacks, Session Thefts\") → drilled: https://www.darkreading.com/cyberattacks-data-breaches/anthropic-users-infostealer-attacks-session-thefts → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/artificial-intelligence/anthropic-warns-infostealer-malware-is-hijacking-claude-sessions-to-drain-usage/ → corroborating: Help Net Security, URL https://www.helpnetsecurity.com/2026/08/31/claude-accounts-compromised-through-infostealer/"
+    summary: |
+      Anthropic began emailing affected users in the week of 2026-08-24 to say a threat actor had stolen active
+      Claude (claude.ai) login sessions using general-purpose infostealer malware already resident on those
+      users' machines, then replayed the stolen session cookies to access the accounts and consume paid usage
+      — surfacing to defenders when a user's usage allotment "refilled and then drained" without the
+      subscriber using the service. Anthropic names the malware families involved as Vidar, Lumma (LummaC2),
+      StealC, RedLine and Acreed on Windows, and Atomic Stealer (AMOS) on a small number of Macs — all
+      commodity infostealers whose logs are traded on criminal markets. Anthropic states the infection vector
+      is unrelated to Claude itself (typically an unofficial download or malicious app); the case that surfaced
+      publicly traced to a pirated-game download. Because a stolen browser session cookie authenticates as an
+      already-logged-in user, the attacker bypassed password and 2FA entirely — a textbook instance of session-
+      hijacking superseding credential theft as infostealer-driven account takeover has to contend with
+      broader MFA adoption. Anthropic's remediation was to invalidate the stolen sessions (forcing re-login),
+      strip saved payment methods from affected accounts, and refund unauthorized charges; it explicitly warns
+      that signing a user out does not remove the infostealer, so an unremediated host will have its next
+      session stolen the same way.
+    region_nexus: "global; no jurisdiction-specific victim data disclosed, but any organization whose staff hold individual or team Claude subscriptions is in scope — includes staff using Claude for coding/analysis on personal or under-managed devices"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1539, T1550.004]
+    affected_products: ["Anthropic Claude (claude.ai)"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:claude-session-hijack-infostealers-2026", type: campaign, name: "Claude session-hijacking infostealer campaign (Aug 2026)",
+          summary: "Unattributed criminal actor picking stolen Claude (claude.ai) login sessions out of commodity infostealer logs (Vidar, LummaC2, StealC, RedLine, Acreed, AMOS) to hijack accounts and consume paid usage; Anthropic mass-revoked affected sessions and refunded unauthorized charges (Anthropic user notification, relayed by BleepingComputer/Help Net Security/Dark Reading, 2026-08-30/31)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "We have recently become aware of a bad actor that is using common infostealer malware to steal Claude login sessions from people's computers, then using those login sessions to access Claude accounts and consume their usage"
+        attribution: "Anthropic (email to affected users, via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/artificial-intelligence/anthropic-warns-infostealer-malware-is-hijacking-claude-sessions-to-drain-usage/"
+      - quote: "The malware identified in this campaign so far include Vidar, Lumma (LummaC2), StealC, RedLine and Acreed on Windows, and Atomic Stealer (AMOS) on a small number of Macs"
+        attribution: "Anthropic (email to affected users, via Help Net Security)"
+        source_url: "https://www.helpnetsecurity.com/2026/08/31/claude-accounts-compromised-through-infostealer/"
+      - quote: "Signing you out of Claude stops the stolen sessions, but it doesn't remove the malware. If it's still on your computer, your next login session could be stolen the same way."
+        attribution: "Anthropic (email to affected users, via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/artificial-intelligence/anthropic-warns-infostealer-malware-is-hijacking-claude-sessions-to-drain-usage/"
+    extended_notes: |
+      No independent Anthropic blog post or trust-center advisory was located — the underlying primary is
+      Anthropic's direct email notification to affected users, first surfaced publicly via a Reddit post and
+      independently reproduced (consistent wording) by three separate outlets, which is treated here as
+      sufficient multi-source corroboration of the email's content. Detection/hardening angle for a SOC: this
+      is a reminder that any SaaS/GenAI account reachable with only a browser session cookie is exposed to
+      infostealer logs regardless of the org's own MFA policy, since the theft happens client-side before
+      authentication even completes on a subsequent visit — session-lifetime limits, IP/device-binding on
+      session tokens, and routine infostealer-log monitoring (many vendors sell searchable stealer-log feeds)
+      are the practical controls, not stronger password/MFA policy alone.
+
+candidate_sources: []
+coverage_gaps:
+  - source_id: paradigm-shift-research
+    reason: "ps.tc's most recent traceable post is 2026-07-23 (per WebSearch); no in-window content, and the source's known SPA-shell/no-listing limitation (see sources.json notes) means discovery still depends entirely on a news/WebSearch pivot each run."
+  - source_id: trellix
+    reason: "Bridge listing (https://www.trellix.com/blogs/) still surfaces the same three research-blog slugs seen in prior audits (dcsync-detection, purerat, weaponized-ai) dated April/August 2026 respectively — none in-window; confirms the 2026-07-27 note that the index appears stale/cached rather than reflecting the true latest posts."
+  - source_id: fox-it-blog
+    reason: "No new post since 2026-05-22 (RemotePE); low-cadence source, empty window is expected per prior audit notes, not a fetch failure."
+  - source_id: sans-newsbites
+    reason: "Latest enumerated issue (xxviii-62) is dated 2026-08-21, outside the 26h window; no fresher issue number found on the listing."
+  - source_id: csa-labs
+    reason: "One 2026-08-31 research note found (agent-governance reasoning gap) but it is a secondary analysis of a Forrester blog post (2026-08-27) with no new technical/telemetry content — dropped per the source's standing C-reliability/re-reporting caveat and the audience's technical-depth bar."
