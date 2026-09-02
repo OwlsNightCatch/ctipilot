@@ -19,7 +19,7 @@ summary: >
   new user account and enumerating every record one by one; no actor has been identified and no
   ransom demand reported. The breach is declared under GDPR Article 33.
 discovered_at: "2026-08-04T04:48:00Z"
-updated_at: "2026-09-01T04:18:40Z"
+updated_at: "2026-09-02T04:50:00Z"
 event_date: 2026-07-30
 run_id: 2026-08-04T0411Z-intel
 priority: high
@@ -70,6 +70,14 @@ sources:
     publisher: "Neue Zürcher Zeitung"
     date: 2026-08-07
     role: corroborating
+  - url: "https://insideparadeplatz.ch/2026/08/31/banken-lobby-gegen-keller-sutter-striptease-datenbank/"
+    publisher: "Inside Paradeplatz (Lukas Hässig)"
+    date: 2026-08-31
+    role: corroborating
+  - url: "https://exxpress.at/economy/31-000-firmen-betroffen-schweiz-haelt-trotz-hacker-warnung-an-register-fest/"
+    publisher: "Exxpress (Reuters wire)"
+    date: 2026-08-31
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "Dabei wurden Datenkopien von rund 31'000 Rechtsträgern widerrechtlich abgegriffen."
@@ -94,6 +102,12 @@ evidence:
   - quote: "The interface does not allow mass queries. That is why it took several hours for the attackers to download all 31,000 records, as the head of Liechtenstein's Office for IT, Fabian Schmid, told the media. (translated from German)"
     original: "Die Schnittstelle lässt keine Massenabfrage zu. Deshalb dauerte es mehrere Stunden, bis die Angreifer alle 31 000 Datensätze heruntergeladen hatten, wie der Leiter des Amts für Informatik in Liechtenstein, Fabian Schmid, vor den Medien sagte."
     publisher: "Neue Zürcher Zeitung"
+  - quote: "extremely attractive target for cyber criminals"
+    attribution: "Inside Paradeplatz, citing the Financial Times' quotation of the Verband Schweizerischer Vermögensverwalter's letter"
+    publisher: "Inside Paradeplatz (Lukas Hässig)"
+  - quote: "The government will bring the register into operation as planned on 1 October, it declared on Monday. Various measures are planned to guarantee the 'highest possible level of protection.' (translated from German)"
+    original: "Die Regierung werde das Register wie geplant zum 1. Oktober in Betrieb nehmen, erklärte sie am Montag. Es seien verschiedene Maßnahmen vorgesehen, um ein „höchstmögliches Schutzniveau“ zu gewährleisten."
+    publisher: "Exxpress (Reuters wire), on the Swiss Federal Council's 2026-08-31 statement"
 verification: multi-source
 sourcing_note: >
   The government is the primary disclosing party for its own incident; The Record and SRF
@@ -149,6 +163,17 @@ updates:
       - sources
       - evidence
       - body
+  - at: "2026-09-02T04:50:00Z"
+    run_id: 2026-09-02T0411Z-intel
+    type: update
+    summary: >
+      Switzerland's wealth-manager lobby (VSV) wrote to Justice Minister Beat Jans warning that
+      the country's own incoming Transparency Register — covering roughly 500,000 beneficial
+      owners and due live 1 October 2026 — would be an "extremely attractive target for cyber
+      criminals" given this breach, and asked for a delay or materially stricter access controls;
+      the banking lobby (SBVg) separately raised the same concern. The Swiss Federal Council
+      confirmed on 31 August 2026 it will proceed with the launch unchanged.
+    fields: [sources, evidence, body]
 migrated_from: null
 ---
 
@@ -179,3 +204,11 @@ The Amt für Justiz has filed a criminal complaint against persons unknown, and 
 The access vector this entry previously recorded as undisclosed is now named. Reporting from the Neue Zürcher Zeitung, sourced to Liechtenstein's Office for IT director Fabian Schmid speaking at the government's 2026-08-04 press briefing, states that the attackers did not reach the register's database directly: they exploited a vulnerability in the register's reporting portal, or in the interface between that portal and the database, to scrape the complete dataset ([Neue Zürcher Zeitung, 2026-08-07](https://www.nzz.ch/wirtschaft/nach-hackerangriff-in-liechtenstein-wie-sicher-sind-heikle-finanzdaten-beim-bund-ld.10018419)). To do so, they registered a new user account on the portal and then queried every one of the roughly 31,000 records individually; the interface has no bulk-query function, which is why the download took several hours ([Neue Zürcher Zeitung, 2026-08-07](https://www.nzz.ch/wirtschaft/nach-hackerangriff-in-liechtenstein-wie-sicher-sind-heikle-finanzdaten-beim-bund-ld.10018419)).
 
 **Defender takeaway:** this is a defence-in-depth failure, not a single flaw. Reporting portals that let external parties (here, the fiduciaries and companies who file beneficial-ownership data) write into a government register are a routine design pattern, and their access controls to the underlying data store are exactly where an attacker who cannot reach the database directly will look. That the interface enforced a per-request query pattern but no per-account rate limit, and produced no alert across several hours of an account querying tens of thousands of sequential records overnight, is the gap: volumetric behaviour, not a signature, was the available signal, and no control acted on it.
+
+## Update — 2026-09-02T04:50:00Z
+
+This breach has become the argument in a live Swiss policy fight over a comparable register. The Verband Schweizerischer Vermögensverwalter (VSV) wrote to Justice Minister Beat Jans warning that Switzerland's own incoming Transparency Register — covering roughly 500,000 beneficial owners, due live 1 October 2026 — would be an "extremely attractive target for cyber criminals" ([Inside Paradeplatz, 2026-08-31](https://insideparadeplatz.ch/2026/08/31/banken-lobby-gegen-keller-sutter-striptease-datenbank/), citing the Financial Times' quotation of the letter), and asked for a delay or stricter access controls; the letter is dated 24 August 2026 and was seen by Reuters ([Exxpress, citing Reuters wire, 2026-08-31](https://exxpress.at/economy/31-000-firmen-betroffen-schweiz-haelt-trotz-hacker-warnung-an-register-fest/)). The Swiss Bankers Association (SBVg) separately raised the same concern. The Swiss Federal Council confirmed on 31 August 2026 that it will proceed with the 1 October launch unchanged, stating that various measures are planned to guarantee the "highest possible level of protection" (translated from German) ([Exxpress, citing Reuters wire, 2026-08-31](https://exxpress.at/economy/31-000-firmen-betroffen-schweiz-haelt-trotz-hacker-warnung-an-register-fest/)).
+
+Unlike Liechtenstein's compromised portal, the Swiss register is designed to run inside a dedicated secured network of the Federal Department of Justice and Police, is an in-house Confederation build rather than an external vendor's system, and restricts direct database access to the operating office and a Federal Department of Finance control unit; external reporting parties reach it only through the EasyGov portal or a dedicated interface — the same portal-mediated access pattern that let the Liechtenstein attacker enumerate all 31,000 records one by one through a vulnerable reporting interface ([Neue Zürcher Zeitung, 2026-08-07](https://www.nzz.ch/wirtschaft/nach-hackerangriff-in-liechtenstein-wie-sicher-sind-heikle-finanzdaten-beim-bund-ld.10018419)).
+
+**Defender takeaway (updated):** for Swiss fiduciaries, trustees and banks, both jurisdictions' registers reach the same client population, so the 1 October go-live of the Swiss register adds a second authoritative identity-verification dataset attackers can draw on for the pretexting risk this entry already describes. The detection lesson carries over directly: a single reporting account exceeding its own historical query volume by orders of magnitude in one session is the signal to watch for on the Swiss register's EasyGov-mediated access path, portal-side rate limiting or not.

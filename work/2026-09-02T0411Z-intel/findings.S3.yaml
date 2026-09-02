@@ -1,0 +1,61 @@
+domain: S3
+run_id: 2026-09-02T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-02T04:14:31Z
+ended_at: 2026-09-02T04:25:29Z
+duration_seconds: 658
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 20
+  bridge_fetches: 22
+items:
+  - title: "Mirage Kitten (Nimbus Manticore/UNC1549) debuts Node.js and JavaScript RATs — NodeRabbit and PollCat — delivered through fake LinkedIn coding-challenge interviews"
+    sources:
+      - { url: "https://securelist.com/mirage-kitten-new-backdoors-noderabbit-pollcat/121244/", publisher: "Kaspersky Securelist (GReAT)", date: "2026-09-01", role: "primary" }
+      - { url: "https://therecord.media/iranian-cyber-spies-target-aviation-fintech-new-malware", publisher: "The Record (Recorded Future News)", date: "2026-09-01", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Kaspersky GReAT Securelist new research September 2026\") → https://securelist.com/ (listing, dated 2026-09-01) → primary: Kaspersky Securelist, URL https://securelist.com/mirage-kitten-new-backdoors-noderabbit-pollcat/121244/ → corroborating: The Record, URL https://therecord.media/iranian-cyber-spies-target-aviation-fintech-new-malware"
+    summary: |
+      Kaspersky's GReAT team published (2026-09-01) two previously undocumented cross-platform RATs it attributes with high confidence to Mirage Kitten — the Iran-nexus actor this pipeline already tracks as Nimbus Manticore/UNC1549/Smoke Sandstorm/Screening Serpens. NodeRabbit (Node.js) and PollCat (obfuscated JavaScript) are the group's first scripting-language implants, a departure from its historical native C/C++/Go malware deployed via DLL search-order hijacking. Delivery mirrors the DPRK "Contagious Interview" tradecraft: fake recruiter personas on LinkedIn and other job platforms invite targets to complete a timed technical assessment (a 3-hour "fix the bugs" coding challenge for NodeRabbit, a 1-hour OTP-gated "CTF" React challenge for PollCat), hosted as an archive on Amazon S3 and pressured for immediate execution. The malicious code sits in a locally-bundled (never registry-published) trojanized npm package — colorized_terminal or pretty-log, both pinned to v2.1.0 — imported on the first line of the assessment's server.js, which launches the implant as a detached background process. Kaspersky documents three NodeRabbit variants of increasing sophistication: v1 uses a fixed single-instance TCP port; v2 adds sandbox/analyst-detection (memory, CPU count, uptime, analyst usernames, running analysis tools) with a benign-decoy HEAD-request fallback and full corporate-proxy traversal (WinHTTP/PAC discovery, HTTP CONNECT, NTLM/Negotiate delegated to curl.exe --proxy-anyauth); v3 (Ethiopia) grows the command set from 11 to 23, adding Outlook OST/PST email harvesting, a fake "GitHub Copilot Helper" VS Code extension for persistence, and Git post-merge/post-checkout hook injection across up to 20 scanned repositories. All variants use AES-256-GCM-encrypted JSON C2 over HTTPS against Azure Websites (AS8075, MarkMonitor-registered) and Cloudflare-fronted domains, in some cases embedding the victim organization's name into the Azure subdomain to blend with legitimate corporate traffic. PollCat shares C2 handshake structure, beacon timing constants (120s/5s jitter/60s retry) and several command IDs with a backdoor Kaspersky internally tracks as Retrograde (overlapping with the publicly reported MiniFast/MiniUpdate family) — the basis, together with victimology and infrastructure patterns, for the Mirage Kitten attribution. Confirmed victims sit in fintech, aviation and aerospace organizations in Egypt, Ethiopia and Afghanistan; The Record's corroborating reporting adds Jordan, Tanzania, Pakistan and Burkina Faso to the group's established Middle East/Africa targeting footprint. No CVE is involved — this is a social-engineering-plus-supply-chain delivery chain, not an exploited vulnerability.
+    region_nexus: "Middle East and Africa (Egypt, Ethiopia, Afghanistan, Jordan, Tanzania, Pakistan, Burkina Faso); no confirmed Swiss/EU victim, but the delivery technique (fake technical-hiring assessment) is directly transferable to any organization that recruits software engineers, including public-sector IT/e-government development teams"
+    primary_sector_nexus: "indirect"
+    sector: "aviation, aerospace, fintech (targeted); technique transferable to any developer-facing organization"
+    cves: []
+    techniques: [T1566.003, T1204.002, T1195.002, T1053.005, T1053.003, T1547.001, T1497, T1071.001, T1573.001, T1027, T1114.001, T1059.007]
+    affected_products: []
+    entity_keys: ["actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt"]
+    new_entities:
+      - { key: "tool:noderabbit", type: tool, name: "NodeRabbit", aliases: [],
+          summary: "Cross-platform (Windows/Linux/macOS) Node.js remote access trojan delivered via trojanized npm packages (colorized_terminal, pretty-log) bundled inside fake LinkedIn/job-platform coding-challenge archives; three variants of increasing sophistication (sandbox evasion, corporate-proxy traversal, VS Code extension and Git-hook persistence, Outlook email harvesting). Attributed to Mirage Kitten/Nimbus Manticore with high confidence (Kaspersky Securelist, 2026-09-01)." }
+      - { key: "tool:pollcat", type: tool, name: "PollCat", aliases: [],
+          summary: "Cross-platform obfuscated-JavaScript RAT distributed through a fake OTP-gated 'CTF'-style React coding-challenge lure; starts C2 registration before the victim completes the fake authentication step. Shares C2 handshake structure, beacon timing constants and several command IDs with the Retrograde/MiniFast backdoor family, the basis (with victimology/infrastructure) for its attribution to Mirage Kitten/Nimbus Manticore (Kaspersky Securelist, 2026-09-01)." }
+    relation_suggestions:
+      - { subject: "actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt", object: "tool:noderabbit", type: uses,
+          basis: "Kaspersky attributes NodeRabbit to Mirage Kitten with high confidence based on victimology, infrastructure patterns (Azure Websites/Cloudflare) and historical delivery tradecraft (Kaspersky Securelist, 2026-09-01)" }
+      - { subject: "actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt", object: "tool:pollcat", type: uses,
+          basis: "Kaspersky attributes PollCat to Mirage Kitten based on structural similarity (C2 handshake, host-registration JSON body, beacon timing, command-ID overlap) to the Retrograde/MiniFast backdoor and consistent victimology (Kaspersky Securelist, 2026-09-01)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "NodeRabbit and PollCat represent the first publicly documented use of Node.js- and JavaScript-based malware by this APT group."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/mirage-kitten-new-backdoors-noderabbit-pollcat/121244/"
+      - quote: "We attribute this activity to Mirage Kitten with a high degree of confidence based on the following observations"
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/mirage-kitten-new-backdoors-noderabbit-pollcat/121244/"
+      - quote: "The group, tracked by Russian cybersecurity firm Kaspersky as Mirage Kitten, has targeted developers and other specialists in Egypt, Ethiopia and Afghanistan through LinkedIn and other job platforms."
+        attribution: "The Record (Recorded Future News)"
+        source_url: "https://therecord.media/iranian-cyber-spies-target-aviation-fintech-new-malware"
+    extended_notes: |
+      Detection concept (telemetry class first): process-creation events showing node.exe / a locally-cloned nodew.exe or platform equivalent spawned from a freshly-extracted archive/project directory outside normal package-manager cache paths, with parent lineage tracing to a zip-extraction or IDE "run project" action rather than an interactive shell; outbound HTTPS to *.azurewebsites.net or newly-registered domains from a developer workstation shortly after such a spawn is the discriminating sequence. Persistence-artifact hunt: HKCU Run keys naming MicrosoftEdgeUpdate/IntelDriverSupportUpdate-style tasks that execute a renamed node.exe against a .js payload; scheduled tasks running daily at 09:00/10:00 invoking Node against a script in %APPDATA%, %LOCALAPPDATA%, or ProgramData; VS Code extension directories containing an extension not present in the marketplace/lockfile inventory; unexpected entries in .git/hooks/post-merge or post-checkout referencing a "shepherd-persist" marker or an out-of-repo Node invocation. Benign lookalike / triage discriminator: legitimate take-home coding assessments are common in technical hiring — the distinguishing features here are (a) a time-pressured single-use access code or a hard time limit paired with an explicit instruction not to use AI-assisted review tools, (b) a first-line import of an unfamiliar or unpublished npm package bundled directly in node_modules rather than fetched from the registry, and (c) outbound network activity beginning before any legitimate application functionality is exercised. Hardening: technical-recruiting workflows should sandbox/detonate candidate-supplied take-home projects in an isolated, network-egress-controlled environment before any engineer runs them on a corporate endpoint, and organizations should treat "please don't use AI code review on this" as itself a red flag warranting manual security review of the archive.
+
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "Both transports failed on their merits this run: direct (--direct) returned bare HTTP 202 with no body, and the jina reader (the source record's pinned recipe) rendered the 'Robot Challenge Screen' CAPTCHA interstitial rather than content — a rotated key ruled out credit exhaustion as the cause. No in-window content recoverable; logged as a fetch failure below."
+  - source_id: paradigm-shift-research
+    reason: "Confirmed again: bridge (url) returns only the SPA shell (meta-refresh to pages/home.html, app.js bootstrap) with no post listing. Recipe gap persists as previously logged in the source record — needs a discovered listing/API path; not logged as a fetch failure since the host itself is reachable (200), only the recipe cannot reach the article grid."
+  - source_id: google-tag
+    reason: "https://blog.google/threat-analysis-group/ continues to resolve to a generic single-post landing page (this run: one Android Strongbox / digital-credentials post with no date), not a dated TAG-specific archive. Recipe gap already flagged in the source record (2026-08-04); WebSearch for TAG-specific September 2026 posts surfaced nothing new either. Not logged as a fetch failure — host reachable, recipe imprecise."

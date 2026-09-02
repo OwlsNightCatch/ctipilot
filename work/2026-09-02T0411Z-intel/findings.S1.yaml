@@ -1,0 +1,112 @@
+domain: S1
+run_id: 2026-09-02T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-02T04:14:00Z
+ended_at: 2026-09-02T04:19:06Z
+duration_seconds: 306
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 2
+  bridge_fetches: 25
+
+items:
+  - title: "JFrog Artifactory auth-bypass CVE-2026-82329 moves from disclosure to active exploitation: attackers mint admin tokens via a 'phantom' join key"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12902", publisher: "NCSC Switzerland (GovCERT.ch) Cyber Security Hub", date: "2026-09-01", role: "primary" }
+      - { url: "https://thehackernews.com/2026/09/attackers-exploit-critical-jfrog.html", publisher: "The Hacker News", date: "2026-09-01", role: "primary" }
+      - { url: "https://www.securityweek.com/critical-jfrog-artifactory-vulnerability-reportedly-exploited-in-the-wild/", publisher: "SecurityWeek", date: "2026-09-01", role: "corroborating" }
+      - { url: "https://docs.jfrog.com/releases/docs/jfrog-security-advisories", publisher: "JFrog PSIRT", date: "2026-08-28", role: "corroborating" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1100/", publisher: "CERT-FR / ANSSI", date: "2026-09-01", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/api/v1/posts/dashboard (post id 12902, created 2026-09-01T11:58:34Z) → primary: The Hacker News, URL https://thehackernews.com/2026/09/attackers-exploit-critical-jfrog.html (carries watchTowr's Yordan Ganchev statement) → corroborating: SecurityWeek, URL https://www.securityweek.com/critical-jfrog-artifactory-vulnerability-reportedly-exploited-in-the-wild/ → vendor reference: JFrog PSIRT, URL https://docs.jfrog.com/releases/docs/jfrog-security-advisories → verified CVE on NVD, URL https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-82329"
+    summary: |
+      This pipeline covered CVE-2026-82329 (JFrog Artifactory, CVSS 9.8) on 2026-09-01 as newly disclosed with no exploitation reported. That has changed: on 2026-09-01 watchTowr's Attacker Eye honeypot telemetry recorded in-the-wild exploitation beginning within days of the 2026-08-28 patch, and NCSC-CH's own advisory (updated 2026-09-01) now records the exploitation status as "Actively Exploited." The mechanism, per watchTowr's Yordan Ganchev (quoted by The Hacker News): the flaw sits in JFrog Access, the component that issues and validates Artifactory credentials — an Artifactory instance with no additional join key configured receives a "phantom" default join key that an unauthenticated network attacker can abuse to forge access and mint administrator-level JWT credentials. Attackers observed by watchTowr are using minted admin tokens to enumerate users, groups, credential sets and federated access topologies — reconnaissance consistent with staging a software-supply-chain pivot, since an Artifactory admin controls the binaries, containers and packages the platform distributes to downstream consumers. This is a self-hosted-only exposure: JFrog had already remediated its own Cloud environment before disclosure. Fixed versions: 7.111.21, 7.117.28, 7.125.20, 7.133.29, 7.146.38, 7.161.20 (all released 2026-08-28) across the six affected release branches (7.111.4–7.111.20, 7.117.0–7.117.27, 7.125.0–7.125.19, 7.133.0–7.133.28, 7.146.0–7.146.36, 7.161.0–7.161.19).
+    region_nexus: "global; CI/CD artifact-management software present in any DevOps toolchain, including Swiss federal/cantonal software delivery pipelines"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-82329"]
+    techniques: [T1190, T1606]
+    affected_products: ["JFrog Artifactory"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-09-01/jfrog-artifactory-cve-2026-82329-default-config-admin-bypass"
+    evidence:
+      - quote: "watchTowr Intel is already seeing exploitation of the JFrog Artifactory Auth Bypass (CVE-2026-82329), with attackers minting themselves admin tokens."
+        attribution: "watchTowr (via The Hacker News)"
+        source_url: "https://thehackernews.com/2026/09/attackers-exploit-critical-jfrog.html"
+      - quote: "Instances without an additional join key configured receive a 'phantom' join key that attackers can abuse to forge access and mint administrator-level credentials."
+        attribution: "Yordan Ganchev, watchTowr (via The Hacker News)"
+        source_url: "https://thehackernews.com/2026/09/attackers-exploit-critical-jfrog.html"
+      - quote: "Current exploitation status: Actively Exploited"
+        attribution: "NCSC Switzerland (GovCERT.ch) Cyber Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12902"
+    extended_notes: |
+      NCSC-CH's post history shows this advisory was created 2026-09-01T11:58:34Z (last-modified same timestamp) explicitly to record the exploitation-status change — this pipeline's 2026-09-01 entry pre-dated that update. CERT-FR's CERTFR-2026-AVI-1100 (also published 2026-09-01) bundles CVE-2026-82329 with four lower-severity, unrelated Artifactory CVEs from 2026-08-25 (CVE-2026-69104, -70548, -70550, -70551 — repo-migration/SSRF/metadata-disclosure issues); none of those carry exploitation reports and none add to the technical picture here. Detection angle for defenders: Artifactory audit logs and JFrog Access logs for unexpected admin-token minting events or new admin-scoped tokens issued without a corresponding interactive admin login; review of newly created/modified users, groups and permission targets; and outbound requests to unfamiliar registries/repositories that could indicate a build-pipeline poisoning attempt following admin compromise. Hardening: explicitly configure a join key (rather than relying on the default) on every self-hosted Artifactory instance and confirm the version matches or exceeds the patched build for its release line; treat any instance that has not yet been patched as though it has already been probed, given the compressed disclosure-to-exploitation window (days).
+    borderline: false
+
+  - title: "WatchGuard Fireware OS bulletin update: two more pre-auth flaws — a third RCE in the iked daemon and a Dimension session-hijack via unredacted diagnostic-log tokens"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12901", publisher: "NCSC Switzerland (GovCERT.ch) Cyber Security Hub", date: "2026-09-01", role: "primary" }
+      - { url: "https://psirt.watchguard.com/", publisher: "WatchGuard PSIRT", date: "2026-08-27", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0335", publisher: "NCSC-NL", date: "2026-09-01", role: "corroborating" }
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-19318", publisher: "NVD", date: "2026-08-28", role: "corroborating" }
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-78174", publisher: "NVD", date: "2026-08-28", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/api/v1/posts/dashboard (post id 12901, created 2026-09-01T11:48:04Z) → primary: WatchGuard PSIRT, URL https://psirt.watchguard.com/ (full CVE table with affected-version ranges) → corroborating: NCSC-NL advisory NCSC-2026-0335, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0335 (published 2026-09-01T13:25:56Z) → verified CVEs on NVD, URL https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-19318 and https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-78174"
+    summary: |
+      This pipeline's 2026-08-31 entry on WatchGuard's 27 August "Immediate Action Required" Fireware OS bulletin covered three of its CVEs (CVE-2026-19313 heap overflow, CVE-2026-19315 type confusion, CVE-2026-13086 epm stack overflow — all pre-auth RCE). NCSC-CH's advisory, created 2026-09-01 to cover the same bulletin, adds two more the earlier pass did not capture. CVE-2026-19318 (CVSS 9.3) is a third pre-auth RCE primitive in the same iked IKE/VPN daemon: NVD records it as "a stack-based buffer overflow vulnerability in the WatchGuard Fireware OS iked process [that] allows a remote unauthenticated attacker to execute arbitrary code by sending specially crafted network traffic" — a third distinct memory-corruption bug in the pre-auth IKE_AUTH message-handling path, alongside the previously-covered heap overflow and type confusion. CVE-2026-78174 (CVSS 9.3) is a different bug class on a different product: WatchGuard's own management platform, Dimension. Per NVD: "WatchGuard Dimension records unredacted session identifiers for logged-in users in its web UI diagnostic log. A low-privileged Dimension Administrator can retrieve this log and extract a Super Administrator's session token while that administrator is logged in, enabling account takeover." All five CVEs share the same fix — Fireware OS 2026.2.2 / 12.12.2 / 12.5.20, and Dimension 2.3.1 for the Dimension-specific flaw. WatchGuard reports no observed exploitation for any of them, a status NCSC-CH's advisory records as "UNKNOWN" for the whole bundle.
+    region_nexus: "global; WatchGuard Firebox appliances are common perimeter/VPN gateways, including in Swiss SME and public-sector environments; Dimension is WatchGuard's centralized reporting/management platform"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-19318", "CVE-2026-78174"]
+    techniques: [T1190, T1552.001]
+    affected_products: ["WatchGuard Fireware OS", "WatchGuard Dimension"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-31/watchguard-fireware-ike-vpn-preauth-rce-epm-overflow"
+    evidence:
+      - quote: "A stack-based buffer overflow vulnerability in the WatchGuard Fireware OS iked process allows a remote unauthenticated attacker to execute arbitrary code by sending specially crafted network traffic."
+        attribution: "NVD (CVE-2026-19318)"
+        source_url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-19318"
+      - quote: "WatchGuard Dimension records unredacted session identifiers for logged-in users in its web UI diagnostic log. A low-privileged Dimension Administrator can retrieve this log and extract a Super Administrator's session token while that administrator is logged in, enabling account takeover."
+        attribution: "NVD (CVE-2026-78174)"
+        source_url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-78174"
+      - quote: "CVE-2026-19318 CVSS4.0: 9.3 (CRITICAL) - Stack-based buffer overflow in the iked process triggered by malicious IKE_AUTH messages"
+        attribution: "NCSC Switzerland (GovCERT.ch) Cyber Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12901"
+    extended_notes: |
+      Detection angle: for the iked flaws, IKE/VPN daemon crash-and-restart telemetry or malformed IKE_AUTH exchanges from the WAN interface are the observable signal (as with the previously-covered pair, no public exploit code is known and the vendor reports these as internally/researcher-found rather than found-in-the-wild). For CVE-2026-78174, the discriminator is access-pattern based: a low-privileged Dimension Administrator account downloading or viewing the web-UI diagnostic log, followed by authenticated activity from that same account under a Super Administrator's session context, is the abuse chain NVD describes — Dimension deployments should treat diagnostic-log export/download as a privileged, logged action and audit which accounts have exercised it. Hardening: patch to Fireware OS 2026.2.2 / 12.12.2 / 12.5.20 and Dimension 2.3.1; WatchGuard's PSIRT page shows this same 27 August release also closed a further ~15 lower-severity Dimension bugs (SQLi in report/log/audit viewers, SSRF via connection-test features, stored/DOM XSS) not covered here as none reach the pre-auth-RCE-or-critical-account-takeover bar this pipeline tracks.
+    borderline: false
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org-profile configures no product watchlist for this deployment (none configured) — product sweep is a documented no-op this run; general coverage rules applied unchanged across the essential/standard source slice."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "Rotation-priority source (3 runs failing) re-attempted via jina reader per fetch_method pin; returned a Cloudflare 'Robot Challenge Screen' interstitial rather than content — the reader itself was served the challenge, not a credit-exhaustion failure this time. Fourth consecutive unreachable run; not demoted per policy (transport block, not content death). No alternate source carried ssd-disclosure's own advisory content this run."
+  - source_id: cisa-advisories
+    reason: "Not independently re-attempted this run given the source record's documented multi-run persistent 403 (sixth+ consecutive per prior notes) with no working direct/bridge/reader rung; the CISA KEV API (fetched successfully this run) substitutes for the exploited-vulnerability surface this source would otherwise carry."
+  - source_id: cisa-directives
+    reason: "Not independently re-attempted this run given the source record's documented multi-run persistent 403 plus exhausted reader quota noted in prior runs; no evidence from any other source (CERT-EU, NCSC-NL, BSI, CERT-FR, NCSC-UK) of a new CISA directive in-window."
+
+## Fetch failures
+- id: ssd-disclosure
+  url_tried: "https://ssd-disclosure.com/"
+  fetch_method: bridge:jina
+  status_code: 200
+  error_class: other
+  error_message: "Response body was a Cloudflare 'Robot Challenge Screen' interstitial ('Checking the site connection security... This page maybe requiring CAPTCHA') rather than site content, despite an HTTP 200 from the reader proxy."
+  attempted_methods: [bridge:jina]
+  mitigation_applied: "none — coverage gap; no alternate publisher carried SSD Secure Disclosure's own advisory content in-window"
+  covered_anyway: false
