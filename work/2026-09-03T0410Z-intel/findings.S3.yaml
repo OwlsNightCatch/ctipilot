@@ -1,0 +1,359 @@
+domain: S3
+run_id: 2026-09-03T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-03T04:13:40Z
+ended_at: 2026-09-03T04:38:13Z
+duration_seconds: 1473
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 9
+  bridge_fetches: 33
+items:
+  - title: "GitSpawn — AI coding agents (Claude Code, Grok Build, Qwen Code, Hermes, Goose) auto-run git commands that a hostile repository's own config can hijack into arbitrary code execution"
+    sources:
+      - { url: "https://www.manifold.security/blog/ai-coding-agents-git-hijack", publisher: "Manifold Security", date: "2026-09-01", role: "primary" }
+      - { url: "https://www.heise.de/news/KI-Agenten-fuehren-git-Schadcode-beim-Starten-automatisch-aus-11437165.html", publisher: "heise Security", date: "2026-09-02", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (RSS) → article https://www.heise.de/news/KI-Agenten-fuehren-git-Schadcode-beim-Starten-automatisch-aus-11437165.html → primary: Manifold Security, URL https://www.manifold.security/blog/ai-coding-agents-git-hijack"
+    summary: |
+      Manifold Security discloses "GitSpawn": every CLI AI coding agent it tested gathers repository context at startup or on first prompt by running ordinary git commands (`git status`, `git diff`) against the repository's own local git configuration — outside the agent's sandbox, before any workspace-trust prompt, and on some agents before the user has even authenticated. Any git command that refreshes the index (which `git status`/`git diff` do) honours the repository's `core.fsmonitor` setting: a performance hook where git hands off the refresh to an external helper program named in `.git/config`, running it with the developer's full local privileges. A hostile `.git/config` can set `[core] fsmonitor = <arbitrary command>`, and the agent's own routine startup housekeeping executes it with no approval prompt and nothing on screen. Delivery is constrained but real: cloning, fetching or pulling a hostile URL is NOT a vector (git never carries `.git/config` across those operations, per Manifold), so the attack requires the `.git` directory arriving as files — a shared zip, sync folder, drive, or USB stick, the way colleagues and consultants routinely hand off projects. Eight findings across seven agents; four remain unpatched at publication. Confirmed sinks: Goose (`git diff` during `goose review`, fixed 1.44.0, CVE-2026-72718 CVSS 7.0), Claude Code's `core.fsmonitor` path (patched 2.1.196) and a second, still-unpatched sink in `claude ultrareview` that uses a different git config key Manifold has withheld while unfixed, Hermes Agent (`git status` on first message, unpatched on 0.21.0 despite six contact attempts across five channels — CVE-2026-71963 assigned by VulnCheck, not the vendor), Qwen Code (`git status` at startup, before authentication — accepted by Alibaba's SRC but unpatched on 0.22.3), and Grok Build (payload fires on the first keystroke — unpatched on 1.0.13, an earlier July report on the same class was closed by xAI as "informative"). OpenAI Codex and Cursor were also affected and are now patched. Manifold states the underlying pattern is not limited to the named agents and spans both major AI labs and large software companies. Mitigation: inspect `.git/config` before opening any repository received as files (any entry naming a program is suspicious); agent vendors should sanitize the git config on their context-gathering calls, e.g. `git -c core.fsmonitor=false status`.
+    region_nexus: "global — affects any developer or SOC workstation running a CLI AI coding agent"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1204.002, T1059]
+    affected_products: ["Claude Code", "Grok Build", "Qwen Code", "Hermes Agent", "Goose", "OpenAI Codex", "Cursor"]
+    entity_keys: []
+    new_entities:
+      - { key: "trend:gitspawn-ai-coding-agent-git-config-rce", type: trend, name: "GitSpawn",
+          summary: "Manifold Security's designation for a class of vulnerabilities across CLI AI coding agents where automatic, sandbox-exempt context-gathering git commands honour a hostile repository's own git configuration (e.g. core.fsmonitor), letting the repository itself specify an arbitrary command that executes with the developer's full privileges before any trust prompt (Manifold Security, 2026-09-01)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Open a folder with Claude Code and it runs git status before you type anything. Before the workspace-trust prompt. On some agents, before you have even authenticated."
+        attribution: "Manifold Security"
+        source_url: "https://www.manifold.security/blog/ai-coding-agents-git-hijack"
+      - quote: "Delivery is worth being precise about, because git never carries this. Cloning a hostile URL does nothing, and neither does fetch or pull. The repository has to arrive as files with its .git directory already inside"
+        attribution: "Manifold Security"
+        source_url: "https://www.manifold.security/blog/ai-coding-agents-git-hijack"
+      - quote: "Agenten von Claude, Qwen, Grok usw. starten in manipulierten Repositories automatisch Schadcode – ohne Zutun des Anwenders, aber mit dessen vollen Rechten."
+        attribution: "heise Security"
+        source_url: "https://www.heise.de/news/KI-Agenten-fuehren-git-Schadcode-beim-Starten-automatisch-aus-11437165.html"
+    extended_notes: |
+      Manifold frames this as a general risk class: "the same shape shows up wherever an agent picks up something it did not write. Skills, MCP servers, and plugins arrive as files, carry their own configuration, and are trusted on arrival for the same reason a repository is." Worth a hunting note for any org standardising on AI coding agents: audit `.git/config` provenance policy for zipped/copied repos (not cloned ones), and check whether the agent vendor in use has patched the fsmonitor-class sink.
+
+  - title: "Gambling Goblin (Earth Berberoka overlap): a Chinese-speaking cluster compiles malicious Apache modules on compromised Brazilian .gov.br servers to reverse-proxy visitors into a gambling-SEO fraud network"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/gaming-the-system-how-a-chinese-speaking-actor-turned-brazilian-government-sites-into-an-seo-weapon/", publisher: "Check Point Research", date: "2026-09-02", role: "primary" }
+      - { url: "https://blog.checkpoint.com/research/gambling-goblin-a-chinese-speaking-actor-hijacks-brazilian-government-sites-to-fuel-a-global-seo-fraud-machine/", publisher: "Check Point Blog", date: "2026-09-02", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/gambling-goblin-brazilian/", publisher: "Infosecurity Magazine", date: "2026-09-02", role: "corroborating" }
+    discovery_trace: "first seen at: majors-sweep (Check Point Research listing), URL https://research.checkpoint.com/ → primary: Check Point Blog, URL https://blog.checkpoint.com/research/gambling-goblin-a-chinese-speaking-actor-hijacks-brazilian-government-sites-to-fuel-a-global-seo-fraud-machine/ → primary technical report: Check Point Research, URL https://research.checkpoint.com/2026/gaming-the-system-how-a-chinese-speaking-actor-turned-brazilian-government-sites-into-an-seo-weapon/"
+    summary: |
+      Check Point Research documents "Gambling Goblin," a Chinese-speaking cluster it assesses with medium-to-high confidence overlaps Earth Berberoka (first documented by Trend Micro in 2022, targeting gambling platforms serving Chinese-speaking users). Active against Brazilian organisations since mid-2025, primarily government and educational institutions. On a compromised Linux host, the group's Bash installer (confirms root, fingerprints Debian/Ubuntu vs. CentOS/RedHat, pulls matching Apache dev packages, patches a missing macro so a hardcoded staging-server source file `opsproxy.c` compiles cleanly on the victim) compiles and installs a custom Apache module via `apxs`, then deletes all build artefacts and timestomps the resulting `.so` and its load-config to match legitimate modules such as `mod_ssl` or `mod_suexec`. The module hooks Apache's name-translation stage, matches a small set of hardcoded URL prefixes (`/wps`, `/bmw`, `/card` in the observed samples), and silently reverse-proxies matching requests to a hardcoded upstream — the victim domain never changes in the browser bar. It strips the site's own Content-Security-Policy header and replaces it with a permissive one (allowing inline/`eval`'d scripts, third-party assets, `data:`/`blob:` sources) so injected content renders unrestricted. A second ELF module decrypts an RC4-protected ruleset keyed on path/referrer/User-Agent/client-IP, locates `<body.*?>` via regex, and injects fetched remote content via `ap_rwrite` — classic SEO-cloaking/content-injection behaviour. The upstream phishing pages impersonate Google Play, Microsoft Store and Amazon (fabricated ratings, `schema.org` metadata, Chinese-language CSS comments) and push gambling/sports-betting content; navigation tiles on the Brazilian pages point to dozens of real `.gov.br` domains spanning federal ministries, state legislative assemblies/courts of accounts, a state utility, and numerous municipal administrations — borrowing their search-engine trust to rank the fraud pages. The group also runs an internet-facing reconnaissance agent ("cluster-asset-mapping"/"cam-agent", a Go ELF binary using gRPC C2 with embedded certs) that wraps `dirprobe`, `httpx`, `naabu`, `nuclei` v3, `subfinder` and `whatweb` as plugins for attack-surface mapping. Custom implants include DownPro (Go downloader, AES-GCM-encrypted URLs, drops payloads under names mimicking system binaries like `systemd-udevd`/`nftables-init` or PHP-session-style temp files), AlphaAgent (modular Go backdoor: gRPC-over-HTTPS with uTLS browser fingerprint mimicry and Google/Cloudflare traffic camouflage, or a DNS/TXT covert channel; bundles a SOCKS5 proxy, yamux multiplexer and Ligolo-style relay for pivoting; archives victims' `.ssh` and `.bash_history`; carries an "AI plugin" execution path (`ai_plugin_%s.sh`) whose purpose is not yet confirmed), and oRAT (Go RAT persisting as a systemd service disguised as the real `xtables-addons` netfilter package, embedding its own SSH/SFTP server, masquerading its process as `sshd: root@pts/0`). A 3snake-based credential stealer intercepts `sshd`/`sudo`/`su`/`ssh`/`passwd`/`kinit`/`login` executions via netlink process-event monitoring and `ptrace`. Attribution rests on three independent overlaps Check Point names explicitly: oRAT's shared `orat/cmd/agent` codebase (tied to Earth Berberoka since 2022), an AlphaAgent sample recovered from the same archive as previously-attributed Earth Berberoka tooling, and C2 infrastructure sharing Earth Berberoka's historical Amazon ASN (AS16509). Check Point states the model is already exported: parallel phishing templates localised for Vietnamese, Spanish and English audiences, with daily domain generation.
+    region_nexus: "Brazil (government at federal/state/municipal level) primary; localised phishing infrastructure also found for Vietnamese, Spanish and English-speaking audiences — the technique (reverse-proxy Apache module abusing a government domain's search reputation) is directly transferable to any public-sector web-hosting estate"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1584.004, T1090.002, T1071.001, T1071.004, T1572, T1036.005, T1070.006, T1552.004, T1110, T1595.002]
+    affected_products: ["Apache HTTP Server (Linux)"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:earth-berberoka", type: actor, name: "Earth Berberoka", aliases: ["Gambling Goblin"],
+          summary: "Chinese-speaking cybercrime cluster first documented by Trend Micro (2022) targeting online gambling platforms serving Chinese-speaking users across Windows/Linux/macOS; Check Point Research's 2026-09-02 'Gambling Goblin' report links a campaign compromising Brazilian government (.gov.br) web servers into an SEO-fraud reverse-proxy network to this cluster with medium-to-high confidence, via shared oRAT codebase, co-archived AlphaAgent tooling, and shared C2 ASN (AS16509)." }
+      - { key: "tool:orat", type: tool, name: "oRAT",
+          summary: "Go-based Linux RAT used by Earth Berberoka/Gambling Goblin; persists as a systemd service disguised as the legitimate xtables-addons package, embeds its own SSH/SFTP server, and exposes REST-style operator routes (exec, upload/download, screenshot, portscan, SOCKS proxy) over TCP/TLS/QUIC transports (Check Point Research, 2026-09-02)." }
+      - { key: "tool:alphaagent", type: tool, name: "AlphaAgent",
+          summary: "Modular Go backdoor used by Earth Berberoka/Gambling Goblin; communicates via gRPC-over-HTTPS with uTLS browser-fingerprint mimicry and Google/Cloudflare traffic camouflage, or over a DNS covert channel, bundling a SOCKS5 proxy, yamux multiplexer and Ligolo-style relay for lateral pivoting, plus an unconfirmed 'AI plugin' execution path (Check Point Research, 2026-09-02)." }
+      - { key: "tool:downpro", type: tool, name: "DownPro",
+          summary: "Go-based downloader used by Earth Berberoka/Gambling Goblin to stage the rest of the toolkit on a freshly compromised Linux host; AES-GCM-encrypts its configured URLs and drops payloads under filenames mimicking legitimate system binaries or PHP session temp files (Check Point Research, 2026-09-02)." }
+    relation_suggestions:
+      - { subject: "actor:earth-berberoka", object: "tool:orat", basis: "Check Point Research: 'oRAT was tied to Earth Berberoka in 2022, and the variant we analyzed shares the same orat/cmd/agent codebase and REST-style operator routes' (Check Point Research, 2026-09-02)" }
+      - { subject: "actor:earth-berberoka", object: "tool:alphaagent", basis: "Check Point Research: 'one of the AlphaAgent samples we recovered was uploaded in the same archive as other tools previously attributed to Earth Berberoka, placing AlphaAgent directly alongside the group's known toolset' (Check Point Research, 2026-09-02)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The group compromises legitimate Brazilian government web servers, many of them .gov.br sites spanning federal, state, and municipal institutions, and installs malicious modules that silently turn them into reverse proxies for phishing content, invisible to the visitor"
+        attribution: "Check Point Research"
+        source_url: "https://blog.checkpoint.com/research/gambling-goblin-a-chinese-speaking-actor-hijacks-brazilian-government-sites-to-fuel-a-global-seo-fraud-machine/"
+      - quote: "We assess with medium-to-high confidence that Gambling Goblin is tied to Earth Berberoka"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/gaming-the-system-how-a-chinese-speaking-actor-turned-brazilian-government-sites-into-an-seo-weapon/"
+      - quote: "Audit Apache configurations and installed modules. Look for unexpected .so files, especially any timestamped to match legitimate modules like mod_ssl or mod_suexec."
+        attribution: "Check Point Research"
+        source_url: "https://blog.checkpoint.com/research/gambling-goblin-a-chinese-speaking-actor-hijacks-brazilian-government-sites-to-fuel-a-global-seo-fraud-machine/"
+    extended_notes: |
+      Very strong fit for this constituency: the campaign specifically weaponises the trust of government (.gov) domains at every administrative tier (federal ministry, state legislative assembly, state court of accounts, state utility, municipal administrations) — precisely the class of infrastructure (cantonal/communal Swiss public-sector web presence) this brief exists to protect, even though the observed victims are Brazilian. Check Point's own defender guidance (audit Apache modules/timestamps, watch for stripped CSP headers on specific paths, hunt masqueraded processes) is directly actionable. Initial access vector was not observed by Check Point; the finding is squarely about post-compromise infrastructure abuse.
+
+  - title: "MoiClient: an invoice-themed backdoor chains BYOVD (a vulnerable Lenovo PC Manager driver) with an RPC-based UAC bypass to kill security products and hide its own C2 from the OS network stack"
+    sources:
+      - { url: "https://asec.ahnlab.com/en/95211/", publisher: "AhnLab ASEC", date: "2026-09-01", role: "primary" }
+    discovery_trace: "first seen at: ahnlab-asec, URL https://asec.ahnlab.com/en/ (listing) → primary: AhnLab ASEC, URL https://asec.ahnlab.com/en/95211/"
+    summary: |
+      AhnLab's ASEC documents "MoiClient" (named for the "moimoi" string in its BYOVD component), distributed as a .vhdx file disguised as an invoice email attachment: the archive contains `Invoice.Pdf.Exe` (actually the legitimate SumatraPDF viewer, used to DLL-sideload a same-directory malicious `uxtheme.dll`) plus hidden support files. Once loaded, MoiClient fetches an in-memory second-stage payload from its C2 — identified as "MoiXD Stealer", a browser-credential stealer using a ChromeElevator-style technique. Execution moves into a legitimate process via classic process hollowing: MoiClient spawns `explorer.exe` suspended, overwrites its entry point with shellcode from a co-located `data.dat`, and lets that shellcode run the next injection stage. For privilege escalation, MoiClient abuses an RPC-based UAC-bypass technique resembling the AppInfo local-RPC interface technique documented by Google Project Zero in 2019: it connects to the AppInfo Service over `ncalrpc`, launches `winver.exe` as a debug target to obtain a debug-object handle, then drives `ComputerDefaults.exe` (a system binary that auto-elevates) through the same RPC path, clones its process handle, and sets that cloned handle as the parent of subsequent `sc.exe`/PowerShell processes so they inherit elevated privileges — a UAC bypass with no user prompt. With elevated rights, MoiClient drops a vulnerable Lenovo PC Manager kernel driver (`BootRepair.sys` v2.5.30.11281) under the name `moimoi.sys`, registers and starts it as a kernel service, and uses its device interface (`\\.\BootRepair`) to pass PIDs of running security-product processes for forced termination — targeting Windows Defender, Malwarebytes, Bitdefender, Kaspersky, Avast, AVG and McAfee by process name. A separate technique specifically neutralises Windows Defender: MoiClient downloads `defendnot.dll`/`defendnot-loader.exe` from its C2 and runs them via the elevated PowerShell session. Persistence is a Task Scheduler job (named `MicrosoftWindowsUpdateTask<4-digit>`, or the existing task name with a trailing period appended if one already exists) that fires every 30 minutes, re-launching the renamed SumatraPDF binary (`demo.exe`) to re-trigger the DLL sideload chain.
+    region_nexus: "Korea-focused per AhnLab's telemetry; technique chain (BYOVD + RPC-based UAC bypass + DLL sideload) is globally transferable"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.001, T1574.001, T1055.012, T1548.002, T1685, T1053.005, T1555.003]
+    affected_products: ["Microsoft Windows", "Lenovo PC Manager (BootRepair.sys driver)"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:moiclient", type: malware, name: "MoiClient",
+          summary: "Backdoor named by AhnLab ASEC for the 'moimoi' string in its BYOVD component; delivered as an invoice-themed .vhdx exploiting DLL sideloading via a repackaged SumatraPDF, using an RPC-based UAC-bypass technique and a vulnerable Lenovo PC Manager driver (BootRepair.sys) to kill security products, and fetching an in-memory 'MoiXD Stealer' browser-credential-theft payload (AhnLab ASEC, 2026-09-01)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "MoiClient uses the ncalrpc protocol sequence to connect to the RPC interface of the AppInfo Service, then executes winver.exe as a debug target and acquires the debug object handle."
+        attribution: "AhnLab ASEC"
+        source_url: "https://asec.ahnlab.com/en/95211/"
+      - quote: "version 2.5.30.11281 of BootRepair.Sys—a vulnerable driver in Lenovo PC Manager—was exploited. MoiClient creates this driver in the %Public% path under the name moimoi.sys"
+        attribution: "AhnLab ASEC"
+        source_url: "https://asec.ahnlab.com/en/95211/"
+      - quote: "The registered task runs every 30 minutes. At that time, SumatraPDF—named \"demo.exe\"—is launched, and \"uxtheme.dll,\" which is located in the same path and is actually MoiClient, is reloaded."
+        attribution: "AhnLab ASEC"
+        source_url: "https://asec.ahnlab.com/en/95211/"
+    extended_notes: |
+      Single-source (AhnLab only) — no independent corroboration found this run; flagged accordingly. AhnLab's IOC/hunt list is unusually complete for a defender: check for unintended explorer.exe processes, the specific Task Scheduler command line (`%LOCALAPPDATA%\demo.exe -print-to-default -silent file.pdf`), and the named files under %Public%/%LOCALAPPDATA%.
+
+  - title: "Kimsuky's seafood-invoice LNK campaign abuses Backblaze B2 cloud storage as C2 and exfiltration infrastructure, keyed by victim BIOS serial number"
+    sources:
+      - { url: "https://asec.ahnlab.com/en/95217/", publisher: "AhnLab ASEC", date: "2026-09-01", role: "primary" }
+    discovery_trace: "first seen at: ahnlab-asec, URL https://asec.ahnlab.com/en/ (listing) → primary: AhnLab ASEC, URL https://asec.ahnlab.com/en/95217/"
+    summary: |
+      AhnLab ASEC attributes a new malicious-LNK campaign to Kimsuky based on code and behavioural overlap with prior Kimsuky LNK operations (PowerShell extraction syntax, fixed-offset data extraction from the LNK, Task Scheduler registration pattern). The lure is a spearphishing attachment named "[Royal Hotel Seoul] Request for Review of Seafood Ingredient Purchases.LNK". Running it uses PowerShell to extract embedded data: it drops a legitimate-looking decoy .hwp document at the same path (displayed to the victim) while simultaneously writing an XOR-encrypted ZIP to `C:\ProgramData\systmp\sunshine`, containing a PowerShell script `termsvc.ps1` and a JScript file `poc.js` (saved as `C:\ProgramData\systmp\ping_<first 4 chars of a UUID>.js`, with supporting files under `C:\ProgramData\video`). Persistence is a Scheduled Task named `MicrosoftOffice2016_<first 4 chars of UUID>` that runs the JS file via `wscript.exe` roughly every 14 minutes; the JS is obfuscated, checks for `termsvc.ps1`, and bypasses the PowerShell execution policy to run it hidden. `termsvc.ps1` collects OS name/architecture, system timezone, public IP (queried via `api.ipify.org`), username/domain, running-process list (via `tasklist`) and computer name, then authenticates to the Backblaze B2 API and uploads the collected data to a per-victim path keyed on the BIOS serial number — using a legitimate cloud-storage service as C2 infrastructure rather than attacker-registered domains. It then polls the same B2 path for a follow-up command file (`aaa`), saves it under an arbitrary name as a `.cmd` in `%TEMP%`, executes it via `cmd.exe /c` in hidden mode, and deletes the local copy roughly 120 seconds later. The actor deletes the original LNK and the intermediate "sunshine" file during execution to remove traces, leaving only the components needed for the persistence loop.
+    region_nexus: "Korea (business-lure targeting); Kimsuky is a persistent European/global espionage threat per prior reporting"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1204.002, T1059.001, T1059.007, T1053.005, T1102, T1082, T1057, T1016.001, T1070.004, T1027]
+    affected_products: ["Microsoft Windows"]
+    entity_keys: ["actor:kimsuky"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "In this attack, Backblaze B2 was used not merely as a file storage space but as a C2 infrastructure to exfiltrate information from infected PCs and relay follow-up commands."
+        attribution: "AhnLab ASEC"
+        source_url: "https://asec.ahnlab.com/en/95217/"
+      - quote: "Based on such similarities in code and behavior, AhnLab determined that this malicious LNK is also linked to the Kim Sukki group."
+        attribution: "AhnLab ASEC"
+        source_url: "https://asec.ahnlab.com/en/95217/"
+      - quote: "it is configured to execute ping_<FIRST 4 digits of UUID>.Js approximately every 14 minutes via wscript.Exe"
+        attribution: "AhnLab ASEC"
+        source_url: "https://asec.ahnlab.com/en/95217/"
+    extended_notes: |
+      Single-source (AhnLab only). The reusable detection hook is the abuse pattern itself: authenticated outbound HTTPS traffic to Backblaze B2 API endpoints from a workstation with no legitimate backup/storage use case, alongside a Scheduled Task invoking wscript.exe against a script under C:\ProgramData at a short (~14 min) interval — both are hunt queries that generalise beyond this specific campaign to "legitimate cloud storage service abused as C2," a pattern increasingly common across unrelated actors.
+
+  - title: "UK Supreme Court removes state immunity as a bar to spyware-victim lawsuits against foreign governments (Shehabi v. Bahrain)"
+    sources:
+      - { url: "https://citizenlab.ca/uk-supreme-court-opens-door-for-spyware-victims-to-sue-foreign-states/", publisher: "Citizen Lab", date: "2026-09-02", role: "primary" }
+      - { url: "https://www.lawfaremedia.org/article/u.k.-supreme-court-opens-door-for-spyware-victims-to-sue-foreign-states", publisher: "Lawfare", date: "2026-09-02", role: "primary" }
+    discovery_trace: "first seen at: citizen-lab, URL https://citizenlab.ca/feed/ → primary: Citizen Lab, URL https://citizenlab.ca/uk-supreme-court-opens-door-for-spyware-victims-to-sue-foreign-states/ → primary analysis: Lawfare, URL https://www.lawfaremedia.org/article/u.k.-supreme-court-opens-door-for-spyware-victims-to-sue-foreign-states"
+    summary: |
+      The UK Supreme Court ruled in *The Kingdom of Bahrain v. Shehabi and another*, holding that Bahrain is not immune from litigation over its use of FinSpy spyware against two Bahraini dissidents living in the UK who allege resulting psychological harm. Citizen Lab researchers (writing in Lawfare) characterise the ruling as removing "the blunt defense of state immunity" at the jurisdictional stage for this class of claim, giving exiles and other targets in the UK greater certainty that civil claims against foreign states for spyware-enabled hacking are viable — a step toward legal accountability for state-sponsored device compromise. The case now returns to the UK High Court, where attribution, causation and injury still have to be proven on the merits; the ruling only removes the jurisdictional immunity defence.
+    region_nexus: "UK jurisdiction; precedent relevant to any European state (including Switzerland) considering exposure to, or victims of, foreign-state spyware operations"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "by removing the blunt defense of state immunity from these cases, the U.K. Supreme Court has dealt a meaningful victory to individuals and organizations fighting spyware and other forms of digital transnational repression"
+        attribution: "Citizen Lab (Siena Anstis, Natalia Krapiva, Kate Pundyk, via Lawfare)"
+        source_url: "https://citizenlab.ca/uk-supreme-court-opens-door-for-spyware-victims-to-sue-foreign-states/"
+    extended_notes: |
+      No attacker TTP content — legal/policy item, included for situational awareness on the mercenary-spyware accountability landscape rather than technical actionability. Low priority; borderline relevance to a highly technical SOC audience, included because it is a substantive legal development directly about state-sponsored device compromise (Citizen Lab's core beat) and genuinely fresh (published within window). Mark borderline for the main agent's final call.
+    borderline: true
+    borderline_reason: "legal/policy development with no technical TTP or detection content for a highly technical SOC audience; included for situational-awareness value on spyware accountability"
+
+  - title: "SonicWall SMA1000: pre-auth CVSS 10.0 SSRF via an undocumented Work Place access path, and a post-auth OS command injection in the Management Console — both under active exploitation"
+    sources:
+      - { url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0016", publisher: "SonicWall PSIRT", date: "2026-09-02", role: "primary" }
+      - { url: "https://www.heise.de/news/Remotezugriff-Sonicwall-SMA1000-Angreifer-verbiegen-interne-Dienste-11438326.html", publisher: "heise Security", date: "2026-09-02", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (RSS) → article https://www.heise.de/news/Remotezugriff-Sonicwall-SMA1000-Angreifer-verbiegen-interne-Dienste-11438326.html → primary: SonicWall PSIRT, URL https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0016"
+    summary: |
+      SonicWall's PSIRT advisory SNWLID-2026-0016 discloses two SMA1000 (secure remote-access appliance) flaws it states are under active exploitation. CVE-2026-83548 (CVSS 3.0: 10.0, AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H; CWE-918 SSRF + CWE-441 Unintended Proxy/"Confused Deputy") is a pre-authentication SSRF in the SMA1000 Work Place interface via an "unintended alternate access path" that lets a remote unauthenticated attacker reach normally-gated internal functionality — heise reports this allows reaching administrative functions, rewriting VPN configuration, establishing persistent access, and ultimately code execution, after which the appliance is considered fully compromised. CVE-2026-83549 (SonicWall CVSS 7.8; CWE-78 OS Command Injection) is a post-authentication command injection in the SMA1000 Management Console (AMC) letting an authenticated administrator execute arbitrary OS commands under specific conditions. Affected models: 6210, 7210 and 8200v; fixed in 12.4.3-03526 (platform-hotfix) and 12.5.0-02952 (platform-hotfix) — all earlier releases are vulnerable. This is the second SMA1000 zero-day exploitation wave in 2026 per heise, following critical SMA1000 zero-days exploited in July.
+    region_nexus: "global — internet-exposed VPN/remote-access gateway class widely deployed including in Swiss public-sector remote-access estates"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-83548, CVE-2026-83549]
+    techniques: [T1190]
+    affected_products: ["SonicWall SMA1000 (6210, 7210, 8200v)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "SonicWall PSIRT has investigated a case indicating the active exploitation of the vulnerabilities described in this advisory. Customers are strongly urged to upgrade to the hotfix release as soon as possible"
+        attribution: "SonicWall PSIRT"
+        source_url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0016"
+      - quote: "Die Fernzugriffslösung SMA1000 von Sonicwall ist verwundbar und Angreifer greifen zurzeit im Zuge von aktiven Attacken mit weitreichenden Rechten auf Instanzen zu."
+        attribution: "heise Security"
+        source_url: "https://www.heise.de/news/Remotezugriff-Sonicwall-SMA1000-Angreifer-verbiegen-interne-Dienste-11438326.html"
+    extended_notes: |
+      Outside S3's core research/investigative-reporting mission but surfaced from an essential S3 source (heise-sec) with active-exploitation confirmation from the vendor's own PSIRT. NOTE: this run's shared url-liveness.tsv ledger shows a BleepingComputer SonicWall SMA1000 zero-day URL was already fetched at 04:15:01Z (well before this S3 fetch at 04:27Z) — strong circumstantial evidence S1 already has this item this run. Retained here only as a redundant safety net; the main agent should treat this as a likely same-run duplicate of an S1 finding, not a new item, unless S1's return shows otherwise.
+    borderline: true
+    borderline_reason: "vulnerability/exploitation alert — better fits S1's mission than S3's; likely already covered by S1 this run per the shared url-liveness ledger timestamps (SonicWall BleepingComputer URL logged at 04:15:01Z, before this S3 fetch) — treat as probable duplicate"
+
+  - title: "Langflow CVE-2026-0768 (January 2026 unauthenticated root RCE, already patched) sees renewed mass exploitation, harvesting AWS/OpenAI credentials from environment variables"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/critical-langflow-flaw-exploited-to-steal-openai-and-aws-keys/", publisher: "BleepingComputer", date: "2026-09-01", role: "primary" }
+      - { url: "https://www.heise.de/news/Jetzt-patchen-Angreifer-attackieren-Langflow-Instanzen-mit-Schadcode-11437701.html", publisher: "heise Security", date: "2026-09-02", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (RSS) → article https://www.heise.de/news/Jetzt-patchen-Angreifer-attackieren-Langflow-Instanzen-mit-Schadcode-11437701.html → corroborating/primary detail: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/critical-langflow-flaw-exploited-to-steal-openai-and-aws-keys/"
+    summary: |
+      VulnCheck (lead researcher Caitlin Condon, via LinkedIn) reports renewed active exploitation of CVE-2026-0768, an unauthenticated remote-code-execution flaw (CVSS 9.8) in Langflow's custom-component-editor code validator, disclosed by Trend Micro ZDI in January 2026 and affecting Langflow releases up to 1.4.2 (a patch has existed since disclosure). VulnCheck's honeypots recorded at least 50 exploitation attempts over one weekend (traffic primarily from Russia) rising to 360 total attacks as of the report, with no known public PoC per VulnCheck. Post-exploitation requests query environment variables `LANGFLOW_SUPERUSER`, `OPENAI_API*`, `AWS_ACCESS*` and `AWS_SECRET*`, read `/root/.cache/langflow/secret_key`, and check `.ssh` access and `.bash_history` size — a reusable hunt signature for this and future Langflow-adjacent exploitation regardless of which specific CVE is chased. CVE-2026-0768 is the fifth distinct Langflow vulnerability actively exploited in 2026 per BleepingComputer's own reporting history (following CVE-2026-33017, CVE-2026-5027, CVE-2026-55255, CVE-2026-0770, and CVE-2026-9198), underscoring that this platform is now a standing, recurring target class rather than a one-off. Sources disagree on the current patched version number (heise cites 1.12.0 as current; BleepingComputer cites 1.11.6 as the version addressing all known flaws) — flagged as an unresolved discrepancy rather than resolved.
+    region_nexus: "global — internet-exposed AI/agent-development platform"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-0768]
+    techniques: [T1190, T1552.001]
+    affected_products: ["Langflow"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Among other things, attacker requests are querying environment variables (LANGFLOW_SUPERUSER, OPENAI_API*, AWS_ACCESS*, AWS_SECRET*), reading /root/.cache/langflow/secret_key, and checking .ssh access and .bash_history size"
+        attribution: "VulnCheck (Caitlin Condon)"
+        source_url: "https://www.bleepingcomputer.com/news/security/critical-langflow-flaw-exploited-to-steal-openai-and-aws-keys/"
+      - quote: "Die Sicherheitsforscher geben an, mittlerweile mehr als 350 Angriffsversuche beobachtet zu haben – Tendenz steigend."
+        attribution: "heise Security"
+        source_url: "https://www.heise.de/news/Jetzt-patchen-Angreifer-attackieren-Langflow-Instanzen-mit-Schadcode-11437701.html"
+    extended_notes: |
+      Outside S3's core mission (vulnerability/exploitation alert, S1 territory) — surfaced from an essential S3 source. VulnCheck's own commentary is single-channel (LinkedIn only); BleepingComputer's independent write-up naming the same researcher and figures is treated as the second corroborating source per the two-source rule.
+    borderline: true
+    borderline_reason: "vulnerability/exploitation alert — better fits S1's mission than S3's; retained as a secondary find from an essential S3 source"
+
+  - title: "EtherRAT gains a new delivery chain: Teams helpdesk-impersonation vishing installs the Node.js RAT via a silent MSI, then pivots over WinRM straight to domain controllers and certificate authorities"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/09/02/impersonating-it-support-threat-actors-turn-remote-session-into-enterprise-wide-access/", publisher: "Microsoft Threat Intelligence", date: "2026-09-02", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/fake-it-support-calls-on-microsoft-teams-push-etherrat-malware/", publisher: "BleepingComputer (reporting Unit 42's earlier campaign)", date: "2026-07-06", role: "background" }
+    discovery_trace: "first seen at: majors-sweep (msft-ti listing), URL https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/ → primary: Microsoft Threat Intelligence, URL https://www.microsoft.com/en-us/security/blog/2026/09/02/impersonating-it-support-threat-actors-turn-remote-session-into-enterprise-wide-access/ → background/corroboration search: WebSearch (\"Microsoft \\\"Impersonating IT support\\\" Teams remote session Node.js implant\") → BleepingComputer, URL https://www.bleepingcomputer.com/news/security/fake-it-support-calls-on-microsoft-teams-push-etherrat-malware/"
+    summary: |
+      Microsoft Threat Intelligence (2026-09-02) documents a human-operated intrusion campaign that abuses Microsoft Teams external-collaboration chat/calls to impersonate IT or helpdesk personnel ("Microsoft Security Update", "Spam Filter Update", "Account Verification" pretexts, sometimes reinforced with vishing) and socially-engineer the victim into approving a "request control" prompt during a Teams screen-share, or into opening Quick Assist and reading back a connection code. Once remote control is granted through the legitimate support tool, the operator uses PowerShell inside the same session to silently pull a malicious MSI (disguised with update-themed names like "devfix"/"Hotfix", hosted on a widely-used cloud-storage platform to blend with legitimate traffic) and installs it via `msiexec /qn`. The MSI stages a portable Node.js runtime fetched from the official Node.js distribution plus a separate encrypted implant file under `LocalAppData`; a deferred MSI custom action launches hidden bootstrap code via PowerShell/cmd.exe/WScript, which decrypts the implant (nonstandard extensions such as `.tmp`/`.ini`/`.dat`/`.bin`/`.cfg`) and hands it to Node.js either via standard input or a temporary `.js` file — evading controls that key on unsigned executables or conventional script extensions. Per-user persistence uses an `HKCU Run` value or Startup-folder shortcut, both named "EdgeUpdate". The implant polls its C2 over randomized HTTPS long-polling and executes returned JavaScript dynamically (Node.js module loading, process execution, environment variables, filesystem access); observed tasking performs sandbox/AV-discovery checks (display-adapter name, installed AV via SecurityCenter2), periodic Base64-encoded desktop-screenshot capture, and ADSI-based Active Directory sweeps (domain-joined server enumeration with CIM reachability probing, user object/description-attribute harvesting) using randomized sleep jitter to stay quiet. Follow-on payloads execute via `rundll32.exe` loading operator-supplied DLLs through an exported `open` function gated by a per-execution token. The intrusion culminates in lateral movement over WinRM (TCP 5985) from a non-administrative process context to a large set of domain-joined systems — explicitly including domain controllers and certificate authorities — which Microsoft frames as the hallmark of activity that precedes large-scale data theft, extortion or ransomware deployment. A dormant capability in the analyzed implants queries an Ethereum smart contract for an updated C2 URL (disabled in the recovered builds, which fall back to a hard-coded server) — the contract stores only a URL string, no payload. Microsoft's own detection-name table (Trojan:JS/EtherRatz.A!MTB / .B!MTB, Trojan:JS/SynkLoader.SA) ties the implant to the malware family this pipeline already tracks as EtherRAT: a cross-platform Node.js RAT previously reported (BleepingComputer, 2026-07-06, relaying Unit 42's GitHub-published analysis of a distinct June/July 2026 wave delivered via an "Employee Survey" phishing PDF plus Teams vishing from an external tenant, using HopToDesk/AnyDesk as the remote-access tool and pulling payloads from an open distribution directory containing versions v1 through v9) as previously used in state-sponsored intrusions exploiting a "React2Shell" flaw and since adopted by multiple unrelated threat actors — and already flagged by this pipeline on 2026-08-23 (Red Canary's August monthly threat-intelligence round-up) as one of several malware families that resolve C2 from a public-blockchain dead drop. Microsoft's Sept-2 report supplies a materially deeper technical picture of a live delivery chain and full post-compromise playbook (MSI/Node.js staging, ADSI-based AD reconnaissance, WinRM pivot to domain controllers and CAs) than either prior mention captured.
+    region_nexus: "global — any enterprise using Microsoft Teams external collaboration; the Teams-vishing → RMM → WinRM-to-domain-controllers playbook is directly transferable to Swiss public-sector helpdesk/service-desk workflows"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.003, T1059.001, T1059.007, T1218.007, T1218.011, T1036, T1497.001, T1082, T1016, T1087.002, T1018, T1518.001, T1113, T1071.001, T1105, T1021.006]
+    affected_products: ["Microsoft Teams", "Microsoft Windows", "Windows Remote Management (WinRM)"]
+    entity_keys: ["malware:etherrat"]
+    new_entities:
+      - { key: "campaign:teams-helpdesk-impersonation-etherrat-winrm-2026-09", type: campaign, name: "Teams Helpdesk-Impersonation → EtherRAT → WinRM-to-DC campaign (Sept 2026)",
+          summary: "Human-operated intrusion campaign documented by Microsoft Threat Intelligence (2026-09-02): Microsoft Teams external-collaboration vishing impersonating IT/helpdesk staff leads to a silent MSI install, a portable-Node.js-hosted EtherRAT implant with a dormant Ethereum-smart-contract C2 fallback, ADSI-based Active Directory reconnaissance, and WinRM (TCP 5985) lateral movement targeting domain controllers and certificate authorities." }
+    relation_suggestions:
+      - { subject: "campaign:teams-helpdesk-impersonation-etherrat-winrm-2026-09", object: "malware:etherrat",
+          basis: "Microsoft's own AV detection names for the implant (Trojan:JS/EtherRatz.A!MTB, Trojan:JS/EtherRatz.B!MTB) and its Node.js/Ethereum-smart-contract-C2 mechanism match the EtherRAT family BleepingComputer described via Unit 42 (2026-07-06: 'EtherRAT is a cross-platform remote access trojan written in Node.js... using Ethereum smart contracts to retrieve its active command-and-control (C2) server') (Microsoft Threat Intelligence, 2026-09-02; BleepingComputer, 2026-07-06)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-23/blockchain-dead-drop-c2-commodity-graphspy"
+    evidence:
+      - quote: "Microsoft Threat Intelligence has observed a human-operated intrusion campaign that abuses Microsoft Teams external collaboration to impersonate IT or helpdesk personnel and socially engineer users into granting an interactive remote session."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/09/02/impersonating-it-support-threat-actors-turn-remote-session-into-enterprise-wide-access/"
+      - quote: "The analyzed implants also contained dormant logic capable of querying an Ethereum smart contract for an updated C2 URL. This functionality was disabled in the recovered builds, which instead used a hard-coded fallback server."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/09/02/impersonating-it-support-threat-actors-turn-remote-session-into-enterprise-wide-access/"
+      - quote: "operator-issued tasking executed through the Node.js backdoor initiated internal remote-management connections over WinRM on TCP port 5985 to a large set of domain-joined systems"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/09/02/impersonating-it-support-threat-actors-turn-remote-session-into-enterprise-wide-access/"
+      - quote: "EtherRAT is a cross-platform remote access trojan written in Node.js that gives attackers full control over compromised systems... using Ethereum smart contracts to retrieve its active command-and-control (C2) server, making it harder to disrupt."
+        attribution: "BleepingComputer (relaying Palo Alto Networks Unit 42 / Brian Janower)"
+        source_url: "https://www.bleepingcomputer.com/news/security/fake-it-support-calls-on-microsoft-teams-push-etherrat-malware/"
+    extended_notes: |
+      Single fresh source (Microsoft) for the Sept-2 development itself — no independent write-up of THIS SPECIFIC Sept-2 Microsoft post was found in-window this run (search results conflated it with two other, unrelated/older Microsoft "Teams helpdesk impersonation" posts from April 2026 and Unit 42's June/July 2026 campaign; those are cited above only as background/history per the entity match, not as fresh corroboration). Flagged accordingly as SINGLE-SOURCE-OTHER. Entity-key exact match on malware:etherrat against the existing 2026-08-23 entry (Red Canary's "dead-drop C2 went commodity" trend piece, which named EtherRAT only as one of four malware families) is why novelty is set to update-of rather than new — this Sept-2 report is a substantially deeper, campaign-specific writeup of the same tracked malware family's delivery chain and post-compromise playbook. The main agent should judge whether the divergence in framing (a generic C2-trend mention vs. a full human-operated intrusion campaign with its own ATT&CK table, detection alerts and hunting queries) instead warrants a new entry with references[] to the 2026-08-23 entry; either composition captures the same underlying facts. Microsoft's own KQL hunting queries (external Teams first-contact via CloudAppEvents, PowerShell writing an MSI to a user-writable path, node.exe executing a staged payload from AppData with a WScript parent, screen-capture via CopyFromScreen/ToBase64String, WinRM to :5985/wsman from a non-admin PowerShell process) are directly portable detection content worth carrying into the entry body.
+
+  - title: "A brand-impersonation download campaign regenerates a fresh-hash installer archive per request from Chinese-language look-alike sites, then disables Windows Update and tampers with Defender via a throwaway SYSTEM scheduled task — Microsoft ties it to Silver Fox with moderate confidence"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/09/01/counterfeit-installers-system-compromise-tracking-deceptive-software-download-campaign/", publisher: "Microsoft Threat Intelligence / Microsoft Defender Experts", date: "2026-09-01", role: "primary" }
+      - { url: "https://thehackernews.com/2026/09/fake-software-installers-disable.html", publisher: "The Hacker News", date: "2026-09-02", role: "corroborating" }
+    discovery_trace: "first seen at: majors-sweep (msft-ti listing), URL https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/ → primary: Microsoft Threat Intelligence, URL https://www.microsoft.com/en-us/security/blog/2026/09/01/counterfeit-installers-system-compromise-tracking-deceptive-software-download-campaign/ → corroboration search: WebSearch (\"Microsoft counterfeit installers Silver Fox fake software download campaign September 2026\") → The Hacker News, URL https://thehackernews.com/2026/09/fake-software-installers-disable.html"
+    summary: |
+      Microsoft Defender Experts (2026-09-01) tracks an active campaign impersonating legitimate software vendors through high-fidelity clone download pages hosted on `.com.cn`/`.hl.cn`/`.cn` infrastructure with Chinese-language lure content, spoofing brands including Razer, Microsoft Edge, Kaspersky, NetEase Youdao, Baidu Netdisk, oCam, draw.io, SteelSeries, Sogou, Calibre and a MindMaster typosquat. Every clone funnels to the same small set of delivery hosts; the downloaded ZIP archive (families `app_setup.*`, `zinst.*`, `zintall.*`, `intsoft.*`, `innstll.*`) keeps a constant filename while its hash changes on every single download — direct evidence the payload is regenerated server-side per request, confirmed by Microsoft capturing two content-distinct copies of the same-named archive written roughly 69 seconds apart from the same delivery URL. Infrastructure enrichment resolves the look-alike domains into two hosting/DNS procurement groupings (six domains sharing one ASN and nameserver pair across four unrelated netblocks and three registered country codes; two more sharing a different ASN and nameserver pair in a single /21) — Microsoft states ASN-level analysis, not netblock or geographic grouping, is what surfaces the relationship. A wrapper installer (e.g. `a_instapp83353001.exe`) drops a randomized stage-one payload under `C:\Users\Public\<random>\` or `C:\Program Files (x86)\<random>\`, with the same payload hash observed under many different names/paths; a parallel execution vector runs the same masquerade pattern through `msiexec.exe` in embedded mode. One later-stage payload's version resource fraudulently declares CompanyName "Speech Processing Solutions GmbH" / FileDescription "Philips Speech Driver Client Configuration" while retaining an unfilled build-template placeholder ("ProductName: TODO: <Product name>") — evidence the version metadata was fabricated rather than inherited from genuine software. A second payload carries the Indigo Rose TrueUpdate Client's version metadata and genuinely reproduces that product's runtime behavior (writing `_ir_tu2_temp_*` artifacts) while connecting to an attacker-controlled Alibaba Cloud OSS bucket over TLS to fetch further payloads — a legitimate update mechanism repurposed for delivery. Persistence uses Scheduled Tasks with innocuous display names (e.g. "Deadline Mission Target") launching specific payloads from `C:\ProgramData\`, giving affected hosts a characteristic ~60-second re-execution cadence. Privilege escalation for defense-evasion actions uses a throwaway SYSTEM-level scheduled task (`SCHTASKS /Create ... /RL HIGHEST /RU "SYSTEM"`, immediately run then deleted) to write Defender path exclusions via registry; other payloads delete volume-shadow copies (`vssadmin delete shadows /all /quiet`), harden their own directories against removal via `icacls`, and neutralize Windows Update by stopping/disabling `wuauserv`/`UsoSvc`/`uhssvc`/`WaaSMedicSvc`, renaming update DLLs and deleting the SoftwareDistribution cache. Process injection was also observed (a persistent payload creating a remote thread in a legitimate application moments after it started). C2 runs over non-standard ports (5090, 7031-7032, 7088-7090, 8050, 28290, 28300) to six-character `.net` domains and IP:port endpoints, with a primary hub on 202.95.14.237 (AS152194). Victims span healthcare, manufacturing, gaming, technology, logistics, government and higher education, predominantly tied to China-based operations of multinational organizations and Chinese-speaking users. Microsoft assesses with moderate confidence the activity is consistent with the publicly reported Silver Fox (Yinhu, 银狐) fake-software cluster — which The Hacker News notes has a track record of spoofed vendor download pages distributing Gh0st RAT and ValleyRAT/Winos 4.0 — but has not attributed it to a nation-state actor; Microsoft Defender's Attack Disruption engaged automated containment in observed environments.
+    region_nexus: "primarily China-based operations of multinational organizations and Chinese-speaking users; the technique class (server-side per-request hash regeneration, ASN-level infrastructure pivoting over netblock/geography, fabricated-vendor version-resource masquerade) is directly transferable to any public-sector estate facing fake-software distribution regardless of region"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1204.002, T1036.005, T1218.007, T1053.005, T1055, T1685, T1490, T1222.001, T1105, T1102.002]
+    affected_products: ["Microsoft Windows"]
+    entity_keys: ["actor:silver-fox"]
+    new_entities:
+      - { key: "campaign:counterfeit-installer-brand-impersonation-2026-09", type: campaign, name: "Counterfeit-installer brand-impersonation campaign (Sept 2026)",
+          summary: "Active malware-distribution campaign documented by Microsoft Defender Experts (2026-09-01): look-alike .com.cn/.hl.cn vendor-download pages (Razer, Microsoft Edge, Kaspersky and others) serve a server-side-regenerated installer archive (constant filename, changing hash per download) that stages a masqueraded payload disabling Windows Update and tampering with Microsoft Defender; Microsoft assesses with moderate confidence it is consistent with the Silver Fox fake-software cluster." }
+    relation_suggestions:
+      - { subject: "campaign:counterfeit-installer-brand-impersonation-2026-09", object: "actor:silver-fox",
+          basis: "Microsoft: 'Microsoft assesses with moderate confidence that this activity is consistent with the publicly reported Silver Fox (also known as Yinhu, 银狐) fake software campaign but has not attributed it to a nation-state actor' (Microsoft Threat Intelligence, 2026-09-01)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Microsoft assesses with moderate confidence that this activity is consistent with the publicly reported Silver Fox (also known as Yinhu, 银狐) fake software campaign but has not attributed it to a nation-state actor."
+        attribution: "Microsoft Threat Intelligence / Microsoft Defender Experts"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/09/01/counterfeit-installers-system-compromise-tracking-deceptive-software-download-campaign/"
+      - quote: "A defining characteristic is that the archive keeps the same filename while its hash changes on every download — a strong indicator the payload is generated server-side, per request."
+        attribution: "Microsoft Threat Intelligence / Microsoft Defender Experts"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/09/01/counterfeit-installers-system-compromise-tracking-deceptive-software-download-campaign/"
+      - quote: "Microsoft has observed victims across healthcare, manufacturing, gaming, technology, logistics, government, and education sectors."
+        attribution: "Microsoft Threat Intelligence / Microsoft Defender Experts"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/09/01/counterfeit-installers-system-compromise-tracking-deceptive-software-download-campaign/"
+      - quote: "Tellingly, the archive downloaded from the site maintains the same file name while its hash changes on every download, indicating that the payload is generated server-side on the fly for every request."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/09/fake-software-installers-disable.html"
+    extended_notes: |
+      Distinct from the already-covered 2026-09-01 ValleyRAT/Winos4.0-via-QN-Wallpaper entry (Kaspersky) despite the shared actor:silver-fox entity match — The Hacker News's own write-up treats them explicitly as two separate, near-simultaneous Silver-Fox-linked campaigns ("the disclosure comes merely days after Kaspersky detailed a malicious installer that deploys...QN Wallpaper...ValleyRAT"), with no shared malware family, delivery mechanism or infrastructure between the two. Kept as a new entry rather than an update on that basis; entity_keys carries only the shared actor link. The Hacker News piece also flags that ValleyRAT's use has separately been attributed (Expel, 2026-08) to CuboidalCanine, a sub-group of GoldenEyeDog that targets the gambling sector — noted for context, not carried into entity_keys since it concerns the OTHER (already-covered) Sept-1 entry, not this one.
+
+candidate_sources: []
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "Cloudflare-style robot-challenge interstitial (HTTP-202-class SiteGround anti-bot page) on both the direct bridge and the jina reader fallback this run, on the listing page itself — same failure mode logged repeatedly in this source's notes over the past several weeks. No article URL in hand to try a direct per-article fetch (the recipe that worked 2026-08-10). Fourth+ consecutive failing run; recommend the main agent consider a feed/sitemap discovery alternative or muting to fetch_method: blocked if a working recipe cannot be found."
+  - source_id: openssf-policy
+    reason: "Reached (webfetch), but content is a podcast transcript on EU CRA readiness with no verifiable fresh publication date in-window; low-cadence, policy-only source per its own notes — no in-window operational CTI signal found."
+  - source_id: team-cymru
+    reason: "Listing reached cleanly; newest drilled post (ShinyHunters infrastructure validation) dated 2026-08-05 — outside the 26h window. No in-window post found; listing does not surface dates so every candidate had to be drilled individually."
+  - source_id: withsecure-labs
+    reason: "Listing reached but (per this source's own standing recipe note) carries no publication dates; guessed URL for the top-listed 'SEO poisoning' item 301-redirected back to the listing rather than resolving to the article, so its date could not be confirmed. Treated as not-in-window per the source's established staleness pattern; a working per-article URL for this specific piece was not found this run."
+  - source_id: paradigm-shift-research
+    reason: "Not attempted this run — no news/WebSearch lead surfaced a ps.tc article in-window; per this source's own notes it has no listing/feed and requires a discovered article slug to fetch at all."
+  - source_id: trellix
+    reason: "Bridge-reached; listing content is stale (newest dated post 2026-08-10, an executive/perspectives piece), consistent with this source's standing note about a possibly-cached index. No in-window research post found."
+  - source_id: fox-it-blog
+    reason: "Reached cleanly; newest post unchanged since 2026-05-22 (RemotePE). Very low cadence per this source's own notes — empty window is expected, not a failure."
+  - source_id: proofpoint
+    reason: "Threat Insight blog listing page did not render post content through the extract transport (nav-menu only); fell back to the newsroom RSS feed, which is press-release/media-relations content only and showed nothing newer than 2026-08-13. No in-window Threat Insight research post confirmed."
+  - source_id: cloudflare-cf1
+    reason: "Reached; newest visible items are undated blurbs on the Cloudforce One tag listing, the most prominent being a 'first half of 2026' DDoS report that reads as a mid-year periodic report already some months old rather than a fresh in-window post. No confirmed in-window item."
+  - source_id: kudelski-security
+    reason: "Continuation-pass check (per spawn instruction): listing reached cleanly via WebFetch; newest post is 'Inside North Korea's Cybercrime Ecosystem' dated 2026-08-12, well outside the 26h window. No in-window item found."
+  - source_id: 0patch-blog
+    reason: "Continuation-pass check (per spawn instruction): feed reached cleanly (8 items pulled); newest post (Certighost CVE-2026-54121 micropatch) dated 2026-08-17T22:00:00Z, well outside the 26h window. No in-window item found."
+  - source_id: ahnlab-asec
+    reason: "Continuation-pass re-check (per spawn instruction): listing reached cleanly; confirms the only two in-window posts (95211, 95217) are the ones already captured as items in this same findings file by the interrupted pass. No additional in-window post found."
+  - source_id: citizen-lab
+    reason: "Continuation-pass re-check (per spawn instruction): feed reached cleanly; the only in-window post (Shehabi v. Bahrain, 2026-09-02) is the one already captured as an item in this same findings file by the interrupted pass. Next-newest post is 2026-08-20 (Apple spyware-notification volume), outside window. No additional in-window post found."
+  - source_id: talos
+    reason: "Majors sweep: WebFetch listing shows newest post dated 2026-08-27 (JavaScript-obfuscation-to-phishing-kit / guardrails newsletter); a WebSearch cross-check for September 2026 Talos research returned only an unrelated crypto-trading-platform brand collision. No in-window Cisco Talos item found."
+  - source_id: sentinellabs
+    reason: "Majors sweep: WebFetch listing shows newest post dated 2026-08-13 ('The Model Is the Malware'); a WebSearch cross-check found only an August-20 LABScon-2026 conference-agenda announcement (Sept 16-19), not a research post. No in-window SentinelLabs item found."
+  - source_id: mandiant-gtig
+    reason: "Majors sweep: feedburner RSS reached cleanly (8 items); newest post ('Financially Motivated Threat Actor BREEZE COMET Targets Brazil') published 2026-09-01T14:00:00Z, roughly 12h before the 26h window's start boundary (~2026-09-02T02:11Z) — stale by the recency rule. A WebSearch cross-check found no fresher GTIG/Mandiant post. Logged as a coverage gap rather than included, per 'drop items whose freshest available source is outside the window'."
+  - source_id: trendmicro-research
+    reason: "Majors sweep: feedburner RSS reached cleanly (8 items); newest post dated 2026-07-30 (Open Secure AI Alliance), a full month outside the window. No in-window Trend Micro Research item found."
+  - source_id: eset
+    reason: "Majors sweep: WebFetch listing shows one in-window post (2026-09-02, 'I've been deepfaked: What do I do?') but it is consumer takedown/how-to guidance with no attacker TTP, technique, or defender-actionable content — does not clear this pipeline's technical-substance bar. No qualifying in-window ESET research item found."

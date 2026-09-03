@@ -1,0 +1,253 @@
+domain: S1
+run_id: 2026-09-03T0410Z-intel
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-09-03T04:13:18Z"
+ended_at: "2026-09-03T04:21:56Z"
+duration_seconds: 518
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 8
+  bridge_fetches: 28
+
+items:
+  - title: "CVE-2026-59822 — BerriAI LiteLLM: unauthenticated MCP-endpoint auth bypass via a fabricated Bearer token, added to CISA KEV (third distinct LiteLLM CVE exploited in three months)"
+    sources:
+      - { url: "https://osv.dev/vulnerability/GHSA-7488-6r32-c95q", publisher: "BerriAI (GitHub Security Advisory GHSA-7488-6r32-c95q, mirrored via OSV.dev)", date: "2026-07-22", role: primary }
+      - { url: "https://vulnerability.circl.lu/vuln/CVE-2026-59822", publisher: "CVE Program (cvelistv5, via CIRCL Vulnerability-Lookup)", date: "2026-08-28", role: corroborating }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (bridge cisa-kev API, catalogVersion 2026.09.02, entry dateAdded 2026-09-02) → primary: BerriAI GitHub Security Advisory GHSA-7488-6r32-c95q, URL https://osv.dev/vulnerability/GHSA-7488-6r32-c95q (GHSA sign-in-walled on direct/jina fetch, read via the OSV.dev mirror of the same advisory JSON) → corroborating: CVE Program record, URL https://vulnerability.circl.lu/vuln/CVE-2026-59822"
+    summary: |
+      CISA added CVE-2026-59822 to its KEV catalog on 2026-09-02 (due date 2026-09-16), confirming active
+      exploitation of an authentication-bypass flaw in LiteLLM's MCP Streamable HTTP endpoint. Prior to 1.84.0,
+      that endpoint supported an OAuth2 passthrough mode for upstream MCP servers; on failed LiteLLM key
+      validation, the fallback path substituted an empty UserAPIKeyAuth() object rather than rejecting the
+      request. An unauthenticated attacker who sends any fabricated Authorization Bearer header therefore
+      establishes an authenticated MCP session with no valid LiteLLM key at all, and can list and invoke every
+      MCP tool and connected service the gateway exposes (GHSA-7488-6r32-c95q, mirrored on OSV.dev). CVSS 4.0
+      8.8 High; CWE-287 Improper Authentication / CWE-306 Missing Authentication for Critical Function per
+      CISA's own CWE tags. Fixed in 1.84.0; the vendor's stated workaround where upgrading is not immediately
+      possible is to disable MCP routes or block `/mcp/` and related MCP endpoints at the reverse proxy or API
+      gateway. This is the third distinct LiteLLM vulnerability this pipeline has tracked reaching confirmed
+      exploitation inside three months: CVE-2026-42271 (command injection via MCP stdio test endpoints, KEV
+      2026-06-08) chained with the Starlette host-header bypass CVE-2026-48710, and Microsoft's 2026-08-26
+      disclosure of a real production LiteLLM-gateway intrusion using that chain. This new CVE is a distinct
+      code path (the Streamable HTTP MCP transport's OAuth2 fallback, not the stdio test-endpoint command
+      injection) — a different mechanism on the same class of MCP-facing attack surface, not a re-run of the
+      same bug.
+    region_nexus: "global; any internet-reachable LiteLLM gateway"
+    primary_sector_nexus: "indirect — LiteLLM is deployed as AI-gateway infrastructure across sectors, public-sector included wherever agencies operate self-hosted LLM proxies"
+    sector: "technology"
+    cves: [CVE-2026-59822]
+    techniques: [T1190, T1550.001]
+    affected_products: ["BerriAI LiteLLM"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "LiteLLM's MCP Streamable HTTP endpoint could allow an unauthenticated attacker to establish an authenticated MCP session using an arbitrary Bearer token. The MCP auth handler supported OAuth2 passthrough for upstream MCP servers, but the fallback path could replace failed LiteLLM key validation with an empty `UserAPIKeyAuth()` object. This allowed requests with a fabricated `Authorization` header to reach MCP tooling without a valid LiteLLM key."
+        attribution: "BerriAI (GitHub Security Advisory GHSA-7488-6r32-c95q, via OSV.dev)"
+        source_url: "https://osv.dev/vulnerability/GHSA-7488-6r32-c95q"
+      - quote: "If upgrading is not immediately possible, disable MCP routes or block access to `/mcp/` and related MCP endpoints at your reverse proxy or API gateway."
+        attribution: "BerriAI (GitHub Security Advisory GHSA-7488-6r32-c95q, via OSV.dev)"
+        source_url: "https://osv.dev/vulnerability/GHSA-7488-6r32-c95q"
+      - quote: "BerriAI LiteLLM contains an improper authentication vulnerability in the MCP Streamable HTTP endpoint that could allow an unauthenticated attacker to establish an authenticated MCP session using an arbitrary Bearer token."
+        attribution: "CISA (KEV catalog entry)"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+    extended_notes: |
+      Disposition per the KEV sweep duty: NEW ENTRY CANDIDATE. Distinct vulnerability/CVE/mechanism from
+      CVE-2026-42271 (2026-06-09 entry) and CVE-2026-48710 (2026-05-30 entry, referenced again in the
+      2026-08-31 AI-infrastructure threat entry) — different endpoint (MCP Streamable HTTP vs. MCP stdio test
+      endpoints), different CWE (287/306 improper/missing authentication vs. 78 OS command injection). The
+      composer may wish to cross-reference the 2026-06-09 and 2026-08-31 entries in `references[]` given they
+      concern the same product's recurring MCP attack surface, without merging them — this is a separate flaw.
+    watchlist: []
+
+  - title: "CVE-2026-83548 / CVE-2026-83549 — SonicWall SMA1000: a pre-auth SSRF in the Appliance Work Place interface chains into post-auth OS command injection in the Appliance Management Console for unauthenticated RCE — the second SMA1000 zero-day chain in seven weeks"
+    sources:
+      - { url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0016", publisher: "SonicWall PSIRT (advisory SNWLID-2026-0016)", date: "2026-09-01", role: primary }
+      - { url: "https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-actively-exploited-sma1000-zero-day-flaws/", publisher: "BleepingComputer", date: "2026-09-02", role: corroborating }
+      - { url: "https://www.helpnetsecurity.com/2026/09/02/sonicwall-sma-1000-cve-2026-83548-cve-2026-83549-zero-day-attacks/", publisher: "Help Net Security", date: "2026-09-02", role: corroborating }
+      - { url: "https://vulnerability.circl.lu/vuln/CVE-2026-83548", publisher: "CVE Program (cvelistv5, via CIRCL Vulnerability-Lookup)", date: "2026-09-01", role: corroborating }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (bridge cisa-kev API, catalogVersion 2026.09.02) → cross-checked at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12904 (post id 12904, created 2026-09-02) → primary: SonicWall PSIRT, URL https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0016 (JS-SPA shell on direct fetch, hydrated via jina reader) → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-actively-exploited-sma1000-zero-day-flaws/ → corroborating: Help Net Security, URL https://www.helpnetsecurity.com/2026/09/02/sonicwall-sma-1000-cve-2026-83548-cve-2026-83549-zero-day-attacks/"
+    summary: |
+      CISA added CVE-2026-83548 and CVE-2026-83549 to its KEV catalog on 2026-09-02 (due date 2026-09-16).
+      SonicWall's own advisory (SNWLID-2026-0016, updated 2026-09-01) states it "has investigated a case
+      indicating the active exploitation of the vulnerabilities." CVE-2026-83548 (CVSS 3.0 10.0,
+      AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H) is a pre-authentication SSRF in the SMA1000 Appliance Work Place
+      interface arising from an unintended alternate access path (CWE-918 SSRF, CWE-441 Confused Deputy),
+      letting a remote unauthenticated attacker reach unauthorized functionality. CVE-2026-83549 (CVSS 3.0
+      7.8, AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H) is a post-authentication OS command injection in the SMA1000
+      Appliance Management Console (CWE-78) exploitable by an attacker holding admin privilege. News reporting
+      states the two are chained — the SSRF grants the unauthorized access that then reaches the AMC command
+      injection — for unauthenticated remote code execution end to end. Affects physical and virtual SMA1000
+      models 6210, 7210 and 8200v; does not affect the SMA 100 series or SonicWall firewall SSL-VPN. Fixed by
+      upgrading to hotfix 12.4.3-03526 or 12.5.0-02952 (branch-dependent) via mysonicwall.com. SonicWall has
+      not published IOCs or attack narrative detail; its guidance where indicators are found is to re-image or
+      re-deploy the appliance, change every user and administrator password, and reset TOTP tokens — implying
+      SonicWall treats successful exploitation as credential- and MFA-seed-compromising. Shadowserver tracks
+      over 400 internet-exposed SMA1000 appliances. This is the second SMA1000 zero-day chain reported in
+      seven weeks: CVE-2026-15409/15410 (SSRF-to-command-injection, tracked by Volexity as UTA0533, already
+      in this store's 2026-07-14 entry) were exploited from at least June 2026 and CISA confirmed ransomware
+      gangs abusing them in August 2026 — the same SSRF-to-injection pattern recurs here on a different
+      endpoint pair, but no source ties this new chain to UTA0533 or any other named actor/cluster.
+    region_nexus: "global; SMA1000 is deployed by large enterprises, government agencies and MSSPs for remote access"
+    primary_sector_nexus: "direct — SMA1000 is explicitly marketed for government and critical-infrastructure remote-access use"
+    sector: "public-sector"
+    cves: [CVE-2026-83548, CVE-2026-83549]
+    techniques: [T1190, T1059]
+    affected_products: ["SonicWall SMA1000"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "SonicWall PSIRT has investigated a case indicating the active exploitation of the vulnerabilities described in this advisory. Customers are strongly urged to upgrade to the hotfix release as soon as possible to remediate this vulnerability."
+        attribution: "SonicWall PSIRT (SNWLID-2026-0016)"
+        source_url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0016"
+      - quote: "A Pre-authentication SSRF vulnerability exists in the SMA1000 Appliance Work Place interface due to an unintended alternate access path. A remote unauthenticated attacker could potentially exploit this vulnerability to gain unauthorized access to sensitive functionality and perform unauthorized operations."
+        attribution: "SonicWall PSIRT (SNWLID-2026-0016)"
+        source_url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0016"
+      - quote: "Internet security watchdog Shadowserver currently tracks over 400 SMA1000 appliances exposed online, although some may already have been patched against this exploit chain."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-actively-exploited-sma1000-zero-day-flaws/"
+    extended_notes: |
+      Disposition per the KEV sweep duty: NEW ENTRY CANDIDATE. Distinct CVE pair and distinct vulnerable
+      components (Work Place interface SSRF + AMC command injection) from the store's existing 2026-07-14
+      SonicWall SMA1000 entry (CVE-2026-15409/15410, different endpoints, attributed by Volexity to UTA0533).
+      Recommend the composer add a `references[]` link to that entry for the recurring-target pattern, but this
+      is a genuinely new finding, not an update. Detection concept (not stated verbatim by a source, inferred
+      from the mechanism — flag if too far from cited fact): monitor SMA1000 Work Place / AMC web-access logs
+      for anomalous internal-service requests originating from the Work Place interface itself (SSRF
+      signature) and for AMC command-execution audit entries not tied to an interactive admin session.
+    watchlist: []
+
+  - title: "CVE-2026-9586 — Sangoma Switchvox: unauthenticated SQL injection in an XML phone-notification endpoint reaches PostgreSQL COPY TO PROGRAM, and honeypots caught exploitation starting five weeks after the patch"
+    sources:
+      - { url: "https://horizon3.ai/attack-research/disclosures/cve-2026-9586-sangoma-switchvox-rce/", publisher: "Horizon3.ai (Zach Hanley)", date: "2026-09-01", role: primary }
+      - { url: "https://www.helpnetsecurity.com/2026/09/02/exploitation-of-sangoma-switchvox-flaw-underway-cve-2026-9586/", publisher: "Help Net Security", date: "2026-09-02", role: corroborating }
+      - { url: "https://vulnerability.circl.lu/vuln/CVE-2026-9586", publisher: "CVE Program (cvelistv5, via CIRCL Vulnerability-Lookup)", date: "2026-07-17", role: corroborating }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (bridge cisa-kev API, catalogVersion 2026.09.02) → primary: Horizon3.ai, URL https://horizon3.ai/attack-research/disclosures/cve-2026-9586-sangoma-switchvox-rce/ → corroborating: Help Net Security, URL https://www.helpnetsecurity.com/2026/09/02/exploitation-of-sangoma-switchvox-flaw-underway-cve-2026-9586/"
+    summary: |
+      CISA added CVE-2026-9586 to its KEV catalog on 2026-09-02 (due date 2026-09-16). Sangoma Switchvox
+      (VoIP/unified-communications platform built on Asterisk) exposes an unauthenticated HTTP endpoint /pa,
+      handled by PhoneAppsHandler.pm, meant to let supported phones receive call-event notifications. The
+      handler validates only that the POST body starts with the literal string <PolycomIPPhone> — no content
+      sanitisation — then parses it as XML via XML::Simple::XMLin() and extracts the PhoneIP field with no
+      validation, concatenating it directly into an unparameterized SQL string executed against PostgreSQL
+      with $db->query(). CVSS 4.0 9.3 (CWE-89). Horizon3.ai's timeline: reported to Sangoma 10 April 2026,
+      patched in Switchvox 8.4.0.2 on 14 July 2026; Horizon3 (with Defused Cyber) deployed internet honeypots
+      from 8 May 2026 — before the patch shipped — specifically to watch for zero-day use. Exploitation
+      attempts began 30 August 2026, six weeks after the patch, from a single source IP dropping reverse
+      shells (an observed initial payload of `nc <ip> <port> | sh`) then enumerating running processes via a
+      base64-encoded `top -bn1` pipeline exfiltrated over HTTP. Help Net Security's 2026-09-02 update (citing
+      Hanley directly) reports the same threat actor has since begun deploying second-stage malware that
+      "on a cursory look appeared to be a cryptominer," and that dozens of additional source IPs have joined,
+      including simple scanning payloads. Hanley assesses the appliance's own value to attackers is as an
+      internal-network pivot point, since some appliances hold integration secrets usable with stolen
+      credentials. Approximately 4,000 Switchvox instances are visible on Shodan, mostly in the United States.
+      Indicator (not an IOC in the operational sense — a log artifact the vendor's own component writes):
+      SQL-injection payloads land in /var/log/switchvox/db-quirks.log.
+    region_nexus: "global; Shodan-visible population concentrated in the United States, but any internet-exposed instance is affected regardless of geography"
+    primary_sector_nexus: "indirect — Switchvox is an SMB/enterprise VoIP platform, not sector-specific, but any public-sector telephony deployment on this product is directly exposed"
+    sector: "telecom"
+    cves: [CVE-2026-9586]
+    techniques: [T1190, T1059.004, T1496]
+    affected_products: ["Sangoma Switchvox"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The PhoneIP field extracted directly from the XML message and directly concatenated into an unparameterized SQL query."
+        attribution: "Horizon3.ai (Zach Hanley)"
+        source_url: "https://horizon3.ai/attack-research/disclosures/cve-2026-9586-sangoma-switchvox-rce/"
+      - quote: "Given the quick succession of exploit attempts across multiple honeypots from the same source IP, we believe that it is likely that most internet exposed Switchvox instances will be or have already been targeted."
+        attribution: "Horizon3.ai (Zach Hanley)"
+        source_url: "https://horizon3.ai/attack-research/disclosures/cve-2026-9586-sangoma-switchvox-rce/"
+      - quote: "the same threat actor has been observed downloading second-stage malware onto the system, which on a cursory look appeared to be a cryptominer, he shared. Also, since his post was published, dozens of additional source IPs have been observed exploiting the honeypots to include simple scanning payloads and also more second stage malware installation."
+        attribution: "Help Net Security, citing Horizon3.ai's Zach Hanley"
+        source_url: "https://www.helpnetsecurity.com/2026/09/02/exploitation-of-sangoma-switchvox-flaw-underway-cve-2026-9586/"
+    extended_notes: |
+      Disposition per the KEV sweep duty: NEW ENTRY CANDIDATE — no existing entry covers this product or CVE.
+      New product for the registry: Sangoma Switchvox (no existing product: key found in entities/registry.yaml).
+      Triage note for the composer: the SQL-injection-to-RCE mechanism (PostgreSQL COPY TO PROGRAM invoked from
+      within an injected query) is a reusable technique class worth naming explicitly in the body — it doesn't
+      require xp_cmdshell-style stored-procedure abuse, just a database role permitted to write server-side
+      files/execute programs, which is a common PostgreSQL misconfiguration this same primitive would apply to
+      elsewhere.
+    watchlist: []
+
+  - title: "PaperCut NG/MF (CVE-2026-82078 / CVE-2026-81578): a third emergency patch, released 1 September, supersedes both prior releases and fixes two regressions the earlier patches introduced"
+    sources:
+      - { url: "https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/", publisher: "PaperCut Software (vendor security bulletin, updated 2026-09-02)", date: "2026-09-01", role: primary }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12882", publisher: "NCSC Switzerland Cyber Security Hub (post 12882, edited 2026-09-02)", date: "2026-09-02", role: corroborating }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12882 (post id 12882, edit history entry \"Information of a 3rd emergency patch\" timestamped 2026-09-02T05:34:56Z) → primary: PaperCut Software vendor bulletin, URL https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/ (same URL this store's existing entry already cites; content updated in place)"
+    summary: |
+      This is an in-window update to the existing entry
+      entries/2026-08-29/papercut-ng-mf-tapestry-request-confusion-preauth-rce.md (CVE-2026-82078 /
+      CVE-2026-81578, discovered_at 2026-08-29), which currently states only that "Emergency Patch Release 2
+      fixes v24/25/26." PaperCut's own bulletin, last updated 2026-09-02, records that on 1 September 2026
+      (6:22pm AEST) the vendor shipped Emergency Patch Release 3, which supersedes Release 2 and is "an
+      accumulation of all emergency releases" (customers do not need to install the earlier releases first).
+      Release 3 fixes two regressions Release 2 had introduced — broken SAML login flows, and loss of support
+      for legacy Microsoft SQL Server drivers used for external card lookup — and the vendor states it "adds
+      additional hardening and mitigation against potential attack chains" beyond what Release 2 shipped.
+      PaperCut recommends all customers with internet-facing Application Servers install Release 3 even if an
+      earlier emergency release is already applied. No change to exploitation status, affected-version scope,
+      or the v23-and-earlier no-fix gap already documented in the existing entry.
+    region_nexus: "global; already documented in the existing entry as public-sector/education/healthcare/finance/telco relevant"
+    primary_sector_nexus: "indirect (unchanged from existing entry)"
+    sector: "public-sector"
+    cves: [CVE-2026-82078, CVE-2026-81578]
+    techniques: []
+    affected_products: ["PaperCut NG", "PaperCut MF"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-29/papercut-ng-mf-tapestry-request-confusion-preauth-rce"
+    evidence:
+      - quote: "Emergency Patch (Release 3) has been released by our emergency response team and supersedes Release 2. You do not need to install previous patches, this patch is an accumulation of all emergency releases. This release addresses two known regressions and adds additional hardening and mitigation against potential attack chains."
+        attribution: "PaperCut Software"
+        source_url: "https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/"
+      - quote: "Regressions include: Addresses broken SAML login flows; Restored support for using legacy Microsoft SQL Server drivers for external card lookup"
+        attribution: "PaperCut Software"
+        source_url: "https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/"
+    extended_notes: |
+      This is a `type: update` changelog candidate (not internal — it changes the reader-facing remediation
+      guidance from "apply Release 2" to "apply Release 3", and documents that Release 2 itself had two
+      regressions defenders who already patched should be aware of). Recommend `updated_at` float per the
+      v4.2 float rule since this is a non-internal `type: update` record.
+    watchlist: []
+
+cve_table:
+  - { cve: "CVE-2026-59822", product: "BerriAI LiteLLM", cvss: "8.8 (CVSS4.0)", epss: null, kev: "Yes (2026-09-02)", exploited: "Yes (CISA-confirmed)", patch: "Upgrade to 1.84.0", source: "https://osv.dev/vulnerability/GHSA-7488-6r32-c95q" }
+  - { cve: "CVE-2026-83548", product: "SonicWall SMA1000 (6210/7210/8200v)", cvss: "10.0 (CVSS3.0)", epss: "0.27 (EUVD)", kev: "Yes (2026-09-02)", exploited: "Yes (SonicWall-confirmed)", patch: "Hotfix 12.4.3-03526 / 12.5.0-02952", source: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0016" }
+  - { cve: "CVE-2026-83549", product: "SonicWall SMA1000 (6210/7210/8200v)", cvss: "7.8 (CVSS3.0)", epss: "0.92 (EUVD)", kev: "Yes (2026-09-02)", exploited: "Yes (SonicWall-confirmed, chained with CVE-2026-83548)", patch: "Hotfix 12.4.3-03526 / 12.5.0-02952", source: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0016" }
+  - { cve: "CVE-2026-9586", product: "Sangoma Switchvox SMB Edition 8.3", cvss: "9.3 (CVSS4.0)", epss: "1.09 (EUVD)", kev: "Yes (2026-09-02)", exploited: "Yes (Horizon3.ai honeypot-confirmed since 2026-08-30)", patch: "Upgrade to 8.4.0.2", source: "https://horizon3.ai/attack-research/disclosures/cve-2026-9586-sangoma-switchvox-rce/" }
+  - { cve: "CVE-2026-82329", product: "JFrog Artifactory", cvss: "9.8", epss: null, kev: "Yes (2026-09-02, added after this store's 2026-09-01 entry was written)", exploited: "Yes (already documented in existing entry)", patch: "See existing entry entries/2026-09-01/jfrog-artifactory-cve-2026-82329-default-config-admin-bypass.md", source: "already covered — no action taken this run" }
+  - { cve: "CVE-2026-48710", product: "Starlette / FastAPI / vLLM / LiteLLM / MCP SDK", cvss: "6.5", epss: null, kev: "Yes (2026-09-02, added after this store's entries already recorded exploitation)", exploited: "Yes (already documented)", patch: "See existing entries 2026-05-30 and 2026-08-31", source: "already covered — no action taken this run" }
+  - { cve: "CVE-2026-49869", product: "Kestra OSS", cvss: "10.0", epss: null, kev: "Yes (2026-09-02, added after this store's entry already recorded exploitation)", exploited: "Yes (already documented)", patch: "See existing entry 2026-08-31/ai-infrastructure-litellm-ragflow-kestra-intrusions", source: "already covered — no action taken this run" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Product watchlist unconfigured for this deployment (no-op per spawn message). No watchlisted-product sweep performed; general coverage rules applied unchanged across the essential source slice."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: "cert-eu"
+    reason: "cert-eu recent 8 returned its full advisory history back to 2026-05-06; the newest item is 2026-010 (19 Aug 2026, Citrix NetScaler) — no in-window content this run. Not a transport failure; the advisory cadence is simply quiet in-window."
+  - source_id: "backlog-cve-2026-16242"
+    reason: "Backlog re-check per spawn instructions: Red Hat's own CVE page (access.redhat.com/security/cve/cve-2026-16242, content dated 2026-07-17) is unchanged — still describes the Konnectivity proxy-server client-certificate-validation gap as mitigation-only (network-restriction guidance), states no fixed version, and no source found reports exploitation. WebSearch for a fresh Red Hat bulletin or exploitation evidence in this window returned nothing new (only stale aggregator mirrors of the same CVE description). No change — carry the backlog row forward."

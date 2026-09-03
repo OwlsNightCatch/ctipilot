@@ -6,28 +6,29 @@ headline: "PaperCut ships an emergency patch for a pre-auth RCE chain already us
 summary: >
   PaperCut NG and PaperCut MF (all versions) carry an unauthenticated remote-code-execution chain — CVE-2026-81578
   (auth bypass, CVSS4.0 8.8) and CVE-2026-82078 (unsafe dynamic class loading, CVSS4.0 9.4) — that PaperCut confirmed
-  under active exploitation on 2026-08-27, before any CVE or patch existed. Emergency Patch Release 2 fixes v24/25/26;
-  there is no fix for v23 and earlier, and Huntress estimates 47% of the PaperCut installs it tracks run v23 or older.
+  under active exploitation on 2026-08-27, before any CVE or patch existed. Emergency Patch Release 3 (1 September
+  2026) supersedes Release 2, fixes two regressions Release 2 introduced, and is now the only recommended fix; there
+  is no fix for v23 and earlier, and Huntress estimates 47% of the PaperCut installs it tracks run v23 or older.
 discovered_at: "2026-08-29T04:09:36Z"
-updated_at: null
+updated_at: "2026-09-03T05:05:00Z"
 event_date: "2026-08-27"
 run_id: 2026-08-29T0409Z-intel
 priority: critical
 immediate_action:
-  title: "Patch PaperCut NG/MF now, or take internet-facing servers offline"
+  title: "Patch PaperCut NG/MF to Emergency Patch Release 3 now, or take internet-facing servers offline"
   action: >
     PaperCut NG and MF are under active exploitation via an unauthenticated request-routing chain that reaches
-    remote code execution as the PaperCut server process; two confirmed customer incidents occurred before any
-    patch existed, one as recently as 27 August against a still-unpatched v24 install. Apply PaperCut's Emergency
-    Patch Release 2 immediately on every v24/25/26 Application Server — Release 2 supersedes the original
-    emergency patch, which a Home-page variant of the same request defeated. For v23 and earlier there is no fix
-    at all: restrict the Application Server to trusted/internal IP addresses right now, and treat any
+    remote code execution as the PaperCut server process; PaperCut now confirms a second, more sophisticated wave
+    of attacks against servers that remain unpatched and internet-facing. Apply PaperCut's Emergency Patch Release 3
+    immediately on every v24/25/26 Application Server and Site Server — Release 3 supersedes both the original
+    emergency patch and Release 2, and fixes two regressions Release 2 itself introduced. For v23 and earlier there
+    is no fix at all: restrict the Application Server to trusted/internal IP addresses right now, and treat any
     internet-facing instance as potentially compromised until proven otherwise.
 tags: [vulnerabilities, zero-day, actively-exploited, pre-auth, rce, no-patch, patch-available]
 regions: [global]
 sectors: [public-sector, education, healthcare, finance, telco]
 entities: []
-techniques: [T1190, T1059.007, T1082, T1057, T1070.004]
+techniques: [T1190, T1059.007, T1082, T1057, T1070.004, T1219]
 affected_products: ["PaperCut NG", "PaperCut MF"]
 cves:
   - id: CVE-2026-81578
@@ -38,7 +39,7 @@ cves:
     auth: pre-auth
     status: [exploited, patch-available]
     affected: "All versions of PaperCut NG and PaperCut MF"
-    fixed: "Emergency Patch Release 2 (v24.1.9, v25.0.12, v26.0.4 and later); no fix for v23 and earlier — vendor recommends upgrading to a supported version"
+    fixed: "Emergency Patch Release 3 (v24.1.9, v25.0.12, v26.0.4 and later — supersedes Release 2, which carried two regressions); no fix for v23 and earlier — vendor recommends upgrading to a supported version"
   - id: CVE-2026-82078
     cvss: "9.4 (CVSS4.0)"
     epss: null
@@ -47,7 +48,7 @@ cves:
     auth: admin-required
     status: [exploited, patch-available]
     affected: "All versions of PaperCut NG and PaperCut MF"
-    fixed: "Emergency Patch Release 2 (v24.1.9, v25.0.12, v26.0.4 and later); no fix for v23 and earlier — vendor recommends upgrading to a supported version"
+    fixed: "Emergency Patch Release 3 (v24.1.9, v25.0.12, v26.0.4 and later — supersedes Release 2, which carried two regressions); no fix for v23 and earlier — vendor recommends upgrading to a supported version"
 sources:
   - url: "https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/"
     publisher: "PaperCut Software (vendor security bulletin)"
@@ -81,13 +82,18 @@ evidence:
     publisher: "Huntress"
   - quote: "PaperCut has been targeted in the past; in 2023, CVE-2023-27350 was broadly exploited in the wild by multiple threat-actor groups, including ransomware operators."
     publisher: "Rapid7"
+  - quote: "Emergency Patch (Release 3) has been released by our emergency response team and supersedes Release 2. You do not need to install previous patches, this patch is an accumulation of all emergency releases. This release addresses two known regressions and adds additional hardening and mitigation against potential attack chains."
+    publisher: "PaperCut Software"
+  - quote: "As anticipated there is a second wave of attack on servers that are not fully patched and are publicly available."
+    publisher: "PaperCut Software"
 verification: multi-source
 sourcing_note: >
   PaperCut's own bulletin confirms the vulnerability's existence, active exploitation and the two-CVE structure, but
   the deep technical narrative — the Apache Tapestry request-routing confusion mechanism, the specific HTTP request
   chains, the JDBC/Derby/Nashorn exploitation path, and the Huntress incident-response artifacts — traces to Rapid7
   and Huntress, both rated B (original vendor vuln/incident research) in sources.json rather than A. Reliability held
-  at B rather than A to reflect that dependency, the same standard this run applied to its ServiceNow entry.
+  at B rather than A to reflect that dependency, the same standard applied elsewhere to vendor advisories that lean
+  on third-party incident-response research.
 confidence: high
 references: []
 deep_dive: true
@@ -98,9 +104,19 @@ classification:
   credibility: 1
 watchlist_hit: false
 actions:
-  - "Apply PaperCut's Emergency Patch Release 2 to every PaperCut NG/MF Application Server now (v24/25/26); for v23 and earlier, immediately restrict the Application Server's web interface to trusted/internal IP addresses only — no patch exists for that line."
-  - "Before patching or restarting an internet-facing server, preserve the server/logs directory and the Application Server's process tree; check server.log for the two vendor-documented error strings and for an unexplained gap or truncation, and check derby.log for a Derby boot line naming an in-memory database directory ending in \"pwn\" — either is a high-confidence sign of prior exploitation."
-updates: []
+  - "Apply PaperCut's Emergency Patch Release 3 (not Release 2, now known-superseded and carrying two regressions of its own) to every PaperCut NG/MF Application Server and Site Server now; for v23 and earlier, immediately restrict the Application Server's web interface to trusted/internal IP addresses only — no patch exists for that line."
+  - "Before patching or restarting an internet-facing server, preserve the server/logs directory and process tree; check server.log for the two vendor-documented error strings and for an unexplained gap or truncation, check derby.log for a Derby boot line naming an in-memory database directory ending in \"pwn\", and hunt for a Windows service named \"Remote Access Service\" running SimpleService.exe (SimpleHelp) or an unexpected AnyDesk install — PaperCut's own published incident data names both as an observed post-compromise access method."
+updates:
+  - at: "2026-09-03T05:05:00Z"
+    run_id: 2026-09-03T0410Z-intel
+    type: update
+    summary: >
+      PaperCut shipped Emergency Patch Release 3 on 1 September 2026, superseding Release 2 and fixing two
+      regressions Release 2 had introduced (broken SAML login; lost legacy Microsoft SQL Server driver support for
+      external card lookup). PaperCut also confirms a second, more sophisticated wave of attacks against
+      still-unpatched, internet-facing servers, and separately published incident data naming a post-compromise
+      chain installing a SimpleHelp remote-access service and AnyDesk for durable access.
+    fields: [cves, actions, immediate_action, summary, techniques, evidence, sourcing_note, body]
 migrated_from: null
 ---
 
@@ -151,7 +167,8 @@ process
 emergency patch for v25/v26 on 28 August, which a Home-page variant of the same request bypassed
 ([Rapid7, 2026-08-28](https://www.rapid7.com/blog/post/etr-papercut-ng-mf-critical-zero-day-exploited-in-the-wild/)).
 Emergency Patch Release 2, published later the same day with hardening developed alongside Huntress and watchTowr,
-closes that bypass and extends coverage to v24
+closed that bypass and extended coverage to v24, and was itself superseded on 1 September 2026 by Emergency Patch
+Release 3 (see Update below)
 ([PaperCut Software, 2026-08-29](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
 There is no fix for v23 and earlier — PaperCut's guidance for that line is to upgrade to a supported version — and
 Huntress estimates 47% of the roughly 2,500 PaperCut installations it tracks still run v23 or older
@@ -173,5 +190,28 @@ stress that these artifacts' *absence* does not clear a system, since the observ
 normal application behavior — legitimate log rotation does not delete mid-file — and is itself a high-confidence
 signal worth investigating even where no other artifact survives. **Defender takeaway:** any PaperCut NG/MF
 Application Server that has ever been reachable from the public internet should be assumed targeted; patch to
-Emergency Patch Release 2 immediately, and where v23 or earlier cannot yet be replaced, remove public exposure
+Emergency Patch Release 3 immediately, and where v23 or earlier cannot yet be replaced, remove public exposure
 entirely rather than relying on detection alone.
+
+## Update — 2026-09-03T05:05:00Z
+
+PaperCut's Emergency Patch Release 3, published 1 September 2026, supersedes Release 2 and is cumulative — customers
+do not need to install the earlier releases first
+([PaperCut Software, 2026-09-02](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
+Release 3 fixes two regressions Release 2 had itself introduced — broken SAML login flows, and lost support for
+legacy Microsoft SQL Server drivers used for external card lookup — and adds further, undisclosed hardening against
+the exploitation chain
+([PaperCut Software, 2026-09-02](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
+PaperCut also confirms a second wave of attacks against servers that remain unpatched and internet-facing, involving
+"more sophisticated post-compromise behaviour" than what was observed in the first days of the incident
+([PaperCut Software, 2026-09-02](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
+The vendor's own incident data, published 30 August as additional indicators of compromise, names a concrete
+follow-on chain from the original intrusion: after initial discovery commands, a PowerShell-delivered download
+installs a Windows service literally named "Remote Access Service" running SimpleService.exe — a SimpleHelp
+remote-access agent — as LocalSystem with auto-start, followed by a further download of AnyDesk; the bulletin does
+not state whether this specific chain recurred in the second wave or belongs only to the earlier intrusions it was
+published alongside
+([PaperCut Software, 2026-09-02](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
+Mobility Print and Print Deploy server components are unaffected; Site Servers and secondary/print servers do need
+the same update as the primary Application Server
+([PaperCut Software, 2026-09-02](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
