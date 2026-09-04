@@ -320,6 +320,10 @@ NATIONAL_CERT_HOSTS: tuple[str, ...] = (
     "ccb.belgium.be", "safeonweb.be",
     "jpcert.or.jp",
     "cert.gov.ua",
+    # National data-protection / regulatory authorities disclosing their own
+    # sanction decisions for their own jurisdiction fit the same carve-out —
+    # added 2026-09-04 when CNIL's own sanction page was reporting as unearned.
+    "cnil.fr", "www.cnil.fr",
 )
 
 

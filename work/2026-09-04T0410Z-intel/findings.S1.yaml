@@ -1,0 +1,286 @@
+domain: S1
+run_id: 2026-09-04T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-04T04:13:28Z
+ended_at: 2026-09-04T04:28:34Z
+duration_seconds: 906
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 9
+  bridge_fetches: 46
+
+items:
+  - title: "CVE-2026-85046 — Google patches a Chrome V8 type-confusion flaw under active exploitation, delivered via a crafted HTML page"
+    sources:
+      - { url: "https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_01882797386.html", publisher: "Google Chrome Releases (vendor blog)", date: "2026-09-03", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-85046", publisher: "MITRE CVE Program (Chrome as CNA)", date: "2026-09-03", role: "primary" }
+      - { url: "https://securityonline.info/chrome-zero-day-vulnerability/", publisher: "Daily CyberSecurity (securityonline.info)", date: "2026-09-03", role: "corroborating" }
+    discovery_trace: "first seen at: chrome-releases, URL https://chromereleases.googleblog.com/2026/09/ (dated archive listing, direct transport since the Atom feed returned count=0 as in prior runs) → primary: Google Chrome Releases blog, URL https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_01882797386.html → corroboration: MITRE CVE record, URL https://cveawg.mitre.org/api/cve/CVE-2026-85046 → corroboration: WebSearch (\"CVE-2026-85046 Chrome V8 type confusion exploit wild\") → securityonline.info, URL https://securityonline.info/chrome-zero-day-vulnerability/. Note: a Field Effect article surfaced by the same search (fieldeffect.com/blog/vulnerability-in-chromes-v8-engine-actively-exploited) was checked and discarded — it covers a different, unrelated CVE (CVE-2025-13223, dated November 2025); flagging per the recycled-news trap discipline. Neither NCSC-NL's advisory feed nor CERT-FR's avis feed carried a dedicated bulletin for this release as of this run — the fix shipped only hours before the run window closed."
+    summary: |
+      Google shipped Chrome Stable 152.0.7977.82/.83 (Windows/Mac) and 152.0.7977.82 (Linux) on
+      2026-09-03, fixing 12 security bugs including CVE-2026-85046 — a type-confusion flaw in V8
+      (CWE-843) that lets a remote attacker execute arbitrary code inside the Chrome sandbox via a
+      crafted HTML page, CVSS 3.1 8.8 (AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H — network vector, low
+      complexity, no privileges, but requires the victim to open the malicious page). Google's own
+      release notes state plainly: "Google is aware that an exploit for CVE-2026-85046 exists in the
+      wild." The bug (Chromium issue 542403045) was reported by external researcher Salvatore Gulizia
+      ("Serotav") on 2026-08-04 and earned a $1,000 bounty; Google is withholding further technical
+      detail and the bug-tracker link pending majority-user patch uptake, per its standard restricted-
+      disclosure practice. The same release closes 11 other flaws (mostly High-severity use-after-free /
+      out-of-bounds issues in Compositing, WebGL, Skia, DevTools, CacheStorage and Network, one further
+      V8 race condition CVE-2026-85045 reported by Brendan Dolan-Gavitt/XBOW), none of which Google lists
+      as exploited. As with prior V8 zero-days, this is a sandbox-escape primitive rather than a
+      full chain by itself — attacker code executes inside the renderer sandbox, so combined exploitation
+      (a second bug to escape the sandbox, or targeting a Chromium-based app that runs with reduced
+      sandboxing) would be needed for full host compromise, though no source describes such chaining for
+      this specific CVE as of publication. Update applies to Chrome on Windows, Mac and Linux; other
+      Chromium-based browsers (Edge, Brave, Vivaldi, etc.) typically ship their own updates on a short lag
+      once the underlying Chromium patch lands — check each browser's own release notes rather than
+      assuming parity with Chrome's version number.
+    region_nexus: "global — Chrome is the dominant desktop/laptop browser across Swiss federal, cantonal and communal administration endpoints"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-85046, CVE-2026-85045, CVE-2026-85042, CVE-2026-85048, CVE-2026-85049, CVE-2026-85050, CVE-2026-85051, CVE-2026-85052, CVE-2026-85053, CVE-2026-85043, CVE-2026-85044, CVE-2026-85047]
+    techniques: [T1189, T1203]
+    affected_products: ["Google Chrome (Windows, Mac, Linux)"]
+    entity_keys: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Google is aware that an exploit for CVE-2026-85046 exists in the wild."
+        attribution: "Google Chrome Releases (vendor blog)"
+        source_url: "https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_01882797386.html"
+      - quote: "Type confusion in V8 in Google Chrome prior to 152.0.7977.82 allowed a remote attacker to execute arbitrary code inside the sandbox via a crafted HTML page."
+        attribution: "MITRE CVE record (Chrome CNA)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-85046"
+    extended_notes: |
+      Prioritise fleet-wide Chrome update verification over the next 24-48h — this is the highest-priority
+      item in this run given confirmed in-the-wild exploitation and the browser's ubiquity on
+      administrative endpoints. Detection angle: EDR/browser-crash telemetry for anomalous Chrome renderer
+      process crashes or unexpected child-process spawns from a Chrome renderer shortly after visiting an
+      untrusted URL is the generic V8-exploitation tell; Google withholds exploit specifics so no
+      more concrete IOC-free hunt hook is available yet. Hardening: enforce Chrome auto-update policy
+      (or push 152.0.7977.82+ via enterprise management) fleet-wide; extend the same check to any
+      Chromium-based browser in use (Edge, Brave, Vivaldi) since they inherit the same V8 codebase and
+      typically patch on a short lag.
+
+  - title: "CVE-2026-20212 — Cisco Nexus 9000 Series switches: unauthenticated root RCE via the Silicon One hardware-abstraction layer on TCP 43210/43211"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr", publisher: "Cisco PSIRT", date: "2026-09-02", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0338", publisher: "NCSC-NL", date: "2026-09-03", role: "corroborating" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1110/", publisher: "CERT-FR / ANSSI", date: "2026-09-03", role: "corroborating" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-20212", publisher: "MITRE CVE Program", date: "2026-09-02", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0338 (NCSC-2026-0338, published 2026-09-03T13:09Z, bundling three Cisco advisories) → pivot: NCSC-NL CSAF body via ncsc-nl csaf NCSC-2026-0338 → primary: Cisco PSIRT, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr → corroboration: CERT-FR, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1110/ → corroboration: MITRE CVE record, URL https://cveawg.mitre.org/api/cve/CVE-2026-20212"
+    summary: |
+      Cisco published cisco-sa-n9k-s1-rce-EH8dEtr on 2026-09-02 (16:00 GMT), disclosing CVE-2026-20212
+      (CVSS 3.1 9.8, CWE-1327 Binding to an Unrestricted IP Address), a flaw in the Silicon One ASIC
+      integration on Cisco Nexus 9000 Series switches. TCP ports 43210 and 43211 used by the S1HAL
+      (Silicon One Hardware Abstraction Layer) process are reachable in the default Layer 3 VRF; an
+      unauthenticated remote attacker who can reach either port can send crafted input that executes as
+      code with root privileges, or crash S1HAL and force the device to reload. Only switches carrying a
+      Silicon One ASIC are affected — Cisco names ten specific product IDs (N9324C-SE1U, N9348Y2C6D-SE1U,
+      N9364E-SG2-O, N9364E-SG2-Q, N9396T12C-SE1, N9348Y12C-SE1, N9396Y12C-SE1, N9336C-SE1, N9K-C9804,
+      N9K-C9808), determinable via `show module`. Cisco's own "Products Confirmed Not Vulnerable" section
+      explicitly excludes the Nexus 3000 and 7000 Series and all other Nexus 9000 models — a detail worth
+      flagging because MITRE's CVE record carries the title "Cisco Nexus 3000 and 9000 Series Switches
+      Silicon One Hardware Abstraction Layer Remote Code Execution Vulnerability," which conflicts with
+      the advisory body; the advisory's affected-products list, not the CVE title, is authoritative. The
+      flaw was found during a TAC support case (internal/non-malicious discovery, not external report),
+      and Cisco PSIRT states it is not aware of any public announcement or malicious use. Fixed NX-OS
+      software is available via Cisco's Software Checker; until upgraded, Cisco recommends infrastructure
+      ACLs (iACLs) that deny TCP destined to 43210/43211, or a temporary NX-OS "Live Protect" shield for
+      CVE-2026-20212. The same NCSC-NL bulletin (and the same CERT-FR advisory day) also carried two
+      lower-severity companion Cisco advisories from the same release cycle: an IOS XR hardening advisory
+      covering several configuration-dependent weaknesses, and a Cisco Secure Email S/MIME advisory that
+      only allows decryption/tampering of mail between gateways to an attacker already holding a
+      man-in-the-middle position.
+    region_nexus: "global — NX-OS data-center switches are deployed across European and Swiss public-sector and critical-infrastructure networks"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-20212]
+    techniques: [T1190]
+    affected_products: ["Cisco Nexus 9000 Series Switches (Silicon One ASIC models: N9324C-SE1U, N9348Y2C6D-SE1U, N9364E-SG2-O, N9364E-SG2-Q, N9396T12C-SE1, N9348Y12C-SE1, N9396Y12C-SE1, N9336C-SE1, N9K-C9804, N9K-C9808)"]
+    entity_keys: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This vulnerability exists because TCP ports 43210 and 43211 are accessible in the default Layer 3 (L3) virtual routing and forwarding (VRF). A successful exploit could allow the attacker to connect to an affected device and send crafted input that could be executed as code with root privileges."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr"
+      - quote: "The Cisco Product Security Incident Response Team (PSIRT) is not aware of any public announcements or malicious use of the vulnerability that is described in this advisory."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr"
+    extended_notes: |
+      Detection angle: monitor for any inbound TCP SYN/connection attempts to 43210/43211 on
+      management/control-plane VRF interfaces of Nexus 9000 switches from unexpected sources — these
+      ports have no legitimate business reason to be reached from outside the switch's own internal S1HAL
+      control path. Hardening: the iACL approach (deny destination TCP 43210/43211) is the durable fix
+      until firmware is upgraded; NX-OS "Live Protect" is described by Cisco as a bridging mitigation, not
+      a substitute for patching.
+
+  - title: "HPE Aruba Networking's September bundle: two CVSS 10.0 unauthenticated RCEs in Networking Fabric Composer (52-CVE bulletin) plus an unauthenticated buffer-overflow RCE in ArubaOS-CX switches"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/hpe-patches-critical-arubaos-cx-remote-code-execution-flaw/", publisher: "BleepingComputer", date: "2026-09-03", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-73749", publisher: "MITRE CVE Program (HPE CNA)", date: "2026-09-01", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-76658", publisher: "MITRE CVE Program (HPE CNA)", date: "2026-09-01", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-76657", publisher: "MITRE CVE Program (HPE CNA)", date: "2026-09-01", role: "primary" }
+      - { url: "https://gbhackers.com/critical-hpe-fabric-composer-flaw/", publisher: "GBHackers", date: "2026-09-02", role: "corroborating" }
+      - { url: "https://securityonline.info/hpe-fabric-composer-vulnerabilities/", publisher: "Daily CyberSecurity (securityonline.info)", date: "2026-09-01", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0340", publisher: "NCSC-NL", date: "2026-09-03", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0339", publisher: "NCSC-NL", date: "2026-09-03", role: "corroborating" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1104/", publisher: "CERT-FR / ANSSI", date: "2026-09-02", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0340 (ArubaOS-CX) and https://advisories.ncsc.nl/advisory?id=NCSC-2026-0339 (Fabric Composer), both published 2026-09-03 → pivot: WebSearch (\"HPE Networking Fabric Composer hpesbnw05133 vulnerabilities September 2026\") → pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/hpe-patches-critical-arubaos-cx-remote-code-execution-flaw/ → pivot: GBHackers, URL https://gbhackers.com/critical-hpe-fabric-composer-flaw/ → pivot: securityonline.info, URL https://securityonline.info/hpe-fabric-composer-vulnerabilities/ → primary: MITRE CVE records (HPE as CNA), URL https://cveawg.mitre.org/api/cve/CVE-2026-73749 and https://cveawg.mitre.org/api/cve/CVE-2026-76658 and https://cveawg.mitre.org/api/cve/CVE-2026-76657 → corroboration: CERT-FR, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1104/. Note: HPE's own bulletin pages (support.hpe.com hpesbnw05133en_us / hpesbnw05134en_us) sit behind an HPE support-portal login wall and could not be fetched directly; MITRE's CVE records (HPE as the assigning CNA) served as the vendor-authoritative primary instead."
+    summary: |
+      HPE published two Aruba-Networking security bulletins in the same release window (Fabric Composer
+      bulletin HPESBNW05133 on 2026-09-01; ArubaOS-CX bulletin HPESBNW05134 on/around 2026-09-01-02), both
+      picked up by NCSC-NL (advisories NCSC-2026-0339 and NCSC-2026-0340) and CERT-FR (CERTFR-2026-AVI-1104)
+      on 2026-09-02/03. HPE Networking Fabric Composer (AFC, the controller managing Aruba CX switch
+      fabrics) carries 52 CVEs in one bulletin, two of them CVSS 3.1 10.0: CVE-2026-76658 is an
+      authentication weakness in AFC's SSH daemon — an unauthenticated remote attacker connects with no
+      credentials, user interaction or preparation and executes arbitrary commands as a privileged OS
+      user, per MITRE's CVE record (CWE-287 Improper Authentication). CVE-2026-76657 is an API
+      authentication-bypass flaw letting an unauthenticated remote attacker circumvent AFC's API auth
+      controls and obtain administrative privileges, leading to complete host compromise. Three more rank
+      Critical: CVE-2026-19766 (9.6, adjacent-network auth bypass to privileged code execution in the
+      underlying OS), CVE-2026-73701 (9.0, unauthenticated privileged RCE with unspecified preconditions)
+      and CVE-2026-73700 (9.0, authenticated stored XSS reachable by a low-privilege operator against an
+      admin). Fixed in Fabric Composer 7.4.0 (or 7.3.4 for the 7.3 branch); versions 7.3.3 and earlier are
+      affected, discovered entirely by HPE's internal Networking security research team. Separately,
+      ArubaOS-CX — the network OS on Aruba's CX-series campus and data-center switches — carries
+      CVE-2026-73749 (CVSS 9.8): a buffer overflow in an unnamed AOS-CX daemon that an unauthenticated
+      remote attacker triggers by sending specially crafted packets, reaching remote code execution with
+      elevated privileges. Affected release branches and fixes per HPE's bulletin (via BleepingComputer):
+      10.18.0001→10.18.1002+, 10.17.1021 and earlier→10.17.1030+, 10.16.1051 and earlier→10.16.1060+,
+      10.13.1180 and earlier→10.13.1190+, 10.10.1180 and earlier→10.10.1181+ (this last branch is already
+      past HPE's End of Maintenance and receives only critical-severity fixes, a category CVE-2026-73749
+      qualifies for). The same ArubaOS-CX bulletin lists 23 further CVEs rated 8.1-8.8 High, including an
+      unauthenticated adjacent-network arbitrary file write via an API endpoint (CVE-2026-73752), an
+      unauthenticated format-string flaw in the CLI reachable from an adjacent network (CVE-2026-73782),
+      and an unauthenticated predictable factory-default password granting full admin control before an
+      administrator sets credentials post-ZTP (CVE-2026-73778). HPE states it is not aware of active
+      exploitation or public PoC code for either bulletin's flaws as of publication.
+    region_nexus: "global — HPE Aruba Networking switches and the Fabric Composer fabric controller are widely deployed in European and Swiss public-sector and enterprise data centers"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-76657, CVE-2026-76658, CVE-2026-19766, CVE-2026-73700, CVE-2026-73701, CVE-2026-73749, CVE-2026-73752, CVE-2026-73778, CVE-2026-73782]
+    techniques: [T1190]
+    affected_products: ["HPE Networking Fabric Composer", "HPE Aruba Networking AOS-CX"]
+    entity_keys: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A vulnerability has been identified in the SSH daemon of HPE Networking Fabric Composer that could allow an unauthenticated remote attacker to gain administrative access to vulnerable AFC hosts. Successful exploitation could allow an attacker to execute arbitrary commands as a privileged user on the underlying operating system leading to complete system compromise."
+        attribution: "HPE (MITRE CVE record for CVE-2026-76658)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-76658"
+      - quote: "Multiple vulnerabilities exist in a daemon of AOS-CX that may allow for improper processing of malformed input. An unauthenticated remote attacker could exploit these vulnerabilities by sending specially crafted packets to the affected service."
+        attribution: "HPE (MITRE CVE record for CVE-2026-73749)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-73749"
+      - quote: "HPE mentions that, at the time of the bulletin's publication, it was not aware of any public discussions or exploit code targeting these issues."
+        attribution: "GBHackers, relaying HPE's advisory"
+        source_url: "https://gbhackers.com/critical-hpe-fabric-composer-flaw/"
+    extended_notes: |
+      Detection angle: Fabric Composer sits in the network-management plane rather than on a single
+      application host — compromise grants control over the whole switch-fabric configuration
+      (segmentation, routing, persistence below typical EDR visibility). Recommended compensating
+      controls before patching (from vendor guidance relayed by nFlo/GBHackers): remove the AFC API and
+      web management interface from general-purpose networks onto a dedicated out-of-band management
+      segment; restrict SSH access to the AFC host by source address (CVE-2026-76658 has no
+      authentication factor to fall back on); review AFC operator accounts and host authentication logs
+      for administrative logins originating outside the management network; and diff the live fabric
+      configuration (VLANs, ACLs, routes) against an approved baseline as the most likely evidence of
+      exploitation. For ArubaOS-CX, note the CVE-2026-73778 factory-default-password issue specifically —
+      any switch left in factory-default or immediate post-Zero-Touch-Provisioning state before an
+      administrator sets credentials is fully exposed to a predictable-password admin takeover.
+
+  - title: "CVE-2026-67402 — ConfigServer Security & Firewall's Messenger v3 maps /usr/bin as CGI, giving a blocked visitor unauthenticated code execution as the Apache user"
+    sources:
+      - { url: "https://support.cpanel.net/hc/en-us/articles/43171958716439-Security-CSF-Security-Release-September-3rd-2026", publisher: "cPanel Support (WebPros)", date: "2026-09-03", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-67402", publisher: "MITRE CVE Program", date: "2026-09-03", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-88ch-qhvf-3vfj", publisher: "GitHub Advisory Database", date: "2026-09-03", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd API (recent criticals listing), record EUVD-2026-70850 (published 2026-09-03T23:57Z) → pivot: cPanel Support advisory, URL https://support.cpanel.net/hc/en-us/articles/43171958716439-Security-CSF-Security-Release-September-3rd-2026 → corroboration: MITRE CVE record, URL https://cveawg.mitre.org/api/cve/CVE-2026-67402 → corroboration: GitHub Advisory Database, URL https://github.com/advisories/GHSA-88ch-qhvf-3vfj → corroboration: WebSearch (\"CVE-2026-67402 ConfigServer Firewall CSF Messenger RCE\")"
+    summary: |
+      cPanel/WebPros published a security release on 2026-09-03 for CVE-2026-67402 (CVSS 4.0 9.2 Critical,
+      CWE-552 Files or Directories Accessible to External Parties) in ConfigServer Security & Firewall
+      (CSF), the widely-deployed Linux iptables/nftables firewall and intrusion-detection add-on used
+      heavily on cPanel/WHM shared-hosting servers. The flaw is an insecure Apache virtual-host
+      configuration: CSF's Messenger v3 HTTPS virtual host — the component that serves a "you have been
+      blocked" notice page to visitors CSF/LFD has blocked — maps the /usr/bin directory as CGI programs.
+      A remote unauthenticated attacker whose own address CSF has already blocked can request one of the
+      mapped executables and have it run as an arbitrary command with the privileges of the Apache user.
+      Two preconditions narrow the exposure: Messenger v3 and its HTTPS mode must be enabled (cPanel
+      states the MESSENGER service is disabled by default), and CVSS4's Attack Requirements sub-score is
+      marked Present, reflecting that the requesting IP must already be in a blocked state for the
+      vulnerable code path to serve the request. Affected versions run 14.02 through 16.30-1; fixed in
+      16.31, obtainable via the standard cPanel `/scripts/update-packages` update path. Where immediate
+      updating is not possible, cPanel's documented interim mitigation is to set `MESSENGERV3 = 0` in
+      /etc/csf/csf.conf and restart csf/lfd. No source reports observed exploitation or public
+      proof-of-concept as of publication; the CVE was assigned via HackerOne.
+    region_nexus: "global — CSF is deployed on a large population of cPanel/WHM-based Linux web-hosting servers, including shared hosting that may serve smaller Swiss public-sector or municipal web properties"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-67402]
+    techniques: [T1190]
+    affected_products: ["ConfigServer Security & Firewall (CSF)"]
+    entity_keys: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "An insecure Apache configuration in ConfigServer Security & Firewall maps /usr/bin as CGI programs through the Messenger v3 HTTPS virtual host. A remote unauthenticated attacker whose address is blocked can request a mapped executable and run arbitrary commands as the Apache user."
+        attribution: "MITRE CVE record (CVE-2026-67402), sourced from cPanel/WebPros"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-67402"
+      - quote: "Note: By default, the MESSENGER service is disabled."
+        attribution: "cPanel Support"
+        source_url: "https://support.cpanel.net/hc/en-us/articles/43171958716439-Security-CSF-Security-Release-September-3rd-2026"
+    extended_notes: |
+      Hunt angle: Apache access logs on CSF-protected hosts showing requests to Messenger's HTTPS virtual
+      host resolving to paths under /usr/bin (or any /cgi-bin/-style mapping outside the expected web
+      root) are the discriminator; legitimate Messenger traffic only ever serves the static block-notice
+      page, never an executable path. Hardening: audit any host running CSF for MESSENGERV3 enablement
+      before assuming this doesn't apply — cPanel's hosting customers who enabled the friendlier
+      HTTPS block-page feature are the population actually exposed.
+    borderline: true
+    borderline_reason: "CVSS 9.2 unauthenticated RCE, but two stacked preconditions (feature disabled by default; attacker's own IP must already be CSF-blocked to reach the vulnerable code path) meaningfully narrow real-world exposure versus a straightforward pre-auth RCE"
+
+cve_table:
+  - { cve: "CVE-2026-85046", product: "Google Chrome (V8 engine)", cvss: "8.8", epss: null, kev: false, exploited: true, patch: "152.0.7977.82 (Linux) / 152.0.7977.82-.83 (Windows/Mac)", source: "https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_01882797386.html" }
+  - { cve: "CVE-2026-20212", product: "Cisco Nexus 9000 Series (Silicon One ASIC models)", cvss: "9.8", epss: null, kev: false, exploited: false, patch: "NX-OS fixed release via Cisco Software Checker; iACL/Live Protect interim mitigation", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr" }
+  - { cve: "CVE-2026-73749", product: "HPE Aruba Networking AOS-CX", cvss: "9.8", epss: null, kev: false, exploited: false, patch: "10.18.1002+ / 10.17.1030+ / 10.16.1060+ / 10.13.1190+ / 10.10.1181+", source: "https://cveawg.mitre.org/api/cve/CVE-2026-73749" }
+  - { cve: "CVE-2026-76657", product: "HPE Networking Fabric Composer", cvss: "10.0", epss: null, kev: false, exploited: false, patch: "7.4.0 or 7.3.4+", source: "https://cveawg.mitre.org/api/cve/CVE-2026-76657" }
+  - { cve: "CVE-2026-76658", product: "HPE Networking Fabric Composer", cvss: "10.0", epss: null, kev: false, exploited: false, patch: "7.4.0 or 7.3.4+", source: "https://cveawg.mitre.org/api/cve/CVE-2026-76658" }
+  - { cve: "CVE-2026-19766", product: "HPE Networking Fabric Composer (underlying OS)", cvss: "9.6", epss: null, kev: false, exploited: false, patch: "7.4.0 or 7.3.4+", source: "https://gbhackers.com/critical-hpe-fabric-composer-flaw/" }
+  - { cve: "CVE-2026-67402", product: "ConfigServer Security & Firewall", cvss: "9.2", epss: null, kev: false, exploited: null, patch: "16.31", source: "https://cveawg.mitre.org/api/cve/CVE-2026-67402" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "product watchlist is empty per org-profile (none configured) — no-op sweep, per spawn instructions; general S1 coverage above applied unchanged"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "6th consecutive run: Cloudflare-class anti-bot interstitial on both the direct bridge (`url`) and the jina reader fallback for the listing page (https://ssd-disclosure.com/); no per-article URL was in hand to test directly. Not demoted per prior rotation notes — this is a 403/429-class block, not a dead recipe."
+  - source_id: cisa-advisories
+    reason: "www.cisa.gov/news-events/cybersecurity-advisories and the /directives page both return only their filter-facet shell content, not the actual advisory/directive listing rows, on every transport tried this run (bridge `cisa page`). Consistent with prior runs' 403/JS-shell condition. CISA KEV JSON feed (unaffected by this) was checked separately and confirmed 0 new additions in-window."
+  - source_id: cisa-directives
+    reason: "Same condition as cisa-advisories above — the directives listing returned only historical/superseded directive summaries (Feb-May 2026 vintage, e.g. ED 26-03 originally issued 2026-02-25) with no way to confirm whether anything newer exists behind the blocked transport."
+
+backlog_note: |
+  Re-checked CVE-2026-16242 (Red Hat OpenShift/HyperShift Konnectivity proxy) per the backlog tasking.
+  Material correction to the backlog's running assessment: Red Hat's own CVE JSON
+  (https://access.redhat.com/hydra/rest/securitydata/cve/CVE-2026-16242.json) lists 16 affected_release
+  records with real RHSA fix advisories — Red Hat OpenShift Container Platform 4.14 through 4.22 (RHSA
+  advisories dated 2026-08-04 through 2026-08-26) and multicluster engine for Kubernetes 2.6 through 2.17
+  (RHSA advisories dated 2026-07-27 through 2026-07-29). This contradicts the backlog's repeated
+  2026-09-02/2026-09-03 notes stating "still mitigation-only, no fixed version" — fixed OpenShift releases
+  have existed since early August 2026. No exploitation evidence found (still none reported by any
+  source). Recommend the backlog row be corrected to record the fix status rather than carried forward
+  with the "no fixed version" claim; not raised as a fresh in-window item since the RHSA fixes themselves
+  are 1-4 weeks old and there is no new exploitation development to anchor recency.

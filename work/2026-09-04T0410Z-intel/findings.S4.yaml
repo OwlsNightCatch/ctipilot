@@ -1,0 +1,112 @@
+domain: S4
+run_id: 2026-09-04T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-04T04:14:01Z
+ended_at: 2026-09-04T04:22:47Z
+duration_seconds: 526
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 9
+  bridge_fetches: 26
+
+items:
+  - title: "CNIL fines HÔPITAL PRIVÉ DE LA LOIRE EUR 500,000 over a 727,000-record breach traced to a single unprotected doctor account on its external patient-record portal"
+    sources:
+      - { url: "https://www.cnil.fr/en/sanction-fine-hopital-prive-loire", publisher: "CNIL (French data protection authority)", date: "2026-09-03", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/french-hospital-fined-500-000-after-breach-exposes-data-of-727-000/", publisher: "BleepingComputer", date: "2026-09-03", role: "corroborating" }
+      - { url: "https://databreaches.net/2026/09/03/cnil-health-data-breach-e500000-fine-imposed-on-the-loire-private-hospital/", publisher: "DataBreaches.net", date: "2026-09-03", role: "corroborating" }
+    discovery_trace: "first seen at: cnil-fr, URL https://www.cnil.fr/en/news → primary: CNIL sanction page, URL https://www.cnil.fr/en/sanction-fine-hopital-prive-loire; independently cross-checked at: databreaches-net, URL https://databreaches.net/feed/ → pivot: databreaches.net article, URL https://databreaches.net/2026/09/03/cnil-health-data-breach-e500000-fine-imposed-on-the-loire-private-hospital/ → pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/french-hospital-fined-500-000-after-breach-exposes-data-of-727-000/"
+    summary: |
+      France's CNIL imposed a EUR 500,000 GDPR fine on 3 September 2026 against Hôpital privé de la Loire (HPL, Saint-Étienne, part of the Ramsay Santé group) over a summer-2025 breach of its externally-reachable electronic patient record (Dossier Patient Informatisé / DPI) system, which exposed 524,867 patients' records and 202,246 people designated as "trusted third parties" (727,113 individuals total). CNIL's own investigation found the authentication procedure for external users — used by private-practice physicians accessing the DPI from outside the hospital — required no VPN and no multi-factor authentication; the attacker used the credentials of a single compromised physician account to authenticate. The access-control model then compounded the exposure: it had no concept of "care team" restricting an account to the patients that physician actually treats, so one set of valid credentials opened every hospital patient's record rather than a bounded subset. With no real-time or near-real-time anomaly detection on the DPI, the attacker was able to enumerate and extract records for several days undetected. CNIL separately sanctioned HPL under GDPR Article 34 for notifying only the direct patients affected and never notifying the 202,246 "trusted third parties" whose data was also taken. A self-identified attacker using the alias "Marak" told the French outlet Le Progrès via Telegram at the time (2025) that the intrusion began with a single doctor's account and that the data was ultimately neither sold nor published — an unconfirmed criminal self-claim, consistent with but not independently verified against CNIL's own findings. CNIL has given HPL three to fifteen months (depending on measure type) to complete the remediation it began during the proceedings.
+    region_nexus: "France (EU); direct structural analogue for any Swiss cantonal/regional hospital exposing an EPR/DPI to external private-practice physicians"
+    primary_sector_nexus: "indirect"
+    sector: "healthcare"
+    cves: []
+    techniques: [T1078, T1213]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:hopital-prive-de-la-loire-dpi-breach-2025", type: incident, name: "Hôpital privé de la Loire (Ramsay Santé) DPI breach and 2026 CNIL sanction", aliases: ["HPL breach", "Loire private hospital breach"],
+          summary: "Summer-2025 breach of Hôpital privé de la Loire's externally-reachable electronic patient record system via a single compromised physician account lacking VPN/MFA, exposing 727,113 individuals' data; sanctioned by CNIL with a EUR 500,000 GDPR fine on 2026-09-03 for Article 32 and 34 failures (CNIL, BleepingComputer, 2026-09-03)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The authentication procedure to connect to the hospital's e-Health Patient Summary, used by users outside the hospital, in particular liberal doctors, was not sufficiently robust, due to the lack of VPNs and multifactor authentication means. The attacker took advantage of this vulnerability to access the data."
+        attribution: "CNIL"
+        source_url: "https://www.cnil.fr/en/sanction-fine-hopital-prive-loire"
+      - quote: "This lack of access limitation allowed the attacker, using the credentials of a single user account, to access the data of all hospital patients."
+        attribution: "CNIL"
+        source_url: "https://www.cnil.fr/en/sanction-fine-hopital-prive-loire"
+      - quote: "A teen hacker using the alias \"Marak\" claimed responsibility, contacting the French outlet Le Progrès over Telegram at the time and saying the attack began with a breach of a single doctor's account, which allowed access to HPL's entire internal system."
+        attribution: "BleepingComputer (Bill Toulas)"
+        source_url: "https://www.bleepingcomputer.com/news/security/french-hospital-fined-500-000-after-breach-exposes-data-of-727-000/"
+    extended_notes: |
+      Detection concept (telemetry class first): application-layer access logs on the EPR/DPI for per-account record-read volume and velocity — a single account reading records outside its declared care-team roster, or reading more than a handful of distinct patient records within a short session, is the discriminator; the CNIL finding states explicitly that no such real-time/near-real-time alerting existed here, which is what let extraction run over "several days" undetected. Benign lookalike: a physician legitimately covering for a colleague or consulting on a transferred patient will show occasional multi-patient access, but not the sustained, broad, multi-day sweep CNIL describes. Hardening levers named or implied by CNIL's own order: enforce VPN + MFA for any external/remote authentication path into a clinical record system; implement care-team-scoped access control (RBAC bound to actual treatment relationships) rather than blanket all-patient visibility per credential; deploy anomaly/DLP alerting on the record-access application itself, not just network perimeter; and extend Article 34 breach notification to every category of data subject whose data was taken, not only the primary patient population. Directly transferable to any Swiss cantonal or regional hospital (a "public institution" under this pipeline's constituency) that exposes an EPR to external private-practice physicians on a similar model.
+
+  - title: "Thomson Reuters C-Track case-management breach reaches appellate court systems in a dozen US states plus the US Virgin Islands and Ontario, Canada — access vector not yet disclosed"
+    sources:
+      - { url: "https://www.technadu.com/thomson-reuters-discloses-court-records-breach-spanning-11-states-the-virgin-islands-and-ontario/634953/", publisher: "TechNadu", date: "2026-09-03", role: "primary" }
+      - { url: "https://databreaches.net/2026/09/03/north-dakota-supreme-court-impacted-by-third-party-data-breach-that-has-affected-dozens-of-states/", publisher: "DataBreaches.net", date: "2026-09-03", role: "corroborating" }
+    discovery_trace: "first seen at: technadu, URL https://www.technadu.com/feed/ → primary: TechNadu article, URL https://www.technadu.com/thomson-reuters-discloses-court-records-breach-spanning-11-states-the-virgin-islands-and-ontario/634953/; independently cross-checked at: databreaches-net, URL https://databreaches.net/feed/ → pivot: databreaches.net article, URL https://databreaches.net/2026/09/03/north-dakota-supreme-court-impacted-by-third-party-data-breach-that-has-affected-dozens-of-states/ (both cite Reuters' own reporting at https://www.reuters.com/legal/litigation/thomson-reuters-detects-cybersecurity-incident-says-unauthorized-party-accessed-2026-09-03/, which was attempted directly and returned a CAPTCHA/paywall wall on every transport tried — not independently re-read)"
+    summary: |
+      Thomson Reuters disclosed on 2 September 2026 (public court-system notices went out same day; company notice referenced 3 September) that an unauthorized party obtained files from C-Track — its West Publishing unit's case-management/e-filing platform used by appellate courts — during a window running 1 March to 29 June 2026, discovered 30 June. Affected court systems span at least eleven or twelve US jurisdictions (Alabama, Pennsylvania, Kentucky, Montana, Nevada, North Dakota, South Carolina, Tennessee, Ohio, New Hampshire, Wyoming reported by name) plus the US Virgin Islands, and separately Ontario, Canada, where Thomson Reuters detected unauthorized activity in one of its cloud environments and worked with Ontario's Ministry of the Attorney General to contain it. Exposed data includes names, dates of birth and driver's license numbers alongside otherwise-public docket data. Thomson Reuters states the access originated on its own C-Track/E-Filing backup storage and cloud environment rather than through any vulnerability in state court networks, and reports no operational disruption to C-Track itself.
+    region_nexus: "US/Canada — no direct Swiss nexus, but the shape (a single case-management/e-filing SaaS vendor serving many separate government court jurisdictions, compromised at the vendor's own backend rather than any one court's network) is a concentration-risk pattern already recurring in this store's coverage of shared public-sector platforms"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: ["Thomson Reuters C-Track"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:thomson-reuters-ctrack-court-breach-2026", type: incident, name: "Thomson Reuters C-Track court case-management platform breach (2026)", aliases: ["C-Track breach"],
+          summary: "Unauthorized access to Thomson Reuters' C-Track case-management/e-filing backup and cloud storage between 1 March and 29 June 2026, exposing court records (names, DOB, driver's-license numbers) across a dozen US state appellate court systems, the US Virgin Islands and Ontario, Canada; disclosed 2026-09-02/03. No access vector or attacker identity disclosed as of surfacing (TechNadu, DataBreaches.net, 2026-09-03)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Thomson Reuters said third parties gained unauthorized access to C-Track and E-Filing backup data, which was stored on TR's servers, indicating the data breach originated on its own storage servers rather than through any vulnerability in state court networks."
+        attribution: "TechNadu (Lore Apostol)"
+        source_url: "https://www.technadu.com/thomson-reuters-discloses-court-records-breach-spanning-11-states-the-virgin-islands-and-ontario/634953/"
+      - quote: "Thomson Reuters says an unauthorised party got into files belonging to C-Track, the case management platform its court software business sells to judiciaries. The records involved come from appellate courts in a dozen US jurisdictions and from Ontario, Canada."
+        attribution: "DataBreaches.net"
+        source_url: "https://databreaches.net/2026/09/03/north-dakota-supreme-court-impacted-by-third-party-data-breach-that-has-affected-dozens-of-states/"
+    extended_notes: |
+      Flagged borderline rather than a clean publish: no source names an access vector, exploitation technique, or attacker identity — Thomson Reuters only characterises the access as originating on its own backend storage/cloud environment, not through a state-court-side vulnerability. This is the same blocking condition already tracked on this run's backlog for the Boston Scientific and IDScan.net items (an `incident` entry needs an evidence-bound ATT&CK mapping; none of the three sources reachable this run supply one). Recommend a coverage-backlog row rather than a store `incident` entry today, with a re-check for Thomson Reuters' own incident notice, a state court system's own statement, or forensic detail naming a mechanism. Reuters' own reporting (the apparent originating primary both secondary sources cite) could not be read this run — it returned a CAPTCHA/paywall wall on the bridge's reader-fallback transport; worth a retry on a later fire.
+    borderline: true
+    borderline_reason: "No stated access vector/attacker identity (mirrors the already-tracked Boston Scientific/IDScan.net blocking pattern); global/multi-jurisdiction court-system scale and third-party-SaaS concentration-risk shape argue for a backlog row over an outright drop."
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Supplier watchlist is empty (none configured) per this deployment's org profile — no-op sweep as instructed; no watchlist hits invented."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: reuters-thomson-reuters-ctrack-primary
+    reason: "https://www.reuters.com/legal/litigation/thomson-reuters-detects-cybersecurity-incident-says-unauthorized-party-accessed-2026-09-03/ (the apparent originating primary for the Thomson Reuters C-Track item, cited by both TechNadu and DataBreaches.net) returned a CAPTCHA/paywall interstitial via the bridge's reader-fallback transport on the one attempt made; not retried a second time per the one-retry cap. Item was still published (borderline) on the two secondary sources' direct quotes of the company/court statements."
+
+backlog_rechecks:
+  - item: "Boston Scientific cybersecurity incident (2026-08-25)"
+    result: "no change — re-fetched SecurityWeek's 2026-08-31 recap and re-searched for a fresh update; still no attacker attribution, ransomware family, access vector, or SEC 8-K/A amendment beyond the original filing. 'It's still unclear who is behind the attack. No known cybercrime group appears to have taken credit for the breach.' (SecurityWeek, 2026-08-31). Blocking condition unchanged."
+  - item: "TheGentlemen ransomware — Ixa Systems SA (Crissier, VD)"
+    result: "no change — re-searched for a victim statement or French/German-Swiss press pickup; only ransomware.live's original 2026-08-30 listing and company-directory pages found. No independent journalism, no statement from Ixa Systems."
+  - item: "Krybit ransomware — UICC (Geneva)"
+    result: "no change — re-fetched uicc.org directly (no incident notice on the homepage) and re-searched; only leak-site trackers (ransomware.live, brinztech.com, redpacketsecurity.com) repeat the claim, no data samples, no Admiralty A/B journalism pickup."
+  - item: "IDScan.net breach (153M+ driver's-license scans)"
+    result: "substantial new reporting found (TechTimes, 2026-09-03, via Krebs/Zach Edwards forensic work: timestamp-based confirmation the leaked images match specific individuals' real Hertz-counter and dispensary encounters, DoD confirming it is evaluating exposure of a Defense Secretary's and an FBI assistant director's licenses, Louisiana breach-notification-law deadline analysis) but still NO access vector or intrusion technique disclosed by IDScan.net, the FBI, or any investigator — 'The actual technical method of how attackers accessed the systems has not been publicly disclosed... IDScan.net has not confirmed the breach or its scope.' Blocking condition for an evidence-bound ATT&CK mapping remains unchanged; not published as an incident this run."
+  - item: "Kairos extortion — Ville de Libercourt (France, claimed 817 GB)"
+    result: "no change — re-searched French press (La Voix du Nord, France 3 Hauts-de-France); found only the same ransomware.live listing and aggregator reposts (DeXpose, RedPacketSecurity). No commune statement, no independent journalism."
+
+notes_for_main_agent: |
+  Checked and deliberately NOT surfaced as a finding: Novocure (Baar, Switzerland-HQ'd oncology medtech) ShinyHunters extortion/data-exposure disclosure — SEC 8-K filed 2026-09-01, BleepingComputer/HIPAA Journal coverage 2026-09-01/09-02, inside-it.ch coverage 2026-09-02T13:24Z. All freshest available sources fall outside this run's 26h window (window start ~2026-09-03T02:11Z); appears to be a genuine miss from the 2026-09-03 fire (inside-it.ch was whole-host rate-limited that day per its source note). Not an update-of an existing entry (none exists). Flagging for awareness only, per the recency-drop rule — not included as an item and not recommended for a backlog row given it is now over 24h stale with no fresh delta.
+  France SDIS data-leak campaign (campaign:france-sdis-data-leaks-2026): re-checked via WebSearch; the "new wave of seven SDIS" (Gard, Bouches-du-Rhône, Bas-Rhin, Moselle, Vosges, Somme, Essonne) already matches this run's existing entity summary — no material delta found today.
+  Swiss items surfaced by search (Martigny-Combe email compromise, Graubünden SharePoint incident, cantonal eAutoIndex vehicle-registry data harvesting) are all already tracked in prior_coverage.json under separate entries — confirmed no new development on any of them this run.
+  ransomware.live recentvictims API sweep (2026-09-02 through 2026-09-03) surfaced no new Swiss victims and no new EU public-sector victims beyond the already-tracked Ville de Libercourt (Kairos) claim.
+  SEC EDGAR full-text search for Item 1.05 (material cybersecurity incident) 8-K filings, 2026-09-02 through 2026-09-04: zero hits.
