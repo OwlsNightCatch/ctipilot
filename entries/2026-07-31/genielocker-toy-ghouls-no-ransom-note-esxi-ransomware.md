@@ -12,8 +12,11 @@ summary: >
   terminating on any mismatch; and it writes no ransom note at all, which Kaspersky reads as a deliberate move
   against detections that trigger on mass readme creation. The analysed intrusion began with valid stolen
   credentials over a partner's OpenVPN connection, and the operators reached the KeePassXC database already
-  installed on compromised machines.
+  installed on compromised machines. The group has since fielded two new backdoors, mqtt-bird-agent and
+  matrix-bird-agent, that route command-and-control through a public MQTT broker and a Matrix/Element
+  homeserver respectively, deployed onto already-compromised hosts over WinRM.
 discovered_at: "2026-07-31T04:09:14Z"
+updated_at: "2026-09-05T05:05:00Z"
 event_date: "2026-07-30"
 run_id: 2026-07-31T0409Z-intel
 priority: notable
@@ -21,14 +24,18 @@ immediate_action: null
 tags: [ransomware, organized-crime, supply-chain]
 regions: [russia-cis]
 sectors: [manufacturing]
-entities: [actor:toy-ghouls, malware:genielocker]
-techniques: [T1199, T1078, T1555.005, T1003.001, T1021.001, T1021.004, T1569.002, T1570, T1572, T1622, T1489, T1046, T1486]
+entities: [actor:toy-ghouls, malware:genielocker, tool:mqtt-bird-agent, tool:matrix-bird-agent]
+techniques: [T1199, T1078, T1555.005, T1003.001, T1021.001, T1021.004, T1021.006, T1569.002, T1570, T1572, T1622, T1489, T1046, T1486, T1059.001, T1102.002, T1543.003]
 affected_products: ["VMware ESXi"]
 cves: []
 sources:
   - url: "https://securelist.com/genielocker-ransomware-for-windows-linux-and-esxi/120843/"
     publisher: "Kaspersky Securelist"
     date: "2026-07-30"
+    role: primary
+  - url: "https://securelist.com/toy-ghouls-new-hivemq-and-element-backdoors/121270/"
+    publisher: "Kaspersky Securelist (GERT)"
+    date: "2026-09-04"
     role: primary
 closed_sources: []
 evidence:
@@ -38,6 +45,18 @@ evidence:
     publisher: "Kaspersky Securelist"
   - quote: "GenieLocker doesn't save the ransom notes on the victim's system. The Trojan doesn't contain any attackers' contact info or negotiation addresses. Instead, the attackers will need to deliver the ransom demands and contacts manually during the attack."
     publisher: "Kaspersky Securelist"
+  - quote: "In this campaign, the attackers use Windows Remote Management (WinRM) to deliver the backdoors and their configuration files to compromised systems. The group relies on open-source tools such as Evil-WinRM and WinRM-fs to do this."
+    publisher: "Kaspersky Securelist (GERT)"
+    source_url: "https://securelist.com/toy-ghouls-new-hivemq-and-element-backdoors/121270/"
+  - quote: "applying the ChaCha20-Poly1305 algorithm with a key derived from the value of the HKLM\\Software\\Microsoft\\Cryptography\\MachineGuid registry key"
+    publisher: "Kaspersky Securelist (GERT)"
+    source_url: "https://securelist.com/toy-ghouls-new-hivemq-and-element-backdoors/121270/"
+  - quote: "Commands are executed via PowerShell.exe in hidden mode, using the `-NonInteractive -NoProfile -Command` parameters."
+    publisher: "Kaspersky Securelist (GERT)"
+    source_url: "https://securelist.com/toy-ghouls-new-hivemq-and-element-backdoors/121270/"
+  - quote: "We continue tracking the activity of Toy Ghouls (also known as Bearlyfy, Laboo.boo, and Feral Wolf)"
+    publisher: "Kaspersky Securelist (GERT)"
+    source_url: "https://securelist.com/toy-ghouls-new-hivemq-and-element-backdoors/121270/"
 verification: single-source
 sourcing_note: >
   [SINGLE-SOURCE: Kaspersky Securelist] — first-party malware and incident analysis, published 2026-07-30. One
@@ -55,6 +74,20 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
+updates:
+  - at: "2026-09-05T05:05:00Z"
+    run_id: 2026-09-05T0409Z-intel
+    type: update
+    summary: >
+      Kaspersky's GERT team documents two new Toy Ghouls backdoors, mqtt-bird-agent and
+      matrix-bird-agent, deployed onto already-compromised Windows hosts over WinRM using
+      Evil-WinRM and WinRM-fs. Both route command-and-control through legitimate, widely-trusted
+      services — a public MQTT broker and a Matrix/Element homeserver — to blend into normal
+      egress traffic; both persist as Windows services, protect their configuration with
+      MachineGuid-keyed ChaCha20-Poly1305 encryption, and execute tasking through hidden
+      PowerShell sessions. Kaspersky's own article names a fourth alias, Feral Wolf, not
+      previously recorded for this actor.
+    fields: [updated_at, summary, techniques, entities, sources, evidence, body]
 migrated_from: null
 ---
 
@@ -73,3 +106,9 @@ The intrusion around it is conventional and, for this constituency, the most fam
 **Triage:** administrators use PsExec, and virtual machines are shut down for maintenance every day. The discriminators are direction and breadth — legitimate PsExec runs originate from a known management host to a bounded set of targets, whereas deployment here fans out from a recently-compromised workstation to everything reachable; and maintenance shutdowns are scheduled, announced in change records, and followed by boots rather than by datastore writes. For the password-manager signal the discriminator is the accessing process: the user's own manager opening its database is normal, a scripted or remote-execution parent doing it is not.
 
 **Defender takeaway:** two items for anyone whose ransomware detection strategy predates this year. First, if the mass-readme heuristic is doing meaningful work in your stack, it is now a single point of failure — this family is explicitly engineered against it, and the fallback needs to be encryption-behaviour and hypervisor-state telemetry. Second, the initial access here was a partner's VPN credentials that still worked, which is the same trusted-third-party path that reached a Swiss rail manufacturer this month; third-party VPN accounts deserve the same conditional-access and session-lifetime treatment as employee accounts, and the review that matters is whether a partner account that has not been used in months can still authenticate at all.
+
+## Update — 2026-09-05T05:05:00Z
+
+Kaspersky's GERT team documents two previously undocumented backdoors fielded by Toy Ghouls — internally named mqtt-bird-agent and matrix-bird-agent — pushed onto already-compromised Windows hosts over WinRM: "in this campaign, the attackers use Windows Remote Management (WinRM) to deliver the backdoors and their configuration files to compromised systems. The group relies on open-source tools such as Evil-WinRM and WinRM-fs to do this" ([Kaspersky Securelist, 2026-09-04](https://securelist.com/toy-ghouls-new-hivemq-and-element-backdoors/121270/)). This is a lateral-movement and deployment step onto hosts the group already controls, not a new initial-access vector. The MQTT variant uses the public HiveMQ broker (broker.hivemq.com) as its command-and-control channel; the Matrix variant instead uses an attacker-controlled Matrix/Element homeserver. Both install as a Windows service for persistence and protect their configuration by "applying the ChaCha20-Poly1305 algorithm with a key derived from the value of the HKLM\Software\Microsoft\Cryptography\MachineGuid registry key," binding the configuration to the specific machine. Operator tasking executes through hidden PowerShell sessions: "commands are executed via PowerShell.exe in hidden mode, using the `-NonInteractive -NoProfile -Command` parameters." The reusable defender takeaway is architectural: both variants route C2 through legitimate, widely-trusted internet services — a public IoT message broker, a public chat federation protocol — specifically to blend into normal egress traffic and evade domain/IP-based blocking. Kaspersky's own article names a fourth alias for the group, Feral Wolf, alongside the previously recorded Bearlyfy, Labubu and Laboo.boo.
+
+**Detection:** outbound TLS/TCP sessions to a public MQTT broker (typically port 8883/1883) or to a Matrix homeserver's federation/client API endpoints from a host with no legitimate business reason to speak either protocol is anomalous and a high-yield pivot point given near-zero baseline MQTT or Matrix egress in most enterprise environments. On the endpoint: WinRM-based remote command or file-transfer activity (Windows Remote Management event logs, process-creation events for `wsmprovhost.exe` spawning a new service) followed by that service spawning hidden, non-interactive PowerShell children is the deployment signature.

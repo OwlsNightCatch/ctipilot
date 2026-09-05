@@ -13,7 +13,7 @@ summary: >
   before detection; Berlin's government has publicly refused the roughly EUR 2 million ransom
   demand.
 discovered_at: "2026-08-30T04:35:00Z"
-updated_at: null
+updated_at: "2026-09-05T04:50:00Z"
 event_date: "2026-08-28"
 run_id: 2026-08-30T0410Z-intel
 priority: high
@@ -54,6 +54,10 @@ sources:
     publisher: "CISA / FBI / Multi-State ISAC"
     date: "2025-04-30"
     role: corroborating
+  - url: "https://www.heise.de/news/Berliner-Senat-zahlt-nicht-sensible-Daten-jetzt-im-Darknet-11442286.html"
+    publisher: "heise online"
+    date: "2026-09-04"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "The attackers apparently gained access to the Landesnetz through an employee's click on a phishing email."
@@ -70,6 +74,14 @@ evidence:
     original: "Experten identifizierten die Ransomware Rhysida als das Werkzeug, mit dem die Systeme verschlüsselt und die Daten entwendet wurden."
     publisher: "BornCity"
     source_url: "https://borncity.com/news/berlin-cyberangriff-rhysida-fordert-2-millionen-euro-fuer-57-tb-daten/"
+  - quote: "All files have been uploaded to the publicly accessible area — have fun browsing, data hunters!"
+    original: "Alle Dateien wurden im öffentlich zugänglichen Bereich hochgeladen – viel Spaß beim Stöbern, Datenjäger!"
+    publisher: "Rhysida leak-site posting, via heise online"
+    source_url: "https://www.heise.de/news/Berliner-Senat-zahlt-nicht-sensible-Daten-jetzt-im-Darknet-11442286.html"
+  - quote: "Based on what I can see here now, they have put the complete dataset online for everyone to view"
+    original: "Nach dem, was ich jetzt hier sehen kann, haben sie den kompletten Datensatz für alle zur Einsicht live gestellt"
+    publisher: "Joachim Selzer, Chaos Computer Club spokesperson, via heise online (dpa)"
+    source_url: "https://www.heise.de/news/Berliner-Senat-zahlt-nicht-sensible-Daten-jetzt-im-Darknet-11442286.html"
 verification: multi-source
 sourcing_note: >
   The phishing access vector and the Rhysida attribution are both sourced to investigative
@@ -92,7 +104,19 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-05T04:50:00Z"
+    run_id: 2026-09-05T0409Z-intel
+    type: update
+    summary: >
+      Rhysida's ultimatum lapsed on 2026-09-04 after Berlin's Senate refused to pay; the group
+      then published the full stolen dataset on its darknet leak site, replacing its prior
+      partial "auction" listing. Chaos Computer Club spokesperson Joachim Selzer confirmed the
+      complete dataset is now publicly accessible to anyone, but whether it actually contains the
+      drinking-water vulnerability analyses and administration credentials the group had earlier
+      claimed remains what the Senate itself must still verify, per a state-parliament faction
+      leader's own account.
+    fields: [updated_at, sources, evidence, body]
 migrated_from: null
 ---
 
@@ -105,3 +129,7 @@ CrowdStrike is conducting a forensic investigation across every Senate departmen
 **Defender takeaway:** the exposure pattern here, a single employee's phishing click reaching a shared administrative network broad enough to threaten a different department's critical-infrastructure and judiciary holdings, is directly transferable to any DACH shared-network government architecture, including Swiss cantonal and federal administrative networks: segment administrative domains so that one credential or endpoint compromise cannot reach unrelated departments' sensitive holdings, and verify that phishing-resistant multi-factor authentication and out-of-band verification cover every remote-access and VPN path that Rhysida's documented playbook targets.
 
 **Triage:** the confirmed mechanism, a user-driven phishing-email click followed by multi-day bulk data exfiltration, surfaces at the point of delivery in mail-flow and attachment-sandboxing logs, and in network-egress and data-loss-prevention telemetry as a sustained high-volume outbound transfer from a single department's network segment; neither cited source states what executed after the click, so no process-level discriminator is offered here.
+
+## Update — 2026-09-05T04:50:00Z
+
+Rhysida's one-week ultimatum expired on 2026-09-04 at roughly 15:35 local time; the Berlin Senate had publicly committed not to pay, and about an hour after the deadline the group published the full stolen dataset on its darknet leak site, replacing the prior partial "auction" listing ([heise online, 2026-09-04](https://www.heise.de/news/Berliner-Senat-zahlt-nicht-sensible-Daten-jetzt-im-Darknet-11442286.html)). Chaos Computer Club spokesperson Joachim Selzer confirmed the complete dataset — including personnel files and documents Selzer describes seeing directly, such as employment references — is now publicly accessible to anyone. Whether the dataset actually contains the drinking-water vulnerability analyses and administration credentials the group had earlier claimed remains unverified by any party this entry cites: Left-party parliamentary faction leader Tobias Schulze stated the Senate now has the opportunity to check whether the prior assumptions about the leaked data are accurate, and should notify affected individuals and organizations as quickly as possible once it does. No further technical root-cause detail beyond the phishing vector has been disclosed by the Senate.

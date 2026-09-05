@@ -13,7 +13,7 @@ summary: >
   contracts give Amazon unilateral rights to change technical terms and only a 90-day
   data-migration window on termination.
 discovered_at: "2026-09-02T05:10:00Z"
-updated_at: null
+updated_at: "2026-09-05T04:55:00Z"
 event_date: "2026-09-01"
 run_id: 2026-09-02T0411Z-intel
 priority: notable
@@ -39,6 +39,10 @@ sources:
     publisher: "Inside IT Switzerland"
     date: "2026-09-01"
     role: corroborating
+  - url: "https://www.eid.admin.ch/en/20260903-beirat-digitale-schweiz-sicherheit-und-ver-trauen-stehen-an-oberster-stelle-e"
+    publisher: "Federal Office of Justice / eid.admin.ch (official)"
+    date: "2026-09-03"
+    role: primary
 closed_sources: []
 evidence:
   - quote: "An award to Amazon was out of the question. (translated from German)"
@@ -50,6 +54,12 @@ evidence:
   - quote: "If the cloud contract is terminated, the federal administration has only 90 days to withdraw its data before Amazon irrevocably deletes everything. (translated from German)"
     original: "Wenn der Cloud-Vertrag aufgelöst wird, hat die Bundesverwaltung lediglich 90 Tage Zeit, um ihre Daten abzuziehen, bevor Amazon alles unwiderruflich löscht."
     publisher: "Republik"
+  - quote: "In light of the latest developments in the field of artificial intelligence, security in the online issuance process for the E-ID is currently being further strengthened. In particular, through the use of additional technical safeguards, it should become harder to introduce malware onto end devices, and the detection of deepfakes should be strengthened."
+    publisher: "Federal Office of Justice / eid.admin.ch (official)"
+    source_url: "https://www.eid.admin.ch/en/20260903-beirat-digitale-schweiz-sicherheit-und-ver-trauen-stehen-an-oberster-stelle-e"
+  - quote: "Worth mentioning in particular are transparency through open source, the conducting of penetration tests, and bug bounty programmes."
+    publisher: "Federal Office of Justice / eid.admin.ch (official)"
+    source_url: "https://www.eid.admin.ch/en/20260903-beirat-digitale-schweiz-sicherheit-und-ver-trauen-stehen-an-oberster-stelle-e"
 verification: single-source
 sourcing_note: >
   Republik is the sole investigator (its own reporting cites a direct confirmation from the Federal
@@ -67,7 +77,18 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-05T04:55:00Z"
+    run_id: 2026-09-05T0409Z-intel
+    type: update
+    summary: >
+      At the 3 September 2026 Advisory Council Digital Switzerland meeting, the Federal Department
+      of Justice and Police announced it is further strengthening security in the E-ID's online
+      issuance process specifically against AI-enabled threats: additional technical safeguards
+      against malware injection onto end devices during issuance, and reinforced deepfake
+      detection in the identity-verification step. The release reaffirmed open-source
+      transparency, penetration testing and bug bounties as the programme's standing controls.
+    fields: [updated_at, sources, evidence, body]
 migrated_from: null
 ---
 
@@ -78,3 +99,7 @@ Federal Councillor Beat Jans, the SP minister responsible for approving major fe
 The E-ID's public launch is already delayed from end-2026 to the first half of 2027 for unrelated reasons — open questions on AHV-number lookups, AI-driven deepfake risk to online enrollment, and incompatibility with the EU's own eID system in its first version ([Republik, 2026-09-01](https://www.republik.ch/2026/09/01/e-id-bundesrat-beat-jans-stoppt-auftrag-an-amazon)).
 
 **Defender takeaway:** the transferable lesson is the contract-risk pattern, not the E-ID case specifically. Any public-sector body evaluating a hyperscaler framework contract for infrastructure that verifies identity, authorization or trust should check for the same three terms Republik found: unilateral rights for the vendor to change technical conditions, minimal liability caps on outages, and a short data-exit window on termination. A 90-day migration deadline is not workable for infrastructure whose failure mode is "citizens and businesses can no longer prove who they are."
+
+## Update — 2026-09-05T04:55:00Z
+
+At the 3 September 2026 meeting of the Advisory Council Digital Switzerland, chaired by Justice Minister Beat Jans with Federal Chancellor Viktor Rossi participating, the Federal Department of Justice and Police stated that security in the E-ID's online issuance process is currently being further strengthened in light of recent AI developments: "in particular, through the use of additional technical safeguards, it should become harder to introduce malware onto end devices, and the detection of deepfakes should be strengthened" ([eid.admin.ch, 2026-09-03](https://www.eid.admin.ch/en/20260903-beirat-digitale-schweiz-sicherheit-und-ver-trauen-stehen-an-oberster-stelle-e)). The release, attributing the emphasis on learning from mistakes to Jans, names the programme's standing security controls as the mechanism for finding such gaps: "transparency through open source, the conducting of penetration tests, and bug bounty programmes" ([eid.admin.ch, 2026-09-03](https://www.eid.admin.ch/en/20260903-beirat-digitale-schweiz-sicherheit-und-ver-trauen-stehen-an-oberster-stelle-e)). No technical specification of the "additional technical safeguards" — an attestation mechanism, device-integrity check or liveness-detection method — has been published; this is a policy-level commitment, not yet an implementation detail defenders can act on.

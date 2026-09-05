@@ -1,0 +1,154 @@
+domain: S1
+run_id: 2026-09-05T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-05T04:12:21Z
+ended_at: 2026-09-05T04:22:46Z
+duration_seconds: 625
+self_telemetry:
+  webfetch_calls: 16
+  websearch_calls: 0
+  bridge_fetches: 28
+items:
+  - title: "GeoNetwork: unauthenticated formatter-upload + unsafe Saxon XSLT config chain to unauthenticated RCE on government geoportal backends (CVE-2026-63219, CVE-2026-58400)"
+    sources:
+      - { url: "https://github.com/geonetwork/core-geonetwork/security/advisories/GHSA-mh22-prqr-vf42", publisher: "GeoNetwork (GitHub Security Advisory)", date: "2026-08-31", role: "primary" }
+      - { url: "https://github.com/geonetwork/core-geonetwork/security/advisories/GHSA-x898-729x-cc3r", publisher: "GeoNetwork (GitHub Security Advisory)", date: "2026-08-31", role: "primary" }
+      - { url: "https://ethiack.com/info-hub/research/geonetwork-preauth-RCE", publisher: "Ethiack (Rafael Castilho)", date: "2026-08-31", role: "primary" }
+      - { url: "https://thehackernews.com/2026/09/geonetwork-fixes-unauthenticated-rce.html", publisher: "The Hacker News", date: "2026-09-02", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de (WID-SEC-2026-3174 RSS entry, 'GeoNetwork: Schwachstelle ermöglicht Manipulation von Dateien'), URL https://wid.cert-bund.de/content/public/securityAdvisory/rss → pivot: enisa-euvd recent exploited, URL https://euvd.enisa.europa.eu/ (EUVD-2026-70647, aliases CVE-2026-63219) → primary: GeoNetwork GitHub Security Advisory, URL https://github.com/geonetwork/core-geonetwork/security/advisories/GHSA-mh22-prqr-vf42 → primary: GeoNetwork GitHub Security Advisory (Saxon RCE), URL https://github.com/geonetwork/core-geonetwork/security/advisories/GHSA-x898-729x-cc3r → primary: Ethiack researcher write-up (full chain + PoC video), URL https://ethiack.com/info-hub/research/geonetwork-preauth-RCE → corroborating: The Hacker News, URL https://thehackernews.com/2026/09/geonetwork-fixes-unauthenticated-rce.html"
+    summary: |
+      Two chained GeoNetwork flaws let an unauthenticated attacker reach remote code execution on a widely deployed open-source geospatial metadata catalog application used behind government open-data portals, environmental agencies, national geoportals (the European INSPIRE geoportal is named as a deployment) and enterprise GIS platforms. CVE-2026-63219 (CVSS 3.1 8.6) is a missing-authorization flaw on the formatter-creation API endpoint (POST /geonetwork/srv/api/formatters): the admin-only endpoint was never guarded by GeoNetwork's own @PreAuthorize checks, so any unauthenticated caller can upload arbitrary .xsl or .zip "formatter" files, writing them straight into the server's formatter directory. CVE-2026-58400 (CVSS 3.1 9.1, CVSS text-labelled Critical by the vendor) is a second-order flaw in how GeoNetwork configures its Saxon XSLT processor: the engine (common/src/main/java/org/fao/geonet/utils/Xml.java) runs without FEATURE_SECURE_PROCESSING and without disabling ALLOW_EXTERNAL_FUNCTIONS, so any stylesheet GeoNetwork loads can call java.lang.Runtime.exec() or java.lang.ProcessBuilder directly. Chained, an attacker uploads a malicious .xsl formatter through the unauthenticated endpoint, then triggers it with a simple unauthenticated GET against any public record (the formatter name and a public record UUID are both attacker-discoverable through GeoNetwork's own search API), achieving unauthenticated remote code execution as the GeoNetwork process user. Ethiack researcher Rafael Castilho, who reports discovering the chain independently and in collision with another researcher, published a reverse-shell proof-of-concept demonstration against GeoNetwork 4.4.11. Both flaws affect every GeoNetwork 4.3.x/4.4.x release up to 4.4.11 and every 4.2.x release up to 4.2.16; both are fixed in 4.4.12 and 4.2.17 (released 2026-07-08). The same researcher also found and reported a related unauthenticated SSRF in the buildSLD endpoint and a reflected-XSS-to-account-takeover chain via the non-HttpOnly XSRF-TOKEN cookie and an unescaped uiconfig parameter reflected into an inline gnGlobalSettings.init() script call — GeoNetwork rated the XSS Medium, the researcher argues High given the unauthenticated, one-click account-takeover impact. No source (the vendor's own advisories, the discovering researcher, or The Hacker News) reports confirmed in-the-wild exploitation of the RCE chain; CISA's ADP Vulnrichment SSVC assessment on the Saxon CVE record (as of 2026-09-03) explicitly lists Exploitation as "none". ENISA's EU Vulnerability Database, however, lists the file-upload half alone (CVE-2026-63219 / EUVD-2026-70647) on its exploited feed with an exploitedSince date of 2026-09-02 — a claim no other source corroborates and that contradicts the "none" SSVC assessment on the companion CVE in the same chain; treat the EUVD exploited flag here with the same scepticism this pipeline has already applied to a comparable EUVD/vendor mismatch on CVE-2026-69836.
+    region_nexus: "global; explicitly names the European INSPIRE geoportal as a deployment, so EU/EEA government geodata infrastructure is directly in scope"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-63219, CVE-2026-58400]
+    techniques: [T1190]
+    affected_products: ["GeoNetwork opensource"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An unauthenticated attacker can upload arbitrary .xsl or .zip formatter files to the server."
+        attribution: "GeoNetwork Security Advisory (GHSA-mh22-prqr-vf42)"
+        source_url: "https://github.com/geonetwork/core-geonetwork/security/advisories/GHSA-mh22-prqr-vf42"
+      - quote: "Any stylesheet loaded by GeoNetwork can therefore invoke java.lang.Runtime.exec() or java.lang.ProcessBuilder directly, achieving arbitrary command execution as the GeoNetwork process user."
+        attribution: "GeoNetwork Security Advisory (GHSA-x898-729x-cc3r)"
+        source_url: "https://github.com/geonetwork/core-geonetwork/security/advisories/GHSA-x898-729x-cc3r"
+      - quote: "As you may expect, we can chain the Unauthorised Upload vulnerability with the unsafe XSLT processing vulnerability and get unauthenticated Remote Code Execution."
+        attribution: "Ethiack (Rafael Castilho)"
+        source_url: "https://ethiack.com/info-hub/research/geonetwork-preauth-RCE"
+      - quote: "The Hacker News found no reference to the GeoNetwork flaws in CISA's Known Exploited Vulnerabilities catalog as of the disclosure, and no public reporting of exploitation in the wild."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/09/geonetwork-fixes-unauthenticated-rce.html"
+    extended_notes: |
+      Detection concept: web-server / reverse-proxy access logs for POST requests to /geonetwork/srv/api/formatters from unauthenticated sessions (any hit is anomalous — the vendor's own interim mitigation is to deny POST/PUT/PATCH to that path at the proxy layer), followed by a GET to the record-view endpoint referencing a newly created formatter name; process-creation telemetry on the GeoNetwork host for any child process spawned by the Java process hosting GeoNetwork (Tomcat/the app server), which should never legitimately fork OS commands. Hardening: upgrade to 4.4.12 / 4.2.17; where upgrade is not immediate, block POST/PUT/PATCH to srv/api/formatters at the reverse proxy (Apache httpd or Nginx snippets are in the vendor advisory) — but note this also disables the legitimate formatter-management admin UI, which shares the same endpoint. Swiss relevance: GeoNetwork and GeoNetwork-derived catalog software are common building blocks behind INSPIRE-compliant cantonal and federal geoportals in Europe; any Swiss public-sector geodata catalog service should be checked against this version range specifically.
+    borderline: false
+
+  - title: "VMware Workstation & Fusion: guest-to-host code execution via VMXNET3 integer overflow and HGFS stack overflow (CVE-2026-59346, CVE-2026-59347)"
+    sources:
+      - { url: "https://www.securityweek.com/vmware-workstation-and-fusion-updates-patch-critical-vulnerability/", publisher: "SecurityWeek", date: "2026-09-04", role: "corroborating" }
+      - { url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38288", publisher: "Broadcom (VMware PSIRT)", date: "2026-09-04", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12912 ('[Advisory] VMware Workstation & Fusion: Guest-to-Host Code Execution (CVE-2026-59346)', published 2026-09-04T13:41Z) → primary: Broadcom Security Advisory, URL https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38288 → corroborating: SecurityWeek, URL https://www.securityweek.com/vmware-workstation-and-fusion-updates-patch-critical-vulnerability/"
+    summary: |
+      Broadcom shipped VMware Workstation and Fusion 26H1u1 on 2026-09-04 fixing two guest-to-host escape flaws distinct from the vCenter/ESX/Workstation/Fusion bulletin (VMSA-2026-0006, CVE-2026-59309/59310/47876/41703/41709) this pipeline already covered on 2026-07-30. CVE-2026-59346 (CVSS 3.1 9.3) is an integer overflow in the VMXNET3 virtual network adapter that a guest VM administrator can trigger to execute arbitrary code on the host — the same vulnerability class (VMXNET3 out-of-bounds write) as CVE-2026-47876 in the July bulletin, but a newly assigned, separately patched flaw. CVE-2026-59347 (CVSS 8.1) is a stack-based buffer overflow in the Host Guest File System (HGFS) that reaches code execution in the host-side VMX process. Both require local administrative privileges inside the guest VM as a starting point; CVE-2026-59346 additionally requires the VM to be configured with a VMXNET3 virtual network adapter. Both were reported privately to Broadcom; NCSC-CH's advisory and Broadcom's own bulletin record the exploitation status as unknown/not observed. Fixed in Workstation and Fusion 26H1u1; versions 25H2 and 26H1 are affected.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-59346, CVE-2026-59347]
+    techniques: [T1611]
+    affected_products: ["VMware Workstation", "VMware Fusion"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "A malicious actor with local administrative privileges on a virtual machine with VMXNET3 virtual network adapter may exploit this issue to execute code on the host."
+        attribution: "SecurityWeek (quoting Broadcom advisory)"
+        source_url: "https://www.securityweek.com/vmware-workstation-and-fusion-updates-patch-critical-vulnerability/"
+      - quote: "Both vulnerabilities affect VMware Workstation and VMware Fusion versions 25H2 and 26H1 and were resolved in version 26H1u1."
+        attribution: "SecurityWeek (quoting Broadcom advisory)"
+        source_url: "https://www.securityweek.com/vmware-workstation-and-fusion-updates-patch-critical-vulnerability/"
+    extended_notes: |
+      Relevant for any environment that runs VMware Workstation/Fusion for developer or lab use (including red-team-aware defenders running nested labs) rather than for production ESX/vCenter estates already covered by the July VMSA. No workaround beyond patching is documented; no exploitation observed.
+    borderline: true
+    borderline_reason: "moderate severity relative to the July VMSA-2026-0006 already covered on the same product family; local-admin-in-guest prerequisite and no ITW exploitation keep this below the high bar, included for completeness of the VMware guest-escape story and because Workstation/Fusion (desktop virtualization) differs in deployment context from the enterprise vCenter/ESX flaws already tracked."
+
+  - title: "Dirty Frag / Fragnesia — Linux kernel page-cache corruption in IPsec ESP and RxRPC networking paths turns local read access into root; Microsoft reports limited real-world activity (CVE-2026-43284, CVE-2026-43500, CVE-2026-46300)"
+    sources:
+      - { url: "https://www.aikido.dev/blog/dirty-frag", publisher: "Aikido Security", date: "2026-09-04", role: "primary" }
+    discovery_trace: "first seen at: WebSearch/blog-sweep of aikido-security (spawn-assigned source slice), URL https://www.aikido.dev/blog → primary: Aikido Security technical write-up, URL https://www.aikido.dev/blog/dirty-frag → verified: MITRE CVE Record, URL https://cveawg.mitre.org/api/cve/CVE-2026-43284 → verified: MITRE CVE Record, URL https://cveawg.mitre.org/api/cve/CVE-2026-43500 → verified: MITRE CVE Record, URL https://cveawg.mitre.org/api/cve/CVE-2026-46300"
+    summary: |
+      Aikido Security's 2026-09-04 write-up collects three Linux kernel CVEs under the name "Dirty Frag" and documents an active-exploitation signal and public PoC status that make the (already-patched, months-old) CVEs newly actionable. The mechanism: Linux keeps recently read file data in the page cache, and some kernel paths (functions using splice()) hand networking code a direct pointer into that cache rather than a private copy, on the assumption that nothing downstream will write through it. CVE-2026-43284 (CWE class: missing copy-on-write before in-place modification, CVSS 3.1 8.8, kernel path: xfrm/esp — the IPsec ESP encrypted-VPN decrypt path, functions esp_input / esp4 / esp6) and CVE-2026-43500 (CVSS 7.8, kernel path: net/rxrpc — the RxRPC protocol used by the AFS network filesystem, functions rxrpc_input_call_event / rxrpc_verify_response) both fail to check whether an skb's fragments are marked SKBFL_SHARED_FRAG (i.e., externally/page-cache-owned) before decrypting or processing in place. An attacker who can run code locally as a low-privileged user or workload feeds a privileged, read-only binary such as /usr/bin/su into the vulnerable decrypt/verify path, corrupting the in-memory (page-cache) copy of that binary; the file on disk is untouched, but any subsequent execution of it — including by root — reads the tampered copy and hands the attacker root. CVE-2026-46300 ("Fragnesia", CVSS 7.8, kernel path: net/core/skbuff.c skb_try_coalesce()) is a follow-on variant: the original Dirty Frag fix relies on a marker showing a fragment is shared, but a thirteen-year-old (2013) bug in the packet-fragment-coalescing code silently drops that marker, reopening the same root path even on hosts patched against the first two CVEs. All three are fixed upstream (Linux kernel networking maintainers, patches merged and CVEs published May 2026) and backported by RHEL and Ubuntu under distribution-specific version numbers — a patched RHEL 8 host can still legitimately report kernel version 4.18. Red Hat states CVE-2026-43500 does not affect its products but confirms CVE-2026-43284 and CVE-2026-46300 affect supported RHEL kernels. Because containers share the host kernel, a compromised container or workload that can reach the vulnerable code path (governed by seccomp, pod security policy and user-namespace settings) can escalate to root on the node; researchers have already published working Kubernetes-context proof-of-concept exploits. Aikido reports that Microsoft has observed limited real-world activity using this escalation pattern (an unknown binary being dropped and then su being invoked), while cautioning this activity may reflect Dirty Frag or its 2026-04 predecessor "Copy Fail" (CVE-2026-31431, previously covered by CERT-EU advisory 2026-005) — the two are described as difficult to distinguish from process-execution logs alone.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-43284, CVE-2026-43500, CVE-2026-46300]
+    techniques: [T1068, T1611]
+    affected_products: ["Linux kernel"]
+    entity_keys: []
+    new_entities:
+      - { key: "trend:dirty-frag-linux-kernel-page-cache-lpe", type: trend, name: "Dirty Frag / Fragnesia", aliases: ["Dirty Frag", "Fragnesia"],
+          summary: "Aikido Security's collective name for a Linux kernel local-privilege-escalation attack class (CVE-2026-43284, CVE-2026-43500, CVE-2026-46300) in which unmarked shared page-cache fragments reach in-place modification via the IPsec ESP and RxRPC networking decrypt/verify paths, letting a local attacker corrupt a privileged read-only binary's in-memory copy and gain root; Microsoft reports limited real-world activity using the pattern, though attribution between Dirty Frag and its April-2026 predecessor 'Copy Fail' (CVE-2026-31431) is not yet distinguishable from process logs alone (Aikido Security, 2026-09-04)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Dirty Frag (CVE-2026-43284, CVE-2026-43500 and CVE-2026-46300) gets the Linux kernel to edit its cached copy anyway."
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/dirty-frag"
+      - quote: "Running su reads the tampered copy and hands the attacker root access, even though they were only ever allowed to read that file."
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/dirty-frag"
+      - quote: "Proof-of-concept code is already public. Microsoft has reported limited real-world activity where an attacker escalates privileges using su, though it's careful to note this may be Dirty Frag or its predecessor Copy Fail, since the two are hard to tell apart from process logs alone."
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/dirty-frag"
+      - quote: "In the Linux kernel, the following vulnerability has been resolved:\n\nxfrm: esp: avoid in-place decrypt on shared skb frags"
+        attribution: "MITRE CVE Record (Linux CNA)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-43284"
+    extended_notes: |
+      [SINGLE-SOURCE for the "Dirty Frag" framing and the Microsoft limited-exploitation claim specifically — Aikido Security is the only source found tying these three CVEs together under this name and reporting Microsoft's observation this run; the three underlying CVEs themselves are independently confirmed on MITRE's CVE record (CNA: Linux), so CVE identity/mechanism is MULTI-SOURCE even though the "active exploitation" framing is not.] Detection concept (telemetry class first): process-creation / audit-framework events showing an unknown or freshly-dropped ELF binary executed immediately followed by invocation of a setuid binary (su or equivalent) — Linux audit framework execve + setuid-transition records are the concrete anchor Aikido names. Additional signal: esp4/esp6/rxrpc kernel modules loading on a host with no legitimate IPsec VPN or AFS use case, especially co-occurring with other suspicious activity (`lsmod | grep -E 'esp4|esp6|rxrpc'`). Exposure check: compare `uname -r` against the distribution vendor's fixed package version, NOT the upstream kernel version number (backports mean a patched RHEL/Ubuntu host can report an old-looking version string); `sysctl user.max_user_namespaces` above zero indicates the common route into the ESP path (RxRPC does not require namespaces, so zero is not full coverage). Hardening beyond the kernel patch: run workloads as non-root, enable the RuntimeDefault seccomp profile, enforce restricted pod security policies, and limit unprivileged user-namespace creation — these reduce reachability but do not fix the underlying flaw. If exploitation is suspected, run integrity checks from a trusted external environment, since blocking the vulnerable kernel modules does not undo page-cache corruption already made.
+    borderline: false
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured in org-profile.yaml for this deployment — sweep is a no-op per spawn instructions; general coverage rules applied unchanged"
+
+cve_table:
+  - { cve: "CVE-2026-63219", product: "GeoNetwork opensource < 4.4.12 / < 4.2.17", cvss: "8.6 (v3.1)", epss: "0.47", kev: false, exploited: "disputed — EUVD exploited-feed flags exploitedSince 2026-09-02; no vendor/researcher/press source corroborates; CISA ADP SSVC on companion CVE says 'none'", patch: "4.4.12 / 4.2.17 (2026-07-08)", source: "https://github.com/geonetwork/core-geonetwork/security/advisories/GHSA-mh22-prqr-vf42" }
+  - { cve: "CVE-2026-58400", product: "GeoNetwork opensource < 4.4.12 / < 4.2.17", cvss: "9.1 (v3.1, Critical)", epss: "n/a", kev: false, exploited: "none reported; CISA ADP Vulnrichment SSVC = none (2026-09-03)", patch: "4.4.12 / 4.2.17 (2026-07-08)", source: "https://github.com/geonetwork/core-geonetwork/security/advisories/GHSA-x898-729x-cc3r" }
+  - { cve: "CVE-2026-59346", product: "VMware Workstation / Fusion 25H2, 26H1", cvss: "9.3 (v3.1)", epss: "n/a", kev: false, exploited: "none reported", patch: "26H1u1 (2026-09-04)", source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38288" }
+  - { cve: "CVE-2026-59347", product: "VMware Workstation / Fusion 25H2, 26H1", cvss: "8.1 (v3.1)", epss: "n/a", kev: false, exploited: "none reported", patch: "26H1u1 (2026-09-04)", source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38288" }
+  - { cve: "CVE-2026-43284", product: "Linux kernel (xfrm/esp) — most supported kernels since ~2017", cvss: "8.8 (v3.1)", epss: "n/a", kev: false, exploited: "Microsoft reports limited real-world activity (per Aikido, 2026-09-04); not KEV-listed; attribution vs. predecessor 'Copy Fail' unresolved", patch: "upstream fixed May 2026; RHEL/Ubuntu backported under distro-specific version numbers", source: "https://cveawg.mitre.org/api/cve/CVE-2026-43284" }
+  - { cve: "CVE-2026-43500", product: "Linux kernel (net/rxrpc) — distributions shipping RxRPC/AFS support", cvss: "7.8 (v3.1)", epss: "n/a", kev: false, exploited: "see CVE-2026-43284; Red Hat states this CVE specifically does not affect its products", patch: "upstream fixed May 2026", source: "https://cveawg.mitre.org/api/cve/CVE-2026-43500" }
+  - { cve: "CVE-2026-46300", product: "Linux kernel (net/core/skbuff.c) — Fragnesia variant", cvss: "7.8 (v3.1)", epss: "n/a", kev: false, exploited: "see CVE-2026-43284", patch: "upstream fixed May 2026", source: "https://cveawg.mitre.org/api/cve/CVE-2026-46300" }
+
+candidate_sources: []
+
+fetch_failures:
+  - id: cisa-advisories
+    url_tried: "https://www.cisa.gov/cybersecurity-advisories/all.xml"
+    fetch_method: "bridge:url"
+    status_code: 403
+    error_class: transport-403
+    error_message: "fetch_source: both transports failed for https://www.cisa.gov/cybersecurity-advisories/all.xml: direct=(direct HTTP 403, 410 B); jina=(reader proxy failed for https://www.cisa.gov/cybersecurity-advisories/all.xml: key ...PGoN9i: The read operation timed out; key ...lAaOKc: The read operation timed )"
+    attempted_methods: ["bridge:cisa page (rejected non-cisa.gov-path URL)", "bridge:url (direct + jina fallback, both failed)"]
+    mitigation_applied: "cross-checked KEV catalog, NCSC-CH Security Hub, and CERT-FR avis feed for the same window instead; no CISA-exclusive in-window advisory found to be missing as a result"
+    covered_anyway: false
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "Cloudflare 'Robot Challenge Screen' (bot-check interstitial) returned by the jina reader itself — rotation-priority attempt this run (7th consecutive miss); no alternate transport available in the fetch-tooling reference for this host. Recommend marking status permanently degraded or dropping from rotation if this persists."
+  - source_id: cisa-advisories
+    reason: "cisa page bridge subcommand only accepts cisa.gov URLs directly (the facet-filtered listing page it returned had no dated item list in the extracted text); a direct bridge `url` fetch of the RSS feed (https://www.cisa.gov/cybersecurity-advisories/all.xml) then failed on both transports — direct GET returned HTTP 403 and the jina-reader fallback timed out on two rotated keys. No new in-window CISA cybersecurity advisory identified distinct from items already found via KEV/NCSC-CH/CERT-FR cross-checks; this is a genuine unrecovered gap on the RSS feed specifically, not just the listing page."
+  - source_id: apple-security
+    reason: "support.apple.com/en-us/100100 returned only the 'latest version' summary list (iOS 26.6.1 / macOS 26.6.2, unchanged from prior runs) via the bridge; no September dated security-content table rows were present in the retrieved body, so no new Apple advisory confirmed in-window this run."

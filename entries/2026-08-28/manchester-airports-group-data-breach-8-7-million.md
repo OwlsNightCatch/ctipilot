@@ -6,13 +6,13 @@ headline: "One of Europe's largest airport-group operators discloses an 8.7M-rec
 summary: >
   Manchester Airports Group confirmed on 2026-08-27 that an unauthorised third party obtained
   customer data relating to car-park, lounge, Fast Track bookings and in-airport WiFi sign-ups
-  across Manchester, Stansted and East Midlands airports, affecting roughly 8.7 million customers
-  — the large majority with only an email address exposed. The extortion group FulcrumSec has since
-  claimed responsibility, telling BleepingComputer it stole roughly 86GB via airport-specific
-  Iterable marketing-platform API credentials exposed in client-side JavaScript; MAG has not
-  addressed the specific claims.
+  across Manchester, Stansted and East Midlands airports. The extortion group FulcrumSec, which
+  claimed access via airport-specific Iterable marketing-platform API credentials exposed in
+  client-side JavaScript, has since published the full stolen dataset — roughly 550GB, 8.67 million
+  customer profiles — and Have I Been Pwned has added the breach, confirming approximately 8.8
+  million unique email addresses and phone numbers.
 discovered_at: "2026-08-28T06:10:00Z"
-updated_at: "2026-08-31T05:35:00Z"
+updated_at: "2026-09-05T05:00:00Z"
 event_date: "2026-08-27"
 run_id: 2026-08-28T0409Z-intel
 priority: high
@@ -45,6 +45,14 @@ sources:
     publisher: "Security Affairs"
     date: "2026-08-30"
     role: corroborating
+  - url: "https://securityaffairs.com/198447/data-breach/crooks-behind-manchester-airports-group-hack-leaked-data-of-8-8-million-people.html"
+    publisher: "Security Affairs"
+    date: "2026-09-04"
+    role: corroborating
+  - url: "https://haveibeenpwned.com/Breach/ManchesterAirportsGroup"
+    publisher: "Have I Been Pwned"
+    date: "2026-09-02"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "Manchester Airports group has been subject to a cyber security incident by an unauthorised third party. A quantity of customer data has been obtained that relates to car park, lounge and Fast Track bookings and in-airport WIFI sign-ups at Manchester, Stansted, and East Midlands airports."
@@ -59,6 +67,15 @@ evidence:
   - quote: "MAG is confident that we have taken effective measures to protect our customers and we have contacted all those affected, including reaching out to all those with upcoming bookings to advise them of additional support"
     publisher: "MAG spokesperson, via BleepingComputer"
     source_url: "https://www.bleepingcomputer.com/news/security/fulcrumsec-claims-manchester-airports-hack-theft-of-86-gb-of-data/"
+  - quote: "Today we are releasing the Manchester Airports Group dataset: every customer, event, configuration that serves Manchester Airport, London Stansted and East Midlands Airport. Half a terabyte, and every byte of it is pure PII."
+    publisher: "FulcrumSec (data-leak-site post, quoted by Security Affairs)"
+    source_url: "https://securityaffairs.com/198447/data-breach/crooks-behind-manchester-airports-group-hack-leaked-data-of-8-8-million-people.html"
+  - quote: "8,672,291 customer profiles with email, name, mobile, home town, postal region, and the residential IP address the account last connected from"
+    publisher: "FulcrumSec (data-leak-site post, quoted by Security Affairs)"
+    source_url: "https://securityaffairs.com/198447/data-breach/crooks-behind-manchester-airports-group-hack-leaked-data-of-8-8-million-people.html"
+  - quote: "approximately 8.8 million email addresses and phone numbers were compromised, alongside names, IP addresses, browser user-agent details, geographic information, purchases and vehicle registration plates"
+    publisher: "Have I Been Pwned, cited by Security Affairs"
+    source_url: "https://securityaffairs.com/198447/data-breach/crooks-behind-manchester-airports-group-hack-leaked-data-of-8-8-million-people.html"
 verification: multi-source
 sourcing_note: >
   Manchester Airports Group's own first-party incident statement is the primary source; The
@@ -108,6 +125,17 @@ updates:
       credentials exposed in client-side JavaScript. MAG has not addressed the specific claims and
       continues to point to its existing customer statement.
     fields: [title, headline, entities, techniques, summary, sources, evidence, body]
+  - at: "2026-09-05T05:00:00Z"
+    run_id: 2026-09-05T0409Z-intel
+    type: update
+    summary: >
+      FulcrumSec published the full stolen dataset rather than merely claiming it, and the scale
+      is substantially larger than the ~86GB previously claimed: roughly 550GB, comprising
+      8,672,291 customer profiles, over 1.16 billion Iterable platform events, and vehicle-plate
+      and future-booking data. Have I Been Pwned processed and added the breach, confirming
+      approximately 8.8 million unique email addresses and phone numbers. No new access-vector
+      information; the client-side API-credential vector is unchanged.
+    fields: [updated_at, summary, sources, evidence, body]
 migrated_from: null
 ---
 
@@ -126,3 +154,7 @@ This entry stated that the UK Information Commissioner's Office had confirmed re
 The extortion group FulcrumSec claimed responsibility on 2026-08-30, telling BleepingComputer it stole approximately 86GB of data — considerably more than MAG's original disclosure suggested ([BleepingComputer, 2026-08-30](https://www.bleepingcomputer.com/news/security/fulcrumsec-claims-manchester-airports-hack-theft-of-86-gb-of-data/)). The group says it obtained access using airport-specific Iterable (marketing-platform) API credentials exposed in client-side JavaScript — code that runs in the customer's own browser, so anyone inspecting network calls or page source could read the credentials — and claims the haul includes nearly 200,000 records tied to upcoming travel through the rest of 2026, alongside a roughly 21.5GB Manchester customer export combining identifiers, historical booking activity and marketing classifications. BleepingComputer validated one sample record against a real traveller's known purchase history, matching Fast Track bookings, arrival times, terminal and amounts paid, though it could not independently verify the claimed scope. MAG has not addressed the specific claims (the exposed credentials, the 86GB figure, the future-travel data) and continues to point to its existing customer-notification statement: "MAG is confident that we have taken effective measures to protect our customers and we have contacted all those affected, including reaching out to all those with upcoming bookings to advise them of additional support" ([BleepingComputer, 2026-08-30](https://www.bleepingcomputer.com/news/security/fulcrumsec-claims-manchester-airports-hack-theft-of-86-gb-of-data/)). No payment-card or banking data is reported exposed.
 
 The exposure class this adds is distinct from the original disclosure: a third-party marketing or analytics SaaS API key embedded directly in browser-delivered JavaScript is effectively a public credential the moment the page is inspectable, independent of any server-side hardening. Organisations embedding third-party API keys client-side should verify with the vendor whether the key's scope can be restricted to write-only/track-only actions rather than full read access to customer records, and review outbound API call patterns from public web front-ends for tokens visible in bundled JS or the browser's network tab.
+
+## Update — 2026-09-05T05:00:00Z
+
+FulcrumSec has now published the full dataset rather than merely claiming it, and the confirmed scale is substantially larger than the ~86GB previously claimed: roughly 550GB uncompressed, comprising 8,672,291 customer profiles (email, name, mobile, home town, postal region, and the residential IP address the account last connected from), over 1.16 billion Iterable platform events (email sends, opens, clicks and bounces), 2,482,763 historical parking, lounge and Fast Track purchase records, 461,433 SMS messages containing booking date, car-park and vehicle-registration details in plain text, and roughly 108,000 distinct UK vehicle registration plates tied to owner contact and booking details ([Security Affairs, 2026-09-04](https://securityaffairs.com/198447/data-breach/crooks-behind-manchester-airports-group-hack-leaked-data-of-8-8-million-people.html)). Have I Been Pwned has processed the published dataset and added it to its breach database, confirming approximately 8.8 million unique email addresses and phone numbers alongside names, IP addresses, purchase history and vehicle registration plates. FulcrumSec's leak-site post separately claims the dataset includes government, judicial, military, police, NHS and defence-industry employees among the exposed customers, and that it withheld a subset of upcoming-travel records that would otherwise reveal when a victim's home will be empty — both claims are the extortion group's own framing and are not independently verified. No new access-vector information accompanies this development; the client-side API-credential vector already recorded above is unchanged.

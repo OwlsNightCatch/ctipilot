@@ -1,0 +1,94 @@
+### S1 (25 sources)
+- advisories-ncsc-nl | NCSC-NL — Security Advisories (RSS) | url=https://advisories.ncsc.nl/rss/advisories | rss=- | tier=essential status=active | fetch_method=rss | reliability=A | lang=en,nl
+- anssi-fr | ANSSI / CERT-FR | url=https://www.cert.ssi.gouv.fr/ | rss=- | tier=essential status=active | fetch_method=api | reliability=A | lang=fr,en
+- bsi-de | BSI Germany — CERT-Bund WID (RSS) | url=https://wid.cert-bund.de/content/public/securityAdvisory/rss | rss=- | tier=essential status=active | fetch_method=rss | reliability=A | lang=de,en
+- cert-eu | CERT-EU | url=https://cert.europa.eu/publications/security-advisories | rss=- | tier=essential status=active | fetch_method=api | reliability=A | lang=en
+- cert-pl | CERT Polska / NASK | url=https://cert.pl/en/news/ | rss=https://cert.pl/en/rss.xml | tier=essential status=active | fetch_method=webfetch | reliability=A | lang=en,pl
+- cisa-advisories | CISA Cybersecurity Advisories | url=https://www.cisa.gov/news-events/cybersecurity-advisories | rss=https://www.cisa.gov/cybersecurity-advisories/all.xml | tier=essential status=active | fetch_method=bridge | reliability=A | lang=en
+- cisa-directives | CISA Directives | url=https://www.cisa.gov/news-events/directives | rss=- | tier=essential status=active | fetch_method=bridge | reliability=A | lang=en
+- cisa-kev | CISA Known Exploited Vulnerabilities Catalog | url=https://www.cisa.gov/known-exploited-vulnerabilities-catalog | rss=- | tier=essential status=active | fetch_method=api | reliability=A | lang=en
+- enisa-euvd | ENISA EU Vulnerability Database (EUVD) | url=https://euvd.enisa.europa.eu/ | rss=- | tier=essential status=active | fetch_method=api | reliability=A | lang=en
+- ncsc-ch-security-hub | NCSC Switzerland — Cyber Security Hub (CSH) / GovCERT.ch | url=https://security-hub.ncsc.admin.ch/#/dashboard | rss=- | tier=essential status=active | fetch_method=api | reliability=A | lang=de,fr,it,en
+- ncsc-uk | NCSC UK | url=https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories | rss=https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml | tier=essential status=active | fetch_method=bridge | reliability=A | lang=en
+- ssd-disclosure | SSD Secure Disclosure | url=https://ssd-disclosure.com/ | rss=- | tier=standard status=candidate | fetch_method=jina | reliability=B | lang=en
+- msrc-blog | Microsoft Security Response Center (MSRC) | url=https://msrc.microsoft.com/blog | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=A | lang=en
+- zdi | Zero Day Initiative | url=https://www.zerodayinitiative.com/blog/ | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=B | lang=en
+- adobe-psirt | Adobe PSIRT — Security Bulletins | url=https://helpx.adobe.com/security/security-bulletin.html | rss=- | tier=standard status=active | fetch_method=bridge | reliability=A | lang=en
+- censys-blog | Censys Research | url=https://censys.com/resources/blog/ | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=B | lang=en
+- vulncheck | VulnCheck | url=https://www.vulncheck.com/blog | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=B | lang=en
+- aikido-security | Aikido Security (aikido.dev) | url=https://www.aikido.dev/blog | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=B | lang=en
+- apple-security | Apple Security Advisories | url=https://support.apple.com/en-us/100100 | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=A | lang=en
+- depthfirst | depthfirst.com (security research blog) | url=https://depthfirst.com | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=C | lang=en
+- exodus-intelligence | Exodus Intelligence (blog.exodusintel.com) | url=https://blog.exodusintel.com | rss=- | tier=standard status=active | fetch_method=rss | reliability=B | lang=en
+- fbi-cyber-alerts | Federal Bureau of Investigation (Cyber Division) | url=https://www.ic3.gov/PSA | rss=- | tier=standard status=active | fetch_method=bridge | reliability=A | lang=en
+- morphisec | Morphisec Labs | url=https://www.morphisec.com/blog/ | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=C | lang=en
+- onapsis | Onapsis Research Labs | url=https://onapsis.com/blog | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=B | lang=en
+- tenable-research | Tenable Research | url=https://www.tenable.com/blog | rss=https://feeds.feedburner.com/tenable/qaXL | tier=standard status=active | fetch_method=rss | reliability=B | lang=en
+
+### S2 (29 sources)
+- advisories-ncsc-nl | NCSC-NL — Security Advisories (RSS) | url=https://advisories.ncsc.nl/rss/advisories | rss=- | tier=essential status=active | fetch_method=rss | reliability=A | lang=en,nl
+- anssi-fr | ANSSI / CERT-FR | url=https://www.cert.ssi.gouv.fr/ | rss=- | tier=essential status=active | fetch_method=api | reliability=A | lang=fr,en
+- bsi-de | BSI Germany — CERT-Bund WID (RSS) | url=https://wid.cert-bund.de/content/public/securityAdvisory/rss | rss=- | tier=essential status=active | fetch_method=rss | reliability=A | lang=de,en
+- cert-at | CERT.at (Austria) | url=https://www.cert.at/en/ | rss=- | tier=essential status=active | fetch_method=webfetch | reliability=A | lang=en,de
+- cert-eu | CERT-EU | url=https://cert.europa.eu/publications/security-advisories | rss=- | tier=essential status=active | fetch_method=api | reliability=A | lang=en
+- cert-pl | CERT Polska / NASK | url=https://cert.pl/en/news/ | rss=https://cert.pl/en/rss.xml | tier=essential status=active | fetch_method=webfetch | reliability=A | lang=en,pl
+- cisa-advisories | CISA Cybersecurity Advisories | url=https://www.cisa.gov/news-events/cybersecurity-advisories | rss=https://www.cisa.gov/cybersecurity-advisories/all.xml | tier=essential status=active | fetch_method=bridge | reliability=A | lang=en
+- cisa-directives | CISA Directives | url=https://www.cisa.gov/news-events/directives | rss=- | tier=essential status=active | fetch_method=bridge | reliability=A | lang=en
+- enisa | ENISA | url=https://www.enisa.europa.eu/news | rss=- | tier=essential status=active | fetch_method=webfetch | reliability=A | lang=en
+- heise-sec | heise Security | url=https://www.heise.de/security/ | rss=https://www.heise.de/security/feed.xml | tier=essential status=active | fetch_method=rss | reliability=B | lang=de
+- inside-it-ch | Inside IT Switzerland | url=https://www.inside-it.ch/ | rss=https://www.inside-it.ch/rss.xml | tier=essential status=active | fetch_method=rss | reliability=C | lang=de
+- ncsc-ch-focus | NCSC Switzerland — Im Fokus | url=https://www.bacs.admin.ch/de/im-fokus | rss=- | tier=essential status=active | fetch_method=webfetch | reliability=A | lang=de
+- ncsc-ch-incidents | NCSC Switzerland — Aktuelle Vorfälle | url=https://www.bacs.admin.ch/de/aktuelle-vorfaelle | rss=- | tier=essential status=active | fetch_method=bridge | reliability=A | lang=de
+- ncsc-ch-security-hub | NCSC Switzerland — Cyber Security Hub (CSH) / GovCERT.ch | url=https://security-hub.ncsc.admin.ch/#/dashboard | rss=- | tier=essential status=active | fetch_method=api | reliability=A | lang=de,fr,it,en
+- ncsc-uk | NCSC UK | url=https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories | rss=https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml | tier=essential status=active | fetch_method=bridge | reliability=A | lang=en
+- edpb | European Data Protection Board | url=https://www.edpb.europa.eu/news/news_en | rss=- | tier=standard status=active | fetch_method=bridge | reliability=A | lang=en
+- ccn-cert-es | CCN-CERT (Spain) | url=https://www.ccn-cert.cni.es/en/updated-security/ccn-news.html | rss=- | tier=standard status=candidate | fetch_method=jina | reliability=A | lang=es,en
+- us-treasury-ofac | US Treasury OFAC — Recent Actions | url=https://ofac.treasury.gov/recent-actions | rss=- | tier=standard status=active | fetch_method=bridge | reliability=A | lang=en
+- fbi-cyber-alerts | Federal Bureau of Investigation (Cyber Division) | url=https://www.ic3.gov/PSA | rss=- | tier=standard status=active | fetch_method=bridge | reliability=A | lang=en
+- govcert-at | GovCERT Austria | url=https://www.govcert.gv.at/en/ | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=A | lang=en,de
+- infoguard-ch | InfoGuard | url=https://www.infoguard.ch/en/blog | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=B | lang=en,de
+- lab52 | Lab52 (S2 Grupo) | url=https://lab52.io/blog/ | rss=- | tier=standard status=active | fetch_method=rss | reliability=B | lang=en,es
+- ncc-research | NCC Group Research | url=https://www.nccgroup.com/research-blog/ | rss=- | tier=standard status=active | fetch_method=bridge | reliability=B | lang=en
+- oneconsult-ch | OneConsult | url=https://www.oneconsult.com/en/blog/ | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=B | lang=en,de
+- sekoia | Sekoia.io blog | url=https://www.sekoia.com/blog | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=B | lang=en,fr
+- compass-security | Compass Security Blog | url=https://blog.compass-security.com/ | rss=https://blog.compass-security.com/feed/ | tier=standard status=active | fetch_method=webfetch | reliability=B | lang=en,de
+- csirt-acn-it | CSIRT Italia (ACN) — Alert e bollettini | url=https://www.acn.gov.it/portale/en/csirt-italia/alert-e-bollettini | rss=- | tier=standard status=active | fetch_method=bridge | reliability=A | lang=en,it
+- ncsc-ie | NCSC Ireland | url=https://www.ncsc.gov.ie/news/ | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=A | lang=en
+- netzwoche | Netzwoche (Swiss IT/cybersecurity trade press) | url=https://www.netzwoche.ch/ | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=C | lang=de
+
+### S3 (16 sources)
+- heise-sec | heise Security | url=https://www.heise.de/security/ | rss=https://www.heise.de/security/feed.xml | tier=essential status=active | fetch_method=rss | reliability=B | lang=de
+- inside-it-ch | Inside IT Switzerland | url=https://www.inside-it.ch/ | rss=https://www.inside-it.ch/rss.xml | tier=essential status=active | fetch_method=rss | reliability=C | lang=de
+- ssd-disclosure | SSD Secure Disclosure | url=https://ssd-disclosure.com/ | rss=- | tier=standard status=candidate | fetch_method=jina | reliability=B | lang=en
+- paradigm-shift-research | Paradigm Shift Technology (ps.tc) | url=https://ps.tc/ | rss=- | tier=standard status=candidate | fetch_method=bridge | reliability=B | lang=en
+- trellix | Trellix Blogs | url=https://www.trellix.com/blogs/ | rss=- | tier=standard status=active | fetch_method=bridge | reliability=B | lang=en
+- zdi | Zero Day Initiative | url=https://www.zerodayinitiative.com/blog/ | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=B | lang=en
+- censys-blog | Censys Research | url=https://censys.com/resources/blog/ | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=B | lang=en
+- gambit-security | Gambit Security | url=https://gambit.security/news-resources | rss=- | tier=standard status=candidate | fetch_method=webfetch | reliability=B | lang=en
+- sygnia | Sygnia | url=https://www.sygnia.co/blog/ | rss=- | tier=standard status=active | fetch_method=bridge | reliability=B | lang=en
+- vulncheck | VulnCheck | url=https://www.vulncheck.com/blog | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=B | lang=en
+- aikido-security | Aikido Security (aikido.dev) | url=https://www.aikido.dev/blog | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=B | lang=en
+- akamai-sirt | Akamai Security Intelligence Group | url=https://feeds.feedburner.com/akamai/blog | rss=- | tier=standard status=active | fetch_method=rss | reliability=B | lang=en
+- csa-labs | Cloud Security Alliance — Lab Space (Research Notes) | url=https://labs.cloudsecurityalliance.org/research/ | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=C | lang=en
+- depthfirst | depthfirst.com (security research blog) | url=https://depthfirst.com | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=C | lang=en
+- dfirreport | The DFIR Report | url=https://thedfirreport.com/ | rss=https://thedfirreport.com/feed/ | tier=standard status=active | fetch_method=rss | reliability=B | lang=en
+- exodus-intelligence | Exodus Intelligence (blog.exodusintel.com) | url=https://blog.exodusintel.com | rss=- | tier=standard status=active | fetch_method=rss | reliability=B | lang=en
+
+### S4 (16 sources)
+- heise-sec | heise Security | url=https://www.heise.de/security/ | rss=https://www.heise.de/security/feed.xml | tier=essential status=active | fetch_method=rss | reliability=B | lang=de
+- inside-it-ch | Inside IT Switzerland | url=https://www.inside-it.ch/ | rss=https://www.inside-it.ch/rss.xml | tier=essential status=active | fetch_method=rss | reliability=C | lang=de
+- schneier | Schneier on Security | url=https://www.schneier.com/blog/ | rss=https://www.schneier.com/feed/atom/ | tier=standard status=active | fetch_method=rss | reliability=C | lang=en
+- ransom-isac | Ransom-ISAC | url=https://ransom-isac.org/blog/ | rss=- | tier=standard status=active | fetch_method=bridge | reliability=C | lang=en
+- securityaffairs | Security Affairs | url=https://securityaffairs.com/ | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=C | lang=en
+- senthorus-ch | Senthorus SOC Research Blog | url=https://blog.senthorus.ch | rss=- | tier=standard status=candidate | fetch_method=webfetch | reliability=C | lang=en,de
+- troyhunt | Troy Hunt — Have I Been Pwned | url=https://www.troyhunt.com/ | rss=https://feeds.feedburner.com/TroyHunt | tier=standard status=active | fetch_method=rss | reliability=B | lang=en
+- zaufana-trzecia-strona | Zaufana Trzecia Strona | url=https://zaufanatrzeciastrona.pl/ | rss=- | tier=standard status=candidate | fetch_method=bridge | reliability=B | lang=pl
+- darkreading | Dark Reading (RSS) | url=https://www.darkreading.com/rss.xml | rss=- | tier=standard status=active | fetch_method=rss | reliability=C | lang=en
+- cyberscoop | CyberScoop | url=https://cyberscoop.com/ | rss=- | tier=standard status=active | fetch_method=rss | reliability=B | lang=en
+- venarix | VenariX | url=https://venarix.com/blog | rss=- | tier=standard status=active | fetch_method=bridge | reliability=B | lang=en
+- cyberattaque-org | Cyberattaque.org | url=https://www.cyberattaque.org/feed/ | rss=- | tier=standard status=active | fetch_method=rss | reliability=C | lang=fr
+- cisa-news | CISA News | url=https://www.cisa.gov/news-events/news | rss=https://www.cisa.gov/news.xml | tier=standard status=active | fetch_method=bridge | reliability=A | lang=en
+- cyberinsider | CyberInsider | url=https://cyberinsider.com | rss=- | tier=standard status=active | fetch_method=webfetch | reliability=C | lang=en
+- dcod-ch | dcod.ch (Décodage — French-language daily cyberattack/incident roundup, Switzerland) | url=https://dcod.ch/ | rss=- | tier=standard status=candidate | fetch_method=webfetch | reliability=C | lang=fr
+- ico-uk | UK ICO breach notifications | url=https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/ | rss=- | tier=standard status=active | fetch_method=bridge | reliability=A | lang=en
+

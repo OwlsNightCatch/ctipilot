@@ -1,0 +1,154 @@
+domain: S3
+run_id: 2026-09-05T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-05T04:13:08Z
+ended_at: 2026-09-05T04:21:43Z
+duration_seconds: 515
+self_telemetry:
+  webfetch_calls: 5
+  websearch_calls: 14
+  bridge_fetches: 22
+items:
+  - title: "Toy Ghouls swaps commodity tooling for two custom backdoors that use HiveMQ's public MQTT broker and the Matrix/Element messaging protocol as command-and-control"
+    sources:
+      - { url: "https://securelist.com/toy-ghouls-new-hivemq-and-element-backdoors/121270/", publisher: "Kaspersky Securelist (GERT)", date: "2026-09-04", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"Kaspersky Securelist new research September 2026\") → primary: Kaspersky Securelist, URL https://securelist.com/toy-ghouls-new-hivemq-and-element-backdoors/121270/ (confirmed via securelist.com/feed/ RSS entry dated 2026-09-04T10:00:05Z)"
+    summary: |
+      Kaspersky's GERT team documents two previously undocumented backdoor variants — internally named
+      mqtt-bird-agent and matrix-bird-agent — fielded by Toy Ghouls, a financially motivated extortion
+      cluster this store already tracks (actor:toy-ghouls, aliases Bearlyfy/Labubu/Laboo.boo) that has
+      targeted Russian organisations since 2025 and previously relied on third-party encryptors before
+      fielding its own GenieLocker ransomware (already registered as malware:genielocker). The MQTT
+      variant uses the public HiveMQ broker (broker.hivemq.com) as its command-and-control channel; the
+      second variant instead uses an attacker-controlled Matrix/Element homeserver (meet.element[.]tw).
+      Both are pushed onto already-compromised Windows hosts over WinRM using the open-source tools
+      Evil-WinRM and WinRM-fs — this is a lateral-movement/deployment step onto hosts the group already
+      controls, not an initial-access vector. Each backdoor installs as a Windows service for persistence,
+      protects its own configuration with ChaCha20-Poly1305 keyed to a value derived from the local
+      HKLM\Software\Microsoft\Cryptography\MachineGuid registry value (binding the config to the specific
+      machine), and executes operator tasking through hidden PowerShell.exe sessions launched with
+      `-NonInteractive -NoProfile -Command`. The reusable defender takeaway is architectural rather than
+      indicator-based: both variants route C2 through legitimate, widely-trusted internet services (a
+      public IoT message broker; a public chat federation protocol) specifically to blend into normal
+      egress traffic and evade domain/IP-based blocking — the same class of resilience this store has
+      recently tracked in blockchain dead-drop C2 (GoCaracal, GraphSpy-adjacent malware) and FTP-banner
+      dead-drop resolvers (E4del/PINHOLE).
+      Prerequisites: the group must already hold a foothold and valid credentials on the target Windows
+      environment before WinRM-based deployment is possible — this is a post-compromise toolset upgrade,
+      not a new intrusion vector.
+      Detection concept (telemetry class first): outbound TLS/TCP sessions to a public MQTT broker
+      (typically port 8883/1883) or to a Matrix homeserver's federation/client API endpoints from a host
+      that has no legitimate business reason to speak either protocol is anomalous and a strong pivot
+      point — most enterprise environments have near-zero baseline MQTT or Matrix egress, making protocol
+      allow-listing / anomaly detection on egress traffic a high-yield control. On the endpoint side:
+      WinRM-based remote command/file-transfer activity (Windows Remote Management event logs, Sysmon
+      process-creation events for wsmprovhost.exe / winrm.cmd spawning new services) landing a new Windows
+      service that then spawns hidden, non-interactive PowerShell children is the deployment signature;
+      PowerShell launched with `-NonInteractive -NoProfile -Command` and no visible window from a
+      service-hosting process is a further discriminator. Hardening: restrict or monitor WinRM usage
+      between workstations/servers that have no operational need for it (WinRM is itself the group's
+      chosen lateral-movement rail, per Kaspersky, using Evil-WinRM/WinRM-fs); egress-filter or alert on
+      MQTT and Matrix/federation protocol traffic from endpoints outside designated IoT/chat-infrastructure
+      segments.
+    region_nexus: "Russia (named victimology); technique and tooling are directly transferable to any environment — MQTT/Matrix-as-C2 evasion pattern has no geographic restriction"
+    primary_sector_nexus: "indirect — technique-transfer relevance to public-sector environments running any MQTT/IoT or Matrix/Element chat infrastructure at the network edge"
+    sector: "cross-sector"
+    cves: []
+    techniques: ["T1021.006", "T1059.001", "T1102.002", "T1573.001", "T1543.003"]
+    affected_products: []
+    entity_keys: ["actor:toy-ghouls", "malware:genielocker"]
+    new_entities:
+      - { key: "tool:mqtt-bird-agent", type: tool, name: "mqtt-bird-agent",
+          aliases: [],
+          summary: "Windows backdoor fielded by Toy Ghouls that uses the public HiveMQ MQTT broker (broker.hivemq.com) as its command-and-control channel, installed as a Windows service and protecting its configuration with MachineGuid-keyed ChaCha20-Poly1305 encryption (Kaspersky Securelist/GERT, 2026-09-04)." }
+      - { key: "tool:matrix-bird-agent", type: tool, name: "matrix-bird-agent",
+          aliases: [],
+          summary: "Windows backdoor fielded by Toy Ghouls, architecturally paired with mqtt-bird-agent, that uses an attacker-controlled Matrix/Element homeserver (meet.element[.]tw) as its command-and-control channel instead of a public MQTT broker (Kaspersky Securelist/GERT, 2026-09-04)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The group relies on open-source tools such as Evil-WinRM and WinRM-fs to do this"
+        attribution: "Kaspersky Securelist (GERT)"
+        source_url: "https://securelist.com/toy-ghouls-new-hivemq-and-element-backdoors/121270/"
+      - quote: "applying the ChaCha20-Poly1305 algorithm with a key derived from the value of the HKLM\\Software\\Microsoft\\Cryptography\\MachineGuid registry key"
+        attribution: "Kaspersky Securelist (GERT)"
+        source_url: "https://securelist.com/toy-ghouls-new-hivemq-and-element-backdoors/121270/"
+      - quote: "Commands are executed via PowerShell.exe in hidden mode, using the -NonInteractive -NoProfile -Command parameters"
+        attribution: "Kaspersky Securelist (GERT)"
+        source_url: "https://securelist.com/toy-ghouls-new-hivemq-and-element-backdoors/121270/"
+    extended_notes: |
+      Single reputable-lab source (Kaspersky GERT); no independent corroboration found within window —
+      several aggregator rewrites exist (cysecurity.news, gbhackers, cybersecuritynews.com) but all trace
+      to this same Securelist post, so they do not count as independent corroboration per the pipeline's
+      corroboration-is-about-independence rule. Kaspersky is Admiralty-B-tier reputable research lab
+      acting as first-party discoverer/analyst of its own GERT investigation, which supports
+      SINGLE-SOURCE-OTHER at MEDIUM confidence rather than a carve-out. Alias list for Toy Ghouls is
+      unstable across secondary sources — some outlets add "Feral Wolf" as a fourth alias not present in
+      this store's registry (which carries Bearlyfy/Labubu/Laboo.boo) — the discrepancy could not be
+      resolved because the extraction tooling (extract/jina) could not retrieve the Securelist article's
+      actual body text (only WordPress head/schema.org JSON-LD and Kaspersky's enterprise mega-nav were
+      recoverable across three attempts); WebFetch's own summarising pass was the only transport that
+      returned real body content, so verbatim-alias confirmation was not possible this run. Flagging as a
+      residual gap rather than asserting the "Feral Wolf" alias.
+  - title: "(dropped — recency gate) Forescout Vedere Labs: Claude Code ports a pre-auth WAGO PLC RCE exploit across models, needing ~8.5 hours and $535 in API spend with sustained researcher steering"
+    sources:
+      - { url: "https://www.forescout.com/blog/can-ai-create-plc-attacks-yes-but-it%E2%80%99s-not-that-easy-yet/", publisher: "Forescout (Vedere Labs)", date: "2026-09-01", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"Forescout Vedere Labs Claude WAGO PLC exploit port AI\") → primary: Forescout blog, URL https://www.forescout.com/blog/can-ai-create-plc-attacks-yes-but-it%E2%80%99s-not-that-easy-yet/"
+    summary: |
+      Not returned as a finding — included only for the record. Forescout's Vedere Labs used Claude Code
+      (terminal + Ghidra access) to port a public CVE-2021-31886 pre-auth Nucleus FTP-server RCE from one
+      WAGO 750 PLC model to a related but distinct model; the port succeeded but needed sustained
+      researcher steering across an 8h32m session costing $535.74 in API usage, and a follow-on attempt to
+      build a C2 implant permanently bricked the test PLC. Published 2026-09-01 — three days outside this
+      run's 26h window with no fresh in-window development found (checked IT Pro's "in wake of Siemens
+      advisories" framing; that framing dates to the same 2026-09-01 cycle, not a new Siemens event).
+      Logged here so a later run does not re-discover and re-research it as if new.
+    region_nexus: "none — global OT relevance, not home-region specific"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: ["CVE-2021-31886"]
+    techniques: []
+    affected_products: ["WAGO 750-831", "WAGO 750-852"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: LOW
+    novelty: duplicate
+    borderline: true
+    borderline_reason: "genuinely interesting AI-exploit-development research but publication date (2026-09-01) falls outside the 26h recency window with no fresh delta; recorded only to prevent re-discovery, main agent should NOT compose an entry from this record"
+candidate_sources: []
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "ssd-disclosure.com returned a Cloudflare/anti-bot 'Robot Challenge Screen' via the jina reader (rotation-priority source, missed again this run — no working transport found; recommend the operator re-verify whether a cookie-authenticated or alternate mirror path exists)."
+  - source_id: paradigm-shift-research
+    reason: "ps.tc blog listing page (pages/blog.html) rendered but its 'Latest article' card links to blog-unavailable.html with placeholder text 'This page is taking an unexpected detour...' — the publisher currently has no live blog content to surface."
+  - source_id: trellix
+    reason: "trellix.com/blogs/ jina fetch returned only the mega-nav/header shell with no article listing surfaced (listing appears to require further JS interaction); no in-window Trellix research confirmed or ruled out this run — recommend the source record note a drill-down path (e.g. /blogs/research/) for a future run."
+  - source_id: censys-blog
+    reason: "censys.com/resources/blog/ jina fetch returned only the cookie-consent banner text, no article listing; could not confirm in-window content this run."
+  - source_id: zdi
+    reason: "checked — latest post is 'The August 2026 Security Update Review' (2026-08-11), outside the 26h window; no in-window ZDI content."
+  - source_id: vulncheck
+    reason: "checked — latest post 'Same Target, Different Playbooks... Pwning the AI Stack' (2026-08-28), outside the 26h window; no in-window VulnCheck content."
+  - source_id: sygnia
+    reason: "checked — latest post 'How the SafePay Ransomware Group Abused OneDrive' (2026-08-31), outside the 26h window; no in-window Sygnia content."
+  - source_id: gambit-security
+    reason: "checked — latest post 'Aurora ransomware targets ESXi, abuses Cursor Agent' (2026-08-27/30), outside the 26h window; no in-window Gambit content."
+  - source_id: aikido-security
+    reason: "checked blog listing (jina) — featured/listed posts show no clear in-window publish dates in the rendered list; none of the visible titles correspond to new in-window research (all match previously-known topics such as Dirty Frag/CVE-2026-43284 from earlier coverage, or generic comparison/guide content). No in-window Aikido item confirmed."
+  - source_id: dfirreport
+    reason: "checked RSS — latest post 'BengalSEO Part 1' (2026-08-24), outside the 26h window; no in-window DFIR Report content."
+  - source_id: akamai-sirt
+    reason: "checked RSS — latest security-research post 'Analyzing a Go-Based IoT Self-Propagating DDoS Botnet' (2026-09-03T06:00Z), outside the 26h window (cutoff ~2026-09-04T02:09Z); no in-window Akamai content."
+  - source_id: exodus-intelligence
+    reason: "checked RSS — latest post (2026-07-27), well outside the 26h window; no in-window Exodus Intelligence content."
+  - source_id: csa-labs
+    reason: "labs.cloudsecurityalliance.org/research/ is explicitly self-described as content 'produced by the AWESOM-Orbert 4000 automated research pipeline' — an automated summarisation/aggregation layer, not a first-hand research lab. Its in-window items (GPUThor Rowhammer/GPU-ECC note dated 2026-09-03, Grafana MCP SSRF note, IETF AI-agent-identity note) were traced back to their actual primaries: GPUThor's underlying disclosure dates to 2026-08-27 (University of Toronto researchers, ACM CCS 2026 paper) and the Grafana MCP CVE-2026-19516 write-up (Pillar Security via SC Media) dates to 2026-09-03 reporting on a patch shipped 'last month' — both outside or at the edge of the 26h window with no fresh in-window delta, so neither was carried as a finding. Treating this source as a discovery-only lead per its own self-description, not a citable primary."
+  - source_id: heise-sec
+    reason: "worked (RSS, essential) — swept full 20-item window; in-window items were all re-reports of vulnerabilities already covered elsewhere in this pipeline (Cisco Nexus 9000 CVE-2026-20212, Chrome CVE-2026-85046, ArubaOS-CX bundle, JFrog Artifactory, SonicWall SMA1000, Langflow, ServiceNow AI Platform) or non-technical policy/business items (BSI constitutional-change plan abandoned, EU CADA defense-sovereignty debate — both outside my domain/window); no S3-original research item found."
+  - source_id: inside-it-ch
+    reason: "worked (RSS, essential) — swept full 20-item window; all Swiss items were either outside the 26h window (Novocure breach 2026-09-02) or non-security business/administration news; no S3-relevant research item found."
