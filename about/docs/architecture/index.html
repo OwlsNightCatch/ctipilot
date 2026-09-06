@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0e1116" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#fafbfc" media="(prefers-color-scheme: light)" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cloud.umami.is; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com https://cloud.umami.is https://gateway.umami.is; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<title>Architecture · CTIPilot</title>
+<meta name="description" content="Architecture · system documentation." />
+<meta name="robots" content="index, follow, max-image-preview:large" />
+<link rel="canonical" href="https://ctipilot.ch/about/docs/architecture/" />
+<meta property="og:site_name" content="CTIPilot" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Architecture · CTIPilot" />
+<meta property="og:description" content="Architecture · system documentation." />
+<meta property="og:url" content="https://ctipilot.ch/about/docs/architecture/" />
+<meta property="og:locale" content="en_US" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Architecture · CTIPilot" />
+<meta name="twitter:description" content="Architecture · system documentation." />
+<link rel="stylesheet" href="../../../assets/css/styles.css?v=8291989a83" />
+<link rel="alternate" type="application/rss+xml" title="CTIPilot · Daily" href="../../../feed.xml" />
+<link rel="alternate" type="application/rss+xml" title="CTIPilot · Per item" href="../../../feed-items.xml" />
+<link rel="alternate" type="application/stix+json" title="CTIPilot · STIX 2.1 recent" href="../../../stix/recent.json" />
+<link rel="sitemap" type="application/xml" href="../../../sitemap.xml" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23e85d75'/%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' dominant-baseline='middle' font-family='ui-monospace,monospace' font-size='15' font-weight='700' fill='%230e1116'%3ECTI%3C/text%3E%3C/svg%3E" />
+
+<script defer src="https://cloud.umami.is/script.js" data-website-id="abe09860-85be-4b06-8383-002f2e598061" data-exclude-search="true"></script>
+<!-- Path prefix back to the site root, used by app.js to build URLs. -->
+<meta name="cti-site-prefix" content="../../../" />
+<script defer src="../../../assets/js/theme.js?v=8291989a83"></script>
+<script defer src="../../../assets/js/search.js?v=8291989a83"></script>
+<script defer src="../../../assets/js/app.js?v=8291989a83"></script>
+<script defer src="../../../assets/vendor/filter.min.js?v=8291989a83"></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CTIPilot","item":"https://ctipilot.ch/"},{"@type":"ListItem","position":2,"name":"About","item":"https://ctipilot.ch/about/"},{"@type":"ListItem","position":3,"name":"Documentation","item":"https://ctipilot.ch/about/docs/"},{"@type":"ListItem","position":4,"name":"Architecture","item":"https://ctipilot.ch/about/docs/architecture/"}]}</script>
+
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="../../../" aria-label="Home · CTIPilot">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <path d="M3.5 12a8.5 8.5 0 0 1 17 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M7.5 12a4.5 4.5 0 0 1 9 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.55"/>
+          <circle cx="12" cy="12" r="2" fill="currentColor"/>
+        </svg></span>
+      <span class="brand-text"><strong>CTI</strong><span class="tld">Pilot</span></span>
+    </a>
+    <div class="seg desktop-only" role="navigation" aria-label="Views">
+      <a class="seg-btn" href="../../../"><span class="ld"><i></i></span>Live</a><a class="seg-btn" href="../../../daily/2026-09-05/">Daily</a><a class="seg-btn" href="../../../changes/">Changes</a>
+    </div>
+    <div class="util desktop-only">
+      <button type="button" class="search" data-search-open aria-label="Search briefs, CVEs, entities">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Search<span class="kbd">/</span>
+      </button>
+      <div class="more-wrap">
+        <button class="ib" type="button" data-display-toggle aria-label="Display and accessibility settings" title="Display &amp; accessibility" aria-expanded="false"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"></path><circle cx="15" cy="7" r="2.2"></circle><circle cx="9" cy="17" r="2.2"></circle></svg></button>
+        <div class="menu dpop" data-display-menu hidden><div class="dpop-row"><span class="dpop-l">Theme</span><div class="mini-seg" data-theme-seg><button type="button" data-theme-set="system">System</button><button type="button" data-theme-set="light">Light</button><button type="button" data-theme-set="dark">Dark</button></div></div><div class="sep"></div><button class="dpop-toggle" type="button" role="switch" aria-checked="false" data-font-toggle><span class="dpop-tl"><b>Dyslexia-friendly</b><small>Legible font &amp; wider spacing</small></span><span class="sw"><i></i></span></button><button class="dpop-toggle" type="button" role="switch" aria-checked="false" data-density-toggle><span class="dpop-tl"><b>Comfortable spacing</b><small>Looser line height</small></span><span class="sw"><i></i></span></button></div>
+      </div>
+      <a class="ghlink" id="github-link" href="https://github.com/OwlsNightCatch/ctipilot" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="View source on GitHub"><svg class="github-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span class="github-stars" id="github-stars" hidden></span></a>
+    </div>
+    <div class="util mobile-only">
+      <button class="ib" type="button" data-drawer-toggle aria-label="Open menu" title="Menu" aria-expanded="false"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+    </div>
+  </div>
+  <nav class="subnav desktop-only" aria-label="Knowledge base"><div class="subnav-in"><a class="subnav-link" href="../../../entities/">Entities</a><a class="subnav-link" href="../../../graph/">Graph</a><a class="subnav-link" href="../../../cves/">CVEs</a><a class="subnav-link" href="../../../attack/">ATT&amp;CK</a><a class="subnav-link" href="../../../sources/">Sources</a><a class="subnav-link" href="../../../trends/">Trends</a><a class="subnav-link" href="../../../ops/">Operations</a><span class="subnav-spring" aria-hidden="true"></span><a class="subnav-link subnav-link--aux" href="../../../feeds/">Feeds</a><a class="subnav-link subnav-link--aux active" href="../../../about/" aria-current="page">About</a></div></nav>
+  <div class="mseg mobile-only">
+    <div class="seg" role="navigation" aria-label="Views"><a class="seg-btn" href="../../../"><span class="ld"><i></i></span>Live</a><a class="seg-btn" href="../../../daily/2026-09-05/">Daily</a><a class="seg-btn" href="../../../changes/">Changes</a></div>
+  </div>
+  <div class="drawer mobile-only" data-drawer hidden>
+    <button type="button" class="msearch" data-search-open><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Search briefs, CVEs, entities…</button>
+    <a href="../../../entities/">Entities <span class="mono">actors · malware</span></a><a href="../../../graph/">Graph <span class="mono">threat graph</span></a><a href="../../../cves/">CVEs <span class="mono">tracked</span></a><a href="../../../attack/">ATT&amp;CK <span class="mono">matrix</span></a><a href="../../../sources/">Sources <span class="mono">curated</span></a><a href="../../../trends/">Trends <span class="mono">analysis</span></a><a href="../../../ops/">Operations <span class="mono">runs</span></a><a href="../../../about/">About </a><a href="../../../feeds/">RSS feeds <span class="mono">10</span></a><a href="../../../stix/">STIX bundles <span class="mono">2.1</span></a><a href="https://github.com/OwlsNightCatch/ctipilot" target="_blank" rel="noopener noreferrer">GitHub <span class="mono"><span class="star">★</span> <span class="github-stars" id="github-stars-menu" hidden></span></span></a>
+    <div class="dpop-row" style="padding:12px 6px 4px;border-top:1px solid var(--border-soft);margin-top:6px;"><span class="dpop-l">Theme</span><div class="mini-seg" data-theme-seg><button type="button" data-theme-set="system">System</button><button type="button" data-theme-set="light">Light</button><button type="button" data-theme-set="dark">Dark</button></div></div>
+    <button class="dpop-toggle" type="button" role="switch" aria-checked="false" data-font-toggle><span class="dpop-tl"><b>Dyslexia-friendly</b><small>Legible font &amp; spacing</small></span><span class="sw"><i></i></span></button>
+    <button class="dpop-toggle" type="button" role="switch" aria-checked="false" data-density-toggle><span class="dpop-tl"><b>Comfortable spacing</b><small>Looser line height</small></span><span class="sw"><i></i></span></button>
+  </div>
+</header>
+<div class="aibar" data-aibar hidden>
+  <div class="aibar-in">
+    <span class="idot" aria-hidden="true"></span>
+    <span><b>AI-generated · no human review</b> · verify critical claims against the linked source.</span>
+    <a href="../../../about/">how it works →</a>
+    <button class="aiclose" type="button" data-ai-dismiss title="Dismiss · I understand" aria-label="Dismiss AI notice">✕</button>
+  </div>
+</div>
+<div class="search-modal" data-search-modal role="dialog" aria-modal="true" aria-label="Search">
+  <div class="search-modal__scrim" data-search-close></div>
+  <div class="search-modal__panel">
+    <form class="searchbox" role="search" data-search-form>
+      <label class="visually-hidden" for="q">Search briefs, CVEs, topics, sources</label>
+      <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search briefs, CVEs, entities, sources…" aria-label="Search" />
+      <kbd class="kbd-hint" aria-hidden="true">esc</kbd>
+      <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
+    </form>
+  </div>
+</div>
+<main id="main" class="main"><div class="view">
+<article class="static-doc">
+  
+  <div class="brief-prose"><h1 id="architecture">Architecture</h1>
+<p>A single, end-to-end map of every component in the repository: what it is,
+what it reads, what it writes, and how it talks to the others. If you are
+debugging an unexpected commit or onboarding a new operator, start here.</p>
+<p>The <strong>data model</strong> (entry files, entity registry, run records) is specified
+normatively in <a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/pipeline.md" target="_blank" rel="noopener noreferrer"><code>docs/pipeline.md</code></a>, this file maps the moving
+parts and defers to that spec for every field-level question.</p>
+<h2 id="one-picture">One picture</h2>
+<pre><code>                      ┌────────────────────────────────────┐
+                      │  Claude Code routines (cloud)      │
+                      │                                    │
+                      │  intel run — operator cadence:     │
+                      │   &quot;Read prompts/cti-run.md and     │
+                      │    execute it.&quot;                    │
+                      │  quality audit — operator cadence: │
+                      │   &quot;Read prompts/quality-audit.md   │
+                      │    and execute it.&quot;                │
+                      └─────────────────┬──────────────────┘
+                                        │ git push
+                                        ▼
+   reads ┌──────────────────────────────────────────────────────────┐
+ ──────► │                       repository                         │
+         │                                                          │
+         │  prompts/                  entries/YYYY-MM-DD/&lt;slug&gt;.md  │
+         │   ├ cti-run.md             entities/registry.yaml        │
+         │   ├ quality-audit.md       runs/YYYY-MM-DD/&lt;run-id&gt;.md   │
+         │   ├ CHANGELOG.md                                         │
+         │   ├ verification.md        state/                        │
+         │   ├ entry-template.md       ├ cves_seen.json             │
+         │   └ check-run-fixes.md      └ source_health.json         │
+         │                            sources/sources.json          │
+         │  docs/pipeline.md          work/&lt;run-id&gt;/                │
+         │   (NORMATIVE data model)                                 │
+         │  docs/audits/              (quality-audit reports)       │
+         │  site/content_model.py     tools/                        │
+         │   (shared parser)           ├ check_run.py (Phase 5.5)   │
+         │                             ├ build_prior_coverage.py    │
+         │  .claude/agents/            ├ run_summary.py             │
+         │   ├ cti-research.md         └ fetch_source.py            │
+         │   └ cti-verification.md                                  │
+         └──────────────────────────────┬───────────────────────────┘
+                                        │
+                                        │ git push (claude/** branches only)
+                                        ▼
+                           ┌────────────────────────────┐
+                           │ auto-merge-claude.yml      │
+                           │  ff-merges (or merges with │
+                           │  state/*.json + entities/  │
+                           │  registry.yaml → ours,     │
+                           │  sources.json → theirs)    │
+                           └────────────┬───────────────┘
+                                        ▼
+                                      main
+                                        │
+                                        ▼ workflow_run (success only)
+                           ┌────────────────────────────┐
+                           │ deploy-site.yml            │
+                           │  runs site/build.py        │
+                           │  force-pushes to gh-pages  │
+                           └────────────┬───────────────┘
+                                        ▼
+                              GitHub Pages reader
+                              / (landing) renders the entry store
+                              over a reader-chosen time window,
+                              ordered by activity (an updated
+                              entry floats back to the top)
+                              (real HTML pages — no SPA)</code></pre>
+<h2 id="components">Components</h2>
+<h3 id="docs-pipeline-md-the-normative-data-model"><code>docs/pipeline.md</code>, the normative data model</h3>
+<p>The single normative specification of the content model (v4): entry-file
+frontmatter (kinds, priority, verification enum, the <code>updates[]</code> changelog +
+<code>updated_at</code>, <code>cves[]</code>, <code>evidence[]</code>, <code>org_triage</code>, …), the entry lifecycle
+(one living entry per finding), run-id shape, the entity-registry contract,
+run-record telemetry, relevance discipline, cross-run dedup, and what
+<code>tools/check_run.py</code> validates. <strong>If any code or doc disagrees with it, the
+spec wins and the code is the bug.</strong> Nothing in this file restates its field
+tables, read it once before touching any producer or consumer.</p>
+<h3 id="prompts-everything-the-routines-load-at-runtime"><code>prompts/</code>, everything the routines load at runtime</h3>
+<p>The two master prompts (intel run, quality audit) plus the runtime-policy / template / debug docs they reference. Each master prompt is the <em>entire</em> runtime contract for a routine; the routine is invoked with a one-line wrapper (&quot;Read this prompt and execute it&quot;). The supporting files live under <code>prompts/</code> because the master prompts <code>Read</code> them at runtime; they are part of the prompt machinery, not operator-facing documentation.</p>
+<ul><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../prompts/cti-run.md" target="_blank" rel="noopener noreferrer"><code>prompts/cti-run.md</code></a>; the intel run, <strong>fired
+multiple times per day</strong> (the operator picks the cadence; the prompt is
+cadence-agnostic, the recency window derives from the gap since the
+previous run record). Phases 0–7: preflight (run id, dedup index, state
+digest, registry read) → parallel research (S1–S4, conditional S5 intake)
+→ verification &amp; triage → deep-dive selection → compose entries + run
+record → state update → 5.5 mechanical gate → 5.7 verifier loop →
+commit/sync/push → publish verification. Output: zero or more entry
+files plus exactly one run record per fire.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../prompts/quality-audit.md" target="_blank" rel="noopener noreferrer"><code>prompts/quality-audit.md</code></a>, the
+<em>quality-audit</em> run, fired on an operator-chosen cadence (weekly is
+typical; the window is always the gap since the previous audit record).
+<strong>Builds on <code>cti-run.md</code></strong>, it instructs a runtime <code>Read</code> of the
+intel-run prompt and defines only the audit lens over the window since
+the previous audit record, so shared machinery lives in exactly one file
+and cannot copy-drift: retrospective
+truth verification of every published entry against its primary sources
+(batched cold-reader passes on the verifier sub-agents), independent
+coverage re-sweeps diffed against the store (G1 vulns / G2 incidents +
+watch-item corroboration / G3 research-blog listing sweeps), a
+systemic/operational drift review (runaway runs, publish follow-through,
+dark-but-green sources, discipline decay), effectiveness checks on the
+previous audit&#39;s fixes, and (first fire of each calendar month) the
+priority-calibration review (priority distribution vs verifier F16 drift).
+Root-causes every confirmed defect and ships the fix under the versioning
+rule (or a numbered operator recommendation). Also owns the ATT&amp;CK-pin
+freshness check (<code>tools/attack_data.py --check</code>). Output: an audit report
+under <code>docs/audits/</code>, one run record (<code>-audit</code> run-id suffix, <code>kind:
+audit</code>), audit-recovered entries where a gap still clears PD-11, and
+<code>correction</code> / <code>improvement</code> changelog records appended to the entries it
+found wrong or thin. (The weekly strategic routine that used to sit
+beside these two (<code>prompts/weekly-summary.md</code>) was retired on
+2026-08-27, and its entries were deleted on 2026-08-29.)</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../prompts/CHANGELOG.md" target="_blank" rel="noopener noreferrer"><code>prompts/CHANGELOG.md</code></a>, the version history of
+the prompts. Treat as the audit trail for editorial-policy changes.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../prompts/verification.md" target="_blank" rel="noopener noreferrer"><code>prompts/verification.md</code></a>, the editorial /
+fake-news verification policy; the two-source rule and its carve-outs
+(now the structured <code>verification</code> frontmatter enum).</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../prompts/entry-template.md" target="_blank" rel="noopener noreferrer"><code>prompts/entry-template.md</code></a>, canonical
+entry + run-record skeletons per kind plus a worked-good depth fragment.
+Phase 4 <code>Read</code>s it before composing.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../prompts/check-run-fixes.md" target="_blank" rel="noopener noreferrer"><code>prompts/check-run-fixes.md</code></a>, fix
+recipes for common <code>tools/check_run.py</code> FAILs, keyed to the checker&#39;s
+output labels.</li></ul>
+<h3 id="entries-the-content-store"><code>entries/</code>, the content store</h3>
+<p>One Markdown file per verified finding at <code>entries/&lt;YYYY-MM-DD&gt;/&lt;slug&gt;.md</code>
+(folder = UTC date of <code>discovered_at</code>; entry id = <code>&lt;YYYY-MM-DD&gt;/&lt;slug&gt;</code>, 
+the path is the identity, there is no <code>id</code> field). Frontmatter carries the
+complete metadata contract (headline, summary, priority + optional
+<code>immediate_action</code>, taxonomy tags/regions/sectors, entity keys, per-CVE
+records, sources, evidence quotes, verification flags, <code>actions[]</code>); the
+body is the analysis in the same technical register as a v2 brief item.</p>
+<p><strong>One living entry per finding.</strong> New information, including a same-day
+development between two runs, is appended to the finding&#39;s own entry as a
+timestamped <code>updates[]</code> changelog record with a matching
+<code>## Update — &lt;at&gt;</code> body section; corrections fix the wrong statement where
+it stands and record a <code>correction</code>; added precision is an <code>improvement</code>.
+The frontmatter always reflects the current state, <code>discovered_at</code> /
+<code>run_id</code> / the entry id never change, <code>updated_at</code> mirrors the last record,
+and the gate FAILs any edit that ships without a record for the editing
+fire (no silent edits, <code>docs/pipeline.md</code> § Entry lifecycle). Volume
+follows a strict relevance/actionability gate rather than a count, no
+per-run, per-day, or rolling-24 h target or ceiling; the window carries
+exactly the entries that earn their place, and more runs mean lower
+latency, never more content (dedup). Everything the site renders, the
+dynamic brief (ordered by activity, so an update floats an entry back to
+the top), day archives, feeds (one item per entry and per update), entity
+pages, trends, <code>data/alerts.json</code>, is derived from these files. Contract pointer:
+<a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../entries/README.md" target="_blank" rel="noopener noreferrer"><code>entries/README.md</code></a>; spec: <a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/pipeline.md" target="_blank" rel="noopener noreferrer"><code>docs/pipeline.md</code></a>.</p>
+<h3 id="entities-registry-yaml-the-global-entity-registry"><code>entities/registry.yaml</code>, the global entity registry</h3>
+<p>The single controlled list of named things the pipeline tracks, actors,
+campaigns, malware families, tools, incidents, reports (plus <code>trend</code> and
+<code>policy</code>). Every entry references entities by registry key
+(<code>actor:shinyhunters</code>); research agents read keys + aliases before naming
+anything; the dedup gate matches candidates against keys <em>and</em> aliases, so
+&quot;UNC6240&quot; and &quot;ShinyHunters&quot; can never become two separately-tracked
+things. The main agent appends new entities in the same commit as the
+entries that first reference them; keys are permanent (extend aliases,
+never rename). Each record may carry typed, directed, evidence-bound
+<code>relations[]</code> edges (<code>{to, type, source, note}</code>, controlled vocabulary,
+<code>source</code> = the establishing entry id; <code>docs/pipeline.md</code> § Relationships);
+derived edges (entry co-occurrence, entity↔CVE, entity↔technique) are
+computed at render time, never stored. Alias collisions, unresolved keys,
+and malformed relations FAIL <code>tools/check_run.py</code>. The site renders
+<code>/entities/&lt;key&gt;/</code> pages from it and the interactive threat graph at
+<code>/graph/</code> (<code>data/graph.json</code>).
+Contract pointer: <a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../entities/README.md" target="_blank" rel="noopener noreferrer"><code>entities/README.md</code></a>.</p>
+<h3 id="attack-enterprise-attack-json-the-pinned-mitre-att-ck-dataset"><code>attack/enterprise-attack.json</code>, the pinned MITRE ATT&amp;CK dataset</h3>
+<p>The one ATT&amp;CK Enterprise release every consumer renders and validates
+against, a compact, committed extraction (technique id → name, tactics,
+definition, sub-technique parentage, lifecycle flags with <code>revoked_by</code>
+forwarding) from the official <code>mitre-attack/attack-stix-data</code> STIX
+releases. <code>tools/attack_data.py</code> is the only writer (<code>--check</code> compares the
+pin against the upstream latest, <code>--update</code> rewrites it, <code>--selftest</code>
+verifies invariants, also enforced by <code>check_run.py</code>). Entry
+<code>techniques[]</code> frontmatter is validated against it; <code>site/build.py</code>
+derives evidence-bound entity/CVE → technique profiles from entries
+(frontmatter ∪ legacy in-prose T-ids via
+<code>content_model.entry_technique_ids</code>), renders the entity-page ATT&amp;CK
+sections and the <code>/attack/</code> overlap matrix, and exports per-entity ATT&amp;CK
+Navigator layers. Revoked techniques are kept and forwarded, the ATT&amp;CK
+analogue of registry tombstones, because the store is not rewritten when
+the pin moves and older entries keep citing old ids. Normative: <a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/pipeline.md" target="_blank" rel="noopener noreferrer"><code>docs/pipeline.md</code></a> § The ATT&amp;CK layer;
+contract: <a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../attack/README.md" target="_blank" rel="noopener noreferrer"><code>attack/README.md</code></a>.</p>
+<h3 id="runs-per-run-records"><code>runs/</code>, per-run records</h3>
+<p>One file per fire at <code>runs/&lt;YYYY-MM-DD&gt;/&lt;run-id&gt;.md</code>, with
+<code>run_id = &lt;YYYY-MM-DD&gt;T&lt;HHMM&gt;Z-&lt;intel|audit&gt;</code> (UTC, minute precision,
+lexically sortable; a same-minute retry updates the same record, 
+idempotent; <code>-weekly</code> records are legacy history from the retired routine). <strong>The run record is the mandatory artifact of every fire</strong>, 
+zero entries is a healthy quiet window; a missing record is an operational
+failure. Frontmatter is the machine-readable telemetry (models per role,
+gap/window hours, per-sub-agent allocation, fetch failures, entry counters
+<code>entries_published</code> for new files, <code>entries_updated</code> +
+<code>updated_entry_ids[]</code> for the existing entries the fire appended a
+changelog record to (the full verification-loop breakdown) the v2
+<code>run_log.json</code> entry, relocated); the body is the human-readable verification &amp; coverage notes
+(the v2 brief § 7, relocated), including the parseable <code>Coverage gaps:</code> /
+<code>Watchlist:</code> / <code>Closed-source intake:</code> / <code>Essential-coverage:</code> lines the
+next run&#39;s preflight reads. The Ops dashboard at <code>/ops/</code> is built entirely
+from <code>runs/**</code> frontmatter; the rendered brief concatenates the in-window
+record bodies as its § Verification Notes. Records migrated from v2 keep
+their historical run ids as filenames. Contract pointer:
+<a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../runs/README.md" target="_blank" rel="noopener noreferrer"><code>runs/README.md</code></a>.</p>
+<h3 id="site-content-model-py-the-shared-parser"><code>site/content_model.py</code>, the shared parser</h3>
+<p>The single reference implementation for parsing, serialising and
+schema-validating all three content types (entries, registry, runs).
+Stdlib-only, no PyYAML; it accepts the strict YAML subset defined in
+<code>docs/pipeline.md</code> § &quot;Frontmatter, strict YAML subset&quot; and refuses
+anything outside it. Consumed by <code>site/build.py</code>, <code>tools/check_run.py</code>
+and <code>tools/migrate_briefs.py</code>, so the producer (the run prompts) and every
+consumer literally share one parser and cannot drift on parsing rules, 
+the v3 equivalent of v2&#39;s &quot;check_brief imports the footer parser from
+build.py&quot; discipline, promoted to a first-class module.</p>
+<h3 id="config-org-profile-yaml-tools-compose-prompts-py-organization-parameterization"><code>config/org-profile.yaml</code> + <code>tools/compose_prompts.py</code>, organization parameterization</h3>
+<p>The deployment&#39;s organization-specific values live in one config file:
+organization (name, short name, sector, additional sectors, region focus,
+home region, description, audience), watchlists (products with
+vendor/exposure/criticality, suppliers with relationship/criticality,
+standing free-text interests), the vulnerability-triage scheme
+(categories with id/name/criteria/response + a default), the
+national-CERT single-source carve-out list (<code>national_certs</code>, required
+key, no in-code default, <code>[]</code> = carve-out disabled), the standing
+policy/regulatory watch the intel run&#39;s S2 worker sweeps (<code>policy_watch</code>),
+the <code>classification:</code>
+scheme (the NATO Admiralty code + the <code>triage_kinds</code> split), and the
+<code>deployment:</code> section (<code>site_url</code> only; there is no visibility/TLP flag).
+The defaults reproduce the historical Swiss-federal-SOC deployment;
+watchlists and triage ship empty/disabled, which makes those profile-driven
+behaviours no-ops.</p>
+<p><code>tools/compose_prompts.py</code> (stdlib-only; <code>--check</code> / <code>--write</code> / <code>--dump</code> /
+<code>--selftest</code>; <code>--get dotted.key</code> for single values) renders the profile
+into <code>ORG-PROFILE:BEGIN/END</code> managed marker blocks inside five files:
+<a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../prompts/cti-run.md" target="_blank" rel="noopener noreferrer"><code>prompts/cti-run.md</code></a> (mission + audience, the
+§ Organization profile &amp; watchlists data block, and the <code>org-policy-watch</code>
+block that tasks S2), <code>prompts/verification.md</code> (the
+<code>org-certs</code> carve-out list), the <code>cti-research</code> definition (mission,
+audience, watchlist values, <code>org-certs</code>), and both verifier definitions
+(§ Organization context). The static policy text around the blocks
+(anti-overshoot rules, sweep ownership, the <code>org_triage</code> frontmatter
+spec) lives in the prompts, is deliberately org-neutral, and follows the
+normal versioning rule; the generated blocks carry values only and are
+exempt from version bumps. In entry output the profile surfaces as
+structured frontmatter: <code>org_triage: {category, rationale}</code> when a triage
+scheme is configured, <code>classification: {reliability, credibility}</code> (the NATO
+Admiralty code) on every non-triage entry, <code>watchlist_hit: true</code> + the
+<code>watchlist</code> tag when a watchlist match drove inclusion. <code>site/build.py</code>
+reads the profile&#39;s <code>classification:</code> block directly at build time (NATO
+doctrine fallback when absent) so the rating badge on every finding card,
+its tooltip, the <code>/sources/</code> legend and the entry-detail assessment panel
+render the configured scheme&#39;s own name and definitions, the published
+badges can never drift from what the agents were instructed to assess.</p>
+<p>The same decoupling exists on the site side: <code>config/branding.yaml</code>
+(loaded by <code>site/branding_config.py</code> into <code>site/build.py</code>) owns the
+published site&#39;s identity, theme overrides, logos, chart palettes, feed
+slices, trend cohorts, and analytics; <code>site/branding/</code> holds downstream
+asset files. The shipped config equals the loader&#39;s defaults and builds a
+byte-identical site. Fork contract: <a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/customization.md" target="_blank" rel="noopener noreferrer">docs/customization.md</a>.</p>
+<p>Enforcement is three-layered: the <code>compose-profile</code> workflow (below)
+composes or fail-louds on push; <code>tools/check_run.py</code> carries a
+<code>profile-sync</code> WARN so a routine run surfaces stale composition; and
+CLAUDE.md forbids hand-editing the generated blocks.</p>
+<p>The <code>deployment:</code> section drives only the Phase 7 site poll
+(<code>compose_prompts.py --get deployment.site_url</code>); there is no TLP / visibility
+gate. For org-internal operation see
+<a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/private-deployment.md" target="_blank" rel="noopener noreferrer"><code>docs/private-deployment.md</code></a>.</p>
+<h3 id="intel-closed-source-drop-folder"><code>intel/</code>, closed-source drop folder</h3>
+<p>Operator-owned feed scripts commit dated folders (<code>intel/&lt;YYYY-MM-DD&gt;/</code>)
+of front-mattered text documents; the runs detect in-window content in
+Phase 0 and spawn a conditional intake sub-agent (S5) that extracts items with mandatory verbatim evidence quotes and
+public-corroboration pivots. Entries cite the documents via
+<code>closed_sources</code> frontmatter records (<code>{title, provider, date, ref}</code>
+referenced, never a fabricated URL). There is no TLP gate, everything
+under <code>intel/</code> is fair game to process; <code>check_run.py</code> only traces citations
+back to drop files (<code>closed-source</code> WARN), and the verifier <code>Read</code>s the drop
+files as ground truth for every closed-source claim. Contract:
+<a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../intel/README.md" target="_blank" rel="noopener noreferrer"><code>intel/README.md</code></a>. Empty/absent <code>intel/</code>, the
+normal state, costs nothing.</p>
+<h3 id="claude-agents-custom-sub-agent-definitions"><code>.claude/agents/</code>, custom sub-agent definitions</h3>
+<ul><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../.claude/agents/cti-research.md" target="_blank" rel="noopener noreferrer"><code>cti-research.md</code></a>, isolated context,
+per-role model bound by the agent definition&#39;s YAML frontmatter (operator
+rebindable). Phase 1 parallel research workers, S1–S4 + conditional S5
+intake per intel run; the audit&#39;s G1–G3 coverage re-sweeps; also reused
+for verification follow-ups (max 3 per iteration). Embeds the
+<code>WebFetch</code> outbound-links template, the <code>tools/fetch_source.py</code> contract
+for known-403 hosts, the intelligence-methodology tradecraft, the
+findings-YAML return contract, and the mandatory <code>**Model:**</code>
+self-identification line (primary source: the harness-injected model line
+in the agent&#39;s own system prompt, which sees the definition&#39;s <code>model:</code>
+pin; env vars <code>CLAUDE_FRIENDLY_NAME</code> / <code>CLAUDE_MODEL_ID</code> as marked
+container-default fallback). Before fetching, each
+worker reads <code>work/&lt;run-id&gt;/prior_coverage.json</code> (which includes entries
+earlier runs published <em>today</em>, an afternoon fire never re-researches
+the morning&#39;s entries) and <code>entities/registry.yaml</code> (canonical names +
+aliases; genuinely new entities return as <code>new_entity</code> suggestions,
+covered stories as <code>novelty: update-of:&lt;entry-id&gt;</code>). Appends one TSV line
+per successful fetch to <code>work/&lt;run-id&gt;/url-liveness.tsv</code> so
+<code>tools/check_run.py</code> can skip redundant HEAD/GETs.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../.claude/agents/cti-verification.md" target="_blank" rel="noopener noreferrer"><code>cti-verification.md</code></a>, read-only,
+isolated context, pinned to Claude Sonnet 5, gatekeeper of the publish
+gate. The Phase 5.7 cold-reader verifier; its scope is <strong>this run&#39;s new entries,
+every existing entry it appended a changelog record to (the whole entry,
+the new section and every changed field against the sources), plus the
+run record</strong>. Runs AFTER <code>tools/check_run.py</code> exits 0 (cheap
+mechanical gate first), looped iteratively (cap 8, fresh spawn each time,
+no shared memory; each iteration re-runs <code>check_run.py</code> between fix and
+re-spawn; publish requires a confirmed CLEAN, two consecutive CLEAN
+verdicts from independent cold passes; v4.1 retired the
+<code>cti-verification-alt</code> rotation variant and the two-model requirement, so
+the single definition runs every iteration). Finding categories
+F1–F18 include frontmatter ⇔ body agreement, priority calibration (a
+false <code>critical</code> fires notification hooks), classification drift and
+action-item discipline. Same self-identification contract.</li></ul>
+<h3 id="state-the-surviving-flat-state-files"><code>state/</code>; the surviving flat state files</h3>
+<p>v3 retired most of <code>state/</code>: coverage is now derived by scanning
+<code>entries/</code> (was <code>covered_items.json</code>), deep-dive rotation from entries
+with <code>deep_dive: true</code> (was <code>deep_dive_history.json</code>), and run telemetry
+lives in <code>runs/**</code> (was <code>run_log.json</code>). <code>tools/migrate_briefs.py</code>
+performed the one-shot conversion and is kept for provenance. Two files
+remain:</p>
+<ul><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../state/cves_seen.json" target="_blank" rel="noopener noreferrer"><code>state/cves_seen.json</code></a>, flat fast-lookup CVE
+index (<code>{id, title, primary_source_url, first_seen, last_seen}</code>) for
+sub-agent dedup and the CVE-sync check. Kept flat because a CVE-id
+lookup must not require scanning the entry store.</li><li><code>state/warning_acknowledgments.json</code>, the zero-warning discipline&#39;s
+ledger (v3.28): audit-reviewed acknowledgments of <code>check_run.py</code> WARNs
+whose subjects are settled history on run records, which stay immutable</li></ul>
+<p>(a published record&#39;s runaway duration, an era-correct confirmation
+  waiver). <code>check_run.py</code> reports matching warnings separately
+  (<code>N acknowledged</code>) and counts them as zero, so <code>--all</code> is held at
+  0 warn · 0 fail. Written only by the quality audit (or an
+  operator-directed session), never by a run for its own fresh warnings.</p>
+<ul><li><code>state/source_health.json</code>, written by
+<a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../tools/source_health.py" target="_blank" rel="noopener noreferrer"><code>tools/source_health.py</code></a>: bounded history
+(12 runs) of per-source accessibility probes via each source&#39;s *actual
+recipe*. Fired by the <a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../.github/workflows/source-health.yml" target="_blank" rel="noopener noreferrer"><code>source-health.yml</code></a>
+Action (a weekly cron, independent of the routines) and at the end of
+every routine run; rendered on <code>/ops/</code>. Lets
+demotion logic key off a stable failing pattern instead of one fire&#39;s
+luck.</li></ul>
+<h3 id="sources-the-curated-source-list"><code>sources/</code>, the curated source list</h3>
+<p><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../sources/sources.json" target="_blank" rel="noopener noreferrer"><code>sources/sources.json</code></a>, ~150 entries spanning
+national CERTs, vendor TI, vulnerability research, journalism, breach
+trackers. Schema:</p>
+<pre><code class="lang-jsonc">{
+  &quot;id&quot;: &quot;stable-id-never-changes&quot;,        // referenced from run records
+  &quot;publisher&quot;: &quot;Display name&quot;,
+  &quot;url&quot;: &quot;https://...&quot;,
+  &quot;category&quot;: [&quot;ch-eu&quot;, &quot;vulns&quot;, ...],
+  &quot;tier&quot;: &quot;essential | standard&quot;,         // essential = attempted every intel run
+  &quot;reliability&quot;: &quot;A | B | C | D | E | F&quot;,  // NATO Admiralty source-reliability letter
+  &quot;language&quot;: [&quot;en&quot;, &quot;de&quot;, ...],
+  &quot;status&quot;: &quot;active | candidate | demoted&quot;,
+  &quot;fetch_method&quot;: &quot;rss | webfetch | api | bridge&quot;,
+  &quot;last_successful_fetch&quot;: &quot;YYYY-MM-DD | null&quot;,
+  &quot;consecutive_failures&quot;: 0,
+  &quot;notes&quot;: &quot;history of changes, dated — the record is the recipe&quot;
+}</code></pre>
+<p><code>tier: essential</code> records (national CERTs, CISA, ENISA, …) go into every
+intel run&#39;s sub-agent slices; a miss is disclosed in the run record and
+WARNed by <code>check_run.py</code>; <code>standard</code> records rotate on a staleness
+ranking. The agent maintains the file autonomously per the lifecycle in
+the top-level <a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../README.md#source-lifecycle-all-transitions-autonomous" target="_blank" rel="noopener noreferrer">README</a>;
+every edit is recorded in the run record&#39;s <code>sources_changed[]</code>.</p>
+<h3 id="tools-pipeline-and-operator-helpers"><code>tools/</code>, pipeline and operator helpers</h3>
+<ul><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../tools/check_run.py" target="_blank" rel="noopener noreferrer"><code>tools/check_run.py</code></a>, the institutionalised
+Phase 5.5 mechanical gate. Stdlib-only, read-only; <strong>exit 0 is required
+before the verifier spawns and before every commit</strong> that adds entries or
+a run record. <code>python3 tools/check_run.py &lt;run-id&gt;</code> validates that run&#39;s
+scope (no arg = latest run; <code>--all</code> validates the whole content store;
+<code>--no-link-check</code> for offline use). Checks (full list in
+<a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/pipeline.md#the-mechanical-gate--toolscheck_runpy" target="_blank" rel="noopener noreferrer"><code>docs/pipeline.md</code></a>):
+entry schema + taxonomy + registry linkage via <code>content_model.py</code>,
+folder-date/<code>discovered_at</code>/slug consistency, blocked-URL patterns +
+liveness (honouring <code>work/&lt;run-id&gt;/url-liveness.tsv</code>), evidence
+presence/binding, <code>priority</code> ⇔ <code>immediate_action</code>, the entry lifecycle
+(<code>updates[]</code> shape, <code>updated_at</code> mirror, 1:1 body-section pairing,
+record <code>run_id</code> resolution, no silent edit, <code>entry-updates</code> /
+<code>silent-edit</code>; <code>update_of</code> retired), store-wide CVE dedup (FAIL unless
+the older entry is declared in <code>references[]</code>) + entity-key dedup (WARN),
+<code>references[]</code> resolution, run counters vs disk (<code>entries_published</code>,
+<code>entries_updated</code> + <code>updated_entry_ids</code>), rolling-24 h composition report
+(informational), CVE sync with
+<code>cves_seen.json</code>, IOC scan, closed-source traceability to <code>intel/</code> (no TLP
+gate), org-triage + Admiralty-classification vocabulary/placement,
+run-record completeness + prompt-version cross-check
+against <code>prompts/CHANGELOG.md</code>, <code>sources.json</code> shape (incl. Admiralty A–F
+<code>reliability_codes</code>), essential-coverage, the ATT&amp;CK layer (pinned
+dataset present + invariant-clean is a FAIL; unknown/revoked
+<code>techniques[]</code> ids and prose-mapped ids missing from the frontmatter are
+WARNs), and the <code>site/test_build.py</code>
+smoke tests. Fix
+recipes: <a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../prompts/check-run-fixes.md" target="_blank" rel="noopener noreferrer"><code>prompts/check-run-fixes.md</code></a>.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../tools/build_prior_coverage.py" target="_blank" rel="noopener noreferrer"><code>tools/build_prior_coverage.py</code></a>, 
+Phase 0 helper: scans <code>entries/</code> for the last N days (14 on the intel run
+and the audit) <strong>including entries earlier runs published today</strong> and
+writes <code>work/&lt;run-id&gt;/prior_coverage.json</code> (full records incl. each
+entry&#39;s <code>summary</code>, <code>updated_at</code>, its changelog record count and the last
+record&#39;s summary, the main agent AND the sub-agents read this to load
+every in-window brief for compose-time / fetch-time dedup, and to decide
+new-entry vs update-record) +
+<code>prior_coverage_keys.json</code> (lean keys-only metadata index). Coverage
+older than the window is caught by the store-wide <code>state/cves_seen.json</code>
+metadata check. This machinery is the mechanical heart of the
+no-repetition discipline.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../tools/run_summary.py" target="_blank" rel="noopener noreferrer"><code>tools/run_summary.py</code></a>, Phase 0 helper:
+compact state digest (known CVE ids, active sources, last run + gap
+anchor, fetch-gap rotation candidates, and the rolling-24 h budget
+snapshot; what earlier runs already consumed).</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../tools/attack_data.py" target="_blank" rel="noopener noreferrer"><code>tools/attack_data.py</code></a>, builds and updates
+the pinned MITRE ATT&amp;CK dataset <code>attack/enterprise-attack.json</code> from the
+official <code>mitre-attack/attack-stix-data</code> releases: <code>--check</code> (pin vs
+upstream latest, a quality-audit duty), <code>--update [--version X.Y]</code>
+(rewrite + printed change summary for the commit body), <code>--selftest</code>
+(offline invariants), <code>--info</code>. See § <code>attack/enterprise-attack.json</code>.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../tools/fetch_source.py" target="_blank" rel="noopener noreferrer"><code>tools/fetch_source.py</code></a>, stdlib-only HTTP
+bridge that re-issues requests with a current desktop-Chrome UA +
+matching client-hint headers. Solves the recurring 403 / 302-to-login on
+high-signal publishers (CISA, the Swiss NCSC Cyber Security Hub) that
+filter the routine&#39;s default UA. <strong>Mandatory every run for CISA +
+NCSC.ch</strong>, don&#39;t even attempt <code>WebFetch</code> there. Structured subcommands
+(<code>cisa-kev</code>, <code>ncsc-csh</code>, <code>enisa-euvd</code>, <code>bsi-rss/csaf</code>, <code>ncsc-nl</code>,
+<code>cert-eu</code>, <code>cert-fr</code>, <code>ico-uk</code>, <code>sec-edgar</code>, <code>feed</code>, <code>msrc</code>) wrap
+JS-rendered listing pages. <code>pdf &lt;URL&gt;</code> extracts the text of a PDF-only
+advisory, the shape multi-agency joint advisories and national-authority
+reports routinely take, and previously unreadable here at all (no
+<code>pdftotext</code>, no PDF library in the routine container), which is why the
+2026-08-19 five-agency Siemens S7 advisory shipped from an outlet&#39;s
+reading instead of its own primary. Stdlib <code>zlib</code> extraction covering
+Flate content streams, PDF string escapes, <code>Tj</code>/<code>TJ</code> operators, simple
+fonts and CID fonts via their ToUnicode CMap; no OCR, so an image-only
+PDF reports <em>no text objects found</em> rather than an empty document, and a
+CMap-approximated decode is labelled as an approximation. Offline test
+suite: <a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../tools/test_fetch_source_pdf.py" target="_blank" rel="noopener noreferrer"><code>tools/test_fetch_source_pdf.py</code></a>.
+Read-only by design: https-only, resolved-IP deny list, redirect
+re-validation, body-size cap.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../tools/migrate_briefs.py" target="_blank" rel="noopener noreferrer"><code>tools/migrate_briefs.py</code></a>, the one-shot
+v2 → v3 migration: decomposed the monolithic briefs into entries
+(discovery timestamps from git history), seeded the registry from
+<code>covered_items.json</code>, converted <code>run_log.json</code> into run records. Kept in
+the repo for provenance; never runs again.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../tools/migrate_updates.py" target="_blank" rel="noopener noreferrer"><code>tools/migrate_updates.py</code></a>, the one-shot
+v3 → v4 migration (2026-08-27): folded the 180 <code>update_of</code> entries into
+their 114 root entries as changelog records + <code>## Update — &lt;at&gt;</code> sections,
+brought each root&#39;s frontmatter to the chain&#39;s current state, re-pointed
+<code>references[]</code> and registry <code>relations[].source</code>, and removed the folded
+files (old permalinks redirect via <code>merged_from</code>). Report:
+<code>work/migration-v4-updates/report.json</code>. Kept for provenance; a store
+with no <code>update_of</code> entries is a no-op.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../tools/source_candidates.py" target="_blank" rel="noopener noreferrer"><code>tools/source_candidates.py</code></a>, walks the
+last 30 days of entries, counts outbound-link hosts, subtracts hosts
+already in <code>sources.json</code> + the aggregator allowlist, outputs the top-N
+cited-but-untracked domains. Operator-run, post-hoc, read-only.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../tools/source_health.py" target="_blank" rel="noopener noreferrer"><code>tools/source_health.py</code></a>, the accessibility
+probe behind <code>state/source_health.json</code> (see § <code>state/</code>). Probes every
+source via its actual recipe, <code>feed</code> discovery for RSS, the documented
+bridge subcommand for <code>api</code>/<code>bridge</code>, browser-UA HEAD→GET for
+<code>webfetch</code>, and derives an <code>action</code> (<code>none | needs-bridge |
+needs-demote</code>) the Ops Health panel floats.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../tools/compose_prompts.py" target="_blank" rel="noopener noreferrer"><code>tools/compose_prompts.py</code></a>, see
+§ <code>config/org-profile.yaml</code> above.</li></ul>
+<h3 id="docs-operator-facing-documentation"><code>docs/</code>, operator-facing documentation</h3>
+<p>System reference for operators, contributors, and curious readers. With one exception nothing here is loaded by the prompts at runtime (that material lives under <code>prompts/</code>); the exception is <a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/pipeline.md" target="_blank" rel="noopener noreferrer"><code>docs/pipeline.md</code></a>, which the run prompts reference as the normative data model.</p>
+<ul><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/pipeline.md" target="_blank" rel="noopener noreferrer"><code>docs/pipeline.md</code></a>, the normative data model (see the top of this file).</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/architecture.md" target="_blank" rel="noopener noreferrer"><code>docs/architecture.md</code></a>, this file. End-to-end map of every component.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/operating.md" target="_blank" rel="noopener noreferrer"><code>docs/operating.md</code></a>, operator runbook: routine setup, GitHub App, Pages, ops dashboard, troubleshooting.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/customization.md" target="_blank" rel="noopener noreferrer"><code>docs/customization.md</code></a>, downstream fork / rebrand guide (two-config model, upstream-merge workflow).</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/private-deployment.md" target="_blank" rel="noopener noreferrer"><code>docs/private-deployment.md</code></a>, org-internal hosting: private repo + scheduled pull/build/serve.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/analytics.md" target="_blank" rel="noopener noreferrer"><code>docs/analytics.md</code></a>, public-facing privacy disclosure (what we measure, what we don&#39;t).</li></ul>
+<h3 id="github-workflows-ci"><code>.github/workflows/</code>, CI</h3>
+<ul><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../.github/workflows/auto-merge-claude.yml" target="_blank" rel="noopener noreferrer"><code>auto-merge-claude.yml</code></a>, 
+triggers on push to <code>claude/**</code>. The <strong>only</strong> path commits land on <code>main</code>;
+fast-forwards when the feature branch is a strict descendant, falls back
+to a regular merge on a true divergence with auto-resolution for
+<code>state/cves_seen.json</code>, <code>state/source_health.json</code> and
+<code>entities/registry.yaml</code> (<code>--ours</code>; the routine&#39;s fresh state) and
+<code>sources/sources.json</code> (<code>--theirs</code>, main&#39;s curated list). Entry and
+run-record files are per-run unique paths and cannot conflict. Deletes
+the feature branch on success; conflicts outside the auto-resolved paths
+fail loud with <code>::error::</code>. <strong>Belongs to the publishing chain; do not
+edit unless you understand the resolution rules in
+<a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/operating.md#publishing-chain--feature-branch-only" target="_blank" rel="noopener noreferrer"><code>docs/operating.md</code></a>.</strong></li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../.github/workflows/deploy-site.yml" target="_blank" rel="noopener noreferrer"><code>deploy-site.yml</code></a>, rebuilds the
+site when the build&#39;s inputs change: direct pushes to <code>main</code> touching
+<code>entries/**</code>, <code>runs/**</code>, <code>entities/**</code>, <code>state/**</code>, <code>sources/**</code>,
+<code>docs/**</code>, <code>prompts/**</code>, <code>README.md</code>, <code>site/**</code>, or the workflow itself</li></ul>
+<p>plus a <code>workflow_run</code> chain from every successful auto-merge (pushes
+  by <code>GITHUB_TOKEN</code> don&#39;t retrigger workflows, so the chain is explicit).
+  Runs <code>site/build.py</code>, force-pushes <code>site/_site/</code> to <code>gh-pages</code>.</p>
+<ul><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../.github/workflows/source-health.yml" target="_blank" rel="noopener noreferrer"><code>source-health.yml</code></a>, a weekly
+cron (Sundays 04:30 UTC) + <code>workflow_dispatch</code>, independent of the routines. Runs
+<a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../tools/source_health.py" target="_blank" rel="noopener noreferrer"><code>tools/source_health.py</code></a> and commits
+<code>state/source_health.json</code> directly to <code>main</code> (that path sits in the
+auto-merge auto-resolution allowlist, so a concurrent claude/* push
+won&#39;t race). Independent of the routines.</li><li><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../.github/workflows/compose-profile.yml" target="_blank" rel="noopener noreferrer"><code>compose-profile.yml</code></a>, 
+triggers on push touching <code>config/org-profile.yaml</code>, the compose script,
+or any composed target. Selftests the compose script, then: on operator
+branches with drift, runs <code>--write</code> and commits the composed prompts
+back to the branch; on <code>main</code> and <code>claude/**</code>, is check-only and fails
+loud (<code>::error::</code>), auto-committing on <code>claude/**</code> would race
+<code>auto-merge-claude.yml</code>, so the Claude session that edits the config is
+required to compose in the same commit instead.</li></ul>
+<p>The four workflows are independent. The site is a <em>consumer</em> of the
+pipeline&#39;s output and never writes back.</p>
+<h3 id="site-the-public-reader"><code>site/</code>, the public reader</h3>
+<p>A stdlib-only Python static-site generator (<code>site/build.py</code>, on top of
+<code>site/content_model.py</code>) emits a real HTML page for every URL. <strong>The brief
+is a query, and the landing page IS the brief</strong>: <code>/</code> renders the live
+rolling brief, a run-grouped, reverse-chronological timeline of the last
+24 h in which <strong>every run appears, including quiet (0-finding) ones</strong>
+(<code>/live/</code> survives only as a noindex redirect stub for legacy inbound
+links). The default window ships
+server-rendered and fully no-JS-readable; <code>assets/js/brief.js</code> re-renders
+the timeline client-side from <code>data/briefbook.json</code> (the last ~35 days of
+entries) when the reader changes the window selector (6 / 12 / 24 / 48 /
+72 h) or loads older findings. Page inventory:</p>
+<ul><li><code>/</code> the landing page = the live rolling brief, ordered by each entry&#39;s
+activity moment (<code>max(discovered_at, updated_at)</code>) so an updated finding
+reappears at the top under the run that changed it, flagged <code>UPD</code>, with
+the knowledge-base pivot band and the machine-endpoint links below the
+feed · <code>/daily/YYYY-MM-DD/</code> one settled page per <strong>completed</strong> UTC day
+in the classic editorial section order, with § Updates to Prior Coverage
+rendered from that day&#39;s changelog records (the still-rolling day lives
+only on the landing page) · <code>/daily/</code> the newest-first completed-day
+archive · <code>/changes/</code> the store-wide changelog: every visible
+changelog record, newest first, deep-linked to its entry section.</li><li><code>/entries/YYYY-MM-DD/&lt;slug&gt;/</code> per-entry permalinks (metadata badges,
+&quot;first published · updated&quot; meta, each <code>## &lt;Type&gt; — &lt;at&gt;</code> section as a
+timestamped block, a revision-history panel, producing-run link); the
+old URLs of the v3 update entries folded on 2026-08-27 are meta-refresh
+redirect stubs to the living entry (<code>merged_from</code>). Every permalink also
+publishes the entry&#39;s raw Markdown source at <code>&lt;permalink&gt;index.md</code>
+(advertised via <code>&lt;link rel=&quot;alternate&quot; type=&quot;text/markdown&quot;&gt;</code> and
+<code>markdown_url</code> in <code>data/briefbook.json</code>), the machine-readable twin
+for AI agents.</li><li><code>/entities/&lt;key&gt;/</code> unified entity pages from the registry + CVE
+universe, including the derived ATT&amp;CK-technique section and a
+per-entity Navigator layer (<code>attack-layer.json</code>); <code>/cves/</code> and
+<code>/topics/</code> type-filtered list views (legacy per-id URLs are
+meta-refresh redirect stubs to the canonical).</li><li><code>/attack/</code> the ATT&amp;CK coverage matrix (pinned release, store-wide heat,
+per-technique definitions + evidence directory, client-side
+multi-entity TTP overlap over <code>data/attack.json</code>).</li><li><code>/sources/</code> + <code>/sources/&lt;id&gt;/</code>, <code>/tags/&lt;t&gt;/</code>, <code>/regions/&lt;r&gt;/</code>,
+<code>/trends/</code> (entries-per-ISO-week cohort dashboard), <code>/ops/</code> (run
+telemetry from <code>runs/**</code>), <code>/runs/&lt;run-id&gt;/</code> (per-run detail pages:
+the full telemetry panel + the record&#39;s verification &amp; coverage notes,
+linked from the live timeline&#39;s run dividers and the ops run log),
+<code>/feeds/</code>, <code>/about/**</code> (README, docs, prompts rendered as pages).</li><li>RSS feeds: <code>feed.xml</code> (one item per day page), <code>feed-items.xml</code> (one
+item per entry; <code>&lt;pubDate&gt;</code> is the entry&#39;s <code>discovered_at</code>, true
+discovery latency, not commit time, plus one item per changelog record,
+<code>guid</code> <code>&lt;entry url&gt;#update-&lt;at&gt;</code>, <code>&lt;pubDate&gt;</code> the record&#39;s <code>at</code>) + the
+sector slices from <code>config/branding.yaml</code> <code>feeds.sector_slices</code>, the
+config list is the complete set, no in-code default (this deployment:
+<code>feed-public-sector.xml</code>).</li><li>Data islands: <code>data/briefbook.json</code> (the landing page&#39;s client payload, 
+Phase 7 polls it for the run id), <code>data/alerts.json</code> (last 7 days by
+activity moment of <code>critical</code>/<code>high</code> entries with headline, summary,
+<code>immediate_action</code>, entities, CVEs, <code>updated_at</code> + compact changelog,
+the notification-hook surface), <code>data/search.json</code>,
+<code>data/site.json</code>.</li><li>STIX 2.1 bundle endpoints under <code>/stix/</code> (<code>site/stix_model.py</code>, a pure
+derived layer compiled on every build): <code>bundle.json</code> (full corpus),
+<code>recent.json</code> (rolling-window activity, reference-closed, the pull
+target for TIP platforms), <code>entities.json</code> (core entity graph),
+<code>sector-&lt;slug&gt;.json</code> (same slices as the sector RSS feeds),
+<code>extension-schema.json</code>. Deterministic uuid5 ids over the permanent
+store keys make re-ingestion idempotent; no TAXII server (static
+hosting cannot satisfy the TAXII 2.1 MUSTs), docs on the rendered
+<code>/stix/</code> page and in <a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../site/README.md" target="_blank" rel="noopener noreferrer"><code>site/README.md</code></a>.</li></ul>
+<p>The site is read-only with respect to the rest of the repo: it reads
+<code>entries/</code>, <code>entities/</code>, <code>runs/</code>, <code>state/</code>, <code>sources/</code>, <code>README.md</code>,
+<code>docs/*.md</code>, <code>prompts/*.md</code> and <code>site/taxonomy.yaml</code>, and writes only
+under <code>site/_site/</code> (gitignored locally; force-pushed to <code>gh-pages</code> by
+CI). JavaScript only enhances, with JS disabled every page, including
+the landing page&#39;s default window, is fully readable. <code>/llms.txt</code> gives
+AI agents a one-fetch map of the reading surfaces and machine endpoints.
+Internals:
+<a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../site/README.md" target="_blank" rel="noopener noreferrer"><code>site/README.md</code></a>.</p>
+<p><a href="https://github.com/OwlsNightCatch/ctipilot/blob/main/../site/taxonomy.yaml" target="_blank" rel="noopener noreferrer"><code>site/taxonomy.yaml</code></a> is the controlled vocabulary
+for every entry-frontmatter value (themes / sectors / regions / nexus /
+cve_types / cve_vectors / cve_auth / cve_status). The build and
+<code>check_run.py</code> refuse any entry using a value not in this file.</p>
+<h2 id="data-flow-per-intel-run">Data flow per intel run</h2>
+<p>The quality-audit run shares this machinery verbatim (it <code>Read</code>s
+<code>cti-run.md</code> at runtime); its fan-out is retrospective, truth-verification
+passes over the window&#39;s published entries plus independent gap re-sweeps
+(G1–G3), and its extra outputs are the audit report under <code>docs/audits/</code>
+and the <code>correction</code> / <code>improvement</code> records it appends to existing
+entries.</p>
+<pre><code> ┌──────────────┐  Phase 0     ┌───────────────────────────────────────┐
+ │  intel run   │─────────────▶│ compute RUN_ID (YYYY-MM-DDTHHMMZ-intel)│
+ │  fires       │  preflight   │ build_prior_coverage.py → work/&lt;id&gt;/  │
+ │  (N×/day,    │              │   prior_coverage{,_keys}.json          │
+ │  operator-   │              │   (last 14 days INCL. earlier runs     │
+ │  scheduled)  │              │    today — main agent loads all)       │
+ └──────────────┘              │ run_summary.py → state digest +        │
+                               │   rolling-24 h budget snapshot         │
+                               │ Read entities/registry.yaml + taxonomy │
+                               │ gap → window_hours (self-healing)      │
+                               │ detect intel/&lt;date&gt;/ drops (⇒ S5)      │
+                               └──────────┬────────────────────────────┘
+                                          │ spawn in parallel (isolated
+                                          ▼ contexts; xhigh effort, 45-min cap)
+ ┌────────────────────────────────────────────────────┐
+ │ S1 active threats &amp; trending vulns  (+product sweep)│
+ │ S2 home region &amp; sector                             │
+ │ S3 research &amp; investigative reporting               │
+ │ S4 incidents &amp; disclosures        (+supplier sweep) │
+ │ S5 closed-source intake             (conditional)   │
+ │  each: reads prior_coverage + registry BEFORE       │
+ │  fetching; writes work/&lt;id&gt;/findings.&lt;Sn&gt;.yaml +    │
+ │  url-liveness.tsv appends + .ended_at checkpoint    │
+ └──────────┬─────────────────────────────────────────┘
+            ▼ all returned or capped (compose-after-return gate)
+ ┌────────────────────────────────────────────────────┐
+ │ Phase 2 — verification &amp; triage (main context)      │
+ │  URL spot-checks · two-source/carve-outs ·          │
+ │  fake-news guard · CVE verify · dedup ⇒ new entry   │
+ │  vs update record on the existing entry vs drop ·   │
+ │  recency re-check ·                                 │
+ │  relevance/actionability gate · rank ⇒ priority     │
+ │ Phase 3 — deep-dive selection (reserved for items   │
+ │  that earn it; category rotation from prior entries)│
+ └──────────┬─────────────────────────────────────────┘
+            ▼
+ ┌────────────────────────────────────────────────────┐
+ │ Phase 4 — compose (strictly from findings files)    │
+ │  Write entries/&lt;date&gt;/&lt;slug&gt;.md   (one per NEW      │
+ │    finding); Edit an existing entry for a           │
+ │    development: append an updates[] record + its    │
+ │    `## Update — &lt;at&gt;` section, bump updated_at      │
+ │  Write runs/&lt;date&gt;/&lt;run-id&gt;.md    (telemetry front- │
+ │    matter + verification-notes body)                │
+ └──────────┬─────────────────────────────────────────┘
+            ▼
+ ┌────────────────────────────────────────────────────┐
+ │ Phase 5 — state update                              │
+ │  entities/registry.yaml   (new entities + aliases)  │
+ │  state/cves_seen.json     (CVE index sync)          │
+ │  sources/sources.json     (lifecycle bookkeeping)   │
+ │  state/source_health.json (recipe-level probe)      │
+ └──────────┬─────────────────────────────────────────┘
+            ▼
+ ┌────────────────────────────────────────────────────┐
+ │ Phase 5.5 — mechanical gate                         │
+ │  python3 tools/check_run.py &quot;$RUN_ID&quot;               │
+ │  (schema/taxonomy/registry/dedup/budgets/evidence/  │
+ │   priority⇔immediate_action/IOC/classification/     │
+ │   liveness/run-record completeness + site smoke)    │
+ │  exit != 0 → fix and re-run; no verifier, no commit │
+ └──────────┬─────────────────────────────────────────┘
+            ▼
+ ┌────────────────────────────────────────────────────┐
+ │ Phase 5.7 — verifier loop (≤8 iterations)           │
+ │  every iter: cti-verification (Sonnet 5), fresh;    │
+ │    a post-fix iter gets the prior-iteration deltas  │
+ │    block, a confirmation pass reads cold            │
+ │  scope: this run&#39;s new + updated entries + record   │
+ │  NEEDS_FIXES → remediate (incl. dropping entries)   │
+ │    → re-run check_run.py → fresh re-spawn           │
+ │  2× CLEAN → publish · iter 8 NEEDS_FIXES → fail-open,│
+ │    residuals recorded in the run record             │
+ └──────────┬─────────────────────────────────────────┘
+            ▼
+ ┌────────────────────────────────────────────────────┐
+ │ Phase 6 — commit entries/ runs/ registry state      │
+ │  sources work/&lt;run-id&gt;/ (+ .claude/memory/) on the  │
+ │  claude/&lt;name&gt; branch · sync origin/main (state/* + │
+ │  registry → ours, sources → theirs) · push w/ retry │
+ │ Phase 7 — publish verification (10-min budget):     │
+ │  poll run record on origin/main, then                │
+ │  &lt;site&gt;/data/briefbook.json for the RUN_ID           │
+ └────────────────────────────────────────────────────┘</code></pre>
+<p>The agent never bypasses any of these phases; Phase 0 is a hard
+prerequisite for Phase 1, Phase 5 (state update) for Phase 5.5 (the
+mechanical gate), which gates Phase 5.7 (the verifier), which gates
+Phase 6 (commit). The run record is written even when everything else
+fails; a fire that produced neither entries nor a record is the worst
+outcome the prompts are engineered against.</p>
+<h2 id="adding-a-new-component">Adding a new component</h2>
+<p>A safe pattern for extending the system without affecting the runs:</p>
+<ol><li><strong>Site-only feature</strong> (new view, new search facet). Edit <code>site/</code>. The
+pipeline&#39;s runs are untouched.</li><li><strong>New entry-frontmatter field.</strong> Specify it in <code>docs/pipeline.md</code>
+first, add it to <code>site/content_model.py</code> (parser + validator) and
+<code>tools/check_run.py</code>, then teach the prompts&#39; Phase 4 to populate it
+and <code>site/build.py</code> to render it. Existing entries stay valid because
+new fields are optional with a documented default, a bulk rewrite of
+the store is never the first choice (the changelog contract requires a
+record per edit; a store-wide migration is an operator-authorized
+one-shot tool, like <code>tools/migrate_updates.py</code>).</li><li><strong>New source category.</strong> Add the records to <code>sources/sources.json</code> and
+extend the category filter in <code>prompts/cti-run.md</code> Phase 1 so a
+sub-agent slice picks them up. The site&#39;s source catalogue follows on
+the next build automatically.</li><li><strong>New routine</strong> (e.g. a monthly horizon scan). Add a prompt under
+<code>prompts/</code> (follow the audit&#39;s pattern: build on <code>cti-run.md</code>, define
+only the divergences), create a routine pointing at it, and extend the
+run-id <code>kind</code> vocabulary in <code>docs/pipeline.md</code> + <code>content_model.py</code>.</li></ol>
+<p>Anything more invasive (new content type, new repo layout), update
+<code>docs/pipeline.md</code> first (it is normative; code follows it), write down
+the reasoning in the commit message, and bump the prompt version with a
+CHANGELOG entry explaining the <em>why</em>. The prompts and the data-model spec
+are the load-bearing parts of the system; small contract changes are easy
+to ship by accident and hard to roll back; every published entry is a
+living record whose provenance fields (<code>discovered_at</code>, <code>run_id</code>, id) are
+fixed forever, and every change to one is a visible changelog record.</p></div>
+</article>
+</div></main>
+<footer class="footer" role="contentinfo">
+  <div class="foot">
+    <span>© 2026 CTIPilot · published under the MIT License. Made in Switzerland.</span><span>ctipilot.ch</span>
+    <a href="../../../about/prompts/verification/">Verification policy</a>
+    <a href="../../../about/">How this works</a>
+    <a href="../../../feeds/">RSS</a>
+    <a href="https://github.com/OwlsNightCatch/ctipilot" target="_blank" rel="noopener noreferrer">GitHub</a>
+    <span class="foot-end" id="footer-meta">build 8291989 · no cookies · no tracking</span>
+  </div>
+</footer>
+</body>
+</html>

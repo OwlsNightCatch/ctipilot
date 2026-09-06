@@ -1,0 +1,350 @@
+/* brief.js — the live rolling brief's client-side windowing.
+ *
+ * The /live/ page is server-rendered for the default 24 h window as a
+ * run-grouped timeline. This script re-renders that timeline from
+ * data/briefbook.json when the reader changes the window (the range
+ * <select> or the "Load older findings" button), and re-applies the
+ * active chip filters (kept in sync via the `cti:filterchange` event
+ * dispatched by app.js). It mirrors the server markup exactly
+ * (render_timeline_item / render_run_divider in site/build.py).
+ *
+ * Windowing is by ACTIVITY (docs/pipeline.md § Entry lifecycle): each
+ * briefbook entry carries `activity_at` (max of discovered_at and
+ * updated_at), `activity_run_id` (the run that published it, or the run
+ * that made its latest changelog record) and `activity_is_update`. An
+ * updated entry therefore floats back into the window under the run that
+ * updated it, flagged UPD with the record's type + summary.
+ *
+ * Progressive enhancement: without JS the page shows the server-rendered
+ * 24 h timeline and every link still works.
+ */
+(function () {
+  'use strict';
+
+  document.addEventListener('DOMContentLoaded', init);
+
+  function sitePrefix() {
+    var m = document.querySelector('meta[name="cti-site-prefix"]');
+    return (m && m.getAttribute('content')) || '';
+  }
+
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var PRI_LABEL = { critical: 'CRITICAL', high: 'HIGH', notable: 'NOTABLE', routine: 'ROUTINE' };
+  var PRI_CLASS = { critical: 'crit', high: 'pri' };
+  var PRI_DOT = { critical: 'var(--crit)', high: 'var(--accent)' };
+
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function stamp(d) { return pad(d.getUTCDate()) + ' ' + MONTHS[d.getUTCMonth()] + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + 'Z'; }
+  // Mirrors _rail_stamp_html in site/build.py: the rail stamp breaks
+  // date-over-time deliberately, not wherever the gutter runs out.
+  function railStamp(d) { return '<span class="d">' + pad(d.getUTCDate()) + ' ' + MONTHS[d.getUTCMonth()] + '</span><span class="t">' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + 'Z</span>'; }
+  function euro(d) { return pad(d.getUTCDate()) + '.' + pad(d.getUTCMonth() + 1) + '.' + d.getUTCFullYear() + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()); }
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+  }
+
+  function init() {
+    var cfgEl = document.getElementById('brief-config');
+    var container = document.querySelector('[data-brief-timeline]');
+    if (!cfgEl || !container) return;
+    var cfg;
+    try { cfg = JSON.parse(cfgEl.textContent); } catch (_) { return; }
+
+    var refTs = new Date(cfg.reference_ts);
+    var defaultHours = cfg.default_hours || 24;
+    var hours = defaultHours;
+    var filterSets = { priority: [], kind: [], tag: [], region: [] };
+    var data = null;
+
+    var select = document.querySelector('[data-window-select]');
+    var more = document.querySelector('[data-window-more]');
+    var endMsg = document.querySelector('[data-window-end]');
+    var fromEl = document.querySelector('[data-window-from]');
+    var toEl = document.querySelector('[data-window-to]');
+    var statusEl = document.querySelector('[data-window-status]');
+    var countEl = document.querySelector('[data-window-count]');
+
+    if (toEl) toEl.textContent = euro(refTs);
+
+    function passesFilter(e) {
+      var s = filterSets;
+      if (s.priority.length && s.priority.indexOf(e.priority) < 0) return false;
+      if (s.kind.length && s.kind.indexOf(e.kind) < 0) return false;
+      if (s.tag.length && !s.tag.some(function (t) { return (e.tags || []).indexOf(t) >= 0; })) return false;
+      if (s.region.length && !s.region.some(function (r) { return (e.regions || []).indexOf(r) >= 0; })) return false;
+      return true;
+    }
+
+    function relUrl(e) {
+      // briefbook url is prefixed for the /brief/ page ("../entries/…/"); strip
+      // that and re-apply the live sitePrefix so it resolves anywhere.
+      return (e.url || '').replace(/^(\.\.\/)+/, '');
+    }
+
+    function badgesHtml(e) {
+        var b = ['<span class="b ' + (PRI_CLASS[e.priority] || '') + '">' + esc(PRI_LABEL[e.priority] || String(e.priority).toUpperCase()) + '</span>'];
+        if (e.cve_label && e.cve_ids && e.cve_ids.length) {
+          b.push('<a class="b cve" href="' + esc(sitePrefix() + 'cves/' + e.cve_ids[0] + '/') + '">' + esc(e.cve_label) + '</a>');
+        } else if (e.cve_label) {
+          b.push('<span class="b cve">' + esc(e.cve_label) + '</span>');
+        }
+        if (e.exploited) b.push('<span class="b exp">exploited</span>');
+        if (e.update_count) b.push('<span class="b upd" title="' + esc(e.update_count + ' changelog record' + (e.update_count === 1 ? '' : 's')) + '">updated</span>');
+        // Reliability rating — server-rendered badge HTML from briefbook.json
+        // (build-time generated by render_classification_badge /
+        // render_org_triage_badge, so client and server markup can't drift).
+        if (e.classification_html) b.push(e.classification_html);
+        if (e.org_triage_html) b.push(e.org_triage_html);
+        return '<div class="badges">' + b.join('') + '</div>';
+    }
+
+    function sourceLine(e) {
+        var srcs = e.sources_min || [];
+        if (!srcs.length) return '';
+        var bits = srcs.map(function (s) {
+          return '<a href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer">' + esc(s.publisher) + '</a>';
+        });
+        return '<div class="f-sources"><span class="f-sources__l">Sources:</span> ' + bits.join(' · ') + '</div>';
+    }
+
+    var TYPE_LABEL = { update: 'Update', correction: 'Correction', improvement: 'Improvement' };
+
+    // § Do now: every actions[] task in the window, aggregated. Mirrors
+    // render_donow in site/build.py; the panel hides itself when the window
+    // carries no work (a healthy window, not a gap).
+    function shortLabel(e) {
+      var ids = e.cve_ids || [];
+      if (ids.length) return ids[0] + (ids.length > 1 ? ' +' + (ids.length - 1) : '');
+      var t = String(e.headline || e.title || e.id || '').replace(/\*\*/g, '');
+      return t.length <= 52 ? t : t.slice(0, 52).replace(/\s\S*$/, '') + '…';
+    }
+
+    function donowHtml(ops) {
+      var rows = [];
+      ops.forEach(function (e) {
+        (e.actions || []).forEach(function (a) {
+          if (typeof a !== 'string' || !a.trim()) return;
+          var url = esc(sitePrefix() + relUrl(e));
+          rows.push('<li class="action-list__item" data-entry-id="' + esc(e.id) + '">'
+            + '<div class="action-list__body">' + esc(a.trim()) + '</div>'
+            + '<a class="action-ref" href="' + url + '" aria-label="Open finding: ' + esc(shortLabel(e)) + '">'
+            + '<span class="action-ref__tag">Finding</span>'
+            + '<span class="action-ref__label">' + esc(shortLabel(e)) + '</span>'
+            + '<span class="action-ref__go" aria-hidden="true">→</span></a>'
+            + '</li>');
+        });
+      });
+      if (!rows.length) return '';
+      return '<h2 class="donow-h">Do now<span class="donow-n" data-donow-count>' + rows.length + '</span></h2>'
+        + '<ul class="action-list">' + rows.join('') + '</ul>';
+    }
+
+    function activityDate(e) {
+      var a = e.activity_at || e.discovered_at;
+      return a ? new Date(a) : refTs;
+    }
+
+    function latestRecord(e) {
+      var u = e.updates || [];
+      return u.length ? u[u.length - 1] : null;
+    }
+
+    function runItem(e, isNew) {
+      var isUpd = !!e.activity_is_update;
+      var rec = isUpd ? latestRecord(e) : null;
+      var d = isUpd ? activityDate(e) : (e.discovered_at ? new Date(e.discovered_at) : refTs);
+      var flag = isUpd ? 'UPD' : (isNew ? 'NEW' : '');
+      var flagStyle = isUpd ? 'color:var(--warn)' : (isNew ? 'color:var(--ok)' : '');
+      var prov = ['<div class="prov">'];
+      if (e.kind) prov.push('<span>' + esc(e.kind) + '</span>');
+      prov.push('<span>' + esc(stamp(e.discovered_at ? new Date(e.discovered_at) : d)) + '</span>');
+      prov.push('<span class="' + esc(e.verification_class || 'p-warn') + '">' + esc(e.verification_label || '') + '</span>');
+      prov.push('<a class="refs" href="' + esc(sitePrefix() + relUrl(e)) + '">open ↗</a></div>');
+      var line;
+      if (isUpd && rec) {
+        var t = rec.type || 'update';
+        line = '<p class="tl-update tl-update--' + esc(t) + '"><b>' + esc(TYPE_LABEL[t] || 'Update') + '</b> · '
+          + esc(rec.summary || '') + ' <span class="muted">(first published ' + esc((e.discovered_at || '').slice(0, 10)) + ')</span></p>';
+      } else {
+        line = '<p>' + esc(e.summary || e.headline || '') + '</p>';
+      }
+      return '<div class="tl-item' + (isUpd ? ' tl-item--updated' : '') + '" data-entry-id="' + esc(e.id) + '">'
+        + '<div class="tl-rail"><span class="tl-node" style="background:' + (PRI_DOT[e.priority] || 'var(--text-muted)') + '"></span>'
+        + '<span class="time">' + railStamp(d) + '</span><span class="flag" style="' + flagStyle + '">' + esc(flag) + '</span></div>'
+        + '<div class="tl-body">'
+        + badgesHtml(e)
+        + '<h3 class="tl-title"><a href="' + esc(sitePrefix() + relUrl(e)) + '">' + esc(e.title || e.id) + '</a></h3>'
+        + line
+        + prov.join('')
+        + sourceLine(e)
+        + '</div></div>';
+    }
+
+    function runDivider(label, gap, count, rid) {
+      // Mirrors render_run_divider in site/build.py — the timestamp label
+      // links to the run's detail page (/runs/<run-id>/) when the run id is
+      // known; identical markup/classes otherwise.
+      var n = count === 0 ? 'quiet window' : count + ' finding' + (count === 1 ? '' : 's');
+      var g = (gap ? gap + ' · ' : '') + n;
+      var cls = count === 0 ? 'tl-run tl-run--quiet' : 'tl-run';
+      var lbl = rid
+        ? '<a class="rl" href="' + esc(sitePrefix() + 'runs/' + rid + '/') + '" title="Open run details · verification & coverage notes">' + esc(label) + '</a>'
+        : '<span class="rl">' + esc(label) + '</span>';
+      return '<div class="' + cls + '"><div class="tl-rail rail-e"><span class="runnode"></span></div>'
+        + '<div class="run-h">' + lbl + '<span class="rg">· run · ' + esc(g) + '</span></div></div>';
+    }
+
+    function render() {
+      if (!data) return;
+      var since = new Date(refTs.getTime() - hours * 3600000);
+      var runsById = {};
+      (data.runs || []).forEach(function (r) { if (r.run_id) runsById[r.run_id] = r; });
+
+      // Window membership + ordering are by ACTIVITY: an entry updated inside
+      // the window is in the window even if first published long before it.
+      var ops = (data.entries || []).filter(function (e) {
+        var d = (e.activity_at || e.discovered_at) ? activityDate(e) : null;
+        if (!d || d < since || d > refTs) return false;
+        return passesFilter(e);
+      });
+      ops.sort(function (a, b) {
+        var da = a.activity_at || a.discovered_at || '', db = b.activity_at || b.discovered_at || '';
+        if (da !== db) return da < db ? 1 : -1;
+        return a.id < b.id ? 1 : -1;
+      });
+
+      // has-older ignores active filters (it's a window boundary, not a filter).
+      var hasOlder = (data.entries || []).some(function (e) {
+        var d = (e.activity_at || e.discovered_at) ? activityDate(e) : null;
+        return d && d < since;
+      });
+
+      // Group in-window entries by the run of their latest activity (the
+      // publishing run, or the run that made the latest changelog record).
+      var byRun = {};
+      ops.forEach(function (e) {
+        var k = e.activity_run_id || e.run_id || '';
+        (byRun[k] = byRun[k] || []).push(e);
+      });
+
+      // EVERY run in the window gets a divider (incl. 0-finding quiet runs),
+      // union with any run referenced by an in-window entry.
+      var runTs = function (rid) {
+        var r = runsById[rid];
+        if (r && (r.completed || r.started)) return new Date(r.completed || r.started);
+        var es = byRun[rid] || [];
+        return es.length ? activityDate(es[0]) : new Date(0);
+      };
+      var inWindowRuns = (data.runs || []).filter(function (r) {
+        if (!r.run_id) return false;
+        var t = r.completed || r.started ? new Date(r.completed || r.started) : null;
+        return t && t >= since && t <= refTs;
+      }).map(function (r) { return r.run_id; });
+      var keyset = {};
+      inWindowRuns.concat(Object.keys(byRun)).forEach(function (k) { if (k) keyset[k] = 1; });
+      var keys = Object.keys(keyset).sort(function (a, b) { return runTs(b) - runTs(a); });
+      var firstNonEmpty = keys.filter(function (k) { return (byRun[k] || []).length; })[0];
+
+      var activeCount = filterSets.priority.length + filterSets.kind.length + filterSets.tag.length + filterSets.region.length;
+      var html = '';
+      if (!keys.length) {
+        html = '<div class="section-empty" style="padding:40px 0 0;">'
+          + 'No runs in this window' + (activeCount ? ' matching the active filters' : '')
+          + '. Load older findings to reach further back.</div>';
+      } else {
+        var prevTs = null;
+        keys.forEach(function (rid) {
+          var ts = runTs(rid);
+          var gap = '';
+          if (prevTs && ts.getTime() > 0) {
+            var dh = (prevTs.getTime() - ts.getTime()) / 3600000;
+            if (dh >= 1) gap = 'gap ' + Math.round(dh) + 'h';
+          }
+          if (ts.getTime() > 0) prevTs = ts;
+          var items = byRun[rid] || [];
+          html += runDivider(stamp(ts), gap, items.length, rid);
+          items.forEach(function (e) { html += runItem(e, rid === firstNonEmpty && !e.activity_is_update); });
+        });
+      }
+      container.innerHTML = html;
+
+      var donowEl = document.querySelector('[data-donow]');
+      if (donowEl) {
+        var dn = donowHtml(ops);
+        donowEl.innerHTML = dn;
+        donowEl.hidden = !dn;
+      }
+
+      if (fromEl) fromEl.textContent = euro(since);
+      if (statusEl) statusEl.textContent = 'last ' + hours + 'h';
+      if (countEl) countEl.textContent = String(ops.length);
+      var nCrit = 0, nHigh = 0, nUpd = 0, nExp = 0;
+      var kinds = {};
+      ops.forEach(function (e) {
+        if (e.priority === 'critical') nCrit++;
+        if (e.priority === 'high') nHigh++;
+        if (e.activity_is_update) nUpd++;
+        if (e.exploited) nExp++;
+        var k = e.kind || 'other';
+        kinds[k] = (kinds[k] || 0) + 1;
+      });
+      var mixEls = {
+        '[data-window-crit]': nCrit,
+        '[data-window-high]': nHigh,
+        '[data-window-upd]': nUpd,
+        '[data-window-exp]': nExp,
+        '[data-window-total]': ops.length
+      };
+      Object.keys(mixEls).forEach(function (sel) {
+        var el = document.querySelector(sel);
+        if (!el) return;
+        el.textContent = String(mixEls[sel]);
+        var tile = el.closest('.pulse-t');
+        if (tile && sel !== '[data-window-total]') {
+          tile.classList.toggle('pulse-t--zero', mixEls[sel] === 0);
+        }
+      });
+      var kindsEl = document.querySelector('[data-window-kinds]');
+      if (kindsEl) {
+        var kindKeys = Object.keys(kinds).sort(function (a, b) {
+          return (kinds[b] - kinds[a]) || (a < b ? -1 : 1);
+        });
+        kindsEl.innerHTML = kindKeys.length
+          ? kindKeys.map(function (k) {
+              return '<span class="pulse-kind"><b>' + kinds[k] + '</b> ' + esc(k) + '</span>';
+            }).join('')
+          : '<span class="pulse-kind pulse-kind--empty">quiet window</span>';
+      }
+      if (endMsg) endMsg.hidden = hasOlder;
+      if (more) more.hidden = !hasOlder;
+    }
+
+    function load() {
+      fetch(sitePrefix() + (cfg.briefbook_url || 'data/briefbook.json'))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { if (j) { data = j; render(); } })
+        .catch(function () { /* keep the server-rendered timeline */ });
+    }
+
+    if (select) select.addEventListener('change', function () {
+      hours = parseInt(select.value, 10) || defaultHours;
+      render();
+    });
+    if (more) more.addEventListener('click', function () {
+      hours += 24;
+      if (select) {
+        var has = Array.prototype.some.call(select.options, function (o) { return parseInt(o.value, 10) === hours; });
+        if (has) select.value = String(hours);
+      }
+      render();
+    });
+
+    document.addEventListener('cti:filterchange', function (e) {
+      if (e.detail && e.detail.sets) { filterSets = e.detail.sets; if (data) render(); }
+    });
+
+    load();
+  }
+})();
