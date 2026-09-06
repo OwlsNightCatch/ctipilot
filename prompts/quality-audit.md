@@ -1,6 +1,6 @@
 # CTI Quality Audit — Master Prompt
 
-> **Prompt version:** v4.8 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v4.9 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired **on an operator-chosen cadence** (typically weekly; recommended after the day's intel fires — the prompt is schedule-agnostic and self-healing: the window is always the gap since the previous audit record). Same delegation model as the intel run: the main agent owns diffing, root-causing, fixing and publishing; bulk source fetching runs in sub-agents.
 >

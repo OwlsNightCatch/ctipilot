@@ -4,6 +4,30 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.9 — 2026-09-06 (EPSS gets units, and the reader-facing-text check gets its other half)
+
+### Why
+
+Two findings from the 2026-09-06 quality audit. Both are about a rule that existed and an enforcement surface that did not.
+
+**EPSS.** `cves[].epss` has been in the frontmatter contract since v3, and nothing in the repo ever said what it means. `docs/pipeline.md` and `prompts/entry-template.md` carried the field as `epss: null` with no unit, no range and no source. Every fire therefore decided for itself, and the store now holds both conventions side by side: 6 values are plainly the FIRST.org probability (0.0047, 0.9324), 4 are plainly a percentage or the percentile (1.37, 3.97, 12.01%, 55.85), and 10 sit in [0, 1] where no consumer can tell which was meant. Two entries also carry a provenance suffix inside the value ("0.27 (EUVD)"), which is not a number at all.
+
+That ambiguity is not cosmetic and it did not stay contained. On 2026-09-01 the verifier loop's iteration 1 correctly set CVE-2026-82329's EPSS to the FIRST.org value 0.00377, and iteration 2 **reverted it** to 0.377, reasoning in its own words that "the store's convention is a percentage number (confirmed by a pre-existing entry with epss: 1.37, impossible as a raw 0-1 probability)". A wrong legacy value taught a later verifier the wrong convention, and it overrode a correct fix. Four days later a different fire put 0.47 where FIRST.org says 0.0047. Two 100x-wrong values published in seven days, from one undefined field. The store advertises itself as a machine-readable knowledge base for automated triage; a probability field that might be a percentage is not one.
+
+**Reader-facing text.** v4.2's § Style rules bans two things from reader-facing text in one sentence: production-process self-reference ("as of this run") **and** frontmatter field names ("`cves[]`, `techniques[]`, `actions[]`, …"). The `reader-text-internals` check shipped in v4.8 implemented only the first half. The 2026-08-30 audit's watch item 5 set the trigger explicitly — "the v4.2 rule's field list extended if a second instance appears" — and three appeared in the following window alone: `cves[]` in the GitSpawn entry's sourcing note, `evidence[]` in MoiClient's, `techniques[]` in Thomson Reuters'. The rule was never the problem; the check simply did not cover what the rule already said.
+
+### What changed
+
+- **`docs/pipeline.md` § entry frontmatter (normative).** `cves[].epss` is defined: the FIRST.org EPSS **probability**, a quoted decimal in [0, 1], taken from the API's `epss` field and never its `percentile` field; never a percentage, never a provenance suffix, `null` when not looked up. Provenance belongs in `sources[]` / `sourcing_note`.
+- **`prompts/entry-template.md`.** Both `cves[]` skeletons annotate the field with the same rule, where a composing agent actually looks.
+- **`tools/check_run.py` — new `cve-epss` check.** A non-null `epss` must parse as a decimal and sit in [0, 1]. FAIL in run scope (a fire fixes its own before commit), WARN under `--all`, where the subject is historical entries the audit corrects through their changelogs. The docstring records why the field's units were worth writing down.
+- **`tools/check_run.py` — new `append-only-records` check.** Hard invariant #19 makes earlier `updates[]` records settled history, and nothing enforced it: `silent-edit` only asks whether a modified entry carries a record for the current fire, never what changed, so a fire could rewrite a past record's `summary` while adding a well-formed record of its own and pass every check. The 2026-09-06 audit did exactly that, correcting an EPSS figure with a string replacement that also matched the same figure inside a 2026-08-19 record, and the gate stayed green; its own verifier caught it on the fifth iteration. The check diffs each modified entry against HEAD and requires every record belonging to an earlier fire to be byte-identical, with records appended only, never removed or reordered. What stays revisable in place, and is deliberately not flagged, is the frontmatter, the main analysis and the text of earlier `## <Type> — <at>` sections.
+- **`tools/check_run.py` — `reader-text-internals` extended.** A new `_FIELD_REF_RE` catches the bracket form of a frontmatter field name (`cves[]`, `techniques[]`, `evidence[]`, `sources[]`, …) in the title, headline, summary, sourcing note and every non-internal changelog record summary. The bracket form is what makes this unambiguous: "the sources disagree" is English, "the sources[] record" is the entry narrating its own schema at a reader who has never seen it. Still WARN, still run-scope only, for the same reason v4.8 gave.
+
+### What stays
+
+Everything else. The check deliberately catches only the unambiguous EPSS violations: a percentage that lands inside [0, 1] (0.377 for a true 0.00377) is invisible to any offline check, which is exactly why the units are now stated normatively rather than left to be inferred from the store. `epss` remains optional and `null` remains the correct value when nobody looked it up. `reader-text-internals` stays a WARN and stays off `--all` — the historical backlog is an audit sweep, one changelog record at a time, not a gate. No relevance, sourcing, verification or lifecycle rule moves: `append-only-records` mechanises a lifecycle rule that was already normative, it does not change it.
+
 ## 4.8 — 2026-08-30 (the KEV sweep becomes a checklist, and brevity stops shrinking the ATT&CK mapping)
 
 ### Why

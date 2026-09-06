@@ -1,0 +1,443 @@
+domain: G3
+run_id: 2026-09-06T1308Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-06T13:13:12Z
+ended_at: 2026-09-06T13:22:21Z
+duration_seconds: 549
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 0
+  bridge_fetches: 45
+items:
+  - title: "Spring Ring — Microsoft Teams vishing from lookalike onmicrosoft.com tenants walks victims from a fake IT help-desk call into an RMM session or a PetitPotam NTLM relay against the domain controller"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/spring-ring-voice-phishing-campaigns/", publisher: "Palo Alto Networks Unit 42", date: "2026-08-31", role: "primary" }
+    discovery_trace: "first seen at: mandiant-gtig-adjacent listing sweep — unit42.paloaltonetworks.com/feed/, URL https://unit42.paloaltonetworks.com/feed/ → primary: Unit 42, URL https://unit42.paloaltonetworks.com/spring-ring-voice-phishing-campaigns/ (no pivot needed — entry-point post is the primary)"
+    summary: |
+      Palo Alto Networks Unit 42 documents Spring Ring, a January-April 2026 campaign that approached 150+
+      employees across 10+ tenants via external Microsoft Teams chats from spoofed .onmicrosoft.com identities
+      impersonating internal IT help desks (e.g. HelpDesk@ITProtectionDepartment.onmicrosoft.com), then pivoted
+      to a live voice-phishing (vishing) call to build trust before requesting remote-access action. Two
+      divergent post-compromise paths were observed: Campaign A talks the victim into running built-in Quick
+      Assist or third-party RMM tools, then delivers an obfuscated PowerShell RAT stager (disables AMSI via the
+      amsiInitFailed flag) from attacker domain san-sid[.]com; Campaign B directs the victim to a
+      company/employee-name-tailored S3 URL to download an .exe that stages persistence copies, sideloads a
+      headless Microsoft Edge extension, then uses Python to run SMB port-445 scanning and a PetitPotam-driven
+      NTLM-relay attack coercing the domain controller to authenticate to attacker infrastructure for
+      domain-level privilege escalation — blocked in this case by Unit 42 MDR. Detection markers Unit 42
+      names: the rapid 1:1-chat-to-unsolicited-audio-call transition, source IPs from commercial VPN/proxy
+      services, atypical RMM execution by users with no remote-support need, and access to unfamiliar
+      cloud-storage/file-hosting links following a Teams chat.
+    region_nexus: "global; abuses Microsoft Teams' default 'Chat with Anyone' external-contact feature present in any tenant, including Swiss public-sector M365 deployments"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1566.004, T1219, T1557.001, T1562.001]
+    affected_products: ["Microsoft Teams", "Microsoft Entra ID (Active Directory NTLM authentication)"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:spring-ring-teams-vishing-2026", type: campaign, name: "Spring Ring",
+          aliases: [], summary: "Unit 42's designation for a January-April 2026 Microsoft Teams vishing campaign (150+ targets, 10+ tenants) that pivots from a fake IT-helpdesk voice call to RMM-tool abuse or a PetitPotam NTLM-relay attack against the domain controller (Unit 42, 2026-08-31)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Our telemetry reveals that this operation targeted more than 150 employees across at least 10 companies in various industries."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/spring-ring-voice-phishing-campaigns/"
+      - quote: "The attacker attempted a PetitPotam attack to coerce the DC into authenticating back to an attacker-controlled machine. This NTLM relay attack was designed to grant the attacker domain-level privileges"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/spring-ring-voice-phishing-campaigns/"
+    extended_notes: |
+      Distinct from the already-covered SynkLoader (Expel, 2026-08-24) and Storm-2945/UNC7005 device-code
+      cases (GTIG, 2026-08-23): different actor, no named attribution offered by Unit 42, and the
+      NTLM-relay-via-PetitPotam post-compromise path (Campaign B) is technically unique among this run's
+      Teams-vishing coverage. No overlap with any prior_coverage.json record found on title/entity grep.
+
+  - title: "A password-spraying campaign hit AWS root-user console logins at 150+ organisations across a month, using two fixed browser user agents and proxy/hosting-infrastructure source IPs — no successful login observed, motive unconfirmed"
+    sources:
+      - { url: "https://securitylabs.datadoghq.com/articles/aws-root-user-bruteforce-campaign/", publisher: "Datadog Security Labs", date: "2026-08-31", role: "primary" }
+    discovery_trace: "first seen at: RSS feed securitylabs.datadoghq.com/rss/feed.xml, URL https://securitylabs.datadoghq.com/rss/feed.xml → primary: Datadog Security Labs, URL https://securitylabs.datadoghq.com/articles/aws-root-user-bruteforce-campaign/ (no pivot needed)"
+    summary: |
+      Datadog Security Research observed a password-spraying campaign against AWS account root-user console
+      logins running 24 July - 23 August 2026, hitting 150+ organisations with a median of two failed attempts
+      each (up to eight). The campaign is fingerprinted by two static user agents (a Chrome/Edg 85.x string and
+      a Firefox/120.0 string) and by source IPs spanning many countries/ASNs that threat-intel sources flag as
+      hosting or residential-proxy infrastructure. Because a failed root-user ConsoleLogin CloudTrail event
+      requires the root account's registered email address to generate at all, the attacker either already
+      held a list of valid root-user emails or brute-forced through a candidate list until landing valid ones —
+      meaning email enumeration, not just password guessing, is embedded in the technique. No successful
+      authentication was observed and targeting shows no clear victimology by country or industry. Datadog
+      supplies the exact CloudTrail query to check exposure: source:cloudtrail
+      @userIdentity.type:Root @eventName:ConsoleLogin @responseElements.ConsoleLogin:(Failure OR Success)
+      filtered on the two named user agents.
+    region_nexus: "global; any organisation, including Swiss public-sector bodies, running AWS accounts is a potential target regardless of sector"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1110.003, T1078.004]
+    affected_products: ["Amazon Web Services (AWS IAM root user / CloudTrail ConsoleLogin)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "attackers made repeated failed authentication attempts against AWS root user accounts at more than 150 organizations"
+        attribution: "Datadog Security Labs"
+        source_url: "https://securitylabs.datadoghq.com/articles/aws-root-user-bruteforce-campaign/"
+      - quote: "generating a failed `ConsoleLogin` API call requires the email address associated with the root user account. This means the attacker either already had a list of root user email addresses, or brute forced through a list of account email addresses until finding a valid one."
+        attribution: "Datadog Security Labs"
+        source_url: "https://securitylabs.datadoghq.com/articles/aws-root-user-bruteforce-campaign/"
+    extended_notes: |
+      Datadog explicitly declines to assess intent given no successful login was observed; carried here as an
+      unattributed reconnaissance/credential-access campaign with a concrete, low-cost detection query rather
+      than as a confirmed intrusion.
+
+  - title: "A tampered Exodus wallet installer ships a real, working crypto wallet that can never open its own window — three files rewritten to hide a JavaScript FFI loader that reflectively maps a six-module RAT into memory, detected 0/76 on VirusTotal"
+    sources:
+      - { url: "https://www.huntress.com/blog/exodus-crypto-wallet-installer-rat", publisher: "Huntress", date: "2026-09-01", role: "primary" }
+    discovery_trace: "first seen at: RSS feed huntress.com/blog/rss.xml, URL https://www.huntress.com/blog/rss.xml → primary: Huntress, URL https://www.huntress.com/blog/exodus-crypto-wallet-installer-rat (no pivot needed)"
+    summary: |
+      Huntress documents four July-August 2026 intrusions (three within 85 minutes of each other on 18 August)
+      delivered via a trojanized Exodus crypto-wallet installer reached through disguised .pdf.js scripts run
+      from the browser download bar (opening a genuine decoy PDF via Storyblok CDN while silently msiexec-installing
+      an MSI) or via a double-extension .zip.116\ Explorer-staged JS file; a third route found on the same
+      delivery IP but never observed in the wild uses a search-ms: URI redirect over WebDAV (@8080) to run a
+      file straight out of an "Open Windows Explorer?" prompt with no command line and no download step at all.
+      The 201 MB MSI installs a genuine, functional Exodus 24.33.4 wallet (launched via explorer.exe so
+      Exodus.exe re-parents under the shell rather than under msiexec, and runs with no admin rights from
+      %APPDATA%). Three files inside the wallet's app.asar were altered: exodus_patch.js is new and, once
+      deobfuscated from 169,907 to 3,349 bytes, overrides Electron's BrowserWindow.show/focus/center to no-ops
+      and denies every permission request — so the wallet fully initialises and runs but no window, taskbar
+      entry or Alt-Tab target is ever created. keystorage.js (real filename, replaced contents, 50 MB, 99.97%
+      padding) contains, once its string-array/rotation obfuscation is unwound, koffi FFI declarations for
+      VirtualAlloc/WriteProcessMemory/GetProcAddress/CreateThread/RtlAddFunctionTable — a hand-written reflective
+      PE loader in JavaScript — decrypting a 10 MB AES-256-CBC blob (static key/IV recovered from the same
+      string array) into a six-module RAT (remote command execution, file management, and in-progress browser
+      credential/cookie/extension theft modules observed) that never touches disk and was not on VirusTotal.
+      The tampered MSI itself scored 0/76 on VirusTotal at analysis time.
+    region_nexus: "global; no sector or region targeting observed — opportunistic cryptocurrency-user targeting"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1204.002, T1027, T1620, T1036.005]
+    affected_products: ["Exodus (cryptocurrency wallet, Electron desktop app)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "At the time of analysis it was detected by 0 of 76 engines on VirusTotal."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/exodus-crypto-wallet-installer-rat"
+      - quote: "BrowserWindow.prototype.show   = function () {};\n  BrowserWindow.prototype.focus  = function () {};\n  BrowserWindow.prototype.center = function () {};"
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/exodus-crypto-wallet-installer-rat"
+      - quote: "That is a manual Portable Executable (PE) loader, or reflective loading if you prefer that name for it, written in JavaScript and running inside a wallet."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/exodus-crypto-wallet-installer-rat"
+    extended_notes: |
+      Huntress frames the theft target as credentials, not coins — "a whole lot more" than the wallet contents
+      — because the observed modules are RMM-style RAT capabilities (cmd/fileman/browser-credential-theft) not
+      a wallet-seed-phrase grabber; the browser-credential module description was cut off in the fetched extract
+      at the point capability enumeration continued, so treat the module table as partial (three of six named
+      confidently: cmd, fileman, browser).
+
+  - title: "Ted backdoor and curlRAT: DPRK-nexus actor compiles a custom C2 filter directly into HAProxy 2.8.12's own source and trojanizes crond/agetty/atd/sshd/polkitd on South Korean automotive and media edge servers"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/tr-dprk-apts-ted-backdoor-curlrat-target-south-korean-media-automotive-sectors/", publisher: "Rapid7", date: "2026-09-04", role: "primary" }
+    discovery_trace: "first seen at: RSS feed blog.rapid7.com/rss.xml, URL https://blog.rapid7.com/rss.xml → primary: Rapid7, URL https://www.rapid7.com/blog/post/tr-dprk-apts-ted-backdoor-curlrat-target-south-korean-media-automotive-sectors/ (no pivot needed)"
+    summary: |
+      Rapid7 Labs documents a previously undocumented Linux toolkit, attributed with medium confidence to
+      DPRK-nexus actors (hardcoded C2 infrastructure overlaps ThreatFox/maltrail APT37 tags), active against
+      South Korean automotive and media organisations with an edge webserver exposing ports 80/443/25 (likely
+      Groupware-portal or mail-server RCE consistent with documented Kimsuky tradecraft, though the specific
+      CVE is unconfirmed). "Ted backdoor" is a custom filter compiled directly into the victim's own HAProxy
+      2.8.12 source tree (18 MB rebuilt binary) using HAProxy's native filter API to hook the HTTP parser: it
+      registers a trigger on the endpoint path /favorite_list_2x_m500_ico.jpg, at which point it decrements
+      HAProxy's own connection/traffic counters to erase evidence, zeroes the forwarding buffers so the C2
+      request never reaches a backend (the request is fully absorbed at the load balancer, so nothing appears
+      in backend logs), and dispatches command execution / file upload / file download / config-update opcodes
+      over named FIFO pipes, working across HAProxy's master-worker process model. A companion "curlRAT" (named
+      for its libcurl-based HTTP(S) polling) is compiled into replacement builds of crond, agetty, atd and
+      polkitd, decrypts its C2 configuration and payload data with a rolling XOR/Base64 scheme, supports six
+      opcodes (command execution via popen, config rewrite, staged payload drop, root-forcing reverse shell via
+      setuid(0)/setreuid(0,0), beacon, and a full interactive PTY shell), defaults to a 12-hour poll interval
+      with an operator-toggleable 30-second fast-poll mode, and runs a companion watchdog thread that only
+      activates inside virtualized hosts (gated on /usr/lib/libvirtlog.so.0) and reports HAProxy process health
+      (started/stopped/restarted/reloaded, tracked via PID-file timestamp changes) back to the C2. A related SSH
+      keylogger writes intercepted plaintext credentials, custom-cipher-encrypted, to
+      /var/lib/sshd/<hash>, and the stager selectively erases tmp/wget/cron/crond keyword lines from
+      /root/.bash_history and /var/log/{messages,audit/audit.log,cmd.log,secure,syslog,auth.log} using a staging
+      file named /tmp/jasper-log designed to be mistaken for old Apache Tomcat JSP engine activity.
+    region_nexus: "South Korea (automotive, media); technique class — trojanizing network-appliance/system daemon binaries compiled from source rather than replacing them wholesale — is transferable to any organisation running self-built HAProxy load balancers or Linux edge infrastructure"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1554, T1056.001, T1071.001, T1027, T1070.002]
+    affected_products: ["HAProxy 2.8.12", "Linux (crond, agetty, atd, sshd, polkitd system daemons)"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:ted-backdoor", type: malware, name: "ted backdoor",
+          aliases: ["ted_plugin"], summary: "A custom HAProxy filter-module backdoor, named by its own developer in debug strings, compiled directly into HAProxy 2.8.12's source tree to intercept/inject HTTP traffic and run a hidden C2 dispatcher; attributed with medium confidence to DPRK-nexus actors targeting South Korean automotive/media edge servers (Rapid7, 2026-09-04)." }
+      - { key: "malware:curlrat", type: malware, name: "curlRAT",
+          aliases: [], summary: "Rapid7's name (from its libcurl-based HTTP(S) polling) for a Linux RAT compiled into replacement crond/agetty/atd/polkitd binaries, supporting command execution, file transfer, config update, a root-forcing reverse shell and an interactive PTY shell; deployed alongside the ted backdoor against South Korean targets (Rapid7, 2026-09-04)." }
+    relation_suggestions:
+      - { subject: "malware:ted-backdoor", object: "malware:curlrat",
+          basis: "Rapid7: the stager checks for HAProxy or cron presence and deploys curlRAT alongside/complementary to the ted backdoor as part of the same toolkit (Rapid7, 2026-09-04)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The ted backdoor is compiled as part of the victim's existing HAProxy version 2.8.12. It uses its native filter API, internal memory pools, event scheduler, and process management infrastructure to intercept traffic and hide from monitoring"
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/tr-dprk-apts-ted-backdoor-curlrat-target-south-korean-media-automotive-sectors/"
+      - quote: "the list of C2s hardcoded is associated to APT37 by ThreatFox and maltrail"
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/tr-dprk-apts-ted-backdoor-curlrat-target-south-korean-media-automotive-sectors/"
+    extended_notes: |
+      Rapid7 states the specific initial-access CVE is unconfirmed; the attack-chain figure is the vendor's own
+      partial reconstruction, not confirmed forensics. Hunting angle for Tier 2/3: file-integrity/hash
+      verification of HAProxy and core system-daemon binaries against known-good vendor packages, since this
+      technique defeats detections keyed on "unexpected new binary" (T1554) by rebuilding from source rather
+      than swapping a foreign binary in.
+
+  - title: "Check Point publishes a public static-deobfuscation pipeline for JSCeal's compiled V8 bytecode payloads, exposing keylogging, browser/credential theft and a local HTTPS man-in-the-middle proxy inside the crypto-stealer (aka WEEVILPROXY / MeadowLocust)"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/breaking-the-seal-static-deobfuscation-of-jsceals-compiled-v8-bytecode/", publisher: "Check Point Research", date: "2026-08-31", role: "primary" }
+    discovery_trace: "first seen at: RSS feed research.checkpoint.com/feed/, URL https://research.checkpoint.com/feed/ → primary: Check Point Research, URL https://research.checkpoint.com/2026/breaking-the-seal-static-deobfuscation-of-jsceals-compiled-v8-bytecode/ (no pivot needed)"
+    summary: |
+      Check Point Research (presented at Black Hat USA 2026) publishes a fully static deobfuscation
+      methodology and public toolkit (jsc_deobfuscator, extending the open-source View8 V8-bytecode decompiler)
+      for JSCeal, a cryptocurrency-focused stealer it has tracked since early 2025 (also tagged WEEVILPROXY /
+      MeadowLocust by other vendors) that is delivered as compiled V8 bytecode (.jsc, run via a bundled Node.js
+      runtime with `node.exe -r preflight.js app.jsc`) rather than plaintext JavaScript — a format poorly
+      served by existing reverse-engineering tooling because it is both obfuscated with the public
+      javascript-obfuscator tool (RC4-protected strings, control-flow flattening, proxy/operation-wrapper
+      indirection) before compilation and then version-locked to a specific V8 build. Applied to 23 collected
+      JSCeal payloads, the pipeline produced analysable pseudocode in every case, enabling capability analysis
+      of keylogging, browser and credential theft, screenshot capture, and a local HTTPS-interception proxy
+      that man-in-the-middles the victim's own traffic. The delivery chain runs malvertising into chained
+      PowerShell into two ZIPs (node.zip, a packaged Node.js runtime; build.zip, containing winpty-agent.exe /
+      winpty.dll for a hidden console, the Brotli-compressed app.jsc payload, and native PE .node modules).
+    region_nexus: "global; cryptocurrency-application users"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1027.002, T1056.001, T1555.003, T1557]
+    affected_products: ["Node.js runtime (bundled, abused as an execution environment for compiled V8 bytecode)"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:jsceal", type: malware, name: "JSCeal",
+          aliases: ["WEEVILPROXY", "MeadowLocust"], summary: "Cryptocurrency-focused stealer delivered as compiled V8 bytecode (.jsc) via a bundled Node.js runtime, active since March 2024; capabilities include keylogging, browser/credential theft, screenshot capture and a local HTTPS MITM proxy (Check Point Research, tracked since early 2025, deobfuscation methodology published 2026-08-31)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "JSCeal is a stealer delivered as compiled V8 bytecode (.jsc) and executed by a bundled Node.js runtime, targeting cryptocurrency applications (other vendors also tag it with the names WEEVILPROXY or MeadowLocust)."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/breaking-the-seal-static-deobfuscation-of-jsceals-compiled-v8-bytecode/"
+      - quote: "The deobfuscated output enabled detailed analysis of JSCeal's capabilities and their implementation, including keylogging, browser and credential theft, and HTTPS traffic interception through a local MITM proxy."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/breaking-the-seal-static-deobfuscation-of-jsceals-compiled-v8-bytecode/"
+    extended_notes: |
+      This item's primary value is methodological (a public toolkit reverse engineers who encounter compiled
+      V8-bytecode malware can reuse: https://github.com/hasherezade/jsc_deobfuscator) rather than a fresh
+      campaign disclosure — Check Point's original JSCeal campaign/targeting writeup was July 2025 and is
+      out of window; flagged here because the capability details (local HTTPS MITM proxy, keylogging) are
+      newly documented in this publication. Borderline against the "not a rehash" gate criterion — kept because
+      the deobfuscation technique and malware capability enumeration are both new technical content, not a
+      repackaging of another lab's finding.
+    borderline: true
+    borderline_reason: "primarily a reverse-engineering methodology publication rather than a fresh campaign/technique-in-the-wild disclosure; included for its concrete, reusable deobfuscation toolkit and newly-detailed malware capabilities (local HTTPS MITM proxy, keylogging)"
+
+  - title: "Unit 42 investigates an intrusion where a human attacker ran parallel frontier-AI agents end-to-end, compressing roughly two weeks of manual red-team-grade tradecraft (50+ ATT&CK techniques) into under 10 hours, up through CI/CD pipeline abuse and hijacking the victim's own AI infrastructure as post-compromise C2"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/ai-assisted-cyber-attack-inside-a-unit-42-investigation/", publisher: "Palo Alto Networks Unit 42", date: "2026-09-02", role: "primary" }
+    discovery_trace: "first seen at: RSS feed unit42.paloaltonetworks.com/feed/, URL https://unit42.paloaltonetworks.com/feed/ → primary: Palo Alto Networks Unit 42, URL https://unit42.paloaltonetworks.com/ai-assisted-cyber-attack-inside-a-unit-42-investigation/ (no pivot needed)"
+    summary: |
+      Unit 42 responded to an intrusion (the actor's own negotiation statements say it was extortion-motivated)
+      in which the human attacker directed multiple frontier AI agents running in parallel, coordinating
+      through structured Markdown files passed between agent sessions, to autonomously execute a full intrusion
+      lifecycle in under 10 hours — work Unit 42 assesses would normally take human operators roughly two
+      weeks and over 50 distinct MITRE ATT&CK techniques. After breaching a publicly accessible web service to
+      tunnel into the network, an automated recon agent mapped internal microservices; sub-agents combed
+      enterprise code repositories for hardcoded tokens and service passwords (T1552.001); the harvested tokens
+      were used to reach the secrets-management system and seize master administrative credentials (T1555);
+      the attacker then hijacked CI/CD workflows to exfiltrate cloud access keys and attempted to plant
+      Terraform backdoors, blocked by the victim's branch-protection controls (T1578); finally, stolen cloud
+      keys were used to invoke the victim's own AI model endpoints as post-compromise infrastructure
+      (T1078), hiding orchestration traffic among expected AI-service traffic and shifting compute cost onto
+      the victim. The attacker also directed an agent to generate and leave behind an 80-page technical
+      security-posture audit of the victim's environment. Unit 42 published a joint MITRE ATT&CK / MITRE ATLAS
+      technique table for the intrusion and recommends synchronized automated containment playbooks (revoke
+      credentials, terminate OAuth sessions, freeze CI/CD, isolate cloud accounts simultaneously), inventorying
+      every AI model endpoint/API key/MCP gateway with least-privilege and diagnostic logging, hunting for
+      bursty API request patterns, rapid 401/200 HTTP state shifts and parallel authentications from unexpected
+      identities, and enforcing mandatory multi-party review with immutable branch protection on
+      infrastructure-as-code repos.
+    region_nexus: "global; any organisation running exposed web services, CI/CD pipelines and cloud AI infrastructure — directly relevant to Swiss public-sector bodies increasingly deploying self-hosted/cloud AI tooling"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1190, T1046, T1552.001, T1555, T1578, T1078]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The threat actor told us in negotiations that they leveraged frontier AI models and attack-specific agentic AI frameworks. By shifting execution to an automated loop, the attacker compressed weeks of methodical intrusion tradecraft (using more than 50 MITRE ATT&CK techniques) into less than 10 hours."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ai-assisted-cyber-attack-inside-a-unit-42-investigation/"
+      - quote: "AI agents leave recognizable indicators: Defenders can identify agentic attacks by watching for indicators such as the use of structured Markdown, Python caches and paired asset folders."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ai-assisted-cyber-attack-inside-a-unit-42-investigation/"
+    extended_notes: |
+      Unit 42 issued two post-publication corrections (2026-09-03 and 2026-09-04, both captured in the fetched
+      body) clarifying the event was an intrusion/extortion case, not a ransomware attack, and making minor
+      copyedits — no factual walkback of the AI-agent-orchestration claims. Distinct incident from the
+      already-tracked Hugging Face autonomous-agent breach (entities incident:hugging-face-autonomous-ai-agent-breach-2026-07
+      and its sibling incident: cluster) and from the Unit 42 CL-CRI-1131/1163/BREEZE COMET LATAM cluster
+      already covered on 2026-09-04 — no named victim, no named actor, a single-incident IR narrative rather
+      than a multi-victim campaign.
+
+  - title: "ANNUAL REPORT — Recorded Future Insikt Group H1 2026 Malware and Vulnerability Trends: 215 actively-exploited CVEs (up 34% YoY), 68% needing no prior authentication, and named post-exploitation tool-stacks reused across up to 13 distinct CVEs"
+    sources:
+      - { url: "https://www.recordedfuture.com/research/h1-2026-malware-vulnerability-trends", publisher: "Recorded Future Insikt Group", date: "2026-09-03", role: "primary" }
+    discovery_trace: "first seen at: RSS feed recordedfuture.com/feed, URL https://www.recordedfuture.com/feed → primary: Recorded Future Insikt Group, URL https://www.recordedfuture.com/research/h1-2026-malware-vulnerability-trends (no pivot needed)"
+    summary: |
+      Recorded Future's Insikt Group published its semi-annual Malware and Vulnerability Trends report for H1
+      2026 on 2026-09-03. Headline figures: 215 actively exploited CVEs (up 34% from 161 in H1 2025); 176 (82%)
+      network-accessible and 146 (68%) exploitable without prior authentication, of which 142 were also
+      network-reachable; 82 involved RCE, of which 60 combined network access with no authentication
+      requirement — the combination Insikt flags as the priority-patching triage signal over CVSS score alone.
+      66 of the 215 (31%) had public PoC exploits; median time-to-exploitation was 31 days (mean 564, reflecting
+      a mix of fast zero-day-style exploitation and continued abuse of old flaws — 17 CVEs from 2020 or
+      earlier), and 81 (38%) were exploited within 7 days of NVD disclosure including 20 where honeypot activity
+      preceded public disclosure. Microsoft remained the top vendor (40 exploited CVEs, +43% YoY), followed by
+      Red Hat (15), Cisco (13, eight of them Catalyst SD-WAN Manager), Vercel (11, all Next.js) and Fortinet
+      (9). Weakness distribution was fragmented across 83 CWE classes with no single class exceeding 6% (code
+      injection CWE-94 led at 13 CVEs). Two named post-exploitation clusters reused identical tool-stacks across
+      multiple initial-access CVEs: "StrikeShark" (SharkLoader, Cobalt Strike Beacon, FScan, Searchall, Pillager
+      Stealer, SharpGPOAbuse across 13 CVEs spanning Exchange, SharePoint, FortiOS, IOS XE, BIG-IP, GeoServer
+      and Apache Shiro, 2016-2025) and a Storm-1175 campaign (Mimikatz, Impacket, PsExec, Rclone, Medusa
+      ransomware across 10 CVEs). Of 114 CVEs Insikt mapped to ATT&CK, T1190 (Exploit Public-Facing Application)
+      led at 77 CVEs (68%), and 50 of those 77 also involved PowerShell/Windows Command Shell/Unix Shell
+      execution, with all 28 web-shell-associated CVEs also carrying T1190 — Insikt's stated defensive signal is
+      to chain exploitation telemetry on public-facing systems directly to subsequent process creation, shell
+      execution and payload transfer rather than treating the exploit alert in isolation. AI-enabled activity
+      (PromptSpy — first GenAI-using Android malware, per ESET; CANFAIL's LLM-generated decoy logic) is assessed
+      as concentrated at AIM3 maturity Levels 1-3 (task-level augmentation), not autonomous operation, apart
+      from the already-covered Hugging Face incident which Insikt cites as the first case showing
+      discovery-through-operationalization with limited human intervention.
+    region_nexus: "global cross-industry vulnerability-and-malware telemetry; directly informs Swiss public-sector patch-prioritisation triage"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1190, T1059.001, T1505.003, T1071.001]
+    affected_products: []
+    entity_keys: ["incident:hugging-face-autonomous-ai-agent-breach-2026-07"]
+    new_entities:
+      - { key: "campaign:strikeshark-post-exploitation-toolstack", type: campaign, name: "StrikeShark",
+          aliases: [], summary: "Recorded Future Insikt Group's name for a post-exploitation cluster that reused an identical six-tool stack (SharkLoader, Cobalt Strike Beacon, FScan, Searchall, Pillager Stealer, SharpGPOAbuse) across 13 distinct initial-access CVEs (2016-2025) affecting Exchange, SharePoint, FortiOS, IOS XE, BIG-IP, GeoServer and Apache Shiro (Insikt Group, H1 2026 Malware and Vulnerability Trends, 2026-09-03)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Insikt Group identified 215 actively exploited common vulnerabilities and exposures (CVEs), and the most consequential cases combined network reachability, few access prerequisites, and code execution."
+        attribution: "Recorded Future Insikt Group"
+        source_url: "https://www.recordedfuture.com/research/h1-2026-malware-vulnerability-trends"
+      - quote: "Exploit Public-Facing Application (T1190) was the most common MITRE ATT&CK technique, associated with 77 CVEs (68%)."
+        attribution: "Recorded Future Insikt Group"
+        source_url: "https://www.recordedfuture.com/research/h1-2026-malware-vulnerability-trends"
+    extended_notes: |
+      verification field corrected to SINGLE-SOURCE-OTHER by the composer if the national-cert carve-out is
+      judged not to apply (Recorded Future is a commercial vendor, not a national CERT) — flagged here in
+      case the carve-out list needs no change; treat as SINGLE-SOURCE-OTHER, HIGH-reliability vendor primary.
+      Periodic (semi-annual) report — flagged per PD-9. Predecessor H1 2025 report already exists in Recorded
+      Future's own archive but was not found in prior_coverage.json; no store entry for it was located via
+      grep, so this is treated as new rather than update-of.
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: elastic-seclabs
+    reason: "No RSS/feed known; not swept this run due to 45-min time cap — listing page not fetched."
+  - source_id: sentinellabs
+    reason: "RSS enumerated (feed https://www.sentinelone.com/labs/feed/) but latest post is 2026-08-13, outside the 2026-08-30 to 2026-09-06 window; no in-window posts."
+  - source_id: proofpoint
+    reason: "RSS resolved to newsroom press-release feed, not the Threat Insight blog; latest in-window items are press releases / product news, no in-window Threat Insight technical post surfaced. Recipe needs fixing — proofpoint.com/us/rss.xml is not the threat-insight blog feed."
+  - source_id: fortinet-fortiguard-blog
+    reason: "Not swept — bridge fetch_method not exercised this run due to time cap."
+  - source_id: jamf-threat-labs
+    reason: "Not swept — no RSS known and listing page not fetched due to time cap."
+  - source_id: xlab-qianxin
+    reason: "RSS enumerated; latest post is 2026-07-29, outside window; no in-window posts."
+  - source_id: seqrite-labs
+    reason: "RSS enumerated; latest post is 2026-08-17, outside window; no in-window posts."
+  - source_id: kela-cyber
+    reason: "Not swept — no RSS known, listing page not fetched due to time cap."
+  - source_id: netcraft
+    reason: "Guessed RSS URL (netcraft.com/blog/feed/) resolved via jina fallback with 0 items — recipe likely wrong; needs a working feed/listing URL identified in a future run."
+  - source_id: push-security
+    reason: "Guessed RSS URL (pushsecurity.com/blog/rss.xml) resolved via jina fallback with 0 items — recipe likely wrong."
+  - source_id: socradar
+    reason: "RSS enumerated (10 in-window items, mostly re-reporting of already-covered CVEs — SonicWall SMA1000, PaperCut, JFrog Artifactory, Cisco Nexus 9000, HPE ArubaOS-CX, Elementor Pro). Two candidate original items (FalconFlank: CrowdStrike Falcon 0-Day PoC, 2026-09-03; PEEP: A Browser RAT Posing as a Chrome Extension, 2026-09-04) were not deep-dived due to time cap — SocRadar is reliability C (aggregator-style) per source-list notes, so either would need independent corroboration before inclusion; not verified this run."
+  - source_id: trail-of-bits
+    reason: "RSS enumerated; latest in-window-adjacent post (VMs won't contain cyber-capable agents, 2026-08-26) falls just outside the 2026-08-30 window; no in-window posts."
+  - source_id: sansec-research
+    reason: "Not swept — listing page not fetched due to time cap."
+  - source_id: snyk-research
+    reason: "RSS enumerated; latest post 2026-08-26, outside window; no in-window posts."
+  - source_id: shadowserver
+    reason: "Not swept — listing page not fetched due to time cap."
+  - source_id: ox-security
+    reason: "Not swept — listing page not fetched due to time cap."
+  - source_id: project-discovery
+    reason: "Not swept — listing page not fetched due to time cap."
+  - source_id: novee-security
+    reason: "Not swept — listing page not fetched due to time cap."
+  - source_id: esentire
+    reason: "Guessed RSS URL (esentire.com/rss/blog) resolved via jina fallback with 0 items — recipe likely wrong."
+  - source_id: ssd-disclosure
+    reason: "Not swept — pinned jina fetch_method not exercised due to time cap."
+  - source_id: heise-sec
+    reason: "RSS enumerated fully; in-window items are general security news (Cisco Nexus 9000, ArubaOS-CX, Chrome 0-day exploitation, Berlin Senate ransomware) already surfaced via other domains' CVE/incident channels, not original G3-class research."
+  - source_id: inside-it-ch
+    reason: "RSS enumerated fully; in-window items are Swiss IT/business news with no security-research content this window."
+  - source_id: sophos-xops
+    reason: "Guessed RSS URL (news.sophos.com/en-us/feed/) resolved via jina fallback with 0 items; not swept further due to time cap."
+  - source_id: trend-micro-research
+    reason: "Guessed RSS URL failed (jina fallback, 0 items); not swept further due to time cap."
+  - source_id: group-ib
+    reason: "Guessed RSS URL failed (jina fallback, 0 items); known Cloudflare-challenge host per prior runs; not swept further due to time cap."
+  - source_id: securonix
+    reason: "Guessed RSS URL failed (jina fallback, 0 items); not swept further due to time cap."
+  - source_id: intezer
+    reason: "Guessed RSS URL failed (jina fallback, 0 items); not swept further due to time cap."
+  - source_id: volexity
+    reason: "RSS URL (volexity.com/blog/feed/) resolved via jina fallback with 0 items; recipe likely needs a different feed path or direct listing scrape."
+  - source_id: wiz-research
+    reason: "RSS enumerated fully; in-window items (Sep 1-3) are product/feature announcements, no substantive in-window technical research post cleared the gate."
+  - source_id: aqua-nautilus
+    reason: "RSS URL (blog.aquasec.com/rss.xml) returned only stale 2025 items — feed appears broken/unmaintained; recipe needs fixing."
+  - source_id: jfrog-security-research
+    reason: "RSS enumerated fully; in-window items are all AI-tooling/product-launch posts (swampUP 2026 conference coverage), no technical security research."
+  - source_id: cyble
+    reason: "RSS enumerated fully; in-window items are marketing/thought-leadership posts, no substantive technical research."
+  - source_id: crowdstrike
+    reason: "RSS enumerated fully; in-window items are all product/press announcements, no technical threat research post."
+  - source_id: red-canary
+    reason: "RSS enumerated; latest post (Intelligence Insights August 2026, already covered 2026-08-23) is 2026-08-20, no newer post in window."
+  - source_id: datadog-security-labs
+    reason: "RSS enumerated fully; one in-window item cleared the gate (AWS root password-spraying campaign, included above)."

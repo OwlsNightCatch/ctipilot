@@ -165,7 +165,12 @@ affected_products: []          # official product names ("Vendor Product" string
 cves:                          # [] when the entry carries no CVE
   - id: CVE-2026-34038
     cvss: "9.9"                # string; "n/a" when unassigned
-    epss: null
+    epss: null                 # FIRST.org EPSS PROBABILITY as a quoted decimal in [0, 1]
+                               # ("0.0047"), never a percentage ("0.47"), never the
+                               # percentile ("55.85"), never a suffix ("0.27 (EUVD)") —
+                               # take the API's `epss` field, not its `percentile` field,
+                               # and put provenance in sources[]/sourcing_note. null when
+                               # not looked up. `check_run.py` `cve-epss` enforces the range.
     type: rce                  # taxonomy cve_types
     vector: zero-click         # taxonomy cve_vectors
     auth: post-auth            # taxonomy cve_auth

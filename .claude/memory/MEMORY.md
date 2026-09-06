@@ -13,7 +13,7 @@ Conventions: one topic per file, kebab-case filename, YAML front block (`name`, 
 - [Routine model assignment](routine-model-assignment.md) — Sonnet 5 intel / Opus 5 audit, generic `sonnet` pins at xhigh, single verifier, double-CLEAN; self-ID protocol (prompt line, not env vars)
 - [Verification lessons](verification-lessons.md) — aiming iterations, testing findings before applying, inverted claims, unsourced status flags, quote fidelity, composing-from-entries traps
 - [Source fetch blocks & recipes](source-fetch-blocks.md) — fetch ladder, blocked-host recipes, jina pool rules, PDF extraction honesty, probe/health traps
-- [CSAF/MSRC/CVE transcription](csaf-msrc-transcription.md) — structured fields over prose; verdict vs membership; base vs temporal CVSS; CNA vs ADP vs NVD
+- [CSAF/MSRC/CVE transcription](csaf-msrc-transcription.md) — structured fields over prose; verdict vs membership; base vs temporal CVSS; CNA vs ADP vs NVD; EPSS is FIRST.org's probability in [0,1] (EUVD renders it as a percentage)
 - [Dedup: store-wide CVE index](dedup-store-wide-cve-index.md) — 14-day read is a floor; check `cves.ids` store-wide; read the covered entry's body
 - [Scheduler & workflow races](scheduler-and-workflow-races.md) — operator-owned cadence, overtaken-run recovery, two local sessions in one worktree, pre-v3.33 durations are floors
 - [Classifier trips on spawns](classifier-trips-on-spawns.md) — safeguards-flagged spawns: framing + checkpointing + pointer-not-enumeration; quiet output ≠ dead spawn

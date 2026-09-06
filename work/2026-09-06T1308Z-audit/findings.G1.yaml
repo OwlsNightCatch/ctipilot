@@ -1,0 +1,203 @@
+domain: G1
+run_id: 2026-09-06T1308Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-06T13:12:16Z
+ended_at: 2026-09-06T13:24:10Z
+duration_seconds: 714
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 9
+  bridge_fetches: 45
+
+items:
+  - title: "Dell Secure Connect Gateway (DSA-2026-382): unauthenticated admin-token replay (CVSS 9.8) and pre-auth RCE (CVSS 9.4) across a 40+ CVE bundle"
+    sources:
+      - { url: "https://www.dell.com/support/kbdoc/de-de/000503426/dsa-2026-382-security-update-for-dell-secure-connect-gateway-application-and-appliance-multiple-vulnerabilities", publisher: "Dell PSIRT (DSA-2026-382)", date: "2026-09-03", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3184", publisher: "BSI CERT-Bund (WID-SEC-2026-3184)", date: "2026-09-04", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, URL https://wid.cert-bund.de/content/public/securityAdvisory/rss (WID-SEC-2026-3184 item) → primary: Dell PSIRT, URL https://www.dell.com/support/kbdoc/de-de/000503426/dsa-2026-382-security-update-for-dell-secure-connect-gateway-application-and-appliance-multiple-vulnerabilities"
+    summary: |
+      Dell's DSA-2026-382 (initial release 2026-08-31, BSI carried it 2026-09-03/04) fixes over 40 CVEs across Dell Secure Connect Gateway (SCG) 5.0 Application (< 5.36.00.00) and Appliance (< 5.36.00.16) — the on-prem remote-support gateway that ships telemetry/diagnostics traffic to Dell's backend. Three stand out for defenders: CVE-2026-80172 (CVSS 9.8, insufficient verification of data authenticity) lets an unauthenticated attacker with network access to the SCG replay a single captured request indefinitely to mint ADMIN access and refresh tokens — there is no nonce or time-window validation, so the replay window never closes. CVE-2026-61410 (CVSS 9.4, missing authorization) is an unauthenticated remote-command-execution path reachable with a single crafted request, reported by researcher Saltedfish along with sibling CVE-2026-61409 (OS command injection) and CVE-2026-61408. CVE-2026-80238 (CVSS 9.3, execution with unnecessary privileges) lets a low-privileged local operator with SSH access reach root without a password by abusing an exposed Docker socket — a compromised orchestrator-container service can escape the container boundary the same way. The remaining ~37 CVEs (CVSS 4.4-8.2) span hard-coded credentials, certificate-validation bypasses, path traversal, SSRF and SQL injection, most also reachable unauthenticated. Dell ships no workaround for any of the 40+ flaws — patching to 5.36.00.00/5.36.00.16 is the only control. No exploitation in the wild is claimed by Dell or any secondary source at time of writing; all issues were privately reported.
+    region_nexus: "global; Dell SCG is deployed at customer premises as an on-prem support/telemetry gateway, including in EU/CH enterprise and public-sector estates running Dell hardware support contracts"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-80172, CVE-2026-61410, CVE-2026-80238, CVE-2026-79645, CVE-2026-78491, CVE-2026-80132, CVE-2026-80166, CVE-2026-79637, CVE-2026-80134, CVE-2026-61409, CVE-2026-61408]
+    techniques: [T1190, T1068, T1611, T1552.001]
+    affected_products: ["Dell Secure Connect Gateway 5.0 Application", "Dell Secure Connect Gateway 5.0 Appliance"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This vulnerability is considered critical as an unauthenticated attacker can repeatedly reuse a captured request to generate ADMIN access and refresh tokens. Since there is no nonce validation or time limit on requests, the attack can be performed indefinitely."
+        attribution: "Dell PSIRT (DSA-2026-382)"
+        source_url: "https://www.dell.com/support/kbdoc/de-de/000503426/dsa-2026-382-security-update-for-dell-secure-connect-gateway-application-and-appliance-multiple-vulnerabilities"
+      - quote: "a low-privileged operator with SSH access to the SCG host can gain root-level access to the host without requiring a password by leveraging the exposed Docker socket"
+        attribution: "Dell PSIRT (DSA-2026-382)"
+        source_url: "https://www.dell.com/support/kbdoc/de-de/000503426/dsa-2026-382-security-update-for-dell-secure-connect-gateway-application-and-appliance-multiple-vulnerabilities"
+    extended_notes: |
+      Clears PD-11(b): no exploitation signal exists, but the mechanics force the timeline — a single unauthenticated request replayed indefinitely yields full administrative control, and Dell shipped no workaround. Verify SCG is not reachable from untrusted network segments and check for the 5.36.00.00/5.36.00.16 upgrade in any Dell hardware-support contract inventory. This CVE cluster was not found in prior_coverage.json.
+
+  - title: "'Chaotic Eclipse' (Nightmare Eclipse) drops unpatched 0-day LPE PoCs against three more EDR/AV vendors: CrowdStrike Falcon (FalconFlank), Avast/Gen Digital (PrettyPrague), plus a since-patched Kaspersky flaw (HardBreacher)"
+    sources:
+      - { url: "https://thehackernews.com/2026/09/researcher-releases-falconflank-poc.html", publisher: "The Hacker News", date: "2026-09-03", role: "primary" }
+      - { url: "https://securityaffairs.com/198342/hacking/chaotic-eclipse-releases-crowdstrike-falcon-zeroday-falconflank.html", publisher: "Security Affairs", date: "2026-09-03", role: "corroborating" }
+      - { url: "https://www.truesec.com/hub/blog/privilege-escalation-vulnerability-in-falcon-crowdstrike", publisher: "Truesec TRU", date: "2026-09-04", role: "corroborating" }
+    discovery_trace: "first seen at: truesec, URL https://www.truesec.com/hub/blog/feed/ (FalconFlank item) → primary: The Hacker News, URL https://thehackernews.com/2026/09/researcher-releases-falconflank-poc.html → corroborating: Security Affairs, URL https://securityaffairs.com/198342/hacking/chaotic-eclipse-releases-crowdstrike-falcon-zeroday-falconflank.html"
+    summary: |
+      The pseudonymous researcher already tracked in this store as Nightmare Eclipse / Chaotic Eclipse (prior releases: BlueHammer, RedSun, UnDefend, YellowKey, GreenPlasma, MiniPlasma, GreatXML, RoguePlanet, LegacyHive and ShieldBreak, all against Microsoft Windows/Defender) published, without vendor advance notice, working local-privilege-escalation PoC code against three more security products between 2026-08-2x and 2026-09-03: (1) FalconFlank abuses CrowdStrike Falcon Sensor's "Microsoft Office file malicious macro removal" remediation feature — a high-privileged cleanup routine — to spawn a SYSTEM-level process from a low-privileged account on a fully patched Windows 11 25H2 / Windows Server 2025 host running Falcon Phase 3 Optimal Protection; no CVE has been assigned and CrowdStrike told The Hacker News it is "actively investigating" while advising customers to disable the "Microsoft Office File Suspicious Macro Removal Windows" policy setting (cloud anti-malware scanning for Office files remains active as a compensating control). (2) PrettyPrague abuses a flaw in the Avast Sandbox component to dump the Windows SAM database and spawn a full SYSTEM shell on fully patched Avast Antivirus + Windows 11 25H2; Gen Digital (Avast/AVG/Norton) confirmed the report and said a patch is in development. (3) HardBreacher targeted Kaspersky Endpoint Security for Windows 14.0.0.504 — taking control of the UI process could disable Kaspersky's own protections and grant/block file access arbitrarily — and Kaspersky has already shipped a fix via automatic/manual database update. A fourth release, GreenSection, is a memory-corruption crash (not LPE) in NVIDIA drivers affecting any Vulkan/OpenGL application. The researcher's public statements (cited by The Hacker News) frame the releases as retaliation for Microsoft's Digital Crimes Unit threatening legal action and for vendors' unresponsiveness to prior reports.
+    region_nexus: "global; CrowdStrike Falcon, Kaspersky Endpoint Security and Avast/AVG/Norton are widely deployed EDR/AV products in enterprise and public-sector estates, including in Switzerland"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1068, T1562.001]
+    affected_products: ["CrowdStrike Falcon Sensor", "Avast Antivirus", "Kaspersky Endpoint Security for Windows"]
+    entity_keys: ["actor:nightmare-eclipse"]
+    new_entities:
+      - { key: "trend:falconflank-crowdstrike-falcon-macro-remediation-lpe-2026-09", type: trend, name: "FalconFlank",
+          aliases: [],
+          summary: "Nightmare Eclipse PoC abusing CrowdStrike Falcon Sensor's Office malicious-macro-removal remediation feature to escalate a low-privileged Windows account to SYSTEM on fully patched Windows 11 25H2/Server 2025; no CVE assigned, CrowdStrike investigating (The Hacker News, 2026-09-03)." }
+      - { key: "trend:prettyprague-avast-sandbox-sam-dump-lpe-2026-09", type: trend, name: "PrettyPrague",
+          aliases: [],
+          summary: "Nightmare Eclipse PoC exploiting a flaw in the Avast Sandbox to dump the Windows SAM database and spawn a SYSTEM shell on fully patched Avast Antivirus + Windows 11 25H2; Gen Digital confirmed and is developing a fix, suspects other Gen products (AVG, Norton) may share the flaw (The Hacker News / Security Affairs, 2026-09-03)." }
+      - { key: "trend:hardbreacher-kaspersky-endpoint-security-lpe-2026-08", type: trend, name: "HardBreacher",
+          aliases: [],
+          summary: "Nightmare Eclipse PoC against Kaspersky Endpoint Security for Windows 14.0.0.504 allowing UI-process takeover and privilege escalation; Kaspersky has shipped a fix via automatic/manual database update (The Hacker News, 2026-09-03)." }
+    relation_suggestions:
+      - { subject: "actor:nightmare-eclipse", object: "trend:falconflank-crowdstrike-falcon-macro-remediation-lpe-2026-09", basis: "The Hacker News: 'The security researcher known as Chaotic Eclipse ... has dropped a new zero-day dubbed FalconFlank' (The Hacker News, 2026-09-03)" }
+      - { subject: "actor:nightmare-eclipse", object: "trend:prettyprague-avast-sandbox-sam-dump-lpe-2026-09", basis: "Security Affairs: 'The researcher also released a zero-day exploit targeting GenDigital Avast Antivirus, named PrettyPrague' (Security Affairs, 2026-09-03)" }
+      - { subject: "actor:nightmare-eclipse", object: "trend:hardbreacher-kaspersky-endpoint-security-lpe-2026-08", basis: "The Hacker News: the researcher 'released a PoC for another privilege escalation flaw impacting Kaspersky's endpoint security product for Windows' (The Hacker News, 2026-09-03)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "FalconFlank is a 0-day privilege escalation that abuses the office malicious macros remediation in CrowdStrike Falcon Sensor"
+        attribution: "The Hacker News, quoting the researcher's GitHub README"
+        source_url: "https://thehackernews.com/2026/09/researcher-releases-falconflank-poc.html"
+      - quote: "We are actively investigating these claims and advise customers to disable the Microsoft Office File Suspicious Macro Removal Windows policy setting"
+        attribution: "CrowdStrike spokesperson, via The Hacker News"
+        source_url: "https://thehackernews.com/2026/09/researcher-releases-falconflank-poc.html"
+      - quote: "Gen was recently made aware of a security vulnerability affecting a subset of Gen products, including Avast Antivirus, that could allow an attacker to elevate their system privileges. We immediately initiated our security response procedures and are actively developing a patch."
+        attribution: "Gen Digital spokesperson, via The Hacker News"
+        source_url: "https://thehackernews.com/2026/09/researcher-releases-falconflank-poc.html"
+    extended_notes: |
+      This is the same actor tracked in the registry as actor:nightmare-eclipse — the store already carries the ShieldBreak/RoguePlanet Windows Defender entry (2026-08-12) as prior coverage; this finding is the actor's pivot from Microsoft-only targets to third-party EDR/AV vendors within days of each other, which is itself the notable delta (not previously covered — no matching CVE/entity in prior_coverage.json). Recommend as either a standalone new entry referencing the ShieldBreak entry via `references[]`, or an update to that entry if the main agent judges it the same "finding" — I judged the vendor-breadth expansion substantial enough to warrant a new entry. Detection angle: for CrowdStrike shops, monitor for Falcon Sensor process/service crashes or unexpected child processes spawned by falcon-agent-owned processes with SYSTEM token; the interim mitigation (disabling the Office-macro-removal policy setting) trades a remediation capability for closing this LPE path.
+
+  - title: "VMware Workstation & Fusion: VMXNET3 integer-overflow guest-to-host escape (CVE-2026-59346, CVSS 9.3) and HGFS stack overflow (CVE-2026-59347, CVSS 8.1) — VMSA-2026-0007"
+    sources:
+      - { url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38288", publisher: "Broadcom/VMware PSIRT (VMSA-2026-0007)", date: "2026-09-03", role: "primary" }
+      - { url: "https://www.securityweek.com/vmware-workstation-and-fusion-updates-patch-critical-vulnerability/", publisher: "SecurityWeek", date: "2026-09-04", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12912 → primary: Broadcom/VMware PSIRT, URL https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38288"
+    summary: |
+      Broadcom's VMSA-2026-0007 (2026-09-03) fixes two flaws in VMware Workstation and Fusion 25H2/26H1, distinct from the vCenter/ESXi VMSA-2026-0006 bundle already in this store (different product line, different CVEs). CVE-2026-59346 (CVSS 9.3, AV:L/AC:L/PR:N/S:C) is an integer-overflow in the VMXNET3 virtual network adapter: a malicious actor with local administrative privileges inside a guest VM configured with a VMXNET3 adapter can trigger the overflow to execute arbitrary code on the host — a classic guest-to-host VM escape. CVE-2026-59347 (CVSS 8.1) is a stack-based buffer overflow in HGFS (Host-Guest File System) that lets a guest-local administrator execute code as the host's VMX process. Both were reported privately (VMXNET3 flaw independently by two parties: h4urek and a Trend Micro Zero Day Initiative-affiliated researcher pair); both are fixed in version 26H1u1 with no workaround. Broadcom states no known exploitation; the researcher-reporting pattern (independent co-discovery) and VMware's long KEV history (SecurityWeek notes "more than two dozen VMware vulnerabilities are currently included in CISA's KEV list") are the only elevated-risk signals.
+    region_nexus: "global; relevant to any environment running VMware Workstation/Fusion for malware analysis sandboxes, developer VDI, or red-team tooling"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-59346, CVE-2026-59347]
+    techniques: [T1611]
+    affected_products: ["VMware Workstation", "VMware Fusion"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A malicious actor with local administrative privileges on a virtual machine with VMXNET3 virtual network adapter may exploit this issue to execute code on the host."
+        attribution: "Broadcom/VMware PSIRT (VMSA-2026-0007)"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38288"
+    extended_notes: |
+      Note the prerequisite is local administrative access inside the guest — this is a sandbox-escape/VDI-hardening concern (malware-analysis labs running untrusted samples inside Workstation/Fusion VMs with VMXNET3 adapters are the highest-relevance population), not a remote network attack path. Distinguish clearly from the already-covered VMSA-2026-0006 (vCenter/ESXi server-side bundle) in any changelog cross-reference.
+
+  - title: "Cisco IOS XR Software Security Hardening Release (September 2026): seven internally-discovered CVEs up to CVSS 9.8, affecting all IOS XR releases 'regardless of device configuration'"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxr-qg64NcM", publisher: "Cisco PSIRT", date: "2026-09-04", role: "primary" }
+    discovery_trace: "first seen at: cisco-psirt, URL https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml → primary (no pivot needed)"
+    summary: |
+      Cisco's semi-annual IOS XR internal hardening release groups multiple internally-discovered vulnerabilities by CWE class, one CVE per class, across ALL Cisco IOS XR Software releases including IOS XR7 (LNT) — the advisory states explicitly this affects every release "regardless of device configuration". Two of the seven carry the maximum CVSS 9.8: CVE-2026-20274 (CWE-664, improper control of a resource through its lifetime — covers buffer overflows, use-after-free, out-of-bounds read/write and uninitialized-resource classes) and CVE-2026-20279 (CWE-284, improper access control — covers improper certificate validation, missing authentication for a critical function, missing/incorrect authorization). The remaining five (CVE-2026-20275/76/77/78/80) range CVSS 8.2-8.8 across incorrect-calculation, insufficient control-flow, protection-mechanism-failure (insufficiently random values) and improper-neutralization/exceptional-condition-handling classes. Cisco states these were "found during internal testing using existing testing processes as well as frontier AI models" and confirms "PSIRT is not aware of any public announcements or malicious use." No workarounds exist; remediation requires per-train Software Maintenance Updates (SMUs) — Cisco lists roughly 16 SMUs per release across functional areas (BGP, crypto-IKE, gRPC, IS-IS, MPLS, OSPF, segment routing, TCP-AO, ZTP).
+    region_nexus: "global; IOS XR runs on Cisco's carrier/service-provider-class routing platforms (8000 Series, NCS families) used in ISP/telecom backbone and some large enterprise/government WAN cores"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-20274, CVE-2026-20275, CVE-2026-20276, CVE-2026-20277, CVE-2026-20278, CVE-2026-20279, CVE-2026-20280]
+    techniques: [T1210, T1078]
+    affected_products: ["Cisco IOS XR Software", "Cisco IOS XR7 (LNT) Software"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "These vulnerabilities affect all releases of Cisco IOS XR Software, including Cisco IOS XR7 (LNT) Software, regardless of device configuration."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxr-qg64NcM"
+      - quote: "These vulnerabilities were found during internal security testing using existing testing processes as well as frontier AI models."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxr-qg64NcM"
+      - quote: "The Cisco PSIRT is not aware of any public announcements or malicious use of the vulnerabilities that are described in this advisory."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxr-qg64NcM"
+    extended_notes: |
+      Single-sourced to Cisco's own advisory (no independent secondary coverage found in this pass) — reduced confidence noted accordingly, though Cisco PSIRT as first-party vendor advisory for its own product would normally carry the national-CERT-equivalent carve-out for vendor self-disclosure. Borderline for this constituency: IOS XR is service-provider/carrier-grade gear, less likely to sit inside a cantonal/communal administration's own network versus its upstream telecom/ISP supplier — flagging as `watchlist: none` but potentially relevant via supplier chain. The "frontier AI models" detail in Cisco's own internal-testing disclosure is a notable data point for the AI-assisted-vulnerability-discovery trend line this store already tracks from the attacker side (gtig-avdh, unit42 AI-enabled malware) — this is the discovery side from a vendor.
+    borderline: true
+    borderline_reason: "single-sourced, no confirmed exploitation, carrier-grade product with lower direct footprint in Swiss cantonal/communal administration networks (more relevant to upstream telecom suppliers)"
+
+  - title: "SEPPmail Secure E-Mail Gateway 15.0.7: authenticated admin command injection (CVSS 8.6) and an MFA-completion-order flaw"
+    sources:
+      - { url: "https://downloads.seppmail.com/extrelnotes/150/ERN15.0.html", publisher: "SEPPmail release notes (ERN15.0)", date: "2026-09-02", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3178", publisher: "BSI CERT-Bund (WID-SEC-2026-3178)", date: "2026-09-04", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, URL https://wid.cert-bund.de/content/public/securityAdvisory/rss (WID-SEC-2026-3178 item) → primary: SEPPmail release notes, URL https://downloads.seppmail.com/extrelnotes/150/ERN15.0.html"
+    summary: |
+      SEPPmail (a Swiss/DACH-region secure e-mail gateway vendor) shipped version 15.0.7 on 2026-09-02, fixing CVE-2026-84830 (CVSS 8.6): an authenticated administrator can execute commands with elevated privileges because affected input values are not escaped ("all affected values will be escaped not" per the vendor's own release-note typo, confirming the fix is an escaping gap in command construction). The same release also fixes an unassigned-CVE flaw ("SEC-100", CVSS 7.7) where, under certain conditions, the authentication flow could grant access before all required multi-factor authentication steps completed, and a related command-execution issue ("SEC-99", CVSS 8.6) in processing of specially crafted input. All three require either existing admin authentication (command injection) or hitting a specific MFA-flow race/ordering condition; none is reported as pre-auth or exploited in the wild.
+    region_nexus: "Switzerland/DACH — SEPPmail is a Swiss-headquartered secure e-mail gateway vendor with public and private-sector customers across the DACH region"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-84830]
+    techniques: [T1068, T1556]
+    affected_products: ["SEPPmail Secure E-Mail Gateway"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "SEPPmail Secure Email Gateway before 15.0.7 contains a command injection vulnerability that allows authenticated administrators to execute commands with elevated privileges."
+        attribution: "SEPPmail (release notes, republished via BSI CERT-Bund WID-SEC-2026-3178)"
+        source_url: "https://downloads.seppmail.com/extrelnotes/150/ERN15.0.html"
+      - quote: "Under certain conditions, the authentication process could allow a user to gain access before all required multi-factor authentication steps had been completed."
+        attribution: "SEPPmail (release notes)"
+        source_url: "https://downloads.seppmail.com/extrelnotes/150/ERN15.0.html"
+    extended_notes: |
+      Flagged for Swiss-vendor nexus rather than severity alone — SEPPmail is a Swiss company and its Secure E-Mail Gateway is deployed by public and private-sector organizations across Switzerland/DACH for encrypted e-mail. Requires admin authentication for the command-injection path (not internet-facing anonymous), so this is a patch-hygiene item rather than an urgent out-of-band action; included as borderline given the org profile's Switzerland-at-the-centre coverage focus.
+    borderline: true
+    borderline_reason: "post-auth prerequisite for the scored CVE; included for Swiss-vendor nexus rather than pre-auth severity"
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "https://ssd-disclosure.com/ returned a Cloudflare CAPTCHA challenge page even via the jina reader (last-resort transport) — no working recipe found this run; recommend re-checking the recipe or finding an RSS/API alternative."
+  - source_id: esentire
+    reason: "https://www.esentire.com/security-advisories redirects to https://www.esentire.com/resources/security-advisories, a marketing landing page with no article listing surfaced by trafilatura extraction (page dated 2021 in metadata, clearly stale render) — recipe likely needs a different URL or a structured feed."
+  - source_id: sansec-research
+    reason: "https://sansec.io/research rendered only the landing description, no article list — needs an RSS feed or different listing path if one exists."
+  - source_id: watchtowr
+    reason: "Root URL https://labs.watchtowr.com/ returned 0 items via the jina-fallback feed parser; the working feed path is https://labs.watchtowr.com/rss/ (confirmed working this run, returned 10 items, none in-window — latest post 2026-08-14). Recommend updating sources.json rss_url to the /rss/ path."
+  - source_id: cert-eu
+    reason: "No in-window items — latest CERT-EU advisory (2026-010, Citrix NetScaler) published 2026-08-19, before window start."
+
+candidate_sources: []
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Organization profile configures no product/supplier watchlist — sweep is a no-op per spawn message; general coverage rules applied unchanged throughout this run."
+
+cve_table:
+  - { cve: "CVE-2026-80172", product: "Dell Secure Connect Gateway 5.0", cvss: 9.8, epss: null, kev: false, exploited: "no", patch: "5.36.00.00 (App) / 5.36.00.16 (Appliance)", source: "Dell DSA-2026-382" }
+  - { cve: "CVE-2026-61410", product: "Dell Secure Connect Gateway 5.0", cvss: 9.4, epss: null, kev: false, exploited: "no", patch: "5.36.00.00 (App) / 5.36.00.16 (Appliance)", source: "Dell DSA-2026-382" }
+  - { cve: "CVE-2026-80238", product: "Dell Secure Connect Gateway 5.0", cvss: 9.3, epss: null, kev: false, exploited: "no", patch: "5.36.00.00 (App) / 5.36.00.16 (Appliance)", source: "Dell DSA-2026-382" }
+  - { cve: "CVE-2026-59346", product: "VMware Workstation / Fusion", cvss: 9.3, epss: null, kev: false, exploited: "no", patch: "26H1u1", source: "Broadcom VMSA-2026-0007" }
+  - { cve: "CVE-2026-59347", product: "VMware Workstation / Fusion", cvss: 8.1, epss: null, kev: false, exploited: "no", patch: "26H1u1", source: "Broadcom VMSA-2026-0007" }
+  - { cve: "CVE-2026-20274", product: "Cisco IOS XR Software", cvss: 9.8, epss: null, kev: false, exploited: "no", patch: "per-train SMUs (see advisory)", source: "Cisco PSIRT (hardening release)" }
+  - { cve: "CVE-2026-20279", product: "Cisco IOS XR Software", cvss: 9.8, epss: null, kev: false, exploited: "no", patch: "per-train SMUs (see advisory)", source: "Cisco PSIRT (hardening release)" }
+  - { cve: "CVE-2026-84830", product: "SEPPmail Secure E-Mail Gateway", cvss: 8.6, epss: null, kev: false, exploited: "no", patch: "15.0.7", source: "SEPPmail ERN15.0 / BSI WID-SEC-2026-3178" }

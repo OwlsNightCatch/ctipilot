@@ -42,7 +42,7 @@ sourcing_note: >
   Rated B/2 on that basis. The vendor's own published page renders several technical terms with unusual
   capitalization ("winver.Exe", "moimoi.Sys", "demo.Exe") — confirmed via two independent fetch transports as a
   source-side characteristic, not a citation error — so this entry paraphrases those details in prose rather than
-  quoting the odd casing directly, while evidence[] preserves it verbatim as required.
+  quoting the odd casing directly, while the quoted passages preserve it verbatim.
 confidence: medium
 references: []
 deep_dive: false
@@ -53,7 +53,15 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-06T14:05:00Z"
+    run_id: 2026-09-06T1308Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      A frontmatter field name was removed from the reader-facing sourcing note; the statement it made
+      about preserving the source's unusual capitalization in quotation is unchanged.
+    fields: [sourcing_note]
 migrated_from: null
 ---
 

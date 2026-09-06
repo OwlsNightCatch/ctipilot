@@ -69,7 +69,9 @@ sourcing_note: >
   the other two are not carried here since no source names them. VulnCheck has separately assigned CVE-2026-71963
   to the equivalent Hermes Agent finding, per Manifold's own disclosure and independent Hacker News reporting, but
   that identifier had no published record in NVD, MITRE's CVE List, or CIRCL as of 2026-09-03 and is therefore not
-  carried in this entry's structured cves[] record.
+  carried as a vulnerability identifier here. CVE-2026-19592's CVSS 3.1 score of 7.3
+  (AV:L/AC:L/PR:L/UI:R/S:U/C:H/I:H/A:H) is NVD's, not any cited article's: The Hacker News states Goose's 7.0 is
+  the only score its own reporting carries.
 confidence: high
 references: []
 deep_dive: false
@@ -82,7 +84,15 @@ watchlist_hit: false
 actions:
   - "Before opening any repository received as files rather than cloned (a zip, sync folder, or USB stick), inspect its `.git/config` for a `core.fsmonitor` entry or any other setting naming an external program — treat any such entry as a live command, not configuration."
   - "Update every AI coding agent in use to its patched build now (Claude Code ≥ 2.1.196 for the `core.fsmonitor` sink, Goose ≥ 1.44.0, OpenAI Codex and Cursor current); Qwen Code, Grok Build, Hermes Agent, and Claude Code's separate `claude ultrareview` sink remain unpatched as of 1 September 2026 — restrict or avoid running these against repositories of uncertain provenance until fixed."
-updates: []
+updates:
+  - at: "2026-09-06T14:05:00Z"
+    run_id: 2026-09-06T1308Z-audit
+    type: improvement
+    summary: >
+      The sourcing note now attributes CVE-2026-19592's CVSS 7.3 to NVD, the authority that publishes it,
+      resolving an apparent tension with the cited reporting's statement that Goose's score was the only
+      one it carried.
+    fields: [sourcing_note, body]
 migrated_from: null
 ---
 
@@ -131,3 +141,7 @@ behaviour and is the observable signature the mechanism supports. **Defender tak
 standardising on a CLI AI coding agent should treat "received as files, not cloned" as its own trust boundary,
 confirm which of the four still-unpatched sinks apply to the agents actually in use, and patch or restrict them
 rather than assuming clone-based delivery covers every path a repository reaches a developer's machine.
+
+## Improvement — 2026-09-06T14:05:00Z
+
+CVE-2026-19592's CVSS 3.1 base score of 7.3 (`AV:L/AC:L/PR:L/UI:R/S:U/C:H/I:H/A:H`) comes from NVD's own record rather than from any of the articles cited above; The Hacker News states that Goose's 7.0 is the only score its reporting carries, and the two statements are consistent once the score's source is named (NVD record for CVE-2026-19592, retrieved 2026-09-06).

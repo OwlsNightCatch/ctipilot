@@ -1484,6 +1484,84 @@ def check_silent_edits(run: dict[str, Any] | None, run_id: str,
            "entry of this run or carrying this run's changelog record")
 
 
+def check_append_only_records(run_id: str, content_root: Path,
+                              report=fail) -> None:
+    """Earlier `updates[]` records are append-only — a later fire never edits
+    one (hard invariant #19; `docs/pipeline.md` § Entry lifecycle rule 5).
+
+    `silent-edit` above only asks whether a modified entry carries a record
+    for THIS run; it never looks at what changed, so a fire that rewrites a
+    past record's `summary` while adding a well-formed record of its own
+    sails through. That is not hypothetical: the 2026-09-06 audit corrected
+    an EPSS figure with a string replacement that also matched the same
+    figure inside a 2026-08-19 record's summary, rewriting settled history,
+    and every mechanical check passed. Its own verifier caught it on the
+    fifth iteration.
+
+    What the changelog exists to be is a record of what the entry said at
+    each point in time. Editing a past record does not correct anything: it
+    destroys the evidence that the correction was needed.
+
+    The check diffs each modified entry against HEAD and compares the
+    `updates[]` arrays: every record whose `run_id` is not this run must be
+    byte-identical to its committed form, and records may only be appended,
+    never removed or reordered. Revisable in place, and deliberately not
+    flagged here: the frontmatter, the main analysis, and the text of
+    earlier `## <Type> — <at>` body sections."""
+    try:
+        proc = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD", "--", "entries/"],
+            capture_output=True, text=True, cwd=content_root, timeout=15)
+    except Exception:
+        proc = None
+    if proc is None or proc.returncode != 0:
+        ok("append-only-records", "skipped — git diff unavailable for the content root")
+        return
+    paths = [p for p in proc.stdout.split("\n") if p.strip().endswith(".md")]
+    problems: list[str] = []
+    n_checked = 0
+    for rel in paths:
+        try:
+            show = subprocess.run(["git", "show", f"HEAD:{rel}"],
+                                  capture_output=True, text=True,
+                                  cwd=content_root, timeout=15)
+            if show.returncode != 0:
+                continue  # new file at HEAD: nothing to preserve
+            before = cm.parse_yaml_subset(cm.split_frontmatter(show.stdout)[0]) or {}
+            after = cm.parse_yaml_subset(cm.split_frontmatter(
+                (content_root / rel).read_text(encoding="utf-8"))[0]) or {}
+        except Exception:
+            continue
+        old_recs = [r for r in (before.get("updates") or []) if isinstance(r, dict)]
+        new_recs = [r for r in (after.get("updates") or []) if isinstance(r, dict)]
+        n_checked += 1
+        if len(new_recs) < len(old_recs):
+            problems.append(f"{rel}: {len(old_recs)} changelog record(s) at HEAD, {len(new_recs)} now "
+                            "— records are never removed")
+            continue
+        for i, old in enumerate(old_recs):
+            new = new_recs[i]
+            if str(old.get("at") or "") != str(new.get("at") or ""):
+                problems.append(f"{rel}: updates[{i}] was {old.get('at')!r} at HEAD and is now "
+                                f"{new.get('at')!r} — records are append-only and keep their order")
+                continue
+            if str(old.get("run_id") or "") == run_id:
+                continue  # this fire's own record, still being written
+            changed = sorted(k for k in set(old) | set(new) if old.get(k) != new.get(k))
+            if changed:
+                problems.append(
+                    f"{rel}: updates[{i}] (at {old.get('at')}, run {old.get('run_id')}) was modified "
+                    f"in {changed} — an earlier fire's record is settled history; correct the "
+                    "frontmatter and the analysis instead and let your own record say what was wrong")
+    if problems:
+        for p in problems:
+            report("append-only-records", p)
+    else:
+        ok("append-only-records",
+           f"{n_checked} modified entr{'y' if n_checked == 1 else 'ies'}: every earlier changelog "
+           "record byte-identical to its committed form")
+
+
 def check_legacy_shape(run: dict[str, Any] | None, new_entries: list[dict]) -> None:
     """v4.0 retired the weekly strategic routine and its entries are now
     deleted: a fire is `intel` or `audit`, and no entry carries a legacy
@@ -2940,8 +3018,21 @@ _SELF_REF_RE = re.compile(
     re.IGNORECASE,
 )
 
+# The OTHER half of the same § Style rules sentence, which the 2026-08-30 check
+# did not implement: "frontmatter field names (`cves[]`, `techniques[]`,
+# `actions[]`, …) never appear" in reader-facing text. The bracket form is what
+# makes this unambiguous — "the sources disagree" is English, "the sources[]
+# record" is the entry narrating its own schema at a reader who has never seen
+# it. Three instances shipped in the 2026-08-30 → 2026-09-06 window alone
+# (gitspawn `cves[]`, MoiClient `evidence[]`, Thomson Reuters `techniques[]`),
+# which is the second-instance trigger the 2026-08-30 audit's watch item 5 set.
+_FIELD_REF_RE = re.compile(
+    r"\b(?:cves|techniques|actions|sources|closed_sources|evidence|entities|"
+    r"references|affected_products|updates|tags|regions|sectors)\[\]",
+)
 
-def check_reader_text_internals(run_entries: list[dict]) -> None:
+
+def check_reader_text_internals(run_entries: list[dict], run_id: str | None = None) -> None:
     """Reader-facing entry text must describe the threat, never the fire.
 
     `prompts/cti-run.md` § Style rules scopes this to the title, headline,
@@ -2970,15 +3061,30 @@ def check_reader_text_internals(run_entries: list[dict]) -> None:
             if hit:
                 flagged.append(f"{e['id']}: {field} says {hit.group(0)!r} — "
                                f"state the date or the fact, not the fire that found it")
+            fhit = _FIELD_REF_RE.search(val)
+            if fhit:
+                flagged.append(f"{e['id']}: {field} says {fhit.group(0)!r} — "
+                               f"name the thing, not the frontmatter field that holds it")
         for rec in (e.get("updates") or []):
             if rec.get("internal"):
                 continue  # never rendered
+            # Only this fire's own records. Earlier ones are append-only (hard
+            # invariant #19): flagging them would produce a warning nothing is
+            # permitted to clear, which is worse than the defect it names. The
+            # historical backlog is reported by the audit, not by the gate.
+            if run_id is not None and str(rec.get("run_id") or "") != str(run_id):
+                continue
             summ = rec.get("summary")
             if isinstance(summ, str):
                 hit = _SELF_REF_RE.search(summ)
                 if hit:
                     flagged.append(
                         f"{e['id']}: updates[{rec.get('at')}].summary says {hit.group(0)!r} — "
+                        f"record summaries render on the entry's revision history")
+                fhit = _FIELD_REF_RE.search(summ)
+                if fhit:
+                    flagged.append(
+                        f"{e['id']}: updates[{rec.get('at')}].summary says {fhit.group(0)!r} — "
                         f"record summaries render on the entry's revision history")
 
     if flagged:
@@ -2988,6 +3094,69 @@ def check_reader_text_internals(run_entries: list[dict]) -> None:
         ok("reader-text-internals",
            f"{len(run_entries)} entr{'y' if len(run_entries) == 1 else 'ies'}: "
            f"no production-process self-reference in reader-facing text")
+
+
+def check_cve_epss(entries: list[dict], store_mode: bool = False) -> None:
+    """`cves[].epss` is the FIRST.org EPSS *probability* — a number in [0, 1].
+
+    Not a percentage, not the EPSS percentile, not a string, and never carrying
+    a provenance suffix. The store publishes itself as a machine-readable base
+    for automated triage, and a consumer reading `epss: 55.85` as a probability,
+    or `epss: "0.27 (EUVD)"` as a number, gets nonsense out.
+
+    This exists because the field's units were never written down anywhere in
+    the repo — `docs/pipeline.md` and `prompts/entry-template.md` carried only
+    `epss: null` — and eight months of fires each decided for themselves. The
+    2026-08-30 → 2026-09-06 window published two 100x-wrong values in seven
+    days, and the second one was worse than a slip: on 2026-09-01 iteration 1
+    set the correct FIRST.org probability and iteration 2 *reverted* it to the
+    percentage, reasoning that "the store's convention is a percentage number
+    (confirmed by a pre-existing entry with epss: 1.37, impossible as a raw 0-1
+    probability)". A wrong legacy value taught a verifier the wrong convention
+    and it overrode a correct fix. Undefined units do not stay a small problem.
+
+    Note the deliberate limit: this catches the *unambiguous* violations — a
+    value above 1, or one that is not a number at all. A percentage that
+    happens to land inside [0, 1] (0.377 for a true 0.00377) is invisible to
+    any offline check, which is why `docs/pipeline.md` now states the units and
+    requires the FIRST.org value rather than a relay's rendering of it.
+
+    FAIL in run scope (a fire fixes its own before commit); WARN under `--all`,
+    where the subject is historical entries the quality audit corrects through
+    their changelogs one record at a time."""
+    report = warn if store_mode else fail
+    problems: list[str] = []
+    n_values = 0
+    for e in entries:
+        for i, rec in enumerate(e.get("cves") or []):
+            if not isinstance(rec, dict):
+                continue
+            raw = rec.get("epss")
+            if raw is None or raw == "":
+                continue
+            n_values += 1
+            cid = rec.get("id") or f"cves[{i}]"
+            # The store writes this as a quoted decimal ("0.0047"); accept that
+            # shape and judge the VALUE, which is what a consumer misreads.
+            try:
+                val = float(str(raw).strip())
+            except (TypeError, ValueError):
+                problems.append(
+                    f"{e['id']}: {cid} epss={raw!r} does not parse as a decimal — the field "
+                    f"carries the FIRST.org EPSS probability alone; a percent sign or a "
+                    f"provenance suffix belongs in sourcing_note, not in the value")
+                continue
+            if not (0.0 <= val <= 1.0):
+                problems.append(
+                    f"{e['id']}: {cid} epss={raw!r} is outside [0, 1] — EPSS is a probability, "
+                    f"not a percentage or a percentile; take the `epss` field from "
+                    f"api.first.org/data/v1/epss, not the `percentile` field")
+    if problems:
+        for p in problems:
+            report("cve-epss", p)
+    else:
+        ok("cve-epss", f"{n_values} epss value(s): every one a number in [0, 1]"
+                       if n_values else "no epss values to check")
 
 
 def check_frontmatter_yaml_portability(targets: list[tuple[str, Path]]) -> None:
@@ -3223,6 +3392,9 @@ def run_all_checks(entries: list[dict], runs: list[dict], taxonomy: dict,
     if not n_err:
         ok("entry-schema", f"all {len(entries)} entr{'y' if len(entries) == 1 else 'ies'} pass validate_entry")
 
+    print("\n== all: cves[].epss units ==")
+    check_cve_epss(entries, store_mode=True)
+
     print("\n== all: frontmatter YAML portability ==")
     check_frontmatter_yaml_portability(
         [(e["id"], content_root / "entries" / f"{e['id']}.md") for e in entries])
@@ -3352,7 +3524,10 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
         check_run_counters(run, new_entries, updated_entries)
 
     print("\n== reader-facing text: no production-process self-reference ==")
-    check_reader_text_internals(run_entries)
+    check_reader_text_internals(run_entries, run_id)
+
+    print("\n== cves[].epss units ==")
+    check_cve_epss(run_entries)
 
     print("\n== frontmatter YAML portability ==")
     _yaml_targets = [(e["id"], content_root / "entries" / f"{e['id']}.md")
@@ -3378,6 +3553,9 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
 
     print("\n== entry lifecycle — no silent edits ==")
     check_silent_edits(run, run_id, entries_by_id, content_root)
+
+    print("\n== changelog records are append-only ==")
+    check_append_only_records(run_id, content_root)
 
     print("\n== v4 shape (retired weekly fields / run kind) ==")
     check_legacy_shape(run, new_entries)

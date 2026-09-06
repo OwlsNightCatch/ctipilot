@@ -19,3 +19,12 @@ Read `affected`/`fixed`/patch-timing from **structured** fields, never the human
 - A CNA publishing CVSS 4.0 AND 3.1 side by side is parallel metrics, not a self-correction — read every element of `cna.metrics`.
 - Never rank scores across CVSS versions. When multiple legitimate figures exist, the number goes in `cves[].cvss` and the reconciliation (which body, which scale) in `sourcing_note`.
 - OSV 404s on ecosystem-less products (Joomla extensions, firmware) are not unreachability — the CVE API has no ecosystem requirement.
+
+## EPSS rules (2026-09-06 audit)
+
+`cves[].epss` is the FIRST.org EPSS **probability**, a quoted decimal in `[0, 1]`. It is NOT the percentile and NOT a percentage. `docs/pipeline.md` states this normatively and `check_run.py`'s `cve-epss` check enforces the range (FAIL in run scope, WARN under `--all`).
+
+- **ENISA EUVD renders EPSS as a percentage; FIRST.org returns the probability.** Verified 2026-09-06: EUVD's API returned `"epss": 0.71` for CVE-2026-83548 the same day FIRST.org returned `0.00710`. Divide an EUVD figure by 100 before it enters the field, and never paste a provenance suffix (`"0.27 (EUVD)"`) into a numeric field.
+- **Take the API's `epss` field, never its `percentile` field.** The four out-of-range legacy values (`3.97`, `12.01%`, `55.85`, `1.37`) were all percentage renderings, not percentiles, but both mistakes look identical from inside the store.
+- **The value is a dated snapshot and moves daily.** A correction converts the units and preserves the entry's own as-of value; it does not silently substitute today's number.
+- **Why this earned a rule:** the field shipped for eight months with no stated units, and the store taught its own verifier the wrong convention. On 2026-09-01 iteration 1 set the correct `0.00377` and iteration 2 *reverted* it to `0.377`, citing "a pre-existing entry with epss: 1.37, impossible as a raw 0-1 probability" as evidence of house convention. An undefined unit does not stay a small problem: it becomes precedent.

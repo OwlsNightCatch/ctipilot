@@ -71,8 +71,8 @@ sourcing_note: >
   a genuinely large, multi-jurisdictional footprint from a single vendor compromise, distinct from a
   single-country, single-organization breach. No new or evolved TTP is asserted (no access vector is
   stated at all, so ground (b) does not apply here), no actor is named, and no imminent shared threat
-  is stated; the entry rests on ground (a) alone. `techniques[]` is limited to T1530 because that is
-  the only behavior any source states; no initial-access technique is asserted by any party.
+  is stated; the entry rests on ground (a) alone. The only attacker behavior any source states is access to the
+  stored case data itself; no party asserts an initial-access technique, so none is recorded.
 confidence: medium
 references: []
 deep_dive: false
@@ -83,7 +83,15 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-06T14:05:00Z"
+    run_id: 2026-09-06T1308Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      A frontmatter field name was removed from the reader-facing sourcing note; the statement it made
+      about the mapping resting only on the behavior sources describe is unchanged.
+    fields: [sourcing_note]
 migrated_from: null
 ---
 

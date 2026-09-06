@@ -72,7 +72,9 @@ affected_products: ["{Vendor} {Product}"]   # official product names; [] when no
 cves:
   - id: CVE-YYYY-NNNNN
     cvss: "9.8"
-    epss: null
+    epss: null          # FIRST.org EPSS probability, quoted decimal in [0,1]
+                        # ("0.0047") — never a percentage, never the percentile,
+                        # never a provenance suffix; null when not looked up
     type: rce
     vector: zero-click
     auth: pre-auth
@@ -202,7 +204,9 @@ priority: high                             # moved from notable by the 07-05 rec
 cves:
   - id: CVE-YYYY-NNNNN
     cvss: "9.8"
-    epss: null
+    epss: null          # FIRST.org EPSS probability, quoted decimal in [0,1]
+                        # ("0.0047") — never a percentage, never the percentile,
+                        # never a provenance suffix; null when not looked up
     type: rce
     vector: zero-click
     auth: pre-auth
