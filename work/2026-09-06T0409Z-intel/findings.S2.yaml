@@ -1,0 +1,109 @@
+domain: S2
+run_id: 2026-09-06T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-06T04:12:24Z
+ended_at: 2026-09-06T04:20:01Z
+duration_seconds: 457
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 4
+  bridge_fetches: 22
+items:
+  - title: "MikroTrick — CERT Polska coordinates disclosure of a six-CVE RouterOS chain that takes over any internet-exposed SSH service without authentication, exploited since at least 2 September"
+    sources:
+      - { url: "https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/", publisher: "CERT Polska (NASK)", date: "2026-09-05", role: "primary" }
+      - { url: "https://cert.pl/en/posts/2026/09/mikrotik-routeros-cve", publisher: "CERT Polska (NASK) — CVE detail page", date: "2026-09-05", role: "primary" }
+    discovery_trace: "first seen at: cert-pl, URL https://cert.pl/en/rss.xml → primary: CERT Polska, URL https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/ (no pivot needed — CERT-PL is the discovering and coordinating authority) → corroboration: CERT Polska CVE detail page, URL https://cert.pl/en/posts/2026/09/mikrotik-routeros-cve"
+    summary: |
+      CERT Polska (NASK) discovered and coordinated disclosure of six RouterOS vulnerabilities it collectively names "MikroTrick" and confirms two of them are being chained in live attacks against internet-exposed SSH services. CVE-2026-67276 (CVSS 9.2) is the core primitive: RouterOS's SSH authentication compares only the key type and the RSA modulus of a client-supplied public key against the authorized key on file, never the exponent — an attacker who already knows an authorized user's public modulus (harvestable from the exposed SSH host key exchange in many configurations) can craft a substitute key with exponent 1, forge a valid signature over it without the corresponding private key, and open an authenticated SSH command channel as that user. CVE-2026-86060 (CVSS 9.2, CWE-88 argument-delimiter/argument-injection) is chained immediately after: RouterOS mishandles SSH usernames beginning with a disallowed character, letting a crafted username escalate the resulting session to full administrative privileges regardless of the account the auth-bypass targeted. CERT Polska states it has independent confirmation the two are being combined against SSH-exposed devices in ongoing attacks and that the vendor's patches stop the observed activity. Three lower-severity flaws round out the chain: CVE-2026-67277 (CVSS 8.8) is an unauthenticated pre-auth state in the bandwidth-test service that leaks uninitialized kernel packet-buffer memory and can trigger a kernel restart via an integer-underflow size check; CVE-2026-67278 lets an attacker forge a trusted TLS intermediate certificate because RouterOS's trust store contains a root CA with public exponent e=3 and accepts malformed RSA/PKCS#1 v1.5 signatures during X.509 validation, enabling TLS server impersonation on outbound RouterOS connections; CVE-2026-67279 lets an unauthenticated client that requests an SSH rekey before ever attempting authentication still open a session channel and issue an exec request that the affected build dispatches, permitting unauthenticated creation/overwrite of files in the managed namespace including configuration/diagnostic support files; CVE-2026-67281 is an unauthenticated file-read in the WebFig `/jsproxy` path via a stale uninitialized session principal pointer. Affected: RouterOS 6.0.0 before 6.49.21, 7.0.0 before 7.23.4, and 7.24 before 7.24.2. Fixed in 6.49.21, 7.23.4, 7.24.2 and 7.25beta3 (MikroTik security bulletin, referenced by CERT Polska). MikroTik additionally shipped a boot-time configuration scanner in the fixed releases that flags selected known post-compromise artifacts (a "Flagged" marker) — CERT Polska is explicit this only catches selected traces and its absence is not proof a device is clean.
+    region_nexus: "global — internet-facing SSH-managed network infrastructure, discovered/coordinated by a Council-of-Europe-region national CERT (Poland)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-67276", "CVE-2026-67277", "CVE-2026-67278", "CVE-2026-67279", "CVE-2026-67281", "CVE-2026-86060"]
+    techniques: ["T1190", "T1136"]
+    affected_products: ["MikroTik RouterOS"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "We have obtained confirmation that the attackers are exploiting this combination of vulnerabilities to take full control of devices whose SSH service is accessible from public networks. It has also been confirmed that the released patches prevent the observed attacks."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/"
+      - quote: "RouterOS did not properly verify public keys used for SSH authentication - in particular, it did not compare the entire RSA public key assigned to a user."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/09/mikrotik-routeros-cve"
+      - quote: "RouterOS did not properly handle usernames beginning with a disallowed character in the SSH login mechanism. By using a crafted username, an attacker could elevate their privileges. The resulting session had full administrative privileges in the RouterOS system."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/"
+    extended_notes: |
+      Detection concept (telemetry class first): authentication-log review on any RouterOS device with SSH reachable beyond a trusted management network — look for SSH login sessions that immediately follow a rekey request with no prior authentication attempt, and for account-creation events shortly after an SSH session establishes (RouterOS system log entries recording a new user added "by ssh" from an external session). Config-artifact hunt: enumerate all local users for any unexpected/unrecognized administrative account, and check the `/system/device-mode/print` "Flagged" marker after updating — CERT Polska is explicit this marker only catches known traces and its absence never proves a device is clean, so a full user/script/scheduler/proxy/tunnel configuration review is the actual bar, not just the marker. Hardening: update to 6.49.21 / 7.23.4 / 7.24.2 / 7.25beta3 immediately; until patched, remove SSH, WWW/WWW-SSL and the bandwidth-test server from any interface reachable outside a trusted management network, and do not originate TLS connections or use the built-in SSH client/exec tools from an unpatched device toward untrusted hosts (CVE-2026-67278 lets an on-path or DNS-hijacking attacker impersonate any TLS server to such a device). No IOCs are reproduced here per this pipeline's policy — CERT Polska's advisory documents the specific log-message templates and a named suspicious account observed in the wild for anyone needing them at the source.
+  - title: "Berlin Landesnetz aftermath: Rhysida's full data dump goes live after the ransom ultimatum lapses, and the federal government uses the same week to shelve the constitutional fix for BSI's cross-Länder assistance gap"
+    sources:
+      - { url: "https://www.heise.de/news/Berliner-Senat-zahlt-nicht-sensible-Daten-jetzt-im-Darknet-11442286.html", publisher: "heise online (dpa)", date: "2026-09-04", role: "primary" }
+      - { url: "https://www.heise.de/news/Kehrtwende-bei-Cybersicherheit-Bund-gibt-Plan-fuer-BSI-Grundgesetzaenderung-auf-11440646.html", publisher: "heise online", date: "2026-09-03", role: "primary" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml → primary: heise online, URL https://www.heise.de/news/Berliner-Senat-zahlt-nicht-sensible-Daten-jetzt-im-Darknet-11442286.html and https://www.heise.de/news/Kehrtwende-bei-Cybersicherheit-Bund-gibt-Plan-fuer-BSI-Grundgesetzaenderung-auf-11440646.html (both fetched via python3 tools/fetch_source.py extract)"
+    summary: |
+      Two directly-connected developments this window on the already-tracked Berlin Landesnetz/Rhysida incident. First, a genuine policy consequence: heise reports (citing the Federal Interior Ministry's own written reply to a Bundestag inquiry from Green-faction deputy chair Konstantin von Notz) that the German federal government has quietly abandoned the coalition-agreement commitment to amend the Basic Law (Grundgesetz) so the BSI could act as a true central authority for state- and municipal-level cyber incidents. Today the BSI may only assist a Land after that Land explicitly requests Amtshilfe, and durable bilateral cooperation agreements — a precondition the BMI itself confirms do not yet exist with all 16 federal states — still gate faster support; in practice the BSI has repeatedly had to help first and formalise the legal basis afterward. The BMI's reply points instead to the 14 existing cooperation agreements, the NIS2-transposition-driven expansion of BSI's powers, and increased staffing/budget as sufficient, explicitly declining to revive the constitutional change. Von Notz calls the reversal "devastating for Germany's IT security" given the still-unfolding fallout from this exact incident. This is a direct, defender-relevant illustration of a structural gap in federated cyber-incident response — the same tension the Swiss constituency's federal/cantonal/communal cooperation model with BACS must itself navigate — landing in the same week the incident's fallout peaked. Second, on the incident itself: Rhysida's ransom ultimatum lapsed 2026-09-04 and the group published its full "auction" dataset in the clear on its leak site after Berlin's Senate confirmed it would not pay (a fact this pipeline's prior update on 2026-09-05 had already recorded); the added, previously uncaptured detail is what Chaos Computer Club spokesperson Joachim Selzer identifies as concretely exposed and exploitable — personnel matters and employment reference letters, and an employee's handwritten signature on an internal device-request form, which he assesses is more useful for medium-term identity-fraud and impersonation than for immediate abuse given the dataset's size. IT-security expert Christof Fischer separately confirms in the same reporting that German law bars public bodies from paying such ransoms outright.
+    region_nexus: "Germany (federal/Länder cyber-incident-response structure) — direct transferable-lesson nexus to Switzerland's own federal/cantonal/communal cyber-assistance model"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: ["actor:rhysida", "incident:berlin-landesnetz-compromise-2026-08"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-30/berlin-landesnetz-rhysida-extortion-phishing-vector"
+    evidence:
+      - quote: "Auf die Frage, ob die Regierung vor dem Hintergrund anhaltender und schwerwiegender Angriffe auf Länder und Kommunen die seinerzeit von der Ampel-Koalition geplante Grundgesetzänderung vorlegen wird, verweist das Ressort nur auf den bestehenden verfassungsrechtlichen Rahmen."
+        attribution: "heise online, citing the Federal Interior Ministry's (BMI) written reply"
+        source_url: "https://www.heise.de/news/Kehrtwende-bei-Cybersicherheit-Bund-gibt-Plan-fuer-BSI-Grundgesetzaenderung-auf-11440646.html"
+      - quote: "Bisher durfte das BSI den Ländern bei der Abwehr schwerer Cyberattacken verfassungsrechtlich bedingt erst nach einer expliziten Anforderung von Amtshilfe zur Seite stehen. Zudem mussten langwierige bilaterale Vereinbarungen geschlossen werden – und die existieren bis heute nicht mit allen 16 Bundesländern."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Kehrtwende-bei-Cybersicherheit-Bund-gibt-Plan-fuer-BSI-Grundgesetzaenderung-auf-11440646.html"
+      - quote: "„Nach dem, was ich jetzt hier sehen kann, haben sie den kompletten Datensatz für alle zur Einsicht live gestellt“, sagte der Sprecher des Chaos Computer Clubs, Joachim Selzer... „Ich sehe hier zum Beispiel Personalangelegenheiten, auch Arbeitszeugnisse.“"
+        attribution: "Chaos Computer Club spokesperson Joachim Selzer, via heise online/dpa"
+        source_url: "https://www.heise.de/news/Berliner-Senat-zahlt-nicht-sensible-Daten-jetzt-im-Darknet-11442286.html"
+    extended_notes: |
+      Framing note for the composer: this is offered as an update-of delta on the existing 2026-08-30 entry, not a new entry — the CVE/TTP-free policy angle (BSI's Amtshilfe-gated assistance model) is the genuinely new, defender-relevant fact; the data-publication mechanics were already recorded by yesterday's run and are only lightly recapped here for continuity. No ATT&CK mapping applies to the policy delta itself; the underlying incident's techniques remain whatever the original entry already carries (phishing-borne network compromise, ransomware/data-extortion impact).
+watchlist_sweep:
+  duty: sector-lens
+  note: "No separate sweep required (sector-lens duty) — triage was weighted toward public-sector/Switzerland throughout; no watchlists configured for this deployment."
+candidate_sources: []
+coverage_gaps:
+  - source_id: cert-at
+    reason: "Bare listing and /en/news/ both static at last-known content (newest dated item 26.08.2026, BEC fraud warning); no in-window (post-2026-09-01) item found. Consistent with this source's documented sparse (~monthly) cadence — not a transport failure."
+  - source_id: ncsc-ch-focus
+    reason: "Im Fokus listing fetched cleanly (WebFetch) but newest item is 2026-09-01 (food-delivery skimming); nothing published in the 2026-09-05/06 window."
+  - source_id: ncsc-ch-incidents
+    reason: "Aktuelle Vorfälle listing fetched cleanly but newest dated entry is 2026-08-18 (consumer-fraud page, expected slow cadence per source notes); nothing in-window."
+  - source_id: enisa
+    reason: "Reachability probe only (raw HTML head, no listing drill this run given time budget) — no in-window item independently confirmed; ENISA's own EUVD/KEV-adjacent content is mirrored via NCSC-CH CSH and CERT-FR/BSI feeds, which were fully drilled."
+  - source_id: cert-lv
+    reason: "The /lv/incidenti page returned only static procedural/taxonomy content, no dated incident bulletins in this fetch; the actual Brīdinājumi/statistika subpages were not drilled this run given time budget."
+  - source_id: safeonweb-be
+    reason: "Not attempted this run (standard-rotation, time budget) — no CH/EU-nexus signal expected beyond citizen-fraud content per source notes."
+  - source_id: synacktiv
+    reason: "Not attempted this run (standard-rotation, time budget)."
+  - source_id: truesec
+    reason: "Not attempted this run (standard-rotation, time budget)."
+  - source_id: jpcert
+    reason: "Not attempted this run (standard-rotation, time budget)."
+  - source_id: prodaft
+    reason: "Not attempted this run (standard-rotation, time budget)."
+  - source_id: intrinsec
+    reason: "Not attempted this run (standard-rotation, time budget)."
+  - source_id: scip-ch
+    reason: "Not attempted this run (standard-rotation, time budget)."
+  - source_id: ec-digital-strategy-newsroom
+    reason: "Fetched cleanly (jina); newest item 2026-09-01, nothing in-window; specifically checked for EU CRA reporting-obligation last-minute developments ahead of the 2026-09-11 go-live per standing policy watch — none found."
+  - source_id: ccb-belgium
+    reason: "Direct bridge fetch returned raw Drupal HTML with no title/date rows extracted at this pass (time budget did not allow a second drill via the documented --direct rung); no BE-specific in-window item confirmed either way."
+  - source_id: cisa-directives
+    reason: "Bridge `cisa page` returned only the navigation/menu shell (consistent with this source's long-documented JS-shell condition on the un-filtered listing URL); no evidence from any other source that a new directive published in-window."

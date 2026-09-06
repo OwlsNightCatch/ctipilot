@@ -16,7 +16,7 @@ summary: >
   been stolen; only investigations opened after the attacker advertised the dataset on 2026-08-12
   established the theft.
 discovered_at: "2026-08-15T04:47:00Z"
-updated_at: "2026-09-02T04:55:00Z"
+updated_at: "2026-09-06T04:55:00Z"
 event_date: 2026-08-14
 run_id: 2026-08-15T0412Z-intel
 priority: high
@@ -35,7 +35,10 @@ entities:
   - "actor:zerobytes"
   - "incident:france-education-nationale-agent-training-breach-2026-07"
   - "incident:france-bloctel-breach-2026-08"
+  - "incident:zero-logement-vacant-breach-2026-08"
   - "actor:cybernox"
+  - "actor:epsilon-hacking-collective"
+  - "malware:wavestealer"
 techniques:
   - T1078
   - T1199
@@ -74,6 +77,14 @@ sources:
     publisher: "ZATAZ.COM (Damien Bancal)"
     date: "2026-08-07"
     role: corroborating
+  - url: "https://www.zataz.com/deux-suspects-interpelles-apres-le-piratage-du-fisc/"
+    publisher: "ZATAZ.COM (Damien Bancal)"
+    date: "2026-09-04"
+    role: corroborating
+  - url: "https://www.zataz.com/zerobytes-deux-arrestations-et-des-alias-a-demeler/"
+    publisher: "ZATAZ.COM (Damien Bancal)"
+    date: "2026-09-05"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "Mercredi 12 et jeudi 13 août 2026, un acteur malveillant a revendiqué des accès illégitimes au système d'information de la Direction générale des Finances publiques (DGFiP), intervenus en juin et juillet 2026, reposant sur des usurpations d'identifiants d'un agent de la DGFIP et d'un tiers habilité."
@@ -100,6 +111,18 @@ evidence:
     original: "Ces piratages doivent être traités comme des revendications publiées par Cybernox. Une ligne affichée sur un forum clandestin ne démontre pas qu'une organisation a elle-même subi une intrusion totale."
     publisher: "ZATAZ.COM"
     source_url: "https://www.zataz.com/cybernox-multiplie-les-revendications-de-fuites-en-france/"
+  - quote: "the first suspect was arrested on 18 August. Aged 18 and resident in the Paris region, he is suspected of having taken part in the cyberattacks against the tax administration and of belonging to"
+    original: "le premier suspect a été arrêté le 18 août. Âgé de 18 ans et domicilié en région parisienne, il est soupçonné d’avoir participé aux cyberattaques contre l’administration fiscale et d’appartenir à"
+    publisher: "ZATAZ.COM (Damien Bancal)"
+    source_url: "https://www.zataz.com/deux-suspects-interpelles-apres-le-piratage-du-fisc/"
+  - quote: "A second suspect was arrested on 26 August. He is a minor under 16."
+    original: "Un deuxième suspect a été arrêté le 26 août. Il s’agit d’un mineur âgé de moins de 16 ans."
+    publisher: "ZATAZ.COM (Damien Bancal)"
+    source_url: "https://www.zataz.com/deux-suspects-interpelles-apres-le-piratage-du-fisc/"
+  - quote: "After his police custody, he was released."
+    original: "Après sa garde à vue, il a été libéré."
+    publisher: "ZATAZ.COM (Damien Bancal)"
+    source_url: "https://www.zataz.com/deux-suspects-interpelles-apres-le-piratage-du-fisc/"
 verification: multi-source
 sourcing_note: >
   The confirmed facts come from the French Ministry of Economy and Finance's own statement about
@@ -163,6 +186,20 @@ updates:
       ZATAZ confirms Cybernox as the actor behind the DGFiP-adjacent Bloctel incident; this is a
       plausible correlation, not a confirmed attribution.
     fields: [entities, sources, evidence, body]
+  - at: "2026-09-06T04:55:00Z"
+    run_id: 2026-09-06T0409Z-intel
+    type: update
+    summary: >
+      France's Paris public prosecutor's office confirms two suspects tied to ZeroBytes were
+      arrested in August 2026 over the campaign this entry tracks: an 18-year-old ("ChatNoir"), a
+      presumed Epsilon-collective co-founder previously tied to the Free/LDLC/BFM-TV/RMC
+      breaches, remanded in pretrial detention; and a 15-year-old ("Casquette"), released without
+      charge pending forensic analysis of seized devices. The prosecutor's office names further
+      claimed victims beyond this cluster's already-tracked DGFiP/Éducation nationale/Bloctel
+      thread (France Travail, the French Handball Federation, Intermarché, SFR, Bureau Vallée,
+      Pulsy). A third alias, xMetah, was not arrested and is suspected of a further leak posted
+      after the arrests: the arrests have not ended the campaign.
+    fields: [updated_at, entities, sources, evidence, body]
 migrated_from: null
 ---
 
@@ -201,3 +238,13 @@ The delta here is operational, not technical. The Ministry of National Education
 ## Update — 2026-09-02T04:55:00Z
 
 A plausible, unconfirmed link has surfaced for the third breach this entry has so far declined to attribute. ZATAZ reported on 2026-08-07 — five days before DGCCRF's public warning — that an actor using the handle Cybernox, jointly with a second handle presented as "don't call me," claimed to have leaked a database tied to Bloctel, France's telemarketing opt-out registry, containing exactly 3,032,386 phone numbers ([ZATAZ.COM, 2026-08-07](https://www.zataz.com/cybernox-multiplie-les-revendications-de-fuites-en-france/)). That figure and timing are consistent with DGCCRF's own disclosure of a leak affecting roughly 3 million phone numbers, 600,000 of them Bloctel registrants, taken via a fraudulently accessed professional account. ZATAZ's own reporting is explicit that this does not establish attribution: "these hacks must be treated as claims published by Cybernox. A line displayed on an underground forum does not demonstrate that an organization itself suffered a full intrusion" (translated from French) ([ZATAZ.COM, 2026-08-07](https://www.zataz.com/cybernox-multiplie-les-revendications-de-fuites-en-france/)). Neither DGCCRF nor ZATAZ names Cybernox as the actor behind the DGFiP-adjacent Bloctel incident, so this entry records the correlation without upgrading it to attribution.
+
+## Update — 2026-09-06T04:55:00Z
+
+France's Paris public prosecutor's office confirms two arrests in the ZeroBytes cluster this entry tracks. The first suspect, an 18-year-old resident of the Paris region, was arrested on 2026-08-18, is suspected of participating in the cyberattacks against the tax administration and of belonging to ZeroBytes, and was placed under judicial examination and pretrial detention two days later ([ZATAZ.COM, 2026-09-04](https://www.zataz.com/deux-suspects-interpelles-apres-le-piratage-du-fisc/)). ZATAZ identifies him under the handle "ChatNoir," a presumed co-founder of the earlier Epsilon hacking collective, whose name already appears in prior proceedings tied to intrusions at Free, LDLC and the hijacked broadcast accounts of BFM-TV and RMC ([ZATAZ.COM, 2026-09-05](https://www.zataz.com/zerobytes-deux-arrestations-et-des-alias-a-demeler/)). Epsilon's own 2023-2024 breaches separately include a database of more than four million Sport 2000 customer records, and the collective has been associated with WaveStealer, an infostealer sold cheaply on Telegram and Discord that harvests locally-stored credentials and session cookies ([ZATAZ.COM, 2026-09-05](https://www.zataz.com/zerobytes-deux-arrestations-et-des-alias-a-demeler/)). A second suspect, a minor under 16, was arrested on 2026-08-26; after his police custody, he was released, with his computer equipment seized for forensic analysis ([ZATAZ.COM, 2026-09-04](https://www.zataz.com/deux-suspects-interpelles-apres-le-piratage-du-fisc/)). ZATAZ names him under the handle "Casquette," aged 15, and describes him as a known associate of ChatNoir ([ZATAZ.COM, 2026-09-05](https://www.zataz.com/zerobytes-deux-arrestations-et-des-alias-a-demeler/)). The first suspect is charged with unauthorized access to and persistence in an automated data-processing system containing personal data, an offence aggravated by acting as part of an organized group, alongside data modification, extraction, transmission and reproduction offences and a possible conspiracy charge, together carrying up to ten years' imprisonment; the investigation into a criminal association is ongoing ([ZATAZ.COM, 2026-09-04](https://www.zataz.com/deux-suspects-interpelles-apres-le-piratage-du-fisc/)). The second suspect was released without indictment at this stage, pending the forensic analysis of his seized devices ([ZATAZ.COM, 2026-09-05](https://www.zataz.com/zerobytes-deux-arrestations-et-des-alias-a-demeler/)).
+
+The prosecutor's office's own victim list extends materially beyond the DGFiP/Éducation nationale/Bloctel thread already tracked here — and beyond ZeroBytes' separately claimed Zéro Logement Vacant compromise this store also tracks: France Travail, the French Handball Federation, Intermarché, SFR, Bureau Vallée and Pulsy are named among the organizations the cluster claimed on dark-web forums ([ZATAZ.COM, 2026-09-04](https://www.zataz.com/deux-suspects-interpelles-apres-le-piratage-du-fisc/)). ZATAZ's own alias-mapping (built on account histories, observed relationships between users, pseudonym changes and overlapping activity periods rather than resemblance alone) traces the first suspect to a cluster of aliases including Saturne, near, Nears, ChatNoir7331 and blackcat, and the second to a separate cluster converging on xMetah, xReyna and F7001 ([ZATAZ.COM, 2026-09-05](https://www.zataz.com/zerobytes-deux-arrestations-et-des-alias-a-demeler/)) — the same source separately treats xMetah as a distinct, uninvolved third individual (see below), so this alias cluster's membership is itself unsettled. The timing corroborates the arrests: a message on the cluster's own forum records that "ChatNoir" stopped communicating around 18–19 August, matching his arrest window, and several ZeroBytes-adjacent forum accounts were subsequently banned or closed ([ZATAZ.COM, 2026-09-05](https://www.zataz.com/zerobytes-deux-arrestations-et-des-alias-a-demeler/)). Neither correlation by itself proves which individual controlled which account.
+
+The arrests have not ended the campaign. The alias xMetah was not arrested, and ZATAZ assesses him as very likely responsible for a further data-leak post made on 2026-09-01, after both arrests ([ZATAZ.COM, 2026-09-05](https://www.zataz.com/zerobytes-deux-arrestations-et-des-alias-a-demeler/)). That single fact is the operational takeaway: a loosely affiliated, multi-alias extortion cluster can lose two members to arrest, including one identified as a co-founder of its predecessor collective, and continue publishing new leaks days later under a surviving alias. Law-enforcement disruption of one identity is not disruption of the cluster.
+
+**Defender takeaway:** treat an arrest announcement against a named handle as a partial disruption signal, not a closure signal, for any ongoing extortion or leak campaign attributed to a multi-alias cluster: continue monitoring for fresh claims under the cluster's other known or newly surfacing aliases rather than standing down a watch once one member is in custody.

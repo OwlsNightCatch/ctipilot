@@ -13,7 +13,7 @@ summary: >
   before detection; Berlin's government has publicly refused the roughly EUR 2 million ransom
   demand.
 discovered_at: "2026-08-30T04:35:00Z"
-updated_at: "2026-09-05T04:50:00Z"
+updated_at: "2026-09-06T04:50:00Z"
 event_date: "2026-08-28"
 run_id: 2026-08-30T0410Z-intel
 priority: high
@@ -58,6 +58,10 @@ sources:
     publisher: "heise online"
     date: "2026-09-04"
     role: corroborating
+  - url: "https://www.heise.de/news/Kehrtwende-bei-Cybersicherheit-Bund-gibt-Plan-fuer-BSI-Grundgesetzaenderung-auf-11440646.html"
+    publisher: "heise online"
+    date: "2026-09-03"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "The attackers apparently gained access to the Landesnetz through an employee's click on a phishing email."
@@ -82,6 +86,18 @@ evidence:
     original: "Nach dem, was ich jetzt hier sehen kann, haben sie den kompletten Datensatz für alle zur Einsicht live gestellt"
     publisher: "Joachim Selzer, Chaos Computer Club spokesperson, via heise online (dpa)"
     source_url: "https://www.heise.de/news/Berliner-Senat-zahlt-nicht-sensible-Daten-jetzt-im-Darknet-11442286.html"
+  - quote: "Among the data that is viewable is, for example, the application for a new phone, including the signature of the administrative employee."
+    original: "Unter den Daten, die einsehbar sind, ist zum Beispiel der Antrag auf ein neues Handy – samt der Unterschrift des Verwaltungsmitarbeiters."
+    publisher: "heise online (dpa)"
+    source_url: "https://www.heise.de/news/Berliner-Senat-zahlt-nicht-sensible-Daten-jetzt-im-Darknet-11442286.html"
+  - quote: "the ministry points only to the existing constitutional framework."
+    original: "vorlegen wird, verweist das Ressort nur auf den bestehenden verfassungsrechtlichen Rahmen."
+    publisher: "heise online, citing the Federal Interior Ministry's (BMI) written reply"
+    source_url: "https://www.heise.de/news/Kehrtwende-bei-Cybersicherheit-Bund-gibt-Plan-fuer-BSI-Grundgesetzaenderung-auf-11440646.html"
+  - quote: "Until now, the BSI has only been constitutionally permitted to assist the states in defending against serious cyberattacks after an explicit request for administrative assistance. In addition, lengthy bilateral agreements had to be concluded, and these still do not exist with all 16 federal states today."
+    original: "Bisher durfte das BSI den Ländern bei der Abwehr schwerer Cyberattacken verfassungsrechtlich bedingt erst nach einer expliziten Anforderung von Amtshilfe zur Seite stehen. Zudem mussten langwierige bilaterale Vereinbarungen geschlossen werden – und die existieren bis heute nicht mit allen 16 Bundesländern."
+    publisher: "heise online"
+    source_url: "https://www.heise.de/news/Kehrtwende-bei-Cybersicherheit-Bund-gibt-Plan-fuer-BSI-Grundgesetzaenderung-auf-11440646.html"
 verification: multi-source
 sourcing_note: >
   The phishing access vector and the Rhysida attribution are both sourced to investigative
@@ -117,6 +133,18 @@ updates:
       claimed remains what the Senate itself must still verify, per a state-parliament faction
       leader's own account.
     fields: [updated_at, sources, evidence, body]
+  - at: "2026-09-06T04:50:00Z"
+    run_id: 2026-09-06T0409Z-intel
+    type: update
+    summary: >
+      Germany's federal government has quietly abandoned a plan set by the previous coalition to amend the
+      Basic Law so the BSI could act as a true central authority for state- and municipal-level
+      cyber incidents, per the Interior Ministry's own written Bundestag reply: a structural gap
+      in federated cyber-incident response the fallout from this exact incident has now surfaced.
+      Separately, the Chaos Computer Club identifies specific exposed record types (personnel
+      matters, employment references, a handwritten signature on an internal device-request form)
+      in the now fully-published leak.
+    fields: [updated_at, sources, evidence, body]
 migrated_from: null
 ---
 
@@ -133,3 +161,9 @@ CrowdStrike is conducting a forensic investigation across every Senate departmen
 ## Update — 2026-09-05T04:50:00Z
 
 Rhysida's one-week ultimatum expired on 2026-09-04 at roughly 15:35 local time; the Berlin Senate had publicly committed not to pay, and about an hour after the deadline the group published the full stolen dataset on its darknet leak site, replacing the prior partial "auction" listing ([heise online, 2026-09-04](https://www.heise.de/news/Berliner-Senat-zahlt-nicht-sensible-Daten-jetzt-im-Darknet-11442286.html)). Chaos Computer Club spokesperson Joachim Selzer confirmed the complete dataset — including personnel files and documents Selzer describes seeing directly, such as employment references — is now publicly accessible to anyone. Whether the dataset actually contains the drinking-water vulnerability analyses and administration credentials the group had earlier claimed remains unverified by any party this entry cites: Left-party parliamentary faction leader Tobias Schulze stated the Senate now has the opportunity to check whether the prior assumptions about the leaked data are accurate, and should notify affected individuals and organizations as quickly as possible once it does. No further technical root-cause detail beyond the phishing vector has been disclosed by the Senate.
+
+## Update — 2026-09-06T04:50:00Z
+
+A structural consequence of this incident has now surfaced at the federal level. Asked in a Bundestag inquiry whether, given ongoing severe attacks on states and municipalities, the government would bring forward a constitutional amendment planned earlier by the previous coalition to make the BSI a true central authority for cyber incidents, the Federal Interior Ministry pointed only to the existing constitutional framework ([heise online, 2026-09-03](https://www.heise.de/news/Kehrtwende-bei-Cybersicherheit-Bund-gibt-Plan-fuer-BSI-Grundgesetzaenderung-auf-11440646.html)). Under that framework, the BSI may assist a state in defending against a serious cyberattack only after that state explicitly requests administrative assistance, and durable bilateral cooperation agreements (a precondition the ministry itself confirms do not yet exist with all 16 federal states) still gate faster support; in practice the BSI has repeatedly had to help first and formalise the legal basis afterward ([heise online, 2026-09-03](https://www.heise.de/news/Kehrtwende-bei-Cybersicherheit-Bund-gibt-Plan-fuer-BSI-Grundgesetzaenderung-auf-11440646.html)). The ministry points instead to its 14 existing cooperation agreements, its NIS2-transposition-driven expansion of BSI's powers, and increased staffing and budget as sufficient. Green-faction deputy chair Konstantin von Notz, who filed the inquiry, called the reversal "devastating for Germany's IT security" (translated from German) given the still-unfolding fallout from this exact incident. The tension is directly transferable to any federated cyber-incident-response model, including Switzerland's own federal/cantonal/communal cooperation structure with BACS: a central technical authority's ability to help is gated by a request-and-agreement process rather than by its own capacity to act.
+
+Separately, on the incident itself, the Chaos Computer Club's Joachim Selzer identified specific record types now visible in the fully-published leak beyond the personnel-and-employment-reference material already recorded here: an internal request form for a new mobile phone bearing the requesting employee's handwritten signature, which Selzer noted gives a criminal a usable signature sample ([heise online, 2026-09-04](https://www.heise.de/news/Berliner-Senat-zahlt-nicht-sensible-Daten-jetzt-im-Darknet-11442286.html)).
