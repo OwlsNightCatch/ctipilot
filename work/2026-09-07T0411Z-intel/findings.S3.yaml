@@ -1,0 +1,166 @@
+domain: S3
+run_id: 2026-09-07T0411Z-intel
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: 2026-09-07T04:14:44Z
+ended_at: 2026-09-07T04:25:32Z
+duration_seconds: 648
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 10
+  bridge_fetches: 28
+
+items:
+  - title: "Rapid7: DPRK-nexus actor compiles a custom C2 filter directly into a victim's own HAProxy source tree (\"ted backdoor\"), pairs it with a curl-based RAT trojanizing crond/agetty/atd/polkitd on South Korean edge servers"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/tr-dprk-apts-ted-backdoor-curlrat-target-south-korean-media-automotive-sectors/", publisher: "Rapid7 Labs", date: "2026-09-03", role: "primary" }
+      - { url: "https://thehackernews.com/2026/09/new-ted-backdoor-hides-inside-victims.html", publisher: "The Hacker News", date: "2026-09-04", role: "corroborating" }
+    discovery_trace: "first seen at: state/coverage_backlog.md backlog row (surfaced 2026-09-06 by 2026-09-06T1308Z-audit, held below the recovery bar as one of four PD-11(d) research items, flagged strongest of the four and worth prioritizing) → primary: Rapid7 Labs, URL https://www.rapid7.com/blog/post/tr-dprk-apts-ted-backdoor-curlrat-target-south-korean-media-automotive-sectors/ → corroborating: The Hacker News, URL https://thehackernews.com/2026/09/new-ted-backdoor-hides-inside-victims.html"
+    summary: |
+      Rapid7 Labs documented a previously undocumented Linux espionage toolkit against two South Korean
+      automotive- and media-sector organizations, active since at least early 2025, attributed with medium
+      confidence to a DPRK-nexus actor via infrastructure overlap (ThreatFox / maltrail both tag the hardcoded
+      C2 domain list to APT37). Rather than exploiting a HAProxy vulnerability, the actor obtained code
+      execution on the host and recompiled the victim's own HAProxy 2.8.12 source tree to embed a custom
+      filter plugin ("ted_plugin") that hooks HAProxy's native HTTP parser, memory-pool allocator and event
+      scheduler. Using hardcoded 2.8.12 struct offsets, the implant decrements HAProxy's own live-connection
+      counters (per-backend beconn/feconn, global actconn, and the 64-bit cum_conn/cum_req/bytes_in/bytes_out
+      fields) after every C2 exchange, so command traffic terminates at the load balancer and never appears in
+      backend logs or load-balancer statistics. A request to one hardcoded static-asset-style path flips the
+      filter into C2 mode (beacon, file upload/download, shell command execution via popen, config update);
+      outside that mode the filter can also passively capture session cookies and selected HTTP headers, or -
+      when four conditions are met (User-Agent present and pattern-matched, a byte-substring selecting a 32-
+      or 64-bit payload path, a URL+referer regex match, and either IP allow/deny-list membership or an
+      operator key smuggled in the Accept-Language header that overrides IP filtering entirely) - substitute or
+      append attacker-supplied content into the HTTP response body using HAProxy's own body-editing/data-filter
+      callbacks, rewriting Content-Type/Content-Length and stripping Accept-Ranges so the size change is
+      invisible to the client. A companion RAT ("curlRAT" - libcurl-based, hence the name) is compiled into
+      trojanized replacements of crond, agetty, atd and polkitd; it polls a hardcoded C2 over HTTPS (HTTP
+      fallback) every 12 hours by default (30 seconds in an operator-set fast-poll mode), decodes tasking
+      through a Base64-plus-rolling-XOR pipeline, and offers command execution, file transfer, an interactive
+      PTY/reverse shell that calls setuid(0)/setreuid(0,0) before handoff, and a watchdog thread that polls
+      /proc/<pid> hourly to report HAProxy's started/stopped/restarted/reloaded state back to the operator. A
+      stager component deploys only when HAProxy or cron is already present, verifies root, overwrites the
+      legitimate crond binary in place, timestomps the replacement to match /usr/bin/ssh's creation time, and
+      scrubs the keywords tmp/wget/cron/crond from root's bash history and six system logs including auth.log
+      and audit/audit.log via a staging file named to resemble a JSP engine artifact. A separate trojanized
+      sshd intercepts plaintext credentials into an encrypted log file. Rapid7 could not establish the initial-
+      access vector with certainty but notes both victims ran an exposed Groupware login portal and mail
+      server on the same edge host - a plausible entry point Rapid7 says is consistent with documented Kimsuky
+      tradecraft against Korean groupware vendors. The watering-hole delivery model otherwise overlaps
+      Kaspersky's Operation SyncHole (Nov 2024-Feb 2025), which Kaspersky attributed to Lazarus; Rapid7
+      explicitly flags that APT37 and Lazarus are organizationally distinct DPRK clusters (per Mandiant's 2023
+      structure assessment) operating under different agencies, so the attribution rests on three separate,
+      only partially reconciled evidentiary threads (APT37 via the C2 domain list, Lazarus via the delivery
+      model, Kimsuky via the initial-access hypothesis) rather than a single confirmed cluster.
+    region_nexus: "South Korea (automotive and media sectors); the technique class - compiling covert C2 directly into an internet-facing edge daemon's own source tree so its self-reported telemetry cannot be trusted - is directly transferable to any organization, including Swiss public-sector estates, running HAProxy or comparable load-balancer/reverse-proxy software at the network edge"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector (edge network infrastructure / load balancers)"
+    cves: []
+    techniques: [T1190, T1059.004, T1106, T1574.006, T1543, T1548, T1036.005, T1685.006, T1070.006, T1685, T1027, T1497.001, T1480, T1556.003, T1539, T1082, T1057, T1185, T1119, T1071.001, T1132.001, T1102, T1572, T1568, T1041, T1560]
+    affected_products: ["HAProxy"]
+    entity_keys: ["actor:scarcruft"]
+    new_entities:
+      - { key: "malware:ted-backdoor", type: malware, name: "ted backdoor", aliases: [],
+          summary: "Custom HAProxy filter plugin (internally named ted_plugin, left in debug strings as 'ted backdoor') compiled directly into a trojanized HAProxy 2.8.12 source build; hooks HAProxy's internal HTTP parser and connection-counter structures via hardcoded struct offsets to run covert C2, harvest session cookies, and inject or substitute content into HTTP responses on selected South Korean automotive/media edge servers, attributed with medium confidence to a DPRK-nexus actor via APT37-tagged C2 infrastructure (Rapid7 Labs, 2026-09-03)." }
+      - { key: "tool:curlrat", type: tool, name: "curlRAT", aliases: [],
+          summary: "libcurl-based companion RAT compiled into trojanized crond/agetty/atd/polkitd binaries alongside ted backdoor; polls an HTTPS (HTTP-fallback) C2 every 12 hours by default (30s in fast-poll mode) for command execution, file transfer, an interactive PTY/reverse shell, and HAProxy process-health monitoring tasking, using a Base64+rolling-XOR tasking pipeline (Rapid7 Labs, 2026-09-03)." }
+    relation_suggestions:
+      - { subject: "actor:scarcruft", object: "malware:ted-backdoor",
+          basis: "Rapid7: 'the toolkit is attributed with medium confidence to DPRK APTs... the list of C2s hardcoded is associated to APT37 by ThreatFox and maltrail' (Rapid7 Labs, 2026-09-03) - actor:scarcruft carries the registry's existing APT37 alias" }
+      - { subject: "actor:scarcruft", object: "tool:curlrat",
+          basis: "Rapid7 attributes the toolkit as a whole (ted backdoor and its companion curlRAT) to the same DPRK-nexus cluster via the same C2 infrastructure overlap (Rapid7 Labs, 2026-09-03)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The toolkit is attributed with medium confidence to DPRK APTs, given that the attacks Rapid7 observed were targeting South Korean media and automotive sectors, likely aiming at long-term espionage"
+        attribution: "Rapid7 Labs"
+        source_url: "https://www.rapid7.com/blog/post/tr-dprk-apts-ted-backdoor-curlrat-target-south-korean-media-automotive-sectors/"
+      - quote: "First, it reaches into HAProxy's internal counters to decrement active connection stats... to clear any trace left"
+        attribution: "Rapid7 Labs"
+        source_url: "https://www.rapid7.com/blog/post/tr-dprk-apts-ted-backdoor-curlrat-target-south-korean-media-automotive-sectors/"
+      - quote: "It is not a HAProxy vulnerability, and installing it requires code execution on the host and the ability to replace the running binary."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/09/new-ted-backdoor-hides-inside-victims.html"
+    extended_notes: |
+      RECENCY / PROVENANCE NOTE FOR THE MAIN AGENT: this item's primary source (Rapid7, 2026-09-03) and
+      corroborating source (The Hacker News, 2026-09-04) both predate this run's 24h window
+      (window_hours=24, anchor 2026-09-07T04:11:40Z). It is included per explicit spawn-message tasking:
+      "state/coverage_backlog.md ... Rapid7's 'Ted backdoor and curlRAT' research ... this was flagged as the
+      strongest of four held-back PD-11(d) research items ... should be the first published if a fire has
+      room." Per coverage_backlog.md's own header, backlog rows are "exempt from the recency gate." No
+      fresher (in-window) follow-up coverage of this specific story was found by this run (Rapid7's own blog
+      listing and a further WebSearch pass surfaced nothing newer). Suggest composing as a `threat` entry with
+      `priority: notable` (own registry/backlog language: "none is critical or high severity for this
+      constituency... the strongest of the four [and] should be the first published"); discovered_at should
+      probably reflect today's run per the entry-lifecycle convention for backlog recoveries.
+
+      DETECTION / HARDENING SPECIFICS (source-supported, no IOCs):
+      - Telemetry class: binary-integrity verification of edge-host system daemons (haproxy, crond, agetty,
+        atd, polkitd, sshd) against package-manager-recorded checksums (rpm -V / debsums-class tooling) run
+        out-of-band from the host itself - the compromise replaces binaries in place rather than exploiting a
+        flaw, so a vulnerability scan or HAProxy's own version string will not reveal it (a recompiled binary
+        still reports the same version string as a clean build, per The Hacker News's read of the report).
+      - Telemetry class: independent network capture/NetFlow at the network edge (or a downstream device's own
+        access log) correlated against the load balancer's self-reported connection/request counters - a
+        discrepancy where externally observed request volume exceeds what HAProxy's own statistics record is
+        the core discriminator this technique defeats internally.
+      - Telemetry class: process/thread-creation monitoring on the haproxy process itself (unexpected
+        pthread_create activity, unexpected named-pipe/FIFO file creation under /tmp keyed to a connection ID)
+        and file-integrity monitoring on non-standard cache/config paths the running HAProxy configuration does
+        not reference.
+      - Hunt technique: absence-of-evidence hunting - a near-total absence of routine keywords (cron, crond,
+        wget, tmp) across bash_history and the affected system-log set on a host where such activity would
+        normally be routine is itself the anomaly this toolkit's log-scrubbing produces, rather than their
+        presence.
+      - Hunt technique: cross-reference system-daemon binary ctime/mtime against the package manager's own
+        install/update transaction history rather than against each other - the observed technique
+        deliberately timestomps the replaced binary to match another system binary's timestamp, defeating a
+        same-host-only comparison.
+      - Triage / benign lookalike (source-supported): a legitimate in-house HAProxy Lua/filter module can
+        also hook the HTTP parser and modify response bodies; the discriminating feature Rapid7's mechanism
+        supports is that no operationally normal filter needs to actively decrement or zero HAProxy's own
+        connection/traffic counters - any module doing so (as opposed to only reading them) warrants
+        investigation.
+      - Hardening: apply the same binary-integrity and patch discipline to edge/load-balancer components as to
+        application servers; do not rely on HAProxy's own logs/stats as an audit trail for that host; harden
+        and monitor exposed Groupware/webmail portals sitting on the same edge host (the suspected, unconfirmed
+        initial-access class); restrict outbound HTTPS from load-balancer/edge hosts to operationally required
+        destinations only.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "6th/7th consecutive run blocked - Cloudflare Robot Challenge Screen confirmed independently on both the direct/browser-UA bridge (`url --direct` returned upstream HTTP 202 challenge page) and the jina reader fallback (`jina` returned the 'Robot Challenge Screen' interstitial with no article links). WebSearch located several 2026 advisory titles via cached snippets (Uniview PreAuth RCE, Cisco UCM arbitrary file write, ReadableStream TOCTOU V8 sandbox bypass, a Linux kernel Bridge-STP use-after-free from TyphoonPWN 2026) but none published within this run's 24h window - the freshest identifiable (Bridge STP UAF) traces to early-August coverage (gbhackers.com, secureinseconds.com), already stale. Checked the GitHub mirror `ssd-secure-disclosure/advisories` as a possible bypass route: it exists but its last commit is from 2020 and it does not track current advisories, so it provides no working path around the block. No in-window item recovered."
+  - source_id: kela-cyber
+    reason: "Fetched cleanly (webfetch, full listing with titles/dates); freshest post 2026-09-04, all content marketing/explainer pieces (Cloudflare WARP, prompt injection primer, telecom CISO guide) rather than substantive original research; no in-window item."
+  - source_id: netcraft
+    reason: "Fetched cleanly; blog listing's most recent dated item is 2026-08-03 (AI-overview phishing piece); no in-window item."
+  - source_id: trail-of-bits
+    reason: "Fetched cleanly; most recent post 2026-08-26 ('VMs won't contain cyber-capable agents'); no in-window item."
+  - source_id: xlab-qianxin
+    reason: "RSS fetched cleanly (15 items); most recent post 2026-07-29 (Dysphoria botnet); no in-window item."
+  - source_id: seqrite-labs
+    reason: "RSS fetched cleanly; most recent post 2026-08-18 (Operation QUICSILVER); no in-window item."
+  - source_id: crowdstrike
+    reason: "Fetched cleanly; most recent post ~2026-08-31 (Sality botnet disruption); no in-window item."
+  - source_id: elastic-seclabs
+    reason: "Fetched cleanly; listing shows agentic-SOC/tooling posts, no dated timeline surfaced by the extractor and none reads as fresh original threat research; no in-window item identified."
+  - source_id: eset
+    reason: "Fetched cleanly; most recent dated item 2026-09-02 ('I've been deepfaked', a how-to piece, not original technical research); no in-window item."
+  - source_id: fortinet-fortiguard-blog
+    reason: "Fetched cleanly via extract; listing items carry no per-article dates in the extracted view (page metadata date 2026-09-03); could not confirm any item as in-window without drilling each article, and none of the visible titles (Evooo1Bot, QuickFox, TrickBot DNS-tunneling variant, Ousaban, C0XMO) match known in-window disclosures; not pursued further given time budget."
+  - source_id: push-security
+    reason: "Fetched cleanly; only one recent article surfaced (agentic threat-hunting pipeline post), consistent with the source record's noted low publish cadence; no in-window item."
+  - source_id: esentire
+    reason: "Fetched cleanly but the extractor returned only site navigation/marketing chrome, not the advisory listing itself; could not identify any article titles or dates this run."
+  - source_id: ox-security
+    reason: "Fetched cleanly; most recent post 2026-08-29 (Shai-Hulud npm-worm follow-up); no in-window item."
+  - source_id: project-discovery
+    reason: "Fetched cleanly; front content is an undated recap of the July 2026 OpenAI/Hugging Face incident (already covered in the store); no in-window item."
+  - source_id: heise-sec
+    reason: "Essential source fetched cleanly (RSS). Two items fell inside the 24h window: (1) an OpenAI-agent-swarm/DSEwiki article (2026-09-06) - checked against prior_coverage.json and found to be a same-day German-language pickup of a story the store already published in full yesterday (2026-09-06/openai-dsewiki-agent-collusion-egress-bypass-nondisclosure); no material delta found in the heise text, so dropped as a duplicate rather than surfaced as an update. (2) a Berlin/Rhysida ransomware-fallout update (2026-09-06) - out of S3's research mission and the store already tracks the underlying incident (2026-08-30/berlin-landesnetz-rhysida-extortion-phishing-vector); left for S2/S4 to assess as a possible changelog update rather than duplicated here."
+  - source_id: inside-it-ch
+    reason: "Essential source fetched cleanly (RSS, 20 items). No item published within the 24h window (freshest item 2026-09-04) and nothing in the visible items falls within S3's research mission; general Swiss public-sector IT/government news, better suited to S2's domain."

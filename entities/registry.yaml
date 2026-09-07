@@ -222,8 +222,17 @@ entities:
       - "APT37"
       - "Reaper"
     nexus: north-korea-nexus
-    summary: "North Korea-aligned APT; 2026 pipeline coverage includes the BirdCall Android/Windows backdoor and the NarwhalRAT campaign with pCloud dead-drop C2."
+    summary: "North Korea-aligned APT; 2026 pipeline coverage includes the BirdCall Android/Windows backdoor, the NarwhalRAT campaign with pCloud dead-drop C2, and (medium confidence, via C2-infrastructure overlap) the ted backdoor/curlRAT HAProxy-implant toolkit against South Korean media and automotive targets."
     first_seen: 2026-05-06
+    relations:
+      - to: "malware:ted-backdoor"
+        type: uses
+        source: "2026-09-07/rapid7-ted-backdoor-curlrat-dprk-haproxy"
+        note: "Rapid7: the toolkit's hardcoded C2 domain list is tagged to APT37 by ThreatFox and maltrail (medium confidence)"
+      - to: "tool:curlrat"
+        type: uses
+        source: "2026-09-07/rapid7-ted-backdoor-curlrat-dprk-haproxy"
+        note: "Rapid7 attributes the toolkit as a whole, ted backdoor and its companion curlRAT, to the same DPRK-nexus cluster via the same C2 infrastructure overlap"
   - key: "actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt"
     type: actor
     name: "Screening Serpens"
@@ -1282,7 +1291,7 @@ entities:
     aliases:
       - "SharkLoader"
     nexus: null
-    summary: "Chinese-suspected loader operation (StrikeShark / SharkLoader) deploying Cobalt Strike via 'Perfect DLL Hijacking' against government targets."
+    summary: "Chinese-suspected loader operation (StrikeShark / SharkLoader) deploying Cobalt Strike via 'Perfect DLL Hijacking', with confirmed victims spanning government/diplomatic entities, software developers and organizations in several other sectors and regions (Kaspersky GReAT states a broad geographic reach and diverse target set rather than a narrow focus)."
     first_seen: 2026-06-27
   - key: "campaign:svg-ecmascript-phishing-2026"
     type: campaign
@@ -4715,6 +4724,13 @@ entities:
         type: uses
         source: "2026-08-03/cve-2026-18577-n-able-n-central-auth-bypass-exploited"
         note: "Microsoft Threat Intelligence reports Storm-1175 began deploying StormEncryptor on 2 August 2026"
+  - key: "actor:shadow-earth-053"
+    type: actor
+    name: "SHADOW-EARTH-053"
+    aliases: []
+    nexus: china-nexus
+    summary: "China-linked cluster Recorded Future's Insikt Group associates with Mimikatz-based credential dumping following exploitation of CVE-2021-26855 in Microsoft Exchange Server (Insikt Group, H1 2026 Malware and Vulnerability Trends, 2026-09-03)."
+    first_seen: 2026-09-07
   - key: "malware:stormencryptor"
     type: malware
     name: "StormEncryptor"
@@ -4722,6 +4738,20 @@ entities:
     nexus: null
     summary: "Previously undocumented ransomware strain Microsoft Threat Intelligence reports Storm-1175 began deploying on 2 August 2026, the day the N-able N-central authentication-bypass flaw CVE-2026-18577 was disclosed. It marks the actor's departure from the Medusa ransomware it had used previously (Microsoft Threat Intelligence via The Record, 2026-08-10)."
     first_seen: 2026-08-12
+  - key: "malware:ted-backdoor"
+    type: malware
+    name: "ted backdoor"
+    aliases: []
+    nexus: north-korea-nexus
+    summary: "Custom HAProxy filter plugin (internally named ted_plugin, left in debug strings as 'ted backdoor') compiled directly into a trojanized HAProxy 2.8.12 source build; hooks HAProxy's internal HTTP parser and connection-counter structures via hardcoded struct offsets to run covert C2, harvest session cookies, and inject or substitute content into HTTP responses on selected South Korean automotive/media edge servers, attributed with medium confidence to a DPRK-nexus actor via APT37-tagged C2 infrastructure (Rapid7 Labs, 2026-09-03)."
+    first_seen: 2026-09-07
+  - key: "tool:curlrat"
+    type: tool
+    name: "curlRAT"
+    aliases: []
+    nexus: north-korea-nexus
+    summary: "libcurl-based companion RAT compiled into trojanized crond/agetty/atd/polkitd binaries alongside ted backdoor; polls an HTTPS (HTTP-fallback) C2 every 12 hours by default (30s in fast-poll mode) for command execution, file transfer, an interactive PTY/reverse shell, and HAProxy process-health monitoring tasking, using a Base64+rolling-XOR tasking pipeline (Rapid7 Labs, 2026-09-03)."
+    first_seen: 2026-09-07
   - key: "trend:shieldbreak-defender-rogueplanet-patch-bypass-2026-08"
     type: trend
     name: "ShieldBreak"
@@ -5392,6 +5422,13 @@ entities:
     nexus: null
     summary: "Rapid7 Labs quarterly telemetry report for Q2 2026, published 2026-08-18: 8,539 new high- and critical-severity CVEs against 4,268 a year earlier while newly exploited vulnerabilities held roughly steady at 40; 62% of exploited flaws required no user interaction, up from 53%; missing-authentication (CWE-306) disclosures up 247% year on year; Qilin led leak-site activity with 263 victims; ClickFix, fake-CAPTCHA and collaboration-platform social engineering accounted for 31.8% of Rapid7 incident-response engagements. Its argument is that disclosure volume has outpaced any team's triage capacity, so prioritisation must run on reachable exposure (Rapid7 Labs, 2026-08-18)."
     first_seen: 2026-08-24
+  - key: "report:recordedfuture-h1-2026-malware-vulnerability-trends"
+    type: report
+    name: "Recorded Future H1 2026 Malware and Vulnerability Trends"
+    aliases: []
+    nexus: null
+    summary: "Recorded Future Insikt Group's semi-annual threat report, published 2026-09-03: 215 actively exploited CVEs in H1 2026 (up 34% year on year), with post-exploitation tool-stack reuse persisting across unrelated initial CVEs (StrikeShark's six-tool stack across thirteen CVEs; Storm-1175's credential-theft/ransomware tooling across ten) (Recorded Future, 2026-09-03)."
+    first_seen: 2026-09-07
   - key: "malware:synkloader"
     type: malware
     name: "SynkLoader"
@@ -5705,8 +5742,15 @@ entities:
     name: "ChimeraZ"
     aliases: []
     nexus: null
-    summary: "Forum handle behind multiple data-leak postings against French departmental fire-and-rescue services (SDIS), including SDIS du Gard, Bouches-du-Rhône, Moselle, Bas-Rhin and Vosges in the July-August 2026 wave (ZATAZ, 2026-08-30)."
+    summary: "Forum handle behind multiple data-leak postings against French departmental fire-and-rescue services (SDIS), including SDIS du Gard, Bouches-du-Rhône, Moselle, Bas-Rhin and Vosges in the July-August 2026 wave (ZATAZ, 2026-08-30); also claimed the Département de l'Aveyron's OnRecrute employment platform, exposing 20,316 people's data (FrenchBreaches, Cyberattaque.org, 2026-09-06)."
     first_seen: 2026-08-31
+  - key: "incident:aveyron-onrecrute-chimeraz-breach-2026-09"
+    type: incident
+    name: "OnRecrute.EnAveyron.fr (Département de l'Aveyron employment platform) breach, September 2026"
+    aliases: []
+    nexus: null
+    summary: "ChimeraZ claims exfiltration of 23,381 records / 20,316 people plus ~1,499 PDF CVs from OnRecrute.EnAveyron.fr, the Département de l'Aveyron's employment platform, published 2026-09-05 on a cybercriminal forum; independently reviewed by FrenchBreaches and Cyberattaque.org (2026-09-06)."
+    first_seen: 2026-09-07
   - key: "actor:aplagroup"
     type: actor
     name: "AplaGroup"
@@ -6469,6 +6513,11 @@ entities:
     name: Elementor Pro (WordPress plugin)
     aliases: []
     first_seen: 2026-08-28
+  - key: "product:f5-big-ip"
+    type: product
+    name: F5 BIG-IP
+    aliases: []
+    first_seen: 2026-09-07
   - key: "product:f5-nginx-open-source"
     type: product
     name: F5 NGINX Open Source
@@ -6629,6 +6678,11 @@ entities:
     name: Haiwell IoT Cloud HMI Gateway
     aliases: []
     first_seen: 2026-08-15
+  - key: "product:haproxy"
+    type: product
+    name: HAProxy
+    aliases: []
+    first_seen: 2026-09-07
   - key: "product:hashicorp-terraform-mcp-server"
     type: product
     name: HashiCorp Terraform MCP Server
@@ -7179,6 +7233,11 @@ entities:
     name: OAuth 2.0 / OpenID Connect discovery endpoints
     aliases: []
     first_seen: 2026-08-28
+  - key: "product:odoo"
+    type: product
+    name: Odoo
+    aliases: []
+    first_seen: 2026-09-07
   - key: "product:okta"
     type: product
     name: Okta

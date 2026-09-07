@@ -1,0 +1,210 @@
+domain: S1
+run_id: 2026-09-07T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-07T04:14:23Z
+ended_at: 2026-09-07T04:26:27Z
+duration_seconds: 724
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 6
+  bridge_fetches: 28
+items:
+  - title: "N-able N-central: a third distinct auth-bypass/RCE chain in five weeks, this one a confirmed-exploited pre-auth CVSS 10.0 zero-day (CVE-2026-86206, CVE-2026-86207, CVE-2026-86218)"
+    sources:
+      - { url: "https://www.huntress.com/blog/n-able-vulnerability-exploitation", publisher: "Huntress (Threat Response Unit)", date: "2026-09-06", role: primary }
+      - { url: "https://status.n-able.com/2026/09/06/n-central-2026-3-hotfix-4-cve-2026-86218/", publisher: "N-able Status (vendor)", date: "2026-09-06", role: primary }
+      - { url: "https://uptime.n-able.com/event/201814/", publisher: "N-able Status Dashboard — Active Incident (vendor)", date: "2026-09-06", role: primary }
+      - { url: "https://status.n-able.com/2026/09/05/n-central-2026-3-hotfix-3-cve-2026-86206-and-cve-2026-86207/", publisher: "N-able Status (vendor)", date: "2026-09-05", role: primary }
+      - { url: "https://radar.offseq.com/threat/cve-2026-86207-cwe-305-authentication-bypass-by-primary-weakness-in-n-able-n-central-fdc4e7f222848fbd", publisher: "OffSeq Threat Radar (CVE record aggregator, CNA data)", date: "2026-09-05", role: corroborating }
+      - { url: "https://radar.offseq.com/threat/a-vulnerability-in-the-n-central-internal-api-access-control-filter-allows-unauthorised-access-to-43df6868be83edb2", publisher: "OffSeq Threat Radar (CVE record aggregator, CNA data)", date: "2026-09-05", role: corroborating }
+      - { url: "https://radar.offseq.com/threat/cve-2026-86218-cwe-96-improper-neutralization-of-directives-in-statically-saved-code-static-code-70cdd1c30c8772ef", publisher: "OffSeq Threat Radar (CVE record aggregator, CNA data)", date: "2026-09-06", role: corroborating }
+    discovery_trace: >
+      first seen at: WebSearch ("actively exploited vulnerability September 6 2026") → Huntress,
+      URL https://www.huntress.com/blog/n-able-vulnerability-exploitation → primary: N-able Status
+      (vendor hotfix pages), URL https://status.n-able.com/2026/09/06/n-central-2026-3-hotfix-4-cve-2026-86218/
+      and https://status.n-able.com/2026/09/05/n-central-2026-3-hotfix-3-cve-2026-86206-and-cve-2026-86207/
+      → primary: N-able Active Incident dashboard (jina-rendered, JS-SPA), URL
+      https://uptime.n-able.com/event/201814/ → corroboration: OffSeq Threat Radar per-CVE CNA
+      records for CWE/CVSS specificity, URLs listed above.
+    summary: |
+      N-able's remote-monitoring-and-management platform N-central — used by MSPs to centrally
+      manage patching, monitoring and remote access across their customers' fleets — has now shipped
+      four emergency hotfixes in five weeks against three separate, unrelated authentication/RCE
+      flaws. Following the August CVE-2026-18556/CVE-2026-18577 auth-bypass chain (already tracked in
+      this store, entry 2026-08-03/cve-2026-18577-n-able-n-central-auth-bypass-exploited, exploited by
+      the Storm-1175/StormEncryptor ransomware actor), Huntress discovered on 2026-09-04 that a
+      customer's already-patched (HF2) N-central production server was compromised again through a
+      completely distinct exploit chain. N-able's HF3 (build 2026.3.1.13, 2026-09-05) addressed two
+      newly designated CVEs: CVE-2026-86206 (CWE unspecified access-control gap in the N-central
+      internal API access-control filter, allowing unauthorised access to internal-only APIs,
+      moderate severity per OSV/GHSA-9x6x-w4xq-rw3g) and CVE-2026-86207 (CWE-305 authentication
+      bypass by primary weakness, also reaching internal-only APIs, CVSS4.0 7.7 High). Then, in the
+      early hours of 2026-09-06, a THIRD independent researcher reported a separate, unrelated
+      zero-day — CVE-2026-86218, CWE-96 improper neutralization of directives in statically saved
+      code ("static code injection"), a pre-authentication remote-code-execution path rated CVSS4.0
+      10.0 — which N-able's own Jason Murphy confirmed in a support-community thread as "a Zero day"
+      that "has been exploited in the wild", and which N-able's Active Incident dashboard states
+      explicitly "has been observed being exploited in the wild" — even though the concurrently
+      published HF4 release notes hedge to "we have no confirmations that this vulnerability has been
+      exploited in production environments". HF4 (build 2026.3.1.14) supersedes HF3 and is required
+      even for servers already on HF3. Huntress could not determine from appliance logs (already
+      rotated) which of the three new CVEs was used in the 2026-09-04 compromise, and given the
+      exploit chain grants full administrative ("god-mode") control over N-central's user/role
+      management, an attacker can create rogue admin accounts, push scripts/jobs to every managed
+      endpoint, and pivot into managed networks via the built-in Take Control remote-access feature
+      or by deploying Cloudflare-tunnel backdoors for persistence — the same post-compromise pattern
+      Huntress documented in the August incident. Hosted (NCOD) instances are already patched by
+      N-able; only self-hosted/on-premises N-central deployments are exposed.
+    region_nexus: "global — N-central is an MSP-operated RMM platform with install base across Europe including Swiss-market MSPs; no confirmed Swiss victim, but the platform class (third-party-managed IT for public-sector customers) is directly relevant to cantonal/communal administrations that outsource IT operations"
+    primary_sector_nexus: "indirect — public-sector bodies reached through their managed-service-provider's N-central estate, not a direct public-sector product"
+    sector: "public-sector"
+    cves: [CVE-2026-86206, CVE-2026-86207, CVE-2026-86218]
+    techniques: [T1190, T1136.001, T1219, T1572]
+    affected_products: ["N-able N-central"]
+    entity_keys: ["product:n-able-n-central"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Since those disclosures, a third, independent security researcher has alerted us to a new separate vulnerability that is unrelated to the previously disclosed CVEs. Unlike the earlier vulnerabilities, this newly identified vulnerability has been observed being exploited in the wild."
+        attribution: "N-able (Active Incident dashboard, uptime.n-able.com)"
+        source_url: "https://uptime.n-able.com/event/201814/"
+      - quote: "this one is a Zero day."
+        attribution: "Jason Murphy, N-able — quoted by Huntress"
+        source_url: "https://www.huntress.com/blog/n-able-vulnerability-exploitation"
+      - quote: "At this time, we have no confirmations that this vulnerability has been exploited in production environments, but unpatched systems remain at risk."
+        attribution: "N-able Status (HF4 release notes)"
+        source_url: "https://status.n-able.com/2026/09/06/n-central-2026-3-hotfix-4-cve-2026-86218/"
+      - quote: "A vulnerability in the N-central internal API access control filter allows unauthorised access to internal APIs. This is fixed in N-central 2026.3 HF3 and 2026.4"
+        attribution: "OffSeq Threat Radar (CVE-2026-86206 CNA record)"
+        source_url: "https://radar.offseq.com/threat/a-vulnerability-in-the-n-central-internal-api-access-control-filter-allows-unauthorised-access-to-43df6868be83edb2"
+    extended_notes: |
+      References the store's existing entry 2026-08-03/cve-2026-18577-n-able-n-central-auth-bypass-exploited
+      (August CVE-2026-18556/CVE-2026-18577 chain, exploited by actor:storm-1175 with
+      malware:stormencryptor) — this is a genuinely distinct new vulnerability chain in the same
+      product, not a development on the same CVEs, so it should ship as a new entry with that prior
+      entry in `references[]` rather than as a changelog update. Detection concept: telemetry class =
+      RMM/appliance authentication and internal-API access logs; anchor = N-central's own
+      envoy_proxy_HTTPS.log and syslog ncentraldms (Huntress: filter for URL-encoded internal API
+      route access, e.g. encoded "%2F", and audit newly created user accounts for anomalous naming
+      such as an email address suffixed ".invalid"). Behavioral pivot to managed endpoints: Windows
+      Application Event Log IDs 4102/8192/8193 showing "MSP Support" (the default N-central Take
+      Control account name) sessions from unexpected source IPs targeting domain controllers — a
+      lookalike-free discriminator would be Take Control sessions outside a change ticket or expected
+      support window, especially against high-value hosts. Hardening: self-hosted N-central admins
+      should not treat HF3 as sufficient — HF4 (2026.3.1.14) is required for CVE-2026-86218
+      specifically; restrict N-central console exposure to the internet (VPN/allowlist only); audit
+      user/role tables for unexpected accounts.
+    watchlist: []
+    borderline: false
+
+  - title: "VMSA-2026-0007 (CVE-2026-59346 VMXNET3 guest-to-host escape, VMware Workstation/Fusion) — coverage-backlog check: no exploitation reports, and the flaw does not reach ESXi"
+    sources:
+      - { url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38288", publisher: "Broadcom/VMware Security Advisory (vendor)", date: "2026-09-03", role: primary }
+    discovery_trace: >
+      first seen at: coverage-backlog tasking (state/coverage_backlog.md) → primary: Broadcom
+      VMSA-2026-0007 advisory, URL
+      https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38288
+      → corroboration: WebSearch ("VMSA-2026-0007 CVE-2026-59346 exploitation ESXi") — no
+      independent exploitation reporting found.
+    summary: |
+      Backlog check, not a new finding: Broadcom's VMSA-2026-0007 (issued 2026-09-03, also
+      surfaced by NCSC-CH CSH post #12912 the same day) scopes CVE-2026-59346 (VMXNET3 integer
+      overflow, CVSS3.1 9.3) and its sibling CVE-2026-59347 (HGFS stack overflow, CVSS3.1 8.1) to
+      VMware Workstation and Fusion ONLY — the response matrix lists no ESX/ESXi or vCenter product
+      row, unlike the earlier VMSA-2026-0006 (CVE-2026-47876, a different VMXNET3 escape CVE already
+      in this store) which did affect ESX. Broadcom's own advisory states "Known Attack Vectors: A
+      malicious actor with local administrative privileges on a virtual machine with VMXNET3 virtual
+      network adapter may exploit this issue to execute code on the host" with no exploitation
+      language. No public PoC or in-the-wild exploitation report was found via WebSearch as of this
+      run (2026-09-07). Conclusion for the backlog row: does not clear the recovery bar — no update
+      needed on the existing store (there is in fact no existing entry for VMSA-2026-0006/0007 in the
+      14-day prior-coverage window at all; VMSA-2026-0006 predates that window).
+    region_nexus: "n/a — investigative note"
+    primary_sector_nexus: "n/a"
+    sector: "public-sector"
+    cves: [CVE-2026-59346, CVE-2026-59347]
+    techniques: [T1611]
+    affected_products: ["VMware Workstation", "VMware Fusion"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: duplicate
+    evidence:
+      - quote: "A malicious actor with local administrative privileges on a virtual machine with VMXNET3 virtual network adapter may exploit this issue to execute code on the host."
+        attribution: "Broadcom/VMware (VMSA-2026-0007)"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38288"
+    extended_notes: |
+      This is a backlog-answer record, not intended to become a new store entry — the main agent
+      should treat it as informational (no action) unless it judges the Workstation/Fusion-only
+      local-admin VM-escape profile worth a brief standalone note. Flagging `novelty: duplicate`
+      accordingly so it is not composed into an entry by default.
+    watchlist: []
+    borderline: true
+    borderline_reason: "This is a backlog investigative answer (no exploitation, product scope narrower than the backlog question implied), not a fresh finding — included for the record per the spawn tasking, main agent should decide whether it merits any store action at all (likely none)."
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured — sweep is a no-op per spawn tasking"
+
+cve_table:
+  - { cve: "CVE-2026-86206", product: "N-able N-central", cvss: "unscored (OSV: MODERATE severity)", epss: null, kev: false, exploited: "unconfirmed for this specific CVE (part of a chain Huntress could not isolate from the Sept-4 compromise)", patch: "N-central 2026.3 HF3 (build 2026.3.1.13) / 2026.4", source: "https://status.n-able.com/2026/09/05/n-central-2026-3-hotfix-3-cve-2026-86206-and-cve-2026-86207/" }
+  - { cve: "CVE-2026-86207", product: "N-able N-central", cvss: "7.7 (CVSS4.0, High)", epss: null, kev: false, exploited: "unconfirmed for this specific CVE (part of a chain Huntress could not isolate from the Sept-4 compromise)", patch: "N-central 2026.3 HF3 (build 2026.3.1.13) / 2026.4", source: "https://status.n-able.com/2026/09/05/n-central-2026-3-hotfix-3-cve-2026-86206-and-cve-2026-86207/" }
+  - { cve: "CVE-2026-86218", product: "N-able N-central", cvss: "10.0 (CVSS4.0, Critical)", epss: null, kev: false, exploited: "confirmed by N-able's own Active Incident dashboard and by N-able staff (\"this one is a Zero day\"), though N-able's HF4 release notes hedge to no confirmation of production exploitation", patch: "N-central 2026.3 HF4 (build 2026.3.1.14) — required even if already on HF3", source: "https://status.n-able.com/2026/09/06/n-central-2026-3-hotfix-4-cve-2026-86218/" }
+  - { cve: "CVE-2026-59346", product: "VMware Workstation / Fusion", cvss: "9.3 (CVSS3.1)", epss: null, kev: false, exploited: "none reported (backlog check, see item)", patch: "26H1u1", source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38288" }
+  - { cve: "CVE-2026-59347", product: "VMware Workstation / Fusion", cvss: "8.1 (CVSS3.1)", epss: null, kev: false, exploited: "none reported (backlog check, see item)", patch: "26H1u1", source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38288" }
+
+candidate_sources:
+  - id: huntress-blog
+    publisher: "Huntress (Threat Response Unit blog)"
+    url: "https://www.huntress.com/blog"
+    category: research
+    why: >
+      MDR vendor with direct customer telemetry; broke and drove remediation of both the August and
+      September 2026 N-able N-central exploitation chains (this run's headline item), plus prior
+      exploitation-ground-truth reporting this pipeline would benefit from tracking directly rather
+      than discovering via ad hoc WebSearch. No RSS discovered on a quick check; would need bridge
+      `extract`/`url` drill-down per post.
+
+coverage_gaps:
+  - source_id: essential-sweep
+    reason: >
+      All 11 essential-tier sources (NCSC-NL, ANSSI/CERT-FR, BSI-DE, CERT-EU, CERT-PL, CISA
+      advisories feed, CISA directives, CISA KEV, ENISA EUVD, NCSC-CH CSH, NCSC-UK) were fetched
+      successfully but their newest content tops out at 2026-09-04/05 — nothing genuinely fresh
+      (published in the last ~24-36h) beyond items already in prior_coverage.json (Cisco Nexus 9000
+      CVE-2026-20212, HPE Aruba bundle, MikroTik RouterOS "MikroTrick", Chrome CVE-2026-85046). No
+      recipe failures; this is a quiet essential-tier window, not a fetch problem.
+  - source_id: enisa-euvd
+    reason: >
+      EUVD-2026-72188 (NEC UNIVERGE IX-R/IX-V WebGUI auth bypass, CVE-2026-16876, CVSS 9.3) surfaced
+      in the "criticals" listing with an ENISA publish timestamp of 2026-09-07 00:48 UTC, but the
+      underlying NEC vendor advisory (jpn.nec.com NV26-005) is dated 2026-08-21 — over two weeks old,
+      no new development, ENISA simply ingested it late. Dropped per the recycled-news recency rule.
+  - source_id: standard-tier-rotation
+    reason: >
+      Checked ssd-disclosure (Cloudflare Robot Challenge on both direct and jina — 10th+ consecutive
+      blocked run, per its own source-record note; genuinely unreachable, not a recipe problem),
+      trail-of-bits, watchtowr, cisco-psirt, sansec, snyk, socket.dev, sonatype, synacktiv,
+      truesec, shadowserver, esentire, checkpoint-support (sk185222/CVE-2026-18574 — Aug-01
+      internally-discovered flaw, no exploitation, outside window). None had in-window S1-qualifying
+      content; all fetched successfully (no transport failures beyond ssd-disclosure).
+
+fetch_failures:
+  - id: ssd-disclosure
+    url_tried: "https://ssd-disclosure.com/"
+    fetch_method: "bridge:jina"
+    status_code: null
+    error_class: other
+    error_message: "Cloudflare Robot Challenge Screen returned on both direct bridge fetch and jina reader fallback — anti-bot class block, consistent with the source record's own note of 8-9 prior consecutive failures."
+    attempted_methods: ["bridge:url", "bridge:jina"]
+    mitigation_applied: "none — no per-article URL in hand to route around the challenge; not covered by any other source this run"
+    covered_anyway: false

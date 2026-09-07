@@ -13,7 +13,7 @@ summary: >
   before detection; Berlin's government has publicly refused the roughly EUR 2 million ransom
   demand.
 discovered_at: "2026-08-30T04:35:00Z"
-updated_at: "2026-09-06T04:50:00Z"
+updated_at: "2026-09-07T04:47:00Z"
 event_date: "2026-08-28"
 run_id: 2026-08-30T0410Z-intel
 priority: high
@@ -62,6 +62,14 @@ sources:
     publisher: "heise online"
     date: "2026-09-03"
     role: corroborating
+  - url: "https://www.heise.de/news/BSI-warnt-nach-Daten-Leak-vor-erhoehter-Cyber-Bedrohung-11442510.html"
+    publisher: "heise online"
+    date: "2026-09-05"
+    role: corroborating
+  - url: "https://www.heise.de/news/Cyberangriff-Berlin-mit-Steuerungseinheit-will-Betroffene-kontaktieren-11442896.html"
+    publisher: "heise online"
+    date: "2026-09-06"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "The attackers apparently gained access to the Landesnetz through an employee's click on a phishing email."
@@ -98,6 +106,18 @@ evidence:
     original: "Bisher durfte das BSI den Ländern bei der Abwehr schwerer Cyberattacken verfassungsrechtlich bedingt erst nach einer expliziten Anforderung von Amtshilfe zur Seite stehen. Zudem mussten langwierige bilaterale Vereinbarungen geschlossen werden – und die existieren bis heute nicht mit allen 16 Bundesländern."
     publisher: "heise online"
     source_url: "https://www.heise.de/news/Kehrtwende-bei-Cybersicherheit-Bund-gibt-Plan-fuer-BSI-Grundgesetzaenderung-auf-11440646.html"
+  - quote: "In addition, data containing information on critical infrastructure, companies and organizations can, depending on the sensitivity of the data, also increase the threat level. (translated from German)"
+    original: "Darüber hinaus können Daten, die Informationen zu kritischen Infrastrukturen, Unternehmen und Organisationen enthalten, je nach Sensibilität der Daten ebenfalls eine Erhöhung der Bedrohungslage bewirken"
+    publisher: "BSI spokesperson, via heise online"
+    source_url: "https://www.heise.de/news/BSI-warnt-nach-Daten-Leak-vor-erhoehter-Cyber-Bedrohung-11442510.html"
+  - quote: "According to Der Tagesspiegel, the data reportedly also includes information on heating plants, fuel depots, backup-power facilities, substations, prisons, waterworks, as well as armaments companies and the Bundeswehr. (translated from German)"
+    original: "Dem Tagesspiegel zufolge sollen sich darunter zudem Daten zu Heizkraftwerken, Tanklagern, Notstromanlagen, Umspannwerken, Gefängnissen, Wasserwerken sowie Rüstungsunternehmen und der Bundeswehr befinden."
+    publisher: "heise online, citing Der Tagesspiegel"
+    source_url: "https://www.heise.de/news/Cyberangriff-Berlin-mit-Steuerungseinheit-will-Betroffene-kontaktieren-11442896.html"
+  - quote: "The state of Berlin acted grossly negligently and deliberately failed to comply with classified-information protection requirements. (translated from German)"
+    original: "Das Land Berlin hat grob fahrlässig gehandelt und vorsätzlich die Geheimschutz-Vorgaben nicht eingehalten"
+    publisher: "Manuel Atug (IT-security expert), via heise online (dpa)"
+    source_url: "https://www.heise.de/news/Cyberangriff-Berlin-mit-Steuerungseinheit-will-Betroffene-kontaktieren-11442896.html"
 verification: multi-source
 sourcing_note: >
   The phishing access vector and the Rhysida attribution are both sourced to investigative
@@ -106,10 +126,15 @@ sourcing_note: >
   attacker, citing investigative-tactical reasons. Whether the affected systems were also
   encrypted, not only exfiltrated, is disputed: BornCity attributes an encryption claim to
   unnamed "experts", while every other cited source describes only data theft and extortion.
-  Security Affairs states Berlin first disclosed the compromise on 2026-08-17; Berliner
-  Zeitung, Der Tagesspiegel and rbb24 all independently state the compromise became public
-  and the affected departments were disconnected on 2026-08-14. This entry follows the
-  three-source consensus date.
+  The isolation/disclosure date itself is contradicted across sources and unresolved (see the
+  body's Contradiction line): Der Tagesspiegel and rbb24 explicitly date the network
+  disconnection to 2026-08-14; Berliner Zeitung dates the attack becoming publicly known to
+  the same day without separately dating the disconnection itself. Security Affairs dates both
+  the disconnection and Berlin's first public disclosure to 2026-08-17. The 2026-09-07 update's heise source adds a
+  fourth account — a retrospective timeline dating isolation to 2026-08-14 (matching the
+  German-language reporting) and a separate Senate chancellery press statement to
+  2026-08-17 — which is consistent with the German-language sources on the isolation date but
+  does not corroborate Security Affairs' claim that isolation itself happened on 2026-08-17.
 confidence: medium
 references: []
 deep_dive: false
@@ -145,10 +170,24 @@ updates:
       matters, employment references, a handwritten signature on an internal device-request form)
       in the now fully-published leak.
     fields: [updated_at, sources, evidence, body]
+  - at: "2026-09-07T04:47:00Z"
+    run_id: 2026-09-07T0411Z-intel
+    type: update
+    summary: >
+      Follow-up reporting establishes for the first time that the published leak extends well
+      beyond personnel data: it includes records tied to district heating and power plants, fuel
+      depots, backup-power installations, electrical substations, prisons and defense-industrial /
+      Bundeswehr-related material. Germany's BSI issued a public warning of an elevated threat
+      level from the leak — heightened targeted-phishing risk plus a hack-and-leak risk given
+      Berlin's 20 September state election — while assessing the underlying intrusion itself as
+      financially motivated. Berlin's government set up a dedicated coordination unit (BSI, BKA
+      and the domestic intelligence service BfV jointly reviewing the material) and started a
+      risk-based notification process for affected citizens, employees and companies.
+    fields: [updated_at, sources, evidence, body]
 migrated_from: null
 ---
 
-Germany's Berlin state administration is the target of a live extortion attempt following a compromise of its Landesnetz, the shared network serving every Senate department and state agency; the attack became public knowledge on 2026-08-14 (translated from German) ([Berliner Zeitung, 2026-08-28](https://www.berliner-zeitung.de/article/cyberangriff-auf-berliner-senat-wegner-bestaetigt-erpressungsversuch-10337926)), the same day the two affected departments were disconnected from the network as a containment measure ([Der Tagesspiegel, 2026-08-28](https://www.tagesspiegel.de/berlin/notfallplane-und-passworter-erbeutet-wegner-weist-erpresser-ultimatum-zuruck--hacker-fordern-laut-medienbericht-zwei-millionen-euro-15984600.html)). Investigative reporting, not an official technical disclosure, is the first to name a mechanism: the attackers apparently gained access to the Landesnetz through an employee's click on a phishing email (translated from German) ([Der Tagesspiegel, 2026-08-28](https://www.tagesspiegel.de/berlin/notfallplane-und-passworter-erbeutet-wegner-weist-erpresser-ultimatum-zuruck--hacker-fordern-laut-medienbericht-zwei-millionen-euro-15984600.html)). Forensic investigators found the actual data exfiltration ran between 2026-08-07 and 2026-08-12 ([Security Affairs, 2026-08-29](https://securityaffairs.com/198064/cyber-crime/rhysida-ransomware-group-targets-berlin-government-ahead-of-vote.html)), several days before the two affected departments were disconnected.
+Germany's Berlin state administration is the target of a live extortion attempt following a compromise of its Landesnetz, the shared network serving every Senate department and state agency; Der Tagesspiegel and rbb24 both independently date the two affected departments' disconnection from the network, as a containment measure, to 2026-08-14 (translated from German) ([Der Tagesspiegel, 2026-08-28](https://www.tagesspiegel.de/berlin/notfallplane-und-passworter-erbeutet-wegner-weist-erpresser-ultimatum-zuruck--hacker-fordern-laut-medienbericht-zwei-millionen-euro-15984600.html); [rbb24, 2026-08-29](https://www.rbb24.de/politik/beitrag/2026/08/berlin-hackerangriff-landesnetz-loesegeld-forderung-erpresser.html)); Berliner Zeitung independently dates the attack becoming publicly known to the same day, stating the departments were disconnected shortly after the incident became known without giving a separate explicit date for the disconnection itself (translated from German) ([Berliner Zeitung, 2026-08-28](https://www.berliner-zeitung.de/article/cyberangriff-auf-berliner-senat-wegner-bestaetigt-erpressungsversuch-10337926)). **Contradiction:** Security Affairs instead states "Berlin first disclosed the compromise on August 17, isolating" the same two departments — dating both the public disclosure and the network isolation itself three days later than the German-language reporting ([Security Affairs, 2026-08-29](https://securityaffairs.com/198064/cyber-crime/rhysida-ransomware-group-targets-berlin-government-ahead-of-vote.html)). This entry follows the 2026-08-14 date as the better-corroborated account (two independent German-language outlets against one English-language aggregator) without resolving the discrepancy. Investigative reporting, not an official technical disclosure, is the first to name a mechanism: the attackers apparently gained access to the Landesnetz through an employee's click on a phishing email (translated from German) ([Der Tagesspiegel, 2026-08-28](https://www.tagesspiegel.de/berlin/notfallplane-und-passworter-erbeutet-wegner-weist-erpresser-ultimatum-zuruck--hacker-fordern-laut-medienbericht-zwei-millionen-euro-15984600.html)). Forensic investigators found the actual data exfiltration ran between 2026-08-07 and 2026-08-12 ([Security Affairs, 2026-08-29](https://securityaffairs.com/198064/cyber-crime/rhysida-ransomware-group-targets-berlin-government-ahead-of-vote.html)), several days before the two affected departments were disconnected.
 
 Der Spiegel reported, citing security-industry sources, that the ransomware group Rhysida is behind the attack ([heise online, 2026-08-29](https://www.heise.de/news/30-Bitcoin-oder-Leak-Ransomware-Bande-erpresst-Berlin-11434325.html)), an attribution Berlin's Senate administration has declined to confirm, citing investigative-tactical reasons ([heise online, 2026-08-29](https://www.heise.de/news/30-Bitcoin-oder-Leak-Ransomware-Bande-erpresst-Berlin-11434325.html)). Rhysida's own dark-web leak site independently posted an entry titled "Berlin, Germany" on 2026-08-28 claiming 5.79 terabytes of data across roughly 1.44 million files, including personal data on 12,076 individuals, more than 5,000 personnel files, plaintext credentials for internal systems, disciplinary and court records, Bundesrat committee protocols, and vulnerability analyses concerning Berlin's water supply ([Security Affairs, 2026-08-29](https://securityaffairs.com/198064/cyber-crime/rhysida-ransomware-group-targets-berlin-government-ahead-of-vote.html)). Rhysida demanded 30 Bitcoin, about EUR 2 million (translated from German) ([heise online, 2026-08-29](https://www.heise.de/news/30-Bitcoin-oder-Leak-Ransomware-Bande-erpresst-Berlin-11434325.html)), with a one-week ultimatum running from 2026-08-28 (translated from German) ([Der Tagesspiegel, 2026-08-28](https://www.tagesspiegel.de/berlin/notfallplane-und-passworter-erbeutet-wegner-weist-erpresser-ultimatum-zuruck--hacker-fordern-laut-medienbericht-zwei-millionen-euro-15984600.html)); Berlin's Governing Mayor Kai Wegner and Interior Senator Iris Spranger jointly confirmed the extortion attempt and publicly refused to pay, stating the state of Berlin will not submit to extortion ([Security Affairs, 2026-08-29](https://securityaffairs.com/198064/cyber-crime/rhysida-ransomware-group-targets-berlin-government-ahead-of-vote.html)). Whether the affected systems were also encrypted, not only exfiltrated, is disputed: one outlet attributes to unnamed "experts" the claim that the Rhysida ransomware was the tool used to both encrypt the systems and steal the data (translated from German) ([BornCity, 2026-08-29](https://borncity.com/news/berlin-cyberangriff-rhysida-fordert-2-millionen-euro-fuer-57-tb-daten/)), while every other cited source describes only data theft and extortion without confirming encryption; this entry does not assert that encryption occurred.
 
@@ -167,3 +206,13 @@ Rhysida's one-week ultimatum expired on 2026-09-04 at roughly 15:35 local time; 
 A structural consequence of this incident has now surfaced at the federal level. Asked in a Bundestag inquiry whether, given ongoing severe attacks on states and municipalities, the government would bring forward a constitutional amendment planned earlier by the previous coalition to make the BSI a true central authority for cyber incidents, the Federal Interior Ministry pointed only to the existing constitutional framework ([heise online, 2026-09-03](https://www.heise.de/news/Kehrtwende-bei-Cybersicherheit-Bund-gibt-Plan-fuer-BSI-Grundgesetzaenderung-auf-11440646.html)). Under that framework, the BSI may assist a state in defending against a serious cyberattack only after that state explicitly requests administrative assistance, and durable bilateral cooperation agreements (a precondition the ministry itself confirms do not yet exist with all 16 federal states) still gate faster support; in practice the BSI has repeatedly had to help first and formalise the legal basis afterward ([heise online, 2026-09-03](https://www.heise.de/news/Kehrtwende-bei-Cybersicherheit-Bund-gibt-Plan-fuer-BSI-Grundgesetzaenderung-auf-11440646.html)). The ministry points instead to its 14 existing cooperation agreements, its NIS2-transposition-driven expansion of BSI's powers, and increased staffing and budget as sufficient. Green-faction deputy chair Konstantin von Notz, who filed the inquiry, called the reversal "devastating for Germany's IT security" (translated from German) given the still-unfolding fallout from this exact incident. The tension is directly transferable to any federated cyber-incident-response model, including Switzerland's own federal/cantonal/communal cooperation structure with BACS: a central technical authority's ability to help is gated by a request-and-agreement process rather than by its own capacity to act.
 
 Separately, on the incident itself, the Chaos Computer Club's Joachim Selzer identified specific record types now visible in the fully-published leak beyond the personnel-and-employment-reference material already recorded here: an internal request form for a new mobile phone bearing the requesting employee's handwritten signature, which Selzer noted gives a criminal a usable signature sample ([heise online, 2026-09-04](https://www.heise.de/news/Berliner-Senat-zahlt-nicht-sensible-Daten-jetzt-im-Darknet-11442286.html)).
+
+## Update — 2026-09-07T04:47:00Z
+
+Follow-up reporting establishes for the first time that the scope of the published leak extends well beyond the personal data first identified. Citing Der Tagesspiegel, heise reports the dataset also includes information on district-heating and power plants, fuel depots, backup-power installations, electrical substations, prisons, waterworks, and armaments companies and the Bundeswehr (translated from German) ([heise online, 2026-09-06](https://www.heise.de/news/Cyberangriff-Berlin-mit-Steuerungseinheit-will-Betroffene-kontaktieren-11442896.html)) — a materially broader critical-infrastructure and defense-industrial exposure than the water-supply-vulnerability material Rhysida itself had claimed at disclosure.
+
+Germany's BSI issued a public warning on 2026-09-05 of an elevated threat level stemming from the leak. The agency states data containing information on critical infrastructure, companies and organizations can, depending on its sensitivity, also increase the threat level (translated from German) ([heise online, 2026-09-05](https://www.heise.de/news/BSI-warnt-nach-Daten-Leak-vor-erhoehter-Cyber-Bedrohung-11442510.html)), and separately warns of heightened targeted-phishing risk against anyone who had contact with affected individuals or institutions ([heise online, 2026-09-05](https://www.heise.de/news/BSI-warnt-nach-Daten-Leak-vor-erhoehter-Cyber-Bedrohung-11442510.html)). BSI additionally flags a hack-and-leak risk specific to the political calendar: Berlin holds a state-parliament election on 20 September 2026, and stolen documents can be released or recontextualized at a moment favorable to an attacker ([heise online, 2026-09-05](https://www.heise.de/news/BSI-warnt-nach-Daten-Leak-vor-erhoehter-Cyber-Bedrohung-11442510.html)). BSI assesses the underlying intrusion itself as financially rather than politically motivated ([heise online, 2026-09-05](https://www.heise.de/news/BSI-warnt-nach-Daten-Leak-vor-erhoehter-Cyber-Bedrohung-11442510.html)) — an assessment attributed to BSI, distinct from opposition politicians' own separately reported alarm about the incident's severity.
+
+Berlin's government responded on 2026-09-06 by establishing a dedicated coordination unit ("Steuerungseinheit") in which BSI, the Federal Criminal Police Office (BKA) and the domestic intelligence service (BfV) jointly review and assess the leaked material, and by starting a risk-based notification process to contact affected citizens, employees and companies by letter or email ([heise online, 2026-09-06](https://www.heise.de/news/Cyberangriff-Berlin-mit-Steuerungseinheit-will-Betroffene-kontaktieren-11442896.html)). Independent IT-security expert Manuel Atug separately stated that the state of Berlin acted grossly negligently and deliberately failed to comply with classified-information protection requirements (translated from German), adding that he had already flagged the same security gaps to Berlin's parliamentary interior committee in 2023 and 2025 ([heise online, 2026-09-06](https://www.heise.de/news/Cyberangriff-Berlin-mit-Steuerungseinheit-will-Betroffene-kontaktieren-11442896.html)). **Contradiction:** the heise 2026-09-06 timeline separately dates full network reconnection to 2026-08-24, one day later than the 2026-08-23 date this entry's main analysis attributes to Der Tagesspiegel; both dates are carried without resolving the one-day gap.
+
+The same 2026-09-06 report adds a fourth account of the date sequence: its own retrospective timeline states the two affected Senate departments were isolated from the Landesnetz on 2026-08-14 — matching Der Tagesspiegel and Berliner Zeitung's dating of the isolation, not Security Affairs' 2026-08-17 — and separately states the Senate chancellery's public press statement disclosing the "ICT incident" followed on 2026-08-17 (translated from German) ([heise online, 2026-09-06](https://www.heise.de/news/Cyberangriff-Berlin-mit-Steuerungseinheit-will-Betroffene-kontaktieren-11442896.html)). This distinguishes network isolation (2026-08-14, now three independent accounts) from the Senate's own formal press disclosure (2026-08-17) as two separate events, but Security Affairs' claim that the isolation itself happened on 2026-08-17 remains an unresolved discrepancy with the German-language reporting, not one this update can settle.
