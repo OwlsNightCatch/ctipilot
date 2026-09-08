@@ -1,0 +1,155 @@
+domain: S4
+run_id: 2026-09-08T0411Z-intel
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: 2026-09-08T04:15:13Z
+ended_at: 2026-09-08T04:25:16Z
+duration_seconds: 603
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 6
+  bridge_fetches: 26
+
+items:
+  - title: "BSI names TerminalFix (a ClickFix/reverse-tunnel variant) as the confirmed initial-access vector into Berlin's Landesnetz, and attributes the campaign to Rhysida's operators (aka Vice Spider / Vice Society / Vanilla Tempest)"
+    sources:
+      - { url: "https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html", publisher: "heise online", date: "2026-09-07", role: primary }
+      - { url: "https://www.heise.de/news/Gefahr-fuer-die-nationale-Sicherheit-Berliner-Datenleck-schlaegt-hohe-Wellen-11444301.html", publisher: "heise online", date: "2026-09-07", role: corroborating }
+      - { url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile", publisher: "BSI (Germany's federal cybersecurity authority) — BITS-B# advisory 2026-287419-1032, v1.0", date: "2026-09-04", role: primary }
+      - { url: "https://social.bund.de/@bsi/117212729947889443", publisher: "BSI (official Mastodon account, social.bund.de)", date: "2026-09-04", role: corroborating }
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/08/28/terminalfix-campaign-deploys-reverse-tunnel-through-multistage-intrusion/", publisher: "Microsoft Threat Intelligence", date: "2026-08-28", role: corroborating }
+      - { url: "https://www.infosecurity-magazine.com/news/rhysida-berlin-data-extortion/", publisher: "Infosecurity Magazine", date: "2026-09-07", role: corroborating }
+    discovery_trace: "first seen at: heise-sec (S4 essential source), URL https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html → pivot: BSI Mastodon post, URL https://social.bund.de/@bsi/117212729947889443 → primary: BSI BITS advisory PDF, URL https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile → cross-reference: Microsoft Threat Intelligence TerminalFix write-up (already tracked in the store as campaign:terminalfix-clickfix-reverse-tunnel-2026), URL https://www.microsoft.com/en-us/security/blog/2026/08/28/terminalfix-campaign-deploys-reverse-tunnel-through-multistage-intrusion/"
+    summary: |
+      Germany's BSI confirmed on 2026-09-04 (advisory BITS-B#2026-287419-1032 v1.0) that the confirmed technique against Berlin's two affected Senatsverwaltungen (Stadtentwicklung/Bauen/Wohnen and Mobilität/Verkehr/Klimaschutz) was TerminalFix, the ClickFix variant Microsoft documented on 2026-08-28. BSI's advisory reproduces the full chain: a user visits a compromised/water-holed website carrying a fake Cloudflare Turnstile CAPTCHA overlay; completing the "verification" copies a PowerShell command to the clipboard, which the victim is instructed to paste into Windows Terminal (Win+X, I) rather than the classic Run dialog (Win+R) used by earlier ClickFix variants — a change Microsoft says increases the odds that longer, multi-line scripts execute successfully. The pasted command downloads and extracts a ZIP archive to C:\ProgramData and launches a batch file that runs a legitimate signed binary, LockScreenContentServer.exe, which side-loads a co-located malicious dui70.dll (masquerading as the Windows DirectUI Engine, unsigned, with a forged future timestamp) from its own working directory rather than System32 — classic DLL side-loading. The sideloaded DLL then pulls further payloads hidden inside PNG images via steganography (payload length encoded in the first 8 bytes of reconstructed pixel data, split across multiple images to evade content inspection), establishes dual persistence via an HKCU Run key and a scheduled task re-executing every 60 minutes, and conducts extensive Active Directory reconnaissance (domain trust enumeration, domain-admin group membership, AD user/computer searches, and ICMP sweeps of named infrastructure hosts corresponding to domain controllers, databases, backup and mail servers) in English, Spanish and German locale variants. A persistent PowerShell file-watch loop provides an interim asynchronous command channel, and the final stage deploys a portable, unmodified python.org embeddable Python runtime plus a custom client.py implant launched via pythonw.exe (no visible window) that dials out over TLS/443, upgrades to a WebSocket, and relays arbitrary TCP connections back to the attacker — turning the compromised host into a full network pivot with SOCKS5-style addressing. BSI's advisory adds a detail Microsoft's write-up did not include: reporting organisations told BSI that attackers used the access to stage exfiltration into attacker-controlled cloud storage (e.g. Azure), using vendor-supplied cloud tools such as azcopy. BSI also states that submitted incident reports show the malware family "LoremIpsumLoader" (aka AxolotLoader, previously documented by BlueVoyant as distributed via trojanized MS Teams/WebEx-style installers) was used within this campaign, and that BSI's own knowledge ties this loader to the same financially motivated group responsible for the Rhysida ransomware and its leak site. BSI further attributes Rhysida itself to "Vice Spider" (aka Vice Society, WhiteNefas, White Hekate, DEV-0832, Vanilla Tempest) — active since mid-2021, initially using the Vice Society leak site and a variety of third-party ransomware, almost exclusively deploying Rhysida since June 2023 — and states that, per a commercial partner's telemetry, 92% of Rhysida leak-site listings are followed by data publication, with a mean 11 days between listing and publication. BSI assesses the campaign as purely financially motivated opportunistic cybercrime with no established link to a state or politically motivated actor, and notes Rhysida shows no significant German-region focus, concentrating instead on education and healthcare, with the public-administration sector a more distant top-5 target category. This is the confirmed first attack-vector explanation for the Berlin Landesnetz compromise already tracked in the store (incident:berlin-landesnetz-compromise-2026-08); it also resolves an open attribution gap on the TerminalFix campaign entry (campaign:terminalfix-clickfix-reverse-tunnel-2026), which Microsoft's original write-up left unattributed beyond "opportunistic, financially motivated."
+    region_nexus: "Germany (federal/state government network); directly transferable to Swiss federal/cantonal/communal administrations given near-identical shared-network architecture (Landesnetz-style shared government WAN) and identical initial-access lure (fake CAPTCHA/ClickFix) already active against multiple sectors"
+    primary_sector_nexus: "direct — public-sector state/city government administration network (Land Berlin Senatsverwaltungen)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1204.004, T1189, T1059.001, T1574.002, T1027.003, T1547.001, T1053.005, T1482, T1069.002, T1572]
+    affected_products: ["Windows Terminal", "PowerShell", "Microsoft Windows (LockScreenContentServer.exe / DirectUI Engine)"]
+    entity_keys: ["incident:berlin-landesnetz-compromise-2026-08", "campaign:terminalfix-clickfix-reverse-tunnel-2026", "actor:rhysida"]
+    new_entities:
+      - { key: "malware:loremipsumloader", type: malware, name: "LoremIpsumLoader",
+          aliases: ["AxolotLoader"],
+          summary: "Multi-stage loader/backdoor distributed via trojanized MS Teams/WebEx-style installer packages (BlueVoyant, 2026); per Germany's BSI (advisory BITS-B#2026-287419-1032, 2026-09-04), incident reports place this loader within the TerminalFix/ClickFix campaign infrastructure and BSI ties it to the same financially motivated group that operates the Rhysida ransomware and leak site." }
+    relation_suggestions:
+      - { subject: "actor:rhysida", object: "campaign:terminalfix-clickfix-reverse-tunnel-2026", basis: "BSI (BITS-B#2026-287419-1032, 2026-09-04): TerminalFix was the confirmed initial-access technique used against Berlin's Landesnetz, an intrusion German authorities attribute to the group operating the Rhysida ransomware and leak site" }
+      - { subject: "actor:rhysida", object: "malware:loremipsumloader", basis: "BSI (BITS-B#2026-287419-1032, 2026-09-04): incident reports received by BSI show LoremIpsumLoader/AxolotLoader used within the campaign, and BSI's own knowledge attributes this malware to the same group responsible for Rhysida" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-30/berlin-landesnetz-rhysida-extortion-phishing-vector"
+    evidence:
+      - quote: "Damit steht fest: Die Senatsverwaltungen für Bauen und Verkehr wurden per TerminalFix attackiert."
+        attribution: "heise online, citing BSI's official Mastodon confirmation"
+        source_url: "https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html"
+      - quote: "Nach Kenntnislage des BSI wird diese Malware derselben finanziell motivierten Gruppe zugeordnet, welche für die Ransomware und Leak-Seite Rhysida verantwortlich ist."
+        attribution: "BSI, advisory BITS-B#2026-287419-1032 v1.0 (2026-09-04)"
+        source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile"
+      - quote: "Die Ransomware und Leak-Seite Rhysida wird der finanziell motivierten Gruppe Vice Spider (aka Vice Society, WhiteNefas, White Hekate, DEV-0832, Vanilla Tempest) zugeordnet."
+        attribution: "BSI, advisory BITS-B#2026-287419-1032 v1.0 (2026-09-04)"
+        source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile"
+      - quote: "Nach Kenntnislage eines kommerziellen Dienstleisters des BSI folgt in 92 % der Fälle auf die Nennung auf der Leak-Seite Rhysida auch eine Datenveröffentlichung. Dabei vergehen zwischen Nennung auf der Leak-Seite und Veröffentlichung von gestohlenen Daten im Durchschnitt 11 Tage."
+        attribution: "BSI, advisory BITS-B#2026-287419-1032 v1.0 (2026-09-04)"
+        source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile"
+      - quote: "Once executed, the PowerShell command masquerades as a Cloudflare verification process while downloading a ZIP archive containing a legitimate binary (LockScreenContentServer.exe) and a malicious DLL (dui70.dll) used for sideloading."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/08/28/terminalfix-campaign-deploys-reverse-tunnel-through-multistage-intrusion/"
+      - quote: "This type of intrusion is particularly dangerous because it provides attackers with direct access to an organization's internal network through the reverse tunnel."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/08/28/terminalfix-campaign-deploys-reverse-tunnel-through-multistage-intrusion/"
+    extended_notes: |
+      REGISTRY NOTE (alias extension, not a new relation): BSI's advisory states Rhysida's ransomware/leak-site operation is itself tracked under the alias set Vice Spider / Vice Society / WhiteNefas / White Hekate / DEV-0832 / Vanilla Tempest. The existing registry record actor:rhysida currently has an empty aliases list — please extend it with these aliases directly (per the "extend aliases, never rename" rule) rather than modeling this as a relation edge, since it is the same tracked entity under different vendor/authority names, not a connection between two distinct entities.
+      Defender-facing detection/hunting angles supported by the sources (vendor-neutral telemetry class first, platform anchor second):
+      - Process-creation telemetry: PowerShell spawning cmd.exe with a command line referencing a ProgramData subfolder, a .bat file and a subsequent LockScreenContentServer.exe launch (Microsoft's own advanced-hunting query keys on exactly this InitiatingProcessFileName/FileName/ProcessCommandLine chain).
+      - Image/module-load telemetry: LockScreenContentServer.exe loading dui70.dll from a working directory OTHER than \Windows\System32, \Windows\SysWOW64, \winsxs\ or \Program Files\ — the legitimate binary only ever loads that DLL from those trusted paths; any other load path is the sideloading tell (T1574.002).
+      - Persistence telemetry: new HKCU Run-key value pointing at LockScreenContentServer.exe from a non-standard path, paired with a new Scheduled Task configured to re-run roughly every 60 minutes under a name blending in as a Lock Screen component (T1547.001 / T1053.005).
+      - Discovery telemetry: a single host issuing domain-trust enumeration, "domain admins" group queries, and ADSI/LDAP searches in rapid succession, followed by ICMP sweeps against a short list of named internal hosts resolving to domain controllers/DB/backup/gateway/mail roles (T1482 / T1069.002 / T1018) — a pre-ransomware reconnaissance signature, not routine admin activity.
+      - Network telemetry: outbound TLS on port 443 that upgrades to a WebSocket from an unusual parent process (pythonw.exe with no console window, or an embedded/portable python.org interpreter not normally present on the host) sustaining long-lived, high-volume bidirectional flow consistent with protocol tunneling (T1572) rather than a single web request.
+      - Cloud-egress telemetry (BSI-specific addition beyond Microsoft's write-up): unexpected use of cloud-vendor CLI transfer tools (e.g. azcopy) from an endpoint that does not normally perform bulk cloud uploads is a plausible late-stage exfiltration-staging indicator in this campaign.
+      - Triage / benign-lookalike discriminator: LockScreenContentServer.exe itself is a legitimate, signed Windows component and its presence in a process tree is not anomalous — the discriminating features are (a) its working directory/load path for dui70.dll, (b) the DLL being unsigned with a forged future compile timestamp, and (c) the DLL's masquerading name matching a real Windows component ("Windows DirectUI Engine") it is not.
+      - Hardening: block or audit Win+R and Win+X→I access to Windows Terminal/PowerShell for standard users via AppLocker/App Control/GPO where not operationally required; enforce PowerShell Constrained Language Mode plus script-block logging; treat any host showing this chain as a confirmed internal network pivot point requiring credential rotation for every account reachable from it, not as an isolated infection.
+      Backlog re-check (single search pass each, per spawn instructions — none crossed the corroboration bar this run): (1) Ixa Systems SA / TheGentlemen — still only ransomware.live + directory listings, no victim statement or CH French/German press; (2) UICC / Krybit — still only leak-site aggregator trackers (SOCRadar, RedPacketSecurity, Brinztech), no UICC statement or Admiralty A/B journalism; (3) Ville de Libercourt / Kairos — still only a French breach-tracker blog repeating the leak-site claim, no commune statement or mainstream French press; (4) NovoCure 8-K — confirmed "unauthorized access to some of its information systems" with ~1,400 US patients' internal ID numbers and <50 with additional identifying data exposed, but still no named attacker, vulnerability or intrusion mechanism, so it still does not clear the bar for a full incident entry.
+
+  - title: "BSI attributes the TerminalFix ClickFix/reverse-tunnel campaign to Rhysida's operators (Vice Spider), closing the attribution gap left open by Microsoft's original write-up"
+    sources:
+      - { url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile", publisher: "BSI (Germany's federal cybersecurity authority) — BITS-B# advisory 2026-287419-1032, v1.0", date: "2026-09-04", role: primary }
+      - { url: "https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html", publisher: "heise online", date: "2026-09-07", role: corroborating }
+    discovery_trace: "first seen at: heise-sec (S4 essential source), URL https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html → primary: BSI BITS advisory PDF, URL https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile"
+    summary: |
+      The TerminalFix campaign (already tracked as campaign:terminalfix-clickfix-reverse-tunnel-2026, sourced originally from Microsoft's 2026-08-28 write-up, which described the operators only as opportunistic and financially motivated with no named group) now has a named operator per Germany's BSI: BSI's advisory of 2026-09-04 states its confirmed real-world case — the Berlin Landesnetz compromise — used TerminalFix as the entry vector, and that incident reports place the LoremIpsumLoader/AxolotLoader malware family within the campaign; BSI's own knowledge attributes that loader, and by extension this deployment of TerminalFix, to the same financially motivated group that operates the Rhysida ransomware and leak site, which BSI in turn identifies as "Vice Spider" (aka Vice Society, WhiteNefas, White Hekate, DEV-0832, Vanilla Tempest) — active since mid-2021, using the Vice Society leak site and assorted third-party ransomware initially, and almost exclusively Rhysida since June 2023. This is the first attribution of the TerminalFix campaign to a named, tracked actor.
+    region_nexus: "Germany (confirmed case); campaign itself is described by Microsoft as targeting organizations across multiple industries and is not region-limited"
+    primary_sector_nexus: "indirect — technique-class relevance to any sector; the one confirmed real-world case is public-sector"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: ["campaign:terminalfix-clickfix-reverse-tunnel-2026", "actor:rhysida"]
+    new_entities: []
+    relation_suggestions:
+      - { subject: "actor:rhysida", object: "campaign:terminalfix-clickfix-reverse-tunnel-2026", basis: "BSI (BITS-B#2026-287419-1032, 2026-09-04) attributes the TerminalFix campaign, via the LoremIpsumLoader/AxolotLoader malware observed in incident reports, to the same financially motivated group that operates the Rhysida ransomware and leak site" }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-31/microsoft-terminalfix-clickfix-reverse-tunnel-campaign"
+    evidence:
+      - quote: "Nach Kenntnislage des BSI wird diese Malware derselben finanziell motivierten Gruppe zugeordnet, welche für die Ransomware und Leak-Seite Rhysida verantwortlich ist."
+        attribution: "BSI, advisory BITS-B#2026-287419-1032 v1.0 (2026-09-04)"
+        source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile"
+    extended_notes: |
+      This item and the Berlin-incident update above both derive from the same BSI advisory; they are split because they land on two different existing entries (an incident entry and a technique/campaign entry). If the main agent judges a single combined changelog record across both entries is cleaner, the underlying facts and citations are identical — no duplicate research was performed, this is one source pivoted onto two entries it materially updates. Confidence held at MEDIUM/single-source-national-cert because the BSI PDF's central narrative section decoded cleanly but a portion of the document (apparently a graphic/table area) came back as OCR-mangled text via the stdlib PDF extractor — the readable narrative quotes above were manually verified against the clean text and are not drawn from the garbled section.
+
+  - title: "France's Ministry of Ecological Transition confirms a 'sophisticated' cyberattack; a criminal claims 22,000+ records taken via an API misconfiguration and an IDOR flaw in the ministry's inspection-body oversight tool, the latest in a run of French public-administration breaches"
+    sources:
+      - { url: "https://www.lemondeinformatique.fr/actualites/lire-le-ministere-de-la-transition-ecologique-cible-par-une-cyberattaque-100771.html", publisher: "Le Monde Informatique", date: "2026-09-07", role: primary }
+      - { url: "https://frenchbreaches.com/alertes/minist-re-de-la-transition-cologique-mtk4bzvizh7z1fmgm7", publisher: "French Breaches (breach-notification/analysis site)", date: "2026-09-02", role: corroborating }
+    discovery_trace: "first seen at: le-monde-info (S4 rotation source), URL https://www.lemondeinformatique.fr/actualites/toute-l-actualite.html → drill: https://www.lemondeinformatique.fr/actualites/lire-le-ministere-de-la-transition-ecologique-cible-par-une-cyberattaque-100771.html → corroboration: French Breaches, URL https://frenchbreaches.com/alertes/minist-re-de-la-transition-cologique-mtk4bzvizh7z1fmgm7"
+    summary: |
+      France's Ministère de la Transition écologique confirmed (per Le Monde Informatique, 2026-09-07, and French Breaches) that it was the target of a "sophisticated computer attack," that it filed a criminal complaint (signalement au parquet), and that ANSSI (France's national cybersecurity agency) is intervening with the affected administrations over possible user-account compromises. Several ministry-linked sites — including the public environmental-consultation platform and multiple regional administration sites — were temporarily taken offline during remediation, and AFP reported the attack targeted the ministerial hub's messaging tools. Separately and NOT independently confirmed: a criminal using the forum handle "mondial" posted on 2026-09-02 claiming to have exfiltrated two datasets from systems tied to the developpement-durable.gouv.fr domain — a controleurs.csv file the poster says holds 14,656 records on approved inspection controllers (names, dates of birth, approval numbers, affiliated inspection bodies, phone numbers) and an all_users.json file the poster says holds 8,166 users (unique email addresses, phone numbers, employee IDs/matricules, LDAP-directory fields, login identifiers) spanning 942 distinct administrative units. The claimed initial-access route is a misconfigured authentication service, followed by exploitation of an IDOR (Insecure Direct Object Reference) flaw in OISO (Outil Informatique de Surveillance des Organismes), the ministry's IT tool for overseeing accredited inspection bodies — letting an authenticated (or improperly-scoped) user manipulate an object reference/identifier in a request to pull other users' or controllers' records outside their authorised scope. Neither the record counts, the exact misconfiguration, nor the compromised-system perimeter has been independently verified; this is the attacker's own claim as relayed by French Breaches' analysis of the leaked samples. This is the latest in a continuing run of French public-administration compromises the store already tracks (Direction générale des Finances publiques/DGFiP, Éducation nationale, Bloctel, Zéro Logement Vacant) — but the claimed mechanism (API/authentication misconfiguration plus an IDOR in a specific oversight application) and the poster handle differ from the credential-theft pattern already attributed there to ZeroBytes/the Epsilon collective, so no shared-actor link is asserted for this incident.
+    region_nexus: "France (national ministry, e-government/inspection-oversight systems); directly transferable to Swiss federal/cantonal e-government platforms exposing comparable professional-licensing, inspection-body or public-register APIs"
+    primary_sector_nexus: "direct — national government ministry and its regional/inspection-body oversight systems"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: []
+    entity_keys: ["actor:zerobytes", "actor:epsilon-hacking-collective", "incident:france-dgfip-tax-breach-2026-08"]
+    new_entities:
+      - { key: "incident:france-transition-ecologique-breach-2026-09", type: incident, name: "Ministère de la Transition écologique (France) breach claim (2026-09)",
+          aliases: [],
+          summary: "A criminal, forum handle 'mondial', claimed on 2026-09-02 to have exfiltrated ~14,656 inspection-controller records and ~8,166 ministry user records from systems tied to developpement-durable.gouv.fr, via a claimed API/authentication misconfiguration and an IDOR flaw in OISO (Outil Informatique de Surveillance des Organismes); the ministry confirmed a 'sophisticated' cyberattack, filed a criminal complaint, and ANSSI is investigating possible account compromises (Le Monde Informatique / French Breaches, 2026-09-07)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Le ministère a indiqué avoir mis en œuvre des mesures de protection renforcées et confirmé avoir effectué un signalement au parquet."
+        attribution: "Le Monde Informatique"
+        source_url: "https://www.lemondeinformatique.fr/actualites/lire-le-ministere-de-la-transition-ecologique-cible-par-une-cyberattaque-100771.html"
+      - quote: "Le pirate affirme que l'accès aurait notamment été rendu possible par une mauvaise configuration d'API. Il revendique également l'exploitation d'une vulnérabilité de type IDOR concernant OISO (Outil Informatique de Surveillance des Organismes)."
+        attribution: "French Breaches"
+        source_url: "https://frenchbreaches.com/alertes/minist-re-de-la-transition-cologique-mtk4bzvizh7z1fmgm7"
+      - quote: "L'authenticité et l'exhaustivité des données présentées n'ont pas été confirmées indépendamment."
+        attribution: "Le Monde Informatique"
+        source_url: "https://www.lemondeinformatique.fr/actualites/lire-le-ministere-de-la-transition-ecologique-cible-par-une-cyberattaque-100771.html"
+    extended_notes: |
+      Fact/claim separation: FACT (ministry + press) — a cyberattack occurred, was called "sophisticated" by the ministry, several public-facing sites were taken offline for remediation, a criminal complaint was filed, and ANSSI is investigating account compromises. CLAIM (attacker, via French Breaches' relay, unconfirmed) — the specific record counts, file names, and the API-misconfiguration/IDOR mechanism. Detection/hardening angle transferable regardless of claim-confirmation status: IDOR is a design-level authorization flaw (object/record identifiers accepted from the client without a server-side ownership/scope check) — the durable defender lesson for any e-government inspection, licensing or professional-register API is to audit that every object-reference parameter enforces server-side authorization against the caller's own scope, not just authentication. Telemetry angle: sequential or rapidly-incrementing identifier values in API access logs against a single authenticated session, or access to records spanning far more organisational units/directions than that account's normal scope, is the vendor-neutral discriminator for this technique class.
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org profile supplier watchlist is empty (no-op per spawn instructions); no per-supplier sweep performed"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: dcod-ch
+    reason: "landing page only (dcod.ch) — no article links surfaced from the root URL per the listing-page empirical rule; no RSS/feed URL on record. Tools/analysis hub page, not a news listing; would need a dedicated /actualites or similar path to drill, not identified this run."
+  - source_id: helpnetsecurity
+    reason: "root URL returned no content via extract; recovered via direct RSS feed (https://www.helpnetsecurity.com/feed/) instead — all in-window items were vulnerability-domain (S1) with no S4-relevant incident/disclosure content."
+  - source_id: nl-times
+    reason: "fetched (root listing) — front page carried general Dutch news with no in-window S4-relevant cyber incident/disclosure item; no dedicated cyber-news path drilled further."
+  - source_id: sans-newsbites
+    reason: "not fetched (webfetch-only source, no RSS on record); SANS ISC diary archive was checked instead and yielded only vulnerability-domain (MikroTik) content already covered elsewhere."
+  - source_id: cisa-news
+    reason: "not fetched directly this run; CISA content for the window was cross-checked indirectly via other sources (MikroTik/N-able/Artifactory items all vulnerability-domain, out of S4 scope)."

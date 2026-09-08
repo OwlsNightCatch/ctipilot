@@ -1,0 +1,148 @@
+domain: S3
+run_id: 2026-09-08T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-08T04:15:00Z
+ended_at: 2026-09-08T04:24:01Z
+duration_seconds: 541
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 8
+  bridge_fetches: 32
+items:
+  - title: "BSI confirms the Berlin state-government breach ran through TerminalFix, names the loader malware, and ties Rhysida to a five-alias actor it calls Vice Spider"
+    sources:
+      - { url: "https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html", publisher: "heise Security (Nico Ernst)", date: "2026-09-07", role: "primary" }
+      - { url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile", publisher: "BSI (Bundesamt für Sicherheit in der Informationstechnik) — BITS advisory, v1.0", date: "2026-09-04", role: "primary" }
+      - { url: "https://social.bund.de/@bsi/117212729947889443", publisher: "BSI (Mastodon, @bsi@social.bund.de)", date: "2026-09-04", role: "corroborating" }
+      - { url: "https://www.bluevoyant.com/blog/lorem-ipsum-trojanized-microsoft-teams-installers-multi-stage-loader-backdoor", publisher: "BlueVoyant", date: "2026-05-04", role: "corroborating (background: the Lorem Ipsum loader/backdoor BSI names as LoremIpsumLoader/AxolotLoader)" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (RSS) → article: https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html → primary: BSI BITS advisory PDF, URL https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile → primary: BSI Mastodon confirmation, URL https://social.bund.de/@bsi/117212729947889443 → background pivot: BlueVoyant's original Lorem Ipsum write-up, URL https://www.bluevoyant.com/blog/lorem-ipsum-trojanized-microsoft-teams-installers-multi-stage-loader-backdoor"
+    summary: |
+      Germany's BSI (federal cyber authority) published a BITS advisory (v1.0, 2026-09-04, TLP:CLEAR) stating that forensic analysis of the August 2026 compromise of Berlin's shared Landesnetz (the incident already tracked in this store) matches Microsoft's published "TerminalFix" campaign profile — the first authoritative confirmation of the specific initial-access chain behind that breach. heise's 2026-09-07 reporting adds the missing link: BSI confirmed on Mastodon, citing its own BITS notice, that TerminalFix is specifically the vector that hit Berlin's Senatsverwaltungen für Bauen und Verkehr, and named the loader deployed after initial access as "LoremIpsumLoader" (aka AxolotLoader) — which BlueVoyant researchers already documented in May 2026 as a multi-stage shellcode loader distributed via SEO-poisoned, trojanized Microsoft Teams installer downloads, notable for hiding its command-and-control traffic inside JFIF image files (payload bytes appended past the declared image boundary, XOR-obfuscated) and for using a legitimate India-based Q&A/blogging site as a dead-drop C2 resolver. BSI states this loader is attributed to the same financially motivated group responsible for the Rhysida ransomware and leak site, which BSI in turn attributes to a cluster it calls "Vice Spider" — cross-referenced in the advisory against the aliases Vice Society, WhiteNefas, White Hekate, DEV-0832 and Vanilla Tempest, active since mid-2021, using the Vice Society leak site and multiple non-self-developed ransomware families until it moved almost exclusively to Rhysida in June 2023.
+      The TerminalFix mechanics themselves (per BSI + Microsoft, as already recorded in the store's TerminalFix entry) are the actionable delta for defenders: a water-holed or phished user is shown a fake Cloudflare CAPTCHA that instructs them to open Windows Terminal (Win+X, then I — not the classic ClickFix Win+R "Run" box) and paste a clipboard-seeded command. That command downloads and runs a ZIP archive containing a signed, legitimate executable (Windows' own LockScreenContentServer.exe) alongside a malicious DLL, sideloaded as dui70.dll; the DLL pulls further PowerShell stages and downloads PNG files from attacker infrastructure that carry additional code/DLLs hidden via steganography. Persistence is a Registry Run-key entry plus a roughly hourly re-check; the malware then enumerates domain trust, Active Directory, servers and backup systems, and BSI's advisory adds that operators have been observed provisioning cloud storage (e.g., Azure, via the vendor's own azcopy tool) ahead of exfiltration and standing up a Python-based reverse tunnel over TLS/WebSockets on port 443 whose in-tunnel command traffic BSI notes "may not be logged." BSI assesses the campaign as opportunistic cybercrime with no state-nexus link found, states the CAPTCHA JavaScript used has been seen on several hundred historical sites (i.e., a reusable watering-hole kit, not one-off infrastructure), and cites a commercial vendor's finding that 92% of victims named on Rhysida's leak site do eventually see data published (average 11 days after naming) — with Rhysida's targeting skewed to education and healthcare, but public administration among its top five sectors. BSI's own hardening list: PowerShell Script Block Logging, running PowerShell in Constrained Language Mode, browsers with SmartScreen, cloud-based malware detection, and treating any compromised host as a lateral-movement entry point into the wider network rather than an isolated incident.
+    region_nexus: "Germany (federal-state public administration); directly transferable to Swiss federal/cantonal/communal networks given the identical PowerShell/Windows-Terminal attack surface and Rhysida's demonstrated targeting of public administration"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1204.004, T1027.003, T1574.001, T1112, T1053.005, T1090.002, T1567.002, T1018]
+    affected_products: []
+    entity_keys: ["incident:berlin-landesnetz-compromise-2026-08", "actor:rhysida", "campaign:terminalfix-clickfix-reverse-tunnel-2026"]
+    new_entities:
+      - { key: "malware:loremipsumloader", type: malware, name: "LoremIpsumLoader", aliases: ["AxolotLoader", "Lorem Ipsum loader", "Lorem Ipsum backdoor"],
+          summary: "Multi-stage shellcode loader and backdoor first documented by BlueVoyant (May 2026) as distributed via SEO-poisoned trojanized Microsoft Teams installers; hides C2 traffic inside JFIF image files with data appended past the declared image boundary, and uses a legitimate third-party Q&A/blogging site as a dead-drop C2 resolver. Germany's BSI (BITS advisory, 2026-09-04) names it 'LoremIpsumLoader (aka AxolotLoader)' and attributes it to the same financially motivated group operating the Rhysida ransomware/leak site." }
+    relation_suggestions:
+      - { subject: "malware:loremipsumloader", object: "actor:rhysida",
+          basis: "BSI BITS advisory (2026-09-04): 'Nach Kenntnislage des BSI wird diese Malware derselben finanziell motivierten Gruppe zugeordnet, welche für die Ransomware und Leak-Seite Rhysida verantwortlich ist' (BSI attributes LoremIpsumLoader/AxolotLoader to the same group responsible for Rhysida)." }
+      - { subject: "campaign:terminalfix-clickfix-reverse-tunnel-2026", object: "incident:berlin-landesnetz-compromise-2026-08",
+          basis: "BSI BITS advisory + BSI Mastodon confirmation (2026-09-04), reported by heise (2026-09-07): BSI states the TerminalFix campaign's technique profile matches the observed intrusion into Berlin's Senatsverwaltungen für Bauen und Verkehr." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-30/berlin-landesnetz-rhysida-extortion-phishing-vector"
+    evidence:
+      - quote: "Dass es sich bei der Methode TerminalFix um den von der Cyberbande Rhysida genutzten Angriffsvektor handelt, hat das BSI in einem Beitrag bei Mastodon bestätigt."
+        attribution: "heise Security (Nico Ernst), citing BSI"
+        source_url: "https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html"
+      - quote: "Aus beim BSI eingegangenen Meldungen geht der Einsatz der Malware LoremIpsumLoader (aka AxolotLoader) im Rahmen der Angriffskampagne hervor [BV26a][BV26b]. Nach Kenntnislage des BSI wird diese Malware derselben finanziell motivierten Gruppe zugeordnet, welche für die Ransomware und Leak-Seite Rhysida verantwortlich ist."
+        attribution: "BSI BITS advisory (BITS-2026-287419-1032, v1.0, 2026-09-04)"
+        source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile"
+      - quote: "Die Ransomware und Leak-Seite Rhysida wird der finanziell motivierten Gruppe Vice Spider (aka Vice Society, WhiteNefas, White Hekate, DEV-0832, Vanilla Tempest) zugeordnet."
+        attribution: "BSI BITS advisory (BITS-2026-287419-1032, v1.0, 2026-09-04)"
+        source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile"
+    extended_notes: |
+      Registry note for the main agent: the BSI advisory attributes Rhysida to a cluster it names "Vice Spider," cross-referenced against the aliases Vice Society, WhiteNefas, White Hekate, DEV-0832 and Vanilla Tempest. The existing registry key actor:rhysida currently carries aliases: [] — recommend folding these five names in as aliases of actor:rhysida (source: this BSI advisory) rather than registering a second key, since BSI's own text treats "Vice Spider" as the actor operating Rhysida, not a distinct group. The BlueVoyant source (2026-05-04) is background/context only — outside the 26h recency window — cited to substantiate the LoremIpsumLoader technical profile that BSI's advisory references but does not itself fully describe.
+
+  - title: "StyleSmuggler (CVE-2026-75650) — unauthenticated Magento/Adobe Commerce RCE via template-engine styles-property injection, exploited three days before Adobe's hotfix"
+    sources:
+      - { url: "https://sansec.io/research/stylesmuggler", publisher: "Sansec Forensics Team", date: "2026-09-05", role: "primary" }
+      - { url: "https://socradar.io/blog/stylesmuggler-magento-adobe-commerce-0day/", publisher: "SOCRadar", date: "2026-09-07", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Zero-Day-Luecke-StyleSmuggler-in-Magento-und-Adobe-Commerce-wird-aktiv-ausgenutzt-11444217.html", publisher: "heise Security (Kathrin Stoll)", date: "2026-09-07", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (RSS) → article: https://www.heise.de/news/Zero-Day-Luecke-StyleSmuggler-in-Magento-und-Adobe-Commerce-wird-aktiv-ausgenutzt-11444217.html → primary: Sansec research write-up, URL https://sansec.io/research/stylesmuggler → corroboration: SOCRadar independent analysis, URL https://socradar.io/blog/stylesmuggler-magento-adobe-commerce-0day/"
+    summary: |
+      Dutch e-commerce security firm Sansec disclosed StyleSmuggler on 2026-09-05, an unauthenticated remote-code-execution chain against Magento Open Source and Adobe Commerce that was already under active exploitation since 2026-09-04 — Sansec published early specifically because stores were being compromised in real time. The bug abuses Magento's template engine via the `styles` property to smuggle PHP past existing input safeguards, in two stages: first the attacker plants (poisons) PHP code inside a file Magento itself writes — a failure report or system log — then triggers the built-in "Payment Transaction Failed Reminder" email; the planted code executes while Magento renders that email template, so the attacker never needs the email to be opened or even delivered. SOCRadar's independent write-up adds that the underlying mechanism drives Magento's own dependency-injection code-scanner classes (paths normally reserved for the CLI DI compiler) into including the attacker-poisoned log/report file. Sansec reproduced the full unauthenticated chain on clean Magento Open Source 2.4.7, 2.4.8 and 2.4.9; the first confirmed victim was running 2.4.6-p15 with the July and August 2026 security patches already applied and a clean `security:patch-status`, and moving sessions to Redis/database storage did not stop the attack. Adobe shipped an emergency hotfix (APSB26-146, priority 1, CVE-2026-75650, CVSS 10.0) on 2026-09-07 at 20:20 UTC as a composer patch (`VULN-39341`) rather than a full release, three days after first confirmed exploitation; Adobe additionally recommends rotating every credential the Magento encryption key protects (admin passwords, REST/SOAP/GraphQL tokens, OAuth secrets, payment-gateway API credentials, DB/SSH/deploy keys), since rotating the encryption key alone does not invalidate anything already read by an attacker. Post-exploitation, the primary operator's implant is a small, statically linked Rust binary that masquerades under kernel-worker-like or legitimate-daemon process names (observed as `[kworker/u:8:0]`, then renamed to `fc-cache`, then to `chronyd`) and persists via a cron entry written directly to the spool file (bypassing `crontab -e` and its logging); its beaconing is disguised as NTP time-sync traffic on UDP port 123 rather than a conventional HTTPS callback, and it checks `/proc/self/status` for `TracerPid` to detect debugger/tracing attachment before deciding whether to beacon. Sansec separately observed an unrelated second attacker using StyleSmuggler as an entry point to drop a PHP web shell into the product-image cache directory, gated behind a custom request header, preceded by an out-of-band (OAST-style) reconnaissance probe that exfiltrates OS/user/writability data one DNS/HTTP label at a time with no response ever needed from the target.
+    region_nexus: "global; any Magento Open Source or Adobe Commerce storefront, including public-sector or public-institution e-commerce, ticketing or fee-payment portals built on the platform"
+    primary_sector_nexus: "indirect"
+    sector: "e-commerce (indirect public-sector relevance for any Magento/Adobe-Commerce-based government storefront or payment portal)"
+    cves: ["CVE-2026-75650"]
+    techniques: [T1190, T1053.003, T1036.005, T1001.003, T1622, T1505.003, T1082]
+    affected_products: ["Adobe Commerce", "Magento Open Source"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "Cross-domain overlap with S1's mission (active-exploitation vulnerability tracking) — surfaced here because the primary is a research write-up reached via the S3 essential source heise-sec; main agent should merge with any independent S1 finding on the same CVE rather than duplicate."
+    evidence:
+      - quote: "Sansec is publishing early because stores are being compromised right now."
+        attribution: "Sansec Forensics Team"
+        source_url: "https://sansec.io/research/stylesmuggler"
+      - quote: "The fix ships as a hotfix, not as a full release."
+        attribution: "Sansec Forensics Team"
+        source_url: "https://sansec.io/research/stylesmuggler"
+      - quote: "Independent incident-response evidence from Disrex Group, a Magento hosting company, confirms exploitation across at least two stores running Magento Open Source. Both stores were breached within an eight-hour window between the first observed attack and the availability of any defensive measure."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/stylesmuggler-magento-adobe-commerce-0day/"
+    extended_notes: |
+      This is primarily a vulnerability/active-exploitation finding (S1's usual lane) but is included here because it reached me through the S3 essential source heise-sec and the primary is a dedicated research write-up (Sansec) with strong technical depth on both the exploit chain and the post-exploitation implant's evasion behaviour. Flagging for the main agent in case S1 already independently surfaced this CVE this run — if so, merge rather than duplicate. No IOCs (hashes, IPs, C2 domains) are carried into this summary even though Sansec's own post published them; only the technique classes are described.
+
+  - title: "CloudSEK gains admin access to \"BigBear 2.0,\" an Evilginx2-based Microsoft 365 phishing-as-a-service panel that JavaScript-disables FIDO2/WebAuthn to force victims onto phishable MFA"
+    sources:
+      - { url: "https://www.cloudsek.com/blog/tracking-bigbear-2-0-evilginx2-phishing-campaign", publisher: "CloudSEK (Gagan Aggarwal / TRIAD)", date: "2026-09-07", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/bigbear-microsoft-365-phishing-service-bypassed-mfa-at-258-organizations/", publisher: "BleepingComputer (Bill Toulas)", date: "2026-09-07", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"new malware family analysis report September 7 2026\") → article: https://www.bleepingcomputer.com/news/security/bigbear-microsoft-365-phishing-service-bypassed-mfa-at-258-organizations/ → primary: CloudSEK research write-up, URL https://www.cloudsek.com/blog/tracking-bigbear-2-0-evilginx2-phishing-campaign"
+    summary: |
+      CloudSEK's TRIAD team gained administrator access to the control panel of "BigBear 2.0," a rebranded, Evilginx2-based adversary-in-the-middle (AiTM) phishing-as-a-service operation targeting Microsoft 365 exclusively, and published full technical findings on 2026-09-07. The panel managed 42 VPS nodes (primarily hosted commercially on Vultr) running Evilginx2's reverse-proxy engine configured with a single phishlet ("offy") that proxies the entire authentication flow between the victim and login.microsoftonline.com: the victim's password is captured in plaintext as it passes through, and — critically — after the victim completes MFA (TOTP, push, or SMS), Microsoft's own session cookie (ESTSAUTH for Entra ID, AppSessionId for Outlook Web Access) is captured off the wire before it reaches the victim's browser, since the proxy terminates the victim's TLS session before opening its own to Microsoft. That cookie is bound to the browser session but not to any specific device or location, so importing it into an attacker-controlled browser inherits the fully authenticated session — TOTP, push and SMS MFA are structurally bypassed this way because the proxy never has to defeat the second factor, only wait for the legitimate user to clear it. The panel exposes a REST API (`/api/jobs`) that automatically replays captured cookies against Microsoft 365, and a keepalive feature abuses captured refresh tokens (typically valid ~90 days with a sliding window) to periodically refresh session cookies well past their nominal expiry. Custom JavaScript injected into every proxied login page (not present in stock Evilginx2) monkey-patches the browser's `PublicKeyCredential`/`navigator.credentials` API to force a fallback away from FIDO2/WebAuthn — the one MFA class immune to AiTM replay because its cryptographic assertion is bound to the legitimate origin domain — toward phishable methods, blocks outbound requests and image beacons to Microsoft's own anti-phishing telemetry/canary-token endpoints, and auto-checks "Keep me signed in" to maximise the stolen session's lifetime. A 69-country geo-matched residential-proxy pool routes the relayed traffic through an IP in the victim's own country, defeating Microsoft's location-anomaly detection and satisfying IP-based Conditional Access checks; the panel itself is only reachable via a residential IP, since an `ipapi.is`-based anti-bot gate blocks datacenter/VPN/proxy IPs from viewing it. At the time of writing the panel had exfiltrated 5,137 credential records — 474 complete MFA-bypassed sessions, 1,032 plaintext passwords and 4,148 session cookies — from 3,331 unique victim IPs across 40+ countries, and is leased to at least five identified affiliate operators who each receive stolen credentials in real time via dedicated Telegram bots. IT services/MSP organisations were the single largest targeted sector (151 of the profiled organisations), which CloudSEK notes is disproportionate because a compromised IT provider's privileged access to client Azure AD/on-prem AD/RMM tooling and password managers enables downstream supply-chain compromise of its customers.
+    region_nexus: "global; victims across 40+ countries (India, France, Saudi Arabia, New Zealand, Germany leading); directly relevant to any Microsoft 365 / Entra ID tenant, including Swiss federal, cantonal and communal administrations and their managed IT-service providers"
+    primary_sector_nexus: "direct"
+    sector: "public-sector (via IT-services/MSP concentration — the top targeted sector, and the same supply-chain exposure class already seen in Swiss public-sector MSP-breach reporting)"
+    cves: []
+    techniques: [T1566.002, T1539, T1550.004, T1111]
+    affected_products: ["Microsoft 365", "Microsoft Entra ID"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:bigbear-phaas", type: tool, name: "BigBear 2.0", aliases: ["BigBear"],
+          summary: "Evilginx2-based phishing-as-a-service (PhaaS) panel targeting Microsoft 365 exclusively via an adversary-in-the-middle reverse-proxy phishlet ('offy'); leased to multiple affiliate operators. Documented by CloudSEK (2026-09-07), whose researchers gained administrator access to the operator's control panel; operator alias 'General Boss'." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The panel has exfiltrated 5,137 credential records - including 474 complete MFA-bypassed authentications, 1,032 plaintext passwords, and 4,148 session cookies - affecting 3,331 unique victim IPs across 40+ countries... with the operation still active at the time of writing."
+        attribution: "CloudSEK"
+        source_url: "https://www.cloudsek.com/blog/tracking-bigbear-2-0-evilginx2-phishing-campaign"
+      - quote: "Why FIDO2/WebAuthn is resistant: FIDO2 ... uses origin-bound credentials. The cryptographic assertion is tied to the origin domain ... When Evilginx2 proxies traffic, the origin seen by the browser is the phishing domain ... not the real Microsoft domain. The FIDO2 assertion fails because the origin does not match the credential's registered origin. This is the only MFA method that structurally prevents AiTM phishing."
+        attribution: "CloudSEK"
+        source_url: "https://www.cloudsek.com/blog/tracking-bigbear-2-0-evilginx2-phishing-campaign"
+      - quote: "Researchers at cybersecurity company CloudSEK gained administrator access to the control panel and found that the service managed 42 VPS nodes, all configured to target Microsoft 365 as part of the observed operation."
+        attribution: "BleepingComputer (Bill Toulas)"
+        source_url: "https://www.bleepingcomputer.com/news/security/bigbear-microsoft-365-phishing-service-bypassed-mfa-at-258-organizations/"
+    extended_notes: |
+      No IOCs (IP addresses, domains, hashes, Sigma/detection rule code) carried forward from CloudSEK's post even though it publishes them; only technique classes are described. Detection concept for the main agent to compose from: identity/sign-in telemetry showing a session-cookie-authenticated action with no matching interactive MFA challenge in the same session lineage, or a token-issuance event immediately followed by activity from a network location/device-compliance state inconsistent with the enrolling device — the generic AiTM tell regardless of vendor. Hardening lever: phishing-resistant FIDO2/WebAuthn plus Conditional Access policies keyed to device compliance/managed-device state rather than geolocation, since geo-matched residential proxies defeat the latter.
+
+candidate_sources: []
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "Confirmed still unreachable on every transport (blocked, gap_flag already set, 5 consecutive prior-run failures). Per spawn instructions, attempted WebSearch corroboration instead of direct fetch: found only its most recent advisory (UNISOC modem MPU-isolation-bypass chain), which is already covered in the store (2026-08-28 entry, corrected 2026-08-30) — no new SSD-originated in-window item found. The GitHub advisories mirror (github.com/ssd-secure-disclosure/advisories) is also stale (last update predates the current window by a wide margin) and not useful as a substitute feed."
+  - source_id: mandiant-gtig
+    reason: "Feed reachable (feeds.feedburner.com/threatintelligence/pvexyqv7v0v); most recent item (BREEZE COMET, 2026-09-01) is outside the 26h window and already covered in the store (2026-09-04 entry). No in-window items."
+  - source_id: sysdig
+    reason: "Feed reachable; most recent post dated 2026-09-04 is a product/marketing piece with no in-window threat-research content."
+  - source_id: trendmicro-research
+    reason: "Feed reachable but stale — most recent item dated 2026-07-30; no in-window research content via RSS or the research.html listing page (which itself renders a July item as its top entry)."
+  - source_id: sentinellabs
+    reason: "Listing page (trafilatura extract) renders but shows no dated in-window posts; most recent identifiable item is from 2026-07-22."
+  - source_id: volexity
+    reason: "Listing page renders; most recent post dated 2026-07-17. No in-window content."
+  - source_id: zscaler-threatlabz
+    reason: "Listing page (trafilatura extract) renders customer-story/product content only, most recent dated 2026-08-24; no in-window threat-research posts surfaced. Raw URL fetch returns a JS-only shell with no server-rendered listing."
+  - source_id: proofpoint
+    reason: "Listing page renders navigation only (JS-rendered article list not present in server-side markup via either raw fetch or trafilatura extract); no in-window items could be enumerated. Recipe may need a structured endpoint or jina fallback in a future run."
+  - source_id: jamf-threat-labs
+    reason: "Category listing page (trafilatura extract) renders an empty post list (JS-rendered cards not present server-side); no in-window items could be enumerated."
+  - source_id: hadrian-labs
+    reason: "Blog listing (both raw url and jina reader) explicitly renders \"No items found\" — likely requires a category/tag query parameter this run did not supply. No in-window items found via WebSearch either."
+  - source_id: yeswehack
+    reason: "Lab listing page's only visible item (trafilatura extract) is dated 2026-07-01 (\"ChocoPoCs\"); no in-window items surfaced."
+  - source_id: novee-security
+    reason: "Blog listing's visible item is a mobile-pentesting product announcement with no clear date in-window; WebSearch corroborates nothing more recent than August 2026 pieces."
+  - source_id: malware-news
+    reason: "Aggregator (malware.news), reliability C, discovery-only. RSS feed reachable and current (items through 2026-09-08T03:06Z); scanned for leads not otherwise covered — the two candidate leads found (StyleSmuggler, BigBear) are both already captured above via their own primaries. No additional in-window primary-research lead found beyond those two."

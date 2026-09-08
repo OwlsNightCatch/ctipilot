@@ -13,7 +13,7 @@ summary: >
   before detection; Berlin's government has publicly refused the roughly EUR 2 million ransom
   demand.
 discovered_at: "2026-08-30T04:35:00Z"
-updated_at: "2026-09-07T04:47:00Z"
+updated_at: "2026-09-08T04:49:00Z"
 event_date: "2026-08-28"
 run_id: 2026-08-30T0410Z-intel
 priority: high
@@ -21,8 +21,8 @@ immediate_action: null
 tags: [ransomware, data-breach, phishing, organized-crime]
 regions: [dach]
 sectors: [public-sector]
-entities: ["incident:berlin-landesnetz-compromise-2026-08", "actor:rhysida"]
-techniques: [T1566, T1657]
+entities: ["incident:berlin-landesnetz-compromise-2026-08", "actor:rhysida", "campaign:terminalfix-clickfix-reverse-tunnel-2026"]
+techniques: [T1566, T1657, T1567.002]
 affected_products: []
 cves: []
 sources:
@@ -69,6 +69,14 @@ sources:
   - url: "https://www.heise.de/news/Cyberangriff-Berlin-mit-Steuerungseinheit-will-Betroffene-kontaktieren-11442896.html"
     publisher: "heise online"
     date: "2026-09-06"
+    role: corroborating
+  - url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile"
+    publisher: "BSI (Bundesamt für Sicherheit in der Informationstechnik) — BITS-2026-287419-1032, v1.0"
+    date: "2026-09-04"
+    role: primary
+  - url: "https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html"
+    publisher: "heise online (Nico Ernst)"
+    date: "2026-09-07"
     role: corroborating
 closed_sources: []
 evidence:
@@ -118,16 +126,32 @@ evidence:
     original: "Das Land Berlin hat grob fahrlässig gehandelt und vorsätzlich die Geheimschutz-Vorgaben nicht eingehalten"
     publisher: "Manuel Atug (IT-security expert), via heise online (dpa)"
     source_url: "https://www.heise.de/news/Cyberangriff-Berlin-mit-Steuerungseinheit-will-Betroffene-kontaktieren-11442896.html"
+  - quote: "That TerminalFix is the attack vector used by the Rhysida cybergang has been confirmed by the BSI in a Mastodon post. (translated from German)"
+    original: "Dass es sich bei der Methode TerminalFix um den von der Cyberbande Rhysida genutzten Angriffsvektor handelt, hat das BSI in einem Beitrag bei Mastodon bestätigt."
+    publisher: "heise online (Nico Ernst)"
+    source_url: "https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html"
+  - quote: "This makes it clear: the Senate administrations for construction and transport were attacked via TerminalFix. (translated from German)"
+    original: "Damit steht fest: Die Senatsverwaltungen für Bauen und Verkehr wurden per TerminalFix attackiert."
+    publisher: "heise online (Nico Ernst)"
+    source_url: "https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html"
+  - quote: "The Rhysida ransomware and leak site is attributed to the financially motivated group Vice Spider (aka Vice Society, WhiteNefas, White Hekate, DEV-0832, Vanilla Tempest). (translated from German)"
+    original: "Die Ransomware und Leak-Seite Rhysida wird der finanziell motivierten Gruppe Vice Spider (aka Vice Society, WhiteNefas, White Hekate, DEV-0832, Vanilla Tempest) zugeordnet."
+    publisher: "BSI (Bundesamt für Sicherheit in der Informationstechnik) — BITS-2026-287419-1032, v1.0"
+    source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile"
 verification: multi-source
 sourcing_note: >
-  The phishing access vector and the Rhysida attribution are both sourced to investigative
-  journalism (Der Tagesspiegel, Der Spiegel via heise online), not an official BSI or Senate
-  technical disclosure; Berlin's Senate administration has explicitly declined to name the
-  attacker, citing investigative-tactical reasons. Whether the affected systems were also
-  encrypted, not only exfiltrated, is disputed: BornCity attributes an encryption claim to
-  unnamed "experts", while every other cited source describes only data theft and extortion.
-  The isolation/disclosure date itself is contradicted across sources and unresolved (see the
-  body's Contradiction line): Der Tagesspiegel and rbb24 explicitly date the network
+  The original phishing access vector and the Rhysida attribution were sourced only to
+  investigative journalism (Der Tagesspiegel, Der Spiegel via heise online); Berlin's Senate
+  administration has explicitly declined to name the attacker, citing investigative-tactical
+  reasons. Germany's BSI (BITS-2026-287419-1032, 2026-09-04, confirmed via Mastodon the same day)
+  now independently confirms both: the intrusion technique matches its own advisory's
+  description of the TerminalFix campaign, and Rhysida is attributed to a group BSI tracks as
+  Vice Spider — resolving what was previously a media-only attribution into a national-CERT
+  technical confirmation. Whether the affected systems were also encrypted, not only exfiltrated,
+  remains disputed: BornCity attributes an encryption claim to unnamed "experts", while every
+  other cited source, BSI included, describes data theft and extortion without confirming
+  encryption. The isolation/disclosure date itself is contradicted across sources and unresolved
+  (see the body's Contradiction line): Der Tagesspiegel and rbb24 explicitly date the network
   disconnection to 2026-08-14; Berliner Zeitung dates the attack becoming publicly known to
   the same day without separately dating the disconnection itself. Security Affairs dates both
   the disconnection and Berlin's first public disclosure to 2026-08-17. The 2026-09-07 update's heise source adds a
@@ -135,14 +159,14 @@ sourcing_note: >
   German-language reporting) and a separate Senate chancellery press statement to
   2026-08-17 — which is consistent with the German-language sources on the isolation date but
   does not corroborate Security Affairs' claim that isolation itself happened on 2026-08-17.
-confidence: medium
+confidence: high
 references: []
 deep_dive: false
 deep_dive_category: null
 org_triage: null
 classification:
   reliability: B
-  credibility: 2
+  credibility: 1
 watchlist_hit: false
 actions: []
 updates:
@@ -184,6 +208,20 @@ updates:
       and the domestic intelligence service BfV jointly reviewing the material) and started a
       risk-based notification process for affected citizens, employees and companies.
     fields: [updated_at, sources, evidence, body]
+  - at: "2026-09-08T04:49:00Z"
+    run_id: 2026-09-08T0411Z-intel
+    type: update
+    summary: >
+      Germany's BSI officially confirms, for the first time, both the intrusion technique and the
+      actor attribution this entry had previously carried only from investigative journalism: the
+      compromise matches BSI's own TerminalFix campaign advisory, and Rhysida is attributed to a
+      group BSI tracks as Vice Spider (aka Vice Society, WhiteNefas, White Hekate, DEV-0832,
+      Vanilla Tempest). BSI's advisory adds that operators staged exfiltration into
+      attacker-controlled Azure cloud storage using the vendor's own azcopy tool and separately
+      names the malware family LoremIpsumLoader (aka AxolotLoader) as attributed to the same
+      group. Confidence moves from medium to high on the strength of this national-CERT technical
+      confirmation.
+    fields: [updated_at, entities, techniques, sources, evidence, sourcing_note, confidence, classification, body]
 migrated_from: null
 ---
 
@@ -216,3 +254,7 @@ Germany's BSI issued a public warning on 2026-09-05 of an elevated threat level 
 Berlin's government responded on 2026-09-06 by establishing a dedicated coordination unit ("Steuerungseinheit") in which BSI, the Federal Criminal Police Office (BKA) and the domestic intelligence service (BfV) jointly review and assess the leaked material, and by starting a risk-based notification process to contact affected citizens, employees and companies by letter or email ([heise online, 2026-09-06](https://www.heise.de/news/Cyberangriff-Berlin-mit-Steuerungseinheit-will-Betroffene-kontaktieren-11442896.html)). Independent IT-security expert Manuel Atug separately stated that the state of Berlin acted grossly negligently and deliberately failed to comply with classified-information protection requirements (translated from German), adding that he had already flagged the same security gaps to Berlin's parliamentary interior committee in 2023 and 2025 ([heise online, 2026-09-06](https://www.heise.de/news/Cyberangriff-Berlin-mit-Steuerungseinheit-will-Betroffene-kontaktieren-11442896.html)). **Contradiction:** the heise 2026-09-06 timeline separately dates full network reconnection to 2026-08-24, one day later than the 2026-08-23 date this entry's main analysis attributes to Der Tagesspiegel; both dates are carried without resolving the one-day gap.
 
 The same 2026-09-06 report adds a fourth account of the date sequence: its own retrospective timeline states the two affected Senate departments were isolated from the Landesnetz on 2026-08-14 — matching Der Tagesspiegel and Berliner Zeitung's dating of the isolation, not Security Affairs' 2026-08-17 — and separately states the Senate chancellery's public press statement disclosing the "ICT incident" followed on 2026-08-17 (translated from German) ([heise online, 2026-09-06](https://www.heise.de/news/Cyberangriff-Berlin-mit-Steuerungseinheit-will-Betroffene-kontaktieren-11442896.html)). This distinguishes network isolation (2026-08-14, now three independent accounts) from the Senate's own formal press disclosure (2026-08-17) as two separate events, but Security Affairs' claim that the isolation itself happened on 2026-08-17 remains an unresolved discrepancy with the German-language reporting, not one this update can settle.
+
+## Update — 2026-09-08T04:49:00Z
+
+Germany's BSI published an advisory on 2026-09-04 describing the compromise of an anonymized "state institution" whose technique matches the multi-stage TerminalFix campaign Microsoft documented on 2026-08-28 — the advisory itself never names Berlin ([BSI, BITS-2026-287419-1032, 2026-09-04](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile)). The same day, BSI posted on its official Mastodon account that it was intensively involved in handling the Berlin incident and separately linked to its detailed TerminalFix security notice; heise reports that juxtaposition as confirmation that TerminalFix is specifically the attack vector the Rhysida operators used against Berlin's two affected Senate administrations ([heise online, citing BSI, 2026-09-07](https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html)) — the first technical confirmation, reported by heise, of both the access vector and the attribution this entry had previously carried only from investigative journalism. BSI attributes the Rhysida ransomware and leak site to a financially motivated group it tracks as Vice Spider, cross-referenced against the aliases Vice Society, WhiteNefas, White Hekate, DEV-0832 and Vanilla Tempest, active since at least mid-2021 and using the Rhysida ransomware and leak site almost exclusively since June 2023 ([BSI, BITS-2026-287419-1032, 2026-09-04](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile)). BSI's advisory adds a detail beyond what Microsoft's original write-up described: reporting organizations told BSI that TerminalFix operators have staged exfiltration into attacker-controlled cloud storage, for example Azure, using the cloud provider's own transfer tooling such as azcopy ([BSI, BITS-2026-287419-1032, 2026-09-04](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile)). BSI further states that incident reports place a malware family it names LoremIpsumLoader (also known as AxolotLoader) within the campaign, and attributes that loader to the same group responsible for Rhysida ([BSI, BITS-2026-287419-1032, 2026-09-04](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile)). BSI assesses the campaign as opportunistic, purely financially motivated cybercrime with no established link to a state or politically motivated actor, and states Rhysida shows no particular regional focus on Germany, concentrating instead on education and healthcare, with public administration a more distant top-five target sector ([BSI, BITS-2026-287419-1032, 2026-09-04](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile)).

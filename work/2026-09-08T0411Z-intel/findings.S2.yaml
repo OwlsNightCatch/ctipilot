@@ -1,0 +1,177 @@
+domain: S2
+run_id: 2026-09-08T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-08T04:14:55Z
+ended_at: 2026-09-08T04:29:38Z
+duration_seconds: 883
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 11
+  bridge_fetches: 34
+
+items:
+  - title: "BSI confirms the Berlin state-government breach ran through TerminalFix (a ClickFix variant abusing Windows Terminal), names Rhysida's operator as \"Vice Spider\", and reveals the 5.7 TB leak included Bundeswehr and civil-defense documents"
+    sources:
+      - { url: "https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html", publisher: "heise online", date: "2026-09-07", role: "primary" }
+      - { url: "https://www.heise.de/news/Gefahr-fuer-die-nationale-Sicherheit-Berliner-Datenleck-schlaegt-hohe-Wellen-11444301.html", publisher: "heise online", date: "2026-09-07", role: "primary" }
+      - { url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile", publisher: "BSI (German federal cyber authority) — BITS-2026-287419-1032, TLP:CLEAR", date: "2026-09-04", role: "primary" }
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/08/28/terminalfix-campaign-deploys-reverse-tunnel-through-multistage-intrusion/", publisher: "Microsoft Threat Intelligence", date: "2026-08-28", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml → pivot: heise, URL https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html → pivot: heise, URL https://www.heise.de/news/Gefahr-fuer-die-nationale-Sicherheit-Berliner-Datenleck-schlaegt-hohe-Wellen-11444301.html → primary: BSI's own TLP:CLEAR advisory referenced by both heise articles, URL https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile"
+    summary: |
+      This is a material technical and scope update to the already-tracked Berlin Landesnetz/Rhysida incident (entity incident:berlin-landesnetz-compromise-2026-08) and the already-tracked TerminalFix campaign (entity campaign:terminalfix-clickfix-reverse-tunnel-2026), published by BSI (Germany's federal cyber authority) and confirmed via heise's 2026-09-07 reporting.
+
+      Facts, per BSI's own TLP:CLEAR advisory BITS-2026-287419-1032 (04.09.2026) and its 2026-09-07 Mastodon confirmation that this campaign is what breached the two Berlin Senate administrations (Stadtentwicklung/Bauen/Wohnen and Mobilität/Verkehr/Klimaschutz/Umwelt): the chain is a fake-Cloudflare-CAPTCHA lure on a compromised or watering-hole webpage that instructs the victim to open Windows Terminal (Win+X, then I) rather than the classic ClickFix Run-dialog (Win+R) — BSI names this variant "TerminalFix". The victim pastes a PowerShell command from the clipboard (placed there by page JavaScript) that downloads and runs a ZIP archive while the fake CAPTCHA displays a bogus success state. The archive contains a legitimate signed binary (LockScreenContentServer.exe) that side-loads a malicious dui70.dll; the DLL pulls further PNG image files from attacker infrastructure that hide additional payload code and DLLs via steganography. Persistence is a registry Run key plus an hourly scheduled re-check, with files/directories hidden from Explorer. The malware then enumerates domains, Active Directory, servers and backup systems to size up the target's value, and BSI states operators have in some cases staged an Azure cloud-storage container (using azcopy) for later exfiltration, and separately install a Python-based reverse tunnel that opens a persistent SOCKS-proxy channel to the victim network over TLS/WebSockets on port 443 — commands executed inside that Python runtime may not be logged. BSI states some incidents involving this chain saw ransomware deployment attempted and double-extortion data theft.
+
+      BSI attributes the Rhysida ransomware/leak-site operation to a financially motivated group it names "Vice Spider" (aka Vice Society, White Nefas, White Hekate, DEV-0832, Vanilla Tempest), active since at least mid-2021, using the Vice Society leak site and outsourced ransomware families before switching almost exclusively to Rhysida since June 2023. BSI's own commercial-provider telemetry states 92% of Rhysida leak-site listings are followed by data publication, with a median 11 days between listing and publication; Rhysida shows no particular regional focus on Germany and concentrates on education and healthcare, with public administration among its next most-frequent target types. A malware family named LoremIpsumLoader (aka AxolotLoader), separately profiled by BlueVoyant as a trojanized MS Teams installer, is linked by BSI to the same group operating Rhysida.
+
+      The 5.7 TB / ~1.44M-file Rhysida leak published 2026-09-04 (after Berlin's non-payment) is now confirmed by heise to include not only personnel records, disciplinary files, plaintext passwords and 46,500-plus contracts, but civil-defense and protection concepts, barracks documents, and detailed plans for critical infrastructure — water and heating plants, substations, emergency-power installations and defense-industry sites — prompting German federal bodies (Bundeswehr's Operative Führungskommando, the National Cyber Defence Centre, and BSI) to assess national-security risk. Separately, heise reports an operational dispute during incident response: the Lichtenberg district is refusing to deploy the CrowdStrike Falcon agent the Senate Chancellery engaged for forensics on its own servers, citing near-unrestricted data access, possible disruption to production systems, and surveillance concerns for its staff, and states it has found no intrusion evidence on its own systems.
+
+      Defender relevance: BSI's mitigation list is (1) current network/endpoint protection, (2) browsers with SmartScreen-class reputation checks to catch the lure page, (3) cloud-based malware detection, (4) PowerShell Script Block Logging enabled so pasted commands are captured, (5) PowerShell run in Constrained Language Mode to block dangerous cmdlets, and (6) treating any host that ran the paste as a network entry point for lateral movement rather than an isolated case. This is directly transferable to Swiss cantonal/federal administration networks, which share the same shared-Landesnetz/shared-domain topology that let the compromise of two departments reach a common government network — and the same watering-hole/phishing-driven initial-access class NCSC-CH has separately been tracking under "fake CAPTCHA" (ClickFix) warnings since August 2026.
+    region_nexus: "Germany (Berlin state government); directly transferable to Swiss cantonal/federal shared-network topologies"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566, T1204.004, T1059.001, T1574.001, T1027.003, T1547.001, T1053.005, T1572, T1567.002, T1486, T1018]
+    affected_products: ["Microsoft Windows Terminal", "Windows PowerShell"]
+    entity_keys: ["incident:berlin-landesnetz-compromise-2026-08", "campaign:terminalfix-clickfix-reverse-tunnel-2026", "actor:rhysida"]
+    new_entities: []
+    relation_suggestions:
+      - { subject: "actor:rhysida", object: "campaign:terminalfix-clickfix-reverse-tunnel-2026", basis: "BSI (BITS-2026-287419-1032, 2026-09-04, confirmed via Mastodon 2026-09-07): the TerminalFix campaign chain is the access vector BSI observed compromising the Berlin Senate administrations, and BSI attributes Rhysida's operation to the same financially motivated group ('Vice Spider') behind the LoremIpsumLoader malware used in TerminalFix intrusions" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-30/berlin-landesnetz-rhysida-extortion-phishing-vector"
+    evidence:
+      - quote: "Der Code darin lädt PNG-Bilddateien von den Angreifern herunter, in denen per Steganografie weitere Programme und DLLs versteckt sind."
+        attribution: "BSI (Bundesamt für Sicherheit in der Informationstechnik), BITS-2026-287419-1032"
+        source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile"
+      - quote: "Die Ransomware und Leak-Seite Rhysida wird der finanziell motivierten Gruppe Vice Spider (aka Vice Society, White Nefas, White Hekate, DEV-0832, Vanilla Tempest) zugeordnet."
+        attribution: "BSI (Bundesamt für Sicherheit in der Informationstechnik), BITS-2026-287419-1032"
+        source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile"
+      - quote: "Das Leck umfasst Notfall- und Schutzkonzepte zur zivilen Verteidigung, Dokumente zu Kasernen sowie Detailpläne zu kritischen Infrastrukturen wie Wasser- und Heizkraftwerken, Umspannwerken, Notstromanlagen und Rüstungsbetrieben."
+        attribution: "heise online (Stefan Krempl)"
+        source_url: "https://www.heise.de/news/Gefahr-fuer-die-nationale-Sicherheit-Berliner-Datenleck-schlaegt-hohe-Wellen-11444301.html"
+    extended_notes: |
+      Both entity_keys this updates (incident:berlin-landesnetz-compromise-2026-08 and campaign:terminalfix-clickfix-reverse-tunnel-2026) already exist in the registry as separate records; BSI's advisory is the first source to explicitly state they are the same event — worth carrying as a relation edge (see relation_suggestions) rather than merging the entities, since TerminalFix is used against other, unrelated victims too.
+
+  - title: "Sekoia and Kudelski Security (Swiss) publish a joint reassessment of DPRK's offensive-cyber organization, splitting the 'Lazarus umbrella' into six named clusters and documenting RaaS adoption (Play, Qilin) by nominally-espionage units"
+    sources:
+      - { url: "https://kudelskisecurity.com/research/beyond-lazarus-organization-of-dprk-cyber-capabilities", publisher: "Kudelski Security (Switzerland)", date: "2026-09-07", role: "primary" }
+      - { url: "https://www.sekoia.com/blog/beyond-lazarus-organization-of-dprk-cyber-capabilities", publisher: "Sekoia", date: "2026-09-07", role: "primary" }
+    discovery_trace: "first seen at: kudelski-security, URL https://kudelskisecurity.com/research-blog → primary: Kudelski Security's own article, URL https://kudelskisecurity.com/research/beyond-lazarus-organization-of-dprk-cyber-capabilities (co-published verbatim at Sekoia, URL https://www.sekoia.com/blog/beyond-lazarus-organization-of-dprk-cyber-capabilities)"
+    summary: |
+      Sekoia's TDR team and Kudelski Security (a Switzerland-based security firm) jointly published, on 2026-09-07, a reassessment of how DPRK's offensive-cyber apparatus is organized — relevant to Swiss defenders both as an actor-tracking update (DPRK clusters routinely target government, defense and financial-sector organizations worldwide) and because the co-author is a domestic Swiss research firm.
+
+      The core claim, attributed to the two authoring teams' own clustering analysis: the historical "Lazarus" umbrella should now be tracked as six distinct sub-clusters — TEMP.Hermit, Citrine Sleet, CryptoCore, Jade Sleet, Moonstone Sleet, and Famous Chollima (the last already tracked in this store as an alias of actor:purpledelta, the North Korean fraudulent-IT-worker cluster) — each with a different primary mandate: strategic espionage (inheriting Lazarus/Kimsuky lineage), dual espionage-plus-revenue operations, and pure financially-motivated crime. The authors state APT38 has itself split into CryptoCore and Jade Sleet, both exclusively financially motivated and focused on cryptocurrency/Web3/blockchain targets. The report also documents that "Reaper" — already tracked here as an alias of actor:scarcruft (ScarCruft/APT37) — is the cluster aligned with North Korea's newly renamed National Intelligence Agency (formerly the Ministry of State Security, renamed June 2026), tasked with surveillance of defectors and South Korean NGOs/activists.
+
+      Concrete, hunting-relevant facts the authors report: Andariel (a dual-mandate cluster under the GRIB, ex-RGB) has used custom ransomware (Maui, H0lyGh0st) and, per Unit 42's prior reporting the authors cite, collaborated with the Play ransomware-as-a-service operation in 2024. Moonstone Sleet deployed its own custom malware (FakePenny) in 2024 and separately adopted the Qilin RaaS in 2025 — within two months of Andariel's own RaaS adoption, which the authors read as a pattern of nominally espionage-focused DPRK clusters increasingly renting commodity ransomware infrastructure rather than only running bespoke tooling. Kudelski Security's own separate prior research (cited in this report) found that DPRK fake-IT-worker infrastructure and offensive-APT infrastructure share the same VPN exit nodes — a concrete pivot point for defenders correlating IT-worker fraud indicators against APT intrusion infrastructure. The report also documents a Cambodia-based money-laundering hub (Huione Group) that the US Treasury's FinCEN has flagged for direct ties to North Korean actors, with an estimated $37.6M in DPRK-linked cryptocurrency laundered through it between 2021 and 2025.
+
+      Defender takeaway: organizations maintaining DPRK actor-tracking (threat intel feeds, IOC allow/deny lists keyed to vendor cluster names) should map internal designations against this consolidated six-way Lazarus split, and should treat RaaS indicators (Play, Qilin) as potentially DPRK-nexus rather than purely criminal when other DPRK tradecraft is present, given the authors' documented cross-over.
+    region_nexus: "global DPRK threat-actor ecosystem; co-authored by a Switzerland-based research firm (Kudelski Security)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1657, T1199, T1486]
+    affected_products: []
+    entity_keys: ["actor:kimsuky", "actor:purpledelta", "actor:scarcruft", "actor:qilin"]
+    new_entities:
+      - { key: "actor:temp-hermit", type: actor, name: "TEMP.Hermit", aliases: [], summary: "One of six clusters Sekoia and Kudelski Security now split the historical 'Lazarus umbrella' into; a strategic-espionage-focused DPRK cluster inheriting Lazarus/Kimsuky lineage under the GRIB (ex-RGB) (Sekoia/Kudelski Security, 2026-09-07)." }
+      - { key: "actor:citrine-sleet", type: actor, name: "Citrine Sleet", aliases: [], summary: "One of six clusters Sekoia and Kudelski Security now split the historical 'Lazarus umbrella' into, tracked under the GRIB (ex-RGB) (Sekoia/Kudelski Security, 2026-09-07)." }
+      - { key: "actor:cryptocore", type: actor, name: "CryptoCore", aliases: [], summary: "Sekoia and Kudelski Security assess this is one of two clusters (with Jade Sleet) that APT38 split into between 2018-2023; exclusively financially motivated, focused on cryptocurrency, Web3 and blockchain targets, likely tied to the 110th Research Institute under the GRIB (ex-RGB) (Sekoia/Kudelski Security, 2026-09-07)." }
+      - { key: "actor:jade-sleet", type: actor, name: "Jade Sleet", aliases: [], summary: "Sekoia and Kudelski Security assess this is one of two clusters (with CryptoCore) that APT38 split into between 2018-2023; exclusively financially motivated, focused on cryptocurrency, Web3 and blockchain targets (Sekoia/Kudelski Security, 2026-09-07)." }
+      - { key: "actor:moonstone-sleet", type: actor, name: "Moonstone Sleet", aliases: [], summary: "Dual-mandate DPRK cluster (espionage plus revenue generation); deployed its own custom malware FakePenny in 2024 and the Qilin ransomware-as-a-service in 2025 (Sekoia/Kudelski Security, 2026-09-07)." }
+      - { key: "actor:andariel", type: actor, name: "Andariel", aliases: [], summary: "Dual-mandate DPRK cluster under the GRIB (ex-RGB); used custom ransomware Maui and H0lyGh0st for financial theft and collaborated with the Play ransomware-as-a-service operation in 2024 (Sekoia/Kudelski Security, 2026-09-07, citing Unit 42)." }
+      - { key: "trend:france-public-sector-breach-wave-2026", type: trend, name: "2026 wave of French public-administration data breaches", aliases: [], summary: "A recurring pattern of distinct intrusions/leaks against French national administrations through 2026 — ANTS (April), Éducation nationale (July), DGFiP (June-July, disclosed August), Zéro Logement Vacant (August), AMF (September) and the Ministère de la Transition écologique (September) — that prompted PM Sébastien Lecornu to impose a 15-day ministerial deadline (31 August 2026) to accelerate a pre-existing EUR 200M state-security plan; ANSSI recorded 3,586 security events / 1,366 qualified incidents in 2025, with ministries and local authorities at 24% of incidents (Le Monde Informatique, 2026-09-04)." }
+    relation_suggestions:
+      - { subject: "actor:moonstone-sleet", object: "actor:qilin", basis: "Sekoia/Kudelski Security (2026-09-07): 'Moonstone Sleet... acted similarly by deploying its custom malware FakePenny in 2024, but also the Qilin RaaS in 2025'" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "We notably made our clustering evolved by splitting the Lazarus umbrella into six distinct sub-clusters: TEMP.Hermit, Citrine Sleet, CryptoCore, Jade Sleet, Moonstone Sleet, and Famous Chollima."
+        attribution: "Sekoia TDR team / Kudelski Security"
+        source_url: "https://www.sekoia.com/blog/beyond-lazarus-organization-of-dprk-cyber-capabilities"
+      - quote: "Another DPRK cluster, Moonstone Sleet, acted similarly by deploying its custom malware FakePenny in 2024, but also the Qilin RaaS in 2025."
+        attribution: "Sekoia TDR team / Kudelski Security"
+        source_url: "https://www.sekoia.com/blog/beyond-lazarus-organization-of-dprk-cyber-capabilities"
+      - quote: "Kudelski Security observed that fake IT workers and offensive teams often share the same VPN exit nodes."
+        attribution: "Sekoia TDR team / Kudelski Security"
+        source_url: "https://kudelskisecurity.com/research/beyond-lazarus-organization-of-dprk-cyber-capabilities"
+    extended_notes: |
+      Marked SINGLE-SOURCE-OTHER because, although two firms co-authored it, the underlying six-cluster taxonomy is this single joint publication's own novel assessment rather than an independently corroborated finding; individual component facts (e.g. Andariel's Maui/H0lyGh0st ransomware, Moonstone Sleet's FakePenny) trace to prior reporting the authors cite (Unit 42, ESET) but the consolidated framework itself is new. Infosecurity Magazine's same-day coverage (found via WebSearch, not independently fetched) is a press pickup of this same primary and does not count as independent corroboration.
+      Also proposed: trend:france-public-sector-breach-wave-2026 — surfaced while researching item 3 below; useful as a shared parent entity so future French administration breach entries don't fragment.
+
+  - title: "France's Ministry of Ecological Transition confirms a 'sophisticated' intrusion targeting mail systems; a criminal claims 22,000+ records via an IDOR flaw in an internal compliance-monitoring tool, ANSSI investigating suspected account compromise"
+    sources:
+      - { url: "https://www.lemondeinformatique.fr/actualites/lire-le-ministere-de-la-transition-ecologique-cible-par-une-cyberattaque-100771.html", publisher: "Le Monde Informatique", date: "2026-09-07", role: "primary" }
+      - { url: "https://www.ici.fr/infos/societe/apres-le-fisc-et-l-education-nationale-le-ministere-de-la-transition-ecologique-touche-par-une-cyberattaque-1734036", publisher: "ICI / Radio France (AFP wire)", date: "2026-09-03", role: "corroborating" }
+      - { url: "https://www.lemondeinformatique.fr/actualites/lire-cybersecurite-sebastien-lecornu-donne-15-jours-aux-ministres-pour-lutter-contre-les-cyberattaques-100767.html", publisher: "Le Monde Informatique", date: "2026-09-04", role: "corroborating" }
+    discovery_trace: "first seen at: le-monde-info, URL https://www.lemondeinformatique.fr/ → primary: Le Monde Informatique article, URL https://www.lemondeinformatique.fr/actualites/lire-le-ministere-de-la-transition-ecologique-cible-par-une-cyberattaque-100771.html → corroboration: ICI/Radio France (AFP), URL https://www.ici.fr/infos/societe/apres-le-fisc-et-l-education-nationale-le-ministere-de-la-transition-ecologique-touche-par-une-cyberattaque-1734036 → context: Le Monde Informatique on the government's accelerated remediation deadline, URL https://www.lemondeinformatique.fr/actualites/lire-cybersecurite-sebastien-lecornu-donne-15-jours-aux-ministres-pour-lutter-contre-les-cyberattaques-100767.html"
+    summary: |
+      France's Ministère de la Transition écologique (Ministry of Ecological Transition) confirmed to AFP on 2026-09-02/03 that its ministerial IT hub suffered a "sophisticated computer attack" targeting mail systems the prior week, filed a criminal complaint, and took several public-facing sites (the environmental public-consultation platform and regional-administration sites) into maintenance mode. ANSSI (France's national cyber-defense authority) confirmed it is intervening at ministry administrations "following suspicions of compromise of certain user accounts" as part of its investigation — a fact-level statement from the authority itself, not a claim.
+
+      On 2026-09-07, a criminal using the pseudonym "mondial" posted on the specialist forum tracked by the outlet French Breaches, claiming exfiltration of two files from systems tied to developpement-durable.gouv.fr: controleurs.csv (claimed 14,656 records on approved inspection controllers — names, birthdates, approval numbers, phone numbers, some tied to inspection bodies such as APAVE Exploitation France) and all_users.json (claimed 8,166 user records: unique emails, landline and mobile numbers, professional IDs, unit/directorate affiliations, drawn from an LDAP directory). The attacker claims initial access via a misconfigured authentication service, followed by exploitation of an IDOR (Insecure Direct Object Reference) flaw in OISO (Outil Informatique de Surveillance des Organismes, an internal tool for monitoring approved inspection bodies) to enumerate and pull records that should not have been reachable by the authenticated session. Le Monde Informatique and French Breaches both flag that the claimed record counts, the precise nature of the misconfiguration, and the scope of compromised systems remain independently unconfirmed as of the article date — this is a criminal's claim, not an established fact, though the underlying intrusion itself is victim- and ANSSI-confirmed.
+
+      This is the latest in a now-recurring pattern of French national-administration breaches this year (ANTS in April, Éducation nationale in July, DGFiP in June/July disclosed August, Zéro Logement Vacant in August, AMF in September) that led PM Sébastien Lecornu, at a 31 August 2026 government seminar, to impose a firm deadline on every minister to accelerate implementation of the pre-existing EUR 200M state-cybersecurity plan (announced April 2026 after the ANTS breach). ANSSI's own 2025 statistics, cited in that same reporting: 3,586 security events handled, 1,366 qualified as incidents, with ministries and local authorities (collectivités) accounting for 24% of incidents — second only to education/research at 34%.
+
+      Defender relevance for Swiss public-sector readers: an IDOR-class flaw in an internal monitoring/compliance tool reachable via a misconfigured authentication front-end is a directly transferable exposure class for any cantonal or federal administration running similar internal case-management or inspection-tracking applications — access-control checks on object references (not just session authentication) are the concrete lesson, independent of whether the specific French claim is ultimately confirmed in full.
+    region_nexus: "France (neighbouring country); direct parallel exposure class for Swiss federal/cantonal administration"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1078, T1213]
+    affected_products: ["OISO (Outil Informatique de Surveillance des Organismes)"]
+    entity_keys: ["trend:france-public-sector-breach-wave-2026"]
+    new_entities:
+      - { key: "incident:france-transition-ecologique-breach-2026-09", type: incident, name: "Ministère de la Transition écologique data-exposure claim (France, 2026-09)", aliases: [], summary: "France's Ministry of Ecological Transition confirmed a sophisticated attack on ministerial mail systems in late August/early September 2026 and referred the matter to prosecutors; ANSSI is investigating suspected user-account compromise. A criminal separately claims (unconfirmed as of 2026-09-07) exfiltration of 22,000+ records — inspection-controller and internal-directory data — via a misconfigured authentication service and an IDOR flaw in the OISO internal monitoring tool (Le Monde Informatique / AFP, 2026-09-03/07)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: false
+    evidence:
+      - quote: "Le pôle ministériel a fait l'objet d'une attaque informatique sophistiquée la semaine dernière, ciblant des outils de messagerie... Un signalement au parquet a été fait."
+        attribution: "Ministère de la Transition écologique, statement to AFP"
+        source_url: "https://www.ici.fr/infos/societe/apres-le-fisc-et-l-education-nationale-le-ministere-de-la-transition-ecologique-touche-par-une-cyberattaque-1734036"
+      - quote: "L'Anssi... a indiqué intervenir «au profit d'administrations du ministère de la transition écologique, suite à des suspicions de compromission de certains comptes utilisateurs et dans le cadre d'investigations»."
+        attribution: "ANSSI, statement to AFP"
+        source_url: "https://www.ici.fr/infos/societe/apres-le-fisc-et-l-education-nationale-le-ministere-de-la-transition-ecologique-touche-par-une-cyberattaque-1734036"
+      - quote: "Il revendique ensuite l'exploitation d'une vulnérabilité de type IDOR (Insecure Direct Object Reference) affectant l'OISO, l'Outil Informatique de Surveillance des Organismes."
+        attribution: "Le Monde Informatique, relaying the attacker's claim via French Breaches"
+        source_url: "https://www.lemondeinformatique.fr/actualites/lire-le-ministere-de-la-transition-ecologique-cible-par-une-cyberattaque-100771.html"
+    extended_notes: |
+      Do not conflate with incident:france-dgfip-tax-breach-2026-08 or actor:zerobytes — no source ties this intrusion to the ZeroBytes/Epsilon cluster tracked there; the attacker here uses a different pseudonym ("mondial") with no stated affiliation. The connective tissue across these French cases is the pattern/policy response, captured in the new trend entity, not a shared actor.
+
+watchlist_sweep:
+  duty: sector-lens
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "sector-lens duty — no separate sweep required; triage weighted toward public-sector/Switzerland home region as reflected in all three items above (Germany/Berlin and France items chosen specifically for direct transferability to Swiss cantonal/federal administration)."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Reachable via RSS (20 items fetched, all Swiss IT/digitalization news, none security-incident-relevant in-window beyond general items already assessed). However every individual article drill-down (extract and WebFetch alike) returned HTTP 429 Too Many Requests from the site's Vercel-fronted hosting for the remainder of the run after the first successful RSS fetch — could not read 'Bündner Hotel wird Opfer eines Hackerangriffs' (2026-09-07, smishing-via-compromised-hotel-database, likely low relevance to public-sector but unverified) or re-attempt the backlog item below."
+  - source_id: inside-it-ch
+    reason: "Backlog item (Insel Gruppe / Bern hospital group ServiceNow migration delay 'wegen eines Sicherheitsvorfalls'): the specific article (insel-gruppe-verschiebt-wechsel-zu-servicenow) could not be re-checked this run due to the 429 rate-limiting above. WebSearch for corroboration on netzwoche.ch, swisscybersecurity.net and via general queries found no independent report connecting Insel Gruppe to a security incident or a ServiceNow migration delay — only unrelated June-2026 ServiceNow platform-wide API vulnerability coverage and Insel Gruppe's separate, unrelated Epic-KIS financial reporting. Status unchanged from prior runs: still blocked, still uncorroborated."
+  - source_id: n/a
+    reason: "Boston Scientific incident (2026-08-25) backlog re-check: WebSearch found no source (as of this run) naming a specific access vector or compromise mechanism beyond 'unauthorized activity' detected 2026-08-25 and CrowdStrike engaged for IR. Status unchanged — still blocked on mechanism."
+  - source_id: n/a
+    reason: "EU CRA Article 14 reporting-obligation last-mile check (deadline 2026-09-11): no in-window (past 26h) development found beyond the already-tracked entry (2026-08-29/eu-cra-reporting-obligation-ncsc-fi-checklist, last updated 2026-09-03). The one substantive delta found — ENISA's Single Reporting Platform not yet live as of a 2026-06-29 article — is itself stale relative to this window and not cited as a fresh source; no fresher confirmation or denial of SRP readiness was found in-window. Recommend a fresh check close to/after 2026-09-11 once the obligation is actually live."
+  - source_id: kudelski-security
+    reason: "The research-blog listing page (https://kudelskisecurity.com/research-blog) renders multiple unrelated older advisories (BlueHammer LPE, Apifox supply-chain, axios npm compromise — all March/April 2026, already stale) inline above/below the fresh DPRK piece with no clean per-item boundary in the extracted text; had to search out the dedicated permalink (kudelskisecurity.com/research/beyond-lazarus-organization-of-dprk-cyber-capabilities) separately to get a clean citation. Recipe note for future runs: prefer the dedicated /research/<slug> URL over the /research-blog listing when one can be found via search."
+  - source_id: prodaft
+    reason: "Listing page returned only a stale (2023-12-05 dated) cached 'latest report' (Wazawaka); no in-window content visible via extract."
+  - source_id: google-tag
+    reason: "blog.google/threat-analysis-group/ redirected to blog.google/security/ with stale (2026-04-28) cached content; no in-window content."
+  - source_id: intrinsec
+    reason: "Blog listing page returned only cookie-consent boilerplate and a stale 2025-02-27 page date; no in-window content surfaced."
+  - source_id: cert-lv
+    reason: "cert.lv/lv/incidenti is a static informational page about CERT.LV's incident-handling categories, not a news/incident feed; no in-window items possible from this URL."
+  - source_id: openssf-policy
+  - source_id: jpcert
+  - source_id: nl-times
+  - source_id: safeonweb-be
+    reason: "openssf-policy, jpcert, nl-times, safeonweb-be: fetched/attempted, no in-window (past 26h) content found relevant to the domain mission."

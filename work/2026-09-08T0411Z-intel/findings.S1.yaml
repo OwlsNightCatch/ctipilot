@@ -1,0 +1,142 @@
+# work/2026-09-08T0411Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-09-08T0411Z-intel
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: 2026-09-08T04:14:41Z
+ended_at: 2026-09-08T04:23:19Z
+duration_seconds: 518
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 6
+  bridge_fetches: 24
+
+items:
+  - title: "StyleSmuggler (CVE-2026-75650) — unauthenticated CVSS 10.0 RCE in Magento/Adobe Commerce via template-engine injection, mass exploitation confirmed, Adobe hotfix shipped three days into the campaign"
+    sources:
+      - { url: "https://sansec.io/research/stylesmuggler-0day", publisher: "Sansec Forensics Team", date: "2026-09-05", role: "primary" }
+      - { url: "https://helpx.adobe.com/security/products/magento/apsb26-146.html", publisher: "Adobe PSIRT (APSB26-146)", date: "2026-09-07", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12915", publisher: "NCSC Switzerland / GovCERT.ch — Cyber Security Hub", date: "2026-09-07", role: "primary" }
+      - { url: "https://thehackernews.com/2026/09/unpatched-magento-and-adobe-commerce.html", publisher: "The Hacker News", date: "2026-09-06", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12915 → primary: Sansec Forensics Team, URL https://sansec.io/research/stylesmuggler-0day → primary: Adobe PSIRT, URL https://helpx.adobe.com/security/products/magento/apsb26-146.html → corroborating (independent IR data from Disrex Group, quoted via The Hacker News): URL https://thehackernews.com/2026/09/unpatched-magento-and-adobe-commerce.html"
+    summary: |
+      Sansec discovered StyleSmuggler on 2026-09-04, an unauthenticated remote-code-execution chain in Magento Open Source and Adobe Commerce that Adobe assigned CVE-2026-75650 (CVSS 3.1: 10.0, CWE-1336 Improper Neutralization of Special Elements Used in a Template Engine) and patched with an emergency hotfix (VULN-39341) on 2026-09-07 — three days after Sansec observed the first exploitation and a full week after mass compromise began. Every version 2.4.4 through 2.4.9 of Adobe Commerce, Adobe Commerce B2B and Magento Open Source is affected, "including the latest release"; no authentication or user interaction is required.
+      The chain runs in two stages. First, the attacker poisons Magento's own template rendering: an unauthenticated request (Sansec's confirmed victims were reached over the storefront's GraphQL endpoint) causes Magento to write attacker-controlled text into a location it later re-reads and renders through its template filter — either a failure report under var/report/ (Sansec's published check) or, per independent incident responder Disrex Group, var/log/system.log, which Sansec's own indicator search misses. Second, the attacker triggers Magento's standard "Payment Transaction Failed Reminder" customer-notification email; rendering that email causes Magento to execute the poisoned template content, reaching a code path in Magento's own dependency-injection compiler classes (Disrex traces the sink to three files under setup/src/Magento/Setup/Module/Di/Code/) that ends by including an attacker-chosen file — the previously poisoned log/report — and executing it as PHP. The exploit succeeds whether or not the notification email actually gets delivered, and moving session storage to Redis or a database does not stop it.
+      On success, the implant is a small statically-linked Rust binary that installs itself outside the web root (Sansec observed a path under a hidden directory in the site user's home directory) and re-persists via a cron entry written directly into the cron spool file rather than through the crontab command, so no "REPLACE" line appears in system logs and an empty `crontab -l` is not evidence of a clean host. The implant disguises its running process name to match a legitimate system process — a kernel worker thread, the fontconfig cache builder, or the real NTP daemon — and, in variants Sansec observed from 2026-09-06 onward, beacons roughly every 60 seconds over UDP port 123 in traffic deliberately shaped to resemble NTP protocol replies, carrying a chunked, encoded telemetry record (host, user, OS, resource usage, implant version) rather than legitimate time-sync data; a separate build communicates over WebSocket-over-TLS on port 443. Sansec also documents a second, apparently unrelated threat actor independently exploiting the same StyleSmuggler flaw to drop a token-gated PHP web shell into the product-image cache directory, reachable only with a custom request header, after a reconnaissance probe that exfiltrates basic host facts through DNS-style out-of-band callbacks embedded in a GraphQL request header rather than a response body.
+      Independent incident-response data from Disrex Group (which hosts Magento stores and handled two live compromises) confirms exploitation began at the store level within hours of Sansec's own first observation, that a fully patched 2.4.8 store running Sansec's own blocking product was still breached because the attack predated the vendor's detection-rule release by roughly eight hours, and that patch level was "irrelevant" to the affected merchants at the time they were hit.
+    region_nexus: "global; no Swiss-specific victim reporting yet, but any government-adjacent e-commerce/ticketing storefront (tourism boards, cantonal shops, public transport ticketing) running Adobe Commerce or Magento Open Source is in the affected population"
+    primary_sector_nexus: "indirect — the vulnerable platform is e-commerce software, not core public-sector infrastructure, but public bodies and their suppliers that operate storefronts on this stack are directly exposed"
+    sector: "public-sector"
+    cves: ["CVE-2026-75650"]
+    techniques: ["T1190", "T1053.003", "T1036.005", "T1001.003", "T1071.001"]
+    affected_products: ["Adobe Commerce", "Adobe Commerce B2B", "Magento Open Source"]
+    entity_keys: ["product:adobe-commerce", "product:adobe-commerce-b2b", "product:magento-open-source"]
+    new_entities:
+      - key: "trend:stylesmuggler-magento-adobe-commerce-2026-09"
+        type: trend
+        name: "StyleSmuggler"
+        aliases: ["CVE-2026-75650 Magento/Adobe Commerce zero-day"]
+        summary: "Sansec's name for an unauthenticated RCE chain in Magento/Adobe Commerce (CVE-2026-75650, CVSS 10.0) that poisons a Magento-rendered log or report file with template code and detonates it via the platform's own failed-payment notification email; exploited in the wild from 2026-09-04, patched by Adobe on 2026-09-07 (Sansec, 2026-09-05)."
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Sansec discovered StyleSmuggler, a Magento and Adobe Commerce zero-day that gives unauthenticated attackers remote code execution."
+        attribution: "Sansec Forensics Team"
+        source_url: "https://sansec.io/research/stylesmuggler-0day"
+      - quote: "Adobe is aware of CVE-2026-75650 being exploited in the wild."
+        attribution: "Adobe PSIRT (APSB26-146)"
+        source_url: "https://helpx.adobe.com/security/products/magento/apsb26-146.html"
+      - quote: "Successful exploitation allows unauthenticated attackers to achieve remote code execution and establish persistent backdoors on affected e-commerce servers via network access."
+        attribution: "NCSC Switzerland / GovCERT.ch — Cyber Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12915"
+    extended_notes: |
+      Detection concept (telemetry class first, platform anchor second): unexpected outbound UDP traffic on port 123 from web-application hosts that never legitimately act as NTP peers, especially many small (~48-byte) datagrams sent in rapid bursts every ~60 seconds rather than the single periodic query a real NTP client issues — a genuine time-sync client never emits server-mode reply packets, which is what distinguishes this beacon from legitimate NTP traffic (process-creation + network-connection telemetry, e.g. Sysmon EID 3/22 or EDR network-egress alerting scoped to web-tier hosts). Process telemetry: a bracketed kernel-thread-style name (indicating a kernel worker) or a fontconfig-cache-builder/NTP-daemon process name running under a non-root, site/web-application account with non-trivial resident memory is not legitimate — real kernel worker threads belong to root and hold no user-space memory. Cron/persistence telemetry: hunt the raw cron spool files directly (not just `crontab -l` output) for entries that were not accompanied by a corresponding "REPLACE" audit line, since this implant (and a prior campaign using the same technique) writes the spool file directly to avoid the crontab command's own logging. Application telemetry: an unexplained burst of "Payment Transaction Failed Reminder" emails, especially ones containing unresolved `{{var ...}}` template placeholders or Magento's own template-error fallback text, is a Magento-specific tell that costs no additional tooling to check. Hardening: apply Adobe's VULN-39341 hotfix immediately; where unpatched, temporarily disable the GraphQL endpoint (the observed primary attack vector) and add `proc_open` to PHP's `disable_functions`; mount `/tmp`, `/var/tmp` and `/dev/shm` `noexec`; and, per Adobe's guidance, rotate the store's encryption key and every credential it protects (admin passwords, REST/SOAP/GraphQL integration tokens, OAuth client secrets, payment-gateway API credentials, database credentials, SSH/deploy keys) at the source system, not only inside Magento, since rotating the encryption key alone does not invalidate anything already read by an attacker. No IOC hashes/IPs/domains are reproduced here per pipeline policy; consult the cited Sansec/Disrex write-ups directly for indicator matching.
+
+  - title: "CVE-2026-19490 — Citrix NetScaler ADC/Gateway unauthenticated auth-bypass (CVSS 9.3): public PoC live since Sept 3, exploitation attempts confirmed through Sept 7, three weeks after the patch shipped"
+    sources:
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0318", publisher: "NCSC-NL (Nationaal Cyber Security Centrum)", date: "2026-09-07", role: "primary" }
+      - { url: "https://previdian.com/CVE-2026-19490", publisher: "Previdian (Ryan Dewhurst)", date: "2026-09-07", role: "primary" }
+      - { url: "https://fieldeffect.com/blog/early-exploitation-citrix-netscaler-vulnerability", publisher: "Field Effect Security Intelligence Team", date: "2026-09-04", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hackers-target-critical-citrix-netscaler-auth-bypass-in-attacks/", publisher: "BleepingComputer", date: "2026-09-04", role: "corroborating" }
+      - { url: "https://www.rapid7.com/blog/post/etr-cve-2026-19490-critical-vulnerability-affecting-citrix-netscaler-adc-and-netscaler-gateway/", publisher: "Rapid7", date: "2026-08-19", role: "corroborating" }
+      - { url: "https://www.securityweek.com/exploitation-expected-for-critical-authentication-bypass-patched-in-citrix-netscaler/", publisher: "SecurityWeek", date: "2026-08-20", role: "corroborating" }
+      - { url: "https://cert.europa.eu/publications/security-advisories/2026-010/", publisher: "CERT-EU", date: "2026-08-19", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories → NCSC-NL advisory update, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0318 → pivot: WebSearch (\"CVE-2026-19490 Citrix NetScaler proof of concept\") → Previdian (vulnerability-intelligence sensor telemetry), URL https://previdian.com/CVE-2026-19490 → corroborating: Field Effect, URL https://fieldeffect.com/blog/early-exploitation-citrix-netscaler-vulnerability → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/hackers-target-critical-citrix-netscaler-auth-bypass-in-attacks/ → corroborating: Rapid7, URL https://www.rapid7.com/blog/post/etr-cve-2026-19490-critical-vulnerability-affecting-citrix-netscaler-adc-and-netscaler-gateway/ → corroborating: SecurityWeek, URL https://www.securityweek.com/exploitation-expected-for-critical-authentication-bypass-patched-in-citrix-netscaler/ → corroborating: CERT-EU 2026-010, URL https://cert.europa.eu/publications/security-advisories/2026-010/"
+    summary: |
+      Citrix patched CVE-2026-19490 on 2026-08-19 (CTX696939): an authentication-bypass-via-alternate-path (CWE-288) in NetScaler ADC and NetScaler Gateway, CVSS v4.0 9.3, exploitable remotely by an unauthenticated attacker with no user interaction. The flaw affects appliances configured as a Gateway (SSL VPN, ICA Proxy, CVPN, RDP Proxy) or as an AAA virtual server; Field Effect notes that on some newer builds the bypass additionally requires a configured SAML authentication action, while older affected versions are reachable whenever Gateway or AAA functionality is enabled at all — configuration, not just version, determines exposure. Affected: NetScaler ADC/Gateway 14.1 before 14.1-73.32 and 13.1 before 13.1-63.21, including FIPS/NDcPP variants (13.1-FIPS/NDcPP before 13.1-37.277) and Secure Private Access Hybrid deployments using NetScaler instances. The same bulletin ships CVE-2026-19489 (CVSS 8.8), a memory-overflow-to-DoS bug reachable only when SIP ALG is enabled inside a Large Scale NAT (LSN) group — a narrow, checkable precondition (`add lsn group` combined with `sipalg` in the running configuration).
+      A "credible" public proof-of-concept for CVE-2026-19490 went live around 2026-09-03. Vulnerability-intelligence firm Previdian recorded exploitation-attempt traffic matching that PoC from at least six distinct source IPs across three countries within 24 hours, and its tracker shows continued observed activity through 2026-09-07 (medium confidence; "provides evidence of exploitation attempts, but does not confirm successful compromise"). The Centre for Cybersecurity Belgium separately warned of exploitation attempts the same week. NCSC-NL updated its advisory on 2026-09-07 specifically to flag that PoC code is now public and that it assesses imminent widespread exploitation as highly likely ("Het NCSC acht het zeer waarschijnlijk dat op korte termijn misbruik zal plaatsvinden" — "NCSC considers it highly likely that abuse will occur in the short term"). As of this research, CVE-2026-19490 has not been added to CISA's KEV catalog and FIRST EPSS scores it at 3.4% (2026-09-07) — both trailing the sensor-level exploitation evidence already reported by name.
+      NetScaler ADC/Gateway is near-ubiquitous perimeter infrastructure for SSL VPN remote access, federated (SAML) authentication, ICA/RDP proxying and load balancing — Shadowserver's public scan counts over 22,000 internet-exposed NetScaler ADC instances and roughly 1,700–1,800 Gateway instances, with no visibility into how many carry a vulnerable configuration versus already-patched or honeypot systems. Citrix authentication-bypass and RCE flaws have a consistent history of rapid exploitation once public: CISA has tagged 23 separate Citrix vulnerabilities as actively exploited since November 2021, six of them subsequently abused by ransomware operators, and the immediately preceding NetScaler patch cycle (CVE-2026-3055/CVE-2026-4368, March 2026) also saw exploitation begin within days of disclosure.
+    region_nexus: "global; NetScaler ADC/Gateway is widely deployed as perimeter VPN/SAML-IdP infrastructure across European public-sector networks, Switzerland included"
+    primary_sector_nexus: "direct — Citrix NetScaler is standard perimeter remote-access and identity-federation infrastructure for government networks"
+    sector: "public-sector"
+    cves: ["CVE-2026-19490", "CVE-2026-19489"]
+    techniques: ["T1190", "T1556", "T1499"]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["product:citrix-netscaler"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Er is Proof of Concept code beschikbaar voor CVE-2026-19490. Het NCSC acht het zeer waarschijnlijk dat op korte termijn misbruik zal plaatsvinden."
+        attribution: "NCSC-NL (English gloss: \"PoC code is available for CVE-2026-19490. NCSC considers it highly likely that abuse will occur in the short term.\")"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0318"
+      - quote: "On 3 September, one of our NetScaler sensors received requests matching the PoC from three distinct source IPs, geolocated to Australia, the United States and Germany."
+        attribution: "Ryan Dewhurst, Previdian (via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/hackers-target-critical-citrix-netscaler-auth-bypass-in-attacks/"
+      - quote: "Some newer affected versions require SAML authentication to be configured before the vulnerability can be exploited, while older affected versions have broader exposure and may be vulnerable whenever Gateway or AAA functionality is enabled."
+        attribution: "Field Effect Security Intelligence Team"
+        source_url: "https://fieldeffect.com/blog/early-exploitation-citrix-netscaler-vulnerability"
+    extended_notes: |
+      Detection concept (telemetry class first, platform anchor second): authentication/session logs on the NetScaler appliance itself are the primary hunt surface — review AAA/Gateway authentication events, SAML assertion-consumption events and administrative-session logs for the exposure window (patch available since 2026-08-19; PoC-driven attempts observed from 2026-09-03) for sessions established via the alternate/bypass path rather than the normal login sequence, and for any session that appears authenticated but has no matching prior credential-submission event. Configuration telemetry: search the running NetScaler configuration for `add authentication samlAction.*`, `add authentication vserver .*` and `add vpn vserver .*` (Rapid7) to determine whether a given appliance is in an exploitable configuration at all, and separately for `add lsn group` combined with `sipalg` to scope exposure to CVE-2026-19489. Hardening: patch to NetScaler ADC/Gateway 14.1-73.32 / 13.1-63.21 (or the FIPS/NDcPP-specific builds) immediately; restrict NetScaler management interfaces to dedicated management networks; enforce MFA on administrative access; and for any appliance that was internet-exposed and unpatched during the exposure window, review authentication logs, active sessions and SAML configuration for signs of unauthorized access before treating the appliance as clean, since the auth-bypass path leaves no failed-login trail to alert on in the first place.
+
+cve_table:
+  - cve: "CVE-2026-75650"
+    product: "Adobe Commerce / Adobe Commerce B2B / Magento Open Source"
+    cvss: "10.0 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H)"
+    epss: null
+    kev: false
+    exploited: true
+    patch: "Hotfix VULN-39341, released 2026-09-07 (Adobe APSB26-146); no full point-release yet"
+    source: "https://helpx.adobe.com/security/products/magento/apsb26-146.html"
+  - cve: "CVE-2026-19490"
+    product: "Citrix NetScaler ADC / NetScaler Gateway"
+    cvss: "9.3 (CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:L/SI:L/SA:L)"
+    epss: 0.0337
+    kev: false
+    exploited: true
+    patch: "14.1-73.32 / 13.1-63.21 (and FIPS/NDcPP-specific builds), released 2026-08-19 (CTX696939)"
+    source: "https://support.citrix.com/support-home/kbsearch/article?articleNumber=CTX696939"
+  - cve: "CVE-2026-19489"
+    product: "Citrix NetScaler ADC / NetScaler Gateway"
+    cvss: "8.8 (CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:L/VA:H/SC:N/SI:N/SA:L)"
+    epss: 0.00388
+    kev: false
+    exploited: false
+    patch: "14.1-73.32 / 13.1-63.21 (and FIPS/NDcPP-specific builds), released 2026-08-19 (CTX696939)"
+    source: "https://support.citrix.com/support-home/kbsearch/article?articleNumber=CTX696939"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "product watchlist is empty per org profile (no-op); no per-product sweep performed beyond normal S1 collection, which already covers the vendor/CERT advisory surface a product sweep would check"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "gap_flag:true, fetch_method blocked (Cloudflare/anti-bot challenge on every transport per prior runs, confirmed historically exhausted). WebSearch found no new SSD-sourced items in this run's window; not counted against fetch_failures per spawn instructions."
+  - source_id: cisa-directives
+    reason: "https://www.cisa.gov/news-events/directives fetched via bridge (jina) but returned only nav/breadcrumb chrome, no listing content — page appears to require further JS hydration than the bridge captured. No directive-specific content recoverable this run; no separate directive news found via WebSearch either."
+  - source_id: trendmicro-research
+    reference: "https://feeds.feedburner.com/TrendMicroResearch"
+    reason: "feed fetched successfully (200) but latest entry dates to 2026-07-30 — feed appears stale/not updated in-window; no in-window Trend Micro items found."
+  - source_id: yeswehack
+    reason: "https://www.yeswehack.com/blog fetched (200) but returned a JS-hydrated Next.js shell with no article listing in the raw/direct body; not pursued further given no indication of in-window CTI content and time budget prioritized toward the two high-confidence findings above."
+  - source_id: hadrian-labs
+    reason: "https://hadrian.io/blog fetched (200, large HTML body) but not manually triaged for in-window items this run due to time-budget prioritization toward the two confirmed active-exploitation items; not a transport failure, a coverage-breadth tradeoff."
