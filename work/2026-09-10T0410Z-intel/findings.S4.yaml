@@ -1,0 +1,66 @@
+domain: S4
+run_id: 2026-09-10T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-10T04:13:31Z
+ended_at: 2026-09-10T04:21:22Z
+duration_seconds: 471
+self_telemetry:
+  webfetch_calls: 10
+  websearch_calls: 18
+  bridge_fetches: 16
+items:
+  - title: "Veradigm (formerly Allscripts) discloses a vendor-API credential breach exposing patient SSNs; The Gentlemen ransomware group claims 3.5 million records against Veradigm's own 'small number of customers' account"
+    sources:
+      - { url: "https://www.sec.gov/Archives/edgar/data/1124804/000119312526385249/mdrx-20260908.htm", publisher: "Veradigm Inc. (SEC Form 8-K, Item 8.01)", date: "2026-09-08", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/veradigm-discloses-patient-data-breach-after-gentlemen-gang-claims-attack/", publisher: "BleepingComputer", date: "2026-09-09", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer (rotation slice, S4), URL https://www.bleepingcomputer.com/news/security/ → pivot: article URL https://www.bleepingcomputer.com/news/security/veradigm-discloses-patient-data-breach-after-gentlemen-gang-claims-attack/ → primary: victim's own SEC Form 8-K, URL https://www.sec.gov/Archives/edgar/data/1124804/000119312526385249/mdrx-20260908.htm"
+    summary: |
+      Veradigm Inc. (formerly Allscripts Healthcare Solutions, a US healthcare-technology vendor) filed a Form 8-K on 2026-09-08 disclosing that one of its third-party vendors suffered a cybersecurity incident: an unauthorized party obtained credentials from that vendor's own environment and used them to reach a single Veradigm application programming interface the vendor uses to deliver services on Veradigm's customers' behalf. The attacker downloaded patient personal data through that one interface, including Social Security numbers in some instances; Veradigm states explicitly that no clinical or medical data was involved and that the compromised credentials "provided access only through that limited interface and did not provide access to any other part of the Company's environment, including the Company's broader network, servers, databases, or other systems" — the scoped-API-credential design contained the blast radius to a read path rather than a network foothold. Veradigm characterises the population affected as "a small number of the Company's customers." The Gentlemen ransomware/extortion group (tracked by this store as `actor:thegentlemen`, aliases Storm-2697 / Phantom Mantis, a RaaS operation with a documented ~32% European victim share and a prior Swiss leak-site listing against DEVO-Tech AG) publicly claimed the same intrusion on 2026-09-05, asserting possession of 3.5 million patient records (full names, addresses, SSNs, emails, phone numbers) and threatening publication by 2026-09-11 without ransom negotiation — a scale claim the victim's own regulatory filing does not confirm and materially contradicts. The gap between the extortion group's stated scale and the victim's own "small number of customers" language is reported here as a live, unresolved contradiction rather than resolved fact.
+    region_nexus: "US victim (Veradigm, Chicago IL); actor (`actor:thegentlemen`) carries an established ~32% European victim share and a prior Swiss leak-site listing (DEVO-Tech AG, tracked separately in the registry), plus an uncorroborated current Swiss claim (Ixa Systems SA, tracked in the coverage backlog) — same-actor nexus relevant to Swiss-based organisations relying on external vendors with API-scoped integrations"
+    primary_sector_nexus: "indirect — healthcare-technology vendor breach via a third-party integration partner; the transferable lesson (scope vendor API credentials narrowly so a partner compromise cannot pivot into the broader estate) applies directly to any Swiss public-sector body that grants third-party/vendor API access into citizen- or patient-facing systems"
+    sector: "healthcare, public-sector (transferable vendor-access-scoping lesson)"
+    cves: []
+    techniques: [T1199, T1078]
+    affected_products: []
+    entity_keys: ["actor:thegentlemen"]
+    new_entities:
+      - { key: "incident:veradigm-vendor-api-breach-2026-09", type: incident, name: "Veradigm vendor-API credential breach (2026-09)",
+          aliases: [],
+          summary: "A Veradigm third-party vendor's compromised credentials were used to pull patient personal data (including SSNs) through one scoped Veradigm API; Veradigm's own SEC Form 8-K (2026-09-08) confirms the mechanism and states access was limited to that single interface. The Gentlemen ransomware/extortion group claimed the same intrusion on 2026-09-05, asserting 3.5 million patient records — a scale Veradigm's filing does not corroborate (BleepingComputer, Veradigm SEC 8-K, 2026-09-08/09)." }
+    relation_suggestions:
+      - { subject: "incident:veradigm-vendor-api-breach-2026-09", object: "actor:thegentlemen",
+          basis: "BleepingComputer: 'The Gentlemen ransomware group claimed the attack on September 5' against the same Veradigm vendor-breach timeline Veradigm's own 8-K discloses — the claim is the actor's own, not independently confirmed by Veradigm, which does not name an attacker" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "an unauthorized party obtained credentials from the vendor's environment to a Company application programming interface used by the vendor to provide services on behalf of the Company's customers"
+        attribution: "Veradigm Inc., SEC Form 8-K"
+        source_url: "https://www.sec.gov/Archives/edgar/data/1124804/000119312526385249/mdrx-20260908.htm"
+      - quote: "The vendor's compromised credentials provided access only through that limited interface and did not provide access to any other part of the Company's environment, including the Company's broader network, servers, databases, or other systems."
+        attribution: "Veradigm Inc., SEC Form 8-K"
+        source_url: "https://www.sec.gov/Archives/edgar/data/1124804/000119312526385249/mdrx-20260908.htm"
+      - quote: "The threat actor alleges to be holding 3.5 million patient records that include full names, home addresses, SSNs, email addresses, phone numbers."
+        attribution: "BleepingComputer, reporting The Gentlemen's claim"
+        source_url: "https://www.bleepingcomputer.com/news/security/veradigm-discloses-patient-data-breach-after-gentlemen-gang-claims-attack/"
+    extended_notes: |
+      Detection/hardening angle: this is a clean real-world illustration of the value of scoping vendor/partner API credentials to a single narrow interface (least-privilege service accounts) — Veradigm's own account credits this scoping with preventing lateral movement into its broader network, servers or databases despite a full credential compromise on the vendor side. For a Swiss public-sector estate that grants API access to external service providers (health-data platforms, case-management vendors, payment processors), the actionable takeaway is to audit whether third-party API credentials are similarly interface-scoped and whether compromise of a partner's environment could reach a broader internal surface than a single API endpoint. `actor:thegentlemen` already carries an uncorroborated Swiss leak-site claim (Ixa Systems SA, coverage_backlog.md row) and a prior confirmed Swiss leak-site listing (DEVO-Tech AG) — this is the actor's first 2026-09 victim-confirmed (not leak-site-only) disclosure, worth tracking as this actor's tradecraft develops.
+    borderline: true
+    borderline_reason: "US victim with no direct Swiss/EU domicile; included on a same-actor nexus (actor:thegentlemen's established European targeting share and outstanding Swiss claims) plus a transferable vendor-API-scoping hardening lesson — main agent should confirm this clears the bar over a pure US-domestic healthcare breach"
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Supplier watchlist is empty (none configured) per org-profile — no-op sweep. General S4 research (backlog re-checks + rotation-slice sweep) proceeded as the primary mission."
+candidate_sources: []
+coverage_gaps:
+  - source_id: ransom-isac
+    reason: "Rotation-slice source; RSS feed (https://ransom-isac.org/feed.xml) fetched cleanly but latest post is 2026-08-27 — no in-window (24h) content. Not a transport failure."
+  - source_id: venarix
+    reason: "Blog listing (extract) fetched cleanly but latest dated item is 'Updated Aug 24' — no in-window content. Not a transport failure."
+  - source_id: zaufana-trzecia-strona
+    reason: "Homepage extracted cleanly (trafilatura-direct) but latest weekly roundup post is dated 2026-09-05 — outside the 24h window. Not a transport failure."
+  - source_id: cyberinsider
+    reason: "Listing extracted cleanly; nothing with a constituency nexus or novel TTP beyond items already covered elsewhere (Bimbo Bakeries/Oracle EBS, Trezor/ShipMonk, MikroTik RouterOS — none in-window as fresh S4-relevant leads beyond what S1/S2/S3 slices would independently surface)."

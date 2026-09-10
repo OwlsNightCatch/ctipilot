@@ -9,8 +9,11 @@ summary: >
   under active exploitation on 2026-08-27, before any CVE or patch existed. Emergency Patch Release 3 (1 September
   2026) supersedes Release 2, fixes two regressions Release 2 introduced, and is now the only recommended fix; there
   is no fix for v23 and earlier, and Huntress estimates 47% of the PaperCut installs it tracks run v23 or older.
+  GreyNoise now documents an AI-agent-orchestrated mass-exploitation campaign against this same chain, compromising
+  440 instances across 395 organizations since 31 August 2026, reaching full domain admin in as little as five
+  minutes via legacy Active Directory escalation paths.
 discovered_at: "2026-08-29T04:09:36Z"
-updated_at: "2026-09-03T05:05:00Z"
+updated_at: "2026-09-10T05:00:00Z"
 event_date: "2026-08-27"
 run_id: 2026-08-29T0409Z-intel
 priority: critical
@@ -28,7 +31,7 @@ tags: [vulnerabilities, zero-day, actively-exploited, pre-auth, rce, no-patch, p
 regions: [global]
 sectors: [public-sector, education, healthcare, finance, telco]
 entities: []
-techniques: [T1190, T1059.007, T1082, T1057, T1070.004, T1219]
+techniques: [T1190, T1059.007, T1082, T1057, T1070.004, T1219, T1003.001, T1003.006, T1550.002, T1136.002, T1078.002]
 affected_products: ["PaperCut NG", "PaperCut MF"]
 cves:
   - id: CVE-2026-81578
@@ -70,6 +73,10 @@ sources:
     publisher: "NCSC-NL advisory NCSC-2026-0334"
     date: "2026-08-28"
     role: corroborating
+  - url: "https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf"
+    publisher: "GreyNoise"
+    date: "2026-09-09"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "PaperCut Software security response team is investigating active exploitation of a vulnerability affecting PaperCut NG and PaperCut MF."
@@ -86,6 +93,10 @@ evidence:
     publisher: "PaperCut Software"
   - quote: "As anticipated there is a second wave of attack on servers that are not fully patched and are publicly available."
     publisher: "PaperCut Software"
+  - quote: "compromise at least 440 instances of PaperCut MF/NG hosted by 395 identified victim organizations in 48 countries"
+    publisher: "GreyNoise"
+  - quote: "GreyNoise observed the adversary achieved domain admin against only 12 victim organizations."
+    publisher: "GreyNoise"
 verification: multi-source
 sourcing_note: >
   PaperCut's own bulletin confirms the vulnerability's existence, active exploitation and the two-CVE structure, but
@@ -106,6 +117,7 @@ watchlist_hit: false
 actions:
   - "Apply PaperCut's Emergency Patch Release 3 (not Release 2, now known-superseded and carrying two regressions of its own) to every PaperCut NG/MF Application Server and Site Server now; for v23 and earlier, immediately restrict the Application Server's web interface to trusted/internal IP addresses only — no patch exists for that line."
   - "Before patching or restarting an internet-facing server, preserve the server/logs directory and process tree; check server.log for the two vendor-documented error strings and for an unexplained gap or truncation, check derby.log for a Derby boot line naming an in-memory database directory ending in \"pwn\", and hunt for a Windows service named \"Remote Access Service\" running SimpleService.exe (SimpleHelp) or an unexpected AnyDesk install — PaperCut's own published incident data names both as an observed post-compromise access method."
+  - "Given GreyNoise's confirmed domain-admin escalation paths, verify no PaperCut Application Server is domain-joined with a privileged service account or hosted on a domain controller, and confirm domain controllers reachable from any PaperCut host are patched against the 2021 noPac flaws (CVE-2021-42278/CVE-2021-42287) — the AI-orchestrated campaign reaches full domain admin via exactly these paths within minutes of initial compromise."
 updates:
   - at: "2026-09-03T05:05:00Z"
     run_id: 2026-09-03T0410Z-intel
@@ -117,6 +129,16 @@ updates:
       still-unpatched, internet-facing servers, and separately published incident data naming a post-compromise
       chain installing a SimpleHelp remote-access service and AnyDesk for durable access.
     fields: [cves, actions, immediate_action, summary, techniques, evidence, sourcing_note, body]
+  - at: "2026-09-10T05:00:00Z"
+    run_id: 2026-09-10T0410Z-intel
+    type: update
+    summary: >
+      GreyNoise documents an AI-agent-orchestrated mass-exploitation campaign against this chain beginning 31
+      August 2026, using hundreds of AI agents to opportunistically compromise 440 PaperCut instances across 395
+      organizations in 48 countries, reaching domain admin against 12 of them in as little as five minutes via
+      LSASS credential harvesting, the 2021 noPac flaws, or a PaperCut host running on the domain controller
+      itself, all finishing with a DCSync-based NTDS.DIT credential dump.
+    fields: [summary, techniques, actions, sources, evidence, body]
 migrated_from: null
 ---
 
@@ -215,3 +237,29 @@ published alongside
 Mobility Print and Print Deploy server components are unaffected; Site Servers and secondary/print servers do need
 the same update as the primary Application Server
 ([PaperCut Software, 2026-09-02](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
+
+## Update — 2026-09-10T05:00:00Z
+
+GreyNoise's Global Observation Grid documents an AI-agent-orchestrated exploitation campaign against this chain
+beginning 31 August 2026, run by a likely Russian-speaking operator already tracked since July 2026 for attacks on
+Palo Alto, Ubiquiti, Citrix, SonicWall and Proxmox VE targets
+([GreyNoise, 2026-09-09](https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf)). The
+operator built and tested both CVEs' exploits in a self-hosted PaperCut/Active Directory lab, sourced target lists
+via the Netlas.io scanning service, then deployed hundreds of AI agents — built on OpenAI's Codex harness paired
+with a DeepSeek model — to opportunistically "compromise at least 440 instances of PaperCut MF/NG hosted by 395
+identified victim organizations in 48 countries"
+([GreyNoise, 2026-09-09](https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf)). GreyNoise
+reports the adversary "went from an empty workspace to first achieving RCE against a real victim in just under
+four hours, first domain admin in an additional two hours, and once the full campaign launched, compromised at
+least 11 organizations in 26 seconds"
+([GreyNoise, 2026-09-09](https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf)), with one
+US high school reaching full domain admin in seven minutes from initial access. Domain admin was ultimately reached
+against only twelve of the 395 compromised organizations — "GreyNoise observed the adversary achieved domain admin
+against only 12 victim organizations"
+([GreyNoise, 2026-09-09](https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf)) — via three
+paths: LSASS credential harvesting for pass-the-hash against the domain controller when the PaperCut host was
+domain-joined; the 2021 noPac flaws (CVE-2021-42278/CVE-2021-42287) where those remained unpatched; or directly
+adding a new account to Domain Admins when the PaperCut host itself ran on the domain controller or under a
+domain-admin service account. All three paths finished with a DCSync-based full NTDS.DIT credential dump; Cloudflare's
+WAF defeated the adversary against at least one targeted instance. This delta is reported by GreyNoise alone; a
+second independent source had not corroborated it as of this update.

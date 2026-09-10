@@ -1,0 +1,211 @@
+domain: S1
+run_id: 2026-09-10T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-10T04:12:51Z
+ended_at: 2026-09-10T04:24:15Z
+duration_seconds: 684
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 11
+  bridge_fetches: 26
+
+items:
+  - title: "CVE-2025-25249 — Fortinet FortiOS/FortiSwitchManager CAPWAP heap overflow added to CISA KEV, tied to a Node.js post-exploitation RAT (PivotC2) after months of undisclosed active exploitation"
+    sources:
+      - { url: "https://socradar.io/blog/cve-2025-25249-pivotc2-fortigate-rat", publisher: "SOCRadar (STRU)", date: "2026-09-08", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/09/09/cisa-adds-four-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-09-09", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-mj8x-m8f5-x4w8", publisher: "GitHub Advisory Database", date: "2026-09-09", role: "corroborating" }
+      - { url: "https://www.sentinelone.com/vulnerability-database/cve-2025-25249/", publisher: "SentinelOne", date: "2026-01-13", role: "corroborating" }
+    discovery_trace: "first seen at: kev-window mechanical sweep (work/2026-09-10T0410Z-intel/kev-window.txt) → primary: CISA KEV catalog, URL https://www.cisa.gov/news-events/alerts/2026/09/09/cisa-adds-four-known-exploited-vulnerabilities-catalog → pivot: GitHub Advisory Database, URL https://github.com/advisories/GHSA-mj8x-m8f5-x4w8 (References section names SOCRadar write-up) → primary: SOCRadar Threat Research Unit, URL https://socradar.io/blog/cve-2025-25249-pivotc2-fortigate-rat. Fortinet's own PSIRT advisory (fortiguard.fortinet.com/psirt/FG-IR-25-084) was attempted three times across three transports (direct, trafilatura, jina) and returned only an anti-bot challenge each time — logged as a fetch failure; version/patch data below is corroborated instead via SentinelOne's vulnerability-database entry and SOCRadar's own citation of the same advisory."
+    summary: |
+      CISA added CVE-2025-25249 to its KEV catalog on 2026-09-09: a heap-based buffer overflow (CWE-122/CWE-787) in the cw_acd CAPWAP daemon that FortiOS and FortiSwitchManager use to manage wireless access points, listening unauthenticated on UDP 5246. SOCRadar's Threat Research Unit (STRU) reports, with high confidence, that a likely Russian-speaking financially motivated cybercrime operator has exploited it since at least July 2026, targeting over 30,000 FortiGate IP addresses and infecting 178 devices. The exploit binary (fortirun.bin, a self-extracting Linux x86-64 ELF bundling a CPython runtime) fingerprints the target's CAPWAP Discovery Response to leak live image_base/data_rw memory pointers and defeat ASLR, matches the reported hw_rev/sw_ver against a hardcoded table of 13 FortiGate models and 2 FortiAP models on FortiOS 7.4.0-7.4.8, grooms the daemon's free_list_mp2 heap-chunk pool with crafted CAPWAP Add Station messages, then overflows it with a CAPWAP Image Data message to redirect execution via an ARM64 br x16 ROP gadget into execvp. Successful exploitation drops PivotC2, an AI-assisted Node.js RAT purpose-built for FortiGate post-exploitation: it maintains a persistent outbound TLS connection using an SSH-like multiplexed channel protocol, supports interactive shells, SOCKS5/HTTP proxy tunneling, port forwarding, CIDR port scanning, and — via an "auto-mode" flag — fully autonomous harvesting of FortiGate configuration files and AES-128-GCM/AES-256-CBC-encrypted credential stores (VPN PSKs, SSL-VPN and LDAP bind credentials, admin accounts) using a device-specific key pulled from /data/etc/fsv_sync.dat. In two confirmed US intrusions the operators pivoted further with ldapdomaindump, russh reverse-SSH relays, SoftPerfect Network Scanner, RDP-enablement registry edits (fDenyTSConnections/DisableRestrictedAdmin) for pass-the-hash, browser-credential/DPAPI extraction, run.ps1-driven XOR-decoded shellcode injected into svchost.exe, and exfiltration of Exchange .pst files to attacker-controlled Wasabi S3 buckets. Affected: FortiOS 7.6.0-7.6.3, 7.4.0-7.4.8, 7.2.0-7.2.11, 7.0.0-7.0.17, 6.4 (all versions); FortiSwitchManager 7.2.0-7.2.6 and 7.0.0-7.0.5; FortiSASE 25.1.a.2 and 25.2.b are also listed as affected with no patched build confirmed by any source reached this run. Fixed in FortiOS 7.6.4/7.4.9/7.2.12/7.0.18 and FortiSwitchManager 7.2.7/7.0.6. CVSS base is 8.1 (NVD/GHSA, CVSS 3.1, AV:N/AC:H/PR:N/UI:N); ENISA's EUVD mirrors NVD's temporally-adjusted score of 7.4 (E:P/RL:W/RC:C — exploit maturity Proof-of-Concept, workaround available, confirmed report); SOCRadar's write-up separately states "Critical – CVSSv3: 9.8 as per NVD", which does not match either published vector and is flagged here as an unresolved discrepancy rather than silently averaged.
+    region_nexus: "global; FortiGate is a heavily deployed perimeter device in Swiss public-sector and critical-infrastructure networks"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2025-25249]
+    techniques: [T1190, T1071.001, T1090, T1046, T1552.001, T1555, T1021.001, T1055, T1567.002]
+    affected_products: ["Fortinet FortiOS", "Fortinet FortiSwitchManager", "Fortinet FortiSASE"]
+    entity_keys: ["product:fortinet-fortios"]
+    new_entities:
+      - { key: "malware:pivotc2", type: malware, name: "PivotC2", aliases: [],
+          summary: "Node.js post-exploitation RAT purpose-built for compromised FortiGate firewalls, delivered via CVE-2025-25249 exploitation; supports interactive shells, SOCKS5/HTTP tunneling, port scanning and FortiGate configuration/credential harvesting (SOCRadar STRU, 2026-09-08)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The SOCRadar Threat Research Unit (STRU) identified, with high confidence, exploitation of CVE-2025-25249, a heap-based buffer overflow vulnerability in FortiOS and FortiSwitchManager cw_acd daemon."
+        attribution: "SOCRadar (STRU)"
+        source_url: "https://socradar.io/blog/cve-2025-25249-pivotc2-fortigate-rat"
+      - quote: "Active exploitation has been observed since at least July 2026 and is still ongoing."
+        attribution: "SOCRadar (STRU)"
+        source_url: "https://socradar.io/blog/cve-2025-25249-pivotc2-fortigate-rat"
+      - quote: "the actors highly likely leveraged AI to develop the RAT"
+        attribution: "SOCRadar (STRU)"
+        source_url: "https://socradar.io/blog/cve-2025-25249-pivotc2-fortigate-rat"
+    extended_notes: |
+      CISA's due date for this KEV entry is 2026-09-12 (3-day BOD 26-04 window with Forensics Triage Requirements flagged "Yes"). Fortinet's own PSIRT page (FG-IR-25-084) could not be fetched in this run despite three attempted transports — flagged as a fetch failure below; a future run should retry it directly for the authoritative fixed-version table, since SOCRadar's mitigation section is currently the only source for the FortiOS/FortiSwitchManager patched builds cited above.
+
+  - title: "CVE-2026-87491 — Google Chromium V8 out-of-bounds write, exploited in the wild, patched in Chrome 153 (seventh exploited Chrome zero-day of 2026)"
+    sources:
+      - { url: "https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_0808145027.html", publisher: "Google Chrome Releases (vendor blog)", date: "2026-09-08", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/09/09/google-chrome-cve-2026-87491-zero-day-flaw/", publisher: "Help Net Security", date: "2026-09-09", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/09/chrome-v8-zero-day-exploited-in-wild.html", publisher: "The Hacker News", date: "2026-09-09", role: "corroborating" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1139/", publisher: "CERT-FR / ANSSI", date: "2026-09-09", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/2026/ncsc-2026-0354.html", publisher: "NCSC-NL", date: "2026-09-09", role: "corroborating" }
+    discovery_trace: "first seen at: kev-window mechanical sweep (work/2026-09-10T0410Z-intel/kev-window.txt) → primary: CISA KEV catalog notes field, URL https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_0808145027.html → corroborating: Help Net Security, URL https://www.helpnetsecurity.com/2026/09/09/google-chrome-cve-2026-87491-zero-day-flaw/ → corroborating: The Hacker News, URL https://thehackernews.com/2026/09/chrome-v8-zero-day-exploited-in-wild.html → corroborating: CERT-FR advisory CERTFR-2026-AVI-1139 and NCSC-NL advisory NCSC-2026-0354, both fetched independently via the essential-source sweep."
+    summary: |
+      Google's Chrome 153 stable release (2026-09-08, versions 153.0.8010.36/.37 Windows/Mac, 153.0.8010.36 Linux) fixes 230 security bugs, one of which — CVE-2026-87491, an out-of-bounds write in V8 (Chrome's JavaScript/WebAssembly engine) — Google states has an exploit in the wild: "Out-of-bounds write in V8 in Google Chrome prior to 153.0.8010.36 allowed a remote attacker to execute arbitrary code inside the sandbox via a crafted HTML page." Google rates the bug's internal Chromium severity as Medium (reported by Jihyeon Jeong, Compsec Lab, Seoul National University, on 2026-08-06 for a $2,500 bounty), but ENISA's EUVD records a CVSS 3.1 base score of 8.8 (AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H) — user interaction (visiting/being served a crafted page) is required, but no authentication or special access. Google has disclosed no detail on the exploitation vector, victims, or actor, consistent with its standard practice of withholding bug detail until a majority of users have updated. This is the seventh Chrome zero-day Google has confirmed under active exploitation in 2026 (after CVE-2026-2441, CVE-2026-3909/CVE-2026-3910, CVE-2026-5281, CVE-2026-11645 and CVE-2026-85046 — the last of which the store already tracks from last week). Every Chromium-based browser (Edge, Brave, Opera, Vivaldi) inherits the same V8 engine and needs the equivalent update.
+    region_nexus: "global; every Chromium-derived browser in the Swiss public-sector endpoint fleet is affected"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-87491]
+    techniques: [T1203]
+    affected_products: ["Google Chrome", "Microsoft Edge", "Chromium"]
+    entity_keys: ["product:google-chrome"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Google is aware that an exploit for CVE-2026-87491 exists in the wild."
+        attribution: "Google (Chrome Releases blog, via Help Net Security)"
+        source_url: "https://www.helpnetsecurity.com/2026/09/09/google-chrome-cve-2026-87491-zero-day-flaw/"
+      - quote: "Out-of-bounds write in V8 in Google Chrome prior to 153.0.8010.36 allowed a remote attacker to execute arbitrary code inside the sandbox via a crafted HTML page."
+        attribution: "NVD (quoted by The Hacker News)"
+        source_url: "https://thehackernews.com/2026/09/chrome-v8-zero-day-exploited-in-wild.html"
+      - quote: "Google meldt dat de kwetsbaarheid met kenmerk CVE-2026-87491 actief wordt misbruikt."
+        attribution: "NCSC-NL (advisory NCSC-2026-0354)"
+        source_url: "https://advisories.ncsc.nl/2026/ncsc-2026-0354.html"
+    extended_notes: |
+      NCSC-NL, CERT-FR and CISA (KEV due date 2026-09-23) all independently flagged the same CVE within hours of Google's release, indicating fast Europe-wide dissemination. No named threat actor or campaign has been attributed by any source reached this run.
+
+  - title: "SAP September 2026 Patch Day: OVERPASS (CVE-2026-44756, CVSS 10.0) and S4GET (CVE-2026-58240, CVSS 9.8) — two unauthenticated pre-auth RCE chains in shared SAP kernel components, reachable through ports that cannot be firewalled without breaking normal SAP GUI/RFC use"
+    sources:
+      - { url: "https://cert.europa.eu/publications/security-advisories/2026-011/", publisher: "CERT-EU", date: "2026-09-09", role: "primary" }
+      - { url: "https://onapsis.com/blog/sap-overpass-remediation/", publisher: "Onapsis Research Labs", date: "2026-09-09", role: "primary" }
+      - { url: "https://onapsis.com/blog/s4get-cve-2026-58240-sap-message-server-threat-advisory/", publisher: "Onapsis Research Labs", date: "2026-09-09", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/sap-warns-of-maximum-severity-overpass-kernel-vulnerability/", publisher: "BleepingComputer", date: "2026-09-08", role: "corroborating" }
+    discovery_trace: "first seen at: cert-eu (essential-source sweep), URL https://cert.europa.eu/publications/security-advisories/2026-011/ → primary: Onapsis Research Labs (OVERPASS), URL https://onapsis.com/blog/sap-overpass-remediation/ → primary: Onapsis Research Labs (S4GET), URL https://onapsis.com/blog/s4get-cve-2026-58240-sap-message-server-threat-advisory/ → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/sap-warns-of-maximum-severity-overpass-kernel-vulnerability/. Independently confirmed at NCSC-CH Security Hub, URL https://security-hub.ncsc.admin.ch/#/posts/12926."
+    summary: |
+      SAP's 8 September 2026 Security Patch Day fixed CVE-2026-44756 ("OVERPASS", CVSS 10.0) and CVE-2026-58240 ("S4GET", CVSS 9.8), both discovered and responsibly disclosed by Onapsis Research Labs, both remotely exploitable pre-authentication, and both reachable through access paths that cannot be closed by network segmentation alone. OVERPASS is a memory corruption (classic buffer overflow, CWE-120) in the SAP kernel's processing of the Extended Passport (EPP) — a tracing structure SAP attaches to requests that is parsed before any session authentication occurs. Because EPP handling is shared kernel code, the flaw is reachable via three independent, all-unauthenticated routes: the Internet Communication Manager/Web Dispatcher (HTTP/HTTPS web tier — Fiori, WebGUI, APIs), the SAP Dispatcher (the SAP GUI logon protocol every classic client uses), and RFC connections between SAP systems. A single crafted EPP header can corrupt memory to yield arbitrary OS command execution as the account that owns the SAP installation. Onapsis's own Internet-wide fingerprinting found more than 10,000 unique Internet-facing IPs presenting an SAP web interface — a conservative count that structurally undercounts the SAP Web Dispatcher, which returns no distinguishing banner. Affected: SAP kernel releases KRNL64NUC/KRNL64UC 7.22 (+7.22EXT)/7.53/8.04, KERNEL 7.22/7.53/7.54/7.77/7.89/7.93/8.04/9.16/9.18/9.19/9.20, WEBDISP 9.16/9.18/9.19/9.20 — i.e., effectively every SAP NetWeaver-kernel-based product line (S/4HANA, ECC/Business Suite, NetWeaver AS ABAP, Web Dispatcher, BW/4HANA, Enterprise Portal, PI/PO, Solution Manager). Fixed via SAP Security Note 3747649 (a single kernel patch closes all three routes); an HTTP-only interim workaround is documented in Note 3756304. S4GET is a distinct logic flaw (not a misconfiguration) in the SAP NetWeaver Message Server (component BC-CST-MS, kernel lines 9.16/9.18/9.19/9.20 — native to SAP ABAP Platform 2025/S/4HANA 2025) that lets an unauthenticated network attacker send a crafted packet to the Message Server's public port (36NN — the same port every SAP GUI client connects to) to have an arbitrary IP address accepted as a trusted internal node; the Message Server propagates that false trust to every application server in the cluster, and the attacker then registers with the Gateway as internal and invokes RFC-callable external programs to reach code execution as <sid>adm on every application server. Because the flaw operates on the Gateway's trust-membership decision rather than its ACLs, the standard secinfo/reginfo/ms/acl_info hardening does not intercept it. Fixed in kernel patch levels 9.16 PL100 / 9.18 PL32 / 9.19 PL17 / 9.20 PL7 (SAP Security Note 3759472). Onapsis states it has not observed active in-the-wild exploitation of either flaw as of publication, but frames both against CVE-2025-31324 (Mandiant's 2026 M-Trends names it the most exploited vulnerability of 2025) and the 2019 10KBLAZE Message Server exploit chain as the closest historical analogues, and notes SAP patches have historically been reverse-engineered into working exploits within 72 hours.
+    region_nexus: "global; SAP ERP/NetWeaver is widely deployed across Swiss federal, cantonal and public-institution back-office and finance systems"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-44756, CVE-2026-58240]
+    techniques: [T1190, T1210]
+    affected_products: ["SAP NetWeaver Application Server ABAP", "SAP S/4HANA", "SAP Kernel", "SAP NetWeaver Message Server", "SAP Web Dispatcher", "SAP ERP / Business Suite (ECC)", "SAP BW/4HANA", "SAP Enterprise Portal", "SAP PI/PO", "SAP Solution Manager"]
+    entity_keys: ["product:sap-netweaver-application-server-abap", "product:sap-abap-platform"]
+    new_entities:
+      - { key: "vuln:overpass-sap-epp-2026", type: campaign, name: "OVERPASS (CVE-2026-44756)", aliases: [],
+          summary: "Onapsis Research Labs' name for a CVSS 10.0 pre-auth memory-corruption flaw in SAP kernel Extended Passport (EPP) processing, disclosed at SAP's September 2026 Patch Day (Onapsis, 2026-09-09)." }
+      - { key: "vuln:s4get-sap-message-server-2026", type: campaign, name: "S4GET (CVE-2026-58240)", aliases: [],
+          summary: "Onapsis Research Labs' name for a CVSS 9.8 pre-auth missing-authentication flaw in the SAP NetWeaver Message Server letting an attacker fraudulently join the internal trust cluster, disclosed at SAP's September 2026 Patch Day (Onapsis, 2026-09-09)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Both are remotely exploitable without authentication. According to the reporting researchers, successful exploitation of either can result in arbitrary operating system command execution under the account that owns the SAP installation"
+        attribution: "CERT-EU (advisory 2026-011)"
+        source_url: "https://cert.europa.eu/publications/security-advisories/2026-011/"
+      - quote: "A targeted search using high-fidelity fingerprints identifies more than 10,000 unique Internet-facing IP addresses presenting an SAP web interface reachable from the public Internet, and that figure is conservative."
+        attribution: "Onapsis Research Labs (JP Perez-Etchegoyen)"
+        source_url: "https://onapsis.com/blog/sap-overpass-remediation/"
+      - quote: "Exploitation requires no credentials, no certificate, and no pre-existing misconfiguration. A successful attack yields full remote code execution as <sid>adm, the OS-level user that runs SAP, on every application server in the cluster."
+        attribution: "Onapsis Research Labs (Pablo Artuso)"
+        source_url: "https://onapsis.com/blog/s4get-cve-2026-58240-sap-message-server-threat-advisory/"
+    extended_notes: |
+      Onapsis frames S4GET explicitly against the 2019 10KBLAZE Message Server exploit: 10KBLAZE abused a permissive ACL on the Message Server's internal port (39NN, rarely reachable); S4GET is a genuine vulnerability reachable on the public port (36NN) every SAP GUI user needs, making internal-network reachability the norm rather than the exception. Neither flaw is yet KEV-listed or confirmed exploited; this item is included at high priority under PD-11 because of the maximum/near-maximum severity, pre-auth reachability, and the breadth of SAP deployment across public-sector back-office systems — not because of confirmed in-the-wild activity.
+
+  - title: "Check Point Quantum Security Gateway / Management Server / Spark Firewall: two unauthenticated CVSS 9.8 pre-auth RCE flaws in VPN certificate processing (CVE-2026-85103 heap overflow, CVE-2026-85102 improper cert validation)"
+    sources:
+      - { url: "https://support.checkpoint.com/results/sk/sk1000118/", publisher: "Check Point (vendor advisory sk1000118)", date: "2026-09-07", role: "primary" }
+      - { url: "https://support.checkpoint.com/results/sk/sk1000117/", publisher: "Check Point (vendor advisory sk1000117)", date: "2026-09-07", role: "primary" }
+      - { url: "https://forkast.news/check-point-quantum-vpn-drops-two-cvss-9-8-cves-in-the-same-certificate-path-vpn-infrastructure-joins-the-auth-gap/", publisher: "Forkast News", date: "2026-09-09", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub (essential-source sweep), URL https://security-hub.ncsc.admin.ch/#/posts/12927 → primary: Check Point vendor advisory, URL https://support.checkpoint.com/results/sk/sk1000118/ and https://support.checkpoint.com/results/sk/sk1000117/ → corroborating: Forkast News, URL https://forkast.news/check-point-quantum-vpn-drops-two-cvss-9-8-cves-in-the-same-certificate-path-vpn-infrastructure-joins-the-auth-gap/"
+    summary: |
+      Check Point published two Critical-severity advisories (last modified 2026-09-09) for its VPN certificate-handling code. CVE-2026-85103 (CVSS 9.8) is a heap overflow in the VPN certificate ASN.1 decoding flow, reachable against both the Security Gateway and the Security Management Server; CVE-2026-85102 (CVSS 9.8, CWE-295 improper certificate validation) is an authentication-bypass-to-RCE in Remote Access and Site-to-Site VPN negotiation, reachable against the Security Gateway and Spark Firewall. Both are triggered during VPN certificate processing before authentication completes, and both were discovered internally by Check Point (no external researcher credited, no reports of active exploitation as of 2026-09-09). Affected: R81.20, R82, R82.10, and the End-of-Support R80/R80.10/R80.20/R80.30/R80.40/R81/R81.10 lines and their .x builds; R82.20 is confirmed not affected. Fix is delivered via Check Point LivePatch Take 24 (automatic if enabled) or Jumbo Hotfix Accumulator (R82.10 Take 44+, R82 Take 126+, R81.20 Take 166+), plus dedicated Spark Firewall builds (R82.00.10 Build 2325+, R81.10.17 Build 4968+). No workaround exists for the locally-managed Spark Firewall; for Site-to-Site VPN, Check Point's only interim mitigation is disabling implied VPN rules and manually restricting UDP/500 and UDP/4500 to specific peer IPs — not applicable to Remote Access VPN, which remains exposed until patched.
+    region_nexus: "global; VPN gateways are common internet-facing infrastructure in government and public-sector remote-access deployments"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-85103, CVE-2026-85102]
+    techniques: [T1190]
+    affected_products: ["Check Point Security Gateway", "Check Point Security Management Server", "Check Point Spark Firewall"]
+    entity_keys: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A heap overflow in the VPN certificate ASN.1 decoding flow may allow a remote attacker to remotely execute arbitrary code on the management and Security Gateway."
+        attribution: "Check Point (advisory sk1000118)"
+        source_url: "https://support.checkpoint.com/results/sk/sk1000118/"
+      - quote: "Improper validation of certificate data during VPN negotiation may allow an unauthenticated remote attacker to execute arbitrary code on the Security Gateway."
+        attribution: "Check Point (advisory sk1000117)"
+        source_url: "https://support.checkpoint.com/results/sk/sk1000117/"
+      - quote: "Both vulnerabilities were discovered internally by Check Point, and there are no reports of active exploitation as of September 9, 2026."
+        attribution: "Forkast News"
+        source_url: "https://forkast.news/check-point-quantum-vpn-drops-two-cvss-9-8-cves-in-the-same-certificate-path-vpn-infrastructure-joins-the-auth-gap/"
+    extended_notes: |
+      Distinct from the June 2026 CVE-2026-50751 IKEv1 key-exchange flaw already on CISA KEV (per Forkast News) — this is a separate certificate-validation/decoding defect. Not yet KEV-listed; included at high priority under PD-11 for pre-auth CVSS 9.8 reachability on widely deployed perimeter VPN infrastructure, not for confirmed exploitation.
+
+  - title: "UPDATE CANDIDATE — PaperCut NG/MF (CVE-2026-81578 / CVE-2026-82078): GreyNoise documents an AI-agent-orchestrated exploitation campaign compromising 440 instances across 395 organizations in 48 countries, with domain-admin reached in as little as 5 minutes"
+    sources:
+      - { url: "https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf", publisher: "GreyNoise", date: "2026-09-09", role: "primary" }
+    discovery_trace: "first seen at: greynoise (rotation-tier source sweep), URL https://www.greynoise.io/blog (listing) → primary: GreyNoise, URL https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf"
+    summary: |
+      This is a material new development on the entry already covering CVE-2026-81578/CVE-2026-82078 (2026-08-29/papercut-ng-mf-tapestry-request-confusion-preauth-rce), not a new finding. GreyNoise's Global Observation Grid attributes a campaign starting 31 August 2026 to a likely Russian-speaking malicious cyber actor operating from IP 45.142.193.132 (previously tracked since July 2026 against Palo Alto, Ubiquiti, Citrix, SonicWall and Proxmox VE targets). The actor built exploits for both PaperCut CVEs in a self-hosted lab (PaperCut + Active Directory), sourced target lists via the Netlas.io internet-scanning service using a compromised/identified API key, then deployed hundreds of AI agents — built on OpenAI's Codex harness paired with a DeepSeek model (explicitly not an OpenAI model) — to opportunistically exploit at least 440 PaperCut MF/NG instances across 395 identified victim organizations in 48 countries (education-sector-heavy in the US, likely reflecting PaperCut's customer base). GreyNoise's timing data: RCE against a first real victim in under four hours from an empty workspace, first domain admin two hours after that, and once the automated campaign launched fully, at least 11 organizations compromised in 26 seconds; one US high school went from initial access to full domain admin in seven minutes. Domain admin was ultimately achieved against only 12 of the 440 compromised instances (successful escalations ranged 5-144 minutes) — the agents' fastest, most spectacular results were not representative of overall campaign success, and Cloudflare's WAF defeated the adversary against at least one targeted-but-vulnerable instance. Three attack paths reached domain admin: (A) LSASS memory/registry-secret credential harvesting for pass-the-hash against the domain controller when the PaperCut host was domain-joined; (B) a noPac attack (CVE-2021-42278/CVE-2021-42287) where those legacy AD flaws remained unpatched; (C) directly adding a newly created account to Domain Admins when the PaperCut host ran on the domain controller or as a domain-admin service account. All three paths finished with a DCSync-based full NTDS.DIT credential dump. The agents were instructed to avoid targeting 28 named countries (Russia, China, Iran, and 25 others) but GreyNoise observed the restraint fail in some instances. GreyNoise states it is unclear whether this actor intends direct follow-on exploitation (data theft, ransomware) or access-brokering to affiliated actors, and notes past PaperCut intrusions have led to extortion.
+    region_nexus: "global; opportunistic scanning-driven campaign, PaperCut is deployed in public-sector print-management environments"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-81578, CVE-2026-82078]
+    techniques: [T1190, T1003.001, T1003.006, T1550.002, T1136.002, T1078.002]
+    affected_products: ["PaperCut NG", "PaperCut MF"]
+    entity_keys: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-29/papercut-ng-mf-tapestry-request-confusion-preauth-rce"
+    evidence:
+      - quote: "compromised at least 440 instances of PaperCut MF/NG hosted by 395 identified victim organizations in 48 countries"
+        attribution: "GreyNoise"
+        source_url: "https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf"
+      - quote: "the adversary went from an empty workspace to first achieving RCE against a real victim in just under four hours, first domain admin in an additional two hours, and once the full campaign launched, compromised at least 11 organizations in 26 seconds"
+        attribution: "GreyNoise"
+        source_url: "https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf"
+      - quote: "GreyNoise observed the adversary achieved domain admin against only 12 victim organizations."
+        attribution: "GreyNoise"
+        source_url: "https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf"
+    extended_notes: |
+      Single-source (GreyNoise only reached this run; Palo Alto Unit42 has a related "Chinese-Speaking Threat Actor Harnesses AI Models" piece surfaced in search results but not fetched/verified this run — worth checking for overlap or a distinct cluster in a follow-up). Confidence marked MEDIUM pending a second independent source. This should be composed as a changelog update on the existing PaperCut entry, not a new entry, per PD-8/dedup rules.
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Product watchlist is empty per config/org-profile.yaml (none configured) — sweep is a documented no-op per spawn instructions. General coverage rules applied unchanged; no watchlist-driven inclusions in this run."
+
+cve_table:
+  - { cve: "CVE-2025-25249", product: "Fortinet FortiOS / FortiSwitchManager", cvss: "8.1 (NVD/GHSA base; ENISA EUVD temporal 7.4; SOCRadar states 9.8 — unresolved discrepancy)", epss: "0.76 (EUVD, 2026-09-10)", kev: "Added 2026-09-09, due 2026-09-12", exploited: "Yes — active since at least July 2026 (SOCRadar STRU), PivotC2 RAT", patch: "FortiOS 7.6.4/7.4.9/7.2.12/7.0.18; FortiSwitchManager 7.2.7/7.0.6", source: "https://socradar.io/blog/cve-2025-25249-pivotc2-fortigate-rat" }
+  - { cve: "CVE-2026-87491", product: "Google Chromium V8 (Chrome/Edge/Chromium browsers)", cvss: "8.8 (EUVD/NVD CVSS 3.1)", epss: "0.29 (EUVD, 2026-09-10)", kev: "Added 2026-09-09, due 2026-09-23", exploited: "Yes — Google confirms exploit exists in the wild", patch: "Chrome 153.0.8010.36/.37 (Win/Mac), 153.0.8010.36 (Linux)", source: "https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_0808145027.html" }
+  - { cve: "CVE-2026-44756", product: "SAP Kernel (NetWeaver AS ABAP, S/4HANA, ECC, Web Dispatcher, BW/4HANA and other kernel-based products)", cvss: "10.0", epss: "not published by sources reached this run", kev: "Not listed", exploited: "No confirmed ITW exploitation as of 2026-09-09 (Onapsis)", patch: "SAP Security Note 3747649 (kernel patch); interim HTTP-only workaround in Note 3756304", source: "https://onapsis.com/blog/sap-overpass-remediation/" }
+  - { cve: "CVE-2026-58240", product: "SAP NetWeaver Message Server (kernel 9.16/9.18/9.19/9.20)", cvss: "9.8", epss: "not published by sources reached this run", kev: "Not listed", exploited: "No confirmed ITW exploitation as of 2026-09-09 (Onapsis)", patch: "SAP Security Note 3759472 — kernel PL 9.16/100, 9.18/32, 9.19/17, 9.20/7", source: "https://onapsis.com/blog/s4get-cve-2026-58240-sap-message-server-threat-advisory/" }
+  - { cve: "CVE-2026-85103", product: "Check Point Security Gateway / Security Management Server", cvss: "9.8", epss: "not published by sources reached this run", kev: "Not listed", exploited: "No reports of active exploitation as of 2026-09-09 (vendor)", patch: "LivePatch Take 24 / Jumbo HFA (R82.10 Take 44+, R82 Take 126+, R81.20 Take 166+)", source: "https://support.checkpoint.com/results/sk/sk1000118/" }
+  - { cve: "CVE-2026-85102", product: "Check Point Security Gateway / Spark Firewall", cvss: "9.8", epss: "not published by sources reached this run", kev: "Not listed", exploited: "No reports of active exploitation as of 2026-09-09 (vendor)", patch: "LivePatch Take 24 / Jumbo HFA; Spark Firewall R82.00.10 Build 2325+ / R81.10.17 Build 4968+", source: "https://support.checkpoint.com/results/sk/sk1000117/" }
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "rotation_priority retried with a fresh transport ladder this run: homepage (https://ssd-disclosure.com/) now resolves via jina reader fallback (prior runs reported total failure), but it is marketing content with no advisory listing. The actual listing page https://ssd-disclosure.com/advisories/ still returns a Cloudflare 'Robot Challenge Screen' (CAPTCHA) via both direct and jina transports. Recipe should be updated to note the homepage is reachable (jina) but the advisories index is not; individual advisory permalinks (discovered via WebSearch, e.g. https://ssd-disclosure.com/unisoc-t612-rce/) may still be worth spot-checking in future runs even though the index itself is blocked."
+  - source_id: tp-link-omada-psirt
+    reason: "https://support.omadanetworks.com/us/security-advisory/ now 404s (Nuxt app 'page404' response) — the URL in sources.json appears to have moved or been retired; needs a fresh URL for the recipe."
+  - source_id: ccb-belgium
+    reason: "https://ccb.belgium.be/advisories returned full page HTML (Drupal) but no advisory list surfaced within the fetched portion; not confirmed empty vs. just not extracted — flagging rather than asserting no in-window content."
+  - source_id: fortiguard-fortinet-psirt (ad hoc, not in source_allocation slice)
+    reason: "https://fortiguard.fortinet.com/psirt/FG-IR-25-084 blocked on all three transports (direct anti-bot challenge, trafilatura no readable body, jina reader relayed an upstream block) for CVE-2025-25249's own vendor advisory. Worked around via GHSA/SentinelOne/SOCRadar citations of the same document; the authoritative Fortinet-stated fixed-version table for this CVE should be re-verified against the vendor page directly when it becomes reachable."
+
+# VMware coverage-backlog check (state/coverage_backlog.md row on VMSA-2026-0007 / CVE-2026-59346):
+# No new exploitation signal found. CISA KEV catalog (fetched fresh this run) carries no CVE-2026-59346 or
+# CVE-2026-59347 entry. WebSearch corroborates: as of publication there is no public evidence of KEV listing
+# or active-exploitation reporting for either VMSA-2026-0007 CVE, and no ESXi-reaching variant is described —
+# affected products remain scoped to VMware Workstation 25H2/26H1 and VMware Fusion 25H2/26H1 on host OS,
+# fixed in 26H1u1. No action taken; row not re-opened per instructions.

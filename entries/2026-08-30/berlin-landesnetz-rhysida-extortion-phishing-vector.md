@@ -13,7 +13,7 @@ summary: >
   before detection; Berlin's government has publicly refused the roughly EUR 2 million ransom
   demand.
 discovered_at: "2026-08-30T04:35:00Z"
-updated_at: "2026-09-08T04:49:00Z"
+updated_at: "2026-09-10T05:05:00Z"
 event_date: "2026-08-28"
 run_id: 2026-08-30T0410Z-intel
 priority: high
@@ -78,6 +78,10 @@ sources:
     publisher: "heise online (Nico Ernst)"
     date: "2026-09-07"
     role: corroborating
+  - url: "https://www.heise.de/news/Gefahr-fuer-die-nationale-Sicherheit-Berliner-Datenleck-schlaegt-hohe-Wellen-11444301.html"
+    publisher: "heise online (Stefan Krempl)"
+    date: "2026-09-07"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "The attackers apparently gained access to the Landesnetz through an employee's click on a phishing email."
@@ -138,6 +142,18 @@ evidence:
     original: "Die Ransomware und Leak-Seite Rhysida wird der finanziell motivierten Gruppe Vice Spider (aka Vice Society, WhiteNefas, White Hekate, DEV-0832, Vanilla Tempest) zugeordnet."
     publisher: "BSI (Bundesamt für Sicherheit in der Informationstechnik) — BITS-2026-287419-1032, v1.0"
     source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile"
+  - quote: "This data leak is of grave scope and endangers our national security."
+    original: "Dieser Datenabfluss ist von gravierendem Ausmaß und gefährdet unsere nationale Sicherheit"
+    publisher: "Roderich Kiesewetter (CDU defense-policy spokesperson), via Süddeutsche Zeitung, relayed by heise online"
+    source_url: "https://www.heise.de/news/Gefahr-fuer-die-nationale-Sicherheit-Berliner-Datenleck-schlaegt-hohe-Wellen-11444301.html"
+  - quote: "In an internal letter, he cites concerns, according to rbb, about near-unlimited data access, possible disruption to specialised administrative applications, and remaining monitoring risks for staff."
+    original: "In einem internen Schreiben verweist er laut dem rbb auf Bedenken rund um einen nahezu unbegrenzten Datenzugriff, mögliche Störungen von Fachverfahren sowie verbleibende Überwachungsrisiken für die Dienstkräfte."
+    publisher: "heise online, citing rbb24, on the Lichtenberg district's refusal to deploy CrowdStrike Falcon Agent"
+    source_url: "https://www.heise.de/news/Gefahr-fuer-die-nationale-Sicherheit-Berliner-Datenleck-schlaegt-hohe-Wellen-11444301.html"
+  - quote: "Berlin's data protection commissioner Meike Kamp and the security agencies advise those potentially affected to exercise increased vigilance. They recommend changing passwords, closely monitoring account activity, and increased scepticism toward phishing emails."
+    original: "Die Berliner Datenschutzbeauftragte Meike Kamp sowie die Sicherheitsbehörden raten potenziell Betroffenen zu erhöhter Wachsamkeit. Sie empfehlen das Ändern von Passwörtern, die genaue Kontrolle von Kontoaktivitäten und erhöhte Skepsis gegenüber Phishing-E-Mails."
+    publisher: "heise online, citing Berlin's Data Protection Commissioner Meike Kamp"
+    source_url: "https://www.heise.de/news/Gefahr-fuer-die-nationale-Sicherheit-Berliner-Datenleck-schlaegt-hohe-Wellen-11444301.html"
 verification: multi-source
 sourcing_note: >
   The original phishing access vector and the Rhysida attribution were sourced only to
@@ -222,6 +238,18 @@ updates:
       group. Confidence moves from medium to high on the strength of this national-CERT technical
       confirmation.
     fields: [updated_at, entities, techniques, sources, evidence, sourcing_note, confidence, classification, body]
+  - at: "2026-09-10T05:05:00Z"
+    run_id: 2026-09-10T0410Z-intel
+    type: update
+    summary: >
+      The leak's national-security framing sharpens: a CDU defense-policy spokesperson states the
+      published dataset includes civil-defense/total-defense emergency plans and barracks
+      documents alongside the critical-infrastructure material already recorded, prompting the
+      Bundeswehr's own operational command to join BSI's review. Separately, the Berlin district of
+      Lichtenberg has refused to deploy CrowdStrike's Falcon Agent on its own servers over
+      data-access and monitoring concerns, and Berlin's data protection commissioner has issued
+      concrete victim guidance.
+    fields: [sources, evidence, body]
 migrated_from: null
 ---
 
@@ -258,3 +286,9 @@ The same 2026-09-06 report adds a fourth account of the date sequence: its own r
 ## Update — 2026-09-08T04:49:00Z
 
 Germany's BSI published an advisory on 2026-09-04 describing the compromise of an anonymized "state institution" whose technique matches the multi-stage TerminalFix campaign Microsoft documented on 2026-08-28 — the advisory itself never names Berlin ([BSI, BITS-2026-287419-1032, 2026-09-04](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile)). The same day, BSI posted on its official Mastodon account that it was intensively involved in handling the Berlin incident and separately linked to its detailed TerminalFix security notice; heise reports that juxtaposition as confirmation that TerminalFix is specifically the attack vector the Rhysida operators used against Berlin's two affected Senate administrations ([heise online, citing BSI, 2026-09-07](https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html)) — the first technical confirmation, reported by heise, of both the access vector and the attribution this entry had previously carried only from investigative journalism. BSI attributes the Rhysida ransomware and leak site to a financially motivated group it tracks as Vice Spider, cross-referenced against the aliases Vice Society, WhiteNefas, White Hekate, DEV-0832 and Vanilla Tempest, active since at least mid-2021 and using the Rhysida ransomware and leak site almost exclusively since June 2023 ([BSI, BITS-2026-287419-1032, 2026-09-04](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile)). BSI's advisory adds a detail beyond what Microsoft's original write-up described: reporting organizations told BSI that TerminalFix operators have staged exfiltration into attacker-controlled cloud storage, for example Azure, using the cloud provider's own transfer tooling such as azcopy ([BSI, BITS-2026-287419-1032, 2026-09-04](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile)). BSI further states that incident reports place a malware family it names LoremIpsumLoader (also known as AxolotLoader) within the campaign, and attributes that loader to the same group responsible for Rhysida ([BSI, BITS-2026-287419-1032, 2026-09-04](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile)). BSI assesses the campaign as opportunistic, purely financially motivated cybercrime with no established link to a state or politically motivated actor, and states Rhysida shows no particular regional focus on Germany, concentrating instead on education and healthcare, with public administration a more distant top-five target sector ([BSI, BITS-2026-287419-1032, 2026-09-04](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile)).
+
+## Update — 2026-09-10T05:05:00Z
+
+CDU defense-policy spokesperson Roderich Kiesewetter told Süddeutsche Zeitung "this data leak is of grave scope and endangers our national security" (translated from German), naming civil-defense and total-defense emergency plans and barracks documents as part of the published dataset alongside the critical-infrastructure material already recorded here; Germany's Bundeswehr Operative Führungskommando and the Nationales Cyberabwehrzentrum have joined BSI in reviewing the security fallout ([heise online, citing Süddeutsche Zeitung, 2026-09-07](https://www.heise.de/news/Gefahr-fuer-die-nationale-Sicherheit-Berliner-Datenleck-schlaegt-hohe-Wellen-11444301.html)). Separately, the Berlin district of Lichtenberg has refused to deploy CrowdStrike's Falcon Agent on its own servers: "in an internal letter, he cites concerns, according to rbb, about near-unlimited data access, possible disruption to specialised administrative applications, and remaining monitoring risks for staff" (translated from German), while the district states it has found no evidence of intrusion on its own systems and is demanding the Senate assume full responsibility and cost for the response ([heise online, citing rbb24, 2026-09-07](https://www.heise.de/news/Gefahr-fuer-die-nationale-Sicherheit-Berliner-Datenleck-schlaegt-hohe-Wellen-11444301.html)). Berlin's data protection commissioner Meike Kamp has now issued concrete guidance for potentially affected individuals: "change passwords, closely monitor account activity, and increased scepticism toward phishing emails" (translated from German) ([heise online, citing Meike Kamp, 2026-09-07](https://www.heise.de/news/Gefahr-fuer-die-nationale-Sicherheit-Berliner-Datenleck-schlaegt-hohe-Wellen-11444301.html)).
+
+**Defender takeaway:** the Lichtenberg dispute is a transferable governance lesson for any DACH federated administration, Swiss cantonal/communal architecture included — an incident-response tool that needs broad endpoint data access can itself become a point of inter-departmental conflict when trust in central IT governance is already damaged, so decide the incident-response tooling and data-access model before an incident forces the question under public pressure.
