@@ -4,19 +4,18 @@ kind: policy
 title: "Finland's NCSC-FI publishes an operational manufacturer checklist for the EU Cyber Resilience Act's 24h/72h/14-day/1-month reporting clock, two weeks before the 11 September 2026 go-live"
 headline: "NCSC-FI supplies the CRA reporting deadlines the Commission's own guidance had left unstated"
 summary: >
-  With the EU Cyber Resilience Act's mandatory vulnerability/incident-reporting obligation taking effect on
-  11 September 2026, Finland's national cybersecurity authority (NCSC-FI, part of Traficom) published a manufacturer
-  checklist on 2026-08-28 specifying the exact notification clock: a 24-hour early warning, a 72-hour supplemented
-  notification, and a final report due 14 days after a fix (for a vulnerability) or one month after notification (for
-  a severe incident) — all submitted through ENISA's centralised Single Reporting Platform, which its own FAQ still
-  had no published URL for eight days before go-live.
+  Finland's national cybersecurity authority (NCSC-FI, part of Traficom) published a manufacturer checklist on
+  2026-08-28 ahead of the EU Cyber Resilience Act's mandatory vulnerability/incident-reporting obligation, specifying
+  the exact notification clock: a 24-hour early warning, a 72-hour supplemented notification, and a final report due
+  14 days after a fix (for a vulnerability) or one month after notification (for a severe incident) — all submitted
+  through ENISA's centralised Single Reporting Platform. That obligation is now in legal effect as of 2026-09-11.
 discovered_at: "2026-08-29T04:09:36Z"
-updated_at: "2026-09-03T05:06:30Z"
+updated_at: "2026-09-11T04:40:00Z"
 event_date: "2026-08-28"
 run_id: 2026-08-29T0409Z-intel
 priority: notable
 immediate_action: null
-tags: [vulnerabilities, eu-nexus]
+tags: [vulnerabilities, policy]
 regions: [europe]
 sectors: [public-sector, technology, energy, water, transport, healthcare, finance, telco]
 entities:
@@ -37,6 +36,14 @@ sources:
     publisher: "Hogan Lovells Cadwalader (legal analysis)"
     date: "2026-06-10"
     role: corroborating
+  - url: "https://digital-strategy.ec.europa.eu/en/policies/cra-reporting"
+    publisher: "European Commission — Shaping Europe's Digital Future"
+    date: "2026-07-31"
+    role: primary
+  - url: "https://www.enisa.europa.eu/topics/product-security/single-reporting-platform-srp"
+    publisher: "ENISA — Single Reporting Platform (SRP) page"
+    date: "2026-09-10"
+    role: primary
 closed_sources: []
 evidence:
   - quote: "For an actively exploited vulnerability or a severe incident, an early warning must be submitted within 24 hours of the manufacturer becoming aware of it. The notification must be supplemented within 72 hours."
@@ -53,6 +60,15 @@ evidence:
     publisher: "ENISA — Single Reporting Platform (SRP) FAQ"
   - quote: "Notably, the reporting obligations apply from 11 September 2026 to all products with digital elements within the CRA's scope that have been made available on the EU market before full CRA application (Art. 69(3) CRA)."
     publisher: "Hogan Lovells Cadwalader"
+  - quote: "As of 11 September 2026, manufacturers are required to report actively exploited vulnerabilities and severe incidents impacting the security of products with digital elements."
+    publisher: "European Commission — Shaping Europe's Digital Future"
+    source_url: "https://digital-strategy.ec.europa.eu/en/policies/cra-reporting"
+  - quote: "The Single Reporting Platform will be operational by 11 September 2026 (date of entry into application of the CRA reporting requirements). Functional and security testing are under way."
+    publisher: "European Commission — Shaping Europe's Digital Future"
+    source_url: "https://digital-strategy.ec.europa.eu/en/policies/cra-reporting"
+  - quote: "From 11 September 2026, manufacturers are required to submit these mandatory notifications through the SRP."
+    publisher: "ENISA — Single Reporting Platform (SRP) page"
+    source_url: "https://www.enisa.europa.eu/topics/product-security/single-reporting-platform-srp"
 verification: multi-source
 sourcing_note: >
   NCSC-FI is a national authority acting as primary discloser for its own jurisdiction's implementation guidance.
@@ -63,7 +79,9 @@ sourcing_note: >
   corroboration; the uncorroborated API-timeline claim keeps the entry at an overall credibility of 2. NCSC-FI's
   checklist and ENISA's FAQ disagree on the Assigned Representative cap (NCSC-FI: two named representatives; ENISA:
   one Primary plus up to 20 Secondary) — the entry surfaces both figures rather than silently picking one, per the
-  fake-news/contradiction-handling policy.
+  fake-news/contradiction-handling policy. ENISA's SRP overview page is a continuously-updated hub rather than a
+  dated article; its own sub-pages carry explicit "Updated: 9/10 September 2026" labels, which is why this entry
+  cites it at 2026-09-10, even though the page's own extracted publication metadata is older.
 confidence: high
 references: []
 deep_dive: false
@@ -85,6 +103,17 @@ updates:
       go-live, the FAQ still gives no published platform URL and confirms no API will exist at launch, so an
       automated reporting pipeline must still terminate at a manual web-portal boundary within the 24-hour window.
     fields: [sources, evidence, sourcing_note, summary, body]
+  - at: "2026-09-11T04:40:00Z"
+    run_id: 2026-09-11T0410Z-intel
+    type: update
+    summary: >
+      The reporting obligation this entry tracked ahead of go-live is now in legal effect: as of
+      2026-09-11, CRA Article 14 mandatory reporting binds every in-scope manufacturer, including
+      products already on the EU market before this date. Neither the European Commission's own
+      page nor ENISA's SRP page states the platform is confirmed live and accepting submissions
+      today, only that this was ENISA's operational target — recorded as an open point rather than
+      asserted.
+    fields: [summary, sourcing_note, body, sources, evidence, tags]
 migrated_from: null
 ---
 
@@ -158,3 +187,13 @@ remain subject to the obligation regardless
 ([NCSC-FI / Traficom, 2026-08-28](https://www.kyberturvallisuuskeskus.fi/en/news/manufacturers-prepare-advance-reporting-vulnerabilities-and-incidents-under-cyber-resilience-act)).
 The SRP will be available in English only at launch
 ([ENISA — Single Reporting Platform (SRP) FAQ, 2026-08-31](https://www.enisa.europa.eu/topics/product-security/single-reporting-platform-srp/frequently-asked-questions)).
+
+## Update — 2026-09-11T04:40:00Z
+
+The obligation this entry has tracked ahead of go-live is now in legal effect: the European Commission's own page states plainly, "as of 11 September 2026, manufacturers are required to report actively exploited vulnerabilities and severe incidents impacting the security of products with digital elements"
+([European Commission, 2026-07-31](https://digital-strategy.ec.europa.eu/en/policies/cra-reporting)).
+This covers every in-scope product already placed on the EU market before today, not only new ones, consistent with Article 69(3) CRA as this entry already recorded. Neither the Commission's page nor ENISA's own SRP page states that the platform is confirmed live and accepting submissions today — the Commission's page says only that "the Single Reporting Platform will be operational by 11 September 2026 (date of entry into application of the CRA reporting requirements)" and that "functional and security testing are under way"
+([European Commission, 2026-07-31](https://digital-strategy.ec.europa.eu/en/policies/cra-reporting)),
+while ENISA's own SRP page states that "from 11 September 2026, manufacturers are required to submit these mandatory notifications through the SRP" without an explicit operational-status confirmation
+([ENISA, 2026-09-10](https://www.enisa.europa.eu/topics/product-security/single-reporting-platform-srp)).
+This entry therefore scopes its claim to what is independently confirmed — the legal reporting obligation is in effect — rather than to platform operational status, which no source reached has confirmed either way as of today.

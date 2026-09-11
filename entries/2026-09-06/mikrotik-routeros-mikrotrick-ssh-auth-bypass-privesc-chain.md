@@ -12,12 +12,13 @@ summary: >
   CERT Polska coordinated disclosure of six MikroTik RouterOS vulnerabilities on 2026-09-05 and
   confirms active exploitation of two of them — CVE-2026-67276 and CVE-2026-86060 — chained to
   take full unauthenticated control of any device whose SSH service is reachable from the
-  internet. Affected: RouterOS 6.0.0 before 6.49.21, 7.0.0 before 7.23.4, and 7.24 before 7.24.2.
-  Fixed in 6.49.21, 7.23.4, 7.24.2 and 7.25beta3 (2026-09-03); administrators must update
-  immediately and audit configuration for unknown users regardless of the vendor's post-update
-  compromise check.
+  internet. The signature-forgery entry point (CVE-2026-67276) affects RouterOS 7.9 before 7.23.4
+  and 7.24 before 7.24.2 only — the 6.x branch lacks this flaw, though three of the six disclosed
+  CVEs do reach back to 6.0.0 before 6.49.21. Fixed in 6.49.21, 7.23.4, 7.24.2 and 7.25beta3
+  (2026-09-03); administrators must update immediately and audit configuration for unknown users
+  regardless of the vendor's post-update compromise check.
 discovered_at: "2026-09-06T04:35:00Z"
-updated_at: null
+updated_at: "2026-09-11T04:46:00Z"
 event_date: "2026-09-05"
 run_id: 2026-09-06T0409Z-intel
 priority: critical
@@ -46,8 +47,8 @@ cves:
     vector: zero-click
     auth: pre-auth
     status: [exploited]
-    affected: "6.0.0 before 6.49.21; 7.0.0 before 7.23.4; 7.24 before 7.24.2"
-    fixed: "6.49.21 (LTS) / 7.23.4 (LTS) / 7.24.2 (stable) / 7.25beta3"
+    affected: "7.9 before 7.23.4; 7.24 before 7.24.2"
+    fixed: "7.23.4 (LTS) / 7.24.2 (stable) / 7.25beta3"
   - id: CVE-2026-86060
     cvss: "9.2"
     epss: null
@@ -63,7 +64,7 @@ cves:
     type: dos
     vector: zero-click
     auth: pre-auth
-    status: [patch-available]
+    status: [exploited]
     affected: "6.0.0 before 6.49.21; 7.0.0 before 7.23.4; 7.24 before 7.24.2"
     fixed: "6.49.21 (LTS) / 7.23.4 (LTS) / 7.24.2 (stable) / 7.25beta3"
   - id: CVE-2026-67278
@@ -73,8 +74,8 @@ cves:
     vector: zero-click
     auth: pre-auth
     status: [patch-available]
-    affected: "6.0.0 before 6.49.21; 7.0.0 before 7.23.4; 7.24 before 7.24.2"
-    fixed: "6.49.21 (LTS) / 7.23.4 (LTS) / 7.24.2 (stable) / 7.25beta3"
+    affected: "7.0.0 before 7.23.4; 7.24 before 7.24.2"
+    fixed: "7.23.4 (LTS) / 7.24.2 (stable) / 7.25beta3"
   - id: CVE-2026-67279
     cvss: "6.9"
     epss: null
@@ -91,8 +92,8 @@ cves:
     vector: zero-click
     auth: pre-auth
     status: [patch-available]
-    affected: "6.0.0 before 6.49.21; 7.0.0 before 7.23.4; 7.24 before 7.24.2"
-    fixed: "6.49.21 (LTS) / 7.23.4 (LTS) / 7.24.2 (stable) / 7.25beta3"
+    affected: "7.20 before 7.23.4; 7.24 before 7.24.2"
+    fixed: "7.23.4 (LTS) / 7.24.2 (stable) / 7.25beta3"
 sources:
   - url: "https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/"
     publisher: "CERT Polska (NASK)"
@@ -126,8 +127,15 @@ sources:
     publisher: "MITRE CVE Record (CNA: CERT Polska)"
     date: "2026-09-05"
     role: corroborating
+  - url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+    publisher: "CISA KEV"
+    date: "2026-09-10"
+    role: corroborating
 closed_sources: []
 evidence:
+  - quote: "MikroTik RouterOS contains a missing authenticaion for critical function vulnerability which allows kernel memory disclosure and denial of service in the btest service."
+    publisher: "CISA KEV"
+    source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
   - quote: "We have obtained confirmation that the attackers are exploiting this combination of vulnerabilities to take full control of devices whose SSH service is accessible from public networks. It has also been confirmed that the released patches prevent the observed attacks."
     publisher: "CERT Polska"
     source_url: "https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/"
@@ -168,7 +176,22 @@ watchlist_hit: false
 actions:
   - "Update every MikroTik RouterOS device to 6.49.21, 7.23.4, 7.24.2 or 7.25beta3 now; where SSH, WWW/WWW-SSL or the bandwidth-test service are reachable from outside a trusted management network and an immediate update is not possible, remove that reachability first."
   - "After updating, check the system log for a device-compromise message and the /system/device-mode/print Flagged status, and audit the configuration for any user, script, scheduler task, proxy server or tunnel you do not recognize — the Flagged marker only catches known post-compromise traces and its absence does not clear a device."
-updates: []
+updates:
+  - at: "2026-09-11T04:46:00Z"
+    run_id: 2026-09-11T0410Z-intel
+    type: update
+    summary: >
+      CISA added CVE-2026-67277 (the bandwidth-test kernel-memory-disclosure/DoS flaw among the
+      four lower-severity CVEs in this disclosure) to its Known Exploited Vulnerabilities catalog
+      on 2026-09-10, confirming active in-the-wild exploitation — this entry previously stated
+      none of the four lower-severity CVEs was confirmed separately exploited. Separately, this
+      entry's per-CVE `affected` field had wrongly applied all three RouterOS branches (6.0.0,
+      7.0.0, 7.24) uniformly to all six CVEs; cross-checked against CERT Polska's own per-CVE page
+      and the MITRE CVE record, only CVE-2026-86060, CVE-2026-67277 and CVE-2026-67279 genuinely
+      carry all three branches — CVE-2026-67276 (the exploited chain's entry-point flaw) starts at
+      7.9, CVE-2026-67278 at 7.0.0, and CVE-2026-67281 at 7.20, none of them reaching the 6.x
+      branch. Corrected per-CVE and fixed frontmatter summary accordingly.
+    fields: [summary, cves, sources, evidence, body]
 migrated_from: null
 ---
 
@@ -176,7 +199,7 @@ CERT Polska (NASK) coordinated disclosure of six MikroTik RouterOS vulnerabiliti
 
 An independent researcher's reverse-engineering of the silent 2026-09-03 patch traces the mechanics of the crafted-username step in more detail: the SSH daemon invokes a legacy login helper via a system call, passing the authenticated username and a decimal policy-mask value as trailing positional arguments, and that helper's undocumented legacy transport treats any positional argument beginning with a hyphen as a file-descriptor number, reading up to 4096 bytes from it and splitting the result on null bytes into a replacement identity and a replacement policy mask (Nick Pratley, 2026-09-04). The researcher reproduced full policy-mask override once a username matching this pattern was accepted, but did not reproduce a stock, credential-free way to make SSH accept that username in the first place — leaving CERT Polska's combination of the two coordinated CVEs, rather than this third-party analysis, as the authoritative description of the unauthenticated attack path. CERT Polska's own investigation of the observed intrusions found the operators create a highly-privileged local account after exploitation, with the log sequence recording a failed login for a numeric pseudo-user immediately followed by that user's creation over the same SSH session, and states this activity has been occurring since at least 2026-09-02 ([CERT Polska, 2026-09-05](https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/)).
 
-Four further CVEs round out the coordinated disclosure at lower severity, none confirmed separately exploited. CVE-2026-67277 (CVSS 8.8) lets an unauthenticated client reach the bandwidth-test service's post-authentication code path; combined with disclosure of uninitialized kernel packet-buffer contents and an integer-underflow size-validation bug, this yields kernel memory leakage or a remote denial-of-service that restarts the device ([CERT Polska, CVE detail page, 2026-09-05](https://cert.pl/en/posts/2026/09/mikrotik-routeros-cve)). CVE-2026-67278 (CVSS 6.3) lets an attacker who can intercept or redirect an outbound RouterOS TLS connection forge a trusted intermediate certificate for arbitrary hostnames, because RouterOS accepts malformed RSA/PKCS#1 v1.5 signatures during X.509 validation and its trust store ships a root CA with public exponent 3 — enabling TLS server impersonation against the device's own outbound connections without the root's private key. CVE-2026-67279 (CVSS 6.9) lets an unauthenticated SSH client that requests a rekey before ever attempting authentication still reach the connection protocol and issue an exec request, letting it create, overwrite or reconstruct files in RouterOS's managed file namespace, including configuration and diagnostic support files. CVE-2026-67281 (CVSS 8.7) is an unauthenticated file-read in the WebFig `/jsproxy` path: a newly allocated session retains a stale, uninitialized pointer used for file-authorization checks, and an attacker who can influence allocator state and supplies parent-directory traversal components in an encrypted URI can escape the WebFig file namespace and disclose root-owned files, including credential-bearing configuration stores.
+Four further CVEs round out the coordinated disclosure at lower severity. CVE-2026-67277 (CVSS 8.8) lets an unauthenticated client reach the bandwidth-test service's post-authentication code path; combined with disclosure of uninitialized kernel packet-buffer contents and an integer-underflow size-validation bug, this yields kernel memory leakage or a remote denial-of-service that restarts the device ([CERT Polska, CVE detail page, 2026-09-05](https://cert.pl/en/posts/2026/09/mikrotik-routeros-cve)); CISA added it to its Known Exploited Vulnerabilities catalog on 2026-09-10, confirming active in-the-wild exploitation ([CISA KEV, catalogue version 2026.09.10](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). The remaining three are not confirmed separately exploited. CVE-2026-67278 (CVSS 6.3) lets an attacker who can intercept or redirect an outbound RouterOS TLS connection forge a trusted intermediate certificate for arbitrary hostnames, because RouterOS accepts malformed RSA/PKCS#1 v1.5 signatures during X.509 validation and its trust store ships a root CA with public exponent 3 — enabling TLS server impersonation against the device's own outbound connections without the root's private key. CVE-2026-67279 (CVSS 6.9) lets an unauthenticated SSH client that requests a rekey before ever attempting authentication still reach the connection protocol and issue an exec request, letting it create, overwrite or reconstruct files in RouterOS's managed file namespace, including configuration and diagnostic support files. CVE-2026-67281 (CVSS 8.7) is an unauthenticated file-read in the WebFig `/jsproxy` path: a newly allocated session retains a stale, uninitialized pointer used for file-authorization checks, and an attacker who can influence allocator state and supplies parent-directory traversal components in an encrypted URI can escape the WebFig file namespace and disclose root-owned files, including credential-bearing configuration stores.
 
 All six are fixed in RouterOS 7.25beta3, 7.24.2, 7.23.4 and 6.49.21, released 2026-09-03; MikroTik pushed a first-ever in-app push notification to administrators alongside the release ([CERT Polska, 2026-09-05](https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/)). The fixed releases add a startup "Flagged" self-check that scans configuration for known post-compromise traces, disables recognized suspicious entries, and logs a critical warning — but CERT Polska is explicit that this mechanism detects only selected traces left after a compromise, and its absence is not proof that a device is safe ([CERT Polska, 2026-09-05](https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/)).
 
@@ -185,3 +208,7 @@ CERT Polska states the six flaws were found using an agentic research environmen
 Detection concept, telemetry class first: on-device system-log review is the primary hunt surface here, since these are commodity routers with no EDR agent. Alert on any SSH login-failure log entry for a non-standard, negative-looking numeric pseudo-username, especially one immediately followed within the same session window by a new-user-creation log entry — CERT Polska's own observed intrusions show exactly this sequence. Independently alert on creation of any locally-administered account with full or administrative group membership that does not correlate to a known change-management action. For the WebFig file-disclosure path, web-access logs showing `/jsproxy` requests carrying encoded parent-directory traversal sequences are the anchor; for the bandwidth-test flaw, unexpected inbound connections to that service from unauthenticated sources, or device reboots correlated with such connections, are the observable. **Triage:** a device's own "Flagged" status is a useful positive signal but never a negative one — treat it as one input alongside the log markers above, not as a clearance check, per the vendor and CERT Polska's shared caution.
 
 **Defender takeaway:** patch every internet-reachable RouterOS device now regardless of whether it shows signs of compromise, and treat any device that was running an unpatched, internet-exposed SSH service before 2026-09-03 as a compromise-assessment target — an unpatched update alone evicts the vulnerability but not anything already taken through it. Until every device is patched, remove SSH, WWW/WWW-SSL and the bandwidth-test service from any interface reachable outside a trusted management network, and do not originate outbound TLS connections or use RouterOS's built-in SSH client from an unpatched device toward untrusted networks or hosts, which the certificate-forgery flaw can otherwise abuse.
+
+## Update — 2026-09-11T04:46:00Z
+
+CISA added CVE-2026-67277 — the bandwidth-test kernel-memory-disclosure and denial-of-service flaw among this disclosure's four lower-severity CVEs — to its Known Exploited Vulnerabilities catalog on 2026-09-10, describing it as a "missing authenticaion for critical function vulnerability which allows kernel memory disclosure and denial of service in the btest service" ([CISA KEV, catalogue version 2026.09.10](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). This confirms active in-the-wild exploitation of a third vulnerability in the coordinated disclosure, beyond the two (CVE-2026-67276, CVE-2026-86060) CERT Polska had already reported exploited; the remaining three lower-severity CVEs (CVE-2026-67278, CVE-2026-67279, CVE-2026-67281) are still not confirmed separately exploited by any source. The remediation is unchanged — all six flaws share the same fixed releases (6.49.21, 7.23.4, 7.24.2, 7.25beta3) already covered by this entry's patch guidance. Separately, per-CVE affected-version ranges have been corrected: only CVE-2026-67277, CVE-2026-67279 and CVE-2026-86060 reach back to the 6.x branch (6.0.0 before 6.49.21); the signature-forgery entry point of the exploited chain, CVE-2026-67276, affects only 7.9 before 7.23.4 and 7.24 before 7.24.2, so a device on the 6.x branch is not exposed to that specific unauthenticated takeover path ([CERT Polska, CVE detail page, 2026-09-05](https://cert.pl/en/posts/2026/09/mikrotik-routeros-cve); [MITRE CVE Record](https://cveawg.mitre.org/api/cve/CVE-2026-67276)) — it remains reachable via CVE-2026-86060 and the other lower-severity flaws that do affect that branch, so the same patch guidance applies to all versions regardless.
