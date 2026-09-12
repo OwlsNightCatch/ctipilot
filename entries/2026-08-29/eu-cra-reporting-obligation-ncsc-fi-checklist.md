@@ -10,7 +10,7 @@ summary: >
   14 days after a fix (for a vulnerability) or one month after notification (for a severe incident) — all submitted
   through ENISA's centralised Single Reporting Platform. That obligation is now in legal effect as of 2026-09-11.
 discovered_at: "2026-08-29T04:09:36Z"
-updated_at: "2026-09-11T04:40:00Z"
+updated_at: "2026-09-12T04:09:19Z"
 event_date: "2026-08-28"
 run_id: 2026-08-29T0409Z-intel
 priority: notable
@@ -44,6 +44,14 @@ sources:
     publisher: "ENISA — Single Reporting Platform (SRP) page"
     date: "2026-09-10"
     role: primary
+  - url: "https://www.enisa.europa.eu/news/the-cra-single-reporting-platform-is-launched"
+    publisher: "ENISA"
+    date: "2026-09-11"
+    role: primary
+  - url: "https://www.heise.de/news/Gilt-ab-heute-CRA-setzt-24-Stunden-Frist-fuer-Sicherheitsmeldungen-11450208.html"
+    publisher: "heise online"
+    date: "2026-09-11"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "For an actively exploited vulnerability or a severe incident, an early warning must be submitted within 24 hours of the manufacturer becoming aware of it. The notification must be supplemented within 72 hours."
@@ -69,6 +77,13 @@ evidence:
   - quote: "From 11 September 2026, manufacturers are required to submit these mandatory notifications through the SRP."
     publisher: "ENISA — Single Reporting Platform (SRP) page"
     source_url: "https://www.enisa.europa.eu/topics/product-security/single-reporting-platform-srp"
+  - quote: "The EU Agency for Cybersecurity (ENISA) has deployed the initial operating capability of the Single Reporting Platform (SRP)."
+    publisher: "ENISA"
+    source_url: "https://www.enisa.europa.eu/news/the-cra-single-reporting-platform-is-launched"
+  - quote: "Der Bitkom kritisiert insbesondere, dass Unternehmen die Meldeplattform vor deren Start nicht registrieren und die Prozesse nicht erproben konnten. Die Plattform ging erst mit Beginn der Meldepflicht online. (translated from German: Bitkom specifically criticizes that companies could not register on the reporting platform or test their processes before its start. The platform only went online with the start of the reporting obligation.)"
+    original: "Der Bitkom kritisiert insbesondere, dass Unternehmen die Meldeplattform vor deren Start nicht registrieren und die Prozesse nicht erproben konnten. Die Plattform ging erst mit Beginn der Meldepflicht online."
+    publisher: "heise online (relaying a Bitkom survey finding)"
+    source_url: "https://www.heise.de/news/Gilt-ab-heute-CRA-setzt-24-Stunden-Frist-fuer-Sicherheitsmeldungen-11450208.html"
 verification: multi-source
 sourcing_note: >
   NCSC-FI is a national authority acting as primary discloser for its own jurisdiction's implementation guidance.
@@ -81,7 +96,10 @@ sourcing_note: >
   one Primary plus up to 20 Secondary) — the entry surfaces both figures rather than silently picking one, per the
   fake-news/contradiction-handling policy. ENISA's SRP overview page is a continuously-updated hub rather than a
   dated article; its own sub-pages carry explicit "Updated: 9/10 September 2026" labels, which is why this entry
-  cites it at 2026-09-10, even though the page's own extracted publication metadata is older.
+  cites it at 2026-09-10, even though the page's own extracted publication metadata is older. ENISA's
+  separate 2026-09-11 news post confirms the platform's operational status directly, resolving the
+  open point the prior update recorded; heise online's same-day reporting adds an independent
+  preparedness-survey data point (Bitkom) not carried by either primary.
 confidence: high
 references: []
 deep_dive: false
@@ -114,6 +132,16 @@ updates:
       today, only that this was ENISA's operational target — recorded as an open point rather than
       asserted.
     fields: [summary, sourcing_note, body, sources, evidence, tags]
+  - at: "2026-09-12T04:09:19Z"
+    run_id: 2026-09-12T0409Z-intel
+    type: update
+    summary: >
+      ENISA confirmed on 2026-09-11 that the CRA Single Reporting Platform has deployed its
+      initial operating capability, resolving the open point the prior update recorded. A Bitkom
+      survey, relayed the same day by heise online, finds only 29% of German firms understand what the
+      CRA means for their organization and that manufacturers could not register or test their
+      reporting process before the platform went live with the reporting obligation itself.
+    fields: [sourcing_note, sources, evidence, body]
 migrated_from: null
 ---
 
@@ -197,3 +225,12 @@ This covers every in-scope product already placed on the EU market before today,
 while ENISA's own SRP page states that "from 11 September 2026, manufacturers are required to submit these mandatory notifications through the SRP" without an explicit operational-status confirmation
 ([ENISA, 2026-09-10](https://www.enisa.europa.eu/topics/product-security/single-reporting-platform-srp)).
 This entry therefore scopes its claim to what is independently confirmed — the legal reporting obligation is in effect — rather than to platform operational status, which no source reached has confirmed either way as of today.
+
+## Update — 2026-09-12T04:09:19Z
+
+The open point above is resolved: ENISA confirmed on 2026-09-11 that "the EU Agency for Cybersecurity (ENISA) has deployed the initial operating capability of the Single Reporting Platform (SRP)"
+([ENISA, 2026-09-11](https://www.enisa.europa.eu/news/the-cra-single-reporting-platform-is-launched)),
+manufacturers and, from 11 December 2027, open-source software stewards submit once through the platform and the receiving CSIRT disseminates the notification to every other Member State CSIRT where the affected product is available, simultaneously to ENISA.
+A Bitkom survey of 1,003 German firms, relayed the same day by heise online, found only 29% know what the CRA means for their own organization and a further 38% have heard of it but cannot assess the impact; Bitkom specifically criticizes that manufacturers could not register on the platform or test their reporting process before today, "because the platform only went online with the start of the reporting obligation" (translated from German)
+([heise online, 2026-09-11](https://www.heise.de/news/Gilt-ab-heute-CRA-setzt-24-Stunden-Frist-fuer-Sicherheitsmeldungen-11450208.html)).
+For a Swiss manufacturer or distributor placing networked products on the EU market, or a Swiss public-sector body procuring from an EU-regulated manufacturer now subject to this clock, the practical takeaway is that the 24-hour/72-hour/14-day-or-1-month reporting chain is a live obligation rather than a target date, and a first submission may hit friction precisely because pre-launch registration and testing were not possible.

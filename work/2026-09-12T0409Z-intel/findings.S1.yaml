@@ -1,0 +1,163 @@
+domain: S1
+run_id: 2026-09-12T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-12T04:11:41Z
+ended_at: 2026-09-12T04:19:32Z
+duration_seconds: 471
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 6
+  bridge_fetches: 16
+
+items:
+  - title: "CVE-2026-84869 — ConnectWise ScreenConnect: file-transfer authorization flaw let a live remote-support session push and execute files on the Host with no confirmation — Huntress traced worm-like exploitation back to August 20, over two weeks before any CVE or patch existed"
+    sources:
+      - { url: "https://github.com/ConnectWise-Advisories/Disclosures/tree/main/CVE-2026-84869", publisher: "ConnectWise (vendor advisory, GitHub Advisories repo)", date: "2026-09-08", role: "primary" }
+      - { url: "https://www.huntress.com/blog/rogue-screenconnect-installations", publisher: "Huntress", date: "2026-09-03 (updated 2026-09-08)", role: "primary" }
+      - { url: "https://www.securityweek.com/modified-screenconnect-clients-used-in-worm-like-campaign/", publisher: "SecurityWeek", date: "2026-09-07", role: "corroborating" }
+    discovery_trace: "first seen at: MANDATORY KEV disposition duty (spawn message) naming CVE-2026-84869, dateAdded 2026-09-11 → cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog → pivot: WebSearch (\"CVE-2026-84869 ConnectWise ScreenConnect security bulletin\") → pivot: Huntress, URL https://www.huntress.com/blog/rogue-screenconnect-installations (original incident research, published 2026-09-03 before the CVE existed) → pivot: SecurityWeek, URL https://www.securityweek.com/modified-screenconnect-clients-used-in-worm-like-campaign/ → primary: ConnectWise vendor disclosure, URL https://github.com/ConnectWise-Advisories/Disclosures/tree/main/CVE-2026-84869 → corroboration: ENISA EUVD (EUVD-2026-74053, exploitedSince 2026-09-11) via `enisa-euvd recent exploited` bridge call"
+    summary: |
+      CVE-2026-84869 (CVSS 3.1 9.9, CWE-862 Missing Authorization + CWE-269 Improper Privilege Management) is a client-side file-transfer flaw in ConnectWise ScreenConnect's Support and Access session handling: file-transfer actions inside an already-active remote session could be processed without the authorization or Host-confirmation step the product is meant to require, letting files be transferred to and executed on the Host system, including through elevated execution paths. ScreenConnect servers are not affected; only clients prior to 26.6.5. ConnectWise disclosed on 2026-09-03 (advisory, no CVE yet), recommended stripping the "TransferFiles" role permission from open sessions as an interim mitigation, then shipped the fix in ScreenConnect 26.6.5 on 2026-09-08.
+      Huntress had already been tracking the underlying exploitation for two and a half weeks before any advisory existed. Starting 20 August 2026, Huntress's SOC found rogue ScreenConnect clients deployed via social engineering (a fake tech-support Quick Assist session in one case, phishing-driven MSI execution in another) that immediately spawned four chained VBScript stagers via wscript.exe. The stagers profile the host (existing ScreenConnect install, EDR/AV product inventory by service name — Huntress itself, Cisco AMP, CrowdStrike, SentinelOne, Sophos, Malwarebytes — and available RAM to rule out sandboxes), then pull an AES-encrypted payload bundle from Dropbox keyed to that profile. Depending on the profile, the final PowerShell stage installs a hidden ScreenConnect backdoor client, builds a UAC-bypass helper via a hijacked ms-settings: protocol handler routed through ComputerDefaults.exe, sets AmsiUtils.amsiInitFailed=true to blind AMSI, adds all of C:\Users as a Defender exclusion, and — in the broadest variant — drops a wstunnel tunneling tool renamed Themes.exe, an XMRig cryptominer renamed SearchIndex.exe, and the vulnerable WinRing0 driver as a BYOVD component. The installed backdoor client then monitors ScreenConnect's own EndPointStatusMessage.Connections collection for newly established Host sessions and pushes the same four VBScript stagers to each one as a file-transfer message flagged to auto-run — turning every infected ScreenConnect connection into a worm-propagation vector for the next one, which is exactly the abuse path CVE-2026-84869 patches. CISA added the CVE to its KEV catalog on 2026-09-11 with an unusually short three-day remediation deadline (2026-09-14). No named threat-actor cluster is attributed by any source; Huntress frames it as a continuation of RMM-tool abuse already established as a top attack vector, layered with a novel worm mechanism.
+      Relevance for defenders whose environment includes MSP-managed or self-hosted ScreenConnect (a widely deployed RMM tool, including by IT service providers to public-sector customers): the worm mechanism means a single compromised technician session can silently reach every other host that technician's ScreenConnect client is actively connected to, independent of the original social-engineering vector.
+    region_nexus: "global; RMM tooling widely used by MSPs serving public-sector customers, including in Switzerland"
+    primary_sector_nexus: "indirect — via IT-service-provider/MSP supply chain"
+    sector: "public-sector"
+    cves: [CVE-2026-84869]
+    techniques: [T1219, T1570, T1548.002, T1562.001, T1496]
+    affected_products: ["ConnectWise ScreenConnect"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A condition in the ScreenConnect client may allow files to be transferred and executed through an active remote session without authorization or Host confirmation in certain circumstances. ScreenConnect servers are not impacted."
+        attribution: "ConnectWise (vendor disclosure)"
+        source_url: "https://github.com/ConnectWise-Advisories/Disclosures/tree/main/CVE-2026-84869"
+      - quote: "This creates a worm-like behavior: propagating infections over new ScreenConnect connections. Connecting to an infected ScreenConnect client can cause the server-side Host system to receive and execute the same four-stage VBScript chain."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/rogue-screenconnect-installations"
+      - quote: "In late August, our Security Operations Center (SOC) sent out three critical incident reports for what looked like malicious ScreenConnect installation and unexpected process execution."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/rogue-screenconnect-installations"
+    extended_notes: |
+      Disposition (per KEV duty instructions): this is a NEW, standalone entry — no existing ScreenConnect/ConnectWise entry in the store. CVSS 9.9 but note the prerequisite: PR:L in the CVE record's own vector (CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H) — exploitation requires an attacker who already has an active remote-support/access session (achieved here via social engineering: fake tech-support Quick Assist calls, phishing-driven MSI downloads), not a raw unauthenticated internet-facing path. Given (a) CVSS 9.9, (b) confirmed worm-like ITW exploitation running for 2.5+ weeks before any patch or CVE existed, (c) EDR-killing/cryptomining/BYOVD payloads observed, and (d) CISA's unusually short 3-day KEV remediation window, I assess this clears the "high" bar at minimum; the main agent may find the pre-patch exploitation + worm mechanism warrants "critical" (comparable to the store's PaperCut/StyleSmuggler precedent of exploitation preceding patch availability). IOC-bearing details (C2 IPs/domains, file hashes) from Huntress's report are deliberately omitted per the no-IOCs rule; only behavioral/detection-relevant facts are carried above.
+
+  - title: "CVE-2026-85706 — GitLab CE/EE: unauthenticated path traversal in the repository commits API reads arbitrary server files (CVSS 10.0); watchTowr's honeypots caught exploitation attempts one day after the patch"
+    sources:
+      - { url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-3-2-released/", publisher: "GitLab (vendor security release notes)", date: "2026-09-10", role: "primary" }
+      - { url: "https://watchtowr.com/resources/rapid-reaction-gitlab-critical-path-traversal-vulnerability-cve-2026-85706/", publisher: "watchTowr", date: "2026-09-11", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1160/", publisher: "CERT-FR (ANSSI)", date: "2026-09-11", role: "corroborating" }
+    discovery_trace: "first seen at: MANDATORY KEV disposition duty (spawn message) naming CVE-2026-85706, dateAdded 2026-09-11 → cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog → primary: GitLab vendor release notes, URL https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-3-2-released/ (fetched via extract) → pivot: WebSearch (\"CVE-2026-85706 GitLab path traversal exploited KEV\") → primary: watchTowr Rapid Reaction, URL https://watchtowr.com/resources/rapid-reaction-gitlab-critical-path-traversal-vulnerability-cve-2026-85706/ → corroboration: CERT-FR advisory CERTFR-2026-AVI-1160, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1160/ (fetched via `cert-fr avis-recent` bridge) and NCSC Switzerland Security Hub post id 12935, URL https://security-hub.ncsc.admin.ch/#/posts/12935 (fetched via `ncsc-csh recent` bridge)"
+    summary: |
+      GitLab released Community Edition and Enterprise Edition versions 19.3.2, 19.2.6 and 19.1.8 on 2026-09-10, fixing CVE-2026-85706 (CVSS 3.1 10.0): a path-traversal vulnerability in the repository commits API caused by improper path confinement combined with missing authentication enforcement, letting an unauthenticated user read arbitrary files from the GitLab server. Affected: all CE/EE versions from 18.7 before 19.1.8, 19.2 before 19.2.6, and 19.3 before 19.3.2. GitLab.com is already patched; GitLab Dedicated customers need no action; self-managed installations must upgrade. The flaw was reported through GitLab's HackerOne bug-bounty program (researcher handle s3ntago).
+      watchTowr reproduced the vulnerability and validated exposure across client environments the same day GitLab published patches, and by 2026-09-11 its Attacker Eye global honeypot network was already recording behavioral probes against the flaw — meaning attackers had independently reverse-engineered a working exploit within roughly 24 hours of disclosure. CISA added the CVE to its KEV catalog on 2026-09-11 with a three-day remediation deadline (2026-09-14). NCSC Switzerland's own advisory (published 2026-09-11, 13:54 CEST — before CISA's KEV addition later that day) recorded exploitation status as "unknown" at time of writing, illustrating how fast the status moved from unconfirmed to KEV-listed within the same day. Depending on file permissions and deployment layout, the exposed files can include configuration data, secrets, tokens, SSH keys and database credentials — i.e. a foothold into the CI/CD and source-control plane that GitLab manages, which is a materially higher-value target than the file-read primitive alone suggests. The same release also fixed a second maximum-severity flaw, CVE-2026-87719 (CVSS 9.9), an insecure GraphQL-subscription deserialization issue exposing Advanced Search configurations and credentials to an authenticated user with Duo Chat access — not KEV-listed and not confirmed exploited, but worth patching in the same maintenance window since it ships in the identical release.
+    region_nexus: "global; GitLab widely deployed for source-control/CI-CD across public and private sector, including self-managed instances in EU/Swiss government contexts"
+    primary_sector_nexus: "indirect — DevOps/source-control infrastructure"
+    sector: "public-sector"
+    cves: [CVE-2026-85706]
+    techniques: [T1190]
+    affected_products: ["GitLab Community Edition", "GitLab Enterprise Edition"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "under certain conditions, an unauthenticated user could have read arbitrary files from the GitLab server due to improper path confinement and missing authentication enforcement in the repository commits API"
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-3-2-released/"
+      - quote: "watchTowr Intel is already seeing behavioral probes for this vulnerability against Attacker Eye, our global honeypot network, meaning attackers have already successfully reverse engineered and reproduced the vulnerability and the countdown to indiscriminate, in-the-wild exploitation is on."
+        attribution: "watchTowr"
+        source_url: "https://watchtowr.com/resources/rapid-reaction-gitlab-critical-path-traversal-vulnerability-cve-2026-85706/"
+      - quote: "Defenders should also hunt through log files for HTTP POST requests to \u201c/api/v4/projects/{id}/repository/commits/\u201d URIs containing \u201cfile.path\u201d parameters to identify potential exploitation attempts."
+        attribution: "watchTowr"
+        source_url: "https://watchtowr.com/resources/rapid-reaction-gitlab-critical-path-traversal-vulnerability-cve-2026-85706/"
+    extended_notes: |
+      Disposition (per KEV duty instructions): NEW, standalone entry — no existing GitLab entity/entry in the store or registry. CVSS 10.0, unauthenticated, no user interaction, confirmed rapid ITW probing and CISA KEV addition — this reads as a strong critical-priority candidate to me (unauthenticated pre-auth arbitrary file read against widely-deployed DevOps infrastructure, patch-to-exploitation gap of ~24h), but priority is the main agent's call.
+
+  - title: "CVE-2026-42016 / CVE-2026-42018 — JFrog Artifactory: two previously-patched, separately-disclosed token-validation flaws (July/August) are now confirmed chained in the wild to mint admin-scoped tokens from an anonymous identity — a distinct exploitation chain from the already-tracked default-config bypass (CVE-2026-82329), but the same vendor, same research report, and same attacker objective"
+    sources:
+      - { url: "https://docs.jfrog.com/releases/docs/jfrog-security-advisories", publisher: "JFrog (vendor security advisories page)", date: "2026-09-03 (page last updated; per-CVE rows list 2026-07-27 / 2026-08-12/13 publish dates)", role: "primary" }
+      - { url: "https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201", publisher: "Wiz Research", date: "2026-09-10 (corrected 2026-09-11)", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2808", publisher: "BSI / CERT-Bund (WID-SEC-2026-2808)", date: "2026-09-11", role: "corroborating" }
+    discovery_trace: "first seen at: MANDATORY KEV disposition duty (spawn message) naming CVE-2026-42016 and CVE-2026-42018, dateAdded 2026-09-11 → cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog → primary: JFrog Security Advisories page, URL https://docs.jfrog.com/releases/docs/jfrog-security-advisories (fetched via extract; per-CVE affected-version rows for both CVEs) → pivot: WebSearch (\"CVE-2026-42016 CVE-2026-42018 JFrog Artifactory exploited KEV\") → primary: Wiz Research blog, URL https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201 → corroboration: BSI WID-SEC-2026-2808, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2808 (fetched via `bsi-csaf` bridge) and ENISA EUVD entries EUVD-2026-49566/EUVD-2026-57388 (exploitedSince 2026-09-11), via `enisa-euvd recent exploited` bridge call"
+    summary: |
+      CVE-2026-42016 (CVSS 3.1 8.1, CWE-863 Incorrect Authorization) is a token scope-validation flaw: JFrog Artifactory (Self-Hosted) validates a token's signature and issuer but not its intended scope, so a low-privileged token can be exchanged for one carrying elevated authority. Affected: Artifactory before 7.133.11; disclosed by JFrog on 2026-07-27. CVE-2026-42018 (CVSS 3.1 7.5, CWE-287 Improper Authentication) causes Artifactory to return an internal anonymous-user token to an unauthenticated caller even when anonymous access is disabled. Affected: before 7.111.20, and per-branch ranges up to 7.146.0→7.146.8; disclosed by JFrog on 2026-08-12/13. Both are distinct disclosures — different CVE ids, different root causes, different affected-version ranges, and different original publish dates — from the already-tracked CVE-2026-82329 (a default-configuration authentication bypass via a "phantom join key," disclosed 2026-08-28, patched in 7.111.21/7.117.28/7.125.20/7.133.29/7.146.38/7.161.20, covered in this store's 2026-09-01 entry).
+      Wiz Research's 2026-09-10 report (corrected 2026-09-11) documents in-the-wild exploitation of all three CVEs, and states plainly it found no prior public reporting of exploitation for the CVE-2026-42018/CVE-2026-42016 pair specifically. Between 15 August and 8 September 2026, Wiz observed multiple actors chain the two: an unauthenticated POST to /access/api/v1/aws/token/ (with a trailing slash) returns HTTP 200 with a JWT scoped to Artifactory's internal anonymous identity (CVE-2026-42018); that token is then exchanged via POST /access/api/v1/tokens for an admin-scoped token (CVE-2026-42016) — turning an unauthenticated request into full administrative access in two API calls, in some cases in under five minutes from first contact to a created admin account. Neither flaw alone grants administrative control; the chain does. Wiz's telemetry shows patching has lagged materially behind CVE-2026-82329's faster remediation: six weeks after CVE-2026-42016's July 27 disclosure, 59% of organizations running Artifactory remained vulnerable to it, and CVE-2026-42018 fell only from 69% to 62% vulnerable over four weeks — versus CVE-2026-82329 dropping from 67% to 49% within two weeks, which Wiz attributes to its higher (critical) severity label driving faster attention.
+      Post-exploitation observed across the chained-token cases (CVE-2026-42018+CVE-2026-42016) includes creation of persistent administrator accounts (PUT /api/security/users/<username> or /access/api/ui/users/<username>), deployment of malicious Groovy plugins through Artifactory's native plugin framework for arbitrary code execution, ad-hoc command execution via the plugin execute endpoint, and delivery of a custom Rust-based backdoor with C2 capabilities dropped to a world-writable path. Separately, exploitation specific to CVE-2026-82329 (POST /access/api/v1/registry/join returning an admin-scoped token directly) includes configuration exfiltration, long-lived credential minting, cluster join-key theft from /access/api/v1/system/security/join_key, and attackers attaching their own SSH keys to created accounts.
+    region_nexus: "global; Artifactory widely used as CI/CD artifact-repository infrastructure across public and private sector"
+    primary_sector_nexus: "indirect — software supply-chain/CI-CD infrastructure"
+    sector: "public-sector"
+    cves: [CVE-2026-42016, CVE-2026-42018]
+    techniques: [T1190, T1550.001, T1136]
+    affected_products: ["JFrog Artifactory"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    references: ["2026-09-01/jfrog-artifactory-cve-2026-82329-default-config-admin-bypass"]
+    evidence:
+      - quote: "Wiz Research has identified active, in-the-wild exploitation of three critical and high-severity vulnerabilities affecting JFrog Artifactory: CVE-2026-42016, CVE-2026-42018, and CVE-2026-82329. Attackers are chaining these vulnerabilities to bypass authentication, escalate privileges, and gain administrative control over vulnerable Artifactory instances."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201"
+      - quote: "Between August 15 and September 8, 2026, we observed multiple actors chain CVE-2026-42018 and CVE-2026-42016 against self-hosted Artifactory instances. Across multiple cases we observed a custom Rust backdoor with C2 capabilities being dropped. Wiz Research is not aware of any prior public reporting of in-the-wild exploitation involving those two CVEs."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201"
+      - quote: "JFrog Artifactory (Self Hosted) versions before 7.133.11 are vulnerable to a privilege escalation attack due to a validation check of the token signature/issuer and not the token\u2019s scope."
+        attribution: "JFrog (vendor advisory)"
+        source_url: "https://docs.jfrog.com/releases/docs/jfrog-security-advisories"
+    extended_notes: |
+      EXPLICIT DISPOSITION per the KEV duty instructions: I checked JFrog's own advisory page. CVE-2026-42016 (published 27 Jul 2026), CVE-2026-42018 (published 12 Aug 2026), and CVE-2026-82329 (published 28 Aug 2026, the entry already in the store) are three SEPARATE JFrog advisory entries with three different CVE ids, three different root causes (token-scope validation / anonymous-token exposure / default-config join-key bypass), and three different affected-version ranges. They are NOT the same flaw re-numbered and NOT the same advisory — so per the instruction's own conditional ("if same root cause / same advisory" -> update), this does not meet the bar for an update-of record. I am returning it as a NEW entry. However, because Wiz Research's single report covers all three CVEs as one connected "Artifactory under attack" narrative, and because the two entries concern the same vendor product family, I recommend the composer set `references: ["2026-09-01/jfrog-artifactory-cve-2026-82329-default-config-admin-bypass"]` (included above) so readers are pointed between the two, and consider whether the existing 82329 entry's changelog should also get a short cross-reference note pointing forward to this new entry. If the composer judges that keeping one unified "JFrog Artifactory under active attack" entry serves readers better than two separate entries, an `update` changelog record adding these two CVEs to the existing entry's frontmatter (with a body section covering the token-chain mechanism) is the defensible alternative — I flag both options because the store's dedup discipline leaves this a judgment call once CVE ids and root causes are confirmed genuinely distinct, which they are.
+
+cve_table:
+  - cve: CVE-2026-84869
+    product: "ConnectWise ScreenConnect"
+    cvss: "9.9 (CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H)"
+    epss: "0.0038 (2026-09-11, FIRST.org)"
+    kev: "added 2026-09-11, due 2026-09-14"
+    exploited: "yes — Huntress documented worm-like ITW exploitation from 2026-08-20, before any CVE/patch existed"
+    patch: "ScreenConnect 26.6.5 (2026-09-08); interim mitigation: remove TransferFiles permission from open sessions"
+    source: "https://github.com/ConnectWise-Advisories/Disclosures/tree/main/CVE-2026-84869"
+  - cve: CVE-2026-85706
+    product: "GitLab CE/EE"
+    cvss: "10.0 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N)"
+    epss: "not yet scored by FIRST.org as of 2026-09-11 (too recent)"
+    kev: "added 2026-09-11, due 2026-09-14"
+    exploited: "yes — watchTowr honeypot probes observed one day after patch release; CISA KEV listed"
+    patch: "19.1.8 / 19.2.6 / 19.3.2 (2026-09-10); affected all versions from 18.7 before those releases"
+    source: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-3-2-released/"
+  - cve: CVE-2026-42016
+    product: "JFrog Artifactory (Self-Hosted)"
+    cvss: "8.1 (CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N)"
+    epss: "0.0027 (2026-09-11, FIRST.org) — reflects the standalone flaw, not the exploited chain"
+    kev: "added 2026-09-11, due 2026-09-25"
+    exploited: "yes — Wiz Research, chained with CVE-2026-42018, observed 2026-08-15 to 2026-09-08"
+    patch: "7.133.11 (originally shipped 2026-07-27); also fixed on all later branch lines"
+    source: "https://docs.jfrog.com/releases/docs/jfrog-security-advisories"
+  - cve: CVE-2026-42018
+    product: "JFrog Artifactory"
+    cvss: "7.5 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N)"
+    epss: "0.0035 (2026-09-11, FIRST.org) — reflects the standalone flaw, not the exploited chain"
+    kev: "added 2026-09-11, due 2026-09-25"
+    exploited: "yes — Wiz Research, chained with CVE-2026-42016, observed 2026-08-15 to 2026-09-08"
+    patch: "before 7.111.20; 7.117.0->7.117.27; 7.125.0->7.125.19; 7.133.0->7.133.28; 7.146.0->7.146.8 (originally shipped 2026-08-12/13)"
+    source: "https://docs.jfrog.com/releases/docs/jfrog-security-advisories"
+
+watchlist_sweep:
+  duty: products
+  note: "no product watchlist configured (config/org-profile.yaml) — sweep is a no-op per spawn instructions"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: connectwise-security-bulletins
+    reason: "https://www.connectwise.com/company/trust/security-bulletins/2026-09-08-screenconnect-bulletin returned direct HTTP 403, no readable trafilatura body, and the jina reader relayed an upstream block/challenge — all three transports failed. Recovered via ConnectWise's own GitHub Advisories disclosure repo (github.com/ConnectWise-Advisories/Disclosures) instead, which mirrors the same vendor content and was reachable."
+  - source_id: digital-nhs-uk-cyber-alerts
+    reason: "https://digital.nhs.uk/cyber-alerts/2026/cc-4848 (NHS England cyber alert on the same ScreenConnect CVE) returned direct HTTP 403, no trafilatura body, and jina reader block — not in this run's source slice, so not logged as a fetch_failures entry; noted here only because it was attempted as a supplementary corroboration source and could not be recovered. Coverage was not affected since Huntress/SecurityWeek/ConnectWise/ENISA EUVD already gave multi-source verification."

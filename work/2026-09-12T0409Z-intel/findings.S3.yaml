@@ -1,0 +1,230 @@
+domain: S3
+run_id: 2026-09-12T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: "2026-09-12T04:12:01Z"
+ended_at: "2026-09-12T04:20:43Z"
+duration_seconds: 522
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 11
+  bridge_fetches: 11
+items:
+  - title: >
+      SonicWall SMA1000 CVE-2026-15409 mass-exploitation campaign named its first victim — a UK
+      council — and Hunt.io reconstructs a secretsdump-on-appliance DCSync chain distinct from
+      UTA0533's earlier targeted intrusion
+    sources:
+      - { url: "https://securityaffairs.com/198864/hacking/uk-council-attack-linked-to-mass-exploitation-of-sonicwall-flaw.html", publisher: "Security Affairs", date: "2026-09-11", role: primary }
+      - { url: "https://radar.offseq.com/threat/open-directory-exposes-a-full-sonicwall-sma1000-credential-theft-campaign-250-targets-5-domains-fully-d4ce0567ed92186b", publisher: "OffSeq Threat Radar", date: "2026-09-10", role: corroborating }
+    discovery_trace: >
+      first seen at: hunt-io (S3 rotation source), listing fetched via WebFetch at
+      https://hunt.io/blog (returned titles only, no outbound links surfaced on the listing page;
+      the specific article's direct hunt.io URL could not be located despite five targeted
+      WebSearch attempts and one failed direct-guess fetch to
+      https://hunt.io/blog/uk-council-attack-sonicwall-sma1000-campaign, which 404'd) →
+      pivot: WebSearch ("Hunt.io UK Council SonicWall SMA 1000 campaign September 2026") →
+      primary (as fetched): Security Affairs, URL
+      https://securityaffairs.com/198864/hacking/uk-council-attack-linked-to-mass-exploitation-of-sonicwall-flaw.html
+      (quotes Hunt.io's report directly and at length) → corroborating: OffSeq Threat Radar
+      (S3 rotation source, id "offseq"), URL
+      https://radar.offseq.com/threat/open-directory-exposes-a-full-sonicwall-sma1000-credential-theft-campaign-250-targets-5-domains-fully-d4ce0567ed92186b
+      (independently reproduces the same campaign statistics: 250 targets, 168 LDAP configs, 534
+      AD accounts, 160 domains, 255 LDAP servers, 9 SAM/LSA thefts, 5 full-DCSync domains/7 DCs).
+    summary: |
+      Hunt.io published a technical analysis (relayed at length by Security Affairs, 2026-09-11)
+      linking the 17 July 2026 cyberattack on the Borough Council of King's Lynn and West Norfolk
+      (UK local government) — with moderate confidence — to a wider mass-exploitation campaign
+      against SonicWall SMA1000 appliances abusing CVE-2026-15409, the pre-auth SSRF this store
+      already tracks (entry 2026-07-14, updated 2026-07-18 and 2026-08-04 for UTA0533's targeted
+      pre-disclosure intrusion and INC ransomware's weaponization). This is a materially distinct,
+      wider and more opportunistic wave: Hunt.io's AttackCapture system crawled an operator's open
+      directory (left unauthenticated on port 80) on 17 July, the same day the council disclosed,
+      recovering the complete toolchain. The chain: an unauthenticated crafted request to /wsproxy
+      tunnels the WebSocket proxy into the appliance's own local port 1050, where a CouchDB-related
+      Erlang service listens; a hardcoded Erlang-distribution cookie embedded in the appliance
+      firmware completes authentication to the Erlang node, from which arbitrary OS commands run
+      as the couchdb account. From there, a script reads
+      /usr/local/extranet/etc/policy_file.xml and decrypts stored LDAP bind passwords using a
+      fixed 32-byte AES key hardcoded in the firmware's ASAPPasswordUtil class — meaning the same
+      key decrypts every vulnerable device's stored credentials. The operator then downloaded a
+      standalone Linux build of Impacket's secretsdump directly onto the compromised SonicWall
+      appliance itself and ran it against internal Windows systems, extracting SAM/LSA secrets and,
+      where LDAP privileges were insufficient, using machine-account NTLM hashes recovered from LSA
+      secrets to perform pass-the-hash DCSync replication. Campaign scope recovered from the open
+      directory: 250 target appliances, 168 with LDAP configs exposed (534 AD accounts across 160
+      domains, 255 internal LDAP servers), 9 environments losing SAM/LSA secrets, and 5 losing their
+      entire AD database via full DCSync against 7 domain controllers — with confirmed credential
+      theft in France, India, Italy and the US and a broader target list spanning the UK, Canada,
+      Germany, Sweden, Poland, Hungary, South Korea and Hong Kong. Targeted sectors included local
+      government and law enforcement, healthcare, financial services, universities, manufacturing
+      and managed IT providers — opportunistic (driven by exposed vulnerable firmware, not sector
+      choice), consistent with a Shodan-derived target list of nearly 200,000 SonicWall-labelled
+      addresses recovered from the directory. Scripts carried extensive Chinese-language comments,
+      which Hunt.io states is insufficient on its own for attribution; no link to UTA0533 (the actor
+      this store's existing entry already tracks for the pre-disclosure zero-day intrusion) or to
+      INC Ransom (already tracked as a post-disclosure weaponizer of the same CVE) is asserted in
+      this reporting — treat this as a separate, broader post-PoC mass-scanning wave rather than the
+      same operator.
+      The defender-relevant delta beyond what the existing entry already carries: running
+      Impacket's secretsdump *from the appliance itself* against internal Windows hosts is a
+      technique this entry's prior kill-chain description (tcpdump-based LDAP wire-sniffing) did
+      not cover, and it is specifically chosen because organizations typically have far less
+      process/file/network visibility into a VPN/firewall appliance's own operating system than
+      into EDR-monitored Windows and Linux hosts — the malicious secretsdump traffic looks, from the
+      internal network's perspective, like the appliance doing exactly what it is supposed to do
+      (connecting inbound-authenticated users to internal resources).
+    region_nexus: "global; confirmed UK local-government victim, direct analogue to Swiss cantonal/communal administrations"
+    primary_sector_nexus: "direct (local government and law enforcement named among targeted sectors; UK council named as a victim)"
+    sector: "public-sector"
+    cves: ["CVE-2026-15409"]
+    techniques: [T1190, T1003.002, T1003.004, T1003.006, T1550.002, T1105]
+    affected_products: ["SonicWall SMA1000"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-07-14/sonicwall-sma1000-ssrf-cve-2026-15409-actively-exploited"
+    evidence:
+      - quote: "Across the wider campaign, compromised appliances were used as footholds into internal networks. The operator deployed a standalone Linux build of Impacket's secretsdump directly onto selected SonicWall appliances, enabling remote credential theft from internal Windows systems."
+        attribution: "Hunt.io (quoted by Security Affairs)"
+        source_url: "https://securityaffairs.com/198864/hacking/uk-council-attack-linked-to-mass-exploitation-of-sonicwall-flaw.html"
+      - quote: "The appliances associated with confirmed SAM and LSA theft were distributed across infrastructure in France, India, Italy and the United States."
+        attribution: "Hunt.io (quoted by Security Affairs)"
+        source_url: "https://securityaffairs.com/198864/hacking/uk-council-attack-linked-to-mass-exploitation-of-sonicwall-flaw.html"
+      - quote: "The retained evidence shows how quickly public vulnerability research can be operationalised. By 16 July 2026, two days after SonicWall disclosed CVE-2026-15409, a threat actor was using modified, multithreaded tooling to identify vulnerable SMA 1000 appliances, extract and decrypt LDAP credentials, and automate follow-on credential theft against internal Active Directory environments."
+        attribution: "Hunt.io (quoted by Security Affairs)"
+        source_url: "https://securityaffairs.com/198864/hacking/uk-council-attack-linked-to-mass-exploitation-of-sonicwall-flaw.html"
+    extended_notes: |
+      This entry's existing techniques[] (T1190, T1059, T1133, T1068, T1055, T1505.003, T1037.004,
+      T1090.003, T1040, T1601.002, T1539, T1111, T1657, T1486) already covers UTA0533's own
+      pre-disclosure kill chain (webshell/proxy injection, tcpdump credential sniffing). The five
+      new IDs above (T1003.002 SAM, T1003.004 LSA Secrets, T1003.006 DCSync, T1550.002 Pass the
+      Hash, T1105 Ingress Tool Transfer) map specifically to this update's secretsdump-on-appliance
+      / DCSync chain and are additive, not replacements.
+      Sourcing caveat for the main agent: I could not locate a stable, directly fetchable hunt.io
+      URL for the original report despite five distinct WebSearch queries and one direct-guess
+      fetch (404). Security Affairs (2026-09-11, reliability C per this deployment's source list but
+      quoting Hunt.io verbatim and at length) is the most complete directly-fetched account: it
+      preserves five separate block quotes attributed explicitly to "the report published by
+      Hunt.io." OffSeq's Threat Radar page (2026-09-10, an AI-summarised aggregation, reliability B
+      per sources.json, S3 rotation source id "offseq") independently reproduces the identical
+      campaign statistics (250/168/534/160/255/9/5/7), which corroborates that Security Affairs'
+      quotations are an accurate representation of Hunt.io's report rather than an embellishment —
+      but both ultimately trace to the same single Hunt.io primary, which is why I set confidence to
+      MEDIUM rather than HIGH despite the two-source corroboration. If a later fire can reach
+      hunt.io's own page directly, re-verify quotes against it and consider raising confidence.
+    borderline: false
+  - title: >
+      Anthropic's own threat-intel report: three Chinese AI labs ran "hydra cluster" networks of
+      tens of thousands of fraudulent accounts to defeat geo-blocking and extract Claude's
+      capabilities via distillation
+    sources:
+      - { url: "https://www.anthropic.com/news/detecting-and-preventing-distillation-attacks", publisher: "Anthropic", date: "2026-09-10", role: primary }
+      - { url: "https://www.cnbc.com/2026/09/11/chinese-ai-labs-moonshot-deepseek-alibaba-anthropic.html", publisher: "CNBC", date: "2026-09-11", role: corroborating }
+    discovery_trace: >
+      first seen at: inside-it-ch (S3 essential source), RSS item "Anthropic entdeckt verdächtige
+      Anfragen aus China" published 2026-09-11T10:24:19Z (article body itself unreachable — see
+      Fetch failures — full text never read directly from inside-it.ch) → pivot: WebSearch
+      ("Anthropic Claude Chinese AI company secretly relaying requests exposed") → pivot: WebSearch
+      ("Anthropic blog Moonshot DeepSeek routing Claude fraudulent accounts") → primary: Anthropic's
+      own report, URL https://www.anthropic.com/news/detecting-and-preventing-distillation-attacks
+      (fetched directly via extract, trafilatura-direct) → corroborating: CNBC, URL
+      https://www.cnbc.com/2026/09/11/chinese-ai-labs-moonshot-deepseek-alibaba-anthropic.html
+      (press pickup of the same Anthropic report; not independent technical verification).
+    summary: |
+      Anthropic published a threat-intelligence report (2026-09-10/11) identifying what it calls
+      industrial-scale "distillation attacks" by three AI labs — DeepSeek, Moonshot AI (maker of
+      the Kimi models) and MiniMax — generating over 16 million exchanges with Claude through
+      roughly 24,000 fraudulent accounts, in violation of Anthropic's terms of service and its
+      regional access restrictions (Anthropic does not sell Claude access in China). The technique
+      class, not the AI-competition framing, is the transferable lesson for defenders operating any
+      account-gated API or portal: labs accessed Claude through commercial proxy resellers running
+      what Anthropic calls "hydra cluster" architectures — sprawling fraudulent-account networks
+      distributing traffic across Anthropic's own API and third-party cloud platforms so that no
+      single account ban stops the operation; one such proxy network alone managed more than 20,000
+      simultaneous fraudulent accounts, deliberately mixing illicit distillation traffic with
+      unrelated legitimate customer requests specifically to defeat per-account and per-pattern
+      detection. Anthropic attributed each campaign to a specific lab with high confidence via IP
+      correlation, request metadata (in one case tracing accounts to specific named researchers at
+      the lab through metadata matching public staff profiles), infrastructure indicators, and
+      corroboration from unnamed industry partners observing the same actors elsewhere. Detection
+      signals Anthropic describes building: behavioral fingerprinting/classifiers for coordinated
+      activity across large numbers of accounts, chain-of-thought-elicitation detection (prompts
+      that ask a model to reconstruct its own reasoning step-by-step, used to manufacture reasoning
+      training data at scale), and volume/pattern anomaly detection (massive repetitive-prompt
+      volume concentrated on a narrow capability area is the discriminator from normal usage, not
+      any single prompt's content). MiniMax's campaign (13M+ exchanges) was caught while still
+      active — pivoting roughly half its traffic within 24 hours of Anthropic releasing a new model,
+      which Anthropic used for lifecycle visibility into a live distillation operation.
+      Framing note: Anthropic is a competitively interested party in an active US-China AI/export-
+      control policy dispute, and the report's framing (national-security risk, export-control
+      rationale) reflects that; the underlying technical claims (account counts, hydra-cluster
+      mechanics, detection methodology) are Anthropic's own telemetry-based assertions, not
+      independently verified by a third party, and DeepSeek/Moonshot/MiniMax have not been reported
+      to have responded. Included here for the transferable fraudulent-account-network detection
+      technique class, not as a validated attribution.
+    region_nexus: "global; no direct Swiss public-sector nexus"
+    primary_sector_nexus: "indirect — general awareness of an account-fraud/API-abuse technique class transferable to any organization operating gated APIs or citizen-facing portals (cf. this store's 2026-08-29 Swiss-cantons eAutoIndex rate-limit-bypass entry, a related technique class)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1585, T1090]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:moonshot-ai-distillation-abuse", type: actor, name: "Moonshot AI (Kimi) distillation-abuse campaign", aliases: ["Moonshot", "Kimi"],
+          summary: "Anthropic's designation for Moonshot AI's campaign of >3.4M Claude exchanges through hundreds of fraudulent accounts to distill agentic-reasoning, coding and computer-use capabilities (Anthropic, 2026-09-10)." }
+      - { key: "actor:deepseek-distillation-abuse", type: actor, name: "DeepSeek distillation-abuse campaign", aliases: ["DeepSeek"],
+          summary: "Anthropic's designation for a DeepSeek campaign of >150,000 Claude exchanges used to generate reward-model grading data and chain-of-thought training data (Anthropic, 2026-09-10)." }
+      - { key: "actor:minimax-distillation-abuse", type: actor, name: "MiniMax distillation-abuse campaign", aliases: ["MiniMax"],
+          summary: "Anthropic's designation for a MiniMax campaign of >13M Claude exchanges targeting agentic coding and tool-use/orchestration capabilities, detected while still active (Anthropic, 2026-09-10)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "We attributed each campaign to a specific lab with high confidence through IP address correlation, request metadata, infrastructure indicators, and in some cases corroboration from industry partners who observed the same actors and behaviors on their platforms."
+        attribution: "Anthropic"
+        source_url: "https://www.anthropic.com/news/detecting-and-preventing-distillation-attacks"
+      - quote: "In one case, a single proxy network managed more than 20,000 fraudulent accounts simultaneously, mixing distillation traffic with unrelated customer requests to make detection harder."
+        attribution: "Anthropic"
+        source_url: "https://www.anthropic.com/news/detecting-and-preventing-distillation-attacks"
+      - quote: "Massive volume concentrated in a few areas, highly repetitive structures, and content that maps directly onto what is most valuable for training an AI model are the hallmarks of a distillation attack."
+        attribution: "Anthropic"
+        source_url: "https://www.anthropic.com/news/detecting-and-preventing-distillation-attacks"
+    extended_notes: |
+      This is a borderline call — flagged for the main agent's judgment. It is genuinely
+      new-in-window, technically substantive, primary-sourced (Anthropic's own telemetry-holding
+      report) research with detection-relevant content (the "hydra cluster" fraudulent-account-
+      network evasion pattern, behavioral fingerprinting across accounts). But the subject matter is
+      AI-industry IP/competitive abuse and US-China export-control policy, not a cyberattack against
+      Swiss public-sector infrastructure, and I could not establish a direct nexus beyond the
+      general "account-fraud/API-abuse technique class" analogy. The new_entities above are proposed
+      only if the main agent decides to publish; they are per-campaign, not organization-wide,
+      designations coined by Anthropic's own report structure (three separate sections), and I am
+      not confident they clear the registry's bar for a lasting tracked entity versus being folded
+      into a single "research" or "report"-kind entry instead of three actor keys — flagging this
+      uncertainty explicitly rather than deciding unilaterally.
+    borderline: true
+    borderline_reason: >
+      Substantive primary technical research (Anthropic's own telemetry) with a transferable
+      account-fraud-network detection technique, but the underlying subject (AI-lab-vs-AI-lab IP
+      distillation dispute and US export-control policy) has no direct Swiss public-sector nexus;
+      relevance rests on the general technique-class analogy only.
+candidate_sources: []
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: >
+      Persistent whole-host issue continues (documented on the coverage_backlog.md row since
+      2026-08-30): both extract() attempts on today's two most substantive-looking articles
+      ("Anthropic entdeckt verdächtige Anfragen aus China" and "Florierender Schwarzmarkt für
+      KI-Zugänge", both published 2026-09-11) returned Vercel Security Checkpoint HTTP 429 via
+      every transport (direct, trafilatura-fetch fallback, jina fallback). The RSS feed itself
+      fetched cleanly (20 items). The first article's underlying story was fully recovered via
+      WebSearch pivot to Anthropic's own primary and press corroboration (see item 2 above); the
+      second (AI-access black-market article) could not be independently corroborated in the time
+      available and is not included as a standalone item — a targeted WebSearch surfaced adjacent
+      but not clearly-identical English-language coverage (LLMjacking/Shadow Relay Market research
+      from Cloud Security Alliance/Sysdig/Cybernews, none confirmed as the same underlying story
+      inside-it.ch was covering), so I did not force a match.
