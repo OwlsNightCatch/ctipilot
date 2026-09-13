@@ -4,6 +4,32 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.10 — 2026-09-13 (the blocked verifier gets a defined path, and the KEV artefact stops depending on a shell redirect)
+
+### Why
+
+Two findings from the 2026-09-13 quality audit, and one of them is the window's headline.
+
+**The verifier spawn can be blocked reproducibly, and the prompt had no path through it.** The 2026-09-09T1726Z-intel fire published two entries with `iterations: []` after the content-safety classifier terminated its `cti-verification` spawn on all four attempts of the retry ladder — the initial spawn, a defensive-role reframe, a minimal pointer-only message, and a fourth carrying no offensive vocabulary at all with scope handed via a manifest file. All four request ids are on the record. The fire did the right thing under guard #1 and documented it fully, but it was left resolving a contradiction the prompt never addressed: § Hard rules says one iteration is **mandatory**, § Spawn says publish anyway when the ladder is exhausted, and `check_run.py` FAILs an empty block. Because run records are immutable and `fail()` — unlike `warn()` — does not consult the acknowledgment ledger, that FAIL could never be cleared by any fix, so `--all` was permanently red for a fire that followed the prompt exactly.
+
+This audit then established that the trip is a property of the content rather than of the message. It spawned the same pinned definition against the same two entries **three more times** under three further framings (full batch, reframed defensive, narrowest two-file scope with per-entry checkpointing) and every one terminated on `[cyber]` — seven blocked spawns across two fires on one set of content. Reframing was not going to work on the eighth attempt either, and the audit stopped reframing and verified both entries in its own main agent instead, which is what the fire should have been told to do in the first place.
+
+**The KEV artefact was never once written.** v4.8's step 6b asked the fire to `tee` the sweep into `work/<run-id>/kev-window.txt`. Across the two windows since (2026-08-30 → 09-06 and 09-06 → 09-13), **not one fire of fourteen produced the file** — the 2026-09-06 audit raised it as watch item 3 and this window's fires ignored it again, while the prose discharge itself decayed from six of seven fires to three of seven. The substance of the sweep is working (all 14 in-window KEV additions were covered, a second consecutive clean KEV window); the forensic surface promised to the operator simply does not exist. A duty carried by a shell redirect is a duty that decays.
+
+### What changed
+
+- **`prompts/cti-run.md` § Phase 5.7 Spawn — new "Exhausted ladder" rung.** When every rung fails, the fail-open stands, but the main agent must now take the **truth half** of the gate on its own output before committing: re-read each to-be-published entry against its cited primaries, `grep -F` every `evidence[]` quote against the saved body, re-check each CVE id / CVSS / affected-fixed pair against the per-CVE authority, and confirm each `techniques[]` id is active in the pinned dataset — recording exactly that in `verification.confirmation_waived`, with every blocked attempt and its request id in `verification.spawn_attempts[]`, plus a notes line asking the next audit for an independent pass. The rung states the limit plainly: the main agent substitutes for the truth gate, never for the independent editorial cold read, because it is checking its own composition. It also says to stop reframing once the ladder is exhausted and do the work instead.
+- **`prompts/cti-run.md` § Phase 5.7 Hard rules.** The "at least one iteration is mandatory" rule now names its single exception explicitly and fences it: a fully-exhausted ladder with documented attempts and the main agent's own truth pass. A spawn that returned late, timed out, or was never attempted is **not** an exhausted ladder.
+- **`tools/check_run.py` — store severity for the empty-verifier-block error.** Under `--all` only, `verification.iterations missing or empty` is a WARN instead of a FAIL, the same shape `check_verification_confirmation(store_mode=True)` and `cve-epss` already use for immutable history, and the audit must still acknowledge it with a written reason. **In run scope it remains a FAIL**, verified against the 2026-09-09 record, so no future fire can publish an empty verifier block without the gate stopping it. This is deliberately not the self-serve mute button the ledger has refused five times: nothing auto-passes on a non-null `confirmation_waived`, and the downgrade is keyed on the scan being retrospective, not on the run's own prose.
+- **`tools/kev_window_diff.py` — new `--run-id`.** The tool writes `work/<run-id>/kev-window.txt` itself; `--json` persists the JSON payload the same way; without the flag nothing changes. Artefact-write failures print to stderr and never fail the sweep.
+- **`prompts/cti-run.md` Phase 0 step 6b** now shows `--run-id "$RUN_ID"` instead of the `tee`, with the two-window evidence for why.
+
+### What stays
+
+Every invariant. One verifier iteration is still mandatory and the exception is narrower than the behaviour it describes, not wider — before v4.10 a blocked fire had no stated duty at all beyond "note it", and now it owes a full truth pass. The double-CLEAN gate, the 8-iteration cap, the fail-open, `check_run.py` exit 0 before commit, and the single Sonnet-pinned verifier definition with **no model override** are all unchanged: the exhausted-ladder rung deliberately does not reach for Opus, because the pin exists so the verifier never follows the main agent, and a main agent confirming its own composition on its own model is exactly the independence the rung tells the record to disclaim. The KEV sweep's judgement half is untouched — every NOT COVERED row still needs a disposition, and the artefact only makes the sweep auditable after the fact.
+
+---
+
 ## 4.9 — 2026-09-06 (EPSS gets units, and the reader-facing-text check gets its other half)
 
 ### Why

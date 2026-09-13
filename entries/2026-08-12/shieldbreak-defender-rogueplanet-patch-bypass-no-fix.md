@@ -6,8 +6,8 @@ title: >
   Defender flaw, claims 100% reliability where the original was a coin flip, and now covers
   Windows Server 2025
 headline: >
-  Nightmare Eclipse drops a Defender privilege-escalation patch bypass on Patch Tuesday itself,
-  with no fix available
+  Microsoft has now shipped an engine fix (1.1.26080.3) — and the same researcher claims a
+  partial bypass of it
 summary: >
   Researcher Nightmare Eclipse published ShieldBreak on 2026-08-11/12, a proof-of-concept the
   researcher describes as a full bypass of the patch Microsoft shipped in July for RoguePlanet
@@ -15,10 +15,12 @@ summary: >
   a SYSTEM shell on fully updated Windows. Two properties make it worse than what it replaces: it
   is listed with a 100 percent success rate where RoguePlanet was an unreliable race, and it is
   listed as tested on Windows Server 2025 alongside Windows 11 25H2, where the June exploit did
-  not run. No patch exists, no vendor has publicly reproduced it, and Microsoft had not commented
-  at publication.
+  not run. Microsoft acknowledged it as CVE-2026-69414 and has since shipped a fix: Malware
+  Protection Engine 1.1.26080.3 addresses it, with 1.26070.7 the last affected engine. On
+  2026-09-08 the same researcher published ShieldCrash, claiming that fix is incomplete under
+  specific conditions; Microsoft has not confirmed that claim.
 discovered_at: "2026-08-12T04:47:00Z"
-updated_at: "2026-08-24T09:11:00Z"
+updated_at: "2026-09-13T15:10:00Z"
 event_date: 2026-08-12
 run_id: 2026-08-12T0411Z-intel
 priority: high
@@ -28,7 +30,7 @@ tags:
   - priv-esc
   - lpe
   - poc-public
-  - no-patch
+  - patch-available
   - zero-day
   - identity
 regions:
@@ -87,12 +89,12 @@ cves:
     vector: local
     auth: post-auth
     status:
-      - no-patch
+      - patch-available
       - poc-public
     affected: >
       Windows 11 24H2 and Windows Server 2025 with Windows Defender in its default configuration,
       fully patched as of the August 2026 updates
-    fixed: no fix available — Microsoft states a security update is still being worked on
+    fixed: Microsoft Malware Protection Engine 1.1.26080.3 (last affected engine 1.26070.7)
 sources:
   - url: "https://www.cyberkendra.com/2026/08/shieldbreak-poc-bypasses-microsofts.html"
     publisher: Cyber Kendra
@@ -118,8 +120,18 @@ sources:
     publisher: LevelBlue SpiderLabs
     date: 2026-08-19
     role: primary
+  - url: "https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/"
+    publisher: "SOCRadar"
+    date: "2026-09-10"
+    role: corroborating
 closed_sources: []
 evidence:
+  - quote: "First version of the Microsoft Malware Protection Engine with this vulnerability addressed"
+    publisher: Microsoft Security Response Center
+    source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69414"
+  - quote: "ShieldCrash does not currently have a separate CVE. Nightmare Eclipse describes the public release as a skeleton PoC that demonstrates privileged file reads. It does not establish arbitrary file writes or SYSTEM-level code execution."
+    publisher: "SOCRadar"
+    source_url: "https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/"
   - quote: ShieldBreak is listed with a 100 percent success rate.
     publisher: Cyber Kendra
   - quote: "No patch exists for ShieldBreak, and no vendor has reproduced it publicly yet."
@@ -154,7 +166,7 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Confirm application allowlisting is in enforcement — not audit — mode on Windows endpoints where standard users can write executables: ThreatLocker found allowlisting blocked RoguePlanet by default, and the source calls it the strongest control available for this bug class, and no patch exists."
+  - "Confirm every Windows endpoint reports Microsoft Malware Protection Engine 1.1.26080.3 or later — the engine version updates on its own cadence and is not covered by the OS patch level, so check it separately; 1.26070.7 is the last affected build."
   - "Hunt for C:\\Windows\\System32\\phoneinfo.dll across the Windows estate now — LevelBlue states the file is not expected to exist natively on supported Windows versions, so an instance on a supported build is either this chain or an unrelated planted DLL, and either warrants investigation."
 updates:
   - at: "2026-08-18T04:45:00Z"
@@ -225,18 +237,38 @@ updates:
       - techniques
       - body
     merged_from: 2026-08-24/shieldbreak-defender-remediation-mechanism-hunting-package
+  - at: "2026-09-13T15:10:00Z"
+    run_id: 2026-09-13T1307Z-audit
+    type: update
+    summary: >
+      Microsoft has shipped a fix. Its own record for CVE-2026-69414 names Malware Protection
+      Engine 1.1.26080.3 as the first version with the vulnerability addressed and 1.26070.7 as the
+      last affected, so this entry's standing "no fix available" statement is superseded and the
+      frontmatter, headline, summary and action item move with it. Separately, on 2026-09-08 the
+      same researcher published ShieldCrash, claiming the fix is incomplete under specific
+      conditions; that claim is the researcher's own, relayed by SOCRadar, carries no new CVE, and
+      Microsoft has not confirmed it. Surfaced by this audit's coverage re-sweep.
+    fields:
+      - headline
+      - summary
+      - tags
+      - cves
+      - actions
+      - sources
+      - evidence
+      - body
 migrated_from: null
 ---
 
 The pseudonymous researcher Nightmare Eclipse published ShieldBreak, a proof-of-concept described as defeating the patch Microsoft shipped five weeks earlier for a Windows Defender privilege-escalation flaw ([Cyber Kendra, 2026-08-12](https://www.cyberkendra.com/2026/08/shieldbreak-poc-bypasses-microsofts.html)). Rapid7 places the drop late on Patch Tuesday itself, continuing what it describes as a pattern of the past few months ([Rapid7, 2026-08-11](https://www.rapid7.com/blog/post/em-patch-tuesday-august-2026/)). Rapid7, covering the same release in its Patch Tuesday analysis, records the researcher describing ShieldBreak as a full patch bypass for RoguePlanet — the entry in the same series that Microsoft patched as CVE-2026-50656 in July, a month after its public disclosure — and notes that both are elevation-of-privilege-to-SYSTEM vulnerabilities in Defender ([Rapid7, 2026-08-11](https://www.rapid7.com/blog/post/em-patch-tuesday-august-2026/)).
 
-Two claims are what make this worth acting on rather than filing. RoguePlanet was a race condition whose reliability varied sharply between machines — the researcher called it hit or miss in June — while "ShieldBreak is listed with a 100 percent success rate". And where the June exploit did not run on Windows Server because standard users cannot mount ISO images there, ShieldBreak is listed as tested on Windows Server 2025 alongside Windows 11 25H2 and the Canary channel ([Cyber Kendra, 2026-08-12](https://www.cyberkendra.com/2026/08/shieldbreak-poc-bypasses-microsofts.html)). Both of those are the researcher's own claims: Cyber Kendra states that "No patch exists for ShieldBreak, and no vendor has reproduced it publicly yet", and that Microsoft had not commented at publication. Treat the reliability figure and the server coverage as unverified until someone reproduces them — but treat the existence of working exploit code as established, because that is what the release consists of.
+Two claims are what make this worth acting on rather than filing. RoguePlanet was a race condition whose reliability varied sharply between machines — the researcher called it hit or miss in June — while "ShieldBreak is listed with a 100 percent success rate". And where the June exploit did not run on Windows Server because standard users cannot mount ISO images there, ShieldBreak is listed as tested on Windows Server 2025 alongside Windows 11 25H2 and the Canary channel ([Cyber Kendra, 2026-08-12](https://www.cyberkendra.com/2026/08/shieldbreak-poc-bypasses-microsofts.html)). Both of those are the researcher's own claims: Cyber Kendra states that "No patch exists for ShieldBreak, and no vendor has reproduced it publicly yet", and that Microsoft had not commented at publication — both true when written on 2026-08-12 and both since overtaken: Microsoft acknowledged the flaw as CVE-2026-69414 two days later and has since shipped an engine fix (2026-09-13 update below). Treat the reliability figure and the server coverage as unverified until someone reproduces them — but treat the existence of working exploit code as established, because that is what the release consists of.
 
 The target is the Microsoft Malware Protection Engine, the scanner behind Defender, which runs as SYSTEM; RoguePlanet abused improper link resolution before file access to spawn a SYSTEM shell on fully updated machines, was rated Important at CVSS 7.8, and was fixed in engine build 1.1.26060.3008 on 2026-07-09. Analysts who dissected RoguePlanet in June described an attack chain built on NTFS junctions, opportunistic locks and the Windows Error Reporting `QueueReporting` scheduled task, which Cyber Kendra reads as suggesting ShieldBreak reworks the same plumbing rather than opening a new front ([Cyber Kendra, 2026-08-12](https://www.cyberkendra.com/2026/08/shieldbreak-poc-bypasses-microsofts.html)) — that is an inference in the reporting, not a stated finding, and no technical analysis of ShieldBreak itself has been published.
 
 The reason a local privilege-escalation PoC from this particular persona deserves more than a backlog ticket is the track record the same reporting sets out: of the previously disclosed flaws in the series, three — BlueHammer (CVE-2026-33825), RedSun (CVE-2026-41091) and UnDefend (CVE-2026-45498) — were exploited in real-world intrusions before fixes landed and all three ended up in CISA's Known Exploited Vulnerabilities catalog ([Cyber Kendra, 2026-08-12](https://www.cyberkendra.com/2026/08/shieldbreak-poc-bypasses-microsofts.html)). This is also the second time a fix in this class has fallen: Microsoft hardened Defender's internal file-handling APIs in mid-May and RoguePlanet was rewritten to defeat that.
 
-Compensating controls, not patching, are the available lever. The one the reporting names as strongest for this bug class is application allowlisting — ThreatLocker found it blocked RoguePlanet by default ([Cyber Kendra, 2026-08-12](https://www.cyberkendra.com/2026/08/shieldbreak-poc-bypasses-microsofts.html)). Detection concepts follow the RoguePlanet chain rather than ShieldBreak's unpublished internals, so they are hypotheses to hunt with rather than confirmed signatures for this variant: in filesystem and process telemetry, reparse-point or junction creation by a standard-user process inside a path the Defender engine subsequently touches, and unexpected execution lineage from the Windows Error Reporting scheduled task, are the observable steps that chain described. Because the escalation ends in a SYSTEM process spawned by an engine that legitimately runs as SYSTEM all day, the parent-process shape alone will not separate this from routine scanning activity — the preceding filesystem manipulation by an unprivileged account is where the discriminator lives.
+**This paragraph describes the position at disclosure, when no fix existed; Microsoft has since shipped one — see the 2026-09-13 update below, and patch first.** At the time, compensating controls rather than patching were the available lever. The one the reporting names as strongest for this bug class is application allowlisting — ThreatLocker found it blocked RoguePlanet by default ([Cyber Kendra, 2026-08-12](https://www.cyberkendra.com/2026/08/shieldbreak-poc-bypasses-microsofts.html)). Detection concepts follow the RoguePlanet chain rather than ShieldBreak's unpublished internals, so they are hypotheses to hunt with rather than confirmed signatures for this variant: in filesystem and process telemetry, reparse-point or junction creation by a standard-user process inside a path the Defender engine subsequently touches, and unexpected execution lineage from the Windows Error Reporting scheduled task, are the observable steps that chain described. Because the escalation ends in a SYSTEM process spawned by an engine that legitimately runs as SYSTEM all day, the parent-process shape alone will not separate this from routine scanning activity — the preceding filesystem manipulation by an unprivileged account is where the discriminator lives.
 
 ## Update — 2026-08-18T04:45:00Z
 
@@ -268,10 +300,18 @@ LevelBlue also places the disclosing persona in a lineage of prior proof-of-conc
 
 ## Update — 2026-08-24T09:11:00Z
 
-The entry this one updates recorded that Microsoft had acknowledged ShieldBreak as CVE-2026-69414, rated it 7.8, assessed it "Exploitation More Likely", and stated a security update was still being worked on — with no published mechanism and therefore nothing to detect on. LevelBlue SpiderLabs has now published the mechanism and, with it, a hunting package ([LevelBlue SpiderLabs, 2026-08-19](https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking)). That is the whole delta, and it matters because no fix exists: detection is currently the only control a defender has.
+The entry this one updates recorded that Microsoft had acknowledged ShieldBreak as CVE-2026-69414, rated it 7.8, assessed it "Exploitation More Likely", and stated a security update was still being worked on — with no published mechanism and therefore nothing to detect on. LevelBlue SpiderLabs has now published the mechanism and, with it, a hunting package ([LevelBlue SpiderLabs, 2026-08-19](https://www.levelblue.com/blogs/spiderlabs-blog/cloud-sync-root-registrationshieldbreak-hunting-windows-defender-remediation-abuse-and-cloud-files-hijacking)). That is the whole delta, and at the time it mattered because no fix existed: detection was then the only control a defender had. (Microsoft has since shipped an engine fix — see the 2026-09-13 update below.)
 
 The chain turns Windows Defender's own remediation path into the write primitive. The proof-of-concept registers its working directory as a **Cloud Files sync root**, self-identifying as a sync provider with a hardcoded provider GUID and creating a placeholder file. It then creates two directories beneath the object manager's `\BaseNamedObjects\Restricted\` namespace and, inside them, **two conflicting symbolic links both named `WD_SCAN`** — one initially resolving to the working directory holding the placeholder, the other to a path used by the Common Log File System. It opens Defender's interface directly, resolving the management, scanning and clean functions out of `MpClient.dll` at runtime, and asks Defender to scan the placeholder through a `\\.\globalroot\...\WD_SCAN\` path. A background thread watches for the CLFS transaction log that Defender's clean operation creates, and the instant it appears takes an **exclusive lock** on it — freezing Defender mid-transaction. With the operation held open, the proof-of-concept deletes the shadow `WD_SCAN` link and recreates it pointing at `\??\UNC\127.0.0.1\C$\Windows\System32\phoneinfo.dll`, so the already-in-flight path resolves somewhere new without any NTFS junction being involved; it then restarts Cloud Files hydration with the file size set to the DLL's rather than the original's, so the hydration callback supplies the attacker's bytes while Defender's clean engine performs the write. Because `MsMpEng.exe` is the process that writes the file, the write itself looks expected — which LevelBlue flags as a triage detail that must be correlated rather than dismissed. The proof-of-concept then maps the resulting DLL as an executable image to stop remediation removing it, crafts a Windows Error Report into the report queue, and triggers the **built-in `QueueReporting` scheduled task through the Task Scheduler COM interface method `ITaskService::Run()`**; that task runs as SYSTEM, so the signed Windows error-reporting binary `wermgr.exe` processes the report and loads `phoneinfo.dll` with SYSTEM privileges — a trusted system binary acting as the proxy that executes the attacker's code, which is how the payload runs without the attacker ever launching a process of their own. LevelBlue states the whole sequence takes approximately eight to twelve seconds on an unloaded system, and that it "is fully self-contained and runs to full SYSTEM completion from a standard user account on any fully patched Windows 11 24H2 or Windows Server 2025 system with Windows Defender in its default configuration."
 
 Detection, in the report's own framing, "is best detected through behavioral correlation rather than any single static indicator" — but one static indicator is close to free. LevelBlue identifies **`C:\Windows\System32\phoneinfo.dll`** as the strongest single indicator in the chain and states the file **is not expected to exist natively on supported Windows versions** — so its creation warrants a high-priority look regardless of the process that wrote it. (The hedge is the source's own and is worth keeping: "not expected on supported versions" is what it will bear, not a guarantee about every Windows build ever shipped.) Beyond that, and led by telemetry class: in image- and module-load telemetry, `MpClient.dll` loaded by a process that is not one of Defender's own small set of expected consumers — the report names `MsMpEng.exe`, `MpCmdRun.exe`, `NisSrv.exe`, `ConfigSecurityPolicy.exe` and `MpSigStub.exe` — is the compound signal, and LevelBlue is specific about what makes it load-bearing: "The set of expected MpClient.dll consumers is small. A load by an unrelated process becomes especially significant when followed by runtime resolution of MpManagerOpen, MpScanStart, MpCleanOpen, MpCleanStart, or MpCleanControl." The same telemetry should surface `wermgr.exe` loading `phoneinfo.dll`. In scheduled-task audit records, the `QueueReporting` task being started programmatically through the Task Scheduler COM interface is the execution step. In registry or filter telemetry, a sync-root registration call issued by a process that is not a cloud-sync client is the setup step. And in named-pipe telemetry this specific proof-of-concept creates a pipe with a hardcoded name, with a SYSTEM-integrity process then connecting to a pipe a normal user created — though that name is an artefact of this build rather than of the technique.
 
-**Triage:** every individual event here has a benign twin, which is why the sequence is the detection. `MsMpEng.exe` writing into System32 is normal remediation behaviour; a cloud-sync provider registering a sync root is normal on a machine running OneDrive or a similar client; `wermgr.exe` running as SYSTEM off a scheduled task is normal error reporting. The discriminators are the process identities and the ordering: a sync-root registration from something that is not a sync client, `MpClient.dll` resolved by a non-Defender process followed by that specific clean-function set, and a `QueueReporting` run driven through COM rather than by the ordinary error-reporting trigger — with the whole chain completing inside roughly ten seconds. Hardening is the awkward part: because the abused component is Defender itself in its default configuration and Microsoft has declined to ship a fix so far, there is no configuration change to apply, and the vulnerable-driver blocklist and application-control policies have nothing third-party to key on.
+**Triage:** every individual event here has a benign twin, which is why the sequence is the detection. `MsMpEng.exe` writing into System32 is normal remediation behaviour; a cloud-sync provider registering a sync root is normal on a machine running OneDrive or a similar client; `wermgr.exe` running as SYSTEM off a scheduled task is normal error reporting. The discriminators are the process identities and the ordering: a sync-root registration from something that is not a sync client, `MpClient.dll` resolved by a non-Defender process followed by that specific clean-function set, and a `QueueReporting` run driven through COM rather than by the ordinary error-reporting trigger — with the whole chain completing inside roughly ten seconds. Hardening was the awkward part while the flaw was unpatched: because the abused component is Defender itself in its default configuration, there was no configuration change to apply, and the vulnerable-driver blocklist and application-control policies have nothing third-party to key on. Microsoft has since shipped an engine fix, so updating the Defender engine is now the primary control — see the 2026-09-13 update below.
+
+## Update — 2026-09-13T15:10:00Z
+
+**Microsoft has shipped a fix, and this entry's standing "no fix available" status was stale.** Microsoft's own record for CVE-2026-69414 now carries a remediation boundary in its structured fields: "Last version of the Microsoft Malware Protection Engine affected by this vulnerability" reads 1.26070.7, and "First version of the Microsoft Malware Protection Engine with this vulnerability addressed" reads **1.1.26080.3** ([Microsoft MSRC](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69414), latest revision 2026-09-03). The record's CVSS vector carries `RL:O` — an official fix — against the `E:P` proof-of-concept maturity it already had. The practical point for a defender is that **the Defender engine version updates on its own cadence and is not the same thing as the OS patch level**, so an estate that is fully current on Windows Update is not thereby on engine 1.1.26080.3; check the engine version explicitly. That replaces detection-as-the-only-control, which is what this entry has told readers since 2026-08-12.
+
+**The same researcher now claims the fix is incomplete — as their own claim, not a confirmed one.** On 2026-09-08 Nightmare Eclipse published ShieldCrash, described in the researcher's own repository as a partial rather than total bypass: "Microsoft has failed to properly patch ShieldBreak CVE-2026-69414, under specific conditions it is still possible to trigger the exact same problem that was caused by ShieldBreak. While Microsoft fixed several things to prevent re-exploiting the issue, they missed a spot where ShieldBreak can still be exploited" ([Nightmare Eclipse, 2026-09-08](https://github.com/MSNightmare/ShieldCrash)). What is published is explicitly unfinished and narrower than the original: SOCRadar records that "ShieldCrash does not currently have a separate CVE. Nightmare Eclipse describes the public release as a skeleton PoC that demonstrates privileged file reads. It does not establish arbitrary file writes or SYSTEM-level code execution" ([SOCRadar, 2026-09-10](https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/)), and that "Microsoft has not publicly confirmed the reported bypass" ([SOCRadar, 2026-09-10](https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/)). Microsoft's record predates the ShieldCrash release by five days and acknowledges no bypass. SOCRadar also states there is no confirmed in-the-wild exploitation of ShieldCrash.
+
+**Defender takeaway:** patch to engine 1.1.26080.3 or later and verify it as an engine version, not an OS build — that is now a real control where previously there was none. Do not retire the detection package in the 2026-08-24 update on the strength of the patch: the researcher who wrote the original working exploit says the fix leaves a reachable path, the claim is unrefuted as well as unconfirmed, and the hunting signals above key on the abuse of Defender's own remediation path rather than on any particular build. Arbitrary file read as SYSTEM is materially less severe than the original's full SYSTEM execution, so the residual risk after patching is lower than the pre-patch position, not equal to it.

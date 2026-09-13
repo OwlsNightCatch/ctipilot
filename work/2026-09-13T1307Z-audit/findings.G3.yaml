@@ -1,0 +1,849 @@
+# work/2026-09-13T1307Z-audit/findings.G3.yaml
+domain: G3
+run_id: 2026-09-13T1307Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-13T13:13:06Z
+ended_at: 2026-09-13T13:27:43Z
+duration_seconds: 877
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 17
+  bridge_fetches: 46
+items:
+  - title: "GTIG AI Threat Tracker: agentic AI compresses cloud-credential-harvesting campaigns to under six hours; UNC6780 (TeamPCP) tricks AI coding assistants and LLM security scanners into supply-chain compromises"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/from-prompting-to-autonomy-the-evolution-of-adversarial-ai/", publisher: "Google Threat Intelligence Group (GTIG)", date: "2026-09-08", role: "primary" }
+    discovery_trace: "first seen at: mandiant-gtig, URL https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v (RSS listing) → primary: GTIG blog post, URL https://cloud.google.com/blog/topics/threat-intelligence/from-prompting-to-autonomy-the-evolution-of-adversarial-ai/ (no pivot needed)"
+    summary: |
+      Google Threat Intelligence Group's follow-on to its May 2026 adversarial-AI report documents a shift from
+      basic LLM prompting to agentic, multi-agent workflows that collapse the human-in-the-loop attack timeline.
+      GTIG states that in Q2 2026 it observed threat actors compromise a cloud resource, then plan, build and
+      execute an agent-enabled mass credential-harvesting campaign in under six hours end-to-end. Separately,
+      GTIG tracked UNC6780 (the actor also profiled as TeamPCP in this store's registry, source of the PCPJack
+      backdoor ecosystem) using multiple tactics to trick AI coding assistants and LLM-based security scanners
+      into approving its open-source supply-chain compromises — a technique class distinct from, but thematically
+      consistent with, the same-week ESET GuardBreaker finding (below) of a VBScript comment engineered to trip
+      an LLM code scanner's safety refusal before it inspects the malicious payload. GTIG frames enterprise AI
+      assets themselves (model weights, API credentials, cloud compute quotas) as high-value targets for
+      espionage, extortion and unauthorized compute ("LLMjacking"), grounded in Mandiant IR telemetry and live
+      platform defenses rather than a single incident.
+    region_nexus: "global; explicitly names government among sectors targeted for proprietary AI IP theft"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1195.002, T1078.004, T1588.006]
+    affected_products: []
+    entity_keys: ["actor:teampcp"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "In Q2 2026, GTIG observed threat actors compromise a cloud resource, then plan, build, and execute an agent-enabled mass credential harvesting campaign in under six hours."
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/from-prompting-to-autonomy-the-evolution-of-adversarial-ai/"
+      - quote: "We also tracked UNC6780 using multiple tactics to trick AI coding assistants and large language model (LLM) security scanners into its open source software supply chain compromises."
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/from-prompting-to-autonomy-the-evolution-of-adversarial-ai/"
+    extended_notes: |
+      Single-source but from a telemetry-holding first-party lab (Mandiant IR + Google's own AI platform defenses);
+      no independent corroboration found in-window. Worth a deep-dive framing given it sets defenders' expectation
+      for detection latency against agent-orchestrated cloud intrusions.
+
+  - title: "ClickFix moves into the browser: a Google Sheets/Visualization-API C2 channel drives a cryptocurrency-theft web-skimmer via Tampermonkey"
+    sources:
+      - { url: "https://blog.talosintelligence.com/clickfix-moves-into-the-browser/", publisher: "Cisco Talos", date: "2026-09-08", role: "primary" }
+      - { url: "https://siliconangle.com/2026/09/08/clickfix-moves-into-the-browser-and-onto-webdav-cisco-talos-finds/", publisher: "SiliconANGLE", date: "2026-09-08", role: "corroborating" }
+    discovery_trace: "first seen at: talos, URL https://blog.talosintelligence.com/ (listing) → primary: Cisco Talos, URL https://blog.talosintelligence.com/clickfix-moves-into-the-browser/; corroborated via WebSearch (\"Cisco Talos ClickFix moves into the browser Google Sheets cryptocurrency\") → SiliconANGLE, URL https://siliconangle.com/2026/09/08/clickfix-moves-into-the-browser-and-onto-webdav-cisco-talos-finds/"
+    summary: |
+      Cisco Talos documents a monthslong campaign that evolves ClickFix social engineering into a browser-native
+      attack: rather than convincing victims to paste PowerShell into a Windows Run dialog, the lure (posing as a
+      leaked API-flaw report at crypto swap services) convinces victims to paste JavaScript into the Chrome
+      address bar or install it via the Tampermonkey extension, which also supplies persistence. The injected
+      script uses the Google Visualization API — free, unauthenticated read access to any public Google Sheets
+      document — to retrieve obfuscated JavaScript hidden via white-on-white cell formatting; because requests
+      originate from the victim's own browser to Google's domain, they resemble ordinary traffic and evade
+      domain-reputation and network-layer controls. The payload hooks the browser's fetch API, rewrites
+      cryptocurrency deposit addresses in server responses and the clipboard, and injects counterfeit "bonus"
+      UI elements. Talos alerted Google and the targeted sites in April 2026; replacement spreadsheets returned
+      within a week and were still live as of August 11, 2026. Campaign began October 2025, added the
+      Visualization API in March 2026, and added the Tampermonkey delivery step from mid-April 2026.
+    region_nexus: "global; lures distributed via Telegram, DarkForums and paste sites"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1204.001, T1176, T1102.002, T1555]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:clickfix-google-sheets-c2-crypto-skimmer-2026", type: campaign, name: "ClickFix Google-Sheets-C2 cryptocurrency skimmer campaign",
+          aliases: [], summary: "Cisco Talos-tracked ClickFix variant abusing the Google Visualization API for C2 and Tampermonkey for persistence to run a browser-based cryptocurrency web-skimmer (Talos, 2026-09-08)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The actors use a variation on ClickFix social engineering. Instead of convincing targets to run commands against the operating system, they convince targets to paste JavaScript into the Chrome address bar or install it into the Tampermonkey browser extension, which also provides persistence."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/clickfix-moves-into-the-browser/"
+      - quote: "The injected script functions as a web skimmer. It hooks the browser's fetch API, replaces cryptocurrency deposit addresses in server responses and the user's clipboard, and displays counterfeit \"bonus\" interface elements."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/clickfix-moves-into-the-browser/"
+    extended_notes: |
+      Detection angle: hunt for Tampermonkey/browser-extension installs following a ClickFix-style prompt, and for
+      outbound requests to the Google Visualization API endpoint (gviz/tq) from unexpected processes/extensions —
+      a legitimate-service-abuse pattern that bypasses domain-reputation blocking entirely.
+
+  - title: "ClearFake WebDAV chain delivers Amatera stealer, ZigCryptoStealer and an unauthorized NetSupport Manager RAT via a vulnerable-driver EDR kill and blockchain-hosted JS injection"
+    sources:
+      - { url: "https://blog.talosintelligence.com/clearfake-webdav-infection-chain/", publisher: "Cisco Talos", date: "2026-09-08", role: "primary" }
+      - { url: "https://siliconangle.com/2026/09/08/clickfix-moves-into-the-browser-and-onto-webdav-cisco-talos-finds/", publisher: "SiliconANGLE", date: "2026-09-08", role: "corroborating" }
+    discovery_trace: "first seen at: talos, URL https://blog.talosintelligence.com/ (listing) → primary: Cisco Talos, URL https://blog.talosintelligence.com/clearfake-webdav-infection-chain/; corroborated via WebSearch (\"Cisco Talos ClearFake WebDAV Amatera stealer ZigCryptoStealer\") → SiliconANGLE, URL https://siliconangle.com/2026/09/08/clickfix-moves-into-the-browser-and-onto-webdav-cisco-talos-finds/"
+    summary: |
+      Cisco Talos reconstructed a ClearFake-lineage infection chain first spotted via a WebDAV DLL named
+      "verification.google" executing from rundll32.exe at a Ukrainian government organization in April 2026.
+      A Cloudflare Worker injects JavaScript hosted on the BNB Smart Chain plus a fake Google CAPTCHA ClickFix
+      prompt to trigger rundll32-based WebDAV DLL loading of two distinct branches: a "pf.ch" loader deploys
+      Amatera stealer, then a NativeAOT-compiled ZigCryptoStealer (clipboard cryptocurrency-address swapper) and
+      a Go-based reverse proxy, and per Talos's cited reporting the pf.ch branch also uses a vulnerable driver to
+      kill EDR/security tooling; the "verification.google" loader instead installs an unauthorized instance of
+      the legitimate NetSupport Manager RAT, whose C2 configuration points at a Russia-based IP — the basis for
+      Talos's moderate-confidence assessment of a Russian threat actor on that branch. Talos assesses with
+      moderate confidence the campaign is broadly opportunistic (crypto/credential theft), not targeted at the
+      Ukrainian government victim specifically.
+    region_nexus: "Ukraine (initial detection at a government organization); broader campaign not targeted"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1204.001, T1105, T1219, T1027, T1562.001]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "malware:amatera-stealer", type: malware, name: "Amatera stealer / ACR", aliases: ["ACR"],
+          summary: "Information stealer delivered via the ClearFake WebDAV chain analysed by Cisco Talos (2026-09-08)." }
+      - { key: "malware:zigcryptostealer", type: malware, name: "ZigCryptoStealer", aliases: [],
+          summary: "NativeAOT-compiled clipboard cryptocurrency-address-swapping stealer delivered alongside Amatera in the ClearFake WebDAV chain (Cisco Talos, 2026-09-08)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Cisco Talos began an investigation after observing a DLL named \"verification.google\" executing from WebDAV at a Ukrainian government organization. We assess with moderate confidence that the attacks are not targeted at a particular organization, but are a part of a cryptocurrency and credentials-stealing operation using the Amatera stealer as the primary payload."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/clearfake-webdav-infection-chain/"
+      - quote: "The NetSupport Manager installation contained configuration with the C2 server using an IP address based in Russia. With moderate confidence, we assess that \"verification.google\" branch attack was conducted by a Russian threat actor."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/clearfake-webdav-infection-chain/"
+    extended_notes: |
+      Government-organization initial detection (Ukraine) makes this transferable evidence for the constituency
+      even though the broader campaign is opportunistic; hunt for rundll32.exe loading DLLs from WebDAV paths and
+      for unauthorized NetSupport Manager installs.
+
+  - title: "PuzzleMask: a plain-English prose wrapper defeats fast LLM policy-check filters, letting a jailbreak payload reach the target model undetected"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/puzzlemask-abusing-plain-prose-as-a-covert-ai-attack-vector/", publisher: "Check Point Research", date: "2026-09-10", role: "primary" }
+    discovery_trace: "first seen at: checkpoint-research, URL https://research.checkpoint.com/feed/ (RSS listing) → primary: Check Point Research, URL https://research.checkpoint.com/2026/puzzlemask-abusing-plain-prose-as-a-covert-ai-attack-vector/ (no pivot needed)"
+    summary: |
+      Check Point Research introduces PuzzleMask, a prompt-crafting technique that defeats fast/cheap LLM-based
+      policy-check filters (the lightweight classifier many AI pipelines run before handing a prompt to the full
+      target model) using only plain English — no emojis, base64, or invisible-Unicode tricks, which existing
+      guardrail research already anticipates. A policy-violating payload is embedded in a specially crafted prose
+      wrapper; the resource-constrained checking LLM classifies the whole prompt as benign and passes it to the
+      target model, which then notices, extracts and acts on the embedded payload. Tested against four models
+      running the quick check (gpt-4o-mini-2024-07-18, gpt-oss-safeguard:20b, claude-3-haiku-20240307,
+      llama-guard3) with policies independently verified to correctly block the unwrapped versions of the same
+      prompts, all 23 automated-pipeline-generated test prompts were misclassified as safe. Submitted to a strong
+      target model (gpt-5-thinking-high with Python code-interpreter access), the target extracted and acted on
+      the payload in over 90% of trials. PuzzleMask is not itself a jailbreak — it is a delivery/evasion layer
+      that can be combined with one. Check Point names three mitigation directions: paraphrasing incoming input
+      before the check, hardening the gatekeeper policy with a specifically worded clause, and monitoring LLM
+      behavior/output rather than only input.
+    region_nexus: "global; applicable to any organization operating a multi-tier LLM content-moderation pipeline"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "In all trials we ran, LLMs running the quick policy check classified the input as `safe` and did not notice the payload existed."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/puzzlemask-abusing-plain-prose-as-a-covert-ai-attack-vector/"
+      - quote: "For target testing, we submitted these prompts to a strong target model (`gpt-5-thinking-high` with access to a Python code interpreter); in >90% of trials, the target model successfully extracted the payload, processed it as further input and acted on it."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/puzzlemask-abusing-plain-prose-as-a-covert-ai-attack-vector/"
+    extended_notes: |
+      Adversarial-ML research rather than an observed in-the-wild campaign; no classic ATT&CK technique applies
+      cleanly (pre-exploitation research against LLM guardrail architecture). Relevant to any Swiss public-sector
+      deployment building an internal LLM-based content-moderation or agent-guardrail layer.
+    borderline: true
+    borderline_reason: "AI-safety research, not an observed campaign against an org network — relevance rests on the constituency's own growing LLM/agent deployments rather than a direct intrusion technique."
+
+  - title: "The Shared Clipboard Inside the Sandbox: a covert cross-account channel in ChatGPT's code-execution containers relayed a victim's Gmail data to an attacker"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/the-shared-clipboard-inside-the-sandbox-cross-account-data-leakage-in-chatgpt/", publisher: "Check Point Research", date: "2026-09-08", role: "primary" }
+    discovery_trace: "first seen at: checkpoint-research, URL https://research.checkpoint.com/feed/ (RSS listing) → primary: Check Point Research, URL https://research.checkpoint.com/2026/the-shared-clipboard-inside-the-sandbox-cross-account-data-leakage-in-chatgpt/ (no pivot needed)"
+    summary: |
+      Check Point Research (Alexey Bukhteyev) discovered a covert command channel that let an attacker use a
+      victim's live ChatGPT session to execute hidden tasks with whatever tools, data and connected apps
+      (e.g. Gmail) that session already had access to — while the victim received a normal, unrelated answer to
+      their own visible request. The channel operates through ChatGPT's per-account, isolated code-execution
+      containers: although containers cannot reach the public internet or talk to each other directly, Check
+      Point found they could all reach the same internal package-delivery service, which became the covert
+      cross-account relay. In the proof of concept, ChatGPT retrieved email data from the victim's connected
+      Gmail account and relayed it to the attacker's account. The hidden instruction could be seeded via a
+      malicious prompt, a shared ChatGPT conversation link, or a custom GPT; once present in the victim's
+      conversation context, an ordinary subsequent message from the victim could trigger the attacker's task
+      without it appearing in the victim's visible response. The same channel could exfiltrate conversation
+      history and any files present in the affected chat's code-execution environment — scope bounded only by
+      whatever data/tools/connected-app permissions the victim's session already held.
+    region_nexus: "global; any organization whose staff use ChatGPT with connected apps (email, file tools)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1213]
+    affected_products: ["OpenAI ChatGPT"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Check Point Research discovered a covert cross-account command channel through which an attacker could use a victim's ChatGPT session to execute hidden tasks with the tools, data, and connected apps available to that session."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/the-shared-clipboard-inside-the-sandbox-cross-account-data-leakage-in-chatgpt/"
+      - quote: "In our proof of concept, ChatGPT retrieved email data from the victim's connected Gmail account and relayed it to the attacker."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/the-shared-clipboard-inside-the-sandbox-cross-account-data-leakage-in-chatgpt/"
+    extended_notes: |
+      Vendor-reported research finding (presumably disclosed to/fixed by OpenAI prior to publication, though the
+      article excerpt fetched does not state remediation status explicitly). Relevant hardening lever for any
+      constituency staff using ChatGPT with connected third-party apps: treat connected-app grants (email,
+      drive) as a data-exposure surface equivalent to an OAuth app-consent grant, not merely a convenience toggle.
+
+  - title: "The Machine With Many Faces: root access on one Kubernetes node lets an attacker spoof SPIFFE/SPIRE cgroup attestation and harvest every co-located workload's cryptographic identity"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/kubernetes-spiffe-spire-identity-spoofing/", publisher: "Palo Alto Networks Unit 42", date: "2026-09-10", role: "primary" }
+    discovery_trace: "first seen at: unit42, URL https://unit42.paloaltonetworks.com/feed/ (RSS listing) → primary: Unit 42, URL https://unit42.paloaltonetworks.com/kubernetes-spiffe-spire-identity-spoofing/ (no pivot needed)"
+    summary: |
+      Unit 42 demonstrates a post-exploitation technique against SPIFFE/SPIRE, the open standard and reference
+      implementation widely deployed in Kubernetes and cloud-native environments to replace long-lived secrets
+      with short-lived, cryptographically verifiable workload identities (SVIDs). An attacker who has already
+      obtained root on a Kubernetes node can spoof the Linux control-group (cgroup) metadata the SPIRE agent
+      relies on during workload attestation, tricking the agent into issuing a co-located workload's SVID to an
+      attacker-controlled process — collapsing the core trust assumption of every machine-identity system, that
+      the node itself is trusted. Unit 42 built and released Spooffe (github.com/PaloAltoNetworks/spooffe), an
+      open-source tool defenders can use to test whether an attacker with administrative node access could
+      manipulate cgroup metadata to harvest co-located workload identities and scope the resulting blast radius.
+      Unit 42 states it has not observed this technique exploited in the wild. Recommended hardening: harden
+      nodes, restrict root access, prohibit privileged containers and host access, and minimize reliance on weak
+      SPIRE selectors when scoping identity issuance.
+    region_nexus: "global; applies to any Kubernetes/cloud-native environment running SPIFFE/SPIRE"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1550.001, T1611]
+    affected_products: ["SPIFFE/SPIRE"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:spooffe", type: tool, name: "Spooffe", aliases: [],
+          summary: "Open-source Unit 42 tool that tests whether an attacker with node root can spoof SPIFFE/SPIRE cgroup attestation to harvest co-located workload SVIDs (Unit 42, 2026-09-10)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Our research shows how an attacker with root can spoof the Linux control group (cgroup) information the SPIRE agent uses during workload attestation. This tricks the agent into issuing a co-located workload's SVID to an attacker-controlled process."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/kubernetes-spiffe-spire-identity-spoofing/"
+      - quote: "Unit 42 has not observed this technique exploited in the wild."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/kubernetes-spiffe-spire-identity-spoofing/"
+    extended_notes: |
+      Proof-of-concept research, no ITW exploitation reported. Include for hardening/hunt value given rising
+      SPIFFE/SPIRE adoption in Kubernetes identity architectures; the released Spooffe tool is itself a useful
+      defender-side validation asset.
+
+  - title: "Untracked Nightmares: a two-year pay-per-install marketplace (CL-CRI-1171) uses YouTube gaming lures and SEO poisoning to deliver three malware families — including infections on government and critical-infrastructure endpoints"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/ppi-network-malware-campaign-analysis/", publisher: "Palo Alto Networks Unit 42", date: "2026-09-09", role: "primary" }
+    discovery_trace: "first seen at: unit42, URL https://unit42.paloaltonetworks.com/feed/ (RSS listing) → primary: Unit 42, URL https://unit42.paloaltonetworks.com/ppi-network-malware-campaign-analysis/ (no pivot needed)"
+    summary: |
+      Unit 42 traced what looked like low-priority enterprise infections back to CL-CRI-1171, a pay-per-install
+      (PPI) infection marketplace that has operated undetected for at least two years, offering an indiscriminate
+      malware-delivery service to other threat actors. The operators ran at least eleven YouTube channels (each
+      with hundreds of thousands of followers, since terminated by YouTube after Unit 42's notification) posting
+      genuine gaming content — frame-rate tips, crash fixes, settings guides — that also funneled viewers to
+      malware downloads, alongside a parallel SEO-poisoning funnel aimed at a "more professional audience" that
+      delivered trojanized software resulting in malware deployment on corporate endpoints, explicitly including
+      critical infrastructure and government entities. Unit 42 identified more than 10,000 distinct loader
+      samples tied to the same shared-loader infrastructure and did a technical deep dive on three payloads
+      delivered by that loader between July 2025 and April 2026: two never previously reported (Docro Hijacker
+      and ARKTunnel) and a new variant of a previously unnamed backdoor Unit 42 now names Insomnia RAT.
+    region_nexus: "global; SEO-poisoning funnel explicitly reached government and critical-infrastructure endpoints"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1608.006, T1204.002]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:cl-cri-1171", type: actor, name: "CL-CRI-1171", aliases: [],
+          summary: "Unit 42 attribution-framework cluster running a pay-per-install (PPI) malware-delivery marketplace via YouTube gaming channels and SEO poisoning, active 2+ years (Unit 42, 2026-09-09)." }
+      - { key: "malware:docro-hijacker", type: malware, name: "Docro Hijacker", aliases: [],
+          summary: "Previously unreported malware payload delivered by CL-CRI-1171's shared loader infrastructure (Unit 42, 2026-09-09)." }
+      - { key: "malware:arktunnel", type: malware, name: "ARKTunnel", aliases: [],
+          summary: "Previously unreported malware payload delivered by CL-CRI-1171's shared loader infrastructure (Unit 42, 2026-09-09)." }
+      - { key: "malware:insomnia-rat", type: malware, name: "Insomnia RAT", aliases: [],
+          summary: "New variant of a previously unnamed backdoor, named by Unit 42, delivered by CL-CRI-1171's shared loader infrastructure (Unit 42, 2026-09-09)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The SEO funnel targeted a more professional audience, promoting trojanized software that resulted in malware deployment on corporate endpoints, including critical infrastructure and even government entities."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ppi-network-malware-campaign-analysis/"
+      - quote: "We have identified more than 10,000 distinct loader samples, each capable of delivering unique payload combinations."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ppi-network-malware-campaign-analysis/"
+    extended_notes: |
+      Direct constituency nexus (government/critical-infrastructure endpoints named as victims of the SEO-poisoning
+      funnel), and a genuinely novel actor cluster with three new/renamed malware families — strong candidate for
+      inclusion despite single-source status (first-hand Unit 42 investigation, not a re-report).
+
+  - title: "GuardBreaker: a Russia-aligned actor (UAC-0099) embeds a decoy nuclear-weapon request in a VBScript comment to trip an LLM-powered code scanner's safety refusal before it inspects the malicious payload"
+    sources:
+      - { url: "https://www.welivesecurity.com/en/business-security/guardbreaker-derailing-ai-assisted-malware-analysis-code-comment/", publisher: "ESET WeLiveSecurity", date: "2026-09-10", role: "primary" }
+    discovery_trace: "first seen at: eset, URL https://www.welivesecurity.com/en/rss/feed/ (RSS listing) → primary: ESET WeLiveSecurity, URL https://www.welivesecurity.com/en/business-security/guardbreaker-derailing-ai-assisted-malware-analysis-code-comment/ (no pivot needed)"
+    summary: |
+      ESET researchers spotted a VBScript used in the early stages of an attack against a Ukrainian target,
+      attributed to the Russia-aligned group UAC-0099, that contains a decoy comment requesting guidance on
+      building a nuclear weapon — a request LLMs are trained to refuse. The comment has zero effect on the
+      script's runtime behavior; its only purpose is to trip the safety guardrails of an LLM-powered code
+      scanner used in the target's defenses, causing that model to halt inspection at the refusal before ever
+      reaching the malicious code further down the file. ESET names this technique GuardBreaker: an
+      indirect-prompt-injection variant where the attacker's input reaches the LLM at inference time through the
+      file under analysis rather than through a user-supplied prompt, exploiting the architectural weakness that
+      current LLMs process untrusted content and trusted instructions without a dependable boundary between
+      them. The script's actual purpose was to download and install MATCHBOIL, a loader used exclusively by
+      UAC-0099 to deliver further payloads. ESET notes this fits a broader pattern from the same group, which in
+      other recent attacks checked for processes associated with established analysis tools (IDA, Wireshark) —
+      i.e., UAC-0099 explicitly accounts for both human and AI-assisted analysis in its operational tradecraft.
+      ESET also cites a prior Socket finding of fabricated warnings used to interfere with LLM-powered scanners
+      in software supply-chain attacks, framing GuardBreaker as part of a wider anti-AI-analysis trend.
+    region_nexus: "Ukraine (named target); technique is transferable to any org relying on LLM-assisted malware triage"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1497, T1059.005, T1027]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:uac-0099", type: actor, name: "UAC-0099", aliases: [],
+          summary: "Russia-aligned group tracked by Ukraine's CERT-UA, observed by ESET using a VBScript comment-based LLM-scanner-evasion technique (GuardBreaker) to deliver the MATCHBOIL loader (ESET, 2026-09-10)." }
+      - { key: "malware:matchboil", type: malware, name: "MATCHBOIL", aliases: [],
+          summary: "Loader used exclusively by UAC-0099 to deliver additional payloads, observed delivered via a GuardBreaker-laced VBScript (ESET, 2026-09-10)." }
+    relation_suggestions:
+      - { subject: "actor:uac-0099", object: "malware:matchboil",
+          basis: "ESET: \"The script's purpose was to download and install MATCHBOIL, a loader used exclusively by this group\" (ESET WeLiveSecurity, 2026-09-10)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "By inserting a decoy request for guidance on building a nuclear weapon into the script's comment, the bad actor aimed to trip the safety guardrails of an LLM-powered code scanner and cause it to stop inspecting the rest of the file — before ever reaching the malicious code."
+        attribution: "ESET WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/business-security/guardbreaker-derailing-ai-assisted-malware-analysis-code-comment/"
+      - quote: "just as in other recent attacks the group also checked for processes associated with established analysis tools such as IDA and Wireshark"
+        attribution: "ESET WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/business-security/guardbreaker-derailing-ai-assisted-malware-analysis-code-comment/"
+    extended_notes: |
+      Directly actionable for any SOC now routing suspicious scripts through an LLM-based triage step: a refusal
+      or early-halt verdict from that step should not be treated as "benign" — GuardBreaker specifically weaponizes
+      the refusal itself as an evasion signal. Detection: flag LLM-scanner outputs that halt/refuse on adversarial
+      or off-topic content embedded in comments rather than completing analysis of the full file.
+
+  - title: "0patch back-ports \"ResetNightmare\" (CVE-2026-27912) Kerberos Change-Password domain-takeover fix to unsupported Windows — and has to revoke and reissue its own first patch after it broke legitimate password resets"
+    sources:
+      - { url: "https://0patch.com/blog/micropatches-released-for-resetnightmare-windows-kerberos-elevation-of-privilege", publisher: "ACROS Security / 0patch", date: "2026-09-06", role: "primary" }
+    discovery_trace: "first seen at: 0patch-blog, URL https://blog.0patch.com/feeds/posts/default (RSS listing) → primary: 0patch, URL https://0patch.com/blog/micropatches-released-for-resetnightmare-windows-kerberos-elevation-of-privilege (no pivot needed)"
+    summary: |
+      0patch released free micropatches, for legacy/unsupported Windows versions it still protects, against
+      CVE-2026-27912 ("ResetNightmare"), a Kerberos Change-Password-service elevation-of-privilege vulnerability
+      Microsoft originally patched for supported Windows in its April 2026 updates. Security researcher Shai
+      Laron (Semperis) found and published the flaw with a proof-of-concept tool: a domain user who can modify
+      their own userPrincipalName attribute can abuse the Kerberos Change Password service on a domain
+      controller to change any other account's password, including a domain administrator's — a direct path to
+      full domain takeover from an ordinary authenticated user. 0patch's first micropatch, issued 2026-09-07,
+      introduced a regression that blocked administrators from changing passwords for OTHER users via Kerberos
+      (impact limited to that path; normal admin password resets and "net use" password resets were unaffected);
+      0patch revoked those patches and issued corrected ones on 2026-09-09.
+    region_nexus: "global; specifically relevant to any organization still running unsupported/EOL Windows domain controllers"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: ["CVE-2026-27912"]
+    techniques: [T1098, T1068]
+    affected_products: ["Microsoft Windows (unsupported/legacy versions — domain controller Kerberos Change Password service)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The vulnerability lies in the Kerberos Change Password service on a Windows domain controller. A domain user who can modify the userPrincipalName attribute on an account they control can change the password of any other account in the domain, including domain administrator's."
+        attribution: "0patch (ACROS Security)"
+        source_url: "https://0patch.com/blog/micropatches-released-for-resetnightmare-windows-kerberos-elevation-of-privilege"
+      - quote: "Update 9/9/2026: Our original patches issued on 9/7/2026 blocked administrators from changing passwords for other users. Impact was limited to password change performed via Kerberos... Today we revoked those patches and issued corrected ones."
+        attribution: "0patch (ACROS Security)"
+        source_url: "https://0patch.com/blog/micropatches-released-for-resetnightmare-windows-kerberos-elevation-of-privilege"
+    extended_notes: |
+      Public-sector relevance: many cantonal/communal IT estates run older domain-controller OS builds no longer
+      under Microsoft's standard support lifecycle. Original CVE was Microsoft-patched in April 2026 for supported
+      versions — this item is specifically about the exposure window for EOL Windows Server domain controllers.
+      Hunt angle: audit for userPrincipalName modifications by non-privileged accounts immediately preceding
+      unexpected password-change events on other accounts.
+    borderline: true
+    borderline_reason: "the underlying CVE was already Microsoft-patched (April 2026) for supported Windows; this item's news value is narrowly about 0patch's legacy-OS back-port and its own patch regression, not a fresh 0-day."
+
+  - title: "ShieldCrash: Nightmare Eclipse (the Chaotic Eclipse security-tooling researcher) publishes a bypass of Microsoft's own fix for the ShieldBreak Defender privilege-escalation flaw (CVE-2026-69414)"
+    sources:
+      - { url: "https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/", publisher: "SOCRadar", date: "2026-09-10", role: "primary" }
+    discovery_trace: "first seen at: socradar, URL https://socradar.io/blog/ (listing) → primary: SOCRadar, URL https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/ (no pivot needed)"
+    summary: |
+      The pseudonymous researcher Nightmare Eclipse — already tracked in this store (actor:nightmare-eclipse,
+      alias Chaotic Eclipse, from the 2026-09-06 entry disclosing unauthorized PoCs against CrowdStrike Falcon,
+      Avast and Kaspersky) has published ShieldCrash, a GitHub PoC (github.com/MSNightmare/ShieldCrash) claiming
+      to bypass Microsoft's fix for CVE-2026-69414 ("ShieldBreak", CVSS 7.8), a High-severity elevation-of-
+      privilege flaw in the Microsoft Malware Protection Engine. The researcher describes ShieldCrash as a
+      "skeleton PoC" reportedly reaching privileged file reads with SYSTEM authority on fully patched Windows
+      systems by taking a remaining exploitation path Microsoft's fix for ShieldBreak did not close; it does not
+      currently demonstrate arbitrary file writes or code execution, and Microsoft has not publicly confirmed the
+      bypass. The remediation boundary for the original ShieldBreak fix is Microsoft Malware Protection Engine
+      version 1.1.26080.3. ShieldCrash requires an existing low-privilege code-execution foothold — it is not a
+      remote initial-access exploit.
+    region_nexus: "global; any Windows estate running Microsoft Defender"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-69414"]
+    techniques: [T1068, T1562.001]
+    affected_products: ["Microsoft Defender / Microsoft Malware Protection Engine"]
+    entity_keys: ["actor:nightmare-eclipse"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-09-06/chaotic-eclipse-falconflank-prettyprague-edr-av-lpe-drops"
+    evidence:
+      - quote: "Nightmare Eclipse has released ShieldCrash, a Proof-of-Concept (PoC) that reportedly bypasses Microsoft's remediation and enables arbitrary file reads with SYSTEM privileges on updated Windows systems. Microsoft has not publicly confirmed the reported bypass."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/"
+      - quote: "Microsoft Malware Protection Engine version 1.1.26080.3 is identified as the remediation boundary for CVE-2026-69414. Defenders should verify Defender engine and platform versions separately from general Windows servicing."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/"
+    extended_notes: |
+      Same actor, same unauthorized-disclosure pattern (unvetted PoC against a security vendor's own product)
+      as the 2026-09-06 Chaotic Eclipse entry, now against a fourth vendor (Microsoft) and a different underlying
+      CVE — recommend as an update to that entry rather than a new one; main agent's call given the distinct CVE
+      and vendor. SOCRadar (reliability C) is corroboration-recommended per this deployment's source-reliability
+      table; no second source found in-window for the bypass claim itself (only for the underlying ShieldBreak CVE).
+    borderline: true
+    borderline_reason: "single C-reliability source relaying a researcher's own unverified claim; Microsoft has not confirmed the bypass."
+
+  - title: "AD Rights Management Service: a Service Group member's export rights let an attacker extract the RMS root Server Licensor Certificate private key, giving total, permanent, offline decryption of every document the deployment ever protected"
+    sources:
+      - { url: "https://www.huntress.com/blog/ad-rms-slc-encryption-key", publisher: "Huntress Labs", date: "2026-09-10", role: "primary" }
+      - { url: "https://www.huntress.com/blog/ad-rms-architecture-and-recon", publisher: "Huntress Labs", date: "2026-09-08", role: "primary" }
+    discovery_trace: "first seen at: huntress, URL https://www.huntress.com/blog/rss.xml (RSS listing) → primary: Huntress, URL https://www.huntress.com/blog/ad-rms-slc-encryption-key (Part 2, no pivot needed); companion article URL https://www.huntress.com/blog/ad-rms-architecture-and-recon (Part 1)"
+    summary: |
+      Huntress's two-part series on Active Directory Rights Management Service (AD RMS) shows that every document
+      an AD RMS deployment protects is bound to one root key — the Server Licensor Certificate (SLC) private key
+      — whose certificate carries a 255-year validity period while the key itself has no expiry and no rotation
+      mechanism. Part 1 (2026-09-08) covers the AD RMS architecture, certificate/license trust model, and how any
+      ordinary domain user can fingerprint which files are RMS-protected purely through reconnaissance. Part 2
+      (2026-09-10) demonstrates that a member of the RMS Service Group — the account class that operates the
+      admin surface — can export that SLC private key; once extracted, the 1,172-byte key decrypts every
+      document the deployment ever protected, offline, with no further access to the RMS infrastructure required,
+      and continues to work even after the RMS deployment itself is rebuilt (since the key is never rotated).
+      Huntress explicitly distinguishes this from a DCSync-equivalent attack: it is not AD credential theft or
+      domain compromise, but a total and permanent compromise of everything the RMS service protects for every
+      user. The author built and released SharpRMS, a unified tool combining the previously known client-side
+      RMS-protection-stripping attacks (from Grothe/Mainka/Rösler/Schwenk's 2016 WOOT "DisARMS" research) with the
+      new server-side key-extraction capability in one binary.
+    region_nexus: "global; applies to any organization using on-premises AD RMS for document rights protection"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1552.004]
+    affected_products: ["Active Directory Rights Management Services (AD RMS)"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:sharprms", type: tool, name: "SharpRMS", aliases: [],
+          summary: "Huntress-authored unified tool combining known client-side AD RMS protection-stripping attacks with new server-side Server Licensor Certificate private-key extraction (Huntress, 2026-09-10)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "every document an AD RMS deployment protects is bound to one root key, the Server Licensor Certificate (SLC) private key, whose certificate carries a 255-year validity period while the key itself has no expiry and no rotation mechanism."
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/ad-rms-slc-encryption-key"
+      - quote: "This attack is not a DCSync equivalent. The SLC key is not AD credentials, and this is not domain compromise. It is a total, permanent compromise of everything the RMS service protects, for every user."
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/ad-rms-slc-encryption-key"
+    extended_notes: |
+      High-value hardening lever for any public-sector deployment using AD RMS for sensitive document protection:
+      the finding argues for treating RMS Service Group membership as Tier-0-equivalent privileged access, and for
+      planning key-rotation/decommissioning procedures the product does not natively support. No CVE — this is an
+      architectural/design finding, not a patchable software bug.
+
+  - title: "A browser-in-the-browser (BiTB) phishing chain impersonating Adobe delivers rogue ScreenConnect installers and defense-evasion binaries across unrelated victim environments"
+    sources:
+      - { url: "https://www.huntress.com/blog/phishing-bitb-rmm-attacks", publisher: "Huntress Labs", date: "2026-09-09", role: "primary" }
+    discovery_trace: "first seen at: huntress, URL https://www.huntress.com/blog/rss.xml (RSS listing) → primary: Huntress, URL https://www.huntress.com/blog/phishing-bitb-rmm-attacks (no pivot needed)"
+    summary: |
+      Huntress's SOC documents two August 2026 incidents sharing a browser-in-the-browser (BiTB) phishing
+      technique: attackers render an entire fake browser window — address bar, URL, padlock icon, favicon
+      included — inside the actual webpage's HTML/CSS/JavaScript, defeating the address-bar check users are
+      trained to rely on. Both incidents began with a phishing message leading to an attacker-controlled landing
+      page that prompted the target to "View Files" via a spoofed Adobe Acrobat interface (showing what looked
+      like a legitimate Adobe subdomain in the fake address bar); following the BiTB page's instructions caused
+      the target to download a ScreenConnect installer, leading to deployment of multiple rogue ScreenConnect
+      instances plus additional defense-evasion binaries on the endpoint. This is a social-engineering delivery
+      chain distinct from the CVE-2026-84869 ScreenConnect file-transfer vulnerability (also Huntress-documented,
+      already tracked in this store): here the attacker abuses legitimate ScreenConnect installation via social
+      engineering rather than an authorization-check flaw in an active session.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566, T1204.001, T1219]
+    affected_products: ["ConnectWise ScreenConnect"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "BiTB is a tactic where an attacker spins up an entire fake browser window (including the address bar, URL, padlock icon, favicon, and more) inside the actual webpage content itself, usually using HTML/CSS/JavaScript."
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/phishing-bitb-rmm-attacks"
+      - quote: "This fake page looked like it was the official Adobe website (showing a legitimate, official Adobe subdomain in the URL). Through following the instructions on the BiTB page, the targets unknowingly downloaded a ScreenConnect installer – leading to the deployment of multiple rogue ScreenConnect instances on their endpoints and defense-evasion binaries."
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/phishing-bitb-rmm-attacks"
+    extended_notes: |
+      Triage discriminator: legitimate ScreenConnect deployment by IT is normally initiated by a known
+      administrator account/process lineage; a ScreenConnect installer arriving as a browser download
+      immediately following a "View Files"-style prompt on an unfamiliar domain, with no corresponding change
+      ticket, is the discriminating signal from this report.
+
+  - title: "Bitdefender's September 2026 Threat Debrief: ShinyHunters' vishing → Okta SSO → Salesforce/Snowflake exfiltration playbook reaches a healthcare victim for 200M+ records and a $55M ransom demand"
+    sources:
+      - { url: "https://www.bitdefender.com/en-us/blog/businessinsights/bitdefender-ransomware-threat-debrief-september-2026", publisher: "Bitdefender Business Insights", date: "2026-09-08", role: "primary" }
+    discovery_trace: "first seen at: bitdefender-threat-debrief, URL https://www.bitdefender.com/en-us/blog/businessinsights/ (listing) → primary: Bitdefender, URL https://www.bitdefender.com/en-us/blog/businessinsights/bitdefender-ransomware-threat-debrief-september-2026 (no pivot needed)"
+    summary: |
+      Bitdefender's monthly ransomware/extortion debrief (data window: August 1-31, 2026; 1,000 claimed victims,
+      the second-highest monthly total since Bitdefender began detailed tracking in 2023) highlights ShinyHunters
+      (registry: actor:shinyhunters, alias UNC6240) continuing to run the same playbook it developed alongside
+      Scattered Spider and Lapsus$: at the start of August, vishing combined with compromise of an organization's
+      Okta SSO and its Salesforce/Snowflake ecosystem let the group exfiltrate what it claims is more than 200
+      million records from a healthcare-sector victim in a four-day window, followed by a $55 million ransom
+      demand. Only 18 named victims are reported for the group so far, but Bitdefender notes the scope of
+      individual breaches has scaled to impact thousands to millions of records each. The debrief separately
+      tracks Qilin reclaiming the top ransomware-group ranking (166 August victims, Germany/France/Italy the
+      largest non-North-American victim demographic), Clop's second 2026 campaign exploiting FlexPLM and PTC
+      Windchill (40+ claimed victims), and Medusa (67 victims to date; observed staging Rclone inside a Windows
+      Defender exclusion path to evade exfiltration detection).
+    region_nexus: "global; Qilin's largest non-North-American victim demographic is Germany/France/Italy"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.004, T1078.004, T1567.002, T1562.001]
+    affected_products: ["Okta", "Salesforce", "Snowflake"]
+    entity_keys: ["actor:shinyhunters"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "At the beginning of August, ShinyHunters used playbook tactics they developed alongside their partners Scattered Spider and Lapsus$ to hit an organization in healthcare... resulted in the exfiltration of what the group claims is more than 200 million records in a four-day window. Then, ShinyHunters sent a $55 million ransom demand."
+        attribution: "Bitdefender Business Insights"
+        source_url: "https://www.bitdefender.com/en-us/blog/businessinsights/bitdefender-ransomware-threat-debrief-september-2026"
+      - quote: "Medusa uses a defense evasion tactic involving staging Rclone in a Windows Defender exclusion path to combat the detection of exfiltration activity."
+        attribution: "Bitdefender Business Insights"
+        source_url: "https://www.bitdefender.com/en-us/blog/businessinsights/bitdefender-ransomware-threat-debrief-september-2026"
+    extended_notes: |
+      Monthly periodic report (flag: PERIODIC REPORT — Bitdefender Threat Debrief September 2026). Bitdefender
+      itself states DLS-derived figures cannot be independently verified, only trended; the specific victim-record
+      claims (200M+, $55M) are the extortion actor's own unverified figures relayed by Bitdefender, not confirmed
+      by the named victim. Overlaps S2/S4 territory (incidents/ransomware) more than pure technique research;
+      flagging for the main agent's cross-domain triage given the transferable vishing→SSO→SaaS-exfil TTP value.
+    borderline: true
+    borderline_reason: "primarily an incident/leak-site-claim digest (S2/S4 territory) rather than G3 technique research; victim figures are the criminal actor's own unverified claims relayed by a C/B-reliability source."
+publisher_sweep:
+  - publisher: "Microsoft Threat Intelligence"
+    listing_url: "https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/"
+    method: "not directly re-swept this run (time-boxed) — the in-window Microsoft Threat Intelligence items already in prior_coverage.json (TerminalFix update, AI infrastructure gateways) cover this publisher's window signal; no additional MSTI post identified via cross-checks (Talos/Volexity/Proofpoint's BlueMoon coverage did not surface a distinct MSTI post beyond the already-covered TerminalFix thread)."
+    posts_in_window: []
+  - publisher: "Google Threat Intelligence Group / Mandiant (GTIG)"
+    listing_url: "https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v"
+    method: "rss feed"
+    posts_in_window:
+      - { title: "GTIG AI Threat Tracker: From Prompting to Autonomy – The Evolution of Adversarial AI", date: "2026-09-08", included: true }
+  - publisher: "Cisco Talos"
+    listing_url: "https://blog.talosintelligence.com/"
+    method: "extract"
+    posts_in_window:
+      - { title: "ClickFix moves into the browser: Cryptocurrency theft with Google-hosted C2", date: "2026-09-08", included: true }
+      - { title: "ClearFake WebDAV infection chain delivers Amatera stealer, ZigCryptoStealer, and NetSupport Manager", date: "2026-09-08", included: true }
+      - { title: "Active exploitation of Cisco Secure Firewall Management Center vulnerabilities", date: "~2026-09-11 to 09-13 (update)", included: false, note: "already covered — primary for the existing CVE-2026-20079 entry's Sept-13 update" }
+      - { title: "Microsoft Patch Tuesday for September 2026 — Snort rules and prominent vulnerabilities", date: "2026-09-09", included: false, note: "roll-up already covered by existing Sept-9 Patch Tuesday entry" }
+      - { title: "JavaScript obfuscation: From party trick to phishing kit", date: "unclear/likely pre-window", included: false }
+      - { title: "\"Sorry, I can't help with that\": How your guardrails might become the attacker's best friend", date: "unclear", included: false, note: "newsletter/opinion piece, not primary technical research" }
+  - publisher: "Palo Alto Networks Unit 42"
+    listing_url: "https://unit42.paloaltonetworks.com/feed/"
+    method: "rss feed"
+    posts_in_window:
+      - { title: "The Machine With Many Faces: Post-Exploitation Identity Misuse in SPIFFE/SPIRE", date: "2026-09-10", included: true }
+      - { title: "Untracked Nightmares: The Threats Hiding Behind Commodity Infrastructure", date: "2026-09-09", included: true }
+  - publisher: "Check Point Research"
+    listing_url: "https://research.checkpoint.com/feed/"
+    method: "rss feed"
+    posts_in_window:
+      - { title: "PuzzleMask: Abusing Plain Prose as a Covert AI Attack Vector", date: "2026-09-10", included: true }
+      - { title: "The Shared Clipboard Inside the Sandbox: Cross-Account Data Leakage in ChatGPT", date: "2026-09-08", included: true }
+      - { title: "7th September – Threat Intelligence Report", date: "2026-09-07", included: false, note: "weekly roll-up, discovery only" }
+  - publisher: "ESET Research (WeLiveSecurity)"
+    listing_url: "https://www.welivesecurity.com/en/rss/feed/"
+    method: "rss feed"
+    posts_in_window:
+      - { title: "GuardBreaker: Derailing AI-assisted malware analysis with a code comment", date: "2026-09-10", included: true }
+      - { title: "Safe word: What is it and why do you need one?", date: "2026-09-09", included: false, note: "consumer-advice piece, not technical research" }
+  - publisher: "Kaspersky Securelist"
+    listing_url: "https://securelist.com/feed/"
+    method: "rss feed"
+    posts_in_window: []
+    note: "swept — newest item in feed is 2026-09-04 (Toy Ghouls, already covered), nothing published inside the 09-06 to 09-13 window."
+  - publisher: "SentinelOne SentinelLabs"
+    listing_url: "https://www.sentinelone.com/labs/feed/"
+    method: "rss feed"
+    posts_in_window: []
+    note: "swept — newest item is 2026-08-13, quiet for the whole window."
+  - publisher: "Proofpoint Threat Insight"
+    listing_url: "https://www.proofpoint.com/us/blog/threat-insight"
+    method: "extract (recipe recovered this run — see broken_recipes)"
+    posts_in_window:
+      - { title: "Once in a BlueMoon: Multiple State-Aligned Threat Actors Rapidly Adopt Novel Exploit Chain Using Chrome and Windows Zero-Days", date: "2026-09-09", included: false, note: "already covered — primary source for the existing BlueMoon exploit-kit entry (2026-09-10)" }
+  - publisher: "Trend Micro Research"
+    listing_url: "https://feeds.feedburner.com/TrendMicroResearch"
+    method: "rss feed"
+    posts_in_window: []
+    note: "feed itself appears stale (newest item returned was 2026-07-30) despite the source record showing a 2026-09-08 last_successful_fetch — feed lag/caching suspected; no in-window items retrievable through the feed this run."
+  - publisher: "CrowdStrike"
+    listing_url: "https://www.crowdstrike.com/blog/category/counter-adversary-operations/"
+    method: "extract"
+    posts_in_window: []
+    note: "listing surfaced 'Peer Pressure: Inside the Sality Botnet Disruption Operation' and 'Inside Astaroth's New Spambot Component', both of which WebSearch-verified as published outside the window (~Sept 2-3 and July 29 2026 respectively, despite the extract tool's page-level date metadata misreporting both as 2026-09-08 — a caveat for this listing, its per-article dates are not reliable and must be independently verified). No confirmed in-window CrowdStrike post found."
+  - publisher: "Recorded Future Insikt Group"
+    listing_url: "https://www.recordedfuture.com/feed"
+    method: "rss feed"
+    posts_in_window: []
+    note: "in-window items are product-announcement posts (Digital Risk Protection launch, Automated Signature Creation) and an 'August 2026 CVE Landscape' summary (2026-09-08) — none rose to a qualifying primary technical-research item distinct from prior coverage."
+  - publisher: "AhnLab ASEC"
+    listing_url: "https://asec.ahnlab.com/en/feed/"
+    method: "rss feed"
+    posts_in_window:
+      - { title: "Ransom & Dark Web Issues Week 2, September 2026", date: "2026-09-09", included: false, note: "weekly roll-up digest, discovery-only per mission rules" }
+  - publisher: "0patch"
+    listing_url: "https://blog.0patch.com/feeds/posts/default"
+    method: "rss feed"
+    posts_in_window:
+      - { title: "Micropatches released for \"ResetNightmare\" Windows Kerberos Elevation of Privilege (CVE-2026-27912)", date: "2026-09-06", included: true }
+  - publisher: "Citizen Lab"
+    listing_url: "https://citizenlab.ca/feed/"
+    method: "rss feed"
+    posts_in_window:
+      - { title: "Group of Bipartisan Lawmakers Ask US Government to Ban Several Hack-for-Hire Firms", date: "2026-09-10", included: false, note: "policy/advocacy, not primary technical research" }
+  - publisher: "Cloudflare Cloudforce One"
+    listing_url: "https://blog.cloudflare.com/tag/cloudforce-one/"
+    method: "extract"
+    posts_in_window: []
+    note: "quiet — newest content ~2026-08-11."
+  - publisher: "Fox-IT"
+    listing_url: "https://blog.fox-it.com/"
+    method: "not directly re-fetched this run (time-boxed; source record notes very low cadence, ~3 posts in 18 months — empty window expected, not a failure)"
+    posts_in_window: []
+  - publisher: "Team Cymru"
+    listing_url: "https://www.team-cymru.com/blog"
+    method: "extract"
+    posts_in_window: []
+    note: "listing carries no inline dates (documented source caveat); the three most-recent-looking titles were WebSearch-verified to pre-window dates (Behind the Panels: ShinyHunters — Aug 5 2026; others undated/inconclusive in the time available)."
+  - publisher: "Akamai SIRT"
+    listing_url: "https://feeds.feedburner.com/akamai/blog"
+    method: "rss feed"
+    posts_in_window:
+      - { title: "Introducing AI Assistant for Akamai Web Security Analytics", date: "2026-09-10", included: false, note: "marketing/product post, filtered per source record's own guidance" }
+      - { title: "NIS2 Compliance in the AI Age", date: "2026-09-09", included: false, note: "marketing/compliance post, not SIRT research" }
+      - { title: "Inside AI-Powered WAF Detections: Architecture and Safety Controls", date: "2026-09-08", included: false, note: "product-architecture post, not threat research" }
+  - publisher: "Exodus Intelligence"
+    listing_url: "https://blog.exodusintel.com/feed/"
+    method: "rss feed"
+    posts_in_window: []
+    note: "quiet — newest item 2026-07-27."
+  - publisher: "Lab52"
+    listing_url: "https://lab52.io/blog/feed/"
+    method: "rss feed"
+    posts_in_window: []
+    note: "quiet — newest item 2026-07-03."
+  - publisher: "watchTowr Labs"
+    listing_url: "https://labs.watchtowr.com/rss/"
+    method: "rss feed"
+    posts_in_window: []
+    note: "quiet — newest item 2026-08-14."
+  - publisher: "Volexity"
+    listing_url: "https://www.volexity.com/blog/"
+    method: "extract (recipe recovered this run — see broken_recipes)"
+    posts_in_window:
+      - { title: "Mind the (Patch) Gap: Multiple Chinese Threat Actors Chain 0-day Exploits in Chrome & Windows", date: "2026-09-09", included: false, note: "already covered — pivot source for the existing BlueMoon entry's Sept-13 update" }
+  - publisher: "Aqua Nautilus"
+    listing_url: "https://blog.aquasec.com/rss.xml"
+    method: "rss feed — confirmed stale, see broken_recipes"
+    posts_in_window: []
+  - publisher: "SocRadar"
+    listing_url: "https://socradar.io/blog/"
+    method: "extract (recipe recovered this run — see broken_recipes)"
+    posts_in_window:
+      - { title: "ShieldCrash PoC: Microsoft Defender Fix Bypass", date: "2026-09-10", included: true }
+      - { title: "Cisco FMC CVE-2026-20079 Actively Exploited", date: "unclear, likely pre-window", included: false, note: "already covered under the existing CVE-2026-20079 entry" }
+      - { title: "September 2026 Patch Tuesday: 974 Flaws, 2 Zero-Days", date: "~2026-09-09", included: false, note: "roll-up, already covered by existing Patch Tuesday entry" }
+      - { title: "Vibe-Terrorism: Inside the Yemen Cell That Used Claude to Build Guided Weapons", date: "~2026-09-10 to 09-13", included: false, note: "relays Anthropic's Sept-2026 threat-intel report (same report as the already-covered GTG-20006 entry); physical-weapons case is not a cyber-intrusion technique and falls outside this domain's detection/hunt/harden mandate" }
+  - publisher: "ReliaQuest"
+    listing_url: "https://reliaquest.com/blog/"
+    method: "STILL BROKEN — see broken_recipes"
+    posts_in_window: []
+  - publisher: "IBM X-Force"
+    listing_url: "https://www.ibm.com/think/x-force"
+    method: "STILL BROKEN — see broken_recipes"
+    posts_in_window: []
+  - publisher: "Jamf Threat Labs"
+    listing_url: "https://www.jamf.com/blog/category/jamf-threat-labs/"
+    method: "STILL BROKEN — see broken_recipes"
+    posts_in_window: []
+  - publisher: "Bitdefender Business Insights"
+    listing_url: "https://www.bitdefender.com/en-us/blog/businessinsights/"
+    method: "extract"
+    posts_in_window:
+      - { title: "Bitdefender Threat Debrief | September 2026", date: "2026-09-08", included: true }
+  - publisher: "Huntress Labs"
+    listing_url: "https://www.huntress.com/blog/rss.xml"
+    method: "rss feed"
+    posts_in_window:
+      - { title: "AD Rights Management Service (Part 2): Extraction, Offline Decryption, and the Unrotatable Key", date: "2026-09-10", included: true }
+      - { title: "AD Rights Management Service (Part 1): Architecture, Deprecation, and Reconnaissance", date: "2026-09-08", included: true, note: "companion source cited alongside Part 2" }
+      - { title: "Grand Theft Auto VI hype leads to malware", date: "2026-09-09", included: false, note: "SEO-poisoning malware distribution, but assessed as thinner/less novel than the included items; deprioritized under quality-over-quantity" }
+      - { title: "Phishing Attacks Serve Browser-in-the-Browser Pages, Rogue RMM Persistence", date: "2026-09-09", included: true }
+      - { title: "Rogue ScreenConnect Installations Across Unrelated Hosts Suggest Worm-Like Activity", date: "2026-09-03 (updated 2026-09-08)", included: false, note: "already covered — underlying Huntress research for the existing CVE-2026-84869 entry" }
+      - { title: "Google Doc Sidebar Sends Mac and Windows Users Down Different Paths to Malware", date: "2026-09-15 (feed-listed; future-dated relative to today, 2026-09-13)", included: false, note: "excluded — publication date is after today per the feed, treated as not yet genuinely published; flagged for a future run to verify once its date has passed" }
+  - publisher: "Rapid7 Research"
+    listing_url: "https://www.rapid7.com/rss.xml"
+    method: "rss feed"
+    posts_in_window:
+      - { title: "Metasploit Wrap Up: This One Goes to Sixteen!", date: "2026-09-11", included: false, note: "weekly roll-up; all named CVEs (Cisco, PaperCut, SonicWall, JetBrains, Langflow) already covered" }
+  - publisher: "GreyNoise Labs"
+    listing_url: "https://www.greynoise.io/blog"
+    method: "extract (re-confirmed working this run — see broken_recipes)"
+    posts_in_window:
+      - { title: "(PaperCut AI-agent mass-exploitation article)", date: "~early September 2026 (page metadata unreliable)", included: false, note: "already covered — primary for the existing PaperCut CVE-2026-81578/82078 entry's Sept-10 update" }
+  - publisher: "Horizon3.ai"
+    listing_url: "https://horizon3.ai/attack-research/ (now serves via /category/attack-research/)"
+    method: "extract"
+    posts_in_window: []
+    note: "quiet — newest item 2026-09-01 (Sangoma Switchvox CVE-2026-9586, already covered)."
+  - publisher: "Sekoia"
+    listing_url: "https://www.sekoia.com/blog"
+    method: "extract"
+    posts_in_window: []
+    note: "featured post (ChocoPoC) WebSearch-verified as a July 2026 publication, not in-window."
+  - publisher: "Symantec / Broadcom (Threat Hunter Team)"
+    listing_url: "https://www.security.com/threat-intelligence"
+    method: "extract"
+    posts_in_window: []
+    note: "quiet — newest item 3 Sept 2026 (Node.js technique piece), one day before window start."
+  - publisher: "Censys"
+    listing_url: "https://censys.com/resources/blog/"
+    method: "not directly fetched this run (time-boxed); WebSearch found no clearly in-window item"
+    posts_in_window: []
+  - publisher: "Datadog Security Labs"
+    listing_url: "https://securitylabs.datadoghq.com/"
+    method: "not directly fetched this run (time-boxed, no sources.json record found); WebSearch found no September 2026 article"
+    posts_in_window: []
+watchlist_sweep:
+  duty: none
+candidate_sources: []
+coverage_gaps:
+  - source_id: reliaquest
+    reason: "Confirmed still broken this run across every transport tried (extract, jina) — the /blog/ listing is fully client-side rendered; jina returned only an ad-tracker pixel page, no post content. No working recipe found. Recommend a structured-endpoint probe (sitemap.xml, a JSON API) in a future run."
+  - source_id: ibm-xforce
+    reason: "Confirmed still broken this run — both bridge url and extract on https://www.ibm.com/think/x-force return only the marketing-shell head (title/description), no dated post listing. WebSearch found only February 2026 and older dated posts; no in-window content locatable."
+  - source_id: jamf-threat-labs
+    reason: "Confirmed still broken this run — extract on the category listing returns only nav/subscribe chrome, no post cards; the guessed /blog/feed/ path is not a real RSS feed (jina resolved it to unrelated site-nav links). WebSearch found no September 2026 Jamf Threat Labs post; most recent identifiable posts are from July-August 2026 (AmnesiaStealer, MacSync Stealer evolution)."
+  - source_id: exodus-intelligence
+    reason: "Feed live and correctly fetched (rss_url https://blog.exodusintel.com/feed/) but genuinely quiet — newest item is 2026-07-27, no in-window (2026-09-06 to 09-13) posts. Not a recipe problem."
+  - source_id: lab52
+    reason: "Feed live but genuinely quiet — newest item is 2026-07-03, no in-window posts."
+  - source_id: watchtowr
+    reason: "Feed live but genuinely quiet — newest item is 2026-08-14, no in-window posts."
+  - source_id: sentinellabs
+    reason: "Feed live but genuinely quiet — newest item is 2026-08-13, no in-window posts."
+  - source_id: cloudflare-cf1
+    reason: "Listing live but genuinely quiet (Cloudforce One tag) — newest content dated around 2026-08-11, no in-window posts."
+  - source_id: horizon3-ai
+    reason: "Listing live (now serves from /category/attack-research/ rather than the recorded /attack-research/ path — same content, works via extract) but genuinely quiet — newest item is 2026-09-01 (CVE-2026-9586, already covered), no in-window posts after that."
+  - source_id: team-cymru
+    reason: "Listing live via extract but carries no inline dates (matches the source record's known caveat); drilled the three most-recent-looking titles via WebSearch — all resolved to pre-window dates (Cl0p/ShinyHunters posts from July-August 2026). No confirmed in-window post identified within the time available."
+  - source_id: censys-blog
+    reason: "Not directly fetched this run (time-boxed); WebSearch found no clearly in-window (Sept 6-13) post — most recent identifiable item is the 'New on the Map — August 2026' post."
+  - source_id: akamai-sirt
+    reason: "Feed live; in-window items present but all fall on the marketing/product/NIS2-compliance side the source record already flags to filter out (AI Assistant launch, NIS2 compliance, WAF architecture) rather than SIRT security research — no qualifying research item in window."
+  - source_id: sekoia
+    reason: "Listing live via extract; its featured post (ChocoPoC trojanised-PoC-exploit campaign) is confirmed via WebSearch to be a July 2026 publication, not in-window — no other post surfaced on the listing."
+  - source_id: citizen-lab
+    reason: "Feed live; newest item is 2026-09-10 but is policy/advocacy (US lawmakers call for hack-for-hire sanctions), not primary technical research — no qualifying in-window item."
+  - source_id: datadog-security-labs
+    reason: "Not directly fetched this run (time-boxed, no sources.json record found for it); WebSearch found no September 2026 article, most recent identifiable content is the State of DevSecOps 2026 report."
+broken_recipes:
+  - source_id: volexity
+    status: FIXED
+    working_recipe: "python3 tools/fetch_source.py extract https://www.volexity.com/blog/"
+    verified_result: "Returns a full dated listing with article titles, dates and lead paragraphs (trafilatura-direct). Newest item this run: \"Mind the (Patch) Gap: Multiple Chinese Threat Actors Chain 0-day Exploits in Chrome & Windows\", dated September 9, 2026 — the primary write-up already cited as a pivot source for this store's BlueMoon exploit-kit entry (UTA0560 operator)."
+    note: "The prior 'RSS returns zero items' failure was almost certainly a raw-RSS attempt against a host that has no RSS feed at all; the fix is to use the extract transport directly against the /blog/ listing page rather than searching for a feed. Recommend sources.json fetch_method stay webfetch/extract, not rss."
+  - source_id: proofpoint
+    status: FIXED
+    working_recipe: "python3 tools/fetch_source.py extract https://www.proofpoint.com/us/blog/threat-insight"
+    verified_result: "Returns the actual Threat Insight blog content (not the corporate newsroom) — top article this run: \"Once in a BlueMoon: Multiple State-Aligned Threat Actors Rapidly Adopt Novel Exploit Chain Using Chrome and Windows Zero-Days\", dated 2026-09-09."
+    note: "The recorded url in sources.json (https://www.proofpoint.com/us/blog/threat-insight) was already correct; the prior failure was very likely a plain-WebFetch attempt whose summariser lost the listing content. Recommend fetch_method stay/become extract-first."
+  - source_id: aqua-nautilus
+    status: STILL_BROKEN
+    attempted: "python3 tools/fetch_source.py url https://www.aquasec.com/nautilus/ ; python3 tools/fetch_source.py feed https://blog.aquasec.com/rss.xml 5"
+    result: "The recorded feed (blog.aquasec.com/rss.xml) is confirmed stale — newest item 2025-05-06, matching the spawn brief's '2025 items only' description. Probing https://www.aquasec.com/nautilus/ returned a single article page (not a listing), canonical URL https://www.aquasec.com/resources/item/nautilus-behind-the-code/ — suggesting Aqua has migrated Nautilus research into a /resources/ hub on the main aquasec.com domain rather than the legacy blog.aquasec.com subdomain."
+    recommendation: "Next run should probe https://www.aquasec.com/resources/ (filtered to blog/research item types) or aquasec.com/sitemap.xml for a dated Nautilus listing under the new URL structure; no working listing found in the time available this run."
+  - source_id: socradar
+    status: FIXED
+    working_recipe: "python3 tools/fetch_source.py extract https://socradar.io/blog/ (for the listing) then extract each per-article URL for the real publish date"
+    verified_result: "The listing extract returns clean titles/links/summaries; individual article extracts carry an accurate per-article date field (verified: shieldcrash-poc-microsoft-defender-fix-bypass dated 2026-09-10). The listing PAGE's own meta date is stale/wrong (showed 2026-06-03) and must not be trusted for recency — always drill to the specific article for its date."
+    note: "Resolves the 'partial' status: the source is fully usable provided the caller drills per-article rather than trusting the listing page's own metadata date."
+  - source_id: greynoise
+    status: CONFIRMED_WORKING
+    working_recipe: "python3 tools/fetch_source.py extract https://www.greynoise.io/blog"
+    verified_result: "Returns full article content (verified against the already-covered PaperCut AI-agent mass-exploitation story). The listing page's own date metadata is unreliable (showed 2026-07-31 despite the top article discussing 31 August 2026 events) — read the actual date from in-body text/date references, not the page-level meta date."
+    note: "Re-probe requested by the audit; source is not broken, just carries the same page-level-date-metadata caveat documented for socradar/team-cymru above."

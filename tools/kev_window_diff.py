@@ -31,6 +31,9 @@ Usage
     python3 tools/kev_window_diff.py --window-hours 26          # gap-derived
     python3 tools/kev_window_diff.py --since 2026-08-24 --json  # machine-readable
     python3 tools/kev_window_diff.py --since 2026-08-24 --kev-file kev.json
+    python3 tools/kev_window_diff.py --window-hours 26 --run-id "$RUN_ID"
+        # ^ the shape a fire should use: also writes work/<run-id>/kev-window.txt,
+        #   so the forensic artefact exists without depending on a shell redirect.
 
 Coverage is checked against BOTH `state/cves_seen.json` (the flat store-wide
 index) and the `cves[]` frontmatter of every entry, so a CVE covered by an
@@ -126,6 +129,9 @@ def main() -> int:
     p.add_argument("--json", action="store_true", help="machine-readable output")
     p.add_argument("--kev-file", type=Path,
                    help="read the KEV catalog from a local JSON file instead of fetching")
+    p.add_argument("--run-id", metavar="RUN_ID",
+                   help="also persist this report to work/<RUN_ID>/kev-window.txt "
+                        "(the forensic artefact the run record's KEV note refers to)")
     args = p.parse_args()
 
     since = _since_from_args(args)
@@ -163,29 +169,52 @@ def main() -> int:
     uncovered = [r for r in rows if not r["covered"]]
 
     if args.json:
-        json.dump({"since": since.isoformat(), "total_in_window": len(rows),
-                   "uncovered": len(uncovered), "rows": rows},
-                  sys.stdout, indent=2)
-        sys.stdout.write("\n")
+        payload = json.dumps({"since": since.isoformat(), "total_in_window": len(rows),
+                              "uncovered": len(uncovered), "rows": rows}, indent=2)
+        print(payload)
+        _persist(args.run_id, payload)
         return 0
 
-    print(f"CISA KEV additions since {since.isoformat()}: {len(rows)} "
-          f"({len(uncovered)} not covered by the store)\n")
+    out = [f"CISA KEV additions since {since.isoformat()}: {len(rows)} "
+           f"({len(uncovered)} not covered by the store)", ""]
     if not rows:
-        print("  none — the window carries no KEV additions")
-        return 0
+        out.append("  none — the window carries no KEV additions")
     for r in rows:
         mark = "COVERED  " if r["covered"] else "NOT COVERED"
-        print(f"  {mark} {r['date_added']}  {r['cve']:18s} {r['vendor']} {r['product']}")
-        print(f"              {r['name']}")
+        out.append(f"  {mark} {r['date_added']}  {r['cve']:18s} {r['vendor']} {r['product']}")
+        out.append(f"              {r['name']}")
         if r["covered"]:
-            print(f"              already in: {r['covered_by']}")
+            out.append(f"              already in: {r['covered_by']}")
     if uncovered:
-        print("\nEvery NOT COVERED row needs a disposition in this run: a new entry, "
-              "an `update` changelog record on the entry that already covers the "
-              "finding, or an explicit `borderline-drop:` line in the run record "
-              "saying why it is out of scope (PD-11). Silence is not a disposition.")
+        out += ["", "Every NOT COVERED row needs a disposition in this run: a new entry, "
+                    "an `update` changelog record on the entry that already covers the "
+                    "finding, or an explicit `borderline-drop:` line in the run record "
+                    "saying why it is out of scope (PD-11). Silence is not a disposition."]
+    report = "\n".join(out)
+    print(report)
+    _persist(args.run_id, report)
     return 0
+
+
+def _persist(run_id: str | None, report: str) -> None:
+    """Write the report to work/<run-id>/kev-window.txt.
+
+    The artefact requirement in `prompts/cti-run.md` Phase 0 step 6b was purely
+    attentional through v4.9 — it asked the fire to `tee` the output — and two
+    consecutive audit windows (2026-08-30 → 09-06 and 09-06 → 09-13) found that
+    not one fire of fourteen ever wrote the file, even while most discharged the
+    KEV duty correctly in prose. A duty that depends on remembering a shell
+    redirect is a duty that decays; running the tool now discharges it.
+    """
+    if not run_id:
+        return
+    dest = ROOT / "work" / run_id / "kev-window.txt"
+    try:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(report + "\n", encoding="utf-8")
+        print(f"\n[kev-window] persisted to {dest.relative_to(ROOT)}", file=sys.stderr)
+    except OSError as e:  # noqa: BLE001 — never fail the sweep over the artefact
+        print(f"[kev-window] could not persist artefact: {e}", file=sys.stderr)
 
 
 if __name__ == "__main__":

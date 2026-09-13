@@ -49,9 +49,12 @@ evidence:
     publisher: "Piyolog (Piyokango) — Japanese security incident-tracking blog"
 verification: multi-source
 sourcing_note: >
-  Jiji Press (a national wire service) and the Digital Agency's own press-conference statements
-  (relayed by Piyolog, a well-regarded Japanese incident-tracking blog that directly quotes and
-  links official sources) are independent of each other. Piyolog additionally records its own
+  All three cited outlets relay the same single disclosure event — the Digital Agency's 2026-09-11
+  press release and the ministerial press conference that accompanied it. Jiji Press is a national
+  wire service and Piyolog a well-regarded Japanese incident-tracking blog that directly quotes and
+  links official sources, but neither observed or assessed the intrusion independently, so this is
+  one assessor with several publishers and the credibility number is 2 rather than 1. Piyolog
+  additionally records its own
   named speculation, explicitly hedged as such, that the exploited VPN flaw may be Palo Alto
   Networks' CVE-2026-0257 (GlobalProtect authentication bypass) based on matching CVSS rating and
   timing; no official source names the VPN vendor, product or CVE, and that identification is not
@@ -63,10 +66,20 @@ deep_dive_category: null
 org_triage: null
 classification:
   reliability: B
-  credibility: 1
+  credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-13T14:40:00Z"
+    run_id: 2026-09-13T1307Z-audit
+    type: correction
+    summary: >
+      Admiralty credibility lowered from 1 to 2. All three cited sources relay the Digital Agency's
+      single 2026-09-11 press release and press conference rather than assessing the incident
+      independently, which is the one-assessor-several-publishers pattern the classification rule
+      scores as 2. The sourcing note's claim that Jiji Press and the Piyolog-relayed agency
+      statements are independent of each other is corrected with it.
+    fields: [classification, sourcing_note]
 migrated_from: null
 ---
 
@@ -77,3 +90,7 @@ The root cause was a third party exploiting a vulnerability in an externally-fac
 At the 2026-09-11 press conference, Digital Minister Matsumoto stated the exploited vulnerability was already known to the agency before the intrusion, rated only "Medium" severity under CVSS, and was being remediated on a severity-based schedule when it was exploited ahead of that fix being applied ([Digital Agency Q&A, relayed by Piyolog, 2026-09-11](https://piyolog.hatenadiary.jp/entry/2026/09/11/220855)). The agency stated it will review its vulnerability-management approach as a result, without disclosing specifics on what will change ([Rocket Boys Security Measures Lab, 2026-09-11](https://rocket-boys.co.jp/security-measures-lab/digital-agency-privacy-data-incident/)).
 
 **Defender takeaway:** two lessons transfer directly to any shared, multi-agency IT-services platform — the closest structural analogue being a federal or cantonal shared administrative environment. First, the detection trigger here was not the initial VPN exploit but a downstream behavioral anomaly: unusually large file-access volume from a maintenance or service account, which is a hunt worth running regardless of whether the initial exploit is ever caught. Second, a vulnerability rated only "Medium" by bare CVSS was exploited before its scheduled fix arrived — a reminder that severity-based patch queues need an exposure- and asset-criticality-aware override for anything reachable from outside the network, not just a CVSS threshold.
+
+## Correction — 2026-09-13T14:40:00Z
+
+The confidence this entry conveyed in its Admiralty rating was too high, and the reason matters for how a reader weighs it. Every fact here traces to one disclosure: the Digital Agency's 2026-09-11 press release and the accompanying press conference. Jiji Press, Piyolog and Rocket Boys Security Measures Lab each report that announcement; none of them examined the intrusion. Independent corroboration means a second party that observed or assessed the thing, not a second outlet that republished the first, so the credibility number is 2 (probably true, not independently confirmed) rather than 1. Nothing factual in the entry changes — the figures, the scope and the agency's statements were re-verified against the same sources and hold. What changes is that a reader should treat the account as the Digital Agency's own, still awaiting outside confirmation: the VPN vendor, the product, the CVE and whether the flaw was known and patched before the intrusion all remain undisclosed by any party.

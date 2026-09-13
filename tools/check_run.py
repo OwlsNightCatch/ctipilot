@@ -2414,6 +2414,11 @@ VERIFIER_ITERATION_CAP_PRE_V327 = 5
 # overrun into the next scheduled fire). Surface it — never a FAIL, the
 # record itself is the forensic evidence.
 RUNAWAY_RUN_SECONDS = 3 * 3600
+
+# The one validate_run_record error that carries store severity under --all.
+# Kept as a constant rather than inlined so the string stays pinned to
+# site/content_model.py's wording; see the --all run-record loop for why.
+_EMPTY_VERIFIER_BLOCK = "verification.iterations missing or empty"
 # v3.33+: `completed` / `duration_seconds` must cover the WHOLE fire, verifier
 # loop included. Phase 5 stamps `main.ended_at` before the mechanical gate and
 # the Phase 5.7 loop; a run that then spends another one-to-two hours looping
@@ -3315,6 +3320,26 @@ def check_all_run_records(runs: list[dict]) -> None:
                 fail("run-record", f"{r.get('path', r.get('run_id'))}: migrated record missing {missing}")
             continue
         for e in cm.validate_run_record(r):
+            # Store severity for the empty-verifier-block error only (immutable
+            # history → WARN, same shape as check_verification_confirmation's
+            # store_mode and the cve-epss check). A fire whose Phase 5.7 spawn
+            # is killed by the content-safety classifier on every attempt of the
+            # retry ladder publishes on the documented fail-open with
+            # `iterations: []` — and the record is immutable, so that FAIL can
+            # never be cleared by any fix and no ledger row can silence it
+            # (`warn()` consults the acknowledgment ledger; `fail()` does not).
+            # `--all` would therefore be permanently red for a fire that
+            # followed the prompt exactly. Observed: 2026-09-09T1726Z-intel,
+            # four blocked spawns with request ids on the record; the 2026-09-13
+            # audit reproduced the same trip three more times on the same
+            # content before verifying those entries in the main agent instead.
+            # The invariant is NOT weakened: in run scope this stays a FAIL, so
+            # a fire still cannot publish with an empty verifier block, and the
+            # warning still has to be reviewed and acknowledged with a reason
+            # rather than passing silently.
+            if _EMPTY_VERIFIER_BLOCK in e:
+                warn("run-record", f"{r.get('run_id')}: {e}")
+                continue
             n_err += 1
             fail("run-record", e)
         if _lifecycle_enforced(r):

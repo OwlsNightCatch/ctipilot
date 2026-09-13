@@ -1,0 +1,373 @@
+domain: F1
+run_id: 2026-09-13T1307Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-13T13:30:28Z
+ended_at: 2026-09-13T13:38:33Z
+duration_seconds: 485
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 0
+  bridge_fetches: 12
+
+# Scoped follow-up deep-read task for the 2026-09-13T1307Z-audit. Two items only,
+# both re-researched to primary-source depth per the spawn brief. Not a domain sweep.
+
+items:
+  - id: item1-resetnightmare
+    title: "ResetNightmare (CVE-2026-27912) — Kerberos Change Password protocol flaw enabling full domain takeover from a low-privileged user; recovering an unpublished CVE already in the pipeline's CVE index since 2026-08-09"
+    cves: ["CVE-2026-27912"]
+    related_cve_context: ["CVE-2026-25177"]   # KerberLoss — the second, DISTINCT vulnerability from the same research; see cve_mapping below
+    sources:
+      - { url: "https://www.semperis.com/blog/identity-crisis-novel-vulnerabilities-leading-to-kerberos-downgrade-dos-and-full-domain-takeover/", publisher: "Semperis (Shai Laron)", date: "2026-08-05", role: "primary — discoverer's own write-up" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-27912", publisher: "Microsoft MSRC (Security Update Guide API)", date: "2026-04-14", role: "primary — assigning/patching authority, structured CVSS + affected-product data" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-25177", publisher: "Microsoft MSRC (Security Update Guide API)", date: "2026-03-10", role: "corroborating — MSRC record for the second (KerberLoss) vulnerability, confirms the id-to-flaw mapping via matching patch date" }
+      - { url: "https://0patch.com/blog/micropatches-released-for-resetnightmare-windows-kerberos-elevation-of-privilege", publisher: "0patch (ACROS Security) — Mitja Kolsek", date: "2026-09-09 (page date; RSS-listed 2026-09-06, updated 2026-09-09)", role: "primary — legacy-OS back-port vendor, including its own patch-regression disclosure" }
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA KEV catalog", date: "2026-09-13 (fetch date)", role: "corroborating — negative check, CVE-2026-27912 absent from KEV" }
+    discovery_trace: >
+      first seen at: recorded primary in spawn brief (this CVE reached the pipeline's cves_seen index on 2026-08-09
+      with no published entry) → fetched Semperis's own write-up in full,
+      URL https://www.semperis.com/blog/identity-crisis-novel-vulnerabilities-leading-to-kerberos-downgrade-dos-and-full-domain-takeover/
+      (trafilatura extract, full body, 377 lines) → pivoted to Microsoft's own MSRC per-CVE record,
+      URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-27912 (bridge `msrc cve` subcommand, structured JSON)
+      → pivoted to the full April-2026 MSRC CVRF release, URL (CVRF API, `msrc cvrf 2026-Apr`) to extract the
+      structured affected-product/KB table for CVE-2026-27912 → cross-checked the second vulnerability's own MSRC
+      record, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-25177, to confirm the KerberLoss/
+      CVE-2026-25177 mapping independently of Semperis's prose (patch dates match exactly: March 10 vs April 14 2026)
+      → fetched 0patch's RSS feed, URL https://blog.0patch.com/feeds/posts/default, located the ResetNightmare post,
+      then fetched it in full, URL https://0patch.com/blog/micropatches-released-for-resetnightmare-windows-kerberos-elevation-of-privilege
+      (trafilatura extract, full body including its 9/9/2026 revocation update) → checked CISA KEV catalog via
+      bridge `cisa-kev` subcommand for exploitation-in-KEV status (absent).
+    summary: |
+      Semperis researcher Shai Laron's write-up ("Identity Crisis") documents two DISTINCT Active Directory
+      vulnerabilities discovered via abuse of "invisible"/unfilterable Unicode characters in AD object attributes,
+      each with its own CVE, unambiguously stated by the source (never inferred by list position):
+
+      KerberLoss = CVE-2026-25177 (patched by Microsoft in March 2026, on Patch Tuesday 2026-03-10, "Important"
+      Elevation of Privilege). Mechanism: unfilterable Unicode characters let a low-privileged user holding the
+      WriteSPN permission on ANY computer or user account bypass Active Directory's SPN-alias uniqueness check
+      (added by the 2021 CVE-2021-42282 fix) and create a conflicting servicePrincipalName. Because explicit-SPN
+      lookup takes precedence over the alias mapping, this can (a) redirect Kerberos service tickets for a
+      HOST-mapped service to an attacker-controlled account, causing a denial-of-service on that service
+      (KRB_AP_ERR_MODIFIED at the real target), and (b) when the conflict is an exact SPN duplicate, cause the KDC
+      to return KDC_ERR_S_PRINCIPAL_UNKNOWN, forcing Kerberos authentication to fail and the client to silently
+      fall back to NTLM for that service (an authentication downgrade). MSRC's own record independently confirms:
+      title "Active Directory Domain Services Elevation of Privilege Vulnerability", released 2026-03-10, CVSS 8.8
+      (CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H/E:U/RL:O/RC:C).
+
+      ResetNightmare = CVE-2026-27912 (patched by Microsoft in April 2026, Patch Tuesday 2026-04-14, "Important"
+      Elevation of Privilege) — the more severe of the two, enabling immediate full domain takeover. Mechanism:
+      the attacker (any domain user who can write their own userPrincipalName, or who has generic Write on any
+      user/computer object, or who can create user/computer objects) sets their own UPN to a string matching the
+      target's SamAccountName (e.g. "DemoAdmin1") — this does not require bypassing UPN uniqueness verification,
+      since the string differs from the target's actual UPN. The attacker then requests, directly via an AS-REQ
+      (not a normal TGS-REQ), a Kerberos ticket scoped to the `kadmin/changepw` SPN — which the source establishes
+      is not a distinct service account but "just a TGT with the SPN (sname) changed", using the krbtgt key —
+      specifying the target's SamAccountName as principal with the NT-ENTERPRISE name-type and the attacker's own
+      (UPNUser) password. The KDC authenticates the request against UPNUser's real key (per PAC_REQUESTOR_SID) but
+      returns a ticket displaying the target's name. The critical flaw: the Kerberos Change Password protocol
+      (RFC 3244, port 464/kpasswd) goes directly from ticket issuance to an AP-REQ, with NO intervening TGS-REQ —
+      and the PAC_REQUESTOR_SID identity-confusion fix Microsoft shipped for the 2021 Dollar Ticket/noPac flaw
+      (CVE-2021-42287) is enforced ONLY at TGS exchange, so it never fires on this path. After clearing/changing
+      their own UPN attribute (orphaning the name binding), the attacker submits the password-change request using
+      the cached ticket; the change-password service resolves the ticket's displayed principal name and, because
+      the UPN mapping to the attacker's own account no longer exists, the reset lands on the real target account
+      (e.g. Domain Admin). The attacker then requests a fresh, genuinely-privileged TGT for that account. Only
+      precondition beyond the write permission: the target's password must be "sufficiently aged" — trivially met,
+      since AD's default Minimum password age is 1 day. 0patch's own (simpler) characterization of the root cause:
+      the change-password code "blindly trust[s] the user ID (SID) to change the password for (provided by the
+      attacker) and not validat[es] the requestor's identity."
+
+      CVSS: Semperis's post does not state a CVSS score for either CVE. Microsoft's own MSRC record (the assigning
+      authority) is the only score available for CVE-2026-27912: Base 8.0, Temporal 7.0, vector
+      CVSS:3.1/AV:A/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H/E:U/RL:O/RC:C — attack vector is Adjacent (MSRC's own FAQ
+      explains this reflects that "exploitation of this vulnerability requires that an attacker needs to be in the
+      same restricted Active Directory domain as the target system"). MSRC records "exploited": "No" and
+      "publiclyDisclosed": "No" for CVE-2026-27912, and its exploitability assessment is "Exploitation Less Likely"
+      (structured MSRC field, not free-text prose) — i.e. Microsoft itself does not report any observed
+      exploitation. CVE-2026-27912 is NOT present in the CISA KEV catalog (checked 2026-09-13 via the bridge).
+
+      Affected/patched versions, from Microsoft's own structured CVRF data (April 2026 release) rather than prose:
+      the vulnerability affects the Windows Kerberos component on domain-controller-role Windows Server builds
+      only (no client-OS entries in the CVRF ProductTree for this CVE) — Windows Server 2012 (KB5082127), Windows
+      Server 2012 R2 (KB5082126), Windows Server 2016 (KB5082198), Windows Server 2019 (KB5082123), Windows Server
+      2022 (KB5082142), Windows Server 2022 23H2 Server Core (KB5082060), Windows Server 2025 incl. Server Core
+      (KB5082063) — all with severity "Important" / Impact "Elevation of Privilege", released 2026-04-14.
+
+      0patch (ACROS Security) subsequently back-ported the fix as a free micropatch for Windows versions Microsoft
+      no longer patches by default: Windows Server 2008 R2 (fully updated with no ESU, ESU1, ESU3 or ESU4 — 0patch
+      notes ESU2 is, "for some reason", NOT vulnerable), Windows Server 2012 (no ESU/ESU1/ESU2), and Windows Server
+      2012 R2 (no ESU/ESU1/ESU2). Its first micropatch (issued 2026-09-07) had a functional regression — it
+      "blocked administrators from changing passwords for other users" via the legitimate Kerberos change-password
+      path (normal admin resets and "net use" password resets were unaffected) — and 0patch revoked and reissued
+      corrected micropatches on 2026-09-09.
+
+      Detection/hardening (from the two sources; no rule code): Semperis recommends SACL auditing of AD object
+      modifications, specifically Security Event ID 5136 ("A directory service object was modified") on domain
+      controllers — for ResetNightmare, watch for a userPrincipalName addition/change that matches an existing
+      account's SamAccountName; for KerberLoss, watch for a servicePrincipalName addition that conflicts with an
+      existing SPN. Semperis's own commercial product (Directory Services Protector) ships purpose-built indicators
+      for both (disabled UPN/SPN uniqueness verification, hidden-Unicode-character objects, non-privileged
+      SPN/UPN writes). Both sources converge on patching as the primary mitigation; Semperis additionally
+      recommends least-privilege review of WriteSPN/generic-Write grants on user and computer objects, since both
+      vulnerabilities require only those (very commonly over-granted) permissions plus password-age default.
+    cve_mapping_note: >
+      Explicitly and unambiguously stated by Semperis (never inferred from list order): "This is the first
+      vulnerability I discovered. Due to its various impacts, I named it KerberLoss; Microsoft has assigned it
+      CVE-2026-25177." ... "I titled this vulnerability ResetNightmare; it has been assigned CVE-2026-27912."
+      Independently confirmed via MSRC: CVE-2026-25177's own MSRC record release date (2026-03-10) matches
+      Semperis's stated KerberLoss patch date ("March 10, 2026"); CVE-2026-27912's MSRC release date (2026-04-14)
+      matches Semperis's stated ResetNightmare patch date ("April 14, 2026").
+    region_nexus: "global; directly relevant to any Windows Active Directory domain, including Swiss federal/cantonal/communal AD estates and any still running unsupported/EOL domain controllers"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    techniques: [T1068]
+    affected_products: ["Windows Server 2012", "Windows Server 2012 R2", "Windows Server 2016", "Windows Server 2019", "Windows Server 2022", "Windows Server 2022 23H2", "Windows Server 2025", "Windows Server 2008 R2 (0patch legacy back-port only)"]
+    entity_keys: []
+    new_entities:
+      - { key: "vuln:resetnightmare", type: vulnerability, name: "ResetNightmare (CVE-2026-27912)",
+          aliases: [], summary: "Kerberos Change Password protocol flaw (Semperis, Shai Laron) allowing a low-privileged AD user to reset any other domain account's password via UPN name-confusion, bypassing the PAC_REQUESTOR_SID check because the change-password flow has no TGS-REQ step; patched by Microsoft April 2026." }
+      - { key: "vuln:kerberloss", type: vulnerability, name: "KerberLoss (CVE-2026-25177)",
+          aliases: [], summary: "Companion vulnerability from the same Semperis research: unfilterable Unicode characters bypass AD SPN-alias uniqueness checks, enabling denial-of-service against HOST-mapped Kerberos services and forced NTLM authentication downgrade; patched by Microsoft March 2026." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "I titled this vulnerability ResetNightmare; it has been assigned CVE-2026-27912. The vulnerability allows a complete domain takeover by an attacker that has generic Write permissions over any user or computer object in the domain or who can create user or computer objects in the domain (excluding MachineAccountQuota)."
+        attribution: "Semperis (Shai Laron)"
+        source_url: "https://www.semperis.com/blog/identity-crisis-novel-vulnerabilities-leading-to-kerberos-downgrade-dos-and-full-domain-takeover/"
+        checked_against_file: "work/2026-09-13T1307Z-audit/semperis-resetnightmare.md"
+      - quote: "This is the first vulnerability I discovered. Due to its various impacts, I named it KerberLoss; Microsoft has assigned it CVE-2026-25177."
+        attribution: "Semperis (Shai Laron)"
+        source_url: "https://www.semperis.com/blog/identity-crisis-novel-vulnerabilities-leading-to-kerberos-downgrade-dos-and-full-domain-takeover/"
+        checked_against_file: "work/2026-09-13T1307Z-audit/semperis-resetnightmare.md"
+      - quote: "In the case of the Kerberos Password Change protocol, the ticket in the AP-REQ structure must be scoped to the `kadmin/changepw` SPN. However, this is an SPN owned by the krbtgt account, and we know that all that matters is the encryption key, so a ticket to `kadmin/changepw` is just a TGT with the SPN (sname) changed."
+        attribution: "Semperis (Shai Laron)"
+        source_url: "https://www.semperis.com/blog/identity-crisis-novel-vulnerabilities-leading-to-kerberos-downgrade-dos-and-full-domain-takeover/"
+        checked_against_file: "work/2026-09-13T1307Z-audit/semperis-resetnightmare.md"
+      - quote: "The interesting bit is that this flow goes directly from a TGT-REQ to an AP-REQ, without a TGS-REQ in between. Remember the patch we examined before: The TGS-REQ is where the `PAC_REQUESTOR_SID` validation occurs."
+        attribution: "Semperis (Shai Laron)"
+        source_url: "https://www.semperis.com/blog/identity-crisis-novel-vulnerabilities-leading-to-kerberos-downgrade-dos-and-full-domain-takeover/"
+        checked_against_file: "work/2026-09-13T1307Z-audit/semperis-resetnightmare.md"
+      - quote: "The only other requirement is that the target user’s password must be sufficiently aged. However, the default Minimum password age in Active Directory is 1 day, so it is highly likely that the target’s password matches this requirement."
+        attribution: "Semperis (Shai Laron)"
+        source_url: "https://www.semperis.com/blog/identity-crisis-novel-vulnerabilities-leading-to-kerberos-downgrade-dos-and-full-domain-takeover/"
+        checked_against_file: "work/2026-09-13T1307Z-audit/semperis-resetnightmare.md"
+      - quote: "This means that by having the WriteSPN permission on any computer or user account in the forest, in addition to a complete DoS of any HOST-mapped service in the forest, you could force any service in the forest, HOST-mapped or not, to use only NTLM (unless disabled, which would result in a DoS)."
+        attribution: "Semperis (Shai Laron)"
+        source_url: "https://www.semperis.com/blog/identity-crisis-novel-vulnerabilities-leading-to-kerberos-downgrade-dos-and-full-domain-takeover/"
+        checked_against_file: "work/2026-09-13T1307Z-audit/semperis-resetnightmare.md"
+      - quote: "The best prevention for these vulnerabilities is patching all DCs. Microsoft patched KerberLoss (CVE-2026-25177) in March 2026 and ResetNightmare (CVE-2026-27912) in April 2026."
+        attribution: "Semperis (Shai Laron)"
+        source_url: "https://www.semperis.com/blog/identity-crisis-novel-vulnerabilities-leading-to-kerberos-downgrade-dos-and-full-domain-takeover/"
+        checked_against_file: "work/2026-09-13T1307Z-audit/semperis-resetnightmare.md"
+      - quote: "The vulnerability lies in the Kerberos Change Password service on aWindows domain controller. A domain user who can modify the `userPrincipalName` attribute  on an account they control can change the password of any other account in the domain, including domain administrator's. The root cause is in the change-password code blindly trusting the user ID (SID) to change the password for (provided by the attacker) and not validating the requestor's identity."
+        attribution: "0patch (ACROS Security)"
+        source_url: "https://0patch.com/blog/micropatches-released-for-resetnightmare-windows-kerberos-elevation-of-privilege"
+        checked_against_file: "work/2026-09-13T1307Z-audit/0patch-resetnightmare.md"
+      - quote: "Microsoft fixed the issue by adding a security check to make sure the SID of the user for which the password change was requested matches the SID of the user making such request."
+        attribution: "0patch (ACROS Security)"
+        source_url: "https://0patch.com/blog/micropatches-released-for-resetnightmare-windows-kerberos-elevation-of-privilege"
+        checked_against_file: "work/2026-09-13T1307Z-audit/0patch-resetnightmare.md"
+      - quote: "[Update 9/9/2026: Our original patches issued on 9/7/2026 blocked administrators from changing passwords for other users. Impact was limited to password change performed via Kerberos, which did not affect typical administrative use cases like password resets on domain controller or \"net use\" password resets. Today we revoked those patches and issued corrected ones.]"
+        attribution: "0patch (ACROS Security)"
+        source_url: "https://0patch.com/blog/micropatches-released-for-resetnightmare-windows-kerberos-elevation-of-privilege"
+        checked_against_file: "work/2026-09-13T1307Z-audit/0patch-resetnightmare.md"
+      - quote: "1. Windows Server 2008 R2 - fully updated with no ESU, with ESU 1, ~~ESU 2*~~ , ESU 3 or ESU 4"
+        attribution: "0patch (ACROS Security)"
+        source_url: "https://0patch.com/blog/micropatches-released-for-resetnightmare-windows-kerberos-elevation-of-privilege"
+        checked_against_file: "work/2026-09-13T1307Z-audit/0patch-resetnightmare.md"
+      - quote: "(* For some reason, Windows Server 2008 R2 with ESU2 applied is not vulnerable to this issue.)"
+        attribution: "0patch (ACROS Security)"
+        source_url: "https://0patch.com/blog/micropatches-released-for-resetnightmare-windows-kerberos-elevation-of-privilege"
+        checked_against_file: "work/2026-09-13T1307Z-audit/0patch-resetnightmare.md"
+    msrc_structured_data:
+      cve_2026_27912:
+        cveTitle: "Windows Kerberos Elevation of Privilege Vulnerability"
+        releaseDate: "2026-04-14T07:00:00-07:00"
+        severity: "Important"
+        impact: "Elevation of Privilege"
+        cwe: "CWE-285: Improper Authorization"
+        baseScore: 8.0
+        temporalScore: 7.0
+        vectorString: "CVSS:3.1/AV:A/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H/E:U/RL:O/RC:C"
+        publiclyDisclosed: "No"
+        exploited: "No"
+        latestSoftwareRelease: "Exploitation Less Likely"
+        source: "python3 tools/fetch_source.py msrc cve CVE-2026-27912"
+      cve_2026_25177:
+        cveTitle: "Active Directory Domain Services Elevation of Privilege Vulnerability"
+        releaseDate: "2026-03-10T07:00:00-07:00"
+        baseScore: 8.8
+        vectorString: "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H/E:U/RL:O/RC:C"
+        publiclyDisclosed: "No"
+        exploited: "No"
+        source: "python3 tools/fetch_source.py msrc cve CVE-2026-25177"
+      cve_2026_27912_remediations:
+        - { product: "Windows Server 2019 (incl. Server Core)", kb: "KB5082123" }
+        - { product: "Windows Server 2022 (incl. Server Core)", kb: "KB5082142" }
+        - { product: "Windows Server 2025 (incl. Server Core)", kb: "KB5082063" }
+        - { product: "Windows Server 2022, 23H2 Edition (Server Core)", kb: "KB5082060" }
+        - { product: "Windows Server 2016 (incl. Server Core)", kb: "KB5082198" }
+        - { product: "Windows Server 2012 (incl. Server Core)", kb: "KB5082127" }
+        - { product: "Windows Server 2012 R2 (incl. Server Core)", kb: "KB5082126" }
+        - source: "python3 tools/fetch_source.py msrc cvrf 2026-Apr, Vulnerability record for CVE-2026-27912, Remediations[]"
+    cisa_kev_check: "CVE-2026-27912 NOT present in CISA KEV catalog (checked 2026-09-13 via `python3 tools/fetch_source.py cisa-kev`, 1709 total entries scanned, no match)."
+    extended_notes: |
+      This item recovers a coverage gap: CVE-2026-27912 reached the pipeline's cves_seen index on 2026-08-09 but no
+      entry was ever published. All facts above are freshly re-verified against primary sources in this run
+      (Semperis full body, MSRC per-CVE + CVRF structured data, 0patch full body, CISA KEV catalog) rather than
+      carried over from the earlier G3 sweep's shorter treatment of the 0patch angle alone. The Semperis article's
+      own publish date is 2026-08-05 (well outside any 24-36h recency window) — this item's currency for the audit
+      rests on: (a) it fills a genuine, previously-undetected coverage gap for a full-domain-takeover Kerberos flaw,
+      and (b) the 0patch legacy-OS back-port + its own patch-regression/reissue is itself an in-window development
+      (0patch post last revised 2026-09-09, within the trailing audit window).
+    borderline: false
+
+  - id: item2-shieldcrash
+    title: "ShieldCrash — Nightmare Eclipse publishes a partial bypass of Microsoft's fix for the ShieldBreak Microsoft Defender/Malware Protection Engine EoP flaw (CVE-2026-69414); no new CVE assigned, no Microsoft confirmation"
+    cves: ["CVE-2026-69414"]
+    sources:
+      - { url: "https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/", publisher: "SOCRadar", date: "2026-09-10", role: "primary — reporting outlet; per-article date verified (listing-page date metadata for this publisher is known-unreliable per prior G3 finding, this fetch drilled the specific article)" }
+      - { url: "https://github.com/MSNightmare/ShieldCrash", publisher: "MSNightmare (Nightmare Eclipse) — GitHub repository README", date: "README last updated 2026-09-08 (per commit fb18911); release tag 1.0 published 2026-09-08", role: "primary — researcher's own disclosure, fetched directly (jina-reader fallback after JS-shell on direct GET)" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69414", publisher: "Microsoft MSRC (Security Update Guide API)", date: "latest revision 2026-09-03", role: "corroborating — authoritative record for the underlying CVE-2026-69414 (ShieldBreak); confirms no Microsoft acknowledgment of a bypass exists as of its latest revision, which predates ShieldCrash's 2026-09-08 disclosure" }
+    discovery_trace: >
+      first seen at: recorded lead in spawn brief (registry actor:nightmare-eclipse) → fetched SOCRadar's specific
+      article, URL https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/ (trafilatura extract,
+      full body) → pivoted to the researcher's own GitHub repository named in that article,
+      URL https://github.com/MSNightmare/ShieldCrash (direct fetch returned a JS shell; `tools/fetch_source.py url`
+      auto-fell back to the jina reader, which hydrated the full README) → pivoted to Microsoft's own MSRC record
+      for the underlying CVE, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69414 (bridge
+      `msrc cve` subcommand), to check for any Microsoft acknowledgment of the bypass and to independently confirm
+      the remediation-boundary engine version SOCRadar cites.
+    summary: |
+      SOCRadar (2026-09-10 article) reports that Nightmare Eclipse — the same pseudonymous researcher this store
+      tracks as actor:nightmare-eclipse (aliases Chaotic Eclipse, INFINITE NIGHTMARE, MSNightmare), previously
+      covered for the 2026-09-06 FalconFlank/PrettyPrague EDR/AV LPE PoC drops — has published "ShieldCrash", a
+      public PoC on GitHub (github.com/MSNightmare/ShieldCrash) claiming to bypass Microsoft's own fix for
+      CVE-2026-69414 ("ShieldBreak", CVSS 7.8), an elevation-of-privilege flaw in the Microsoft Malware Protection
+      Engine (mpengine.dll, used by Windows Defender and related Microsoft antimalware products).
+
+      What is actually claimed, and by whom, matters here: the researcher's OWN GitHub README (last updated
+      2026-09-08, release tag 1.0) states plainly: "Microsoft has failed to properly patch ShieldBreak
+      CVE-2026-69414, under specific conditions it is still possible to trigger the exact same problem that was
+      caused by ShieldBreak. While Microsoft fixed several things to prevent re-exploiting the issue, they missed
+      a spot where ShieldBreak can still be exploited." This is a PARTIAL bypass claim, not a full defeat of the
+      fix — the researcher's own words describe "specific conditions" and "a spot" Microsoft missed, not a wholesale
+      failure of the remediation. The researcher's PoC is explicitly self-described as unfinished: "This PoC
+      demonstrates an arbitrary file read as SYSTEM with September 2026, all supported windows versions are
+      affected" and "I might rework this later into a full SYSTEM PoC but for now I'm dropping this skeleton PoC
+      because I'm feeling a bit lazy." SOCRadar's own characterization is consistent and appropriately hedged:
+      "ShieldCrash does not currently have a separate CVE. Nightmare Eclipse describes the public release as a
+      skeleton PoC that demonstrates privileged file reads. It does not establish arbitrary file writes or
+      SYSTEM-level code execution." SOCRadar frames the bypass claim itself as the researcher's own assertion, not
+      as vendor-confirmed fact: "Now, Nightmare Eclipse has released ShieldCrash, a Proof-of-Concept (PoC) that
+      reportedly bypasses Microsoft's remediation and enables arbitrary file reads with SYSTEM privileges on
+      updated Windows systems. Microsoft has not publicly confirmed the reported bypass."
+
+      No new CVE has been assigned to ShieldCrash (both the researcher's README and SOCRadar's article state this).
+      No Microsoft-published fix for the bypass exists as of this research: Microsoft's own MSRC record for the
+      underlying CVE-2026-69414 shows its latest revision dated 2026-09-03 — five days BEFORE the ShieldCrash
+      GitHub release (2026-09-08) — with no acknowledgment of a bypass; nothing in that record post-dates the
+      ShieldCrash disclosure. SOCRadar independently confirms no active exploitation: "There is currently no
+      confirmed evidence that ShieldCrash is being exploited in the wild. Although a public PoC is available,
+      exploit-code availability does not establish active exploitation."
+
+      Prerequisites, corroborated by MSRC's own CVSS vector for the underlying CVE-2026-69414 (Base 7.8, vector
+      CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H/E:P/RL:O/RC:C — Attack Vector: Local, Privileges Required: Low):
+      an attacker needs an existing local, low-privilege code-execution foothold; this is not a remote initial-
+      access exploit. MSRC's structured exploitability field for the underlying CVE is "Exploitation More Likely"
+      (SOCRadar quotes this MSRC assessment verbatim as "Exploitation More Likely" — this reflects Microsoft's
+      expected-exploitability rating, not a confirmation of observed attacks). MSRC's own record states the
+      remediation boundary precisely: "Last version of the Microsoft Malware Protection Engine affected by this
+      vulnerability: 1.26070.7" / "First version of the Microsoft Malware Protection Engine with this vulnerability
+      addressed: 1.1.26080.3" — matching SOCRadar's cited figure of engine version 1.1.26080.3 as the fix boundary.
+
+      Detection/hardening (SOCRadar only; general, not ShieldCrash-specific): verify Defender engine/platform
+      version separately from Windows OS patch level (scanners read on-disk binaries even when Defender is
+      administratively disabled — a disabled Defender install is reported as "not in an exploitable state" per
+      Microsoft's own FAQ in the MSRC record); restrict untrusted local code execution and remove unnecessary local
+      admin rights (the practical mitigation given the local-foothold prerequisite); hunt for unexpected sensitive-
+      file reads by MsMpEng.exe or related Defender processes, low-privilege activity immediately followed by
+      unusual Defender file operations, and unexpected access to credential stores/security databases/protected
+      configuration files — SOCRadar is explicit these are general hunting signals correlated with process
+      ancestry and subsequent activity, "not ShieldCrash-specific indicators."
+    region_nexus: "global; any Windows estate running Microsoft Defender / Microsoft Malware Protection Engine"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    techniques: [T1068]
+    affected_products: ["Microsoft Defender", "Microsoft Malware Protection Engine (mpengine.dll)"]
+    entity_keys: ["actor:nightmare-eclipse"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-09-06/chaotic-eclipse-falconflank-prettyprague-edr-av-lpe-drops"
+    novelty_note: >
+      Same actor (actor:nightmare-eclipse) and disclosure pattern as the existing 2026-09-06 entry
+      (entries/2026-09-06/chaotic-eclipse-falconflank-prettyprague-edr-av-lpe-drops.md), now against a different
+      vendor (Microsoft) and a distinct underlying CVE (CVE-2026-69414 vs. that entry's CrowdStrike/Avast/Kaspersky
+      CVEs) — flagging as update-of per G3's prior recommendation; final placement (new entry vs. changelog record)
+      is the composing agent's call given the distinct CVE and vendor.
+    evidence:
+      - quote: "Microsoft has failed to properly patch ShieldBreak [CVE-2026-69414](https://msrc.microsoft.com/update-guide/en-US/advisory/CVE-2026-69414), under specific conditions it is still possible to trigger the exact same problem that was caused by ShieldBreak. While Microsoft fixed several things to prevent re-exploiting the issue, they missed a spot where ShieldBreak can still be exploited."
+        attribution: "Nightmare Eclipse (researcher's own GitHub README, MSNightmare/ShieldCrash)"
+        source_url: "https://github.com/MSNightmare/ShieldCrash"
+        checked_against_file: "work/2026-09-13T1307Z-audit/github-shieldcrash.html"
+      - quote: "This PoC demonstrates an arbitrary file read as SYSTEM with September 2026, all supported windows versions are affected."
+        attribution: "Nightmare Eclipse (researcher's own GitHub README, MSNightmare/ShieldCrash)"
+        source_url: "https://github.com/MSNightmare/ShieldCrash"
+        checked_against_file: "work/2026-09-13T1307Z-audit/github-shieldcrash.html"
+      - quote: "I might rework this later into a full SYSTEM PoC but for now I'm dropping this skeleton PoC because I'm feeling a bit lazy."
+        attribution: "Nightmare Eclipse (researcher's own GitHub README, MSNightmare/ShieldCrash)"
+        source_url: "https://github.com/MSNightmare/ShieldCrash"
+        checked_against_file: "work/2026-09-13T1307Z-audit/github-shieldcrash.html"
+      - quote: "Now, Nightmare Eclipse has released ShieldCrash, a Proof-of-Concept (PoC) that reportedly bypasses Microsoft’s remediation and enables arbitrary file reads with SYSTEM privileges on updated Windows systems. Microsoft has not publicly confirmed the reported bypass."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/"
+        checked_against_file: "work/2026-09-13T1307Z-audit/socradar-shieldcrash.md"
+      - quote: "ShieldCrash does not currently have a separate CVE. Nightmare Eclipse describes the public release as a skeleton PoC that demonstrates privileged file reads. It does not establish arbitrary file writes or SYSTEM-level code execution."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/"
+        checked_against_file: "work/2026-09-13T1307Z-audit/socradar-shieldcrash.md"
+      - quote: "Microsoft Malware Protection Engine version 1.1.26080.3 is identified as the remediation boundary for CVE-2026-69414. Defenders should verify Defender engine and platform versions separately from general Windows servicing."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/"
+        checked_against_file: "work/2026-09-13T1307Z-audit/socradar-shieldcrash.md"
+      - quote: "For the underlying CVE-2026-69414, Microsoft assessed exploitation as “Exploitation More Likely.” This reflects expected exploitability rather than confirmation of attacks."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/"
+        checked_against_file: "work/2026-09-13T1307Z-audit/socradar-shieldcrash.md"
+      - quote: "There is currently no confirmed evidence that ShieldCrash is being exploited in the wild. Although a public PoC is available, exploit-code availability does not establish active exploitation."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/shieldcrash-poc-microsoft-defender-fix-bypass/"
+        checked_against_file: "work/2026-09-13T1307Z-audit/socradar-shieldcrash.md"
+    msrc_structured_data:
+      cve_2026_69414:
+        cveTitle: "Microsoft Defender Elevation of Privilege Vulnerability"
+        releaseDate: "2026-08-14T07:00:00-07:00"
+        latestRevisionDate: "2026-09-03T07:00:00-07:00"
+        severity: "Important"
+        cwe: "CWE-284: Improper Access Control"
+        baseScore: 7.8
+        temporalScore: 7.0
+        vectorString: "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H/E:P/RL:O/RC:C"
+        publiclyDisclosed: "Yes"
+        exploited: "No"
+        latestSoftwareRelease: "Exploitation More Likely"
+        engine_last_affected_version: "1.26070.7"
+        engine_first_fixed_version: "1.1.26080.3"
+        revision_history: "v1 2026-08-14 (information published) -> v1.1 2026-08-19 (CWE added) -> v2 2026-09-03 (Microsoft released the actual Malware Protection Engine update addressing the CVE) -- all revisions predate ShieldCrash's 2026-09-08 GitHub release; no revision acknowledges a bypass"
+        source: "python3 tools/fetch_source.py msrc cve CVE-2026-69414"
+    extended_notes: |
+      Precision on attribution: the claim that Microsoft's fix is bypassed originates from the researcher
+      (Nightmare Eclipse) and is relayed, not independently verified, by SOCRadar — SOCRadar's own headline framing
+      throughout is "reportedly" / "claims" / "not publicly confirmed". No primary from Microsoft acknowledges
+      ShieldCrash. This item should be composed with that attribution chain explicit (researcher claims -> SOCRadar
+      relays -> no vendor confirmation), consistent with the fake-news/attribution discipline for leak-site-style
+      unverified researcher claims.
+    borderline: false
+
+candidate_sources: []
+coverage_gaps: []
