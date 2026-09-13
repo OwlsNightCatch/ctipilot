@@ -1,0 +1,124 @@
+domain: S4
+run_id: 2026-09-13T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-13T04:13:34Z
+ended_at: 2026-09-13T04:22:45Z
+duration_seconds: 551
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 15
+  bridge_fetches: 15
+items:
+  - title: "Revolut discloses customer KYC/identity data handed to an attacker who impersonated a government agency using its own genuine email domain — no system was breached, the request simply looked authentic"
+    sources:
+      - { url: "https://techcrunch.com/2026/09/12/revolut-confirms-customer-data-breach-through-fake-government-requests/", publisher: "TechCrunch", date: "2026-09-12", role: "primary" }
+      - { url: "https://securityaffairs.com/198922/data-breach/revolut-exposed-kyc-data-after-fraudulent-government-email-passed-security-checks.html", publisher: "Security Affairs", date: "2026-09-12", role: "corroborating" }
+    discovery_trace: "first seen at: securityaffairs, URL https://securityaffairs.com/ (homepage extract, article teaser) → primary: TechCrunch, URL https://techcrunch.com/2026/09/12/revolut-confirms-customer-data-breach-through-fake-government-requests/ → corroborating full write-up: Security Affairs, URL https://securityaffairs.com/198922/data-breach/revolut-exposed-kyc-data-after-fraudulent-government-email-passed-security-checks.html (quotes Revolut's own customer notification directly) → further corroboration via WebSearch (\"Revolut KYC breach fake government email September 2026\"): The Block, CryptoTimes, 247WallSt, BNO News all independently confirmed the same customer-notification text on 2026-09-12"
+    summary: |
+      Revolut confirmed on 2026-09-12 that it disclosed sensitive customer data to an unauthorized
+      third party after receiving fraudulent information requests sent from an email account
+      operating inside a genuine government agency's own domain infrastructure — Security Affairs
+      assesses the attacker either registered a rogue mailbox within that domain or compromised an
+      existing one. Because the message carried valid domain-authentication credentials for that
+      domain, Revolut's compliance/KYC-response process treated it as an authentic official request
+      and fulfilled it: exposed data included full name, date of birth, occupation, postal/email
+      address, phone number, passport/driver's-licence copies, verification selfies, IBAN/account
+      statements, withdrawal records and full transaction history including Bitcoin. No Revolut
+      system was compromised and no malware was involved — the entire "breach" was a successful
+      social-engineering compromise of the legal/regulatory data-request channel, not a technical
+      intrusion. Revolut says a "limited" number of customers were affected and declines to name the
+      government agency, the country, or the customer count; crypto-investigator ZachXBT assesses
+      the operation was targeted at high-net-worth individuals for detailed identity/crypto-history
+      profiling rather than bulk data theft. Revolut discovered the fraud only when it independently
+      contacted the agency to verify the request and was told the agency never sent it; it has since
+      blocked the sending mailbox, notified the agency, law enforcement and financial regulators.
+      The transferable lesson: any organisation whose legal/compliance team fulfils data requests
+      based on domain-level email authenticity alone (SPF/DKIM/DMARC-style trust in "this really is
+      that domain") is exposed to the same class of attack once an adversary controls (or spoofs
+      convincingly enough into) a single mailbox on a trusted government or law-enforcement domain —
+      a pattern with obvious relevance to any authority that itself issues legal data requests to
+      third parties (banks, telcos, cloud/ISPs) as part of investigations, since compromise of that
+      authority's own mail infrastructure could be used to defraud third parties in its name.
+    region_nexus: "global (UK-headquartered fintech, 80M+ customers, EU/UK banking licenses); no Swiss nexus confirmed, but Revolut operates in Switzerland and the technique targets a process (verifying inbound legal/government data requests) any Swiss public-sector authority issuing such requests, or any org receiving requests purportedly from Swiss authorities, must also defend"
+    primary_sector_nexus: "indirect"
+    sector: "finance"
+    cves: []
+    techniques: [T1684.001, T1598]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:revolut-fake-government-request-breach-2026-09", type: incident, name: "Revolut fake-government-request KYC data breach (September 2026)",
+          aliases: [],
+          summary: "Revolut disclosed on 2026-09-12 that it handed over customers' KYC documents, selfies and Bitcoin transaction histories to an attacker who submitted a fraudulent information request from a compromised or rogue mailbox inside a genuine government agency's email domain (TechCrunch, Security Affairs, 2026-09-12)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Revolut received a request for customer information that appeared to come from a legitimate government agency. The request came from an unauthorised email account sent directly using the official government agency's email domain."
+        attribution: "Revolut (customer notification, via Security Affairs)"
+        source_url: "https://securityaffairs.com/198922/data-breach/revolut-exposed-kyc-data-after-fraudulent-government-email-passed-security-checks.html"
+      - quote: "As the communication carried valid domain authentication credentials, it was fulfilled under the reasonable belief that it was an authentic government agency request."
+        attribution: "Revolut (customer notification, via Security Affairs)"
+        source_url: "https://securityaffairs.com/198922/data-breach/revolut-exposed-kyc-data-after-fraudulent-government-email-passed-security-checks.html"
+      - quote: "Revolut recently identified a sophisticated external impersonation scam where an unauthorised third party utilised a legitimate government agency domain email to submit fraudulent requests for information."
+        attribution: "Revolut spokesperson, via TechCrunch"
+        source_url: "https://techcrunch.com/2026/09/12/revolut-confirms-customer-data-breach-through-fake-government-requests/"
+    extended_notes: |
+      Not a technical intrusion and no CVE — this is a process/verification failure in a
+      legal-data-request handling workflow, closely related in shape to the "fake Emergency Data
+      Request" (EDR) fraud pattern that previously hit Discord, Apple, Meta and Snap (attacker
+      obtains or spoofs law-enforcement email access and submits an urgent, seemingly-authentic
+      legal request that bypasses the normal warrant/subpoena verification a company would apply).
+      Here the same pattern is documented for the first time (in this run's search) against a
+      major fintech's KYC/AML compliance channel rather than a social platform's law-enforcement
+      portal. Defender takeaway for any org (public or private) that operates a legal/regulatory
+      data-request intake process: treat inbound "official" requests as requiring OUT-OF-BAND
+      verification (a callback to a directory-listed number, not a reply to the same channel, and
+      never trust email-domain authentication alone as proof of institutional authority) regardless
+      of how convincing the sending domain looks; log and periodically audit which staff can
+      approve bulk/sensitive data releases against a legal-request queue, since this is exactly the
+      chokepoint the attacker targeted.
+      Coverage-backlog re-checks this run (all unchanged, no new development — not returned as
+      items): TheGentlemen/Ixa Systems SA (Crissier, VD) — still bare ransomware.live listing only;
+      Krybit/UICC (Geneva) — still leak-site trackers only, no data sample; ShinyHunters/Medela AG
+      (Baar/Zug) — still only the leak-site deadline claim + social reposts, no Medela statement;
+      SafePay/reichenau.at — still leak-site trackers only; Kairos/Ville de Libercourt — still
+      ransomware.live + one French tracker's leak review only; Ville du Tampon (La Réunion) — city
+      confirmed service disruption since 2026-09-09 but as of this run still no party has named a
+      mechanism, actor or data-theft claim (a 2026-09-11 "suspect" post by a former mayor is a
+      joke/satire piece, not a real lead) — still cannot carry an evidence-bound techniques[]
+      mapping, so still withheld per the standing guidance.
+      Dropped as stale-for-window (published/reported 2+ days before this run's 26h window with no
+      in-window fresh development found): Cisco Talos's 2026-09-09 report (press pickup 2026-09-11)
+      that three named threat clusters (UAT-12197, UAT-11823 overlapping Sandworm/Cyclops Blink,
+      and UAT-11988 attributed to Qilin ransomware affiliates) are exploiting the already-tracked
+      CVE-2026-20079/CVE-2026-20316 Cisco Secure FMC chain — this is a materially new development on
+      the existing entry (prior update only recorded the 2026-09-09 CISA KEV listing, not the named
+      clusters or ransomware deployment) and is flagged here so a future run/audit can add it as an
+      update-of record on that entry if it is still missing; also dropped for the same reason:
+      Anthropic's Russia-linked (GTG-20006, overlaps Midnight Blizzard/APT29) Claude-misuse
+      espionage report against 20+ government/military/diplomatic/drone-supply-chain targets
+      (Anthropic disclosure ~2026-09-10, press 2026-09-10/11) — squarely S3/research territory and
+      outside this run's window, flagged in case it was also missed by the prior run's S3/G3 sweep.
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No supplier watchlist configured for this deployment (empty per org-profile.yaml) — sweep is a no-op per spawn instructions. Applied the PD-11 breach/incident inclusion gate as the primary discipline instead."
+candidate_sources: []
+coverage_gaps:
+  - source_id: malwarebytes
+    reason: "RSS feed https://www.malwarebytes.com/blog/rss.xml returned 0 items via jina fallback (feed appears dead/misconfigured); fell back to extract on https://www.malwarebytes.com/blog directly, which returned only a teaser list (no in-window items — most recent dated 2026-09-11)."
+  - source_id: sans-newsbites
+    reason: "Listing page is a JS SPA as noted in the source record; WebFetch returned only titles/dates/issue-links with no article bodies or outbound links. Most recent issue dated 2026-09-11, no items past that; nothing new in-window found this way."
+  - source_id: cisa-news
+    reason: "Bridge subcommand 'cisa-news' does not exist in tools/fetch_source.py (valid choices include 'cisa'); fell back to 'cisa page <URL>' on https://www.cisa.gov/news-events/news, which returned the filter-sidebar markup rather than the article listing itself (structured recipe likely needs a different endpoint/pagination parameter). No CISA-sourced incident items surfaced this run as a result — logged as a recipe gap, not a hard failure, since CISA content in this domain mostly duplicates KEV coverage that is S1's remit."
+  - source_id: ico-uk
+    reason: "Structured 'ico-uk enforcement 10' subcommand worked and returned the 10 most recent enforcement-action URLs via sitemap, but the newest is dated 2026-08-27 — no in-window (or even week-in-window) ICO enforcement actions to report."
+  - source_id: therecord
+    reason: "RSS feed https://therecord.media/feed reachable and returned 5 items, all dated 2026-09-10/11 — nothing in the 26h window as of this run's start."
+  - source_id: dcod-ch
+    reason: "Homepage extract returned only static tool-page navigation, no dated article listing; a targeted WebSearch (site:dcod.ch) surfaced only older 2026 articles, none in-window. Recipe may need a specific /category or RSS path rather than the homepage."

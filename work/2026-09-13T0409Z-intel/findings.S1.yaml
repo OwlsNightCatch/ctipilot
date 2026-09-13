@@ -1,0 +1,115 @@
+domain: S1
+run_id: 2026-09-13T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-13T04:12:24Z
+ended_at: 2026-09-13T04:18:53Z
+duration_seconds: 389
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 3
+  bridge_fetches: 27
+
+items:
+  - title: "BlueMoon exploit kit: NCSC Switzerland confirms Government among targeted sectors; Volexity names a fourth operator (UTA0560) and details the full three-CVE Chrome/Windows chain plus two new backdoors"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12936", publisher: "NCSC Switzerland (GovCERT.ch) Cyber Security Hub", date: "2026-09-12", role: "primary" }
+      - { url: "https://www.volexity.com/blog/2026/09/09/mind-the-patch-gap-multiple-chinese-threat-actors-chain-0-day-exploits-in-chrome-windows/", publisher: "Volexity", date: "2026-09-09", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12936 (bridge: ncsc-csh recent 20, fetched 2026-09-13) → primary: Volexity, URL https://www.volexity.com/blog/2026/09/09/mind-the-patch-gap-multiple-chinese-threat-actors-chain-0-day-exploits-in-chrome-windows/ (linked from the NCSC-CH post's References section)"
+    summary: |
+      This is a material update to the existing BlueMoon exploit-kit entry (2026-09-10), sourced from an NCSC Switzerland advisory published 2026-09-12 (in-window) and the Volexity technical write-up it cites (2026-09-09). NCSC-CH's own post states "no reported cases in CH so far" but lists Government among the targeted verticals (alongside NGO, Consulting, Finance, Mining, Commodity Trading) and names a fourth cluster: Volexity tracked UTA0560 exploiting the chain against NGOs from 2026-09-01, separate from Proofpoint's three clusters already in the entry.
+      Volexity's write-up supplies the missing middle link in the exploit chain and full mechanism detail. The chain is three CVEs, not two: CVE-2026-85046 (Chrome V8 type confusion) grants arbitrary read/write in the V8 sandbox; CVE-2026-87491 (a WebAssembly defect) escapes the V8 sandbox; CVE-2026-85880, a previously unreported flaw in Windows RtlpCreateServerAcl, is a kernel local-privilege-escalation that lets the exploit escape Chrome's sandboxed renderer and inject code into the browser process itself — all three ship byte-for-byte identical shellcode across both observed operators. The p2 (kernel LPE) stage is conditional: it only fires if the process is not already elevated and the Windows build is in a specific target set (Win10 1809–22H2, Server 2022, Win11 21H2); builds above 22000 are rejected. Delivery is a reflected XSS on a legitimate US university website (UTA0560) or two attacker-registered domains fronted by Cloudflare Tunnels (JungleBamboo/APT31/TA412, already tracked in the entry), reached via spearphishing that dual-targets a victim's work and personal email addresses.
+      UTA0560's post-exploitation payload is GRIMWEDGE, a sub-250-line JScript backdoor that runs in-memory as an eval()'d string inside msiexec.exe, delivered via a signed-binary DLL-sideloading dropper (msgbox.exe) and a per-victim beacon URL keyed on hostname (https://<C2>/%COMPUTERNAME%.txt); it supports ten commands (recon, directory listing, file create/delete/read, process list/kill, command execution, chunked file upload) and persists via a scheduled task ("Windows Scheduled System") that re-runs the sideloading chain every five minutes. JungleBamboo's payload chain (SUPERSTOMP → LONGTALE) is a distinct technique: SUPERSTOMP tampers with Chrome's Secure Preferences file to install a malicious extension impersonating "Google Gemini" (extension ID ckiknalbeplpcpofpnabcnhjcegckfei) by stripping the per-preference and super_encrypted_hash integrity values and forging valid legacy-HMAC values, exploiting Chrome's default legacy-MAC fallback (disabled only when compiling Chromium from source); Chrome then re-authenticates the tampered state under its own newer integrity scheme. The resulting LONGTALE extension keylogs every keystroke and form/clipboard value across all tabs with no sensitive-field suppression, steals all cookies plus localStorage/sessionStorage tokens, takes keyword-triggered screenshots, and exfiltrates collected data roughly every 30 seconds; it deliberately has no remote-code-execution command, sufficient for JungleBamboo's stated credential-theft and surveillance objective.
+      All three CVEs are patched (Chrome 152.0.7977.82/.83 for CVE-2026-85046, Chrome 153 for CVE-2026-87491, Microsoft's September 2026 cumulative update for CVE-2026-85880); persistence mechanisms (malicious extension, DLL sideloading, scheduled tasks) survive an OS/browser patch untouched and require separate remediation.
+    region_nexus: "global espionage targeting (NGO, government, consulting, finance, mining, commodity trading); NCSC-CH explicitly assessed no Swiss victims reported so far, but Government is named among targeted verticals"
+    primary_sector_nexus: "direct — NCSC Switzerland names Government among the sectors targeted via this exploit chain, and issued its own advisory to the Swiss constituency"
+    sector: "public-sector"
+    cves: [CVE-2026-85046, CVE-2026-87491, CVE-2026-85880]
+    techniques: [T1189, T1203, T1068, T1176, T1539, T1056.001, T1053.005, T1071.001]
+    affected_products: ["Google Chrome", "Chromium-based browsers", "Microsoft Windows"]
+    entity_keys: ["actor:apt31", "tool:bluemoon-exploit-kit", "actor:unk-latenight", "actor:unk-doublecheck", "actor:unk-quietracket"]
+    new_entities:
+      - { key: "actor:uta0560", type: actor, name: "UTA0560", aliases: [],
+          summary: "Volexity's designation for a Chinese threat actor observed from 2026-09-01 exploiting the BlueMoon Chrome/Windows exploit chain (CVE-2026-85046/87491/85880) against NGOs via spearphishing that redirects through a reflected-XSS flaw on a legitimate US university website, deploying the GRIMWEDGE backdoor (Volexity, 2026-09-09)." }
+      - { key: "malware:grimwedge", type: malware, name: "GRIMWEDGE", aliases: [],
+          summary: "In-memory JScript backdoor (under 250 lines) that UTA0560 delivers via an MSI custom action, executing as an eval()'d string inside msiexec.exe; supports ten commands including recon, file read/upload, process control and command execution, with no built-in persistence or lateral-movement mechanism of its own (Volexity, 2026-09-09)." }
+      - { key: "tool:superstomp", type: tool, name: "SUPERSTOMP", aliases: [],
+          summary: "JungleBamboo's (APT31/TA412) Chrome-extension-sideloading loader, delivered via the BlueMoon exploit chain, that tampers with Chrome's Secure Preferences file to bypass extension-integrity checks and install the LONGTALE malicious extension (Volexity, 2026-09-09)." }
+      - { key: "tool:longtale", type: tool, name: "LONGTALE", aliases: [],
+          summary: "Malicious Chrome extension impersonating 'Google Gemini' (extension ID ckiknalbeplpcpofpnabcnhjcegckfei), installed by SUPERSTOMP, that keylogs all tab input, steals cookies and web-storage tokens, takes keyword-triggered screenshots and exfiltrates data roughly every 30 seconds; attributed to JungleBamboo/APT31/TA412 (Volexity, 2026-09-09)." }
+    relation_suggestions:
+      - { subject: "actor:uta0560", object: "tool:bluemoon-exploit-kit", basis: "Volexity: UTA0560 used the same Chrome V8 + WebAssembly + Windows-kernel exploit chain (CVE-2026-85046/87491/85880) already tracked as the BlueMoon kit, with byte-for-byte identical shellcode to the JungleBamboo/APT31 operation (Volexity, 2026-09-09)" }
+      - { subject: "actor:uta0560", object: "malware:grimwedge", basis: "Volexity: UTA0560 deployed the GRIMWEDGE JScript backdoor after exploiting the shared Chrome/Windows chain (Volexity, 2026-09-09)" }
+      - { subject: "actor:apt31", object: "tool:superstomp", basis: "Volexity: JungleBamboo (APT31/TA412) deployed the SUPERSTOMP Chrome-extension loader via the same exploit chain (Volexity, 2026-09-09)" }
+      - { subject: "actor:apt31", object: "tool:longtale", basis: "Volexity: SUPERSTOMP installs the LONGTALE malicious Chrome extension used by JungleBamboo (APT31/TA412) for credential and session theft (Volexity, 2026-09-09)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-09-10/bluemoon-exploit-kit-four-state-actors-chrome-windows-chain"
+    evidence:
+      - quote: "Exploitation Status:  Exploitation observed, no reported cases in CH so far."
+        attribution: "NCSC Switzerland (GovCERT.ch) Cyber Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12936"
+      - quote: "Targets so far: NGO, Government, Consulting, Finance, Mining, Commodity Trading"
+        attribution: "NCSC Switzerland (GovCERT.ch) Cyber Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12936"
+      - quote: "The exploit first gains arbitrary read/write within the V8 sandbox through the Type confusion vulnerability (CVE-2026-85046), then combines a separate WebAssembly defect to escape the V8 sandbox (CVE-2026-87491). It then exploits a third vulnerability in the Windows kernel (CVE-2026-85880)"
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/09/09/mind-the-patch-gap-multiple-chinese-threat-actors-chain-0-day-exploits-in-chrome-windows/"
+      - quote: "It exploits CVE-2026-85880, a previously unreported vulnerability in RtlpCreateServerAcl."
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/09/09/mind-the-patch-gap-multiple-chinese-threat-actors-chain-0-day-exploits-in-chrome-windows/"
+      - quote: "Volexity tracks this malware as GRIMWEDGE."
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/09/09/mind-the-patch-gap-multiple-chinese-threat-actors-chain-0-day-exploits-in-chrome-windows/"
+    extended_notes: |
+      Defender takeaways not previously captured in the entry: (1) benign-lookalike discriminator — legitimate chrome.exe does not spawn cmd.exe/curl chains or msiexec.exe installs from a browser-process context; a child process of chrome.exe executing curl to fetch and run an .exe, or an unexplained msiexec.exe beaconing outbound over HTTPS to a per-hostname path, is the observable signature of the sandbox-escape stage. (2) Chrome extension integrity: organizations should enforce ExtensionInstallBlocklist/ExtensionInstallAllowlist policy rather than relying on Secure Preferences tamper-resistance alone, since the legacy-MAC fallback (default-enabled as of 2026-09-08 unless compiling Chromium from source) can be defeated to smuggle in an unauthorized extension. (3) Hunt for the scheduled task name "Windows Scheduled System" recurring at 5-minute intervals as a GRIMWEDGE-chain persistence indicator. (4) All three patches were already available before this Volexity report (Chrome 152/153, Microsoft's September cumulative), so the do-now action for any org that has not yet closed the September Patch Tuesday / Chrome update gap remains unchanged from the parent entry — this update is about the sector-targeting and mechanism detail, not a new remediation deadline.
+
+  - title: "GitLab's 19.3.2/19.2.6/19.1.8 patch release also fixed a CVSS 9.9 authenticated deserialization flaw exposing Advanced Search credentials, and a CVSS 8.5 RCE via crafted Git project import — both confirmed by NCSC Switzerland alongside the already-tracked path traversal"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12935", publisher: "NCSC Switzerland (GovCERT.ch) Cyber Security Hub", date: "2026-09-11", role: "primary" }
+      - { url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-3-2-released/", publisher: "GitLab", date: "2026-09-10", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12935 (bridge: ncsc-csh recent 20, fetched 2026-09-13) → primary: GitLab's own patch-release notes, URL https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-3-2-released/ (cited as the Source Advisory in the NCSC-CH post)"
+    summary: |
+      This is a material update to the existing entry for CVE-2026-85706 (GitLab CE/EE unauthenticated path-traversal file read, CVSS 10.0, already KEV-listed and under confirmed exploitation). The same 2026-09-10 patch release (19.3.2 / 19.2.6 / 19.1.8) that fixed CVE-2026-85706 also fixed two further vulnerabilities not previously recorded in the entry, one of them independently confirmed critical by NCSC Switzerland's own advisory (dated 2026-09-11, titled jointly for both CVEs):
+      CVE-2026-87719 (CVSS 3.1: 9.9, GitLab EE only) is an insecure-deserialization flaw in the GraphQL subscription serializer: an authenticated user who holds Duo Chat access can supply a specially crafted GraphQL subscription argument to bypass serialization and perform a server-side object lookup, obtaining Advanced Search instance configuration and sensitive stored credentials. NCSC-CH's advisory states the impact includes exposure of "Advanced Search configurations and stored credentials." Affected: GitLab EE all versions from 18.3 before 19.1.8, 19.2 before 19.2.6, and 19.3 before 19.3.2.
+      CVE-2026-88765 (CVSS 3.1: 8.5, GitLab EE only, vendor-sourced only — not covered in the NCSC-CH advisory) is a buffer overflow in the Unicode-conversion wrapper used by Advanced Search indexing: an authenticated user can trigger remote code execution by importing a specially crafted Git project export that overflows the conversion buffer during indexing. Affected: GitLab EE all versions from 12.3 before 19.1.8, 19.2 before 19.2.6, and 19.3 before 19.3.2 — a substantially longer exposure window than the other two flaws given its 12.3 starting point.
+      No confirmed in-the-wild exploitation is reported for either of these two CVEs; only CVE-2026-85706 (the path-traversal flaw already in the entry) is KEV-listed and confirmed exploited. Fix for all three, plus a long tail of lower-severity CVEs in the same release (SAML SSO bypass, CI/CD variable-scope escapes, XSS, DoS), is the same upgrade already recommended in the entry: 19.3.2 / 19.2.6 / 19.1.8.
+    region_nexus: "global; GitLab self-managed CE/EE is widely deployed in government CI/CD environments, including Swiss public-sector development pipelines"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-87719, CVE-2026-88765]
+    techniques: [T1190, T1552]
+    affected_products: ["GitLab Enterprise Edition (EE)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-09-12/cve-2026-85706-gitlab-unauth-path-traversal-file-read"
+    evidence:
+      - quote: "CVE-2026-85706 CVSS3.1: 10.0 (CRITICAL) - Unauthenticated path traversal enabling arbitrary file read via repository commits API\nCVE-2026-87719 CVSS3.1: 9.9 (CRITICAL) - Insecure deserialization exposing credentials via GraphQL subscription serializer"
+        attribution: "NCSC Switzerland (GovCERT.ch) Cyber Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12935"
+      - quote: "GitLab has remediated an issue that, under certain conditions, could allow an authenticated user with Duo Chat access to obtain Advanced Search instance configurations and sensitive credentials using a specially crafted GraphQL subscription argument to bypass serialization and perform server object lookup."
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-3-2-released/"
+      - quote: "GitLab has remediated an issue that, under certain conditions, could allow an authenticated user to achieve remote code execution by importing a specially crafted Git project export to overflow the Unicode conversion buffer used in Advanced Search indexing."
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-3-2-released/"
+    extended_notes: |
+      CVE-2026-88765's affected-version floor (18.7... for CE — actually EE from 12.3) is notably older than the other two flaws in this release (18.3 and 18.7 respectively), meaning any EE instance that has deferred upgrades for a long period carries the largest exposure window for this specific RCE path. CVE-2026-88765 is sourced only from GitLab's own release notes (not corroborated by the NCSC-CH advisory, which named only CVE-2026-85706 and CVE-2026-87719); treat its severity/scope as vendor-single-source pending independent confirmation. Detection angle: audit logs for GraphQL subscription requests with abnormal argument shapes targeting Advanced Search, and for Advanced Search reindex operations immediately following a Git project import from an external/untrusted source.
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured in this deployment's org-profile (watchlists empty) — sweep is a no-op; general coverage rules applied unchanged across the full essential-source sweep (NCSC-NL, BSI, CERT-EU, CERT-PL, CISA advisories/KEV, ENISA EUVD, NCSC-CH, NCSC-UK, CERT-FR) plus rotation checks (Horizon3.ai, Keycloak, Mozilla, Resecurity, Searchlight Cyber, CCB Belgium)."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-directives
+    reason: "Known recipe gap persists — bridge/jina both return only a JS filter-facet shell for https://www.cisa.gov/news-events/directives; no structured feed found. Not attempted again this run beyond the standing note; no directive-specific content recovered."
+  - source_id: fortinet-fg-ir-bulletins (not in curated source list; encountered via CERT-FR AVI-1166 pivot)
+    reason: "fortiguard.com/psirt/<id> pages (FG-IR-26-164 through FG-IR-26-174, covering CVE-2026-84385 through CVE-2026-84393, CVE-2026-22575, CVE-2026-26084) refused all transports — direct GET returned an anti-bot/challenge body, trafilatura had no readable body, and the jina reader relayed an upstream block/challenge. CERT-FR's own advisory (CERTFR-2026-AVI-1166) confirms the CVE list and risk categories (RCE, privilege escalation, DoS across FortiAnalyzer/FortiManager/FortiOS/FortiSOAR/FortiSIEM/FortiSandbox/FortiPAM/FortiProxy/FortiClientWindows) but carries no CVSS scores or exploitation-status statement, so the bundle could not be brought to the technical-depth and severity-confirmation bar needed for a standalone item this run. A 2026-05-14 CCB Belgium advisory found via search covers a different, earlier Fortinet CVE bundle and does not apply here."
