@@ -1,0 +1,129 @@
+domain: S2
+run_id: 2026-09-14T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-14T04:12:56Z
+ended_at: 2026-09-14T04:19:47Z
+duration_seconds: 411
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 12
+  bridge_fetches: 22
+
+# No qualifying in-window items this run. Extensive essential+rotation sweep
+# performed (see notes below); every candidate either (a) already covered by
+# an existing store entry with no fresh delta, or (b) falls outside the
+# 24h window_hours with no fresher source found after fair-attempt search.
+items: []
+
+backlog_rechecks:
+  - row: "2026-08-30 / inside-it.ch — Insel Gruppe ServiceNow-migration-delayed-by-security-incident article"
+    disposition: no-change
+    note: >
+      16th+ consecutive fire unable to read this article's body. This run the
+      condition WORSENED from the prior "specific-article-only" 429 to a
+      whole-host block: extract on the specific article URL
+      (https://www.inside-it.ch/insel-gruppe-verschiebt-wechsel-zu-servicenow-20260828)
+      returned the same "Vercel Security Checkpoint" 429 via the jina
+      fallback (all four rotation jina keys reported balance-exhausted
+      before the fallback succeeded); a direct feed fetch of
+      https://www.inside-it.ch/feed returned 0 items via jina (empty, not
+      teaser-only); and a direct extract of the inside-it.ch homepage itself
+      also 429'd via jina. Unlike prior fires (2026-09-06 through
+      2026-09-13), general RSS/article access is NOT confirmed healthy this
+      run — this is the first time the whole-host block has persisted
+      across every attempted transport in the same run with no partial
+      success. No corroborating coverage found on netzwoche.ch,
+      computerworld.ch, itmagazine.ch, derbund.ch, bernerzeitung.ch or
+      swisscybersecurity.net (not independently re-searched this run beyond
+      the transport check; prior fires' searches already exhausted the
+      obvious query space with no hits). Recommend the source record be
+      flagged for a recipe review given the escalation from article-level to
+      whole-host failure.
+  - row: "2026-09-06 / Spring Ring (Unit 42) Teams-vishing-to-PetitPotam-NTLM-relay-against-DC"
+    disposition: no-change
+    note: >
+      Re-searched (Unit 42's own post, Dark Reading, Help Net Security,
+      GBHackers, Hackread, dev.to, techjacksolutions, cyberpress.org,
+      windowsforum.com). Every reachable source still traces to the same
+      January-April 2026 campaign window Unit 42 originally disclosed:
+      "Both intrusion attempts were blocked by Unit 42 before the attackers
+      reached their objective." No new victim, no successful DC compromise,
+      no follow-on reporting found. Confirmed distinct from the store's
+      three existing Teams-vishing entries (2026-07-29 STAC4749,
+      2026-08-24 SynkLoader, 2026-09-03 Teams-helpdesk-impersonation).
+
+watchlist_sweep: null  # duty=sector-lens; no product/supplier watchlists configured (per org-profile), so no sweep block per the contract's omission rule.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: >
+      Whole-host 429 ("Vercel Security Checkpoint") across direct fetch,
+      trafilatura-extract-with-jina-fallback, and a standalone jina call,
+      on three separate URLs (the specific backlog article, the RSS/Atom
+      feed, and the bare homepage) in this run — see backlog_rechecks above.
+      Distinct from and worse than the specific-article-only paywall/rate-
+      limit pattern recorded on prior fires.
+  - source_id: ncsc-uk
+    reason: >
+      https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories is
+      a client-side-rendered listing page; trafilatura-extract returns only
+      the static nav shell (section headings, no actual advisory list
+      items). No structured API/recipe is documented for this source in
+      sources.json notes. Not logged as a fetch_failures entry per the
+      SPA-empty-landing-page rule (no transport actually errored), but
+      flagging as a recipe gap: this essential source effectively yields
+      zero content on every fetch attempt with the current recipe.
+  - source_id: zataz
+    reason: >
+      Homepage extract via trafilatura and the /feed/ RSS both returned
+      thin content (extract surfaced only a single dormant Sept-9 article;
+      feed's 10 most recent items all predate the window, oldest visible
+      2026-09-05). No in-window SDIS/DACH-adjacent French public-sector
+      story found via this source this run; supplemented with targeted
+      WebSearch, also no fresher signal located.
+
+notes: |
+  Full essential-tier sweep this run: NCSC-CH (im-fokus, aktuelle-vorfaelle,
+  security-hub API via ncsc-csh recent 10, medienmitteilungen) — most recent
+  dated items are 2026-09-11/12 (BlueMoon Exploit Kit advisory, already
+  covered by the existing store entry 2026-09-10/bluemoon-exploit-kit-...)
+  and 2026-09-08 (consumer/general-fraud awareness items, not gov-facing).
+  BSI CERT-Bund RSS, CERT-FR avis-recent, CERT-EU recent, ENISA news,
+  heise-sec RSS, inside-it.ch (blocked, see above), swisscybersecurity.net,
+  netzwoche.ch, zataz.com/feed, cert.at, cert.pl, ncsc.gov.ie, NCSC-NL
+  advisories RSS, NCSC-UK (recipe gap, see above) — all fetched. All
+  in-window items surfaced (CVE advisories: Check Point VPN CVE-2026-85102/
+  85103, SAP EPP/OVERPASS CVE-2026-44756, GitLab path-traversal
+  CVE-2026-85706, N-central CVE-2026-86218, etc.) are vulnerability-ground-
+  truth items that duplicate S1's territory and/or were already published
+  in prior fires per prior_coverage.json; none carry a distinctively
+  home-region/policy angle beyond what is already tracked.
+
+  Swiss/DACH-specific incident sweep (WebSearch, German/French queries):
+  Basel-Stadt schulen printer-system intrusion-attempt (swissinfo.ch,
+  dated 2026-09-04) — confirmed but 10 days stale, well outside window;
+  Bern canton's Informations- und Cybersicherheitsgesetz (ICSG) entering
+  force 1 November 2026 (derbund.ch 2026-09-10, swisscybersecurity.net/
+  netzwoche.ch 2026-09-11) — a genuine standing-policy development (24h/72h
+  incident-reporting clock, security-officer accountability at
+  office/directorate-management level) but freshest source found is
+  2026-09-10/11, outside the 24h window_hours with no fresher delta located
+  despite a repeated search; noting here rather than in items[] so a future
+  run can pick it up if it develops further or if this window's gate should
+  be reconsidered for it. WeChat/WeWorm zero-click worm (swisscybersecurity.
+  net 2026-09-13) traces back to the existing store entry
+  2026-09-09/weworm-ai-zero-click-wechat-worm-account-takeover — no delta.
+  No fresh Swiss cantonal/communal/federal incident, no fresh French SDIS/
+  DGFiP delta, no fresh Liechtenstein VwbP/Swiss Transparency Register
+  delta (launch on track for 2026-10-01 per Federal Council's 2026-08-31
+  confirmation, already in the existing entry), no fresh Berlin Landesnetz
+  delta beyond a minor victim-support-hotline launch (heise, 2026-09-11)
+  judged too thin to warrant its own changelog trigger given the entry's
+  already-extensive update history.
+
+  Conclusion: genuinely thin in-window signal for S2's mission this run.
+  Returning zero items is the honest outcome rather than padding with
+  stale or already-covered material.

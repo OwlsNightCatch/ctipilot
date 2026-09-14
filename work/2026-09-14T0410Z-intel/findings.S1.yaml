@@ -1,0 +1,73 @@
+domain: S1
+run_id: 2026-09-14T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-14T04:12:37Z
+ended_at: 2026-09-14T04:18:53Z
+duration_seconds: 376
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 6
+  bridge_fetches: 21
+items:
+  - title: "Regular Labs' catalogue-wide Joomla extension release fixes nine RESERVED CVEs — one lets any Author-role account run PHP via Conditional Content's inline Condition Rules"
+    sources:
+      - { url: "https://mysites.guru/blog/regular-labs-september-2026-security-updates/", publisher: "mySites.guru", date: "2026-09-13", role: "primary" }
+      - { url: "https://mysites.guru/blog/regular-labs-joomla-extension-security-release/", publisher: "mySites.guru", date: "2026-07-22", role: "background (prior catalogue-wide release establishing the affected version baseline)" }
+    discovery_trace: "first seen at: mysites-guru, URL https://mysites.guru/blog/ (rotation-slice fetch of the blog listing) -> primary: mysites.guru's own dedicated writeup, URL https://mysites.guru/blog/regular-labs-september-2026-security-updates/ (mySites.guru independently confirmed the shipped-package defaults itself rather than relying solely on the vendor's changelog text; the vendor Regular Labs' own changelog index at https://regularlabs.com/latest-releases is linked throughout as the underlying source but was not separately fetched this run). Corroboration attempt: WebFetch of https://nvd.nist.gov/vuln/detail/CVE-2026-85192 confirmed no NVD record exists yet, consistent with mySites.guru's own statement that all nine CVE identifiers were RESERVED and unpublished at cve.org/NVD/MITRE on release day."
+    summary: |
+      Regular Labs, a Joomla extension house, shipped 24 extension updates on 2026-09-13, ten of them carrying `[SECURITY FIX]` changelog entries covering nine CVE identifiers (all still in RESERVED state, unpublished at cve.org/NVD/MITRE as of this writing — confirmed independently by mySites.guru against the MITRE record endpoint, NVD API and the CVE Project's git mirror, and by this research pass against NVD directly). The standout is CVE-2026-85192 in Conditional Content (fixed 8.0.0): an untrusted article author — the lowest content-authoring role Joomla has — could run arbitrary PHP through an inline "Condition Rule," i.e. code execution reachable by any account with Author rights, including a self-registered one on sites that allow open registration into that role. The other eight CVEs are XSS or information-disclosure issues: CVE-2026-85188 is one shared Condition-Set defect present in four separate extensions (Advanced Module Manager 12.1.0, Conditional Content 8.0.0, Content Templater 14.2.0, ReReplacer 16.2.0); CVE-2026-85195/CVE-2026-85196 affect Articles Anywhere 20.0.0 (CVE-2026-85196 also affects Users Anywhere 2.1.0); CVE-2026-85189/CVE-2026-88853 affect Modals 17.0.0; CVE-2026-88852 affects Snippets 11.0.0; CVE-2026-85190 affects Quick Index 5.0.5; CVE-2026-85191 affects Tabs & Accordions 3.1.0. Every affected build dates from Regular Labs' prior catalogue-wide release (22 July 2026) or later. Four of the ten security fixes (Articles Anywhere, Conditional Content, Modals, Snippets) are flagged BC BREAK by the vendor: rather than sanitising input, the fix withdraws a previously-open capability (JavaScript Events / Snippet variable overrides / PHP Condition Rules) and gates it behind an author-group setting that mySites.guru confirmed defaults to Super Users only in the shipped plugin manifests — sites that legitimately used these features from a non-Super-User account will see them silently stop working post-update with no warning. No Joomla 3 backport exists or is planned; Regular Labs' Joomla-3 branch has been frozen since 4 September 2023, so any site still on that branch needs a migration to Joomla 4/5/6, not an update, to receive any of these fixes. mySites.guru reports roughly a third of the Regular-Labs installs it monitors are still on pre-fix builds, and about a fifth of installs across the affected extensions with a Joomla 3 branch sit on that frozen 2023 terminal build.
+    region_nexus: "global CMS-ecosystem exposure; no Switzerland-specific reporting, but Joomla is in routine use by smaller public-sector, NGO and communal sites in the DACH region"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-85192", "CVE-2026-85188", "CVE-2026-85195", "CVE-2026-85196", "CVE-2026-85189", "CVE-2026-88853", "CVE-2026-88852", "CVE-2026-85190", "CVE-2026-85191"]
+    techniques: [T1190]
+    affected_products: ["Joomla! (Regular Labs extensions: Conditional Content, Articles Anywhere, Users Anywhere, Modals, Snippets, Quick Index, Tabs & Accordions, Advanced Module Manager, Content Templater, ReReplacer)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-85192, fixed in Conditional Content 8.0.0, let an untrusted article author run PHP through an inline Condition Rule. That is code execution reachable by the lowest content-authoring role on a Joomla site."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/regular-labs-september-2026-security-updates/"
+      - quote: "All nine CVE identifiers were still in RESERVED state on the day of release. The numbers are allocated, and Regular Labs has printed them in its own changelogs, but the records are not live at cve.org or in NVD. We checked the MITRE record endpoint, the NVD API and the CVE Project's own git mirror, and all three come back empty."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/regular-labs-september-2026-security-updates/"
+      - quote: "We confirmed that in the shipped packages rather than inferring it: the javascript_events_usergroups field in Articles Anywhere 20.0.0's plugin manifest sets default=\"Super Users\", and the code default matches."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/regular-labs-september-2026-security-updates/"
+    extended_notes: |
+      Triage/detection angle for the composer: because the fix for the four BC-BREAK extensions is a capability withdrawal (default now Super Users only) rather than a pure sanitisation, the expected post-patch symptom for a legitimate site is a silently-broken content feature (JavaScript Events / Snippet variable overrides / PHP Condition Rules stop rendering) with no error message -- that is the normal patch side effect, not an intrusion indicator, and should not be triaged as a compromise signal. A genuine pre-patch exploitation attempt would show as a non-Super-User (Author/Editor-role) account creating or editing a Conditional Content "Condition Rule" containing PHP, or an Articles Anywhere/Modals JavaScript Events attachment from an account outside the site's trusted author groups -- both are visible in Joomla's content-revision history and the extension's own audit trail, not in a web server access log alone, since the trigger is stored content rendered at view time rather than a single malicious HTTP request. Hardening beyond patching: restrict/disable open self-registration into the Author role (or any content-authoring group) where not operationally required, since CVE-2026-85192 is reachable by any account holding that role including a freshly self-registered one. This is a same-vendor, same-mechanism follow-on to the 22 July 2026 catalogue-wide release the store already tracks via three 2026-08-28 entries (yootheme-zoo, icagenda, sourcerer) -- none of those three entries' CVEs overlap this batch's nine identifiers, so this is genuinely new coverage rather than a duplicate. Single-sourced because the CVEs are RESERVED/unpublished and no second independent outlet has picked this up yet; the vendor's own changelog (https://regularlabs.com/latest-releases, linked throughout mySites.guru's writeup) is the ultimate primary but was not separately fetched this run given time budget -- worth an independent confirmation fetch on a later audit pass if this entry needs corroboration upgraded.
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "product watchlist is not configured for this deployment (none configured) -- sweep is a documented no-op per the org profile; no targeted product checks performed beyond normal domain research"
+candidate_sources:
+  - id: tp-link-omada-support
+    publisher: "TP-Link/Omada Networks product-security advisory portal"
+    url: "https://www.tp-link.com/us/press/security-advisory/"
+    category: vendor-psirt
+    why: "the sources.json record for tp-link-omada-psirt (https://support.omadanetworks.com/us/security-advisory/) 404s consistently (confirmed again this run, 3rd+ consecutive failure per the rotation-priority note). A WebSearch canonical-URL probe found that URL redirects to https://www.tp-link.com/us/press/security-advisory/, but that page is a static policy/contact page with no advisory listing rendered server-side (likely JS-hydrated) -- individual advisories are only reachable via support.omadanetworks.com/us/document/<id>/ pages found through targeted search, not a stable listing URL. Recommend the source record be corrected to the tp-link.com canonical URL with a note that individual advisory IDs must be discovered via WebSearch each run, or reclassified fetch_method: blocked."
+coverage_gaps:
+  - source_id: tp-link-omada-psirt
+    reason: "support.omadanetworks.com/us/security-advisory/ returned a hard 404 (Nuxt app 'page not found' JSON payload) on direct bridge fetch, consistent with the rotation-priority note (2+ prior failures, last_status 404). Canonical-URL probe performed per instruction; see candidate_sources entry above for the corrected URL and its own limitation."
+  - source_id: tenable-research
+    reason: "RSS feed https://www.tenable.com/blog/rss returned 0 items via both direct and jina-fallback transport (empty feed body) -- could not enumerate recent posts this run."
+  - source_id: chrome-releases
+    reason: "RSS feed https://chromereleases.googleblog.com/feeds/posts/default returned 0 items via jina; substituted extract on the blog landing page directly (https://chromereleases.googleblog.com/), which showed only a 2026-09-11 ChromeOS LTC post with previously-known/already-patched CVEs -- no new Desktop Stable release or zero-day beyond the already-covered CVE-2026-85046/CVE-2026-87491 found in-window."
+  - source_id: ncsc-uk
+    reason: "the bridge/direct fetch of ncsc.gov.uk's Report RSS feed returned only old (2022-2025) long-form thematic reports, not a current advisories/alerts feed; the actual 'reports-advisories' listing page was not independently drilled this run due to time budget -- worth a source-recipe check on a future run (may need a different feed path or the bridge's structured route)."
+  - source_id: cisa-advisories
+    reason: "cisa.gov listing pages (cybersecurity-advisories, directives) render as a filter form with no advisory items present in the server-rendered/extracted markdown (JS-paginated results). The CISA KEV catalog itself (the higher-value structured data) was fetched successfully and cross-checked directly, so the gap is limited to CISA's own ICS/AA-numbered advisory listing, which was not independently enumerated this run."
+  - source_id: censys-blog
+    reason: "extract of https://censys.com/resources/blog/ returned only a stale cached landing snippet (metadata date 2026-05-28) with no post listing -- likely needs a different listing path or JS rendering; not independently re-attempted this run."
+backlog_disposition:
+  - row: "Joint advisory AA26-231A, active threat to Siemens S7 PLCs"
+    disposition: "not re-probed this run; low priority per the row's own history of 12+ consecutive carry-forwards with no new development; no spare capacity allocated after the primary sweep and the new Joomla-extension item. Carry forward."
+  - row: "VMware VMSA-2026-0007, CVE-2026-59346/CVE-2026-59347 VMXNET3 guest-to-host escape (Workstation/Fusion)"
+    disposition: "re-checked. Fresh CISA KEV catalog fetch (catalogVersion 2026.09.11) confirms neither CVE has been added to CISA KEV. WebSearch for exploitation reporting found only original disclosure-week coverage (SecurityWeek, The Hacker News, SC Media, securityonline.info, xnews.sk); multiple sources explicitly state no public evidence of active exploitation, and Broadcom's own advisory does not claim exploitation. No report of the defect reaching ESXi. No change; does not clear the row's own publish bar. Carry forward."
