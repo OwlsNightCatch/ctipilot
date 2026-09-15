@@ -1,0 +1,157 @@
+domain: S1
+run_id: 2026-09-15T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-15T04:13:32Z
+ended_at: 2026-09-15T04:18:51Z
+duration_seconds: 319
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 3
+  bridge_fetches: 26
+items:
+  - title: "CVE-2026-76461 — Cisco Secure Email Gateway: unauthenticated SQL injection in email parsing reaches root command execution, exploited before disclosure, CISA gives it a 3-day KEV remediation window"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-esa-inj-2bLVGmhX", publisher: "Cisco PSIRT", date: "2026-09-14", role: primary }
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA Known Exploited Vulnerabilities Catalog", date: "2026-09-14", role: primary }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0368", publisher: "NCSC-NL", date: "2026-09-14", role: corroborating }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-esa-dfCrfXkm", publisher: "Cisco PSIRT", date: "2026-09-14", role: corroborating }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml", publisher: "Cisco PSIRT (RSS)", date: "2026-09-14", role: corroborating }
+    discovery_trace: >
+      first seen at: mandatory-disposition-item (v4.8 KEV sweep, spawn message naming CVE-2026-76461) →
+      confirmed at: cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+      (catalogVersion 2026.09.14, dateAdded 2026-09-14) → primary: Cisco PSIRT advisory, URL
+      https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-esa-inj-2bLVGmhX
+      → corroborating: NCSC-NL advisory NCSC-2026-0368, URL
+      https://advisories.ncsc.nl/advisory?id=NCSC-2026-0368 → companion advisory found via Cisco
+      PSIRT RSS feed, URL https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml,
+      pivoted to https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-esa-dfCrfXkm
+      → independently confirmed exploited-since date at ENISA EUVD, URL https://euvd.enisa.europa.eu/
+      (EUVD-2026-77625, exploitedSince 2026-09-14).
+    summary: |
+      Cisco's PSIRT disclosed CVE-2026-76461 (CVSS 3.1 9.8, CWE-89) on 2026-09-14: a SQL injection
+      in the email-parsing logic of AsyncOS for Cisco Secure Email Gateway (ESA), reachable by an
+      unauthenticated remote attacker who sends a single crafted email containing malicious SQL
+      statements through the device. Successful exploitation executes arbitrary SQL statements that
+      in turn execute arbitrary OS commands with root privileges on the underlying operating system
+      — Cisco's own detection guidance instructs administrators to grep mail_logs for the pattern
+      "COPY.*TO PROGRAM", which points at the same PostgreSQL COPY-TO-PROGRAM OS-command-execution
+      primitive documented in other 2026 SQLi-to-RCE chains (e.g. Sangoma Switchvox CVE-2026-9586;
+      this parallel is this agent's own technical inference from Cisco's published grep pattern, not
+      a Cisco statement). Cisco states plainly: "In September 2026, the Cisco PSIRT became aware of
+      active exploitation of this vulnerability," and that the flaw "was found during the resolution
+      of a Cisco TAC support case" — i.e. discovered through a real customer compromise, not
+      internal testing. There is no workaround; the only fix is upgrading. All Cisco Secure Email
+      Gateway physical and virtual appliances are affected regardless of configuration; Cisco Secure
+      Email and Web Manager and Secure Web Appliance are confirmed NOT affected. Fixed in AsyncOS
+      15.5.5-014 (for 15.5 and earlier), 16.0.4-302 (for 16.0), and 16.5.0-780 (for 16.5, the release
+      Cisco "strongly recommends" migrating to). Cisco has already upgraded all Secure Email Cloud
+      instances and directly contacted Cloud customers on whose devices indicators of compromise
+      were found. CISA added the CVE to its Known Exploited Vulnerabilities catalog on 2026-09-14
+      with an unusually aggressive three-day remediation due date (2026-09-17) and flagged it for
+      Forensic Triage Requirements. The same day, Cisco published a companion "Security Hardening
+      Release" advisory for the same product line bundling five further internally-discovered
+      vulnerability classes it found via internal review "as well as frontier AI models" — path
+      traversal (CVE-2026-76440, CVSS 9.8), improper access control (CVE-2026-76441, CVSS 9.8),
+      uncontrolled resource consumption (CVE-2026-20353, CVSS 9.8), an injection-class CWE-707
+      grouping (CVE-2026-76443, CVSS 9.8, the same CWE class as the exploited flaw, though Cisco
+      states this grouped CVE is not itself known to be exploited) and an input-validation issue
+      (CVE-2026-76442, CVSS 7.5) — all patched in the identical software releases (also
+      15.5.5-006/16.5.0-429 for Secure Email and Web Manager). Administrators upgrading against
+      CVE-2026-76461 close all six CVEs with the same action.
+    region_nexus: "global — internet-facing mail security gateways are deployed across public-sector and enterprise environments generally, including in Switzerland"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves:
+      - CVE-2026-76461
+      - CVE-2026-76440
+      - CVE-2026-76441
+      - CVE-2026-20353
+      - CVE-2026-76443
+      - CVE-2026-76442
+    techniques: [T1190]
+    affected_products:
+      - "Cisco Secure Email Gateway"
+      - "Cisco Secure Email and Web Manager"
+    entity_keys: []
+    new_entities:
+      - key: "product:cisco-secure-email-gateway"
+        type: product
+        name: "Cisco Secure Email Gateway"
+        aliases: ["Cisco Secure Email", "Cisco ESA", "Cisco IronPort ESA", "Cisco AsyncOS for Cisco Secure Email Gateway"]
+        summary: "Cisco's mail-security gateway appliance (physical and virtual), running AsyncOS software; the product affected by CVE-2026-76461 and the concurrent September 2026 hardening-release CVE bundle (Cisco PSIRT, 2026-09-14)."
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A vulnerability in the email parsing of Cisco AsyncOS Software for Cisco Secure Email Gateway could allow an unauthenticated, remote attacker to execute arbitrary commands with root privileges on the underlying operating system."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-esa-inj-2bLVGmhX"
+      - quote: "In September 2026, the Cisco PSIRT became aware of active exploitation of this vulnerability."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-esa-inj-2bLVGmhX"
+      - quote: "This vulnerability was found during the resolution of a Cisco TAC support case."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-esa-inj-2bLVGmhX"
+      - quote: "grep -i \"COPY.*TO PROGRAM\" [IronPort Text Mail Logs Log name - Default: mail_logs]"
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-esa-inj-2bLVGmhX"
+      - quote: "Cisco meldt dat succesvolle exploitatie van deze kwetsbaarheid is waargenomen."
+        attribution: "NCSC-NL (NCSC-2026-0368)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0368"
+      - quote: "These vulnerabilities were found during internal security testing using existing testing processes as well as frontier AI models."
+        attribution: "Cisco PSIRT (companion hardening-release advisory)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-esa-dfCrfXkm"
+    extended_notes: |
+      Priority set to critical: unauthenticated remote root RCE on an internet-facing mail
+      gateway, confirmed active exploitation (Cisco PSIRT direct statement + CISA KEV + ENISA EUVD
+      exploitedSince 2026-09-14), CVSS 9.8, no workaround, and CISA's unusually short 3-day KEV
+      remediation window (added 2026-09-14, due 2026-09-17) versus KEV's normal ~2-3 week window
+      for non-ransomware-linked entries — signalling CISA assesses urgency above the median KEV
+      addition. Cisco's disclosure that the flaw was found "during the resolution of a Cisco TAC
+      support case" (i.e. a real customer's compromise investigation), combined with directly
+      notifying Secure Email Cloud customers where indicators of compromise were found, indicates
+      Cisco has firsthand incident telemetry behind this advisory beyond a generic "aware of active
+      exploitation" boilerplate. No named threat actor or cluster is given by any source checked.
+      Detection: hunt mail_logs (and firewall/network logs external to the appliance, since an
+      attacker with root can remove local evidence) for SQL-injection-shaped log entries,
+      specifically the COPY-TO-PROGRAM pattern Cisco names; also watch for unexpected outbound
+      uploads/downloads from the appliance to external IPs. Hardening: Cisco's own general
+      recommendations (separate mail/management network interfaces, restrict appliance reachability
+      to known hosts, disable HTTP for the admin portal, disable unneeded network services) reduce
+      the appliance's exposure but do not substitute for patching, since there is no workaround for
+      the SQLi itself.
+    actions:
+      - "Upgrade every Cisco Secure Email Gateway (physical and virtual) to AsyncOS 15.5.5-014, 16.0.4-302, or 16.5.0-780 (Cisco's recommended target) immediately — the same upgrade also closes the five companion hardening-release CVEs (CVE-2026-76440/76441/76442/76443, CVE-2026-20353) disclosed the same day."
+      - "Run Cisco's published detection command against every ESA/cluster device's mail_logs — grep -i \"COPY.*TO PROGRAM\" — and cross-check firewall/network logs external to the appliance for unexpected outbound connections, since a successful exploit grants root and attackers may have removed local log evidence."
+      - "For Cisco Secure Email Cloud customers: confirm directly with Cisco whether your instance is among those where indicators of compromise were identified — Cisco states it has already proactively contacted affected Cloud customers."
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product watchlist configured for this deployment (config/org-profile.yaml) — sweep is a no-op per spawn instructions. General S1 coverage (CISA KEV, national-CERT advisories, vendor PSIRT feeds, ENISA EUVD) checked as normal; no watchlist-specific fetches performed beyond that."
+candidate_sources: []
+coverage_gaps:
+  - source_id: tp-link-omada-psirt
+    reason: >
+      Promoted to top of rotation slice after 3 prior failed fetches; tried a fresh recipe this run
+      (extract <URL> instead of the bridge) — the page https://support.omadanetworks.com/us/security-advisory/
+      returns a live 200 response but is a soft-404 ("Oops! The page you're looking for can't be
+      found") rendered by the site itself, not a transport failure. The advisory listing has likely
+      moved. WebSearch for "Omada Networks security advisory" / "TP-Link Omada PSIRT" did not
+      surface a working replacement URL in the time available this run. Recommend the source record
+      be updated with a corrected URL or retired if Omada Networks has discontinued a public
+      advisory index; flagging as a recipe-fix candidate rather than a repeat coverage gap.
+coverage_backlog_recheck:
+  - row: "AA26-231A joint advisory on active threats to Siemens S7 PLCs"
+    entry: "2026-08-20/joint-advisory-active-threat-siemens-s7-plcs"
+    result: >
+      Light re-check only, per spawn instructions (low priority, no deep dive). Read the existing
+      entry in full: it already reflects a complete primary-PDF read (2026-08-21 update) carrying
+      the five named detection classes, the full hardening sequence, the supply-chain/MSP
+      instruction, and the advisory's own scope note that targeting is broader than Siemens. No
+      further unquoted-passage gaps were identified from re-reading the entry against its own
+      documented source-reading history; no new fetch of the PDF was performed this run given the
+      entry's sourcing_note already documents a full-text read and cross-check. No update warranted.
