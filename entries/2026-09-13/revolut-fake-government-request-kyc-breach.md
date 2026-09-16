@@ -11,7 +11,7 @@ summary: >
   involved; the compromise was entirely of the process Revolut uses to verify inbound legal and
   regulatory data requests.
 discovered_at: "2026-09-13T04:37:32Z"
-updated_at: null
+updated_at: "2026-09-16T05:30:00Z"
 event_date: "2026-09-12"
 run_id: 2026-09-13T0409Z-intel
 priority: notable
@@ -20,7 +20,7 @@ tags: [data-breach, phishing, identity]
 regions: [global, uk]
 sectors: [finance]
 entities: ["incident:revolut-fake-government-request-breach-2026-09"]
-techniques: [T1598, T1684.001]
+techniques: [T1598, T1684.001, T1657]
 affected_products: []
 cves: []
 sources:
@@ -32,6 +32,10 @@ sources:
     publisher: "Security Affairs"
     date: "2026-09-12"
     role: corroborating
+  - url: "https://databreaches.net/2026/09/15/hackers-demand-10000-bitcoin-from-revolut-following-data-breach/"
+    publisher: "DataBreaches.net (relaying Computing.co.uk)"
+    date: "2026-09-15"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "Revolut received a request for customer information that appeared to come from a legitimate government agency. The request came from an unauthorised email account sent directly using the official government agency's email domain."
@@ -40,9 +44,21 @@ evidence:
     publisher: "Revolut (customer notification, via Security Affairs)"
   - quote: "Revolut recently identified a sophisticated external impersonation scam where an unauthorised third party utilised a legitimate government agency domain email to submit fraudulent requests for information."
     publisher: "Revolut spokesperson, via TechCrunch"
+  - quote: "People claiming responsibility for the incident have posted samples of the allegedly stolen information across several Telegram groups and the material appears to include details belonging to prominent individuals, including business leaders, sports professionals and performing artists."
+    publisher: "Dev Kundaliya, via DataBreaches.net (relaying Computing.co.uk)"
+  - quote: "The attackers have threatened to publish additional information “every day” unless Revolut pays a ransom of 10,000 Bitcoin – currently worth more than $782m."
+    publisher: "Dev Kundaliya, via DataBreaches.net (relaying Computing.co.uk)"
 verification: single-source-victim
-sourcing_note: "All reporting traces to Revolut's own customer notification and spokesperson statement; no independent forensic or regulatory confirmation of the incident's scope or mechanism has been published, and Revolut declines to name the government agency, country, or number of customers affected."
-confidence: high
+sourcing_note: >
+  All reporting on the original disclosure traces to Revolut's own customer notification and
+  spokesperson statement; no independent forensic or regulatory confirmation of the incident's
+  scope or mechanism has been published, and Revolut declines to name the government agency,
+  country, or number of customers affected. The 2026-09-16 extortion-escalation development is
+  sourced to DataBreaches.net's relay of Computing.co.uk reporting; Computing.co.uk itself
+  remained unreachable on every transport tried as of 2026-09-16, and neither Revolut nor a second
+  outlet has confirmed the ransom demand, the Telegram posting, or the alleged victim identities,
+  which are treated as attacker-stated claims, not established fact.
+confidence: medium
 references: []
 deep_dive: false
 deep_dive_category: null
@@ -62,6 +78,16 @@ updates:
       elided words carry the operative detail: the fraudulent request was sent directly from the
       government agency's own domain, not merely styled to resemble it.
     fields: [body]
+  - at: "2026-09-16T05:30:00Z"
+    run_id: 2026-09-16T0409Z-intel
+    type: update
+    summary: >
+      Parties claiming responsibility have posted samples of the allegedly stolen data across
+      multiple Telegram groups and are demanding a 10,000 Bitcoin ransom, threatening daily
+      further publication if unpaid; sourced to a relay of reporting whose original outlet remains
+      unreachable as of 2026-09-16, so the claims are attacker-stated, not confirmed by Revolut or
+      a second source.
+    fields: [techniques, sources, evidence, sourcing_note, confidence, body]
 migrated_from: null
 ---
 
@@ -76,3 +102,7 @@ For any organization that operates a legal or regulatory data-request intake pro
 ## Correction — 2026-09-13T14:05:00Z
 
 The quotation from Revolut's customer notification in the opening paragraph was rendered with an inserted ellipsis. Revolut's sentence reads in full: "The request came from an unauthorised email account sent directly using the official government agency's email domain" ([Revolut, via Security Affairs, 2026-09-12](https://securityaffairs.com/198922/data-breach/revolut-exposed-kyc-data-after-fraudulent-government-email-passed-security-checks.html)). The two elided words are the operative ones for a defender reading this as a control failure: the request was **sent directly** from the agency's own domain rather than from a lookalike, which is why domain authentication passed and why the sending domain told Revolut's reviewer nothing about the sender's authority.
+
+## Update — 2026-09-16T05:30:00Z
+
+Parties claiming responsibility for the breach have posted samples of the allegedly stolen data across several Telegram groups, reported to include details belonging to "prominent individuals, including business leaders, sports professionals and performing artists," and are demanding Revolut pay a ransom of 10,000 Bitcoin, worth more than 782 million US dollars at the time of reporting, threatening to publish further data "every day" if unpaid ([DataBreaches.net, relaying Computing.co.uk, 2026-09-15](https://databreaches.net/2026/09/15/hackers-demand-10000-bitcoin-from-revolut-following-data-breach/)). This is the first extortion dimension reported on an incident this entry previously described only as a disclosed process-abuse breach with no stated attacker demand. Computing.co.uk, the outlet that originated this reporting, remains unreachable on every transport tried as of 2026-09-16; neither Revolut nor a second independent outlet has confirmed the ransom figure, the Telegram posting, or the claimed victim identities, so these remain attacker-stated claims rather than established fact.
