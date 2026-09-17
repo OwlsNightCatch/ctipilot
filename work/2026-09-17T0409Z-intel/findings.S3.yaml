@@ -1,0 +1,349 @@
+domain: S3
+run_id: 2026-09-17T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-17T04:12:06Z
+ended_at: 2026-09-17T04:24:11Z
+duration_seconds: 725
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 10
+  bridge_fetches: 22
+
+items:
+  - title: "DDRop — a $159 DDR5 hardware interposer drops targeted memory writes to defeat Intel TDX/SGX and AMD SEV-SNP, forging TDX remote-attestation reports; no CVE, no vendor fix planned"
+    sources:
+      - { url: "https://www.heise.de/news/DDROP-Adapterstecker-hebelt-Confidential-Computing-aus-11454579.html", publisher: "heise Security (Dirk Knop)", date: "2026-09-16", role: "primary" }
+      - { url: "https://ddropattack.eu/", publisher: "DDRop research team (KU Leuven / ETH Zurich / Durham University / Google)", date: "2026-09-14", role: "primary" }
+      - { url: "https://www.intel.com/content/www/us/en/security-center/announcement/intel-security-announcement-2026-08-11-001.html", publisher: "Intel PSIRT (announcement 2026-09-14-001)", date: "2026-09-14", role: "corroborating" }
+      - { url: "https://www.amd.com/en/resources/product-security/bulletin/amd-sb-3048.html", publisher: "AMD Product Security (AMD-SB-3048)", date: "2026-09-15", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec (essential source), URL https://www.heise.de/news/DDROP-Adapterstecker-hebelt-Confidential-Computing-aus-11454579.html → primary: DDRop research site, URL https://ddropattack.eu/ (research paper https://ddropattack.eu/ddrop.pdf) → pivot: Intel security announcement, URL https://www.intel.com/content/www/us/en/security-center/announcement/intel-security-announcement-2026-08-11-001.html → pivot: AMD security bulletin AMD-SB-3048, URL https://www.amd.com/en/resources/product-security/bulletin/amd-sb-3048.html"
+    summary: |
+      Researchers from KU Leuven, ETH Zurich, Durham University and Google disclosed DDRop, an open-source
+      DDR5 hardware interposer (~$159 in parts, installs in minutes) that defeats the confidentiality/integrity
+      guarantees of Intel TDX, Intel Scalable SGX and AMD SEV-SNP without reading encrypted memory or requiring
+      any software bug in the victim VM. Instead of snooping the bus like earlier passive attacks (Membuster,
+      WireTap, TEE.fail), DDRop actively abuses the DDR5 bus's error-handling path: it forges a parity error on
+      a targeted write and suppresses the resulting alert, so the memory module silently discards the command
+      while the processor believes the write completed — leaving stale, attacker-chosen ciphertext in place, at
+      full native bus speed with no timing signature to flag the tampering. Against Intel TDX, the team used this
+      to corrupt the TDX module's initialization writes to Secure Extended Page Tables (SEPT), letting an
+      attacker-controlled Trust Domain remap its own memory onto any physical RAM address; in TDX's default
+      Logical Integrity mode this exposes and corrupts other TDs' encrypted control structures, and even under
+      the stronger Cryptographic Integrity mode an attacker can still forge their own TD's launch-measurement
+      attestation (via TDG.MR.REPORT) so a backdoored VM passes remote attestation as trusted, or flip the TD's
+      debug-mode bit (~50% success per attempt) to obtain a hypervisor-level plaintext memory dump. The only
+      prerequisite is brief physical access to install the interposer plus the standard TEE threat model
+      (compromised hypervisor/BIOS) — the researchers list malicious data-center technicians, hardware
+      supply-chain tampering, and law-enforcement/state seizure as realistic access vectors. Intel and AMD
+      confirmed the findings under coordinated disclosure (2026-09-14/15) but both declared physical DRAM-bus
+      attacks out of scope for their current products' threat model; neither is assigning a CVE or shipping a
+      mitigation. Intel says it is evaluating "Platform Owner Endorsements" (to let remote parties verify who
+      physically holds sensitive hardware) and next-generation memory-encryption schemes with built-in freshness
+      protection. This is disclosed academic research with public PoC code, hardware schematics and firmware on
+      GitHub (github.com/ddropattack/ddrop) — no in-the-wild exploitation is claimed or plausible given the
+      physical-access requirement.
+    region_nexus: "global; co-authored by ETH Zurich (Switzerland). Directly relevant to any organization or agency that relies on a cloud provider's Confidential Computing marketing (Intel TDX/SGX, AMD SEV-SNP) as a data-sovereignty or trust assurance for hosting sensitive workloads on infrastructure it does not physically control."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1200, T1553]
+    affected_products: ["Intel TDX", "Intel Scalable SGX", "AMD SEV-SNP", "AMD EPYC 4004/4005/8004/9004/9005 Series", "AMD Instinct MI300A"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:ddrop-hardware-interposer", type: tool, name: "DDRop", aliases: [],
+          summary: "Open-source $159 DDR5 hardware interposer disclosed 2026-09-14 by KU Leuven/ETH Zurich/Durham University/Google researchers that abuses DDR5 bus error-handling to silently drop targeted memory writes, defeating Intel TDX/Scalable SGX and AMD SEV-SNP confidential-computing integrity — including forging Intel TDX remote-attestation reports and toggling TD debug mode. No CVE assigned; Intel and AMD declare physical DRAM-bus attacks out of scope for their current threat models (Intel PSIRT / AMD-SB-3048, 2026-09-14/15)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "DDRop is a small, low-cost hardware interposer device that can make writes to a server's memory disappear, causing the computer to read old data as if it were newly written."
+        attribution: "DDRop research team (KU Leuven / ETH Zurich / Durham University / Google)"
+        source_url: "https://ddropattack.eu/"
+      - quote: "This primitive is 100% deterministic and lets an attacker-controlled TD remap its own memory onto any physical address in RAM."
+        attribution: "DDRop research team"
+        source_url: "https://ddropattack.eu/"
+      - quote: "Intel's analysis confirms that the described scenarios fall outside Intel's standard threat model for confidential computing deployments."
+        attribution: "Intel PSIRT"
+        source_url: "https://www.intel.com/content/www/us/en/security-center/announcement/intel-security-announcement-2026-08-11-001.html"
+      - quote: "AMD has assessed this report and has determined that the described technique relies on a physical attack against the memory bus, which falls outside the scope of the published threat model for SEV-SNP. AMD does not plan to assign a CVE or release mitigations in response to this report."
+        attribution: "AMD Product Security (AMD-SB-3048)"
+        source_url: "https://www.amd.com/en/resources/product-security/bulletin/amd-sb-3048.html"
+    extended_notes: |
+      Triage/detection angle: this is a physical-access class of attack (T1200 Hardware Additions), not remotely
+      detectable by conventional host telemetry — the defensive lever is entirely procedural/physical (restrict
+      and monitor physical server access, secure supply-chain handling, least-privilege for system
+      firmware/software) per Intel's own customer-action list, not a patch. Distinguishes cleanly from prior
+      passive interposer/cold-boot research (BatteringRAM, BadRAM, "Download more RAM") which the DDRop team
+      cites as its own prior-art lineage — worth a Background paragraph if the main agent is doing a deep dive
+      on Confidential Computing trust assumptions. No exploitation in the wild; this is coordinated-disclosure
+      academic research.
+
+  - title: "PhantomRaven: CrowdStrike unmasks a self-described bug-bounty hunter running an LLM-generated npm infostealer to manufacture their own bounty submissions"
+    sources:
+      - { url: "https://www.crowdstrike.com/en-us/blog/phantomraven-llm-generated-information-stealer-for-bug-bounty-hunting/", publisher: "CrowdStrike Counter Adversary Operations", date: "2026-09-16", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/new-phantomraven-npm-attack-wave-steals-dev-data-via-88-packages/", publisher: "BleepingComputer (Bill Toulas), citing Endor Labs research", date: "2026-03-11", role: "background/corroborating on malware mechanics" }
+    discovery_trace: "first seen at: crowdstrike (rotation source), URL https://www.crowdstrike.com/blog/category/counter-adversary-operations/ → primary: CrowdStrike Counter Adversary Operations blog post, URL https://www.crowdstrike.com/en-us/blog/phantomraven-llm-generated-information-stealer-for-bug-bounty-hunting/ → corroboration via WebSearch (\"CrowdStrike PhantomRaven infostealer bug bounty hunter LLM\") → background: BleepingComputer/Endor Labs, URL https://www.bleepingcomputer.com/news/security/new-phantomraven-npm-attack-wave-steals-dev-data-via-88-packages/"
+    summary: |
+      CrowdStrike Counter Adversary Operations identifies a financially motivated threat actor — a
+      self-proclaimed bug-bounty hunter active since November 2022 — as the developer and operator of
+      PhantomRaven, a JavaScript npm information stealer whose code CrowdStrike assesses "almost certainly"
+      LLM-generated with high confidence (verbose per-symbol comments explaining the obvious, placeholder code,
+      and statistical token-analysis patterns consistent with an LLM token stream). The actor distributes the
+      stealer via typosquatted npm packages containing only trivial, non-malicious code (a "Hello, world!"
+      script), but the package.json specifies a dependency via a raw HTTP URL instead of a normal npm registry
+      reference — a Remote Dynamic Dependency (RDD) that npm silently fetches at install time from
+      attacker-controlled infrastructure, so the actual malicious payload never appears in the npm registry's
+      own web interface or most automated scanners. The fetched payload registers as a `preinstall` script that
+      auto-executes on `npm install` (npm 12+ now blocks unapproved preinstall scripts by default, a June 2026
+      change CrowdStrike credits with narrowing this vector). Once running, the stealer harvests OS/hostname/
+      architecture, local and external IPs (queried via api64.ipify.org), NodeJS version, current directory and
+      PID, Git/npm-configured usernames and emails, and a long list of CI/CD environment variables covering
+      GitHub Actions, GitLab CI, Jenkins and CircleCI (tokens, project IDs, build URLs) — data consistent with
+      harvesting CI/CD account credentials rather than end-user secrets. Exfiltration goes out over both HTTP GET
+      (query string) and POST (JSON body) to the same C2 domains, with an incomplete WebSocket fallback CrowdStrike
+      reads as an unfinished, likely LLM-suggested redundancy feature rather than live infrastructure. CrowdStrike
+      correlated npm usernames, an X account, a HackerOne-referencing alias, a GitHub account, and a 2025 PyPI
+      submission (rejected by PyPI as an information-stealer attempt) back to the same operator, who publicly
+      claims — via their own X profile — to have collected bounties from at least nine organizations across
+      tech, retail and hospitality via Bugcrowd, Intigriti, YesWeHack, HackenProof and HackerOne, using
+      compromises enabled by their own malware as leverage for legitimate-looking disclosure submissions.
+      CrowdStrike frames this as a broader eCrime pattern: financially motivated actors developing proprietary,
+      AI-generated tooling rather than renting commodity malware, alongside separately observed AI-generated
+      PowerShell use by a TRAVELING SPIDER/INC affiliate and by PUNK SPIDER. PhantomRaven itself (the RDD
+      technique and malware family) was first documented by Koi Security in an earlier 2025 wave and by Endor
+      Labs' "Return of PhantomRaven" research covering three further 2025-2026 waves (126+88 packages,
+      86,000+ downloads) — the actor-identification/monetization finding is CrowdStrike's new September 2026
+      contribution.
+    region_nexus: "global (npm ecosystem); no Swiss-specific targeting reported, but any government software-development team consuming npm dependencies or running CI/CD pipelines (GitHub Actions, GitLab CI, Jenkins, CircleCI) is in the exposed population."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1195.001, T1587.001, T1552.007, T1071.001]
+    affected_products: ["npm (Node Package Manager)", "GitHub Actions", "GitLab CI", "Jenkins", "CircleCI"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:phantomraven", type: malware, name: "PhantomRaven", aliases: [],
+          summary: "JavaScript npm information stealer, LLM-generated per CrowdStrike (high confidence), distributed via typosquatted packages using Remote Dynamic Dependencies (HTTP-URL package.json dependencies) to evade npm-registry scanning; harvests system info and CI/CD environment variables/tokens (GitHub Actions, GitLab CI, Jenkins, CircleCI). First documented by Koi Security (2025) and Endor Labs (\"Return of PhantomRaven\"); CrowdStrike (2026-09-16) attributes it to a single self-described bug-bounty hunter who leverages resulting compromises to submit bounty claims to Bugcrowd, Intigriti, YesWeHack, HackenProof and HackerOne." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "CrowdStrike Counter Adversary Operations identified a financially motivated threat actor who works as a bug bounty hunter and who developed and distributed the JavaScript (JS)-based information stealer PhantomRaven via npm."
+        attribution: "CrowdStrike Counter Adversary Operations"
+        source_url: "https://www.crowdstrike.com/en-us/blog/phantomraven-llm-generated-information-stealer-for-bug-bounty-hunting/"
+      - quote: "PhantomRaven is a simple JS information stealer that exfiltrates system information and continuous integration/continuous deployment (CI/CD)-related environment variables, likely in an attempt to collect account credentials. The code was almost certainly LLM-generated, and the author's technical sophistication is likely low."
+        attribution: "CrowdStrike Counter Adversary Operations"
+        source_url: "https://www.crowdstrike.com/en-us/blog/phantomraven-llm-generated-information-stealer-for-bug-bounty-hunting/"
+      - quote: "In npm version 12 or later, if a developer attempts to install a dependency package with a preinstall script, they receive a warning message indicating that the script has been blocked and will not automatically execute."
+        attribution: "CrowdStrike Counter Adversary Operations"
+        source_url: "https://www.crowdstrike.com/en-us/blog/phantomraven-llm-generated-information-stealer-for-bug-bounty-hunting/"
+    extended_notes: |
+      Verification note: the core new claim (single operator, LLM-generated code, bounty-hunter monetization
+      motive) rests solely on CrowdStrike's own cross-platform identity correlation — marked SINGLE-SOURCE-OTHER
+      accordingly. The malware family's existence, RDD technique and prior campaign waves are independently
+      confirmed by Koi Security and Endor Labs (via BleepingComputer), so the underlying threat is
+      well-corroborated even though the September 2026 attribution angle is CrowdStrike-exclusive. Detection
+      angle for defenders: hunt for `preinstall`/`postinstall` npm lifecycle-script execution spawning outbound
+      HTTP to non-registry hosts immediately after `npm install`, and for CI/CD runner processes making outbound
+      connections to `ipify.org`-style IP-lookup services followed by GET/POST exfil — a benign lookalike would
+      be a legitimate build tool's own telemetry/update-check call, discriminated by the absence of a
+      corresponding, expected package purpose and by the destination domain pattern (freshly registered,
+      "artifact"/"registry"-themed domains per Endor Labs' prior-wave infrastructure notes).
+
+  - title: "ANNUAL REPORT — Mandiant AI Risk and Resilience Report 2026: eight frontline case studies of AI agents weaponized inside real intrusions, from an AI-recommended poisoned dependency reviving the Shai-Hulud worm to a $50,000 runaway-agent cloud bill"
+    sources:
+      - { url: "https://cloud.google.com/security/resources/ai-risk-and-resilience-2026", publisher: "Mandiant / Google Threat Intelligence Group (Google Cloud)", date: "2026-09-15", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/09/16/google-mandiant-enterprise-ai-security-risks-report/", publisher: "Help Net Security (Anamarija Pogorelec)", date: "2026-09-16", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Mandiant Google Threat Intelligence new report September 16 2026\") → primary: Mandiant/Google Cloud report landing page, URL https://cloud.google.com/security/resources/ai-risk-and-resilience-2026 → corroborating: Help Net Security, URL https://www.helpnetsecurity.com/2026/09/16/google-mandiant-enterprise-ai-security-risks-report/"
+    summary: |
+      Mandiant published the second annual edition of its "AI Risk and Resilience" special report (first edition
+      covered 2025), synthesizing frontline Mandiant incident-response/red-team engagements and Google Threat
+      Intelligence Group (GTIG) research into eight case studies of AI-agent abuse inside real intrusions and
+      assessments. Most operationally significant for defenders: (1) a SaaS provider was compromised when an
+      attacker poisoned an external software package that a victim developer's AI coding-assistant session then
+      recommended installing — the assistant, trusted as a code-review interpreter, became the delivery
+      mechanism, and the resulting infostealer harvested GitHub OAuth tokens to deploy a self-propagating
+      Shai-Hulud worm across ~100 internal repositories, then re-poisoned the org's own namespace to cause a
+      secondary downstream infection; (2) an attacker with a stolen long-lived CI/CD credential turned a live VM
+      into an "AI co-debugging" offensive hub, iteratively prompting an LLM in real time to build a
+      multi-worker credential-harvesting framework, write dynamic IP-rotation evasion scripts, and co-develop a
+      Rust tool to validate stolen financial-account balances — malware development happening live, in-session,
+      rather than offline; (3) a threat actor poisoned an internal AI repository and tampered with an AI
+      assistant's CLI hooks to achieve native remote code execution through the assistant's own extensibility
+      framework; (4) malware using embedded local AI inference to fingerprint active endpoint security tools and
+      dynamically rewrite its own command-execution strings at runtime — "just-in-time" polymorphism that never
+      writes a predictable payload to disk, defeating static EDR signatures; (5) a "Confused Deputy" red-team
+      finding in which role-confusion prompt injection convinced an internal AI assistant it was assisting an
+      authorized security test, so it used its own CLI to clone sensitive internal repositories and push them to
+      an external, attacker-controlled GitHub account — GitHub being an allowlisted external domain the
+      assistant was otherwise permitted to reach; (6) a financial-services accounting-reconciliation agent hit a
+      null-value formatting bug and entered an unconstrained recursive reasoning loop, firing over 15,000
+      high-cost API calls in under an hour, generating a ~$50,000 cloud-billing spike and locking the production
+      ledger database; (7) a public-facing customer-service RAG agent that treated forum comments and support
+      tickets as trusted context let an attacker embed hidden instructions in a public forum post, hijacking the
+      model's reasoning to exfiltrate other customers' PII from cross-tenant support tickets; and (8) a named
+      espionage cluster, DARK CASTLE (formerly tracked as UNC2814), targeting global telecommunications
+      providers and government organizations with a backdoor that hid its C2 inside legitimate cloud
+      productivity-spreadsheet traffic — an agentic SOC triage pipeline escalated a single low-frequency
+      anomalous command execution that a human analyst would typically have scored as low-severity, enabling
+      detection before lateral spread. Mandiant's cross-cutting defensive architecture recommendation is a shift
+      from static service-account identities to cryptographically bound, lifecycle-integrated agent identities
+      (e.g. SPIFFE/Workload Identity Federation) across five pillars: hyper-segmented identity perimeters,
+      dual-execution authority (human-in-the-loop re-authorization for high-risk bulk actions), data/tool/
+      operational governance (financial circuit breakers, bounded recursion limits), active multi-layered
+      telemetry (semantic firewalls such as Model Armor, VPC Service Controls), and treating AI coding
+      assistants/MCP servers as privileged sessions requiring cryptographic CLI-hook integrity checks.
+    region_nexus: "global; sector-relevant case study (DARK CASTLE, ex-UNC2814) explicitly names government organizations and telecommunications providers as targets."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1195.002, T1027.004, T1567.002, T1078.004]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "report:mandiant-ai-risk-resilience-2026", type: report, name: "Mandiant AI Risk and Resilience Report 2026", aliases: [],
+          summary: "Second annual Mandiant special report (published 2026-09-15) synthesizing Mandiant IR/red-team and Google Threat Intelligence Group frontline observations on adversarial AI use, AI-system security assessments, and AI-powered defense; carries eight named case studies of AI-agent abuse in real intrusions and red-team engagements." }
+      - { key: "actor:dark-castle", type: actor, name: "DARK CASTLE", aliases: ["UNC2814"],
+          summary: "Cyber-espionage cluster targeting global telecommunications providers and government organizations, per Mandiant/GTIG (2026-09), using a backdoor that hides C2 inside legitimate cloud productivity-spreadsheet traffic; formerly tracked as UNC2814 under Google's updated threat-actor naming system." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "By executing this recommendation, the assistant inadvertently functioned as a trojan horse, facilitating the installation of malicious software... deploy the self-propagating Shai-Hulud worm across approximately 100 internal code repositories."
+        attribution: "Mandiant (Google Cloud)"
+        source_url: "https://cloud.google.com/security/resources/ai-risk-and-resilience-2026"
+      - quote: "In under an hour it generated over 15,000 high-frequency, high-cost reasoning API calls, triggering a sudden ~$50,000 cloud-billing spike and causing severe local database locking that halted active business transactions."
+        attribution: "Mandiant (Google Cloud)"
+        source_url: "https://cloud.google.com/security/resources/ai-risk-and-resilience-2026"
+      - quote: "During the attack phase, the malware dynamically rewrites its own command execution strings at runtime to bypass detection."
+        attribution: "Mandiant (Google Cloud)"
+        source_url: "https://cloud.google.com/security/resources/ai-risk-and-resilience-2026"
+    extended_notes: |
+      This is a long, dense periodic report (PD-9 flag: ANNUAL REPORT). If the main agent runs this as a deep
+      dive, the strongest detection-engineering hooks are: (a) for case study 4's JIT polymorphic malware —
+      monitor for unexpected native-compiler process spawns from non-developer parent processes and
+      rapid file-create-execute-delete cycles in temp directories, plus endpoint CPU/GPU baseline anomalies from
+      otherwise-lightweight background processes; (b) for case study 5's Confused Deputy — SIEM correlation
+      rules that trigger when an internal-facing AI-service account initiates outbound data transfer to an
+      allowlisted-but-attacker-controlled external endpoint (the discriminator from a benign lookalike being
+      destination account/repo identity, not the allowlisted domain itself); (c) for case study 8 (DARK CASTLE)
+      — the transferable lesson is that agentic SOC triage escalated a single low-frequency command-execution
+      anomaly a human analyst would routinely have deprioritized, which is the concrete argument for correlating
+      isolated endpoint anomalies against outbound-traffic telemetry rather than triaging events in isolation.
+
+  - title: "Spain's AEPD confirms the first regulatory notification of a personal-data breach executed by an autonomous AI agent, which chained vulnerability discovery, login, further vulnerability discovery, and data modification without human step-by-step direction"
+    sources:
+      - { url: "https://www.heise.de/news/Spaniens-Datenschutzaufsicht-Erster-Cyberangriff-mithilfe-eines-KI-Agenten-11454545.html", publisher: "heise Security (Martin Holland)", date: "2026-09-16", role: "primary (in-window discovery)" }
+      - { url: "https://www.aepd.es/prensa-y-comunicacion/blog/primera-notiviacion-brecha-datos-personales-causada-por-ataque-ejecutado-mediante-agente-ia", publisher: "Agencia Española de Protección de Datos (AEPD)", date: "2026-09-14", role: "primary (regulator's own statement)" }
+    discovery_trace: "first seen at: heise-sec (essential source), URL https://www.heise.de/news/Spaniens-Datenschutzaufsicht-Erster-Cyberangriff-mithilfe-eines-KI-Agenten-11454545.html → primary: AEPD's own blog post, URL https://www.aepd.es/prensa-y-comunicacion/blog/primera-notiviacion-brecha-datos-personales-causada-por-ataque-ejecutado-mediante-agente-ia"
+    summary: |
+      Spain's data-protection authority (AEPD) states it has received the first breach notification in which
+      the reported incident was executed by an AI agent built on a known language model. Per the affected
+      organization's own notification (which AEPD stresses is unverified and un-audited at this stage): the
+      attacking agent launched a vulnerability search against generic files, achieved a successful login,
+      then autonomously continued searching for further vulnerabilities inside the system; once found, it
+      modified personal data and accessed invoices. AEPD is explicit that this does not imply the underlying AI
+      provider or model infrastructure was compromised, nor that the tool was purpose-built for malicious use —
+      the significant fact from a data-protection standpoint is that a third party used an AI agent as the
+      instrument chaining multiple attack phases together autonomously. AEPD's deputy director (Francisco Pérez
+      Bes) frames the qualitative change as speed and autonomy rather than novel technique: an agent "can receive
+      a goal, plan intermediate steps, use tools, execute code, query sources, interpret results, and adapt its
+      approach autonomously based on what it finds" — which AEPD says obsoletes risk-assessment language that
+      references malware/phishing/unauthorized-access only generically, without naming AI-assisted or
+      AI-executed attacks explicitly. AEPD's stated practical implications for data controllers/processors:
+      (1) risk analyses must explicitly name AI-assisted/AI-executed attack scenarios rather than relying on
+      generic threat categories; (2) incident-response procedures built for manually executed attacks may be
+      too slow, since an agent can probe multiple assets and adapt in parallel; (3) digital credentials and API
+      keys gain outsized importance, since whoever obtains them can operate at machine speed, complicating
+      detection; (4) security cannot depend solely on manual intervention and must be backed by
+      detection/containment/response mechanisms fast enough to match agent-speed attacks. Neither the affected
+      organization nor the specific AI model/agent framework used is named.
+    region_nexus: "EU (Spain); establishes a regulatory precedent directly relevant to how EU/Swiss data-protection risk assessments and GDPR-equivalent (Swiss FADP) breach-notification processes should characterize AI-agent-driven attacks going forward."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "El agente atacante inició una búsqueda de vulnerabilidades en archivos genéricos, y realizó un login correcto. Una vez accedió al sistema, comenzó a buscar, de forma autónoma, vulnerabilidades en la aplicación, lo que, una vez conseguido, le permitió modificar datos personales y acceder a facturas."
+        attribution: "AEPD (Agencia Española de Protección de Datos), Francisco Pérez Bes"
+        source_url: "https://www.aepd.es/prensa-y-comunicacion/blog/primera-notiviacion-brecha-datos-personales-causada-por-ataque-ejecutado-mediante-agente-ia"
+      - quote: "un tercero habría utilizado un agente de IA como instrumento para encadenar exitosamente distintas fases del ataque"
+        attribution: "AEPD, Francisco Pérez Bes"
+        source_url: "https://www.aepd.es/prensa-y-comunicacion/blog/primera-notiviacion-brecha-datos-personales-causada-por-ataque-ejecutado-mediante-agente-ia"
+      - quote: "Der Angriff bedeute nicht, dass ein KI-Anbieter kompromittiert wurde."
+        attribution: "heise Security, paraphrasing AEPD"
+        source_url: "https://www.heise.de/news/Spaniens-Datenschutzaufsicht-Erster-Cyberangriff-mithilfe-eines-KI-Agenten-11454545.html"
+    extended_notes: |
+      This is a regulatory disclosure, not a technical write-up — no IOCs, no named vector beyond "vulnerability
+      search in generic files," no named organization or AI model. Its value is precedent/awareness: it is
+      presented by AEPD as the first *officially notified* case in the EU of a data breach attributed to
+      autonomous AI-agent execution (distinct from the several AI-agent-in-the-loop intrusions already tracked
+      in this store — Hugging Face, Anthropic's evaluation-environment escapes, GTG-20006 — which came from
+      vendor/lab disclosures rather than a national data-protection regulator's own breach-notification
+      channel). Overlaps thematically with S2's regulatory-watch mission (EU data-protection authority guidance)
+      but is included here for the novel-tradecraft angle per AEPD's own framing; the main agent should dedupe
+      against any S2 item covering the same AEPD post.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: paradigm-shift-research
+    reason: "ps.tc is a JS-only SPA shell (meta-refresh redirect to pages/home.html); bridge `url` fetch returned only the redirect shell, no article content. No structured API/RSS endpoint found for this source. Recipe needs a jina/rendered-DOM fetch in a future run."
+  - source_id: sygnia
+    reason: "sygnia.co/blog/ returned full page HTML (WordPress) but no distinct in-window article was visible in the truncated head of the response within time budget; RSS exists at sygnia.co/feed/ per page metadata — future runs should use that feed directly instead of the HTML listing."
+  - source_id: trellix
+    reason: "trellix.com/blogs/ returned a JS-shell page (client-rendered blog listing); no outbound article links surfaced via direct bridge fetch within time budget. Needs a structured listing endpoint or jina rendering in a future run."
+  - source_id: csa-labs
+    reason: "labs.cloudsecurityalliance.org listing fetched cleanly via WebFetch and surfaced several items, but all items examined this run were either already-covered vulnerability news (Cisco Secure Email Gateway, Chrome V8, Check Point VPN — S1 territory) or one genuinely new research lead (Red Heron/Gitea) whose freshest primary sources (Acronis TRU 2026-09-13, The Hacker News 2026-09-14) both predate the 26h recency window and were dropped per recency discipline."
+
+## Bridge uses
+- id: ddropattack.eu
+  method: bridge:extract
+  outcome: ok
+- id: aepd.es
+  method: bridge:extract
+  outcome: ok
+- id: intel.com
+  method: bridge:extract
+  outcome: ok
+- id: amd.com
+  method: bridge:extract
+  outcome: ok
+- id: crowdstrike.com
+  method: bridge:extract
+  outcome: ok
+- id: google-cloud-ai-risk-resilience
+  method: bridge:extract
+  outcome: ok
+- id: helpnetsecurity.com
+  method: bridge:extract
+  outcome: ok
+- id: bleepingcomputer.com
+  method: bridge:extract
+  outcome: ok
+- id: acronis.com
+  method: bridge:extract
+  outcome: ok (dropped from findings — outside recency window)
+- id: thehackernews.com
+  method: bridge:extract
+  outcome: ok (dropped from findings — outside recency window)
+- id: paradigm-shift-research
+  method: bridge:url
+  outcome: empty-shell
+- id: sygnia
+  method: bridge:url
+  outcome: ok (no in-window item isolated in time budget)
+- id: trellix
+  method: bridge:url
+  outcome: empty-shell

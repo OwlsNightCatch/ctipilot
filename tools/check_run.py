@@ -324,6 +324,10 @@ NATIONAL_CERT_HOSTS: tuple[str, ...] = (
     # sanction decisions for their own jurisdiction fit the same carve-out —
     # added 2026-09-04 when CNIL's own sanction page was reporting as unearned.
     "cnil.fr", "www.cnil.fr",
+    # Same carve-out, another EU member-state DPA — added 2026-09-17 when
+    # AEPD's own blog post disclosing a breach notification for its own
+    # jurisdiction was reporting as unearned.
+    "aepd.es", "www.aepd.es",
 )
 
 
