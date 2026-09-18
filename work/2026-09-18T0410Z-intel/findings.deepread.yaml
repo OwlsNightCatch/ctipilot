@@ -1,0 +1,379 @@
+domain: deepread
+run_id: 2026-09-18T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-18T04:31:42Z
+ended_at: 2026-09-18T04:46:57Z
+duration_seconds: 915
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 0
+  bridge_fetches: 33
+
+items:
+
+  # ============================================================
+  - item_number: 1
+    title: "CVE-2026-91843 — Check Point Security Management stack overflow"
+    confirmed: true
+    corrections: []
+    additional_detail:
+      - "Precise LivePatch build/take mapping confirmed from Check Point's own sk1000155 page (raw JSON payload, __NEXT_DATA__): R82.20 -> BUNDLE_URGENT_SECURITY_UPDATE_R82_10_AUTOUPDATE take 29; R82.10 -> BUNDLE_URGENT_SECURITY_UPDATE_R82_10_AUTOUPDATE take 28; R82 -> BUNDLE_URGENT_SECURITY_UPDATE_R82_AUTOUPDATE take 28; R81.20 -> BUNDLE_URGENT_SECURITY_UPDATE_R81_20_AUTOUPDATE take 28. Note the R82.20 fix is delivered via the 'R82_10' bundle name per Check Point's own table (not a typo on my part — that is the vendor's own naming as published)."
+      - "Validation command confirmed precisely: `cplp list` in Expert mode on the Security Management Server / Log Server should show `fwm:fwm ... armed livepatch ... CVE-2026-91843`. Also: 'If you have enabled automatic updates according to sk175504, you are automatically protected' (Check Point sk1000155)."
+      - "NVD confirms the exact CVSS 3.1 vector string cited in the findings YAML's extended_notes verbatim: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H (source: cve@checkpoint.com)."
+      - "NVD's CISA-ADP SSVC record explicitly carries `\"exploitation\": \"none\"` (timestamp 2026-09-17T03:56:52Z, role 'CISA Coordinator'), confirming the findings YAML's claim that CISA's SSVC exploitation field reads 'none'. `cisaExploitAdd` is null (not KEV-listed)."
+      - "CERT-FR's advisory (CERTFR-2026-AVI-1193) independently lists the exact same per-branch fixed-take matrix (e.g. 'Security Management Server versions R82.20 antérieures à R82.20 take29') and repeats the identical detection string 'Administrator failed to log in: Username too long' — fully corroborating, no discrepancy."
+    verbatim_check:
+      - quote: "A stack overflow during the unauthenticated login process may allow an attacker to run arbitrary code remotely with root privileges."
+        result: pass
+      - quote: "In SmartConsole, search for Audit and Admin login logs containing the message: \"Administrator failed to log in: Username too long\"."
+        result: pass
+    unreachable: []
+    notes: >
+      BSI's own CSAF JSON (fetched via bridge, WID-SEC-W-2026-3429) does not carry an explicit
+      machine-readable exploitation-status field (no `threats`/`exploit_status` block present) — it
+      only relays the CVE, product-tree and a German-language attack summary lifted from Check Point's
+      advisory. CERT-FR's advisory likewise contains no exploitation-status statement one way or the
+      other. So "Check Point's own advisory and BSI both record exploitation status as UNKNOWN" is
+      accurate in effect (neither claims exploitation) but BSI does not carry an affirmative "UNKNOWN"
+      field per se — it is simply silent on the question, same as Check Point's own sk1000155 page.
+      Recommend the composer phrase this as "no source (Check Point, BSI, CERT-FR, or CISA's own SSVC
+      assessment) reports observed exploitation" rather than implying an explicit "UNKNOWN" field exists
+      on all four.
+
+  # ============================================================
+  - item_number: 2
+    title: "CVE-2026-87886 — Acronis Backup plugin LPE, exploited, KEV"
+    confirmed: true
+    corrections:
+      - field: "exploitation characterization"
+        original: "confirmed exploitation was observed in the wild against cPanel & WHM deployments specifically, in what reporting characterizes as targeted rather than mass-scanning activity"
+        correction: >
+          Accurate as far as it goes, but BleepingComputer reports a materially important caveat the
+          findings YAML omits: "In a statement for BleepingComputer, Acronis notes that the assessment
+          is based on a single report from a 'potentially affected' customer." The "confirmed exploited /
+          targeted attacks" framing (Acronis's own advisory language, quoted identically by both Help Net
+          Security and BleepingComputer: "Exploitation of this vulnerability has been detected in the
+          wild in limited, targeted attacks against Acronis Backup plugin for cPanel & WHM deployments")
+          rests on ONE customer's report of being "potentially affected," not a broadly observed
+          campaign, and Acronis has published no IOCs and has not disclosed what the attacker did after
+          escalating privileges. Recommend the entry state this precisely (single-customer-report basis)
+          rather than implying a broadly confirmed campaign.
+        source: "https://www.bleepingcomputer.com/news/security/acronis-warns-of-actively-exploited-flaw-in-its-cpanel-backup-plugin/"
+      - field: "CISA KEV shortDescription scope"
+        original: "n/a (not previously flagged)"
+        correction: >
+          CISA's own KEV catalog entry (vulnerabilityName: "Acronis Backup Incorrect Default Permissions
+          Vulnerability"; shortDescription: "Acronis Backup plugin for cPanel & WHM and extension for
+          Plesk contains an incorrect default permissions vulnerability that could allow for privilege
+          escalation.") names only cPanel & WHM and Plesk — it does NOT mention the DirectAdmin plugin at
+          all, even though NVD/ENISA (both sourced to Acronis's own CVE description) list DirectAdmin as
+          a third affected product. This is a genuine scope gap in CISA's own KEV description text worth
+          flagging if the entry leans on CISA's KEV wording for the affected-product list.
+        source: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json (CVE-2026-87886 record)"
+    additional_detail:
+      - "Exact CVSS vector confirmed via NVD (source: security@acronis.com): CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H, base score 7.8 HIGH — version 3.0, not 3.1. AV:L + PR:L confirms this is a LOCAL, low-privilege-authenticated escalation (matches the summary's 'local attacker with existing low-privilege access' framing)."
+      - "CWE-276 (Incorrect Default Permissions) confirmed as the weakness class via both NVD and CISA KEV's `cwes` field — matches 'insecure file permissions' framing precisely."
+      - "CISA KEV record fields confirmed exactly: dateAdded 2026-09-16, dueDate 2026-09-19, knownRansomwareCampaignUse 'Unknown', forensicTriage 'Yes' (this vulnerability is subject to CISA's BOD 26-04 forensic-triage-requirements track, a detail worth surfacing — it signals CISA treats this with elevated evidentiary concern despite the single-customer-report basis)."
+      - "ENISA EUVD-2026-82595 independently confirms the DirectAdmin plugin (before build 1.2.3.238) as officially affected — this text is Acronis's own CVE description (mirrored identically in NVD, assigner 'Acronis'), so the DirectAdmin detail IS effectively primary-sourced even though the acronis.com advisory page itself could not be rendered directly (client-side JS app, returned 'Please enable JavaScript to continue' on both trafilatura-direct and jina-reader transports)."
+      - "BleepingComputer article's own frontmatter date is 2026-09-15 (the initial brief-advisory publish date), with the article itself noting Acronis 'issued an update today' identifying the CVE — i.e. BleepingComputer's article was updated same-day-ish on 09-16; the findings YAML's citation date of 2026-09-16 for this source is reasonable but the underlying article URL's own metadata reads 2026-09-15. Minor, non-load-bearing."
+    verbatim_check:
+      - quote: "Local privilege escalation due to insecure file permissions. The following products are affected: Acronis Backup plugin for cPanel & WHM (Linux) before build 1.9.3.1021, Acronis Backup extension for Plesk (Linux) before build 1.8.11.638, Acronis Backup plugin for DirectAdmin (Linux) before build 1.2.3.238."
+        result: "pass (verified verbatim via NVD's mirror of Acronis's own CVE description, since the acronis.com advisory page itself would not render outside JavaScript)"
+    unreachable:
+      - url: "https://security-advisory.acronis.com/advisories/SEC-10986"
+        tried: ["extract (trafilatura-direct)", "jina reader"]
+        result: "Both transports returned only the SPA shell ('Please enable JavaScript to continue.') — no article body. Fell back to NVD/ENISA (which mirror Acronis's own submitted CVE description verbatim) plus Help Net Security and BleepingComputer's direct quotes from the advisory for all load-bearing facts. No material fact used in the findings YAML was left unverified."
+
+  # ============================================================
+  - item_number: 3
+    title: "NTC Swiss solar-inverter cybersecurity assessment"
+    confirmed: true
+    corrections: []
+    additional_detail:
+      - "NTC's own report (cash.ch corroboration) explicitly states: 'Hinweise auf absichtlich eingebaute Hintertüren fand das NTC laut eigenen Angaben nicht' (NTC found no evidence of intentionally built-in backdoors, per its own statement) — an important tempering fact absent from both S2 and S3 findings: the risk framing is about architecture/cloud-concentration, not evidence of deliberate malicious backdoors in the tested devices."
+      - "338,000 grid-connected installations figure confirmed independently by cash.ch as an end-of-2025 count, matching S2's figure exactly."
+      - "SRF names the specific installer and executive quoted on the Bern cantonal-school procurement: solar firm 'Clevergie', CEO Lukas Meister, who states the Huawei products are 'qualitativ gut und vergleichsweise günstig' (good quality and comparatively cheap) and that the concentration risk from thousands of such installations cannot be solved by any single installer or the industry alone."
+      - "SRF quotes Huawei's own written response to the cybersecurity concerns (declined an on-camera interview): cybersecurity has 'höchste Priorität' (highest priority), and that system operation is done by customers who can choose either a secure encrypted connection to the manufacturer's management system or an offline mode — SRF notes experts consider offline mode 'kaum praktikabel' (barely practical). Sungrow left SRF's questions unanswered entirely."
+      - "SRF gives more specific detail on the US executive action than either S2/S3 fully captured: President Trump's national emergency for the high-voltage grid not only bans installation of new grid-connected inverters from arms-embargoed/sanctioned countries (including China) but explicitly could force operators to REMOVE already-installed devices ('Betreiber sollen sogar gezwungen werden können, bereits verbaute Geräte wieder auszubauen')."
+      - "SRF quotes a named EU Commission spokesperson, Siobhan McGarry, on the EU's own risk assessment: it confirmed the threat including 'the possibility of a manipulation of power production,' which in practice could mean remote grid shutdown and nationwide blackouts."
+      - "cash.ch adds that Switzerland's Federal Office of Energy (Bundesamt für Energie / BFE) independently confirms NTC's analysis and states the risk of a coordinated attack cannot be excluded — this is a Swiss federal authority explicitly validating the private/NTC assessment, not currently surfaced in either S2 or S3's summaries; worth adding given the Swiss-public-sector nexus this pipeline centers on."
+      - "SRF: 'Mehr than jeder zweite in der Schweiz neu verbaute Wechselrichter stammt von der Firma Huawei' — more than every second newly-installed Swiss inverter is from Huawei alone (Sungrow separately contributing to the >60% combined Chinese-manufacturer share cited)."
+    verbatim_check:
+      - quote: "In total, the assessments produced more than 50 findings, seven of them critical and a further six rated high."
+        result: pass
+      - quote: "On almost every inverter tested, the local control interface makes it possible — without any login — to change how much power the installation feeds into the grid, all the way down to zero."
+        result: pass
+      - quote: "on four products, the NTC gained complete control over the device"
+        result: pass
+      - quote: "Würden die chinesischen Hersteller alle ihre Geräte bei voller Leistung gleichzeitig abschalten, drohe ein Zusammenbruch des Stromnetzes in der Schweiz."
+        result: pass
+      - quote: "Auf Anfrage schreibt die Baudirektion, man habe den Hersteller nicht vorgegeben. Sie räumt aber ein, Cybersicherheit sei bei Ausschreibungen «noch wenig verankert»."
+        result: pass
+      - quote: "Bei nahezu allen geprüften Wechselrichtern lässt sich über die lokale Steuerschnittstelle ohne Anmeldung verändern, wie viel Leistung die Anlage einspeist – bis hinunter auf null."
+        result: pass
+      - quote: "Man könne einen Wechselrichter fernsteuern. «Das kann man gutartig nutzen, aber auch bösartig, um ein Gerät zum Beispiel auszuschalten oder zu manipulieren.»"
+        result: pass
+    unreachable: []
+    notes: >
+      Both the English (en.ntc.swiss) and German (ntc.swiss) versions of NTC's own report page fetched
+      cleanly; content is consistent across both languages. No CVEs, product names, or vendor names were
+      published in NTC's own report text, confirming the findings YAML's claim exactly.
+
+  # ============================================================
+  - item_number: 4
+    title: "FamousSparrow / SparroWocky backdoor (ESET)"
+    confirmed: true
+    corrections:
+      - field: techniques
+        original: "[T1583.003, T1587.001, T1608.001, T1190, T1059.003, T1569.002, T1106, T1559, T1574.001, T1547.001, T1543.003, T1134.002, T1140]  (13 ids)"
+        correction: >
+          ESET's own MITRE ATT&CK table (built on v19) maps 34 technique rows, not 13. The findings
+          YAML's techniques[] list is missing 21 ESET-mapped ids: T1480.002 (Execution Guardrails: Mutual
+          Exclusion — the instance-synchronization mutex), T1564.010 (Hide Artifacts: Process Argument
+          Spoofing — stdin-sourced command-line hooking for dynamically loaded PEs), T1027.007
+          (Obfuscated Files or Information: Dynamic API Resolution — the custom API-hashing algorithm),
+          T1620 (Reflective Code Loading), T1070.004 (Indicator Removal: File Deletion — self-deletion
+          batch script), T1070.009 (Indicator Removal: Clear Persistence), T1036.001 (Masquerading:
+          Invalid Code Signature — the loader keeps the now-invalid signature of the impersonated
+          module), T1036.004 (Masquerading: Masquerade Task or Service), T1083 (File and Directory
+          Discovery), T1680 (Local Storage Discovery), T1082 (System Information Discovery), T1033
+          (System Owner/User Discovery), T1120 (Peripheral Device Discovery), T1005 (Data from Local
+          System), T1113 (Screen Capture), T1573.002 (Encrypted Channel: Asymmetric Cryptography — TLS
+          handshake), T1573.001 (Encrypted Channel: Symmetric Cryptography — RC4-encrypted exfiltrated
+          data), T1090.001 (Proxy: Internal Proxy), T1090.002 (Proxy: External Proxy — HTTP/SOCKS5),
+          T1095 (Non-Application Layer Protocol — TLS over TCP), T1041 (Exfiltration Over C2 Channel).
+          Per CLAUDE.md's ATT&CK mapping rule ("techniques[] is the canonical, complete mapping surface —
+          every technique the sources support"), this entry should carry the full 34-id set ESET itself
+          published, not a 13-id subset. This is a load-bearing correction — recommend the composer
+          expand techniques[] to the complete list before publishing.
+        source: "https://www.welivesecurity.com/en/eset-research/beware-sparrowock-backdoor-bites-commands-catch/ (MITRE ATT&CK techniques table)"
+    additional_detail:
+      - "Precise syscall-gadget mechanism for the VEH-hijack-style anti-analysis (this is SparroWocky's loader, distinct from MovieReaper's separate VEH technique in item 5 — do not conflate): not applicable here, SparroWocky does not use VEH; correcting my own note — SparroWocky's anti-analysis techniques are SilentMoonwalk call-stack forgery (using JOP/ROP gadgets in legitimate kernel32.dll to make calls appear to originate from RtlUserThreadStart/BaseThreadInitThunk) and a MinHook-based CreateThread hook that reports AnimateWindow as the fake thread start address via a trampoline."
+      - "Trident loader confirmed precisely: legitimate executable + side-loading DLL (patched .text-section region, entry point redirected into the patch, exported-function list/metadata otherwise untouched to blend in) + a same-named .dat payload file with a custom header (4-byte magic 0x11328712, config size, payload size, 16-byte RC4 key) whose decrypted PE payload has its MZ/PE magic bytes stripped before reflective in-memory mapping."
+      - "BOF loading confirmed precisely: command 0x14 uses a modified TrustedSec COFFLoader/RunCOFF; the modification specifically redirects BOF-imported-symbol calls to a stack-spoofing subroutine (hiding/proxying calls the BOF object makes to external libraries) — compatible with Cobalt Strike, Brute Ratel, Metasploit and Sliver BOF-formatted objects."
+      - "Sample analyzed: PE-timestamp-compiled 2025-11-17, backdoor self-reported version 1.8, SHA-1 44F0A22B143B79FA760BF31E14C8FFF714C8A2A1 (IOC — do not carry into the entry). Authors: Alexandre Côté Cyr and Romain Dumont (ESET)."
+      - "Persistence config confirmed operator-selectable via the .dat configuration: value 1 = Windows service, value 2 = registry Run key (HKLM or HKCU depending on privilege level) — matches the summary's 'operator-configurable' framing exactly."
+      - "C2 network protocol confirmed: Mbed TLS for the TLS channel to the C&C server, connecting on port 443 by default (also observed on 8080); self-signed certs reused across some servers but no reliable generic fingerprint per ESET. RC4 with a per-message freshly generated 8-byte key encrypts command arguments/results."
+    verbatim_check:
+      - quote: "We believe that this focus is not coincidental and likely reflects China's reaction to various recent US initiatives in the region."
+        result: pass
+      - quote: "Based on our investigation, we attribute the latest campaign and the SparroWocky backdoor to FamousSparrow with high confidence, since in some of the first attacks involving this backdoor, SparroWocky was deployed by the FamousSparrow-exclusive SparrowDoor."
+        result: pass
+    unreachable: []
+    notes: >
+      Countries list (Argentina, Ecuador, Guatemala, Honduras, Panama, Peru, Puerto Rico, Venezuela) and
+      the 90% telemetry figure both confirmed verbatim. Salt Typhoon / Earth Estries attribution nuance
+      confirmed accurately reflected (ESET: "due to the absence of any technical indicators, we track
+      them as separate" for Salt Typhoon; Earth Estries link credited to Trend Micro with "the exact
+      nature of the link is not fully known").
+
+  # ============================================================
+  - item_number: 5
+    title: "MovieReaper crimeware framework (Kaspersky Securelist)"
+    confirmed: true
+    corrections:
+      - field: "victim countries"
+        original: "Several hundred victims are confirmed across individuals and organizations spanning enterprise, government, IT, consulting, retail, transportation and agriculture sectors in Russia, Türkiye, Japan, Kenya, Uganda, Colombia, Spain, the Netherlands, Belgium, Germany and others."
+        correction: >
+          Kaspersky's own article carries TWO different, only partially overlapping country lists in
+          different sections, and the findings YAML used only the first (Introduction) one. The
+          Introduction section lists: "Russia, Türkiye, Japan, Kenya, Uganda, and Colombia, as well as
+          ... Spain, the Netherlands, Belgium, Germany." The dedicated "Victims" section further down
+          — the more specific, authoritative enumeration — instead lists: "Russia, Spain, Germany,
+          Finland, Türkiye, Japan, Nepal, Kenya, Tanzania, Ghana, and others." Netherlands, Belgium,
+          Uganda and Colombia appear ONLY in the Introduction paragraph; Finland, Nepal, Tanzania and
+          Ghana appear ONLY in the "Victims" section. This is an internal inconsistency in Kaspersky's
+          own published article, not a fabrication risk on the findings YAML's part, but the composer
+          should either merge both lists explicitly as "at least: Russia, Spain, Germany, Türkiye, Japan,
+          Kenya, and others across Europe, Asia and Africa (Kaspersky's own article gives two
+          overlapping-but-not-identical country enumerations in different sections)" or cite the more
+          specific "Victims" section list, rather than presenting the Introduction's list as the complete
+          or sole enumeration.
+        source: "https://securelist.com/moviereaper-malware-torrent-odyssey-solana/121344/ (both the Introduction paragraph and the dedicated 'Victims' section)"
+    additional_detail:
+      - "The 'government' sector confirmation is solid and unambiguous — the Victims section states verbatim: 'The targeted organizations span a wide range of sectors, including enterprise, government, IT, consulting, retail, transportation, and agriculture.'"
+      - "Precise VEH-hijack mechanism (more granular than the findings YAML's paraphrase): the loader 'registers a vectored exception handler and rewrites the handler address in memory in order to perform a debug break, which will not crash the program, but instead redirect control-flow into the function that actually makes raw NtProtectVirtualMemory syscall (via previously located \"0x0F 0x05\" syscall instruction inside ntdll)' — the exact opcode bytes of the syscall gadget (0x0F 0x05, the x64 SYSCALL instruction) are named by Kaspersky and worth including as a precise hunt detail (a manually located raw syscall stub inside ntdll being invoked via a VEH-triggered debug-break redirect, rather than a normal API call, is the discriminator)."
+      - "Solana C2-resolution infrastructure named precisely: the 'legitimate Solana blockchain via the api.mainnet.solana.com RPC endpoint' is explicitly named by Kaspersky in the Infrastructure section, confirming the extended_notes' detection-concept claim verbatim."
+      - "Kaspersky's own detection name for this threat: HEUR:Trojan.Win64.Agent.gen (a Kaspersky-specific signature label, not an IOC in the hash/domain/IP sense — could be surfaced as a defender search term if desired, though it is vendor-specific)."
+      - "Threat-hunting origin date confirmed: Kaspersky's own threat-hunting effort first identified the campaign in mid-August 2026 while investigating malware using blockchain-based C2; the underlying actor's activity itself is dated back to October 2025 (both facts already correctly reflected in the findings YAML)."
+      - "Requires user interaction to execute (T1204.002, already mapped): 'After the user manually starts the application, it establishes a global mutex...' — confirms initial execution is not silent/automatic."
+    verbatim_check:
+      - quote: "we have discovered a previously unknown modular, multi-stage framework that we dubbed MovieReaper"
+        result: pass
+      - quote: "the threat actors did not compromise the torrent trackers themselves. Instead, they compromised a widely used public repository of torrent files"
+        result: pass
+      - quote: "By using Solana blockchain network as a distribution layer of endpoints for a next stage attackers may increase stability of their campaign and resist takedown efforts of defenders."
+        result: pass
+    unreachable: []
+    notes: >
+      Remote-file-manager command count of 21 confirmed exactly: "The final module ('file manager')
+      exposes 21 commands that give the operator filesystem access on the victim host." No file hashes,
+      Solana account/program addresses, domains or IPs carried into this deep-read note per the pipeline's
+      no-IOC policy (Solana account 6pnDGAiHgyPdmckM5Qt1YbanGzrX43WLEU159nRaNLDm and program address
+      CSiY8bQLBYPdfPWkwipBzH6sijTVQVVsA279JQdvwHtL function as network/C2 indicators analogous to a
+      domain or IP and should NOT be added to the entry, consistent with the existing findings YAML's own
+      no-IOC framing).
+
+  # ============================================================
+  - item_number: 6
+    title: "Gyazo (Helpfeel) data breach"
+    confirmed: true
+    corrections: []
+    additional_detail:
+      - "Fuller incident timeline confirmed from Helpfeel's own notice (all times JST): Sept 11 evening — suspicious activity detected, response begins; Sept 12 early hours — access routes blocked, vulnerability remediated; Sept 14 — investigation CONFIRMS data was disclosed (this confirmation date is materially later than the Sept 11-12 exploitation/containment window; Helpfeel suspended image delivery as a precaution at this point); Sept 15 — additional harm-prevention measures, resumed delivery of newly uploaded images, and Helpfeel submitted a report to Japan's Personal Information Protection Commission (PPC); Sept 16 — public notice published. Worth adding: the gap between containment (Sept 12) and public disclosure (Sept 16) included a formal regulatory filing (Japan PPC) on Sept 15, one day before the public notice — relevant regulatory-timeline context."
+      - "Helpfeel explicitly confirms its other two products, Helpfeel and Cosense, run on DIFFERENT system architectures and were NOT found to have any unauthorized data disclosure as a result of this incident (though some images shown inside them via Gyazo may be temporarily unavailable) — an important scope-limiting fact not currently in the S4 summary."
+      - "The Hacker News independently confirms and sources the 'emergency maintenance' framing directly to Gyazo's own public status page (updates.gyazo.com): 'Gyazo's product-updates page said delivery had been suspended for some images \"due to emergency maintenance\"' (Sept 14 notice) and 'Some images remain unavailable due to emergency maintenance' (Sept 15 notice) — this fully confirms the findings YAML's claim about status-page language, sourced one hop further than Helpfeel's own press notice (which does not itself reference the status-page wording)."
+      - "Fuller exposed-user-data field list than in the findings YAML summary: Helpfeel's own notice additionally lists Language preference, Registration date/time, Last login date/time, Subscription plan, and Billing status (explicitly excluding credit-card numbers) among the exposed fields — worth adding for completeness on exposure scope."
+      - "Gyazo's own help-page–documented security model (per The Hacker News, sourcing Gyazo's own help pages): a private ('Only me') image cannot be viewed even by someone with the link; a password-protected private image is a separate setting; both require a paid plan. For the DEFAULT-setting capture, the 32-character image ID in the URL is the only thing protecting it — directly supporting the access-control-collapse framing already in the findings YAML."
+    verbatim_check:
+      - quote: "On September 11, 2026, a third party exploited a vulnerability in Gyazo's image upload server to gain unauthorized access to our systems and execute arbitrary commands."
+        result: pass
+      - quote: "We have also confirmed that the third party obtained a list identifying private images. As we cannot rule out the possibility that some private images may have been viewed by the third party, we are continuing our detailed investigation."
+        result: pass
+    unreachable: []
+    notes: >
+      No CVE or named flaw-class confirmed absent from Helpfeel's own notice, matching the findings
+      YAML's claim — Helpfeel describes only "a vulnerability in Gyazo's image upload server" enabling
+      "unauthorized access... and execute arbitrary commands," without naming a CWE class or CVE ID.
+
+  # ============================================================
+  - item_number: 7
+    title: "Brevo Cloudflare Worker / ClickFix supply-chain compromise"
+    confirmed: true
+    corrections:
+      - field: "incident window framing"
+        original: "the exact incident window (Brevo's 16:07-20:30 UTC vs Sansec's 16:05-20:13 UTC on 2026-09-14)"
+        correction: >
+          Brevo's own post-mortem headline figure is NOT 16:07-20:30. The post-mortem's own top-line
+          field reads: "Impact window: 15:01 to 20:30 UTC, 5h29" — a broader window than 16:07-20:30.
+          Brevo's detailed timeline clarifies why two different numbers exist: at 15:01 UTC "Worker
+          routed to all of brevo.com. Impact begins" (the Worker begins injecting the ClickFix page on
+          Brevo's OWN site), while at 16:07 UTC "Worker updated to also append a loader to the three
+          embedded JavaScript files, and routed to sibforms.com" — i.e. 16:07 is specifically when the
+          CUSTOMER-EMBEDDED-SCRIPT compromise (the supply-chain-relevant part reaching third-party sites)
+          began, not the start of the overall incident. BleepingComputer's own article states "Upon
+          detecting the compromise, Brevo removed the Worker and its routes, defining the exposure window
+          as between 16:07 and 20:30 UTC" — this is BleepingComputer's own compression of Brevo's
+          two-window disclosure down to the customer-facing-script sub-window, and reads as if it were
+          Brevo's single official "Impact window" figure, which it is not. Recommend the entry state
+          Brevo's own two windows precisely: overall incident impact 15:01-20:30 UTC (5h29, per Brevo's
+          own headline figure), with the customer-embedded-script/sibforms.com compromise beginning later
+          at 16:07 UTC and ending at the same 20:30 UTC close — and note Sansec's independently measured
+          16:05:18-20:12:53 UTC window (first/last malicious sdk-loader.js observed) aligns closely with
+          the 16:07-start customer-facing-script sub-window, not with Brevo's full 15:01 start.
+        source: "https://status.brevo.com/incidents/01M2QBC4EZ24ZACW6SWQYVW8N3/write-up (Brevo's own post-mortem, 'Impact window' field and timeline) and https://www.bleepingcomputer.com/news/security/brevo-supply-chain-attack-injected-clickfix-scripts-on-customer-sites/ (BleepingComputer's compressed rendering)"
+    additional_detail:
+      - "Both load-bearing Brevo quotes in the existing findings YAML confirmed 100% verbatim against Brevo's own post-mortem page (see verbatim_check below)."
+      - "BleepingComputer's WordPress-backdoor-plugin analysis fully confirmed independently (Sansec explicitly states it could NOT recover the plugin archive: 'We didn't recover this plugin, but it's likely a backdoor' — BleepingComputer is the SOLE source for the detailed plugin mechanism, having recovered the sample from VirusTotal): the plugin masquerades as 'Web Media Optimizer', hides itself from the WordPress admin plugin list, persists via the must-use-plugins directory, periodically beacons to an attacker-controlled server for a Base64-encoded next-stage JavaScript URL, caches the last-valid URL as a fallback if the C2 becomes unreachable, and carries a hardcoded authentication key letting attackers generate a valid WordPress-administrator login session without the password. Both evidence quotes already in the findings YAML for this mechanism are exact matches to BleepingComputer's text."
+      - "Direct, explicit statement on the Sept-10-SSO-incident connection question (stronger sourcing than 'Brevo has not said'): BleepingComputer states plainly, 'Brevo did not respond to BleepingComputer's questions as to whether the SSO incident and the Cloudflare compromise were connected.' This confirms BleepingComputer specifically put the question to Brevo and got no answer — recommend citing this exact framing rather than the softer 'Brevo has not said' paraphrase, since it is more precise about what was and wasn't asked/answered."
+      - "Sansec's own published timeline table (in its 2026-09-16 write-up) opens with two entries about the separate Sept-10 SSO incident, sourced explicitly to Brevo's OWN Sept-10 write-up: '2026-09-10 06:30 — Brevo identifies the SSO flaw' and '2026-09-10 08:30 — Attacker loses access in Brevo's SSO incident' — both cited 'per its write-up' (i.e. per Brevo's own separate incident report). Sansec does NOT explicitly assert these two incidents are technically connected or share an attacker, but by placing these Sept-10 timestamps as the opening rows of ITS OWN Sept-14-incident timeline table, Sansec's presentation implies a narrative continuity between the two incidents without making an explicit causal claim. Worth surfacing this nuance rather than treating the two incidents as entirely unconnected in the entry's framing, while being careful not to overstate it as a confirmed technical link — neither Brevo's post-mortem (which does not mention the Sept 10 incident at all) nor Sansec's prose makes an explicit causation claim."
+      - "The '100,000 sites' figure precise sourcing: Sansec's own text states 'Brevo served malware to visitors of its own site and more than 100 thousand customer sites,' linked to a publicwww.com source-code search for pages referencing 'brevo.com' OR 'sibforms.com' OR 'sibautomation.com' — i.e. the figure is an upper-bound COUNT OF SITES EMBEDDING the affected Brevo components (a proxy for maximum possible exposure), not a confirmed count of sites whose visitors actually received the injected malicious payload during the ~5-hour window. BleepingComputer's own paraphrase is appropriately hedged: Sansec 'reported that it may have impacted up to 100,000 websites that use the affected Brevo components.' The existing findings YAML's phrasing ('estimates the affected embedded-script exposure reached up to 100,000 websites') is reasonably calibrated already; recommend keeping the hedged 'up to' framing rather than a bare '100,000 sites compromised' claim."
+      - "Sansec independently corroborated the root cause (Cloudflare-account compromise) via its OWN forensic evidence BEFORE Brevo's official confirmation: matching Last-Modified timestamps across the injected/clean asset versions, all five Brevo apex domains (brevo.com, sibforms.com, sibautomation.com, sendinblue.com, sendibt1.com) sharing Cloudflare DNS (implying one compromised account), and an SSL certificate for the attacker's cdn.sendibt1.com subdomain created 2026-08-25 (pinning the attacker's DNS write-access at least to that date) — this independently corroborates, and slightly sharpens the date of, Brevo's own 'late August 2026' first-misuse estimate."
+      - "Malware behavior detail: the ClickFix/plugin payload 'does not activate for crawlers, developers and automated scanners' (Sansec) — a selective-targeting/evasion behavior worth noting as a detection-evasion characteristic (automated scans of a compromised page would not necessarily surface the malicious behavior)."
+    verbatim_check:
+      - quote: "A long-lived Cloudflare API key with full account permissions was stored in application source code and was obtained by the attacker. With it, they could create Workers, routes and DNS records on Brevo's zones without triggering an alert."
+        result: pass
+      - quote: "Because the Worker rewrote responses at the edge and removed security headers such as Content-Security-Policy, our origin servers and files remained unmodified and standard integrity checks did not detect the change."
+        result: pass
+      - quote: "The plugin also stores a backup copy of the last valid JavaScript URL so it can continue loading malicious code if the remote server becomes unavailable... the plugin contains a hardcoded authentication key that allows attackers to generate a valid login session for a WordPress administrator account without knowing the account password."
+        result: "pass (both clauses confirmed verbatim in BleepingComputer's article, in two adjacent but separate sentences rather than one continuous run — the ellipsis in the findings YAML correctly signals the elision)"
+    unreachable: []
+    notes: >
+      Also confirmed: Brevo's own post-mortem explicitly scopes what was NOT affected — app.brevo.com,
+      the Brevo API, email-sending infrastructure, and customer account data — a scope-limiting fact
+      worth keeping prominent in the entry given the "supply chain" framing could otherwise read as
+      broader than it was.
+
+  # ============================================================
+  - item_number: 8
+    title: "Update — CVE-2026-20324 / CVE-2026-20242 (Cisco Secure FMC hardening, Sept 16)"
+    confirmed: true
+    corrections:
+      - field: "SCC Firewall Management SaaS unaffected-by-CVE-2026-20242 claim"
+        original: "SCC Firewall Management SaaS NOT affected by -20242"
+        correction: >
+          Could not confirm this specific claim from Cisco's own advisory. The fetched CVE-2026-20242
+          advisory (cisco-sa-fmc-javarce-y2NypXwk) 's "Products Confirmed Not Vulnerable" section lists
+          ONLY "Secure Firewall Adaptive Security Appliance (ASA) Software" and "Secure Firewall Threat
+          Defense (FTD) Software" — Cisco Security Cloud Control (SCC) Firewall Management is not
+          mentioned anywhere on this advisory page (searched the full extracted text for "SCC" and "Cloud
+          Control" — no hits). The claim may be true (SCC likely doesn't run the on-box External Database
+          Access feature this CVE affects) but it is not a Cisco-stated fact on this specific advisory;
+          recommend either dropping the SCC-unaffected claim for CVE-2026-20242 specifically, or sourcing
+          it from wherever it originated (possibly conflated with CVE-2026-20079's SCC-unaffected
+          statement, which IS Cisco-stated on that separate advisory) before publishing.
+        source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-javarce-y2NypXwk (full 'Vulnerable Products' / 'Products Confirmed Not Vulnerable' sections)"
+    additional_detail:
+      - "CVE-2026-20242 advisory URL independently re-confirmed correct and distinct from the older cisco-sa-fmc-rce-NKhnULJh advisory: the fetched page's title is 'Cisco Secure Firewall Management Center Software Java Deserialization Remote Code Execution Vulnerability' and Cisco's own advance-notification bundle page (cisco-sa-notice-jfxK98ZP) maps CVE-2026-20242 to exactly this advisory title/URL. Confirmed correct — no action needed."
+      - "Exact CVSS vectors confirmed: CVE-2026-20324 (sftunnel) = CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H, base 9.9 (PR:L confirms 'must already hold valid low-priv credentials' framing); CVE-2026-20242 (Java deserialization) = CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, base 9.8 (PR:N confirms 'no credentials needed, attacker must control an allow-listed host' framing)."
+      - "Both advisories confirm ASA and FTD are NOT affected, verbatim: 'Cisco has confirmed that this vulnerability does not affect Cisco Secure Firewall Adaptive Security Appliance (ASA) Software or Cisco Secure Firewall Threat Defense (FTD) Software' (sftunnel advisory) and an equivalent bulleted list for the Java deserialization advisory."
+      - "Both advisories confirm no exploitation reported, verbatim and identical wording on both pages: 'The Cisco Product Security Incident Response Team (PSIRT) is not aware of any public announcements or malicious use of the vulnerability that is described in this advisory.'"
+      - "CVE-2026-20242 has a documented interim mitigation Cisco itself calls out (not present for CVE-2026-20324, which has none): administrators may disable External Database Access entirely until the fix is deployed — Cisco states this was 'deployed and was proven successful in a test environment' but customers should validate applicability in their own environment first."
+      - "Researcher credits confirmed: CVE-2026-20324 reported by independent researcher Mark Pralat; CVE-2026-20242 reported by Andy Niu of TrendAI Research."
+      - "The full Sept 16 Cisco Secure Firewall ASA/FTD/FMC advisory bundle (per the advance-notification page) also includes a separate 8-CVE 'Hardening Release: September 2026' item (CVE-2026-20334/20330/20335/20331/20332/20329/20333/20336, Critical 9.9) not currently reflected in the S1 findings' cves[] list for this update — worth the composer checking whether this batch belongs in the same update or is out of scope for this entry."
+    verbatim_check:
+      - quote: "A registered sftunnel peer has incorrect permissions to write an arbitrary file to any location on the device. ... A successful exploit could allow the attacker to write a file to the device that is executed with root privileges. To exploit this vulnerability, the attacker must have valid user credentials on the affected device."
+        result: pass
+      - quote: "The Cisco Product Security Incident Response Team (PSIRT) is not aware of any public announcements or malicious use of the vulnerability that is described in this advisory."
+        result: "pass (identical wording confirmed on both the sftunnel and Java-deserialization advisories)"
+    unreachable: []
+    notes: "All three primaries (sftunnel advisory, Java-deserialization advisory, advance-notification bundle) fetched cleanly via extract; no transport issues."
+
+  # ============================================================
+  - item_number: 9
+    title: "Update — Cisco ISE hardening release (21 vulnerabilities, 13 critical, Sept 16)"
+    confirmed: true
+    corrections: []
+    additional_detail:
+      - "IMPORTANT CLARIFICATION (not a correction, but worth stating precisely): the '21 total / 13 critical' figure from NCSC-NL is NOT the total count of CVEs Cisco disclosed for ISE on Sept 16 — Cisco's own advance-notification bundle page (cisco-sa-notice-jfxK98ZP) lists 42 distinct CVE IDs across 15 separate ISE advisory titles that day, spanning severities from Critical 10.0 down to Medium 3.8. NCSC-NL's advisory (NCSC-2026-0382) scopes to a specific 21-CVE subset. I independently pulled NCSC-NL's own structured CSAF document (via the ncsc-nl csaf bridge command, since the human-facing advisories.ncsc.nl page redirects client-side and could not be read directly) and it lists EXACTLY 21 CVE ids: CVE-2026-20307, 20211, 20176, 76423, 76424, 76425, 76426, 76427, 76428, 20282, 20283, 20284, 20305, 20306, 20130, 20192, 20194, 20234, 20237, 20287, 76460. Using NCSC-NL's OWN per-CVE CVSS scores from that document, exactly 13 of these 21 score >=9.0 (20307=9.9, 20211=9.1, 20176=9.1, 76423=10.0, 76424=7.2, 76425=7.6, 76426=4.9, 76427=4.9, 76428=4.9, 20282=4.9, 20283=6.5, 20284=9.1, 20305=9.1, 20306=9.1, 20130=10.0, 20192=10.0, 20194=9.1, 20234=9.9, 20237=9.1, 20287=6.5, 76460=10.0) — confirming NCSC-NL's '13 critical' count exactly. So the S1 findings YAML's '21 total, 13 critical' framing is fully accurate FOR NCSC-NL's specific advisory scope, but the composer should be careful not to imply this is the complete Sept-16 ISE disclosure — Cisco's own bundle page shows roughly double that number of CVE IDs when including the medium/high-severity items NCSC-NL's advisory does not cover (RADIUS DoS, SQL injection, XSS, path traversal, medium auth-bypass, info disclosure, SQL/HQL injection, authorization bypass, 802.1x session hijack — none of which reach the ~4.9+ severity floor NCSC-NL's 21-CVE scope appears to use)."
+      - "CERT-FR's combined advisory (CERTFR-2026-AVI-1197, covering BOTH the FMC/ASA/FTD hardening cycle from item 8 AND the ISE hardening cycle from item 9 under one French advisory) states explicitly and singularly: 'Cisco indique que la vulnérabilité CVE-2026-76460 est activement exploitée' (Cisco states that CVE-2026-76460 is actively exploited) — no other CVE in the entire Sept 16 disclosure batch is named as exploited by CERT-FR. This fully confirms 'only CVE-2026-76460 is exploited' with an independent, authoritative source beyond Cisco's own advisory."
+      - "CERT-FR adds an important patch-availability caveat not currently in either entry: 'Cisco indique que les versions 3.2 et 3.1 de Identity Services Engine (ISE) ne seront plus supportées à partir du 30 novembre 2027 et n'ont pas reçu de correctif pour les vulnérabilités CVE-2026-20247, CVE-2026-20282, CVE-2026-20300, CVE-2026-76424, CVE-2026-76425, CVE-2026-76426 et CVE-2026-76428' — i.e. ISE 3.1 and 3.2 (both scheduled for End-of-Software-Maintenance Nov 30, 2027) will NOT receive fixes for seven of the disclosed CVEs at all. Worth flagging: any org running ISE 3.1/3.2 has an unpatchable subset of this disclosure and should treat upgrade to 3.3+ as the only remediation path for those specific CVEs."
+      - "Per-CVE CWE/mechanism detail for the two newly-disclosed CVSS-10.0 bundle CVEs confirmed via NCSC-NL's CSAF: CVE-2026-20130 = CWE-class 'onvoldoende neutralisatie van invoer' (insufficient input neutralization — an injection-class bundle); CVE-2026-20192 = CWE-class 'onjuiste toegangscontrole' (improper access control bundle). NCSC-NL: 'Cisco heeft voor deze hardening-release meerdere onderliggende kwetsbaarheden per CWE-klasse onder één CVE-ID samengebracht. De CVSS-score vertegenwoordigt daarbij de hoogst scorende onderliggende kwetsbaarheid' (Cisco grouped multiple underlying vulnerabilities per CWE class under one CVE ID for this hardening release; the CVSS score represents the highest-scoring underlying vulnerability) — this is more precise than the S1 findings' generic 'CWE-class-grouped bundles' framing and worth adding the specific CWE-class names per CVE."
+      - "CVE-2026-76423 mechanism confirmed precisely via NCSC-NL's per-CVE CSAF record (CWE-23 Relative Path Traversal as primary, also implicated: CWE-290 Authentication Bypass by Spoofing, CWE-611 XML External Entity injection, CWE-89 SQL Injection): 'Multiple vulnerabilities in Cisco Identity Services Engine (ISE) and ISE Passive Identity Connector (ISE-PIC) allow remote attackers to bypass authentication, execute remote code, and perform SQL injection and XML External Entity injection attacks via REST API authorization flaws.' This is richer than the existing entry's framing of CVE-2026-76423 as a single 'REST API unauthenticated admin-access bypass' — it is itself a CWE-class bundle covering multiple flaw types via REST API authorization weaknesses."
+      - "CVE-2026-76460 mechanism confirmed via NCSC-NL's own CVSS vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H, base 10.0, CWE-648 (Incorrect Use of Privileged APIs) — matches the existing entry's framing exactly, no discrepancy."
+    verbatim_check:
+      - quote: "Van de in totaal 21 kwetsbaarheden zijn 13 als kritiek aangemerkt. Op basis van de door Cisco gepubliceerde CVSS-scores kunnen vier kwetsbaarheden zonder authenticatie op afstand worden misbruikt."
+        result: pass
+      - quote: "Vier kwetsbaarheden, CVE-2026-20130, CVE-2026-20192, CVE-2026-76423 en CVE-2026-76460, hebben een CVSS-score van 10,0."
+        result: pass
+    unreachable:
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0382"
+        tried: ["extract (trafilatura-direct)"]
+        result: "Returned only a client-side JS redirect stub ('Redirecting... If you are not redirected, click here'), no article content. Recovered the full advisory text and the complete 21-CVE structured record via the `ncsc-nl csaf NCSC-2026-0382` bridge subcommand instead, plus the RSS `ncsc-nl recent` listing for the full-length prose summary — both succeeded and are the basis for the verbatim_check passes and additional_detail above. No material loss; recommend the composer cite the advisories.ncsc.nl human-facing URL as the Source (that is the correct citable page) while noting the content was verified via the structured CSAF endpoint."
+    notes: "CERT-FR-1197's own References section (Documentation) lists all 20 distinct Cisco advisory URLs and the complete ~60-CVE reference list for the full Sept 16 Cisco disclosure cycle (spanning FMC/ASA/FTD/ISE/Nexus Dashboard/BroadWorks/ThousandEyes) in one place — useful as a single cross-check point if the composer wants to verify any other CVE ID from this cycle."
+
+  # ============================================================
+  - item_number: 10
+    title: "Update — Revolut breach: infostealer-compromised pec.interno.it access vector (Hudson Rock)"
+    confirmed: true
+    corrections: []
+    additional_detail:
+      - "IMPORTANT nuance on the attacker's self-reported methodology, not currently captured in the S4 findings YAML: Hudson Rock's own analysis states 'While the Revolut hackers claimed they used Infostealers (initially telling researchers they used a \\'RAT\\') to actively infect Italian government employees, Hudson Rock's intelligence suggests a different scenario.' The attacker's own account of HOW they gained initial access was internally inconsistent — first claiming a RAT (remote access trojan), then an infostealer — before Hudson Rock's own independent database finding (the ~300 already-compromised pec.interno.it credentials) cast doubt on the self-infection claim specifically. Recommend the entry note this inconsistency explicitly: the attacker's own claimed methodology shifted between two different techniques across their own statements, which is itself a signal of low reliability for the self-infection portion of the narrative, distinct from the (independently corroborated) fact that pec.interno.it credentials were compromised via infostealers by SOMEONE at some point."
+      - "CyberInsider (2026-09-16), citing 'separate reporting' not otherwise identified, states 'Revolut has contacted around 680 affected customers' — a specific customer count not present in the existing entry (which states Revolut 'declines to name... the customer count') nor in the S4 findings YAML. This is a single, loosely-sourced claim (CyberInsider attributes it only to unnamed 'separate reporting') — flagging as a lead worth chasing to a firmer primary before adding to the entry, not confirmed enough to add as fact on its own."
+      - "CyberInsider independently corroborates the core Hudson Rock findings (pec.interno.it domain, ~300 compromised credentials, Hudson Rock's skepticism about the self-infection claim, the five-month campaign duration, the forged-court-orders-then-Revolut-Bank-UAB pivot, the .eml download-then-delete anti-forensic technique, and the 'Revolut staff helped correct an improperly formatted document' detail) while explicitly caveating: 'Those claims have not been independently verified, and Revolut has not publicly confirmed the alleged five-month timeline' — this hedge belongs in the entry's sourcing_note if not already present, since it applies to the ENTIRE Duel-sourced attacker narrative (not just the parts already flagged as attacker-stated in the current entry)."
+      - "CyberInsider adds one useful mechanistic clarification on why the fraudulent request passed authentication: 'This would explain why the fraudulent requests passed normal email authentication checks' (since the request originated from a genuinely compromised mailbox on the real pec.interno.it domain, not a spoofed or lookalike domain) — directly resolves the access-vector question the original Revolut disclosure and this pipeline's existing entry left open, exactly as the S4 findings YAML already states."
+    verbatim_check:
+      - quote: "The hacker gained access to government employee accounts using an infostealer. After gaining entry to an employee's email, they would log in, add a recovery email under their control, begin logging activities, and silently monitor communications."
+        result: pass
+      - quote: "By checking Hudson Rock's extensive cybercrime database, we identified approximately 300 compromised pec.interno.it webmail logins stemming from already infected machines. Based on this intelligence, we assess that it is highly unlikely the hacker actively infected these specific employees themselves."
+        result: pass
+      - quote: "Upon receiving a reply to their fraudulent emails, they would immediately download it as a .eml file and delete it before the actual account owner noticed."
+        result: pass
+    unreachable:
+      - url: "https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering"
+        tried: ["extract (trafilatura-direct) — returned only a LiveChat widget shell, no article body", "jina reader — succeeded, full article recovered"]
+        result: "Recovered via jina reader after the direct trafilatura transport returned an empty JS-widget shell. All verbatim checks above performed against the jina-recovered full text."
+      - url: "https://duel... (the original Duel investigations-team article)"
+        tried: ["not attempted — outside this task's assigned source list for item 10"]
+        result: "Not fetched. Both Hudson Rock's and CyberInsider's text make clear that the detailed attacker-narrative content (forged court orders, mailbox-monitoring methodology, .eml anti-forensic technique, the 'Revolut staff helped correct a document' anecdote) originates from Duel's own direct contact with the attacker, relayed by Hudson Rock/CyberInsider rather than independently established by either. If the composer wants a firmer primary for the attacker-narrative portions specifically (as opposed to Hudson Rock's own independent ~300-credential database finding, which IS Hudson Rock's own primary claim), fetching Duel's original article would be the next pivot — flagging as a coverage gap rather than chasing it within this deep-read pass's time budget, since Hudson Rock/CyberInsider already properly attribute the claims to Duel/the attacker rather than presenting them as independently verified."
+
+candidate_sources: []
+
+coverage_gaps:
+  - item: 9
+    source_id: ncsc-nl
+    reason: "The human-facing advisories.ncsc.nl?id=NCSC-2026-0382 page is a client-side redirect stub with no server-rendered content; the working recipe is the `ncsc-nl csaf <id>` structured bridge subcommand (returns the full per-CVE CSAF record) or `ncsc-nl recent N` (returns the full prose summary via RSS). Recommend updating sources.json's notes for this source if not already reflecting this — the redirect-stub behavior was consistent on both attempts this run."
+  - item: 2
+    source_id: acronis-security-advisory
+    reason: "security-advisory.acronis.com is a client-side-rendered SPA that returns 'Please enable JavaScript to continue.' on both the trafilatura-direct extract transport and the jina reader fallback — genuinely unreachable by content, not just by the article-summary-only trafilatura path. All load-bearing facts for CVE-2026-87886 were nonetheless independently confirmed via NVD/ENISA (both mirror Acronis's own submitted CVE description text) plus two press outlets quoting the advisory directly, so no material was lost, but flagging the site as a structural (not transient) fetch gap for any future item citing an Acronis advisory page directly."

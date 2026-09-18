@@ -9,9 +9,11 @@ summary: >
   fraudulent information request from an unauthorized mailbox operating inside a genuine
   government agency's own email domain. No Revolut system was breached and no malware was
   involved; the compromise was entirely of the process Revolut uses to verify inbound legal and
-  regulatory data requests.
+  regulatory data requests. Threat-intelligence firm Hudson Rock later reported the mailbox was
+  an infostealer-compromised account on Italy's Ministry of the Interior's own domain, though the
+  attacker's own account of how remains only partly corroborated.
 discovered_at: "2026-09-13T04:37:32Z"
-updated_at: "2026-09-16T05:30:00Z"
+updated_at: "2026-09-18T05:08:00Z"
 event_date: "2026-09-12"
 run_id: 2026-09-13T0409Z-intel
 priority: notable
@@ -20,7 +22,7 @@ tags: [data-breach, phishing, identity]
 regions: [global, uk]
 sectors: [finance]
 entities: ["incident:revolut-fake-government-request-breach-2026-09"]
-techniques: [T1598, T1684.001, T1657]
+techniques: [T1598, T1684.001, T1657, T1586.002, T1070.008]
 affected_products: []
 cves: []
 sources:
@@ -36,6 +38,14 @@ sources:
     publisher: "DataBreaches.net (relaying Computing.co.uk)"
     date: "2026-09-15"
     role: corroborating
+  - url: "https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering"
+    publisher: "Hudson Rock"
+    date: "2026-09-15"
+    role: primary
+  - url: "https://cyberinsider.com/revolut-hackers-used-infostealer-to-hijack-italian-government-emails/"
+    publisher: "CyberInsider"
+    date: "2026-09-16"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "Revolut received a request for customer information that appeared to come from a legitimate government agency. The request came from an unauthorised email account sent directly using the official government agency's email domain."
@@ -48,16 +58,30 @@ evidence:
     publisher: "Dev Kundaliya, via DataBreaches.net (relaying Computing.co.uk)"
   - quote: "The attackers have threatened to publish additional information “every day” unless Revolut pays a ransom of 10,000 Bitcoin – currently worth more than $782m."
     publisher: "Dev Kundaliya, via DataBreaches.net (relaying Computing.co.uk)"
+  - quote: "The hacker gained access to government employee accounts using an infostealer. After gaining entry to an employee's email, they would log in, add a recovery email under their control, begin logging activities, and silently monitor communications."
+    publisher: "The Duel Investigations Team, via Hudson Rock"
+    source_url: "https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering"
+  - quote: "By checking Hudson Rock's extensive cybercrime database, we identified approximately 300 compromised pec.interno.it webmail logins stemming from already infected machines. Based on this intelligence, we assess that it is highly unlikely the hacker actively infected these specific employees themselves."
+    publisher: "Hudson Rock"
+    source_url: "https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering"
+  - quote: "Upon receiving a reply to their fraudulent emails, they would immediately download it as a .eml file and delete it before the actual account owner noticed."
+    publisher: "The Duel Investigations Team, via Hudson Rock"
+    source_url: "https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering"
 verification: single-source-victim
 sourcing_note: >
   All reporting on the original disclosure traces to Revolut's own customer notification and
   spokesperson statement; no independent forensic or regulatory confirmation of the incident's
   scope or mechanism has been published, and Revolut declines to name the government agency,
   country, or number of customers affected. The 2026-09-16 extortion-escalation development is
-  sourced to DataBreaches.net's relay of Computing.co.uk reporting; Computing.co.uk itself
-  remained unreachable on every transport tried as of 2026-09-16, and neither Revolut nor a second
-  outlet has confirmed the ransom demand, the Telegram posting, or the alleged victim identities,
-  which are treated as attacker-stated claims, not established fact.
+  sourced to DataBreaches.net's relay of Computing.co.uk reporting, unconfirmed by Revolut or a
+  second source. The access-vector detail (infostealer-compromised pec.interno.it mailboxes)
+  traces to Hudson Rock's own independent finding of roughly 300 already-compromised credentials
+  in its cybercrime database, genuine independent corroboration, but the surrounding attacker
+  narrative (the five-month timeline, the anti-forensic .eml-deletion technique, the
+  forged-court-orders pivot) originates from the attacker's own account to a third outlet, Duel,
+  relayed via Hudson Rock and CyberInsider rather than independently verified; the attacker's own
+  claimed initial-access method was itself inconsistent (first a RAT, then an infostealer), a
+  reliability signal Hudson Rock itself flags.
 confidence: medium
 references: []
 deep_dive: false
@@ -88,6 +112,17 @@ updates:
       unreachable as of 2026-09-16, so the claims are attacker-stated, not confirmed by Revolut or
       a second source.
     fields: [techniques, sources, evidence, sourcing_note, confidence, body]
+  - at: "2026-09-18T05:08:00Z"
+    run_id: 2026-09-18T0410Z-intel
+    type: update
+    summary: >
+      Hudson Rock reports the access vector: infostealer-compromised webmail accounts on
+      pec.interno.it, Italy's Ministry of the Interior's certified-email domain, monitored for
+      roughly five months with an anti-forensic technique of deleting fraudulent outgoing mail
+      and downloading-then-deleting replies. Hudson Rock's own database independently found
+      approximately 300 already-compromised pec.interno.it credentials, though the attacker's own
+      inconsistent account of infecting the officials directly is not independently confirmed.
+    fields: [techniques, sources, evidence, summary, sourcing_note, body]
 migrated_from: null
 ---
 
@@ -106,3 +141,7 @@ The quotation from Revolut's customer notification in the opening paragraph was 
 ## Update — 2026-09-16T05:30:00Z
 
 Parties claiming responsibility for the breach have posted samples of the allegedly stolen data across several Telegram groups, reported to include details belonging to "prominent individuals, including business leaders, sports professionals and performing artists," and are demanding Revolut pay a ransom of 10,000 Bitcoin, worth more than 782 million US dollars at the time of reporting, threatening to publish further data "every day" if unpaid ([DataBreaches.net, relaying Computing.co.uk, 2026-09-15](https://databreaches.net/2026/09/15/hackers-demand-10000-bitcoin-from-revolut-following-data-breach/)). This is the first extortion dimension reported on an incident this entry previously described only as a disclosed process-abuse breach with no stated attacker demand. Computing.co.uk, the outlet that originated this reporting, remains unreachable on every transport tried as of 2026-09-16; neither Revolut nor a second independent outlet has confirmed the ransom figure, the Telegram posting, or the claimed victim identities, so these remain attacker-stated claims rather than established fact.
+
+## Update — 2026-09-18T05:08:00Z
+
+Hudson Rock, relaying the attacker's own account to the Duel Investigations Team, reports the access vector claimed behind the fraudulent request: infostealer-compromised webmail accounts on pec.interno.it, the certified-email domain of Italy's Ministry of the Interior. Per that account, the hacker gained access to government employee accounts using an infostealer, and after gaining entry to an employee's email, would log in, add a recovery email under their control, begin logging activities, and silently monitor communications ([The Duel Investigations Team, via Hudson Rock, 2026-09-15](https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering)). Upon receiving a reply to their fraudulent emails, the operator would immediately download it as a .eml file and delete it before the actual account owner noticed, an anti-forensic technique the account says let the campaign run for roughly five months, beginning with forged court orders before pivoting to Revolut Bank UAB, Revolut's Lithuania-licensed EU subsidiary obligated to respond to European Investigation Orders ([The Duel Investigations Team, via Hudson Rock, 2026-09-15](https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering)). Hudson Rock's own cybercrime database independently identified approximately 300 compromised pec.interno.it webmail logins from already-infected machines, and on that basis assesses it is highly unlikely the hacker actively infected these specific employees themselves ([Hudson Rock, 2026-09-15](https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering)) — the attacker's own account of the initial-access method was itself inconsistent, first describing a remote-access trojan and later an infostealer. This resolves the access-vector question the original disclosure left open; CyberInsider reports Revolut told it only that the fraudulent request "appeared authentic based on the technical indicators available to its staff" ([CyberInsider, 2026-09-16](https://cyberinsider.com/revolut-hackers-used-infostealer-to-hijack-italian-government-emails/)), and Revolut itself has not confirmed the five-month timeline, the pec.interno.it detail, or the anti-forensic technique. CyberInsider separately references unnamed "separate reporting" giving a customer count of around 680, a figure this entry cannot independently verify.

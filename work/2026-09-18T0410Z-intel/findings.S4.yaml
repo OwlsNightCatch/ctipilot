@@ -1,0 +1,178 @@
+domain: S4
+run_id: 2026-09-18T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-18T04:15:09Z
+ended_at: 2026-09-18T04:21:43Z
+duration_seconds: 394
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 8
+  bridge_fetches: 16
+
+items:
+  - title: "Gyazo (Helpfeel, Japan) image-sharing service breached via an image-upload-server vulnerability: 23.62M user records and 490M image-metadata records exposed"
+    sources:
+      - { url: "https://corp.helpfeel.com/en/news/news-20260916", publisher: "Helpfeel Inc. (own notice)", date: "2026-09-16", role: "primary" }
+      - { url: "https://thehackernews.com/2026/09/gyazo-breach-exposes-2362-million-user.html", publisher: "The Hacker News", date: "2026-09-17", role: "corroborating" }
+      - { url: "https://databreaches.net/2026/09/17/gyazo-breach-exposes-23-62-million-user-records-and-490-million-image-metadata-records/", publisher: "DataBreaches.net (relaying The Hacker News)", date: "2026-09-17", role: "corroborating" }
+    discovery_trace: "first seen at: databreaches-net, URL https://databreaches.net/feed/ (RSS item, 2026-09-17) -> pivot: The Hacker News, URL https://thehackernews.com/2026/09/gyazo-breach-exposes-2362-million-user.html -> primary: Helpfeel Inc.'s own notice, URL https://corp.helpfeel.com/en/news/news-20260916"
+    summary: |
+      Helpfeel Inc. (Kyoto, Japan) disclosed on 2026-09-16 that a third party exploited a vulnerability in the image-upload server of Gyazo, its screenshot/image-sharing service, gaining unauthorized system access and the ability to execute arbitrary commands (T1190), then reaching Gyazo's database. Helpfeel has not named the flaw class or assigned a CVE. Approximately 23.62 million user records were exposed, including name, email address, password hash, user ID, device ID, login-session ID, X/Google-SSO integration tokens, profile data and usage statistics; no payment data was exposed. Separately, roughly 490 million image-metadata records (mostly pre-2019 images, ~14.4% of all image data) plus metadata for a further 2.4 million images were exposed, including the image ID used to construct the access URL, upload IP, User-Agent, EXIF location data, OCR-extracted text, and a hashed passphrase for password-protected private images. Gyazo's access-control model for "private" (default) images relies entirely on the 32-character image ID staying secret — the leaked IDs directly defeat that model, and Helpfeel confirms the attacker also obtained a list identifying which images were marked private, so it "cannot rule out" unauthorized viewing of private content. Helpfeel's own public status notices during the incident (Sept 12-15) described the outage only as "emergency maintenance" and did not mention a breach until the Sept 16 notice — a disclosure-timing gap worth noting for any responder benchmarking their own incident-communication practice. Attack window: exploited 2026-09-11 (JST), detected/contained by early hours of 2026-09-12.
+    region_nexus: "global (Japan-headquartered vendor, worldwide user base); no specific Swiss public-sector nexus identified"
+    primary_sector_nexus: "indirect"
+    sector: "technology / SaaS"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Gyazo"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:gyazo-helpfeel-data-breach-2026-09", type: incident, name: "Gyazo (Helpfeel) data breach (September 2026)", aliases: [],
+          summary: "A third party exploited a vulnerability in Gyazo's image-upload server to gain arbitrary command execution and database access, exposing 23.62 million user records and 490 million image-metadata records including the private-image access IDs (Helpfeel Inc., 2026-09-16)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "On September 11, 2026, a third party exploited a vulnerability in Gyazo's image upload server to gain unauthorized access to our systems and execute arbitrary commands."
+        attribution: "Helpfeel Inc."
+        source_url: "https://corp.helpfeel.com/en/news/news-20260916"
+      - quote: "We have also confirmed that the third party obtained a list identifying private images. As we cannot rule out the possibility that some private images may have been viewed by the third party, we are continuing our detailed investigation."
+        attribution: "Helpfeel Inc."
+        source_url: "https://corp.helpfeel.com/en/news/news-20260916"
+      - quote: "The attacker gained access through a vulnerability in Gyazo's image upload server, ran arbitrary commands on Helpfeel's systems, and accessed Gyazo's database, the company said."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/09/gyazo-breach-exposes-2362-million-user.html"
+    extended_notes: |
+      Defender-relevant lessons even absent a Swiss-specific nexus: (1) an "unguessable link" access-control model collapses entirely once the identifiers themselves leak from the backend, rather than from a URL being shared or logged elsewhere — the same class of failure applies to any internal system that treats a long random ID as sufficient authorization; (2) OCR-extracted text and EXIF location metadata are commonly stored server-side even when the image content itself is protected, widening the blast radius of an image-store breach beyond what an inventory of "protected content" might assume; (3) Helpfeel's own product-status page described the incident purely as "emergency maintenance" for several days before the breach notice — a reminder to audit whether an organization's own status-page/incident-communication playbook could produce the same appearance of downplaying.
+    borderline: true
+    borderline_reason: "No Swiss public-sector nexus; included on PD-11(a) genuinely global scale (23.62M+490M records) and a transferable access-control/detection lesson (PD-11(b)) rather than a direct constituency hit."
+
+  - title: "Brevo: a stolen, hardcoded Cloudflare API key let attackers inject ClickFix malware and a WordPress backdoor via a CDN-edge Worker into up to 100,000 customer sites, evading origin integrity checks"
+    sources:
+      - { url: "https://status.brevo.com/incidents/01M2QBC4EZ24ZACW6SWQYVW8N3/write-up", publisher: "Brevo (own post-mortem)", date: "2026-09-17", role: "primary" }
+      - { url: "https://sansec.io/research/brevo-supply-chain-attack", publisher: "Sansec (original finder)", date: "2026-09-14", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/brevo-supply-chain-attack-injected-clickfix-scripts-on-customer-sites/", publisher: "BleepingComputer", date: "2026-09-17", role: "corroborating" }
+      - { url: "https://cyberinsider.com/100000-wordpress-sites-infected-via-brevo-supply-chain-attack/", publisher: "CyberInsider", date: "2026-09-17", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/news/security/ (listing, 2026-09-17) -> pivot: BleepingComputer article, URL https://www.bleepingcomputer.com/news/security/brevo-supply-chain-attack-injected-clickfix-scripts-on-customer-sites/ -> primary: Brevo's own post-mortem, URL https://status.brevo.com/incidents/01M2QBC4EZ24ZACW6SWQYVW8N3/write-up (also cross-checked against Sansec's original finding, URL https://sansec.io/research/brevo-supply-chain-attack)"
+    summary: |
+      Brevo (CRM/email-marketing platform, formerly Sendinblue) confirmed in a 2026-09-17 post-mortem that an attacker used a long-lived Cloudflare API key with full account permissions — hardcoded in Brevo's application source code and first misused as early as late August 2026 — to create a malicious Cloudflare Worker on Brevo's own account (T1552.001 Credentials In Files as root cause). For roughly 5.5 hours on 2026-09-14 (16:07-20:30 UTC per Brevo; Sansec independently timed 16:05-20:13 UTC), the Worker rewrote HTTP responses at the CDN edge — stripping security headers such as Content-Security-Policy — on brevo.com, sendinblue.com, the onboarding subdomain, sibforms.com and, critically, three JavaScript files (the Brevo forms script, the Conversations widget, and the SDK loader) that customers embed directly on their own websites (T1195.002 Compromise Software Supply Chain). Because the edge rewrite never touched origin files, Brevo's own standard integrity checks did not detect the change. Visitors were shown a fake "Cloudflare, verify you are human" page instructing them to press Win+R, Ctrl+V, Enter — a ClickFix lure (T1204.004 Malicious Copy and Paste) that ran an attacker-supplied clipboard command to download Windows malware. On WordPress sites embedding an affected widget, if the visitor was a logged-in WordPress administrator, the script silently installed a malicious plugin (impersonating "Web Media Optimizer") from a third-party CDN; BleepingComputer recovered the plugin sample from VirusTotal and confirms it hides itself from the plugin list, persists via the must-use-plugins directory, beacons to an attacker C2 for a Base64-encoded next-stage JavaScript URL, and carries a hardcoded authentication key granting attackers a valid WordPress-administrator session without the account password. Sansec (the original finder) estimates the affected embedded-script exposure reached up to 100,000 websites. Brevo separately disclosed an unrelated SSO-hijacking incident on 2026-09-10 that led to a phishing campaign against Trezor customers (347,000 targeted, 2,500+ compromised, per Trezor's own 2026-09-11 disclosure); Brevo has not said whether the two incidents are connected.
+    region_nexus: "global (SaaS platform with worldwide customer base embedding its widgets); no specific Swiss public-sector victim named"
+    primary_sector_nexus: "indirect"
+    sector: "technology / SaaS supply chain"
+    cves: []
+    techniques: [T1195.002, T1204.004, T1552.001]
+    affected_products: ["Brevo (formerly Sendinblue)"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:brevo-cloudflare-worker-clickfix-supply-chain-2026-09", type: incident, name: "Brevo Cloudflare Worker / ClickFix supply-chain compromise (September 2026)", aliases: [],
+          summary: "A stolen, hardcoded long-lived Cloudflare API key let an attacker deploy a malicious Cloudflare Worker rewriting Brevo's own pages and customer-embedded widget scripts at the CDN edge for ~5.5 hours on 2026-09-14, serving ClickFix malware and a WordPress admin backdoor plugin to up to 100,000 sites, without modifying any origin file (Brevo, Sansec, 2026-09-17)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A long-lived Cloudflare API key with full account permissions was stored in application source code and was obtained by the attacker. With it, they could create Workers, routes and DNS records on Brevo's zones without triggering an alert."
+        attribution: "Brevo"
+        source_url: "https://status.brevo.com/incidents/01M2QBC4EZ24ZACW6SWQYVW8N3/write-up"
+      - quote: "Because the Worker rewrote responses at the edge and removed security headers such as Content-Security-Policy, our origin servers and files remained unmodified and standard integrity checks did not detect the change."
+        attribution: "Brevo"
+        source_url: "https://status.brevo.com/incidents/01M2QBC4EZ24ZACW6SWQYVW8N3/write-up"
+      - quote: "The plugin also stores a backup copy of the last valid JavaScript URL so it can continue loading malicious code if the remote server becomes unavailable... the plugin contains a hardcoded authentication key that allows attackers to generate a valid login session for a WordPress administrator account without knowing the account password."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/brevo-supply-chain-attack-injected-clickfix-scripts-on-customer-sites/"
+    extended_notes: |
+      Materially novel supply-chain TTP for detection engineers: a CDN-edge Worker/route/DNS-record creation on a compromised third-party SaaS account can inject content into every downstream site embedding that vendor's script, WITHOUT touching any file an origin-side integrity monitor (SRI hash, file-change alert, WAF rule on the origin) would ever see — the tamper happens entirely on the vendor's edge infrastructure. Detection concept: any organization embedding a third-party widget/SDK should monitor the actual bytes served by that widget's script URL over time (external synthetic monitoring / hash-pinning via Subresource Integrity where the vendor supports it), not just trust the vendor's own origin security. Hardening lever named by Brevo itself: eliminate long-lived, broad-scope API keys hardcoded in source (Brevo's own remediation moves to a secrets vault with automatic rotation and no plaintext credentials in source/config, plus real-time alerting on every Cloudflare audit event that touches Workers/routes/DNS/account access).
+
+  - title: "Update: infostealer-compromised Italian Ministry of Interior (pec.interno.it) mailboxes were the access vector behind the Revolut fake-government-request KYC breach — a five-month, anti-forensic email-monitoring campaign"
+    sources:
+      - { url: "https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering", publisher: "Hudson Rock", date: "2026-09-15", role: "primary" }
+      - { url: "https://cyberinsider.com/revolut-hackers-used-infostealer-to-hijack-italian-government-emails/", publisher: "CyberInsider (relaying Duel + Hudson Rock)", date: "2026-09-16", role: "corroborating" }
+    discovery_trace: "first seen at: cyberinsider, URL https://cyberinsider.com/ (listing, 2026-09-18 fetch) -> pivot: CyberInsider article, URL https://cyberinsider.com/revolut-hackers-used-infostealer-to-hijack-italian-government-emails/ -> primary: Hudson Rock's own blog post, URL https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering"
+    summary: |
+      Material update to the existing entry on the Revolut fake-government-request KYC breach (entity incident:revolut-fake-government-request-breach-2026-09). Threat-intelligence firm Hudson Rock, corroborating claims a hacker made directly to the outlet Duel, reports the access vector behind the fraudulent information requests Revolut received: compromised webmail accounts on pec.interno.it, the certified-email domain of Italy's Ministry of the Interior (T1586.002 Compromise Accounts: Email Accounts). Per the attacker's own account to Duel, once inside a compromised government mailbox the operator added a recovery address for persistent access, monitored the inbox continuously, and used an anti-forensic technique to hide the fraud from the legitimate account owner: every outgoing fraudulent message the attacker sent was deleted immediately, and every incoming reply was downloaded as a .eml file and then deleted before the account owner could see it (T1070.008 Clear Mailbox Data). The campaign ran roughly five months, beginning with forged court orders before pivoting specifically to Revolut Bank UAB (Revolut's Lithuania-licensed EU subsidiary, obligated to respond to European Investigation Orders) as the more exploitable target; in one instance Revolut support staff reportedly helped the attacker correct an improperly formatted fraudulent document rather than flagging it. Hudson Rock independently corroborates the pec.interno.it angle by identifying roughly 300 compromised pec.interno.it webmail credentials already circulating in infostealer logs in its own cybercrime database, but assesses the attacker's own claim of personally infecting the government employees is likely false — more probably the attacker purchased or reused already-stolen infostealer credentials rather than running the infection themselves. This resolves the access-vector question the original Revolut disclosure and the store's existing entry left open (Revolut had said only that the request "appeared authentic based on the technical indicators available"), and independently corroborates (rather than merely relays) the extortion detail already carried in the entry's 2026-09-16 update (10,000 BTC demand, Telegram-posted samples).
+    region_nexus: "EU (Italy: Ministry of the Interior mailbox compromise; Lithuania: Revolut Bank UAB as the exploited regulatory target); no direct Swiss nexus, but directly transferable to any Swiss federal/cantonal agency mailbox as a vector for third-party social-engineering fraud"
+    primary_sector_nexus: "indirect"
+    sector: "financial services / government email infrastructure"
+    cves: []
+    techniques: [T1586.002, T1070.008]
+    affected_products: []
+    entity_keys: ["incident:revolut-fake-government-request-breach-2026-09"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-09-13/revolut-fake-government-request-kyc-breach"
+    evidence:
+      - quote: "The hacker gained access to government employee accounts using an infostealer. After gaining entry to an employee's email, they would log in, add a recovery email under their control, begin logging activities, and silently monitor communications."
+        attribution: "Hudson Rock (relaying the Duel investigations team's contact with the attacker)"
+        source_url: "https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering"
+      - quote: "By checking Hudson Rock's extensive cybercrime database, we identified approximately 300 compromised pec.interno.it webmail logins stemming from already infected machines. Based on this intelligence, we assess that it is highly unlikely the hacker actively infected these specific employees themselves."
+        attribution: "Hudson Rock"
+        source_url: "https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering"
+      - quote: "Upon receiving a reply to their fraudulent emails, they would immediately download it as a .eml file and delete it before the actual account owner noticed."
+        attribution: "Hudson Rock (relaying the Duel investigations team)"
+        source_url: "https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering"
+    extended_notes: |
+      Confidence held at MEDIUM rather than HIGH: the attacker's own narrative (relayed via a third outlet, Duel, whose own article this run could not independently fetch) is explicitly flagged by Hudson Rock itself as likely inaccurate on the initial-access method, and Revolut has not confirmed the five-month timeline or the specific pec.interno.it detail. The load-bearing forensic fact — ~300 already-compromised pec.interno.it credentials found in infostealer logs — is Hudson Rock's own independent database finding, not the attacker's claim, and is what elevates this past a bare leak-site/attacker-claim story. Detection-relevant takeaway for any government agency: an account-takeover campaign against a shared/generic institutional mailbox can persist for months when the only anti-forensic signal is deleted sent/received mail — mailbox-audit-log retention and alerting on secondary-recovery-address changes are the concrete hardening levers named by this mechanism.
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Composed supplier watchlist is empty per org-profile.yaml (no-op, confirmed) - no supplier-specific sweep performed beyond normal domain coverage."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: sec-disclosures-edgar
+    reason: "No new Item 1.05 8-K filings in the 2026-09-15 to 2026-09-18 window; the one hit in the wider 2026-09-10 to 2026-09-18 window (Nutex Health Inc., filed 2026-09-11) was already surfaced and noted by a prior fire's backlog re-check (TheGentlemen/Ixa Systems SA row, 2026-09-14) - not new signal."
+  - source_id: ico-uk
+    reason: "Bridge `url` fetch returned only the raw page shell/navigation with no article listing content extracted (JS-rendered or template not captured by the direct GET); no signal found this run. Recommend a source-recipe check for a structured ICO endpoint or RSS feed on a future run."
+  - source_id: venarix
+    reason: "Blog listing is a client-side-hydrated Astro SPA; the direct bridge fetch returned only the page shell/nav with tag-count JSON but no rendered article list. No signal surfaced this run; would need the jina reader (JS execution) to hydrate the list, not attempted given time budget after two strong items were already confirmed elsewhere."
+  - source_id: zaufana-trzecia-strona
+    reason: "Fetched cleanly via bridge; most recent substantive post dated 13.08.2026 and most recent weekly roundup dated 13.09.2026, both outside the 26h window. No in-window signal."
+  - source_id: troyhunt
+    reason: "RSS feed fetched cleanly; most recent item (Weekly Update 521) published 2026-09-11, outside the 26h window. No in-window signal."
+  - source_id: piyolog
+    reason: "Not fetched this run - time budget prioritized confirmed leads (Gyazo/Brevo/Revolut) over a fourth candidate-source check; Gyazo/Helpfeel story already has a fetched Japanese-company primary (Helpfeel's own English-language notice) plus two English corroborating sources, so piyolog's likely Japanese-language coverage of the same story was not chased for additional corroboration."
+
+## Fetch failures
+(none logged - the ICO UK and venarix cases above are recipe/content gaps with no signal loss elsewhere, not full source-retrieval failures; both bridge fetches returned HTTP 200 shells.)
+
+## Bridge uses
+- id: sec-disclosures-edgar
+  method: bridge:sec-edgar
+  outcome: ok (0 then 1 hit, both already-known)
+- id: databreaches-net
+  method: bridge:feed
+  outcome: ok
+- id: troyhunt
+  method: bridge:feed
+  outcome: ok (no in-window items)
+- id: ico-uk
+  method: bridge:url
+  outcome: empty-content (shell only)
+- id: cnil-fr
+  method: extract
+  outcome: ok (no in-window items)
+- id: cyberinsider
+  method: extract
+  outcome: ok
+- id: ransom-isac
+  method: extract
+  outcome: ok (no in-window items, most recent post dated 2026-09-17 but describes an August-surfaced campaign with no fresh victim/detail)
+- id: venarix
+  method: bridge:url
+  outcome: empty-content (SPA shell only)
+- id: zaufanatrzeciastrona
+  method: bridge:url
+  outcome: ok (no in-window items)
+- id: bleepingcomputer
+  method: extract
+  outcome: ok
+- id: frenchbreaches
+  method: extract
+  outcome: ok
