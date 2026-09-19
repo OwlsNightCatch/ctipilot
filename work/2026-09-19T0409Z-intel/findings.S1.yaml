@@ -1,0 +1,276 @@
+domain: S1
+run_id: 2026-09-19T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-19T04:12:54Z
+ended_at: 2026-09-19T04:21:00Z
+duration_seconds: 486
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 9
+  bridge_fetches: 28
+
+items:
+  - title: "CISA adds three unrelated Linux kernel CVEs to KEV in one day — kTLS receive-path RCE/DoS, AF_ALG race-condition privesc, netfilter ebtables SNAT out-of-bounds write"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/09/18/cisa-adds-one-known-exploited-vulnerability-catalog", publisher: "CISA", date: "2026-09-18", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/09/18/cisa-adds-two-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-09-18", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2025-39682", publisher: "NVD/NIST", date: "2026-09-18", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2025-39964", publisher: "NVD/NIST", date: "2026-09-18", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-53266", publisher: "NVD/NIST", date: "2026-09-18", role: "corroborating" }
+    discovery_trace: >
+      first seen at: bridge:cisa-kev, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+      (mandatory KEV-diff duty, 3 additions dated 2026-09-18) → primary: CISA alert pages,
+      URL https://www.cisa.gov/news-events/alerts/2026/09/18/cisa-adds-one-known-exploited-vulnerability-catalog
+      and https://www.cisa.gov/news-events/alerts/2026/09/18/cisa-adds-two-known-exploited-vulnerabilities-catalog
+      → cross-checked: NVD CVE records (CVSS vectors, publication dates, affected/fixed versions) and
+      WebSearch ("CVE-2025-39682 Linux kernel KEV" / "CVE-2025-39964 Linux kernel race condition" /
+      "CVE-2026-53266 Linux kernel out-of-bounds write") for distro-advisory and exploitation corroboration
+      (Red Hat, Ubuntu, Debian CVE pages — none add technical detail on the exploitation evidence beyond
+      the KEV listing itself).
+    summary: |
+      CISA added three Linux kernel CVEs to its KEV catalog on 2026-09-18, all with a 3-day (2026-09-21)
+      remediation deadline and "knownRansomwareCampaignUse: Unknown" — no named actor, campaign, or public
+      exploitation write-up accompanies any of the three; the KEV listing itself is the only exploitation
+      evidence available. All three are old CVEs newly added to KEV, not new disclosures:
+      CVE-2025-39682 (published 2025-09-05, kernel CNA CVSS3.1 9.8 AV:N, NVD's own re-score 7.1 AV:L) is a
+      logic bug in the kTLS receive path (net/tls/tls_sw.c): a remote peer that controls a TLS session using
+      kernel TLS offload for receive can send a three-record sequence (application data, a zero-length
+      non-data record, more application data) that bypasses the intended per-recvmsg() record-type
+      constraint, corrupting the zero-copy/queuing assumptions for subsequent records — only reachable
+      when the application uses CONFIG_TLS kernel TLS offload for the receive path, not a default config
+      on most distros but present on high-throughput proxies/storage/network appliances that use ktls.
+      Fixed in 6.1.149, 6.6.103, 6.12.44, 6.16.4, 6.17.
+      CVE-2025-39964 (published 2025-10-13, kernel CNA CVSS3.1 7.8, NVD re-score 5.5/availability-only) is a
+      race condition in the AF_ALG crypto user-API socket (crypto/af_alg.c): concurrent sendmsg() writes to
+      the same af_alg socket were not exclusively owned, letting request payloads interleave unpredictably
+      and corrupt per-socket context — local, requires access to an AF_ALG socket (CONFIG_CRYPTO_USER_API_SKCIPHER
+      and friends, often restricted or unloaded). Fixed in 5.10.245, 5.15.194, 6.1.154, 6.6.108, 6.12.49, 6.16.9+.
+      CVE-2026-53266 (published 2026-06-25, CVSS3.1 8.8, AV:L/PR:L/S:C) is an out-of-bounds write in the
+      netfilter bridge ebtables SNAT target (net/bridge/netfilter/ebt_snat.c): the optional ARP
+      sender-hardware-address rewrite calls skb_store_bits() without first ensuring the target range is
+      writable, and when that range sits in a nonlinear skb fragment backed by a splice-imported file page,
+      the write lands directly on the underlying page — requires a system configured with bridge netfilter
+      ebtables SNAT ARP-rewrite rules and local low-privilege access to trigger. Fixed in 5.10.259, 5.15.210,
+      6.1.176, 6.6.143, 6.12.94, plus earlier-series backports per the kernel.org commit set.
+      No vendor (Red Hat, Ubuntu, Debian, SUSE) advisory located in this window adds exploitation detail
+      beyond re-listing the CVEs with a fixed kernel build; none names an exploiting actor or campaign.
+    region_nexus: "global — Linux kernel affects Swiss federal/cantonal Linux server and network-appliance fleets uniformly; no Swiss-specific reporting found"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2025-39682, CVE-2025-39964, CVE-2026-53266]
+    techniques: [T1210, T1499, T1068]
+    affected_products: ["Linux Kernel"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "CISA has added one new vulnerability to its Known Exploited Vulnerabilities (KEV) Catalog, based on evidence of active exploitation. CVE-2025-39682 Linux Kernel Improper Check for Unusual or Exceptional Conditions Vulnerability"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/09/18/cisa-adds-one-known-exploited-vulnerability-catalog"
+      - quote: "CISA has added two new vulnerabilities to its Known Exploited Vulnerabilities (KEV) Catalog, based on evidence of active exploitation. CVE-2025-39964 Linux Kernel Race Condition Vulnerability, CVE-2026-53266 Linux Kernel Out-of-Bounds Write Vulnerability"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/09/18/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+      - quote: "The corner case we missed is when the initial record comes from rx_list, and it's zero length."
+        attribution: "Linux kernel stable tree (CVE-2025-39682 CNA description, mirrored on NVD)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2025-39682"
+      - quote: "If that range is still held in a nonlinear skb fragment backed by a splice-imported file page, skb_store_bits() maps the frag page and copies the new MAC address directly into it."
+        attribution: "Linux kernel stable tree (CVE-2026-53266 CNA description, mirrored on NVD)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-53266"
+    extended_notes: |
+      This is the mandatory KEV-diff duty for this run (3 additions on 2026-09-18, none covered by any
+      existing entry or state/cves_seen.json record). Framing note for the composer: CISA's own catalog
+      metadata offers no exploitation narrative, named cluster, or ransomware nexus for any of the three —
+      the KEV listing is the entirety of the public exploitation evidence, consistent with a recurring
+      pattern where CISA adds older kernel CVEs to KEV without disclosing the underlying (likely federal/
+      classified) telemetry. Per PD-13 the listing itself is the actionable signal regardless of remediation-
+      deadline irrelevance to this non-US constituency; recommend an entry that states plainly what is known
+      (technical mechanism, fixed versions, KEV addition) and what is NOT known (no named actor, no
+      exploitation narrative, no confirmed ransomware use) rather than speculating a campaign. Given the
+      narrow real-world attack surface of two of the three bugs (AF_ALG and ebtables SNAT both need local
+      access plus a specific kernel feature enabled), and the network-reachable one (kTLS) needing kernel TLS
+      offload on the receive path — an uncommon but real production config (high-throughput TLS-terminating
+      proxies, some storage/network appliances) — the operational impact for a typical Swiss government
+      server/workstation fleet is most acute for hosts running custom bridge-netfilter or kTLS-offloading
+      network appliances; general server/desktop fleets should still patch on the standard kernel cadence
+      given no workaround exists beyond disabling the relevant kernel feature (blacklist af_alg module;
+      avoid CONFIG_TLS receive offload; remove ebtables SNAT ARP-rewrite rules) if immediate patching is not
+      possible.
+    cve_table:
+      - { cve: "CVE-2025-39682", product: "Linux Kernel (net/tls)", cvss: "9.8 (kernel CNA, AV:N) / 7.1 (NVD re-score, AV:L)", epss: "0.51 (ENISA EUVD)", kev: true, exploited: "CISA KEV-confirmed, no public technical exploitation narrative", patch: "6.1.149, 6.6.103, 6.12.44, 6.16.4, 6.17", source: "https://www.cisa.gov/news-events/alerts/2026/09/18/cisa-adds-one-known-exploited-vulnerability-catalog" }
+      - { cve: "CVE-2025-39964", product: "Linux Kernel (crypto/af_alg)", cvss: "7.8 (kernel CNA) / 5.5 (NVD re-score)", epss: "0.32 (ENISA EUVD)", kev: true, exploited: "CISA KEV-confirmed, no public technical exploitation narrative", patch: "5.10.245, 5.15.194, 6.1.154, 6.6.108, 6.12.49, 6.16.9+", source: "https://www.cisa.gov/news-events/alerts/2026/09/18/cisa-adds-two-known-exploited-vulnerabilities-catalog" }
+      - { cve: "CVE-2026-53266", product: "Linux Kernel (net/bridge/netfilter/ebt_snat)", cvss: "8.8", epss: "0.12 (ENISA EUVD)", kev: true, exploited: "CISA KEV-confirmed, no public technical exploitation narrative", patch: "5.10.259, 5.15.210, 6.1.176, 6.6.143, 6.12.94", source: "https://www.cisa.gov/news-events/alerts/2026/09/18/cisa-adds-two-known-exploited-vulnerabilities-catalog" }
+
+  - title: "CVE-2026-81642 / CVE-2026-82717 — NLnet Labs Unbound DNS resolver: DNSSEC-validator heap overflow and CNAME-synthesis heap corruption, both reaching remote code execution (CVSS4.0 9.1 / 8.4)"
+    sources:
+      - { url: "https://nlnetlabs.nl/downloads/unbound/CVE-2026-81642.txt", publisher: "NLnet Labs", date: "2026-09-18", role: "primary" }
+      - { url: "https://nlnetlabs.nl/downloads/unbound/CVE-2026-82717.txt", publisher: "NLnet Labs", date: "2026-09-16", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12957", publisher: "NCSC Switzerland (Cyber Security Hub)", date: "2026-09-18", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-82717", publisher: "NVD/NIST", date: "2026-09-18", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/09/critical-unbound-dnssec-validator-flaw.html", publisher: "The Hacker News", date: "2026-09-18", role: "corroborating" }
+    discovery_trace: >
+      first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12957
+      (bridge:ncsc-csh.recent) → primary: NLnet Labs' own advisory,
+      URL https://nlnetlabs.nl/downloads/unbound/CVE-2026-81642.txt → pivot: companion advisory for the
+      secondary CVE named in the same NCSC-CH post, URL https://nlnetlabs.nl/downloads/unbound/CVE-2026-82717.txt
+      → cross-checked: NVD record for CVE-2026-82717, URL https://nvd.nist.gov/vuln/detail/CVE-2026-82717.
+    summary: |
+      NLnet Labs disclosed two heap-corruption vulnerabilities in Unbound, the widely deployed open-source
+      validating/recursive DNS resolver, fixed together in Unbound 1.26.1 (all versions up to and including
+      1.26.0 are affected). CVE-2026-81642 (CVSS4.0 9.1, discovered by Yuqi Qiu and Xiang Li of Nankai
+      University's AOSP Lab) is a heap buffer overflow in Unbound's DNSSEC validator: a DNSKEY record whose
+      owner name uses a compression pointer that self-references back into its own RDATA can overflow the
+      digest buffer during DNSKEY digesting, reachable whenever DNSSEC validation is enabled and the
+      resolver's query routing lets an attacker-controlled malicious zone be parsed — NLnet Labs states this
+      reaches denial of service and "remote code execution is possible through attacker controlled data."
+      CVE-2026-82717 (CVSS4.0 8.4, discovered by Ben Morris of Anthropic) is a companion heap-corruption bug
+      in CNAME synthesis during upstream-response processing: when Unbound rewrites a max-TTL value into the
+      packet buffer and a compression pointer references the now-overwritten, now-invalid domain name, an
+      error path fails to advance the buffer position correctly, producing a heap buffer overflow that NLnet
+      Labs describes as "heavily reliant on heap memory layout" and, "under certain systems and compilation
+      options," capable of remote code execution — otherwise manifesting as progressive heap corruption
+      leading to a crash. NCSC Switzerland's advisory records exploitation status as UNKNOWN as of publication.
+    region_nexus: "global — Unbound is deployed as recursive/validating resolver infrastructure including in Swiss and EU government networks; NCSC-CH flagged the advisory to its constituency same-day"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-81642, CVE-2026-82717]
+    techniques: [T1210]
+    affected_products: ["NLnet Labs Unbound"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A DNSKEY with an owner compression pointer to its own RDATA can overflow the digest buffer. Remote code execution is possible through attacker controlled data. An adversary can exploit the vulnerability by controlling a malicious zone and querying a vulnerable Unbound."
+        attribution: "NLnet Labs"
+        source_url: "https://nlnetlabs.nl/downloads/unbound/CVE-2026-81642.txt"
+      - quote: "Since this is heavily reliant on heap memory layout, results are memory corruption that eventually leads to a crash and under specific systems and compilation options remote code execution."
+        attribution: "NLnet Labs"
+        source_url: "https://nlnetlabs.nl/downloads/unbound/CVE-2026-82717.txt"
+      - quote: "Prerequisites: Resolver must have DNSSEC validation active, and query routing must allow the attacker's malicious zone to be parsed. Current exploitation status: UNKNOWN"
+        attribution: "NCSC Switzerland (Cyber Security Hub)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12957"
+    extended_notes: |
+      Triage discriminator: CVE-2026-81642 requires DNSSEC validation enabled AND the resolver's query
+      routing to permit resolving an attacker-controlled zone — a normal condition for any DNSSEC-validating
+      recursive resolver doing open internet resolution, less so for resolvers restricted to internal/
+      forwarding-only zones. CVE-2026-82717's RCE outcome is compilation/heap-layout-dependent, so DoS/crash
+      is the more likely near-term observable even post-disclosure; both are worth patching to 1.26.1
+      regardless. Detection angle: named/unbound crash-loop or repeated worker-process restarts correlated
+      with resolution of an unusual/newly-registered authoritative zone is the closest available behavioral
+      signal; no public PoC located in this window.
+    cve_table:
+      - { cve: "CVE-2026-81642", product: "NLnet Labs Unbound", cvss: "9.1 (CVSS4.0)", epss: null, kev: false, exploited: "unknown (NCSC-CH: UNKNOWN)", patch: "1.26.1", source: "https://nlnetlabs.nl/downloads/unbound/CVE-2026-81642.txt" }
+      - { cve: "CVE-2026-82717", product: "NLnet Labs Unbound", cvss: "8.4 (CVSS4.0)", epss: null, kev: false, exploited: "unknown", patch: "1.26.1", source: "https://nlnetlabs.nl/downloads/unbound/CVE-2026-82717.txt" }
+
+  - title: "ISC BIND 9 fixes 8 vulnerabilities including two unauthenticated remote-crash flaws reachable with a single request — DNS-over-HTTPS SIG(0) abort and an assertion-failure TKEY query"
+    sources:
+      - { url: "https://kb.isc.org/docs/cve-2026-77692", publisher: "Internet Systems Consortium (ISC)", date: "2026-09-16", role: "primary" }
+      - { url: "https://kb.isc.org/docs/cve-2026-76163", publisher: "Internet Systems Consortium (ISC)", date: "2026-09-16", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1192/", publisher: "CERT-FR / ANSSI", date: "2026-09-17", role: "corroborating" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12956", publisher: "NCSC Switzerland (Cyber Security Hub)", date: "2026-09-18", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/09/bind-9-update-fixes-14-flaws-including.html", publisher: "The Hacker News", date: "2026-09-16", role: "corroborating" }
+    discovery_trace: >
+      first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12956
+      (bridge:ncsc-csh.recent) → primary: ISC's own per-CVE knowledgebase pages,
+      URL https://kb.isc.org/docs/cve-2026-77692 and https://kb.isc.org/docs/cve-2026-76163
+      → corroboration: CERT-FR advisory listing all 8 CVEs for the France-supported branch,
+      URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1192/.
+    summary: |
+      ISC released BIND 9.20.29 and 9.21.26 on 2026-09-16, fixing 8 CVEs (CERT-FR's count for the currently
+      supported branches; NCSC-CH's summary references "fourteen vulnerabilities fixed" across all supported
+      and out-of-support version lines). Two are exploitable by an unauthenticated remote attacker with a
+      single request and carry ISC's own "High" / CVSS3.1 7.5 rating (AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H —
+      availability-only impact): CVE-2026-77692 lets an attacker abort `named` by sending a crafted
+      DNS-over-HTTPS request containing a cryptographically invalid SIG(0) record and then closing the
+      transport connection prematurely, affecting only servers with DoH enabled; CVE-2026-76163 lets an
+      attacker crash `named` via a single QTYPE TKEY query when the server's named.conf carries no global
+      options block — a configuration ISC treats as valid but that removes an implicit safety check. Both
+      affect BIND 9.20.0-9.20.27 and 9.21.0-9.21.25 (and the 9.20.9-S1 to 9.20.27-S1 Supported Preview
+      Edition range); both are fixed in 9.20.29 / 9.21.26. ISC states it is "not aware of any active
+      exploits" for either. The remaining six CVEs in CERT-FR's list (CVE-2026-75029, CVE-2026-77119,
+      CVE-2026-78301, CVE-2026-80274, CVE-2026-81563, CVE-2026-81736) round out the release; CERT-FR's
+      advisory scopes the risk category as denial-of-service, data-integrity impact and security-policy
+      bypass with no RCE among them.
+    region_nexus: "global — BIND remains the most widely deployed authoritative/recursive DNS server; CERT-FR and NCSC-CH both flagged this same-week"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-77692, CVE-2026-76163, CVE-2026-75029, CVE-2026-77119, CVE-2026-78301, CVE-2026-80274, CVE-2026-81563, CVE-2026-81736]
+    techniques: [T1499]
+    affected_products: ["ISC BIND 9"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An attacker can cause named to abort by sending a crafted DNS-over-HTTPS request with a cryptographically invalid SIG(0) record, and then closing the transport connection prematurely."
+        attribution: "Internet Systems Consortium (ISC)"
+        source_url: "https://kb.isc.org/docs/cve-2026-77692"
+      - quote: "If BIND is loaded with a \"named.conf\" file that contains no global \"options\" block, an attacker can send a query of QTYPE TKEY which may cause an assertion failure and subsequent unexpected program exit."
+        attribution: "Internet Systems Consortium (ISC)"
+        source_url: "https://kb.isc.org/docs/cve-2026-76163"
+      - quote: "Two of the fourteen vulnerabilities fixed can be triggered by a request alone, without the attacker needing a DNS server of their own, both affect only the 9.20 and 9.21 branches"
+        attribution: "NCSC Switzerland (Cyber Security Hub)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12956"
+    extended_notes: |
+      Triage discriminator: CVE-2026-77692 requires DNS-over-HTTPS enabled on the server (not BIND's default
+      transport) — narrows exposure to operators who explicitly turned on DoH. CVE-2026-76163 requires the
+      opposite of best practice (an omitted global options block in named.conf), so its presence is itself a
+      configuration-hygiene signal worth auditing for. Both are availability-only (no confidentiality/
+      integrity impact per ISC's own vector), so impact is resolver downtime, not compromise. No PoC or
+      scanning activity found in this window; ISC explicitly states no known active exploits for either.
+    cve_table:
+      - { cve: "CVE-2026-77692", product: "ISC BIND 9", cvss: "7.5", epss: null, kev: false, exploited: "ISC: not aware of active exploits", patch: "9.20.29 / 9.21.26", source: "https://kb.isc.org/docs/cve-2026-77692" }
+      - { cve: "CVE-2026-76163", product: "ISC BIND 9", cvss: "7.5", epss: null, kev: false, exploited: "ISC: not aware of active exploits", patch: "9.20.29 / 9.21.26", source: "https://kb.isc.org/docs/cve-2026-76163" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "profile configures no product watchlist — sweep is a no-op per spawn tasking; general S1 coverage applied unchanged."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: tp-link-omada-psirt
+    reason: >
+      NOT a coverage gap — recipe fix found and verified. The bare listing URL
+      (https://support.omadanetworks.com/en/bulletin/) returns only the site navigation shell via jina
+      (no bulletin content, explaining the 2 consecutive 404s recorded against this source). The working
+      recipe is the filtered listing URL
+      https://support.omadanetworks.com/en/bulletin/?bulletinsResourceTypeIdList=1111 fetched via
+      `jina <URL>` — this returns the actual "Security Vulnerability" bulletin list with titles, CVE ids
+      and dates. Checked this run: most recent bulletin is dated 2026-09-10 (CVE-2026-84941, Omada
+      Controller XXE via SAML IdP metadata parsing) — outside this run's 26h window, so no in-window item
+      from this source, but the source itself is confirmed reachable and should have its `url` /
+      `notes` field updated to the filtered path to end the repeated-404 rotation flag.
+  - source_id: vulncheck
+    reason: "Blog listing page (https://www.vulncheck.com/blog) is JS-rendered; trafilatura extraction returned only the site's generic marketing description, no article listing. No in-window items surfaced; recipe likely needs the jina reader or a discovered RSS/sitemap path — flagging for a future run rather than spending further budget this run."
+  - source_id: shadowserver
+    reason: "Listing fetched cleanly (trafilatura-direct); most recent post is a 2025-year-in-review piece dated 2026-09-07, well outside window. No in-window items — quiet source this cycle, not a fetch failure."
+  - source_id: watchtowr
+    reason: "RSS feed fetched cleanly; most recent entry dated 2026-08-14 (Citrix NetScaler CVE-2026-8452). No in-window items — quiet source this cycle, not a fetch failure."
+
+coverage_backlog_rechecks:
+  - item: "VMware VMSA-2026-0007 (CVE-2026-59346 VMXNET3 guest-to-host escape, CVE-2026-59347 HGFS stack overflow, Workstation/Fusion)"
+    result: >
+      No change. Checked the full CISA KEV catalog dump (2026.09.18, 1716 entries) — neither CVE-2026-59346
+      nor CVE-2026-59347 is listed. WebSearch for fresh exploitation reporting or an ESXi-reaching variant
+      found only the original 2026-09-03/05 disclosure coverage (Broadcom VMSA-2026-0007, CVSS 9.3/8.1,
+      requires local admin inside a VMXNET3-attached guest, fixed in 26H1u1); no source claims exploitation
+      or an ESXi-applicable variant. Confirmed via https://thehackernews.com/2026/09/critical-vmware-workstation-and-fusion.html
+      (dated 2026-09-04, outside this run's window — cited only to confirm no new development, not as a new item).
+  - item: "Joint advisory AA26-231A (Siemens S7 PLC active-threat advisory)"
+    result: >
+      No change. WebSearch for material developments in the last 24-48h found only recirculated coverage of
+      the original 2026-08-18/19 joint advisory (NSA/CISA/FBI/DOE/EPA) on AI-generated exploitation scripts
+      against internet-exposed Siemens S7 PLCs. No new agency update, no new exploitation report, no expanded
+      device list located. Entry needs no changelog update from this run's sweep.
