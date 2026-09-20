@@ -73,7 +73,7 @@ verification: single-source-national-cert
 sourcing_note: >
   NCSC UK, the FBI and AIVD co-authored a single joint advisory rather than three independently
   arrived-at assessments; The Record's reporting relays the same advisory rather than adding
-  independent technical confirmation. Treated under the national-CERT carve-out (PD-5) as a
+  independent technical confirmation. Treated under the government-authority carve-out as a
   single-source item from a high-reliability primary disclosing authority.
 confidence: high
 references: []
@@ -85,7 +85,15 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-20T13:30:32Z"
+    run_id: 2026-09-20T1308Z-audit
+    type: improvement
+    summary: >
+      The sourcing note carried an internal policy-reference code in reader-facing text. It now names the
+      government-authority carve-out in plain language. No sourcing or factual claim changes.
+    fields: [sourcing_note]
+    internal: true
 migrated_from: null
 ---
 

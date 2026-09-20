@@ -44,8 +44,8 @@ evidence:
     publisher: "Jiji Press (via Nippon.com)"
   - quote: "\"We take it seriously that the incident occurred despite our operations under multi-layered security measures and a 24-hour-a-day, 365-day-a-year surveillance system,\" Chief Cabinet Secretary Minoru Kihara said at a press conference"
     publisher: "Jiji Press (via Nippon.com)"
-  - quote: "悪用された脆弱性の共通脆弱性評価システム(CVSS)における評価は重要度「中(Medium)」程度で、修正プログラムやパッチの適用前に悪用された (translated from Japanese: the exploited vulnerability's CVSS severity rating was around \"Medium\", and it was exploited before a fix or patch was applied)"
-    original: "悪用された脆弱性の共通脆弱性評価システム(CVSS)における評価は重要度「中(Medium)」程度で、修正プログラムやパッチの適用前に悪用された"
+  - quote: "The Digital Agency said that in the vulnerability assessment published at the time, the Common Vulnerability Scoring System rated the severity at around \"Medium\", and explained that it was exploited before a fix or patch had been applied (translated from Japanese)"
+    original: "デジタル庁は、当初公表されていた脆弱性評価においては共通脆弱性評価システム(CVSS)で重要度「中(Medium)」程度だったとし、修正プログラムやパッチの適用前に悪用されたと説明した"
     publisher: "Piyolog (Piyokango) — Japanese security incident-tracking blog"
 verification: multi-source
 sourcing_note: >
@@ -80,6 +80,16 @@ updates:
       scores as 2. The sourcing note's claim that Jiji Press and the Piyolog-relayed agency
       statements are independent of each other is corrected with it.
     fields: [classification, sourcing_note]
+  - at: "2026-09-20T13:33:40Z"
+    run_id: 2026-09-20T1308Z-audit
+    type: correction
+    summary: >
+      The Japanese-language evidence record was not verbatim: the stored source-language text reordered and
+      abridged the sentence on the Piyolog page and could not be matched against it. Both the source-language
+      text and its English rendering now reproduce what the page actually says, which qualifies the rating as
+      the one in the assessment published at the time rather than a flat Medium; the analysis carries the same
+      qualification. The substance, that a Medium-rated flaw was exploited before its scheduled fix, is unchanged.
+    fields: [evidence, body]
 migrated_from: null
 ---
 
@@ -87,10 +97,14 @@ Japan's Digital Agency confirmed on 2026-09-11 that Government Solution Service 
 
 The root cause was a third party exploiting a vulnerability in an externally-facing VPN appliance used for maintenance access, gaining a foothold from around late May 2026 ([Piyolog, 2026-09-11](https://piyolog.hatenadiary.jp/entry/2026/09/11/220855)). The intrusion was not detected from the VPN compromise itself: on 25 June, the agency detected suspicious access from the account of a system maintenance administrator, and only through the subsequent investigation confirmed on 9 July that an external party had repeated unauthorized access since late May ([Jiji Press, 2026-09-11](https://www.nippon.com/en/news/yjj2026091100453/)). The agency disabled the account and cut the compromised device's external connectivity the same day, then patched the VPN appliance as an initial response ([Piyolog, 2026-09-11](https://piyolog.hatenadiary.jp/entry/2026/09/11/220855)); roughly two and a half months of investigation with an external forensics firm preceded the public announcement.
 
-At the 2026-09-11 press conference, Digital Minister Matsumoto stated the exploited vulnerability was already known to the agency before the intrusion, rated only "Medium" severity under CVSS, and was being remediated on a severity-based schedule when it was exploited ahead of that fix being applied ([Digital Agency Q&A, relayed by Piyolog, 2026-09-11](https://piyolog.hatenadiary.jp/entry/2026/09/11/220855)). The agency stated it will review its vulnerability-management approach as a result, without disclosing specifics on what will change ([Rocket Boys Security Measures Lab, 2026-09-11](https://rocket-boys.co.jp/security-measures-lab/digital-agency-privacy-data-incident/)).
+At the 2026-09-11 press conference, Digital Minister Matsumoto stated the exploited vulnerability was already known to the agency before the intrusion, rated at around "Medium" severity in the vulnerability assessment published at the time, and was being remediated on a severity-based schedule when it was exploited ahead of that fix being applied ([Digital Agency Q&A, relayed by Piyolog, 2026-09-11](https://piyolog.hatenadiary.jp/entry/2026/09/11/220855)). The agency stated it will review its vulnerability-management approach as a result, without disclosing specifics on what will change ([Rocket Boys Security Measures Lab, 2026-09-11](https://rocket-boys.co.jp/security-measures-lab/digital-agency-privacy-data-incident/)).
 
 **Defender takeaway:** two lessons transfer directly to any shared, multi-agency IT-services platform — the closest structural analogue being a federal or cantonal shared administrative environment. First, the detection trigger here was not the initial VPN exploit but a downstream behavioral anomaly: unusually large file-access volume from a maintenance or service account, which is a hunt worth running regardless of whether the initial exploit is ever caught. Second, a vulnerability rated only "Medium" by bare CVSS was exploited before its scheduled fix arrived — a reminder that severity-based patch queues need an exposure- and asset-criticality-aware override for anything reachable from outside the network, not just a CVSS threshold.
 
 ## Correction — 2026-09-13T14:40:00Z
 
 The confidence this entry conveyed in its Admiralty rating was too high, and the reason matters for how a reader weighs it. Every fact here traces to one disclosure: the Digital Agency's 2026-09-11 press release and the accompanying press conference. Jiji Press, Piyolog and Rocket Boys Security Measures Lab each report that announcement; none of them examined the intrusion. Independent corroboration means a second party that observed or assessed the thing, not a second outlet that republished the first, so the credibility number is 2 (probably true, not independently confirmed) rather than 1. Nothing factual in the entry changes — the figures, the scope and the agency's statements were re-verified against the same sources and hold. What changes is that a reader should treat the account as the Digital Agency's own, still awaiting outside confirmation: the VPN vendor, the product, the CVE and whether the flaw was known and patched before the intrusion all remain undisclosed by any party.
+
+## Correction — 2026-09-20T13:33:40Z
+
+The Digital Agency's statement on the flaw's severity is narrower than this entry first rendered it. Piyolog's account of the 2026-09-11 press conference reports the agency saying that the Common Vulnerability Scoring System rated the severity at around "Medium" **in the vulnerability assessment published at the time**, and that the flaw was exploited before a fix or patch had been applied ([Piyolog, 2026-09-11](https://piyolog.hatenadiary.jp/entry/2026/09/11/220855)). The qualification matters: the agency described the rating as it stood when first published, not as a settled assessment of the flaw.

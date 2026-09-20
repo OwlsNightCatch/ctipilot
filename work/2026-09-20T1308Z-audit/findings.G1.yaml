@@ -1,0 +1,284 @@
+domain: G1
+run_id: 2026-09-20T1308Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-20T13:11:47Z
+ended_at: 2026-09-20T13:21:23Z
+duration_seconds: 576
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 0
+  bridge_fetches: 34
+
+# ============================================================
+# G1 audit re-sweep, window 2026-09-13T13:07Z -> 2026-09-20T13:08Z
+# Mission: re-research vulnerabilities & exploitation for the
+# window independently, then dedup against the store. Store
+# coverage for this window is extremely dense (CISA KEV catalog
+# additions, Cisco ISE/FMC/Secure Email Gateway, MikroTik
+# RouterOS, PaperCut, N-able N-central, JFrog Artifactory x2,
+# Dell Secure Connect Gateway, StyleSmuggler/Magento, SAP
+# OVERPASS/S4GET, Check Point Quantum VPN + Sept-18 stack
+# overflow, Ivanti Sept update, ConnectWise ScreenConnect,
+# GitLab x3 CVEs, Windows Sept KEV LPEs, FortiOS CAPWAP,
+# Chrome V8 x2, Linux Kernel KEV triad, Unbound DNSSEC RCE,
+# Acronis Backup KEV). Independent research below confirms this
+# coverage is accurate and finds ONE genuine gap (Oracle's new
+# interim Critical Security Patch Update line, which none of
+# the six daily fires or the store's CVE index has ever
+# touched) plus several correctly-droppable borderline items,
+# documented for the record.
+# ============================================================
+
+items:
+  - title: "Oracle's new September 2026 Critical Security Patch Update ships five unauthenticated CVSS 10.0 RCEs across WebLogic Server, Access Manager, Forms, Internet Directory and Platform Security for Java — a wholly uncovered advisory class"
+    sources:
+      - { url: "https://www.oracle.com/security-alerts/cspusep2026.html", publisher: "Oracle", date: "2026-09-15", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0372", publisher: "NCSC-NL (advisory NCSC-2026-0372, Fusion Middleware)", date: "2026-09-16", role: "corroborating" }
+      - { url: "https://www.oracle.com/security-alerts/", publisher: "Oracle Security Alerts index", date: "2026-09-20", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories (NCSC-2026-0372/-0373/-0374/-0375/-0376/-0377/-0378/-0379/-0380/-0381, all published 2026-09-16, relaying an Oracle patch batch not attributable in the RSS text to a known quarterly CPU month) -> pivot: Oracle Security Alerts index, URL https://www.oracle.com/security-alerts/ (revealed Oracle quietly started a second, higher-frequency \"Critical Security Patch Update\" (CSPU) line in May 2026, released on the third Tuesday of Feb/Mar/May/Jun/Aug/Sep/Nov/Dec, distinct from and complementing the quarterly Jan/Apr/Jul/Oct CPU) -> primary: Oracle CSPU September 2026 bulletin, URL https://www.oracle.com/security-alerts/cspusep2026.html (Rev 1, 15 September 2026; risk-matrix confirms the five CVSS 10.0 entries)."
+    summary: |
+      Independent research (not from a KEV/CERT trigger) surfaced that Oracle has, since May 2026, quietly run a second
+      "Critical Security Patch Update" (CSPU) release line alongside its long-standing quarterly Critical Patch Update
+      (CPU, third Tuesday of Jan/Apr/Jul/Oct) -- CSPUs land on the third Tuesday of Feb/Mar/May/Jun/Aug/Sep/Nov/Dec.
+      Neither the store's 14-day prior-coverage index nor its store-wide CVE index (1123 ids) contains a single Oracle,
+      WebLogic, or Fusion Middleware entry, so this entire release class -- eight-plus prior CSPU/CPU editions since
+      May -- has never been researched by any daily fire, and September's edition (Rev 1, 15 September 2026, relayed
+      by NCSC-NL as advisory NCSC-2026-0372 on 2026-09-16) falls inside this window.
+      September's CSPU fixes 153 CVEs in Oracle Fusion Middleware alone (66 rated Critical, 78 remotely exploitable
+      without authentication) plus large batches across E-Business Suite (159 CVEs), Communications (31), Siebel CRM
+      (63), Hyperion (102) and more. Five CVEs carry the maximum CVSS 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H) and
+      require no authentication over the network: CVE-2026-83021 in Oracle WebLogic Server's Web Container component
+      (HTTP, versions 12.2.1.4.0, 14.1.1.0.0, 14.1.2.0.0), CVE-2026-71133 in Oracle Access Manager's Authentication
+      Engine (HTTP, 12.2.1.4.0/14.1.2.1.0), CVE-2026-83099 in Oracle Forms Services/C-S/Charmode (HTTP,
+      12.2.1.19.0/14.1.2.0.0), CVE-2026-83059 in Oracle Internet Directory's OID LDAP Server (LDAP,
+      12.2.1.4.0/14.1.2.1.0), and CVE-2026-83020 in Oracle Platform Security for Java's centralized third-party jars
+      (HTTP, 12.2.1.4.0/14.1.2.0.0). Oracle discloses no exploitation-technique detail (standard PSIRT practice) and
+      states only its boilerplate historical warning that patched vulnerabilities are periodically targeted after the
+      fact; no CVE-specific in-the-wild exploitation is claimed for this batch as of 2026-09-20. The mechanics
+      themselves force the timeline regardless: an unauthenticated, network-reachable, single-flaw path to full
+      confidentiality/integrity/availability compromise of internet- or intranet-facing middleware is precisely
+      WebLogic Server's historical fast-weaponization profile (its pre-auth deserialization RCEs have repeatedly been
+      diffed and mass-scanned within days of prior CPU releases), and the same profile applies to Access
+      Manager/Forms/OID, all of which back Swiss public-sector legacy applications, SSO and directory services.
+    region_nexus: "global; Oracle Fusion Middleware, E-Business Suite, PeopleSoft and WebLogic Server are widely deployed as legacy back-office and SSO/identity infrastructure across public-sector estates, including in Switzerland"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-83021, CVE-2026-71133, CVE-2026-83099, CVE-2026-83059, CVE-2026-83020]
+    techniques: [T1190]
+    affected_products: ["Oracle WebLogic Server", "Oracle Access Manager", "Oracle Forms", "Oracle Internet Directory", "Oracle Platform Security for Java", "Oracle Fusion Middleware"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "This Critical Security Patch Update contains 153 new security patches for Oracle Fusion Middleware.  78 of these vulnerabilities may be remotely exploitable without authentication"
+        attribution: "Oracle"
+        source_url: "https://www.oracle.com/security-alerts/cspusep2026.html"
+      - quote: "A Critical Security Patch Update provides targeted, high-priority security fixes in a smaller, more focused format... Critical Security Patch Updates complement Oracle's existing quarterly cumulative Critical Patch Updates (CPUs)."
+        attribution: "Oracle"
+        source_url: "https://www.oracle.com/security-alerts/"
+    extended_notes: |
+      This is a genuine coverage gap, not a single CVE the daily fires happened to miss: Oracle's entire second,
+      higher-frequency CSPU release line (running monthly-ish since May 2026: May, Jun, Aug, Sep so far) has never
+      been in any daily fire's source slice or resulted in a store entry, and the store's CVE index has zero Oracle
+      hits at all. Recommend the main agent/operator add an Oracle CSPU/CPU tracking line to the S1 source slice
+      (the existing "oracle-cpu" source record only names the quarterly CPU page; its "standard"/bridge fetch note
+      should be updated to also enumerate CSPU editions from the same index page) so future editions (next: 17
+      November 2026, per Oracle's own posted schedule) are not missed again. CVSS 10.0 unauthenticated network RCE
+      is present but Oracle's own advisory does not claim exploitation for any of the five headline CVEs as of this
+      window, hence MEDIUM confidence and a `high`-leaning, not `critical`-leaning, severity read; recommend the main
+      agent treat this as `priority: high` pending any exploitation confirmation.
+    coverage: "GAP"
+
+  - title: "Cisco's 16 September 2026 bundled advisory notice (79 CVEs across ISE, ASA/FTD/FMC, Nexus Dashboard, BroadWorks and ThousandEyes) — independently traced in full; correctly a non-gap"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-notice-jfxK98ZP", publisher: "Cisco (Advance Notification for Publication of September 16, 2026, Security Advisories)", date: "2026-09-16", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-asaftdfmc-uvpPROhN", publisher: "Cisco PSIRT", date: "2026-09-18", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-ndw1-psFvnrg", publisher: "Cisco PSIRT", date: "2026-09-16", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-mulivulns-4PsnFwvx", publisher: "Cisco PSIRT", date: "2026-09-16", role: "corroborating" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc2-multivulns-HXgcqRG", publisher: "Cisco PSIRT", date: "2026-09-16", role: "corroborating" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmcftd-sftun-multivulns-WGVHOrN3", publisher: "Cisco PSIRT", date: "2026-09-16", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0382", publisher: "NCSC-NL (Cisco ISE advisory NCSC-2026-0382)", date: "2026-09-17", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12954 (\"Cisco: patches multiple Critical vulnerabilities across their products\", 2026-09-17, referencing cisco-sa-notice-jfxK98ZP) -> primary: Cisco's own bundle notice, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-notice-jfxK98ZP -> pivoted into the six named sub-advisories (hardening-asaftdfmc, hardening-ndw1, fmc-mulivulns, fmc2-multivulns, fmcftd-sftun-multivulns) individually to check CVSS vectors, privilege prerequisites and exploitation status for every CVE not already in an existing store entry."
+    summary: |
+      This is Cisco's semi-annual internally-discovered "hardening release" disclosure across Identity Services
+      Engine, ASA/FTD/Secure FMC, Nexus Dashboard, BroadWorks and ThousandEyes -- 79 distinct CVE identifiers on one
+      notification page. The store already carries the two items with confirmed active exploitation from this same
+      effort: CVE-2026-76460 (ISE unauthenticated API auth bypass to root) and the March-disclosed CVE-2026-20079 /
+      July-disclosed CVE-2026-20316 Secure FMC pair, plus the two newest FMC hardening CVEs Cisco called out by name
+      (CVE-2026-20324 sftunnel file write, CVE-2026-20242 Java deserialization) via the 2026-08-04 entry's 2026-09-18
+      changelog. Independent inspection of every remaining CVE group not already covered confirms none clears the
+      inclusion bar: the ASA/FTD/FMC "Hardening Release: September 2026" bundle (CVE-2026-20329/30/31/32/33/34/35/36,
+      CVSS 9.9) requires PR:L (an existing low-privilege session) per its own CVSS vector; the FMC "Multiple
+      Vulnerabilities" group (CVE-2026-20340/41/42/43/44, CVSS 9.1, reported by NATO's own Cyber Security Centre)
+      requires PR:H; the FMC session-forgery group (CVE-2026-76412/13/20, CVSS 9.0) is unauthenticated but AC:H
+      (session forgery/impersonation, not a direct single-request compromise); the sftunnel group (CVE-2026-20295/23,
+      CVSS 8.6 High) is availability-only DoS; and the entirely separate Nexus Dashboard "Hardening Release" bundle
+      (CVE-2026-20360/61/22/25/26, CVE-2026-76409, CVSS 9.9) again requires PR:L. Every one of these advisories
+      states verbatim that Cisco PSIRT "is not aware of any public announcements or malicious use," and the bundle's
+      own summary confirms only the two already-tracked flaws are the ones "known to be actively exploited." This is
+      Cisco's normal (twice-yearly) internal-review patch cadence and is correctly out of scope beyond what the store
+      already carries.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: ["Cisco Identity Services Engine", "Cisco Secure Firewall ASA", "Cisco Secure Firewall Threat Defense", "Cisco Secure Firewall Management Center", "Cisco Nexus Dashboard"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: duplicate
+    evidence:
+      - quote: "These vulnerabilities were found during internal testing. Two of them are known to be actively exploited."
+        attribution: "Cisco PSIRT (ASA/FTD/FMC hardening release advisory)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-asaftdfmc-uvpPROhN"
+      - quote: "The Cisco PSIRT is not aware of any public announcements or malicious use of the vulnerabilities that are described in this advisory."
+        attribution: "Cisco PSIRT (Nexus Dashboard hardening release advisory)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-ndw1-psFvnrg"
+    extended_notes: "Documented as a correct, well-investigated drop -- included in the return per the audit's request to record droppable-item judgement, not because it should become a new entry or changelog."
+    borderline: true
+    borderline_reason: "CVSS 9.0-9.9 across ~70 CVEs looks alarming at a glance; every sub-group requires existing privileges (PR:L/PR:H), is high attack-complexity, or is DoS-only, and Cisco confirms no exploitation beyond the two flaws the store already tracks. Correctly out of scope under PD-11's normal-patch-cycle carve-out."
+    coverage: "covered-by: 2026-09-17/cve-2026-76460-cisco-ise-auth-bypass-root-rce (CVE-2026-76460, CVE-2026-76423, CVE-2026-20130, CVE-2026-20192) and 2026-08-04/cve-2026-20079-cisco-secure-fmc-auth-bypass-root-hotfix (CVE-2026-20079, CVE-2026-20324, CVE-2026-20242); remaining ~65 CVEs in the same 2026-09-16 bundle are borderline-drop (see summary)"
+
+  - title: "Palo Alto Networks PAN-OS XML-processing buffer overflow (CVE-2026-0310) — high severity but unexploited and high-complexity; correctly not urgent"
+    sources:
+      - { url: "https://security.paloaltonetworks.com/CVE-2026-0310", publisher: "Palo Alto Networks PSIRT", date: "2026-09-09", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0369", publisher: "NCSC-NL (advisory NCSC-2026-0369)", date: "2026-09-15", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories (NCSC-2026-0369, published 2026-09-15) -> primary: Palo Alto Networks PSIRT, URL https://security.paloaltonetworks.com/CVE-2026-0310 (first published 2026-09-09)."
+    summary: |
+      A buffer overflow in PAN-OS's XML-processing functionality (CVE-2026-0310) lets an unauthenticated attacker with
+      network access to the management web or dataplane interface cause a denial-of-service on VM-Series firewalls, or
+      execute arbitrary code with root privileges on PA-Series hardware firewalls; Panorama and Prisma Access/Cloud
+      NGFW carry a reduced-severity variant. No special configuration is required for exposure. Palo Alto's own
+      severity read is HIGH with CVSS-BT 7.2 (CVSS-B 9.2, vector AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H) -- attack
+      complexity is HIGH, distinguishing this from a trivial single-request compromise. Palo Alto states explicitly:
+      "Palo Alto Networks is not aware of any malicious exploitation of this issue." The vendor advisory itself
+      predates this audit window (first published 2026-09-09, four days before the 2026-09-13 window start); NCSC-NL's
+      relay on 2026-09-15 falls inside the window but adds no new technical or exploitation information. Fixed in
+      PAN-OS 12.2.3, 12.1.10 (or the listed hotfix trains), 11.2.13-h2, 11.1.16-h2 and 10.2.18-h10; no workaround
+      exists short of restricting management-interface access.
+    region_nexus: "global; PAN-OS firewalls are a common perimeter product in enterprise and government networks"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-0310]
+    techniques: [T1190]
+    affected_products: ["Palo Alto Networks PAN-OS", "Palo Alto Networks Panorama", "Palo Alto Networks Prisma Access", "Palo Alto Networks Cloud NGFW"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "A buffer overflow vulnerability in the XML processing functionality of Palo Alto Networks PAN-OS software enables an unauthenticated attacker with network access to the management web or dataplane interface to cause a denial of service (DoS) condition on VM-Series firewalls or execute arbitrary code with root privileges on the PA-Series firewalls."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-0310"
+      - quote: "Palo Alto Networks is not aware of any malicious exploitation of this issue."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-0310"
+    extended_notes: "Root-cause vendor disclosure date (2026-09-09) sits outside the 168h window; only the NCSC-NL relay is in-window and it is a straight restatement. Combined with AC:H and no exploitation, this does not clear the PD-11 bar; documented as a correct drop rather than silently omitted."
+    borderline: true
+    borderline_reason: "Unauthenticated root RCE on a common perimeter firewall reads as high-priority at a glance, but attack complexity is HIGH, no exploitation is reported, and the vendor disclosure itself predates the window -- normal patch cycle applies."
+    coverage: "borderline-drop: high severity but AC:H, no exploitation, vendor advisory predates window by 4 days, NCSC-NL relay adds nothing new"
+
+  - title: "ISC BIND 9 — two unauthenticated remote crash vulnerabilities (CVE-2026-77692, CVE-2026-76163); DoS-only, correctly not urgent"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12956", publisher: "NCSC Switzerland (GovCERT.ch CSH advisory)", date: "2026-09-18", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12956 (published 2026-09-18) -> primary is the same NCSC-CH post, which cites ISC's own bind9 release notes (bind9.readthedocs.io) as the vendor source; those release-note pages were not independently re-fetched given the DoS-only, unexploited severity profile assessed sufficient from the NCSC-CH advisory text and CVSS vectors it reproduces."
+    summary: |
+      ISC fixed 14 vulnerabilities in BIND 9 (branches 9.20/9.21), two of which are remotely triggerable by an
+      unauthenticated attacker without needing to control a DNS zone of their own: CVE-2026-77692 (CVSS 7.5,
+      unauthenticated crash via a single malformed DoH SIG(0) request) and CVE-2026-76163 (CVSS 7.5, assertion
+      failure/crash via a crafted TKEY query on options-less configurations). NCSC-CH records "current exploitation
+      status: UNKNOWN" and the impact for both is denial-of-service (server crash), not code execution or data
+      compromise. Vendor patches are available; no workaround is documented in the advisory.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-77692, CVE-2026-76163]
+    techniques: []
+    affected_products: ["ISC BIND 9"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Successful exploitation allows remote attackers to disrupt DNS resolution services and trigger denial-of-service conditions via crafted requests or responses without authentication."
+        attribution: "NCSC Switzerland"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12956"
+    extended_notes: "DoS-only impact with unknown/no exploitation on a DNS resolver product; recommend routine patch cycle, not an out-of-band alert."
+    borderline: true
+    borderline_reason: "CVSS 7.5 unauthenticated remote crash on core DNS infrastructure is worth a mention in a lower-tier awareness note, but availability-only impact and no exploitation evidence keep it below the strict PD-11 action-beyond-patch-cycle bar."
+    coverage: "borderline-drop: DoS-only impact, exploitation status unknown/unclaimed, does not meet the pre-auth-to-full-compromise or confirmed-exploitation bar"
+
+  - title: "LiteSpeed Web Server Enterprise — shared-hosting privilege escalation to root (no CVE yet assigned); scoped to a low-relevance deployment model"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12951", publisher: "NCSC Switzerland (GovCERT.ch CSH advisory)", date: "2026-09-16", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12951 (published 2026-09-16) -> primary is the same NCSC-CH post, citing cPanel's own advisory (support.cpanel.net) and LiteSpeed's release announcement as the vendor sources; not independently re-fetched given the narrow shared-hosting applicability and unexploited status already established by the NCSC-CH text."
+    summary: |
+      LiteSpeed Web Server Enterprise versions prior to 6.3.7 contain a privilege-escalation flaw that lets a
+      low-privilege customer account on a shared-hosting server obtain root access, potentially compromising every
+      other tenant's site on the same host. No CVE identifier had been assigned at time of NCSC-CH's advisory.
+      Exploitation status is UNKNOWN and the vendor has shipped a fix.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: ["LiteSpeed Web Server Enterprise"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: LOW
+    novelty: new
+    evidence:
+      - quote: "Attacker must control a single low-privilege hosting account on an affected shared-hosting server."
+        attribution: "NCSC Switzerland"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12951"
+    extended_notes: "Applicability is narrow (commercial shared-hosting deployments of LiteSpeed Enterprise) and not a typical Swiss public-sector deployment pattern; no exploitation, no CVE at time of publication."
+    borderline: true
+    borderline_reason: "Root privilege escalation sounds severe, but the prerequisite (already holding a paid shared-hosting tenant account) and the deployment model (commercial multi-tenant hosting, not typical government infrastructure) make this a poor match for the constituency even before considering the lack of exploitation."
+    coverage: "borderline-drop: narrow shared-hosting applicability, low relevance to Swiss public-sector infrastructure profile, unexploited, no CVE assigned"
+
+  - title: "CISA KEV catalog additions inside the window — systematic sweep confirms full existing coverage"
+    sources:
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-09-20", role: "primary" }
+    discovery_trace: "first seen at: cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (full catalog JSON pulled via python3 tools/fetch_source.py cisa-kev, then filtered locally for dateAdded >= 2026-09-13) -> no further pivot needed; this is a systematic cross-check against the store's own coverage, not a new lead."
+    summary: |
+      Filtering CISA's KEV catalog for dateAdded within the 168-hour window (2026-09-13 through 2026-09-20) returns
+      exactly seven CVE additions: CVE-2026-76461 (2026-09-14, Cisco Secure Email Gateway SQLi-to-root, covered by
+      2026-09-15/cve-2026-76461-cisco-secure-email-gateway-sqli-root-rce), CVE-2026-58704 / CVE-2026-76460 /
+      CVE-2026-87886 (all 2026-09-16, covered respectively by 2026-09-17/cve-2026-58704-google-pixel-modem-zero-click-eop,
+      2026-09-17/cve-2026-76460-cisco-ise-auth-bypass-root-rce, and 2026-09-18/cve-2026-87886-acronis-backup-plugin-lpe-cpanel-kev),
+      and CVE-2025-39682 / CVE-2026-53266 / CVE-2025-39964 (all 2026-09-18, covered by
+      2026-09-19/cisa-kev-linux-kernel-ktls-af-alg-ebtables-snat). Every single in-window KEV addition is already
+      present in the content store. This confirms the daily fires' exploitation-ground-truth sweep is complete for
+      the window; no action needed.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: duplicate
+    evidence: []
+    extended_notes: "Included to document the sweep's thoroughness per the audit mission's request that a correctly-covered check be recorded, not because it is a new item."
+    coverage: "covered-by: 2026-09-15/cve-2026-76461-cisco-secure-email-gateway-sqli-root-rce, 2026-09-17/cve-2026-58704-google-pixel-modem-zero-click-eop, 2026-09-17/cve-2026-76460-cisco-ise-auth-bypass-root-rce, 2026-09-18/cve-2026-87886-acronis-backup-plugin-lpe-cpanel-kev, 2026-09-19/cisa-kev-linux-kernel-ktls-af-alg-ebtables-snat"
+
+coverage_gaps: []
+
+candidate_sources: []

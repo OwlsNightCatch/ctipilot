@@ -4,6 +4,36 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.11 — 2026-09-20 (the source rotation stops rotating, and three gate surfaces were narrower than the rules they enforce)
+
+### Why
+
+Four findings from the 2026-09-20 quality audit. One is a coverage failure with a structural cause; three are enforcement surfaces that had been reading as compliance.
+
+**The staleness rotation had stopped rotating, and it cost six publications in one week.** Phase 0 allocation rule 2 ranks standard-tier sources oldest-`last_successful_fetch` first. That field moves only when a source is *fetched AND used* (Phase 5 § `sources.json`). So a source swept every fire that yields nothing publishable keeps its old date forever, stays pinned to the head of a stable ranking, and is re-selected on the next fire, and the one after that. Over the audit window six consecutive fires drew an almost identical S3 slice: `unit42` at 2026-09-04, nine sources frozen at 09-05, two at 09-07. Below that frozen cohort sat `talos`, `sentinellabs`, `huntress` and `kaspersky-securelist`, which were allocated to **no fire at all** during the week. The audit's G3 re-sweep recovered **six** publishable research items from exactly those four publishers; five had never been given to any sub-agent. 111 research sources exist and roughly 14 were being swept. The rule's own promise, "No source silently starves", had inverted into starving everything except the perpetually unproductive head of the queue.
+
+**Three checks were narrower than the rules they enforce.**
+- `reader-text-internals` walked four frontmatter fields, though § Style rules scopes the rule to "title, headline, summary, sourcing_note, **body** and changelog sections" and the check's own docstring quotes that scope. All three of this window's violations were in the body; the previous audit recorded the v4.9 extension as "took" on the strength of the fields alone.
+- The same sentence's third shape, "PD numbers, phase names, gate/verifier mechanics", had no pattern at all. An entry shipped a `sourcing_note` containing the literal `(PD-5)`; thirteen entries carry one store-wide.
+- `BLOCKED_SOURCE_PATTERNS` covered the three human-facing NVD/MITRE/cve.org per-CVE URL forms and neither of the same two databases' APIs. 21 entries cite `cveawg.mitre.org/api/cve/…` or `services.nvd.nist.gov/rest/json/cves…` in `sources[]`, four with `role: primary`, and nine of the 21 landed in the two most recent windows. Fires had reasonably concluded the API form was the way to *read* a CVE record, which it is; nothing told them it is still not the way to *cite* one.
+
+**Verifier counters do not reconcile with their own findings.** The 2026-09-13 audit noticed one instance in passing and asked for a check. It is systematic: 118 of 748 iterations across 60 of 181 run records, in both directions (50 counters-high, 68 counters-low), deltas from -22 to +9. It matters because `verification_residual_count` is defined as the final iteration's `truth + editorial` and nothing ever compared those counters to the list beneath them. `2026-08-05T0412Z-intel` and `2026-08-23T1311Z-audit` each ended on a NEEDS_FIXES final iteration carrying one finding while recording `truth: 0 / editorial: 0`, so `residual: 0` passed the arithmetic although the rule is that the residual is never 0 on a NEEDS_FIXES final iteration. Both records say the run finished with nothing outstanding; both findings lists say otherwise.
+
+### What changed
+
+- **`prompts/cti-run.md` Phase 0 allocation rule 2 — anti-starvation clause.** Before taking the top 10 to 14 per domain, remove every source that appears in either of the previous two fires' `sub_agents.*.sources_attempted`. Essential-tier records are exempt (rule 1 attempts them every fire). The run record states how many were excluded.
+- **`tools/run_summary.py` — `runs.recent_attempts` and `--recent-attempts`.** The digest now carries `{runs, ids}` for the last two **intel** fires (audit re-sweeps are excluded, so the audit's own sweeps never suppress a source for the next fire), and the flag prints the ids one per line. A stateless fire cannot remember earlier fires, so the tool remembers for it; the KEV-artefact lesson applies, a duty that depends on the fire reconstructing state by hand is a duty that decays.
+- **`tools/check_run.py` — new `verification-counters` check.** Each iteration's `truth + editorial + advisory` must equal `len(findings)`. Version-gated from v4.11 and not evaluated in store mode: the 140 historical mismatches sit on immutable records, so a FAIL could never be cleared and 140 WARNs would swamp the zero-warning discipline. Run scope FAILs, so no future fire ships one. The fix is always to transcribe the verifier's actual counts, never to trim the findings list.
+- **`tools/check_run.py` — `reader-text-internals` walks the body** (main analysis plus the sections this fire itself wrote, matched by their record's `at`; never an earlier fire's section, which the current fire cannot attribute to its own composition) and gains `_HOUSE_REF_RE` for `PD-<n>`, a dotted `Phase <n>.<n>`, `check_run.py`, "prior-coverage index" and "verifier loop". Deliberately narrow: a bare `Phase 2` was tried and dropped, because campaigns and exploit chains have phases and it fired on "Phase 2 of the campaign deployed a loader".
+- **`tools/check_run.py` — `BLOCKED_SOURCE_PATTERNS` covers the CVE-database APIs, and the check now scans the body.** `cveawg.mitre.org/api/cve/CVE-…` and `services.nvd.nist.gov/rest/json/cves…` join the three human-facing forms, and `check_blocked_sources` walks the body's inline Markdown links as well as `sources[]`: PD-2 binds the two together, so a pattern that is never acceptable in one is never acceptable in the other. The 2026-09-20 audit proved the gap on itself, removing three NVD REST endpoints from one entry's `sources[]`, watching the gate go green, and having its own Phase 5.7 verifier find all three still cited inline in the analysis. Run scope only, as the check already was, so `--all` is unaffected and the historical citations are an audit sweep rather than a permanently red gate.
+- **`prompts/cti-run.md` Phase 5.5** documents all three gate changes in the validation list.
+
+### What stays
+
+Every invariant. The allocation change tightens the rotation rather than loosening any bar: the essential floor, the candidate-rotation rule and the promotion rule are untouched, and nothing about which sources exist or what clears PD-11 changes. The blocked-source extension is the existing CLAUDE.md hard rule ("never cite an NVD/MITRE per-CVE page") applied to the same pages in JSON; reading those records to verify an id, a score or an affected-version pair stays correct and is still what the truth passes do. `verification-counters` adds no new obligation to a fire beyond recording accurately what its verifier returned. The quality-audit prompt moves in lockstep and is otherwise unchanged.
+
+---
+
 ## 4.10 — 2026-09-13 (the blocked verifier gets a defined path, and the KEV artefact stops depending on a shell redirect)
 
 ### Why

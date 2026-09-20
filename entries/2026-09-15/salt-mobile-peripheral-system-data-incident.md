@@ -73,7 +73,15 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-20T13:28:45Z"
+    run_id: 2026-09-20T1308Z-audit
+    type: improvement
+    summary: >
+      One sentence in the analysis referred to the production process rather than to the reporting. It now
+      states the same fact in plain language. No claim changes.
+    fields: [body]
+    internal: true
 migrated_from: null
 ---
 
@@ -81,6 +89,6 @@ Salt Mobile SA, "the third-largest telecommunications provider in Switzerland" (
 
 Salt has notified affected customers and "the relevant authorities" but has not disclosed how many customers are affected, when the access was misused, or whether data was actually copied or published ([20 Minuten, 2026-09-11](https://www.20min.ch/story/datenleck-salt-bestaetigt-moeglichen-sicherheitsvorfall-viele-fragen-offen-103631643)). As early as late August 2026, dark-web monitoring service Brinztech had reported "an illegal sales campaign" (translated from German) offering a dataset of more than 1.09 million customer records "attributed to the Swiss telecommunications provider Salt Mobile" (translated from German); Salt "will neither confirm nor deny" that figure ([watson.ch, 2026-09-12](https://www.watson.ch/schweiz/mobile/695101274-datenleck-salt-bestaetigt-vorfall-kunden-berichten-von-anrufen)). Customers have separately reported, on social media, an increase in unsolicited fraud calls in the days around the disclosure ([watson.ch, 2026-09-12](https://www.watson.ch/schweiz/mobile/695101274-datenleck-salt-bestaetigt-vorfall-kunden-berichten-von-anrufen)); no source establishes that those calls referenced the callers' specific personal data. No ransomware group or named threat actor has claimed the incident, and no CVE or specific initial-access flaw has been disclosed by any party.
 
-"Peripheral system" is Salt's own vague framing and could denote an internal subsidiary system, an outsourced CRM or marketing platform, or a partner-integration endpoint; no source found in this run resolves that ambiguity, so this entry does not assume a supply-chain vector beyond what Salt itself has stated: misuse of an existing, legitimate access grant.
+"Peripheral system" is Salt's own vague framing and could denote an internal subsidiary system, an outsourced CRM or marketing platform, or a partner-integration endpoint; no published source resolves that ambiguity, so no supply-chain vector is established beyond what Salt itself has stated: misuse of an existing, legitimate access grant.
 
 **Defender takeaway:** organizations that rely on Salt as a telecom supplier, including government agencies whose staff use Salt mobile subscriptions, should treat Salt-sourced phone numbers, names and email addresses as potentially exposed and brief staff on the associated vishing/phishing risk; the incident is worth tracking for how Salt's own disclosure evolves, since neither the scope, the exploitation window, nor the nature of the "peripheral system" itself has been established yet.

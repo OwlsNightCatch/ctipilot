@@ -171,6 +171,11 @@ CHANGELOG_HEAD_RE = re.compile(r"^##\s+(\d+\.\d+)\s+—", re.MULTILINE)
 # research-lab post is the primary disclosing source and must be cited
 # instead. NVD/MITRE still appear automatically as "External references" on
 # every per-CVE page in the build.
+# Inline Markdown links in an entry body: `[text](https://…)`. PD-2 binds the
+# body's links and the frontmatter `sources[]` list together, so the blocked
+# patterns apply to both (v4.11).
+_BODY_LINK_RE = re.compile(r"\]\((https?://[^)\s]+)\)")
+
 BLOCKED_SOURCE_PATTERNS: list[tuple[str, str, str]] = [
     # (host fragment, path regex, reason)
     ("nvd.nist.gov", r"^/vuln/detail/CVE-",
@@ -179,6 +184,24 @@ BLOCKED_SOURCE_PATTERNS: list[tuple[str, str, str]] = [
      "MITRE per-CVE pages are derived data sheets — cite the vendor advisory or research blog instead"),
     ("cve.org", r"^/CVERecord",
      "cve.org per-CVE pages are derived data sheets — cite the vendor advisory or research blog instead"),
+    # v4.11: the SAME two databases, reached through their machine-readable
+    # APIs. The three patterns above match only the human-facing URL forms, so
+    # the CVE Services record endpoint and the NVD REST query sailed through a
+    # check whose whole point is that a derived data sheet is not a source. The
+    # 2026-09-20 audit measured 21 entries citing one of these in `sources[]`,
+    # four of them with `role: primary` (PD-12 puts NVD/MITRE below the vendor
+    # advisory and the national CERT), and the rate was rising: nine of the 21
+    # landed in the two most recent windows. Fires had reasonably concluded the
+    # API form was the way to READ a CVE record — which it is, and the bridge
+    # reads it — and nothing told them it is still not the way to CITE one.
+    # Reading a CVE record to verify an id or a score stays correct and
+    # encouraged; what this blocks is putting that endpoint in `sources[]`.
+    ("cveawg.mitre.org", r"^/api/cve/CVE-",
+     "the CVE Services API record is the MITRE per-CVE data sheet in JSON — read it to verify, "
+     "but cite the vendor advisory or research blog as the source"),
+    ("services.nvd.nist.gov", r"^/rest/json/cves",
+     "the NVD REST API is the NVD per-CVE data sheet in JSON — read it to verify, "
+     "but cite the vendor advisory or research blog as the source"),
 ]
 
 # v2 origin: check_brief.py BLOCKED_LANDING_PATTERNS (~line 690).
@@ -884,6 +907,81 @@ def check_run_record(run: dict[str, Any] | None, run_id: str, content_root: Path
              "2026-07-09T2009Z: 11.2 h, published 11 h late). Surface the cause in "
              "the run record and to the operator")
     check_run_clock(run)
+    check_verification_counters(run, pre_verify=pre_verify)
+
+
+def check_verification_counters(run: dict[str, Any], pre_verify: bool = False) -> int:
+    """v4.11: every verifier iteration's `truth` / `editorial` / `advisory`
+    counters must sum to the length of that iteration's `findings[]` list.
+
+    The counters are the record's summary of the findings beneath them, and
+    the whole verification contract is read off them rather than off the
+    list: `verification_residual_count` is defined as the FINAL iteration's
+    `truth + editorial` (content_model.validate_run_record), the double-CLEAN
+    gate and the convergence analysis read them, and the Ops dashboard plots
+    them. A transcription slip between the verifier's return and the record
+    therefore silently rewrites what the run reports about its own
+    verification, and nothing before this check looked at the two together.
+
+    The 2026-09-13 audit noticed one instance in passing; the 2026-09-20
+    audit measured the store and found it systematic — 118 of 748 iterations
+    across 60 of 181 records, in BOTH directions (50 counters-high, 68
+    counters-low, deltas from -22 to +9). Two records demonstrate the
+    consequence exactly: `2026-08-05T0412Z-intel` and `2026-08-23T1311Z-audit`
+    each end on a NEEDS_FIXES final iteration carrying one finding while
+    recording `truth: 0 / editorial: 0`, so `verification_residual_count: 0`
+    passed the residual arithmetic although the prompt's rule is that the
+    residual count is NEVER 0 on a NEEDS_FIXES final iteration. The published
+    record says the run finished with nothing outstanding; its own findings
+    list says otherwise.
+
+    Version-gated from v4.11 and NOT evaluated in store mode: the 140
+    historical mismatches sit on immutable run records, so a FAIL could never
+    be cleared and 140 WARNs would swamp the zero-warning discipline for
+    drift no fix can reach. Returns the number of mismatched iterations.
+
+    Fixing this is always transcribing the verifier's actual counts, never
+    editing the findings list to match a wrong counter."""
+    v = _prompt_version_tuple(run.get("prompt_version"))
+    if v is None or v < VERIFIER_COUNTERS_FROM:
+        return 0
+    iters = ((run.get("verification") or {}).get("iterations") or [])
+    if not isinstance(iters, list):
+        return 0
+    bad: list[str] = []
+    for n, it in enumerate(iters, 1):
+        if not isinstance(it, dict):
+            continue
+        findings = it.get("findings")
+        if not isinstance(findings, list):
+            continue
+        try:
+            total = (int(it.get("truth") or 0) + int(it.get("editorial") or 0)
+                     + int(it.get("advisory") or 0))
+        except (TypeError, ValueError):
+            continue
+        if total != len(findings):
+            bad.append(
+                f"iteration {n}: truth {it.get('truth')} + editorial "
+                f"{it.get('editorial')} + advisory {it.get('advisory')} = {total}, "
+                f"but findings[] carries {len(findings)}")
+    if not bad:
+        if iters:
+            ok("verification-counters",
+               f"{len(iters)} iteration(s): truth+editorial+advisory reconciles "
+               "with findings[] on each")
+        return 0
+    detail = "; ".join(bad)
+    msg = (f"{run.get('run_id')}: verifier counters do not reconcile with their own "
+           f"findings list — {detail}. verification_residual_count is computed from "
+           "the final iteration's truth+editorial, so a wrong counter misreports what "
+           "the run left outstanding. Transcribe the verifier's actual counts; never "
+           "trim the findings list to match")
+    if pre_verify:
+        warn("verification-counters(pre-verify)", msg)
+    else:
+        fail("verification-counters", msg)
+    return len(bad)
 
 
 def _latest_recorded_activity(run: dict[str, Any]) -> tuple[Any, str] | None:
@@ -1762,25 +1860,39 @@ def check_blocked_sources(run_entries: list[dict]) -> None:
     """Hard FAIL when any entry's sources[].url matches a known-bad pattern:
     NVD/MITRE/cve.org per-CVE pages (always derived, never the disclosing
     party) or generic landing / category / index URLs that point at
-    navigation, not content. v2 origin: check_blocked_source_patterns."""
+    navigation, not content. v2 origin: check_blocked_source_patterns.
+
+    **v4.11: the body's inline links are scanned too.** PD-2 requires the
+    frontmatter `sources[]` list and the body's inline links to agree, so a
+    URL pattern that is never acceptable in one is never acceptable in the
+    other. Scanning only the frontmatter let a blocked URL survive in the
+    prose that actually carries the claim: the 2026-09-20 audit removed three
+    NVD REST endpoints from one entry's `sources[]`, the gate went green, and
+    all three were still cited inline in the analysis, attributed to a
+    publisher the entry no longer listed. That run's own Phase 5.7 verifier
+    caught what the gate had just passed."""
     blocked: list[str] = []
     for e in run_entries:
-        for src in e.get("sources") or []:
+        srcs: list = [s for s in (e.get("sources") or []) if isinstance(s, dict)]
+        srcs += [{"url": u, "inline": True}
+                 for u in _BODY_LINK_RE.findall(e.get("body") or "")]
+        for src in srcs:
             if not isinstance(src, dict):
                 continue
             url = src.get("url", "") or ""
+            where = "in the body" if src.get("inline") else "in sources[]"
             host, path = _host_path(url)
             matched = False
             for h_frag, p_re, reason in BLOCKED_SOURCE_PATTERNS:
                 if h_frag in host and re.search(p_re, path):
-                    blocked.append(f"{e['id']} cites {url} — {reason}")
+                    blocked.append(f"{e['id']} cites {url} {where} — {reason}")
                     matched = True
                     break
             if matched:
                 continue
             for h_frag, p_re, reason in BLOCKED_LANDING_PATTERNS:
                 if h_frag in host and re.search(p_re, path):
-                    blocked.append(f"{e['id']} cites {url} — {reason}")
+                    blocked.append(f"{e['id']} cites {url} {where} — {reason}")
                     break
     if blocked:
         for b in blocked:
@@ -2445,6 +2557,16 @@ CLOCK_INTEGRITY_FROM = (3, 33)
 # and a run record whose kind is not intel|audit (the weekly routine was
 # retired). Pre-v4 history is validated structurally only.
 ENTRY_LIFECYCLE_FROM = (4, 0)
+# v4.11+: a verifier iteration's truth/editorial/advisory counters must sum to
+# the length of its own `findings[]` list (`check_verification_counters`). The
+# counters are what the residual arithmetic, the double-CLEAN gate and every
+# audit's convergence review actually read, so a transcription slip rewrites
+# what a run reports about its own verification. Measured store-wide by the
+# 2026-09-20 audit: 118 of 748 iterations on 60 of 181 records, both
+# directions. Pre-v4.11 records are immutable history and are exempt entirely
+# — not a FAIL, not a WARN — so `--all` stays at zero for drift no fix can
+# reach; run scope FAILs from v4.11 so no future fire ships a mismatch.
+VERIFIER_COUNTERS_FROM = (4, 11)
 
 # ATT&CK completeness by kind: these kinds inherently describe attacker
 # behavior (a campaign, an intrusion, an exploitable vulnerability's access
@@ -3040,6 +3162,25 @@ _FIELD_REF_RE = re.compile(
     r"references|affected_products|updates|tags|regions|sectors)\[\]",
 )
 
+# v4.11 — the THIRD shape in the same § Style rules sentence: "PD numbers,
+# phase names, gate/verifier mechanics". The 2026-09-20 audit found a
+# `sourcing_note` shipping the literal "(PD-5)" — a prime-directive number
+# that means nothing to a reader and everything to this repo. Neither of the
+# two regexes above could see it. Deliberately NARROW: only tokens that
+# cannot plausibly be threat-intel prose. "Phase 2" was tried and dropped —
+# campaigns and exploit chains have phases, and the pattern fired on "Phase 2
+# of the campaign deployed a loader", which is exactly the register the entry
+# is supposed to be written in. A dotted phase number (`Phase 5.7`) is this
+# repo's numbering and nothing else's, so that form stays.
+_HOUSE_REF_RE = re.compile(
+    r"\bPD-\d{1,2}\b"
+    r"|\bPhase \d\.\d+\b"
+    r"|\bcheck_run\.py\b"
+    r"|\bprior[- ]coverage index\b"
+    r"|\bverifier loop\b",
+    re.IGNORECASE,
+)
+
 
 def check_reader_text_internals(run_entries: list[dict], run_id: str | None = None) -> None:
     """Reader-facing entry text must describe the threat, never the fire.
@@ -3059,11 +3200,31 @@ def check_reader_text_internals(run_entries: list[dict], run_id: str | None = No
     time, not a gate.
 
     WARN, never FAIL: the fix is always a deletion or a date substitution, and
-    no claim in the entry is wrong."""
+    no claim in the entry is wrong.
+
+    **v4.11 — the body is checked too.** § Style rules scopes the rule to
+    "entry title, headline, summary, sourcing_note, body and changelog
+    sections", and this docstring has quoted that scope since v4.9, but the
+    implementation only ever walked `READER_FIELDS` — four of the six named
+    surfaces. The 2026-09-20 audit found all three of its window's violations
+    in the body, none in a checked field, while the previous audit recorded
+    the v4.9 extension as "took" on the strength of the fields alone: an
+    enforcement surface narrower than the rule reads as compliance. The body
+    walk covers the **main analysis plus the sections this fire itself wrote**
+    (matched by their record's `at`), never an earlier fire's section — a
+    warning the current fire cannot attribute to its own composition is one it
+    will learn to skip."""
     flagged: list[str] = []
     for e in run_entries:
-        for field in READER_FIELDS:
-            val = e.get(field)
+        own_ats = {str(r.get("at")) for r in (e.get("updates") or [])
+                   if run_id is None or str(r.get("run_id") or "") == str(run_id)}
+        main, sections = cm.split_update_sections(e.get("body") or "")
+        surfaces = [(f, e.get(f)) for f in READER_FIELDS]
+        surfaces.append(("body", main))
+        for sec in sections:
+            if str(sec.get("at")) in own_ats:
+                surfaces.append((f"body section {sec.get('at')}", sec.get("body")))
+        for field, val in surfaces:
             if not isinstance(val, str):
                 continue
             hit = _SELF_REF_RE.search(val)
@@ -3074,6 +3235,11 @@ def check_reader_text_internals(run_entries: list[dict], run_id: str | None = No
             if fhit:
                 flagged.append(f"{e['id']}: {field} says {fhit.group(0)!r} — "
                                f"name the thing, not the frontmatter field that holds it")
+            hhit = _HOUSE_REF_RE.search(val)
+            if hhit:
+                flagged.append(f"{e['id']}: {field} says {hhit.group(0)!r} — "
+                               f"house rules and pipeline machinery mean nothing to a reader; "
+                               f"state the reason in plain language")
         for rec in (e.get("updates") or []):
             if rec.get("internal"):
                 continue  # never rendered

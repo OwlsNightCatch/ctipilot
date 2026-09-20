@@ -109,8 +109,44 @@ def _promotion_due(srcs: list, promote_after: int) -> list:
     ]
 
 
+def _recent_attempts(runs: list, attempt_runs: int) -> dict:
+    """Source ids the last `attempt_runs` INTEL fires already handed to a
+    sub-agent, as {"runs": [run_id, ...], "ids": [source_id, ...]}.
+
+    The staleness rotation (cti-run.md Phase 0 allocation rule 2) ranks
+    standard-tier sources oldest-`last_successful_fetch` first, and that field
+    moves only when a source is fetched AND used. A source swept every fire
+    that yields nothing publishable therefore keeps its stale date, stays
+    pinned to the head of a stable ranking, and is re-selected indefinitely
+    while everything below it starves. Over 2026-09-13 to 09-20 six
+    consecutive fires drew an almost identical S3 slice and four research
+    publishers that published in-window were allocated to no fire at all; the
+    audit recovered six publishable items from them. This list is what the
+    rotation subtracts so the ranking can actually advance.
+
+    Audit records are excluded: the audit's own re-sweeps are not the
+    rotation's work and must not suppress a source for the next intel fire.
+    """
+    ids: set = set()
+    used: list = []
+    for run in reversed(runs):
+        if run.get("kind") != "intel":
+            continue
+        if len(used) >= attempt_runs:
+            break
+        used.append(run.get("run_id"))
+        for sa in (run.get("sub_agents") or {}).values():
+            if not isinstance(sa, dict):
+                continue
+            for sid in (sa.get("sources_attempted") or []):
+                if isinstance(sid, str) and sid:
+                    ids.add(sid)
+    return {"runs": list(reversed(used)), "ids": sorted(ids)}
+
+
 def build_summary(now: datetime, recent_days: int, gap_runs: int,
-                  gap_window: int, promote_after: int = 3) -> dict:
+                  gap_window: int, promote_after: int = 3,
+                  attempt_runs: int = 2) -> dict:
     today = now.strftime("%Y-%m-%d")
     out: dict = {"today": today, "now": now.strftime("%Y-%m-%dT%H:%M:%SZ")}
 
@@ -164,6 +200,7 @@ def build_summary(now: datetime, recent_days: int, gap_runs: int,
             for sid, rec in sorted(gap_counter.items())
             if rec["runs_failing"] >= gap_runs
         ],
+        "recent_attempts": _recent_attempts(runs, attempt_runs),
     }
 
     # --- 24 h budget snapshot (entries/**) ----------------------------------
@@ -211,6 +248,12 @@ def main() -> int:
     ap.add_argument("--promote-after", type=int, default=3,
                     help="contributing runs after which a candidate source is "
                          "listed under sources.promotion_due (default 3)")
+    ap.add_argument("--attempt-runs", type=int, default=2,
+                    help="how many previous INTEL fires' sources_attempted lists feed "
+                         "runs.recent_attempts, the anti-starvation exclusion set the "
+                         "rotation subtracts (default 2)")
+    ap.add_argument("--recent-attempts", action="store_true",
+                    help="print only the recent-attempts source ids, one per line, and exit")
     ap.add_argument("--now", help="override 'now' (UTC ISO 8601 Z) for testing")
     args = ap.parse_args()
 
@@ -219,7 +262,13 @@ def main() -> int:
         if args.now else datetime.now(timezone.utc)
     )
     summary = build_summary(now, args.recent_days, args.gap_runs,
-                            args.gap_window, args.promote_after)
+                            args.gap_window, args.promote_after, args.attempt_runs)
+    if args.recent_attempts:
+        ra = summary['runs']['recent_attempts']
+        print(f"# attempted by {len(ra['runs'])} previous intel fire(s): {', '.join(ra['runs']) or 'none'}")
+        for sid in ra['ids']:
+            print(sid)
+        return 0
     payload = json.dumps(summary, indent=1, ensure_ascii=False) + "\n"
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)

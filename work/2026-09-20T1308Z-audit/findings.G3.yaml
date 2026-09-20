@@ -1,0 +1,345 @@
+domain: G3
+run_id: 2026-09-20T1308Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-20T13:12:28Z
+ended_at: 2026-09-20T13:29:55Z
+duration_seconds: 1047
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 6
+  bridge_fetches: 62
+
+items:
+  - title: "Cisco Talos exposes The Gentlemen ransomware's open-directory AD attack toolchain and finds AI-generated wiper code in Qilin's own staging directory"
+    sources:
+      - { url: "https://blog.talosintelligence.com/ransomware-incidents-in-japan-in-the-first-half-of-2026/", publisher: "Cisco Talos", date: "2026-09-17", role: "primary" }
+    discovery_trace: "first seen at: talos, URL https://blog.talosintelligence.com/ (listing) → primary: Cisco Talos, URL https://blog.talosintelligence.com/ransomware-incidents-in-japan-in-the-first-half-of-2026/ (confirmed via RSS https://feeds.feedburner.com/feedburner/Talos, published 2026-09-17T10:00:43Z)"
+    summary: |
+      Cisco Talos's H1 2026 Japan ransomware review (published 2026-09-17) carries two distinct technical findings beyond its regional-statistics framing. First, Talos identified an open-directory infrastructure used by a threat actor associated with The Gentlemen RaaS and reconstructed a six-phase attack flow from the operator's own bash_history: Chisel/Ligolo-ng/SSH tunnels to turn the attacker server into a pivot platform; nmap/masscan recon; RustHound (a Rust BloodHound-collector) plus NetExec/Responder/Impacket against Active Directory; exploitation of CVE-2025-2479 (SQL injection) and a cPanel/WHM auth-bypass PoC for initial footholds; CVE-2020-1472 (Zerologon) and MS17-010 exploitation attempts for AD compromise; RDP/SMB/LDAP/WinRM authentication sweeps via NetExec/Impacket for lateral movement; and a credential-theft/exfil stage that mounts VHDX backup files via CIFS, copies ntds.dit/SAM/SYSTEM out of the mounted backup rather than the live DC, runs Impacket's secretsdump.py offline, then zstd-compresses and rclone-uploads the data to Wasabi cloud storage in concurrent 256MiB chunks. C2 runs on the open-source AdaptixC2 framework. Russian-language script comments and a Russian keyboard layout in the operator's own command history (Cyrillic-keymap mistypes of whoami/ls/ip a/clear/exit) support, with Talos's own hedge, a Russian-speaking operator. Second, in a separate Qilin-affected environment, Talos found Python post-exploitation scripts (deadman.py — a GPO-deployed, time-triggered wiper; veeam_kill.py — a Veeam backup-destruction script; deploy_locker.py — a mass-deployment ransomware launcher) that Talos assesses with medium-to-high confidence were AI-generated, based on step-numbered comments ("# Stage wipe payload to SYSVOL", "# Stage startup script", "# Create GPO via PowerShell on DC"), consistent per-step logging patterns, and specification-style docstrings — plus a bash_history reference to a local "llm_chatbot" tool.
+    region_nexus: "Japan-focused dataset, but the tooling and technique chain (RustHound/BloodHound, Responder, Ligolo-ng, Impacket secretsdump against VHDX-mounted backups, AdaptixC2) and the AI-generated-wiper forensic method are directly transferable to any AD environment, including Swiss public-sector networks running similar backup/AD topology."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2025-2479", "CVE-2020-1472"]
+    techniques: [T1590, T1595, T1210, T1557.001, T1572, T1021.002, T1021.001, T1003.003, T1003.006, T1567.002, T1587.001, T1489]
+    affected_products: []
+    entity_keys: ["actor:thegentlemen", "actor:qilin"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Talos identified open directory infrastructure believed to have been used by a threat actor associated with The Gentlemen."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/ransomware-incidents-in-japan-in-the-first-half-of-2026/"
+      - quote: "the main() function clearly divides the overall process into four stages, labeled \"Step 1\" through \"Step 4,\" with comments and progress logs provided at a consistent level of detail for each step"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/ransomware-incidents-in-japan-in-the-first-half-of-2026/"
+      - quote: "Talos identified several characteristics in Python scripts found in an open directory used by Qilin that suggest, with medium-to-high confidence, that scripts may have been generated using AI"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/ransomware-incidents-in-japan-in-the-first-half-of-2026/"
+    extended_notes: |
+      Not covered elsewhere in prior_coverage.json. actor:thegentlemen and actor:qilin are both existing registry keys (confirmed via entities/registry.yaml grep) — no new entity registration needed. Talos's credential-theft-from-mounted-backup technique (VHDX mount via CIFS -> copy ntds.dit/SAM offline -> secretsdump.py -> rclone to Wasabi) is a variant of T1003.003 worth a detection note: monitor for CIFS mounts of backup shares followed by libguestfs-tools/qemu-utils/nbd-client installation and rclone process creation with cloud-storage destinations.
+    coverage: GAP
+
+  - title: "NightEagle (APT-Q-95) pivots to Russian targets, tunnels RDP over Microsoft's own legitimate dev-tunnels service, and extracts DCSync credentials after exploiting BlueKeep"
+    sources:
+      - { url: "https://securelist.com/tr/nighteagle-apt-ghostcontainer-and-tunneling/121323/", publisher: "Kaspersky Securelist (GERT)", date: "2026-09-16", role: "primary" }
+    discovery_trace: "first seen at: kaspersky-securelist, URL https://securelist.com/feed/ (listing) → primary: Kaspersky Securelist, URL https://securelist.com/tr/nighteagle-apt-ghostcontainer-and-tunneling/121323/ (published 2026-09-16T10:00:11Z per RSS)"
+    summary: |
+      Kaspersky's Global Emergency Response Team documents a NightEagle (aka APT-Q-95) campaign, active since 2023 and previously focused on Asia, now confirmed against Russian organizations. Initial access used compromised VPN credentials, with connections originating from Cloudflare WARP-tunnel IPs and European VPS ranges. On Microsoft Exchange servers, the group deploys the GhostContainer backdoor (a .NET assembly with Stub/App_Web_843e75cf5b63/App_Web_8c9b251fb5b3 classes) via VIEWSTATE parameter injection — extracting the Exchange ASP.NET machine keys, forging a serialized payload with the ysoserial GhostWebShell gadget, and reusing a CVE-2020-0688 exploit component; the backdoor tampers with amsi.dll and ntdll.dll addresses to blind AMSI and Windows Event Logging. For traffic redirection the group abuses Microsoft's own legitimate dev-tunnels service (*.devtunnels.ms) to expose port 3389 (RDP) outward, then layers rdp2tcp — a public RDP-virtual-channel TCP tunneling tool — inside that RDP session; rdp2tcp's presence is detectable via Windows event IDs 132/148 in Microsoft-Windows-RemoteDesktopServices-RdpCoreTS/Operational.evtx, where the RemoteFX channel name reads "rdp2tcp" or a random string instead of a legitimate RDS channel name. Tooling and payloads are staged on GitHub repositories disguised with mismatched legitimate-sounding names (e.g. adobe_32.exe, 1c-office-plugin.exe, trueconf-broker.exe). For lateral movement and privilege escalation, NightEagle exploited CVE-2019-0708 (BlueKeep) to create and elevate a local account, used Impacket's atexec to set scheduled netsh portproxy rules for internal pivoting, and requested Kerberos tickets with a non-standard Forwardable/Proxiable/Renewable flag combination before executing DCSync (replicating the Domain-Password AD object) to dump domain credentials.
+    region_nexus: "Campaign newly confirmed against Russian organizations; the abused legitimate-service tunneling technique (Microsoft dev tunnels + rdp2tcp) and the GhostContainer VIEWSTATE-injection Exchange backdoor are directly relevant to any organization running on-prem Exchange and permitting outbound HTTPS to *.devtunnels.ms."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2020-0688", "CVE-2019-0708"]
+    techniques: [T1078, T1190, T1505.003, T1027, T1562.006, T1090, T1572, T1036.005, T1210, T1053.002, T1090.001, T1558, T1003.006]
+    affected_products: ["Microsoft Exchange Server"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:nighteagle", type: actor, name: "NightEagle", aliases: ["APT-Q-95"],
+          summary: "APT group active since at least 2023, originally focused on Asia, now confirmed by Kaspersky GERT (2026-09-16) targeting Russian organizations via compromised VPN credentials and a VIEWSTATE-injected Exchange backdoor." }
+      - { key: "malware:ghostcontainer", type: malware, name: "GhostContainer", aliases: [],
+          summary: ".NET Exchange-server backdoor deployed via ASP.NET VIEWSTATE parameter injection using stolen Exchange machine keys and a ysoserial GhostWebShell gadget; blinds AMSI/Event Logging by patching amsi.dll/ntdll.dll addresses. Attributed to NightEagle (Kaspersky Securelist, 2026-09-16; first documented by Kaspersky in an earlier 2025 report)." }
+    relation_suggestions:
+      - { subject: "actor:nighteagle", object: "malware:ghostcontainer",
+          basis: "Kaspersky Securelist: \"the attackers deployed the GhostContainer backdoor on Microsoft Exchange servers\" attributed to NightEagle (Kaspersky GERT, 2026-09-16)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "We have now identified attacks by the group targeting businesses in Russia."
+        attribution: "Kaspersky Securelist (GERT)"
+        source_url: "https://securelist.com/tr/nighteagle-apt-ghostcontainer-and-tunneling/121323/"
+      - quote: "Microsoft dev tunnels ... allows local web services to be published for internet access ... The attackers used this tunneling capability to expose port 3389 (RDP) on the compromised system."
+        attribution: "Kaspersky Securelist (GERT)"
+        source_url: "https://securelist.com/tr/nighteagle-apt-ghostcontainer-and-tunneling/121323/"
+      - quote: "they exploited a well-known RDP implementation vulnerability, CVE-2019-0708 (BlueKeep). They used the vulnerable mechanism to create a local account on the system and add it to the Administrators and Remote Desktop Users groups."
+        attribution: "Kaspersky Securelist (GERT)"
+        source_url: "https://securelist.com/tr/nighteagle-apt-ghostcontainer-and-tunneling/121323/"
+    extended_notes: |
+      Not present in prior_coverage.json or entities/registry.yaml. GhostContainer was reportedly first documented by Kaspersky in an earlier standalone 2025 post (linked in-article: securelist.com/ghostcontainer/116953/) — that predates this deployment's store and is out of this run's window, so only the new NightEagle/Russia-targeting delta and the tunneling-technique details are being surfaced now.
+    coverage: GAP
+
+  - title: "TraderTraitor (Jade Sleet) compromises a non-crypto IT-services victim via a weaponized Terraform provider lockfile and controls FLATROOF/ROOFDECK backdoors through a Nostr-relay dead-drop resolver"
+    sources:
+      - { url: "https://www.sentinelone.com/labs/dont-call-us-well-call-your-apis-tradertraitor-backdoors-resurface-on-victim-with-no-crypto-ties/", publisher: "SentinelOne / SentinelLabs", date: "2026-09-18", role: "primary" }
+    discovery_trace: "first seen at: sentinellabs, URL https://www.sentinelone.com/labs/ (listing) → primary: SentinelOne SentinelLabs, URL https://www.sentinelone.com/labs/dont-call-us-well-call-your-apis-tradertraitor-backdoors-resurface-on-victim-with-no-crypto-ties/ (dated 2026-09-18 in page metadata)"
+    summary: |
+      SentinelLabs hunted its telemetry for the FLATROOF (aka macOS.Gaslight) and ROOFDECK macOS backdoors first disclosed in April 2026's USD 292M LayerZero/KelpDAO theft, and found an unrelated victim: a small India-based IT-services provider with no cryptocurrency ties, compromised through a single Apple Silicon MacBook belonging to a DevOps engineer. The lure follows DPRK's "Contagious Interview" pattern: fake job-interview GitHub repositories themed as infrastructure-engineering coding challenges (identified names: Northwind-IAC, novacart-interview, terraform-candidate-repo) each carry a weaponized `.terraform.lock.hcl` pointing to an attacker-controlled custom Terraform provider registry (`registry.hashicorp-aws[.]com`, `registry.hashicorp-aws[.]io`, `registry.hashicorp-terraform[.]io`); running `terraform init` against the poisoned lockfile causes Terraform to trust and execute the attacker's provider module as though it were the real HashiCorp registry. On the victim host, both backdoors sat dormant on disk from March 18 to March 29, 2026, then launched the moment the developer opened a specific Cursor IDE workspace — Cursor's integrated terminal spawned the implants directly (`nohup .../SystemUpdate --type=renderer` and `nohup .../iSync --type=renderer`), which then stripped the macOS quarantine attribute and set the executable bit on each other (Gatekeeper bypass) before beaconing. FLATROOF is a Rust ARM64 backdoor supporting shell/kill/upload/stop commands and a Python data-harvesting module that pulls Chrome/Brave/Firefox/Safari data, Terminal history, installed-app lists, `ps aux` output, `system_profiler` output and a raw copy of `login.keychain-db`, exfiltrated via a hardcoded Telegram bot. ROOFDECK is the more capable second-stage implant: on first run it queries the public `api.nostr[.]watch/v1/online` endpoint plus a hardcoded relay list, searches Nostr relays for an operator profile matching a configured public key, and reads that profile's "website" field as its live C2 URL — a decentralized dead-drop resolver that survives takedown of any single C2 domain. A third stage (`loginwindow`) later replaced both original implants and kept beaconing to a separate C2 for over a month before going silent.
+    region_nexus: "Global DPRK financially-motivated campaign (TraderTraitor/Jade Sleet, aka UNC4899/PUKCHONG); the developer-targeting Contagious Interview lure and the weaponized-IaC-lockfile supply-chain vector are directly relevant to any organization whose engineering staff use Terraform/HashiCorp tooling and could be approached via fake recruiting outreach."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.002, T1195.002, T1204.002, T1553.001, T1027, T1102.001, T1102.002, T1555.001, T1005, T1119, T1497]
+    affected_products: ["Terraform", "macOS"]
+    entity_keys: ["actor:jade-sleet"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "SentinelOne identified an additional victim with the same macOS backdoors... a much smaller organization in the IT services industry."
+        attribution: "SentinelOne SentinelLabs"
+        source_url: "https://www.sentinelone.com/labs/dont-call-us-well-call-your-apis-tradertraitor-backdoors-resurface-on-victim-with-no-crypto-ties/"
+      - quote: "When the victim runs terraform init with the weaponized lockfile in place, Terraform treats the custom provider as the source of truth, resulting in Terraform downloading and executing the malicious provider modules."
+        attribution: "SentinelOne SentinelLabs"
+        source_url: "https://www.sentinelone.com/labs/dont-call-us-well-call-your-apis-tradertraitor-backdoors-resurface-on-victim-with-no-crypto-ties/"
+      - quote: "Upon first execution, it pulls live Nostr relays from api.nostr[.]watch/v1/online and combines them with a hardcoded relay list... then searches the relays for an operator's profile on the Nostr network... When found, it reads the website field of the profile and uses that as its C2 URL."
+        attribution: "SentinelOne SentinelLabs"
+        source_url: "https://www.sentinelone.com/labs/dont-call-us-well-call-your-apis-tradertraitor-backdoors-resurface-on-victim-with-no-crypto-ties/"
+    extended_notes: |
+      Registry alias gap: entities/registry.yaml's "actor:jade-sleet" record currently has aliases: [] — this SentinelLabs report states "TraderTraitor (aka UNC4899, PUKCHONG, Jade Sleet)"; recommend the main agent extend actor:jade-sleet's aliases with TraderTraitor, UNC4899, PUKCHONG so future TraderTraitor-labeled reporting maps to the same registry key instead of fragmenting. Not present in prior_coverage.json (distinct new victim/technique from the April 2026 LayerZero incident, which is out of this run's window).
+    coverage: GAP
+
+  - title: "Huntress: distinguishing malicious Volume Shadow Copy abuse (NTDS.dit theft, ransomware anti-recovery) from routine RMM/backup VSS activity requires event-correlation, not single-event alerting"
+    sources:
+      - { url: "https://www.huntress.com/blog/vss-abuse-explained", publisher: "Huntress Labs", date: "2026-09-14", role: "primary" }
+    discovery_trace: "first seen at: huntress, URL https://www.huntress.com/blog/rss.xml (listing) → primary: Huntress Labs, URL https://www.huntress.com/blog/vss-abuse-explained (published 2026-09-14T13:00:00Z per RSS)"
+    summary: |
+      Huntress lays out three distinct classes of Volume Shadow Copy Service (VSS) abuse it detects and the correlation logic needed to separate each from benign RMM/backup-agent VSS housekeeping, which performs the identical raw create/delete API calls constantly. Class one (MITRE T1490, Inhibit System Recovery) is the familiar pre-ransomware shadow-copy deletion, most commonly via vssadmin but also achievable through other services/binaries, so detections must not anchor solely on the vssadmin.exe process image. Class two, credential access, is less commonly discussed: rather than running LSASS/NTDS-dumping tools live on a monitored host, an attacker creates a shadow copy specifically to pull the NTDS.dit Active Directory database out of the static snapshot, which is materially quieter than direct extraction. Class three is shadow-copy size/configuration manipulation as ancillary tradecraft. Huntress's detection logic fires on the raw VSS event plus surrounding context rather than the event alone: for deletions, it inspects how the deletion occurred (accounting for non-vssadmin deletion paths); for creations, it looks for pairing with lateral-movement indicators and credential-harvesting commands before or after the VSS event, correlated across a time window rather than judged as isolated actions. A worked incident is included: PsExec spawned a SYSTEM-level shell on a domain controller, the operator enumerated active RDP sessions, ran `vssadmin create shadow` (the NTDS.dit-theft pattern), attempted to delete the shadow copies to cover tracks (blocked by endpoint AV), and DNS-enumerated at least one additional host in the same window — a sequence Huntress states no single step would have justified escalating alone.
+    region_nexus: "Vendor-neutral detection-engineering technique; directly applicable to any organization's own SOC correlation rules regardless of platform."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1490, T1003.003, T1569.002, T1018]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Rather than running credential-dumping tools directly against a live, monitored system, an attacker can spin up a shadow copy and quietly pull the NTDS.dit file (the Active Directory database) out of it."
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/vss-abuse-explained"
+      - quote: "PsExec was used to spawn SYSTEM-level command shell processes on a domain controller. From there, the attacker enumerated active Remote Desktop sessions, then ran vssadmin create shadow... A few minutes later, the attacker tried to cover their tracks by deleting the shadow copies they'd just created; that attempt was blocked and flagged by endpoint antivirus."
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/vss-abuse-explained"
+    extended_notes: |
+      No specific actor/malware named — general detection-engineering technique piece, not an incident disclosure. Included because it materially improves a Tier 2/3 hunter's ability to write low-false-positive VSS-abuse detections, which the surrounding threat landscape (ransomware pre-encryption VSS deletion; NTDS.dit-via-shadow-copy credential theft, seen this same window in the MikroTik/PaperCut AI-agent mass-exploitation campaigns already in the store) makes directly actionable.
+    coverage: GAP
+
+  - title: "A DEFCON-targeted phishing chain installs a self-signed root CA plus a hosts-file/firewall MITM proxy that survives reboot, alongside three abused stolen code-signing certificates and a Terraform/Google-Apps-Script reconnaissance funnel"
+    sources:
+      - { url: "https://www.huntress.com/blog/google-doc-sidebar-malware-mac-windows", publisher: "Huntress Labs", date: "2026-09-15", role: "primary" }
+    discovery_trace: "first seen at: huntress, URL https://www.huntress.com/blog/rss.xml (listing) → primary: Huntress Labs, URL https://www.huntress.com/blog/google-doc-sidebar-malware-mac-windows (published 2026-09-15T13:00:00Z per RSS)"
+    summary: |
+      A Huntress researcher was targeted post-DEFCON by an X account impersonating a CoinDesk marketing executive, sent a legitimate Google Doc carrying a custom Google Apps Script sidebar. The sidebar runs client-side with no OAuth consent prompt and, merely by the document being opened while signed in, silently reports the viewer's public IP, geolocation, browser, and whether a MetaMask/Phantom/Tron/Solana wallet extension is present, beaconing every action via the Telegram Bot API — a reconnaissance/qualification step that requires no download or click at all. A fake "decryption failure" overlay then offers OS-specific ClickFix remediation instructions. macOS victims who paste the clipboard command get a piped zsh chain leading to an AMOS-family stealer (harvesting browser, crypto-wallet, Telegram, Apple Notes, cookie, and login-keychain data) with Gatekeeper-bypass instructions; Windows victims are directed to an application signed with a stolen/fraudulently-issued Norwegian company certificate, deployed via abuse of Microsoft's ClickOnce feature, leading through an encoded PowerShell loader to three payloads: NetSupport Manager (a legitimate RMM tool reconfigured to redirect data to attacker infrastructure, persisted via a keyboard filter driver, Windows service, Winlogon and Run-key entries, and a self-reinstalling scheduled task); a TLS-intercepting local proxy; and a Ledger-wallet implant. A second document link, sent later in the same conversation, used a third stolen certificate (from Discord Inc., signature invalid) to distribute a DocSend-themed installer. The most novel component: a payload disguised as a Lenovo driver package, signed with a genuine stolen Lenovo certificate, hollows `MsBuild.exe` and generates its own self-signed certificate authority presenting as "Google Trust Services CN=WR3" plus a fabricated `www.virustotal.com` leaf certificate, installs the CA into the system root store, adds a hosts-file entry and a local-proxy firewall rule, and thereby locally answers HTTPS connections with fabricated "clean" results and no certificate warnings — for any domain the operator chooses (crypto wallets, AV update checks). Because the CA is regenerated per host, blocking a single certificate thumbprint is ineffective, and while the interception process itself dies at reboot, the installed CA, hosts entry and firewall rule all persist.
+    region_nexus: "Individually-targeted social-engineering campaign against security researchers/DevOps-adjacent individuals post-conference; the rogue-CA/hosts-file/firewall-rule persistent-MITM technique and the three-stolen-certificate abuse pattern are transferable hunting targets for any Windows estate (check for unexpected root-store CAs claiming to be major CAs, unexplained hosts-file entries, and orphaned local-proxy firewall rules)."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.002, T1204.002, T1027.010, T1553.002, T1553.004, T1219, T1102.002, T1090, T1071.001, T1518]
+    affected_products: ["Google Docs / Apps Script", "Microsoft Windows", "macOS", "NetSupport Manager"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "VIEW is the one worth sitting with. Opening the document while signed in, clicking nothing, and downloading nothing, was enough to report the viewer's IP address, location, browser, and whether they were running a crypto wallet extension."
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/google-doc-sidebar-malware-mac-windows"
+      - quote: "It hollowed MsBuild.exe and imported only kernel32, ultimately establishing what Jon called \"purpose-built and working public key infrastructure on your machine.\""
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/google-doc-sidebar-malware-mac-windows"
+      - quote: "Because the CA was regenerated per host, blocking a single certificate thumbprint does nothing."
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/google-doc-sidebar-malware-mac-windows"
+    extended_notes: |
+      No named actor/campaign — Huntress declines attribution beyond "Russian comments... supporting, but not proving, a Russian-speaking operator." No CVE (abuse of legitimate features, not a vulnerability). Not present in prior_coverage.json.
+    coverage: GAP
+
+  - title: "REF9334/KREMLIN forges Chromium's own Secure Preferences integrity HMACs to silently install a malicious banking-session-stealing extension outside the Web Store, resolving its C2 through Ethereum smart contracts"
+    sources:
+      - { url: "https://www.elastic.co/security-labs/threat-command/malicious-browser-extension-kremlin-banking-malware", publisher: "Elastic Security Labs", date: "2026-09-14", role: "primary" }
+    discovery_trace: "first seen at: elastic-seclabs, URL https://www.elastic.co/security-labs/rss/feed.xml (listing) → primary: Elastic Security Labs, URL https://www.elastic.co/security-labs/threat-command/malicious-browser-extension-kremlin-banking-malware (published 2026-09-14T00:00:00Z per RSS)"
+    summary: |
+      Elastic Security Labs has tracked REF9334, a Brazilian-banking-focused operation (its KREMLIN toolkit name is the malware author's own; Elastic notes nothing about the operation is actually Russian — Portuguese lures/comments and São-Paulo-hours Ethereum transaction timing point to Brazil), across seven campaigns since May 2025. The infection chain starts with an obfuscated multi-stage JavaScript loader (trivially LLM-deobfuscated per Elastic) that checks sandbox indicators (desktop file count, WMI process count) before decoding a second stage via certutil and downloading Node.js to execute it. That second stage installs persistence as a scheduled task disguised as "MicrosoftNodeRuntimeUpdater," then queries an Ethereum smart contract (0xCD7360A83E5cdbBbbbcEB0e78748babA6740d07b) for three configuration parameters — main-v2 (main module URL), sub-module (a .NET RunPE injector hidden as JPEG-carrier Base64), and sentinel (a legitimate SentinelOne SentinelMemoryScanner.exe binary abused for DLL sideloading, a technique Symantec first documented in Seedworm's Korean-electronics-maker intrusion) — with payloads partly hosted by abusing archive.org. The main C++ installer resolves NTDLL syscall numbers indirectly by correlating export names against the .pdata exception-directory RUNTIME_FUNCTION table (linked to the open-source PigSyscall project) rather than parsing Nt*/Zw* stubs directly, evading userland EDR hooks; it runs extensive sandbox/analysis-tool/VM checks (specific security-tool and sandbox process-name blacklists, a hardcoded username blacklist, CPU/RAM thresholds, a network-canary check against a deliberately unregistered domain, and VMware/VirtualBox artifact checks) before proceeding. The extension-installation technique — documented in detail by Synacktiv's "Phantom Extension" research and rarely seen in the wild — waits for the browser to close or the user to idle for two minutes, force-terminates it if still open, then relaunches it under a debugger specifically to catch the LOAD_DLL_DEBUG_EVENT for chrome.dll/msedge.dll, scans that module's memory for the "OSCrypt.AppBoundProvider.Decrypt.ResultCode" string cross-reference to locate and read the in-memory App-Bound encryption key via ReadProcessMemory, and separately recovers the legacy DPAPI-protected OSCrypt key from Local State. Using the recovered keys plus a seed extracted from chrome.dll's resources.pak, it regenerates the legacy HMAC and the newer OSCrypt-encrypted SHA-256 hash that Chromium's Secure Preferences integrity mechanism requires, then manually copies the extension files into the browser profile and edits Secure Preferences directly (enabling developer mode, registering the extension under extensions.settings.<id>, and writing the forged protection.macs values) — installing the extension exactly as if the user had approved it through the Web Store, with no user interaction and no visible warning. Elastic disrupted over 1,500 infections by registering the operation's network-canary kill-switch domain.
+    region_nexus: "Brazilian-banking-focused today, but the Chromium Secure-Preferences-forging extension-sideloading technique and the Ethereum-smart-contract dead-drop C2 pattern are directly transferable to any Chrome/Edge estate; the legitimate-SentinelOne-binary DLL-sideload technique is a concrete EDR-bypass hunt target for any org running that security product."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1204.002, T1497, T1027.007, T1574.002, T1176, T1553, T1555.003, T1102.001, T1105]
+    affected_products: ["Google Chrome", "Microsoft Edge", "SentinelOne SentinelMemoryScanner.exe"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:ref9334", type: actor, name: "REF9334", aliases: [],
+          summary: "Elastic Security Labs' tracking designation for a Brazilian-banking-focused threat operation, active since May 2025 across seven campaigns, that builds and deploys the KREMLIN malicious browser-extension toolkit (Elastic Security Labs, 2026-09-14)." }
+      - { key: "malware:kremlin", type: malware, name: "KREMLIN", aliases: [],
+          summary: "Malicious Chrome/Edge browser-extension toolkit (named by its own author, 'Kr3mlin4rt1st') that forges Chromium's Secure Preferences integrity HMACs to sideload an unauthorized extension outside the Web Store; resolves payload URLs via an Ethereum smart-contract dead-drop resolver. Attributed to REF9334, targeting Brazilian banking users (Elastic Security Labs, 2026-09-14)." }
+    relation_suggestions:
+      - { subject: "actor:ref9334", object: "malware:kremlin",
+          basis: "Elastic Security Labs: \"Elastic Security Labs has tracked REF9334... Its toolkit is called KREMLIN (as named by the malware author...)\" (Elastic Security Labs, 2026-09-14)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Malicious browser extensions bypass Chromium integrity mechanisms by manipulating Secure Preferences and regenerating required HMACs and App-Bound encrypted hashes."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/threat-command/malicious-browser-extension-kremlin-banking-malware"
+      - quote: "KREMLIN uses a documented technique rarely observed in malware: it manually copies the extension into the browser's profile directories and registers it in the Secure Preferences file."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/threat-command/malicious-browser-extension-kremlin-banking-malware"
+      - quote: "Threat Command temporarily disrupted over 1,500 (and counting) infections in this reported campaign by registering the network canary (kill switch) domain"
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/threat-command/malicious-browser-extension-kremlin-banking-malware"
+    extended_notes: |
+      Not present in prior_coverage.json or entities/registry.yaml. "KREMLIN" naming is coincidental (malware author's own choice) — Elastic explicitly states "nothing about the operation is Russian"; flag this for the composer so a headline/summary does not imply Russian state nexus.
+    coverage: GAP
+
+publisher_sweep:
+  - publisher: "Microsoft Threat Intelligence"
+    transport: "webfetch extract (listing) — no working RSS found for this exact topic page; verified via WebSearch cross-check"
+    in_window_posts: 0
+    note: "Newest listed post is 2026-09-02 (Impersonating IT support); a 2026-09-10 Storm-2945/CaptiveCrunch post found via WebSearch is also out of window. Zero in-window."
+  - publisher: "Google GTIG / Mandiant"
+    transport: "feed https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v"
+    in_window_posts: 0
+    note: "Newest post (GTIG AI Threat Tracker) published 2026-09-08, before window start."
+  - publisher: "Google Threat Analysis Group"
+    transport: "extract https://blog.google/threat-analysis-group/"
+    in_window_posts: 0
+    note: "URL resolves to generic blog.google/security/ landing page dated 2026-04-28; no dedicated in-window TAG content surfaced."
+  - publisher: "Cisco Talos"
+    transport: "feed https://feeds.feedburner.com/feedburner/Talos"
+    in_window_posts: 2
+    note: "2 substantive in-window posts; 1 (Gentlemen/Qilin) is a GAP, the other is a newsletter opinion piece (Should you care about an AI slowdown?) not qualifying."
+  - publisher: "Palo Alto Unit 42"
+    transport: "feed https://unit42.paloaltonetworks.com/feed/"
+    in_window_posts: 5
+    note: "AgentCore Harness credential exfiltration, cross-environment SOC pivot, AMOS stealer activity, cloud-identity behavioral clustering, SPIFFE/SPIRE post-exploitation identity misuse — reviewed titles/summaries; all read as vendor-capability-driven pieces (XSIAM/Cortex framing) rather than primary novel-technique disclosures on the level of the items already included; none met the bar on summary review within time budget. Flagged as checked, not deep-dived."
+  - publisher: "Check Point Research"
+    transport: "feed https://research.checkpoint.com/feed/"
+    in_window_posts: 2
+    note: "'AI Threat Landscape Digest: July-August 2026' (2026-09-17) and '14th September Threat Intelligence Report' (2026-09-14) are both roll-up/digest formats, not primary novel research; not included."
+  - publisher: "ESET WeLiveSecurity"
+    transport: "feed https://www.welivesecurity.com/en/rss/feed/"
+    in_window_posts: 1
+    note: "'Beware the SparroWock' (2026-09-17) already covered by entry 2026-09-18/famoussparrow-sparrowocky-backdoor-latam-gov — same URL, exact match."
+  - publisher: "Kaspersky Securelist"
+    transport: "feed https://securelist.com/feed/"
+    in_window_posts: 2
+    note: "MovieReaper (2026-09-17) already covered by entry 2026-09-18/moviereaper-torrent-supply-chain-solana-c2. NightEagle/GhostContainer (2026-09-16) is a GAP."
+  - publisher: "SentinelOne SentinelLabs"
+    transport: "extract https://www.sentinelone.com/labs/"
+    in_window_posts: 1
+    note: "TraderTraitor/FLATROOF/ROOFDECK (2026-09-18) is a GAP."
+  - publisher: "Proofpoint"
+    transport: "jina https://www.proofpoint.com/us/blog/threat-insight (extract/webfetch returned only the single most-recent tile; jina surfaced the full listing)"
+    in_window_posts: 0
+    note: "Newest Threat Insight post is 2026-09-09 (BlueMoon, already covered by 2026-09-10 entry)."
+  - publisher: "Trend Micro Research"
+    transport: "feed (both https://www.trendmicro.com/en_us/research/rss.xml and https://feeds.trendmicro.com/TrendMicroResearch attempted — both failed transport)"
+    in_window_posts: null
+    note: "Could not establish a working feed transport this run (see Fetch failures)."
+  - publisher: "CrowdStrike"
+    transport: "feed https://www.crowdstrike.com/en-us/blog/feed"
+    in_window_posts: 1
+    note: "PhantomRaven (2026-09-15/17) already covered by entry 2026-09-17/phantomraven-npm-llm-generated-infostealer. Sality botnet takedown (2026-09-01) and Patch Tuesday summary (2026-09-08) both out of window."
+  - publisher: "Recorded Future Insikt"
+    transport: "feed https://www.recordedfuture.com/feed"
+    in_window_posts: 2
+    note: "'Tajin Group' (2026-09-15) reviewed in full — cybercrime-economy/money-laundering profile of a Chinese guarantee-marketplace vendor, not primary attack-technique research and low direct relevance to Swiss public-sector defenders; borderline-drop. 'Our View on... Threat Intelligence Leader' and 'New Rules of Machine Speed Defense' (both 2026-09-17) are thought-leadership/marketing pieces, not included."
+  - publisher: "Sekoia.io"
+    transport: "extract https://www.sekoia.com/blog"
+    in_window_posts: 4
+    note: "All 4 in-window posts (SOC-platform checklist, AI/SOC framework analysis, multi-tenant SOC agents, none dated after 2026-09-10 for actual threat research) are SOC-platform/product content, not primary threat research. Zero qualifying."
+  - publisher: "Volexity"
+    transport: "jina https://www.volexity.com/blog/ (direct bridge fetch returned raw WordPress shell with no rendered post list; jina rendered the JS listing)"
+    in_window_posts: 0
+    note: "Newest post is 2026-09-09 (Mind the Patch Gap / BlueMoon chain, already covered), before window start."
+  - publisher: "Huntress Labs"
+    transport: "feed https://www.huntress.com/blog/rss.xml"
+    in_window_posts: 5
+    note: "2 GAPs (VSS abuse, Google Doc sidebar). Remaining 3 in-window posts (Operational Resilience staffing risk, and 2 posts dated 2026-09-10 which fall right at/before window edge) are awareness/generic-advice pieces, not included."
+  - publisher: "Red Canary"
+    transport: "feed https://redcanary.com/feed/"
+    in_window_posts: 0
+    note: "Newest post is 2026-08-20 (Intelligence Insights: August 2026); feed appears to have gone quiet since."
+  - publisher: "Elastic Security Labs"
+    transport: "feed https://www.elastic.co/security-labs/rss/feed.xml"
+    in_window_posts: 2
+    note: "KREMLIN/REF9334 (2026-09-14) is a GAP. 'One SOC, 100 projects' (2026-09-18) is a product-feature piece, not included."
+  - publisher: "Sophos X-Ops"
+    transport: "feed https://news.sophos.com/feed/"
+    in_window_posts: 4
+    note: "'Cisco Secure Email Gateway CVE-2026-76461' (2026-09-15) already covered by existing entry. 'ATT&CK grew a 15th tactic' DFIR field guide (2026-09-14) reviewed in full — genuinely useful forensic-artifact/tooling mapping but a taxonomy/process reference rather than primary attacker-technique research, and heavily framed as Sophos IR/MDR service promotion; borderline-drop. 'AI uncertainty' (2026-09-17) and 'Luciferus AI service advertised underground' (2026-09-14, one-paragraph underground-forum note) did not clear the bar."
+  - publisher: "Group-IB"
+    transport: "bridge url + jina attempted; listing page renders only lead-capture-form modals with no chronological post list surfaced"
+    in_window_posts: null
+    note: "Could not establish a working chronological-listing recipe this run; WebSearch cross-check surfaced only pre-window reports (High-Tech Crime Trends Report 2026, AUNZ Q2 2026 Insikt-equivalent report) and a GISEC 2026 conference presence note, no in-window blog post identified. Recipe gap, not a confirmed-zero."
+  - publisher: "Malwarebytes Labs"
+    transport: "extract https://www.malwarebytes.com/blog"
+    in_window_posts: "~8"
+    note: "All in-window posts (parcel-delivery phishing scams, Flock camera tracking, T-Mobile rewards phishing, Revolut phishing follow-up, celebrity-deepfake site seizures, Pixel patch advisory, AI-antivirus-scam pages, RatHat Android malware) are consumer-awareness-level pieces; reviewed titles/summaries only (not deep-dived given consumer framing) — none met the Tier2/3 primary-technical-research bar on that review."
+  - publisher: "Socket Security"
+    transport: "extract https://socket.dev/blog + feed https://socket.dev/blog/rss.xml (feed returned 0 items via jina fallback)"
+    in_window_posts: null
+    note: "Listing page is JS-only (search box shell, no post list); feed empty. Recipe gap this run."
+  - publisher: "Sonatype"
+    transport: "feed https://www.sonatype.com/blog/rss.xml"
+    in_window_posts: 2
+    note: "'Why Are OSS Attackers Always After CI/CD Credentials?' (2026-09-18) reviewed in full — a generic explainer rehashing Sonatype's own prior published research (typosquatting/brandjacking, preinstall-script credential theft) with no new technical finding; not included, not even borderline. 'Why AI Demands a New Approach to Shift Left' (2026-09-15) is product-strategy content."
+  - publisher: "Qianxin X-Lab"
+    transport: "feed https://blog.xlab.qianxin.com/feed/"
+    in_window_posts: 0
+    note: "Newest post is 2026-07-29 (Dysphoria botnet). Zero in-window."
+  - publisher: "watchTowr Labs"
+    transport: "feed https://labs.watchtowr.com/rss/"
+    in_window_posts: 0
+    note: "Newest post is 2026-08-14 (Citrix NetScaler CVE-2026-8452); feed appears to have gone quiet since."
+  - publisher: "ReliaQuest"
+    transport: "jina https://reliaquest.com/blog/ (returned an ad-tracker probe page, content-free — confirms prior dark diagnosis) + sitemap https://reliaquest.com/sitemap.xml (WORKING alternative: returns real dated blog URLs with <lastmod>)"
+    in_window_posts: 0
+    note: "Sitemap recipe recovers dated URLs (newest lastmod 2026-09-10, threat-spotlight-gryxa-ai-built-toolkit, out of window) — this is a genuine improved recipe over the pinned jina method, which still returns a content-free ad-tracker shell. Recommend updating sources.json notes for reliaquest to: try sitemap.xml first, drill dated /blog/ URLs with extract, fall back to jina only for the article body itself."
+  - publisher: "IBM X-Force"
+    transport: "url (raw HTML meta-only shell) + extract (hero-teaser text only) + sitemap probe (returned generic IBM template shell) + feed (securityintelligence.com/feed and ibm.com/think/rss both 0 items via jina) + WebSearch cross-check"
+    in_window_posts: null
+    note: "DARK CONFIRMED — every transport (direct, extract, sitemap, RSS via 2 candidate feed URLs, WebSearch) returned either a content-free template shell or only pre-2026 / off-window results (2026 Threat Intelligence Index from February 2026). No working listing recipe found this run despite full ladder attempt."
+  - publisher: "Jamf Threat Labs"
+    transport: "url https://www.jamf.com/blog/category/jamf-threat-labs/ (grep post slugs from raw HTML) + url per-article (auto-falls-back to jina reader)"
+    in_window_posts: 0
+    note: "RECIPE FIXED this run — contradicts prior 'dark' diagnosis. The category listing page's raw HTML does contain real /blog/<slug> links (grep -oE 'jamf.com/blog/[a-z0-9-]+' surfaces them); individual articles fetch cleanly via the same 'url' command's jina auto-fallback. All 8 slugs found on the current listing page date July 13 - September 3, 2026 (newest: 'Contagious Interview steps outside the developer workflow', 2026-09-03) — all before this run's window. Recommend updating sources.json fetch_method/notes for jamf-threat-labs from 'dark' to: url <category-listing-url>, grep jamf.com/blog/ slugs, then url <article-url> per slug (jina auto-fallback covers the article body)."
+
+dark_feeds:
+  - source_id: reliaquest
+    diagnosis: "Partially recovered. jina (the pinned fetch_method) still returns a content-free ad-tracker probe page for https://reliaquest.com/blog/, confirming the prior audit's diagnosis for that specific transport. However, https://reliaquest.com/sitemap.xml IS reachable and returns real, dated (<lastmod>) /blog/ URLs via the plain 'url' bridge command — a working discovery recipe that was not tried in the prior audit. No in-window posts existed this run (newest sitemap entry dated 2026-09-10), so the recipe fix could not be end-to-end validated against a real in-window article this run, but the listing-discovery half of the problem is solved. Recommend: update sources.json notes to add the sitemap-first recipe; keep jina only for drilling the eventual article body if extract also fails on it.
+  - source_id: ibm-xforce
+    diagnosis: "STILL DARK — confirmed via a fuller ladder than the prior audit likely tried (direct url, extract/trafilatura, a guessed sitemap path, 2 candidate RSS/feed URLs including the legacy securityintelligence.com domain, and a WebSearch cross-check for September 2026 content). Every transport returned either a template shell with no article list, or zero feed items, or only pre-window content (the 2026 Threat Intelligence Index, published February 2026). No working listing endpoint identified. Diagnosis unchanged from prior audit; not demoted."
+  - source_id: jamf-threat-labs
+    diagnosis: "RECOVERED — NOT actually dark. The prior audit's diagnosis (content-free shell to extract/jina/bridge url) appears to have tested only the bare 'url' fetch without grepping the raw HTML body for post links; this run found that https://www.jamf.com/blog/category/jamf-threat-labs/ fetched via the plain 'url' bridge command DOES contain real https://www.jamf.com/blog/<slug> links embedded in its raw HTML (confirmed via grep), and that fetching an individual article URL the same way auto-falls-back to the jina reader and returns full clean article text (verified against 'AmnesiaStealer', full body retrieved). Recommend the main agent correct this source's sources.json record from a 'dark'/degraded status to a working bridge recipe: url on the category page + grep for jamf.com/blog/ slugs + url per article (jina auto-fallback). No in-window articles existed on the current first-page listing (newest dated 2026-09-03), so this is a recipe fix with a zero-item result this run, not a missed gap."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: trendmicro-research
+    reason: "Both candidate RSS feeds failed transport: https://www.trendmicro.com/en_us/research/rss.xml returned empty with no error, and https://feeds.trendmicro.com/TrendMicroResearch failed on both direct (SSL EOF error) and jina (HTTP 422 on all available reader keys) transports. Listing page itself not separately re-tried with extract/jina this run due to time budget after the feed ladder exhausted both bounded retries."
+  - source_id: group-ib
+    reason: "No working chronological-listing recipe found (bridge url and jina both render only lead-capture-form/modal content on https://www.group-ib.com/blog/, no post list in the rendered output); WebSearch cross-check found no in-window blog post. Recipe gap, not a confirmed-empty result — a future run should try the alphabetical /blog/<slug> archive combined with a sitemap probe."
+  - source_id: socket-dev-blog
+    reason: "https://socket.dev/blog renders as a JS-only search-box shell via extract; https://socket.dev/blog/rss.xml returned 0 items via the jina fallback. No working recipe found this run."

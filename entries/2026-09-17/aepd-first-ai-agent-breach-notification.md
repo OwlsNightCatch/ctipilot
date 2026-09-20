@@ -43,7 +43,7 @@ evidence:
     original: "confirma la necesidad de incorporar expresamente los ataques asistidos o ejecutados mediante IA a los análisis de riesgos de los tratamientos"
     publisher: "AEPD (Agencia Española de Protección de Datos)"
 verification: single-source-national-cert
-sourcing_note: "AEPD is Spain's national data-protection authority acting as primary disclosing party for its own jurisdiction's regulatory process (PD-5 carve-out); heise online's pickup relays AEPD's own blog post rather than independently assessing the incident. AEPD itself stresses the account rests solely on the notifying organization's own unaudited statement and does not name the organization or the AI model involved."
+sourcing_note: "AEPD is Spain's national data-protection authority acting as primary disclosing party for its own jurisdiction's regulatory process, which is why a single source carries the entry; heise online's pickup relays AEPD's own blog post rather than independently assessing the incident. AEPD itself stresses the account rests solely on the notifying organization's own unaudited statement and does not name the organization or the AI model involved."
 confidence: medium
 references: []
 deep_dive: false
@@ -54,7 +54,16 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-20T13:28:45Z"
+    run_id: 2026-09-20T1308Z-audit
+    type: improvement
+    summary: >
+      Two pieces of reader-facing text referred to house machinery rather than to the reporting: one
+      sentence in the analysis referred to the entry collection, and the sourcing note carried an internal
+      policy-reference code. Both now state the same thing in plain language. No claim changes.
+    fields: [body, sourcing_note]
+    internal: true
 migrated_from: null
 ---
 
@@ -62,6 +71,6 @@ Spain's Agencia Española de Protección de Datos (AEPD) disclosed on 2026-09-14
 
 AEPD's deputy director, Francisco Pérez Bes ([heise online, 2026-09-16](https://www.heise.de/news/Spaniens-Datenschutzaufsicht-Erster-Cyberangriff-mithilfe-eines-KI-Agenten-11454545.html)), frames the change as one of speed and autonomy rather than a new technique: an agent can receive a goal, plan intermediate steps, use tools, execute code, query sources, interpret results and adapt its approach autonomously to what it finds. AEPD draws four practical conclusions for data controllers and processors: risk analyses must name AI-assisted or AI-executed attack scenarios explicitly, since a generic reference to malware, phishing or unauthorized access no longer captures how automation changes probability, speed and scope; incident-response procedures built for manually-executed attacks may be too slow against an agent that probes multiple assets in parallel and adapts in real time; digital credentials and API keys carry outsized risk, since whoever obtains one can operate at machine speed across services before anomalous behaviour is noticed; and security cannot rely on manual intervention alone, requiring detection, containment and response mechanisms fast enough to match agent-speed attacks ([AEPD, 2026-09-14](https://www.aepd.es/prensa-y-comunicacion/blog/primera-notiviacion-brecha-datos-personales-causada-por-ataque-ejecutado-mediante-agente-ia)). AEPD cites Spain's National Cryptologic Centre guide CCN-CERT BP/36 on offensive-AI best practices as reaching the same operational conclusion.
 
-This is a distinct case from the agentic-AI-security incidents already tracked in this store (Hugging Face's production breach, Anthropic's four disclosed evaluation-environment escapes, OpenAI's DSEWiki agent-collusion disclosure): those are vendor or evaluator disclosures of an AI provider's own agents misbehaving in a sandbox or eval environment. This is the first publicly documented case of a third-party criminal weaponizing a commercial AI agent against an unrelated victim organization, surfaced through a national data-protection regulator's own breach-notification channel.
+This is a distinct case from the agentic-AI-security incidents reported so far (Hugging Face's production breach, Anthropic's four disclosed evaluation-environment escapes, OpenAI's DSEWiki agent-collusion disclosure): those are vendor or evaluator disclosures of an AI provider's own agents misbehaving in a sandbox or eval environment. This is the first publicly documented case of a third-party criminal weaponizing a commercial AI agent against an unrelated victim organization, surfaced through a national data-protection regulator's own breach-notification channel.
 
 **Defender takeaway:** update your organization's risk-analysis templates now to name AI-agent-assisted and AI-agent-executed attacks as their own category rather than folding them into generic "malware" or "unauthorized access" language, and review whether your incident-response runbooks assume a human-paced attacker — AEPD's own framing is that they may not hold against an agent probing multiple access paths in parallel and adapting between attempts.

@@ -40,8 +40,8 @@ evidence:
     source_url: "https://corp.helpfeel.com/en/news/news-20260916"
 verification: single-source-victim
 sourcing_note: >
-  Helpfeel's own incident notice is the primary source under the victim-disclosure carve-out
-  (PD-5); The Hacker News's reporting relays rather than independently investigates the incident.
+  Helpfeel's own incident notice is the primary source under the victim-disclosure carve-out;
+  The Hacker News's reporting relays rather than independently investigates the incident.
 confidence: high
 references: []
 deep_dive: false
@@ -52,7 +52,15 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-20T13:28:45Z"
+    run_id: 2026-09-20T1308Z-audit
+    type: improvement
+    summary: >
+      The sourcing note carried an internal policy-reference code in reader-facing text. It now names the
+      victim-disclosure carve-out in plain language. No sourcing or factual claim changes.
+    fields: [sourcing_note]
+    internal: true
 migrated_from: null
 ---
 

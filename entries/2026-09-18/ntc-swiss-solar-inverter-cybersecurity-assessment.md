@@ -56,7 +56,11 @@ evidence:
     publisher: "SRF (Rundschau)"
     source_url: "https://www.srf.ch/news/schweiz/risiko-cyberangriffe-sicherheitsexperten-blackout-risiko-wegen-solaranlagen"
 verification: multi-source
-sourcing_note: null
+sourcing_note: >
+  The findings originate in a single assessment: the National Test Institute for Cybersecurity ran
+  the tests and published the report. SRF and cash.ch report on that study rather than testing the
+  devices themselves, and the Federal Office of Energy endorsed the analysis rather than conducting
+  its own, so the corroboration is editorial rather than a second assessment.
 confidence: high
 references: []
 deep_dive: false
@@ -64,10 +68,20 @@ deep_dive_category: null
 org_triage: null
 classification:
   reliability: A
-  credibility: 1
+  credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-20T13:29:09Z"
+    run_id: 2026-09-20T1308Z-audit
+    type: correction
+    summary: >
+      Credibility was rated 1 (corroborated by independent sources). Every cited source traces to the
+      National Test Institute for Cybersecurity's own study: SRF and cash.ch report on it and the Federal
+      Office of Energy endorsed it, and none of them re-tested the inverters. That is one assessor with
+      several publishers, which rates 2. A sourcing note now records the provenance. The findings
+      themselves were re-verified against the institute's own publication and are unchanged.
+    fields: [classification, sourcing_note]
 migrated_from: null
 ---
 
@@ -76,3 +90,7 @@ Switzerland's National Test Institute for Cybersecurity (NTC) published a year-l
 The market-concentration and procurement angle is directly relevant to Swiss public-sector buyers: Huawei and Sungrow together hold over 60% of the Swiss inverter market, Switzerland's Federal Intelligence Service (NDB) warns the country risks becoming a preferred target if it protects critical infrastructure less than the EU, and canton Bern's own cantonal building authority admits that a public tender for a cantonal vocational school's rooftop solar installation was structured such that only a Huawei inverter could qualify, conceding that cybersecurity is still barely anchored in tenders (translated from German) ([Kanton Bern Baudirektion, via SRF, 2026-09-16](https://www.srf.ch/news/schweiz/risiko-cyberangriffe-sicherheitsexperten-blackout-risiko-wegen-solaranlagen)). The EU has withdrawn subsidy eligibility for Chinese-inverter projects and the US has declared a grid emergency that can force removal of already-installed sanctioned-country inverters ([SRF, 2026-09-16](https://www.srf.ch/news/schweiz/risiko-cyberangriffe-sicherheitsexperten-blackout-risiko-wegen-solaranlagen)). NTC deliberately withheld product names and technical exploit detail, reporting findings confidentially to manufacturers, and states most manufacturers responded quickly to the disclosure while work to fix the vulnerabilities remains under way for some products ([NTC, 2026-09-17](https://en.ntc.swiss/news/cybersecurity-of-photovoltaic-systems)); cash.ch separately reports manufacturers have already closed the gaps (translated from German) ([cash.ch, 2026-09-17](https://www.cash.ch/news/studie-findet-kritische-cyberlucken-bei-schweizer-solaranlagen-969350)). No CVEs were assigned to any of the findings, and neither NTC nor cash.ch names one ([NTC, 2026-09-17](https://en.ntc.swiss/news/cybersecurity-of-photovoltaic-systems); [cash.ch, 2026-09-17](https://www.cash.ch/news/studie-findet-kritische-cyberlucken-bei-schweizer-solaranlagen-969350)).
 
 **Defender takeaway:** any cantonal or communal procurement of solar, PV or building-management technology should now require a documented minimum device-security standard in the tender specification, and disable or network-isolate local maintenance interfaces on installed inverters — the exact gap canton Bern's own Baudirektion admits it lacked.
+
+## Correction — 2026-09-20T13:29:09Z
+
+The corroboration behind this entry is editorial rather than independent, and its credibility rating now says so. The National Test Institute for Cybersecurity ran the tests and published the findings; SRF and cash.ch report on that study rather than testing the devices themselves, and the Federal Office of Energy endorsed the institute's analysis rather than conducting its own. That is one assessor with several publishers, so the rating moves from confirmed to probably true. Every figure in the entry was re-checked against the institute's own publication and none of them changes ([National Test Institute for Cybersecurity, 2026-09-17](https://en.ntc.swiss/news/cybersecurity-of-photovoltaic-systems)).
