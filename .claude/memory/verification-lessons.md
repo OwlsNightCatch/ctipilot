@@ -42,3 +42,15 @@ Every value in a structured field needs a source like a sentence: each `cves[].s
 - **Re-derive every numeral and absolute** ("every", "all", "first") from the body's own enumeration immediately before commit.
 - One citation per clause; a national-CERT relay carries less than the vendor bulletin (cite the relay for reach + timing only); a slug is not a dateline (read the page's own date field — BSI `260601` = 6 January); vendor blog URLs mutate in place (re-fetch before re-quoting); when a source has a blog + PDF, check which artifact carries the clause.
 - **Drop rather than half-source:** an attribution no fetched source connects is not fixable by adding a plausible link.
+
+## Recap sources: fetch the fuller original they link to
+
+A vendor "webinar recap" / talk-show-style summary post is not the primary — if it says "read the blog for full technical details" and links a fuller write-up (even weeks older), fetch and cite that fuller original as primary; the recap's spoken paraphrase of a technical detail (persistence mechanism, timing, field contents) can diverge from the more rigorous original on the *same* fact (2026-09-21: a recap said NetSupport persisted via "a Run key and a scheduled task"; the linked original said "registers its own COM object" — genuine same-publisher disagreement, not a copying error). Composing straight from the recap risks stale-news-as-new (check 8) on top of the fact-fidelity risk.
+
+## Remediation itself is a defect-injection risk — verify fixes, don't just apply them
+
+Three separate defects this run (2026-09-21) were the *previous* iteration's own fix: restoring a dropped hedge reassigned the hedged tool's specific scope to both tools jointly (dropping the unhedged tool's real action); a date correction moved to the wrong field; a document/cert/payload structural fix mis-attached a still-open detail. Re-verify every remediation against the primary in the *same* pass that applies it (re-read the exact sentence against the source text before moving on), not just at the next cold iteration — the next iteration existing to catch it is not a substitute for checking your own fix.
+
+## `check_run.py`'s IOC scanner only catches hashes/IPv4 — domains need a manual sweep
+
+The mechanical `_scan_iocs()` pattern-matches hashes and routable IPv4 only; a defanged attacker domain (`registry.hashicorp-aws[.]com`) printed in entry prose passes the gate clean while still violating CLAUDE.md's hard "no attacker domains" rule. Before publish, manually grep every entry for `[.]`/bracket-defanged strings and judge each: legitimate infrastructure the malware calls (a public relay directory, an impersonated real service) is fine to name; attacker-registered C2/staging domains are not, however defanged.

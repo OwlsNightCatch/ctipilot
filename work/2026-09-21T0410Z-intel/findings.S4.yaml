@@ -1,0 +1,189 @@
+domain: S4
+run_id: 2026-09-21T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-21T04:16:13Z
+ended_at: 2026-09-21T04:26:08Z
+duration_seconds: 595
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 24
+  bridge_fetches: 10
+
+items:
+  - title: "AFPA (French national adult-training agency) confirms a potential data extraction affecting up to 1.7 million people via a third-party accommodation-management tool — resolves the two competing criminal claims into one confirmed incident"
+    sources:
+      - { url: "https://www.clubic.com/actualite-630454-cyberattaque-de-lafpa-jusqua-17-million-de-dossiers-potentiellement-compromis-apres-une-faille-dun-prestataire.html", publisher: "Clubic (relaying AFP/franceinfo, quoting AFPA deputy director Pierre Prady directly)", date: "2026-09-20", role: primary }
+      - { url: "https://www.cyberattaque.org/afpa-pres-dun-million-de-dossiers-revendiques-apres-une-cyberattaque/", publisher: "Cyberattaque.org", date: "2026-09-15 (updated through 2026-09-19/20)", role: primary }
+      - { url: "https://frenchbreaches.com/alertes/afpa-mu4jbja3w3es4t7j0a8", publisher: "FrenchBreaches", date: "2026-09-16 (updated 2026-09-19)", role: corroborating }
+    discovery_trace: "first seen at: state/coverage_backlog.md priority-task row (surfaced 2026-09-20 by 2026-09-20T1308Z-audit, and the related 2026-09-16 row for the two competing criminal claims) → WebSearch (\"AFPA cyberattaque 1,7 million communiqué officiel\") → Clubic.com, URL https://www.clubic.com/actualite-630454-... (relays AFP/franceinfo quoting AFPA's deputy director Pierre Prady) → corroborating pivot: Cyberattaque.org, URL https://www.cyberattaque.org/afpa-pres-dun-million-de-dossiers-revendiques-apres-une-cyberattaque/ → corroborating pivot: FrenchBreaches, URL https://frenchbreaches.com/alertes/afpa-mu4jbja3w3es4t7j0a8. franceinfo's own article (https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/l-agence-nationale-pour-la-formation-des-adultes-afpa-cible-d-un-piratage-informatique_8200595.html) was located but returned 403 on every transport (direct, trafilatura, jina) and could not be fetched directly — its content is preserved via Clubic's direct quotation."
+    summary: |
+      AFPA (Agence nationale pour la formation des adultes, France's national public adult vocational-training
+      agency under the Ministry of Labour) has confirmed, through its deputy director Pierre Prady speaking to
+      AFP (relayed by franceinfo and Clubic on 2026-09-19/20), that it identified a "potential data extraction"
+      after two criminal claims surfaced within 24 hours of each other on a cybercrime forum. This RESOLVES an
+      open ambiguity: the handle xMetah first offered 971,420 records for sale (2026-09-15), then Cybernox
+      (`actor:cybernox`, already tracked in this store for a financially-adjacent AFPA-account exposure a month
+      earlier and for a hedged, unconfirmed correlation to a DGFiP-adjacent Bloctel leak) claimed 1,732,811 lines
+      via an alleged IDOR (Insecure Direct Object Reference) flaw (2026-09-16). AFPA's own investigation traced
+      the "potential extraction" to a flaw in the third-party-hosted tool it uses to manage worker accommodation/
+      lodging ("outil de gestion des hébergements") — an application hosted by an external vendor and outside
+      AFPA's own information system, so AFPA states there was "a priori" no impact on its internal services or
+      systems. AFPA states the data in the affected application is limited to identity, address and possibly
+      phone number, with no bank data or French national ID (Sécurité sociale) numbers identified so far;
+      independent sample review by Cyberattaque.org and FrenchBreaches additionally found full dates of birth,
+      internal identifiers, a "partner" field (observed value "LHEA", suggesting a partner-feed origin), email
+      addresses and nationality, spanning records created or modified from 2006 through 2026. AFPA has NOT
+      confirmed the IDOR mechanism Cybernox claims, has not confirmed whether the xMetah and Cybernox datasets
+      overlap or derive from the same extraction (the two counts must not be summed), and — per Clubic's own
+      note — has not stated whether it has notified the CNIL, despite GDPR's 72-hour breach-notification
+      requirement. This is the third AFPA-linked security alert in roughly a month: in early August 2026,
+      Cybernox separately exposed 101 AFPA accounts with a published admin-level access, and no source
+      establishes a link between that earlier exposure and this extraction.
+    region_nexus: "France (neighbouring EU jurisdiction); the vendor-trust/third-party-hosted-tool failure mode is directly analogous to Swiss cantonal/communal reliance on externally hosted administrative SaaS tools"
+    primary_sector_nexus: "direct — national public-sector vocational-training/employment agency, the closest French analogue to a Swiss federal/cantonal administrative agency"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1213]
+    affected_products: []
+    entity_keys: ["actor:cybernox"]
+    new_entities:
+      - { key: "actor:xmetah", type: actor, name: "xMetah", aliases: [],
+          summary: "Criminal-forum handle that first offered 971,420 records attributed to AFPA for sale on 2026-09-15, one day before Cybernox's larger, separate 1,732,811-record IDOR claim against the same agency; AFPA has not confirmed whether the two claimed datasets overlap (Cyberattaque.org, FrenchBreaches, Clubic, 2026-09-15/20)." }
+      - { key: "incident:afpa-third-party-accommodation-tool-data-extraction-2026-09", type: incident, name: "AFPA third-party accommodation-tool data extraction (September 2026)",
+          summary: "AFPA confirmed a potential data extraction, tied by its own investigation to a flaw in a third-party-hosted worker-accommodation-management tool outside its own IS, following criminal claims by xMetah (971,420 records) and Cybernox (1,732,811 records via an alleged IDOR) published 24 hours apart in mid-September 2026; up to 1.7 million people are potentially affected (AFP/franceinfo via Clubic, Cyberattaque.org, FrenchBreaches)." }
+    relation_suggestions:
+      - { subject: "incident:afpa-third-party-accommodation-tool-data-extraction-2026-09", object: "actor:cybernox",
+          basis: "Cybernox claims exfiltration of 1,732,811 AFPA-linked records via an alleged IDOR vulnerability; AFPA confirms a potential extraction from the same third-party tool but does not itself confirm the IDOR mechanism (cyberattaque.org, 2026-09-15/20; frenchbreaches.com, 2026-09-16/19)." }
+      - { subject: "incident:afpa-third-party-accommodation-tool-data-extraction-2026-09", object: "actor:xmetah",
+          basis: "xMetah first offered 971,420 AFPA-linked records for sale 24 hours before Cybernox's claim; AFPA has not established whether the two datasets overlap (clubic.com, cyberattaque.org, 2026-09-20)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Selon l'Afpa, l'application piratée contenait l'identité et l'adresse des personnes, avec éventuellement leur numéro de téléphone, mais « a priori » aucune donnée bancaire ni aucun numéro de Sécurité sociale."
+        attribution: "Clubic (quoting AFPA via AFP/franceinfo)"
+        source_url: "https://www.clubic.com/actualite-630454-cyberattaque-de-lafpa-jusqua-17-million-de-dossiers-potentiellement-compromis-apres-une-faille-dun-prestataire.html"
+      - quote: "Cet outil « est hébergé chez un éditeur tiers et est externe à notre système d'information, donc il n'y a pas eu a priori d'impact sur les services et systèmes d'information de l'Afpa »"
+        attribution: "Clubic, quoting Pierre Prady (AFPA deputy director) via AFP"
+        source_url: "https://www.clubic.com/actualite-630454-cyberattaque-de-lafpa-jusqua-17-million-de-dossiers-potentiellement-compromis-apres-une-faille-dun-prestataire.html"
+      - quote: "L'AFPA confirme désormais qu'une extraction de données a potentiellement eu lieu et indique que l'incident pourrait concerner jusqu'à 1,7 million de personnes."
+        attribution: "Cyberattaque.org"
+        source_url: "https://www.cyberattaque.org/afpa-pres-dun-million-de-dossiers-revendiques-apres-une-cyberattaque/"
+    extended_notes: |
+      RESOLUTION OF THE TWO BACKLOG ROWS (per the spawn's priority task): the 2026-09-16-surfaced row (two
+      competing uncorroborated criminal claims, xMetah ~971K and Cybernox ~1.73M) and the 2026-09-20-surfaced
+      row (AFPA's "confirmed" 1.7M-person incident) are THE SAME underlying event, not two separate incidents.
+      AFPA's own confirmation (via AFP/franceinfo, quoted by Clubic) explicitly references "deux hackers" who
+      claimed data "mercredi et jeudi" (Wednesday/Thursday) — matching xMetah's 2026-09-15 and Cybernox's
+      2026-09-16 claims exactly. This should be composed as ONE new entry, not two, and both backlog rows
+      should be struck against it.
+      Sourcing re-gate (per the spawn's explicit instruction): Clubic.com is a mainstream French consumer-tech
+      outlet (comparable to a French PCMag/Engadget) that here relays an AFP wire story quoting AFPA's own
+      deputy director's words directly to the press — this is Admiralty B journalism carrying the victim's own
+      statement, not a bare aggregator repeating a criminal's claim. Cyberattaque.org and FrenchBreaches are
+      C-reliability niche trackers, but here they are ALSO directly quoting/paraphrasing AFPA's own confirmation
+      (not merely relaying the criminals' claims) — both explicitly attribute the "potential extraction" finding
+      and the third-party-tool explanation to AFPA's own investigation. This satisfies MULTI-SOURCE without
+      needing the single-source-victim carve-out. AFPA's own official site (afpa.fr) carries no dedicated press
+      notice reachable from its /actualites listing; franceinfo's own article page (the ultimate primary AFP
+      quote source) 403'd on every transport (direct, trafilatura, jina) and could not be independently
+      fetched — Clubic's direct quotation is the best available anchor for AFPA's exact words.
+      Registry note for the main agent: `actor:cybernox`'s current registry summary characterises it purely as
+      a hacktivist (French/EU political-dossier leaks in protest of "Chat Control"). This AFPA episode (selling
+      971K-1.7M personal records on a criminal forum) is financially-motivated data theft, a materially
+      different modus operandi under the same handle — worth a registry-summary update noting the handle now
+      spans both hacktivist leaks and for-profit data extortion, distinct from the DGFiP/Bloctel correlation
+      which cyberattaque.org itself held as merely "plausible but unconfirmed" (already reflected in the
+      2026-08-15 DGFiP entry's changelog).
+
+  - title: "[NOT PUBLISHABLE — PD-6 BLOCKED, recommend new coverage-backlog row] Qilin ransomware group lists Touring Club Suisse (TCS), Switzerland's largest mobility club (1.6M members), on its leak site — bare claim only, no victim statement, no Admiralty A/B journalism"
+    sources:
+      - { url: "https://ransomware.live/id/VG91cmluZyBDbHViIFN1aXNzZUBxaWxpbg==", publisher: "ransomware.live (Qilin leak-site listing)", date: "2026-09-20", role: primary }
+    discovery_trace: "first seen at: WebSearch (\"ransomware victim listed leak site September 20 2026 government\") → ransomware.live listing, URL https://ransomware.live/id/VG91cmluZyBDbHViIFN1aXNzZUBxaWxpbg== → pivot search (WebSearch \"Touring Club Suisse Qilin ransomware cyberattack\" and German-language \"TCS Touring Club Suisse Cyberangriff Hacker\") found no victim statement and no Admiralty A/B journalism pickup; only leak-site trackers (ransomware.live, RedPacketSecurity) repeat the claim."
+    summary: |
+      Ransomware.live recorded on 2026-09-20 that the Qilin ransomware group (`actor:qilin`, already tracked in
+      this store) added Touring Club Suisse — Switzerland's largest mobility/roadside-assistance membership
+      organization, with roughly 1.6 million members — to its Tor leak site, with an estimated attack date of
+      2026-09-20. No data samples, file trees, or ransom figure accompany the listing. TCS's own channels carry
+      no incident notice found in this search, and no German-, French- or English-language press pickup beyond
+      leak-site aggregators (RedPacketSecurity) was found despite a targeted multilingual search. This is a bare
+      leak-site claim that does NOT clear PD-6's fake-news guard as it stands — it is being surfaced here as a
+      candidate for a NEW coverage-backlog row (not as a publishable finding) because of the unusually strong,
+      fresh (surfaced within this run's 24h window) Swiss home-region nexus: TCS is a widely-used quasi-critical
+      mobility/emergency-roadside-assistance service serving a substantial fraction of the Swiss population, and
+      Qilin is a currently active RaaS operation already linked in this store to prior Swiss-adjacent activity
+      (the CVE-2026-59310 vCenter Syslog entry's single-assessor ransomware finding; the Retelit Italian
+      telco/public-administration-supplier entry).
+    region_nexus: "Switzerland — direct home-region nexus if corroborated (largest Swiss mobility club, 1.6M members)"
+    primary_sector_nexus: "indirect — private membership organization providing roadside assistance/mobility services, not government itself, but widely relied upon by the Swiss public including public-sector fleets"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: ["actor:qilin"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: LOW
+    novelty: new
+    borderline: true
+    borderline_reason: "Fails PD-6 (bare leak-site claim, no victim statement, no Admiralty A/B journalism) — do NOT publish as a finding. Recommend the main agent add this as a NEW coverage_backlog.md Open row (surfaced 2026-09-21 by this run) given the strength of the Swiss home-region nexus once/if corroborated; re-check on subsequent fires the same way the Ixa Systems/UICC/Medela/reichenau.at rows are re-checked."
+    extended_notes: |
+      No evidence quotes included deliberately — this item carries no load-bearing claim beyond the bare
+      leak-site listing itself, which is exactly the fake-news-guard failure mode PD-6 exists to catch.
+
+backlog_updates:
+  - row: "Communauté de communes des Pays de L'Aigle (France) mail-server intrusion, 14-15 September 2026"
+    checked_at: "2026-09-21T0410Z-intel"
+    result: "no change"
+    note: "Re-read cyberattaque.org's own 2026-09-17 article in full (https://www.cyberattaque.org/pays-de-laigle-une-cyberattaque-contre-les-messageries-fait-craindre-une-fuite-de-donnees-sensibles/) plus a fresh WebSearch pass. Still no mechanism, actor, or confirmed data-theft claim beyond the collectivity's own hedged 'possible' personal-data-theft language; CNIL/ANSSI notification and a gendarmerie complaint remain in progress. Does not clear the ATT&CK-mapping bar. Carry forward."
+  - row: "Familea (French municipal family-services SaaS, ~1,600 client collectivities) — platform-wide confirmed scope"
+    checked_at: "2026-09-21T0410Z-intel"
+    result: "no change"
+    note: "WebSearch pass found the same facts already on file (platform-wide impact, precautionary shutdown, Bruguières + other communes); still no mechanism, actor, or data-theft claim. Carry forward."
+  - row: "Ville du Tampon (La Réunion, France) — municipality-confirmed cyberattack since 2026-09-09"
+    checked_at: "2026-09-21T0410Z-intel"
+    result: "no change"
+    note: "WebSearch pass (linfo.re, la1ere.franceinfo.fr, parallelesud.com, zinfos974.com) found only the same facts already on file: services disrupted, internet/phone lines cut as precaution, no mechanism/actor/data-theft claim from any party. Carry forward."
+  - row: "ShinyHunters claims Kimberly-Clark, 2026-09-13"
+    checked_at: "2026-09-21T0410Z-intel"
+    result: "no change"
+    note: "Still only leak-site/aggregator trackers (DeXpose, GalaxyWarden); no Kimberly-Clark statement, no SEC 8-K (confirmed via sec-edgar 8-K Item 1.05 bridge query, no new filing), no Admiralty A/B journalism."
+  - row: "TheGentlemen ransomware group lists Ixa Systems SA (Crissier, VD)"
+    checked_at: "2026-09-21T0410Z-intel"
+    result: "no change"
+    note: "Still only the original 2026-08-30 ransomware.live listing; no victim statement, no Swiss press pickup found."
+  - row: "Krybit ransomware group lists Geneva-headquartered UICC"
+    checked_at: "2026-09-21T0410Z-intel"
+    result: "no change"
+    note: "Still only leak-site trackers/aggregators (ransomware.live, RedPacketSecurity, Brinztech, SOCRadar); no UICC statement, no Admiralty A/B journalism."
+  - row: "ShinyHunters claims Medela AG (Baar/Zug), 2026-09-07"
+    checked_at: "2026-09-21T0410Z-intel"
+    result: "no change"
+    note: "Still only leak-site trackers (DeXpose, breachnews.com, hookphish) and X/Threads reposts; no Medela statement, no Swiss press pickup."
+  - row: "SafePay claims reichenau.at (Marktgemeinde Reichenau an der Rax, Austria), 2026-09-08"
+    checked_at: "2026-09-21T0410Z-intel"
+    result: "no change"
+    note: "Still only leak-site trackers (DeXpose, HackNotice, RedPacketSecurity); no municipal statement, no Austrian press pickup."
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No supplier watchlist configured for this deployment — sweep is a no-op per the spawn instructions."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: "franceinfo.fr"
+    reason: "The AFPA article at franceinfo.fr (the ultimate AFP-quote primary) returned HTTP 403 on every transport tried (direct, trafilatura, jina) — could not be fetched despite being the most-primary available source. Composed instead from Clubic.com's direct quotation of the same AFP wire content."
+  - source_id: "afpa.fr"
+    reason: "AFPA's own /actualites listing page was fetched cleanly but carries no dedicated press-release/incident-notice entry reachable from the landing page; no official written AFPA statement located beyond the AFP-quoted remarks."
+  - source_id: "general news feeds (krebs, cyberscoop, darkreading, hackernews, technadu, zataz, schneier)"
+    reason: "All feeds fetched cleanly but returned no items published inside the 24h window (2026-09-20T04:10Z–2026-09-21T04:10Z) that fall within S4's mission (SEC 8-K / ICO-CNIL-EDPB / victim statements / breach journalism); most recent items across all feeds date to 2026-09-18/19 or earlier. Not a transport failure — a genuine quiet-window observation for this domain."
+  - source_id: "therecord.media"
+    reason: "Landing page (https://therecord.media/) and the /news/cybercrime listing both returned only navigation/sidebar content via extract/WebFetch, no article listing with dates — could not surface fresh items from this source this run."
+  - source_id: "securityweek.com"
+    reason: "Landing page fetched via extract but the trafilatura capture returned only promotional/webinar content dated 2026-09-14 (stale), no current article listing with links — could not surface fresh items."
