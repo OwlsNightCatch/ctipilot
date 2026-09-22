@@ -1,0 +1,177 @@
+domain: S3
+run_id: 2026-09-22T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-22T04:13:17Z
+ended_at: 2026-09-22T04:22:44Z
+duration_seconds: 567
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 8
+  bridge_fetches: 17
+items:
+  - title: "Plugin4Shell: zero-click RCE breaks plugin SHA-pinning identically across Claude Code, Codex, Copilot and Gemini CLI"
+    sources:
+      - { url: "https://www.air.security/blog-posts/plugin4shell", publisher: "AIR Security", date: "2026-09-17", role: "primary" }
+      - { url: "https://www.heise.de/news/Kritische-Luecke-bei-Claude-Code-OpenAI-Codex-GitHub-Copilot-und-Gemini-CLI-11459862.html", publisher: "heise online (Manuel Masiero)", date: "2026-09-21", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/09/plugin4shell-lets-repository-owners.html", publisher: "The Hacker News", date: "2026-09", role: "corroborating" }
+      - { url: "https://www.helpnetsecurity.com/2026/09/18/plugin4shell-ai-coding-agents-vulnerability/", publisher: "Help Net Security", date: "2026-09-18", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (RSS listing) → article URL https://www.heise.de/news/Kritische-Luecke-bei-Claude-Code-OpenAI-Codex-GitHub-Copilot-und-Gemini-CLI-11459862.html → primary: AIR Security, URL https://www.air.security/blog-posts/plugin4shell → corroboration via WebSearch (\"Plugin4Shell Claude Code OpenAI Codex GitHub Copilot Gemini CLI vulnerability\"): The Hacker News URL https://thehackernews.com/2026/09/plugin4shell-lets-repository-owners.html, Help Net Security URL https://www.helpnetsecurity.com/2026/09/18/plugin4shell-ai-coding-agents-vulnerability/"
+    summary: |
+      Security firm AIR disclosed Plugin4Shell (2026-09-17): a zero-click RCE design flaw present identically in
+      four major AI coding agents — Anthropic Claude Code, OpenAI Codex, GitHub Copilot and Google Gemini CLI. All
+      four implement plugin-marketplace SHA-pinning (each install locked to a reviewed 40-hex commit hash) but none
+      verifies, after checkout, that the resolved working tree actually matches that hash. An attacker who controls
+      or takes over a trusted plugin's upstream repository (AIR's own prior "SkillJacking"/RepoJacking research
+      already demonstrated repo takeover at scale — 925 hijacked skills, 134,000 affected agents) creates a branch
+      named identically to the pinned SHA and sets it as the repository's default branch. Claude Code, Codex and
+      Copilot perform a plain `git clone` + `git checkout <pinned-sha>`; because git resolves an ambiguous ref-vs-
+      object-id in favour of the ref, the checkout silently resolves to the attacker's branch while the agent
+      reports the pinned commit installed. Gemini CLI has a distinct but equally exploitable variant: it fetches
+      the pinned commit into `.git/FETCH_HEAD` then runs `git checkout FETCH_HEAD`, which an attacker defeats by
+      naming their malicious default branch literally "FETCH_HEAD". Because background plugin auto-update is the
+      default in Claude Code and Codex, an already-installed, already-reviewed plugin is silently swapped on the
+      next update — no install step, no prompt, full zero-click compromise of the agent process and everything it
+      can reach (local source, cloud credentials, SSH keys, internal repos, secrets). The technique requires a
+      marketplace backend that permits SHA-shaped branch names (Bitbucket, GitLab, self-hosted git — all
+      documented-supported marketplace backends); GitHub rejects such names outright. AIR privately disclosed to
+      Anthropic, OpenAI, Microsoft and Google in June 2026. Anthropic patched in Claude Code 2.1.179 (16 June
+      2026) and OpenAI in Codex 0.146.0 (confirmed early August); Microsoft has shipped no fix for GitHub Copilot
+      as of publication (no response to AIR per the vendor); Google confirmed on 4 August 2026 that Gemini CLI for
+      consumer users is being deprecated rather than patched, so it stays permanently vulnerable (enterprise
+      access via Gemini Code Assist / Google Cloud is unaffected; Google's replacement, Antigravity CLI, currently
+      has no comparable SHA-pinning mechanism to bypass). One material scope caveat The Hacker News adds after
+      independently checking the shipped catalogs on 2026-09-18: background auto-update is on by default only for
+      each agent's own built-in, GitHub-hosted marketplace, and every plugin The Hacker News checked in Anthropic's
+      community catalog and the default Claude Code/Copilot catalogs points to a GitHub repository — so the
+      branch-name variant (which GitHub's naming rules block) does not reach a user who installs only from an
+      agent's default marketplace; the risk concentrates on externally-hosted (Bitbucket/GitLab/self-hosted)
+      marketplaces, where auto-update is off or optional but can still be enabled. Gemini CLI's FETCH_HEAD-named-
+      branch variant is not clearly blocked by GitHub's hash-name restriction, so it is not established that a
+      GitHub-hosted Gemini plugin is safe. As of 18 September 2026 no CVE identifier had been assigned and none of
+      the four vendors had published a security advisory; no source reports exploitation in the wild.
+    region_nexus: "global; no Swiss-specific reporting found"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1195.002]
+    affected_products: ["Anthropic Claude Code", "OpenAI Codex", "GitHub Copilot", "Google Gemini CLI"]
+    entity_keys: []
+    new_entities:
+      - { key: "trend:plugin4shell-ai-coding-agent-supply-chain-2026-09", type: trend, name: "Plugin4Shell",
+          aliases: [], summary: "AIR Security's name for a zero-click plugin-marketplace SHA-pinning bypass affecting Claude Code, Codex, GitHub Copilot and Gemini CLI, disclosed 2026-09-17." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "It is a plugin SHA-pinning bypass: the agent checks out the exact commit the marketplace pinned but never verifies it landed there, so an attacker who controls the plugin's repo makes the checkout resolve to malicious code while the pin still looks honored. The result is zero-click remote code execution across Claude Code, Codex, GitHub Copilot, and Gemini CLI."
+        attribution: "AIR Security"
+        source_url: "https://www.air.security/blog-posts/plugin4shell"
+      - quote: "Google has deprecated the Gemini CLI and will not patch it, so every install stays vulnerable for good; those users should migrate to Antigravity, which this attack does not reach"
+        attribution: "AIR Security"
+        source_url: "https://www.air.security/blog-posts/plugin4shell"
+      - quote: "Die vier Coding-Agenten Claude Code, OpenAI Codex, GitHub Copilot und Gemini CLI sind von der Zero-Click-RCE-Sicherheitslücke (Remote Code Execution) Plugin4Shell betroffen, die Schadcode auf die Rechner von Entwicklerinnen und Entwicklern einschleust."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Kritische-Luecke-bei-Claude-Code-OpenAI-Codex-GitHub-Copilot-und-Gemini-CLI-11459862.html"
+    extended_notes: |
+      Detection (telemetry class, vendor-neutral): monitor the coding agent's plugin-manager child processes
+      (process-creation events for git.exe/git-equivalent spawned by the agent binary) for a plugin directory
+      whose `.git` HEAD resolves to a symbolic ref (branch) rather than a detached commit matching the
+      marketplace-pinned SHA; that mismatch is the only reliable discriminator AIR names — routine background
+      plugin auto-update produces identical git clone/checkout telemetry to the attack, so a single benign update
+      event is not itself suspicious. Hardening: apply the vendor patch (Claude Code >=2.1.179, Codex
+      >=0.146.0) immediately; until GitHub ships a fix, disable Copilot plugin auto-update where configurable and
+      manually verify `git rev-parse HEAD` against the marketplace-pinned SHA before trusting an update; migrate
+      off Gemini CLI (consumer) to a tool without this class of marketplace plugin pinning, or restrict its plugin
+      use entirely; where an organization runs its own plugin marketplace, restrict the backend to hosts that
+      reject SHA-shaped branch names (GitHub-only) as a partial mitigation — this blocks the branch-hijack variant
+      but not Gemini's FETCH_HEAD variant, and the underlying missing-verification bug remains agent-side.
+    borderline: false
+
+  - title: "Google Project Zero details a dangling-COM-registration privilege-escalation technique in Windows Cross Device Service (CVE-2026-66804), and a general method to hunt for others"
+    sources:
+      - { url: "https://projectzero.google/2026/09/windows-dangling-com.html", publisher: "Google Project Zero (James Forshaw)", date: "2026-09-21", role: "primary" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-66804", publisher: "Microsoft Security Response Center", date: "2026-08-11", role: "corroborating" }
+    discovery_trace: "first seen at: projectzero, URL https://projectzero.google/feed.xml (RSS listing) → primary: Google Project Zero, URL https://projectzero.google/2026/09/windows-dangling-com.html (no pivot needed) → corroboration: MSRC CVE record fetched via `python3 tools/fetch_source.py msrc cve CVE-2026-66804`, human-facing URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-66804, plus WebSearch (\"CVE-2026-66804 Windows privilege escalation Microsoft patch\")"
+    summary: |
+      Google Project Zero researcher James Forshaw published a working local-privilege-escalation exploit
+      (2026-09-21) for CVE-2026-66804 ("Windows Cross Device Service Elevation of Privilege Vulnerability",
+      CVSS 3.1 7.8, AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H, "Important", fixed in Microsoft's August 2026 Patch
+      Tuesday on 2026-08-11; Microsoft rates exploitability "Exploitation More Likely" and records no observed
+      in-the-wild exploitation). Root cause: a dangling COM object registration for the CrossDevice.Streaming.Source
+      class, CLSID {E9F83CF2-E0C0-4CA7-AF01-E90C70BEF496}, registered machine-wide under HKEY_CLASSES_ROOT but
+      pointing to a DLL under %ProgramData%\CrossDevice\ that does not exist — and %ProgramData% is writable by
+      any local, unprivileged user, who can plant an arbitrary malicious DLL at that exact path. The bug is an
+      incomplete fix of an earlier flaw, CVE-2026-50343 ("Dark Elevator", disclosed by researcher group Calif),
+      whose original exploitation path — abusing weak registry permissions to register the class as an installer
+      plugin loaded by InstallService — Microsoft closed without removing the dangling registration itself,
+      leaving it exploitable by a different route. Forshaw supplies that route: COM's opt-in marshal-by-value
+      mechanism (the IMarshal interface) lets an object specify an arbitrary CLSID for server-side unmarshaling;
+      sending a custom OBJREF naming the dangling CLSID to a SYSTEM-context COM server that has not enabled the
+      `EOAC_NO_CUSTOM_MARSHAL` capability flag or `COMGLB_UNMARSHALING_POLICY_STRONG` causes the runtime to load
+      the attacker's planted DLL into that privileged process automatically during unmarshaling, before any
+      target method call. Forshaw identifies the "Shell Create Object Handler" COM service (CLSID
+      135fd325-45b7-4c30-89f8-4386961669f0, hosted in a SYSTEM-context dllhost.exe) as one exploitable target: it
+      is not directly instantiable via CoCreateInstance but is started by any authenticated local user via the
+      \Microsoft\Windows\Shell\CreateObjectTask scheduled task; its sole custom interface (ICreateObject) accepts
+      an IUnknown parameter the attacker fills with the fake-marshaled dangling-CLSID object via
+      CoGetInstanceFromIStorage, yielding SYSTEM code execution. Forshaw also publishes a general PowerShell
+      hunting method (his OleViewDotNet / NtObjectManager modules): enumerate every in-process COM class
+      registered in the machine hive whose DefaultServer DLL path cannot actually be resolved via LoadLibrary —
+      a reusable technique for finding other, still-undiscovered dangling COM registrations on any Windows
+      estate, independent of this specific CVE.
+    region_nexus: "global; Windows-wide technique class"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-66804, CVE-2026-50343]
+    techniques: [T1546.015, T1068]
+    affected_products: ["Microsoft Windows"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This short blog post is about abusing a privilege escalation bug that Microsoft recently fixed in Windows, CVE-2026-66804, that I and 14 others reported. This issue is an incomplete fix for CVE-2026-50343, a bug dubbed \"Dark Elevator\" by Calif."
+        attribution: "Google Project Zero (James Forshaw)"
+        source_url: "https://projectzero.google/2026/09/windows-dangling-com.html"
+      - quote: "This object was registered in the system wide classes key, meaning it was accessible to all users on the system, including system services. However the server executable was missing."
+        attribution: "Google Project Zero (James Forshaw)"
+        source_url: "https://projectzero.google/2026/09/windows-dangling-com.html"
+      - quote: "Improper access control in Windows Cross Device Service allows an authorized attacker to elevate privileges locally."
+        attribution: "Microsoft Security Response Center"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-66804"
+    extended_notes: |
+      Detection (telemetry class): image-load / process-creation events showing a SYSTEM-context COM host
+      (e.g. dllhost.exe) loading a DLL from a user-writable path such as %ProgramData%\<vendor>\ is the sharpest
+      single signal; correlate with a preceding scheduled-task-start event for a task startable by a non-admin
+      account (e.g. under \Microsoft\Windows\Shell\) followed within seconds by an out-of-process COM activation
+      into that same host. Hardening: apply the August 2026 cumulative update if not already installed; as a
+      reusable defense-in-depth measure (not specific to this one CVE), run Forshaw's published enumeration
+      method to find other COM classes in the machine hive whose registered DLL cannot be resolved via
+      LoadLibrary, then remove the dangling registration or lock down write access to the target ProgramData
+      subfolder; where organizations run their own privileged COM servers, enable
+      `COMGLB_UNMARSHALING_POLICY_STRONG` / `EOAC_NO_CUSTOM_MARSHAL` to block custom-marshal abuse generally.
+      Triage: legitimate installers/update agents also write to ProgramData and start scheduled tasks; the
+      discriminator is the specific sequence (non-admin-startable scheduled task immediately followed by
+      out-of-process COM activation into an already-running, unrelated SYSTEM service) plus a SYSTEM process
+      loading a DLL from a path with no corresponding installed application — routine software activity does not
+      produce that combination.
+    borderline: false
+
+candidate_sources:
+  - id: air-security
+    publisher: "AIR Security (air.security)"
+    url: "https://www.air.security/blog-posts"
+    category: research
+    why: "First-of-its-kind primary research on AI-coding-agent supply-chain security (\"The Story of Skills\", \"SkillJacking\", and this run's Plugin4Shell) — a growing, highly technical attack surface (marketplace plugin trust, SHA-pinning bypass, repo takeover at scale) not covered by any other source in the current slice, directly relevant to the audience's AI-agent adoption."
+
+coverage_gaps:
+  - source_id: group-ib
+    reason: "Listing page (https://www.group-ib.com/blog/) returned a static/near-empty template shell (wordCount:1 in embedded JSON-LD; dateModified stuck at 2025-02-28) to the bridge `url` transport this run — no dated post list surfaced. Not demoted (recipe/content-shape issue, not a 403); needs a feed/sitemap recipe check on a later run."
+  - source_id: bitdefender-threat-debrief
+    reason: "extract on https://www.bitdefender.com/en-us/blog/businessinsights/ returned only bare dates with no post titles/links (JS-rendered listing not fully hydrated by trafilatura) — could not confirm or rule out an in-window item. Not demoted."
+  - source_id: ibm-xforce
+    reason: "Per the source record's own standing note (still broken as of the 2026-09-20 audit re-probe), not separately re-attempted this run given the documented dead-end; deferred to the audit's broken-recipe duty."
+  - source_id: acronis-tru
+    reason: "RSS feed fetched cleanly (newest item 2026-09-16, \"Acronis Cyberthreats Update, September 2026\") but nothing in-window; direct page fetch of https://www.acronis.com/en/tru/ returns a client-rendered SPA shell to the bridge, RSS is the only working recipe (consistent with existing record notes)."

