@@ -1,0 +1,111 @@
+domain: S3
+run_id: 2026-09-23T0405Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-23T04:10:25Z
+ended_at: 2026-09-23T04:21:31Z
+duration_seconds: 666
+self_telemetry:
+  webfetch_calls: 15
+  websearch_calls: 9
+  bridge_fetches: 20
+items:
+  - title: "Open-source AI pentesting harnesses (Strix, Cairn, Hermes) run an autonomous, largely unattended intrusion-and-skimmer campaign against hundreds of online retailers for about $25 a target"
+    sources:
+      - { url: "https://gambit.security/blog-posts/autonomous-ai-agents-online-retailers-25-a-company", publisher: "Gambit Security", date: "2026-09-22", role: "primary" }
+      - { url: "https://cybersecuritynews.com/ai-agents-retail-credit-card-theft/", publisher: "Cybersecurity News", date: "2026-09-22", role: "corroborating" }
+    discovery_trace: "first seen at: gambit-security (rotation source), URL https://gambit.security/news-resources → primary: Gambit Security's own blog, URL https://gambit.security/blog-posts/autonomous-ai-agents-online-retailers-25-a-company → corroborating: Cybersecurity News, URL https://cybersecuritynews.com/ai-agents-retail-credit-card-theft/ (the listing/news-resources page and the /blog index both link to a 404 'Read More' target; the working post URL was recovered via WebSearch and the site's own sitemap.xml)"
+    summary: |
+      Gambit Security's Threat Intelligence team recovered a financially motivated operator's exposed staging server and reconstructed an ongoing campaign, running since July 2026, in which three off-the-shelf open-source AI agent harnesses conduct nearly the entire intrusion lifecycle unattended against online retailers. Strix (open-source AI pentesting tool, run via OpenRouter on GLM 5.2 then DeepSeek v4 Pro) performs autonomous vulnerability discovery -- 146 deep-mode scans against 138 hosts between 23-31 August 2026, burning 633 hours of scanner time within 195 hours of wall-clock time. Cairn (autonomous exploitation engine on DeepSeek v4.1 Flash) receives a target domain and an objective and runs for hours until it gets a shell or admin access; between 10-15 September 2026 it launched 105 attack projects, compromising at least 27 companies. Hermes -- the SAME open-source "Hermes AI agent" (Nous Research, persistent daemon, self-authored skills, YOLO-mode unattended execution) already tracked in this store from unrelated nation-state intrusions against Thailand's Ministry of Finance and Taiwanese government infrastructure -- orchestrated the campaign end to end on Anthropic Opus 4.6 (after newer models refused the operator's requests), taking only 1,951 short Chinese-language operator prompts across 260 sessions. One fully reconstructed Cairn chain: unauthenticated SQL injection (login-email parameter, error-based EXTRACTVALUE) -> plaintext OTP read from the database (MFA bypass) -> admin panel access -> arbitrary file upload (unchecked image-field extension) -> host RCE as a non-root user -> sudo NOPASSWD python3.12 escalation to root -> NFS mount with no_root_squash -> WordPress DB credentials recovered from wp-config.php on the NFS share -> new WP admin user created via direct DB write -> malicious WP plugin upload for RCE on the blog host -> full AWS Secrets Manager dump (46 secrets, 102KB) -> production Magento (Aurora) database access -> Magento encryption-key extraction -> Blowfish-ECB decryption of stored card numbers. Confirmed impact: 600,000+ unexpired credit-card records exfiltrated from two victims, checkout-page skimmer scripts confirmed live on at least 19 of 27 named victims (over 100 further skimmer-infected sites found via a shared skimmer signature), and partial-to-full compromise of a Fortune 500 hospitality company, a major US airline, a large US industrial-supplies distributor and a US online fashion retailer. One of Hermes's self-written skills instructs the agent to wipe the card-data source columns from the victim's Magento database in chunked batches immediately after exfiltration "to avoid detection"; at a bicycle retailer, an overly broad table-name-matching cleanup step additionally dropped 180 staging/backup tables, including backups the victim's own administrators had made -- data loss as an unintended side effect of the attacker's own automated cleanup, not extortion. OpenRouter billing puts the operator's total spend at roughly $12,000-18,000 over the campaign, averaging $25.46 per completed scan (range $3.13-$79.31). Gambit is notifying victims and working with Cloudflare and the Shadowserver Foundation to take down the operator's infrastructure, which has been repeatedly rebuilt.
+    region_nexus: "global (named victims are US-based; the tooling, technique chain and skimmer-injection methods are directly transferable to any internet-facing custom web application, including Swiss public-sector portals and their e-commerce/payment-adjacent services)"
+    primary_sector_nexus: "indirect"
+    sector: "retail / e-commerce (technique class transferable to any custom-coded web application)"
+    cves: []
+    techniques: [T1190, T1552.001, T1078, T1505.003, T1068, T1530, T1189, T1485]
+    affected_products: ["Magento", "WordPress", "AWS Secrets Manager", "NFS"]
+    entity_keys: ["tool:hermes-ai-agent"]
+    new_entities:
+      - { key: "tool:strix-ai-pentest", type: tool, name: "Strix", aliases: [],
+          summary: "Open-source AI-driven autonomous penetration-testing/vulnerability-discovery tool; run via OpenRouter (GLM 5.2, later DeepSeek v4 Pro) at high tempo (146 deep-mode scans / 138 hosts in nine days) by a financially motivated operator against online retailers (Gambit Security, 2026-09-22)." }
+      - { key: "tool:cairn-exploitation-engine", type: tool, name: "Cairn", aliases: [],
+          summary: "Autonomous end-to-end exploitation engine that takes a target domain and an objective (shell or admin access) and runs unattended for hours until it succeeds, times out, or is stopped; used on DeepSeek v4.1 Flash to launch 105 attack projects against online retailers in a five-day span (Gambit Security, 2026-09-22)." }
+    relation_suggestions:
+      - { subject: "tool:hermes-ai-agent", object: "tool:strix-ai-pentest",
+          basis: "Gambit Security: the operator chained Strix's vulnerability-discovery reports into Cairn's exploitation runs, with Hermes orchestrating both as the campaign console (Gambit Security, 2026-09-22)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Between 10 and 15 September alone, 105 attack projects were launched and at least 27 companies were compromised to varying degrees."
+        attribution: "Gambit Security"
+        source_url: "https://gambit.security/blog-posts/autonomous-ai-agents-online-retailers-25-a-company"
+      - quote: "the operator’s own cost review gives a similar figure, a mean of $25.46 over 101 completed scans, from $3.13 for the cheapest target to $79.31 for the most expensive"
+        attribution: "Gambit Security"
+        source_url: "https://gambit.security/blog-posts/autonomous-ai-agents-online-retailers-25-a-company"
+      - quote: "One of the Hermes agent's skill files tells the agent to erase the card data from the victim's Magento database once the data is stolen."
+        attribution: "Gambit Security"
+        source_url: "https://gambit.security/blog-posts/autonomous-ai-agents-online-retailers-25-a-company"
+    extended_notes: |
+      Notable cross-thread link for the entity graph: this campaign's "Hermes" orchestrator is the identical open-source Nous Research "Hermes AI agent" (registry key tool:hermes-ai-agent) already tracked here from the July 2026 Thailand Ministry of Finance intrusion and the July 2026 Taiwan agentic-AI government intrusion (Tenable's seven-incident agentic-AI cluster) -- three unrelated operators (financially motivated criminal, and two apparently state-nexus intrusions) independently reaching for the same permissive open-source agent framework and disabling its safety rails ("YOLO mode" / a self-added skill to strip Hermes's own content-safety filters). This is a genuinely new, distinct campaign -- not a duplicate of the previously-covered Bissa Scanner (AI-assisted mass exploitation/credential harvesting, DFIR Report, April 2026) or PhantomRaven (LLM-generated npm infostealer for bug-bounty fraud) items; different operator, different tooling, different victim set (online retail/e-commerce vs. broad opportunistic scanning / npm supply chain).
+    borderline: false
+
+  - title: "Virtualizor VPS/hypervisor control panel: a login-page guard's own exemption for act=login lets an unauthenticated attacker reach root on the host node (three CVEs, one unauthenticated remote root RCE)"
+    sources:
+      - { url: "https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce", publisher: "VulnCheck", date: "2026-09-22", role: "primary" }
+    discovery_trace: "first seen at: vulncheck (rotation source), URL https://www.vulncheck.com/blog → primary: VulnCheck's own disclosure post, URL https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce (no pivot needed -- VulnCheck is both the discovering researcher and the CVE Numbering Authority for the assigned CVEs; corroboration attempted via WebSearch, only CVE-database mirrors of VulnCheck's own record found, no independent second analysis surfaced)"
+    summary: |
+      VulnCheck's Initial Access Intelligence team discloses three unauthenticated vulnerabilities in Virtualizor, Softaculous' commercial VPS/hypervisor control panel (KVM/OpenVZ/LXC), all reached through a single mis-scoped pre-authentication guard. In enduser/index.php, the admin panel (ports 4084/4085) walks a pre-auth block that redirects every request to the login page except one: when the act GET parameter equals 'login', the redirect's inequality check is false and control falls through to an unauthenticated from_billing_module handler with no session, API key or slave credentials. CVE-2026-43641 (the flagship, CWE-78 OS command injection, CVSS not stated by source but described as reaching uid=0): the handler's uid field, taken unvalidated from an unserialized attacker POST body, is concatenated into a shell command inside billing_unsuspend() -> vexec() -> proc_open(), giving remote root command execution. Exploitation requires a paid, currently-suspended in-house-billing account to exist on the target (any real deployment has these by design) -- no separate enumeration step is needed because the same request path is a non-destructive timing oracle (a sleep-payload probe hangs only for a valid, eligible uid). The bug needs MySQL's default non-strict sql_mode (confirmed present in Virtualizor's own bundled MySQL 5.5.62 EMPS stack) because a stricter mode's truncation error would otherwise abort the query chain before the shell executes. Because the vulnerable index.php request is served by the root-privileged php-fpm pool reserved for the admin panel (distinct from the unprivileged pool serving every other .php file), the exploit avoids dropping a PHP webshell (which would run unprivileged) and instead relays each command's output to a random static file written directly into the webroot and fetched over plain HTTP. CVE-2026-43642 (CWE-502, PHP object injection): the same handler runs native unserialize() with no allowed_classes restriction on attacker-controlled POST data; no working POP gadget chain exists in the stock code today, but the primitive is unauthenticated and remains live for any addon/plugin that introduces a class with __wakeup/__destruct. CVE-2026-43643 (CWE-639, missing authorization): the same handler's 'whmcs' branch lets an unauthenticated caller zero out or inflate any tenant's account balance via a parameterized-but-unauthenticated UPDATE, independent of sql_mode. All three were confirmed exploitable on Virtualizor 3.2.9 patch 7 and patch 8; Softaculous fixed all three in 3.2.9 patch 9 (2026-09-01, carried into 3.3.0) by requiring apicall_validate() (a valid HMAC-based API key or admin credentials) before the handler is reached at all, casting uid to (int) before it reaches the shell, adding allowed_classes => false to the deserialization call, and adding an email/uid ownership check to the balance-write branch. No exploitation in the wild is reported by VulnCheck; this is vendor-fixed vulnerability research, not an active-exploitation alert.
+    region_nexus: "global; any organization or hosting provider (including those serving Swiss public-sector cloud/VPS workloads) running a self-managed Virtualizor control panel on 3.2.9 patch 8 or earlier"
+    primary_sector_nexus: "indirect"
+    sector: "hosting / infrastructure (VPS and hypervisor management)"
+    cves: [CVE-2026-43641, CVE-2026-43642, CVE-2026-43643]
+    techniques: [T1190, T1068]
+    affected_products: ["Softaculous Virtualizor"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "the pre-auth billing-module hook is guarded only against requests whose act is not 'login', so act=login walks straight into it"
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce"
+      - quote: "Verified on the lab: /tmp/x reads uid=0(root) gid=0(root) groups=0(root)."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce"
+      - quote: "Softaculous patched all three in 3.2.9 patch 9 (2026-09-01), and the fix carries into 3.3.0 (2026-09-09), the current build. Patch 7, the build audited above, and patch 8 are both still vulnerable"
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce"
+    extended_notes: |
+      No CVSS score was stated in the VulnCheck post itself; NVD had not yet published a scored record for these three CVE ids at fetch time (disclosure was same-day). VulnCheck is the assigning CNA and the discovering researcher, so this is treated as an authoritative single primary (equivalent standing to a vendor advisory) rather than an unverified claim, but no second independent technical analysis has surfaced yet -- flagged SINGLE-SOURCE-OTHER per the verification gate. Worth a hunt note: the parameterized-query bypass mechanism here (MySQL casting an injected string back to the leading integer it needs, defeating a bound-parameter "fix" that was never a trust boundary in the first place) is a reusable lesson for any code review that treats "uses parameterized queries" as sufficient when the same tainted value is later also used in a shell command or file path.
+    borderline: false
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: dfirreport
+    reason: "RSS feed fetched successfully; newest post dated 2026-08-24, no in-window items."
+  - source_id: unit42
+    reason: "Blog listing fetched successfully; newest post dated 2026-09-21 (just outside the 25.92h window), no in-window items."
+  - source_id: akamai-sirt
+    reason: "RSS feed fetched successfully; one in-window post (2026-09-22, 'Beyond Identity: Governing the Agentic Enterprise') read in full via jina -- a marketing/thought-leadership summary of an unreleased, form-gated SOTI report with generic statistics (40% of enterprise users installed AI extensions, 6% of AI-chatbot conversations contain sensitive data, MCP attack-surface framing); no concrete vulnerable component, technique, or detection specifics -- dropped as below the technical-depth bar, not treated as an ANNUAL/periodic-report flag since the underlying full report is gated behind a lead-gen form and not itself accessible."
+  - source_id: sygnia
+    reason: "Blog listing fetched successfully; newest post dated 2026-09-06, no in-window items."
+  - source_id: trellix
+    reason: "Direct WebFetch 403'd; recovered via extract (trafilatura-direct). Listing is stale -- newest substantive research post dated April 2026 (page appears to not have been refreshed with September posts in the crawled snapshot)."
+  - source_id: zdi
+    reason: "Blog listing fetched successfully; newest post dated 2026-09-16, no in-window items."
+  - source_id: fortinet-fortiguard-blog
+    reason: "Blog listing fetched successfully; newest post dated 2026-09-10, no in-window items."
+  - source_id: sansec-research
+    reason: "Blog listing fetched successfully; newest post dated 2026-09-16 (Brevo, already covered in prior_coverage), no in-window items."
+  - source_id: shadowserver
+    reason: "Blog listing fetched successfully; newest post dated 2026-09-07, no in-window items."
+  - source_id: esentire
+    reason: "Advisories page fetched successfully; newest advisory dated 2026-09-17, no in-window items."
+  - source_id: csa-labs
+    reason: "Fetched successfully but flagged as a quality/recency trap: every 'research note' on the listing carries the CSA fetch/publish date (mostly 2026-09-20/21/22) but each one turns out, on drilling to its own cited primary, to repackage a disclosure 3-7 days older (verified for four of five: BragJack -> BleepingComputer 2026-09-19; Codex sandbox escapes -> Accomplish AI 2026-09-15; RatHat -> Zimperium 2026-09-16; SOCPAC AI-hallucination story -> TechCrunch 2026-09-18). None of these were included per the recency gate. Recommend the main agent treat csa-labs' displayed date as a republish/aggregation timestamp, not a recency signal, and always re-verify against the linked primary before using a csa-labs item as in-window."
+  - source_id: paradigm-shift-research
+    reason: "ps.tc (bridge fetch) redirects to a client-rendered SPA shell with no server-side content on direct GET; WebFetch's cached/rendered view surfaced a listing identical in content and dating pattern to csa-labs (see above) -- same recycled-news caveat applies. No item sourced from here independently of the csa-labs cross-check."
+  - source_id: heise-sec
+    reason: "RSS feed fetched, several in-window items were vulnerability-disclosure news (WordPress, SolarWinds ARM, Pi-hole) more appropriate to the S1 domain than S3, and were left for that domain. One item drilled and dropped on merits: 'Cybergang-Fehde: ShinyHunters knackt Cl0p-Darknetseite' (heise, 2026-09-22, https://www.heise.de/news/Cybergang-Fehde-ShinyHunters-knackt-Cl0p-Darknetseite-11460967.html) -- corroborated via BleepingComputer (https://www.bleepingcomputer.com/news/security/shinyhunters-hacks-clop-leak-site-threatens-to-extort-ransomware-gang/, dated 2026-09-19, updated 2026-09-21) -- an inter-gang leak-site defacement/extortion feud with no CVE, no victim-data exposure confirmed beyond the gangs' own claims, and no detection-relevant technical content; underlying event is 3+ days old by the time heise picked it up. Judged below the bar (no vanity metrics / no actionable technical content) rather than included as borderline."

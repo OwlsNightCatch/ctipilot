@@ -1,0 +1,179 @@
+domain: S1
+run_id: 2026-09-23T0405Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-23T04:09:44Z
+ended_at: 2026-09-23T04:17:37Z
+duration_seconds: 473
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 5
+  bridge_fetches: 20
+
+items:
+  - title: "CVE-2026-93616 — Check Point Security Management: pre-authentication path traversal to arbitrary script upload/execution, exploited as a zero-day since July (CVSS 9.8)"
+    sources:
+      - { url: "https://support.checkpoint.com/results/sk/sk1000171/", publisher: "Check Point Support (sk1000171)", date: "2026-09-22", role: "primary" }
+      - { url: "https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/", publisher: "Check Point Research (blog)", date: "2026-09-22", role: "primary" }
+      - { url: "https://thehackernews.com/2026/09/check-point-warns-of-management-server.html", publisher: "The Hacker News", date: "2026-09-22", role: "corroborating" }
+    discovery_trace: "first seen at: MANDATORY priority tasking (CISA KEV mechanical sweep, CVE-2026-93616) → primary: Check Point Support sk1000171, URL https://support.checkpoint.com/results/sk/sk1000171/ → primary: Check Point Research blog, URL https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/ → corroborating: The Hacker News, URL https://thehackernews.com/2026/09/check-point-warns-of-management-server.html. Also confirmed via CISA KEV catalog bridge fetch (cisa-kev, dateAdded 2026-09-22) and ENISA EUVD (EUVD-2026-84375)."
+    summary: |
+      CVE-2026-93616 (CVSS 9.8) is a pre-authentication directory-traversal and file-upload vulnerability in the Check Point Management web service that lets an unauthenticated network attacker upload a script to an arbitrary path and then execute it — Check Point's own advisory describes it as allowing an attacker to "execute a script from an arbitrary path and load an arbitrary Java class." It affects Security Management Server, Multi-Domain Security Management Server, Log Server, Multi-Domain Log Server and SmartEvent (Smart-1 Cloud already has the fix applied; Security Gateway appliances and Spark Firewall are not affected). Check Point states it identified "a handful of pinpointed attacks" exploiting this as a zero-day on 23 July 2026 — roughly two months before the 22 September 2026 disclosure and fix. Affected versions: R82.20 (all takes), R82.10 Jumbo Hotfix Take 44 or lower, R82 Take 126 or lower, R81.20 Take 166 or lower, R81.10 Take 190 or lower (EoS), and R80/R80.10–R80.40/R81 (all EoS). Fixed in the R82.20 Security Hotfix, or Jumbo Hotfix Accumulator R82.10 Take 45+ / R82 Take 127+ / R81.20 Take 170+ / R81.10 Take 192+. Check Point explicitly states no LivePatch is available for this issue "because of the nature of the fix" — the September LivePatch (Take 28/29) that addressed the unrelated CVE-2026-91843 stack-overflow flaw does NOT cover this vulnerability. CISA added it to KEV the same day with a 25 September 2026 remediation deadline.
+    region_nexus: "global; Check Point Security Management / Multi-Domain Security Management is widely deployed to centrally manage firewall estates, including in Swiss public-sector and critical-infrastructure environments"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-93616"]
+    techniques: ["T1190", "T1505.003"]
+    affected_products: ["Check Point Security Management Server", "Check Point Multi-Domain Security Management Server", "Check Point Log Server", "Check Point Multi-Domain Log Server", "Check Point SmartEvent"]
+    entity_keys: ["product:check-point-security-management-server", "product:check-point-multi-domain-security-management-server", "product:check-point-log-server", "product:check-point-multi-domain-log-server"]
+    new_entities:
+      - { key: "product:check-point-smartevent", type: product, name: "Check Point SmartEvent", aliases: [], summary: "Check Point's security-event correlation and reporting product, listed as affected by CVE-2026-93616 (Check Point sk1000171, 2026-09-22)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A directory traversal and file upload vulnerability allows an unauthenticated attacker to upload and execute arbitrary scripts on the Check Point Management Server. This vulnerability is exploited in the Wild. Check Point is aware of a handful of customers who have been attacked."
+        attribution: "Check Point Support (sk1000171)"
+        source_url: "https://support.checkpoint.com/results/sk/sk1000171/"
+      - quote: "As of the advisory publications date, we observed a handful of pinpointed attacks on July 23, 2026."
+        attribution: "Check Point Research (blog)"
+        source_url: "https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/"
+      - quote: "Because of the nature of the fix, a LivePatch is not be available for this issue."
+        attribution: "Check Point Support (sk1000171)"
+        source_url: "https://support.checkpoint.com/results/sk/sk1000171/"
+    extended_notes: |
+      Detection concept (from the vendor's own hunting guidance, vendor-neutral framing): correlate two independent log signals on Security Management / MDS / Log / SmartEvent servers rather than alerting on either alone. (1) A pre-authentication login attempt whose username field is anomalously long (>1000 characters) appearing in the management-process log, occurring at the same timestamp as an FWM/MDS core-dump file — the combination indicates a crash consistent with exploitation, not the isolated long-username event by itself. (2) A resource-loading error referencing a file path containing directory-traversal sequences (parent-directory references) in the same log — this is the traversal primitive itself surfacing in application error output. Hardening: restrict network reachability to the management web service (Check Point names TCP/19009 specifically) to trusted administrative IP ranges via the platform's Trusted Clients / implied-rule mechanism, per Check Point's own Gateway and Management Hardening guide — this is the one mitigation available given no LivePatch exists.
+
+      This CVE was disclosed in the same advisory cycle as CVE-2026-85102 (a separate, previously-patched Check Point Security Gateway/Spark VPN certificate-validation RCE now confirmed under active exploitation since 2026-09-12) — see the separate update item on this run's existing 2026-09-10 Check Point Quantum VPN entry. The two vulnerabilities affect different components (Management Server web service vs. Gateway/Spark VPN certificate handling) and have no CVE overlap, so they are kept as distinct findings.
+    priority_recommendation: critical
+
+  - title: "CVE-2026-93952 — Arista VeloCloud Orchestrator: improper input validation reaches privileged internal functionality, actively exploited in certificate-authenticated deployments (CVSS 10.0/9.5)"
+    sources:
+      - { url: "https://www.arista.com/en/support/advisories-notices/security-advisory/24765-security-advisory-0183", publisher: "Arista Networks (Security Advisory 0183)", date: "2026-09-22", role: "primary" }
+      - { url: "https://thehackernews.com/2026/09/new-cvss-100-velocloud-orchestrator.html", publisher: "The Hacker News", date: "2026-09-22", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0385", publisher: "NCSC-NL (NCSC-2026-0385)", date: "2026-09-22", role: "corroborating" }
+    discovery_trace: "first seen at: MANDATORY priority tasking (CISA KEV mechanical sweep, CVE-2026-93952) → primary: Arista Security Advisory 0183, URL https://www.arista.com/en/support/advisories-notices/security-advisory/24765-security-advisory-0183 → corroborating: The Hacker News, URL https://thehackernews.com/2026/09/new-cvss-100-velocloud-orchestrator.html → corroborating: NCSC-NL RSS feed (advisories.ncsc.nl/rss/advisories), advisory NCSC-2026-0385, published 2026-09-22T14:34Z. Also confirmed via CISA KEV catalog bridge fetch and ENISA EUVD (EUVD-2026-84296)."
+    summary: |
+      CVE-2026-93952 (CVSS 3.1: 10.0, CVSS4.0: 9.5, CWE-20 improper input validation) affects on-premises VeloCloud Orchestrator (VCO), the SD-WAN control-plane server that provisions and manages VeloCloud Edge devices. Arista states the flaw "may allow a remote attacker to access privileged internal functionality and impact the VCO host," compromising confidentiality, integrity and availability of the orchestrator and the data it manages — and that a compromised VCO may also give an attacker access to the Edge devices it manages. Exposure is configuration-dependent: only VCOs where certificate-based Edge-to-VCO authentication is configured are affected; the attacker additionally needs network access to the VCO web interface and the public portion of a VeloCloud Edge's authentication certificate, but requires no VCO tenant or operator credentials. Affected releases: 5.2.3.15 and below, 6.1.3.7 and below, 6.4.2.7 and below, and 7.0.0.2 and below. As of 22 September 2026, fixes exist only for the 5.2 (5.2.3.16+) and 6.4 (6.4.2.8+) trains; the 6.1.x and 7.0.x trains have no fix yet. Arista's Hosted and Dedicated VCO offerings were already patched. Arista states the vulnerability "was discovered externally and is known to be actively exploited," without disclosing when exploitation began or its scale. Notably, the affected release trains are the same ones that received fixes in July 2026 for a separate, unrelated VCO flaw (CVE-2026-16812) that Arista also reported as exploited — indicating VCO has now been targeted twice within roughly two months.
+    region_nexus: "global; SD-WAN orchestrators are frequently internet-facing control-plane infrastructure for distributed government/agency branch networks"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-93952"]
+    techniques: ["T1190", "T1543.002"]
+    affected_products: ["Arista VeloCloud Orchestrator (VCO) On-Prem"]
+    entity_keys: ["product:arista-velocloud-orchestrator-on-prem"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This issue was discovered externally and is known to be actively exploited."
+        attribution: "Arista Networks (Security Advisory 0183)"
+        source_url: "https://www.arista.com/en/support/advisories-notices/security-advisory/24765-security-advisory-0183"
+      - quote: "VCO is exposed if certificate based authentication from the VeloCloud Edge to VeloCloud Orchestrator (VCO) is configured. Access to the public portion of the VeloCloud Edge authentication certificate is required. A successful attack requires network access to the VCO web interface. VCO tenant or operator credentials are not required for this exposure."
+        attribution: "Arista Networks (Security Advisory 0183)"
+        source_url: "https://www.arista.com/en/support/advisories-notices/security-advisory/24765-security-advisory-0183"
+      - quote: "Arista said an orchestrator is exposed if \"certificate based authentication from the VeloCloud Edge to VeloCloud Orchestrator (VCO) is configured.\" It did not say which of those modes meets that condition."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/09/new-cvss-100-velocloud-orchestrator.html"
+    extended_notes: |
+      Detection concept (vendor-neutral, from Arista's own guidance): review VCO web-access logs for requests with unusual URL-like path components, encoded characters, references to local/internal services, or abnormally high request rates; monitor for unexpected outbound HTTP/HTTPS connections originating from the VCO host itself (an orchestrator should not normally initiate outbound web requests); watch for privileged configuration or maintenance actions that do not correspond to known administrator activity. Arista's own compromise indicators describe persistence via an unscheduled systemd service unit plus a companion script dropped under a system binary directory, and a distinctive custom HTTP request header appearing in the reverse-proxy access log — a defender should treat any newly created systemd unit not tied to package management, or an unrecognized custom header pattern in nginx/proxy logs, as a hunt lead on this class of appliance, without relying on the vendor's specific artifact names (which function as IOCs and are excluded from this brief). Hardening: restrict VCO web-interface access to trusted administrative networks; where feasible on unpatched 6.1.x/7.0.x deployments, consider whether PSK-based Edge authentication (Certificate Deactivated mode) can substitute for certificate-based authentication until a fix ships, since PSK-mode deployments are not exposed to this flaw.
+    priority_recommendation: critical
+
+  - title: "CVE-2026-94127 — F5 BIG-IP APM: unauthenticated heap-based buffer overflow in OAuth-profile processing reaches RCE on the TMM data plane (CVSS 9.8)"
+    sources:
+      - { url: "https://cert.europa.eu/publications/security-advisories/2026-013/", publisher: "CERT-EU (Security Advisory 2026-013)", date: "2026-09-22", role: "primary" }
+      - { url: "https://fieldeffect.com/blog/f5-fixes-big-ip-apm-vulnerability", publisher: "Field Effect", date: "2026-09-22", role: "corroborating" }
+      - { url: "https://securityonline.info/big-ip-apm-vulnerability-cve-2026-94127/", publisher: "SecurityOnline / Daily CyberSecurity", date: "2026-09-22", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0386", publisher: "NCSC-NL (NCSC-2026-0386)", date: "2026-09-22", role: "corroborating" }
+    discovery_trace: "first seen at: MANDATORY priority tasking (CISA KEV mechanical sweep, CVE-2026-94127) → attempted primary: F5 K000162605 (https://my.f5.com/manage/s/article/K000162605) — the F5 support portal is a fully JS-gated SPA; direct fetch and the jina reader both returned only a loading shell, so the vendor advisory text is relayed via CERT-EU's advisory (which quotes it directly) and two independent write-ups that quote it verbatim → primary: CERT-EU Security Advisory 2026-013, URL https://cert.europa.eu/publications/security-advisories/2026-013/ → corroborating: Field Effect, URL https://fieldeffect.com/blog/f5-fixes-big-ip-apm-vulnerability → corroborating: SecurityOnline, URL https://securityonline.info/big-ip-apm-vulnerability-cve-2026-94127/ → corroborating: NCSC-NL advisory NCSC-2026-0386, published 2026-09-22T14:39Z. Also confirmed via CISA KEV catalog bridge fetch and ENISA EUVD (EUVD-2026-84427)."
+    summary: |
+      CVE-2026-94127 (CVSS 3.1: 9.8, CVSS4.0: 9.3, CWE-122 heap-based buffer overflow) is a vulnerability in F5 BIG-IP Access Policy Manager (APM) reachable on the Traffic Management Microkernel (TMM) data plane — F5 states explicitly "this is a data plane issue; there is no control plane exposure." It triggers only on a virtual server configured with both an APM access policy AND an OAuth profile in the OAuth Authorization Server role (deployments using APM strictly as an OAuth Client/Resource Server are not affected). F5's own advisory text, relayed by CERT-EU: "When a BIG-IP APM access policy and an OAuth profile are configured on a virtual server, specific malicious traffic can lead to remote code execution (RCE)." The OAuth-profile request-handling logic writes attacker-influenced data into a heap allocation without validating its size, corrupting adjacent heap memory and ultimately hijacking control flow inside TMM — exploitable by an unauthenticated, network-only attacker with no user interaction, and BIG-IP systems running in Appliance mode are also vulnerable. Affected: BIG-IP APM 21.1.0, 17.5.0–17.5.1, and 17.1.0–17.1.3. Fixed via engineering hotfixes: Hotfix-BIGIP-21.1.0.2.0.30.22, Hotfix-BIGIP-17.5.1.9.0.160.12, Hotfix-BIGIP-17.1.3.5.0.41.14; F5 also offers an emergency iRule mitigation through F5 Support for organizations that cannot immediately apply the hotfix. F5's advisory states the vulnerability has been exploited; CISA added it to KEV the same day with a 25 September 2026 remediation deadline.
+    region_nexus: "global; BIG-IP APM is a common SSO/OAuth/VPN authentication gateway in front of business and government applications"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-94127"]
+    techniques: ["T1190"]
+    affected_products: ["F5 BIG-IP Access Policy Manager (APM)"]
+    entity_keys: ["product:f5-big-ip"]
+    new_entities:
+      - { key: "product:f5-big-ip-apm", type: product, name: "F5 BIG-IP Access Policy Manager (APM)", aliases: ["BIG-IP APM"], summary: "F5 BIG-IP's access-management module providing authentication, SSO and OAuth/VPN policy enforcement; affected by CVE-2026-94127, an unauthenticated heap-overflow RCE on the TMM data plane (F5 advisory K000162605, 2026-09-22)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "When a BIG-IP APM access policy and an OAuth profile are configured on a virtual server, specific malicious traffic can lead to remote code execution (RCE)."
+        attribution: "F5 (via CERT-EU Security Advisory 2026-013 and SecurityOnline)"
+        source_url: "https://securityonline.info/big-ip-apm-vulnerability-cve-2026-94127/"
+      - quote: "This is a data plane issue; there is no control plane exposure."
+        attribution: "F5 (via SecurityOnline)"
+        source_url: "https://securityonline.info/big-ip-apm-vulnerability-cve-2026-94127/"
+      - quote: "The vendor **confirmed active exploitation in the wild**"
+        attribution: "CERT-EU (Security Advisory 2026-013)"
+        source_url: "https://cert.europa.eu/publications/security-advisories/2026-013/"
+      - quote: "At a high level, multiple OAuth authentication failures, followed by suspicious commands, shortly followed by a TMM SIGABRT is the combination that should lead to human review of the system."
+        attribution: "CERT-EU (Security Advisory 2026-013, relaying F5's own compromise-assessment guidance)"
+        source_url: "https://cert.europa.eu/publications/security-advisories/2026-013/"
+    extended_notes: |
+      Detection concept, directly from the vendor's own compromise-assessment guidance (relayed verbatim by CERT-EU, vendor-neutral telemetry classes): (1) authentication-log telemetry — repeated OAuth "UserInfo" request failures with an "invalid_token" error code from a single source in a short window (10+ occurrences is the vendor's own threshold) in the APM authentication log; (2) counter/metrics telemetry — an unexplained rise in the failed-OAuth-request counter relative to total OAuth requests, queryable via the platform's internal OAuth statistics; (3) crash/audit telemetry — administrative-audit-log review around the same timestamps as any OAuth failure spike, correlated with a TMM process crash/core file caused by the microkernel entering an abort loop. F5's own framing: no single one of these three signals is by itself an indicator of compromise — it is the correlated sequence (auth failures → suspicious commands → TMM crash) that should trigger human review, a discriminator worth carrying into any SIEM correlation rule built from this advisory. Hardening: inventory every virtual server pairing an APM access policy with an OAuth profile (the exposure is entirely configuration-gated); apply the engineering hotfix or the emergency iRule; because this is an authentication-gateway component, internet-facing instances are the highest remediation priority.
+    priority_recommendation: critical
+
+  - title: "CVE-2026-85102 confirmed under active exploitation against Check Point Spark customers since September 12 — update to the 2026-09-10 Check Point Quantum VPN entry"
+    sources:
+      - { url: "https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/", publisher: "Check Point Research (blog)", date: "2026-09-22", role: "primary" }
+      - { url: "https://support.checkpoint.com/results/sk/sk1000117", publisher: "Check Point Support (sk1000117)", date: "2026-09-20", role: "primary" }
+      - { url: "https://thehackernews.com/2026/09/check-point-warns-of-management-server.html", publisher: "The Hacker News", date: "2026-09-22", role: "corroborating" }
+    discovery_trace: "first seen at: MANDATORY priority tasking cross-check (CISA KEV addition of CVE-2026-85102 alongside CVE-2026-93616, 2026-09-22) → matched against prior_coverage.json entry 2026-09-10/checkpoint-quantum-vpn-cert-preauth-rce-cvss98 (same CVE, previously stated \"No exploitation is reported\") → primary: Check Point Research blog, URL https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/ → primary: Check Point Support sk1000117, URL https://support.checkpoint.com/results/sk/sk1000117 → corroborating: The Hacker News, URL https://thehackernews.com/2026/09/check-point-warns-of-management-server.html. Also confirmed via CISA KEV catalog bridge fetch (dateAdded 2026-09-22) and ENISA EUVD (EUVD-2026-75009, exploitedSince 2026-09-22)."
+    summary: |
+      This run's existing entry (2026-09-10/checkpoint-quantum-vpn-cert-preauth-rce-cvss98) covers CVE-2026-85103 and CVE-2026-85102, two Check Point Security Gateway/Spark Firewall VPN-certificate-processing flaws disclosed 2026-09-09 with "no exploitation is reported" at the time. That is now superseded for CVE-2026-85102: CISA added it to KEV on 2026-09-22, and Check Point's own advisory confirms a wave of exploitation attempts against Check Point Spark customers globally beginning 2026-09-12 — three days after the patch shipped. Check Point states the attempts originated from anonymization infrastructure (VPN services and proxies) and used certificate-based Mobile Access logins with observed (non-exhaustive) certificate subjects; Check Point's recommended hunting step is to review logs for anomalous certificate-based Mobile Access logins broadly, not limited to the observed subjects, and to look for follow-on internal port/service scanning from suspicious logged-in Mobile Access sessions. Check Point states customers who applied the 2026-09-09 fix are protected, but does not confirm whether any exploitation attempt against an unpatched system succeeded. CVE-2026-85103 (the companion heap-overflow certificate-decoding flaw in the original entry) is not reported exploited and is unaffected by this update.
+    region_nexus: "global; confirms exploitation against a widely-deployed SMB/branch firewall line already flagged in the prior entry as internet-facing VPN infrastructure"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-85102"]
+    techniques: ["T1190", "T1133"]
+    affected_products: ["Check Point Security Gateway", "Check Point Spark Firewall"]
+    entity_keys: ["product:check-point-security-gateway", "product:check-point-spark-firewall"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-09-10/checkpoint-quantum-vpn-cert-preauth-rce-cvss98"
+    evidence:
+      - quote: "Check Point disclosed the vulnerability and released fixes on September 9, 2026. At the time, we had no evidence of exploitation. We are now observing exploitation attempts against Check Point Spark customers globally."
+        attribution: "Check Point Research (blog)"
+        source_url: "https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/"
+      - quote: "Starting September 12, 2026, we observed a wave of exploitation attempts against Spark customers. The attempts originated from anonymization infrastructure, including VPN services and proxies"
+        attribution: "Check Point Research (blog)"
+        source_url: "https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/"
+      - quote: "Review your logs for anomalous certificate-based Mobile Access logins. Do not limit the search to the subjects above. Look for second stage activity originating from suspicious logged-in users via Mobile Access. Follow-up activity often involves internal port and service scan"
+        attribution: "Check Point Research (blog)"
+        source_url: "https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/"
+    extended_notes: |
+      Suggested changelog fields: exploitation status for CVE-2026-85102 (unexploited → confirmed active exploitation since 2026-09-12, KEV-listed 2026-09-22), priority (recommend elevating high → critical given confirmed active exploitation of a maximum-severity unauthenticated pre-auth RCE, mirroring how this brief has treated equivalent confirmed-exploited findings this week), and a body note on the detection/hunting guidance above. The headline and summary's "No exploitation is reported" language needs updating; CVE-2026-85103 is unaffected and remains not-confirmed-exploited.
+    priority_recommendation: critical (elevated from high)
+
+cve_table:
+  - { cve: "CVE-2026-93616", product: "Check Point Security Management Server / Multi-Domain Security Management Server / Log Server / Multi-Domain Log Server / SmartEvent", cvss: "9.8 (CVSS3.1)", epss: "not yet populated (too new)", kev: true, exploited: "yes — zero-day, pinpointed attacks since 2026-07-23", patch: "R82.20 Security Hotfix; JHF R82.10 Take 45+ / R82 Take 127+ / R81.20 Take 170+ / R81.10 Take 192+; no LivePatch available", source: "https://support.checkpoint.com/results/sk/sk1000171/" }
+  - { cve: "CVE-2026-93952", product: "Arista VeloCloud Orchestrator (VCO) On-Prem", cvss: "10.0 (CVSS3.1) / 9.5 (CVSS4.0)", epss: "not yet populated (too new)", kev: true, exploited: "yes — actively exploited, start date/scale undisclosed", patch: "5.2.3.16+ (5.2.x train), 6.4.2.8+ (6.4.x train); 6.1.x and 7.0.x trains have no fix yet as of 2026-09-22", source: "https://www.arista.com/en/support/advisories-notices/security-advisory/24765-security-advisory-0183" }
+  - { cve: "CVE-2026-94127", product: "F5 BIG-IP Access Policy Manager (APM)", cvss: "9.8 (CVSS3.1) / 9.3 (CVSS4.0)", epss: "not yet populated (too new)", kev: true, exploited: "yes, per F5 advisory", patch: "Engineering hotfixes for 21.1.0, 17.5.0-17.5.1, 17.1.0-17.1.3 branches; emergency iRule mitigation available via F5 Support", source: "https://cert.europa.eu/publications/security-advisories/2026-013/" }
+  - { cve: "CVE-2026-85102", product: "Check Point Security Gateway / Spark Firewall (Site-to-Site / Remote Access VPN)", cvss: "9.8 (CVSS3.1)", epss: "0.33 (ENISA EUVD)", kev: true, exploited: "yes — confirmed active exploitation against Spark customers since 2026-09-12 (update to prior 2026-09-10 entry)", patch: "Fixed since 2026-09-09 (LivePatch Take 26 or Jumbo Hotfix Accumulator, see sk1000117)", source: "https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Product watchlist is empty (none configured per config/org-profile.yaml) — the sweep is a no-op this run. General coverage rules applied unchanged; no watchlist-driven items to mark."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: "f5-com-portal"
+    reason: "F5's my.f5.com support portal (K000162605, the CVE-2026-94127 vendor advisory) is a fully client-rendered SPA; both a direct fetch and the jina reader returned only a loading shell with no article content — covered_anyway via CERT-EU Security Advisory 2026-013 (which quotes the F5 advisory directly), Field Effect, SecurityOnline and NCSC-NL, all of which reproduce F5's own advisory language verbatim."
+  - source_id: "zdi"
+    reason: "No new in-window post since 2026-09-16 (Apple September review); nothing to surface for this run."
+  - source_id: "ncsc-uk"
+    reason: "No new in-window advisory items since 2026-09-21 (general blog post, not vulnerability-specific); nothing new to surface for the S1 mandate this run."

@@ -1,0 +1,489 @@
+domain: deepread-verification
+run_id: 2026-09-23T0405Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+task: "Phase 4 deep-read verification / enrichment pass (items 1-9, item 10 excluded - handled by main agent)"
+started_at: 2026-09-23T04:32:52Z
+ended_at: 2026-09-23T04:43:44Z
+duration_seconds: 652
+
+items:
+
+  - id: 1
+    title: "CVE-2026-93616 (Check Point Security Management)"
+    urls_fetched:
+      - url: "https://support.checkpoint.com/results/sk/sk1000171/"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-checkpoint-93616-sk.txt"
+        fetch_method: "extract (trafilatura-direct)"
+        status: 200
+      - url: "https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-checkpoint-blog-93616-85102.txt"
+        fetch_method: "extract (trafilatura-direct)"
+        status: 200
+    quotes:
+      - quote: "A directory traversal and file upload vulnerability allows an unauthenticated attacker to upload and execute arbitrary scripts on the Check Point Management Server. This vulnerability is exploited in the Wild. Check Point is aware of a handful of customers who have been attacked."
+        verdict: PASS
+        found_in: sk1000171
+      - quote: "As of the advisory publications date, we observed a handful of pinpointed attacks on July 23, 2026."
+        verdict: PASS
+        found_in: blog post (verbatim, exact)
+      - quote: "Because of the nature of the fix, a LivePatch is not be available for this issue."
+        verdict: PASS
+        found_in: sk1000171
+    contradictions: none
+    enrichment:
+      cvss: "9.8 (stated in both sk1000171 and the blog CVE table)"
+      affected_versions_precise:
+        - "R82.20"
+        - "R82.10 Jumbo Hotfix Take 44 or lower"
+        - "R82 Jumbo Hotfix Take 126 or lower"
+        - "R81.20 Jumbo Hotfix Take 166 or lower"
+        - "R81.10 Jumbo Hotfix Take 190 or lower (EoS)"
+        - "R80, R80.10, R80.20, R80.30, R80.40, R81 (all EoS)"
+      affected_products: "Security Management Server, Multi-Domain Security Management Server, Log Server, Multi-Domain Log Server, SmartEvent"
+      not_affected: "Smart-1 Cloud (fix already applied — no separate timeline given beyond that), Check Point Firewall Appliances, Check Point Spark Firewall"
+      fixed_in:
+        - "R82.20 Security Hotfix (standalone TAR download)"
+        - "Jumbo Hotfix Accumulator R82.10 from Take 45"
+        - "Jumbo Hotfix Accumulator R82 from Take 127"
+        - "Jumbo Hotfix Accumulator R81.20 from Take 170"
+        - "Jumbo Hotfix Accumulator R81.10 from Take 192"
+        - "note: these Jumbo HFAs also carry the fix for the separate CVE-2026-91843 (sk1000155)"
+      note_blog_also_states: "Check Point LivePatch Take 28/29 does NOT address CVE-2026-93616 (explicit vendor statement in the blog's CVE table footnote)."
+      tcp_19009_hardening_source: "sk1000171 Mitigation section, vendor's own text: 'Limit access to your Management Servers behind a Security Gateway/Check Point Firewall... Make sure that access to port TCP/19009 is only possible from Trusted IP addresses.' This is a first-party Check Point statement, not third-party inference."
+      ioc_hunting_note: "sk1000171 provides two log-grep hunting commands (against cpm.elg on Management/MDS/Log/SmartEvent servers) as compromise indicators — these are detection queries/log patterns, not hashes/IPs/domains, so they do not trigger the no-IOC rule; may be useful for a **Triage:** or detection note but are log-grep recipes, not classic IOCs."
+      dates: "sk1000171 Date Created 2026-09-20, Last Modified 2026-09-22. Blog post dated 2026-09-22, authored by Lotem Finkelstein, VP Research."
+      author_attribution: "Blog post bylined Lotem Finkelstein, VP Research, Check Point."
+
+  - id: 2
+    title: "CVE-2026-93952 (Arista VeloCloud Orchestrator)"
+    urls_fetched:
+      - url: "https://www.arista.com/en/support/advisories-notices/security-advisory/24765-security-advisory-0183"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-arista-93952.txt"
+        fetch_method: "extract (trafilatura-direct)"
+        status: 200
+      - url: "https://www.arista.com/en/support/advisories-notices/security-advisory/24364-security-advisory-0144"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-arista-16812.txt"
+        fetch_method: "extract (trafilatura-direct)"
+        status: 200
+        note: "Fetched to independently confirm the CVE-2026-16812 relationship stated in the item's enrichment ask (found via WebSearch, this is Arista Security Advisory 0144)."
+    quotes:
+      - quote: "This issue was discovered externally and is known to be actively exploited."
+        verdict: PASS
+        found_in: "Security Advisory 0183"
+      - quote: "VCO is exposed if certificate based authentication from the VeloCloud Edge to VeloCloud Orchestrator (VCO) is configured. Access to the public portion of the VeloCloud Edge authentication certificate is required. A successful attack requires network access to the VCO web interface. VCO tenant or operator credentials are not required for this exposure."
+        verdict: PASS
+        found_in: "Security Advisory 0183"
+    contradictions: none
+    enrichment:
+      cvss: "CVSSv3.1 10.0, CVSSv4.0 9.5 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H). CWE-20 Improper Input Validation."
+      affected_versions:
+        - "5.2.3.15 and below (5.2.x train)"
+        - "6.1.3.7 and below (6.1.x train)"
+        - "6.4.2.7 and below (6.4.x train)"
+        - "7.0.0.2 and below (7.0.x train)"
+      fixed_versions_IMPORTANT: >
+        Only TWO trains have a fix released as of the 2026-09-22 advisory: VCO 5.2.3.16+ (5.2.3 train)
+        and VCO 6.4.2.8+ (6.4.2 train). The advisory explicitly states fixes for the 6.1.x and 7.0.x
+        trains are NOT yet available ("Releases in other release trains that fix this will be added
+        over time.") — this is a materially important gap the entry should carry: two of the four
+        affected trains remain unpatched at disclosure time.
+      hosted_vco: "Arista-hosted/Dedicated VCO instances were already patched before this advisory published (not a Smart-1-Cloud-style separate timeline — same treatment: hosted variant patched ahead of on-prem)."
+      required_config_for_exploitation: "Certificate-based auth from VeloCloud Edge to VCO must be configured; attacker needs the PUBLIC portion of a VeloCloud Edge auth cert (not secret); no VCO tenant/operator credentials required; network access to VCO web interface is the only other prerequisite."
+      cve_2026_16812_relationship_CONFIRMED: >
+        CVE-2026-16812 is a SEPARATE, earlier flaw (Arista Security Advisory 0144, initial release
+        2026-07-27, revised 2026-08-10) in the SAME product/trains: CVSSv3.1 10.0 AND CVSSv4.0 10.0
+        (higher v4 score than the new CVE), CWE-78 OS Command Injection (vs. CWE-20 for the new one).
+        Arista's own advisory confirms active exploitation of CVE-2026-16812 too ("known to be actively
+        exploited" language pattern consistent across Arista VCO advisories this year). Fixed versions
+        for CVE-2026-16812 per public secondary reporting (IONIX/Resecurity/BleepingComputer, not
+        independently re-verified against the 0144 advisory body beyond its header): 5.2.x before
+        5.2.3.14, 6.1.x before 6.1.3.4, 6.4.x before 6.4.2.4, 7.0.x before 7.0.0.1 — all four trains
+        WERE fixed for the July CVE, unlike the September one where two trains remain open.
+      ioc_note: "Security Advisory 0183 contains a full Indicators-of-Compromise section (file paths, an MD5 hash, and two IP addresses: 142.93.149.77 and 104.248.126.159, plus an HTTP header name x-vc-opt). Per pipeline no-IOC policy these values must NOT be carried into the entry. Safe to describe generically: 'the vendor's advisory lists specific file/service artifacts, a malicious-file hash, and known-malicious source IPs as IoCs for defenders with TAC access' without reproducing them."
+
+  - id: 3
+    title: "CVE-2026-94127 (F5 BIG-IP APM)"
+    urls_fetched:
+      - url: "https://my.f5.com/manage/s/article/K000162605"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-f5-94127-primary.txt / -jina.txt"
+        fetch_method: "extract, then jina (LAST RESORT) — BOTH FAILED"
+        status: "JS-gated Salesforce Lightning community shell; returns only a loading/CSS-error placeholder even via the jina reader (which normally executes JS). Could not retrieve F5's own advisory body directly."
+      - url: "https://cert.europa.eu/publications/security-advisories/2026-013/"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-f5-94127-certeu.txt"
+        fetch_method: "extract (trafilatura-direct)"
+        status: 200
+      - url: "https://fieldeffect.com/blog/f5-fixes-big-ip-apm-vulnerability"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-f5-94127-fieldeffect.txt"
+        fetch_method: "extract (trafilatura-direct)"
+        status: 200
+      - url: "https://securityonline.info/big-ip-apm-vulnerability-cve-2026-94127/"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-f5-94127-securityonline.txt"
+        fetch_method: "extract (trafilatura-direct)"
+        status: 200
+    quotes:
+      - quote: "When a BIG-IP APM access policy and an OAuth profile are configured on a virtual server, specific malicious traffic can lead to remote code execution (RCE)."
+        verdict: PASS
+        found_in: "securityonline.info, explicitly quoting F5's advisory verbatim ('F5 noted, \"...\"')"
+      - quote: "This is a data plane issue; there is no control plane exposure."
+        verdict: PASS
+        found_in: "securityonline.info, quoting F5's advisory verbatim"
+      - quote: "The vendor confirmed active exploitation in the wild"
+        verdict: PASS
+        found_in: "CERT-EU advisory 2026-013 (CERT-EU's own bolded sentence, itself summarising F5's advisory, cited [1])"
+      - quote: "At a high level, multiple OAuth authentication failures, followed by suspicious commands, shortly followed by a TMM SIGABRT is the combination that should lead to human review of the system."
+        verdict: PASS
+        found_in: "CERT-EU advisory 2026-013 (relaying F5's compromise-assessment guidance)"
+    contradictions: >
+      None found, but note the primary vendor URL (my.f5.com K000162605) could not be read directly by
+      any transport in the ladder (extract, jina) — every quote above is corroborated via CERT-EU (a
+      national-CERT-class carve-out primary for its own advisory) and securityonline.info's direct
+      quoting of F5's text, not by reading F5's own page. Flag this as a genuine, unrecovered fetch gap
+      on the primary vendor source (see Fetch failures section).
+    enrichment:
+      cvss: "9.8 (CVSS v3.1), per CERT-EU and securityonline.info"
+      cwe: "Not explicitly stated as a CWE number by any source fetched; described consistently as a heap-based buffer overflow in the data-plane OAuth/APM request-handling path (TMM)."
+      affected_versions:
+        - "17.1.0 - 17.1.3"
+        - "17.5.0 - 17.5.1"
+        - "21.1.0"
+      affected_versions_precondition: "Only when a virtual server has BOTH an APM access policy AND an OAuth profile configured."
+      exact_hotfix_builds:
+        - "BIG-IP APM 21.x (21.1.0): Hotfix-BIGIP-21.1.0.2.0.30.22 (securityonline.info appends '-ENG')"
+        - "BIG-IP APM 17.5.x (17.5.0-17.5.1): Hotfix-BIGIP-17.5.1.9.0.160.12"
+        - "BIG-IP APM 17.1.x (17.1.0-17.1.3): Hotfix-BIGIP-17.1.3.5.0.41.14"
+      exploitation_start_date: "NOT STATED by any source reached. F5's own wording (per securityonline.info) is only 'We have learned that this vulnerability has been exploited' — no onset date given. Advisory publication date is 2026-09-22 across all three secondary sources."
+      other_detail:
+        - "Appliance-mode BIG-IP deployments also remain vulnerable (securityonline.info, paraphrasing F5's bulletin — not independently quote-verified against F5's own page since that page was unreachable)."
+        - "No public PoC confirmed as of these sources' publication (securityonline.info: 'researchers have not confirmed any public proof-of-concept code yet')."
+        - "iRule-based mitigation available from F5 Support for virtual servers that cannot be hotfixed immediately (CERT-EU + Field Effect both confirm)."
+        - "Field Effect's detection guidance: review BIG-IP APM virtual servers with both an access policy and OAuth profile configured to scope exposure; after suspected compromise, review admin activity, config changes, local accounts, processes, scheduled tasks and outbound connections."
+        - "CERT-EU detection guidance (its own bolded takeaway) telescopes to a three-stage sequence: repeated OAuth authentication failures (>=10 from one IP in a short window is their threshold) -> audit-log command anomalies around those timestamps -> a TMM core file coincident with a SIGABRT (vendor states TMM entering a loop causes the SOD daemon to send SIGABRT) — this is a strong, source-backed **Triage:** sequence."
+
+  - id: 4
+    title: "EU Court of Auditors Special Report 19/2026"
+    urls_fetched:
+      - url: "https://www.eca.europa.eu/en/publications/SR-2026-19"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-eca-sr19.txt (extract — cookie-banner shell only, JS-rendered content not captured) and deepread-eca-sr19-jina.txt (jina reader — full report body, 909 lines)"
+        fetch_method: "extract FAILED (returned only a cookie-consent shell); jina SUCCEEDED and returned the full report text"
+        status: 200 (jina)
+    quotes:
+      - quote: "Yet, no member state treated this incident as being either significant or large-scale cross-border. Therefore, none of the affected member states formally notified ENISA or other member states of the incident. The CSIRTs network did not advise EU-CyCLONe, which therefore did not support the coordinated management of the incident."
+        verdict: PASS
+        found_in: "Box 1 (Collins Aerospace incident), paragraph 137/138 region"
+      - quote: "Member states had until October 2024 to transpose the NIS 2 Directive into national law, but only two met the deadline."
+        verdict: PASS
+        found_in: "paragraph 33"
+      - quote: "In 2025, only 14 significant cross-border incidents were reported, by seven member states."
+        verdict: PASS
+        found_in: "paragraph 38"
+    contradictions: none
+    enrichment:
+      audited_member_states_CONFIRMED: "Ireland, Greece and Italy (report para 07: 'audit visits to three member states (Ireland, Greece and Italy)'). Audit covers 2022-2025."
+      box_1_context_IMPORTANT: >
+        The 'no member state treated this incident as significant' quote is anchored to a NAMED,
+        concrete example the report itself supplies (Box 1): the September 2025 Collins Aerospace
+        ransomware attack on its passenger-processing software, which forced London Heathrow, Brussels,
+        Berlin Brandenburg and Dublin airports to revert to manual operations with widespread delays/
+        cancellations — yet NO member state notified ENISA or other member states despite the
+        cross-border, operationally severe impact. This is a strong, citable concrete example for the
+        entry rather than an abstract policy statement.
+      recommendations_exact_wording_and_target_dates:
+        - "Recommendation 1 — Strengthen information sharing between member states. Three sub-actions (national-security-restriction analysis via NIS Cooperation Group; ensure the Digital Omnibus's proposed single-entry point can detect cross-border incidents; enable real-time incident reporting to ENISA). Target implementation date: (a) and (b) 2027, (c) 2028."
+        - "Recommendation 2 — Rationalise EU cybersecurity situational awareness capabilities and optimise the dissemination of information (joint acquisition/analysis with ENISA; share threat reports across EU departments/agencies). Target implementation date: 2027."
+        - "Recommendation 3 — Integrate the European Cybersecurity Alert System into the EU cybersecurity landscape (cooperation arrangements + interoperability standards among cross-border hubs, the CSIRTs network, and EU-CyCLONe). Target implementation date: 2028."
+        - "Recommendation 4 — Ensure a robust ownership-and-control assessment of DIGITAL-funded entities (ECCC obtains assurance beneficiaries can perform ownership/control checks; sample-check eligible entities). Target implementation date: (a) 2026, (b) 2027."
+      additional_context: >
+        Report also states: no cybersecurity incident has EVER been classified 'large-scale' by any
+        member state since 2016 (the EU-CyCLONe large-scale escalation procedure has therefore never
+        been fully activated); the two European Cybersecurity Alert System hubs (ATHENA and ENSOC) were
+        NOT yet operational at time of audit due to procurement delays; ENISA's 2025 threat-landscape
+        report identified ~4,800 incidents via OSINT vs. the much lower numbers member states formally
+        report, illustrating likely underreporting; member states reported 1,276 incidents to ENISA in
+        2024 (up from 100-500/year in 2018-2021).
+
+  - id: 5
+    title: "Austria NISG 2026"
+    urls_fetched:
+      - url: "https://www.ots.at/presseaussendung/OTS_20260922_OTS0129/bundesamt-fuer-cybersicherheit-oesterreich-buendelt-schutz-vor-digitalen-bedrohungen"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-austria-nisg-ots.txt"
+        fetch_method: "extract (trafilatura-direct)"
+        status: 200
+      - url: "https://www.heise.de/news/Ab-1-10-Meldepflicht-fuer-IT-Vorfaelle-in-Oesterreich-11462442.html"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-austria-nisg-heise.txt"
+        fetch_method: "extract (trafilatura-direct)"
+        status: 200
+    quotes:
+      - quote_de: "Mit dem Inkrafttreten des Netz- und Informationssystemsicherheitsgesetzes 2026 (NISG 2026) nimmt das neue Bundesamt für Cybersicherheit (BCS) am 1. Oktober 2026 offiziell seine Arbeit auf."
+        verdict: PASS
+        found_in: "OTS press release"
+        english_gloss_check: "'With the entry into force of the Network and Information System Security Act 2026 (NISG 2026), the new Federal Office for Cybersecurity (BCS) officially begins its work on 1 October 2026.' — accurate, no correction needed."
+      - quote_de: "Eine erste Frühwarnung ist unverzüglich, jedenfalls innerhalb von 24 Stunden nach Kenntnisnahme des Vorfalls, vorgesehen. Eine ausführlichere Meldung hat unverzüglich, spätestens innerhalb von 72 Stunden, zu erfolgen."
+        verdict: PASS
+        found_in: "OTS press release"
+        english_gloss_check: "'An initial early warning must be issued without delay, in any event within 24 hours of becoming aware of the incident. A more detailed report must follow without delay, at the latest within 72 hours.' — accurate."
+      - quote_de: "Blockade oder Abwehr solcher staatlichen Scans ist ab 1. Oktober strafbar, auf Aufforderung müssen betroffene wesentliche Einrichtungen auch aktiv mitwirken."
+        verdict: PASS
+        found_in: "heise.de article"
+        english_gloss_check: "'Blocking or defending against such state scans becomes a criminal offence from 1 October; on request, affected essential entities must also actively cooperate.' — accurate."
+    contradictions: none
+    enrichment:
+      municipalities_excluded_IMPORTANT: "heise.de states NISG 2026 brings new registration/reporting duties for companies and authorities 'ausgenommen Gemeinden' — i.e. MUNICIPALITIES ARE EXPLICITLY EXCLUDED from the new duties. Directly relevant framing for a Swiss-public-sector audience comparing Austria's scope to Switzerland's own cantonal/communal coverage."
+      bcs_structure: "BCS is a subordinate unit of the Interior Ministry (Bundesministerium für Inneres), reporting directly to the Interior Minister but NOT to the Generaldirektor für die öffentliche Sicherheit; BCS has no police command/coercive powers (keine polizeiliche Befehls- und Zwangsgewalt) and takes on no police/judicial tasks."
+      bcs_cert_role: "BCS operates GovCERT for the public civil administration and has oversight of both sector-specific CERTs (e.g. Austrian HealthCERT for the medical sector) and the national CERT.at (which serves the general private sector and is run by domain registry nic.at)."
+      active_scanning_regime: "BCS will conduct/commission active scans of internet-connected systems belonging to 'wesentliche Einrichtungen' (essential entities) to surface vulnerabilities. Obstructing or defending against such state scans is a criminal offence from 1 October 2026, and entities must actively cooperate on request."
+      penalty_structure: "Penalties also apply for breach of registration/reporting duties, and if senior managers ('leitende Mitarbeiter') fail to complete mandatory IT-security training on time; non-senior staff must merely be given the opportunity to attend. BCS itself does not impose penalties — the competent district administrative authority (Bezirksverwaltungsbehörde) does so on BCS's referral."
+      self_determination_of_scope: "Entities must determine for themselves whether they fall under the registration duty; the authorities give guidance only in special cases ('Wer sich zu registrieren hat, muss das selbst herausfinden')."
+      dora_carveout: "For the financial sector, the EU's DORA (Digital Operational Resilience Act) applies instead and supersedes NISG 2026 in case of conflict."
+      transposition_delay: "heise.de: Austria transposes the 2022 NIS2 directive 'mit zwei Jahren Verspätung' (with a two-year delay)."
+      director_bio: "First BCS director: Markus Kasinger, former CIO of Austrian Power Grid AG (majority state-owned, operates Austria's 110kV-380kV transmission grid) — background in critical-infrastructure IT security / built a SOC there."
+
+  - id: 6
+    title: "NCSC Switzerland Google recovery-phishing advisory"
+    urls_fetched:
+      - url: "https://www.bacs.admin.ch/de/26w38-de"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-ncsc-google-phishing.txt"
+        fetch_method: "extract (trafilatura-direct)"
+        status: 200
+    quotes:
+      - quote_de: "Anschliessend generierten sie in ihrem eigenen Konto ein App-Passwort und benannten dieses im Textfeld mit: «Kevin W. Case-ID: 834333 To view your case…». Googles automatisches System verschickte daraufhin eine offizielle, technisch völlig einwandfreie Sicherheitswarnung an das Opfer."
+        verdict: PASS
+      - quote_de: "Dadurch behielten die Täter selbst nach einer Passwortänderung weiterhin Zugriff auf das Konto. Im gemeldeten Fall wurden noch längere Zeit nach dem Angriff unbemerkt E-Mails und Kontakte auf ein Gerät im Ausland synchronisiert."
+        verdict: PASS
+    contradictions: none
+    enrichment:
+      full_mechanism_ordered:
+        - "1. Attackers create their OWN new Google account and set the VICTIM's email address as that account's recovery address."
+        - "2. In their own account, attackers generate an App Password and name it in the free-text label field with social-engineering text mimicking a support case: '«Kevin W. Case-ID: 834333 To view your case…»'."
+        - "3. Google's own automated system sends a genuine, technically legitimate security notification email to the victim (as the registered recovery address) — the free-text label is echoed verbatim into that legitimate email, making it look like an active, numbered Google support case."
+        - "4. Shortly after, victim receives a phone call from a spoofed number that displays as a trusted-looking Swiss Google landline number; caller impersonates Google Security Support, applies urgency/pressure (imminent account loss); a victim's mention of hardware-key 2FA protection did not deter the caller."
+        - "5. Caller redirects victim to a phishing page hosted on the legitimate Google Sites platform (sites.google.com) — genuine google.com-family domain shown in the browser address bar reduces victim suspicion — with an embedded malicious login form that exfiltrates entered credentials directly to the attackers."
+        - "6. Once attackers have the harvested credentials, they log into the real account within minutes and create an App Password on the VICTIM's real account — App Passwords are legacy access tokens for older applications that work WITHOUT further 2FA/MFA confirmation, so this becomes a persistent backdoor that survives a subsequent password change by the victim."
+        - "7. Observed impact in the reported case: emails and contacts silently synced to a foreign device for an extended period after the initial attack, undetected."
+      telecom_spoofing_context: "Since mid-2026, Swiss telecom carriers enforce tightened rules to block or mark as 'unknown' spoofed Swiss landline/mobile numbers originating abroad — this measurably reduced fake-authority calls, but NCSC-CH stresses a Swiss-looking caller ID/number is STILL not proof of call authenticity, since attackers keep finding new spoofing paths."
+      defender_recommendations_from_source:
+        - "Legitimate platform operators never cold-call users about security incidents — hang up immediately on such calls."
+        - "Never give passwords, SMS codes or confirmation prompts over the phone, and never type them into a site while being pressured on a call."
+        - "Official Google login pages exist ONLY at accounts.google.com — NEVER at sites.google.com."
+        - "Post-incident remediation checklist (source-stated): change account password immediately; sign out of all active sessions/foreign devices in account settings; check Google Account Security > App Passwords and delete ALL entries there without exception; review configured recovery email addresses and any automatic mail-forwarding rules."
+      attack_technique_notes_for_composer: >
+        Good ATT&CK-mappable angles: T1598/T1656-style impersonation + vishing (phone-based social
+        engineering) as the initial vector, T1114 (Email Collection - ongoing sync of mail/contacts to
+        a foreign device), and an MFA-bypass persistence mechanism via a legitimate-but-abusable
+        'App Password' feature (closest fit is the generic T1556 Modify Authentication
+        Process family, though App-Passwords-as-backdoor is a fairly distinct sub-pattern worth
+        describing in prose rather than forcing a sub-technique id).
+
+  - id: 7
+    title: "Gambit Security AI-agent retail skimmer campaign (DEEP DIVE)"
+    urls_fetched:
+      - url: "https://gambit.security/blog-posts/autonomous-ai-agents-online-retailers-25-a-company"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-gambit.txt (extract) and deepread-gambit-rawurl.txt (raw HTML, used to recover an embedded HTML table the markdown extraction dropped)"
+        fetch_method: "extract (trafilatura-direct), then raw url fetch for the country-breakdown table"
+        status: 200
+      - url: "https://cybersecuritynews.com/ai-agents-retail-credit-card-theft/"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-gambit-cybersecuritynews.txt"
+        fetch_method: "extract (jina fallback triggered automatically)"
+        status: 200
+    quotes:
+      - quote: "Between 10 and 15 September alone, 105 attack projects were launched and at least 27 companies were compromised to varying degrees."
+        verdict: PASS
+      - quote: "the operator's own cost review gives a similar figure, a mean of $25.46 over 101 completed scans, from $3.13 for the cheapest target to $79.31 for the most expensive"
+        verdict: PASS
+      - quote: "One of the Hermes agent's skill files tells the agent to erase the card data from the victim's Magento database once the data is stolen."
+        verdict: PASS
+    contradictions_and_cautions:
+      - >
+        MINOR INTERNAL INCONSISTENCY IN THE PRIMARY (Gambit's own post): the opening summary paragraph
+        states skimmer scripts were installed "on the websites of five" companies, while the dedicated
+        later section states "Skimmers were ordered against at least 27 named victims and confirmed in
+        place on 19 of them during the span of this campaign" (plus 100+ further sites found via
+        researcher Varys). These are not necessarily contradictory — the "five" appears to be a subset
+        referenced in the same sentence as four other illustrative victim types — but the entry should
+        use the LARGER, more precise, dedicated-section figure (confirmed on 19 of 27 named victims,
+        100+ further sites via Varys) as the authoritative skimmer count, not the "five" from the
+        opening paragraph. cybersecuritynews.com's independent paraphrase also uses "19" and "100+",
+        corroborating the dedicated-section figure as the correct one.
+      - >
+        cybersecuritynews.com ADDS a claim NOT found anywhere in Gambit's primary page (checked against
+        both the trafilatura extraction AND the raw HTML): that heaviest AI workload was "routed through
+        Chinese models DeepSeek and Kimi." Gambit's own text names only GLM 5.2 and DeepSeek v4 Pro
+        (Strix), DeepSeek v4.1 Flash (Cairn), and Anthropic Opus 4.6 (Hermes) — no mention of "Kimi"
+        anywhere in the primary. RECOMMEND: do NOT include "Kimi" as a model used in this campaign
+        unless corroborated elsewhere; it looks like an unverified addition/possible error by the
+        secondary source.
+      - >
+        cybersecuritynews.com also states a "payment processor later confirmed that at least 60 percent
+        of a sampled batch had not previously been flagged for fraud" — this sentence does NOT appear
+        anywhere in Gambit's primary page (checked both extraction and raw HTML). Treat as a
+        cybersecuritynews.com-only claim if used at all; do not attribute it to Gambit directly.
+      - >
+        cybersecuritynews.com's phrasing loosely implies the four named victim-type examples (Fortune
+        500 hospitality company / major US airline / large industrial supplies distributor / US fashion
+        retailer) are the victims of "one fully documented chain" (the SQLi-to-Blowfish-decryption kill
+        chain quoted below). Gambit's own primary text presents these as TWO SEPARATE items: the kill
+        chain is given anonymously ("the chain below was documented in one completed Cairn project")
+        and the four company types are named separately, earlier, as general examples of "some level of
+        access" victims. Do not conflate the two in the entry — describe the chain as an illustrative,
+        unnamed example, and the four company types as separately-stated categories of accessed victims.
+      - >
+        VERIFIED (not a contradiction): the "$25.46 mean cost" and "600,000+ card records / two victims"
+        figures are corroborated in both sources. The US-card-share figure (488,372 cards / 79.0%) that
+        cybersecuritynews.com states in prose IS independently confirmed: recovered directly from an
+        HTML data table embedded in Gambit's primary page (not visible in the markdown/trafilatura
+        extraction — the table renders via a custom CSS/JS embed that trafilatura's markdown pass
+        dropped, but the raw HTML source contains the literal table rows). Top entries from that table:
+        United States 488,372 (79.0%), United Arab Emirates 13,559 (2.2%), Saudi Arabia 6,785 (1.1%),
+        United Kingdom 6,522 (1.0%), New Zealand 5,710 (0.9%), Ireland 5,483 (0.9%), Singapore 5,305
+        (0.9%), Kuwait 4,676 (0.8%), Australia 4,672 (0.7%), Hong Kong 4,459 (0.7%), France 4,295 (0.7%).
+        No Switzerland entry visible in the portion of the table recovered (top ~11 rows) — no direct
+        Swiss-cardholder nexus evidenced by this table.
+    enrichment_full_kill_chain_verbatim_from_primary: |
+      Unauthenticated SQLi (login email param, error-based EXTRACTVALUE)
+       -> OTP plaintext read from the OTP table (MFA bypass)
+        -> admin panel access
+         -> Arbitrary file upload (image field, no extension check)
+          -> host RCE (uid=1001, gid=root)
+           -> sudo NOPASSWD python3.12 -> root
+            -> NFS mount (internal address, no_root_squash)
+             -> WP blog DB credentials from wp-config.php on NFS
+              -> WP admin write (new user via DB)
+               -> WP plugin upload -> blog host RCE
+                -> AWS Secrets Manager full dump (46 secrets, 102KB)
+                 -> Main Magento DB access (Aurora)
+                  -> Magento encryption key extraction
+                   -> cc_number_enc Blowfish-ECB decryption verified
+      (Gambit states this is ONE illustrative, fully-documented Cairn project chain out of 105 launched
+      between 10-15 Sept; each victim's actual path was chosen dynamically by the harness through
+      real-time probing, so most chains differed victim to victim — this specific chain should be
+      presented as illustrative, not universal.)
+    enrichment_attck_mapping_suggestions_for_composer:
+      - "T1190 Exploit Public-Facing Application — unauthenticated SQLi entry point (login email parameter, error-based EXTRACTVALUE technique)"
+      - "T1552 Unsecured Credentials — plaintext OTP readable directly from an application DB table, used to bypass MFA (no exact ATT&CK sub-technique for 'MFA-bypass-via-insecure-OTP-storage'; describe the mechanism in prose)"
+      - "T1505.003 Server Software Component: Web Shell / T1190 — arbitrary image-field file upload with no extension check reaching host RCE"
+      - "T1548.003 Abuse Elevation Control Mechanism: Sudo and Sudo Caching — sudo NOPASSWD python3.12 misconfiguration escalating to root"
+      - "Lateral movement via an NFS export misconfigured with no_root_squash, mounted to read another host's wp-config.php in plaintext — no exact ATT&CK sub-technique; closest generic parents are T1210 Exploitation of Remote Services / T1552.001 Unsecured Credentials: Credentials In Files"
+      - "T1136.001 Create Account: Local Account — new WordPress admin user created via direct DB write"
+      - "T1505.003 Server Software Component: Web Shell — malicious WordPress plugin upload for blog-host RCE"
+      - "T1555.006 Credentials from Password Stores: Cloud Secrets Management Stores — full AWS Secrets Manager dump (46 secrets, 102KB)"
+      - "T1213 Data from Information Repositories / T1530 Data from Cloud Storage — access to the main Magento database on Aurora"
+      - "T1552 Unsecured Credentials — Magento encryption-key extraction (Magento's known app/etc/env.php key storage) enabling offline Blowfish-ECB decryption of the cc_number_enc field"
+      - "T1659 Content Injection — the various web-skimmer injection techniques (JS-file append, hidden script tag, GTM-block injection, S3 poisoning, DB-field injection, K8s initContainer injection, page-cache poisoning)"
+      - "T1053.003 Scheduled Task/Job: Cron — self-healing skimmer persistence via a 2-minute cron job in a JBoss log directory that re-appends the skimmer whenever a redeploy reverts it"
+      - "T1485 Data Destruction — Hermes 'Database Wipe After Extraction' skill wiping stolen-field DB columns post-exfiltration, and the over-broad table-drop cleanup that destroyed 180 tables (including administrator-made backups) at the bicycle-retailer victim"
+    enrichment_ai_tooling_detail:
+      harnesses:
+        - "Strix — open-source AI penetration-testing tool for vulnerability discovery. 23-31 Aug 2026: 146 runs in 'deep mode' against 138 hosts, 633 scanner-hours within 195 clock-hours. Model: OpenRouter GLM 5.2, later switched to DeepSeek v4 Pro."
+        - "Cairn — autonomous end-to-end exploitation engine; given a target domain + objective (shell/admin), runs until success/timeout/stop. Model: DeepSeek v4.1 Flash. Launched 105 attack projects 10-15 Sept 2026 (48 of 105 recoverable for analysis; 57 deleted)."
+        - "Hermes — orchestration agent with persistent memory, self-written/edited skills (121 total, 78 offensive), session archive, scheduled jobs, web console. Loaded a persona titled 'SOUL - Red Team Operator'. Operator added a custom skill to strip Hermes's own content-safety filters. Model: Anthropic Opus 4.6 — explicitly stated as adopted 'after newer models refused its requests' (notable operational-security data point re: model refusal behavior driving attacker model choice). 1,951 human-typed prompts (short Chinese-language instructions) across 260 sessions."
+      cost: "OpenRouter account balance snapshot on 25 Aug 2026: $7,005.71 spent over 4 weeks; ran ~3 further weeks at ~2x daily call volume => Gambit's own estimate of total spend $12,000-$18,000 across the full campaign. Operator's own per-target cost review: mean $25.46 over 101 completed scans, range $3.13-$79.31."
+      targeting_method: "Primary method: website-traffic ranking service, filtered to the shopping category, EXCLUDING shops on major hosted/open-source commerce platforms (custom-code shops assumed more likely vulnerable) — operator pasted 301 candidate results into the Hermes console with the instruction '跑这些 用代理 只扫高危' ('run these, use the proxy, high severity only'). Secondary method: hand-picked targets, e.g. a New Zealand retailer and a US photo-printing company handed to the agent with an ALREADY-COMPROMISED admin password and the instruction '开干' ('get to work') — i.e. some targets were pre-compromised by the human operator before agent handoff, not discovered by the agent itself."
+      bicycle_retailer_incident_detail: "Second data-loss victim (bicycle retailer): the agent created 'ZQ'-prefixed staging tables to hold exfiltrated data; its cleanup routine then dropped 180 tables matching the name patterns ZQ or Backup — this over-broad name-matching also destroyed backup tables the victim's OWN administrators had separately created (i.e. collateral destruction of legitimate backups, not just attacker-created staging data)."
+      skimmer_injection_methods_all_seven: "1) Appended to a legitimate already-served JS file (most common — e.g. end of a jQuery/Bootstrap bundle, original file timestamp restored to avoid detection by mtime). 2) Foreign <script> tag added directly to the checkout page (three named-by-sector examples). 3) Inserted inside a site's Google Tag Manager/gtag block, padded with ~100 tab characters to push it off the right edge of a typical source-code view (anti-review evasion). 4) 'S3 poisoning' — a found AWS access key granted write access to the bucket behind the store's own CDN, so the skimmer loaded from the victim's OWN trusted CDN host rather than a third-party domain (defeats domain-reputation/blocklist controls). 5) Injected into database content fields (e.g. product-description columns) via an admin panel, then relocated to a file on the victim's own domain. 6) Added as a Kubernetes initContainer in a production front-end deployment manifest. 7) Written directly into a server-side page-cache model for the checkout page (bypasses source-code review entirely since the served HTML differs from the template). 8) Self-healing persistence: a cron job placed in a JBoss LOG DIRECTORY checks file size every two minutes and re-appends the skimmer whenever an app redeploy reverts the injection."
+    ioc_note: "The base64-decoded loader payload and specific attacker domains (static-js[.]com, cdn[.]netlfjs[.]com and associated .js filenames) appear in Gambit's post, already defanged by the source. Per pipeline no-IOC policy these domains must NOT be reproduced in the entry — describe the injection TECHNIQUE (e.g. 'a base64-encoded loader appended to a legitimate JS file that injects a remote <script> tag') without the domain/filename."
+
+  - id: 8
+    title: "VulnCheck Virtualizor RCE chain"
+    urls_fetched:
+      - url: "https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-vulncheck-virtualizor.txt"
+        fetch_method: "extract (trafilatura-direct)"
+        status: 200
+    quotes:
+      - quote: "the pre-auth billing-module hook is guarded only against requests whose act is not 'login', so act=login walks straight into it"
+        verdict: PASS
+        found_in: "page meta-description (verbatim substring), which mirrors the post's own technical framing"
+      - quote: "Verified on the lab: /tmp/x reads uid=0(root) gid=0(root) groups=0(root)."
+        verdict: PASS
+      - quote: "Softaculous patched all three in 3.2.9 patch 9 (2026-09-01), and the fix carries into 3.3.0 (2026-09-09), the current build. Patch 7, the build audited above, and patch 8 are both still vulnerable"
+        verdict: PASS
+    contradictions: none
+    enrichment:
+      explicit_cve_to_flaw_mapping_CONFIRMED_NOT_GUESSED: >
+        Table explicitly given in the post: CVE-2026-43641 = Unauthenticated OS command injection to
+        root (CWE-78, +306 Missing Authentication) via billing_unsuspend() -> vexec -> proc_open, uid
+        spliced in -> uid=0(root); CVE-2026-43642 = Unauthenticated PHP object injection (CWE-502, +306)
+        via _unserialize($_POST['billing_data']), native unserialize -> untrusted deserialization, no
+        stock gadget chain demonstrated; CVE-2026-43643 = Unauthenticated cross-tenant balance write
+        (CWE-639 Authorization Bypass Through User-Controlled Key, +306) via
+        'UPDATE users SET cur_bal WHERE uid=:uid' with no ownership check -> arbitrary balance
+        overwrite (777.00 -> 0.00 demonstrated). This matches the item's proposed mapping exactly.
+      cvss_scores_NOW_PUBLISHED_ON_NVD: >
+        Checked NVD directly (not stated in the VulnCheck post itself): CVE-2026-43641 CVSSv3.1 9.8
+        (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H) and CVSSv4.0 9.3; CVE-2026-43642 CVSSv3.1 8.1 and CVSSv4.0
+        9.2; CVE-2026-43643 CVSSv3.1 7.5 and CVSSv4.0 8.7. NVD's own descriptions independently
+        corroborate the affected-version boundary stated by VulnCheck ("before 3.2.9 (Patch 9)").
+      other_technical_detail:
+        - "Root cause of privilege (why RCE lands as root, not www-data/emps): EMPS splits PHP execution across separate php-fpm pools by port/path — admin panel index.php on ports 4084/4085 runs in pool virt9178 AS ROOT; the client panel and every other .php file run in pools virt9179/virt9180 as user 'emps'. Dropping a webshell (e.g. vshell.php) would be served by the non-root pool — the exploit therefore avoids ever dropping a PHP file and instead relays commands through the same admin-panel billing-hook request, writing output to a random static .txt file in the webroot that nginx serves directly (no php-fpm involved), preserving root execution."
+        - "Precondition for CVE-2026-43641 (stated honestly by the researcher): requires an existing account that is type=2, in-house-billing enabled, currently SUSPENDED, with cur_bal >= usage (a freshly-suspended, zero-usage account satisfies 0>=0) — this is server state that exists on any install using in-house billing, since suspended accounts are the normal product of that billing mode. No enumeration endpoint is needed because a non-destructive TIMING ORACLE exists: injecting 'sleep N' via the uid field causes a 3-second delay ONLY for an eligible uid, with identical status code/body otherwise — attacker sprays uid=1..N and watches for the hang."
+        - "Environmental dependency: the exploit requires MySQL non-strict sql_mode (a lossy string-to-int cast is what lets the injected command string still satisfy an INT-typed WHERE clause). Researcher verified production Virtualizor ships with non-strict mode by default (bundled EMPS stack uses MySQL 5.5.62 with an empty default sql_mode, not overridden by the bundled my.cnf) — i.e. this is NOT a lab-only artifact, default production installs are exploitable out of the box."
+        - "Fix mechanics (patch 9 / 3.3.0): (1) the shared pre-auth entry point now requires apicall_validate() to return a validated call (HMAC apikey or admin API credentials) before the billing hook is reachable at all — this alone removes 'unauthenticated' from all three CVEs; (2) the uid value is now explicitly (int)-cast before reaching vexec(), closing the command-injection sink directly; (3) the object-injection sink now calls unserialize() with ['allowed_classes' => false]; (4) the balance-write sink now requires the submitted email to exist and the submitted uid to be that email's real owner before writing."
+        - "Distribution note: the vulnerable panel package is a straight unauthenticated download at http://api.virtualizor.com/updates.php?give=3.2.9.7 (91 MB ZIP, no license required) — i.e. the exact vulnerable build any operator would fetch and run was directly verifiable/reproducible by the researcher without a paid license."
+        - "Disclosure timeline: reported 2026-08-22; CVEs assigned 2026-08-26 (120-day disclosure deadline 2026-12-24); vendor fix released 2026-09-01 (patch 9, and 3.3.0 already fixed); vendor requested re-test 2026-09-17; re-test confirmed fixed-in-9/3.3.0 and vulnerable-in-7/8 on 2026-09-20; public disclosure 2026-09-22."
+        - "Operational guidance from the researcher directly: keep Virtualizor admin-panel ports 4084/4085 off the public internet or behind an allowlist REGARDLESS of patch level."
+
+  - id: 9
+    title: "Check Point CVE-2026-85102 exploitation update (update to existing entry)"
+    urls_fetched:
+      - url: "https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-checkpoint-blog-93616-85102.txt (already fetched for item 1, same URL — content reused)"
+        fetch_method: "extract (trafilatura-direct)"
+        status: 200
+      - url: "https://support.checkpoint.com/results/sk/sk1000117"
+        saved_to: "work/2026-09-23T0405Z-intel/deepread-checkpoint-85102-sk.txt"
+        fetch_method: "extract returned direct-raw HTML (Next.js SPA), containing a __NEXT_DATA__ JSON blob with the FULL advisory body embedded — parsed manually from that JSON"
+        status: 200
+    quotes:
+      - quote: "Check Point disclosed the vulnerability and released fixes on September 9, 2026. At the time, we had no evidence of exploitation. We are now observing exploitation attempts against Check Point Spark customers globally."
+        verdict: PASS
+      - quote: "Starting September 12, 2026, we observed a wave of exploitation attempts against Spark customers. The attempts originated from anonymization infrastructure, including VPN services and proxies"
+        verdict: PASS
+      - quote: "Review your logs for anomalous certificate-based Mobile Access logins. Do not limit the search to the subjects above. Look for second stage activity originating from suspicious logged-in users via Mobile Access. Follow-up activity often involves internal port and service scan"
+        verdict: PASS
+    contradictions: none
+    enrichment_MATERIAL_FINDING: >
+      sk1000117 (the CVE-2026-85102 advisory itself) carries an "Update (September 14, 2026)" notice
+      that materially strengthens this story: "Important notification for customers who installed the
+      Offline LivePatch Package and are running: R82.10 Jumbo Hotfix Take 24 or lower / R82 Jumbo
+      Hotfix Take 107 or lower / R81.20 Jumbo Hotfix Take 146 or lower. Following additional research,
+      we identified a rare scenario in which customers must install Check Point Live Patch Take 26,
+      which provides enhanced coverage for this CVE." In other words: Check Point's own September-9
+      LivePatch fix had a coverage gap for a specific hotfix-take range that required a SECOND,
+      hardened LivePatch (Take 26) issued five days later on September 14 — two days AFTER the
+      observed exploitation wave began (September 12). This is a strong, source-backed technical
+      explanation for why some environments that believed themselves patched from September 9 could
+      still have been exploitable during the September 12+ wave, and should be surfaced in the entry.
+    enrichment_other:
+      cve_2026_85102_full_precision:
+        cvss: "9.8"
+        affected_products: "Security Gateway, Check Point Spark Firewall (Centrally Managed), Check Point Spark Firewall (Locally Managed)"
+        affected_versions: "R81.20, R82, R82.10; R80, R80.10, R80.20, R80.30, R80.40, R81, R81.10 (all EoS); R81.10.x, R82.00.x"
+        not_affected: "R82.20"
+        applicability_note: "Site-to-Site VPN: only gateways using/allowing CERTIFICATE-based authentication are affected. Gateways in encryption communities using ONLY Pre-Shared Key authentication are NOT vulnerable. VPN with Dynamic IP Gateways (DAIP) or Large Scale VPN (LSV) community gateways enable certificate authentication (so those ARE in scope)."
+        fixed_via:
+          - "Check Point LivePatch (automatic if enabled) OR offline LivePatch packages: R82.10 Take 26 / R82 Take 26 / R81.20 Take 26 (validated via 'cpinfo -y CPupdates' or 'cplp list', expected to show CVE-2026-85102 AND CVE-2026-85103 fixed together across cpca, iked, vpn, vpnrad and cprid certificate components)"
+          - "Jumbo Hotfix Accumulator: R82.10 from Take 44, R82 from Take 126, R81.20 from Take 166, R81.10 from Take 190"
+          - "Check Point Spark Firewalls R82.00.10 from Build 2325; Spark Firewalls R81.10.17 from Build 4968"
+        mitigation_if_unpatchable: "Disable VPN implied rules and create explicit Access Control rules limiting Site-to-Site VPN to UDP/500+UDP/4500 for specific peer IPs (Remote Access VPN: UDP/500, UDP/4500, TCP/443, TCP/80, scoped to Remote Access client IP ranges) — vendor explicitly notes this mitigation does NOT apply to the locally-managed Spark Firewall."
+        advisory_dates: "sk1000117 dateCreated 2026-09-07, lastModified 2026-09-18 (i.e. the Sept-14 LivePatch-gap update was folded into a page later touched again on Sept 18)."
+      exploitation_wave_detail: "Observed certificate subjects used by attackers (per the blog, NOT an exhaustive list per Check Point's own caveat): CN=vpn,OU=users,O=global / CN=vpn-user,OU=users,O=global / CN=vpnuser,OU=users,O=global. Attempts originated from anonymization infrastructure (VPN services, proxies)."
+
+fetch_failures:
+  - id: f5-my-f5-com
+    url_tried: "https://my.f5.com/manage/s/article/K000162605"
+    fetch_method: "extract, then jina"
+    status_code: 200 (both transports returned 200 but with an empty JS-shell body, not the article)
+    error_class: other
+    error_message: "Salesforce Lightning community page returns only a 'Loading / Sorry to interrupt / CSS Error / Refresh' placeholder shell via both trafilatura-direct extraction and the jina reader (which normally executes page JS) — the article content never hydrated in either transport."
+    attempted_methods: [bridge:extract, bridge:jina]
+    mitigation_applied: "Corroborated every load-bearing quote and fact via CERT-EU's advisory 2026-013 (national-CERT-class carve-out primary, itself citing and quoting F5's advisory) plus two independent secondary write-ups (Field Effect, securityonline.info) that directly quote F5's text. All four requested quotes verified PASS via these alternates."
+    covered_anyway: true
+
+candidate_sources: none proposed this pass (verification/enrichment task only)
+
+notes_for_main_agent:
+  - "Item 7 (Gambit) is the richest enrichment by far — the full kill chain, all 8 skimmer-injection methods, AI-harness cost/tooling detail, and the ATT&CK mapping suggestions above should let the deep-dive entry reach genuinely Tier2/3-actionable depth."
+  - "Item 7 also carries the clearest no-IOC hazard in this batch — the source text includes a base64-decoded loader with a live domain and two more attacker domains/filenames; do not reproduce them."
+  - "Item 2 (Arista) carries a genuinely important nuance the item summary should not omit: only 2 of 4 affected VCO trains have a fix as of this advisory; 6.1.x and 7.0.x remain open."
+  - "Item 9 / sk1000117's September-14 'rare scenario, LivePatch Take 26' update is the strongest single enrichment in this batch for explaining the September-12 exploitation wave against ostensibly-patched Spark customers — recommend it be woven into the update's body."
+  - "Item 3 (F5): primary vendor URL (my.f5.com) is unreachable by every transport tried; all four quotes are nonetheless independently verified via CERT-EU + two secondary write-ups that directly quote F5. Treat as MULTI-SOURCE, not single-source, since CERT-EU's own advisory independently states the same facts (not merely relaying F5) and qualifies for the national-CERT carve-out regardless."
