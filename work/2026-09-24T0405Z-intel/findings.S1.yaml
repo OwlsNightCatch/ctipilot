@@ -1,0 +1,179 @@
+domain: S1
+run_id: 2026-09-24T0405Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-24T04:08:06Z
+ended_at: 2026-09-24T04:18:48Z
+duration_seconds: 642
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 6
+  bridge_fetches: 38
+items:
+  - title: "WordPress Core CVE-2026-87902 — unauthenticated page-template path traversal to conditional RCE, already commoditised with a named Nuclei template and confirmed file-write attempts (CVSS4.0 9.2)"
+    sources:
+      - { url: "https://github.com/WordPress/wordpress-develop/security/advisories/GHSA-7hp8-65ch-5whp", publisher: "WordPress Security Team (official GHSA advisory)", date: "2026-09-22", role: "primary" }
+      - { url: "https://ressl.ch/blog/cve-2026-87902-wordpress/", publisher: "Robert Ressl (discovering researcher)", date: "2026-09-22", role: "primary" }
+      - { url: "https://patchstack.com/articles/cve-2026-87902-attackers-started-probing-wordpress-sites-hours-after-the-patch/", publisher: "Patchstack", date: "2026-09-23", role: "primary" }
+      - { url: "https://www.wordfence.com/blog/2026/09/psa-critical-unauthenticated-path-traversal-vulnerability-patched-in-wordpress-core/", publisher: "Wordfence Threat Intelligence", date: "2026-09-22", role: "corroborating" }
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-87902", publisher: "NVD (API JSON — the nvd.nist.gov HTML page is a JS-only SPA that returns an empty shell; the REST API at services.nvd.nist.gov is directly reachable and returns the full CVE record)", date: "2026-09-22", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"WordPress CVE-2026-87902 local file inclusion theme\") → pivot: ressl.ch (discoverer's own write-up), URL https://ressl.ch/blog/cve-2026-87902-wordpress/ → pivot: Patchstack exploitation-telemetry follow-up, URL https://patchstack.com/articles/cve-2026-87902-attackers-started-probing-wordpress-sites-hours-after-the-patch/ → pivot: Wordfence PSA, URL https://www.wordfence.com/blog/2026/09/psa-critical-unauthenticated-path-traversal-vulnerability-patched-in-wordpress-core/ → primary: WordPress's own GHSA advisory, URL https://github.com/WordPress/wordpress-develop/security/advisories/GHSA-7hp8-65ch-5whp → verified: NVD REST API, URL https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-87902"
+    summary: |
+      WordPress Core's page-template resolution contains an unauthenticated local-file-inclusion primitive that, under specific theme and server conditions, reaches remote code execution. get_page_template() builds a template candidate as "page-{urldecode(pagename)}.php" from the public, POST-or-GET 'pagename' query variable; WordPress's own slug sanitiser preserves percent-encoded octets while only rewriting literal dots/slashes, so a double-encoded traversal sequence (e.g. %252e%252e) survives sanitisation and is only decoded into live "../" syntax by get_page_template()'s own urldecode() call. locate_template() then joins the candidate to the active theme path and checks only that the file exists and is readable — it never confirms the resolved path stays inside the theme directory. Exploitation requires (1) the active parent/child theme to contain a top-level directory whose name starts with "page-" (the advisory names legacy Twenty Twelve/Twenty Fourteen and third-party themes Neve, Hestia and Sydney) and (2) a readable local .php file with useful behaviour when included — the discoverer's and Patchstack's chain both use PHP's pearcmd.php (present in the official wordpress:php8.3-apache Docker image and default cPanel PHP<8.5 installs) with register_argc_argv=On, which exposes the query string to the included script as $argv, letting an attacker issue pearcmd's "config-create" action to write an attacker-controlled PHP file to /tmp or /var/tmp — arbitrary code execution as the web-server account. Affects every WordPress Core release from 4.7.0 through 7.1.1; fixed in 7.1.2 (7.x) with security backports to every branch down to 4.7.37. Patchstack observed the first exploitation attempt within hours of the 2026-09-22 patch (11:49 UTC, same day) and documents escalation over the following day from reconnaissance-only probing to confirmed file-write (pearcmd config-create) attempts, with two dedicated user agents (cve-2026-87902-poc/1.0, nuclei-cve-2026-87902/1.0) — including a named public Nuclei template — now in general circulation and traffic running at more than 10x the first-evening volume.
+    region_nexus: "global; any internet-facing WordPress install, including Swiss public-sector/communal sites built on WordPress"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-87902"]
+    techniques: ["T1190"]
+    affected_products: ["WordPress Core"]
+    entity_keys: ["product:wordpress-core"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Attackers are now including `pearcmd.php` and using it to write PHP files to disk, and public scanning tooling for this CVE is in circulation."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/cve-2026-87902-attackers-started-probing-wordpress-sites-hours-after-the-patch/"
+      - quote: "A named Nuclei template means this is no longer a handful of operators working from the patch diff. It is in general circulation and anyone can point it at a host list."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/cve-2026-87902-attackers-started-probing-wordpress-sites-hours-after-the-patch/"
+      - quote: "An unauthenticated attacker can make `get_page_template()` page-template resolution include a chosen readable local `.php` file outside the active theme directories. If relevant pre-conditions for both the server and the active theme are met, this can lead to RCE."
+        attribution: "WordPress Security Team (GHSA-7hp8-65ch-5whp)"
+        source_url: "https://github.com/WordPress/wordpress-develop/security/advisories/GHSA-7hp8-65ch-5whp"
+      - quote: "the vulnerable behavior is in WordPress Core, requires no account, and can be reached over the internet"
+        attribution: "Wordfence Threat Intelligence"
+        source_url: "https://www.wordfence.com/blog/2026/09/psa-critical-unauthenticated-path-traversal-vulnerability-patched-in-wordpress-core/"
+    extended_notes: |
+      Detection (telemetry-class first): web/app access-log analysis for the query-parameter pairing 'pagename' + 'page_id' arriving together at the site root or /index.php (Patchstack: this pairing "rarely appears together in ordinary traffic"), a 'pagename' value containing %2e%2e or %252e%252e (single or double URL-encoding), a 'pagename' value beginning with 'templates%2f' or another 'page-' directory name, and any request containing 'pearcmd', '+config-show' or '+config-create'. The two commoditised user agents (cve-2026-87902-poc/1.0, nuclei-cve-2026-87902/1.0) are a coarse but real signal; most traffic spoofs a normal browser UA so absence of these strings is not reassuring. Host-side: check /tmp and /var/tmp for unexpected .php files — presence means a stage-three write succeeded and the host must be treated as compromised, not merely probed. A 200 response returning OPML/RSS-feed content (wp-links-opml.php, wp-includes/feed-rss2.php) from what should be a normal page URL is the sign a stage-one probe worked and confirms a vulnerable window even without further action. Hardening: update to the branch-appropriate fixed release (7.1.2 down to 4.7.37 — every affected branch has a patched release, no forced major-version jump). Interim mitigation: reject traversal sequences (%2e%2e literal or encoded) in the 'pagename' parameter at the WAF/reverse-proxy layer (a legitimate page slug never contains one). Disabling register_argc_argv for web-facing PHP does not fix the underlying inclusion but breaks the pearcmd escalation path specifically, turning a code-execution primitive back into an information-disclosure-only bug — worth doing immediately on any host that cannot patch same-day. Triage/benign-lookalike: ordinary WordPress page requests never carry a 'pagename' value with encoded traversal syntax, and 'pagename' + 'page_id' co-occurring is itself anomalous, so the false-positive rate on these signatures should be very low.
+
+  - title: "CVE-2026-28324 / CVE-2026-28325 — SolarWinds Observability Self-Hosted: two unauthenticated remote-code-execution flaws (integrity-check bypass CVSS 9.8, deserialization of untrusted data CVSS 8.8), patched same-day disclosure, no confirmed exploitation yet"
+    sources:
+      - { url: "https://documentation.solarwinds.com/en/success_center/orionplatform/content/release_notes/hco_2026-2-3_release_notes.htm", publisher: "SolarWinds (official Observability Self-Hosted 2026.2.3 release notes)", date: "2026-09-22", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0388", publisher: "NCSC-NL (Dutch national CERT)", date: "2026-09-23", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1215/", publisher: "CERT-FR / ANSSI (French national CERT)", date: "2026-09-23", role: "corroborating" }
+      - { url: "https://gbhackers.com/solarwinds-observability-flaws/", publisher: "GBHackers", date: "2026-09-23", role: "corroborating" }
+      - { url: "https://securityonline.info/solarwinds-observability-vulnerabilities-fixed/", publisher: "SecurityOnline / Daily CyberSecurity", date: "2026-09-23", role: "corroborating" }
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-28324", publisher: "NVD (API JSON)", date: "2026-09-22", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories → advisory https://advisories.ncsc.nl/advisory?id=NCSC-2026-0388 → corroborating: CERT-FR, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1215/ → primary: SolarWinds' own release notes, URL https://documentation.solarwinds.com/en/success_center/orionplatform/content/release_notes/hco_2026-2-3_release_notes.htm (the SolarWinds trust-center advisory pages themselves 403'd on every transport tried: direct, trafilatura, and jina reader) → corroborating detail: GBHackers and SecurityOnline, URLs as above → verified: NVD REST API"
+    summary: |
+      SolarWinds released Observability Self-Hosted 2026.2.3 on 2026-09-22 fixing two unauthenticated remote-code-execution vulnerabilities, both reported by researcher Kai Huang of Armadin through responsible disclosure. CVE-2026-28324 (CVSS 9.8) stems from insufficient integrity checks and affects installations running in a non-default, non-secure configuration; SolarWinds has not published the specific communication mode or component involved beyond "non-default and non-secure configuration." CVE-2026-28325 (CVSS 8.8) is a deserialization-of-untrusted-data flaw (CWE-502) that requires the application to be configured to use "a specific communication mode" — plausibly related to the Web Performance Monitor (WPM) player communication channel, since the same release simultaneously converts passive (server-initiated) WPM players to active (player-initiated) communication and issues remotely-installed passive players a randomly generated strong password on upgrade, a change the release notes frame as a "critical update advisory" alongside the CVE fixes. Both NCSC-NL and CERT-FR flagged the advisory the day after release (2026-09-23). Neither vendor nor either national CERT reports active exploitation or public PoC as of this writing; SolarWinds has a documented history of both supply-chain (SUNBURST, 2020) and rapidly-weaponised RCE flaws (Web Help Desk, Serv-U) in this product family, and unauthenticated RCE against internet-reachable monitoring infrastructure is a high-value initial-access target.
+    region_nexus: "global; any organization running SolarWinds Observability Self-Hosted (formerly Orion-platform-based monitoring), a common enterprise/government network-monitoring deployment"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-28324", "CVE-2026-28325"]
+    techniques: ["T1190"]
+    affected_products: ["SolarWinds Observability Self-Hosted"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:solarwinds-observability-self-hosted", type: product, name: "SolarWinds Observability Self-Hosted", aliases: ["SolarWinds Orion Platform (self-hosted)"], summary: "SolarWinds' self-hosted, on-premises network/application monitoring platform (successor branding for the Orion-platform product line); patched two unauthenticated RCE flaws, CVE-2026-28324 and CVE-2026-28325, in version 2026.2.3 (SolarWinds, 2026-09-22)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "SolarWinds Observability Self-Hosted was found to be affected by an unauthenticated remote code execution vulnerability due to the insufficient integrity checks. Installations configured in a non-default and non-secure configuration are affected."
+        attribution: "SolarWinds (official release notes, CVE-2026-28324)"
+        source_url: "https://documentation.solarwinds.com/en/success_center/orionplatform/content/release_notes/hco_2026-2-3_release_notes.htm"
+      - quote: "SolarWinds Observability Self-Hosted was found to be affected by an unauthenticated remote code execution vulnerability stemming from deserialization of untrusted data when the application is configured to use a specific communication mode."
+        attribution: "SolarWinds (official release notes, CVE-2026-28325)"
+        source_url: "https://documentation.solarwinds.com/en/success_center/orionplatform/content/release_notes/hco_2026-2-3_release_notes.htm"
+      - quote: "SolarWinds has not provided technical exploit details, affected endpoint information, or evidence of active exploitation in the release notes."
+        attribution: "GBHackers"
+        source_url: "https://gbhackers.com/solarwinds-observability-flaws/"
+    extended_notes: |
+      Detection: SolarWinds has not published attack signatures; given the deserialization flaw's likely tie to WPM player communication, prioritise reviewing which WPM players (main-polling-engine default, remote passive, remote active) are internet-reachable and monitor SolarWinds platform/service logs for unexpected inbound connections to WPM-player communication ports from unrecognised hosts, plus unexpected process spawns under the SolarWinds Platform service account following any such connection. Hardening: upgrade to 2026.2.3 via Settings > My Deployment; remove unnecessary internet exposure of SolarWinds management/communication services; audit for any deployment running "non-default and non-secure" communication settings (SolarWinds does not enumerate which settings qualify — treat any deviation from the vendor-recommended secure defaults, particularly around WPM player communication mode, as in scope); note that this upgrade also silently reconfigures passive WPM players to active mode and issues new passwords to remote passive players, which operators should account for in change-management. No workaround is documented short of patching.
+
+  - title: "GitLab CI/CD regex parser CVE-2026-89078 (double free) / CVE-2026-93577 (integer overflow): authenticated crafted-regex-in-pipeline-config reaches server-side code execution (CVSS 9.9), part of a wider critical patch release"
+    sources:
+      - { url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/", publisher: "GitLab (official critical patch release notes)", date: "2026-09-23", role: "primary" }
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-89078", publisher: "NVD (API JSON)", date: "2026-09-24", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, bridge `enisa-euvd recent criticals` → primary: GitLab's own critical-patch-release notes, URL https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/ → verified: NVD REST API"
+    summary: |
+      GitLab shipped a critical patch release (19.4.1, 19.3.3, 19.2.7) on 2026-09-23 fixing eight vulnerabilities, the two most severe of which are memory-corruption bugs in GitLab's regular-expression handling for CI/CD configuration: CVE-2026-89078, a double-free when parsing a specially crafted regular expression in a CI/CD configuration, and CVE-2026-93577, an integer overflow when compiling a specially crafted regular expression in the same context — both CVSS 3.1 9.9 (AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H, scope changed), both reported by the same HackerOne researcher (joaxcar), and both requiring only low-privileged authenticated access (i.e., a user able to author or modify .gitlab-ci.yml, which default self-managed configurations often grant to any project Developer). GitLab's advisory withholds further technical detail under its standard 90-day disclosure embargo. No exploitation is reported; GitLab.com is already patched and GitLab Dedicated customers need no action, so exposure is limited to self-managed CE/EE instances (all versions from 19.2 before 19.2.7, 19.3 before 19.3.3, and 19.4 before 19.4.1) not yet upgraded. This is a distinct vulnerability class (regex-engine memory corruption) from the unauthenticated path-traversal/file-read CVE-2026-85706 chain this store already tracks from GitLab's 2026-09-10 release — same vendor, same week's cadence of hardening releases, different root cause.
+    region_nexus: "global; any self-managed GitLab CE/EE instance, a widely deployed DevOps/CI platform"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-89078", "CVE-2026-93577"]
+    techniques: ["T1068"]
+    affected_products: ["GitLab CE", "GitLab EE"]
+    entity_keys: ["product:gitlab-ce", "product:gitlab-ee"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "high CVSS (9.9) but requires authenticated low-privilege access, no confirmed exploitation, technical detail withheld under GitLab's 90-day disclosure embargo, and GitLab already has extensive prior coverage this month (a different vulnerability class/release) — main agent should judge whether this clears the bar as a standalone entry or is better folded as a brief cross-reference."
+    evidence:
+      - quote: "GitLab has remediated an issue that under certain conditions could have allowed an authenticated user to execute arbitrary code on the GitLab server due to a double free issue when parsing a specially crafted regular expression in a CI/CD configuration."
+        attribution: "GitLab (official patch release notes, CVE-2026-89078)"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/"
+      - quote: "GitLab has remediated an issue that under certain conditions could have allowed an authenticated user to execute arbitrary code on the GitLab server due to an integer overflow issue when compiling a specially crafted regular expression in a CI/CD configuration."
+        attribution: "GitLab (official patch release notes, CVE-2026-93577)"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/"
+    extended_notes: |
+      Detection: GitLab withholds the vulnerable code path until the 90-day embargo lifts, so no concrete telemetry hook is available yet; in the interim, monitor for unusual gitlab-rails/gitlab-ci-service worker process crashes or restarts correlated with CI/CD pipeline-config changes from low-privileged accounts, and audit which roles can create/modify .gitlab-ci.yml on self-managed instances (Developer role and above, by GitLab's default RBAC). Hardening: upgrade self-managed CE/EE to 19.4.1 / 19.3.3 / 19.2.7 immediately; restrict CI/CD configuration-authoring permission to trusted maintainers where feasible as defense in depth pending patching.
+
+  - title: "Unauthenticated pre-auth enumeration of Entra ID users, registered MFA methods and admin accounts via Microsoft's own public Self-Service Password Reset (SSPR) portal — public tool (ResetSpy) released"
+    sources:
+      - { url: "https://www.levelblue.com/blogs/spiderlabs-blog/enumerating-users-and-mfa-via-microsofts-password-reset-portal", publisher: "LevelBlue (Trustwave) SpiderLabs", date: "2026-09-23", role: "primary" }
+    discovery_trace: "first seen at: trustwave-spiderlabs, URL https://www.levelblue.com/blogs/spiderlabs-blog → primary: LevelBlue SpiderLabs post, URL https://www.levelblue.com/blogs/spiderlabs-blog/enumerating-users-and-mfa-via-microsofts-password-reset-portal (no pivot needed — original research)"
+    summary: |
+      LevelBlue (Trustwave) SpiderLabs documents that Microsoft's public, unauthenticated Self-Service Password Reset (SSPR) portal at passwordreset.microsoftonline.com leaks tenant-account and MFA-registration information usable for reconnaissance against any Entra ID tenant that has SSPR enabled. Submitting an email address via the portal's ASP.NET UpdatePanel POST returns a "CurrentViewName" hidden field that discloses server-side state: "ViewMultigateUserControl" confirms the account exists and lists its registered second factors (via visible vs. display:none radio rows in the method-selection screen); named SSPR-policy-error views (ViewSsprNotEnabledInUserPolicy/SSPR_0011, ViewUserNotMemberOfScopedAccessGroup/SSPR_0013, etc.) also confirm the account exists even when SSPR itself is unavailable to it, because the server only reaches those policy checks after resolving the username in the directory — only a true "ViewUserIdentifierVerification" bounce means not-found. Because Microsoft enforces SSPR for administrator accounts regardless of tenant-wide policy, any account that reaches method-selection while the broader tenant has SSPR disabled for standard users is very likely a privileged role account, and its registered factors (SMS vs. authenticator app vs. alternate-email OTP) are visible too — letting an attacker pre-select privileged, weak-MFA targets before any credential attack. Microsoft removed the portal's visual CAPTCHA in August 2026, replacing it with backend throttling/behavioural abuse detection. The author released a public tool, ResetSpy (github.com/mlcsec/ResetSpy), that automates bulk enumeration with per-request UA rotation (16 realistic UA strings) and jitter to reduce fingerprinting, flagging accounts as PROTECTED / WEAK ONLY / NO METHODS. No CVE is assigned — this is abuse of a legitimate, publicly documented Microsoft feature, not a code vulnerability.
+    region_nexus: "global; any organization using Microsoft Entra ID with SSPR enabled, including Swiss government bodies on Microsoft 365/Entra ID"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: ["T1589.002", "T1087.004"]
+    affected_products: ["Microsoft Entra ID"]
+    entity_keys: ["product:microsoft-entra-id"]
+    new_entities:
+      - { key: "tool:resetspy", type: tool, name: "ResetSpy", aliases: [], summary: "Public reconnaissance tool (github.com/mlcsec/ResetSpy) automating bulk unauthenticated enumeration of Entra ID account existence, registered MFA methods and likely-admin status via Microsoft's public SSPR portal, with UA rotation and jitter to reduce fingerprinting (LevelBlue SpiderLabs / Matthew Coady, 2026-09-23)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Importantly, every non-\"ViewUserIdentifierVerification\" response — including \"SSPR_0011\", \"SSPR_0013\", and the guest/federated not-available response — is confirmation that the account exists. The server only reaches those policy checks after successfully resolving the username in the directory."
+        attribution: "LevelBlue SpiderLabs (Matthew Coady)"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/enumerating-users-and-mfa-via-microsofts-password-reset-portal"
+      - quote: "Microsoft enforces SSPR for administrator accounts regardless of the tenant-wide SSPR policy. If an organization has disabled SSPR for standard users, standard accounts return \"ViewSsprNotEnabledInUserPolicy\" (SSPR_0011). Admin accounts bypass this check entirely and proceed to method enumeration regardless."
+        attribution: "LevelBlue SpiderLabs (Matthew Coady)"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/enumerating-users-and-mfa-via-microsofts-password-reset-portal"
+    extended_notes: |
+      Detection (telemetry class first): Entra ID / Azure AD sign-in and self-service password-reset audit logs — specifically SSPR activity events with status "user is not member of the password reset users group" or other named SSPR error codes recurring across many distinct usernames from a single source in a short window, with no subsequent completed password reset. Volume/velocity anomalies (many SSPR lookups, few or no completions) are the discriminator from legitimate self-service use. Benign lookalike: a genuine user forgetting their password generates exactly one SSPR lookup that is normally followed by a completed reset — bulk lookups with no completions is the anomalous pattern, not the lookups alone. Hardening: scope SSPR to a specific security group rather than tenant-wide to shrink the enumerable population; remove alternate-email-OTP and security-question options from permitted SSPR methods, requiring authenticator-app or phone verification as the floor; enforce phishing-resistant MFA (FIDO2/certificate-based) specifically on privileged/admin roles, since Microsoft cannot let admin accounts opt out of SSPR exposure at the platform level — this is the one control that neutralises what the technique reveals about those accounts.
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no products configured on the watchlist this deployment — sweep is a documented no-op per the org profile; general vulnerability coverage above applies unchanged"
+
+cve_table:
+  - { cve: "CVE-2026-87902", product: "WordPress Core", cvss: "9.2 (CVSS4.0, vendor) / 8.1 (CVSS3.1, NVD)", epss: null, kev: false, exploited: true, patch: "7.1.2 (7.x); security backports to every branch down to 4.7.37", source: "https://github.com/WordPress/wordpress-develop/security/advisories/GHSA-7hp8-65ch-5whp" }
+  - { cve: "CVE-2026-28324", product: "SolarWinds Observability Self-Hosted", cvss: "9.8", epss: null, kev: false, exploited: false, patch: "2026.2.3", source: "https://documentation.solarwinds.com/en/success_center/orionplatform/content/release_notes/hco_2026-2-3_release_notes.htm" }
+  - { cve: "CVE-2026-28325", product: "SolarWinds Observability Self-Hosted", cvss: "8.8", epss: null, kev: false, exploited: false, patch: "2026.2.3", source: "https://documentation.solarwinds.com/en/success_center/orionplatform/content/release_notes/hco_2026-2-3_release_notes.htm" }
+  - { cve: "CVE-2026-89078", product: "GitLab CE/EE", cvss: "9.9", epss: null, kev: false, exploited: false, patch: "19.4.1 / 19.3.3 / 19.2.7", source: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/" }
+  - { cve: "CVE-2026-93577", product: "GitLab CE/EE", cvss: "9.9", epss: null, kev: false, exploited: false, patch: "19.4.1 / 19.3.3 / 19.2.7", source: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/" }
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-directives
+    reason: "bridge `cisa page` returns only the site navigation shell (long-documented JS-shell/recipe-gap condition per source notes); no evidence from any other source that a new directive published in-window."
+  - source_id: mozilla-mfsa
+    reason: "listing page extracted but the per-date advisory items under recent headers (Sept 16 / Sept 15 / Sept 8) did not resolve to bulleted links in the trafilatura extraction; no MFSA advisory confirmed in-window via this pass. Not treated as a fetch failure since the page returned 200 with content — a extraction-completeness gap, worth a follow-up direct WebFetch if this recurs."
+  - source_id: coverage-backlog-vmware-vmsa-2026-0007
+    reason: "CVE-2026-59346 (VMXNET3 guest-to-host escape, CVSS 9.3): re-checked CISA KEV catalog (confirmed via kev-window.txt mechanical sweep, 0 in-window additions covering this CVE) and ran a fresh WebSearch — no KEV listing, no vendor or researcher report of active exploitation as of 2026-09-24. A third-party PoC listing (sploitus.com mirroring a GitHub PoC) exists but no primary source confirms in-the-wild use. No change from the 2026-09-06 backlog note."
+  - source_id: cert-pl
+    reason: "newest item (WEBCON BPS IDOR, CVE-2026-92419, published 2026-09-23) is low severity (CVSS4.0 5.3, authenticated) — checked, not included as not meeting the relevance bar."
+
+notes_for_main_agent: |
+  Process improvement (self-evolution): the NVD web page at nvd.nist.gov/vuln/detail/<CVE> is a JS-only Angular SPA that returns an empty shell to every direct-fetch transport tried this run (direct, trafilatura, jina reader all returned the same empty <app-root> shell). However, the NVD REST API at https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=<CVE> is reachable via a plain unauthenticated GET (verified this run for 5 CVEs, ~2s response time, no rate-limit issues at low volume) and returns the full structured CVE record (publication date, CVSS vectors, affected-version ranges, description) in JSON. This is a much better verification path than the SPA and should be added to tools/fetch_source.py as a documented recipe (e.g. `nvd cve <CVE-ID>`) so future research/verification sub-agents don't have to rediscover this — add a short delay (~1-2s) between calls if querying several CVEs to stay well under NVD's public rate limit.
+
+  Two other IBM Security Bulletins surfaced via NCSC-NL's bundled advisory NCSC-2026-0392 (IBM MQ CVE-2026-10747, CVSS 10.0 heap overflow, published by IBM 2026-09-14; IBM Langflow OSS CVE-2026-79724/85025/81204 etc., published by IBM 2026-09-08) were investigated and DROPPED per the recency rule: both underlying IBM disclosures are more than a week old and NCSC-NL's 2026-09-23 advisory is purely a same-day bundling/republication with no fresh exploitation evidence — the reader already had every chance to see these when IBM first published. Flagging in case NCSC-NL's late bundling behaviour recurs and a future run needs the same judgment call.
+
+  Adobe Connect (9 CVEs, CVE-2026-75682 CVSS 9.9 SQLi-to-RCE) and Adobe Experience Manager Forms JEE (6 CVEs, CVE-2026-75745 CVSS 9.8 unauthenticated RCE) both appeared fresh via NCSC-NL on 2026-09-23 (NCSC-2026-0391, NCSC-2026-0390) with no exploitation reported by Adobe. Time-boxed out of this run given the two items already included cover the highest-value new signal; worth a follow-up if AEM Forms shows exploitation activity, given AEM's history of real-world targeting against public-sector web-forms deployments.

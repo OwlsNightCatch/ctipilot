@@ -1,0 +1,106 @@
+domain: S3
+run_id: 2026-09-24T0405Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-24T04:08:25Z
+ended_at: 2026-09-24T04:18:12Z
+duration_seconds: 587
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 8
+  bridge_fetches: 27
+items:
+  - title: "CLOSEDQUORUM: Cisco Talos documents the first Windows implant that delegates its next action to a vote among four commercial AI models"
+    sources:
+      - { url: "https://blog.talosintelligence.com/the-closed-quorum-inside-the-first-reported-autonomous-ai-c2-implant/", publisher: "Cisco Talos", date: "2026-09-22", role: "primary" }
+      - { url: "https://thehackernews.com/2026/09/windows-malware-is-built-to-let-up-to.html", publisher: "The Hacker News", date: "2026-09-23", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"new malware research technical analysis September 23 2026\") → pivot: The Hacker News, URL https://thehackernews.com/2026/09/windows-malware-is-built-to-let-up-to.html → primary: Cisco Talos, URL https://blog.talosintelligence.com/the-closed-quorum-inside-the-first-reported-autonomous-ai-c2-implant/"
+    summary: |
+      Cisco Talos disclosed CLOSEDQUORUM on 2026-09-22, a 64-bit Go-compiled Windows implant it says is, to its knowledge, "the first publicly documented Windows implant" to delegate tactical command-and-control decisions to a panel of up to four commercial LLM providers (DeepSeek, Qwen, Mistral, Google Gemini) rather than an attacker-run C2 server. On each cycle the implant's ModelOrchestrator queries each provider with a system prompt ("You are an advanced malware strategist. Provide ONLY executable decisions.") plus host context (hostname, OS/architecture, admin status), and each model must return one of four typed actions — steal, inject, persist, move (unimplemented in the public build) — via a fixed JSON schema; malformed or off-schema responses are discarded. interModelDiscussion() tallies plurality votes across the providers' Decision fields and executes the winner; on a tie, a hardcoded preference order (DeepSeek > Qwen > Mistral > Gemini) decides, and if every provider fails to return a valid decision the implant sleeps and retries rather than defaulting to an action. steal simultaneously dumps LSASS memory (SeDebugPrivilege + MiniDumpWriteDump), harvests Chrome/Edge/Firefox saved credentials, and pulls MetaMask/Exodus/Ethereum wallet data; inject uses Early Bird APC injection into a suspended process by default, or PEB-walk process hollowing if a model selects that exploit type; persist lays down three parallel mechanisms — a Windows-Update-themed Registry Run-key value, a scheduled task, and a WMI permanent event subscription firing every 60 seconds via a script written to a Temp-path .ps1 file. Every model decision, its stated reasoning, and staged/stolen data are relayed through a Discord webhook, with exfiltrated files AES-256-GCM encrypted, base64-encoded and split into ~1,900-byte chunks posted at one-second intervals. Talos found the malware via CAIRN, a new open-source toolkit it released the same day for tracking AI-integrated malware, and dates the analysed build to 2026-06-17 (with a prior alias, BALZAK, renamed 2026-07-03); code artefacts tie the developer to 2025-era carding-forum activity. Talos states plainly it has "no confirmation of in-the-wild deployment," and the public distribution build ships placeholder API keys and a dummy Discord webhook, so no end-to-end run has been observed — this is a capability demonstration Talos is flagging pre-emptively, not a confirmed active campaign.
+    region_nexus: "global — no reported Swiss or regional targeting; capability-class disclosure relevant to any Windows enterprise estate"
+    primary_sector_nexus: "indirect"
+    sector: null
+    cves: []
+    techniques: [T1055.004, T1055.012, T1003.001, T1555.003, T1547.001, T1053.005, T1546.003, T1567.004, T1685]
+    affected_products: ["Microsoft Windows", "Google Chrome", "Microsoft Edge", "Mozilla Firefox", "MetaMask", "Exodus"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:closedquorum", type: malware, name: "CLOSEDQUORUM", aliases: ["BALZAK"],
+          summary: "64-bit Go Windows implant that delegates C2 action-selection to a plurality vote among up to four commercial LLM providers (DeepSeek, Qwen, Mistral, Gemini) instead of an attacker-run server; capabilities are LSASS/browser/crypto-wallet credential theft, Early Bird APC injection or process hollowing, and triple persistence (Registry Run key, scheduled task, WMI event subscription), with results relayed and data exfiltrated via a Discord webhook. Discovered by Cisco Talos via its CAIRN toolkit; no confirmed in-the-wild deployment (Cisco Talos, 2026-09-22)."
+      - { key: "tool:cairn", type: tool, name: "CAIRN (Cognitive Artifact Intelligence Research Network)", aliases: [],
+          summary: "Cisco Talos' open-source research toolkit, released 2026-09-22, for discovering and tracking AI-integrated malware; used to find CLOSEDQUORUM (Cisco Talos, 2026-09-22)." }
+    relation_suggestions:
+      - { subject: "malware:closedquorum", object: "tool:cairn", basis: "Talos: \"CLOSEDQUORUM, a malware binary discovered through Cisco Talos' CAIRN project\" (Cisco Talos, 2026-09-22)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CLOSEDQUORUM, a malware binary discovered through Cisco Talos' CAIRN project, exhibits fully autonomous command and control (C2). While we do not have confirmation of in-the-wild deployment, artifacts from the binary were used to connect the developer to postings on criminal forums related to carding, dating back to 2025."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/the-closed-quorum-inside-the-first-reported-autonomous-ai-c2-implant/"
+      - quote: "CLOSEDQUORUM is, to our knowledge, the first publicly documented Windows implant to apply this model to tactical command and control (C2)."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/the-closed-quorum-inside-the-first-reported-autonomous-ai-c2-implant/"
+      - quote: "Talos said defenders should watch for behavior rather than block the domains of the AI services. Legitimate programs may contact DeepSeek, Mistral, Gemini, Discord, or OpenRouter... Far fewer would contact several of them while also accessing LSASS, injecting code into suspended processes, or creating WMI persistence."
+        attribution: "The Hacker News, relaying Cisco Talos"
+        source_url: "https://thehackernews.com/2026/09/windows-malware-is-built-to-let-up-to.html"
+    extended_notes: |
+      Detection framing per Talos: this is explicitly NOT a domain/IP blocklist problem, since the "C2 infrastructure" is legitimate commercial AI-provider endpoints thousands of benign applications call daily; the actionable signal is the co-occurrence pattern — AI-service traffic from a Windows binary with no legitimate reason to call multiple LLM providers within a short window, combined with LSASS access, injection into a suspended process, new WMI persistence, or Discord webhook traffic from the same host/process — plus a randomized 5-15 minute polling cadence chosen to evade short sandbox runs. Prompt content itself is only visible with TLS inspection or to the AI provider, so a network-only vantage point sees only the fact of repeated multi-provider calls, not their content. Robustness note worth surfacing to hunters: the tie-break order is fixed (DeepSeek wins ties), and total provider failure causes a sleep-retry rather than a default action — both are deterministic behaviors a detection rule or honeypot interaction could exploit. Talos frames CLOSEDQUORUM as the first documented example of "effort displacement" (a full attack-phase decision handed to AI rather than just AI-assisted tooling), contrasting it with CERT-UA's July 2025 LAMEHUG (which had an AI model write commands for a fixed task, not choose the task). No CVE applies — this is malware capability, not a vulnerability.
+  - title: "ShinyHunters hijacks Clop's dark-web leak site via an unauthenticated Grav CMS file-upload flaw, then claims a still-unconfirmed Oracle PeopleSoft zero-day let it breach the FBI's own network"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/shinyhunters-hacks-clop-leak-site-threatens-to-extort-ransomware-gang/", publisher: "BleepingComputer", date: "2026-09-19 (updated 2026-09-21)", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/", publisher: "BleepingComputer", date: "2026-09-22", role: "primary" }
+      - { url: "https://thehackernews.com/2026/09/shinyhunters-claims-fbi-breach-says-it.html", publisher: "The Hacker News", date: "2026-09-23", role: "corroborating" }
+      - { url: "https://www.404media.co/we-hacked-the-fbi-hackers-say-they-have-data-on-all-fbi-employees/", publisher: "404 Media", date: "2026-09-22", role: "corroborating" }
+      - { url: "https://cyberinsider.com/shinyhunters-claims-fbi-breach/", publisher: "CyberInsider", date: "2026-09-22", role: "corroborating" }
+      - { url: "https://www.scworld.com/brief/shinyhunters-defaces-clop-ransomware-data-leak-site-claims-data-theft", publisher: "SC Media", date: "2026-09-21", role: "corroborating" }
+    discovery_trace: "first seen at: socradar (rotation source), URL https://socradar.io/blog/ → drilled: https://socradar.io/blog/clop-hack-shinyhunters-hijacks-data-leak-site/ → pivot: WebSearch (\"ShinyHunters FBI jobs website breach Oracle PeopleSoft September 2026\") and WebSearch (\"ShinyHunters defaces Clop leak site Grav CMS vulnerability\") → primary: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/shinyhunters-hacks-clop-leak-site-threatens-to-extort-ransomware-gang/ and https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/ → corroborating: The Hacker News, 404 Media, CyberInsider, SC Media"
+    summary: |
+      ShinyHunters (actor:shinyhunters) began an intrusion the night of 2026-09-18 against Clop's own Tor data-leak site, which BleepingComputer confirms was defaced and independently verified the uploaded proof file was live on Clop's infrastructure. ShinyHunters told BleepingComputer it exploited "an unauthenticated file upload vulnerability in Grav CMS" (the flat-file PHP CMS running Clop's site; no CVE has been publicly attributed to the exploited flaw) to upload a taunting text file, then fully defaced the site with ShinyHunters' Umbreon-logo ASCII art. ShinyHunters further claims — unverified by BleepingComputer — it gained full server access and stole Grav CMS source code and plugins, all of /var/log (potentially exposing authentication history and visitor IPs), and the private keys to Clop's Tor onion service, which if genuine would let ShinyHunters reproduce Clop's existing onion address on infrastructure it controls. ShinyHunters is using the access to extort Clop itself, demanding an eight-figure Bitcoin sum and threatening to publish Clop's own Oracle E-Business Suite (CVE-2025-61882) extortion-campaign records — victim names, ransom amounts, wallet addresses; Clop responded on 2026-09-21 with a message posted to its own hijacked site asking to reopen contact through a different channel, without addressing the demands. Separately, and by ShinyHunters' own account related to the same feud, the group claims that on the night of 2026-09-21 it discovered and immediately exploited a new, still-undisclosed pre-authentication remote-code-execution zero-day in Oracle PeopleSoft against FBI infrastructure, entering via a component under the /PSEMHUB/ path on the FBI's recruitment site (apply.fbijobs.gov), then moving laterally into FBI-managed AWS GovCloud infrastructure and allegedly exfiltrating 2-3TB of data before defacing apply.fbijobs.gov with the same "seized" banner used against Clop; the FBI took the site offline (it now shows a maintenance page) and told Reuters and BleepingComputer only that it "is aware of claims regarding unauthorized activity affecting FBIjobs.gov and is currently investigating" — it has not confirmed a breach, the zero-day, or any data theft. 404 Media, which first reported the claim, says it independently verified that phone numbers in a ~5,000-record sample ShinyHunters supplied correspond to real US Department of Justice personnel, though this does not confirm the claimed RCE mechanism or the full 2-3TB volume. ShinyHunters frames the FBI intrusion as retaliation for a May 2026 FBI/IC3 PSA (PSA260515) naming the group, and separately told BleepingComputer it is now exploiting the same alleged PeopleSoft zero-day against other organizations including Fortune 500 companies — its third documented wave of PeopleSoft exploitation after a confirmed campaign using CVE-2026-35273 against the education sector in June 2026 (campaign:shinyhunters-peoplesoft-2026).
+    region_nexus: "global — victims are a US federal law-enforcement agency and a rival ransomware operation; no Swiss-specific targeting reported, but Oracle PeopleSoft is widely deployed in government HR/payroll/administrative systems generally, including the kind of estate this constituency runs"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1491.002]
+    affected_products: ["Oracle PeopleSoft", "Grav CMS"]
+    entity_keys: ["actor:shinyhunters", "actor:clop", "campaign:shinyhunters-peoplesoft-2026"]
+    new_entities:
+      - { key: "incident:shinyhunters-clop-leaksite-hijack-2026-09", type: incident, name: "ShinyHunters hijacks Clop's Tor leak site", aliases: [],
+          summary: "ShinyHunters exploited a claimed unauthenticated Grav CMS file-upload flaw to deface and claim full compromise of the Clop ransomware gang's own Tor leak site beginning 2026-09-18/19, then used the access to extort Clop for an eight-figure Bitcoin sum, threatening to publish Clop's own Oracle E-Business Suite (CVE-2025-61882) victim-payment records (BleepingComputer, 2026-09-19/21)." }
+      - { key: "incident:shinyhunters-fbi-peoplesoft-breach-claim-2026-09", type: incident, name: "ShinyHunters claims FBI breach via an Oracle PeopleSoft zero-day", aliases: [],
+          summary: "ShinyHunters claims it exploited a new, undisclosed pre-auth RCE zero-day in Oracle PeopleSoft on 2026-09-21 to breach FBI infrastructure via apply.fbijobs.gov, move laterally into FBI-managed AWS GovCloud, and steal 2-3TB of employee/applicant data, defacing the recruitment site before the FBI took it offline; the FBI confirms only that it is investigating, and BleepingComputer/CyberInsider/404 Media have not independently verified the zero-day, the lateral-movement claim, or the data volume (BleepingComputer, 404 Media, The Hacker News, 2026-09-22/23)." }
+    relation_suggestions:
+      - { subject: "incident:shinyhunters-clop-leaksite-hijack-2026-09", object: "actor:shinyhunters", basis: "BleepingComputer: ShinyHunters told BleepingComputer it exploited the Grav CMS flaw and defaced Clop's site itself (BleepingComputer, 2026-09-19)" }
+      - { subject: "incident:shinyhunters-clop-leaksite-hijack-2026-09", object: "actor:clop", basis: "BleepingComputer: the defaced/hijacked site is Clop's own Tor data-leak site (BleepingComputer, 2026-09-19)" }
+      - { subject: "incident:shinyhunters-fbi-peoplesoft-breach-claim-2026-09", object: "actor:shinyhunters", basis: "ShinyHunters claimed the FBI intrusion directly to BleepingComputer, 404 Media and The Hacker News (2026-09-22)" }
+      - { subject: "incident:shinyhunters-fbi-peoplesoft-breach-claim-2026-09", object: "campaign:shinyhunters-peoplesoft-2026", basis: "BleepingComputer: ShinyHunters says it is now exploiting the same alleged new PeopleSoft zero-day against other organizations after previously weaponizing CVE-2026-35273 against the education sector in June 2026 (BleepingComputer, 2026-09-22)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "BleepingComputer confirmed that the file had been uploaded to Clop's server and could be downloaded directly from the ransomware gang's Tor site."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/shinyhunters-hacks-clop-leak-site-threatens-to-extort-ransomware-gang/"
+      - quote: "BleepingComputer has independently confirmed the defacement and earlier uploaded file but has not independently verified ShinyHunters' claims that it stole server logs, source code, or Clop's onion private keys."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/shinyhunters-hacks-clop-leak-site-threatens-to-extort-ransomware-gang/"
+      - quote: "The threat actors told BleepingComputer the vulnerability allows remote code execution and that they used it Monday night to access FBI systems before moving laterally into FBI-managed AWS GovCloud infrastructure."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/"
+      - quote: "The FBI is aware of claims regarding unauthorized activity affecting FBIjobs.gov and is currently investigating."
+        attribution: "FBI, via BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/"
+      - quote: "BleepingComputer has not independently verified the alleged zero-day, lateral movement, or amount of stolen data."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/"
+    extended_notes: |
+      Fact/claim discipline is the whole story here: CONFIRMED facts are the Clop-site defacement (BleepingComputer directly observed it), the FBIjobs.gov defacement and subsequent takedown to a maintenance page (multiple outlets observed the live site state), and the FBI's own statement that it is investigating. UNVERIFIED CLAIMS, all sourced only to ShinyHunters itself, are: the existence and mechanism of the PeopleSoft zero-day, the AWS GovCloud lateral movement, the 2-3TB volume, the specific compromised services (Criminal Justice/HR/Medlink), and the theft of Clop's source code/logs/onion keys. 404 Media's partial verification (DOJ-consistent phone numbers in a small sample) supports that SOME real personnel data changed hands but does not confirm the RCE claim or full scope. Cato Networks (quoted by The Hacker News) flags the actor's own post timestamp (Sept 23, vs. US news breaking Sept 22) as a soft operational-timezone clue pointing toward Asia, explicitly caveated as non-definitive. Defender takeaway for a public-sector reader: this is a live, still-unfolding zero-day claim against Oracle PeopleSoft, a product class commonly used for HR/payroll/recruitment portals — any organization running an internet-facing PeopleSoft component (especially a recruitment/jobs-portal instance, matching the FBI's own entry point) should watch Oracle's own security-alert channel for an emergency PeopleSoft advisory in the coming days and treat unexplained PeopleSoft process activity or outbound connections as a priority hunt lead until the vendor confirms or denies the claim. No CVE exists yet for the claimed zero-day, so nothing here should be treated as validated vulnerability intelligence — it is exclusively attacker self-reporting at this stage, carried at MEDIUM confidence because of the volume and reliability of press corroboration on the surrounding facts (defacements, FBI statement) even though the core technical claim remains unconfirmed.
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps: []
+backlog_rechecks:
+  - row: "Spring Ring (Unit 42) — Teams vishing into RMM or PetitPotam NTLM relay against the DC (surfaced 2026-09-06)"
+    result: "no change — re-searched; every reachable source (dev.to reproduction, GBHackers) still traces to the same original Jan-Apr 2026 Unit 42 campaign window with the NTLM-relay/domain-takeover attempt blocked by Unit 42's own MDR service. No new victim, no successful DC compromise, no follow-on reporting found."
+  - row: "Three remaining PD-11(d) research items below the recovery bar: AWS root-user password-spraying campaign, tampered Exodus wallet installer RAT, Check Point's JSCeal deobfuscation pipeline (surfaced 2026-09-06)"
+    result: "no change on the Exodus wallet RAT (Huntress) — re-searched, no new victim count or follow-up beyond the original late-July/mid-August 2026 campaign window and the 85-minute three-victim cluster already on file. AWS password-spraying and JSCeal deobfuscation not separately re-searched this run (no new signal encountered while covering the rest of the sweep); all three remain below the recovery bar per the v4.2 rebalancing."
+fetch_failures: []
