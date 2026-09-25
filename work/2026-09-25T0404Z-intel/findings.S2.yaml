@@ -1,0 +1,147 @@
+domain: S2
+run_id: 2026-09-25T0404Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-25T04:07:57Z
+ended_at: 2026-09-25T04:18:20Z
+duration_seconds: 623
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 8
+  bridge_fetches: 22
+items:
+  - title: "CVE-2026-48842 — Roundcube Webmail: pre-auth SQL injection in the virtuser_query plugin confirmed under active exploitation, four months after the patch"
+    sources:
+      - { url: "https://roundcube.net/news/2026/05/24/security-updates-1.6.16-and-1.7.1", publisher: "Roundcube Webmail Dev Team", date: "2026-05-24", role: "primary" }
+      - { url: "https://www.cyber.gc.ca/en/alerts-advisories/roundcube-security-advisory-av26-503", publisher: "Canadian Centre for Cyber Security (CCCS)", date: "2026-09-21", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12596", publisher: "NCSC Switzerland — Cyber Security Hub (GovCERT.ch)", date: "2026-09-24", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/critical-roundcube-flaw-now-actively-exploited-in-code-injection-attacks/", publisher: "BleepingComputer", date: "2026-09-24", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12596 (fetched via bridge ncsc-csh recent 15, post lastModified 2026-09-24T14:45:53Z) → primary: Canadian Centre for Cyber Security, URL https://www.cyber.gc.ca/en/alerts-advisories/roundcube-security-advisory-av26-503 → primary: Roundcube vendor advisory, URL https://roundcube.net/news/2026/05/24/security-updates-1.6.16-and-1.7.1 → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/critical-roundcube-flaw-now-actively-exploited-in-code-injection-attacks/"
+    summary: |
+      Roundcube fixed CVE-2026-48842 (CVSS 3.1 8.1) on 2026-05-24 in versions 1.6.16 and 1.7.1: a pre-authentication
+      SQL injection in the built-in virtuser_query plugin, which substitutes a user-supplied email address into a
+      configured SQL lookup query used for database-driven virtual-user-to-mailbox resolution. The flaw is a
+      preg_replace() backslash-escape bypass that lets an unauthenticated attacker manipulate the resulting query,
+      bypass authentication and inject/execute arbitrary SQL against Roundcube's backend database — potentially
+      exposing mail-account credentials and stored messages, with no user interaction required. Four months after
+      the patch, Canada's Cyber Centre updated advisory AV26-503 on 2026-09-21 to record in-the-wild exploitation;
+      NCSC Switzerland's Cyber Security Hub updated its own advisory (open since 2026-05-27) on 2026-09-24, adding
+      "Current exploitation status: Actively exploited" and citing the same CCCS update. Shadowserver tracks over
+      523,000 internet-exposed Roundcube instances (patch/honeypot ratio unknown). Roundcube webmail has a
+      documented history of exploitation against European government email systems — Winter Vivern/TA473's
+      CVE-2023-5631 XSS zero-day and APT28's chained abuse of CVE-2020-35730/CVE-2020-12641/CVE-2021-44026 both
+      targeted government mail servers specifically. Roundcube also ships pre-installed with cPanel, extending
+      exposure into hosting-provider-run mail for smaller public-sector bodies and their suppliers. Administrators
+      unable to patch immediately are advised to disable/remove the virtuser_query plugin as an interim mitigation.
+    region_nexus: "Switzerland (NCSC-CH advisory update) + global; Roundcube webmail has a documented history of targeted exploitation against European government email systems (Winter Vivern/TA473, APT28)"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: ["CVE-2026-48842"]
+    techniques: ["T1190"]
+    affected_products: ["Roundcube Webmail"]
+    entity_keys: ["product:roundcube-webmail"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Open-source reporting indicates that CVE-2026-48842 is being exploited in the wild."
+        attribution: "Canadian Centre for Cyber Security"
+        source_url: "https://www.cyber.gc.ca/en/alerts-advisories/roundcube-security-advisory-av26-503"
+      - quote: "Current exploitation status: Actively exploited"
+        attribution: "NCSC Switzerland — Cyber Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12596"
+      - quote: "Successful exploitation can let threat actors with no privileges bypass authentication, inject and execute malicious database commands, and steal data from Roundcube's database"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/critical-roundcube-flaw-now-actively-exploited-in-code-injection-attacks/"
+      - quote: "Fix pre-auth SQL injection in virtuser_query plugin via preg_replace backslash escape bypass, reported by skull"
+        attribution: "Roundcube Webmail Dev Team"
+        source_url: "https://roundcube.net/news/2026/05/24/security-updates-1.6.16-and-1.7.1"
+    extended_notes: |
+      Detection concept: since the vulnerable path is pre-auth, hunt in web-access/application logs for the
+      Roundcube login/authentication endpoint for anomalous or successful authentications with no matching
+      credential-verification event, and for malformed/escaped characters (backslash sequences) in fields that
+      feed virtuser_query lookups; correlate against database-query logs for the Roundcube service account
+      issuing queries structurally inconsistent with the configured virtuser_query template. Hardening: apply
+      1.6.16/1.7.1; where immediate patching isn't possible, disable or remove the virtuser_query plugin entirely
+      (removes the attack surface without needing the patch); restrict/monitor external exposure of the webmail
+      login endpoint, since virtuser_query is opt-in and mainly used by hosting/ISP-style deployments (cPanel
+      bundles Roundcube) rather than single-tenant installs — administrators should first confirm whether the
+      plugin is even in use before deciding on an interim mitigation.
+    priority_hint: high
+
+  - title: "Swiss Parliament orders the Federal Council to draft legislation for a sovereign digital infrastructure (cloud service + independent exchange platform) for federal, cantonal and critical-infrastructure data — Federal Council's own rejection overridden"
+    sources:
+      - { url: "https://www.inside-it.ch/bundesrat-muss-sich-um-digitale-souveraenitaet-kuemmern-20260924", publisher: "Inside IT Switzerland", date: "2026-09-24", role: "primary" }
+      - { url: "https://www.parlament.ch/de/ratsbetrieb/suche-curia-vista/geschaeft?AffairId=20243209", publisher: "Swiss Federal Assembly — Curia Vista (motion 24.3209)", date: "2026-09-23", role: "primary" }
+      - { url: "https://www.lauxlawyers.ch/it-recht-in-der-herbstsession-2026/", publisher: "Laux Lawyers AG (legal analysis of the autumn 2026 parliamentary session)", date: "2026-09", role: "corroborating" }
+      - { url: "https://www.netzwoche.ch/news/2026-03-23/staenderat-sagt-ja-zu-souveraener-ki-infrastruktur", publisher: "Netzwoche", date: "2026-03-23", role: "corroborating" }
+    discovery_trace: "first seen at: inside-it-ch, URL https://www.inside-it.ch/bundesrat-muss-sich-um-digitale-souveraenitaet-kuemmern-20260924 (RSS feed https://www.inside-it.ch/rss.xml, published 2026-09-24T14:10:20Z) → pivot: WebSearch (\"nationalrat souveräne digitale infrastruktur KI Zeitalter 2026 angenommen\") → pivot: Laux Lawyers AG session roundup, URL https://www.lauxlawyers.ch/it-recht-in-der-herbstsession-2026/ → primary: Swiss Federal Assembly Curia Vista official record, URL https://www.parlament.ch/de/ratsbetrieb/suche-curia-vista/geschaeft?AffairId=20243209 (confirmed via the parliament's own OData service: BusinessStatus 'Überwiesen an den Bundesrat' recorded 2026-09-23T18:22:12Z, vote record ID 38773 closing 2026-09-23T12:35:29Z, session 'Herbstsession 2026')"
+    summary: |
+      On 2026-09-23 the National Council (Nationalrat) adopted motion 24.3209, "Für eine souveräne digitale
+      Infrastruktur in der Schweiz im Zeitalter der künstlichen Intelligenz" (submitted by Council of States
+      member Charles Juillard), following the Council of States' own approval in March 2026 — meaning both
+      chambers have now passed it despite the Federal Council formally recommending rejection (a minority
+      proposal from National Councillor Tuena aligned with the Federal Council's position was defeated). The
+      motion instructs the Federal Council to submit a legal revision enabling the federal government, together
+      with cantons, research institutions and the private sector, to advance, co-finance, steer and monitor the
+      build-out of a sovereign digital infrastructure — specifically naming an independent cloud service and an
+      independent data-exchange platform intended to host data from companies, public administration and
+      critical infrastructure inside Switzerland. The stated goals are strengthening digital sovereignty and
+      cybersecurity in the age of AI, safeguarding Switzerland's competitiveness, and protecting democratic
+      processes from external interference; the Federal Council's own rejection cited existing legal bases
+      (EMBAG), ongoing work on the Swiss Government Cloud and AI regulation as already covering the ask, but
+      parliament decided further legislative action is required. Switzerland's official parliamentary record
+      confirms the motion's status now reads "Überwiesen an den Bundesrat" (referred to the Federal Council),
+      obliging the executive to bring forward the requested legal revision — a strategic-level policy signal, not
+      yet an operational obligation, but the trigger event for a forthcoming Swiss Government Cloud/exchange-
+      platform legislative process directly affecting how federal, cantonal and critical-infrastructure data may
+      be hosted and by whom.
+    region_nexus: "Switzerland (federal — Federal Assembly / Federal Council)"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "policy:switzerland-sovereign-digital-infrastructure-motion-2026", type: policy, name: "Motion 24.3209 — sovereign digital infrastructure (Switzerland)",
+          aliases: ["Für eine souveräne digitale Infrastruktur in der Schweiz im Zeitalter der künstlichen Intelligenz", "Motion Juillard 24.3209"],
+          summary: "Swiss parliamentary motion, adopted by the Council of States (March 2026) and the National Council (2026-09-23) over the Federal Council's own recommendation to reject it, instructing the Federal Council to submit a legal revision enabling a federally co-financed sovereign cloud service and independent data-exchange platform for administration, industry and critical-infrastructure data hosted in Switzerland (Curia Vista AffairId 20243209)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Die Motion verlangt eine Gesetzesrevision, damit der Bund gemeinsam mit Kantonen, Forschungsinstitutionen und Privatwirtschaft den Aufbau einer souveränen digitalen Infrastruktur vorantreiben, mitfinanzieren, steuern und überwachen kann. Vorgesehen sind insbesondere ein eigenständiger Cloud-Dienst sowie eine unabhängige Austauschplattform, um Daten von Unternehmen, Verwaltung und kritischen Infrastrukturen möglichst in der Schweiz zu hosten."
+        attribution: "Laux Lawyers AG"
+        source_url: "https://www.lauxlawyers.ch/it-recht-in-der-herbstsession-2026/"
+      - quote: "Der Ständerat nimmt die Motion an und nun liegt das Geschäft in der kommenden Herbstsession beim Nationalrat."
+        attribution: "Laux Lawyers AG"
+        source_url: "https://www.lauxlawyers.ch/it-recht-in-der-herbstsession-2026/"
+      - quote: "BusinessStatusName\":\"Überwiesen an den Bundesrat\" ... \"BusinessStatusDate\":\"/Date(1790187732000)/\""
+        attribution: "Swiss Federal Assembly — Curia Vista OData service (ws.parlament.ch)"
+        source_url: "https://www.parlament.ch/de/ratsbetrieb/suche-curia-vista/geschaeft?AffairId=20243209"
+    extended_notes: |
+      No immediate technical/detection content — this is a directional legislative-obligation signal, not an
+      incident or vulnerability. Worth tracking as a leading indicator: a future law revision could reshape where
+      Swiss federal/cantonal/critical-infrastructure workloads may legally be hosted (domestic sovereign cloud vs.
+      hyperscaler), which has downstream implications for supply-chain and data-residency risk assessments in the
+      constituency. inside-it.ch's full article text could not be read directly (its site returned a Vercel
+      anti-bot "Security Checkpoint" 429 on both the trafilatura and jina rungs); its headline and lede are known
+      from the RSS feed item, and all analytical detail here is corroborated instead from the Swiss parliament's
+      own Curia Vista record (fetched via its public OData service, ws.parlament.ch) and the Laux Lawyers legal
+      roundup of the autumn 2026 session's IT-law agenda, which quotes the motion's demand verbatim and confirms
+      the Federal Council's rejection and the Council of States' prior approval.
+    priority_hint: notable
+    borderline: true
+    borderline_reason: "strategic/legislative signal with no immediate operational obligation yet (Federal Council must still draft the law revision) — included for its standing-policy-watch relevance (Swiss e-government/digital-sovereignty security) rather than an immediate action bar"
+coverage_gaps:
+  - source_id: ncsc-ch-focus
+    reason: "Reached and read (jina); top item (2026-09-24) is a National Cybersecurity Conference recap in Bern with no new technical/regulatory substance beyond attendance and a ministerial speech — judged too soft to carry as an item and dropped rather than force-fit."
+  - source_id: enisa
+    reason: "Page fetched successfully but carried a stale cached publish date (2026-07-14) and no distinguishably new in-window items; all visible items (CRA Single Reporting Platform, NIS360, EU Cybersecurity Reserve) are already covered in prior_coverage or pre-date the window."
+  - source_id: inside-it-ch
+    reason: "RSS feed worked and surfaced the digital-sovereignty item, but the article's own page (www.inside-it.ch) returned a Vercel anti-bot 429 'Security Checkpoint' on both trafilatura extract and jina fallback — full article text not retrievable this run; corroborated instead via parlament.ch's own OData API and a legal-roundup secondary source."
+candidate_sources: []

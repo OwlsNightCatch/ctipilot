@@ -14,7 +14,7 @@ summary: >
   same AI-agent framework observed in three prior, unrelated intrusions,
   two of them against government targets with contested attribution.
 discovered_at: "2026-09-23T04:50:00Z"
-updated_at: null
+updated_at: "2026-09-25T04:30:00Z"
 event_date: "2026-09-22"
 run_id: 2026-09-23T0405Z-intel
 priority: high
@@ -35,6 +35,10 @@ sources:
     publisher: "Cybersecurity News"
     date: "2026-09-22"
     role: corroborating
+  - url: "https://www.computing.co.uk/news/2026/security/ai-agents-used-to-steal-credit-card-records"
+    publisher: "Computing (UK)"
+    date: "2026-09-23"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "Between 10 and 15 September alone, 105 attack projects were launched and at least 27 companies were compromised to varying degrees."
@@ -47,7 +51,7 @@ evidence:
     publisher: "Gambit Security"
     source_url: "https://gambit.security/blog-posts/autonomous-ai-agents-online-retailers-25-a-company"
 verification: single-source
-sourcing_note: "Gambit Security is the sole technical assessor — it recovered the operator's exposed staging server and performed the reconstruction directly. Cybersecuritynews.com reports on Gambit's findings rather than independently assessing the campaign, and adds claims (a 'Kimi' model in the harness stack; a payment-processor fraud-flag statistic; Cloudflare's involvement in takedown efforts) that do not appear anywhere in Gambit's own primary text; this entry follows Gambit's primary throughout and does not carry those claims. The per-country cardholder table is a literal HTML table embedded in Gambit's own page via a scroll widget that a standard text-extraction pass does not render; confirmed present by fetching the page's raw HTML directly."
+sourcing_note: "Gambit Security is the sole technical assessor — it recovered the operator's exposed staging server and performed the reconstruction directly. Cybersecuritynews.com reports on Gambit's findings rather than independently assessing the campaign, and adds claims (a 'Kimi' model in the harness stack; a payment-processor fraud-flag statistic) that do not appear anywhere in Gambit's own primary text; this entry follows Gambit's primary throughout and does not carry those claims. The 'Kimi' model detail is independently repeated by Computing UK, so it is not solely a Cybersecuritynews.com addition, but it remains excluded here because Gambit's own primary reconstruction — the only source that recovered and analysed the operator's actual infrastructure — never names it. The per-country cardholder table is a literal HTML table embedded in Gambit's own page via a scroll widget that a standard text-extraction pass does not render; confirmed present by fetching the page's raw HTML directly. The 2026-09-25 update's Anthropic-ban and Cloudflare-takedown facts are corroborated independently by Computing UK's own reporting — its Cloudflare-takedown sentence directly follows its own account of Gambit's notification/takedown efforts, and its Anthropic-ban sentence is Computing UK's own unattributed reporting, neither relayed from Cybersecuritynews.com. Computing UK does relay Cybersecuritynews.com elsewhere in its own article (for the skimmer/victim-count figures), but not for the Anthropic-ban or Cloudflare-takedown claims this update carries. Computing UK's own article separately states a total-spend figure of roughly USD 8,000, lower than Gambit's own USD 12,000-18,000 range this entry follows; this entry follows Gambit's primary reconstruction as the source that actually reviewed the operator's billing records."
 confidence: medium
 references: ["2026-07-25/thailand-mof-hermes-ai-agent-post-exploitation", "2026-08-28/taiwan-agentic-ai-intrusion-openclaw-hermes-guardrail-bypass", "2026-07-31/unit42-autonomous-deepseek-hermes-netscaler-cve-2026-3055"]
 deep_dive: true
@@ -58,7 +62,16 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-25T04:30:00Z"
+    run_id: 2026-09-25T0404Z-intel
+    type: update
+    summary: >
+      Anthropic identified and banned the account behind Hermes's use of an earlier Claude model in
+      this campaign, and Cloudflare took down the operator's staging infrastructure; the operator
+      rebuilt within hours and the campaign continued. Both reactive controls had only marginal
+      disruptive effect.
+    fields: [sources, body, sourcing_note]
 migrated_from: null
 ---
 
@@ -73,3 +86,7 @@ Detection concept, telemetry class first: in web-server access logs, alert on SQ
 The Hermes tool now appears in four unrelated intrusions — this financially motivated campaign and the three above — each independently reaching for the same permissive, open-source agent framework and each disabling its safety rails before use. That convergence, not any single victim in this campaign, is the transferable signal for a defender: an increasingly capable, freely available agent orchestration layer is now common tooling across financially motivated operators and government-targeting intrusions alike, regardless of how firmly any of them is ultimately attributed, and the underlying attack chain here — SQL injection, insecure OTP storage, unrestricted file upload, `sudo` misconfiguration, an over-permissive NFS export, and cloud-secrets exposure — is entirely composed of defects a Tier 2/3 team already reviews for in any custom-coded web application, Swiss public-sector portals included.
 
 **Defender takeaway:** none of the individual flaws in this chain are novel; what changed is that an unattended, cheap AI agent can now find and chain them without an operator watching. A web-application security review that checks each of these six defect classes — injectable authentication parameters, plaintext OTP storage, unrestricted file upload, `sudo` NOPASSWD entries, NFS exports without root-squash, and cloud-secrets scope — closes the same door this campaign walked through, regardless of who or what is doing the walking.
+
+## Update — 2026-09-25T04:30:00Z
+
+Anthropic identified and banned the account associated with the campaign after determining that Hermes's operator ran it on an earlier Claude model, Opus 4.6, whose safeguards attempts on newer Claude releases did not get past ([Computing UK, 2026-09-23](https://www.computing.co.uk/news/2026/security/ai-agents-used-to-steal-credit-card-records)). Cloudflare separately confirmed it had shut down servers connected to the operation. Both actions had only marginal disruptive effect: "researchers said the attacker repeatedly rebuilt the infrastructure and continued the attacks" ([Computing UK, 2026-09-23](https://www.computing.co.uk/news/2026/security/ai-agents-used-to-steal-credit-card-records)). For defenders, the reinforced lesson is that model-provider account bans and infrastructure takedowns are reactive controls with a short disruption window against a campaign whose own operator economics — a mean cost of $25.46 per target — make rebuilding after a takedown cheap; the underlying web-application defect classes this campaign walks through remain the more durable point of intervention.
