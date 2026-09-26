@@ -1,0 +1,130 @@
+---
+schema: 1
+kind: vulnerability
+title: "CISA KEV adds three unrelated Linux kernel flaws in one day — kTLS receive-path logic error, AF_ALG race condition, netfilter ebtables SNAT out-of-bounds write"
+headline: "CISA confirms active exploitation of three separate Linux kernel bugs with no public exploitation narrative behind any of them"
+summary: >
+  CISA added three unrelated Linux kernel CVEs to its Known Exploited Vulnerabilities catalog on
+  2026-09-18 — CVE-2025-39682 (kTLS receive-path logic error, network-reachable when kernel TLS
+  offload is used), CVE-2025-39964 (AF_ALG crypto-socket race condition, local) and CVE-2026-53266
+  (netfilter bridge ebtables SNAT out-of-bounds write, local) — with no named actor, campaign or
+  public technical account of the exploitation behind any of the three; the KEV listing is the only
+  public evidence.
+discovered_at: "2026-09-19T04:33:00Z"
+updated_at: null
+event_date: "2026-09-18"
+run_id: 2026-09-19T0409Z-intel
+priority: notable
+immediate_action: null
+tags: [vulnerabilities, actively-exploited, cisa-kev, dos, priv-esc]
+regions: [global]
+sectors: [public-sector, technology]
+entities: []
+techniques: [T1499, T1068]
+affected_products: ["Linux Kernel"]
+cves:
+  - id: CVE-2025-39682
+    cvss: "9.8 (kernel CNA, AV:N) / 7.1 (NVD re-score, AV:L)"
+    epss: null
+    type: dos
+    vector: zero-click
+    auth: pre-auth
+    status: [exploited, cisa-kev, patch-available]
+    affected: "≤ 6.16.3 (kernel TLS receive-offload builds; branch-dependent — see body)"
+    fixed: "6.1.149, 6.6.103, 6.12.44, 6.16.4, 6.17"
+  - id: CVE-2025-39964
+    cvss: "7.8 (kernel CNA) / 5.5 (NVD re-score, availability-only)"
+    epss: null
+    type: priv-esc
+    vector: local
+    auth: post-auth
+    status: [exploited, cisa-kev, patch-available]
+    affected: "≤ 6.16.8 (branch-dependent — see body)"
+    fixed: "5.10.245, 5.15.194, 6.1.154, 6.6.108, 6.12.49, 6.16.9"
+  - id: CVE-2026-53266
+    cvss: "8.8"
+    epss: null
+    type: priv-esc
+    vector: local
+    auth: post-auth
+    status: [exploited, cisa-kev, patch-available]
+    affected: "≤ 6.18.35 (branch-dependent — see body)"
+    fixed: "5.10.259, 5.15.210, 6.1.176, 6.6.143, 6.12.94, 6.18.36"
+sources:
+  - url: "https://www.cisa.gov/news-events/alerts/2026/09/18/cisa-adds-one-known-exploited-vulnerability-catalog"
+    publisher: "CISA"
+    date: "2026-09-18"
+    role: primary
+  - url: "https://www.cisa.gov/news-events/alerts/2026/09/18/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+    publisher: "CISA"
+    date: "2026-09-18"
+    role: primary
+  - url: "https://access.redhat.com/security/cve/cve-2025-39682"
+    publisher: "Red Hat Product Security"
+    date: "2026-09-19"
+    role: corroborating
+  - url: "https://access.redhat.com/security/cve/cve-2025-39964"
+    publisher: "Red Hat Product Security"
+    date: "2026-09-19"
+    role: corroborating
+  - url: "https://access.redhat.com/security/cve/cve-2026-53266"
+    publisher: "Red Hat Product Security"
+    date: "2026-09-19"
+    role: corroborating
+  - url: "https://thehackernews.com/2026/09/cisa-flags-three-linux-kernel.html"
+    publisher: "The Hacker News"
+    date: "2026-09-19"
+    role: corroborating
+closed_sources: []
+evidence:
+  - quote: "CISA has added one new vulnerability to its"
+    publisher: "CISA"
+  - quote: "based on evidence of active exploitation"
+    publisher: "CISA"
+  - quote: "The corner case we missed is when the initial record comes from rx_list, and it's zero length."
+    publisher: "Red Hat Product Security"
+    source_url: "https://access.redhat.com/security/cve/cve-2025-39682"
+verification: multi-source
+sourcing_note: >
+  CISA is the disclosing authority for all three catalog additions. Red Hat independently acknowledged
+  active exploitation on its own advisory pages for all three flaws on 2026-09-19, stating that public
+  exploits exist and telling customers to address them with high priority. No named actor or campaign is
+  attached to any of the three, and no source describes how they are being exploited.
+confidence: medium
+references: []
+deep_dive: false
+deep_dive_category: null
+org_triage: null
+classification:
+  reliability: A
+  credibility: 2
+watchlist_hit: false
+actions:
+  - "Identify any Linux hosts running kernel TLS receive-offload (CONFIG_TLS with ktls enabled on the receive path), exposing AF_ALG crypto-API sockets to untrusted local users, or running bridge-netfilter ebtables SNAT with ARP-address rewrite rules — these three configurations are the only confirmed-exploited attack surfaces — and prioritize kernel patching on those hosts ahead of the standard update cycle."
+updates:
+  - at: "2026-09-20T13:34:54Z"
+    run_id: 2026-09-20T1308Z-audit
+    type: correction
+    summary: >
+      The sourcing note said no vendor advisory added exploitation detail beyond re-listing fixed kernel
+      builds. Red Hat had already updated its advisories for all three flaws, on 2026-09-19 at 02:00 UTC,
+      to acknowledge active exploitation, state that public exploits exist and tell customers to address
+      them with high priority. The sourcing note and the verification value now reflect that second
+      assessment, and the three NVD API endpoints previously listed as sources are replaced by Red Hat's
+      own per-flaw advisory pages. Two evidence quotes attributed to those endpoints were re-checked: one
+      is carried verbatim by Red Hat's page and is now attributed there, the other is on no reachable
+      first-party page and is removed. The three inline citations in the analysis pointed at the same
+      endpoints and now point at Red Hat's pages; the sentence on the bridge flaw is rewritten to what
+      Red Hat states, because the function name and the page-fragment detail it previously carried are
+      on no source the entry can cite.
+    fields: [verification, sourcing_note, sources, evidence, body]
+migrated_from: null
+---
+
+CISA added three unrelated Linux kernel vulnerabilities to its Known Exploited Vulnerabilities catalog on 2026-09-18, in two separate alerts ([CISA, 2026-09-18](https://www.cisa.gov/news-events/alerts/2026/09/18/cisa-adds-one-known-exploited-vulnerability-catalog); [CISA, 2026-09-18](https://www.cisa.gov/news-events/alerts/2026/09/18/cisa-adds-two-known-exploited-vulnerabilities-catalog)), and neither alert names a ransomware campaign, an actor, or a technical account of the exploitation behind any of the three; the KEV listing itself is the only public evidence that any of them has been used against a real target. CVE-2025-39682 is a logic error in the kernel's TLS receive path (`net/tls/tls_sw.c`): a peer on a connection using kernel TLS offload for receive can supply a record sequence where the initial record picked up from the socket's `rx_list` queue is itself zero-length, a corner case the fix commit describes as previously unhandled ([Red Hat Product Security, 2026-09-19](https://access.redhat.com/security/cve/cve-2025-39682)) — reachable only on hosts that terminate TLS using `CONFIG_TLS` receive offload, an uncommon but real configuration on high-throughput TLS-terminating proxies and some storage or network appliances, not a default on general-purpose servers or workstations. CVE-2025-39964 is a race condition in the AF_ALG crypto user-API socket (`crypto/af_alg.c`): concurrent `sendmsg()` calls to the same socket were never given exclusive-write ownership, letting request payloads interleave and corrupt per-socket state ([Red Hat Product Security, 2026-09-19](https://access.redhat.com/security/cve/cve-2025-39964)) — this requires local access to an AF_ALG socket, which is often restricted or entirely unloaded. CVE-2026-53266 is an out-of-bounds write in the netfilter bridge `ebt_snat` target: the optional ARP sender-hardware-address rewrite can improperly modify the underlying memory pages rather than a copy of them, which Red Hat rates Important and describes as reaching privilege escalation, memory corruption or denial of service ([Red Hat Product Security, 2026-09-19](https://access.redhat.com/security/cve/cve-2026-53266)) — this requires a bridge configured with ebtables SNAT ARP-rewrite rules, plus local low-privilege access to trigger it. Fixed kernel builds: 6.1.149 / 6.6.103 / 6.12.44 / 6.16.4 / 6.17 for CVE-2025-39682; 5.10.245 / 5.15.194 / 6.1.154 / 6.6.108 / 6.12.49 / 6.16.9 for CVE-2025-39964; 5.10.259 / 5.15.210 / 6.1.176 / 6.6.143 / 6.12.94 / 6.18.36 for CVE-2026-53266.
+
+**Defender takeaway:** CISA's remediation deadline for federal agencies is a US-FCEB compliance date and carries no weight here, but the KEV listing itself is jurisdiction-agnostic confirmation of active exploitation — treat all three as confirmed exploited despite the absence of a public narrative. The two local-access bugs (AF_ALG, ebtables SNAT ARP-rewrite) narrow the realistic exposure to hosts where an untrusted or partially-trusted local user already has a foothold; the kTLS bug is the only one reachable purely over the network, and only against hosts that have deliberately enabled kernel TLS receive offload. A general-purpose Linux server or workstation fleet on standard kernel patch cadence is not at elevated risk from any of the three; a fleet running custom bridge-netfilter appliances, kTLS-terminating proxies, or exposing AF_ALG to less-trusted users should patch those specific hosts now rather than waiting for the normal cycle.
+
+## Correction — 2026-09-20T13:34:54Z
+
+Red Hat has acknowledged active exploitation of all three flaws. It updated its advisories for CVE-2025-39682, CVE-2025-39964 and CVE-2026-53266 on 2026-09-19 at 02:00 UTC, saying of each that "This CVE is high risk and there are known public exploits leveraging this vulnerability" and "Address this vulnerability with high priority" ([The Hacker News, 2026-09-19](https://thehackernews.com/2026/09/cisa-flags-three-linux-kernel.html)). This entry previously stated that no vendor advisory added exploitation detail beyond the fixed kernel builds. How the flaws are being exploited, and whether they are chained, is still not described anywhere.
