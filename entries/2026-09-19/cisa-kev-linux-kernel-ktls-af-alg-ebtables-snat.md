@@ -24,7 +24,7 @@ techniques: [T1499, T1068]
 affected_products: ["Linux Kernel"]
 cves:
   - id: CVE-2025-39682
-    cvss: "9.8 (kernel CNA, AV:N) / 7.1 (NVD re-score, AV:L)"
+    cvss: "9.8 (kernel CNA / NVD, AV:N) / 7.0 (Red Hat re-score, AV:N/AC:H)"
     epss: null
     type: dos
     vector: zero-click
@@ -118,6 +118,17 @@ updates:
       Red Hat states, because the function name and the page-fragment detail it previously carried are
       on no source the entry can cite.
     fields: [verification, sourcing_note, sources, evidence, body]
+  - at: "2026-09-27T13:28:04Z"
+    run_id: 2026-09-27T1308Z-audit
+    type: correction
+    summary: >
+      The second score recorded for CVE-2025-39682 was wrong in every part. Red Hat's own CVE page
+      scores it 7.0 with vector AV:N/AC:H, not 7.1, and the re-score is Red Hat's rather than NVD's;
+      NVD and cve.org both publish 9.8 with AV:N. No authority scores this flaw AV:L, and the local
+      attack vector the entry recorded contradicted its own analysis, which describes the flaw as
+      reachable over the network on hosts using kernel TLS receive offload. The other two CVEs' score
+      annotations were re-checked against the same authority and are accurate.
+    fields: [cves]
 migrated_from: null
 ---
 
@@ -128,3 +139,7 @@ CISA added three unrelated Linux kernel vulnerabilities to its Known Exploited V
 ## Correction — 2026-09-20T13:34:54Z
 
 Red Hat has acknowledged active exploitation of all three flaws. It updated its advisories for CVE-2025-39682, CVE-2025-39964 and CVE-2026-53266 on 2026-09-19 at 02:00 UTC, saying of each that "This CVE is high risk and there are known public exploits leveraging this vulnerability" and "Address this vulnerability with high priority" ([The Hacker News, 2026-09-19](https://thehackernews.com/2026/09/cisa-flags-three-linux-kernel.html)). This entry previously stated that no vendor advisory added exploitation detail beyond the fixed kernel builds. How the flaws are being exploited, and whether they are chained, is still not described anywhere.
+
+## Correction — 2026-09-27T13:28:04Z
+
+The severity annotation this entry carried for CVE-2025-39682 was wrong. Red Hat's own page for the CVE publishes a base score of 7.0 with vector `CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:H`, while NVD and cve.org both publish 9.8 with `AV:N/AC:L` ([Red Hat Product Security](https://access.redhat.com/security/cve/cve-2025-39682)). The entry's second figure was recorded as 7.1, attributed to NVD rather than Red Hat, and given an `AV:L` local attack vector that no authority assigns. The practical consequence was a contradiction inside this entry: the analysis describes a flaw reachable over the network wherever kernel TLS receive offload terminates TLS, and an `AV:L` annotation would have told a triage reader the opposite. Only the score annotation changes; the exploitation status, the affected and fixed kernel versions, and the analysis are unchanged.

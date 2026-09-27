@@ -138,10 +138,89 @@ def _recent_attempts(runs: list, attempt_runs: int) -> dict:
         for sa in (run.get("sub_agents") or {}).values():
             if not isinstance(sa, dict):
                 continue
-            for sid in (sa.get("sources_attempted") or []):
-                if isinstance(sid, str) and sid:
-                    ids.add(sid)
+            ids.update(_attempted_ids(sa))
     return {"runs": list(reversed(used)), "ids": sorted(ids)}
+
+
+def _attempted_ids(sa: dict) -> list:
+    """`sources_attempted` as a list of ids, tolerating the older shapes.
+
+    Early run records recorded this as a COUNT (int) and a few as a
+    comma-separated string; both carry no ids and contribute nothing here.
+    Reading them without this guard raises, which is how a latent crash sat in
+    `_recent_attempts` until the rotation ranking walked the whole history.
+    """
+    v = sa.get("sources_attempted")
+    if isinstance(v, list):
+        return [x for x in v if isinstance(x, str) and x]
+    if isinstance(v, str):
+        return [x.strip() for x in v.split(",") if x.strip()]
+    return []
+
+
+def _last_attempted(runs: list) -> dict:
+    """{source_id: latest date on which an INTEL fire handed it to a sub-agent}.
+
+    Derived from the committed run records, so it needs no new field in
+    `sources.json` and no per-fire bookkeeping step that a fire could forget.
+    """
+    out: dict = {}
+    for run in runs:
+        if run.get("kind") != "intel":
+            continue
+        date = str(run.get("date") or "")
+        if not date:
+            continue
+        for sa in (run.get("sub_agents") or {}).values():
+            if not isinstance(sa, dict):
+                continue
+            for sid in _attempted_ids(sa):
+                if date > out.get(sid, ""):
+                    out[sid] = date
+    return out
+
+
+def _rotation(srcs: list, runs: list) -> list:
+    """Standard/candidate sources ranked oldest-rotation-cursor first.
+
+    The cursor is `max(last_successful_fetch, last_attempted)`. Ranking on
+    `last_successful_fetch` alone does not work, because that field moves only
+    when a source is fetched AND used (cti-run.md Phase 5): a source swept
+    every fire that yields nothing publishable keeps its stale date forever and
+    stays pinned to the head of a ranking that never advances. v4.11 worked
+    around that by subtracting the last two fires' attempts, which stopped
+    consecutive fires from repeating each other but left the ranking itself
+    stable — so the slice cycled with period 3 and everything below the first
+    three slices was never reached. Measured over 2026-09-21 to 09-27: mean
+    lag-3 slice overlap 82-92 % across all four domains, and 64 of 115
+    research sources allocated to no fire at all.
+
+    Counting an ATTEMPT as advancing the cursor makes the ranking a true
+    round-robin over the whole pool while `last_successful_fetch` stays what it
+    always was, a content-health signal. Essential-tier records are omitted:
+    they are attempted every fire by rule and are not part of the rotation.
+    """
+    last_att = _last_attempted(runs)
+    rows = []
+    for s in srcs:
+        sid = s.get("id")
+        if not sid or s.get("status") not in ("active", "candidate"):
+            continue
+        if s.get("tier") == "essential":
+            continue
+        lsf = s.get("last_successful_fetch") or ""
+        la = last_att.get(sid, "")
+        rows.append({
+            "id": sid,
+            "category": list(s.get("category") or []),
+            "tier": s.get("tier"),
+            "status": s.get("status"),
+            "last_successful_fetch": lsf or None,
+            "last_attempted": la or None,
+            "rotation_key": max(lsf, la) or None,
+        })
+    rows.sort(key=lambda r: (r["rotation_key"] or "0000-00-00", r["id"]))
+    return rows
 
 
 def build_summary(now: datetime, recent_days: int, gap_runs: int,
@@ -202,6 +281,8 @@ def build_summary(now: datetime, recent_days: int, gap_runs: int,
         ],
         "recent_attempts": _recent_attempts(runs, attempt_runs),
     }
+    # Needs `runs`, so it is filled in after the run collection above.
+    out["sources"]["rotation"] = _rotation(srcs, runs)
 
     # --- 24 h budget snapshot (entries/**) ----------------------------------
     since = now - timedelta(hours=24)
@@ -254,6 +335,12 @@ def main() -> int:
                          "rotation subtracts (default 2)")
     ap.add_argument("--recent-attempts", action="store_true",
                     help="print only the recent-attempts source ids, one per line, and exit")
+    ap.add_argument("--rotation", metavar="CATEGORY", nargs="?", const="",
+                    help="print the rotation ranking (oldest cursor first) and exit; "
+                         "give a category (research, vulns, breaches, ch-eu, ...) to "
+                         "restrict it to that domain's pool")
+    ap.add_argument("--rotation-top", type=int, default=20,
+                    help="how many rotation rows --rotation prints (default 20; 0 = all)")
     ap.add_argument("--now", help="override 'now' (UTC ISO 8601 Z) for testing")
     args = ap.parse_args()
 
@@ -263,6 +350,18 @@ def main() -> int:
     )
     summary = build_summary(now, args.recent_days, args.gap_runs,
                             args.gap_window, args.promote_after, args.attempt_runs)
+    if args.rotation is not None:
+        rows = summary["sources"]["rotation"]
+        if args.rotation:
+            rows = [r for r in rows if args.rotation in (r.get("category") or [])]
+        limit = len(rows) if args.rotation_top in (0, None) else args.rotation_top
+        print(f"# rotation ranking (oldest cursor first) — {len(rows)} source(s)"
+              f"{f' in category {args.rotation}' if args.rotation else ''}, showing {min(limit, len(rows))}")
+        print(f"# {'id':<28} {'cursor':<12} {'last_success':<13} last_attempted")
+        for r in rows[:limit]:
+            print(f"{r['id']:<30} {str(r['rotation_key'] or '-'):<12} "
+                  f"{str(r['last_successful_fetch'] or '-'):<13} {r['last_attempted'] or '-'}")
+        return 0
     if args.recent_attempts:
         ra = summary['runs']['recent_attempts']
         print(f"# attempted by {len(ra['runs'])} previous intel fire(s): {', '.join(ra['runs']) or 'none'}")

@@ -3591,8 +3591,23 @@ def run_all_checks(entries: list[dict], runs: list[dict], taxonomy: dict,
     check_cve_epss(entries, store_mode=True)
 
     print("\n== all: frontmatter YAML portability ==")
-    check_frontmatter_yaml_portability(
-        [(e["id"], content_root / "entries" / f"{e['id']}.md") for e in entries])
+    # Run records are checked here too. In RUN scope this check has always
+    # covered the fire's own record; under --all it covered entries alone,
+    # so a record whose frontmatter no standards-compliant YAML parser can
+    # read was invisible to every store sweep (one such record had sat in
+    # runs/2026-05-14/ since May). The store is published as a
+    # machine-readable knowledge base; a run record is part of it.
+    _portability_targets = [
+        (e["id"], content_root / "entries" / f"{e['id']}.md") for e in entries
+    ]
+    for _run in runs:
+        _rid, _rdate = _run.get("run_id"), _run.get("date")
+        if not _rid or not _rdate:
+            continue
+        _rpath = content_root / "runs" / str(_rdate) / f"{_rid}.md"
+        if _rpath.is_file():
+            _portability_targets.append((f"runs/{_rid}", _rpath))
+    check_frontmatter_yaml_portability(_portability_targets)
 
     print("\n== all: references resolution ==")
     check_references_resolve(entries, entries_by_id)

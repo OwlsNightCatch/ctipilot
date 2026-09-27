@@ -64,7 +64,7 @@ verification: single-source
 sourcing_note: >
   Huntress Labs is the sole publisher. This entry was surfaced by Huntress's 2026-09-15
   "Tradecraft Tuesday" webinar recap, which links to Huntress's own fuller technical write-up published
-  2026-08-19 — 33 days earlier, by the same research team, under the same disclosure — as "full technical
+  2026-08-19 — 27 days earlier, by the same research team, under the same disclosure — as "full technical
   details"; this entry cites and is fact-checked against that fuller original as its primary, with the
   recap kept as corroborating for the spoken quotes it alone carries. The two pieces diverge on one
   forensic detail (the NetSupport Manager payload's persistence mechanism): this entry follows the fuller,
@@ -81,7 +81,16 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-27T13:28:04Z"
+    run_id: 2026-09-27T1308Z-audit
+    type: correction
+    summary: >
+      The gap between Huntress's fuller technical write-up of 2026-08-19 and the 2026-09-15 recap that
+      surfaced this entry is 27 days, not the 33 days first stated. The two publication dates themselves
+      were correct; only the interval computed from them was wrong, and no security-relevant claim in the
+      entry depended on it.
+    fields: [sourcing_note, body]
 migrated_from: null
 ---
 
@@ -94,3 +103,7 @@ The most novel component is that second payload, the TLS-intercepting local prox
 **Defender takeaway:** hunt for unexpected certificate authorities in the Windows or macOS system trust store claiming to be a major public CA (Google Trust Services, DigiCert, and similar) that were not provisioned by your own PKI or MDM — a rogue self-signed CA sitting in the trust store is the persistence artifact this technique leaves behind even after the active interception process is gone. Cross-reference unexplained hosts-file entries and orphaned local-proxy firewall rules against known-good baselines rather than certificate thumbprints, since the CA regenerates per host. Any organization whose staff attend security conferences should treat unsolicited, previously-unknown-contact Google Docs carrying custom Apps Script sidebars as a live reconnaissance vector requiring no click at all.
 
 **Triage:** a locally-installed root CA is not automatically malicious — some legitimate enterprise MDM and TLS-inspection proxies do this deliberately. The discriminator is provenance: a root CA your own PKI/MDM inventory does not recognize as provisioned by it, especially one impersonating a well-known public CA's name, is the signal; one your MDM issued is not.
+
+## Correction — 2026-09-27T13:28:04Z
+
+Huntress published its fuller technical write-up on 2026-08-19 and the webinar recap that surfaced this entry on 2026-09-15, an interval of 27 days rather than the 33 days this entry first stated ([Huntress Labs, 2026-08-19](https://www.huntress.com/blog/defcon-phishing-google-doc-malware); [Huntress Labs, 2026-09-15](https://www.huntress.com/blog/google-doc-sidebar-malware-mac-windows)). Both publication dates, and every technical claim resting on them, are unchanged.

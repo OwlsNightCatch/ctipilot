@@ -4,6 +4,30 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.12 — 2026-09-27 (the rotation cursor: an attempt has to advance the queue, not just a success)
+
+### Why
+
+One finding from the 2026-09-27 quality audit, and it is the v4.11 fix measured in production rather than a new defect.
+
+**The anti-starvation clause worked, and stopped one step short of the cause.** v4.11 told each fire to subtract the previous two fires' `sources_attempted` before taking its slice. That did what it promised: mean consecutive-fire slice overlap over 2026-09-21 to 09-27 fell to 8 % on S3, and `talos`, `sentinellabs`, `huntress` and `kaspersky-securelist` — the four publishers the previous audit found allocated to no fire at all — were all swept, with `huntress` contributing a published entry. But subtracting recent attempts does not make the *ranking* advance, and the ranking was the cause. `last_successful_fetch` still moves only when a source is fetched AND used, so the oldest-first order stayed frozen; each fire simply skipped over the two slices before it and took the next one down. Fire N+3 then saw the same head again. Measured across all four domains: overlap 8-59 % at lag 1, 9-61 % at lag 2, and **82-92 % at lag 3**. The rotation had become a three-slice carousel. Over the seven fires of the window, 51 of the 115 research sources entered a research sub-agent's slice and the other 64 never did. Sources carry several categories, so some of those 64 were still swept by another domain's slice; **22 of the 115 reached no sub-agent at all**, among them `msft-ti`, `checkpoint-research`, `eset`, `crowdstrike`, `citizen-lab`, `ahnlab-asec` and `team-cymru`.
+
+The fix is to let an **attempt** advance a source's place in the queue, which is what a round-robin needs and what `last_successful_fetch` deliberately does not do. Ranking on `max(last_successful_fetch, last_attempted)` reaches 112 of those 115 sources in seven fires with zero consecutive overlap, and leaves `last_successful_fetch` doing the one job it is good at: telling the operator whether a source still produces anything.
+
+There is deliberately **no new field in `sources.json`.** `last_attempted` is derived from the `sources_attempted` lists already on every intel run record, so the cursor cannot drift from what the fires actually did and no fire has a new bookkeeping step it could forget. That is the `kev-window.txt` lesson applied before the fact rather than after it: a duty that depends on a fire remembering to write something down decays, and fourteen consecutive fires proved it.
+
+### What changed
+
+- **`prompts/cti-run.md` Phase 0 allocation rule 2 — the anti-starvation clause is now a rotation cursor.** Rank each domain's standard/candidate records oldest-first on `sources.rotation` from the state digest, the cursor `max(last_successful_fetch, last_attempted)`. The v4.11 exclusion of the previous two fires' attempts stays as belt-and-braces for a fire whose digest failed to build, and the run record still states how many were excluded that way.
+- **`tools/run_summary.py` — `sources.rotation` and `--rotation [CATEGORY]`.** The digest carries the full ranking (`id`, `category`, `tier`, `status`, `last_successful_fetch`, `last_attempted`, `rotation_key`), oldest cursor first; the flag prints it, optionally filtered to one category, with `--rotation-top N`. `_attempted_ids()` also hardens the read of `sources_attempted` against the older record shapes (early fires recorded it as an integer count): `_recent_attempts` carried the same latent crash and only survived because it never walked past the two most recent records.
+- **`tools/check_run.py` — the store-wide YAML-portability check now covers run records, not only entries.** In run scope it always checked both; under `--all` it checked entries alone, which is why `runs/2026-05-14/2026-05-14-e05c6e6e.md` sat unparseable by any standards-compliant YAML library since May without a single gate run noticing. One record of 196.
+
+### What stays
+
+Unchanged: `last_successful_fetch` semantics (fetched AND used) and its role in the source lifecycle; the essential-tier floor, attempted every fire by rule 1; the one-new-candidate-per-run cap; promotion off `sources.promotion_due`; every prime directive; the entry lifecycle; the mechanical gate and the verification loop.
+
+---
+
 ## 4.11 — 2026-09-20 (the source rotation stops rotating, and three gate surfaces were narrower than the rules they enforce)
 
 ### Why
