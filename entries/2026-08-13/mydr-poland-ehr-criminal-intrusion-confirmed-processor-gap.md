@@ -34,6 +34,7 @@ sectors:
   - public-sector
 entities:
   - "incident:mydr-poland-ehr-breach-2026"
+  - "actor:fingerprint"
 techniques:
   - T1190
   - T1552.001
@@ -118,6 +119,16 @@ updates:
       - techniques
       - body
     merged_from: 2026-08-15/mydr-poland-19-million-records-government-confirmed
+  - at: "2026-09-27T04:39:00Z"
+    run_id: 2026-09-27T0404Z-intel
+    type: improvement
+    summary: >
+      Zaufana Trzecia Strona's reporting on a follow-on breach at a second Polish healthcare-software
+      vendor, Qbusoft (Medyc), names the pseudonymous actor behind that intrusion, "fingerprint," as
+      the same party behind this MyDr breach. The attribution is the outlet's own and not
+      independently confirmed by a second assessor. See the new entry for the Qbusoft/Medyc
+      incident.
+    fields: [entities, body]
 migrated_from: null
 ---
 
@@ -142,3 +153,7 @@ At a press briefing following a meeting of the Joint Cybersecurity Operations Ce
 The regulator has now put the notification structure in writing. Poland's data protection authority UODO stated that the obligation to notify people affected by the leak rests with the controllers that used MyDr's services, and reminded controllers that under GDPR a breach must be reported to the supervisory authority without undue delay and where feasible no later than 72 hours after becoming aware of it, with a reasoned explanation attached to any later report ([Gazeta Prawna, 2026-08-13](https://www.gazetaprawna.pl/prawnik/artykuly/11289449,uodo-reaguje-na-gigantyczny-wyciek-danych-wazny-apel-do-polakow.html)). UODO's advice to individuals is to lock their PESEL national identity number and to treat incoming SMS and email with more care to avoid phishing aimed at extracting further data or access to banking. Gawkowski separately urged people to use state services to check exposure and to lock their PESEL through the mObywatel portal ([Notes from Poland, 2026-08-13](https://notesfrompoland.com/2026/08/13/poland-hit-by-theft-of-19-million-patients-data-from-medical-platform/)).
 
 **Defender takeaway:** the delta is a planning fact for any organisation that is a *processor* in a health or public-service supply chain. A breach at the processor triggers a 72-hour clock at every controller downstream, and each of those controllers has to reconstruct which of its own patients or citizens sat in the processor's dataset — from the processor's disclosure, not from its own telemetry. A SOC supporting a processor should assume it will be asked, within days and by hundreds of separate controllers, for per-controller scoping it will not have prepared; a SOC supporting a controller should know now which of its processors hold what, because that inventory is the only thing that turns a supplier's incident into a notification it can actually make.
+
+## Improvement — 2026-09-27T04:39:00Z
+
+Zaufana Trzecia Strona's reporting on a second Polish healthcare-software vendor breach, at Qbusoft (maker of the Medyc practice-management application), names the pseudonymous actor behind that intrusion as "fingerprint," the same party the outlet states was behind this MyDr breach ([Zaufana Trzecia Strona, 2026-09-24](https://zaufanatrzeciastrona.pl/post/sprawcy-wycieku-mydr-ponownie-atakuja-tym-razem-ofiara-aplikacja-medyc/)). The attribution rests on ZTS's own reporting and has not been independently confirmed by a second assessor; the Qbusoft/Medyc incident is covered separately.

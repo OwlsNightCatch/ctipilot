@@ -1,0 +1,298 @@
+domain: S3
+run_id: 2026-09-27T0404Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-27T04:09:43Z
+ended_at: 2026-09-27T04:19:46Z
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 6
+  bridge_fetches: 22
+
+items:
+  - title: >
+      ShinyHunters (UNC6240) resumes mass exploitation of Oracle PeopleSoft CVE-2026-35273
+      via a single-character WAF-bypass, expanding targeting to government, healthcare,
+      transportation and agriculture victims
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-renewed-mass-exploitation-campaign-targeting-oracle-peoplesoft/",
+          publisher: "Google Cloud Blog / Mandiant GTIG", date: "2026-09-25", role: primary }
+      - { url: "https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/",
+          publisher: "BleepingComputer", date: "2026-09-26", role: corroborating }
+    discovery_trace: >
+      first seen at: mandiant-gtig, URL https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v
+      (RSS item "ShinyHunters Renewed Mass Exploitation Campaign Targeting Oracle PeopleSoft",
+      published Fri 2026-09-25T14:00:00Z) -> primary: Mandiant/GTIG own post, URL
+      https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-renewed-mass-exploitation-campaign-targeting-oracle-peoplesoft/
+      -> corroborating (confirms in-window freshness of the wider news cycle): BleepingComputer,
+      URL https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/
+      (dated 2026-09-26, i.e. inside the 26h window even though the originating Mandiant post's
+      RSS timestamp sits a few hours before the strict window start).
+    summary: |
+      Mandiant/GTIG report that UNC6240 (ShinyHunters) has resumed mass exploitation of
+      CVE-2026-35273 (Oracle PeopleSoft PeopleTools Environment Management Hub / PSEMHUB,
+      CVSS 9.8, unauthenticated RCE via Java deserialization) — the same n-day flaw this
+      store already tracks from its May-June 2026 zero-day wave. The actor now bypasses
+      literal-string WAF rules blocking `/PSEMHUB/` by requesting the percent-encoded path
+      `/%50SEMHUB/` (the encoded form of 'P'); WAFs and reverse proxies that match the
+      request path before decoding miss it, while WebLogic decodes and routes it to the
+      vulnerable servlet normally. Mandiant warns the actor may rotate to other
+      percent-encoded, mixed-case, or otherwise non-normalized path variants, so defenders
+      must normalize the path before matching rather than blocklist one encoding.
+      Verification requests (5-15 POST requests to `/%50SEMHUB/hub` with a serialized Java
+      object) let the actor silently confirm exploitability without writing files. Two
+      complementary single-line JSP web shells (`x.jsp` for cross-platform hex-encoded
+      command execution, `u.jsp`/`u2.jsp` for 150KB-chunked Base64 file upload bypassing
+      PeopleSoft's native FILECHUNKING size limits) are dropped into PSEMHUB.war; a fileless
+      variant returns command output directly in the HTTP response with nothing written to
+      disk, defeating file-creation-based detection. On Windows hosts the actor uploads a
+      trojanized installer (`Ple64.exe`, masquerading as the Light Alloy media player,
+      signed with a valid EV certificate Mandiant has asked Sectigo to revoke) that loads a
+      VMProtect-3-packed three-stage chain culminating in the SIDEEYE C++ backdoor
+      (credential theft, process/file management, reverse shell/proxy over raw TCP ports
+      3333/3334). The actor also deploys the open-source Neo-reGeorg tunneling toolkit
+      (SOCKS5-over-HTTP/S) and the legitimate MeshAgent/MeshCentral RMM tool for persistence,
+      continuing a pattern from the original campaign of using Microsoft-masquerading
+      infrastructure domains. A quarter of observed post-exploitation commands executed as
+      root or NT AUTHORITY\SYSTEM. Targeting has expanded beyond the original
+      higher-education skew to technology, IT services, healthcare, agriculture,
+      transportation and government organizations globally. Mandiant recommends patching to
+      the supported PeopleTools release, disabling EMHub if unused, and normalizing the
+      request path (not just the literal string) at the WAF.
+    region_nexus: "global; expanded targeting explicitly includes government-sector victims"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-35273]
+    techniques: [T1190, T1505.003, T1572, T1219, T1027.002, T1553.002]
+    affected_products: ["Oracle PeopleSoft PeopleTools (Environment Management Hub / PSEMHUB)"]
+    entity_keys: ["actor:shinyhunters", "campaign:shinyhunters-peoplesoft-2026"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-06-11/shinyhunters-oracle-peoplesoft-campaign-gadget-chain-access"
+    evidence:
+      - quote: >
+          This allows the threat actor to reach the endpoint on systems whose operators
+          may have believed their WAF rules had mitigated the exposure.
+        attribution: "Mandiant/GTIG"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-renewed-mass-exploitation-campaign-targeting-oracle-peoplesoft/"
+      - quote: >
+          Across compromised instances, a quarter of the threat actor's commands executed
+          as `root` or `NT Authority\SYSTEM`, granting full control of the operating system.
+        attribution: "Mandiant/GTIG"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-renewed-mass-exploitation-campaign-targeting-oracle-peoplesoft/"
+      - quote: >
+          Google says the new wave of attacks has deployed web shells on dozens of systems
+          worldwide within higher education, technology, IT services, healthcare,
+          agriculture, transportation, and government organizations.
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/"
+    extended_notes: |
+      This is the same CVE and campaign already tracked in
+      entries/2026-06-11/shinyhunters-oracle-peoplesoft-campaign-gadget-chain-access.md
+      (existing entity keys actor:shinyhunters / campaign:shinyhunters-peoplesoft-2026,
+      already tagged public-sector/switzerland from the June Council of Europe update).
+      This is a materially new development — a distinct WAF-bypass technique, a new
+      backdoor family (SIDEEYE) and code-signing-certificate abuse, and explicit expansion
+      into the government sector — so it should land as a new dated changelog record on
+      that entry, not a new entry. Recommend priority stays >= high given confirmed
+      ongoing mass exploitation and direct government-sector nexus.
+
+  - title: >
+      Flink (German/Dutch grocery delivery) refuses a ransom after an Order Hub compromise,
+      so extortion actor "LPG Group" pivots to crowdfund-style individual extortion of at
+      least 10,000 customers and employees
+    sources:
+      - { url: "https://www.heise.de/news/Kunden-und-Mitarbeiter-von-Lieferdienst-Flink-werden-erpresst-11467086.html",
+          publisher: "heise online", date: "2026-09-26", role: primary }
+      - { url: "https://nltimes.nl/2026/09/25/individuals-sent-ransom-notes-cybercriminals-steal-flink-customer-worker-data",
+          publisher: "NL Times", date: "2026-09-25", role: corroborating }
+    discovery_trace: >
+      first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (RSS item
+      "Kunden und Mitarbeiter von Lieferdienst Flink werden erpresst", published
+      2026-09-26T16:56:00Z) -> primary (no pivot needed, heise's own reporting includes
+      Flink's on-record statement) -> corroborating: NL Times, URL
+      https://nltimes.nl/2026/09/25/individuals-sent-ransom-notes-cybercriminals-steal-flink-customer-worker-data
+      (independently reported via Dutch coverage / NOS interview with Northwave).
+    summary: |
+      Quick-commerce grocery delivery service Flink (Germany-headquartered, also operating
+      in the Netherlands) confirmed a breach of one of its internal "Order Hub" ordering
+      systems used by its decentralized city warehouses; the specific initial-access vector
+      was not disclosed by the company. Attackers first approached Flink directly demanding
+      payment in Ethereum with a threat to sell the data "on the deep web"; Flink states it
+      does not negotiate with criminals and did not respond. The extortion actor, self-named
+      "LPG Group" and previously undocumented, then pivoted to mass-emailing at least 10,000
+      individual customers and employees in the Netherlands (with Germany also affected)
+      directly, demanding small per-person payments (0.005 ETH, ~EUR 10-12 each) toward a
+      cumulative 100 ETH (~EUR 230,000-237,000) target, promising to delete each payer's data
+      if the collective goal is met and threatening to sell all data if not; a 2 October
+      deadline was set. Exfiltrated data is limited to names, delivery addresses, email
+      addresses, phone numbers and delivery notes (e.g. floor/apartment details) — Flink
+      states passwords, payment cards and bank data were not affected. NL Times cites
+      cybersecurity researcher Pim Takkenberg (Northwave) characterizing individual-consumer
+      extortion as a technique he has "not seen before," distinct from prior cases (he cites
+      ShinyHunters' extortion of Dutch higher-education institutions via their software
+      vendor) where the victim organization's customers, rather than the organization itself,
+      were pressured — an emerging playbook for breach-response teams to expect when a
+      victim organization publicly refuses to pay. Abuse reporting to the extortion group's
+      mail provider curtailed the initial email flood; Flink says only ~150 customers had
+      proactively contacted its support line by the time of reporting, so the scale of
+      contacted individuals in Germany specifically remains unclear. Flink has notified
+      Berlin's data protection authority and police in Germany and the Netherlands, and
+      retained external IT forensics.
+    region_nexus: "germany, netherlands (also previously operated in austria, france)"
+    primary_sector_nexus: "none"
+    sector: "retail"
+    cves: []
+    techniques: [T1657]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - key: "actor:lpg-group"
+        type: actor
+        name: "LPG Group"
+        aliases: []
+        summary: >
+          Previously undocumented, little-known extortion actor that breached one of
+          Flink's internal Order Hub ordering systems and, after Flink refused a
+          corporate-level Ethereum ransom, pivoted to directly extorting individual
+          customers and employees for small per-person payments in a "crowdfunding"-style
+          scheme (heise online / NL Times, 2026-09-25/26). NL Times notes, purely as
+          unconfirmed background and not an attribution, that an unrelated older Conti/
+          Wizard Spider loader file was historically named lpg.dll; no source claims a
+          connection between that and this actor.
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: >
+      Primarily a private-sector (grocery-delivery) breach with no direct Swiss
+      public-sector nexus; included for the transferable TTP — a novel individual-customer
+      "crowdfund extortion" pattern breach-response teams should recognize — and because
+      Flink's operating footprint (Germany/Netherlands, formerly Austria/France) sits in the
+      constituency's home region.
+    evidence:
+      - quote: >
+          "Unauthorized individuals have gained access to data in one of our internal
+          systems. We take this incident very seriously."
+        attribution: "Flink spokesperson, via NL Times"
+        source_url: "https://nltimes.nl/2026/09/25/individuals-sent-ransom-notes-cybercriminals-steal-flink-customer-worker-data"
+      - quote: >
+          "But I haven't seen individual consumers being approached before," said Takkenberg
+          in an interview with NOS.
+        attribution: "Pim Takkenberg, Northwave, via NL Times"
+        source_url: "https://nltimes.nl/2026/09/25/individuals-sent-ransom-notes-cybercriminals-steal-flink-customer-worker-data"
+      - quote: >
+          Die Zahl der kontaktierten Kunden in Deutschland lässt sich damit bisher schlecht
+          einschätzen.
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Kunden-und-Mitarbeiter-von-Lieferdienst-Flink-werden-erpresst-11467086.html"
+    extended_notes: |
+      Distinct pattern from the already-tracked Revolut/"Imnotavillain" entry (2026-09-13,
+      updated 2026-09-26) in this store: Imnotavillain individually extorts ~680 named
+      customers from data it already fully possesses after a KYC-process compromise; LPG
+      Group instead uses a crowdfunding-style COLLECTIVE threshold (100 ETH aggregate) with
+      individual small payments, explicitly tied to the victim organization's refusal to
+      pay. Worth flagging as a second data point suggesting this extortion variant is
+      spreading, not a one-off.
+
+backlog_recheck:
+  - id: "unit42-spring-ring-petitpotam-dc-relay"
+    status: "re-checked (S3), no change"
+    note: >
+      No new victim, successful DC compromise, or follow-on reporting found beyond the
+      already-published Unit 42 report (the attempted PetitPotam NTLM relay against the
+      domain controller was blocked by Unit 42 MDR; no successor post found).
+  - id: "datadog-aws-root-password-spraying"
+    status: "re-checked (S3), no change"
+    note: >
+      Campaign window (24 Jul - 23 Aug 2026) remains reported closed with no confirmed
+      successful authentications; no escalation or new reporting found.
+  - id: "huntress-exodus-wallet-reflective-js-pe-loader-rat"
+    status: "re-checked (S3), no change"
+    note: >
+      Still four Huntress-protected organizations (late July - 18 Aug 2026); no new victim
+      count or follow-up publication found.
+  - id: "checkpoint-jsceal-v8-bytecode-deobfuscation"
+    status: "re-checked (S3), no change"
+    note: >
+      No escalation beyond the already-published Black Hat USA 2026 toolkit (V8-bytecode
+      static deobfuscation pipeline, 23 samples, macOS targeting, newer Node.js/V8 code
+      caches) — this remains the most recent public state.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: kela-cyber
+    reason: >
+      Live and drillable (WebFetch listing surfaced dated posts through 2026-09-24); latest
+      posts are prompt-injection/GenAI-defense guidance and older breach retrospectives
+      (Revolut, TeamPCP) already covered elsewhere in this store — no new in-window research
+      item found. A "KELA AI Cybercrime Report Q4 2026" teaser appears on the homepage but no
+      confirmed publish date or freely-readable content could be established within budget;
+      not pursued further.
+  - source_id: netcraft
+    reason: >
+      Live and drillable; latest in-window post (2026-09-25, "Beyond the Cease and Desist")
+      is vendor thought-leadership on automated phishing blocking, not original research
+      with new technical findings. No in-window item cleared the bar.
+  - source_id: ox-security
+    reason: >
+      Live and drillable; most substantive recent post (MCP-server governance-gap research,
+      15,465 servers analyzed) published 2026-09-24, outside the 26h window with no in-window
+      fresh pickup found — held back on recency grounds.
+  - source_id: project-discovery
+    reason: >
+      Live; listing surfaced only undated or months-old posts (most recent dated post
+      2026-07-21, an OpenAI/Hugging Face retrospective already covered in this store).
+      No in-window item.
+  - source_id: push-security
+    reason: >
+      Live but very low publish cadence; single visible post is an AI-agentic-threat-hunting
+      methodology piece with no visible date, not evidently in-window.
+  - source_id: novee-security
+    reason: >
+      Live and drillable; latest dated post (2026-09-24) is a company-office-opening
+      announcement, not research. No in-window technical research item.
+  - source_id: socradar
+    reason: >
+      extract recipe works per the source's own notes; listing content surfaced is all
+      already-covered CVEs (Roundcube, Check Point, WordPress, F5) or older items (ShinyHunters
+      FBI claim, Berlin/Rhysida). No genuinely new in-window item found.
+  - source_id: sysdig
+    reason: >
+      Feed live; recent posts (through 2026-09-25) are marketing/thought-leadership on runtime
+      security and AI adoption, no fresh technical research in-window.
+  - source_id: seqrite-labs
+    reason: >
+      Feed live; most recent posts are how-to/buyer's-guide content; latest technical research
+      post (MacSync ClickFix stealer) dated 2026-09-08, well outside window.
+  - source_id: xlab-qianxin
+    reason: >
+      Feed live; most recent post dated 2026-07-29 (Dysphoria botnet), outside window.
+  - source_id: trendmicro-research
+    reason: >
+      Feed live; most recent post dated 2026-07-25, outside window.
+  - source_id: rapid7-research
+    reason: >
+      Feed live; most recent CVE/threat-research post in-window territory is the Zimbra BEC
+      research (2026-09-23/24), held back on recency grounds (see dropped-items note below).
+      Newest post (2026-09-25) is a Metasploit module-release digest, not primary research.
+
+dropped_items_note: |
+  Considered and dropped on recency grounds (freshest available source 2+ days before the
+  26h window start, no confirmed in-window fresh development found despite a search pass):
+  Rapid7/Zimbra "manufactured enterprise reality" BEC research (50+ vulnerabilities,
+  published 2026-09-23/24); Patrick Wardle's Meta Muse macOS ClickFix local-backdoor finding
+  (endo_voyager_dictation_endpoint, "not-a-mused" PoC — originally disclosed ~2026-09-21,
+  heise pickup 2026-09-25, no further escalation found); Kaspersky MacSync macOS stealer new
+  iCloud-calendar-C2 variant (securelist/Kaspersky, published 2026-09-24T~09:22Z, ~17h before
+  window start); OX Security MCP-server-governance research (published 2026-09-24); heise's
+  own rewrite of the already-covered Gambit Security AI-agent retail-skimmer campaign
+  (2026-09-24 heise piece adds only numeric detail already present in Gambit's own
+  2026-09-23 primary, which this store already cites and has already updated twice);
+  HotelNetSolutions/OnePageBooking German hotel-booking-data phishing breach (heise,
+  published 2026-09-25T12:44Z, ~14h before window start, no confirmed Swiss/public-sector
+  nexus).
