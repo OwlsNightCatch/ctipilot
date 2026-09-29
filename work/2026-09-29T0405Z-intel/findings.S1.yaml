@@ -1,0 +1,239 @@
+domain: S1
+run_id: 2026-09-29T0405Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-09-29T04:09:43Z
+ended_at: 2026-09-29T04:21:16Z
+duration_seconds: 693
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 11
+  bridge_fetches: 34
+
+items:
+  - title: "watchTowr's root-cause writeup on Citrix NetScaler CVE-2026-88771 reveals the pre-auth command injection lives in a log-parsing crash-monitor script, not the usual nsppe binary, and ships a public detection/PoC tool"
+    novelty: "update-of:2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev"
+    sources:
+      - { url: "https://labs.watchtowr.com/oh-look-the-foot-gun-went-off-again-citrix-netscaler-preauth-command-injection-cve-2026-88771/", publisher: "watchTowr Labs", date: "2026-09-28", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13005", publisher: "NCSC Switzerland CSH", date: "2026-09-28", role: "corroborating" }
+      - { url: "https://www.ncsc.gov.uk/news/exploitation-of-vulnerabilities-affecting-citrix-netscaler-adc-and-citrix-netscaler-gateway", publisher: "NCSC UK", date: "2026-09-28", role: "corroborating" }
+      - { url: "https://cert.europa.eu/publications/security-advisories/2026-014/", publisher: "CERT-EU", date: "2026-09-27", role: "corroborating" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1235/", publisher: "CERT-FR (ANSSI)", date: "2026-09-28", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/13005 → cited watchTowr technical analysis link → primary: watchTowr Labs, URL https://labs.watchtowr.com/oh-look-the-foot-gun-went-off-again-citrix-netscaler-preauth-command-injection-cve-2026-88771/ ; corroborated via NCSC-NL feed URL https://advisories.ncsc.nl/rss/advisories (NCSC-2026-0394), NCSC-UK feed URL https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml, CERT-EU feed URL https://cert.europa.eu/publications/security-advisories-rss, and CERT-FR feed URL https://www.cert.ssi.gouv.fr/avis/feed/"
+    summary: |
+      watchTowr Labs published a full root-cause analysis of CVE-2026-88771 on 2026-09-28, one day after Citrix's CTX697096
+      bulletin, that materially changes what defenders should hunt for. The vulnerable component is NOT the nsppe packet
+      engine binary that has carried most historical NetScaler CVEs — it is ns_monuploadd_err.pl, a Perl script that
+      periodically (a cron-style job, up to a 24-hour delay, or force-triggerable via
+      `/netscaler/ns_monuploadd_err.pl -WR`) scans NetScaler system logs for Pitboss "PPE unexpectedly died" crash
+      messages to recover a core-dump filename. The pre-patch script extracted the filename with an unsanitized
+      grep|sed|awk shell pipeline and then re-interpolated that attacker-influenced string, unsanitized, into a second
+      Perl backtick command (`find $OFF_DIR/var/core -name ${WR_PPE_COREFILE_NAME}* -print | tail -1`) — a two-stage
+      log-poisoning-to-shell-command-injection chain that executes as root, because "pretty much everything on a Citrix
+      NetScaler runs as root" (watchTowr).
+      The trigger is pre-authentication and not limited to a single endpoint: watchTowr demonstrates it via the
+      username field of the SSLVPN/AAA login form (POST /nf/auth/doAuthentication.do, login=<crafted Pitboss-style
+      string with a shell command substitution>), but states "any endpoint or port that logs data controlled in an HTTP
+      header can trigger this" — failed logins, rate-limited requests, arbitrary request parameters and User-Agent
+      headers can all poison the log that the monitor script later parses.
+      Citrix's fix (in 14.1-73.37 / 13.1-64.23 and later) replaces the unsafe pipeline with a strict regex capture
+      (`qr/pitboss.*(NSPPE-\d{2})\s*\((\d+)\).*(missed too many heartbeats|unexpectedly died)/`) that only accepts a
+      well-formed PPE name and numeric PID, executes `find` via Perl's list form (no shell interpolation), and validates
+      the resulting path against an allowlist regex before it is used in any later backtick command.
+      watchTowr also clarifies exploitation-status granularity across the eight-CVE bulletin: only CVE-2026-88771
+      (this command injection) and CVE-2026-88772 (a DTLS-reachable memory overflow, VPN vServer default) are confirmed
+      exploited in the wild; CVE-2026-88773 (HTTP request smuggling, CVSS4 9.3) and CVE-2026-88774 through -88778
+      (memory overflows and a predictable-ISN issue, CVSS4 7.0–8.8) are patched but not reported exploited. watchTowr has
+      published a detection-artefact/PoC tool on GitHub and criticizes Citrix for not proactively notifying customers
+      directly — national CERTs (NCSC-UK, published 2026-09-28; CERT-FR CERTFR-2026-AVI-1235, 2026-09-28) and CERT-EU
+      (2026-09-27) all independently confirmed active exploitation and urged compromise assessment, adding to the
+      NCSC-CH advisory already covered.
+    region_nexus: "global; NetScaler ADC/Gateway is widely deployed as VPN/remote-access front door across Swiss and EU public-sector networks"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: ["CVE-2026-88771", "CVE-2026-88772", "CVE-2026-88773", "CVE-2026-88774", "CVE-2026-88775", "CVE-2026-88776", "CVE-2026-88777", "CVE-2026-88778"]
+    techniques: ["T1190", "T1059.004", "T1005"]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["product:citrix-netscaler"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "The Command Injection happens in the next line, when Perl interpolates that string into another backtick command"
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/oh-look-the-foot-gun-went-off-again-citrix-netscaler-preauth-command-injection-cve-2026-88771/"
+      - quote: "It is worth mentioning that this is not limited to a single endpoint. Any endpoint or port that logs data controlled in an HTTP header can trigger this vulnerability."
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/oh-look-the-foot-gun-went-off-again-citrix-netscaler-preauth-command-injection-cve-2026-88771/"
+      - quote: "CVE-2026-88773 | HTTP request smuggling (inconsistent interpretation of HTTP requests). Depends on specific configurations. | 9.3 Critical | Not reported"
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/oh-look-the-foot-gun-went-off-again-citrix-netscaler-preauth-command-injection-cve-2026-88771/"
+    extended_notes: |
+      Detection concept (telemetry class first, platform anchor second): monitor NetScaler AAA/authentication and web-
+      access logs for authentication-field or header values containing shell metacharacters (`;`, backticks, `` ` ``)
+      combined with Pitboss-style substrings ("PPE", "unexpectedly died", "NSPPE") in fields that should only ever carry
+      a username/credential — this is the log-poisoning precursor, observable before the delayed-trigger command
+      executes. Forensic triage: unexpected root-owned files under /var/tmp or /var/core with anomalous names/timestamps
+      on NetScaler appliances (CISA's KEV entry already directs forensic triage per BOD 26-04). Benign lookalike: crash-
+      monitor scripts on NetScaler legitimately process real Pitboss core-dump messages with names matching
+      `NSPPE-\d{2}-\d+`; any deviating characters (semicolons, backticks, redirection) in that specific log field are
+      the discriminator watchTowr's own patch diff describes.
+      Hardening: apply Citrix's fixed builds; because the trigger depends on log content rather than a single reachable
+      endpoint, endpoint/ACL mitigations (restricting AAA login exposure) reduce but do not eliminate the log-poisoning
+      surface — full patching is the only complete fix. CTX697096 also flags patching alone may not remove attacker
+      access gained pre-patch; preserve forensic evidence before upgrading (per NCSC-CH CSH post 13005).
+
+  - title: "Oracle's September 2026 CSPU broadens beyond Fusion Middleware: eight further unauthenticated CVSS 9.8 flaws confirmed across E-Business Suite, Business Intelligence, Enterprise Manager and Communications — no exploitation reported"
+    novelty: "update-of:2026-09-20/oracle-september-2026-cspu-five-unauthenticated-cvss-10"
+    sources:
+      - { url: "https://www.oracle.com/security-alerts/cspusep2026.html", publisher: "Oracle", date: "2026-09-10", role: "primary" }
+    discovery_trace: "first seen at: coverage-backlog re-check (state/coverage_backlog.md), directly re-fetched Oracle's own risk-matrix page → primary: Oracle, URL https://www.oracle.com/security-alerts/cspusep2026.html (no pivot needed)"
+    summary: |
+      Re-fetching Oracle's own September 2026 Critical Security Patch Update (CSPU) risk-matrix page — the same
+      release the existing entry covers for six unauthenticated CVSS 10.0 Fusion Middleware flaws — confirms eight
+      further unauthenticated, network-exploitable CVSS 9.8 flaws (Privileges Required: None, User Interaction: None,
+      Attack Vector: Network) across four additional product families that the existing entry does not name:
+      Oracle E-Business Suite (159 new patches, 19 remotely exploitable without authentication) carries three:
+      CVE-2026-83327 (Oracle Applications Framework / Personalization, reachable via SOAP, versions 12.2.3-12.2.15),
+      CVE-2026-83452 (Oracle Document Management and Collaboration / Internal Operations, HTTP, 12.2.3-12.2.15), and
+      CVE-2026-83462 (Oracle Mobile Application Server / MWA Terminal Server, TCP, 12.2.3-12.2.15).
+      Oracle Analytics (50 new patches, 8 remotely exploitable without authentication) carries CVE-2026-83283 (Oracle
+      Business Intelligence Enterprise Edition / Platform Security, HTTP, version 12.2.1.4.0).
+      Oracle Enterprise Manager carries CVE-2026-41635 (Enterprise Manager Base Platform / Agent Next Gen — Apache
+      Mina, HTTP, versions 13.5/24.1; the same patch also addresses CVE-2026-41409 and CVE-2026-42779) and
+      CVE-2026-83355 (Enterprise Manager for Fusion Middleware / Metrics, HTTP, versions 13.5/24.1).
+      Oracle Communications (31 new patches, 23 remotely exploitable without authentication) carries CVE-2026-44024
+      (Unified Assurance / Core-Fluentd, HTTP, versions 6.1.1-7.0.0; patch also addresses CVE-2026-44025, CVE-2026-44160
+      and CVE-2026-44161) and CVE-2026-17544 (Unified Assurance / Core-PHP, HTTP, version 7.0.0).
+      Oracle's advisory carries no exploitation claim for any of these eight, none appear in the CISA KEV catalog
+      (checked against the catalog version 2026.09.27, most recent addition 2026-09-27), and a targeted search found
+      no independent exploitation reporting. Given E-Business Suite's history as Cl0p's mass-exploitation target in
+      2025, the three new EBS pre-auth CVSS 9.8 flaws (Applications Framework Personalization, Document Management,
+      Mobile Application Server) are the highest-priority patch items in this broadened set for any organization
+      running EBS 12.2.3-12.2.15, even absent confirmed exploitation.
+    region_nexus: "global; Oracle E-Business Suite and Enterprise Manager are common in Swiss public-sector ERP/IT-management estates"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-83327", "CVE-2026-83452", "CVE-2026-83462", "CVE-2026-83283", "CVE-2026-41635", "CVE-2026-83355", "CVE-2026-44024", "CVE-2026-17544"]
+    techniques: ["T1190"]
+    affected_products: ["Oracle E-Business Suite", "Oracle Business Intelligence Enterprise Edition", "Oracle Enterprise Manager Base Platform", "Oracle Enterprise Manager for Fusion Middleware", "Oracle Communications Unified Assurance"]
+    entity_keys: ["product:oracle-e-business-suite"]
+    new_entities:
+      - { key: "product:oracle-enterprise-manager-base-platform", type: product, name: "Oracle Enterprise Manager Base Platform", aliases: ["Oracle Enterprise Manager"], summary: "Oracle's IT-infrastructure management platform; carried two unauthenticated CVSS 9.8 CVEs (CVE-2026-41635, CVE-2026-83355) in the September 2026 CSPU (Oracle, 2026-09-10/2026-09-15)." }
+      - { key: "product:oracle-business-intelligence-enterprise-edition", type: product, name: "Oracle Business Intelligence Enterprise Edition", aliases: ["OBIEE", "Oracle Analytics"], summary: "Oracle's BI platform; carried an unauthenticated CVSS 9.8 flaw (CVE-2026-83283) in the September 2026 CSPU risk matrix (Oracle, 2026-09-10)." }
+      - { key: "product:oracle-communications-unified-assurance", type: product, name: "Oracle Communications Unified Assurance", aliases: [], summary: "Oracle's telco-assurance platform; carried multiple unauthenticated CVSS 9+ third-party-component CVEs (CVE-2026-44024, CVE-2026-17544, others) in the September 2026 CSPU (Oracle, 2026-09-10)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    evidence:
+      - quote: "This Critical Security Patch Update contains 159 new security patches for Oracle E-Business Suite.  19 of these vulnerabilities may be remotely exploitable without authentication"
+        attribution: "Oracle"
+        source_url: "https://www.oracle.com/security-alerts/cspusep2026.html"
+      - quote: "CVE-2026-83327 | Oracle Applications Framework | Personalization | SOAP | Yes | 9.8 | Network | Low | None | None"
+        attribution: "Oracle"
+        source_url: "https://www.oracle.com/security-alerts/cspusep2026.html"
+    extended_notes: |
+      This item resolves an open coverage-backlog row (state/coverage_backlog.md) asking for exactly this
+      re-verification. Single-source is Oracle's own CPU/CSPU risk-matrix page (a vendor PSIRT primary for its own
+      product, acceptable single-source per the carve-out policy for the vendor's own advisory); no independent
+      exploitation reporting was found despite a targeted search, and the CISA KEV catalog (fetched fresh this run,
+      catalogVersion 2026.09.27) does not list any of the eight CVEs. Recommend the main agent fold this into the
+      existing entry as an `update` record broadening its scope and CVE list, not a new entry, per the CVE-overlap
+      dedup rule.
+    borderline: true
+    borderline_reason: "no confirmed exploitation for any of the 8 CVEs; inclusion is justified mainly by explicit backlog-duty verification and E-Business Suite's history as a mass-exploitation target, not by fresh in-window disclosure (Oracle's advisory itself is dated 2026-09-10/09-15, outside the 26h window)."
+
+  - title: "Kiteworks lifts its precautionary global shutdown advisory; no compromise found, current release already covers all known vulnerabilities"
+    novelty: "update-of:2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning"
+    sources:
+      - { url: "https://www.kiteworks.com/company/press-releases/kiteworks-precautionary-shutdown-advisory/", publisher: "Kiteworks", date: "2026-09-27", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12985", publisher: "NCSC Switzerland CSH", date: "2026-09-28", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12985 → primary: Kiteworks, URL https://www.kiteworks.com/company/press-releases/kiteworks-precautionary-shutdown-advisory/"
+    summary: |
+      Kiteworks updated its own press release on 2026-09-27 to state: "As of September 27th, the shutdown
+      recommendation is now lifted for all customers. If you have not already restarted, you may bring your Kiteworks
+      system back online... All systems Kiteworks hosts on customers' behalf have been brought back up and are
+      operating normally." The company reiterates it has "no indication that Kiteworks or our customers' systems have
+      been compromised," calling the advisory "preventative rather than a response to a confirmed breach," and states
+      current release 9.5.1 "has accounted for all known vulnerabilities." No CVE was ever assigned to the underlying
+      threat-intelligence tip. Subsidiaries Zivver, DRACOON, totemo, ownCloud, WAMNET, Maytech, Bonfy.ai and
+      123FormBuilder were never in scope of the shutdown advisory.
+    region_nexus: "global; falls in the Central European precautionary-shutdown window the existing entry already noted for Switzerland"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: ["Kiteworks"]
+    entity_keys: ["product:kiteworks"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "As of September 27th, the shutdown recommendation is now lifted for all customers."
+        attribution: "Kiteworks"
+        source_url: "https://www.kiteworks.com/company/press-releases/kiteworks-precautionary-shutdown-advisory/"
+      - quote: "We have no indication that Kiteworks or our customers' systems have been compromised, so this advisory is preventative rather than a response to a confirmed breach."
+        attribution: "Kiteworks (Frank Balonis, CISO)"
+        source_url: "https://www.kiteworks.com/company/press-releases/kiteworks-precautionary-shutdown-advisory/"
+    extended_notes: |
+      Low-severity closure update; recommend a brief non-floating `update` record on the existing entry rather than a
+      new entry (no new CVE, no new technical detail beyond the all-clear).
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product/supplier watchlist configured for this deployment (Swiss Government Entities) — sweep is a no-op per spawn instructions."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "direct fetch 403 (known-403 host); jina reader fallback failed on every rotated credential (HTTP 402 balance-exhausted on all keys tried). No alternate transport recovered the /cybersecurity-advisories/all.xml feed this run. Cross-checked via cisa-kev (structured endpoint, worked fine) and via CERT-EU/NCSC-CH/CERT-FR/CCB Belgium, all of which corroborate the same in-window CVE set (Citrix NetScaler), so no coverage was lost on substance — only the CISA-native advisory listing itself was unreachable."
+  - source_id: cisa-directives
+    reason: "bridge/jina both return only the JS filter-facet shell (long-documented recipe gap per source notes, not a new failure); no directive-specific content surfaced this run."
+  - source_id: depthfirst
+    reason: "homepage now serves marketing/product content only (model-comparison tables), no drillable blog/research listing found; consistent with a site redesign since the source's last-verified recipe note."
+  - source_id: vulncheck
+    reason: "extract of vulncheck.com/blog returned a stale cached snapshot (page metadata dated 2022-11-12), matching the source's own prior-run note; no current listing recovered."
+  - source_id: checkpoint-support
+    reason: "the pinned sk185222 URL resolved to a single specific (and dated, 2026-08-01) advisory page rather than a listing; no rotation-priority catalog view was found this run to sweep for newer sk-numbers beyond what NCSC-CH/CCB Belgium/CERT-EU already surfaced for Check Point in-window."
+  - source_id: pwn-ai
+    reason: "latest post on /blog is dated 2025-12-26 (stale); no in-window content."
+  - source_id: resecurity
+    reason: "blog listing returned only newsletter/contact marketing content (JS-rendered listing not captured by trafilatura); no drillable posts surfaced."
+  - source_id: esentire
+    reason: "canonical URL redirects to /resources/security-advisories, which serves marketing/event-calendar content only; no drillable advisory listing surfaced (JS-rendered)."
+  - source_id: hadrian-labs
+    reason: "blog listing is a Webflow SPA shell; trafilatura extraction returned only marketing copy, no drillable post list."
+  - source_id: jpcert
+    reason: "in-window JVN items found (BUFFALO Wi-Fi routers, Contec CONPROSYS ICS devices, both published 2026-09-28) but triaged out: both are auth-required or DoS-class flaws (CVSS <=7.5) in niche Japan-market consumer/ICS products with no confirmed exploitation and no Swiss public-sector nexus — below the relevance bar this run."
+
+cve_table:
+  - { cve: "CVE-2026-88771", product: "Citrix NetScaler ADC/Gateway", cvss: "9.5 (CVSS4)", epss: "n/a", kev: "yes (added 2026-09-27)", exploited: "yes, confirmed (zero-day, pre-patch)", patch: "14.1-73.37 / 13.1-64.23 and later", source: "watchTowr Labs / Citrix CTX697096" }
+  - { cve: "CVE-2026-88772", product: "Citrix NetScaler ADC/Gateway", cvss: "9.5 (CVSS4)", epss: "n/a", kev: "yes (added 2026-09-27)", exploited: "yes, confirmed (zero-day, pre-patch)", patch: "14.1-73.37 / 13.1-64.23 and later", source: "watchTowr Labs / Citrix CTX697096" }
+  - { cve: "CVE-2026-88773", product: "Citrix NetScaler ADC/Gateway", cvss: "9.3 (CVSS4)", epss: "n/a", kev: "no", exploited: "not reported", patch: "14.1-73.37 / 13.1-64.23 and later", source: "watchTowr Labs / Citrix CTX697096" }
+  - { cve: "CVE-2026-88774", product: "Citrix NetScaler ADC/Gateway", cvss: "7.0 (CVSS4)", epss: "n/a", kev: "no", exploited: "not reported", patch: "14.1-73.37 / 13.1-64.23 and later", source: "watchTowr Labs / Citrix CTX697096" }
+  - { cve: "CVE-2026-88775", product: "Citrix NetScaler ADC/Gateway", cvss: "8.8 (CVSS4)", epss: "n/a", kev: "no", exploited: "not reported", patch: "14.1-73.37 / 13.1-64.23 and later", source: "watchTowr Labs / Citrix CTX697096" }
+  - { cve: "CVE-2026-88776", product: "Citrix NetScaler ADC/Gateway", cvss: "8.8 (CVSS4)", epss: "n/a", kev: "no", exploited: "not reported", patch: "14.1-73.37 / 13.1-64.23 and later", source: "watchTowr Labs / Citrix CTX697096" }
+  - { cve: "CVE-2026-88777", product: "Citrix NetScaler ADC/Gateway", cvss: "8.8 (CVSS4)", epss: "n/a", kev: "no", exploited: "not reported", patch: "14.1-73.37 / 13.1-64.23 and later", source: "watchTowr Labs / Citrix CTX697096" }
+  - { cve: "CVE-2026-88778", product: "Citrix NetScaler ADC/Gateway", cvss: "8.8 (CVSS4)", epss: "n/a", kev: "no", exploited: "not reported", patch: "14.1-73.37 / 13.1-64.23 and later (plus enabling Enhanced ISN Generation)", source: "watchTowr Labs / Citrix CTX697096" }
+  - { cve: "CVE-2026-83327", product: "Oracle E-Business Suite (Applications Framework / Personalization)", cvss: "9.8", epss: "n/a", kev: "no", exploited: "not reported", patch: "September 2026 CSPU, versions 12.2.3-12.2.15", source: "Oracle CSPU Sep 2026" }
+  - { cve: "CVE-2026-83452", product: "Oracle E-Business Suite (Document Management and Collaboration)", cvss: "9.8", epss: "n/a", kev: "no", exploited: "not reported", patch: "September 2026 CSPU, versions 12.2.3-12.2.15", source: "Oracle CSPU Sep 2026" }
+  - { cve: "CVE-2026-83462", product: "Oracle E-Business Suite (Mobile Application Server)", cvss: "9.8", epss: "n/a", kev: "no", exploited: "not reported", patch: "September 2026 CSPU, versions 12.2.3-12.2.15", source: "Oracle CSPU Sep 2026" }
+  - { cve: "CVE-2026-83283", product: "Oracle Business Intelligence Enterprise Edition (Analytics)", cvss: "9.8", epss: "n/a", kev: "no", exploited: "not reported", patch: "September 2026 CSPU, version 12.2.1.4.0", source: "Oracle CSPU Sep 2026" }
+  - { cve: "CVE-2026-41635", product: "Oracle Enterprise Manager Base Platform (Agent Next Gen / Apache Mina)", cvss: "9.8", epss: "n/a", kev: "no", exploited: "not reported", patch: "September 2026 CSPU, versions 13.5/24.1", source: "Oracle CSPU Sep 2026" }
+  - { cve: "CVE-2026-83355", product: "Oracle Enterprise Manager for Fusion Middleware (Metrics)", cvss: "9.8", epss: "n/a", kev: "no", exploited: "not reported", patch: "September 2026 CSPU, versions 13.5/24.1", source: "Oracle CSPU Sep 2026" }
+  - { cve: "CVE-2026-44024", product: "Oracle Communications Unified Assurance (Core/Fluentd)", cvss: "9.8", epss: "n/a", kev: "no", exploited: "not reported", patch: "September 2026 CSPU, versions 6.1.1-7.0.0", source: "Oracle CSPU Sep 2026" }
+  - { cve: "CVE-2026-17544", product: "Oracle Communications Unified Assurance (Core/PHP)", cvss: "9.8", epss: "n/a", kev: "no", exploited: "not reported", patch: "September 2026 CSPU, version 7.0.0", source: "Oracle CSPU Sep 2026" }
+
+backlog_status:
+  - item: "IBM MQ CVE-2026-10747 + Langflow OSS CVE-2026-79724/81204/85025 (NCSC-NL bundle NCSC-2026-0392, 2026-09-23)"
+    status: "checked, no development — none of the three Langflow CVEs or the IBM MQ CVE appear in the CISA KEV catalog (fresh fetch this run, version 2026.09.27); targeted searches found vulnerability writeups but no independent exploitation reporting. The HackerNews/VulnCheck 'Langflow actively exploited' coverage found in search concerns the OLDER, already-tracked CVE-2026-0768/0770/5027 cluster (article dated 2026-09-01), not these three new CVEs. No entry exists yet in the store for this bundle; not creating one absent an exploitation trigger, per recency/actionability discipline."
+  - item: "Adobe September 2026 cycle — Campaign Classic APSB26-142 (CVE-2026-82004, CVSS 10.0), Adobe Connect APSB26-150 (CVE-2026-75682, CVSS 9.9), AEM Forms JEE (CVE-2026-75745/81995/82000, CVSS up to 10.0)"
+    status: "checked, no exploitation — Adobe's own bulletins state no exploits in the wild are known for any of these CVEs (published 2026-09-08 and 2026-09-22, both outside the 26h window); none appear in the CISA KEV catalog fetched fresh this run. No update or new entry warranted."
+  - item: "VMware VMSA-2026-0007 (CVE-2026-59346/59347, VMXNET3 guest-to-host escape, Workstation/Fusion only)"
+    status: "still not KEV-listed — confirmed against the fresh CISA KEV fetch this run (catalogVersion 2026.09.27, no CVE-2026-59346/59347 entry); consistent with the mechanical KEV-diff already run this window (zero additions)."
