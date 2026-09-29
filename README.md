@@ -110,7 +110,7 @@ The site deploys automatically on every push to `main` that touches the content 
 │   └── compose-profile.yml    # Composes config/org-profile.yaml into the prompts on push
 ├── .claude/agents/
 │   ├── cti-research.md        # Parallel research worker (S1–S4 + conditional S5)
-│   └── cti-verification.md    # Cold-reader verifier (Claude Sonnet 5; F1–F18)
+│   └── cti-verification.md    # Cold-reader verifier (generic `sonnet` pin; F1–F18)
 ├── work/<run-id>/             # Per-run forensic artefacts, committed with each run
 └── CNAME                      # Custom-domain marker for GitHub Pages → ctipilot.ch
 ```
@@ -214,7 +214,7 @@ The pipeline's Phase 0 does **not** consume any engagement signal. Editorial wei
 This is a fully autonomous, self-evolving system: the agent edits its own prompts, mutates its own state, and publishes via the feature-branch + auto-merge chain. The defensive frame is "detect and correct", not "prevent at all costs". Highlights:
 
 - **Phase 5.5 mechanical gate.** Before the verifier and before every commit, `tools/check_run.py` must exit 0: every entry's frontmatter parses and is schema- and taxonomy-valid, entity keys resolve in the registry, every changelog record pairs with its body section and `updated_at` mirrors the last one, no entry was edited without a record for the editing run, no store-wide CVE duplicates (unless declared in `references[]`), `priority` ⇔ `immediate_action` holds, evidence quotes are bound, no blocked/dead source URLs, no IOCs, the run record is complete, and the site smoke tests pass.
-- **Adversarial verification loop.** An independent cold-reader sub-agent (Claude Sonnet 5, fresh spawn per iteration) re-fetches every URL and traces every claim before publish; the commit is gated on two consecutive CLEAN verdicts.
+- **Adversarial verification loop.** An independent cold-reader sub-agent (the current Claude Sonnet, fresh spawn per iteration) re-fetches every URL and traces every claim before publish; the commit is gated on two consecutive CLEAN verdicts.
 - **No silent edits.** A published entry changes only through a dated, attributed `updates[]` changelog record with a matching body section — `discovered_at`, `run_id` and the entry id never change, and the gate FAILs any edit without a record for the editing run, so the published record cannot be silently rewritten. Git carries the exact diff of every correction.
 - **Feature-branch-only publishing.** Nothing writes to `main` except the auto-merge workflow; every routine commit is a reviewable diff.
 - **Vendored library integrity.** `site/build.py` aborts on SHA-256 mismatch against [`site/assets/vendor/HASHES`](site/assets/vendor/HASHES).

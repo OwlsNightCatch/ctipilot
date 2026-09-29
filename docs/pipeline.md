@@ -186,8 +186,8 @@ closed_sources: []             # [{title, provider, date, ref}] — intel/ drop 
 evidence:                      # quotes binding claims to fetched sources — quote is ALWAYS English (v4.2)
   - quote: "An authenticated remote command injection vulnerability (CWE-78) in Coolify…"
     publisher: "coollabsio GHSA"
-  - quote: "first reported a data leak on 7 August. (translated from German)"   # non-English source:
-    original: "hat … erstmals am 7. August einen Datenabfluss gemeldet."        # quote = marked English
+  - quote: "first reported a data leak on 7 August (translated from German)"    # non-English source:
+    original: "erstmals am 7. August einen Datenabfluss gemeldet"               # quote = marked English
     publisher: "Der Tagesspiegel"                                               # translation; original =
                                                                                 # verbatim source text (the
                                                                                 # verifier greps THIS)
@@ -480,8 +480,8 @@ Rules, all enforced by `tools/check_run.py` (`entry-updates`, `silent-edit`) unl
 - **Live brief** (the landing page `/`, `data/briefbook.json`, brief.js): the entry is
   in the window iff its **activity moment** is; it renders in the run group
   of the fire that made the latest record, flagged `UPD` with the record's
-  type and `summary` shown under the headline; the pulse panel's "updates to
-  prior coverage" counts it. An entry appears once, at its latest activity.
+  type and `summary` shown under the headline; the feed head's "updated"
+  count includes it. An entry appears once, at its latest activity.
 - **Day pages** (`/daily/<date>/`): § Updates to Prior Coverage lists every
   entry with a record dated that UTC day, rendered from the record (type,
   time, summary, the section body, link to the entry); the entry's kind
@@ -949,7 +949,7 @@ verification:
                                # CLEAN on v3.23+ records unless this (or the cap) explains it.
   iterations:                  # v3.23+: a CLEAN publish requires the final TWO iterations both
                                # CLEAN — so a CLEAN publish has ≥2 iterations. v4.1+: both run
-                               # the single `cti-verification` definition (Claude Sonnet 5); the
+                               # the single `cti-verification` definition (generic `sonnet` pin); the
                                # two-different-models requirement of v3.23–v4.0 is retired
     - n: 1
       model: "…"
@@ -1097,7 +1097,13 @@ Replaces `tools/check_brief.py`. Read-only, stdlib-only, exit 0 required
 before the verifier spawns and before every commit. Validates: frontmatter
 parses and every field is schema- and taxonomy-valid; folder-date/
 discovered_at/slug consistency; source-URL block-list + liveness (honouring
-`work/<run-id>/url-liveness.tsv`); evidence shape/presence; priority ⇔
+`work/<run-id>/url-liveness.tsv`); evidence shape/presence; evidence quotes
+literal-searched on their cited page (`quote-literal`, v4.13, WARN on a quote
+that is not a contiguous passage of the page) and every CVE id in a cited
+clause found on that clause's cited page (`citation-cve`, v4.13, WARN), both
+over the direct transports only with bodies cached under
+`work/<run-id>/quote-bodies/` (`--page-checks-since DATE` runs the pair over
+a date range, the audit's pre-pass); priority ⇔
 immediate_action consistency; entity refs resolve; registry integrity
 (incl. typed-relation vocabulary, endpoint constraints, canonical targets
 and source-entry resolution — § Relationships);

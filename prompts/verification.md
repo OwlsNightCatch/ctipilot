@@ -93,7 +93,7 @@ After entries and the run record are written, state is updated, and `tools/check
 
 **Editorial-quality gate.** Relevance to the profiled organization; primary-source strength (vendor PSIRT / research lab / regulator / victim first — NVD/CERT second-tier); priority calibration; action-item discipline (`actions[]` do-now bar); correct update-vs-new decisions; vendor-marketing tells; fake-news patterns; contradictions; clarity for a Tier 2 responder; missed angles.
 
-The verifier's finding categories (F1–F18), report format, and compact-summary contract live in [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md). **One verifier definition** (`cti-verification`, pinned to Claude Sonnet 5) runs every iteration, fresh each time. An iteration that follows a NEEDS_FIXES receives the prior iteration's findings and the applied remediations, so it verifies the fixes before its own cold pass instead of flip-flopping; a confirmation pass after a CLEAN receives nothing but the fact of the previous CLEAN.
+The verifier's finding categories (F1–F18), report format, and compact-summary contract live in [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md). **One verifier definition** (`cti-verification`, pinned to the generic `sonnet` alias) runs every iteration, fresh each time. An iteration that follows a NEEDS_FIXES receives the prior iteration's findings and the applied remediations, so it verifies the fixes before its own cold pass instead of flip-flopping; a confirmation pass after a CLEAN receives nothing but the fact of the previous CLEAN.
 
 ### Iterative refinement loop (double-CLEAN to publish; cap 8 — fail-open safety valve, not goal)
 

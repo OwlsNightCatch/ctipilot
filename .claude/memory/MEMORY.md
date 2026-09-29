@@ -6,11 +6,12 @@ Conventions: one topic per file, kebab-case filename, YAML front block (`name`, 
 
 ## Index
 
+- [Operator directive 2026-09-29](operator-directives-2026-09-29.md) — no time limits but every run ends (structural bounds + 60-min inactivity hang detection); every non-termination number is a guide
 - [Operator directives 2026-08-28](operator-directives-2026-08-28.md) — internal records, only `update` floats updated_at, no internals in reader text, quality>quantity, English-only quotes, v4.3 modifiability, xhigh effort, minimal plugins/skills
 - [Permission rules: Edit covers Write](permission-rules-edit-covers-write.md) — Write(path) allow rules are dead; only Edit(path) matches file tools
 - [Entry lifecycle](entry-lifecycle-v4.md) — one living entry per finding; changelog records + sections; what stays untouchable; the weekly's entries and schema are deleted (2026-08-29)
 - [STIX export layer](stix-export-layer.md) — /stix/ bundles, uuid5 id-stability contract, relation collapse table, canonical ATT&CK ids, no TAXII by decision
-- [Routine model assignment](routine-model-assignment.md) — Sonnet 5 intel / Opus 5 audit, generic `sonnet` pins at xhigh, single verifier, double-CLEAN; self-ID protocol (prompt line, not env vars)
+- [Routine model assignment](routine-model-assignment.md) — Sonnet 5.5 intel / Opus 5.5 audit since 2026-09-29, generic `sonnet` pins at xhigh (unmeasured on 5.5), 5.5 prompting deltas, single verifier, double-CLEAN; self-ID protocol
 - [Verification lessons](verification-lessons.md) — aiming iterations, testing findings before applying, inverted claims, unsourced status flags, quote fidelity, composing-from-entries traps
 - [Source fetch blocks & recipes](source-fetch-blocks.md) — fetch ladder, blocked-host recipes, jina pool rules, PDF extraction honesty, probe/health traps
 - [CSAF/MSRC/CVE transcription](csaf-msrc-transcription.md) — structured fields over prose; verdict vs membership; base vs temporal CVSS; CNA vs ADP vs NVD; EPSS is FIRST.org's probability in [0,1] (EUVD renders it as a percentage)
@@ -25,7 +26,7 @@ Conventions: one topic per file, kebab-case filename, YAML front block (`name`, 
 - [State-file serialization](state-file-serialization.md) — derive JSON format from the live file, `git diff --stat` after; the constant has flipped twice
 - [Auto-publish routine fixes](auto-publish-routine-fixes.md) — commit→push→merge→deploy→probe end-to-end without pausing; permissions pre-authorized
 - [Customization framework](customization-framework.md) — branding.yaml + org-profile.yaml carry all identity; shipped profile = generic "Swiss Government Entities" example/POC (no concrete org anywhere); slices/cohorts/certs/policy-watch/site_url are config-only, no in-code defaults; never re-literal build.py; PYTHONHASHSEED=0 for byte diffs
-- [Site landing = live brief](site-landing-live-brief.md) — 2026-08-29: / is the brief; findings lead, positioning at the foot, § Do now, phone-first timeline
+- [Site landing = live brief](site-landing-live-brief.md) — / is the brief: one-line head, compact critical alarm, counts, whole-row-clickable timeline + Summaries/Headlines; Do now + pulse panel removed 2026-09-29
 - [Design system](design-system.md) — component/DOM contract, brandable surface, CSS invariants (no dlig, badge guards, trends honesty) + document contract (one heading outline, unique ids, AA in both themes)
 - [UI writing style](ui-writing-style.md) — no em dash ANYWHERE a reader sees it; build.py normalises at render, self-check FAILs, <pre>/<code> exempt
 - [Changelog hygiene](changelog-hygiene.md) — version history only in prompts/CHANGELOG.md; no vN.M annotations in rules

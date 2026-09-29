@@ -15,6 +15,12 @@
  * updated entry therefore floats back into the window under the run that
  * updated it, flagged UPD with the record's type + summary.
  *
+ * It also keeps the critical alarm header (render_alarm) and the feed's
+ * count line in step with the window, makes each timeline row open its
+ * permalink on click (text stays selectable; inner links keep working),
+ * and offers a Summaries / Headlines density toggle, remembered per
+ * browser.
+ *
  * Progressive enhancement: without JS the page shows the server-rendered
  * 24 h timeline and every link still works.
  */
@@ -38,7 +44,6 @@
   // Mirrors _rail_stamp_html in site/build.py: the rail stamp breaks
   // date-over-time deliberately, not wherever the gutter runs out.
   function railStamp(d) { return '<span class="d">' + pad(d.getUTCDate()) + ' ' + MONTHS[d.getUTCMonth()] + '</span><span class="t">' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + 'Z</span>'; }
-  function euro(d) { return pad(d.getUTCDate()) + '.' + pad(d.getUTCMonth() + 1) + '.' + d.getUTCFullYear() + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()); }
   function esc(s) {
     return String(s == null ? '' : s)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -61,12 +66,7 @@
     var select = document.querySelector('[data-window-select]');
     var more = document.querySelector('[data-window-more]');
     var endMsg = document.querySelector('[data-window-end]');
-    var fromEl = document.querySelector('[data-window-from]');
-    var toEl = document.querySelector('[data-window-to]');
-    var statusEl = document.querySelector('[data-window-status]');
-    var countEl = document.querySelector('[data-window-count]');
-
-    if (toEl) toEl.textContent = euro(refTs);
+    var alarmEl = document.querySelector('[data-alarm]');
 
     function passesFilter(e) {
       var s = filterSets;
@@ -111,34 +111,49 @@
 
     var TYPE_LABEL = { update: 'Update', correction: 'Correction', improvement: 'Improvement' };
 
-    // § Do now: every actions[] task in the window, aggregated. Mirrors
-    // render_donow in site/build.py; the panel hides itself when the window
-    // carries no work (a healthy window, not a gap).
-    function shortLabel(e) {
-      var ids = e.cve_ids || [];
-      if (ids.length) return ids[0] + (ids.length > 1 ? ' +' + (ids.length - 1) : '');
-      var t = String(e.headline || e.title || e.id || '').replace(/\*\*/g, '');
-      return t.length <= 52 ? t : t.slice(0, 52).replace(/\s\S*$/, '') + '…';
+    // Headline / summary fields may carry inline **emphasis** (migrated
+    // content); render it like the server's _inline_text, drop strays.
+    function inline(t) {
+      return esc(t).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\*\*/g, '');
     }
 
-    function donowHtml(ops) {
-      var rows = [];
-      ops.forEach(function (e) {
-        (e.actions || []).forEach(function (a) {
-          if (typeof a !== 'string' || !a.trim()) return;
-          var url = esc(sitePrefix() + relUrl(e));
-          rows.push('<li class="action-list__item" data-entry-id="' + esc(e.id) + '">'
-            + '<div class="action-list__body">' + esc(a.trim()) + '</div>'
-            + '<a class="action-ref" href="' + url + '" aria-label="Open finding: ' + esc(shortLabel(e)) + '">'
-            + '<span class="action-ref__tag">Finding</span>'
-            + '<span class="action-ref__label">' + esc(shortLabel(e)) + '</span>'
-            + '<span class="action-ref__go" aria-hidden="true">→</span></a>'
-            + '</li>');
-        });
-      });
-      if (!rows.length) return '';
-      return '<h2 class="donow-h">Do now<span class="donow-n" data-donow-count>' + rows.length + '</span></h2>'
-        + '<ul class="action-list">' + rows.join('') + '</ul>';
+    // Critical alarm header: one compact row per critical entry in the
+    // window. Mirrors render_alarm / _alarm_text in site/build.py. It
+    // follows the window, never the chip filters: an alarm is not a view.
+    function alarmText(e) {
+      var ia = e.immediate_action;
+      var t = (ia && ia.title && ia.title.trim()) ? ia.title.trim() : (e.headline || e.title || e.id);
+      return String(t).replace(/\*\*/g, '');
+    }
+
+    function alarmHtml(crit) {
+      return crit.map(function (e) {
+        var meta = [];
+        if (e.cve_label) meta.push(e.cve_label);
+        if (e.exploited) meta.push('exploited');
+        meta.push((e.activity_is_update ? 'updated ' : '') + stamp(activityDate(e)));
+        return '<a class="alarm-row" href="' + esc(sitePrefix() + relUrl(e)) + '" data-entry-id="' + esc(e.id) + '">'
+          + '<span class="alarm-tag"><span class="adot" aria-hidden="true"></span>Critical</span>'
+          + '<span class="alarm-t">' + esc(alarmText(e)) + '</span>'
+          + '<span class="alarm-m">' + esc(meta.join(' · ')) + '</span>'
+          + '<span class="alarm-go" aria-hidden="true">→</span></a>';
+      }).join('');
+    }
+
+    // Section-body order (entry_sort_key): org-lens regions, then
+    // priority, then newest first.
+    var lens = cfg.lens_regions || [];
+    var rank = cfg.priority_rank || {};
+    function sortKey(a, b) {
+      var la = (a.regions || []).some(function (r) { return lens.indexOf(r) >= 0; }) ? 0 : 1;
+      var lb = (b.regions || []).some(function (r) { return lens.indexOf(r) >= 0; }) ? 0 : 1;
+      if (la !== lb) return la - lb;
+      var ra = rank[a.priority] == null ? 2 : rank[a.priority];
+      var rb = rank[b.priority] == null ? 2 : rank[b.priority];
+      if (ra !== rb) return ra - rb;
+      var da = a.discovered_at || '', db = b.discovered_at || '';
+      if (da !== db) return da < db ? 1 : -1;
+      return a.id < b.id ? -1 : 1;
     }
 
     function activityDate(e) {
@@ -152,32 +167,34 @@
     }
 
     function runItem(e, isNew) {
+      // Mirrors render_timeline_item in site/build.py.
       var isUpd = !!e.activity_is_update;
       var rec = isUpd ? latestRecord(e) : null;
       var d = isUpd ? activityDate(e) : (e.discovered_at ? new Date(e.discovered_at) : refTs);
       var flag = isUpd ? 'UPD' : (isNew ? 'NEW' : '');
-      var flagStyle = isUpd ? 'color:var(--warn)' : (isNew ? 'color:var(--ok)' : '');
-      var prov = ['<div class="prov">'];
-      if (e.kind) prov.push('<span>' + esc(e.kind) + '</span>');
-      prov.push('<span>' + esc(stamp(e.discovered_at ? new Date(e.discovered_at) : d)) + '</span>');
-      prov.push('<span class="' + esc(e.verification_class || 'p-warn') + '">' + esc(e.verification_label || '') + '</span>');
-      prov.push('<a class="refs" href="' + esc(sitePrefix() + relUrl(e)) + '">open ↗</a></div>');
+      var flagCls = isUpd ? ' flag--upd' : (isNew ? ' flag--new' : '');
+      var url = esc(sitePrefix() + relUrl(e));
+      var meta = ['<div class="prov tl-meta">'];
+      if (e.kind) meta.push('<span>' + esc(e.kind) + '</span>');
+      meta.push('<span class="' + esc(e.verification_class || 'p-warn') + '">' + esc(e.verification_label || '') + '</span>');
+      if (isUpd && e.discovered_at) meta.push('<span>first published ' + esc(stamp(new Date(e.discovered_at))) + '</span>');
+      meta.push('<a class="refs tl-go" href="' + url + '" tabindex="-1" aria-hidden="true">Full analysis <span class="arw">→</span></a></div>');
       var line;
       if (isUpd && rec) {
         var t = rec.type || 'update';
-        line = '<p class="tl-update tl-update--' + esc(t) + '"><b>' + esc(TYPE_LABEL[t] || 'Update') + '</b> · '
-          + esc(rec.summary || '') + ' <span class="muted">(first published ' + esc((e.discovered_at || '').slice(0, 10)) + ')</span></p>';
+        line = '<p class="tl-sum tl-update tl-update--' + esc(t) + '"><b>' + esc(TYPE_LABEL[t] || 'Update') + '</b> · '
+          + inline(rec.summary || '') + '</p>';
       } else {
-        line = '<p>' + esc(e.summary || e.headline || '') + '</p>';
+        line = '<p class="tl-sum">' + inline(e.summary || e.headline || '') + '</p>';
       }
-      return '<div class="tl-item' + (isUpd ? ' tl-item--updated' : '') + '" data-entry-id="' + esc(e.id) + '">'
+      return '<div class="tl-item' + (isUpd ? ' tl-item--updated' : '') + '" data-card data-entry-id="' + esc(e.id) + '">'
         + '<div class="tl-rail"><span class="tl-node" style="background:' + (PRI_DOT[e.priority] || 'var(--text-muted)') + '"></span>'
-        + '<span class="time">' + railStamp(d) + '</span><span class="flag" style="' + flagStyle + '">' + esc(flag) + '</span></div>'
+        + '<span class="time">' + railStamp(d) + '</span><span class="flag' + flagCls + '">' + esc(flag) + '</span></div>'
         + '<div class="tl-body">'
         + badgesHtml(e)
-        + '<h3 class="tl-title"><a href="' + esc(sitePrefix() + relUrl(e)) + '">' + esc(e.title || e.id) + '</a></h3>'
+        + '<h3 class="tl-title"><a href="' + url + '">' + esc(e.title || e.id) + '</a></h3>'
         + line
-        + prov.join('')
+        + meta.join('')
         + sourceLine(e)
         + '</div></div>';
     }
@@ -270,53 +287,32 @@
       }
       container.innerHTML = html;
 
-      var donowEl = document.querySelector('[data-donow]');
-      if (donowEl) {
-        var dn = donowHtml(ops);
-        donowEl.innerHTML = dn;
-        donowEl.hidden = !dn;
+      // The alarm follows the window, never the chip filters.
+      if (alarmEl) {
+        var crit = (data.entries || []).filter(function (e) {
+          if (e.priority !== 'critical') return false;
+          var d = (e.activity_at || e.discovered_at) ? activityDate(e) : null;
+          return d && d >= since && d <= refTs;
+        }).sort(sortKey);
+        alarmEl.innerHTML = alarmHtml(crit);
+        alarmEl.hidden = !crit.length;
       }
 
-      if (fromEl) fromEl.textContent = euro(since);
-      if (statusEl) statusEl.textContent = 'last ' + hours + 'h';
-      if (countEl) countEl.textContent = String(ops.length);
       var nCrit = 0, nHigh = 0, nUpd = 0, nExp = 0;
-      var kinds = {};
       ops.forEach(function (e) {
         if (e.priority === 'critical') nCrit++;
         if (e.priority === 'high') nHigh++;
         if (e.activity_is_update) nUpd++;
         if (e.exploited) nExp++;
-        var k = e.kind || 'other';
-        kinds[k] = (kinds[k] || 0) + 1;
       });
-      var mixEls = {
-        '[data-window-crit]': nCrit,
-        '[data-window-high]': nHigh,
-        '[data-window-upd]': nUpd,
-        '[data-window-exp]': nExp,
-        '[data-window-total]': ops.length
-      };
-      Object.keys(mixEls).forEach(function (sel) {
-        var el = document.querySelector(sel);
+      var counts = { total: ops.length, crit: nCrit, high: nHigh, exp: nExp, upd: nUpd };
+      Object.keys(counts).forEach(function (k) {
+        var el = document.querySelector('[data-window-' + k + ']');
         if (!el) return;
-        el.textContent = String(mixEls[sel]);
-        var tile = el.closest('.pulse-t');
-        if (tile && sel !== '[data-window-total]') {
-          tile.classList.toggle('pulse-t--zero', mixEls[sel] === 0);
-        }
+        el.textContent = String(counts[k]);
+        var chip = el.closest('.fs');
+        if (chip) chip.classList.toggle('fs--zero', counts[k] === 0);
       });
-      var kindsEl = document.querySelector('[data-window-kinds]');
-      if (kindsEl) {
-        var kindKeys = Object.keys(kinds).sort(function (a, b) {
-          return (kinds[b] - kinds[a]) || (a < b ? -1 : 1);
-        });
-        kindsEl.innerHTML = kindKeys.length
-          ? kindKeys.map(function (k) {
-              return '<span class="pulse-kind"><b>' + kinds[k] + '</b> ' + esc(k) + '</span>';
-            }).join('')
-          : '<span class="pulse-kind pulse-kind--empty">quiet window</span>';
-      }
       if (endMsg) endMsg.hidden = hasOlder;
       if (more) more.hidden = !hasOlder;
     }
@@ -336,10 +332,78 @@
       hours += 24;
       if (select) {
         var has = Array.prototype.some.call(select.options, function (o) { return parseInt(o.value, 10) === hours; });
-        if (has) select.value = String(hours);
+        if (!has) {
+          // Keep the control honest: the window it shows is the window the
+          // timeline renders, even past the preset choices.
+          var opt = document.createElement('option');
+          opt.value = String(hours);
+          opt.textContent = 'last ' + hours + ' h';
+          opt.setAttribute('data-extended', '');
+          select.appendChild(opt);
+        }
+        select.value = String(hours);
       }
       render();
     });
+
+    // A timeline row opens its permalink from anywhere on the row. Inner
+    // links (CVE badge, title, sources) keep their own targets, a text
+    // selection is never hijacked into a navigation, and modifier / middle
+    // clicks open a new tab like a real link would.
+    function rowLink(ev) {
+      var row = ev.target.closest && ev.target.closest('[data-card]');
+      if (!row || !container.contains(row)) return null;
+      if (ev.target.closest('a, button, input, select, summary, label')) return null;
+      var sel = window.getSelection ? String(window.getSelection()) : '';
+      if (sel.trim()) return null;
+      return row.querySelector('.tl-title a');
+    }
+    // A click on summary prose waits one double-click interval before it
+    // navigates, so double-clicking a word (a CVE id, a product name) to
+    // copy it selects the word instead of leaving the page.
+    var pending = null;
+    container.addEventListener('click', function (ev) {
+      if (pending) { clearTimeout(pending); pending = null; }
+      if (ev.defaultPrevented || ev.button !== 0 || ev.detail > 1) return;
+      var a = rowLink(ev);
+      if (!a) return;
+      if (ev.metaKey || ev.ctrlKey || ev.shiftKey) { window.open(a.href, '_blank', 'noopener'); return; }
+      var go = function () {
+        pending = null;
+        var sel = window.getSelection ? String(window.getSelection()) : '';
+        if (!sel.trim()) window.location.href = a.href;
+      };
+      if (ev.target.closest('.tl-sum')) pending = setTimeout(go, 280); else go();
+    });
+    container.addEventListener('auxclick', function (ev) {
+      if (ev.button !== 1) return;
+      var a = rowLink(ev);
+      if (a) { ev.preventDefault(); window.open(a.href, '_blank', 'noopener'); }
+    });
+
+    // Summaries / Headlines density toggle (per-browser convenience only).
+    var viewToggle = document.querySelector('[data-view-toggle]');
+    var VIEW_KEY = 'cti-brief-view';
+    function setView(v, persist) {
+      var compact = v === 'compact';
+      container.classList.toggle('tl--compact', compact);
+      if (viewToggle) {
+        Array.prototype.forEach.call(viewToggle.querySelectorAll('[data-view]'), function (b) {
+          b.setAttribute('aria-pressed', String(b.getAttribute('data-view') === (compact ? 'compact' : 'full')));
+        });
+      }
+      if (persist) { try { localStorage.setItem(VIEW_KEY, compact ? 'compact' : 'full'); } catch (_) { /* storage blocked */ } }
+    }
+    if (viewToggle) {
+      viewToggle.hidden = false;
+      var saved = null;
+      try { saved = localStorage.getItem(VIEW_KEY); } catch (_) { saved = null; }
+      setView(saved === 'compact' ? 'compact' : 'full', false);
+      viewToggle.addEventListener('click', function (ev) {
+        var b = ev.target.closest('[data-view]');
+        if (b) setView(b.getAttribute('data-view'), true);
+      });
+    }
 
     document.addEventListener('cti:filterchange', function (e) {
       if (e.detail && e.detail.sets) { filterSets = e.detail.sets; if (data) render(); }

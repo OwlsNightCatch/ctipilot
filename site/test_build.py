@@ -63,7 +63,7 @@ from build import (  # noqa: E402
     entry_section_key,
     is_safe_path_segment,
     parse_taxonomy,
-    render_actnow,
+    render_alarm,
     render_brief_sections,
     render_cve_pill,
     render_day_page,
@@ -551,9 +551,14 @@ assert_in("TL;DR bullet carries strong headline", "<b>Headline coolify-rce.</b>"
 crit_pos = html.find("Headline coolify-rce")
 high_pos = html.find("Headline fortibleed-campaign")
 assert_true("TL;DR: critical bullet precedes high", 0 <= crit_pos < high_pos)
-actnow = render_actnow(E_CRIT, prefix="")
-assert_in("ACT NOW callout present", "ACT NOW · CRITICAL", actnow)
-assert_in("ACT NOW carries the action", "Upgrade to v4.0.0-beta.469 immediately.", actnow)
+alarm = render_alarm([E_HIGH, E_CRIT], prefix="")
+assert_in("critical alarm renders a row", 'class="alarm-row"', alarm)
+assert_in("alarm row says the immediate-action title", "Patch Coolify now", alarm)
+assert_not_in("alarm stays short: no action paragraph", "Upgrade to v4.0.0-beta.469 immediately.", alarm)
+assert_eq("alarm lists only critical entries", alarm.count('class="alarm-row"'), 1)
+assert_in("alarm row links the permalink", 'href="' + build.entry_url_path(E_CRIT) + '"', alarm)
+assert_in("no critical entry: alarm container is hidden",
+          'data-alarm hidden', render_alarm([E_HIGH], prefix=""))
 assert_in("finding quotes evidence", "actively exploited in the wild", html)
 assert_in("updated badge on the finding", 'class="b upd"', html)
 assert_in("updated badge reads 'updated'", ">updated</span>", html)
@@ -606,14 +611,17 @@ pos_high = tl.find('data-entry-id="' + E_HIGH["id"] + '"')
 assert_true("updating run divider comes first", 0 <= pos_run2 < pos_run1)
 assert_true("updated entry sits under the updating run", pos_run2 < pos_crit < pos_run1)
 assert_true("new entry sits under its publishing run", pos_high > pos_run1)
-assert_in("updated row flagged UPD", 'style="color:var(--warn)">UPD</span>', tl)
-assert_in("updated row carries the record line", 'class="tl-update tl-update--update"', tl)
+assert_in("updated row flagged UPD", '<span class="flag flag--upd">UPD</span>', tl)
+assert_in("updated row carries the record line", 'class="tl-sum tl-update tl-update--update"', tl)
 assert_in("updated row shows the record summary", "A public PoC has now surfaced and CISA added", tl)
 assert_in("updated row stamped with the record time", '<span class="d">03 Jul</span><span class="t">08:00Z</span>', tl)
 assert_in("updated row marks the item", 'class="tl-item tl-item--updated"', tl)
 row = render_timeline_item(E_HIGH, prefix="", is_new=True)
-assert_in("new row flagged NEW", 'style="color:var(--ok)">NEW</span>', row)
+assert_in("new row flagged NEW", '<span class="flag flag--new">NEW</span>', row)
 assert_not_in("new row has no update line", "tl-update", row)
+assert_in("row opens its permalink from anywhere (data-card)", 'class="tl-item" data-card', row)
+assert_in("row carries an explicit Full analysis call to action", "Full analysis", row)
+assert_in("updated row names when it was first published", "first published 03 Jul", tl)
 assert_eq("timeline appears once per entry", tl.count('data-entry-id="' + E_CRIT["id"] + '"'), 1)
 
 print("== products as entities ==")
@@ -790,13 +798,17 @@ assert_in("landing h1 is the functional brief title", '<h1 class="livehead-h">',
 assert_not_in("feed heading stays a h2", '<h1 class="feedhead-title">', landing)
 assert_in("positioning copy renders at the foot, not the top", 'class="sitenote"', landing)
 assert_not_in("no marketing hero above the findings", 'class="hero hero--live"', landing)
-assert_in("§ Do now aggregates the window's actions", 'data-donow', landing)
+assert_not_in("no § Do now panel on the landing page", 'data-donow', landing)
+assert_not_in("no pulse panel on the landing page", 'class="pulsepanel"', landing)
+assert_in("critical alarm header on the landing page", 'class="alarm-row"', landing)
+assert_in("feed head carries the window counts", 'data-window-total', landing)
+assert_in("hint tells the reader rows open the full analysis", 'class="feedhint"', landing)
+assert_in("density toggle ships hidden until brief.js wires it", 'data-view-toggle hidden', landing)
 assert_in("knowledge-base pivot band below the feed", 'class="pivotband"', landing)
 assert_in("pivot band links the daily archive at the latest day", 'href="daily/2026-07-01/"', landing)
 assert_in("pivot band links the changelog", 'href="changes/"', landing)
 assert_in("machine-endpoint line for agents", "data/briefbook.json", landing)
 assert_in("machine-endpoint line advertises llms.txt", "llms.txt", landing)
-assert_in("updates pulse tile links the changelog", 'href="changes/"', landing)
 assert_in("landing declares the WebSite identity node", '"@type":"WebSite"', landing)
 assert_in("landing enumerates the window as a CollectionPage", '"@type":"CollectionPage"', landing)
 assert_not_in("landing never links the retired /live/ page", 'href="live/"', landing)
@@ -1688,6 +1700,12 @@ assert_eq("cm: model-id no minor", _cm("claude-sonnet-5"), "Claude Sonnet 5")
 assert_eq("cm: model-id with minor", _cm("claude-opus-4-8"), "Claude Opus 4.8")
 assert_eq("cm: model-id date suffix dropped", _cm("claude-haiku-4-5-20251001"), "Claude Haiku 4.5")
 assert_eq("cm: new family future-proof", _cm("Claude Fable 5"), "Claude Fable 5")
+# Series 5.5 (routines switched 2026-09-29): the point release must survive
+# both id and friendly forms, including the context-window suffix on the id.
+assert_eq("cm: 5.5 model-id", _cm("claude-sonnet-5-5"), "Claude Sonnet 5.5")
+assert_eq("cm: 5.5 model-id with context suffix", _cm("claude-opus-5-5[1m]"), "Claude Opus 5.5")
+assert_eq("cm: 5.5 friendly", _cm("Sonnet 5.5"), "Claude Sonnet 5.5")
+assert_eq("cm: 5.5 friendly with context", _cm("Opus 5.5 (1M context)"), "Claude Opus 5.5")
 # Genuine identification gaps still fold to "unknown" (they surface the gap).
 assert_eq("cm: tier-only id is a gap", _cm("opus-tier"), "unknown")
 assert_eq("cm: env-var fallback friendly is a gap", _cm("Anthropic Claude (Opus-tier)"), "unknown")

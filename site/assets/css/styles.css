@@ -41,9 +41,9 @@
   --shadow:       0 1px 0 rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.35);
   --radius:       6px;
   --radius-lg:    10px;
-  /* The stacked panels on the live brief (ACT NOW, Do now, window pulse)
-     share one corner and one inner edge, so their text sits on a single
-     vertical however their borders differ. */
+  /* Cards on the live brief (the critical alarm, the filter bar) share one
+     corner and one inner edge, so their text sits on a single vertical
+     however their borders differ. */
   --card-radius:  12px;
   --card-pad:     18px;
   /* Live-timeline rail: the stamp gutter and the gap to the finding text.
@@ -56,6 +56,7 @@
      callouts, chart SVGs). Kept in sync with --accent / --info above. */
   --accent-rgb:   232, 93, 117;
   --info-rgb:     121, 192, 255;
+  --crit-rgb:     255, 107, 107;
   --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
 }
@@ -87,6 +88,7 @@
     --ok:           #1a7f37;
     --info:         #0757b8;
     --info-rgb:     7, 87, 184;
+    --crit-rgb:     207, 34, 46;
   }
 }
 :root[data-theme="light"] {
@@ -114,6 +116,7 @@
   --ok:           #1a7f37;
   --info:         #0757b8;
   --info-rgb:     7, 87, 184;
+  --crit-rgb:     207, 34, 46;
 }
 
 /* ── opt-in reader accommodations (set as attributes on <html> by
@@ -131,7 +134,6 @@
 :root[data-density="comfortable"] .tl-body p,
 :root[data-density="comfortable"] .ebody p,
 :root[data-density="comfortable"] .vsub,
-:root[data-density="comfortable"] .actnow-body p,
 :root[data-density="comfortable"] .chg-s { line-height: 1.95; }
 @media (prefers-reduced-motion: reduce) {
   * {
@@ -731,29 +733,6 @@ body.reading .main { padding-top: 2.2rem; }
 .live-updated { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
 .briefstat .live-updated { margin-right: auto; }
 
-/* ── ACT NOW critical callout ───────────────────────────────────── */
-.actnow {
-  display: block; text-decoration: none;
-  border: 1px solid rgba(var(--accent-rgb), 0.42);
-  border-radius: var(--card-radius); overflow: hidden; margin: 26px 0 44px;
-  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.06);
-  cursor: pointer; user-select: none;
-  transition: box-shadow 0.14s, border-color 0.14s;
-}
-.actnow:hover { box-shadow: 0 0 0 5px rgba(var(--accent-rgb), 0.1); border-color: var(--accent); text-decoration: none; }
-.actnow-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; background: var(--accent); color: var(--accent-fg); padding: 9px var(--card-pad); font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: 0.11em; }
-.actnow-strip .adot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-fg); animation: ctiPulse 1.5s ease-in-out infinite; }
-.actnow-strip .meta { margin-left: auto; font-weight: 500; letter-spacing: 0.04em; opacity: 0.85; }
-.actnow-body { padding: 17px var(--card-pad) 18px; background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.09), transparent); }
-.actnow-body h2 { margin: 0 0 8px; font-size: 23px; line-height: 1.24; font-weight: 700; letter-spacing: -0.02em; color: var(--text); border: 0; padding: 0; }
-.actnow-body p { margin: 0; font-size: 15.5px; line-height: 1.65; color: var(--text-soft); }
-.actnow-body p.imp {
-  margin-top: 12px; padding-top: 12px;
-  border-top: 1px solid rgba(var(--accent-rgb), 0.28);
-  color: var(--text); font-weight: 600;
-}
-.actnow-body .go { display: inline-flex; align-items: center; gap: 5px; margin-top: 12px; font-family: var(--mono); font-size: 12px; color: var(--accent-soft); font-weight: 600; }
-
 /* ── feed head + filters ────────────────────────────────────────── */
 .feedhead { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 2px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
 .feedhead h2 { margin: 0; font-size: 14px; font-family: var(--mono); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-soft); border: 0; }
@@ -786,37 +765,6 @@ body.reading .main { padding-top: 2.2rem; }
 .rf svg { color: var(--text-muted); }
 
 .rf select { background: transparent; border: 0; color: var(--text); font: inherit; font-family: var(--mono); font-size: 12px; cursor: pointer; outline: none; }
-
-/* ── § Do now ───────────────────────────────────────────────────────
-   Every actions[] task in the window, aggregated. The panel only exists
-   when the window actually carries work, so it never becomes furniture
-   the reader learns to scroll past. */
-.donow {
-  margin: 0 0 30px;
-  /* The 3px accent rule replaces the 1px border on that edge, so the inner
-     text still lands on the same vertical as every other card's. */
-  padding: 15px var(--card-pad) 6px calc(var(--card-pad) - 2px);
-  background: var(--bg-elev); border: 1px solid var(--border);
-  border-left: 3px solid var(--accent); border-radius: var(--card-radius);
-}
-.donow[hidden] { display: none; }
-.view h2.donow-h {
-  display: flex; align-items: center; gap: 9px; margin: 0 0 4px;
-  font-family: var(--mono); font-size: 11.5px; font-weight: 700;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--text);
-  border: 0; padding: 0;
-}
-.donow-n {
-  font-size: 10px; font-weight: 600; letter-spacing: 0;
-  color: var(--accent-fg); background: var(--accent);
-  border-radius: 999px; padding: 1px 7px;
-}
-.donow .action-list { margin: 0; padding-left: 0; list-style: none; }
-.donow .action-list__item { position: relative; padding-left: 15px; }
-.donow .action-list__item::before {
-  content: ""; position: absolute; left: 0; top: 0.62em;
-  width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
-}
 
 /* ── timeline (live rolling brief) ──────────────────────────────── */
 .tl-item, .tl-run { display: grid; grid-template-columns: var(--rail-w) 1fr; }
@@ -891,6 +839,9 @@ a.b:hover { border-color: var(--accent-soft); color: var(--text); text-decoratio
 
 .finding { padding: 26px 0; border-bottom: 1px solid var(--border-soft); }
 .finding.lead { border-left: 2px solid var(--accent); padding-left: 20px; margin-left: -22px; }
+/* The hanging accent rule needs a gutter to hang into; below ~900px the
+   page padding is narrower than the hang and the rule fell off-screen. */
+@media (max-width: 900px) { .finding.lead { margin-left: 0; padding-left: 14px; } }
 
 .f-h { font-size: 23px; line-height: 1.26; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 12px; color: var(--text); border: 0; }
 .f-h a { color: inherit; text-decoration: none; transition: color 0.12s; }
@@ -1071,11 +1022,6 @@ a.b:hover { border-color: var(--accent-soft); color: var(--text); text-decoratio
   body.reading .view { max-width: none; }
   .vtitle { font-size: 28px; letter-spacing: -0.03em; }
   .vsub { font-size: 15px; }
-  .actnow { margin: 22px 0 34px; }
-  .actnow-body h2 { font-size: 19px; }
-  .actnow-body p { font-size: 14.5px; }
-  .actnow-strip { padding: 9px 14px; font-size: 10.5px; letter-spacing: 0.07em; }
-  .actnow-strip .meta { flex-basis: 100%; margin-left: 0; margin-top: 2px; font-size: 10px; }
   .f-h { font-size: 20px; }
   .finding > p { font-size: 15.5px; }
   .etitle { font-size: 26px; }
@@ -1555,9 +1501,6 @@ button.chip[aria-pressed="true"] {
 .machine-line a:hover { text-decoration: underline; }
 .machine-line .mono { font-size: 11.5px; }
 
-/* the "updates to prior coverage" pulse tile links to /changes/ */
-a.pulse-t { text-decoration: none; }
-a.pulse-t:hover b { color: var(--accent-soft); }
 
 /* ── /changes/ — the store-wide changelog ───────────────────────── */
 .chg-day { margin-top: 34px; }
@@ -3723,7 +3666,7 @@ a.atk-cell:hover { border-color: var(--accent); text-decoration: none; }
   font-weight: 700;
   font-feature-settings: "kern", "liga";
 }
-.etitle, .vtitle, .f-h, .tl-title, .actnow-body h2 { font-family: var(--sans); }
+.etitle, .vtitle, .f-h, .tl-title, .alarm-t { font-family: var(--sans); }
 
 /* ---------- knowledge-base subnav (second topbar row) ---------- */
 .subnav {
@@ -3775,60 +3718,6 @@ a.atk-cell:hover { border-color: var(--accent); text-decoration: none; }
   color: var(--accent-soft); font-feature-settings: var(--num-feat);
 }
 .pivot-p { font-size: 12px; line-height: 1.5; color: var(--text-muted); }
-
-/* ---------- live window pulse panel ----------
-   A stat card in its own right, visually distinct from the rangebar
-   date-filter control above it: what landed inside the active window,
-   by severity, exploitation status, and entry category. Every number
-   is re-rendered client-side by brief.js when the window changes. */
-.pulsepanel {
-  background: var(--bg-elev); border: 1px solid var(--border-soft);
-  border-radius: var(--card-radius); padding: 16px var(--card-pad) 13px;
-  margin: 14px 0 26px;
-}
-.pulsegrid {
-  display: grid; gap: 10px 22px;
-  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
-}
-.pulse-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.pulse-t b {
-  font-family: var(--sans); font-size: 26px; font-weight: 700;
-  line-height: 1.1; color: var(--text);
-  font-feature-settings: var(--num-feat); letter-spacing: -0.02em;
-}
-.pulse-t span {
-  font-family: var(--mono); font-size: 10px; font-weight: 600;
-  letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted);
-  line-height: 1.45;
-}
-.pulse-t--crit b { color: var(--crit); }
-.pulse-t--high b { color: var(--warn); }
-.pulse-t--exp b { color: var(--crit); }
-.pulse-t--upd b { color: var(--text-soft); }
-.pulse-t--zero b { color: var(--text-muted); }
-.pulsekinds {
-  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
-  margin-top: 13px; padding-top: 11px;
-  border-top: 1px solid var(--border-soft);
-}
-.pulsekinds-l {
-  font-family: var(--mono); font-size: 9.5px; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);
-}
-.pulsekinds-chips { display: inline-flex; flex-wrap: wrap; gap: 6px; }
-.pulse-kind {
-  font-family: var(--mono); font-size: 11px; color: var(--text-muted);
-  background: var(--bg-elev-2); border: 1px solid var(--border-soft);
-  border-radius: 999px; padding: 3px 10px; white-space: nowrap;
-}
-.pulse-kind b { color: var(--text); font-weight: 700; font-feature-settings: var(--num-feat); }
-.pulse-kind--empty { font-style: italic; }
-.pulsewindow {
-  margin: 11px 0 0; padding-top: 10px;
-  border-top: 1px solid var(--border-soft);
-  font-family: var(--mono); font-size: 10.5px; color: var(--text-muted);
-  font-feature-settings: var(--num-feat);
-}
 
 /* ---------- day-page section jump chips ---------- */
 .secnav {
@@ -4176,7 +4065,7 @@ a.trends-card:hover { border-color: var(--accent); text-decoration: none; }
 
 /* ---------- reading measure on wide screens ---------- */
 /* Reading pages keep the 768px measure for prose, but the brief pages'
-   header controls (range bar, pulse row, filters) may breathe a little
+   header controls (window select, count line, filters) may breathe a little
    wider so density tools don't crowd the text column. */
 @media (min-width: 1100px) {
   body.reading:not(.entry-detail) .view { max-width: 800px; }
@@ -4443,38 +4332,6 @@ a.trends-card:hover .trends-card__go { text-decoration: underline; }
      right, and keep it inside a thumb's reach. */
   .briefstat .rf--select { margin-left: 0; flex: 0 0 auto; }
 
-  /* ── ACT NOW ──
-     The critical callout is the one thing that may be long on a phone.
-     Tighter type, and the meta strip gets its own line instead of
-     fighting the label for the same row. */
-  .actnow { margin: 18px 0 26px; border-radius: 11px; }
-  .actnow-strip { padding: 8px 14px; font-size: 11px; letter-spacing: 0.08em; }
-  .actnow-strip .meta {
-    margin-left: 0; flex: 1 0 100%; font-size: 10.5px; line-height: 1.5;
-  }
-  .actnow-body { padding: 14px 15px 15px; }
-  .actnow-body h2 { font-size: 20px; line-height: 1.24; }
-  .actnow-body p { font-size: 15px; line-height: 1.6; }
-
-  /* ── Do now ── */
-  .donow { padding: 13px 14px 4px; margin-bottom: 24px; border-radius: 11px; }
-  .view h2.donow-h { font-size: 11px; }
-
-  /* ── window pulse: three columns of small numbers, not five of big ── */
-  .pulsepanel { padding: 11px 13px 10px; margin: 0 0 20px; border-radius: 11px; }
-  /* The window summary reads as one sentence of numbers, not five stacked
-     tiles: on a phone the stats are orientation, and orientation should
-     cost two lines, not a screen. */
-  .pulsegrid { display: flex; flex-wrap: wrap; gap: 6px 14px; }
-  /* Row layout on a phone; the linked tiles keep a 24px tap target. */
-  .pulse-t { flex-direction: row; align-items: baseline; gap: 5px; }
-  a.pulse-t { padding: 3px 0; }
-  .pulse-t b { font-size: 15px; }
-  .pulse-t span { font-size: 9.5px; letter-spacing: 0.04em; }
-  .pulsekinds { margin-top: 9px; padding-top: 8px; }
-  .pulsekinds-l { display: none; }
-  .pulsewindow { margin-top: 8px; padding-top: 8px; font-size: 10px; }
-
   /* ── controls sized for a thumb ──
      Real controls get a real hit box. Inline links inside meta rows keep
      their size: they sit on their own generously-led lines, and inflating
@@ -4524,3 +4381,152 @@ a.trends-card:hover .trends-card__go { text-decoration: underline; }
 /* A trailing arrow link stays bound to the word before it: a lone "→" on
    its own line reads as a broken list item. */
 .nowrap-tail { white-space: nowrap; }
+
+/* ════════════════════════════════════════════════════════════════════
+   LIVE BRIEF: ALARM HEADER, FEED HEAD, CLICKABLE ROWS
+   Appended after the phone pass on purpose: this is the landing page's
+   current contract and must win over every earlier timeline rule.
+   Order on the page: one-line live head, the critical alarm (only when
+   the window holds a critical entry), the feed head with the window's
+   counts, one hint line, then the findings.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── critical alarm: one compact row per critical entry ──────────── */
+.alarm {
+  margin: 0 0 26px;
+  border: 1px solid rgba(var(--crit-rgb), 0.45);
+  border-left: 3px solid var(--crit);
+  border-radius: var(--card-radius);
+  background: rgba(var(--crit-rgb), 0.07);
+  overflow: hidden;
+}
+.alarm-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "tag t go" "tag m go";
+  column-gap: 12px; row-gap: 2px; align-items: center;
+  padding: 11px 16px 11px calc(var(--card-pad) - 3px);
+  color: var(--text); text-decoration: none;
+  transition: background 0.12s linear;
+}
+/* A day page's alarm follows its subtitle, not a head row. */
+.vsub + .alarm { margin-top: 22px; }
+.alarm-row + .alarm-row { border-top: 1px solid rgba(var(--crit-rgb), 0.24); }
+.alarm-row:hover, .alarm-row:focus-visible { background: rgba(var(--crit-rgb), 0.1); color: var(--text); text-decoration: none; }
+.alarm-row:focus-visible { outline: 2px solid var(--crit); outline-offset: -2px; border-radius: 0; }
+.alarm-tag {
+  grid-area: tag; align-self: start; margin-top: 1px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 8px; border-radius: 5px;
+  background: var(--crit); color: var(--accent-fg);
+  font-family: var(--mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;
+}
+.alarm-tag .adot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: ctiPulse 1.5s ease-in-out infinite; }
+.alarm-t { grid-area: t; font-size: 15.5px; font-weight: 700; line-height: 1.38; letter-spacing: -0.01em; }
+.alarm-m { grid-area: m; font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+.alarm-go { grid-area: go; color: var(--crit); font-size: 17px; transition: transform 0.12s ease; }
+.alarm-row:hover .alarm-go { transform: translateX(3px); }
+
+/* ── feed head: title, the window's counts, density + filter tools ── */
+/* Row one: the heading and its tools; row two: what the window holds. */
+.feedhead, .feedhead--section { align-items: center; flex-wrap: wrap; gap: 8px 16px; padding-bottom: 11px; }
+.feedhead--section { margin-top: 0; }
+.feedstats {
+  margin: 0; order: 3; flex: 1 1 100%;
+  display: flex; flex-wrap: wrap; gap: 2px 12px;
+  font-family: var(--mono); font-size: 11.5px; color: var(--text-muted);
+}
+.feedstats .fs { white-space: nowrap; }
+.feedstats .fs b { color: var(--text); font-weight: 700; font-feature-settings: var(--num-feat); }
+.feedstats .fs--crit b, .feedstats .fs--exp b { color: var(--crit); }
+.feedstats .fs--high b { color: var(--accent-soft); }
+.feedstats .fs--upd b { color: var(--warn); }
+.feedstats .fs--zero b { color: var(--text-muted); }
+.feedhead-tools { margin-left: auto; gap: 8px; }
+.viewseg {
+  display: inline-flex; gap: 2px; padding: 2px;
+  background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px;
+}
+.viewseg button {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.03em;
+  color: var(--text-muted); padding: 3px 10px; border-radius: 6px;
+  transition: background 0.12s, color 0.12s;
+}
+.viewseg button:hover { color: var(--text); }
+.viewseg button[aria-pressed="true"] { background: var(--bg-elev-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--border); font-weight: 600; }
+.feedhint { margin: 10px 0 20px; font-size: 13px; line-height: 1.5; color: var(--text-muted); }
+.feedhint-tap { display: none; }
+@media (hover: none) {
+  .feedhint-click { display: none; }
+  .feedhint-tap { display: inline; }
+}
+
+/* ── timeline rows: the whole row opens the finding ──────────────── */
+.tl-rail .flag--new { color: var(--ok); }
+.tl-rail .flag--upd { color: var(--warn); }
+.tl-item[data-card] .tl-body { position: relative; isolation: isolate; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* The hover plate sits behind the row's content and reaches a little past
+   it, so the text never touches its edge; it is decoration only. */
+.tl-item[data-card] .tl-body::before {
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  inset: -12px -14px 14px 8px; border-radius: 12px;
+  border: 1px solid transparent; background: transparent;
+  transition: background 0.12s linear, border-color 0.12s linear;
+}
+.tl-item[data-card]:hover .tl-body::before,
+.tl-item[data-card]:focus-within .tl-body::before,
+.tl-item[data-card] .tl-body:active::before { background: var(--bg-elev); border-color: var(--border-soft); }
+.tl-item[data-card]:hover .tl-title a { color: var(--accent-soft); }
+.tl-item .tl-title { font-size: 18px; line-height: 1.3; margin-bottom: 6px; }
+.tl-item .tl-body p.tl-sum {
+  display: -webkit-box; -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6; line-clamp: 6; overflow: hidden;
+}
+.tl-meta { margin-top: 11px; gap: 6px 13px; }
+.tl-meta .tl-go { margin-left: auto; font-weight: 600; white-space: nowrap; }
+.tl-meta .tl-go .arw { display: inline-block; transition: transform 0.12s ease; }
+.tl-item[data-card]:hover .tl-go .arw { transform: translateX(3px); }
+.tl-item[data-card] .badges a, .tl-item[data-card] .f-sources a { position: relative; }
+
+/* Headlines view: title, badges and one meta line per finding. */
+.tl--compact .tl-item .tl-body p.tl-sum, .tl--compact .tl-item .f-sources { display: none; }
+.tl--compact .tl-body, .tl--compact .tl-rail { padding-bottom: 16px; }
+.tl--compact .tl-title { font-size: 16.5px; line-height: 1.32; margin-bottom: 2px; }
+.tl--compact .badges { margin-bottom: 6px; }
+.tl--compact .tl-meta { margin-top: 6px; }
+.tl--compact .tl-item[data-card] .tl-body::before { inset: -8px -14px 8px 8px; }
+
+@media (max-width: 639px) {
+  .alarm { margin: 0 0 22px; border-radius: 11px; }
+  .alarm-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "tag go" "t go" "m go";
+    row-gap: 5px; padding: 11px 13px 11px 12px;
+  }
+  .alarm-tag { justify-self: start; }
+  .alarm-t { font-size: 15px; }
+  .alarm-m { font-size: 10.5px; line-height: 1.5; }
+
+  /* Phone: heading + Filter, then the counts, then the density switch
+     as a full-width two-way control (the tools box dissolves so its two
+     controls can take separate rows). */
+  .feedhead, .feedhead--section { gap: 9px 10px; }
+  .feedhead-tools { display: contents; }
+  .feedhead .ftoggle { order: 2; margin-left: auto; }
+  .feedstats { font-size: 11px; gap: 2px 10px; }
+  .viewseg { order: 4; flex: 1 1 100%; }
+  .viewseg button { flex: 1 1 0; min-height: 34px; padding: 0 10px; }
+  .feedhint { margin: 9px 0 16px; font-size: 12.5px; }
+  .feedhint-more { display: none; }
+
+  /* No rail on phone: the plate spans the row edge to edge, a hair past
+     the text on both sides. */
+  .tl-item[data-card] .tl-body::before { inset: -8px -8px 14px -8px; }
+  .tl-item .tl-title { font-size: 17px; line-height: 1.3; }
+  .tl-item .tl-body p.tl-sum { -webkit-line-clamp: 7; line-clamp: 7; }
+  .tl-meta .tl-go { padding: 6px 0; }
+  .tl--compact .tl-item { padding-top: 10px; }
+  .tl--compact .tl-body { padding-bottom: 12px; }
+  .tl--compact .tl-title { font-size: 16px; }
+}

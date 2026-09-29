@@ -2730,8 +2730,8 @@ def render_entry_sources(entry: dict[str, Any], *, with_roles: bool = False) -> 
 def render_immediate_action_callout(entry: dict[str, Any]) -> str:
     """The Immediate-action block at the top of a `priority: critical`
     entry permalink: the one task the reader starts before reading a word
-    of the analysis. Entry-detail only (the live brief carries its own
-    ACT NOW card), so it neither links to the page it is already on nor
+    of the analysis. Entry-detail only (the live brief and day pages carry
+    the one-line critical alarm instead), so it neither links to the page it is already on nor
     repeats the first evidence quote that the Cited-evidence section
     renders in full further down."""
     ia = entry.get("immediate_action")
@@ -3104,38 +3104,56 @@ def render_timeline_item(entry: dict[str, Any], *, prefix: str = "", is_new: boo
                          record: dict[str, Any] | None = None) -> str:
     """One `.tl-item` row for the live rolling brief: rail (time + flag) +
     a body of badges (priority/CVE-link/exploited/updated), a linked
-    headline, a one-line summary, provenance, and a clickable source row.
-    With `record` (the changelog record that is this entry's latest
-    activity) the row is flagged UPD, stamped with the record's time, and
-    carries the record's type + summary in a `.tl-update` line instead of
-    the entry summary (docs/pipeline.md § Entry lifecycle). The body is a
-    <div> (not an <a>) so the CVE badge, headline and source links are
-    all independently clickable."""
+    headline, the summary, a meta row ending in the "Full analysis" call
+    to action, and a clickable source row. With `record` (the changelog
+    record that is this entry's latest activity) the row is flagged UPD,
+    stamped with the record's time, and carries the record's type +
+    summary in a `.tl-update` line instead of the entry summary, while the
+    meta row names when the finding was first published (docs/pipeline.md
+    § Entry lifecycle).
+
+    The whole row opens the permalink (`data-card`, wired by brief.js so
+    text stays selectable), but the CVE badge, the title and the source
+    links remain independent links. Mirrored client-side by brief.js
+    `runItem`: keep the two in sync."""
     url = f"{prefix}{entry_url_path(entry)}"
     is_update = record is not None
     stamp = _fmt_stamp(str(record.get("at")) if is_update else entry.get("discovered_at"))
     flag = "UPD" if is_update else ("NEW" if is_new else "")
-    flag_style = "color:var(--warn)" if is_update else ("color:var(--ok)" if is_new else "")
+    flag_cls = " flag--upd" if is_update else (" flag--new" if is_new else "")
     if is_update:
         rtype = str(record.get("type") or "update")
         line = (
-            f'<p class="tl-update tl-update--{_escape(rtype)}">'
+            f'<p class="tl-sum tl-update tl-update--{_escape(rtype)}">'
             f'<b>{_escape(_update_type_label(rtype))}</b> · '
-            f'{_inline_text(str(record.get("summary") or ""))}'
-            f' <span class="muted">(first published {_escape(str(entry.get("discovered_at") or "")[:10])})</span></p>'
+            f'{_inline_text(str(record.get("summary") or ""))}</p>'
         )
     else:
-        line = f"<p>{_inline_text(entry.get('summary') or entry.get('headline') or '')}</p>"
+        line = f'<p class="tl-sum">{_inline_text(entry.get("summary") or entry.get("headline") or "")}</p>'
+    v_class, v_label = _verif_meta(entry)
+    meta: list[str] = []
+    if entry.get("kind"):
+        meta.append(f'<span>{_escape(str(entry["kind"]))}</span>')
+    meta.append(f'<span class="{v_class}">{_escape(v_label)}</span>')
+    if is_update:
+        first = _fmt_stamp(entry.get("discovered_at"))
+        if first:
+            meta.append(f"<span>first published {_escape(first)}</span>")
+    meta.append(
+        f'<a class="refs tl-go" href="{_escape(url)}" tabindex="-1" aria-hidden="true">'
+        'Full analysis <span class="arw">→</span></a>'
+    )
     return (
-        f'<div class="tl-item{" tl-item--updated" if is_update else ""}" data-entry-id="{_escape(entry["id"])}">'
+        f'<div class="tl-item{" tl-item--updated" if is_update else ""}" data-card '
+        f'data-entry-id="{_escape(entry["id"])}">'
         f'<div class="tl-rail"><span class="tl-node" style="background:{_pri_dot(entry)}"></span>'
         f'<span class="time">{_rail_stamp_html(stamp)}</span>'
-        f'<span class="flag" style="{flag_style}">{_escape(flag)}</span></div>'
+        f'<span class="flag{flag_cls}">{_escape(flag)}</span></div>'
         '<div class="tl-body">'
         f"{render_badges(entry, prefix=prefix)}"
         f'<h3 class="tl-title"><a href="{_escape(url)}">{_escape(entry.get("title") or entry["id"])}</a></h3>'
         f"{line}"
-        f"{render_prov_row(entry, prefix=prefix, open_label='open ↗')}"
+        f'<div class="prov tl-meta">{"".join(meta)}</div>'
         f"{render_source_line(entry, prefix=prefix)}"
         "</div></div>"
     )
@@ -3685,78 +3703,51 @@ def render_runs_overview(
     )
 
 
-def render_actnow(entry: dict[str, Any], *, prefix: str = "") -> str:
-    """The ACT NOW · CRITICAL callout at the top of a live / day brief,
-    built from the window's single highest-severity critical entry."""
-    url = f"{prefix}{entry_url_path(entry)}"
-    meta_bits: list[str] = []
-    cve = _cve_label(entry)
-    if cve:
-        meta_bits.append(cve)
-    if _entry_exploited(entry):
-        meta_bits.append("exploited")
-    n = _source_count(entry)
-    if n:
-        meta_bits.append(f"{n} source" + ("" if n == 1 else "s"))
-    stamp = _fmt_stamp(entry.get("discovered_at"))
-    if stamp:
-        meta_bits.append(stamp)
-    title = _inline_text(entry.get("headline") or entry.get("title") or entry["id"])
-    summary = _inline_text(entry.get("summary") or "")
+def _alarm_text(entry: dict[str, Any]) -> str:
+    """The one line a critical alarm row says: the entry's own do-this-now
+    title (`immediate_action.title`, a short imperative), falling back to
+    the headline. Plain text; brief.js `alarmText` mirrors it."""
     ia = entry.get("immediate_action")
-    imp = ""
-    if isinstance(ia, dict) and str(ia.get("action") or "").strip():
-        # Its own block, not a clause welded onto the summary: the reader
-        # scanning for what to do should find it without reading the
-        # paragraph above it first.
-        imp = f'<p class="imp">{_inline_text(str(ia["action"]).strip())}</p>'
-    return (
-        f'<a class="actnow" href="{_escape(url)}">'
-        '<div class="actnow-strip"><span class="adot" aria-hidden="true"></span>ACT NOW · CRITICAL'
-        f'<span class="meta">{_escape(" · ".join(meta_bits))}</span></div>'
-        f'<div class="actnow-body"><h2>{title}</h2>'
-        f"<p>{summary}</p>{imp}"
-        '<span class="go">Open the full advisory to act →</span></div></a>'
-    )
+    if isinstance(ia, dict) and str(ia.get("title") or "").strip():
+        return _strip_md_emphasis(str(ia["title"]).strip())
+    return _strip_md_emphasis(str(entry.get("headline") or entry.get("title") or entry["id"]))
 
 
-def render_donow(entries: list[dict[str, Any]], *, prefix: str = "",
-                 base_url: str | None = None) -> str:
-    """The § Do now panel at the top of the live brief: every `actions[]`
-    task from the entries in the reader's window, aggregated into the list
-    an on-shift team can work straight down.
-
-    `actions[]` is already held to the do-now bar (one concrete, startable
-    task derived from the finding's own mechanics; empty is the normal
-    case), so this list is short by construction and needs no cap. Empty
-    across the whole window means the panel does not render at all, which
-    is a healthy window, not a gap. Mirrored client-side by brief.js
-    `donowHtml` when the reader changes the window or the filters."""
+def render_alarm(entries: list[dict[str, Any]], *, prefix: str = "") -> str:
+    """The critical alarm header at the top of the live brief (and a day
+    page): ONE compact row per critical entry in the window, each the
+    entry's own imperative plus a mono meta line, the whole row a link to
+    the permalink. It is a pointer, not a summary: the analysis, actions
+    and evidence live one click away, and the same entry still appears in
+    the timeline below. No critical entry in the window means no alarm at
+    all (a hidden, empty container brief.js can refill when the reader
+    widens the window). Mirrored client-side by brief.js `alarmHtml`."""
+    crit = [e for e in sorted(entries, key=entry_sort_key) if _pri_of(e) == "critical"]
+    if not crit:
+        return '<section class="alarm" data-alarm hidden aria-label="Critical alerts"></section>'
     rows: list[str] = []
-    for e in sorted(entries, key=entry_sort_key):
+    for e in crit:
         url = f"{prefix}{entry_url_path(e)}"
-        label = _short_entry_label(e)
-        for a in e.get("actions") or []:
-            if not isinstance(a, str) or not a.strip():
-                continue
-            rows.append(
-                f'<li class="action-list__item" data-entry-id="{_escape(e["id"])}">'
-                f'<div class="action-list__body">{render_inline(a.strip(), base_url=base_url)}</div>'
-                f'<a class="action-ref" href="{_escape(url)}" '
-                f'aria-label="Open finding: {_escape(label)}">'
-                '<span class="action-ref__tag">Finding</span>'
-                f'<span class="action-ref__label">{_escape(label)}</span>'
-                '<span class="action-ref__go" aria-hidden="true">→</span></a>'
-                "</li>"
-            )
-    if not rows:
-        return '<section class="donow" data-donow hidden aria-label="Do now"></section>'
+        meta: list[str] = []
+        cve = _cve_label(e)
+        if cve:
+            meta.append(cve)
+        if _entry_exploited(e):
+            meta.append("exploited")
+        stamp = _fmt_stamp(entry_activity(e)["at"])
+        if stamp:
+            meta.append(("updated " if entry_activity(e)["is_update"] else "") + stamp)
+        rows.append(
+            f'<a class="alarm-row" href="{_escape(url)}" data-entry-id="{_escape(e["id"])}">'
+            '<span class="alarm-tag"><span class="adot" aria-hidden="true"></span>Critical</span>'
+            f'<span class="alarm-t">{_escape(_alarm_text(e))}</span>'
+            f'<span class="alarm-m">{_escape(" · ".join(meta))}</span>'
+            '<span class="alarm-go" aria-hidden="true">→</span></a>'
+        )
     return (
-        '<section class="donow" data-donow aria-label="Do now">'
-        '<h2 class="donow-h">Do now'
-        f'<span class="donow-n" data-donow-count>{len(rows)}</span></h2>'
-        f'<ul class="action-list">{"".join(rows)}</ul>'
-        "</section>"
+        '<section class="alarm" data-alarm aria-label="Critical alerts">'
+        + "".join(rows)
+        + "</section>"
     )
 
 
@@ -3906,21 +3897,11 @@ def render_live_brief_page(
     n_high = sum(1 for e in ops if e.get("priority") == "high")
     n_upd = sum(1 for e in ops if entry_activity(e)["is_update"])
     n_exp = sum(1 for e in ops if _entry_exploited(e))
-    kind_counts: dict[str, int] = {}
-    for e in ops:
-        k = str(e.get("kind") or "other")
-        kind_counts[k] = kind_counts.get(k, 0) + 1
-    kind_chips = "".join(
-        f'<span class="pulse-kind"><b>{v}</b> {_escape(k)}</span>'
-        for k, v in sorted(kind_counts.items(), key=lambda kv: (-kv[1], kv[0]))
-    ) or '<span class="pulse-kind pulse-kind--empty">quiet window</span>'
     critical = next(
         (e for e in sorted(ops, key=entry_sort_key) if e.get("priority") == "critical"),
         None,
     )
     updated = ref_ts.strftime("%d %b %H:%M")
-    from_str = (ref_ts - timedelta(hours=DEFAULT_WINDOW_HOURS)).strftime("%d.%m.%Y %H:%M")
-    to_str = ref_ts.strftime("%d.%m.%Y %H:%M")
     options = "".join(
         f'<option value="{h}"{" selected" if h == DEFAULT_WINDOW_HOURS else ""}>last {h} h</option>'
         for h in BRIEF_WINDOW_CHOICES
@@ -3944,8 +3925,7 @@ def render_live_brief_page(
         + "</script>"
     )
 
-    actnow = render_actnow(critical, prefix=prefix) if critical else ""
-    donow = render_donow(ops, prefix=prefix)
+    alarm = render_alarm(ops, prefix=prefix)
     timeline = _live_timeline_html(ops, window_runs, prefix=prefix)
 
     # --- knowledge-base pivot band + machine endpoints (below the feed) --
@@ -4001,6 +3981,10 @@ def render_live_brief_page(
   <p class="sitenote-p sitenote-p--how">Everything verified or updated in the last {DEFAULT_WINDOW_HOURS} hours, held to a constant relevance bar. An update or correction to an earlier finding floats it back to the top under the run that made it. <a href="{prefix}about/">How this works →</a></p>
 </section>"""
 
+    def _stat(key: str, v: int, label: str) -> str:
+        return (f'<span class="fs fs--{key}{" fs--zero" if not v else ""}">'
+                f'<b data-window-{key}>{v}</b> {label}</span>')
+
     body = f"""
 <header class="livehead">
   <h1 class="livehead-h">{_escape(LIVE_TITLE)}</h1>
@@ -4011,23 +3995,19 @@ def render_live_brief_page(
     <label class="rf rf--select"><select data-window-select aria-label="Reading window">{options}</select></label>
   </div>
 </header>
-{actnow}
-{donow}
-<section class="pulsepanel" aria-label="Window at a glance">
-  <div class="pulsegrid">
-    <div class="pulse-t"><b data-window-total>{n}</b><span>findings</span></div>
-    <div class="pulse-t pulse-t--crit{' pulse-t--zero' if not n_crit else ''}"><b data-window-crit>{n_crit}</b><span>critical</span></div>
-    <div class="pulse-t pulse-t--high{' pulse-t--zero' if not n_high else ''}"><b data-window-high>{n_high}</b><span>high</span></div>
-    <div class="pulse-t pulse-t--exp{' pulse-t--zero' if not n_exp else ''}"><b data-window-exp>{n_exp}</b><span>exploited</span></div>
-    <a class="pulse-t pulse-t--upd{' pulse-t--zero' if not n_upd else ''}" href="{prefix}changes/" title="Open the store-wide changelog"><b data-window-upd>{n_upd}</b><span>updated</span></a>
-  </div>
-  <div class="pulsekinds"><span class="pulsekinds-l">Categories</span><span class="pulsekinds-chips" data-window-kinds>{kind_chips}</span></div>
-  <p class="pulsewindow"><span data-window-from>{from_str}</span> → <span data-window-to>{to_str}</span> UTC · <span data-window-status>last {DEFAULT_WINDOW_HOURS}h</span></p>
-</section>
+{alarm}
 <div class="feedhead feedhead--section">
   <h2 class="feedhead-title">Latest findings</h2>
-  <div class="feedhead-tools">{render_filter_toggle()}</div>
+  <p class="feedstats" data-window-stats>{_stat("total", n, "findings")}{_stat("crit", n_crit, "critical")}{_stat("high", n_high, "high")}{_stat("exp", n_exp, "exploited")}{_stat("upd", n_upd, "updated")}</p>
+  <div class="feedhead-tools">
+    <div class="viewseg" role="group" aria-label="List density" data-view-toggle hidden>
+      <button type="button" data-view="full" aria-pressed="true">Summaries</button>
+      <button type="button" data-view="compact" aria-pressed="false">Headlines</button>
+    </div>
+    {render_filter_toggle()}
+  </div>
 </div>
+<p class="feedhint"><span class="feedhint-click">Click</span><span class="feedhint-tap">Tap</span> any finding to open its full analysis<span class="feedhint-more">: detection and triage guidance, ATT&amp;CK mapping, changelog and every source</span>.</p>
 {render_filter_bar(ops)}
 {data_island}
 <div id="brief-timeline" data-brief-timeline data-default-hours="{DEFAULT_WINDOW_HOURS}">
@@ -4121,7 +4101,6 @@ def render_day_page(
     n = len(ops)
     n_upd = sum(len(update_records_in(e, None, None, day=day)) for e in (updated_entries or []))
     n_runs = len(day_runs)
-    critical = next((e for e in ops if e.get("priority") == "critical"), None)
     try:
         dt = datetime.strptime(day, "%Y-%m-%d")
         long_date = f"{dt.strftime('%A')}, {dt.day} {dt.strftime('%B %Y')}"
@@ -4135,7 +4114,7 @@ def render_day_page(
         next_rel=f"daily/{next_day}/" if next_day else "",
         label=short_date,
     )
-    actnow = render_actnow(critical, prefix=prefix) if critical else ""
+    alarm = render_alarm(ops, prefix=prefix)
     sections_html = render_brief_sections(
         ops, day_runs, prefix=prefix, base_url=canonical, entries_by_id=entries_by_id,
         updated_entries=updated_entries or [], updates_day=day,
@@ -4153,7 +4132,7 @@ def render_day_page(
 <span class="eyebrow">Daily brief · UTC day</span>
 <h1 class="vtitle">{_escape(long_date)}</h1>
 <p class="vsub">{n} verified {findings_word} from {n_runs} {runs_word}{upd_clause} · the settled record for this UTC day, in the classic brief order.</p>
-{actnow}
+{alarm}
 <div class="ftoolrow">{render_filter_toggle()}</div>
 {render_filter_bar(ops)}
 {sections_html}
