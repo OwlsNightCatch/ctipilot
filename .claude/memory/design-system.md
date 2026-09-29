@@ -6,7 +6,7 @@ type: reference
 
 # Design system — where it lives and what not to break
 
-Source: the "CTI Pilot Design Modernization" Claude Design project (id `1ca3b2f3-7d01-40ca-8d48-781bbf3c08b9`, via DesignSync MCP). Live implementation: `site/assets/css/styles.css` (component classes `.seg .aibar .actnow .tl-* .finding .sect .verif .bcard .pulsepanel .erail .rankbar …`), `site/build.py` (`base_template` + renderers), JS `theme.js`/`app.js`/`brief.js` (DOM contract: `data-theme/-font/-density` on `<html>`; `cti:filterchange` links app.js chips → brief.js timeline).
+Source: the "CTI Pilot Design Modernization" Claude Design project (id `1ca3b2f3-7d01-40ca-8d48-781bbf3c08b9`, via DesignSync MCP). Live implementation: `site/assets/css/styles.css` (component classes `.seg .aibar .alarm .feedhead .tl-* .finding .sect .verif .bcard .erail .rankbar …`), `site/build.py` (`base_template` + renderers), JS `theme.js`/`app.js`/`brief.js` (DOM contract: `data-theme/-font/-density` on `<html>`; `cti:filterchange` links app.js chips → brief.js timeline).
 
 **Design DNA:** dark-first analyst console (`--bg #0e1116`), one crimson accent, sans/mono split (mono = every machine fact), border-not-shadow, small radii, no emoji, no IOCs.
 

@@ -8,7 +8,12 @@ signature page is **the landing page itself** — the live rolling brief
 renders at `/` (the retired `/live/` URL is a redirect stub), and the
 brief is a *query*: the reader picks a time window (default last 24 h)
 and the page renders a run-grouped timeline of every run in that window
-(quiet 0-finding runs included). `/daily/` archives each **completed**
+(quiet 0-finding runs included). Above the timeline sits only a one-line
+live head, a compact **critical alarm** (one row per `priority: critical`
+entry in the window, hidden when there is none) and the feed head with
+the window's counts; each timeline row opens its permalink from anywhere
+on the row, and a Summaries / Headlines switch trades the summaries for
+a headline-only skim list. `/daily/` archives each **completed**
 UTC day; `/changes/` is the store-wide changelog, every dated record
 newest-first. A finding has ONE entry for
 its whole life (v4.0): developments, corrections and improvements are
@@ -68,7 +73,9 @@ site/
     │   ├── app.js         # Topbar menus/drawer/display popover, search modal,
     │   │                  # AI-bar dismiss, copy-link, finding chip filters
     │   └── brief.js       # landing-page window selector + load-older: re-renders
-    │                      # the run-grouped timeline from data/briefbook.json
+    │                      # the run-grouped timeline, the critical alarm and the
+    │                      # count line from data/briefbook.json; whole-row click
+    │                      # to the permalink; Summaries / Headlines switch
     └── vendor/
         ├── HASHES         # SHA-256 + SHA-384 known-good hashes; build aborts on mismatch
         ├── marked.min.js  # vendored, unused at runtime (kept integrity-pinned)

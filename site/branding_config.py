@@ -396,11 +396,13 @@ def _hex_to_rgb(color: str) -> str | None:
 
 
 def _rgb_decls(section: dict[str, str]) -> list[str]:
-    """Derive --accent-rgb / --info-rgb from an overridden accent / info hex
-    so a rebrand's accent propagates to every translucent rgba() usage
-    (badges, focus rings, callouts) without a second config value."""
+    """Derive --accent-rgb / --info-rgb / --crit-rgb from an overridden
+    accent / info / crit hex so a rebrand's colours propagate to every
+    translucent rgba() usage (badges, focus rings, the critical alarm)
+    without a second config value."""
     out: list[str] = []
-    for src_key, rgb_name in (("accent", "accent-rgb"), ("info", "info-rgb")):
+    for src_key, rgb_name in (("accent", "accent-rgb"), ("info", "info-rgb"),
+                              ("crit", "crit-rgb")):
         hexv = section.get(src_key, "").strip()
         if hexv:
             rgb = _hex_to_rgb(hexv)

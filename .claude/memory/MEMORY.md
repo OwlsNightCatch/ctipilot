@@ -26,7 +26,7 @@ Conventions: one topic per file, kebab-case filename, YAML front block (`name`, 
 - [State-file serialization](state-file-serialization.md) — derive JSON format from the live file, `git diff --stat` after; the constant has flipped twice
 - [Auto-publish routine fixes](auto-publish-routine-fixes.md) — commit→push→merge→deploy→probe end-to-end without pausing; permissions pre-authorized
 - [Customization framework](customization-framework.md) — branding.yaml + org-profile.yaml carry all identity; shipped profile = generic "Swiss Government Entities" example/POC (no concrete org anywhere); slices/cohorts/certs/policy-watch/site_url are config-only, no in-code defaults; never re-literal build.py; PYTHONHASHSEED=0 for byte diffs
-- [Site landing = live brief](site-landing-live-brief.md) — 2026-08-29: / is the brief; findings lead, positioning at the foot, § Do now, phone-first timeline
+- [Site landing = live brief](site-landing-live-brief.md) — / is the brief: one-line head, compact critical alarm, counts, whole-row-clickable timeline + Summaries/Headlines; Do now + pulse panel removed 2026-09-29
 - [Design system](design-system.md) — component/DOM contract, brandable surface, CSS invariants (no dlig, badge guards, trends honesty) + document contract (one heading outline, unique ids, AA in both themes)
 - [UI writing style](ui-writing-style.md) — no em dash ANYWHERE a reader sees it; build.py normalises at render, self-check FAILs, <pre>/<code> exempt
 - [Changelog hygiene](changelog-hygiene.md) — version history only in prompts/CHANGELOG.md; no vN.M annotations in rules
