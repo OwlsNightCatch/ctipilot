@@ -116,7 +116,8 @@ _site/
 ├── graph/index.html                      # interactive threat graph (canvas, assets/js/graph.js)
 ├── cves/ · topics/                       # type-filtered views + legacy redirect stubs
 ├── sources/{index.html,<id>/…}           # source list + detail (entry-based citations)
-├── tags/<tag>/ · regions/<region>/       # per-tag / per-region entry indexes
+├── tags/ · regions/                      # index of every tag / region with entry counts
+├── tags/<tag>/ · regions/<region>/       # per-tag / per-region entry lists, latest activity first
 ├── trends/index.html                     # momentum analysis: cohort tiles (complete-week deltas),
 │                                         #   cohort×week matrix, entity + ATT&CK technique momentum
 ├── ops/index.html                        # operations dashboard, built from runs/** frontmatter

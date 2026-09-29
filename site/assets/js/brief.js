@@ -86,7 +86,7 @@
     function badgesHtml(e) {
         var b = ['<span class="b ' + (PRI_CLASS[e.priority] || '') + '">' + esc(PRI_LABEL[e.priority] || String(e.priority).toUpperCase()) + '</span>'];
         if (e.cve_label && e.cve_ids && e.cve_ids.length) {
-          b.push('<a class="b cve" href="' + esc(sitePrefix() + 'cves/' + e.cve_ids[0] + '/') + '">' + esc(e.cve_label) + '</a>');
+          b.push('<a class="b cve" href="' + esc(sitePrefix() + 'entities/' + e.cve_ids[0] + '/') + '">' + esc(e.cve_label) + '</a>');
         } else if (e.cve_label) {
           b.push('<span class="b cve">' + esc(e.cve_label) + '</span>');
         }

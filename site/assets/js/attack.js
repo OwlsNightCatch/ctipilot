@@ -94,8 +94,27 @@
     return 1;
   }
 
+  /* The single source of truth for "what the matrix shows": every
+     parent-technique cell that passes the current mode, with the selected
+     entities that hit it (the parent id or any of its sub-techniques).
+     A technique listed under several tactics is one matrix technique drawn
+     in several columns, so the map is keyed by technique id and both the
+     status line and the Navigator export read from it. */
+  function passingTechniques() {
+    var out = {};
+    if (!selected.length) return out;
+    var min = threshold();
+    cells.forEach(function (c) {
+      if (out[c.tid]) return;
+      var hitters = selected.filter(function (k) { return hits(k, c.tid, c.subs); });
+      if (hitters.length && hitters.length >= min) out[c.tid] = { subs: c.subs, hitters: hitters };
+    });
+    return out;
+  }
+
   function apply() {
-    var passing = 0;
+    var passingCells = 0;
+    var min = threshold();
     cells.forEach(function (c) {
       var hitters = selected.filter(function (k) { return hits(k, c.tid, c.subs); });
       var dots = c.el.querySelector('[data-dots]');
@@ -104,8 +123,8 @@
         if (dots) dots.innerHTML = '';
         return;
       }
-      var pass = hitters.length >= threshold() && hitters.length > 0;
-      if (pass) passing++;
+      var pass = hitters.length >= min && hitters.length > 0;
+      if (pass) passingCells++;
       c.el.classList.toggle('atk-cell--ol', pass);
       c.el.classList.toggle('atk-cell--dim', !pass);
       if (dots) {
@@ -116,11 +135,25 @@
         }).join('');
       }
     });
-    renderStatus(passing);
+    document.querySelectorAll('[data-atk-legend-heat]').forEach(function (el) { el.hidden = !!selected.length; });
+    document.querySelectorAll('[data-atk-legend-cmp]').forEach(function (el) { el.hidden = !selected.length; });
+    renderStatus(Object.keys(passingTechniques()).length, passingCells);
+    if (selected.length < MAX_SEL) note('');
     syncUrl();
   }
 
-  function renderStatus(passing) {
+  function modeLabel() {
+    var n = selected.length;
+    if (n === 1) {
+      var e = entByKey[selected[0]];
+      return 'mapped to ' + (e ? e.title : selected[0]);
+    }
+    if (mode === 'all') return n === 2 ? 'common to both' : 'common to all ' + n;
+    if (mode === 'overlap') return n === 2 ? 'shared by both' : 'shared by at least 2 of the ' + n;
+    return n === 2 ? 'used by either' : 'used by at least one of the ' + n;
+  }
+
+  function renderStatus(techniques, cellCount) {
     var st = document.querySelector('[data-atk-status]');
     var exp = document.querySelector('[data-atk-export]');
     var clr = document.querySelector('[data-atk-clear]');
@@ -131,11 +164,24 @@
       st.textContent = 'No selection · cells show store-wide coverage heat.';
       return;
     }
-    var label = mode === 'all' ? 'common to all ' + selected.length
-      : mode === 'overlap' ? 'shared by ≥2'
-      : 'used by ≥1';
-    st.textContent = selected.length + ' selected · ' + passing +
-      ' techniques ' + label + ' (sub-techniques roll up into their parent cell)';
+    var text = selected.length + ' selected · ' + techniques + ' technique' +
+      (techniques === 1 ? '' : 's') + ' ' + modeLabel();
+    st.textContent = cellCount !== techniques
+      ? text + ', in ' + cellCount + ' cells (a technique appears under each of its tactics; ' +
+        'sub-techniques roll up into their parent).'
+      : text + ' (sub-techniques roll up into their parent cell).';
+  }
+
+  /* One short, polite message line under the chips (selection limit). */
+  function note(msg) {
+    var el = document.querySelector('[data-atk-note]');
+    if (!el) return;
+    el.textContent = msg;
+    el.hidden = !msg;
+  }
+
+  function fullMessage() {
+    return 'The comparison holds at most ' + MAX_SEL + ' entities. Remove one to add another.';
   }
 
   // --- picker UI ---------------------------------------------------------
@@ -161,6 +207,7 @@
     input.addEventListener('input', function () {
       var q = input.value.trim().toLowerCase();
       if (q.length < 2) { close(); return; }
+      if (selected.length >= MAX_SEL) { close(); note(fullMessage()); return; }
       var out = [];
       for (var i = 0; i < data.entities.length && out.length < 12; i++) {
         var e = data.entities[i];
@@ -199,7 +246,8 @@
   }
 
   function add(key) {
-    if (!entByKey[key] || selected.indexOf(key) !== -1 || selected.length >= MAX_SEL) return;
+    if (!entByKey[key] || selected.indexOf(key) !== -1) return;
+    if (selected.length >= MAX_SEL) { note(fullMessage()); return; }
     selected.push(key);
     renderChips();
     apply();
@@ -247,29 +295,39 @@
         b.classList.toggle('active', b.getAttribute('data-atk-mode') === m);
       });
     }
-    (p.get('sel') || '').split(',').filter(Boolean).slice(0, MAX_SEL).forEach(function (k) {
-      if (entByKey[k] && selected.indexOf(k) === -1) selected.push(k);
+    var wanted = [];
+    (p.get('sel') || '').split(',').filter(Boolean).forEach(function (k) {
+      if (entByKey[k] && wanted.indexOf(k) === -1) wanted.push(k);
     });
+    selected = wanted.slice(0, MAX_SEL);
     renderChips();
     apply();
+    if (wanted.length > MAX_SEL) {
+      note('The link named ' + wanted.length + ' entities; the comparison holds at most ' +
+        MAX_SEL + ', so the first ' + MAX_SEL + ' are shown.');
+    }
   }
 
   // --- Navigator layer export ---------------------------------------------
 
+  /* The layer carries exactly the techniques the matrix highlights: one
+     record per passing parent-technique cell, scored by how many selected
+     entities hit that cell (the parent or one of its sub-techniques, the
+     same roll-up the matrix applies). The comment names each entity with
+     the exact technique ids it maps, so a sub-technique-only overlap stays
+     traceable after import. */
   function exportLayer() {
     if (!selected.length || !data) return;
-    var scores = {};   // exact tid -> [entity titles]
-    selected.forEach(function (k) {
-      var e = entByKey[k];
-      Object.keys(techniqueSet(k)).forEach(function (tid) {
-        (scores[tid] = scores[tid] || []).push(e ? e.title : k);
+    var passing = passingTechniques();
+    var techniques = Object.keys(passing).sort().map(function (tid) {
+      var rec = passing[tid];
+      var parts = rec.hitters.map(function (k) {
+        var e = entByKey[k];
+        var t = techniqueSet(k);
+        var ids = [tid].concat(rec.subs).filter(function (id) { return t[id]; });
+        return (e ? e.title : k) + ' (' + ids.join(', ') + ')';
       });
-    });
-    var min = threshold();
-    var techniques = Object.keys(scores).sort().filter(function (tid) {
-      return scores[tid].length >= min;
-    }).map(function (tid) {
-      return { techniqueID: tid, score: scores[tid].length, comment: scores[tid].join(', ') };
+      return { techniqueID: tid, score: rec.hitters.length, comment: parts.join('; ') };
     });
     var titles = selected.map(function (k) { return entByKey[k] ? entByKey[k].title : k; });
     var layer = {
@@ -280,9 +338,10 @@
         navigator: '5.1.0'
       },
       domain: 'enterprise-attack',
-      description: 'Entity TTP overlap (' + mode + ') exported from the coverage matrix. ' +
-        'Score = number of selected entities mapping the technique. ' +
-        'Pinned dataset: ATT&CK v' + data.attack_version + '.',
+      description: 'Entity TTP overlap (' + techniques.length + ' techniques ' + modeLabel() +
+        ') exported from the coverage matrix. Score = number of selected entities mapping ' +
+        'the technique or one of its sub-techniques (sub-techniques roll up into their ' +
+        'parent, as on the matrix). Pinned dataset: ATT&CK v' + data.attack_version + '.',
       sorting: 3,
       layout: { layout: 'side', showID: true, showName: true },
       techniques: techniques,

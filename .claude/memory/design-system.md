@@ -112,6 +112,66 @@ article -> rail and the phone order comes out right without `order`).
 - **`.erail .erail-h` needs two classes** or `.view h2` steals its size and
   margin, the same trap as everything else in this file.
 
+## Site-wide audit pass (2026-09-29)
+
+A laptop + phone review of every template; the fixes live in the
+"SITE-WIDE AUDIT PASS" block near the end of styles.css. Contracts:
+
+- **Sticky header needs `overflow-x: clip`, never `hidden`, on html/body.**
+  `hidden` on both made body the scroll container and silently killed
+  `position: sticky` site-wide. Header is sticky at >=861px only (phones
+  scroll it away); anchors clear it via `html { scroll-padding-top:
+  calc(var(--sticky-h) + 12px) }` (`--sticky-h` 106px desktop, 0 phone).
+- **One gutter token** `--gutter` (14/18/26px) pads topbar, subnav, AI bar,
+  mobile seg, main and footer, so every left edge lines up.
+- **The brand SVG has no intrinsic size**: `.brand-mark svg` must be sized
+  in CSS (22px) or it renders 0x0.
+- **theme.js loads WITHOUT `defer`** so theme/font/density and
+  `data-ai-ack` land before first paint. The AI bar ships visible in the
+  HTML (no `hidden`) and CSS hides it under `:root[data-ai-ack]`; no-JS
+  readers always see the disclosure.
+- **Search modal is a real dialog**: focus trap, scroll lock
+  (`body.modal-open`), focus returns to the opener, combobox ARIA,
+  "no match" status line, visible close button (native search clear
+  hidden), results list is static inside the panel. `Search.highlight`
+  is one pass over RAW text (never regex over already-escaped HTML).
+- **Phone topbar** carries a search icon next to the hamburger; the
+  drawer closes on Escape / outside tap / opening search and swaps its
+  icon + label.
+- **List filter chips are `<button aria-pressed>`**, never spans; every
+  filtered list shows a `.filter-empty` line when nothing matches. Day
+  page filters also hide TL;DR lines / alarm rows / action items via
+  `data-entry-id`, update section counts ("1 of 2 items"), hide jump
+  chips of emptied sections, and a closed filter panel is
+  `visibility: hidden` (out of the tab order).
+- **CVE links point at `entities/<CVE>/`**, not the `/cves/<id>/`
+  meta-refresh stub (badge, rail, pivot chips, brief.js).
+- **One colour per entity type**: the graph's `--g-*` tokens drive the
+  list label dot (`.e-tag--<type>` sets `--et`) and the type donut
+  (`_entity_palette_color`, unless a fork sets `charts.entity_palette`).
+- **Common-word entity names** (a single all-lowercase token such as the
+  actor handle "fingerprint") keep prose matches only while they stay
+  within max(3, 3x explicit references); past that only explicit
+  `entities[]` links attach (compute_entities specs loop).
+- **Entry rail CVEs** collapse past 6: exploited/KEV keep cards, the rest
+  are one-line rows in a `<details>`; CVE card facts use a label/value grid.
+- **List pages** (/entities/, /cves/) wrap their charts in
+  `details.kb-stats[data-fold-on-phone]` (app.js folds it on phones); the
+  /cves/ table stacks into cards below 640px. `/changes/` expands the last
+  7 days (`CHANGES_OPEN_DAYS`) and folds older days. `/tags/` and
+  `/regions/` index pages exist. Docs under /about/ use the reading
+  measure.
+- **/attack/ compare mode** dims non-matching cells by background +
+  `--text-muted` (never opacity) and the Navigator export reads the same
+  `passingTechniques()` roll-up as the matrix, so layer == what is shown.
+  The matrix box is viewport-capped with sticky tactic headers and the
+  legend above it. **/graph/** has zoom buttons + pinch, `touch-action:
+  pan-y` until the canvas is tapped (the page must stay scrollable past
+  it on a phone), a server-rendered type legend from the same `--g-*`
+  tokens, and a device-neutral "path to…" action (no shift-click only).
+- **Internal links use →, external ↗.** Run records naming a source id
+  outside sources.json render plain text (`_source_ref`), never a 404.
+
 Traps: `var(--muted)` is NOT a token (five rules once asked for it and
 silently inherited `--text`); a class rule loses to `.view h2` / `.brief-prose
 h2` unless it carries two classes; `a.trends-card { display: block }` beat the

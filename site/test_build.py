@@ -181,7 +181,7 @@ assert_in("leading label promoted to aside",
           '<aside class="callout callout--takeaway"', lead_html)
 assert_in("label badge rendered",
           '<span class="callout__label">Defender takeaway</span>', lead_html)
-assert_in("body carried into callout", "patch now.", lead_html)
+assert_in("body carried into callout, first letter capitalised", "Patch now.", lead_html)
 assert_not_in("no leftover empty paragraph", "<p></p>", lead_html)
 mid_html = enhance_brief_item_html(
     "<p>Narrative prose with <strong>bold</strong> inline. "
@@ -191,7 +191,7 @@ assert_in("mid-paragraph label promoted to aside",
           '<aside class="callout callout--takeaway"', mid_html)
 assert_in("preceding prose kept as its own paragraph",
           "<p>Narrative prose with <strong>bold</strong> inline.</p>", mid_html)
-assert_in("takeaway body carried into callout", "rotate the keys.", mid_html)
+assert_in("takeaway body carried into callout, capitalised", "Rotate the keys.", mid_html)
 two_para = enhance_brief_item_html(
     "<p>First paragraph, no label.</p>\n"
     "<p><strong>Detection guidance:</strong> watch process trees.</p>"
