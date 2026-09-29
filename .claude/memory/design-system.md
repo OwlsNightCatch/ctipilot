@@ -149,10 +149,10 @@ A laptop + phone review of every template; the fixes live in the
 - **One colour per entity type**: the graph's `--g-*` tokens drive the
   list label dot (`.e-tag--<type>` sets `--et`) and the type donut
   (`_entity_palette_color`, unless a fork sets `charts.entity_palette`).
-- **Common-word entity names** (a single all-lowercase token such as the
-  actor handle "fingerprint") keep prose matches only while they stay
-  within max(3, 3x explicit references); past that only explicit
-  `entities[]` links attach (compute_entities specs loop).
+- **Common-word entity names** ("fingerprint", "Falcon", "Troy") are
+  handled by the registry's curated `ambiguous_labels` field (main,
+  2026-09-29), not by a build-time heuristic: listed labels never
+  phrase-match prose. Do not reintroduce a frequency guard in build.py.
 - **Entry rail CVEs** collapse past 6: exploited/KEV keep cards, the rest
   are one-line rows in a `<details>`; CVE card facts use a label/value grid.
 - **List pages** (/entities/, /cves/) wrap their charts in
