@@ -328,7 +328,7 @@ normal state — costs nothing.
   per successful fetch to `work/<run-id>/url-liveness.tsv` so
   `tools/check_run.py` can skip redundant HEAD/GETs.
 - [`cti-verification.md`](../.claude/agents/cti-verification.md) — read-only,
-  isolated context, pinned to Claude Sonnet 5 — gatekeeper of the publish
+  isolated context, pinned to the generic `sonnet` alias — gatekeeper of the publish
   gate. The Phase 5.7 cold-reader verifier; its scope is **this run's new entries,
   every existing entry it appended a changelog record to (the whole entry —
   the new section and every changed field against the sources), plus the
@@ -712,7 +712,7 @@ entries.
             ▼
  ┌────────────────────────────────────────────────────┐
  │ Phase 5.7 — verifier loop (≤8 iterations)           │
- │  every iter: cti-verification (Sonnet 5), fresh;    │
+ │  every iter: cti-verification (sonnet), fresh;      │
  │    a post-fix iter gets the prior-iteration deltas  │
  │    block, a confirmation pass reads cold            │
  │  scope: this run's new + updated entries + record   │

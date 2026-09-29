@@ -14,9 +14,9 @@ A spawn can terminate immediately with "safeguards flagged this message" — a c
 - **Point at the coverage file instead of enumerating covered breach/actor names inline** — the 2026-08-06 respawns that replaced the inline enumeration with a pointer to `work/<run-id>/prior_coverage.json` both completed.
 - **Checkpoint findings YAML every 3–4 items** so a trip costs the tail, not the batch.
 
-## Ladder (single Sonnet 5 verifier since v4.1 — no other-model fallback)
+## Ladder (single `sonnet`-pinned verifier since v4.1 — no other-model fallback)
 
-Retry once → re-frame (framing + no quoted exploit prose + checkpointing) → record a failed spawn (set `verification.confirmation_waived` only if it was the confirmation pass). A failed spawn never counts as CLEAN. Never block the run; a missing run record is the worst outcome. Report a trip as a classifier trip with retry count, never as "the mechanism failed".
+Retry once → re-frame (framing + no quoted exploit prose + checkpointing) → record a failed spawn (set `verification.confirmation_waived` only if it was the confirmation pass). A failed spawn never counts as CLEAN. Never block the run; a missing run record is the worst outcome. Report a trip as a classifier trip with retry count, never as "the mechanism failed". On the 5.5 models a decline is `stop_reason: refusal` with a category (`cyber`, `reasoning_extraction`, `general_harms`): record the category with the request id when the harness shows it. A prompt that asks an agent to write out its reasoning invites `reasoning_extraction` declines, so none of ours does.
 
 ## The false positive (2026-08-22): absence of output is NOT a dead spawn
 

@@ -2223,6 +2223,285 @@ def check_source_urls_resolve(run_entries: list[dict], *, skip: bool,
         ok("source-urls", f"all {checked} source URL(s) returned HTTP 200 (or UA-blocked allowlisted)")
 
 
+def _quote_skeleton(text: str) -> str:
+    """Case-folded letters and digits only: the comparison form for the
+    quote-literal check. Dropping every space and punctuation mark makes the
+    match immune to tag-stripping artefacts, curly-vs-straight quotes, non-
+    breaking spaces and markdown link syntax, while any inserted, dropped or
+    reordered WORD still breaks the contiguous match (a splice of two source
+    sentences, an elided clause, a de-hedged rewrite)."""
+    import unicodedata
+    # JSON bodies carry non-ASCII as \uXXXX escapes, and a quote stored with
+    # a literal backslash escape ("\n" inside code) would otherwise gain a
+    # stray letter; decode both before folding.
+    text = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), text)
+    text = re.sub(r"\\[ntr]", " ", text)
+    norm = unicodedata.normalize("NFKC", text).casefold()
+    return "".join(ch for ch in norm if ch.isalnum())
+
+
+_MIN_PAGE_SKELETON = 600
+# Hosts whose article text is rendered client-side, so both direct transports
+# see navigation chrome that clears the size floor but none of the content.
+# Their structured recipes (`bsi-csaf`, `ncsc-nl csaf`, `msrc cve`) are the
+# real read, and the verifier checks quotes from them by hand.
+_JS_RENDERED_HOSTS = {"wid.cert-bund.de", "advisories.ncsc.nl", "msrc.microsoft.com",
+                      "security-hub.ncsc.admin.ch"}
+
+
+def _page_skeletons(urls: list[str], run_id: str) -> dict[str, list[str]]:
+    """{url: [skeleton of raw HTML text, skeleton of trafilatura text]} for the
+    cited pages, fetched over the bridge's direct transports only (the jina
+    keys are stripped from the subprocess environment so no gate run spends
+    reader credit) and cached under `work/<run-id>/quote-bodies/` (gitignored
+    `.txt`, first line names the URL) so repeated gate runs, the other page
+    checks and the verifier reuse one fetch. An empty list means no direct
+    transport read the page."""
+    import hashlib
+    import html as _html
+    import os
+    from concurrent.futures import ThreadPoolExecutor
+
+    cache_dir: Path | None = WORK_DIR / run_id / "quote-bodies"
+    try:
+        cache_dir.mkdir(parents=True, exist_ok=True)  # type: ignore[union-attr]
+    except OSError:
+        cache_dir = None
+    fetcher = ROOT / "tools" / "fetch_source.py"
+    env = {k: v for k, v in os.environ.items() if k not in ("JINA_API_KEYS", "JINA_API_KEY")}
+
+    def _one(url: str) -> list[str]:
+        if (urlsplit(url).hostname or "").lower() in _JS_RENDERED_HOSTS or "#/" in url:
+            return []
+        key = hashlib.sha1(url.encode("utf-8")).hexdigest()[:16]
+        out: list[str] = []
+        for mode, args in (("html", ["url", url, "--direct"]), ("extract", ["extract", url])):
+            path = cache_dir / f"{key}.{mode}.txt" if cache_dir else None
+            text = ""
+            if path is not None and path.is_file():
+                text = path.read_text(encoding="utf-8", errors="replace")
+            else:
+                try:
+                    proc = subprocess.run([sys.executable, str(fetcher), *args],
+                                          capture_output=True, text=True, timeout=60,
+                                          env=env, cwd=ROOT)
+                    if proc.returncode == 0:
+                        text = proc.stdout
+                except Exception:
+                    text = ""
+                if text and path is not None:
+                    try:
+                        path.write_text(f"<!-- {url} -->\n{text}", encoding="utf-8")
+                    except OSError:
+                        pass
+            if text:
+                # Script blocks stay: a Next.js-style page ships its article as
+                # escaped JSON inside one (Check Point's support pages do).
+                # Decode those escapes first, then strip the tags they reveal.
+                text = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), text)
+                text = _html.unescape(re.sub(r"<[^>]+>", "", text))
+                out.append(_quote_skeleton(text))
+        # A JS redirect or consent shell ("Redirecting... click here") reads as
+        # a page with no content, which would turn every check into a false
+        # mismatch. Below ~100 words of text a body counts as unread.
+        return [b for b in out if len(b) >= _MIN_PAGE_SKELETON]
+
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        return dict(zip(urls, pool.map(_one, urls)))
+
+
+def _committed_evidence_quotes(entry: dict, content_root: Path) -> set[str] | None:
+    """Skeletons of the evidence quotes the entry carried at HEAD (None when
+    HEAD has no such file). On an UPDATED entry only the quotes this run
+    added are checked, since the older ones were checked when first published."""
+    rel = f"entries/{entry['id']}.md"
+    try:
+        proc = subprocess.run(["git", "show", f"HEAD:{rel}"], capture_output=True,
+                              text=True, cwd=content_root, timeout=15)
+    except Exception:
+        return None
+    if proc.returncode != 0:
+        return None
+    try:
+        fm_text, _body = cm.split_frontmatter(proc.stdout)
+        fm = cm.parse_yaml_subset(fm_text)
+    except Exception:
+        return None
+    out = set()
+    for ev in fm.get("evidence") or []:
+        if isinstance(ev, dict):
+            out.add(_quote_skeleton(str(ev.get("original") or ev.get("quote") or "")))
+    return out
+
+
+def check_evidence_quotes_literal(run_entries: list[dict], run_id: str, *, skip: bool,
+                                  updated_ids: set[str] | None = None,
+                                  content_root: Path = ROOT) -> None:
+    """Every evidence[] quote of this run is a contiguous passage of the page
+    it cites (v4.13).
+
+    A non-verbatim evidence quote (a splice of two sentences, an elided
+    clause, a reworded or truncated sentence) is F4 to the verifier: 40 of the
+    529 findings across the fourteen intel fires of 2026-09-15 to 09-29. It is
+    purely mechanical, yet each instance cost a ~11-minute verifier iteration
+    to surface, because the prompt's `grep -F` duty was not catching it. This check does the
+    literal search itself: it fetches each quote's `source_url` (raw HTML via
+    the bridge's direct GET, plus the trafilatura capture, never the metered
+    reader), saves both bodies under `work/<run-id>/quote-bodies/` so later
+    gate runs and the verifier reuse them, and compares letters-and-digits
+    skeletons (`_quote_skeleton`). A translated quote is checked on its
+    `original:` text. A page no direct transport can read is reported as
+    unverifiable, never as a mismatch. WARN, not FAIL: a JS-rendered page can
+    hold text neither transport sees, and the zero-warning discipline already
+    obliges the run to fix or explain every WARN it causes."""
+    if skip:
+        return
+    todo: list[tuple[str, str, str, str]] = []  # (entry_id, publisher, url, needle)
+    for e in run_entries:
+        if e.get("migrated_from"):
+            continue
+        committed = (_committed_evidence_quotes(e, content_root)
+                     if updated_ids and e["id"] in updated_ids else None)
+        for ev in e.get("evidence") or []:
+            if not isinstance(ev, dict):
+                continue
+            url = str(ev.get("source_url") or ev.get("url") or "")
+            needle = str(ev.get("original") or ev.get("quote") or "")
+            if not url.startswith("https://") or len(_quote_skeleton(needle)) < 12:
+                continue
+            if committed is not None and _quote_skeleton(needle) in committed:
+                continue
+            todo.append((e["id"], str(ev.get("publisher") or ""), url, needle))
+    if not todo:
+        ok("quote-literal", "no web-sourced evidence quotes added by this run")
+        return
+
+    urls = sorted({u for _, _, u, _ in todo})
+    print(f"  ... fetching {len(urls)} evidence source page(s) for the literal-quote check ...")
+    bodies = _page_skeletons(urls, run_id)
+
+    mismatched, unreadable, matched = [], [], 0
+    for eid, pub, url, needle in todo:
+        skel = _quote_skeleton(needle)
+        got = [b for b in bodies.get(url) or [] if b]
+        if not got:
+            unreadable.append((eid, url))
+        elif any(skel in b for b in got):
+            matched += 1
+        else:
+            mismatched.append((eid, pub, url, needle))
+    for eid, pub, url, needle in mismatched:
+        warn("quote-literal",
+             f"{eid}: evidence quote attributed to {pub or 'unknown publisher'} is not a "
+             f"contiguous passage of {url}: {needle[:90]!r}… Shorten it to the fragment the "
+             "page carries, split it into two records, or drop the quotation. Saved bodies: "
+             f"work/{run_id}/quote-bodies/")
+    if matched:
+        ok("quote-literal", f"{matched} evidence quote(s) found verbatim on their cited page")
+    if unreadable:
+        ok("quote-literal",
+           f"{len(unreadable)} quote(s) not machine-checkable, no direct transport read "
+           f"the page (e.g. {unreadable[0][1]}), so the verifier checks these by hand")
+
+
+_CITE_LINK_RE = re.compile(r"\[[^\]\n]+\]\((https?://[^)\s]+)\)")
+_CVE_ID_RE = re.compile(r"\bCVE-\d{4}-\d{4,}\b", re.I)
+_CITE_JOIN_RE = re.compile(r"^[\s;,()]*(?:and|&)?[\s;,()]*$", re.I)
+_SENTENCE_END_RE = re.compile(r"[.!?][)\"'*]*\s+(?=[A-Z(*`\"'\[])")
+
+
+def _citation_clauses(text: str) -> list[tuple[str, list[str]]]:
+    """[(clause, [urls])] for every inline citation group in `text`. A group is
+    a run of links separated only by punctuation or "and" (`([A](u1); [B](u2))`
+    vouches jointly). Its clause is the text since the previous group or the
+    start of the sentence, whichever is later: a citation vouches for the
+    clause it terminates, and a trailing one claims the whole sentence."""
+    out: list[tuple[str, list[str]]] = []
+    for para in re.split(r"\n\s*\n", text):
+        prev_end = 0
+        group_urls: list[str] = []
+        group_clause = ""
+        for m in _CITE_LINK_RE.finditer(para):
+            between = para[prev_end:m.start()]
+            if group_urls and _CITE_JOIN_RE.match(between):
+                group_urls.append(m.group(1))
+                prev_end = m.end()
+                continue
+            if group_urls:
+                out.append((group_clause, group_urls))
+            ends = list(_SENTENCE_END_RE.finditer(between))
+            group_clause = between[ends[-1].end():] if ends else between
+            group_urls = [m.group(1)]
+            prev_end = m.end()
+        if group_urls:
+            out.append((group_clause, group_urls))
+    return out
+
+
+def check_citation_cves(run_entries: list[dict], run_id: str, *, skip: bool,
+                        updated_ids: set[str] | None = None) -> None:
+    """A clause that names a CVE id cites a page that mentions that id (v4.13).
+
+    Per-clause attribution is the verifier's largest recurring defect class
+    (cti-run.md Phase 4 item 5: "one citation per clause"), and its sharpest
+    shape is an identifier bound to the wrong page: a CVE named in a clause
+    whose citation is the co-cited source that never mentions it, or a
+    roundup that carries a different id. CVE ids are the one token class
+    precise enough to check mechanically, and they are the one the store's
+    dedup index, `/cve/` pages and triage matching all key on. Checked over a
+    new entry's whole body and over the sections this fire wrote on an
+    updated entry, against the same cached page bodies as `quote-literal`. A
+    group whose pages no direct transport reads is unverifiable, never a
+    mismatch. WARN: fix by citing the page that carries the id for that
+    clause, or by splitting the sentence."""
+    if skip:
+        return
+    todo: list[tuple[str, str, list[str], str]] = []  # (entry, cve, urls, clause)
+    for e in run_entries:
+        if e.get("migrated_from"):
+            continue
+        main, sections = cm.split_update_sections(e.get("body") or "")
+        if updated_ids and e["id"] in updated_ids:
+            own_ats = {str(r.get("at")) for r in (e.get("updates") or [])
+                       if str(r.get("run_id") or "") == str(run_id)}
+            texts = [sec.get("body") or "" for sec in sections if str(sec.get("at")) in own_ats]
+        else:
+            texts = [main] + [sec.get("body") or "" for sec in sections]
+        for text in texts:
+            for clause, urls in _citation_clauses(text):
+                https = [u for u in urls if u.startswith("https://")]
+                if not https:
+                    continue
+                for cve in sorted({c.upper() for c in _CVE_ID_RE.findall(clause)}):
+                    todo.append((e["id"], cve, https, clause.strip()))
+    if not todo:
+        ok("citation-cve", "no cited clause names a CVE id")
+        return
+    urls = sorted({u for _, _, us, _ in todo for u in us})
+    print(f"  ... fetching {len(urls)} cited page(s) for the CVE-citation check ...")
+    bodies = _page_skeletons(urls, run_id)
+    flagged, unreadable, matched = [], 0, 0
+    for eid, cve, us, clause in todo:
+        readable = [b for u in us for b in bodies.get(u) or []]
+        if not readable:
+            unreadable += 1
+            continue
+        if any(_quote_skeleton(cve) in b for b in readable):
+            matched += 1
+        else:
+            flagged.append((eid, cve, us, clause))
+    for eid, cve, us, clause in flagged:
+        warn("citation-cve",
+             f"{eid}: a clause naming {cve} cites {', '.join(us)}, which does not mention "
+             f"{cve} ({clause[-110:]!r}). Cite the page that carries the id for that clause, "
+             "or split the sentence so each citation vouches only for what its page states")
+    if matched:
+        ok("citation-cve", f"{matched} CVE mention(s) found on the page their clause cites")
+    if unreadable:
+        ok("citation-cve", f"{unreadable} CVE mention(s) not machine-checkable (no direct "
+           "transport read the cited page), left to the verifier")
+
+
 def check_evidence_binding(run_entries: list[dict]) -> None:
     """Every evidence[] quote's `publisher` should bind back to one of the
     entry's sources[].publisher or closed_sources[].provider (case-
@@ -3828,10 +4107,44 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
     check_source_urls_resolve(new_entries, skip=skip_link_check,
                               updated_entries=updated_entries, content_root=content_root)
 
+    print("\n== evidence quotes are verbatim on their cited page ==")
+    check_evidence_quotes_literal(run_entries, run_id, skip=skip_link_check,
+                                  updated_ids={e["id"] for e in updated_entries},
+                                  content_root=content_root)
+
+    print("\n== clauses naming a CVE cite a page that carries it ==")
+    check_citation_cves(run_entries, run_id, skip=skip_link_check,
+                        updated_ids={e["id"] for e in updated_entries})
+
     print("\n== build-side smoke tests ==")
     check_test_build(skip_build_tests)
 
     return _summary()
+
+
+def run_page_checks(since: str, cache_id: str, content_root: Path) -> int:
+    """`--page-checks-since`: the cited-page checks over a date range rather
+    than one run (v4.13). The audit runs it over its window so a quote or a
+    CVE citation that survived a fire's verifier loop reaches a truth pass as a
+    concrete lead. Measured on 2026-09-29 over the 68 entries of 09-15 to
+    09-29, it surfaced three non-verbatim Securelist quotes and three quotes
+    cited to a landing page instead of the PDF they came from, all published."""
+    entries, errors = collect_entries_tolerant(content_root / "entries", content_root)
+    for err in errors:
+        warn("entry-parse", err)
+    scope = []
+    for e in entries:
+        stamps = [str(e.get("discovered_at") or "")] + [
+            str(r.get("at") or "") for r in (e.get("updates") or []) if isinstance(r, dict)]
+        if any(t[:10] >= since for t in stamps if t):
+            scope.append(e)
+    print(f"\npage checks: {len(scope)} entr{'y' if len(scope) == 1 else 'ies'} active since {since}\n")
+    print("== evidence quotes are verbatim on their cited page ==")
+    check_evidence_quotes_literal(scope, cache_id, skip=False)
+    print("\n== clauses naming a CVE cite a page that carries it ==")
+    check_citation_cves(scope, cache_id, skip=False)
+    _summary()
+    return 0
 
 
 def _summary() -> int:
@@ -3901,6 +4214,11 @@ def main() -> int:
                    help="resolve entries/, runs/ and entities/registry.yaml under PATH "
                         "instead of the repo root (self-test fixtures); state, sources, "
                         "taxonomy, prompts, work/ and intel/ always resolve in the repo")
+    p.add_argument("--page-checks-since", metavar="YYYY-MM-DD", default=None,
+                   help="run only the two cited-page checks (quote-literal, citation-cve) over "
+                        "every entry discovered or updated on/after the date, caching page "
+                        "bodies under work/<run_id or 'page-checks'>/quote-bodies/. The "
+                        "quality audit's Phase 0 pre-pass; exit 0 always (findings are WARNs)")
     p.add_argument("--pre-verify", action="store_true",
                    help="Phase 5.5 gate run BEFORE the first Phase 5.7 verifier spawn: "
                         "verification-block completeness errors on the run record "
@@ -3916,6 +4234,9 @@ def main() -> int:
         print("FATAL: --pre-verify applies to a single run's pre-Phase-5.7 gate, not --all")
         return 2
     content_root = Path(args.root).resolve() if args.root else ROOT
+    if args.page_checks_since:
+        return run_page_checks(args.page_checks_since, args.run_id or "page-checks",
+                               content_root)
     return run_checks(
         args.run_id,
         all_mode=args.all,

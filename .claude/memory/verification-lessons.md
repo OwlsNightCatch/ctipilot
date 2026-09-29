@@ -34,6 +34,7 @@ Every value in a structured field needs a source like a sentence: each `cves[].s
 - Verify quotes against the live page, never against the findings YAML quoting it. Strip HTML tags to the **empty string**, never a space (a space makes a cross-element splice look contiguous).
 - Extraction shape is a trap: NBSP (`U+00A0`) in the source is part of the quote; whitespace-normalising before checking produces a "quote" that exists nowhere; PDF extractions break mid-word — quote short spans that genuinely hit, or paraphrase.
 - Full-sweep method that works: fetch every cited primary to `work/<run-id>/src-*`, substring-test every `evidence[]` quote after Unicode punctuation folding.
+- **The gate now runs this sweep (v4.13, 2026-09-29):** `check_run.py` `quote-literal` and `citation-cve`, and `--page-checks-since DATE` over a range. They compare letters-and-digits skeletons, so they catch word-level splices, elisions and rewordings but not punctuation or NBSP fidelity, which stays the verifier's job. Measured over 83 verified entries: 6 real published defects (3 Securelist quotes absent from the page, 3 quotes cited to a landing page instead of its PDF), 1 stale page (CISA fixed its own typo), 0 false positives after handling JS shells, JSON escapes and Next.js-embedded article JSON. A page edited after publication shows as a mismatch: judge it, never auto-correct.
 
 ## Composing from entries instead of fresh fetches (an audit's records, Background paragraphs)
 

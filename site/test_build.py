@@ -1581,6 +1581,12 @@ assert_eq("cm: model-id no minor", _cm("claude-sonnet-5"), "Claude Sonnet 5")
 assert_eq("cm: model-id with minor", _cm("claude-opus-4-8"), "Claude Opus 4.8")
 assert_eq("cm: model-id date suffix dropped", _cm("claude-haiku-4-5-20251001"), "Claude Haiku 4.5")
 assert_eq("cm: new family future-proof", _cm("Claude Fable 5"), "Claude Fable 5")
+# Series 5.5 (routines switched 2026-09-29): the point release must survive
+# both id and friendly forms, including the context-window suffix on the id.
+assert_eq("cm: 5.5 model-id", _cm("claude-sonnet-5-5"), "Claude Sonnet 5.5")
+assert_eq("cm: 5.5 model-id with context suffix", _cm("claude-opus-5-5[1m]"), "Claude Opus 5.5")
+assert_eq("cm: 5.5 friendly", _cm("Sonnet 5.5"), "Claude Sonnet 5.5")
+assert_eq("cm: 5.5 friendly with context", _cm("Opus 5.5 (1M context)"), "Claude Opus 5.5")
 # Genuine identification gaps still fold to "unknown" (they surface the gap).
 assert_eq("cm: tier-only id is a gap", _cm("opus-tier"), "unknown")
 assert_eq("cm: env-var fallback friendly is a gap", _cm("Anthropic Claude (Opus-tier)"), "unknown")
