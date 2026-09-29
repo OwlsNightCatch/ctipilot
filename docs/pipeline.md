@@ -568,6 +568,8 @@ entities:
                                # | report | trend | policy | product
     name: "ShinyHunters"
     aliases: ["UNC6240"]       # every public alias; dedup checks match against these too
+    # ambiguous_labels: []     # optional: own name/aliases that never
+                               # phrase-match prose (see below)
     nexus: null                # taxonomy nexus value when publicly attributed, else null
     summary: >
       One-to-three sentence definition: who/what this is, first public
@@ -603,6 +605,25 @@ alternates. Every other public name goes in `aliases` (which feeds both
 dedup matching and the site's phrase-based entry↔entity attachment).
 `summary` is the 1–3-sentence English definition carrying the
 who/what/so-what plus the attributing source and date.
+
+**Ambiguous labels: explicit-key attachment only.** The site attaches an
+entry to an entity when the entry keys it in `entities[]` *or* when the
+entity's name or an alias appears in the entry's title, headline or body
+(word-boundary match, single-token labels case-sensitive). That second path
+breaks when a label is also ordinary vocabulary or another thing's name:
+the actor that calls itself "fingerprint" collected 24 unrelated entries
+about TLS and device fingerprinting before this rule existed, UNC6671's
+alias "Falcon" matched every CrowdStrike Falcon mention, "Troy" matched
+Troy Hunt and "Everest" matched Everest Forms. Casing cannot separate
+them ("Payload delivery:" opens a sentence). Such labels go in the record's
+`ambiguous_labels` list: they stay the entity's display and dedup labels,
+but they never phrase-match, so only an explicit `entities[]` key attaches
+an entry through them (`content_model.prose_match_labels`, and the same rule
+governs `check_run.py`'s relation-evidence check). Every value must be the
+record's own `name` or one of its `aliases` (compared case-insensitively, and
+`validate_registry` FAILs anything else). Set it when registering a name
+that is an English word, a person's first name, or another vendor's product
+name, and make sure every entry about the entity keys it explicitly.
 
 **Merging duplicates — `merged_into` tombstones.** Because keys are
 permanent and hundreds of published entries reference them by key, a
@@ -825,8 +846,9 @@ three parts:
    `data/briefbook.json` and `data/alerts.json` as `techniques[]`.
 3. **Derived aggregations (`site/build.py`).** Per entity AND per CVE:
    `{technique id: [supporting entry ids]}` — evidence-bound, rendered as
-   the entity page's ATT&CK section (grouped by tactic in official matrix
-   order, definitions from the pin, entry links) and exported as a
+   the entity page's ATT&CK section (collapsed by default, grouped by
+   tactic in official matrix order, definitions from the pin, entry links)
+   and exported as a
    per-entity **ATT&CK Navigator layer** (`entities/<key>/attack-layer.json`,
    layer format 4.5, score = supporting-entry count). The `/attack/` page
    renders the full matrix heat-shaded by store-wide coverage, carries the
@@ -834,6 +856,13 @@ three parts:
    client-side multi-entity overlap view (union / overlap≥2 /
    common-to-all) over `data/attack.json` — Navigator-layer semantics
    without leaving the site, plus layer export of any comparison.
+   **Only entries ABOUT the entity contribute** (an `entities[]` key, an
+   `affected_products[]` string for a product, a `cves[]` id for a CVE).
+   An entry that names the entity in passing ("sells footholds to Qilin,
+   Akira and Rhysida") still appears on the entity page's story timeline,
+   tagged *mention*, but it lends the entity none of its techniques, and
+   none of its products, CVEs, sectors or action items either: it
+   documents someone else's behavior.
 
 ## Run records — `runs/YYYY-MM-DD/<run-id>.md`
 
@@ -1051,8 +1080,16 @@ is built entirely from `runs/**` frontmatter.
   no TAXII server: a static host cannot satisfy the TAXII 2.1 media-type
   / header / filtering MUSTs.
 - **Entity pages, trends, ops, search** — all derived from entries +
-  registry + runs, same URLs as v2. Entity/CVE pages carry the derived
-  ATT&CK section; covered techniques are searchable.
+  registry + runs, same URLs as v2. An entity page is laid out for the
+  analyst who pivots onto it to decide what to do: at-a-glance tiles
+  (coverage, latest activity, peak priority, targeted sectors and regions,
+  sources), then § Action items (the `actions[]` and `immediate_action` of
+  every entry about the entity, newest first) and § Defender insights
+  (each entry's `**Defender takeaway:**`, with its `**Triage:**` and
+  detection guidance one click away), then the typed relationships, the
+  story timeline with passing mentions tagged, the hunting pivots (CVEs
+  exploited first, affected products, tags), the collapsed ATT&CK
+  profile, and the embedded entries. Covered techniques are searchable.
 
 ## The mechanical gate — `tools/check_run.py`
 

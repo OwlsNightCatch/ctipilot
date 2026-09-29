@@ -568,7 +568,9 @@ def check_registry(registry_path: Path, entries: list | None = None) -> dict[str
                    + " " + str(en.get("body") or ""))
             hay = raw.lower()
             words = set(re.findall(r"[a-z0-9]+", hay))
-            for label in [ent.get("name") or ""] + list(ent.get("aliases") or []):
+            # `ambiguous_labels` (ordinary words, other things' names) never
+            # count as a mention. Only the explicit key does.
+            for label in cm.prose_match_labels(ent):
                 low = label.lower().strip()
                 if len(low) >= 4 and re.search(
                         r"(?<![a-z0-9])" + re.escape(low) + r"(?![a-z0-9])", hay):
@@ -901,11 +903,10 @@ def check_run_record(run: dict[str, Any] | None, run_id: str, content_root: Path
     if isinstance(dur, (int, float)) and dur > RUNAWAY_RUN_SECONDS:
         warn("run-record",
              f"duration_seconds={int(dur)} (~{dur / 3600:.1f} h) exceeds the "
-             f"{RUNAWAY_RUN_SECONDS // 3600} h runaway threshold — a single intel fire "
-             "should finish well inside an hour or two; a stalled/overrun run delays "
-             "publication and lets later scheduled fires overtake it (observed "
-             "2026-07-09T2009Z: 11.2 h, published 11 h late). Surface the cause in "
-             "the run record and to the operator")
+             f"{RUNAWAY_RUN_SECONDS // 3600} h stall threshold. Runs have no time "
+             "limit, but one still going a day later has almost certainly hung rather "
+             "than worked (76.8 h and 53.2 h are on record). Surface the cause in the "
+             "run record and to the operator")
     check_run_clock(run)
     check_verification_counters(run, pre_verify=pre_verify)
 
@@ -2275,7 +2276,12 @@ def _page_skeletons(urls: list[str], run_id: str) -> dict[str, list[str]]:
             return []
         key = hashlib.sha1(url.encode("utf-8")).hexdigest()[:16]
         out: list[str] = []
-        for mode, args in (("html", ["url", url, "--direct"]), ("extract", ["extract", url])):
+        # A PDF (joint advisories, authority reports) is read with the bridge's
+        # `pdf` text extraction, never compared as raw bytes.
+        is_pdf = urlsplit(url).path.lower().endswith(".pdf")
+        modes = ((("pdf", ["pdf", url]),) if is_pdf else
+                 (("html", ["url", url, "--direct"]), ("extract", ["extract", url])))
+        for mode, args in modes:
             path = cache_dir / f"{key}.{mode}.txt" if cache_dir else None
             text = ""
             if path is not None and path.is_file():
@@ -2804,11 +2810,13 @@ SINGLE_VERIFIER_FROM = (4, 1)
 CAP_EIGHT_FROM = (3, 27)
 VERIFIER_ITERATION_CAP = 8
 VERIFIER_ITERATION_CAP_PRE_V327 = 5
-# A single intel fire should complete well inside an hour or two; the
-# 2026-07-09T2009Z run silently ran 11.2 h wall-clock (container stall /
-# overrun into the next scheduled fire). Surface it — never a FAIL, the
-# record itself is the forensic evidence.
-RUNAWAY_RUN_SECONDS = 3 * 3600
+# Runs have no time limit since prompt v4.14 (operator directive 2026-09-29):
+# a fire takes as long as its work needs. What this still catches is the
+# stall class, a container that hung rather than worked (76.8 h and 53.2 h
+# are on record): a fire still going a day later has stalled. Surface it,
+# never a FAIL, the record itself is the forensic evidence. Until v4.13 the
+# line sat at 3 h, which flagged legitimately long verifier loops daily.
+RUNAWAY_RUN_SECONDS = 24 * 3600
 
 # The one validate_run_record error that carries store severity under --all.
 # Kept as a constant rather than inlined so the string stays pinned to
@@ -3818,7 +3826,7 @@ def check_all_run_records(runs: list[dict]) -> None:
         if isinstance(dur, (int, float)) and dur > RUNAWAY_RUN_SECONDS:
             warn("run-record",
                  f"{r.get('run_id')}: duration_seconds={int(dur)} (~{dur / 3600:.1f} h) "
-                 "exceeded the runaway threshold — see the per-run watchdog note")
+                 "exceeded the 24 h stall threshold, see the run's own notes")
         # v3.23+ double-CLEAN gate, store severity (immutable history → WARN)
         check_verification_confirmation(r, store_mode=True)
         # v3.33 clock integrity. Pre-v3.33 records are immutable history from

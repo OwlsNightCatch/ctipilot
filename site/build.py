@@ -9722,10 +9722,17 @@ def _registry_phrases(ent: dict[str, Any]) -> tuple[list[str], list[str]]:
     sentence-start capitalization. Group names are proper nouns in prose,
     so this keeps "Coolify ships a fix" attaching to `coolify` while a
     disclosure "embargo lifted" or an "unsafe deserialization" no longer
-    attaches to the actors named Embargo / Unsafe."""
+    attaches to the actors named Embargo / Unsafe.
+
+    Casing cannot help when the label IS the ordinary word ("fingerprint")
+    or opens a sentence ("Embargo window: …"), or names something else
+    ("CrowdStrike Falcon"). Those labels sit in the record's
+    `ambiguous_labels` and never phrase-match at all
+    (`content_model.prose_match_labels`). An explicit `entities[]` key is
+    the only thing that attaches an entry through them."""
     phrases: list[str] = []
     cased: list[str] = []
-    for label in [ent.get("name")] + list(ent.get("aliases") or []):
+    for label in content_model.prose_match_labels(ent):
         if not isinstance(label, str):
             continue
         raw = label.strip()
@@ -9803,6 +9810,13 @@ def build_entities(
     compute_related_entities)."""
     prefixes = _source_prefix_index(sources_raw)
     matched: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    # Entries that name the entity as their SUBJECT: an `entities[]` key, an
+    # `affected_products[]` string (products) or a `cves[]` id (CVEs). The
+    # rest of `matched` only mentions the entity in prose ("sells footholds
+    # to Qilin, Akira and Rhysida"). A mention belongs on the page's
+    # timeline, tagged as one, but it never lends the entity that entry's
+    # techniques, products, sectors or action items.
+    explicit_ids: dict[str, set[str]] = defaultdict(set)
     # Effective ATT&CK technique ids per entry (frontmatter ∪ prose,
     # revoked ids resolved forward) — aggregated per entity below so every
     # entity/CVE page and the /attack/ matrix stay evidence-bound.
@@ -9827,18 +9841,13 @@ def build_entities(
         if str(ent.get("type") or "") == "product":
             continue
         folded, acronyms = _registry_phrases(ent)
-        # A name that is also an ordinary lowercase word ("fingerprint",
-        # "beehive") would attach every entry that uses the word.
-        common_word = any(re.fullmatch(r"[a-z]+", w) for w in acronyms)
-        specs.append((key, folded, acronyms, common_word))
+        specs.append((key, folded, acronyms))
     # `affected_products[]` attaches an entry to its product entities the
     # same way `entities[]` does — the strings are release-precise and the
     # registry's product aliases fold them onto one key, so a reader asking
     # "what has happened to SharePoint?" gets every release on one page
     # without any entry being rewritten.
     product_aliases = content_model.product_alias_index(registry)
-    explicit_n: Counter = Counter()
-    phrase_only: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for e in entries:
         explicit = set(
             content_model.resolve_entity_key(registry, str(k))
@@ -9851,25 +9860,19 @@ def build_entities(
         haystack_raw = ((e.get("title") or "") + "\n" + (e.get("headline") or "")
                         + "\n" + (e.get("body") or ""))
         haystack = haystack_raw.lower()
-        for key, folded, acronyms, common_word in specs:
+        for key, folded, acronyms in specs:
             if key in explicit:
                 matched[key].append(e)
-                explicit_n[key] += 1
+                explicit_ids[key].add(e["id"])
             elif _phrase_hits(haystack, haystack_raw, folded, acronyms):
-                (phrase_only[key] if common_word else matched[key]).append(e)
+                matched[key].append(e)
         # Products attach on the entry's own statement of scope only (the
         # specs loop above deliberately excludes them from prose matching).
         for key in explicit:
             if key.startswith("product:") and key in registry \
                     and not registry[key].get("merged_into"):
                 matched[key].append(e)
-
-    # A common-word name keeps its prose matches only while they stay in
-    # proportion to the entries that name the entity explicitly; past that
-    # the word is being used as a word, and only explicit links count.
-    for key, extra in phrase_only.items():
-        if len(extra) <= max(3, 3 * explicit_n[key]):
-            matched[key].extend(extra)
+                explicit_ids[key].add(e["id"])
 
     # --- CVE entities ---------------------------------------------------
     cve_entries: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -9881,9 +9884,15 @@ def build_entities(
         if isinstance(c, dict) and c.get("id"):
             cves_seen_by_id[str(c["id"])] = c
 
-    def _mk_common(key: str, ents: list[dict[str, Any]]) -> dict[str, Any]:
-        apps = sorted((_entry_appearance(e) for e in ents),
-                      key=lambda a: (a["date"], a["entry_id"]))
+    def _mk_common(key: str, ents: list[dict[str, Any]],
+                   explicit: set[str] | None = None) -> dict[str, Any]:
+        """`explicit` = ids of the entries that key the entity (None: all
+        of `ents` do, as for CVEs)."""
+        subject_ids = {e["id"] for e in ents} if explicit is None else explicit
+        apps = sorted(
+            ({**_entry_appearance(e), "mention": e["id"] not in subject_ids}
+             for e in ents),
+            key=lambda a: (a["date"], a["entry_id"]))
         flags = sorted({
             str(e.get("verification"))
             for e in ents
@@ -9918,8 +9927,13 @@ def build_entities(
             h = (c.get("host") or "").strip()
             if h:
                 host_counts[h] = host_counts.get(h, 0) + 1
+        # The TTP profile is evidence-bound to entries ABOUT the entity: an
+        # entry that mentions an actor in passing documents someone else's
+        # behavior, not the actor's.
         tech: dict[str, list[str]] = {}
         for e in ents:
+            if e["id"] not in subject_ids:
+                continue
             for tid in tech_by_entry.get(e["id"], ()):
                 tech.setdefault(tid, []).append(e["id"])
         dates = [a["date"] for a in apps]
@@ -9936,12 +9950,13 @@ def build_entities(
             "related_entities": [],
             "external_refs": [],
             "techniques": {t: sorted(set(v)) for t, v in tech.items()},
+            "subject_entry_ids": sorted(subject_ids),
         }
 
     entities: list[dict[str, Any]] = []
     for key, ent in registry.items():
         ents = matched.get(key, [])
-        rec = _mk_common(key, ents)
+        rec = _mk_common(key, ents, explicit_ids.get(key, set()))
         first_seen = str(ent.get("first_seen") or "")
         if first_seen and (not rec["first_covered"] or first_seen < rec["first_covered"]):
             rec["first_covered"] = first_seen
@@ -10099,6 +10114,210 @@ def compute_related_entities(
 
 # === ENTITY DETAIL PAGE (v3) ===========================================
 
+# The labelled guidance runs an entry body closes on ("**Defender
+# takeaway:**", "**Triage:**", "**Detection concepts (no IOCs).**", …). The
+# entity page lifts them out of every entry ABOUT the entity so an analyst
+# pivoting onto an actor, CVE or product reads what to do before any
+# metadata. Label, then text to the end of its paragraph (plus the list the
+# paragraph introduces, when it ends on a colon).
+_INSIGHT_LABEL_RE = re.compile(
+    r"\*\*\s*(?P<label>(?:Defender\s+(?:takeaway|note|action)|Triage|Detection|Hunt(?:ing)?)"
+    r"\b[^*\n]{0,90}?)\s*[:.]?\s*\*\*\s*[:.]?\s*",
+    re.IGNORECASE,
+)
+_INSIGHT_LIST_RE = re.compile(r"^\s*(?:[-*]|\d+\.)\s+\S")
+
+
+def _insight_kind(label: str) -> str:
+    low = label.strip().lower()
+    if low.startswith("defender"):
+        return "takeaway"
+    if low.startswith("triage"):
+        return "triage"
+    return "detection"
+
+
+def _labelled_insights(md: str) -> list[dict[str, str]]:
+    """`[{kind, md}]` for every labelled guidance run in one Markdown text,
+    in document order. `kind` ∈ takeaway | triage | detection."""
+    blocks = re.split(r"\n\s*\n", md or "")
+    out: list[dict[str, str]] = []
+    for i, block in enumerate(blocks):
+        hits = list(_INSIGHT_LABEL_RE.finditer(block))
+        for j, m in enumerate(hits):
+            end = hits[j + 1].start() if j + 1 < len(hits) else len(block)
+            text = block[m.end():end].strip()
+            if j + 1 == len(hits) and (not text or text.endswith(":")):
+                if i + 1 < len(blocks) and _INSIGHT_LIST_RE.match(blocks[i + 1]):
+                    text = (text + "\n\n" + blocks[i + 1].strip()).strip()
+            if text:
+                # The run was written to follow its label mid-sentence
+                # ("**Defender takeaway:** the gap is …"); standing alone
+                # it opens a callout, so it opens with a capital.
+                if text[:1].islower():
+                    text = text[:1].upper() + text[1:]
+                out.append({"kind": _insight_kind(m.group("label")), "md": text})
+    return out
+
+
+def entry_insights(entry: dict[str, Any]) -> dict[str, Any]:
+    """The operational guidance of one entry, for the entity page.
+
+    `takeaway` / `triage` / `detection` come from the MAIN analysis (first
+    run of each), because that is where the substantive guidance lives: a
+    later update section's detection note often says only that nothing
+    supersedes the original. `update_takeaway` is the newest changelog
+    section's own takeaway, `{at, md}`, when it has one: the delta a
+    returning reader needs."""
+    main, sections = content_model.split_update_sections(entry.get("body") or "")
+    found: dict[str, Any] = {"takeaway": "", "triage": "", "detection": "",
+                             "update_takeaway": None}
+    for ins in _labelled_insights(main):
+        if not found[ins["kind"]]:
+            found[ins["kind"]] = ins["md"]
+    for sec in reversed(sections):
+        hit = next((i for i in _labelled_insights(sec.get("body") or "")
+                    if i["kind"] == "takeaway"), None)
+        if hit:
+            found["update_takeaway"] = {"at": sec.get("at") or "", "md": hit["md"]}
+            break
+    if not found["takeaway"] and found["update_takeaway"]:
+        found["takeaway"] = found["update_takeaway"]["md"]
+        found["update_takeaway"] = None
+    return found
+
+
+def _entity_subject_entries(entity: dict[str, Any],
+                            matching_entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The matching entries that are ABOUT the entity (keyed, not merely
+    mentioned), newest activity first. An entity record without the
+    `subject_entry_ids` field (older callers, tests) treats every match as
+    a subject."""
+    ids = entity.get("subject_entry_ids")
+    pool = (matching_entries if ids is None
+            else [e for e in matching_entries if e["id"] in set(ids)])
+    return sorted(pool, key=lambda e: (content_model.entry_activity_ts(e) or "", e["id"]),
+                  reverse=True)
+
+
+def render_entity_intel(entity: dict[str, Any], subject_entries: list[dict[str, Any]],
+                        *, prefix: str, limit: int = 6, action_limit: int = 5) -> str:
+    """The top of an entity page: § Action items (every do-now task and
+    immediate action from the entries about the entity, newest first) and
+    § Defender insights (each entry's defender takeaway, with its triage and
+    detection guidance one click away). Empty when no entry about the
+    entity carries either, which is a normal state for a thin record."""
+    # A CVE's title is a sentence; the id reads better inside a note.
+    title = str((entity.get("key") if entity.get("type") == "cve" else entity.get("title"))
+                or entity.get("key") or "")
+    action_rows: list[str] = []
+    for e in subject_entries:
+        url = f"{prefix}{entry_url_path(e)}"
+        label = _short_entry_label(e)
+        tasks: list[tuple[str, str]] = []
+        ia = e.get("immediate_action")
+        if isinstance(ia, dict) and (ia.get("action") or ia.get("title")):
+            tasks.append(("Immediate action",
+                          str(ia.get("action") or ia.get("title") or "").strip()))
+        for a in e.get("actions") or []:
+            if isinstance(a, str) and a.strip():
+                tasks.append(("", a.strip()))
+        for tag, text in tasks:
+            action_rows.append(
+                '<li class="action-list__item">'
+                '<div class="action-list__body">'
+                + (f'<strong>{_escape(tag)}:</strong> ' if tag else "")
+                + f"{render_inline(text)}</div>"
+                f'<a class="action-ref" href="{_escape(url)}" '
+                f'aria-label="Open finding: {_escape(label)}">'
+                f'<span class="action-ref__tag">{_escape(e["date"])}</span>'
+                f'<span class="action-ref__label">{_escape(label)}</span>'
+                '<span class="action-ref__go" aria-hidden="true">→</span></a>'
+                "</li>"
+            )
+    older = action_rows[action_limit:]
+    actions_html = (
+        '<section class="entity-intel__actions" aria-label="Action items">'
+        '<h2 class="section-head">Action items '
+        f'<span class="verif-count">({len(action_rows)})</span></h2>'
+        '<p class="muted entity-intel__note">Do-now tasks recorded on the entries about '
+        f"{_escape(title)}, newest first. Check the date before acting on an older one.</p>"
+        f'<ul class="action-list">{"".join(action_rows[:action_limit])}</ul>'
+        + ('<details class="insight__more">'
+           f"<summary>{len(older)} older action item{'s' if len(older) != 1 else ''}</summary>"
+           f'<ul class="action-list">{"".join(older)}</ul></details>' if older else "")
+        + "</section>"
+    ) if action_rows else ""
+
+    cards: list[str] = []
+    with_guidance = 0
+    for e in subject_entries:
+        ins = entry_insights(e)
+        if not (ins["takeaway"] or ins["triage"] or ins["detection"]):
+            continue
+        with_guidance += 1
+        if len(cards) >= limit:
+            continue
+        url = f"{prefix}{entry_url_path(e)}"
+        more: list[str] = []
+        if ins["update_takeaway"]:
+            more.append(
+                '<aside class="callout callout--takeaway" role="note">'
+                '<span class="callout__label">Latest update · '
+                f'{_escape(str(ins["update_takeaway"]["at"])[:10])}</span>'
+                f'<div class="callout__body">{render_markdown(ins["update_takeaway"]["md"])}</div>'
+                "</aside>"
+            )
+        for kind, label in (("triage", "Triage"), ("detection", "Detection")):
+            if ins[kind]:
+                cls = "callout--detection" if kind == "detection" else "callout--action"
+                more.append(
+                    f'<aside class="callout {cls}" role="note">'
+                    f'<span class="callout__label">{label}</span>'
+                    f'<div class="callout__body">{render_markdown(ins[kind])}</div>'
+                    "</aside>"
+                )
+        more_labels = [lbl for k, lbl in (("update_takeaway", "latest update"),
+                                          ("triage", "triage"), ("detection", "detection"))
+                       if ins[k]]
+        main_html = (
+            '<aside class="callout callout--takeaway" role="note">'
+            '<span class="callout__label">Defender takeaway</span>'
+            f'<div class="callout__body">{render_markdown(ins["takeaway"])}</div></aside>'
+        ) if ins["takeaway"] else ""
+        more_html = (
+            '<details class="insight__more">'
+            f'<summary>{_escape(" · ".join(more_labels).capitalize())}</summary>'
+            f'{"".join(more)}</details>'
+        ) if more else ""
+        cards.append(
+            '<article class="insight">'
+            '<p class="insight__meta">'
+            f'<span class="mono">{_escape(e["date"])}</span>'
+            f'<span class="b {_pri_badge_class(e)}">{_escape(_pri_label(e))}</span>'
+            + ('<span class="b exp">exploited</span>' if _entry_exploited(e) else "")
+            + f'<a class="insight__t" href="{_escape(url)}">'
+            + _inline_text(e.get("headline") or e.get("title") or e["id"]) + "</a>"
+            "</p>"
+            f"{main_html}{more_html}</article>"
+        )
+    insights_html = ""
+    if cards:
+        rest = with_guidance - len(cards)
+        insights_html = (
+            '<section class="entity-intel__insights" aria-label="Defender insights">'
+            '<h2 class="section-head">Defender insights</h2>'
+            '<p class="muted entity-intel__note">What each entry about '
+            f"{_escape(title)} tells a defender to do, newest first.</p>"
+            + "".join(cards)
+            + (f'<p class="muted">{rest} earlier entr{"ies" if rest != 1 else "y"} '
+               "carry guidance too, listed under the story timeline below.</p>" if rest > 0 else "")
+            + "</section>"
+        )
+    if not (actions_html or insights_html):
+        return ""
+    return f'<div class="entity-intel">{actions_html}{insights_html}</div>'
+
 
 def render_entity_page(
     entity: dict[str, Any],
@@ -10112,11 +10331,13 @@ def render_entity_page(
     canonical: str,
 ) -> str:
     """Single renderer for every entity type · CVE + every registry type
-    (actor, campaign, malware, tool, incident, report, trend, policy).
-    Same layout as v2: header pills → KPI tiles → coverage strip →
-    story timeline (entry permalinks; each entry's changelog lives on its
-    own page) → charts → related entities → external refs + cited
-    sources → embedded matching entries."""
+    (actor, campaign, malware, tool, incident, report, trend, policy,
+    product). Laid out for the analyst who pivots here to decide what to
+    do: header → at-a-glance tiles → coverage strip → § Action items +
+    § Defender insights (from the entries ABOUT the entity) → typed
+    relationships → story timeline (passing mentions tagged as such) →
+    hunting pivots → ATT&CK profile (collapsed) → embedded entries →
+    co-occurrence, charts and cited sources."""
     etype = (entity.get("type") or "").lower()
     title = entity.get("title") or entity.get("key") or "Untitled"
     key = entity.get("key") or ""
@@ -10124,6 +10345,10 @@ def render_entity_page(
                   key=lambda a: (a.get("date") or "", a.get("entry_id") or ""),
                   reverse=True)
     citations = entity.get("citations", []) or []
+    # Entries that key the entity drive every aggregate on this page; a
+    # passing prose mention only earns a tagged timeline row.
+    subject_entries = _entity_subject_entries(entity, matching_entries or [])
+    n_mentions = sum(1 for a in apps if a.get("mention"))
 
     # --- Story timeline (entry permalinks) ----------------------------
     timeline_lis: list[str] = []
@@ -10137,11 +10362,17 @@ def render_entity_page(
         if delta and delta.rstrip(".") == str(e_title).strip().rstrip("."):
             delta = ""
         link = f'{prefix}entries/{_escape(eid)}/' if eid else "#"
+        mention_tag = (
+            '<span class="e-tag e-tag--mention" title="The entry names this entity in '
+            'passing; it is not about it and adds nothing to the aggregates on this page">'
+            "mention</span>"
+        ) if a.get("mention") else ""
         timeline_lis.append(
-            "<li><span>"
-            f'<span class="mono" style="margin-right:0.6rem">{_escape(a.get("date", "") or "")}</span>'
+            ('<li class="is-mention"><span>' if a.get("mention") else "<li><span>")
+            + f'<span class="mono" style="margin-right:0.6rem">{_escape(a.get("date", "") or "")}</span>'
             f'<a href="{link}">{_escape(e_title)}</a>'
             '<div class="e-meta" style="margin-top:0.2rem">'
+            + mention_tag
             + (f'<span class="e-tag">{_escape(section)}</span>' if section else "")
             + (f'<span class="muted">{_escape(delta)}</span>' if delta else "")
             + "</div></span></li>"
@@ -10160,27 +10391,52 @@ def render_entity_page(
     src_dist = entity.get("source_distribution", {}) or {}
     hosts = {c.get("host") for c in citations if c.get("host")}
 
-    # Priority mix across the matching entries (the KPI a triage reader
-    # actually wants: how hot is this entity's coverage).
+    # Priority mix across the entries about the entity (the KPI a triage
+    # reader actually wants: how hot is this entity's coverage).
     pri_counts: dict[str, int] = {}
-    for me in (matching_entries or []):
+    for me in subject_entries:
         p = str(me.get("priority") or "routine")
         pri_counts[p] = pri_counts.get(p, 0) + 1
     pri_order = ["critical", "high", "notable", "routine"]
     pri_top = next((p for p in pri_order if pri_counts.get(p)), "·")
     pri_sub = " · ".join(
         f"{pri_counts[p]} {p}" for p in pri_order if pri_counts.get(p)
-    ) or "no matching entries"
+    ) or "no entry about it yet"
     pri_kind = "crit" if pri_counts.get("critical") else ("warn" if pri_counts.get("high") else "neutral")
 
+    # Who and where it hits, from the entries about it.
+    sector_counts: Counter[str] = Counter()
+    region_counts: Counter[str] = Counter()
+    for me in subject_entries:
+        sector_counts.update(str(x) for x in (me.get("sectors") or []) if x)
+        region_counts.update(str(x) for x in (me.get("regions") or []) if x and x != "global")
+    top_sectors = [k for k, _ in sector_counts.most_common(3)]
+    top_regions = [k for k, _ in region_counts.most_common(3)]
+    latest = subject_entries[0] if subject_entries else None
+    latest_ts = (content_model.entry_activity_ts(latest) or latest["date"])[:10] if latest else "–"
+    latest_sub = (_strip_md_emphasis(latest.get("headline") or latest.get("title") or "")
+                  if latest else "no entry about it yet")
+    if len(latest_sub) > 110:
+        latest_sub = latest_sub[:110].rsplit(" ", 1)[0].rstrip(",;:- ") + "…"
+
+    cov_sub = f"first {entity.get('first_covered', '–') or '–'} → last {entity.get('last_covered', '–') or '–'}"
+    if n_mentions:
+        cov_sub = (f"{len(apps) - n_mentions} about it · {n_mentions} "
+                   f"mention{'s' if n_mentions != 1 else ''} · " + cov_sub)
     kpi_html = (
         '<div class="ops-kpi-grid">'
         + _ops_kpi_tile(
-            "Coverage timeline",
+            "Coverage",
             str(len(apps)),
-            sub=f"first {entity.get('first_covered', '–') or '–'} → last {entity.get('last_covered', '–') or '–'}",
+            sub=cov_sub,
             kind="accent",
             chart=spark_html,
+        )
+        + _ops_kpi_tile(
+            "Latest activity",
+            _escape(latest_ts),
+            sub=latest_sub,
+            kind="neutral",
         )
         + _ops_kpi_tile(
             "Peak priority",
@@ -10189,32 +10445,30 @@ def render_entity_page(
             kind=pri_kind,
         )
         + _ops_kpi_tile(
+            "Targets",
+            _escape(top_sectors[0] if top_sectors else "·"),
+            sub=" · ".join(filter(None, [
+                ("sectors: " + ", ".join(top_sectors)) if top_sectors else "",
+                ("regions: " + ", ".join(top_regions)) if top_regions else "",
+            ])) or "no sector or region stated",
+            kind="neutral",
+        )
+        + _ops_kpi_tile(
             "Sources cited",
             str(len(citations)),
             sub=f"{len(hosts)} hosts",
             kind="neutral",
         )
-        + _ops_kpi_tile(
-            "Sections touched",
-            str(len(sd)),
-            sub=", ".join(SECTION_SHORT.get(k, k) for k in sorted(sd.keys())[:3]) or "·",
-            kind="neutral",
-        )
-        + _ops_kpi_tile(
-            "Co-occurring entities",
-            str(len(entity.get("related_entities", []) or [])),
-            sub="see Co-occurring entities below" if entity.get("related_entities") else "no co-occurrence",
-            kind="neutral",
-        )
-        + _ops_kpi_tile(
-            "ATT&CK techniques",
-            str(len(entity.get("techniques") or {})),
-            sub=(f"pinned v{ATTACK_VERSION} · see below" if entity.get("techniques")
-                 else "no mapped behavior yet"),
-            kind="neutral",
-        )
         + "</div>"
     )
+
+    intel_html = render_entity_intel(entity, subject_entries, prefix=prefix)
+    timeline_note = (
+        '<p class="muted" style="margin-top:0.2rem">Every entry that names '
+        f"{_escape(title)}, newest first. Rows tagged <em>mention</em> only name it in "
+        "passing: they are listed for completeness and add nothing to the "
+        "action items, pivots or ATT&amp;CK profile on this page.</p>"
+    ) if n_mentions else ""
 
     # --- Section distribution (labelled rank bars) ---------------------
     section_block = ""
@@ -10412,16 +10666,17 @@ def render_entity_page(
 
     actor_timeline_html = _actor_timeline_strip(entity)
 
-    # --- Pivot chips: ATT&CK techniques + affected products + tags ------
-    # Aggregated across the matching entries so the entity page carries
-    # every hunting pivot in one place (technique ids link to MITRE).
-    tech_counts: dict[str, int] = {}
+    # --- Pivot chips: CVEs + affected products + tags --------------------
+    # Aggregated across the entries ABOUT the entity so the page carries
+    # every hunting pivot in one place, and a passing mention (an Oracle
+    # advisory that recalls Cl0p's history) never lends its products or
+    # CVEs to the entity. ATT&CK has its own collapsed section below.
     prod_counts: dict[str, int] = {}
     tag_counts: dict[str, int] = {}
     cve_counts: dict[str, int] = {}
     cve_exploited: set[str] = set()
     release_counts: dict[str, int] = {}
-    for me in (matching_entries or []):
+    for me in subject_entries:
         for cv in me.get("cves") or []:
             if not isinstance(cv, dict) or not cv.get("id"):
                 continue
@@ -10429,10 +10684,6 @@ def render_entity_page(
             cve_counts[cid] = cve_counts.get(cid, 0) + 1
             if any(str(st) in ("exploited", "cisa-kev") for st in (cv.get("status") or [])):
                 cve_exploited.add(cid)
-        for t in me.get("techniques") or []:
-            t = str(t).strip()
-            if t:
-                tech_counts[t] = tech_counts.get(t, 0) + 1
         for pr in me.get("affected_products") or []:
             pr = str(pr).strip()
             if pr:
@@ -10451,20 +10702,6 @@ def render_entity_page(
             f'<div class="echips">{"".join(chips)}</div></div>'
         )
 
-    # One count source with the ATT&CK section below: the entity's
-    # evidence-bound technique map (frontmatter + prose, revoked ids
-    # forwarded); the frontmatter tally is only the fallback. Chips pivot
-    # to the site's own technique directory, like the entry rail does.
-    ev_tech = entity.get("techniques") if isinstance(entity.get("techniques"), dict) else None
-    if ev_tech:
-        tech_counts = {str(t): len(set(eids or [])) for t, eids in ev_tech.items()}
-    tech_chips = []
-    for t, n in sorted(tech_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:24]:
-        cnt = f' <span class="echip-n">×{n}</span>' if n > 1 else ""
-        tech_chips.append(
-            f'<a class="echip echip--tech" href="{prefix}attack/#{_escape(t)}" '
-            f'title="{_escape(t)}: every entry mapping it">{_escape(t)}{cnt}</a>'
-        )
     # Affected products, as a pivot, answers "what does this actor/campaign
     # hit?" — a real question on every entity type EXCEPT a product, where
     # the same list would just be the other products named in the same
@@ -10522,9 +10759,11 @@ def render_entity_page(
             + "</p>"
         )
 
-    # Every CVE the coverage carries, exploited ones first — the answer to
-    # "what is known-broken in this product?" in one row.
-    cve_chips = [
+    # Every CVE the coverage carries, exploited ones first: "what is
+    # known-broken in this product?" and "what does this actor exploit?"
+    # in one row. A CVE page skips it (the row would be itself plus the
+    # CVEs that merely share its entries).
+    cve_chips = [] if etype == "cve" else [
         f'<a class="echip{" echip--exp" if c in cve_exploited else ""}" '
         f'href="{prefix}entities/{_escape(c)}/"'
         + (' title="Reported exploited"' if c in cve_exploited else "")
@@ -10540,9 +10779,8 @@ def render_entity_page(
     ]
     pivot_block = ""
     pivot_rows = (
-        _chiprow("CVEs", cve_chips if etype == "product" else [])
+        _chiprow("CVEs (exploited first)" if cve_exploited else "CVEs", cve_chips)
         + _chiprow("Releases covered", release_chips)
-        + _chiprow("ATT&CK techniques", tech_chips)
         + _chiprow("Affected products", prod_chips)
         + _chiprow("Tags", tag_chips)
     )
@@ -10568,38 +10806,44 @@ def render_entity_page(
 
 {actor_timeline_html}
 
+{intel_html}
+
+{relations_block}
+
+<h2 class="section-head" style="margin-top:1.5rem">Story timeline</h2>
+{timeline_note}
+{timeline_block}
+
 {pivot_block}
 
 {render_entity_attack_section(entity, prefix=prefix)}
 
-<h2 class="section-head" style="margin-top:1.5rem">Story timeline</h2>
-{timeline_block}
+{render_embedded_entries_section(
+    subject_entries,
+    heading=f"Entries about {title}",
+    empty_text=(
+        "No published entry is about this entity yet"
+        + (" · the story timeline above lists the entries that mention it."
+           if n_mentions else
+           " · an entry attaches by registry key, by the entity's name or a "
+           "public alias in its title or body, or (for CVE entities) by exact CVE id.")
+    ),
+    prefix=prefix,
+    entries_by_id=entries_by_id,
+)}
 
-{relations_block}
+{related_block}
 {section_block}
 {donut_block}
-{related_block}
 
 <div class="panel" style="margin-top:1.5rem">
   {ext_block}
   {citations_block}
 </div>
-
-{render_embedded_entries_section(
-    matching_entries or [],
-    heading=f"Entries about {title}",
-    empty_text=(
-        "No published entry references this entity yet · entries match by "
-        "registry key, by the entity's name or a public alias appearing in "
-        "the entry title or body, or (for CVE entities) by exact CVE id."
-    ),
-    prefix=prefix,
-    entries_by_id=entries_by_id,
-)}
 """
     ent_items = [
         (site_url + entry_url_path(e), e.get("title") or e["id"])
-        for e in (matching_entries or [])
+        for e in subject_entries
     ]
     return base_template(
         title=f"{title} · {etype or 'entity'}",
@@ -10716,7 +10960,13 @@ def render_entity_attack_section(entity: dict[str, Any], *, prefix: str) -> str:
     """The entity page's `ATT&CK techniques` section: evidence-bound TTPs
     grouped by tactic (matrix order), each with the pinned release's
     definition and the entries that support it, plus the Navigator-layer
-    export and a jump into the overlap matrix."""
+    export and a jump into the overlap matrix.
+
+    Collapsed by default: the profile is a reference for the hunter who
+    wants it, not the first thing a reader deciding what to do has to
+    scroll past. The closed summary names the technique count and the
+    number of tactics. Opened, it shows one line per tactic with its
+    technique names, then the per-technique definitions and evidence."""
     tech: dict[str, list[str]] = entity.get("techniques") or {}
     if not tech or not ATTACK_TECHNIQUES:
         return ""
@@ -10757,19 +11007,31 @@ def render_entity_attack_section(entity: dict[str, Any], *, prefix: str) -> str:
             + f"</h3>{''.join(rows)}</div>"
         )
     matrix_href = f'{prefix}attack/?sel={urllib.parse.quote(key, safe="")}'
+    tactic_lines = "".join(
+        '<li><span class="atk-brief__tac">' + _escape(str(tac.get("name") or "")) + "</span>"
+        + '<span class="atk-brief__techs">'
+        + " · ".join(_escape(attack_technique_label(tid)) for tid in tids)
+        + "</span></li>"
+        for tac, tids in groups
+    )
+    n_tac = len(groups)
     return (
-        '<div class="ops-section" id="attack">'
-        '<h2 class="section-head" style="margin-top:1.5rem">ATT&CK techniques</h2>'
+        '<details class="ops-section atk-details" id="attack">'
+        '<summary class="section-head">ATT&amp;CK techniques '
+        f'<span class="verif-count">({len(tech)} across {n_tac} '
+        f"tactic{'s' if n_tac != 1 else ''})</span></summary>"
         '<p class="muted" style="margin-top:0.3rem">'
         f"{len(tech)} technique{'s' if len(tech) != 1 else ''} observed across "
-        f"{len(evidence_entries)} entr{'ies' if len(evidence_entries) != 1 else 'y'}, "
-        "derived from entry metadata and body evidence, never asserted without a "
-        f"published entry behind it · pinned to MITRE ATT&CK v{_escape(ATTACK_VERSION)} · "
+        f"{len(evidence_entries)} entr{'ies' if len(evidence_entries) != 1 else 'y'} about "
+        "this entity, derived from entry metadata and body evidence, never asserted "
+        "without a published entry behind it · pinned to MITRE ATT&CK "
+        f"v{_escape(ATTACK_VERSION)} · "
         f'<a href="{_escape(matrix_href)}">compare on the matrix</a> · '
         '<a href="attack-layer.json" download>Navigator layer (JSON)</a>'
         "</p>"
+        f'<ul class="atk-brief">{tactic_lines}</ul>'
         + "".join(group_blocks)
-        + "</div>"
+        + "</details>"
     )
 
 
