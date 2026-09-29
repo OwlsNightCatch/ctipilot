@@ -9,7 +9,7 @@ type: project
 ## Cadence and gaps
 
 - **Cadence is operator-owned and variable at will** (2026-07-18): work off the gap to the last run; a changed cadence is never a finding. Only a *record-less* gap on a schedule that should have fired is an availability signal (2026-07-07: confirmed 62 h scheduler outage; missing `runs/<date>/` + clean previous fire = scheduler-side; the gap-derived window self-heals coverage — surface big gaps, don't re-diagnose the repo).
-- Runaway/stalled runs are container-side (worst: 53 h). The ~3 h main-run watchdog stands: past it, land the run — no new research.
+- Runaway/stalled runs are container-side (worst: 53 h). Since v4.14 (operator directive 2026-09-29) there is no main-run watchdog and no time limit: a run takes as long as its work needs, hangs are caught by inactivity (60 min with no write under `work/<run-id>/`), and `check_run.py` WARNs only past 24 h. Long runs make overtaking more likely, so the re-dedup-against-the-overtaking-run rule (guard #10) matters more, not less.
 
 ## Two local sessions, one working tree (2026-08-29)
 

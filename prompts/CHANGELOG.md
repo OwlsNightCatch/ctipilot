@@ -4,6 +4,31 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.14 — 2026-09-29 (operator directive: no time limits, every run still ends, and every count is a guide)
+
+### Why
+
+Operator directive, 2026-09-29, verbatim in substance: "Remove the time limits and allow a run to take as long as it needs. But ensure that every run ends. Also do not force the runs to produce certain amount of entries. No entry is also okay if there is nothing relevant. Also there can be multiple critical per day or days with nothing. Same for the topic rotation and so on. Like the current numbers are only guides to what probably make sense, but there will be days where this does not make sense and then the agent can judge itself and does not need to adhere strictly."
+
+Two things in the prompts contradicted it. First, work was cut by the clock: a 45-minute research cap, a 30-minute verifier cap, a ~3 h main-run watchdog that stopped new research and reduced the verifier loop to one iteration, phase time estimates in the headings, and a verifier rule to sample URLs past about 100. Second, several numbers read as rules even where the doctrine already said volume follows relevance: a second deep dive or critical in a window needed a written justification, deep-dive category rotation demoted a candidate whatever its merit, the campaign rule said "≤1 update a week", candidate sources had a "hard cap" of one, and the audit capped batches at 20 and the window at 21 days.
+
+### What changed
+
+- **Guard #2 rewritten: no time limits, structural termination.** A run, a research sub-agent and a verifier iteration take as long as the work needs. The end is guaranteed by finite work lists, one continuation per research domain, the 8-iteration verifier cap with its fail-open, one retry per fetch and three push attempts. The only timing rule is hang detection on inactivity: 60 minutes with no write under `work/<run-id>/` and no completion notification is a stall, and a stalled agent is logged and not waited on.
+- **Progress lines.** `cti-research` appends a line to `work/<run-id>/<domain>.progress` per slice record, and `cti-verification` appends one to `verify.iter<N>.progress` per entry, so a working agent is never mistaken for a hung one (the 2026-08-22 false-positive stall, a healthy verifier declared dead because it writes only at the end, cannot recur).
+- **Guard #10 rewritten:** elapsed time is printed at phase boundaries as telemetry and never triggers a cut. The overtaken-run re-dedup rule stays and matters more now that runs are unbounded. **Guard #8** now says take the time quality needs, never on retries.
+- **Counts are guides.** Deep dives: every item that earns one gets one, none or several a day, no justification needed for a second. Criticals: several a day or none are both correct when each clears the bar. Category rotation is a tie-breaker for variety. Campaign updates: the routine drip is consolidated (about weekly) and every material development ships. Slice size, candidate sources per run, follow-up sub-agents per verifier iteration, audit batch size and audit window are typical values the agent adjusts. The run record no longer has to justify a second deep dive or critical.
+- **Agents:** `cti-research` § Time and resilience replaces § Time-boxing, and `cti-verification` drops its 30-minute cap and its URL sampling rule (it now orders its checks so the most consequential finish first).
+- **`quality-audit.md`:** its time-boxing and watchdog lines are replaced by the no-time-limit rule and a priority order used only when a stall or a blocked ladder forces a cut.
+- **`tools/check_run.py`:** `RUNAWAY_RUN_SECONDS` 3 h → 24 h. The WARN now catches only the stall class (76.8 h and 53.2 h are on record), not a long verifier loop. The 14 acknowledgment rows for 3 to 24 h runs stopped silencing anything and were pruned by the 2026-09-29T2134Z-audit.
+- **CLAUDE.md, `docs/operating.md`, memory** (`operator-directives-2026-09-29.md` new, scheduler and classifier notes updated).
+
+### What stays
+
+The bounds that make every run end: the 8-iteration verifier cap and its fail-open, one continuation per research domain, bounded retries, the 10-minute Phase 7 publish poll. Every quality bar (PD-11 relevance, the critical bar, the deep-dive criteria, the do-now bar for `actions[]`) and every hard invariant. Nothing here lowers a bar: a day with no entry that clears it publishes nothing.
+
+---
+
 ## 4.13 — 2026-09-29 (Series 5.5: unattended turn endings, the rotational lookback, and cited-page checks in the gate)
 
 ### Why

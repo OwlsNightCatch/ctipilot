@@ -6,6 +6,7 @@ Conventions: one topic per file, kebab-case filename, YAML front block (`name`, 
 
 ## Index
 
+- [Operator directive 2026-09-29](operator-directives-2026-09-29.md) — no time limits but every run ends (structural bounds + 60-min inactivity hang detection); every non-termination number is a guide
 - [Operator directives 2026-08-28](operator-directives-2026-08-28.md) — internal records, only `update` floats updated_at, no internals in reader text, quality>quantity, English-only quotes, v4.3 modifiability, xhigh effort, minimal plugins/skills
 - [Permission rules: Edit covers Write](permission-rules-edit-covers-write.md) — Write(path) allow rules are dead; only Edit(path) matches file tools
 - [Entry lifecycle](entry-lifecycle-v4.md) — one living entry per finding; changelog records + sections; what stays untouchable; the weekly's entries and schema are deleted (2026-08-29)
