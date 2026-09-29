@@ -10,7 +10,7 @@ Conventions: one topic per file, kebab-case filename, YAML front block (`name`, 
 - [Permission rules: Edit covers Write](permission-rules-edit-covers-write.md) — Write(path) allow rules are dead; only Edit(path) matches file tools
 - [Entry lifecycle](entry-lifecycle-v4.md) — one living entry per finding; changelog records + sections; what stays untouchable; the weekly's entries and schema are deleted (2026-08-29)
 - [STIX export layer](stix-export-layer.md) — /stix/ bundles, uuid5 id-stability contract, relation collapse table, canonical ATT&CK ids, no TAXII by decision
-- [Routine model assignment](routine-model-assignment.md) — Sonnet 5 intel / Opus 5 audit, generic `sonnet` pins at xhigh, single verifier, double-CLEAN; self-ID protocol (prompt line, not env vars)
+- [Routine model assignment](routine-model-assignment.md) — Sonnet 5.5 intel / Opus 5.5 audit since 2026-09-29, generic `sonnet` pins at xhigh (unmeasured on 5.5), 5.5 prompting deltas, single verifier, double-CLEAN; self-ID protocol
 - [Verification lessons](verification-lessons.md) — aiming iterations, testing findings before applying, inverted claims, unsourced status flags, quote fidelity, composing-from-entries traps
 - [Source fetch blocks & recipes](source-fetch-blocks.md) — fetch ladder, blocked-host recipes, jina pool rules, PDF extraction honesty, probe/health traps
 - [CSAF/MSRC/CVE transcription](csaf-msrc-transcription.md) — structured fields over prose; verdict vs membership; base vs temporal CVSS; CNA vs ADP vs NVD; EPSS is FIRST.org's probability in [0,1] (EUVD renders it as a percentage)

@@ -164,23 +164,63 @@ def _last_attempted(runs: list) -> dict:
     Derived from the committed run records, so it needs no new field in
     `sources.json` and no per-fire bookkeeping step that a fire could forget.
     """
+    return {sid: at[:10] for sid, at in _last_attempted_at(runs).items()}
+
+
+def _last_attempted_at(runs: list) -> dict:
+    """{source_id: `started` timestamp of the latest INTEL fire that handed it
+    to a sub-agent}. Timestamp precision is what the per-source lookback needs:
+    a date alone cannot tell a 26 h revisit from a 47 h one."""
     out: dict = {}
     for run in runs:
         if run.get("kind") != "intel":
             continue
-        date = str(run.get("date") or "")
-        if not date:
+        at = str(run.get("started") or run.get("date") or "")
+        if not at:
             continue
         for sa in (run.get("sub_agents") or {}).values():
             if not isinstance(sa, dict):
                 continue
             for sid in _attempted_ids(sa):
-                if date > out.get(sid, ""):
-                    out[sid] = date
+                if at > out.get(sid, ""):
+                    out[sid] = at
     return out
 
 
-def _rotation(srcs: list, runs: list) -> list:
+LOOKBACK_CAP_HOURS = 168
+
+
+def _lookback_hours(now: datetime, last_at: str, lsf: str) -> int:
+    """Hours a rotational source's next sweep must look back so nothing it
+    published since its previous sweep falls between two windows.
+
+    The fire's `window_hours` covers the last ~26 h, so a standard-tier source
+    revisited every two or three days would otherwise surface only the posts
+    of its final day, and everything before that is never seen by any fire
+    (the 2026-09-27 audit recovered 18 research items of exactly this shape).
+    Returns hours since the latest of (last attempt, last successful fetch)
+    plus a 2 h overlap, capped at LOOKBACK_CAP_HOURS. A source never swept
+    gets the cap. The fire takes `max(window_hours, this)` per slice record.
+    """
+    anchor = None
+    for raw in (last_at, lsf):
+        if not raw:
+            continue
+        try:
+            ts = datetime.strptime(raw[:19], "%Y-%m-%dT%H:%M:%S") if "T" in raw \
+                else datetime.strptime(raw[:10], "%Y-%m-%d")
+        except ValueError:
+            continue
+        ts = ts.replace(tzinfo=now.tzinfo)
+        if anchor is None or ts > anchor:
+            anchor = ts
+    if anchor is None:
+        return LOOKBACK_CAP_HOURS
+    hours = int((now - anchor).total_seconds() // 3600) + 2
+    return max(0, min(LOOKBACK_CAP_HOURS, hours))
+
+
+def _rotation(srcs: list, runs: list, now: datetime | None = None) -> list:
     """Standard/candidate sources ranked oldest-rotation-cursor first.
 
     The cursor is `max(last_successful_fetch, last_attempted)`. Ranking on
@@ -200,7 +240,8 @@ def _rotation(srcs: list, runs: list) -> list:
     always was, a content-health signal. Essential-tier records are omitted:
     they are attempted every fire by rule and are not part of the rotation.
     """
-    last_att = _last_attempted(runs)
+    last_att_at = _last_attempted_at(runs)
+    now = now or datetime.now(timezone.utc)
     rows = []
     for s in srcs:
         sid = s.get("id")
@@ -209,7 +250,8 @@ def _rotation(srcs: list, runs: list) -> list:
         if s.get("tier") == "essential":
             continue
         lsf = s.get("last_successful_fetch") or ""
-        la = last_att.get(sid, "")
+        la_at = last_att_at.get(sid, "")
+        la = la_at[:10]
         rows.append({
             "id": sid,
             "category": list(s.get("category") or []),
@@ -218,6 +260,7 @@ def _rotation(srcs: list, runs: list) -> list:
             "last_successful_fetch": lsf or None,
             "last_attempted": la or None,
             "rotation_key": max(lsf, la) or None,
+            "lookback_hours": _lookback_hours(now, la_at, lsf),
         })
     rows.sort(key=lambda r: (r["rotation_key"] or "0000-00-00", r["id"]))
     return rows
@@ -282,7 +325,7 @@ def build_summary(now: datetime, recent_days: int, gap_runs: int,
         "recent_attempts": _recent_attempts(runs, attempt_runs),
     }
     # Needs `runs`, so it is filled in after the run collection above.
-    out["sources"]["rotation"] = _rotation(srcs, runs)
+    out["sources"]["rotation"] = _rotation(srcs, runs, now)
 
     # --- 24 h budget snapshot (entries/**) ----------------------------------
     since = now - timedelta(hours=24)
@@ -357,10 +400,11 @@ def main() -> int:
         limit = len(rows) if args.rotation_top in (0, None) else args.rotation_top
         print(f"# rotation ranking (oldest cursor first) — {len(rows)} source(s)"
               f"{f' in category {args.rotation}' if args.rotation else ''}, showing {min(limit, len(rows))}")
-        print(f"# {'id':<28} {'cursor':<12} {'last_success':<13} last_attempted")
+        print(f"# {'id':<28} {'cursor':<12} {'last_success':<13} {'last_attempted':<15} lookback_h")
         for r in rows[:limit]:
             print(f"{r['id']:<30} {str(r['rotation_key'] or '-'):<12} "
-                  f"{str(r['last_successful_fetch'] or '-'):<13} {r['last_attempted'] or '-'}")
+                  f"{str(r['last_successful_fetch'] or '-'):<13} {str(r['last_attempted'] or '-'):<15} "
+                  f"{r['lookback_hours']}")
         return 0
     if args.recent_attempts:
         ra = summary['runs']['recent_attempts']

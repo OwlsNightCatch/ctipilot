@@ -50,6 +50,6 @@ endpoint — confirm the entry actually establishes the connection, or point
 (attribute quotes to a listed publisher), `aggregator-only` (find the
 primary), `attack-mapping` on `research`/`annual-report` (map the described
 tradecraft unless the piece genuinely carries no TTP content),
-`essential-coverage` (disclose the miss in the run record). The `composition` line is
+`essential-coverage` (disclose the miss in the run record), `quote-literal` (the evidence quote is not a contiguous passage of its `source_url`: open the saved body under `work/<run-id>/quote-bodies/`, then shorten the quote to the fragment the page carries, split it into two records, or point `source_url` at the page the words actually come from, such as the PDF behind a landing page), `citation-cve` (a clause names a CVE its citation's page never mentions: cite the per-CVE authority for that clause, or split the sentence so each citation vouches only for what its page states). The `composition` line is
 informational only (rolling-24 h entry/deep-dive/critical counts) — volume
 follows relevance, not a quota, so there is nothing there to fix.

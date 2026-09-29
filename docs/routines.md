@@ -96,13 +96,13 @@ Never hand-edit a managed block; edit the config and re-compose in the same comm
 ## 3. Sub-agent prompts ([`.claude/agents/`](../.claude/agents/))
 
 Isolated-context workers the main agent spawns. Model is bound by each file's YAML frontmatter
-(operator-rebindable; both pin `claude-sonnet-5`). **These are master prompts too** — the same
+(operator-rebindable; both pin the generic `sonnet` alias, Sonnet 5.5 today). **These are master prompts too** — the same
 versioning rule applies.
 
 | Sub-agent | Role |
 |---|---|
 | [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) | **Research worker.** One spawned per domain — intel run S1–S4 (+ conditional S5 closed-source intake); the audit's G1–G3 coverage re-sweeps. Reads the prior-coverage index and `entities/registry.yaml` before fetching; returns findings YAMLs (a covered finding comes back as `novelty: update-of:<entry-id>` so the main agent appends a changelog record instead of a second entry), never composes entries. |
-| [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md) | **Cold-reader verifier (Claude Sonnet 5).** Phase 5.7. Scope: the run's new entries, every existing entry it appended a changelog record to (whole entry — new section and changed fields against the sources), + the run record. Read-only; spawned fresh on every iteration until a confirmed CLEAN (two consecutive CLEAN verdicts from independent cold passes) or the 8-iteration cap. Two concerns — URL truth and editorial quality (finding categories F1–F18). The `cti-verification-alt` rotation variant was retired in v4.1. |
+| [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md) | **Cold-reader verifier (generic `sonnet` pin).** Phase 5.7. Scope: the run's new entries, every existing entry it appended a changelog record to (whole entry — new section and changed fields against the sources), + the run record. Read-only; spawned fresh on every iteration until a confirmed CLEAN (two consecutive CLEAN verdicts from independent cold passes) or the 8-iteration cap. Two concerns — URL truth and editorial quality (finding categories F1–F18). The `cti-verification-alt` rotation variant was retired in v4.1. |
 
 Self-identification for every agent (main + sub-agents) comes primarily from the model line the
 harness injects into that agent's own system prompt (`You are powered by the model named … The
