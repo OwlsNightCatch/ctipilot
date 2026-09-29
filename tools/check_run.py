@@ -568,7 +568,9 @@ def check_registry(registry_path: Path, entries: list | None = None) -> dict[str
                    + " " + str(en.get("body") or ""))
             hay = raw.lower()
             words = set(re.findall(r"[a-z0-9]+", hay))
-            for label in [ent.get("name") or ""] + list(ent.get("aliases") or []):
+            # `ambiguous_labels` (ordinary words, other things' names) never
+            # count as a mention. Only the explicit key does.
+            for label in cm.prose_match_labels(ent):
                 low = label.lower().strip()
                 if len(low) >= 4 and re.search(
                         r"(?<![a-z0-9])" + re.escape(low) + r"(?![a-z0-9])", hay):

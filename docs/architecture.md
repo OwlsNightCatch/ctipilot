@@ -586,8 +586,9 @@ entries) when the reader changes the window selector (6 / 12 / 24 / 48 /
   `markdown_url` in `data/briefbook.json`) — the machine-readable twin
   for AI agents.
 - `/entities/<key>/` unified entity pages from the registry + CVE
-  universe — including the derived ATT&CK-technique section and a
-  per-entity Navigator layer (`attack-layer.json`); `/cves/` and
+  universe, led by the action items and defender insights of the entries
+  about the entity, with the derived ATT&CK-technique section (collapsed)
+  and a per-entity Navigator layer (`attack-layer.json`); `/cves/` and
   `/topics/` type-filtered list views (legacy per-id URLs are
   meta-refresh redirect stubs to the canonical).
 - `/attack/` the ATT&CK coverage matrix (pinned release, store-wide heat,
