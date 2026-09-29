@@ -181,7 +181,7 @@ assert_in("leading label promoted to aside",
           '<aside class="callout callout--takeaway"', lead_html)
 assert_in("label badge rendered",
           '<span class="callout__label">Defender takeaway</span>', lead_html)
-assert_in("body carried into callout", "patch now.", lead_html)
+assert_in("body carried into callout, first letter capitalised", "Patch now.", lead_html)
 assert_not_in("no leftover empty paragraph", "<p></p>", lead_html)
 mid_html = enhance_brief_item_html(
     "<p>Narrative prose with <strong>bold</strong> inline. "
@@ -191,7 +191,7 @@ assert_in("mid-paragraph label promoted to aside",
           '<aside class="callout callout--takeaway"', mid_html)
 assert_in("preceding prose kept as its own paragraph",
           "<p>Narrative prose with <strong>bold</strong> inline.</p>", mid_html)
-assert_in("takeaway body carried into callout", "rotate the keys.", mid_html)
+assert_in("takeaway body carried into callout, capitalised", "Rotate the keys.", mid_html)
 two_para = enhance_brief_item_html(
     "<p>First paragraph, no label.</p>\n"
     "<p><strong>Detection guidance:</strong> watch process trees.</p>"
@@ -1239,6 +1239,113 @@ assert_true("curated typed edge survives the derived-edge gate",
             any(e["kind"] == "relation"
                 and {e["source"], e["target"]} == {"actor:testfox", "tool:foxkit"}
                 for e in graph2["edges"]))
+
+# Ambiguous labels: an entity named with an ordinary word ("fingerprint")
+# or carrying another product's name as an alias ("Falcon") attaches ONLY
+# through an explicit entities[] key, never through prose that happens to
+# use the word. Its other labels keep phrase-matching.
+_AMB_REG = {
+    "actor:fingerprint": {
+        "key": "actor:fingerprint", "type": "actor", "name": "fingerprint",
+        "aliases": [], "ambiguous_labels": ["fingerprint"], "nexus": None,
+        "summary": "Fixture actor named with an ordinary word.",
+        "first_seen": "2026-06-01",
+    },
+    "actor:unc9999": {
+        "key": "actor:unc9999", "type": "actor", "name": "UNC9999",
+        "aliases": ["BlackFixture", "Falcon"], "ambiguous_labels": ["falcon"],
+        "nexus": None, "summary": "Fixture actor with a product-name alias.",
+        "first_seen": "2026-06-01",
+    },
+}
+_e_tls = mk_entry("tls-fingerprint-fixture",
+                  body="The loader mimics a browser TLS fingerprint. Fingerprint "
+                       "randomisation defeats JA4 matching.")
+_e_keyed = mk_entry("fingerprint-keyed-fixture", entities=["actor:fingerprint"],
+                    body="The actor behind the breach calls itself fingerprint.")
+_e_falcon = mk_entry("falcon-fixture",
+                     body="The driver kills the CrowdStrike Falcon sensor.")
+_e_black = mk_entry("blackfixture-fixture",
+                    body="BlackFixture ran the vishing wave.")
+_amb_ents, _amb_m = build_entities(_AMB_REG, [_e_tls, _e_keyed, _e_falcon, _e_black],
+                                   CVES_SEEN, SOURCES_RAW, day_pages)
+assert_eq("ambiguous name never phrase-matches, explicit key still attaches",
+          [e["id"] for e in _amb_m.get("actor:fingerprint", [])], [_e_keyed["id"]])
+assert_eq("ambiguous alias blocked case-insensitively, other alias still matches",
+          [e["id"] for e in _amb_m.get("actor:unc9999", [])], [_e_black["id"]])
+assert_eq("prose_match_labels drops only the ambiguous labels",
+          content_model.prose_match_labels(_AMB_REG["actor:unc9999"]),
+          ["UNC9999", "BlackFixture"])
+assert_eq("ambiguous_labels that are the record's own labels validate",
+          content_model.validate_registry(_AMB_REG), [])
+_bad_amb = copy.deepcopy(_AMB_REG)
+_bad_amb["actor:unc9999"]["ambiguous_labels"] = ["Pink"]
+assert_true("ambiguous_labels naming a foreign label FAILs",
+            any("ambiguous_labels value 'Pink'" in err
+                for err in content_model.validate_registry(_bad_amb)))
+_bad_amb["actor:unc9999"]["ambiguous_labels"] = "Falcon"
+assert_true("ambiguous_labels must be a list",
+            any("ambiguous_labels must be a list" in err
+                for err in content_model.validate_registry(_bad_amb)))
+
+# Subject vs mention: an entry that keys the entity is ABOUT it; one that
+# only names it in prose is a mention. Mentions stay on the timeline
+# (flagged) but never feed the TTP profile, pivots or action items.
+_e_unc_about = mk_entry(
+    "unc9999-about-fixture", entities=["actor:unc9999"], techniques=["T1190"],
+    actions=["Reset the helpdesk MFA enrolment flow for every account the vishing wave touched."],
+    body="UNC9999 exploits the edge appliance.\n\n"
+         "**Defender takeaway:** the edge appliance is the entry point, so patch it first.\n\n"
+         "**Triage:** a scanner run from the vulnerability-management range is the benign lookalike.\n\n"
+         "## Update — 2026-07-04T05:00:00Z\n\n"
+         "A second wave.\n\n**Defender takeaway:** the second wave reuses the same access.")
+_e_unc_mention = mk_entry(
+    "unc9999-mention-fixture", techniques=["T1566"],
+    body="A phishing kit unrelated to BlackFixture beyond one shared lure.")
+_sm_ents, _sm_m = build_entities(_AMB_REG, [_e_unc_about, _e_unc_mention],
+                                 CVES_SEEN, SOURCES_RAW, day_pages)
+_unc = {e["key"]: e for e in _sm_ents}["actor:unc9999"]
+assert_eq("both the subject and the mention entry attach",
+          sorted(e["id"] for e in _sm_m["actor:unc9999"]),
+          sorted([_e_unc_about["id"], _e_unc_mention["id"]]))
+assert_eq("only the subject entry is a subject",
+          _unc["subject_entry_ids"], [_e_unc_about["id"]])
+assert_eq("appearance flags the mention",
+          {a["entry_id"]: a["mention"] for a in _unc["appearances"]},
+          {_e_unc_about["id"]: False, _e_unc_mention["id"]: True})
+if build.ATTACK_TECHNIQUES:
+    assert_eq("TTP profile comes from subject entries only",
+              sorted(_unc["techniques"]), ["T1190"])
+
+_ins = build.entry_insights(_e_unc_about)
+assert_eq("takeaway lifted from the main analysis, capitalised",
+          _ins["takeaway"], "The edge appliance is the entry point, so patch it first.")
+assert_true("triage lifted from the main analysis",
+            _ins["triage"].startswith("A scanner run"))
+assert_eq("newest update section's takeaway kept separately",
+          (_ins["update_takeaway"] or {}).get("at"), "2026-07-04T05:00:00Z")
+assert_eq("labelled list block is carried with its intro",
+          build._labelled_insights("**Detection concepts.** Hunt for:\n\n- one\n- two")[0]["md"],
+          "Hunt for:\n\n- one\n- two")
+
+_unc_page = build.render_entity_page(
+    _unc, matching_entries=_sm_m["actor:unc9999"], registry=_AMB_REG,
+    site_url="https://x.example/", cachebust="t", prefix="../../",
+    canonical="https://x.example/entities/actor%3Aunc9999/")
+_unc_main = _unc_page.split("</head>")[-1]
+assert_in("entity page leads with the action items", "Action items", _unc_main)
+assert_in("entity page renders the defender takeaway",
+          "The edge appliance is the entry point", _unc_main)
+assert_in("the mention row is tagged", "e-tag--mention", _unc_main)
+assert_true("insights render before the story timeline",
+            _unc_main.find("Defender insights") < _unc_main.find("Story timeline"))
+if build.ATTACK_TECHNIQUES:
+    assert_in("ATT&CK profile is a collapsed details block",
+              '<details class="ops-section atk-details" id="attack">', _unc_main)
+    assert_true("ATT&CK profile renders after the story timeline",
+                _unc_main.find("Story timeline") < _unc_main.find('id="attack"'))
+assert_not_in("mention entry's technique stays off the page",
+              "T1566", _unc_main.split('id="attack"')[0])
 
 src = annotate_sources(SOURCES_RAW, ALL_ENTRIES)["sources"][0]
 assert_true("source appearances carry dates", "2026-07-03" in src["appearances"])

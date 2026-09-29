@@ -844,6 +844,27 @@ def resolve_entity_key(registry: dict, key: str) -> str:
     return key
 
 
+def prose_match_labels(ent: dict) -> list:
+    """The labels (name + aliases) that may attach an entry to this entity
+    by appearing in its prose: every label EXCEPT the record's
+    `ambiguous_labels`.
+
+    Some real entity names are also ordinary vocabulary or another thing's
+    name: the actor that calls itself "fingerprint", the alias "Falcon"
+    (CrowdStrike's product), "Troy" (Troy Hunt), "Everest" (Everest Forms).
+    Phrase matching cannot tell those apart, so a curated record lists them
+    in `ambiguous_labels`: they stay display and dedup labels, but only an
+    explicit `entities[]` key attaches an entry through them. Comparison is
+    case-insensitive (docs/pipeline.md § Entity registry)."""
+    blocked = {str(a).strip().lower() for a in (ent.get("ambiguous_labels") or [])
+               if isinstance(a, str)}
+    out = []
+    for label in [ent.get("name")] + list(ent.get("aliases") or []):
+        if isinstance(label, str) and label.strip() and label.strip().lower() not in blocked:
+            out.append(label)
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Affected products as entities (docs/pipeline.md § Products)
 # ---------------------------------------------------------------------------
@@ -1360,6 +1381,20 @@ def validate_registry(registry: dict, entry_ids=None) -> list:
         aliases = ent.get("aliases")
         if aliases is not None and not _is_str_list(aliases):
             errs.append(f"{key}: aliases must be a list of strings")
+        ambiguous = ent.get("ambiguous_labels")
+        if ambiguous is not None:
+            if not _is_str_list(ambiguous):
+                errs.append(f"{key}: ambiguous_labels must be a list of strings")
+            else:
+                own = {str(x).strip().lower()
+                       for x in [ent.get("name")] + list(aliases or [])
+                       if isinstance(x, str)}
+                for label in ambiguous:
+                    if label.strip().lower() not in own:
+                        errs.append(
+                            f"{key}: ambiguous_labels value {label!r} is neither "
+                            "the record's name nor one of its aliases"
+                        )
         merged = ent.get("merged_into")
         if merged is not None:
             if not isinstance(merged, str) or not ENTITY_KEY_RE.match(merged):

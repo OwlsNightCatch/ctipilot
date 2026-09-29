@@ -7,6 +7,11 @@
      data-theme     = "light" | "dark"     (absent → follow prefers-color-scheme)
      data-font      = "dyslexic"           (absent → default font)
      data-density   = "comfortable"        (absent → default line-height)
+     data-ai-ack                           (present → the AI-disclosure bar
+                                            was dismissed; CSS hides it)
+
+   Loaded without `defer` in <head> so the attributes land before the
+   first paint.
 
    Wires the display/accessibility popover + the mobile drawer copies:
      [data-theme-set="system|light|dark"]  segmented buttons
@@ -25,6 +30,7 @@
   var theme = ls(TKEY, 'system');
   if (THEMES.indexOf(theme) < 0) theme = 'system';
   var dys = ls(FKEY, '0') === '1';
+  var aiAck = ls('ctipilot_ai_ack', '0') === '1';
   var comfy = ls(DKEY, '0') === '1';
 
   function apply() {
@@ -33,6 +39,7 @@
     else h.removeAttribute('data-theme');
     if (dys) h.setAttribute('data-font', 'dyslexic'); else h.removeAttribute('data-font');
     if (comfy) h.setAttribute('data-density', 'comfortable'); else h.removeAttribute('data-density');
+    if (aiAck) h.setAttribute('data-ai-ack', '');
   }
 
   // Apply immediately (before paint).
@@ -40,7 +47,9 @@
 
   function sync() {
     document.querySelectorAll('[data-theme-set]').forEach(function (b) {
-      b.classList.toggle('active', b.getAttribute('data-theme-set') === theme);
+      var on = b.getAttribute('data-theme-set') === theme;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
     document.querySelectorAll('[data-font-toggle]').forEach(function (b) {
       b.setAttribute('aria-checked', dys ? 'true' : 'false');

@@ -18,7 +18,10 @@
  *   - node-type layers (entities / CVEs / techniques) and edge-class
  *     toggles (curated / derived) — these also bound reachability
  *   - click → detail panel (typed relations with their source entries,
- *     neighbours, page links); shift-click a second node → shortest path
+ *     neighbours, page links); "path to…" (or shift-click) a second node
+ *     → shortest path
+ *   - zoom: wheel, two-finger pinch, or the + / − / fit buttons; on touch
+ *     the canvas lets vertical swipes scroll the page until it is tapped
  *   - ?focus=<id>[,<id>…][&hops=1|2|all][&to=<id>] deep links (entity
  *     pages link here)
  *
@@ -61,14 +64,30 @@
   var pathEdgeSet = null;
   var hovered = null;
   var view = { x: 0, y: 0, k: 1 };   // pan/zoom transform
-  var canvas, ctx, panel, statusEl, shell, seedBox;
+  var canvas, ctx, panel, statusEl, shell, seedBox, stage;
   var dpr = Math.max(1, window.devicePixelRatio || 1);
   var simTimer = null, alpha = 0;
   var colors = {};
+  var pathPick = false;      // "path to…" armed: the next node picked ends the path
+  var engaged = false;       // touch: the canvas owns one-finger drags (see setEngaged)
 
-  var HINT_DEFAULT = 'Double-click a node to pull in its neighbours · scroll to zoom · ' +
-    'drag the canvas to pan · drag a node to pin it · click = details · ' +
-    'shift-click a second node = shortest path · Esc = clear.';
+  var ZOOM_MIN = 0.08, ZOOM_MAX = 6, ZOOM_STEP = 1.35;
+
+  /* Touch screens get touch wording: there is no hover, no wheel and no
+     shift key there. A hybrid laptop reports hover and keeps mouse copy. */
+  function touchUI() {
+    return !!(window.matchMedia && window.matchMedia('(hover: none)').matches);
+  }
+  function hintDefault() {
+    return touchUI()
+      ? 'Tap a node for details · double-tap it (or use expand) to pull in its neighbours · ' +
+        'tap the graph once, then drag to pan and pinch to zoom (or use + / − / fit) · ' +
+        'drag a node to pin it · path to… traces the shortest path to a second node · ' +
+        'tap outside the graph to scroll the page again.'
+      : 'Click a node for details · double-click it (or use expand) to pull in its neighbours · ' +
+        'drag to pan · wheel or + / − / fit to zoom · drag a node to pin it · ' +
+        'path to… or shift-click a second node = shortest path · Esc = clear.';
+  }
   var HINT_EMPTY = 'Nothing is drawn until you pick a starting point: search above, or ' +
     'pick one of the most-connected entities below. The view then shows everything connected to it.';
 
@@ -91,6 +110,7 @@
     var cfg;
     try { cfg = JSON.parse(cfgEl.textContent); } catch (e) { return; }
     canvas = shell.querySelector('[data-graph-canvas]');
+    stage = shell.querySelector('[data-graph-stage]') || (canvas && canvas.parentElement);
     panel = shell.querySelector('[data-graph-panel]');
     statusEl = shell.querySelector('[data-graph-status]');
     seedBox = shell.querySelector('[data-graph-seeds]');
@@ -256,7 +276,7 @@
     statusEl.textContent = visN.length + ' node(s) · ' + visE.length + ' edge(s) · ' +
       reachLabel + ' from ' + seeds.map(function (id) {
         return (nodeById[id] || {}).label || id;
-      }).join(', ') + '. ' + HINT_DEFAULT;
+      }).join(', ') + '. ' + hintDefault();
   }
 
   function renderSeedChips() {
@@ -351,12 +371,18 @@
 
     if (!visN.length) {
       ctx.fillStyle = colors.muted;
-      ctx.font = '14px ' + '-apple-system, BlinkMacSystemFont, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('Pick a starting point: search above or choose an entity below.', w / 2, h / 2 - 12);
+      ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+      var l1 = wrapLines('Pick a starting point: search above or choose an entity below.', w - 32);
       ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillText('The graph then shows everything connected to it, and nothing else.', w / 2, h / 2 + 12);
+      var l2 = wrapLines('The graph then shows everything connected to it, and nothing else.', w - 32);
+      var y = h / 2 - ((l1.length * 20 + l2.length * 17 + 8) / 2) + 10;
+      ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+      l1.forEach(function (ln) { ctx.fillText(ln, w / 2, y); y += 20; });
+      y += 8;
+      ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+      l2.forEach(function (ln) { ctx.fillText(ln, w / 2, y); y += 17; });
       ctx.textAlign = 'left';
       return;
     }
@@ -466,6 +492,19 @@
       ctx.fillStyle = colors.text;
       ctx.fillText(label, x, n.y);
     }
+  }
+
+  /* Greedy word wrap in the current ctx.font, so the empty-state copy
+     fits a phone-width canvas instead of running off both edges. */
+  function wrapLines(text, maxW) {
+    var words = text.split(' '), lines = [], cur = '';
+    words.forEach(function (wd) {
+      var next = cur ? cur + ' ' + wd : wd;
+      if (cur && ctx.measureText(next).width > maxW) { lines.push(cur); cur = wd; }
+      else { cur = next; }
+    });
+    if (cur) lines.push(cur);
+    return lines;
   }
 
   function drawArrow(e, color) {
@@ -606,12 +645,20 @@
       (isSeed
         ? '<button type="button" class="mini-btn" data-seed-remove="' + esc(n.id) + '">remove seed</button> '
         : '<button type="button" class="mini-btn" data-seed-add="' + esc(n.id) + '">add as seed</button> ') +
-      '<button type="button" class="mini-btn" data-pin="' + esc(n.id) + '">' + (n.pinned ? 'unpin' : 'pin') + '</button>' +
+      '<button type="button" class="mini-btn" data-pin="' + esc(n.id) + '">' + (n.pinned ? 'unpin' : 'pin') + '</button> ' +
+      '<button type="button" class="mini-btn' + (pathPick ? ' active' : '') + '" data-path-start="' + esc(n.id) +
+        '" aria-pressed="' + (pathPick ? 'true' : 'false') +
+        '" title="Trace the shortest path from this node to a second node you pick">' +
+        (pathPick ? 'cancel path' : 'path to…') + '</button>' +
       '</div>' +
       (pathIds && pathEnd
         ? '<p class="muted g-path-note">Path ' + esc(selected) + ' → ' + esc(pathEnd) + ': ' +
-          (pathIds.size - 1) + ' hop(s). Esc to clear.</p>'
-        : '<p class="muted g-path-note">Shift-click another node to trace the shortest path from here.</p>') +
+          (pathIds.size - 1) + ' hop(s). ' +
+          (touchUI() ? 'Tap empty space to clear.' : 'Esc or a click on empty space clears it.') + '</p>'
+        : pathPick
+          ? '<p class="muted g-path-note">Now pick the second node, on the graph or in Connections below.</p>'
+          : '<p class="muted g-path-note">Path to… then pick a second node to trace the shortest path from here' +
+            (touchUI() ? '.' : ' (or shift-click it).') + '</p>') +
       '<h4>Connections <span class="muted">(' + conns.length +
       (hiddenCount ? ' · ' + hiddenCount + ' not drawn yet' : '') + ')</span></h4>' +
       '<ul class="g-conn">' + (rows || '<li class="muted">none</li>') +
@@ -623,36 +670,148 @@
   }
 
   // ---- interactions ----------------------------------------------------
-  var dragNode = null, panning = false, lastPos = null, moved = false;
+  var dragNode = null, panning = false, lastPos = null, moved = false, downPos = null;
+  var downScrollY = 0;       // page scroll at pointerdown: a touch that scrolled the page is not a graph gesture
+  var pointers = new Map();  // pointers currently down on the canvas: id -> {x, y}
+  var pinch = null;          // {d, m}: finger distance + midpoint while two are down
+  var gesture = false;       // a multi-finger gesture owns the pointers until all lift
+
+  /* Zoom by `factor` about canvas point (px, py), which stays put. The
+     factor is re-derived after clamping so the anchor never drifts at the
+     zoom limits. */
+  function zoomAt(px, py, factor) {
+    var w = canvas.width / dpr, h = canvas.height / dpr;
+    var k = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, view.k * factor));
+    var f = k / view.k;
+    var mx = px - w / 2, my = py - h / 2;
+    view.x = mx - (mx - view.x) * f;
+    view.y = my - (my - view.y) * f;
+    view.k = k;
+  }
+
+  function zoomBy(factor) {
+    zoomAt(canvas.width / dpr / 2, canvas.height / dpr / 2, factor);
+    draw();
+  }
+
+  /* Fit every drawn node into the canvas. On wide screens the detail
+     panel floats over the canvas's right side, so the fit uses the part
+     of the canvas the panel leaves free. */
+  function fitView() {
+    if (!visN.length) return;
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    visN.forEach(function (n) {
+      var r = nodeRadius(n);
+      minX = Math.min(minX, n.x - r); maxX = Math.max(maxX, n.x + r);
+      minY = Math.min(minY, n.y - r); maxY = Math.max(maxY, n.y + r);
+    });
+    var w = canvas.width / dpr, h = canvas.height / dpr;
+    var off = 0;
+    if (panel && !panel.hidden && getComputedStyle(panel).position === 'absolute') {
+      off = Math.min(w * 0.5, panel.offsetWidth + 12);
+    }
+    var pad = 40;
+    var k = Math.min((w - off - 2 * pad) / Math.max(1, maxX - minX),
+                     (h - 2 * pad) / Math.max(1, maxY - minY));
+    view.k = Math.max(ZOOM_MIN, Math.min(2.5, k));
+    view.x = -((minX + maxX) / 2) * view.k - off / 2;
+    view.y = -((minY + maxY) / 2) * view.k;
+    draw();
+  }
+
+  /* Touch: until the reader taps the graph, the canvas lets a vertical
+     one-finger swipe scroll the page (CSS touch-action: pan-y), so a graph
+     filling most of a phone screen never traps the page. A tap engages it
+     (touch-action: none: drag pans, pinch zooms); touching anything
+     outside the stage hands the page back. Mouse input never needs this. */
+  function setEngaged(on) {
+    if (engaged === on || !stage) return;
+    engaged = on;
+    stage.classList.toggle('is-engaged', on);
+  }
+
+  function pinchState() {
+    var ps = [];
+    pointers.forEach(function (p) { ps.push(p); });
+    var a = ps[0], b = ps[1];
+    return {
+      d: Math.max(1, Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y))),
+      m: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+    };
+  }
+
+  function endPointerDrag() { dragNode = null; panning = false; lastPos = null; downPos = null; }
 
   function wire() {
     window.addEventListener('resize', function () { resize(); draw(); });
 
     canvas.addEventListener('pointerdown', function (ev) {
-      canvas.setPointerCapture(ev.pointerId);
-      var n = nodeAt(ev.offsetX, ev.offsetY);
+      if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+      try { canvas.setPointerCapture(ev.pointerId); } catch (_) { /* pointer already gone */ }
+      var p = { x: ev.offsetX, y: ev.offsetY };
+      pointers.set(ev.pointerId, p);
+      if (pointers.size >= 2) {
+        // A second finger turns the gesture into a pinch: whatever the
+        // first finger started (pan, node drag) stops where it is.
+        endPointerDrag();
+        gesture = true; moved = true;
+        pinch = pointers.size === 2 ? pinchState() : null;
+        return;
+      }
+      gesture = false;
+      var n = nodeAt(p.x, p.y);
       moved = false;
-      lastPos = { x: ev.offsetX, y: ev.offsetY };
+      lastPos = p; downPos = p;
+      downScrollY = window.scrollY;
       if (n) { dragNode = n; } else { panning = true; }
     });
     canvas.addEventListener('pointermove', function (ev) {
-      if (dragNode) {
-        var p = toWorld(ev.offsetX, ev.offsetY);
-        dragNode.x = p.x; dragNode.y = p.y;
+      var p = { x: ev.offsetX, y: ev.offsetY };
+      if (pointers.has(ev.pointerId)) pointers.set(ev.pointerId, p);
+      if (gesture) {
+        if (pinch && pointers.size === 2) {
+          var next = pinchState();
+          zoomAt(next.m.x, next.m.y, next.d / pinch.d);
+          view.x += next.m.x - pinch.m.x;
+          view.y += next.m.y - pinch.m.y;
+          pinch = next;
+          draw();
+        }
+        return;
+      }
+      // The browser is scrolling the page with this finger (the canvas
+      // is not engaged yet): the graph stays where it is.
+      if (ev.pointerType !== 'mouse' && !engaged && (dragNode || panning) &&
+          Math.abs(window.scrollY - downScrollY) > 1) {
+        endPointerDrag(); moved = true;
+        return;
+      }
+      // A tap is never a drag: a finger jitters a few pixels while it
+      // rests, which used to pin the node instead of selecting it.
+      // Before the canvas is engaged a touch waits past the browser's own
+      // scroll slop, so a vertical swipe hands over to the page scroll
+      // (pointercancel) before the graph has moved at all.
+      if ((dragNode || panning) && downPos && !moved) {
+        var slop = ev.pointerType === 'mouse' ? 3 : (engaged ? 8 : 18);
+        if (Math.abs(p.x - downPos.x) < slop && Math.abs(p.y - downPos.y) < slop) return;
         moved = true;
+      }
+      if (dragNode) {
+        var wp = toWorld(p.x, p.y);
+        dragNode.x = wp.x; dragNode.y = wp.y;
         alpha = Math.max(alpha, 0.12);
         layout(false);
         return;
       }
       if (panning && lastPos) {
-        view.x += ev.offsetX - lastPos.x;
-        view.y += ev.offsetY - lastPos.y;
-        lastPos = { x: ev.offsetX, y: ev.offsetY };
-        moved = true;
+        view.x += p.x - lastPos.x;
+        view.y += p.y - lastPos.y;
+        lastPos = p;
         draw();
         return;
       }
-      var h = nodeAt(ev.offsetX, ev.offsetY);
+      if (ev.pointerType === 'touch') return;   // a finger has no hover
+      var h = nodeAt(p.x, p.y);
       var hid = h ? h.id : null;
       if (hid !== hovered) {
         hovered = hid;
@@ -661,16 +820,40 @@
       }
     });
     canvas.addEventListener('pointerup', function (ev) {
+      pointers.delete(ev.pointerId);
+      if (gesture) {
+        pinch = pointers.size === 2 ? pinchState() : null;
+        if (!pointers.size) gesture = false;
+        return;
+      }
+      if (ev.pointerType !== 'mouse') {
+        // A touch that scrolled the page was a page scroll, not a tap on
+        // the graph: it neither engages the canvas nor selects anything.
+        if (Math.abs(window.scrollY - downScrollY) > 1) { endPointerDrag(); return; }
+        setEngaged(true);
+      }
       if (dragNode && moved) { dragNode.pinned = true; }
       var wasDrag = moved;
       var n = dragNode || (wasDrag ? null : nodeAt(ev.offsetX, ev.offsetY));
-      dragNode = null; panning = false; lastPos = null;
+      endPointerDrag();
       if (wasDrag || !n) { if (!n && !wasDrag) { clearSelection(); } return; }
-      if (ev.shiftKey && selected && selected !== n.id) {
+      if ((ev.shiftKey || pathPick) && selected && selected !== n.id) {
         setPath(selected, n.id);
       } else {
         selectNode(n.id);
       }
+    });
+    // The browser took the touch over (page scroll): drop the gesture
+    // without treating it as a click or a drag.
+    canvas.addEventListener('pointercancel', function (ev) {
+      pointers.delete(ev.pointerId);
+      pinch = pointers.size === 2 ? pinchState() : null;
+      if (!pointers.size) gesture = false;
+      endPointerDrag();
+      moved = false;
+    });
+    canvas.addEventListener('pointerleave', function (ev) {
+      if (ev.pointerType === 'mouse' && hovered && !dragNode && !panning) { hovered = null; draw(); }
     });
     canvas.addEventListener('dblclick', function (ev) {
       var n = nodeAt(ev.offsetX, ev.offsetY);
@@ -678,20 +861,41 @@
     });
     canvas.addEventListener('wheel', function (ev) {
       ev.preventDefault();
-      var factor = Math.exp(-ev.deltaY * 0.0012);
-      var w = canvas.width / dpr, h = canvas.height / dpr;
-      var mx = ev.offsetX - w / 2, my = ev.offsetY - h / 2;
-      view.x = mx - (mx - view.x) * factor;
-      view.y = my - (my - view.y) * factor;
-      view.k = Math.max(0.08, Math.min(6, view.k * factor));
+      zoomAt(ev.offsetX, ev.offsetY, Math.exp(-ev.deltaY * 0.0012));
       draw();
     }, { passive: false });
+    document.addEventListener('pointerdown', function (ev) {
+      if (engaged && stage && !stage.contains(ev.target)) setEngaged(false);
+    });
 
     document.addEventListener('keydown', function (ev) {
       if (ev.key === 'Escape') { clearSelection(); }
     });
 
     shell.addEventListener('click', function (ev) {
+      var z = ev.target.closest('[data-graph-zoom]');
+      if (z) {
+        var how = z.getAttribute('data-graph-zoom');
+        if (how === 'fit') fitView();
+        else zoomBy(how === 'in' ? ZOOM_STEP : 1 / ZOOM_STEP);
+        return;
+      }
+      z = ev.target.closest('[data-path-start]');
+      if (z) {
+        var from = z.getAttribute('data-path-start');
+        if (selected !== from) selectNode(from);
+        pathPick = !pathPick;
+        if (pathPick) { pathEnd = null; pathIds = null; pathEdgeSet = null; }
+        showPanel(nodeById[from]);
+        if (statusEl) {
+          if (pathPick) {
+            statusEl.textContent = 'Shortest path from ' + ((nodeById[from] || {}).label || from) +
+              ': now pick the second node, on the graph or in the panel’s Connections list.';
+          } else { updateStatus(); }
+        }
+        draw();
+        return;
+      }
       var t = ev.target.closest('[data-graph-layer]');
       if (t) {
         var l = t.getAttribute('data-graph-layer');
@@ -819,6 +1023,7 @@
     // pull exactly this one node into the view (never its whole
     // neighbourhood — growth stays user-driven, node by node).
     if (!visSet.has(id)) { extra.add(id); refreshVisible(); }
+    if (pathPick && selected && selected !== id && nodeById[selected]) { setPath(selected, id); return; }
     selectNode(id, true);
   }
 
@@ -827,6 +1032,7 @@
     if (!n) return;
     if (!visSet.has(id)) { extra.add(id); refreshVisible(); }
     selected = id;
+    pathPick = false;
     pathEnd = null; pathIds = null; pathEdgeSet = null;
     showPanel(n);
     if (center) {
@@ -840,12 +1046,14 @@
 
   function setPath(a, b) {
     var res = tracePath(a, b);
+    pathPick = false;
     pathEnd = b;
     if (res) {
       pathIds = res.ids; pathEdgeSet = res.edges;
       if (statusEl) statusEl.textContent =
         'Shortest path: ' + (nodeById[a].label) + ' → ' + (nodeById[b].label) + ' = ' +
-        (res.ids.size - 1) + ' hop(s). Every hop is an evidence-backed edge: click nodes along it for details. Esc to clear.';
+        (res.ids.size - 1) + ' hop(s). Every hop is an evidence-backed edge: select nodes along it for details. ' +
+        (touchUI() ? 'Tap empty space to clear.' : 'Esc to clear.');
     } else {
       pathIds = null; pathEdgeSet = null;
       if (statusEl) statusEl.textContent =
@@ -859,6 +1067,7 @@
 
   function clearSelection() {
     selected = null;
+    pathPick = false;
     pathEnd = null; pathIds = null; pathEdgeSet = null;
     showPanel(null);
     updateStatus();
@@ -870,7 +1079,7 @@
     seeds = [];
     expanded.clear();
     extra.clear();
-    selected = null; pathEnd = null; pathIds = null; pathEdgeSet = null;
+    selected = null; pathPick = false; pathEnd = null; pathIds = null; pathEdgeSet = null;
     view = { x: 0, y: 0, k: 1 };
     nodes.forEach(function (n) { n.pinned = false; n.placed = false; });
     showPanel(null);
@@ -910,10 +1119,21 @@
     return true;
   }
 
+  var lastW = 0;
   function resize() {
     var rect = canvas.parentElement.getBoundingClientRect();
-    var w = Math.max(320, rect.width);
-    var h = Math.max(420, Math.min(720, window.innerHeight - 260));
+    var w = Math.max(200, rect.width);
+    var vh = window.innerHeight;
+    // Phones get a shorter canvas: the page above and below it must stay
+    // reachable with a thumb.
+    var h = w < 700
+      ? Math.round(Math.max(300, Math.min(480, vh * 0.55)))
+      : Math.max(420, Math.min(720, vh - 260));
+    // Mobile browsers fire resize while the URL bar slides in and out; a
+    // height-only jitter must not re-flow the page under the reader.
+    var curH = parseFloat(canvas.style.height) || 0;
+    if (Math.round(w) === lastW && curH && Math.abs(h - curH) < 120) h = curH;
+    lastW = Math.round(w);
     canvas.style.width = w + 'px';
     canvas.style.height = h + 'px';
     canvas.width = Math.round(w * dpr);

@@ -111,12 +111,14 @@ _site/
 ├── entries/YYYY-MM-DD/<slug>/index.md    # the entry's raw Markdown source (frontmatter + body) —
 │                                         #   advertised via <link rel="alternate" type="text/markdown">,
 │                                         #   the entry meta line, and markdown_url in briefbook.json
-├── entities/{index.html,<key>/…}         # unified entity pages (registry + CVEs) — typed
-│                                         #   relationships + derived co-occurrence sections
+├── entities/{index.html,<key>/…}         # unified entity pages (registry + CVEs): action items +
+│                                         #   defender insights first, then typed relationships,
+│                                         #   timeline (mentions tagged), pivots, ATT&CK (collapsed)
 ├── graph/index.html                      # interactive threat graph (canvas, assets/js/graph.js)
 ├── cves/ · topics/                       # type-filtered views + legacy redirect stubs
 ├── sources/{index.html,<id>/…}           # source list + detail (entry-based citations)
-├── tags/<tag>/ · regions/<region>/       # per-tag / per-region entry indexes
+├── tags/ · regions/                      # index of every tag / region with entry counts
+├── tags/<tag>/ · regions/<region>/       # per-tag / per-region entry lists, latest activity first
 ├── trends/index.html                     # momentum analysis: cohort tiles (complete-week deltas),
 │                                         #   cohort×week matrix, entity + ATT&CK technique momentum
 ├── ops/index.html                        # operations dashboard, built from runs/** frontmatter
@@ -224,7 +226,7 @@ scraping and no state-file joining:
 | Join | Source |
 |---|---|
 | Entry → sections | `kind` (+ `deep_dive` → Deep Dive) via `content_model.KIND_DAILY_SECTION`; § Updates is derived from `updates[]` records dated in the day |
-| Entity → entries | explicit `entities:` registry keys, plus word-boundary name/alias phrase matching against titles/bodies (short all-caps acronyms match case-sensitively) |
+| Entity → entries | explicit `entities:` registry keys, plus word-boundary name/alias phrase matching against titles/bodies (short all-caps acronyms match case-sensitively, and a record's `ambiguous_labels` never phrase-match) |
 | Entity ↔ entity | curated typed `relations[]` (registry; each edge cites its establishing entry) + derived same-entry co-occurrence — rendered on entity pages and `/graph/` |
 | CVE → entries | `cves[].id` frontmatter records (+ `state/cves_seen.json` for historical context) |
 | Source → entries | longest-prefix URL match between `sources.json#url` and `sources[]` records |

@@ -92,19 +92,24 @@
     return out.slice(0, limit).map((r) => r.entry);
   }
 
-  /** Highlight all token occurrences in text with <mark> tags. Plain-text in, HTML out. */
+  /** Highlight all token occurrences in text with <mark> tags. Plain-text in, HTML out.
+   *  One pass over the RAW text with a single alternation (longest token
+   *  first), escaping each piece as it is emitted: a token can never match
+   *  inside markup a previous token inserted, or inside an HTML entity. */
   function highlight(text, q) {
-    if (!q) return escapeHtml(text);
+    const raw = String(text == null ? '' : text);
+    if (!q) return escapeHtml(raw);
     const toks = tokens(q).filter((t) => t.length >= 2);
-    if (!toks.length) return escapeHtml(text);
-    let html = escapeHtml(text);
-    // Sort longest first so substrings don't pre-empt the longer match.
+    if (!toks.length) return escapeHtml(raw);
     toks.sort((a, b) => b.length - a.length);
-    for (const t of toks) {
-      const re = new RegExp('(' + escapeRegex(t) + ')', 'gi');
-      html = html.replace(re, '<mark>$1</mark>');
+    const re = new RegExp(toks.map(escapeRegex).join('|'), 'gi');
+    let out = '', last = 0, m;
+    while ((m = re.exec(raw)) !== null) {
+      if (!m[0]) { re.lastIndex++; continue; }
+      out += escapeHtml(raw.slice(last, m.index)) + '<mark>' + escapeHtml(m[0]) + '</mark>';
+      last = m.index + m[0].length;
     }
-    return html;
+    return out + escapeHtml(raw.slice(last));
   }
 
   function escapeHtml(s) {

@@ -4,7 +4,7 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
-## 4.15 — 2026-09-29 (a source is healthy when it works: content-aware source health, and the quote check covers every quote)
+## 4.16 — 2026-09-29 (a source is healthy when it works: content-aware source health, and the quote check covers every quote)
 
 ### Why
 
@@ -29,6 +29,30 @@ The fetch ladder, the essential-tier floor, the rotation cursor and lookback, th
 
 ---
 
+## 4.15 — 2026-09-29 (entity attachment: ambiguous labels, and an entry about an entity versus one that mentions it)
+
+### Why
+
+Operator report: the page for `actor:fingerprint` (the pseudonymous group behind the MyDr and Qbusoft/Medyc breaches in Poland) listed 26 entries, and 24 of them had nothing to do with it. The site attaches an entry to an entity when the entry keys it in `entities:` or when the entity's name or an alias appears in the entry's prose. The actor's name is an ordinary English word, so every entry about TLS, browser or device fingerprinting landed on its page, fed its ATT&CK profile, its hunting pivots and its co-occurrence edges in `/graph/`, and made pivoting from the actor useless.
+
+A store-wide sweep of every non-product registry record found the same failure on nine more: UNC6671's alias "Falcon" matched every CrowdStrike Falcon mention, "Everest" matched Everest Forms Pro, "Troy" matched Troy Hunt, "Apex" matched Trend Micro Apex One, "Hades" matched the Miasma worm's PyPI front, "Payload" and "Embargo" matched sentence-opening prose ("Payload delivery:", "Embargo window:"), "The Syndicate" matched "the syndicate" and RedC2's alias "Red Agent" matched Wiz's unrelated Red Agent tool. 42 false attachments in all. Case-sensitive matching (v3.x) could not separate them: the words are capitalised exactly as the names are.
+
+The same sweep surfaced a second, quieter defect. Even a genuine prose mention ("sells footholds to Qilin, Interlock, Rhysida, Akira") lent the mentioned actor the whole entry's techniques, products and CVEs, so an actor's TTP profile carried behavior that belonged to a different actor.
+
+The operator also asked that the entity page lead with what a defender does about the entity rather than with its ATT&CK mapping, which previously appeared three times (a tile, a chip row and a full per-technique list) before the story timeline.
+
+### What changed
+
+- **`prompts/cti-run.md` Phase 4 § Entity linking.** `entities:` carries the entities an entry is ABOUT: its subject and every entity a sourced statement in it concerns. An entity named only as context stays unkeyed. The site lists that entry on the entity's page as a *mention*, but only keyed entries feed the entity's action items, defender insights, pivots and ATT&CK profile.
+- **`prompts/cti-run.md` registry conventions.** A name or alias that is also ordinary vocabulary, a person's first name or another vendor's product name goes in the record's new `ambiguous_labels` at registration.
+- **`prompts/quality-audit.md` Phase 3 discipline drift.** Entity attachment hygiene joins the review: unrelated entries on an entity page are fixed with `ambiguous_labels`, a keyed passing mention through an `internal: true` record.
+- **Registry schema (`docs/pipeline.md` § Entity registry, `entities/README.md`).** Optional `ambiguous_labels: [..]`: labels that stay display and dedup labels but never phrase-match prose (`content_model.prose_match_labels`). `validate_registry` FAILs a value that is not the record's own name or alias. `check_run.py`'s relation-evidence check honours it. Set on the ten records above.
+- **Site (`site/build.py`).** `build_entities` records which matched entries key the entity (`subject_entry_ids`) and flags the rest as mentions. The per-entity ATT&CK profile, Navigator layer and `/attack/` overlap now derive from subject entries only (`docs/pipeline.md` § The ATT&CK layer). The entity page is re-ordered: tiles (coverage, latest activity, peak priority, targets, sources), then § Action items and § Defender insights lifted from the entries about the entity, then relationships, the story timeline with mentions tagged, hunting pivots (CVEs exploited first for every type), the ATT&CK profile collapsed into one line, and the embedded entries.
+- **`actor:fingerprint` record.** Summary rewritten from the two Zaufana Trzecia Strona primaries (re-read 2026-09-29): access vectors, cloud hosting, the private extortion approach, the public pre-announcement, the unpublished data, and the single-assessor caveat.
+
+### What stays
+
+Unchanged: prose matching for every label not flagged ambiguous (a genuine mention still reaches the entity's timeline), the registry's key permanence and alias rules, typed `relations[]` and their evidence rule, co-occurrence derivation and its annual-report gate, every prime directive, the entry lifecycle, the mechanical gate and the verification loop. No entry file was edited: both entries about `actor:fingerprint` already keyed it.
 ## 4.14 — 2026-09-29 (operator directive: no time limits, every run still ends, and every count is a guide)
 
 ### Why

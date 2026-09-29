@@ -1259,6 +1259,13 @@ def enhance_brief_item_html(html: str) -> str:
         pre = m.group("pre").strip()
         pre_html = f"<p>{pre}</p>" if pre else ""
         rest = m.group("rest").strip()
+        # The label now stands alone, so the body starts a sentence: capitalise
+        # its first letter ("review GPO-write..." -> "Review ..."), never
+        # inside a code span or a link.
+        rest = re.sub(
+            r"^((?:\s|<(?!code|a[\s>])[^>]+>)*)([a-z])",
+            lambda mm: mm.group(1) + mm.group(2).upper(), rest, count=1,
+        )
         return (
             f'{pre_html}'
             f'<aside class="callout {cls}" role="note">'
@@ -1523,6 +1530,12 @@ def prune_orphans(out: Path) -> None:
 # after CSP_META enforces both rules on every build (including the deploy-site
 # CI step, which runs `python3 site/build.py`).
 ANALYTICS_ENABLED = BRANDING["analytics"]["provider"] == "umami"
+# The footer's privacy line must stay true to the analytics switch:
+# Umami is cookieless aggregate counting, which is still measurement.
+_FOOTER_PRIVACY = (
+    "no cookies · cookieless aggregate analytics" if ANALYTICS_ENABLED
+    else "no cookies · no tracking"
+)
 UMAMI_WEBSITE_ID = BRANDING["analytics"]["umami"]["website_id"].strip()
 UMAMI_SCRIPT_HOST = BRANDING["analytics"]["umami"]["script_host"].strip().rstrip("/")
 UMAMI_BEACON_HOST = BRANDING["analytics"]["umami"]["beacon_host"].strip().rstrip("/")
@@ -1750,7 +1763,7 @@ def _more_menu_links(pfx: str, *, drawer: bool = False) -> str:
     ]
     tail = [
         (f"{pfx}about/", "About", ""),
-        (f"{pfx}feeds/", "RSS feeds", "10"),
+        (f"{pfx}feeds/", "RSS feeds", str(2 + len(SECTOR_FEED_SLICES))),
         (f"{pfx}stix/", "STIX bundles", "2.1"),
     ]
     def row(href: str, label: str, hint: str) -> str:
@@ -2037,7 +2050,7 @@ def base_template(
 {UMAMI_SNIPPET}
 <!-- Path prefix back to the site root, used by app.js to build URLs. -->
 <meta name="cti-site-prefix" content="{pfx}" />
-<script defer src="{pfx}assets/js/theme.js?v={cachebust}"></script>
+<script src="{pfx}assets/js/theme.js?v={cachebust}"></script>
 <script defer src="{pfx}assets/js/search.js?v={cachebust}"></script>
 <script defer src="{pfx}assets/js/app.js?v={cachebust}"></script>
 <script defer src="{pfx}assets/vendor/filter.min.js?v={cachebust}"></script>
@@ -2066,14 +2079,15 @@ def base_template(
       <a class="ghlink" id="github-link" href="{gh_url}" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="View source on GitHub">{GH_ICON_SVG}<span class="github-stars" id="github-stars" hidden></span></a>
     </div>
     <div class="util mobile-only">
-      <button class="ib" type="button" data-drawer-toggle aria-label="Open menu" title="Menu" aria-expanded="false"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+      <button class="ib" type="button" data-search-open aria-label="Search briefs, CVEs, entities" title="Search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg></button>
+      <button class="ib" type="button" data-drawer-toggle aria-label="Open menu" title="Menu" aria-expanded="false" aria-controls="site-drawer"><svg class="ic-open" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg><svg class="ic-close" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
     </div>
   </div>
   {_subnav_html(pfx, active_page)}
   <div class="mseg mobile-only">
     <div class="seg" role="navigation" aria-label="Views">{segments}</div>
   </div>
-  <div class="drawer mobile-only" data-drawer hidden>
+  <div class="drawer mobile-only" id="site-drawer" data-drawer hidden>
     <button type="button" class="msearch" data-search-open><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Search briefs, CVEs, entities…</button>
     {_more_menu_links(pfx, drawer=True)}
     <div class="dpop-row" style="padding:12px 6px 4px;border-top:1px solid var(--border-soft);margin-top:6px;"><span class="dpop-l">Theme</span><div class="mini-seg" data-theme-seg><button type="button" data-theme-set="system">System</button><button type="button" data-theme-set="light">Light</button><button type="button" data-theme-set="dark">Dark</button></div></div>
@@ -2081,7 +2095,7 @@ def base_template(
     <button class="dpop-toggle" type="button" role="switch" aria-checked="false" data-density-toggle><span class="dpop-tl"><b>Comfortable spacing</b><small>Looser line height</small></span><span class="sw"><i></i></span></button>
   </div>
 </header>
-<div class="aibar" data-aibar hidden>
+<div class="aibar" data-aibar>
   <div class="aibar-in">
     <span class="idot" aria-hidden="true"></span>
     <span>{AI_BAR_HTML}</span>
@@ -2093,10 +2107,15 @@ def base_template(
   <div class="search-modal__scrim" data-search-close></div>
   <div class="search-modal__panel">
     <form class="searchbox" role="search" data-search-form>
-      <label class="visually-hidden" for="q">Search briefs, CVEs, topics, sources</label>
-      <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search briefs, CVEs, entities, sources…" aria-label="Search" />
-      <kbd class="kbd-hint" aria-hidden="true">esc</kbd>
-      <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
+      <div class="search-modal__head">
+        <div class="searchbox">
+          <label class="visually-hidden" for="q">Search briefs, CVEs, topics, sources</label>
+          <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search briefs, CVEs, entities, sources…" />
+          <kbd class="kbd-hint" aria-hidden="true">esc</kbd>
+        </div>
+        <button type="button" class="search-close" data-search-close aria-label="Close search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      </div>
+      <ul id="suggestions" class="suggestions" role="listbox" aria-label="Search results" hidden></ul>
     </form>
   </div>
 </div>
@@ -2108,7 +2127,7 @@ def base_template(
     <a href="{pfx}about/">How this works</a>
     <a href="{pfx}feeds/">RSS</a>
     <a href="{gh_url}" target="_blank" rel="noopener noreferrer">GitHub</a>
-    <span class="foot-end" id="footer-meta">build {_escape(cachebust[:7])} · no cookies · no tracking</span>
+    <span class="foot-end" id="footer-meta">build {_escape(cachebust[:7])} · {_FOOTER_PRIVACY}</span>
   </div>
 </footer>
 </body>
@@ -2746,8 +2765,8 @@ def render_immediate_action_callout(entry: dict[str, Any]) -> str:
         f'data-entry-id="{_escape(entry["id"])}">'
         '<span class="callout__label">Immediate action</span>'
         '<div class="callout__body">'
-        + (f'<p class="immediate-action__t"><strong>{_escape(title)}</strong></p>' if title else "")
-        + (f"<p>{_escape(action)}</p>" if action else "")
+        + (f'<p class="immediate-action__t"><strong>{_inline_text(title)}</strong></p>' if title else "")
+        + (f"<p>{render_inline(action)}</p>" if action else "")
         + "</div></aside>"
     )
 
@@ -2862,6 +2881,17 @@ def render_update_card(entry: dict[str, Any], record: dict[str, Any], *,
     )
 
 
+def _entry_ref_label(entry: dict[str, Any] | None, *, max_len: int = 96) -> str:
+    """The readable name of a referenced entry (its headline, else title),
+    cut at a word boundary; empty when the entry is unknown."""
+    if not entry:
+        return ""
+    text = _strip_md_emphasis(str(entry.get("headline") or entry.get("title") or ""))
+    if len(text) <= max_len:
+        return text
+    return text[:max_len].rsplit(" ", 1)[0].rstrip(",;:- ") + "…"
+
+
 def _short_entry_label(entry: dict[str, Any], *, max_len: int = 52) -> str:
     """A compact clickable label for an entry reference (used by the Action
     Items list). Prefers the CVE id(s); otherwise the headline/title cut at
@@ -2959,7 +2989,7 @@ def _rail_stamp_html(stamp: str) -> str:
 
 
 def render_prov_row(entry: dict[str, Any], *, prefix: str = "",
-                    open_label: str = "Open finding ↗") -> str:
+                    open_label: str = "Open finding →") -> str:
     """The mono provenance strip under a finding: kind · stamp ·
     verification · open-link. (CVE lives in the top badges; the source
     list lives in its own clickable row below.)"""
@@ -2988,7 +3018,7 @@ def render_badges(entry: dict[str, Any], *, prefix: str = "", full: bool = False
     if cves:
         label = _cve_label(entry)
         parts.append(
-            f'<a class="b cve" href="{prefix}cves/{_escape(cves[0])}/">{_escape(label)}</a>'
+            f'<a class="b cve" href="{prefix}entities/{_escape(cves[0])}/">{_escape(label)}</a>'
         )
     if _entry_exploited(entry):
         parts.append('<span class="b exp">exploited</span>')
@@ -3073,8 +3103,10 @@ def render_entry_card(
     refs = [str(r) for r in (entry.get("references") or [])]
     refs_html = ""
     if refs:
+        # Name the referenced finding, not its storage id.
         ref_links = " · ".join(
-            f'<a class="mono" href="{_escape(prefix)}entries/{_escape(r)}/">{_escape(r)}</a>'
+            f'<a href="{_escape(prefix)}entries/{_escape(r)}/" title="{_escape(r)}">'
+            f'{_escape(_entry_ref_label((entries_by_id or {}).get(r)) or r)}</a>'
             for r in refs
         )
         refs_html = f'<p class="entry-references"><strong>Builds on:</strong> {ref_links}</p>'
@@ -3389,7 +3421,7 @@ def render_tldr_list(
         summ = _inline_text(e.get("summary") or "")
         tail = _keep_arrow_attached(summ, f'<a href="{_escape(url)}">→</a>')
         lis.append(
-            f'<li><span class="num">{i:02d}</span>'
+            f'<li data-entry-id="{_escape(e["id"])}"><span class="num">{i:02d}</span>'
             f"<span><b>{_inline_text(headline)}.</b> {tail}</span></li>"
         )
     return (
@@ -4014,7 +4046,7 @@ def render_live_brief_page(
 {timeline}
 </div>
 <button class="loadbtn" type="button" data-window-more><span class="plus" aria-hidden="true">+</span>Load older findings · extend the window by 24 h</button>
-<div class="loadmore end" data-window-end hidden>Reached the start of the retained window · <a href="{prefix}daily/">open the day archive ↗</a></div>
+<div class="loadmore end" data-window-end hidden>Reached the start of the retained window · <a href="{prefix}daily/">open the day archive →</a></div>
 {explore_band}
 <script src="{prefix}assets/js/spa-redirect.js?v={cachebust}"></script>
 """
@@ -4127,7 +4159,7 @@ def render_day_page(
     body = f"""
 <div class="briefhead">
   {datenav}
-  <a class="allbriefs" href="{prefix}daily/">All daily briefs ↗</a>
+  <a class="allbriefs" href="{prefix}daily/">All daily briefs →</a>
 </div>
 <span class="eyebrow">Daily brief · UTC day</span>
 <h1 class="vtitle">{_escape(long_date)}</h1>
@@ -4189,26 +4221,35 @@ def render_days_index_page(
         cves = len({c for e in entries for c in entry_cve_ids(e)})
         crit = sum(1 for e in entries if e.get("priority") == "critical")
         top = select_tldr_entries(entries)
-        hint = (top[0].get("headline") or "") if top else ""
+        heads = [_strip_md_emphasis(str(e.get("headline") or e.get("title") or "")) for e in top]
         try:
-            short = datetime.strptime(day, "%Y-%m-%d").strftime("%a %d %b %Y")
+            dt_ = datetime.strptime(day, "%Y-%m-%d")
+            short = dt_.strftime("%a %d %b %Y")
+            long_ = dt_.strftime("%A %d %B %Y")
         except ValueError:
-            short = day
+            short = long_ = day
+        # The date appears once (the left column); the row leads with the
+        # day's top story. Every date form the reader can see or type is in
+        # the filter haystack ("sep 2026", "september", "2026-09-29").
         haystack = " ".join(
-            [day, hint] + [e.get("title") or "" for e in entries]
+            [day, short, long_] + heads + [e.get("title") or "" for e in entries]
             + [c for e in entries for c in entry_cve_ids(e)]
         ).lower()
         if n:
             count_txt = f"{n} finding" + ("" if n == 1 else "s") + (f" · {crit} critical" if crit else "")
-            sub = _inline_text(hint[:150]) or (f"{cves} CVE" + ("" if cves == 1 else "s") if cves else "")
+            title_txt = _inline_text(_clip_words(heads[0], 150)) if heads else "Findings"
+            more = [h for h in heads[1:3] if h]
+            sub = (_inline_text(_clip_words(" · ".join(more), 170)) if more
+                   else (f"{cves} CVE" + ("" if cves == 1 else "s") if cves else ""))
         else:
             count_txt = "run record only"
-            sub = "Quiet window · the run record is the artifact."
+            title_txt = "Quiet window"
+            sub = "No finding cleared the bar · the run record is the artifact."
         rows.append(
             f'<a class="arc" href="{prefix}daily/{_escape(day)}/" '
             f'data-brief-kind="daily" data-brief-haystack="{_escape(haystack)}">'
             f'<span class="arc-d">{_escape(short)}</span>'
-            f'<span class="arc-b"><span class="arc-t">CTI Daily Brief · {_escape(day)}</span>'
+            f'<span class="arc-b"><span class="arc-t">{title_txt}</span>'
             f'<span class="arc-s">{sub}</span></span>'
             f'<span class="arc-c">{_escape(count_txt)}</span></a>'
         )
@@ -4401,6 +4442,9 @@ def render_detail_record(entry: dict[str, Any], *, prefix: str) -> str:
     return "".join(rows)
 
 
+_RAIL_CVE_CARDS = 6
+
+
 def render_entry_rail(
     entry: dict[str, Any],
     *,
@@ -4428,13 +4472,19 @@ def render_entry_rail(
         return f'<div class="echips">{inner}</div>' if inner else ""
 
     # --- CVEs: the hard identifiers, each with its own exposure block ----
-    cve_rows: list[str] = []
-    for cv in entry.get("cves") or []:
-        if not isinstance(cv, dict) or not cv.get("id"):
-            continue
+    # A long list (a vendor's monthly patch release) keeps the rail from
+    # growing to several times the article: past _RAIL_CVE_CARDS the
+    # exploited / KEV CVEs keep their cards and every other one becomes a
+    # one-line row inside a disclosure. Nothing scrolls on its own.
+    cve_list = [cv for cv in (entry.get("cves") or []) if isinstance(cv, dict) and cv.get("id")]
+
+    def _hot(cv: dict[str, Any]) -> bool:
+        return any(str(st) in ("exploited", "cisa-kev") for st in (cv.get("status") or []))
+
+    def _cve_card(cv: dict[str, Any]) -> str:
         cid = str(cv["id"])
         head_bits = [
-            f'<a class="mono erail-cve__id" href="{prefix}cves/{_escape(cid)}/">{_escape(cid)}</a>'
+            f'<a class="mono erail-cve__id" href="{prefix}entities/{_escape(cid)}/">{_escape(cid)}</a>'
         ]
         if cv.get("cvss"):
             head_bits.append(
@@ -4450,18 +4500,44 @@ def render_entry_rail(
             detail.append(_fact_row("EPSS", f'<span class="mono">{_escape(str(cv["epss"]))}</span>'))
         for label, key in (("Type", "type"), ("Vector", "vector"), ("Auth", "auth")):
             if cv.get(key):
-                detail.append(_fact_row(label, _escape(str(cv[key]))))
+                detail.append(_fact_row(label, _inline_text(str(cv[key]))))
         for label, key in (("Affected", "affected"), ("Fixed", "fixed")):
             if cv.get(key):
-                detail.append(_fact_row(label, _escape(str(cv[key]))))
-        cve_rows.append(
+                detail.append(_fact_row(label, _inline_text(str(cv[key]))))
+        return (
             '<article class="erail-cve">'
             f'<div class="erail-cve__head">{"".join(head_bits)}</div>'
             + (f'<div class="erail-cve__st">{st_chips}</div>' if st_chips else "")
             + ("".join(detail))
             + "</article>"
         )
-    group("CVEs", "".join(cve_rows))
+
+    def _cve_line(cv: dict[str, Any]) -> str:
+        cid = str(cv["id"])
+        bits = [f'<a class="mono erail-cve__id" href="{prefix}entities/{_escape(cid)}/">{_escape(cid)}</a>']
+        if cv.get("cvss"):
+            bits.append(f'<span class="mono muted">CVSS {_escape(str(cv["cvss"]))}</span>')
+        if cv.get("type"):
+            bits.append(f'<span class="muted">{_inline_text(str(cv["type"]))}</span>')
+        return '<div class="erail-cve-row">' + "".join(bits) + "</div>"
+
+    if len(cve_list) <= _RAIL_CVE_CARDS:
+        cve_html = "".join(_cve_card(cv) for cv in cve_list)
+    else:
+        hot = [cv for cv in cve_list if _hot(cv)][:_RAIL_CVE_CARDS]
+        hot_ids = {id(cv) for cv in hot}
+        cards = hot or cve_list[:3]
+        card_ids = {id(cv) for cv in cards} | hot_ids
+        rest = [cv for cv in cve_list if id(cv) not in card_ids]
+        cve_html = "".join(_cve_card(cv) for cv in cards)
+        if rest:
+            cve_html += (
+                '<details class="erail-cve-more">'
+                f'<summary>{len(rest)} more CVE{"" if len(rest) == 1 else "s"}</summary>'
+                + "".join(_cve_line(cv) for cv in rest)
+                + "</details>"
+            )
+    group("CVEs", cve_html)
 
     # Each product string keeps the release precision the entry authored,
     # and links to the product entity that folds every release onto one
@@ -4757,7 +4833,9 @@ def render_entry_page(
         cachebust=cachebust,
         home_relative_prefix=prefix,
         body_class="reading entry-detail",
-        active_nav="daily",
+        # The nav segment names where the reader came from: a completed
+        # day's entry belongs to Daily, today's still-rolling one to Live.
+        active_nav="daily" if day in day_pages else "live",
         rel_alternate=[
             ("text/markdown", "Raw Markdown source", canonical + "index.md"),
         ],
@@ -4842,6 +4920,10 @@ def render_embedded_entries_section(
 # === CHANGES (store-wide changelog) ====================================
 
 
+# /changes/ shows this many most-recent days expanded; older days fold.
+CHANGES_OPEN_DAYS = 7
+
+
 def render_changes_page(
     entries: list[dict[str, Any]],
     *,
@@ -4874,7 +4956,7 @@ def render_changes_page(
         by_day.setdefault(at[:10], []).append((at, rec, e))
 
     day_blocks: list[str] = []
-    for day in sorted(by_day, reverse=True):
+    for day_i, day in enumerate(sorted(by_day, reverse=True)):
         lis: list[str] = []
         for at, rec, e in by_day[day]:
             rtype = str(rec.get("type") or "update")
@@ -4891,10 +4973,24 @@ def render_changes_page(
                 + (f'<p class="chg-meta"><a class="mono chg-run" href="{prefix}runs/{_escape(rid)}/">run {_escape(rid)}</a></p>' if rid else "")
                 + "</div></li>"
             )
-        day_blocks.append(
-            f'<section class="chg-day"><h2 class="section-head mono">{_escape(day)}</h2>'
-            f'<ol class="chg-list">{"".join(lis)}</ol></section>'
-        )
+        n_day = len(lis)
+        if day_i < CHANGES_OPEN_DAYS:
+            day_blocks.append(
+                f'<section class="chg-day"><h2 class="section-head mono">{_escape(day)}'
+                f'<span class="chg-n">{n_day} record{"" if n_day == 1 else "s"}</span></h2>'
+                f'<ol class="chg-list">{"".join(lis)}</ol></section>'
+            )
+        else:
+            # Older days fold to one line each: the page stays a page, and
+            # the folded summaries double as a jump list by date.
+            day_blocks.append(
+                f'<details class="chg-day chg-day--older" id="d-{_escape(day)}"><summary class="mono">{_escape(day)}'
+                f'<span class="chg-n">{n_day} record{"" if n_day == 1 else "s"}</span></summary>'
+                f'<ol class="chg-list">{"".join(lis)}</ol></details>'
+            )
+    n_open = min(len(by_day), CHANGES_OPEN_DAYS)
+    if len(by_day) > CHANGES_OPEN_DAYS:
+        day_blocks.insert(n_open, '<h2 class="section-head chg-older-h">Earlier days</h2>')
     listing = "".join(day_blocks) or (
         '<div class="section-empty">No changelog records yet · every future '
         "development, correction or improvement to a published finding lands here.</div>"
@@ -5167,6 +5263,18 @@ def build_alerts(
 # /cves/. The legacy /cves/<id>/ URLs are HTML meta-refresh stubs to
 # /entities/CVE-<id>/, emitted by `render_redirect_page`.
 
+def _kb_stats_fold(chart_html: str) -> str:
+    """A list page's statistics as a disclosure: open on a laptop, folded by
+    app.js on a phone so the search box and the list come first."""
+    if not chart_html.strip():
+        return ""
+    return (
+        '<details class="kb-stats" open data-fold-on-phone>'
+        '<summary class="kb-stats__s">Overview</summary>'
+        f"{chart_html}</details>"
+    )
+
+
 def render_cve_list_page(
     cves: list[dict[str, Any]],
     *,
@@ -5199,8 +5307,8 @@ def render_cve_list_page(
             f'<tr data-cve-year="{_escape(year)}">'
             f'<td class="cve-id"><a href="{prefix}entities/{_escape(c["id"])}/">{_escape(c["id"])}</a></td>'
             f'<td>{_escape(c.get("title", "") or "")}</td>'
-            f'<td class="mono muted">{_escape(c.get("first_seen", "") or "")}</td>'
-            f'<td class="mono muted">{_escape(c.get("last_seen", "") or "")}</td>'
+            f'<td class="mono muted nowrap">{_escape(c.get("first_seen", "") or "")}</td>'
+            f'<td class="mono muted nowrap">{_escape(c.get("last_seen", "") or "")}</td>'
             f'<td>{coverage}</td>'
             f'</tr>'
         )
@@ -5212,8 +5320,8 @@ def render_cve_list_page(
     ) if rows else '<div class="empty">No CVEs match.</div>'
 
     year_chips = "".join(
-        f'<span class="chip" data-filter-chip="cve-year" data-value="{_escape(y)}">{_escape(y)}'
-        f' <span class="chip-n">{n}</span></span>'
+        f'<button type="button" class="chip" data-filter-chip="cve-year" data-value="{_escape(y)}">{_escape(y)}'
+        f' <span class="chip-n">{n}</span></button>'
         for y, n in sorted(year_counts.items(), reverse=True)
     )
 
@@ -5222,13 +5330,13 @@ def render_cve_list_page(
 <h1>CVEs</h1>
 <p class="subtitle">{len(cves)} CVE{'' if len(cves) == 1 else 's'} referenced across all briefs. Click an ID for the full appearance trail.</p>
 
-{chart_block}
+{_kb_stats_fold(chart_block)}
 
 <div class="toolbar" style="margin-top:1rem">
   <input class="input" id="cves-q" type="search" placeholder="Filter by CVE id, title, or brief date…" autocomplete="off" spellcheck="false" data-filter-input="cves" />
 </div>
 <div class="toolbar" style="margin-top:-0.5rem">
-  <span class="chip active" data-filter-chip="cve-year" data-value="all">All years</span>
+  <button type="button" class="chip active" data-filter-chip="cve-year" data-value="all">All years</button>
   {year_chips}
 </div>
 {table}
@@ -5273,7 +5381,7 @@ def render_topic_list_page(
 ) -> str:
     types = sorted({t.get("type", "") for t in topics if t.get("type")})
     type_chips = "".join(
-        f'<span class="chip" data-filter-chip="topic-type" data-value="{_escape(t)}">{_escape(t)}</span>'
+        f'<button type="button" class="chip" data-filter-chip="topic-type" data-value="{_escape(t)}">{_escape(t)}</button>'
         for t in types
     )
 
@@ -5316,16 +5424,16 @@ def render_topic_list_page(
 
 <div class="toolbar" style="margin-top:1rem">
   <input class="input" id="topics-q" type="search" placeholder="Filter topics…" autocomplete="off" spellcheck="false" data-filter-input="topics" />
-  <span class="chip active" data-filter-chip="topic-type" data-value="all">All types</span>
+  <button type="button" class="chip active" data-filter-chip="topic-type" data-value="all">All types</button>
   {type_chips}
 </div>
 <div class="toolbar" style="margin-top:-0.5rem">
-  <span class="chip active" data-filter-chip="topic-flag" data-value="all">All verification</span>
-  <span class="chip" data-filter-chip="topic-flag" data-value="multi" title="Entities whose entries all held two-source verification">Corroborated</span>
-  <span class="chip" data-filter-chip="topic-flag" data-value="SINGLE-SOURCE">Single-source</span>
-  <span class="chip" data-filter-chip="topic-flag" data-value="SINGLE-SOURCE-NATIONAL-CERT">National-CERT carve-out</span>
-  <span class="chip" data-filter-chip="topic-flag" data-value="SINGLE-SOURCE-VICTIM">Victim disclosure</span>
-  <span class="chip" data-filter-chip="topic-flag" data-value="CONTRADICTED">Contradicted</span>
+  <button type="button" class="chip active" data-filter-chip="topic-flag" data-value="all">All verification</button>
+  <button type="button" class="chip" data-filter-chip="topic-flag" data-value="multi" title="Entities whose entries all held two-source verification">Corroborated</button>
+  <button type="button" class="chip" data-filter-chip="topic-flag" data-value="SINGLE-SOURCE">Single-source</button>
+  <button type="button" class="chip" data-filter-chip="topic-flag" data-value="SINGLE-SOURCE-NATIONAL-CERT">National-CERT carve-out</button>
+  <button type="button" class="chip" data-filter-chip="topic-flag" data-value="SINGLE-SOURCE-VICTIM">Victim disclosure</button>
+  <button type="button" class="chip" data-filter-chip="topic-flag" data-value="CONTRADICTED">Contradicted</button>
 </div>
 
 {list_html}
@@ -5430,16 +5538,16 @@ def render_source_list_page(
     today = datetime.now(timezone.utc).date()
 
     cat_chips = "".join(
-        f'<span class="chip" data-filter-chip="source-cat" data-value="{_escape(c)}">{_escape(c)}</span>'
+        f'<button type="button" class="chip" data-filter-chip="source-cat" data-value="{_escape(c)}">{_escape(c)}</button>'
         for c in cats
     )
     status_chips = "".join(
-        f'<span class="chip" data-filter-chip="source-status" data-value="{_escape(s)}">{_escape(s)}</span>'
+        f'<button type="button" class="chip" data-filter-chip="source-status" data-value="{_escape(s)}">{_escape(s)}</button>'
         for s in stats
     )
     rel_chips = "".join(
-        f'<span class="chip" data-filter-chip="source-rel" data-value="{_escape(c)}" '
-        f'title="{_escape(_chrome_text(ADMIRALTY_RELIABILITY_MEANING.get(c, "")))}">{_escape(c)}</span>'
+        f'<button type="button" class="chip" data-filter-chip="source-rel" data-value="{_escape(c)}" '
+        f'title="{_escape(_chrome_text(ADMIRALTY_RELIABILITY_MEANING.get(c, "")))}">{_escape(c)}</button>'
         for c in rel_order
     )
 
@@ -5450,7 +5558,8 @@ def render_source_list_page(
     # a separate block.)
 
     rows = []
-    for s in sources:
+    # Alphabetical by the name the reader sees, not by the internal id.
+    for s in sorted(sources, key=lambda x: str(x.get("publisher") or x.get("id") or "").casefold()):
         appearances = s.get("appearances", []) or []
         n_cites = len(s.get("entry_refs") or [])
         last_cited = appearances[0] if appearances else ""
@@ -5459,7 +5568,7 @@ def render_source_list_page(
             else '<span class="muted mono">0</span>'
         )
         last_cell = (
-            f'<span class="mono">{_escape(last_cited)}</span>' if last_cited
+            f'<span class="mono nowrap">{_escape(last_cited)}</span>' if last_cited
             else '<span class="muted">never</span>'
         )
         cat_tags = "".join(
@@ -5499,7 +5608,7 @@ def render_source_list_page(
     legend_block = render_reliability_legend(reliability_codes, rel_counts)
     rel_chip_row = (
         '<div class="toolbar" style="margin-top:-0.5rem">'
-        '<span class="chip active" data-filter-chip="source-rel" data-value="all">All reliability</span>'
+        '<button type="button" class="chip active" data-filter-chip="source-rel" data-value="all">All reliability</button>'
         f'{rel_chips}</div>'
     ) if rel_chips else ""
     body = f"""
@@ -5512,13 +5621,13 @@ def render_source_list_page(
 
 <div class="toolbar" style="margin-top:1rem">
   <input class="input" id="sources-q" type="search" placeholder="Filter by name, id, notes, URL…" autocomplete="off" spellcheck="false" data-filter-input="sources" />
-  <span class="chip active" data-filter-chip="source-cat" data-value="all">All categories</span>
+  <button type="button" class="chip active" data-filter-chip="source-cat" data-value="all">All categories</button>
   {cat_chips}
 </div>
 <div class="toolbar" style="margin-top:-0.5rem">
-  <span class="chip active" data-filter-chip="source-status" data-value="all">All statuses</span>
+  <button type="button" class="chip active" data-filter-chip="source-status" data-value="all">All statuses</button>
   {status_chips}
-  <span class="chip" data-filter-chip="source-stale" data-value="yes" title="Active sources whose last successful fetch is &gt; 7 days ago">Stale only</span>
+  <button type="button" class="chip" data-filter-chip="source-stale" data-value="yes" title="Active sources whose last successful fetch is &gt; 7 days ago">Stale only</button>
 </div>
 {rel_chip_row}
 
@@ -5801,12 +5910,24 @@ def fetch_github_metadata(repo: str, *, timeout: float = 6.0) -> dict[str, Any]:
         return {}
 
 
+_NUM_WORDS = ("no", "one", "two", "three", "four", "five", "six", "seven",
+              "eight", "nine", "ten")
+
+
+def _count_words(n: int, noun: str, *, bare: bool = False) -> str:
+    """`3, "feed"` -> "Three feeds" (sentence-initial) or, with `bare`,
+    "three feeds". Numbers past ten stay digits."""
+    word = _NUM_WORDS[n] if 0 <= n < len(_NUM_WORDS) else str(n)
+    out = f"{word} {noun}{'' if n == 1 else 's'}"
+    return out if bare else out[:1].upper() + out[1:]
+
+
 def render_feeds_page(*, site_url: str, cachebust: str,
                        prefix: str, canonical: str) -> str:
-    """Single discovery page for all 10 RSS feeds (2 main +
-    8 sector slices). The topbar/footer link to this page; the brief-list
-    page no longer carries chip-style per-feed links. `<head>` rel=alternate
-    autodiscovery for the two main feeds is unchanged."""
+    """Single discovery page for every RSS feed: the two main feeds plus
+    one per configured sector slice (`feeds.sector_slices`, possibly none).
+    Every count on the page is derived from those lists. `<head>`
+    rel=alternate autodiscovery for the two main feeds is unchanged."""
     main_feeds: list[tuple[str, str, str]] = [
         ("feed.xml", "Daily · one item per day page, last 30",
          "One item per archived day. Description carries the day's TL;DR bullets; <code>&lt;content:encoded&gt;</code> carries the full day-page HTML. Categories carry the day's CVEs."),
@@ -5830,10 +5951,30 @@ def render_feeds_page(*, site_url: str, cachebust: str,
             '</li>'
         )
 
+    n_sector = len(sector_feeds)
+    n_feeds = len(main_feeds) + n_sector
+    sector_clause = (
+        f"; the {_count_words(n_sector, 'sector slice', bare=True)} "
+        f"{'filters' if n_sector == 1 else 'filter'} the per-entry feed "
+        "to the audience you care about" if n_sector else ""
+    )
+    sector_disc = (
+        f" The {_count_words(n_sector, 'sector slice', bare=True)} "
+        f"{'is' if n_sector == 1 else 'are'} listed on this page."
+        if n_sector else ""
+    )
+    sector_section = (
+        '<section style="margin-top:1.6rem">\n'
+        '  <h2 class="section-head">Sector slices</h2>\n'
+        f'  <p class="muted" style="margin:0 0 0.6rem">Per-sector filtered slices of <a href="{prefix}feed-items.xml" class="mono">feed-items.xml</a>, matched on each entry\'s sectors / tags. Subscribe to the slice you care about instead of parsing every entry.</p>\n'
+        f'  <ul class="feeds-list">{"".join(_row(f, t, d) for f, t, d in sector_feeds)}</ul>\n'
+        "</section>\n"
+        if n_sector else ""
+    )
     body = f"""
 <header>
   <h1>RSS feeds</h1>
-  <p class="subtitle">Ten feeds in total. The two main feeds carry every day page and every entry (plus every update or correction to one); the eight sector slices filter the per-entry feed to the audience you care about. <code>&lt;pubDate&gt;</code> derives from each entry's <code>discovered_at</code> · the moment the pipeline verified the finding, not a publish schedule · or from an update record's own timestamp. <code>&lt;content:encoded&gt;</code> carries full HTML; categories carry tags / regions / CVE / status. No UTM parameters, no per-source variants · every link is plain canonical.</p>
+  <p class="subtitle">{_count_words(n_feeds, "feed")} in total. The two main feeds carry every day page and every entry (plus every update or correction to one){sector_clause}. <code>&lt;pubDate&gt;</code> derives from each entry's <code>discovered_at</code> · the moment the pipeline verified the finding, not a publish schedule · or from an update record's own timestamp. <code>&lt;content:encoded&gt;</code> carries full HTML; categories carry tags / regions / CVE / status. No UTM parameters, no per-source variants · every link is plain canonical.</p>
 </header>
 
 <section style="margin-top:1.4rem">
@@ -5841,15 +5982,10 @@ def render_feeds_page(*, site_url: str, cachebust: str,
   <ul class="feeds-list">{''.join(_row(f, t, d) for f, t, d in main_feeds)}</ul>
 </section>
 
-<section style="margin-top:1.6rem">
-  <h2 class="section-head">Sector slices</h2>
-  <p class="muted" style="margin:0 0 0.6rem">Per-sector filtered slices of <a href="{prefix}feed-items.xml" class="mono">feed-items.xml</a>, matched on each entry's sectors / tags. Subscribe to the slice you care about instead of parsing every entry.</p>
-  <ul class="feeds-list">{''.join(_row(f, t, d) for f, t, d in sector_feeds)}</ul>
-</section>
-
+{sector_section}
 <section style="margin-top:1.6rem">
   <h2 class="section-head">Autodiscovery</h2>
-  <p>Every page on this site advertises the two main feeds via <code>&lt;link rel="alternate" type="application/rss+xml"&gt;</code> in the document head, so any feed reader pointed at the homepage finds them automatically. The eight sector slices are accessible through this page.</p>
+  <p>Every page on this site advertises the two main feeds via <code>&lt;link rel="alternate" type="application/rss+xml"&gt;</code> in the document head, so any feed reader pointed at the homepage finds them automatically.{sector_disc}</p>
 </section>
 
 <section style="margin-top:1.6rem">
@@ -6065,6 +6201,7 @@ def render_static_doc(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        body_class="reading",
         active_page=active_page,
         seo={"breadcrumb": trail if len(trail) > 1 else None},
     )
@@ -6426,15 +6563,15 @@ def _ops_svg_sparkline(values: list[float], *, width: int = 220, height: int = 3
         pts.append((x, y))
     line = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
     area_pts = f"{pad},{height - pad} {line} {width - pad},{height - pad}"
-    last_x, last_y = pts[-1]
+    # The box stretches (preserveAspectRatio="none"), so no end dot (it
+    # would render as an ellipse) and a stroke that ignores the stretch.
     aria = _escape(label or "trend")
     return (
         f'<svg class="ops-spark" viewBox="0 0 {width} {height}" '
         f'preserveAspectRatio="none" role="img" aria-label="{aria}">'
         f'<polygon points="{area_pts}" fill="{fill}" stroke="none"/>'
         f'<polyline points="{line}" fill="none" stroke="{stroke}" stroke-width="1.5" '
-        f'stroke-linejoin="round" stroke-linecap="round"/>'
-        f'<circle cx="{last_x:.1f}" cy="{last_y:.1f}" r="2.4" fill="{stroke}"/>'
+        f'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'
         f'</svg>'
     )
 
@@ -7326,6 +7463,33 @@ _SOURCES_CHANGE_BADGE = {
 }
 
 
+# Ids that get a /sources/<id>/ page this build (filled in main()). A run
+# record can name a source id that never made it into sources.json (a
+# one-off primary document); linking it would ship a 404.
+_SOURCE_PAGE_IDS: set[str] = set()
+
+
+def _clip_words(text: str, limit: int) -> str:
+    """Cut `text` at a word boundary within `limit` characters and mark the
+    cut with an ellipsis; short text passes through unchanged."""
+    text = " ".join(str(text or "").split())
+    if len(text) <= limit:
+        return text
+    return text[:limit].rsplit(" ", 1)[0].rstrip(",;:.- ") + "…"
+
+
+def _source_ref(sid: str, *, prefix: str, inner_html: str | None = None,
+                cls: str = "") -> str:
+    """A link to the source's page when it has one, else the same label as
+    plain text, so a run-record id outside sources.json never 404s."""
+    label = inner_html if inner_html is not None else _escape(sid)
+    cls_attr = f' class="{cls}"' if cls else ""
+    if sid in _SOURCE_PAGE_IDS or not _SOURCE_PAGE_IDS:
+        return (f'<a{cls_attr} href="{prefix}sources/{urllib.parse.quote(sid, safe="")}/">'
+                f'{label}</a>')
+    return f'<span{cls_attr} title="Not in the curated source list">{label}</span>'
+
+
 def _ops_pager_wrap(inner_html: str, *, pagesize: int = 10, size_select: bool = False) -> str:
     """Wrap a table (whose <tbody> carries `data-pager-rows`) in a client-side
     pager container (app.js `wireOpsPagers`). The control bar is hidden until JS
@@ -7364,7 +7528,7 @@ def _ops_render_run_sources_changed(run: dict[str, Any], *, prefix: str) -> str:
         counts = Counter(c.get("change") for c in sc)
         summary = " · ".join(f"{n} {k}" for k, n in counts.most_common())
         rows = "".join(
-            f'<tr><td class="mono"><a href="{prefix}sources/{urllib.parse.quote(c.get("id", "?"), safe="")}/">{_escape(c.get("id", "?"))}</a></td>'
+            f'<tr><td class="mono">{_source_ref(str(c.get("id", "?")), prefix=prefix)}</td>'
             f'<td><span class="ops-pill ops-pill--{_SOURCES_CHANGE_BADGE.get(c.get("change"), "neutral")}">{_escape(c.get("change", "?"))}</span></td>'
             f'<td class="mono muted">{_escape(str(c.get("from") or "·"))} → {_escape(str(c.get("to") or "·"))}</td>'
             f'<td class="muted">{_escape(c.get("reason", ""))}</td></tr>'
@@ -7436,8 +7600,7 @@ def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: s
             return ""
         rows = "".join(
             f'<tr>'
-            f'<td class="mono"><a href="{prefix}sources/{urllib.parse.quote(r.get("id", "?"), safe="")}/">'
-            f'{_escape(r.get("id", "?"))}</a></td>'
+            f'<td class="mono">{_source_ref(str(r.get("id", "?")), prefix=prefix)}</td>'
             f'<td><span class="ops-pill ops-pill--{_SOURCE_STATUS_KIND.get(r.get("status"), "neutral")}">'
             f'{_escape(r.get("status") or "?")}</span></td>'
             f'<td class="mono muted">{_escape(r.get("fetch_method") or "·")}</td>'
@@ -7594,7 +7757,7 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
             else f'<span class="mono muted">{_escape(url_tried[:80] or "·")}</span>'
         )
         mitigation_html = (
-            f'<span class="mono">{_escape(mitigation[:160])}</span>'
+            f'<span class="ops-prose" title="{_escape(mitigation)}">{_escape(_clip_words(mitigation, 220))}</span>'
             if mitigation else '<span class="muted">none</span>'
         )
 
@@ -7612,14 +7775,14 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
         row_class = ' class="ops-coverage-gaps__row--soft"' if soft_signal else ""
         rows.append(
             f'<tr{row_class}>'
-            f'<td><a href="{prefix}sources/{urllib.parse.quote(sid, safe="")}/" class="mono"><strong>{_escape(sid)}</strong></a>'
+            f'<td>{_source_ref(sid, prefix=prefix, inner_html=f"<strong>{_escape(sid)}</strong>", cls="mono")}'
             + sid_extra
             + '</td>'
             f'<td>{url_html}</td>'
             f'<td>{method_chain_html}</td>'
             f'<td>{_ops_pill(str(status_code) if status_code != "" else "·", kind=kind)}'
             + (f' <span class="muted mono">{_escape(error_class)}</span>' if error_class != "other" else '')
-            + (f'<div class="muted" style="font-size:0.72rem;margin-top:0.15rem">{_escape(error_message[:160])}</div>' if error_message else '')
+            + (f'<div class="muted" style="font-size:0.72rem;margin-top:0.15rem">{_escape(_clip_words(error_message, 220))}</div>' if error_message else '')
             + '</td>'
             f'<td>{mitigation_html}</td>'
             '</tr>'
@@ -7826,7 +7989,7 @@ def _ops_render_verification_iterations(
             item = (fd.get("item") or "")[:80]
             url_or_quote = (fd.get("url_or_quote") or "")[:120]
             summary = (fd.get("summary") or "")[:200]
-            rem = (fd.get("remediation_applied") or "")[:160]
+            rem = _clip_words(fd.get("remediation_applied") or "", 220)
             outcome = (fd.get("remediation_outcome") or "")
             outcome_kind = {
                 "fixed-clean": "ok", "fixed-degraded": "warn",
@@ -7948,6 +8111,10 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
     items_upd = run.get("entries_updated")
     items_upd_str = str(items_upd) if items_upd is not None else "·"
     deep_dive = run.get("deep_dive") or "·"
+    deep_dive_html = (
+        f'<a href="{prefix}entries/{_escape(deep_dive)}/">{_escape(deep_dive)}</a>'
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}/[a-z0-9-]+", str(deep_dive)) else _escape(deep_dive)
+    )
     failures = run.get("fetch_failures") or []
 
     # Sub-agent cards. Base slots per kind + any extra recorded keys
@@ -7993,8 +8160,8 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
             return (
                 f'<li class="{"ops-entry--updated" if (recs and not is_new) else "ops-entry--new"}">'
                 f'<a href="{prefix}entries/{_escape(e["id"])}/">{_escape(e.get("title") or e["id"])}</a>'
-                f' <span class="e-tag">{_escape(e.get("kind") or "")}</span>'
-                f' <span class="muted mono">{_escape(e.get("priority") or "")}</span>{pill}</li>'
+                f'<span class="e-meta-group"><span class="e-tag">{_escape(e.get("kind") or "")}</span>'
+                f' <span class="muted mono">{_escape(e.get("priority") or "")}</span>{pill}</span></li>'
             )
         lis = "".join(_row(e) for e in run_entries)
         n_new = sum(1 for e in run_entries if str(e.get("run_id") or "") == rid_here)
@@ -8100,7 +8267,7 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
     </div>
     <div>
       <h3 class="ops-mini-head">Deep dive</h3>
-      <p class="mono ops-deep">{_escape(deep_dive)}</p>
+      <p class="mono ops-deep">{deep_dive_html}</p>
     </div>
   </div>
 </div>
@@ -8979,10 +9146,20 @@ _ENTITY_PALETTE: list[str] = BRANDING["charts"]["entity_palette"] or [
 ]
 
 
+_ENTITY_TYPE_TOKENS = frozenset((
+    "actor", "campaign", "malware", "tool", "incident", "report",
+    "trend", "policy", "product", "cve", "technique",
+))
+
+
 def _entity_palette_color(label: str, assigned: dict[str, str]) -> str:
     key = (label or "").strip().lower()
     if not key:
         return "var(--text-muted)"
+    # An entity type keeps the colour the list labels and the graph give it
+    # (the --g-* tokens), unless a fork configured its own chart palette.
+    if key in _ENTITY_TYPE_TOKENS and not BRANDING["charts"]["entity_palette"]:
+        return f"var(--g-{key})"
     if key in assigned:
         return assigned[key]
     color = _ENTITY_PALETTE[len(assigned) % len(_ENTITY_PALETTE)]
@@ -9342,7 +9519,7 @@ def render_sources_overview_charts(
         max_n = max(n for _, _, n in top_cited) or 1
         bar_rows = "".join(
             f'<li class="rankbar">'
-            f'<a class="rankbar__label" href="{prefix}sources/{urllib.parse.quote(sid, safe="")}/">{_escape(pub[:42])}</a>'
+            f'{_source_ref(sid, prefix=prefix, inner_html=_escape(pub[:42]), cls="rankbar__label")}'
             f'<span class="rankbar__track"><span class="rankbar__fill" style="width:{max(4, round(n / max_n * 100))}%"></span></span>'
             f'<span class="rankbar__value mono">{n}</span></li>'
             for sid, pub, n in top_cited
@@ -9387,8 +9564,8 @@ def render_entities_index_page(
         if t:
             type_counts[t] = type_counts.get(t, 0) + 1
     type_chips = "".join(
-        f'<span class="chip" data-filter-chip="entity-type" data-value="{_escape(t)}">{_escape(t)}'
-        f' <span class="chip-n">{n}</span></span>'
+        f'<button type="button" class="chip" data-filter-chip="entity-type" data-value="{_escape(t)}">{_escape(t)}'
+        f' <span class="chip-n">{n}</span></button>'
         for t, n in sorted(type_counts.items(), key=lambda kv: (-kv[1], kv[0]))
     )
 
@@ -9403,6 +9580,9 @@ def render_entities_index_page(
         etype = e.get("type", "") or ""
         rows.append(
             '<li data-entity-type="' + _escape(etype) + '" '
+            # Aliases are searchable ("unc6240" finds ShinyHunters) without
+            # cluttering the row.
+            'data-aliases="' + _escape(" ".join(str(x) for x in (e.get("aliases") or []))) + '" '
             'data-entity-flags="' + _escape(",".join(e.get("flags") or [])) + '">'
             f'<span>'
             f'<span class="e-tag e-tag--{_escape(etype or "none")}">{_escape(etype or "·")}</span> '
@@ -9425,11 +9605,11 @@ def render_entities_index_page(
 <h1>Entities</h1>
 <p class="subtitle">{len(entities)} CVEs, products, actors, campaigns, incidents, tools, advisories, and reports tracked across briefs. The ×N marker counts entries referencing an entity · multi-entry entities are the "stories that unfolded".</p>
 
-{chart_block}
+{_kb_stats_fold(chart_block)}
 
 <div class="toolbar" style="margin-top:1rem">
   <input class="input" id="entities-q" type="search" placeholder="Filter entities…" autocomplete="off" spellcheck="false" data-filter-input="entities" />
-  <span class="chip active" data-filter-chip="entity-type" data-value="all">All types</span>
+  <button type="button" class="chip active" data-filter-chip="entity-type" data-value="all">All types</button>
   {type_chips}
 </div>
 
@@ -9568,10 +9748,17 @@ def _registry_phrases(ent: dict[str, Any]) -> tuple[list[str], list[str]]:
     sentence-start capitalization. Group names are proper nouns in prose,
     so this keeps "Coolify ships a fix" attaching to `coolify` while a
     disclosure "embargo lifted" or an "unsafe deserialization" no longer
-    attaches to the actors named Embargo / Unsafe."""
+    attaches to the actors named Embargo / Unsafe.
+
+    Casing cannot help when the label IS the ordinary word ("fingerprint")
+    or opens a sentence ("Embargo window: …"), or names something else
+    ("CrowdStrike Falcon"). Those labels sit in the record's
+    `ambiguous_labels` and never phrase-match at all
+    (`content_model.prose_match_labels`). An explicit `entities[]` key is
+    the only thing that attaches an entry through them."""
     phrases: list[str] = []
     cased: list[str] = []
-    for label in [ent.get("name")] + list(ent.get("aliases") or []):
+    for label in content_model.prose_match_labels(ent):
         if not isinstance(label, str):
             continue
         raw = label.strip()
@@ -9649,6 +9836,13 @@ def build_entities(
     compute_related_entities)."""
     prefixes = _source_prefix_index(sources_raw)
     matched: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    # Entries that name the entity as their SUBJECT: an `entities[]` key, an
+    # `affected_products[]` string (products) or a `cves[]` id (CVEs). The
+    # rest of `matched` only mentions the entity in prose ("sells footholds
+    # to Qilin, Akira and Rhysida"). A mention belongs on the page's
+    # timeline, tagged as one, but it never lends the entity that entry's
+    # techniques, products, sectors or action items.
+    explicit_ids: dict[str, set[str]] = defaultdict(set)
     # Effective ATT&CK technique ids per entry (frontmatter ∪ prose,
     # revoked ids resolved forward) — aggregated per entity below so every
     # entity/CVE page and the /attack/ matrix stay evidence-bound.
@@ -9693,7 +9887,10 @@ def build_entities(
                         + "\n" + (e.get("body") or ""))
         haystack = haystack_raw.lower()
         for key, folded, acronyms in specs:
-            if key in explicit or _phrase_hits(haystack, haystack_raw, folded, acronyms):
+            if key in explicit:
+                matched[key].append(e)
+                explicit_ids[key].add(e["id"])
+            elif _phrase_hits(haystack, haystack_raw, folded, acronyms):
                 matched[key].append(e)
         # Products attach on the entry's own statement of scope only (the
         # specs loop above deliberately excludes them from prose matching).
@@ -9701,6 +9898,7 @@ def build_entities(
             if key.startswith("product:") and key in registry \
                     and not registry[key].get("merged_into"):
                 matched[key].append(e)
+                explicit_ids[key].add(e["id"])
 
     # --- CVE entities ---------------------------------------------------
     cve_entries: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -9712,9 +9910,15 @@ def build_entities(
         if isinstance(c, dict) and c.get("id"):
             cves_seen_by_id[str(c["id"])] = c
 
-    def _mk_common(key: str, ents: list[dict[str, Any]]) -> dict[str, Any]:
-        apps = sorted((_entry_appearance(e) for e in ents),
-                      key=lambda a: (a["date"], a["entry_id"]))
+    def _mk_common(key: str, ents: list[dict[str, Any]],
+                   explicit: set[str] | None = None) -> dict[str, Any]:
+        """`explicit` = ids of the entries that key the entity (None: all
+        of `ents` do, as for CVEs)."""
+        subject_ids = {e["id"] for e in ents} if explicit is None else explicit
+        apps = sorted(
+            ({**_entry_appearance(e), "mention": e["id"] not in subject_ids}
+             for e in ents),
+            key=lambda a: (a["date"], a["entry_id"]))
         flags = sorted({
             str(e.get("verification"))
             for e in ents
@@ -9749,8 +9953,13 @@ def build_entities(
             h = (c.get("host") or "").strip()
             if h:
                 host_counts[h] = host_counts.get(h, 0) + 1
+        # The TTP profile is evidence-bound to entries ABOUT the entity: an
+        # entry that mentions an actor in passing documents someone else's
+        # behavior, not the actor's.
         tech: dict[str, list[str]] = {}
         for e in ents:
+            if e["id"] not in subject_ids:
+                continue
             for tid in tech_by_entry.get(e["id"], ()):
                 tech.setdefault(tid, []).append(e["id"])
         dates = [a["date"] for a in apps]
@@ -9767,12 +9976,13 @@ def build_entities(
             "related_entities": [],
             "external_refs": [],
             "techniques": {t: sorted(set(v)) for t, v in tech.items()},
+            "subject_entry_ids": sorted(subject_ids),
         }
 
     entities: list[dict[str, Any]] = []
     for key, ent in registry.items():
         ents = matched.get(key, [])
-        rec = _mk_common(key, ents)
+        rec = _mk_common(key, ents, explicit_ids.get(key, set()))
         first_seen = str(ent.get("first_seen") or "")
         if first_seen and (not rec["first_covered"] or first_seen < rec["first_covered"]):
             rec["first_covered"] = first_seen
@@ -9930,6 +10140,210 @@ def compute_related_entities(
 
 # === ENTITY DETAIL PAGE (v3) ===========================================
 
+# The labelled guidance runs an entry body closes on ("**Defender
+# takeaway:**", "**Triage:**", "**Detection concepts (no IOCs).**", …). The
+# entity page lifts them out of every entry ABOUT the entity so an analyst
+# pivoting onto an actor, CVE or product reads what to do before any
+# metadata. Label, then text to the end of its paragraph (plus the list the
+# paragraph introduces, when it ends on a colon).
+_INSIGHT_LABEL_RE = re.compile(
+    r"\*\*\s*(?P<label>(?:Defender\s+(?:takeaway|note|action)|Triage|Detection|Hunt(?:ing)?)"
+    r"\b[^*\n]{0,90}?)\s*[:.]?\s*\*\*\s*[:.]?\s*",
+    re.IGNORECASE,
+)
+_INSIGHT_LIST_RE = re.compile(r"^\s*(?:[-*]|\d+\.)\s+\S")
+
+
+def _insight_kind(label: str) -> str:
+    low = label.strip().lower()
+    if low.startswith("defender"):
+        return "takeaway"
+    if low.startswith("triage"):
+        return "triage"
+    return "detection"
+
+
+def _labelled_insights(md: str) -> list[dict[str, str]]:
+    """`[{kind, md}]` for every labelled guidance run in one Markdown text,
+    in document order. `kind` ∈ takeaway | triage | detection."""
+    blocks = re.split(r"\n\s*\n", md or "")
+    out: list[dict[str, str]] = []
+    for i, block in enumerate(blocks):
+        hits = list(_INSIGHT_LABEL_RE.finditer(block))
+        for j, m in enumerate(hits):
+            end = hits[j + 1].start() if j + 1 < len(hits) else len(block)
+            text = block[m.end():end].strip()
+            if j + 1 == len(hits) and (not text or text.endswith(":")):
+                if i + 1 < len(blocks) and _INSIGHT_LIST_RE.match(blocks[i + 1]):
+                    text = (text + "\n\n" + blocks[i + 1].strip()).strip()
+            if text:
+                # The run was written to follow its label mid-sentence
+                # ("**Defender takeaway:** the gap is …"); standing alone
+                # it opens a callout, so it opens with a capital.
+                if text[:1].islower():
+                    text = text[:1].upper() + text[1:]
+                out.append({"kind": _insight_kind(m.group("label")), "md": text})
+    return out
+
+
+def entry_insights(entry: dict[str, Any]) -> dict[str, Any]:
+    """The operational guidance of one entry, for the entity page.
+
+    `takeaway` / `triage` / `detection` come from the MAIN analysis (first
+    run of each), because that is where the substantive guidance lives: a
+    later update section's detection note often says only that nothing
+    supersedes the original. `update_takeaway` is the newest changelog
+    section's own takeaway, `{at, md}`, when it has one: the delta a
+    returning reader needs."""
+    main, sections = content_model.split_update_sections(entry.get("body") or "")
+    found: dict[str, Any] = {"takeaway": "", "triage": "", "detection": "",
+                             "update_takeaway": None}
+    for ins in _labelled_insights(main):
+        if not found[ins["kind"]]:
+            found[ins["kind"]] = ins["md"]
+    for sec in reversed(sections):
+        hit = next((i for i in _labelled_insights(sec.get("body") or "")
+                    if i["kind"] == "takeaway"), None)
+        if hit:
+            found["update_takeaway"] = {"at": sec.get("at") or "", "md": hit["md"]}
+            break
+    if not found["takeaway"] and found["update_takeaway"]:
+        found["takeaway"] = found["update_takeaway"]["md"]
+        found["update_takeaway"] = None
+    return found
+
+
+def _entity_subject_entries(entity: dict[str, Any],
+                            matching_entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The matching entries that are ABOUT the entity (keyed, not merely
+    mentioned), newest activity first. An entity record without the
+    `subject_entry_ids` field (older callers, tests) treats every match as
+    a subject."""
+    ids = entity.get("subject_entry_ids")
+    pool = (matching_entries if ids is None
+            else [e for e in matching_entries if e["id"] in set(ids)])
+    return sorted(pool, key=lambda e: (content_model.entry_activity_ts(e) or "", e["id"]),
+                  reverse=True)
+
+
+def render_entity_intel(entity: dict[str, Any], subject_entries: list[dict[str, Any]],
+                        *, prefix: str, limit: int = 6, action_limit: int = 5) -> str:
+    """The top of an entity page: § Action items (every do-now task and
+    immediate action from the entries about the entity, newest first) and
+    § Defender insights (each entry's defender takeaway, with its triage and
+    detection guidance one click away). Empty when no entry about the
+    entity carries either, which is a normal state for a thin record."""
+    # A CVE's title is a sentence; the id reads better inside a note.
+    title = str((entity.get("key") if entity.get("type") == "cve" else entity.get("title"))
+                or entity.get("key") or "")
+    action_rows: list[str] = []
+    for e in subject_entries:
+        url = f"{prefix}{entry_url_path(e)}"
+        label = _short_entry_label(e)
+        tasks: list[tuple[str, str]] = []
+        ia = e.get("immediate_action")
+        if isinstance(ia, dict) and (ia.get("action") or ia.get("title")):
+            tasks.append(("Immediate action",
+                          str(ia.get("action") or ia.get("title") or "").strip()))
+        for a in e.get("actions") or []:
+            if isinstance(a, str) and a.strip():
+                tasks.append(("", a.strip()))
+        for tag, text in tasks:
+            action_rows.append(
+                '<li class="action-list__item">'
+                '<div class="action-list__body">'
+                + (f'<strong>{_escape(tag)}:</strong> ' if tag else "")
+                + f"{render_inline(text)}</div>"
+                f'<a class="action-ref" href="{_escape(url)}" '
+                f'aria-label="Open finding: {_escape(label)}">'
+                f'<span class="action-ref__tag">{_escape(e["date"])}</span>'
+                f'<span class="action-ref__label">{_escape(label)}</span>'
+                '<span class="action-ref__go" aria-hidden="true">→</span></a>'
+                "</li>"
+            )
+    older = action_rows[action_limit:]
+    actions_html = (
+        '<section class="entity-intel__actions" aria-label="Action items">'
+        '<h2 class="section-head">Action items '
+        f'<span class="verif-count">({len(action_rows)})</span></h2>'
+        '<p class="muted entity-intel__note">Do-now tasks recorded on the entries about '
+        f"{_escape(title)}, newest first. Check the date before acting on an older one.</p>"
+        f'<ul class="action-list">{"".join(action_rows[:action_limit])}</ul>'
+        + ('<details class="insight__more">'
+           f"<summary>{len(older)} older action item{'s' if len(older) != 1 else ''}</summary>"
+           f'<ul class="action-list">{"".join(older)}</ul></details>' if older else "")
+        + "</section>"
+    ) if action_rows else ""
+
+    cards: list[str] = []
+    with_guidance = 0
+    for e in subject_entries:
+        ins = entry_insights(e)
+        if not (ins["takeaway"] or ins["triage"] or ins["detection"]):
+            continue
+        with_guidance += 1
+        if len(cards) >= limit:
+            continue
+        url = f"{prefix}{entry_url_path(e)}"
+        more: list[str] = []
+        if ins["update_takeaway"]:
+            more.append(
+                '<aside class="callout callout--takeaway" role="note">'
+                '<span class="callout__label">Latest update · '
+                f'{_escape(str(ins["update_takeaway"]["at"])[:10])}</span>'
+                f'<div class="callout__body">{render_markdown(ins["update_takeaway"]["md"])}</div>'
+                "</aside>"
+            )
+        for kind, label in (("triage", "Triage"), ("detection", "Detection")):
+            if ins[kind]:
+                cls = "callout--detection" if kind == "detection" else "callout--action"
+                more.append(
+                    f'<aside class="callout {cls}" role="note">'
+                    f'<span class="callout__label">{label}</span>'
+                    f'<div class="callout__body">{render_markdown(ins[kind])}</div>'
+                    "</aside>"
+                )
+        more_labels = [lbl for k, lbl in (("update_takeaway", "latest update"),
+                                          ("triage", "triage"), ("detection", "detection"))
+                       if ins[k]]
+        main_html = (
+            '<aside class="callout callout--takeaway" role="note">'
+            '<span class="callout__label">Defender takeaway</span>'
+            f'<div class="callout__body">{render_markdown(ins["takeaway"])}</div></aside>'
+        ) if ins["takeaway"] else ""
+        more_html = (
+            '<details class="insight__more">'
+            f'<summary>{_escape(" · ".join(more_labels).capitalize())}</summary>'
+            f'{"".join(more)}</details>'
+        ) if more else ""
+        cards.append(
+            '<article class="insight">'
+            '<p class="insight__meta">'
+            f'<span class="mono">{_escape(e["date"])}</span>'
+            f'<span class="b {_pri_badge_class(e)}">{_escape(_pri_label(e))}</span>'
+            + ('<span class="b exp">exploited</span>' if _entry_exploited(e) else "")
+            + f'<a class="insight__t" href="{_escape(url)}">'
+            + _inline_text(e.get("headline") or e.get("title") or e["id"]) + "</a>"
+            "</p>"
+            f"{main_html}{more_html}</article>"
+        )
+    insights_html = ""
+    if cards:
+        rest = with_guidance - len(cards)
+        insights_html = (
+            '<section class="entity-intel__insights" aria-label="Defender insights">'
+            '<h2 class="section-head">Defender insights</h2>'
+            '<p class="muted entity-intel__note">What each entry about '
+            f"{_escape(title)} tells a defender to do, newest first.</p>"
+            + "".join(cards)
+            + (f'<p class="muted">{rest} earlier entr{"ies" if rest != 1 else "y"} '
+               "carry guidance too, listed under the story timeline below.</p>" if rest > 0 else "")
+            + "</section>"
+        )
+    if not (actions_html or insights_html):
+        return ""
+    return f'<div class="entity-intel">{actions_html}{insights_html}</div>'
+
 
 def render_entity_page(
     entity: dict[str, Any],
@@ -9943,11 +10357,13 @@ def render_entity_page(
     canonical: str,
 ) -> str:
     """Single renderer for every entity type · CVE + every registry type
-    (actor, campaign, malware, tool, incident, report, trend, policy).
-    Same layout as v2: header pills → KPI tiles → coverage strip →
-    story timeline (entry permalinks; each entry's changelog lives on its
-    own page) → charts → related entities → external refs + cited
-    sources → embedded matching entries."""
+    (actor, campaign, malware, tool, incident, report, trend, policy,
+    product). Laid out for the analyst who pivots here to decide what to
+    do: header → at-a-glance tiles → coverage strip → § Action items +
+    § Defender insights (from the entries ABOUT the entity) → typed
+    relationships → story timeline (passing mentions tagged as such) →
+    hunting pivots → ATT&CK profile (collapsed) → embedded entries →
+    co-occurrence, charts and cited sources."""
     etype = (entity.get("type") or "").lower()
     title = entity.get("title") or entity.get("key") or "Untitled"
     key = entity.get("key") or ""
@@ -9955,6 +10371,10 @@ def render_entity_page(
                   key=lambda a: (a.get("date") or "", a.get("entry_id") or ""),
                   reverse=True)
     citations = entity.get("citations", []) or []
+    # Entries that key the entity drive every aggregate on this page; a
+    # passing prose mention only earns a tagged timeline row.
+    subject_entries = _entity_subject_entries(entity, matching_entries or [])
+    n_mentions = sum(1 for a in apps if a.get("mention"))
 
     # --- Story timeline (entry permalinks) ----------------------------
     timeline_lis: list[str] = []
@@ -9968,11 +10388,17 @@ def render_entity_page(
         if delta and delta.rstrip(".") == str(e_title).strip().rstrip("."):
             delta = ""
         link = f'{prefix}entries/{_escape(eid)}/' if eid else "#"
+        mention_tag = (
+            '<span class="e-tag e-tag--mention" title="The entry names this entity in '
+            'passing; it is not about it and adds nothing to the aggregates on this page">'
+            "mention</span>"
+        ) if a.get("mention") else ""
         timeline_lis.append(
-            "<li><span>"
-            f'<span class="mono" style="margin-right:0.6rem">{_escape(a.get("date", "") or "")}</span>'
+            ('<li class="is-mention"><span>' if a.get("mention") else "<li><span>")
+            + f'<span class="mono" style="margin-right:0.6rem">{_escape(a.get("date", "") or "")}</span>'
             f'<a href="{link}">{_escape(e_title)}</a>'
             '<div class="e-meta" style="margin-top:0.2rem">'
+            + mention_tag
             + (f'<span class="e-tag">{_escape(section)}</span>' if section else "")
             + (f'<span class="muted">{_escape(delta)}</span>' if delta else "")
             + "</div></span></li>"
@@ -9991,27 +10417,52 @@ def render_entity_page(
     src_dist = entity.get("source_distribution", {}) or {}
     hosts = {c.get("host") for c in citations if c.get("host")}
 
-    # Priority mix across the matching entries (the KPI a triage reader
-    # actually wants: how hot is this entity's coverage).
+    # Priority mix across the entries about the entity (the KPI a triage
+    # reader actually wants: how hot is this entity's coverage).
     pri_counts: dict[str, int] = {}
-    for me in (matching_entries or []):
+    for me in subject_entries:
         p = str(me.get("priority") or "routine")
         pri_counts[p] = pri_counts.get(p, 0) + 1
     pri_order = ["critical", "high", "notable", "routine"]
     pri_top = next((p for p in pri_order if pri_counts.get(p)), "·")
     pri_sub = " · ".join(
         f"{pri_counts[p]} {p}" for p in pri_order if pri_counts.get(p)
-    ) or "no matching entries"
+    ) or "no entry about it yet"
     pri_kind = "crit" if pri_counts.get("critical") else ("warn" if pri_counts.get("high") else "neutral")
 
+    # Who and where it hits, from the entries about it.
+    sector_counts: Counter[str] = Counter()
+    region_counts: Counter[str] = Counter()
+    for me in subject_entries:
+        sector_counts.update(str(x) for x in (me.get("sectors") or []) if x)
+        region_counts.update(str(x) for x in (me.get("regions") or []) if x and x != "global")
+    top_sectors = [k for k, _ in sector_counts.most_common(3)]
+    top_regions = [k for k, _ in region_counts.most_common(3)]
+    latest = subject_entries[0] if subject_entries else None
+    latest_ts = (content_model.entry_activity_ts(latest) or latest["date"])[:10] if latest else "–"
+    latest_sub = (_strip_md_emphasis(latest.get("headline") or latest.get("title") or "")
+                  if latest else "no entry about it yet")
+    if len(latest_sub) > 110:
+        latest_sub = latest_sub[:110].rsplit(" ", 1)[0].rstrip(",;:- ") + "…"
+
+    cov_sub = f"first {entity.get('first_covered', '–') or '–'} → last {entity.get('last_covered', '–') or '–'}"
+    if n_mentions:
+        cov_sub = (f"{len(apps) - n_mentions} about it · {n_mentions} "
+                   f"mention{'s' if n_mentions != 1 else ''} · " + cov_sub)
     kpi_html = (
         '<div class="ops-kpi-grid">'
         + _ops_kpi_tile(
-            "Coverage timeline",
+            "Coverage",
             str(len(apps)),
-            sub=f"first {entity.get('first_covered', '–') or '–'} → last {entity.get('last_covered', '–') or '–'}",
+            sub=cov_sub,
             kind="accent",
             chart=spark_html,
+        )
+        + _ops_kpi_tile(
+            "Latest activity",
+            _escape(latest_ts),
+            sub=latest_sub,
+            kind="neutral",
         )
         + _ops_kpi_tile(
             "Peak priority",
@@ -10020,32 +10471,30 @@ def render_entity_page(
             kind=pri_kind,
         )
         + _ops_kpi_tile(
+            "Targets",
+            _escape(top_sectors[0] if top_sectors else "·"),
+            sub=" · ".join(filter(None, [
+                ("sectors: " + ", ".join(top_sectors)) if top_sectors else "",
+                ("regions: " + ", ".join(top_regions)) if top_regions else "",
+            ])) or "no sector or region stated",
+            kind="neutral",
+        )
+        + _ops_kpi_tile(
             "Sources cited",
             str(len(citations)),
             sub=f"{len(hosts)} hosts",
             kind="neutral",
         )
-        + _ops_kpi_tile(
-            "Sections touched",
-            str(len(sd)),
-            sub=", ".join(sorted(sd.keys())[:3]) or "·",
-            kind="neutral",
-        )
-        + _ops_kpi_tile(
-            "Co-occurring entities",
-            str(len(entity.get("related_entities", []) or [])),
-            sub="see Co-occurring entities below" if entity.get("related_entities") else "no co-occurrence",
-            kind="neutral",
-        )
-        + _ops_kpi_tile(
-            "ATT&CK techniques",
-            str(len(entity.get("techniques") or {})),
-            sub=(f"pinned v{ATTACK_VERSION} · see below" if entity.get("techniques")
-                 else "no mapped behavior yet"),
-            kind="neutral",
-        )
         + "</div>"
     )
+
+    intel_html = render_entity_intel(entity, subject_entries, prefix=prefix)
+    timeline_note = (
+        '<p class="muted" style="margin-top:0.2rem">Every entry that names '
+        f"{_escape(title)}, newest first. Rows tagged <em>mention</em> only name it in "
+        "passing: they are listed for completeness and add nothing to the "
+        "action items, pivots or ATT&amp;CK profile on this page.</p>"
+    ) if n_mentions else ""
 
     # --- Section distribution (labelled rank bars) ---------------------
     section_block = ""
@@ -10054,7 +10503,7 @@ def render_entity_page(
         max_v = max(v for _, v in items_sorted) or 1
         bar_rows = "".join(
             f'<li class="rankbar">'
-            f'<span class="rankbar__label">{_escape(k or "·")}</span>'
+            f'<span class="rankbar__label">{_escape(SECTION_SHORT.get(k, k) or "·")}</span>'
             f'<span class="rankbar__track"><span class="rankbar__fill" style="width:{max(4, round(v / max_v * 100))}%"></span></span>'
             f'<span class="rankbar__value mono">{v}</span></li>'
             for k, v in items_sorted
@@ -10194,7 +10643,8 @@ def render_entity_page(
             f'<span class="cite-url muted">{_escape(c.get("url", ""))}</span>'
             "</a>"
             '<div class="cite-meta muted">'
-            + (f'<a href="{prefix}sources/{urllib.parse.quote(source_id, safe="")}/">source profile</a> · ' if source_id else "")
+            + (f'<a href="{prefix}sources/{urllib.parse.quote(source_id, safe="")}/">source profile</a> · '
+               if source_id and (source_id in _SOURCE_PAGE_IDS or not _SOURCE_PAGE_IDS) else "")
             + "cited in " + (entry_links or '<span class="muted">–</span>')
             + "</div></li>"
         )
@@ -10242,16 +10692,17 @@ def render_entity_page(
 
     actor_timeline_html = _actor_timeline_strip(entity)
 
-    # --- Pivot chips: ATT&CK techniques + affected products + tags ------
-    # Aggregated across the matching entries so the entity page carries
-    # every hunting pivot in one place (technique ids link to MITRE).
-    tech_counts: dict[str, int] = {}
+    # --- Pivot chips: CVEs + affected products + tags --------------------
+    # Aggregated across the entries ABOUT the entity so the page carries
+    # every hunting pivot in one place, and a passing mention (an Oracle
+    # advisory that recalls Cl0p's history) never lends its products or
+    # CVEs to the entity. ATT&CK has its own collapsed section below.
     prod_counts: dict[str, int] = {}
     tag_counts: dict[str, int] = {}
     cve_counts: dict[str, int] = {}
     cve_exploited: set[str] = set()
     release_counts: dict[str, int] = {}
-    for me in (matching_entries or []):
+    for me in subject_entries:
         for cv in me.get("cves") or []:
             if not isinstance(cv, dict) or not cv.get("id"):
                 continue
@@ -10259,10 +10710,6 @@ def render_entity_page(
             cve_counts[cid] = cve_counts.get(cid, 0) + 1
             if any(str(st) in ("exploited", "cisa-kev") for st in (cv.get("status") or [])):
                 cve_exploited.add(cid)
-        for t in me.get("techniques") or []:
-            t = str(t).strip()
-            if t:
-                tech_counts[t] = tech_counts.get(t, 0) + 1
         for pr in me.get("affected_products") or []:
             pr = str(pr).strip()
             if pr:
@@ -10281,14 +10728,6 @@ def render_entity_page(
             f'<div class="echips">{"".join(chips)}</div></div>'
         )
 
-    tech_chips = []
-    for t, n in sorted(tech_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:24]:
-        mitre = "https://attack.mitre.org/techniques/" + t.replace(".", "/") + "/"
-        cnt = f' <span class="echip-n">×{n}</span>' if n > 1 else ""
-        tech_chips.append(
-            f'<a class="echip echip--tech" href="{_escape(mitre)}" target="_blank" '
-            f'rel="noopener noreferrer" title="Open {_escape(t)} on attack.mitre.org">{_escape(t)}{cnt}</a>'
-        )
     # Affected products, as a pivot, answers "what does this actor/campaign
     # hit?" — a real question on every entity type EXCEPT a product, where
     # the same list would just be the other products named in the same
@@ -10346,11 +10785,13 @@ def render_entity_page(
             + "</p>"
         )
 
-    # Every CVE the coverage carries, exploited ones first — the answer to
-    # "what is known-broken in this product?" in one row.
-    cve_chips = [
+    # Every CVE the coverage carries, exploited ones first: "what is
+    # known-broken in this product?" and "what does this actor exploit?"
+    # in one row. A CVE page skips it (the row would be itself plus the
+    # CVEs that merely share its entries).
+    cve_chips = [] if etype == "cve" else [
         f'<a class="echip{" echip--exp" if c in cve_exploited else ""}" '
-        f'href="{prefix}cves/{_escape(c)}/"'
+        f'href="{prefix}entities/{_escape(c)}/"'
         + (' title="Reported exploited"' if c in cve_exploited else "")
         + f">{_escape(c)}"
         + (f' <span class="echip-n">×{n}</span>' if n > 1 else "") + "</a>"
@@ -10364,9 +10805,8 @@ def render_entity_page(
     ]
     pivot_block = ""
     pivot_rows = (
-        _chiprow("CVEs", cve_chips if etype == "product" else [])
+        _chiprow("CVEs (exploited first)" if cve_exploited else "CVEs", cve_chips)
         + _chiprow("Releases covered", release_chips)
-        + _chiprow("ATT&CK techniques", tech_chips)
         + _chiprow("Affected products", prod_chips)
         + _chiprow("Tags", tag_chips)
     )
@@ -10392,38 +10832,44 @@ def render_entity_page(
 
 {actor_timeline_html}
 
+{intel_html}
+
+{relations_block}
+
+<h2 class="section-head" style="margin-top:1.5rem">Story timeline</h2>
+{timeline_note}
+{timeline_block}
+
 {pivot_block}
 
 {render_entity_attack_section(entity, prefix=prefix)}
 
-<h2 class="section-head" style="margin-top:1.5rem">Story timeline</h2>
-{timeline_block}
+{render_embedded_entries_section(
+    subject_entries,
+    heading=f"Entries about {title}",
+    empty_text=(
+        "No published entry is about this entity yet"
+        + (" · the story timeline above lists the entries that mention it."
+           if n_mentions else
+           " · an entry attaches by registry key, by the entity's name or a "
+           "public alias in its title or body, or (for CVE entities) by exact CVE id.")
+    ),
+    prefix=prefix,
+    entries_by_id=entries_by_id,
+)}
 
-{relations_block}
+{related_block}
 {section_block}
 {donut_block}
-{related_block}
 
 <div class="panel" style="margin-top:1.5rem">
   {ext_block}
   {citations_block}
 </div>
-
-{render_embedded_entries_section(
-    matching_entries or [],
-    heading=f"Entries about {title}",
-    empty_text=(
-        "No published entry references this entity yet · entries match by "
-        "registry key, by the entity's name or a public alias appearing in "
-        "the entry title or body, or (for CVE entities) by exact CVE id."
-    ),
-    prefix=prefix,
-    entries_by_id=entries_by_id,
-)}
 """
     ent_items = [
         (site_url + entry_url_path(e), e.get("title") or e["id"])
-        for e in (matching_entries or [])
+        for e in subject_entries
     ]
     return base_template(
         title=f"{title} · {etype or 'entity'}",
@@ -10540,7 +10986,13 @@ def render_entity_attack_section(entity: dict[str, Any], *, prefix: str) -> str:
     """The entity page's `ATT&CK techniques` section: evidence-bound TTPs
     grouped by tactic (matrix order), each with the pinned release's
     definition and the entries that support it, plus the Navigator-layer
-    export and a jump into the overlap matrix."""
+    export and a jump into the overlap matrix.
+
+    Collapsed by default: the profile is a reference for the hunter who
+    wants it, not the first thing a reader deciding what to do has to
+    scroll past. The closed summary names the technique count and the
+    number of tactics. Opened, it shows one line per tactic with its
+    technique names, then the per-technique definitions and evidence."""
     tech: dict[str, list[str]] = entity.get("techniques") or {}
     if not tech or not ATTACK_TECHNIQUES:
         return ""
@@ -10581,19 +11033,31 @@ def render_entity_attack_section(entity: dict[str, Any], *, prefix: str) -> str:
             + f"</h3>{''.join(rows)}</div>"
         )
     matrix_href = f'{prefix}attack/?sel={urllib.parse.quote(key, safe="")}'
+    tactic_lines = "".join(
+        '<li><span class="atk-brief__tac">' + _escape(str(tac.get("name") or "")) + "</span>"
+        + '<span class="atk-brief__techs">'
+        + " · ".join(_escape(attack_technique_label(tid)) for tid in tids)
+        + "</span></li>"
+        for tac, tids in groups
+    )
+    n_tac = len(groups)
     return (
-        '<div class="ops-section" id="attack">'
-        '<h2 class="section-head" style="margin-top:1.5rem">ATT&CK techniques</h2>'
+        '<details class="ops-section atk-details" id="attack">'
+        '<summary class="section-head">ATT&amp;CK techniques '
+        f'<span class="verif-count">({len(tech)} across {n_tac} '
+        f"tactic{'s' if n_tac != 1 else ''})</span></summary>"
         '<p class="muted" style="margin-top:0.3rem">'
         f"{len(tech)} technique{'s' if len(tech) != 1 else ''} observed across "
-        f"{len(evidence_entries)} entr{'ies' if len(evidence_entries) != 1 else 'y'}, "
-        "derived from entry metadata and body evidence, never asserted without a "
-        f"published entry behind it · pinned to MITRE ATT&CK v{_escape(ATTACK_VERSION)} · "
+        f"{len(evidence_entries)} entr{'ies' if len(evidence_entries) != 1 else 'y'} about "
+        "this entity, derived from entry metadata and body evidence, never asserted "
+        "without a published entry behind it · pinned to MITRE ATT&CK "
+        f"v{_escape(ATTACK_VERSION)} · "
         f'<a href="{_escape(matrix_href)}">compare on the matrix</a> · '
         '<a href="attack-layer.json" download>Navigator layer (JSON)</a>'
         "</p>"
+        f'<ul class="atk-brief">{tactic_lines}</ul>'
         + "".join(group_blocks)
-        + "</div>"
+        + "</details>"
     )
 
 
@@ -10912,8 +11376,9 @@ def render_attack_matrix_page(
          placeholder="Type an actor / campaign / malware / CVE… (e.g. Akira, ShinyHunters, CVE-2026-34038)" />
   <ul class="atk-suggest" data-atk-suggest hidden></ul>
   <div class="atk-chips" data-atk-chips></div>
+  <p class="atk-note" data-atk-note role="status" hidden></p>
   <div class="atk-picker-foot muted">
-    <span data-atk-status>No selection · cells show store-wide coverage heat.</span>
+    <span data-atk-status aria-live="polite">No selection · cells show store-wide coverage heat.</span>
     <button type="button" class="mini-btn" data-atk-export hidden
             title="Download the current selection as an ATT&CK Navigator layer (format {NAVIGATOR_LAYER_VERSION})">export Navigator layer</button>
     <button type="button" class="mini-btn" data-atk-clear hidden>clear</button>
@@ -10923,15 +11388,21 @@ def render_attack_matrix_page(
 heat map and the per-technique evidence directory below work without it. Per-entity
 Navigator layers are downloadable from each entity page.</p></noscript>
 
-<div class="atk-matrix-wrap" tabindex="0" aria-label="ATT&CK matrix · horizontally scrollable">
+<div class="atk-legendbar">
+  <p class="muted atk-legend">
+    <span data-atk-legend-heat>Cell shading = published-entry coverage of the technique or its sub-techniques
+    (<span class="atk-swatch h1"></span>1 · <span class="atk-swatch h2"></span>2–3 ·
+     <span class="atk-swatch h3"></span>4–7 · <span class="atk-swatch h4"></span>8+).
+    ▸ marks covered/total sub-techniques. Click or tap a cell for definition and evidence.</span>
+    <span data-atk-legend-cmp hidden><span class="atk-swatch atk-swatch--ol"></span>matches the selection ·
+    <span class="atk-swatch atk-swatch--dim"></span>does not · the dots in a cell show which
+    selected entities map it.</span>
+  </p>
+  <p class="muted atk-scrollhint">{len(ATTACK_TACTICS)} tactics · scroll the matrix sideways; tactic names stay pinned as you scroll down.</p>
+</div>
+<div class="atk-matrix-wrap" tabindex="0" aria-label="ATT&CK matrix · scrollable in both directions">
   <div class="atk-matrix">{''.join(columns)}</div>
 </div>
-<p class="muted atk-legend">
-  Cell shading = published-entry coverage of the technique or its sub-techniques
-  (<span class="atk-swatch h1"></span>1 · <span class="atk-swatch h2"></span>2–3 ·
-   <span class="atk-swatch h3"></span>4–7 · <span class="atk-swatch h4"></span>8+).
-  ▸ marks covered/total sub-techniques. Click a cell for definition and evidence.
-</p>
 
 <h2 class="section-head" style="margin-top:2rem">Covered techniques · definitions &amp; evidence</h2>
 {''.join(directory_blocks) or '<p class="muted">No technique evidence in the store yet.</p>'}
@@ -11162,19 +11633,41 @@ def render_graph_page(
         + _escape_json_island(json.dumps(config, sort_keys=True))
         + "</script>"
     )
+    # Node-type legend: one swatch per type present in the dataset, in the
+    # order an analyst reads a threat picture. The swatch colours are the
+    # same `--g-<type>` tokens graph.js paints the nodes with.
+    legend_order = ("actor", "campaign", "malware", "tool", "incident", "product",
+                    "report", "trend", "policy", "cve", "technique")
+    present_types = {str(n.get("type") or "") for n in nodes}
+    legend_types = [t for t in legend_order if t in present_types]
+    legend_html = (
+        '<div class="graph-legend" aria-label="Graph legend">'
+        + "".join(
+            f'<span class="g-leg"><i class="g-sw g-sw--{t}" aria-hidden="true"></i>'
+            f'{"CVE" if t == "cve" else t}</span>'
+            for t in legend_types
+        )
+        + '<span class="g-leg-sep" aria-hidden="true"></span>'
+        '<span class="g-leg"><i class="g-ln" aria-hidden="true"></i>curated</span>'
+        '<span class="g-leg"><i class="g-ln g-ln--dash" aria-hidden="true"></i>derived</span>'
+        '<span class="g-leg"><i class="g-sw g-sw--cve g-sw--ring" aria-hidden="true"></i>exploited CVE</span>'
+        '<span class="g-leg"><i class="g-sw g-sw--seed" aria-hidden="true"></i>starting point</span>'
+        "</div>"
+    )
     body = f"""
 <h1>Threat graph</h1>
 <p class="subtitle" style="max-width:64rem">
   Start from an entity and see only what connects to it, nothing else is drawn.
   Pick a starting point (search, or an entity below); the graph renders its direct
-  neighbourhood, and grows only where you take it: double-click any node to pull in
-  that node's connections (or widen the reach to 2 hops / the full connected graph).
+  neighbourhood, and grows only where you take it: double-click or double-tap any node
+  (or use <em>expand</em> in its panel) to pull in that node's connections, or widen the
+  reach to 2 hops / the full connected graph.
   Solid edges are <strong>curated relationships</strong>: typed, source-stated connections
   ("attributed to", "uses", "exploits", …), each citing the entry that establishes it.
   Dashed edges are <strong>derived</strong>: entities referenced by the same focused
   entry, or an entity and a CVE carried by the same entry (report roundups never
-  create derived edges). Click a node for its detail
-  panel; shift-click a second node to trace the shortest path between them.
+  create derived edges). Select a node for its detail panel; its <em>path</em> button
+  traces the shortest path to a second node you pick.
 </p>
 <p class="muted">
   {len(ent_nodes)} entities · {sum(1 for n in nodes if n.get("kind") == "cve")} CVEs ·
@@ -11189,7 +11682,7 @@ def render_graph_page(
            placeholder="Start here: find an actor / campaign / malware / product / CVE / technique…" />
     <ul class="atk-suggest" data-graph-suggest hidden></ul>
     <div class="graph-toggles" role="group" aria-label="Reach from the starting points">
-      <button type="button" class="mini-btn active" data-graph-reach="1" title="Direct neighbours only · grow further by double-clicking nodes">1 hop</button>
+      <button type="button" class="mini-btn active" data-graph-reach="1" title="Direct neighbours only · grow further by expanding nodes">1 hop</button>
       <button type="button" class="mini-btn" data-graph-reach="2" title="Neighbours of neighbours">2 hops</button>
       <button type="button" class="mini-btn" data-graph-reach="all" title="The entire connected graph reachable from the starting points">connected graph</button>
     </div>
@@ -11205,8 +11698,14 @@ def render_graph_page(
     <button type="button" class="mini-btn" data-graph-reset>reset</button>
   </div>
   <div class="graph-seeds" data-graph-seeds aria-label="Starting points"></div>
-  <div class="graph-stage">
+  <div class="graph-stage" data-graph-stage>
     <canvas data-graph-canvas aria-label="Threat graph · interactive canvas"></canvas>
+    <div class="graph-zoom" role="group" aria-label="Zoom">
+      <button type="button" class="mini-btn" data-graph-zoom="in" aria-label="Zoom in" title="Zoom in">+</button>
+      <button type="button" class="mini-btn" data-graph-zoom="out" aria-label="Zoom out" title="Zoom out">−</button>
+      <button type="button" class="mini-btn" data-graph-zoom="fit" aria-label="Fit the graph to the view" title="Fit the graph to the view">fit</button>
+    </div>
+    {legend_html}
     <aside class="graph-panel" data-graph-panel hidden></aside>
   </div>
   <p class="muted graph-hint" data-graph-status>
@@ -11769,6 +12268,11 @@ def main() -> int:
         runs_by_day[k].sort(key=lambda r: str(r.get("started") or ""), reverse=True)
 
     sources = annotate_sources(sources_raw, entries)
+    _SOURCE_PAGE_IDS.clear()
+    _SOURCE_PAGE_IDS.update(
+        str(x.get("id")) for x in sources["sources"]
+        if is_safe_path_segment(str(x.get("id") or ""))
+    )
     entities_list, entries_by_entity_key = build_entities(
         registry, entries, cves_raw, sources_raw, day_pages
     )
@@ -11944,25 +12448,52 @@ def main() -> int:
     def tag_or_region_page(facet: str, value: str, bucket: list[dict[str, Any]]) -> str:
         rel_url = f"{facet}/{value}/"
         prefix = "../" * 2
-        ordered = sorted(bucket, key=lambda e: (str(e.get("discovered_at") or ""), e["id"]),
+        # Latest activity first, like the live brief: an update re-surfaces.
+        ordered = sorted(bucket, key=lambda e: (str(content_model.entry_activity_ts(e) or ""), e["id"]),
                          reverse=True)
         items = [
             (
                 e.get("title") or e["id"],
                 f"{prefix}{entry_url_path(e)}",
-                f"{e['date']} · {e.get('kind') or ''} · {e.get('priority') or ''}",
+                f"{e['date']} · {e.get('kind') or ''} · {e.get('priority') or ''}"
+                + (" · updated" if visible_updates(e) else ""),
             )
             for e in ordered
         ]
+        n_b = len(ordered)
+        where = (f"tagged {value}" if facet == "tags" else f"covering the {value} region")
         return render_index_page(
             title=f"{facet[:-1].capitalize()}: {value}",
-            intro=f"All entries tagged {value}.",
+            intro=f"{n_b} entr{'y' if n_b == 1 else 'ies'} {where}, latest activity first.",
             items=items,
             site_url=site_url,
             cachebust=cachebust,
             prefix=prefix,
             canonical=site_url + rel_url,
             description=f"CTI entries tagged {value}.",
+        )
+
+    # /tags/ and /regions/ index pages: every value with its entry count.
+    for facet, index_map, noun in (("tags", tag_index, "tag"), ("regions", region_index, "region")):
+        vals = sorted(
+            ((v, b) for v, b in index_map.items() if is_safe_path_segment(v)),
+            key=lambda vb: (-len(vb[1]), vb[0]),
+        )
+        emit_html(
+            f"{facet}/",
+            render_index_page(
+                title=f"All {facet}",
+                intro=f"{len(vals)} {facet} across the entry store, most-used first.",
+                items=[
+                    (v, f"../{facet}/{v}/", f"{len(b)} entr{'y' if len(b) == 1 else 'ies'}")
+                    for v, b in vals
+                ],
+                site_url=site_url,
+                cachebust=cachebust,
+                prefix="../",
+                canonical=site_url + f"{facet}/",
+                description=f"Every {noun} used by the CTI entries, with entry counts.",
+            ),
         )
 
     for tag, bucket in tag_index.items():

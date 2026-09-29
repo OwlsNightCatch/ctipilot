@@ -19,6 +19,12 @@ Contract (normative version in [`docs/pipeline.md`](../docs/pipeline.md)):
   vendor, never a headline sentence. Every other public name goes in
   `aliases`; collisions with any other entity's key, name, or aliases FAIL
   `tools/check_run.py`.
+- `ambiguous_labels` (optional) lists the record's own name/aliases that are
+  also ordinary vocabulary or another thing's name ("fingerprint", "Troy",
+  the alias "Falcon"). They stay display and dedup labels but never attach
+  an entry by prose matching. Only an explicit `entities[]` key does. Set it
+  when registering such a name, not after the entity page has filled up
+  with unrelated coverage.
 - `summary` is a 1–3 sentence sourced definition. Attribution claims stay
   claim-attributed ("GTIG attributes…"), same as everywhere else.
 - `relations` (optional) carries the entity's curated threat-graph edges:
