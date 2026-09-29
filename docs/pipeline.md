@@ -480,8 +480,8 @@ Rules, all enforced by `tools/check_run.py` (`entry-updates`, `silent-edit`) unl
 - **Live brief** (the landing page `/`, `data/briefbook.json`, brief.js): the entry is
   in the window iff its **activity moment** is; it renders in the run group
   of the fire that made the latest record, flagged `UPD` with the record's
-  type and `summary` shown under the headline; the pulse panel's "updates to
-  prior coverage" counts it. An entry appears once, at its latest activity.
+  type and `summary` shown under the headline; the feed head's "updated"
+  count includes it. An entry appears once, at its latest activity.
 - **Day pages** (`/daily/<date>/`): § Updates to Prior Coverage lists every
   entry with a record dated that UTC day, rendered from the record (type,
   time, summary, the section body, link to the entry); the entry's kind
