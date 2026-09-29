@@ -1924,6 +1924,28 @@ assert_eq("stix_settings falls back to site name",
           branding_config.stix_settings(branding_config.DEFAULTS)["publisher_name"],
           branding_config.DEFAULTS["site"]["name"])
 
+# Source health (2026-09-29): a reachable source whose content fails is floated
+# in its own group with the evidence line, and a stale one in another.
+_sh = {"last_updated": "2026-09-29T22:00:00Z", "latest": {
+    "ok-src": {"id": "ok-src", "status": "active", "fetch_method": "rss", "class": "bridge-ok",
+               "action": "none", "content_verdict": "relevant"},
+    "shell-src": {"id": "shell-src", "status": "active", "fetch_method": "webfetch", "class": "ok",
+                  "action": "needs-content-fix", "action_reason": "the recipe returns a challenge",
+                  "content_verdict": "shell", "content_alnum": 333},
+    "stale-src": {"id": "stale-src", "status": "active", "fetch_method": "webfetch", "class": "ok",
+                  "action": "stale-content", "action_reason": "newest item too old",
+                  "content_verdict": "stale", "content_alnum": 9000,
+                  "newest_item": "2025-11-07", "newest_item_age_days": 326},
+}}
+_sh_html = build._ops_render_source_health(_sh)
+assert_in("source-health: content-fix group", "Reachable, but not returning usable content", _sh_html)
+assert_in("source-health: stale group", "Returning content, but nothing recent", _sh_html)
+assert_in("source-health: evidence line", "content: stale · 9,000 chars · newest 2025-11-07 (326 d)", _sh_html)
+assert_not_in("source-health: healthy source omitted", ">ok-src<", _sh_html)
+_sh_ok = {"last_updated": "x", "latest": {"ok-src": _sh["latest"]["ok-src"]}}
+assert_in("source-health: all-clear wording", "returning relevant, current content",
+          build._ops_render_source_health(_sh_ok))
+
 # ---------------------------------------------------------------------
 # Result
 # ---------------------------------------------------------------------

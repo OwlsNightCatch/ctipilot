@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tools/source_health.py — independent weekly health-check of every active source.
+"""tools/source_health.py — health check of every source: reachable AND returning relevant, current content.
 
 Hits HEAD on every `status: "active"` source in `sources/sources.json`,
 records `(id, status_code, latency_ms, fetched_at)` to
@@ -40,14 +40,17 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import html
 import ipaddress
 import json
+import re
 import socket
 import ssl
 import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from datetime import datetime, timezone
@@ -115,7 +118,14 @@ API_BRIDGE_CMD: dict[str, list[str]] = {
     # full GitHub Advisory Database. Canary on a permanent GHSA id (Log4Shell)
     # verifies the OSV recipe still resolves.
     "github-advisory": ["osv", "vuln", "GHSA-jfh8-c2jp-5v3q"],
+    # The EUVD front page is a JS app; its documented recipe is the JSON API.
+    "enisa-euvd": ["enisa-euvd", "recent", "exploited"],
 }
+# Per-source recipe overrides read from sources.json `health_cmd` (a list of
+# fetch_source.py arguments), filled in main(). Data beats code: a recipe fix
+# found by an audit lands in the source record, not in this file.
+_HEALTH_CMD_OVERRIDES: dict[str, list[str]] = {}
+
 # Minimum stdout bytes for a bridge invocation to count as "served content".
 BRIDGE_MIN_BYTES = 200
 
@@ -313,7 +323,7 @@ def _bridge_check(source_id: str, url: str, *, timeout: float,
     with no dedicated subcommand use `url <url>`, which itself auto-falls-back
     to the reader — so a bridge source behind a fresh WAF still probes ok."""
     default = ["jina", url] if fetch_method == "jina" else ["url", url]
-    argv = API_BRIDGE_CMD.get(source_id) or default
+    argv = _HEALTH_CMD_OVERRIDES.get(source_id) or API_BRIDGE_CMD.get(source_id) or default
     why = ""
     # `why` is truncated for display; `why_full` keeps the untruncated stderr so
     # classification never depends on where the truncation happened to fall.
@@ -475,6 +485,311 @@ def _rss_check(s: dict[str, Any], host: str, *, timeout: float) -> tuple[str, st
     return _classify(status, host), (err or "no working feed found"), status
 
 
+# ---------------------------------------------------------------------------
+# Content assessment (2026-09-29): "reachable" is not "working".
+#
+# Until now a source passed the sweep on transport alone: a 200 status, a feed
+# that parsed with at least one item, or 200+ bytes out of a bridge recipe. That
+# passes a Cloudflare challenge page, a cookie-consent shell, a parked domain, a
+# JS app shell and a feed that stopped publishing in 2024. Every source now also
+# gets its CONTENT read through its own recipe and judged on three questions:
+#   readable  — real text, not a challenge / consent / redirect / JS shell;
+#   relevant  — security vocabulary in the source's own languages;
+#   current   — the newest dated item is recent enough for the source.
+# The verdict and its evidence (text volume, matched terms, newest item date)
+# are written next to the reachability class, and a reachable source whose
+# content fails is floated as `needs-content-fix`, never silently green.
+# ---------------------------------------------------------------------------
+
+# Challenge / shell markers, matched on the first part of the fetched body.
+_SHELL_MARKERS = (
+    "just a moment", "checking your browser", "attention required", "cf-browser-verification",
+    "cf-chl", "enable javascript", "please enable js", "javascript is required",
+    "you need to enable javascript", "access denied", "request blocked", "are you a robot",
+    "captcha", "verify you are human", "ddos protection", "redirecting...",
+    "please wait while", "403 forbidden", "404 not found", "page not found",
+    "this domain is for sale", "domain parked", "buy this domain",
+)
+
+# Security vocabulary in the languages the source list covers. A source is
+# relevant when at least RELEVANCE_MIN distinct terms appear (or any CVE id).
+_SECURITY_TERMS = (
+    # en
+    "vulnerab", "exploit", "malware", "ransomware", "threat", "attack", "security", "advisory",
+    "patch", "breach", "phishing", "backdoor", "botnet", "cyber", "incident", "zero-day",
+    "zero day", "apt", "trojan", "espionage", "compromise", "hacker", "credential",
+    "brute", "jailbreak", "prompt injection", "supply chain", "supply-chain", "infostealer",
+    # de
+    "sicherheitslücke", "schwachstelle", "angriff", "sicherheit", "warnung", "cyberangriff",
+    "datenleck", "schadsoftware",
+    # fr
+    "vulnérabilité", "attaque", "sécurité", "menace", "rançongiciel", "faille", "alerte",
+    # it
+    "vulnerabilità", "attacco", "sicurezza", "minaccia",
+    # nl / pl / es / pt / ja
+    "kwetsbaarheid", "beveiliging", "podatność", "atak", "bezpieczeństw", "vulnerabilidad",
+    "ataque", "seguridad", "segurança", "脆弱性", "攻撃", "セキュリティ",
+)
+RELEVANCE_MIN = 3
+# Below this many letters/digits a body counts as unread (the same floor the
+# gate's cited-page checks use for JS shells).
+CONTENT_MIN_ALNUM = 600
+# Newest dated item older than this many days ⇒ `stale` (a per-source
+# `max_staleness_days` in sources.json overrides it for low-cadence publishers).
+DEFAULT_MAX_STALENESS_DAYS = 60
+
+_MONTHS = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6, "jul": 7, "aug": 8,
+    "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+    # de / fr / it / nl / es long and short forms (lowercased, prefix-matched)
+    "januar": 1, "februar": 2, "märz": 3, "maerz": 3, "mai": 5, "juni": 6, "juli": 7,
+    "oktober": 10, "dezember": 12,
+    "janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4, "juin": 6,
+    "juillet": 7, "août": 8, "aout": 8, "septembre": 9, "octobre": 10, "novembre": 11,
+    "décembre": 12, "decembre": 12,
+    "gennaio": 1, "febbraio": 2, "marzo": 3, "aprile": 4, "maggio": 5, "giugno": 6,
+    "luglio": 7, "agosto": 8, "settembre": 9, "ottobre": 10, "dicembre": 12,
+    "maart": 3, "mei": 5, "augustus": 8,
+    "enero": 1, "febrero": 2, "abril": 4, "junio": 6, "julio": 7, "septiembre": 9,
+    "octubre": 10, "noviembre": 11, "diciembre": 12,
+}
+_MONTH_RE = r"([A-Za-zÀ-ÿ]{3,10})\.?"
+_DATE_PATTERNS = (
+    # `(?!\d)`, not `\b`: an ISO timestamp ("2026-08-27T09:00:00") has a letter
+    # right after the day, and `\b` between two word characters never matches.
+    ("ymd", re.compile(r"(?<!\d)(20[12]\d)[-/](0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])(?!\d)")),
+    ("dmy_dot", re.compile(r"\b(0?[1-9]|[12]\d|3[01])\.(0?[1-9]|1[0-2])\.(20[12]\d)\b")),
+    ("d_mon_y", re.compile(r"\b(0?[1-9]|[12]\d|3[01])\.?\s+" + _MONTH_RE + r",?\s+(20[12]\d)\b")),
+    ("mon_d_y", re.compile(r"\b" + _MONTH_RE + r"\s+(0?[1-9]|[12]\d|3[01])(?:st|nd|rd|th)?,?\s+(20[12]\d)\b")),
+)
+
+
+def _month_num(word: str) -> int | None:
+    w = word.lower().rstrip(".")
+    if w in _MONTHS:
+        return _MONTHS[w]
+    for k, v in _MONTHS.items():
+        if len(w) >= 3 and (k.startswith(w) or w.startswith(k)):
+            return v
+    return None
+
+
+def _dates_in(text: str, now: datetime) -> list[datetime]:
+    """Every plausible calendar date in `text`, never in the future and never
+    before 2015 (copyright lines and version numbers fall outside)."""
+    out: list[datetime] = []
+    horizon = now.timestamp() + 86400
+    for kind, rx in _DATE_PATTERNS:
+        for m in rx.finditer(text):
+            try:
+                if kind == "ymd":
+                    y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
+                elif kind == "dmy_dot":
+                    d, mo, y = int(m.group(1)), int(m.group(2)), int(m.group(3))
+                elif kind == "d_mon_y":
+                    d, mo, y = int(m.group(1)), _month_num(m.group(2)), int(m.group(3))
+                else:
+                    mo, d, y = _month_num(m.group(1)), int(m.group(2)), int(m.group(3))
+                if not mo:
+                    continue
+                dt = datetime(y, mo, d, tzinfo=timezone.utc)
+            except (ValueError, TypeError):
+                continue
+            if 2015 <= dt.year and dt.timestamp() <= horizon:
+                out.append(dt)
+    return out
+
+
+def _alnum_len(text: str) -> int:
+    return sum(1 for ch in text if ch.isalnum())
+
+
+def _strip_html(raw: str) -> str:
+    raw = re.sub(r"(?is)<(script|style|noscript)\b.*?</\1>", " ", raw)
+    return html.unescape(re.sub(r"<[^>]+>", " ", raw))
+
+
+def _run_fetch(argv: list[str], timeout: float) -> str:
+    try:
+        proc = subprocess.run([sys.executable, str(FETCH_SOURCE), *argv],
+                              capture_output=True, text=True, timeout=timeout)
+    except Exception:  # noqa: BLE001
+        return ""
+    return proc.stdout if proc.returncode == 0 else ""
+
+
+def _content_fetch(s: dict[str, Any], *, timeout: float) -> tuple[str, str, str, list[str]]:
+    """Read the source through its own recipe. Returns `(transport, text,
+    raw_for_dates, feed_dates)`: `text` is what a reader would get (feed item
+    titles + summaries, or extracted page text), `raw_for_dates` the raw body
+    (HTML `datetime=` attributes and JSON-LD carry the dates listing pages
+    hide), `feed_dates` the feed's own item timestamps."""
+    sid = s.get("id", "")
+    fm = s.get("fetch_method", "")
+    url = s.get("probe_url") or s.get("url") or ""
+    if fm == "rss":
+        for feed_url in [s.get("rss_url"), s.get("url")]:
+            if not feed_url:
+                continue
+            out = _run_fetch(["feed", feed_url, "15"], timeout)
+            try:
+                data = json.loads(out) if out else {}
+            except ValueError:
+                data = {}
+            items = data.get("items") or []
+            if items:
+                text = "\n".join(f"{i.get('title', '')} {i.get('summary', '')}" for i in items)
+                return "feed", text, "", [str(i.get("published") or "") for i in items]
+    if isinstance(s.get("health_cmd"), list) and s["health_cmd"]:
+        out = _run_fetch([str(a) for a in s["health_cmd"]], timeout)
+        return "health_cmd", _strip_html(out) if out.lstrip().startswith("<") else out, out, []
+    if fm == "api" and sid in API_BRIDGE_CMD:
+        # The reachability probe asks for one item; the content read asks for a
+        # real listing, since one advisory is too thin to judge volume or cadence.
+        argv = [("10" if a in ("1", "3") and i == len(API_BRIDGE_CMD[sid]) - 1 else a)
+                for i, a in enumerate(API_BRIDGE_CMD[sid])]
+        out = _run_fetch(argv, timeout)
+        return "api", _strip_html(out) if out.lstrip().startswith("<") else out, out, []
+    raw_home = ""
+    if fm == "rss":
+        # An `rss` record without a working `rss_url`: follow the page's own
+        # <link rel="alternate"> feed before judging the HTML (exodus-intelligence
+        # and xlab-qianxin were probed as homepages and misread as stale).
+        raw_home = _run_fetch(["url", url, "--direct"], timeout)
+        for m in re.finditer(r'<link[^>]+type="application/(?:rss|atom)\+xml"[^>]*>', raw_home, re.I):
+            href = re.search(r'href="([^"]+)"', m.group(0))
+            if not href:
+                continue
+            feed_url = urllib.parse.urljoin(url, html.unescape(href.group(1)))
+            out = _run_fetch(["feed", feed_url, "15"], timeout)
+            try:
+                items = (json.loads(out) if out else {}).get("items") or []
+            except ValueError:
+                items = []
+            if items:
+                text = "\n".join(f"{i.get('title', '')} {i.get('summary', '')}" for i in items)
+                return f"feed (discovered {feed_url})", text, "", [str(i.get("published") or "") for i in items]
+    # Pages: the trafilatura capture is what a reader gets; the direct raw body
+    # carries the listing's titles and dates when the capture keeps only the
+    # page chrome. The metered reader is used only for records pinned to it.
+    ext = _run_fetch(["extract", url], timeout)
+    ext_body = ext.split("\n---\n", 1)[-1] if ext.lstrip().startswith(("---", "#")) else ext
+    raw = raw_home or _run_fetch(["url", url, "--direct"], timeout)
+    text = ext_body + "\n" + _strip_html(raw)
+    transport = "extract+direct"
+    if _alnum_len(text) < CONTENT_MIN_ALNUM and fm == "jina":
+        jr = _run_fetch(["jina", url], max(timeout, 45.0))
+        if jr:
+            text, raw, transport = jr, jr, "jina"
+    return transport, text, raw, []
+
+
+def _content_assess(s: dict[str, Any], *, timeout: float, now: datetime) -> dict[str, Any]:
+    """Verdict on what the source actually returns: `relevant`, `stale`,
+    `irrelevant`, `shell`, or `unreadable`, with the evidence behind it."""
+    transport, text, raw, feed_dates = _content_fetch(s, timeout=timeout)
+    low = text.lower()
+    n_alnum = _alnum_len(text)
+    head = low[:4000]
+    shell_hits = [m for m in _SHELL_MARKERS if m in head]
+    terms = sorted({t for t in _SECURITY_TERMS if t in low})
+    has_cve = bool(re.search(r"\bcve-\d{4}-\d{4,}\b", low))
+    dates: list[datetime] = []
+    for d in feed_dates:
+        try:
+            dates.append(datetime.fromisoformat(d.replace("Z", "+00:00")).astimezone(timezone.utc))
+        except ValueError:
+            dates.extend(_dates_in(d, now))
+    dated = True
+    if not dates:
+        dates = _dates_in(text + "\n" + (raw or ""), now)
+        # A listing that shows its posts' dates carries several of them; one or
+        # two dates on a page are its own metadata (published / modified), which
+        # says nothing about the newest post (ibm-xforce read as 551 days stale
+        # from its page date while its newest post was four weeks old).
+        if len({d.date() for d in dates}) < 3:
+            dated = False
+            dates = []
+    newest = max(dates) if dates else None
+    age = int((now - newest).total_seconds() // 86400) if newest else None
+    limit = int(s.get("max_staleness_days") or DEFAULT_MAX_STALENESS_DAYS)
+    # A query API (SEC EDGAR full-text search, OSV, a KEV filter) that returns a
+    # well-formed empty envelope is working; judge it by structure, not volume.
+    empty_envelope = False
+    structured_hits = False
+    if transport in ("api", "health_cmd") and text.lstrip().startswith(("{", "[")):
+        try:
+            payload = json.loads(text)
+        except ValueError:
+            payload = None
+        if isinstance(payload, (dict, list)):
+            if isinstance(payload, dict):
+                counts = [payload.get(k) for k in ("count", "total", "total_count")]
+                hits = payload.get("hits")
+                if isinstance(hits, dict):
+                    counts.append((hits.get("total") or {}).get("value")
+                                  if isinstance(hits.get("total"), dict) else hits.get("total"))
+                empty_envelope = any(c == 0 for c in counts if isinstance(c, int))
+                lists = [payload.get(k) for k in ("hits", "items", "results", "vulnerabilities", "vulns")]
+                structured_hits = any(isinstance(v, list) and v for v in lists)
+                item_lists = [v for v in lists if isinstance(v, list) and v]
+                if item_lists:
+                    # Date a query API by its results, not by the query window it
+                    # echoes back (SEC EDGAR's `end` is always today).
+                    item_dates = _dates_in(json.dumps(item_lists, ensure_ascii=False), now)
+                    if item_dates:
+                        newest = max(item_dates)
+                        age = int((now - newest).total_seconds() // 86400)
+            else:
+                structured_hits = bool(payload)
+    min_terms = 1 if s.get("content_scope") == "general-news" else RELEVANCE_MIN
+    if empty_envelope:
+        verdict = "relevant"
+    elif structured_hits and not (age is not None and age > limit):
+        # A security-scoped query API returning well-formed results is working
+        # however small the payload (one Item 1.05 8-K is 241 letters of JSON).
+        verdict = "relevant"
+    elif not text.strip():
+        verdict = "unreadable"
+    elif (n_alnum < CONTENT_MIN_ALNUM and not shell_hits and dated and dates
+          and len({d.date() for d in dates}) >= 3 and age is not None and age <= limit
+          and (terms or has_cve)):
+        # A legitimately small static index (three dated posts on swarmcha.se is
+        # 896 bytes) is readable: dated, current, on topic and not a challenge.
+        verdict = "relevant"
+    elif n_alnum < CONTENT_MIN_ALNUM or (shell_hits and n_alnum < 4 * CONTENT_MIN_ALNUM):
+        verdict = "shell"
+    elif len(terms) < min_terms and not has_cve:
+        verdict = "irrelevant"
+    elif age is not None and age > limit:
+        verdict = "stale"
+    else:
+        verdict = "relevant"
+    return {
+        "content_verdict": verdict,
+        "content_transport": transport,
+        "content_alnum": n_alnum,
+        "content_terms": terms[:12],
+        "content_has_cve": has_cve,
+        "content_shell_markers": shell_hits[:4],
+        "newest_item": newest.strftime("%Y-%m-%d") if newest else None,
+        "newest_item_age_days": age,
+        "max_staleness_days": limit,
+        "content_empty_result_set": empty_envelope,
+        "content_dated": dated,
+    }
+
+
+_CONTENT_FAIL_REASON = {
+    "unreadable": "no transport in the recipe returned any content",
+    "shell": "the recipe returns a challenge, consent, redirect or JS shell instead of content",
+    "irrelevant": "the recipe returns content with no security vocabulary (wrong URL, parked or "
+                  "repurposed page)",
+    "stale": "reachable and relevant, but its newest dated item is older than the source's "
+             "staleness limit (dark source, or the listing URL no longer shows new posts)",
+}
+
+
 # Probe classes that mean "reachable / handled" — no operator action needed.
 # `jina-ok` = a direct probe that anti-bot-blocked / geo-gated / JS-shelled,
 # but whose body the r.jina.ai reader proxy (the `url` auto-fallback, the
@@ -559,11 +874,12 @@ def main() -> int:
                    help="how many runs to retain per source (default 12)")
     p.add_argument("--workers", type=int, default=10,
                    help="parallel probe workers (default 10)")
-    p.add_argument("--budget", type=float, default=420.0,
-                   help="overall wall-clock budget in seconds (default 420; 0 = "
-                        "unlimited). On exhaustion, un-probed sources carry the "
-                        "previous snapshot's result forward and the snapshot "
-                        "still writes complete.")
+    p.add_argument("--budget", type=float, default=0.0,
+                   help="optional overall wall-clock budget in seconds (default 0 = "
+                        "unlimited: every probe is bounded by its own subprocess "
+                        "timeouts, so the sweep always ends). With a budget, "
+                        "un-probed sources carry the previous snapshot's result "
+                        "forward and the snapshot still writes complete.")
     args = p.parse_args()
 
     if not SOURCES_JSON.exists():
@@ -578,6 +894,9 @@ def main() -> int:
     # active ones, so the snapshot is a complete periodic accessibility sweep.
     # The Ops dashboard then floats only the ones that need operator action.
     sources = [s for s in sources_data.get("sources", []) if s.get("url")]
+    for s in sources:
+        if isinstance(s.get("health_cmd"), list) and s["health_cmd"]:
+            _HEALTH_CMD_OVERRIDES[s["id"]] = [str(a) for a in s["health_cmd"]]
     if not sources:
         print("No sources to check.")
         return 0
@@ -658,6 +977,32 @@ def main() -> int:
                     cls = "jina-ok"
                     err = ""
         action, action_reason = _action(src_status, fetch_method, cls, status, sid)
+        content = _content_assess(s, timeout=max(args.timeout, 30.0),
+                                  now=datetime.now(timezone.utc))
+        verdict = content["content_verdict"]
+        if src_status != "demoted" and verdict != "relevant":
+            if action == "none":
+                action = "stale-content" if verdict == "stale" else "needs-content-fix"
+                action_reason = _CONTENT_FAIL_REASON[verdict]
+                if cls in ("reader-quota", "bridge-blocked") and verdict == "unreadable":
+                    action_reason = ("no free transport reads this host and the metered reader "
+                                     "pool is empty, so nothing verifies its content this sweep "
+                                     "(refill JINA_API_KEYS or find a direct recipe)")
+                if verdict == "stale":
+                    action_reason += (f" (newest {content['newest_item']}, "
+                                      f"{content['newest_item_age_days']} d > "
+                                      f"{content['max_staleness_days']} d)")
+            else:
+                action_reason += f"; content: {verdict}"
+        elif fetch_method == "blocked" and verdict == "relevant":
+            action, action_reason = ("needs-content-fix",
+                                     "marked `blocked` but a direct transport now reads relevant "
+                                     f"content ({content['content_transport']}) — restore a working "
+                                     "fetch_method")
+        elif fetch_method == "jina" and verdict == "relevant" \
+                and content["content_transport"] != "jina":
+            action_reason = ("pinned to the metered jina reader, but the free direct transports "
+                             "read it; consider fetch_method bridge")
         rec = {
             "id": sid,
             "url": url,
@@ -670,6 +1015,7 @@ def main() -> int:
             "action": action,
             "action_reason": action_reason,
             "fetched_at": fetched_at,
+            **content,
         }
         if err:
             rec["error"] = err
@@ -770,6 +1116,14 @@ def main() -> int:
         by_class[r["class"]] = by_class.get(r["class"], 0) + 1
         by_action[r["action"]] = by_action.get(r["action"], 0) + 1
     print()
+    by_verdict: dict[str, int] = {}
+    for r in results:
+        v = r.get("content_verdict") or "not-assessed"
+        by_verdict[v] = by_verdict.get(v, 0) + 1
+    print("# content verdicts:")
+    for v in ("relevant", "stale", "irrelevant", "shell", "unreadable", "not-assessed"):
+        if by_verdict.get(v):
+            print(f"  {by_verdict[v]:>3}× {v}")
     print("# class breakdown:")
     for cls in ("ok", "redirect-ok", "bridge-ok", "jina-ok", "ua-blocked", "bridge-blocked",
                 "reader-quota", "client-error", "server-error", "unreachable", "bridge-fail",
@@ -778,13 +1132,13 @@ def main() -> int:
         if n:
             print(f"  {n:>3}× {cls}")
     print("# action breakdown (dashboard floats non-`none`):")
-    for act in ("none", "needs-bridge", "needs-demote"):
+    for act in ("none", "needs-bridge", "needs-demote", "needs-content-fix", "stale-content"):
         n = by_action.get(act, 0)
         if n:
             print(f"  {n:>3}× {act}")
     flagged = [r for r in results if r["action"] != "none"]
     if flagged:
-        print("# UNSOLVED — needs a dedicated bridge fetcher or demotion:")
+        print("# UNSOLVED — needs a bridge, a recipe/URL fix, a staleness review, or demotion:")
         for r in flagged:
             print(f"  - {r['id']:<28} [{r['action']}] {r['action_reason']}")
 
@@ -805,15 +1159,17 @@ def main() -> int:
         existing = {}
     runs = list(existing.get("runs") or [])
     runs.append({"fetched_at": fetched_at, "results": results,
-                 "by_class": by_class, "by_action": by_action})
+                 "by_class": by_class, "by_action": by_action, "by_verdict": by_verdict})
     runs = runs[-args.history_cap :]
     out = {
-        "schema_version": 2,
-        "schema": ("Periodic source-accessibility snapshot (every source, "
-                   "api/bridge verified through tools/fetch_source.py). Each result "
-                   "carries `status`, `fetch_method`, `class`, and a derived `action` "
-                   "(none | needs-bridge | needs-demote). The Ops dashboard floats only "
-                   "non-`none` actions — sources that need a dedicated bridge or demotion."),
+        "schema_version": 3,
+        "schema": ("Periodic source health snapshot (every source, read through its own "
+                   "recipe). Each result carries reachability (`status`, `fetch_method`, "
+                   "`class`) and content (`content_verdict` relevant|stale|irrelevant|shell|"
+                   "unreadable, with `content_alnum`, `content_terms`, `newest_item`, "
+                   "`newest_item_age_days`), and a derived `action` (none | needs-bridge | "
+                   "needs-demote | needs-content-fix | stale-content). The Ops dashboard "
+                   "floats only non-`none` actions."),
         "last_updated": fetched_at,
         "history_cap": args.history_cap,
         "runs": runs,

@@ -7417,18 +7417,18 @@ def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: s
                if isinstance(r, dict) and r.get("action") not in (None, "", "none")]
     intro = (
         f'<p class="ops-subtitle">Periodic probe of all <strong>{total}</strong> sources · snapshot '
-        f'<span class="mono">{_escape(str(fetched_at))}</span>. Uses the bridge\'s browser UA and '
-        f'exercises the <code>api</code>/<code>bridge</code> recipes, so "reachable here" means '
-        f'"reachable via the configured fetch method". Only <strong>unsolved problems</strong> are '
-        f'listed below · healthy sources, already-demoted sources, and sources already served by a '
-        f'working bridge are omitted.</p>'
+        f'<span class="mono">{_escape(str(fetched_at))}</span>. Every source is read through its '
+        f'own recipe and judged twice: <strong>reachable</strong> via the configured fetch method, '
+        f'and <strong>working</strong> · readable content (not a challenge or JS shell), security-'
+        f'relevant, with a recently dated item. Only <strong>unsolved problems</strong> are '
+        f'listed below · healthy sources and already-demoted sources are omitted.</p>'
     )
     if not flagged:
         return (
             intro
             + '<p class="ops-pill ops-pill--ok ops-pill--wrap">✓ All '
-            + f'{total} sources reachable via their configured fetch method · nothing needs a '
-            + 'dedicated bridge or demotion.</p>'
+            + f'{total} sources reachable and returning relevant, current content · nothing needs '
+            + 'a bridge, a recipe fix or demotion.</p>'
         )
 
     def _group(rows_data: list[dict[str, Any]], heading: str, help_txt: str) -> str:
@@ -7443,7 +7443,8 @@ def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: s
             f'<td class="mono muted">{_escape(r.get("fetch_method") or "·")}</td>'
             f'<td class="mono muted">{_escape(r.get("class") or "?")}'
             f'{(" " + str(r.get("status_code"))) if r.get("status_code") else ""}</td>'
-            f'<td class="muted">{_escape(r.get("action_reason") or "")}</td>'
+            f'<td class="muted">{_escape(r.get("action_reason") or "")}'
+            f'{_ops_content_evidence(r)}</td>'
             f'</tr>'
             for r in sorted(rows_data, key=lambda x: x.get("id", ""))
         )
@@ -7458,7 +7459,10 @@ def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: s
 
     needs_bridge = [r for r in flagged if r.get("action") == "needs-bridge"]
     needs_demote = [r for r in flagged if r.get("action") == "needs-demote"]
-    other = [r for r in flagged if r.get("action") not in ("needs-bridge", "needs-demote")]
+    needs_content = [r for r in flagged if r.get("action") == "needs-content-fix"]
+    stale = [r for r in flagged if r.get("action") == "stale-content"]
+    other = [r for r in flagged if r.get("action") not in (
+        "needs-bridge", "needs-demote", "needs-content-fix", "stale-content")]
     return (
         intro
         + _group(needs_bridge, "Needs a dedicated bridge fetcher (or demotion)",
@@ -7468,8 +7472,30 @@ def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: s
         + _group(needs_demote, "Failing · fix the recipe or demote",
                  "Dead / erroring sources, or sources whose already-implemented "
                  "<code>api</code>/<code>bridge</code> recipe is now failing. Update the URL/recipe, or demote.")
+        + _group(needs_content, "Reachable, but not returning usable content",
+                 "The recipe answers, yet what it returns is a challenge or JS shell, nothing at all, "
+                 "or a page with no security content. Fix the URL, feed or recipe.")
+        + _group(stale, "Returning content, but nothing recent",
+                 "Readable and relevant, yet the newest dated item is older than the source's "
+                 "staleness limit. A dark source, a listing URL that stopped showing new posts, or a "
+                 "low-cadence publisher that needs its own <code>max_staleness_days</code>.")
         + _group(other, "Review", "Unexpected probe outcome · inspect.")
     )
+
+
+def _ops_content_evidence(r: dict[str, Any]) -> str:
+    """One muted line under a flagged source's reason: what its content read
+    actually returned (verdict, text volume, newest dated item)."""
+    verdict = r.get("content_verdict")
+    if not verdict:
+        return ""
+    bits = [f"content: {verdict}"]
+    if isinstance(r.get("content_alnum"), int):
+        bits.append(f"{r['content_alnum']:,} chars")
+    if r.get("newest_item"):
+        age = r.get("newest_item_age_days")
+        bits.append(f"newest {r['newest_item']}" + (f" ({age} d)" if isinstance(age, int) else ""))
+    return f'<br><span class="mono muted">{_escape(" · ".join(bits))}</span>'
 
 
 def _ops_kpi_tile(label: str, value: str, *, sub: str = "", kind: str = "neutral",

@@ -2245,7 +2245,7 @@ _MIN_PAGE_SKELETON = 600
 # Their structured recipes (`bsi-csaf`, `ncsc-nl csaf`, `msrc cve`) are the
 # real read, and the verifier checks quotes from them by hand.
 _JS_RENDERED_HOSTS = {"wid.cert-bund.de", "advisories.ncsc.nl", "msrc.microsoft.com",
-                      "security-hub.ncsc.admin.ch"}
+                      "security-hub.ncsc.admin.ch", "psirt.global.sonicwall.com"}
 
 
 def _page_skeletons(urls: list[str], run_id: str) -> dict[str, list[str]]:
@@ -2360,44 +2360,84 @@ def check_evidence_quotes_literal(run_entries: list[dict], run_id: str, *, skip:
     obliges the run to fix or explain every WARN it causes."""
     if skip:
         return
-    todo: list[tuple[str, str, str, str]] = []  # (entry_id, publisher, url, needle)
+    todo: list[tuple[str, str, list[str], str]] = []  # (entry_id, publisher, candidate urls, needle)
     for e in run_entries:
         if e.get("migrated_from"):
             continue
         committed = (_committed_evidence_quotes(e, content_root)
                      if updated_ids and e["id"] in updated_ids else None)
+        src_urls = [(str(sr.get("publisher") or ""), str(sr.get("url") or ""))
+                    for sr in (e.get("sources") or []) if isinstance(sr, dict)]
+        src_urls = [(p_, u) for p_, u in src_urls if u.startswith("https://")]
         for ev in e.get("evidence") or []:
-            if not isinstance(ev, dict):
+            if not isinstance(ev, dict) or ev.get("file") or ev.get("closed_source"):
                 continue
-            url = str(ev.get("source_url") or ev.get("url") or "")
             needle = str(ev.get("original") or ev.get("quote") or "")
-            if not url.startswith("https://") or len(_quote_skeleton(needle)) < 12:
+            if len(_quote_skeleton(needle)) < 12:
                 continue
             if committed is not None and _quote_skeleton(needle) in committed:
                 continue
-            todo.append((e["id"], str(ev.get("publisher") or ""), url, needle))
+            url = str(ev.get("source_url") or ev.get("url") or "")
+            pub = str(ev.get("publisher") or "")
+            if url.startswith("https://"):
+                cands = [url]
+            else:
+                # Most evidence records name only a publisher. Bind it to the
+                # entry's own sources (either name contains the other, the same
+                # rule evidence-binding uses) and search those pages; with no
+                # binding, search every source of the entry.
+                pl = pub.lower()
+                bound = [u for p_, u in src_urls
+                         if p_ and pl and (p_.lower() in pl or pl in p_.lower())]
+                cands = bound or [u for _, u in src_urls]
+            if cands:
+                # Searched in order: the bound pages first, then every other
+                # source of the entry, so a quote is flagged only when it is on
+                # none of the entry's own pages (a Cisco quote naming one
+                # advisory id bound to the sibling advisories, 2026-09-29).
+                rest = [u for _, u in src_urls if u not in cands]
+                todo.append((e["id"], pub, (cands, rest), needle))
     if not todo:
         ok("quote-literal", "no web-sourced evidence quotes added by this run")
         return
 
-    urls = sorted({u for _, _, u, _ in todo})
-    print(f"  ... fetching {len(urls)} evidence source page(s) for the literal-quote check ...")
+    urls = sorted({u for _, _, (b, r), _ in todo for u in b + r})
+    print(f"  ... fetching {len(urls)} cited page(s) for the literal-quote check ...")
     bodies = _page_skeletons(urls, run_id)
 
     mismatched, unreadable, matched = [], [], 0
-    for eid, pub, url, needle in todo:
+
+    def _found(skel: str, nodigit: str, us: list[str]) -> bool:
+        for u in us:
+            for b in bodies.get(u) or []:
+                if skel in b:
+                    return True
+                # The bridge's PDF text extraction can drop the digit glyphs of
+                # Identity-H fonts (the IC3 WaterPlum advisory, 2026-09-29), so a
+                # PDF page also matches on the digit-free skeleton.
+                if urlsplit(u).path.lower().endswith(".pdf") and \
+                        nodigit in "".join(ch for ch in b if not ch.isdigit()):
+                    return True
+        return False
+
+    for eid, pub, (bound, rest), needle in todo:
         skel = _quote_skeleton(needle)
-        got = [b for b in bodies.get(url) or [] if b]
-        if not got:
-            unreadable.append((eid, url))
-        elif any(skel in b for b in got):
+        nodigit = "".join(ch for ch in skel if not ch.isdigit())
+        if _found(skel, nodigit, bound) or _found(skel, nodigit, rest):
             matched += 1
+        elif any(not bodies.get(u) or urlsplit(u).path.lower().endswith(".pdf") for u in bound):
+            # A PDF's text extraction is lossy beyond digits (font maps, ligatures,
+            # footnote markers): a miss there is unverifiable, never a defect.
+            # The page the quote is attributed to could not be read, so its
+            # absence from the entry's other pages proves nothing.
+            unreadable.append((eid, next(u for u in bound if not bodies.get(u)
+                                          or urlsplit(u).path.lower().endswith(".pdf"))))
         else:
-            mismatched.append((eid, pub, url, needle))
+            mismatched.append((eid, pub, ", ".join(bound[:3]), needle))
     for eid, pub, url, needle in mismatched:
         warn("quote-literal",
              f"{eid}: evidence quote attributed to {pub or 'unknown publisher'} is not a "
-             f"contiguous passage of {url}: {needle[:90]!r}… Shorten it to the fragment the "
+             f"contiguous passage of {url} (the page(s) it binds to): {needle[:90]!r}… Shorten it to the fragment the "
              "page carries, split it into two records, or drop the quotation. Saved bodies: "
              f"work/{run_id}/quote-bodies/")
     if matched:
@@ -3467,6 +3507,22 @@ _HOUSE_REF_RE = re.compile(
 )
 
 
+def _echoes_source_word(phrase: str, text: str) -> bool:
+    """True when a self-reference hit ("the run") is the SOURCE's vocabulary,
+    not the pipeline's: the same noun appears inside a quotation in the same
+    text. AI-lab incident reports talk about training and agent runs, and an
+    entry that quotes OpenAI's "The run was killed 2.5 hours later" and then
+    says "the run did not stop automatically" is describing OpenAI's run
+    (false positive on 2026-09-29/openai-dns-tunnel-sandbox-escape-self-
+    replicating-injection). A genuine self-reference ("as of this run") has
+    no such quotation behind it, so it still fires."""
+    noun = phrase.split()[-1].lower()
+    for q in re.findall(r"[\"\u201c]([^\"\u201d]{3,400})[\"\u201d]", text):
+        if re.search(rf"\b{re.escape(noun)}\b", q, re.IGNORECASE):
+            return True
+    return False
+
+
 def check_reader_text_internals(run_entries: list[dict], run_id: str | None = None) -> None:
     """Reader-facing entry text must describe the threat, never the fire.
 
@@ -3513,6 +3569,8 @@ def check_reader_text_internals(run_entries: list[dict], run_id: str | None = No
             if not isinstance(val, str):
                 continue
             hit = _SELF_REF_RE.search(val)
+            if hit and _echoes_source_word(hit.group(0), val):
+                hit = None
             if hit:
                 flagged.append(f"{e['id']}: {field} says {hit.group(0)!r} — "
                                f"state the date or the fact, not the fire that found it")

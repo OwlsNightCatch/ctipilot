@@ -8,6 +8,8 @@ type: reference
 
 A block is transport, not death — **never demote a source for a 403 / anti-bot challenge / exhausted reader credit**.
 
+**Healthy = working, not answering (2026-09-29, v4.15).** `tools/source_health.py` reads every source through its own recipe and adds a content verdict: `relevant` / `shell` / `unreadable` / `irrelevant` / `stale` (newest dated item > `max_staleness_days`, default 60). The first content sweep flagged 27 of 190 sources the old reachability-only probe called green (challenge and JS shells, a PSIRT landing page with no bulletin text, blogs that moved hosts and left a frozen listing behind). Traps: trafilatura's `date:` header is the fetch date on listing pages, never item freshness; listing pages extract to chrome only, so judge them on raw HTML + extract; a structured query API (SEC EDGAR, OSV) with a small or empty result set is working, not a shell; general news feeds (`content_scope: general-news`) need only one security term. Fixes live in the record: `url`/`rss_url`/`fetch_method`, `health_cmd` (fetch_source.py argv), `max_staleness_days`, `content_scope`.
+
 ## Fetch ladder (v3.33)
 
 RSS feed → `fetch_source.py extract <URL>` (human-header GET + trafilatura → markdown; internal fallbacks, jina strictly last) → structured recipe (`cisa csaf`, `cert-eu recent`, …) → `jina <URL>` only for `fetch_method: jina` hosts (heise article bodies, cisa.gov dynamic paths, ccn-cert geo-gate) or after every direct rung failed. Avoid `WebFetch` for article bodies (summariser drops detail); use it only for liveness checks and JS-SPA listings it renders that the bridge cannot (bacs.admin.ch). 18/20 representative CTI hosts extract with no reader (`work/2026-08-23T1311Z-audit/trafilatura-rollout.md`).

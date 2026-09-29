@@ -4,6 +4,31 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.15 — 2026-09-29 (a source is healthy when it works: content-aware source health, and the quote check covers every quote)
+
+### Why
+
+Operator directive, 2026-09-29: check every source in detail, make sure each one works and returns relevant content, and make sure the checks themselves test that. Shipped by the operator-directed audit 2026-09-29T2134Z-audit.
+
+**The health check measured reachability, not work.** `tools/source_health.py` passed a web source on any 2xx status, a feed on any parsed item however old, and a bridge or API source on 200 bytes of output. A Cloudflare challenge, a consent shell, a JS app shell, a PSIRT landing page with no bulletin text and a blog that moved hosts years ago all read as green. The first content-aware sweep flagged 27 of the 190 sources the old probe had passed. Three research sub-agents diagnosed all 27, and after the repairs 185 of 190 return relevant, current content: the three still flagged (`cisa-news`, `cisa-directives`, `ssd-disclosure`) are unreadable by every in-container transport while the reader pool is empty, and the other two are demoted records.
+
+**The new quote check only saw a minority of quotes.** v4.13's `quote-literal` searched a quote on its `source_url`, but 1,826 of the store's 2,119 evidence records name only a publisher. Binding those to the entry's own `sources[]` raised the backfill over entries active since 2026-09-01 from 248 checked quotes to 633. Two retrospective truth passes triaged every flag the widened check raised; after the refinements below it flags exactly the 10 quotes they confirmed as real (six pages the publisher revised after publication, two non-verbatim quotes, one quote cited to the wrong page, one stale evidence record), all corrected by the audit.
+
+### What changed
+
+- **`tools/source_health.py` content assessment.** Every source is read through its own recipe (feed items, the structured API subcommand, or the trafilatura capture plus the direct raw body for pages, the metered reader only for `jina`-pinned records) and judged `relevant`, `shell`, `unreadable`, `irrelevant` or `stale`. The evidence (text volume, matched security terms in the list's languages, newest dated item and its age) is written next to the reachability class in `state/source_health.json` (schema 3). A reachable source whose content fails becomes `needs-content-fix` or `stale-content` on the UNSOLVED list, and so does a `blocked` record a direct transport now reads. Structured query APIs are judged by structure (a small or empty result set is working), and general news feeds need one security term (`content_scope: general-news`). The sweep has no time budget by default: every probe is bounded by its own subprocess timeouts.
+- **Date parsing and dating rules:** ISO timestamps (`2026-08-27T09:00`) are recognised, a structured API is dated by its result items rather than the query window it echoes, a page with fewer than three distinct dates counts as undated instead of taking its own metadata date as its newest post, an `rss` record without `rss_url` follows the page's `<link rel="alternate">` feed, and a tiny but dated, current, on-topic index is readable.
+- **Per-source fields** (optional, in `sources/sources.json`): `health_cmd` (the `fetch_source.py` argv the check should run), `max_staleness_days` (a low-cadence publisher's real limit), `content_scope`.
+- **Ops dashboard** (`site/build.py`): two new groups, "Reachable, but not returning usable content" and "Returning content, but nothing recent", each row with its content evidence line; `site/test_build.py` covers both.
+- **`cti-run.md` Phase 5 § `state/source_health.json`** defines the verdicts and the repair order, and **`quality-audit.md` Phase 3 item 3** turns the dark-but-green hunt into working the verdicts.
+- **`tools/check_run.py` `quote-literal`** binds a publisher-only quote to the entry's sources (either name contains the other, the evidence-binding rule) and searches those pages, then every other source of the entry. A quote whose own page cannot be read, or is a PDF (lossy text extraction: the IC3 advisory's fonts drop digit glyphs), is unverifiable, never a mismatch, and SonicWall's PSIRT app joins the client-rendered host list; `reader-text-internals` no longer flags "the run" when the entry is quoting a source that uses the word (an AI-lab incident report's own "the run was killed").
+
+### What stays
+
+The fetch ladder, the essential-tier floor, the rotation cursor and lookback, the rule that a 403 or anti-bot block never demotes, and every source-lifecycle transition. The content verdict adds a repair order; it never demotes a source by itself.
+
+---
+
 ## 4.14 — 2026-09-29 (operator directive: no time limits, every run still ends, and every count is a guide)
 
 ### Why
