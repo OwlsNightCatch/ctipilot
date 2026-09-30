@@ -49,11 +49,11 @@ sources:
     role: primary
   - url: "https://kb.cert.org/vuls/id/308749"
     publisher: "CERT/CC"
-    date: "2026-08-26"
+    date: "2026-08-25"
     role: corroborating
 closed_sources: []
 evidence:
-  - quote: "getFilePath() builds the on-disk destination by concatenating the cache base directory with a path derived from the uiconf_id request parameter, with no sanitisation"
+  - quote: "kInfraFileSystemCacheWrapper::getFilePath(), in infra/cache/, builds the on-disk destination by concatenating the cache base directory with a path derived from the uiconf_id request parameter, with no sanitisation."
     publisher: "AndDone (Gerjan Wemekamp)"
   - quote: "Kaltura has released new patches to remediate these vulnerabilities in all affected legacy Player V2 versions."
     publisher: "CERT/CC"
@@ -79,7 +79,7 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Block or heavily restrict access to mwEmbedLoader.php at a WAF/reverse-proxy/CDN layer on every internet-facing Kaltura deployment — no vendor fix exists, and this is the only available control. Reject non-http(s) ServiceUrl values and deny PHP execution rights in cache directories as a compensating measure."
+  - "Update every self-hosted legacy Kaltura player (html5lib v2.x) to the patched Player V2 release or migrate it to Kaltura Player V7, which CERT/CC states is not affected; until then, block or heavily restrict mwEmbedLoader.php at a WAF/reverse-proxy/CDN layer, reject non-http(s) ServiceUrl values and deny PHP execution rights in cache directories."
   - "Where Kaltura is deployed as shared, multi-tenant CDN/hosting infrastructure (common in higher-education lecture-capture and media-hosting environments), treat a single exposed mwEmbedLoader.php as putting every tenant on that host at risk, and prioritise the WAF-level block across the whole shared platform rather than per-tenant."
 updates:
   - at: "2026-08-28T15:00:00Z"
@@ -101,19 +101,34 @@ updates:
       affected. Both CVE records move from no-patch to patched with the fixed release named, and
       the title, tags, summary and body no longer present this as an unpatched exposure.
     fields: [title, summary, tags, cves, sourcing_note, evidence, body, updated_at]
+  - at: "2026-09-29T23:44:54Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: correction
+    summary: >
+      The first action and the triage paragraph still said no vendor fix existed, which the update of
+      2026-08-28 had overtaken: Kaltura has patched every affected legacy Player V2 version, and
+      Player V7 is not affected. The action now leads with updating or migrating, with the WAF block
+      as the interim control. The AndDone quotation, in the evidence and the analysis, now carries the
+      class name and directory clause it had dropped, and the CERT/CC source date is the note's
+      original release date, 2026-08-25.
+    fields: [sources, evidence, actions, body]
 migrated_from: null
 ---
 
 Two unauthenticated vulnerabilities exist in Kaltura's mwEmbed/html5lib video-player library, reachable at the `mwEmbedLoader.php` endpoint with no session, token or user interaction. The root cause is an undocumented `ServiceUrl` request parameter that lets the caller control the URL the server fetches data from: `KalturaClientBase.php`'s `doQueue()` function concatenates it unchecked into a request URL with no origin or scheme validation, then feeds the fetched response through PHP's `unserialize()` with no signature check, origin check, or class allow-list.
 
-CVE-2026-19913 (CVSS 9.1): supplying a `file://` scheme in `ServiceUrl` makes the application fetch and attempt to deserialize an internal file's contents; failed-deserialization error messages reflect the raw file bytes back to the client, yielding arbitrary local file read. CVE-2026-19912 (CVSS 10.0): the `uiconf_id` request parameter is concatenated unsanitized into the on-disk cache-file destination path — "`getFilePath()` builds the on-disk destination by concatenating the cache base directory with a path derived from the `uiconf_id` request parameter, with no sanitisation" ([AndDone (Gerjan Wemekamp), 2026-08-26](https://anddone-git.github.io/2026/one-parameter-two-bugs/)) — so path-traversal sequences in `uiconf_id` escape the cache directory; combined with the unchecked `unserialize()` above (PHP object injection), this reaches unauthenticated remote code execution when the default file-based cache backend is in use and PHP execution is not blocked in the cache directory.
+CVE-2026-19913 (CVSS 9.1): supplying a `file://` scheme in `ServiceUrl` makes the application fetch and attempt to deserialize an internal file's contents; failed-deserialization error messages reflect the raw file bytes back to the client, yielding arbitrary local file read. CVE-2026-19912 (CVSS 10.0): the `uiconf_id` request parameter is concatenated unsanitized into the on-disk cache-file destination path — "`kInfraFileSystemCacheWrapper::getFilePath()`, in `infra/cache/`, builds the on-disk destination by concatenating the cache base directory with a path derived from the `uiconf_id` request parameter, with no sanitisation" ([AndDone (Gerjan Wemekamp), 2026-08-26](https://anddone-git.github.io/2026/one-parameter-two-bugs/)) — so path-traversal sequences in `uiconf_id` escape the cache directory; combined with the unchecked `unserialize()` above (PHP object injection), this reaches unauthenticated remote code execution when the default file-based cache backend is in use and PHP execution is not blocked in the cache directory.
 
 The discoverer fully demonstrated the file-read path against a production bug-bounty target and the current codebase, and validated the full RCE chain end-to-end against a 2019-era Kaltura Server Docker image (14.12.0) — the vulnerable code is confirmed unchanged in the current West-23.5.0 release, though no current-release container was available to re-run the full RCE demonstration against. The discoverer found 630+ indexed, internet-facing Kaltura instances via a search query. Disclosure attempts spanned personal email (23 March 2026), corporate email (13 April), LinkedIn escalation (23 May) and national CERT involvement (2 July); CERT/CC's advisory recorded at that point that it had been unable to reach the vendor to coordinate, a statement its 2026-08-28 revision replaced with the patch announcement ([CERT/CC, VU#308749](https://kb.cert.org/vuls/id/308749)), and no vendor response or patch existed when this was first reported. Because Kaltura is frequently deployed as shared, multi-tenant CDN/hosting infrastructure, a single exposed `mwEmbedLoader.php` can put every tenant served by that shared host at risk. Kaltura's video platform is widely used by universities and research institutions for lecture capture and media hosting, a use case common across Swiss and EU academic institutions.
 
-**Triage:** any inbound request to `mwEmbedLoader.php` carrying a `ServiceUrl` parameter with a non-`http(s)` scheme (`file://` in particular), or a `uiconf_id` value containing path-traversal sequences (`../`, encoded variants), has no legitimate explanation — normal player-loading traffic never sets `ServiceUrl` to a local-file scheme or supplies a traversal-shaped `uiconf_id`. With no vendor fix available, WAF-level pattern blocking on those two parameter shapes is the only mitigation short of taking the endpoint offline entirely.
+**Triage:** any inbound request to `mwEmbedLoader.php` carrying a `ServiceUrl` parameter with a non-`http(s)` scheme (`file://` in particular), or a `uiconf_id` value containing path-traversal sequences (`../`, encoded variants), has no legitimate explanation — normal player-loading traffic never sets `ServiceUrl` to a local-file scheme or supplies a traversal-shaped `uiconf_id`. Until a deployment is on the patched legacy player or on Player V7, WAF-level pattern blocking on those two parameter shapes is the mitigation short of taking the endpoint offline.
 
 ## Update — 2026-08-30T13:12:06Z
 
 Kaltura has released patches. CERT/CC updated VU#308749 on 2026-08-28 at 19:59 UTC, hours after this entry was published, and now states: "Kaltura has released new patches to remediate these vulnerabilities in all affected legacy Player V2 versions. Customers using legacy players, including self-hosted legacy player deployments (html5lib v2.x), should update to the patched version or, preferably, migrate to the newer and currently supported Kaltura Player V7 platform" ([CERT/CC, VU#308749, updated 2026-08-28](https://kb.cert.org/vuls/id/308749)).
 
 The same update narrows the affected estate, which this entry had left open: "only versions of the legacy player (Player V2) are vulnerable; these issues do not affect any versions of the currently supported Kaltura Player V7" (same advisory). So the scoping question for an institution running Kaltura is which player line its deployment sits on, not whether it is on a current server release, and self-hosted html5lib v2.x deployments are explicitly in scope. The 630+ internet-facing instances the discoverer found do not become safe by the patch existing; each still has to be updated or migrated.
+
+## Correction — 2026-09-29T23:44:54Z
+
+The first action and the triage advice in this entry still said no vendor fix existed. Kaltura has since patched every affected legacy Player V2 version, and CERT/CC advises updating to the patched version or, preferably, migrating to Kaltura Player V7, which it states is not affected ([CERT/CC, VU#308749, updated 2026-08-28](https://kb.cert.org/vuls/id/308749)). The WAF block on mwEmbedLoader.php remains the interim control for a deployment that is not yet updated.

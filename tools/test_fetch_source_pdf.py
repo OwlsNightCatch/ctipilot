@@ -158,6 +158,96 @@ def test_hex_code_widths() -> None:
     assert fs._pdf_hex_to_text(b"00660066") == "ff"  # ligature destination
 
 
+def _pdf_tree(objects: dict[int, tuple[bytes, bytes | None]]) -> bytes:
+    """Assemble a PDF with real object numbers, so the per-font path can
+    walk pages, font resources and ToUnicode references."""
+    out = b"%PDF-1.7\n"
+    for num, (head, payload) in sorted(objects.items()):
+        if payload is None:
+            out += b"%d 0 obj%s endobj\n" % (num, head)
+            continue
+        comp = zlib.compress(payload)
+        out += b"%d 0 obj<<%s/Length %d/Filter/FlateDecode>>stream\n" % (num, head, len(comp))
+        out += comp + b"\nendstream endobj\n"
+    return out + b"trailer<<>>\n%%EOF"
+
+
+def _word_style_pdf(extra_content: bytes = b"") -> bytes:
+    """The Microsoft Word shape that broke the merged decode: spaces through a
+    simple WinAnsi font, every other glyph through a Type0 font whose codes
+    are glyph ids, a second Type0 font whose codes COLLIDE with the first's,
+    digits whose glyph ids sit below 32, a `bfrange` with an array
+    destination, and a marked-content property list carrying a literal."""
+    cmap_a = (b"begincmap\n3 beginbfchar\n<0003> <0020>\n<0014> <0031>\n<0016> <0033>\nendbfchar\n"
+              b"1 beginbfrange\n<0031> <0033> <004E>\nendbfrange\n"
+              b"1 beginbfrange\n<0044> <0046> [<0061> <0062> <0063>]\nendbfrange\nendcmap")
+    cmap_b = b"begincmap\n2 beginbfchar\n<0031> <0078>\n<0032> <0079>\nendbfchar\nendcmap"
+    content = (b"/Span <</Lang (en-US)>> BDC BT /F1 11 Tf [( )] TJ /F2 11 Tf "
+               b"[<00310032>] TJ /F1 11 Tf ( ) Tj /F2 11 Tf <00140016> Tj ET EMC "
+               b"BT /F3 11 Tf <00310032> Tj ET BT /F2 11 Tf [<0044> -300 <00450046>] TJ ET"
+               + extra_content)
+    return _pdf_tree({
+        1: (b"<</Type/Catalog/Pages 2 0 R>>", None),
+        2: (b"<</Type/Pages/Kids[3 0 R]/Count 1/Resources<</Font<</F1 5 0 R/F2 6 0 R/F3 8 0 R>>>>>>", None),
+        3: (b"<</Type/Page/Parent 2 0 R/Contents 4 0 R>>", None),
+        4: (b"", content),
+        5: (b"<</Type/Font/Subtype/TrueType/BaseFont/X+Times/Encoding/WinAnsiEncoding>>", None),
+        6: (b"<</Type/Font/Subtype/Type0/BaseFont/X+Times/Encoding/Identity-H/ToUnicode 7 0 R>>", None),
+        7: (b"", cmap_a),
+        8: (b"<</Type/Font/Subtype/Type0/BaseFont/Y+Arial/Encoding/Identity-H/ToUnicode 9 0 R>>", None),
+        9: (b"", cmap_b),
+    })
+
+
+def test_per_font_decode_word_style_pdf() -> None:
+    """Each string is decoded with the font active at that point: the
+    colliding codes resolve per font, digits survive, the page-tree
+    resources are inherited, and the property-list literal is not text."""
+    text, pages = fs._pdf_render_by_font(_word_style_pdf())
+    assert pages == 1, pages
+    assert "NO" in text, repr(text)            # F2's 0x31/0x32 are N, O
+    assert "xy" in text, repr(text)            # F3's 0x31/0x32 are x, y — no collision
+    assert "13" in text, repr(text)            # glyph ids 0x14/0x16 are digits
+    assert "a bc" in text, repr(text)          # bfrange array + a wide TJ kern as a space
+    assert "en-US" not in text, repr(text)     # marked-content property list skipped
+
+
+def test_merged_decode_still_garbles_the_word_shape() -> None:
+    """Pins why the per-font path exists: the file-wide decode picks one
+    mapping for all fonts and loses the digits."""
+    pdf = _word_style_pdf()
+    streams = fs._pdf_streams(pdf)
+    content = [s for s in streams if b"Tj" in s or b"TJ" in s or b"BT" in s]
+    text, _ = fs._pdf_render(content, fs._pdf_tounicode_map(streams))
+    assert "13" not in text or "xy" not in text, repr(text)
+
+
+def test_bfrange_array_destination() -> None:
+    cmap = fs._pdf_tounicode_map([b"beginbfrange\n<0010> <0012> [<0041> <0066006C> <0043>]\nendbfrange"])
+    assert cmap == {0x10: "A", 0x11: "fl", 0x12: "C"}, cmap
+
+
+def test_extract_prefers_per_font_over_junk_inflated_merge() -> None:
+    """The real WaterPlum advisory failed this way: an embedded font program
+    decoded byte-wise scores as ten times more "prose" than the whole
+    per-font text, so selection by volume kept the mojibake. `_pdf_extract`
+    must take the per-font text whenever the page walk recovered some."""
+    # Page text past the per-font floor, in the simple font, so the walk qualifies.
+    pdf = _word_style_pdf(b" BT /F1 11 Tf " + b"(Actors reuse the kit. ) Tj " * 12 + b"ET")
+    junk_font = b"(" + b"x7Qz9kLm" * 2000 + b") Tj"  # binary that happens to parse as a string
+    pdf = pdf.replace(b"trailer<<>>", b"20 0 obj<</Length %d>>stream\nBT " % (len(junk_font) + 3)
+                      + junk_font + b"\nendstream endobj\ntrailer<<>>")
+    text, method, _, _, _ = fs._pdf_extract(pdf)
+    assert "per-font" in method, method
+    assert "13" in text and "NO" in text, repr(text[:200])
+
+
+def test_per_font_falls_back_without_a_page_tree() -> None:
+    """A file whose objects cannot be walked yields None, so pdf_text keeps
+    the merged decode instead of returning nothing."""
+    assert fs._pdf_render_by_font(_pdf([(b"", b"BT (orphan text) Tj ET")])) is None
+
+
 def main() -> int:
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0

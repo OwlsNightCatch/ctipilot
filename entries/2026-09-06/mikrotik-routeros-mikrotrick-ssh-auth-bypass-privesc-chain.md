@@ -83,7 +83,7 @@ cves:
     type: auth-bypass
     vector: zero-click
     auth: pre-auth
-    status: [exploited]
+    status: [exploited, cisa-kev]
     affected: "6.0.0 before 6.49.21; 7.0.0 before 7.23.4; 7.24 before 7.24.2"
     fixed: "6.49.21 (LTS) / 7.23.4 (LTS) / 7.24.2 (stable) / 7.25beta3"
   - id: CVE-2026-67281
@@ -122,7 +122,7 @@ sources:
     role: corroborating
 closed_sources: []
 evidence:
-  - quote: "MikroTik RouterOS contains a missing authenticaion for critical function vulnerability which allows kernel memory disclosure and denial of service in the btest service."
+  - quote: "MikroTik RouterOS contains a missing authentication for critical function vulnerability which allows kernel memory disclosure and denial of service in the btest service."
     publisher: "CISA KEV"
     source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
   - quote: "We have obtained confirmation that the attackers are exploiting this combination of vulnerabilities to take full control of devices whose SSH service is accessible from public networks. It has also been confirmed that the released patches prevent the observed attacks."
@@ -206,6 +206,17 @@ updates:
       moved to the correct versions; a defender who had followed the published action would still have
       been exposed to this one flaw.
     fields: [cves, actions, body]
+  - at: "2026-09-29T21:57:49Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      CISA has since fixed a typo in the catalogue text for CVE-2026-67277 ("authenticaion"); the
+      evidence quote now matches the live KEV feed. The body keeps its quotation of catalogue version
+      2026.09.10, which it cites by version, and notes that the misspelling has since been corrected.
+      CISA added CVE-2026-67279, the chain entry point, to its KEV catalog on 2026-09-25, and its
+      status now records the listing.
+    fields: [evidence, cves, body]
 migrated_from: null
 ---
 
@@ -225,7 +236,7 @@ Detection concept, telemetry class first: on-device system-log review is the pri
 
 ## Update — 2026-09-11T04:46:00Z
 
-CISA added CVE-2026-67277 — the bandwidth-test kernel-memory-disclosure and denial-of-service flaw among this disclosure's four lower-severity CVEs — to its Known Exploited Vulnerabilities catalog on 2026-09-10, describing it as a "missing authenticaion for critical function vulnerability which allows kernel memory disclosure and denial of service in the btest service" ([CISA KEV, catalogue version 2026.09.10](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). CERT Polska's own technical analysis states CVE-2026-86060 was added to KEV the same day alongside it ([CERT Polska, technical analysis, 2026-09-22](https://cert.pl/en/posts/2026/09/mikrotrick-technical-analysis/)). CVE-2026-67277's KEV addition confirms active in-the-wild exploitation of a third vulnerability in the coordinated disclosure, beyond the two (CVE-2026-67279, CVE-2026-86060) CERT Polska had already reported exploited directly; the remaining three lower-severity CVEs (CVE-2026-67276, CVE-2026-67278, CVE-2026-67281) are still not confirmed separately exploited by any source. The remediation is unchanged — all six flaws share the same fixed releases (6.49.21, 7.23.4, 7.24.2, 7.25beta3) already covered by this entry's patch guidance. Separately, per-CVE affected-version ranges have been corrected: only CVE-2026-67277, CVE-2026-67279 and CVE-2026-86060 reach back to the 6.x branch (6.0.0 before 6.49.21); the narrower RSA-impersonation flaw, CVE-2026-67276, affects only 7.9 before 7.23.4 and 7.24 before 7.24.2, so a device on the 6.x branch is not exposed to that specific attack path ([CERT Polska, CVE detail page, 2026-09-05](https://cert.pl/en/posts/2026/09/mikrotik-routeros-cve)) — it remains reachable via CVE-2026-86060 and the other lower-severity flaws that do affect that branch, so the same patch guidance applies to all versions regardless.
+CISA added CVE-2026-67277 — the bandwidth-test kernel-memory-disclosure and denial-of-service flaw among this disclosure's four lower-severity CVEs — to its Known Exploited Vulnerabilities catalog on 2026-09-10, describing it as a "missing authenticaion for critical function vulnerability which allows kernel memory disclosure and denial of service in the btest service" ([CISA KEV, catalogue version 2026.09.10](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)), a misspelling CISA has since corrected in the live catalogue. CERT Polska's own technical analysis states CVE-2026-86060 was added to KEV the same day alongside it ([CERT Polska, technical analysis, 2026-09-22](https://cert.pl/en/posts/2026/09/mikrotrick-technical-analysis/)). CVE-2026-67277's KEV addition confirms active in-the-wild exploitation of a third vulnerability in the coordinated disclosure, beyond the two (CVE-2026-67279, CVE-2026-86060) CERT Polska had already reported exploited directly; the remaining three lower-severity CVEs (CVE-2026-67276, CVE-2026-67278, CVE-2026-67281) are still not confirmed separately exploited by any source. The remediation is unchanged — all six flaws share the same fixed releases (6.49.21, 7.23.4, 7.24.2, 7.25beta3) already covered by this entry's patch guidance. Separately, per-CVE affected-version ranges have been corrected: only CVE-2026-67277, CVE-2026-67279 and CVE-2026-86060 reach back to the 6.x branch (6.0.0 before 6.49.21); the narrower RSA-impersonation flaw, CVE-2026-67276, affects only 7.9 before 7.23.4 and 7.24 before 7.24.2, so a device on the 6.x branch is not exposed to that specific attack path ([CERT Polska, CVE detail page, 2026-09-05](https://cert.pl/en/posts/2026/09/mikrotik-routeros-cve)) — it remains reachable via CVE-2026-86060 and the other lower-severity flaws that do affect that branch, so the same patch guidance applies to all versions regardless.
 
 ## Correction — 2026-09-23T04:35:00Z
 

@@ -60,18 +60,20 @@ evidence:
     publisher: "NCSC-FI / Traficom"
   - quote: "Notifications are expected to be possible through APIs from spring 2027. After this, notifications can be submitted directly from the organisation's own system."
     publisher: "NCSC-FI / Traficom"
-  - quote: "The platform is scheduled to be operational by 11 September 2026."
+  - quote: "The platform has become operational on 11 September 2026, coinciding with the date on which the CRA reporting obligations under Art.14 are applicable."
     publisher: "ENISA — Single Reporting Platform (SRP) FAQ"
-  - quote: "however no Application Programming Interfaces will be provided at this stage"
+  - quote: "However, no Application Programming Interface (API) will be provided at the initial release of the SRP, so notifications must be submitted through the platform interface."
     publisher: "ENISA — Single Reporting Platform (SRP) FAQ"
-  - quote: "Non-validated ARs will be able to submit up to 20 notifications for one manufacturer before validation becomes mandatory."
+  - quote: "ARs whose manufacturer association has not yet been verified may submit up to 20 notifications for that manufacturer before verification becomes mandatory."
+    publisher: "ENISA — Single Reporting Platform (SRP) FAQ"
+  - quote: "In the current release, the 72-hour counter displays a due date/time 48hrs after submission of the 24-hour Early Warning."
     publisher: "ENISA — Single Reporting Platform (SRP) FAQ"
   - quote: "Notably, the reporting obligations apply from 11 September 2026 to all products with digital elements within the CRA's scope that have been made available on the EU market before full CRA application (Art. 69(3) CRA)."
     publisher: "Hogan Lovells Cadwalader"
   - quote: "As of 11 September 2026, manufacturers are required to report actively exploited vulnerabilities and severe incidents impacting the security of products with digital elements."
     publisher: "European Commission — Shaping Europe's Digital Future"
     source_url: "https://digital-strategy.ec.europa.eu/en/policies/cra-reporting"
-  - quote: "The Single Reporting Platform will be operational by 11 September 2026 (date of entry into application of the CRA reporting requirements). Functional and security testing are under way."
+  - quote: "ENISA has established the CRA Single Reporting Platform (SRP), operational as of 11 September 2026."
     publisher: "European Commission — Shaping Europe's Digital Future"
     source_url: "https://digital-strategy.ec.europa.eu/en/policies/cra-reporting"
   - quote: "From 11 September 2026, manufacturers are required to submit these mandatory notifications through the SRP."
@@ -89,7 +91,7 @@ sourcing_note: >
   NCSC-FI is a national authority acting as primary discloser for its own jurisdiction's implementation guidance.
   ENISA's own SRP FAQ (updated 2026-08-31) now independently corroborates the 24h/72h/14-day/1-month notification
   clock itself, not only the platform's go-live date. The API-submission target of spring 2027 remains NCSC-FI's own
-  claim, not independently confirmed by ENISA, whose FAQ states only that no API will be provided "at this stage"
+  claim, not independently confirmed by ENISA, whose FAQ states only that no API will be provided "at the initial release of the SRP"
   with no specific date. Credibility on the reporting-clock claim moves from 2 to 1 given this independent
   corroboration; the uncorroborated API-timeline claim keeps the entry at an overall credibility of 2. NCSC-FI's
   checklist and ENISA's FAQ disagree on the Assigned Representative cap (NCSC-FI: two named representatives; ENISA:
@@ -142,6 +144,19 @@ updates:
       CRA means for their organization and that manufacturers could not register or test their
       reporting process before the platform went live with the reporting obligation itself.
     fields: [sourcing_note, sources, evidence, body]
+  - at: "2026-09-29T21:59:19Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: improvement
+    summary: >
+      The European Commission's CRA reporting page now states that ENISA has established the Single
+      Reporting Platform, operational as of 11 September 2026, a second authority confirming the
+      launch ENISA announced on 2026-09-11. ENISA's FAQ, revised on 17 September, now gives the
+      platform address and the EU Login multi-factor requirement, rewords the no-API and
+      unverified-representative answers, and warns that the platform's 72-hour counter currently shows
+      the deadline 48 hours after the early warning. The main analysis and the cited evidence follow
+      both pages' current text instead of the pre-launch wording. The sourcing note quotes the FAQ's
+      current wording, and the Commission citation carries the page's 11 September update date.
+    fields: [evidence, sourcing_note, body]
 migrated_from: null
 ---
 
@@ -157,25 +172,26 @@ report within one month of the incident notification
 ([NCSC-FI / Traficom, 2026-08-28](https://www.kyberturvallisuuskeskus.fi/en/news/manufacturers-prepare-advance-reporting-vulnerabilities-and-incidents-under-cyber-resilience-act)).
 ENISA's own FAQ for the platform independently states the identical clock
 ([ENISA, 2026-08-31](https://www.enisa.europa.eu/topics/product-security/single-reporting-platform-srp/frequently-asked-questions)).
-The SRP itself is only "scheduled to be operational by 11 September 2026" — the same date the reporting duty starts
-to apply — and, eight days before that go-live, ENISA's FAQ still gives no published platform URL, stating only that
-it "will be communicated and published in due course"
-([ENISA, 2026-08-31](https://www.enisa.europa.eu/topics/product-security/single-reporting-platform-srp/frequently-asked-questions)).
+The SRP became operational on 11 September 2026, the same date the reporting duty started to apply, and is reached
+at portal.cra-srp.enisa.europa.eu through a personal EU Login account with multi-factor authentication
+([ENISA, updated 2026-09-17](https://www.enisa.europa.eu/topics/product-security/single-reporting-platform-srp/frequently-asked-questions)).
 NCSC-FI's checklist directs manufacturers to identify in-scope products now — noting that products past end-of-life
 and no longer receiving updates remain subject to the reporting obligation — appoint an Assigned Representative (AR)
 authorised to submit SRP notifications, document an internal report-intake and triage process, and rehearse it at
 least once before the first reportable case
 ([NCSC-FI / Traficom, 2026-08-28](https://www.kyberturvallisuuskeskus.fi/en/news/manufacturers-prepare-advance-reporting-vulnerabilities-and-incidents-under-cyber-resilience-act)).
 ENISA's own FAQ states a manufacturer may register one Primary AR and up to 20 Secondary ARs, and that a
-non-validated AR may still submit up to 20 notifications before validation becomes mandatory, so an organisation
-does not have to wait for validation to complete before filing its first report under time pressure
-([ENISA, 2026-08-31](https://www.enisa.europa.eu/topics/product-security/single-reporting-platform-srp/frequently-asked-questions)).
+representative whose manufacturer association is not yet verified may still submit up to 20 notifications for that
+manufacturer before verification becomes mandatory, so an organisation does not have to wait for verification to
+complete before filing its first report under time pressure
+([ENISA, updated 2026-09-17](https://www.enisa.europa.eu/topics/product-security/single-reporting-platform-srp/frequently-asked-questions)).
 NCSC-FI's own checklist instead describes notifications as submittable only through two named representatives, a
 narrower figure than ENISA's; the two authorities have not been reconciled, and ENISA's FAQ is treated as the more
 current statement of the platform's own rules
 ([NCSC-FI / Traficom, 2026-08-28](https://www.kyberturvallisuuskeskus.fi/en/news/manufacturers-prepare-advance-reporting-vulnerabilities-and-incidents-under-cyber-resilience-act)).
-API-based submission is not expected until spring 2027 per NCSC-FI, and ENISA's own FAQ confirms only that "no
-Application Programming Interfaces will be provided at this stage," without independently stating a target date —
+API-based submission is not expected until spring 2027 per NCSC-FI, and ENISA's own FAQ states only that "no
+Application Programming Interface (API) will be provided at the initial release of the SRP" and that one may follow
+in a later phase, without a target date —
 so any automated vulnerability-management or SBOM-correlation pipeline still has to terminate at a manual web-portal
 boundary for every notification filed before that changes
 ([NCSC-FI / Traficom, 2026-08-28](https://www.kyberturvallisuuskeskus.fi/en/news/manufacturers-prepare-advance-reporting-vulnerabilities-and-incidents-under-cyber-resilience-act);
@@ -191,8 +207,9 @@ obligation regardless
 — including Swiss suppliers exporting into it — should confirm now that a Primary Assigned Representative (and,
 where useful, Secondary ARs) is registered or ready to register on the SRP, that the 24-hour/72-hour/14-day/1-month
 clock is built into the organisation's own incident-response runbook as a manual, portal-only filing step, and that
-the process has been rehearsed at least once before 11 September 2026 — including for legacy products past
-end-of-life, which remain subject to the obligation.
+the process has been rehearsed at least once — including for legacy products past end-of-life, which remain subject
+to the obligation. The runbook should time the 72-hour notification from the moment of awareness, not from the
+platform's own counter, which in its current release can show a report as due or overdue early.
 
 ## Update — 2026-09-03T05:06:30Z
 
@@ -234,3 +251,9 @@ manufacturers and, from 11 December 2027, open-source software stewards submit o
 A Bitkom survey of 1,003 German firms, relayed the same day by heise online, found only 29% know what the CRA means for their own organization and a further 38% have heard of it but cannot assess the impact; Bitkom specifically criticizes that manufacturers could not register on the platform or test their reporting process before today, "because the platform only went online with the start of the reporting obligation" (translated from German)
 ([heise online, 2026-09-11](https://www.heise.de/news/Gilt-ab-heute-CRA-setzt-24-Stunden-Frist-fuer-Sicherheitsmeldungen-11450208.html)).
 For a Swiss manufacturer or distributor placing networked products on the EU market, or a Swiss public-sector body procuring from an EU-regulated manufacturer now subject to this clock, the practical takeaway is that the 24-hour/72-hour/14-day-or-1-month reporting chain is a live obligation rather than a target date, and a first submission may hit friction precisely because pre-launch registration and testing were not possible.
+
+## Improvement — 2026-09-29T21:59:19Z
+
+The European Commission's own CRA reporting page now also confirms the launch: "ENISA has established the CRA Single Reporting Platform (SRP), operational as of 11 September 2026" ([European Commission, updated 2026-09-11](https://digital-strategy.ec.europa.eu/en/policies/cra-reporting)). The page previously gave 11 September 2026 as the target date with testing under way, which is the wording quoted in the 2026-09-11 section above.
+
+ENISA's FAQ, revised on 17 September, now also answers the questions this entry left open before launch. The platform is at portal.cra-srp.enisa.europa.eu and each Assigned Representative signs in with a personal EU Login account with multi-factor authentication. No API exists at the initial release, and ENISA says only that one may be considered in a future phase. One operational detail matters for the reporting clock: "In the current release, the 72-hour counter displays a due date/time 48hrs after submission of the 24-hour Early Warning", so the platform can mark a notification overdue before 72 hours have passed since the manufacturer became aware. ENISA says a later release will count from the awareness time instead ([ENISA, updated 2026-09-17](https://www.enisa.europa.eu/topics/product-security/single-reporting-platform-srp/frequently-asked-questions)).

@@ -8,8 +8,8 @@ summary: >
   compromises of the npm packages debug and chalk and the March 2026 compromise of axios — a library Amazon
   puts at more than 100 million weekly downloads — to a DPRK-linked cluster tracked as SAPPHIRE SLEET,
   STARDUST CHOLLIMA, BlueNoroff, CageyChameleon and Alluring Pisces, explicitly at medium confidence rather
-  than as an established fact. In every case maintainer access came from socially engineering a trusted
-  maintainer rather than from a platform flaw. Amazon assesses that a small March 2025 compromise of a
+  than as an established fact. In the debug, chalk and axios compromises maintainer access came from
+  socially engineering a trusted maintainer rather than from a platform flaw. Amazon assesses that a small March 2025 compromise of a
   package named typo-crypto was a testing ground for these later operations, and that payload only executed
   when handed one specific input value — a conditional-detonation design that defeats analysis which merely installs and
   observes a package.
@@ -38,7 +38,7 @@ closed_sources: []
 evidence:
   - quote: "Based on analysis of command-and-control (C2) indicators and TTPs, Amazon Threat Intelligence assesses with medium confidence that these campaigns are attributable to the DPRK-linked threat actor tracked as SAPPHIRE SLEET, STARDUST CHOLLIMA, BlueNoroff, CageyChameleon, and Alluring Pisces."
     publisher: "AWS Security Blog"
-  - quote: "In each case, the threat actor gained access by socially engineering a trusted maintainer of the package, then published a software update containing malicious code."
+  - quote: "In each case with debug, chalk, and axios, the threat actor gained access by socially engineering a trusted maintainer of the package, then published a software update containing malicious code."
     publisher: "AWS Security Blog"
   - quote: "Based on the limited number of observed downloads, Amazon Threat Intelligence assesses that this campaign was small scale and likely served as a testing ground for the more visible supply chain operations that followed in late 2025 and 2026."
     publisher: "AWS Security Blog"
@@ -69,12 +69,23 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
+updates:
+  - at: "2026-09-29T23:35:00Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: correction
+    summary: >
+      Amazon corrected its post on 2026-08-11: the social engineering of a trusted maintainer applies
+      to the debug, chalk and axios compromises specifically, not to the March 2025 typo-crypto
+      compromise. The entry had applied it to every compromise. The summary, the evidence and the
+      analysis now carry the narrower claim. Amazon states the attribution and its other findings are
+      unchanged.
+    fields: [summary, evidence, body]
 migrated_from: null
 ---
 
 Amazon's threat-intelligence team published an attribution assessment on 2026-07-29 linking three separate npm package compromises to one actor. The load-bearing sentence carries its own hedge, and it should be read with the hedge intact: "based on analysis of command-and-control (C2) indicators and TTPs, Amazon Threat Intelligence assesses with medium confidence that these campaigns are attributable to the DPRK-linked threat actor tracked as SAPPHIRE SLEET, STARDUST CHOLLIMA, BlueNoroff, CageyChameleon, and Alluring Pisces" ([AWS Security Blog, 2026-07-29](https://aws.amazon.com/blogs/security/amazon-identifies-north-korean-hacker-group-behind-open-source-supply-chain-attacks/)). CyberScoop notes that researchers also track this cluster as UNC1069 ([CyberScoop, 2026-07-29](https://cyberscoop.com/amazon-north-korea-open-source-software-attacks/)). Medium confidence is not attribution-by-consensus. Amazon is also precise about which part is new: it states that "while the axios compromise has been publicly attributed to this DPRK-linked threat actor, the typo-crypto, debug, and chalk incidents haven't previously been connected to it" ([AWS Security Blog, 2026-07-29](https://aws.amazon.com/blogs/security/amazon-identifies-north-korean-hacker-group-behind-open-source-supply-chain-attacks/)). For a defender the actor label changes little, but the tradecraft description below changes something real.
 
-The compromises run from March 2025 to March 2026 and escalate in blast radius: debug and chalk in September 2025, then axios in March 2026, which Amazon describes as one of the most widely used JavaScript libraries at more than 100 million weekly downloads ([AWS Security Blog, 2026-07-29](https://aws.amazon.com/blogs/security/amazon-identifies-north-korean-hacker-group-behind-open-source-supply-chain-attacks/)). None of them involved breaking the registry. In Amazon's words, "in each case, the threat actor gained access by socially engineering a trusted maintainer of the package, then published a software update containing malicious code" ([AWS Security Blog, 2026-07-29](https://aws.amazon.com/blogs/security/amazon-identifies-north-korean-hacker-group-behind-open-source-supply-chain-attacks/)) — the trust chain held exactly as designed and delivered the malicious version, which is why provenance and signing controls do not help here.
+The compromises run from March 2025 to March 2026 and escalate in blast radius: debug and chalk in September 2025, then axios in March 2026, which Amazon describes as one of the most widely used JavaScript libraries at more than 100 million weekly downloads ([AWS Security Blog, 2026-07-29](https://aws.amazon.com/blogs/security/amazon-identifies-north-korean-hacker-group-behind-open-source-supply-chain-attacks/)). None of the three involved breaking the registry. In Amazon's words, "in each case with debug, chalk, and axios, the threat actor gained access by socially engineering a trusted maintainer of the package, then published a software update containing malicious code" ([AWS Security Blog, 2026-07-29, corrected 2026-08-11](https://aws.amazon.com/blogs/security/amazon-identifies-north-korean-hacker-group-behind-open-source-supply-chain-attacks/)) — the trust chain held exactly as designed and delivered the malicious version, which is why provenance and signing controls do not help here.
 
 The genuinely new element is the rehearsal. Amazon points at a March 2025 compromise of a package named typo-crypto, into which the actor committed a trojanised file that masqueraded as the unrelated legitimate core-js package, and assesses that "based on the limited number of observed downloads... this campaign was small scale and likely served as a testing ground for the more visible supply chain operations that followed in late 2025 and 2026" ([AWS Security Blog, 2026-07-29](https://aws.amazon.com/blogs/security/amazon-identifies-north-korean-hacker-group-behind-open-source-supply-chain-attacks/)). That is a patience pattern worth internalising: a package with negligible download counts is not necessarily a failed attack, it may be where the maintainer-social-engineering approach and the payload were refined before being pointed at something with a hundred million weekly installs.
 
@@ -85,3 +96,7 @@ Amazon separately describes a shift in how these operations are structured, obse
 **Defender takeaway:** the actor label is the least useful part of this report. What carries over is that a dependency compromise can arrive through a legitimate maintainer and a legitimate release, sit dormant unless given a specific input, and distribute its logic across packages that each look fine alone — so dynamic analysis that observes an install without exercising the code, and review that scores packages individually, are both weaker than their output suggests.
 
 **Triage:** a benign minified or bundled dependency also carries base64 blobs and unreadable code, so obfuscation alone does not separate the two. The discriminators are behavioural and structural: a code path that stays inert unless a caller supplies a particular argument value, a second-stage fetch whose destination differs by host operating system, and persistence written outside the package's own installation tree. A dependency that reaches the network at all during a build or test run, when its documented function does not require it, is the anomaly worth pulling.
+
+## Correction — 2026-09-29T23:35:00Z
+
+Amazon corrected its post on 2026-08-11 to say that the social engineering of a trusted maintainer applied to the debug, chalk and axios compromises specifically ([AWS Security Blog, corrected 2026-08-11](https://aws.amazon.com/blogs/security/amazon-identifies-north-korean-hacker-group-behind-open-source-supply-chain-attacks/)). This entry had stated it for every compromise, including the March 2025 typo-crypto package that Amazon calls a testing ground, for which Amazon names no access method. Amazon says the attribution and its other findings are unchanged.

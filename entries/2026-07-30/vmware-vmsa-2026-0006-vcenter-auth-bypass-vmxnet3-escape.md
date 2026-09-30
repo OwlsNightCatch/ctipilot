@@ -15,8 +15,7 @@ summary: >
   directory traversal in vCenter's Syslog server that reaches arbitrary code execution.
   CVE-2026-47876 (CVSS 9.3) is an out-of-bounds write in the VMXNET3 virtual network adapter that
   lets a guest administrator execute code on the ESX host, affecting only VMs using that adapter.
-  No workaround exists for any of the five, so patching is the only control; none is reported
-  exploited, and all were reported privately to Broadcom, one of them through Pwn2Own.
+  No workaround exists for any of the five, so patching is the only control. All were reported privately to Broadcom, one of them through Pwn2Own, and CVE-2026-59310 has since been exploited in the wild and was added to CISA's KEV catalog on 2026-08-18.
 discovered_at: "2026-07-30T04:54:00Z"
 updated_at: "2026-08-28T05:20:00Z"
 event_date: 2026-07-29
@@ -183,16 +182,15 @@ evidence:
     publisher: NCSC Switzerland
   - quote: "The digital forensics company assessed a suspected advanced persistent threat (APT) actor was responsible, counting 361 victim IP addresses across 47 countries"
     publisher: Infosecurity Magazine, citing QUIRSO GmbH
-  - quote: "The deployment [of Babuk-derived ransomware] may not have been the primary objective of the campaign"
+  - quote: "based on the investigation so far, it's suspected that the deployment of the locker may not have been the primary objective of the campaign"
     publisher: The Hacker News, paraphrasing QUIRSO's assessment
+    source_url: "https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html"
 verification: multi-source
 sourcing_note: >
   Every version and score in this entry is transcribed from the response-matrix tables in
   Broadcom's own advisory rather than from its prose summary or from any national-CERT
   restatement. Broadcom publishes two distinct scores for CVE-2026-41703 depending on product, and
-  both are recorded here rather than reduced to one. Full-text search of the advisory found no
-  reference to exploitation or in-the-wild activity, and none of the three national CERTs reports
-  any. Broadcom describes the reports only as private and names Pwn2Own for one of them; it does
+  both are recorded here rather than reduced to one. At first publication, full-text search of the advisory found no reference to exploitation or in-the-wild activity, and none of the three national CERTs reported any. CVE-2026-59310 was reported exploited later, as the updates record. Broadcom describes the reports only as private and names Pwn2Own for one of them; it does
   not describe a bug-bounty programme, and this entry does not either. The management-segmentation
   guidance is NCSC-NL's — NCSC-CH's advisory carries severity, affected products, vulnerability
   details and references without any segmentation recommendation.
@@ -206,7 +204,7 @@ classification:
   credibility: 1
 watchlist_hit: false
 actions:
-  - "Patch vCenter to 9.1.0.0300, 9.0.2.0100 or 8.0 U3k on its respective track — the two CVSS 9.8 flaws need only network reachability to vCenter and Broadcom lists no workaround for either, so there is no interim mitigation to fall back on while the change is scheduled."
+
   - "Inventory which guest VMs use the VMXNET3 adapter and patch the ESX hosts carrying them to ESXi-9.1.0.0200, ESXi-9.0.2.0100 or ESXi80U3k: the escape is reachable from guest administrative privilege, which makes any tenant-operated or lower-trust VM on a shared host a path to the hypervisor."
   - "Patch vCenter to 9.1.0.0300, 9.0.2.0100 or 8.0 U3k/U2f as applicable — there is no workaround — and on any appliance that was network-reachable and unpatched between 29 July and today, check the appliance's own scheduled-task and cron configuration for entries the platform team did not create, and its egress records for outbound SSH sessions from the appliance itself."
 updates:
@@ -252,12 +250,27 @@ updates:
       - sources
       - evidence
       - body
+  - at: "2026-09-29T23:38:24Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: correction
+    summary: >
+      The summary still said none of the five flaws was reported exploited; CVE-2026-59310 has been
+      exploited in the wild since before the 2026-08-13 update and was added to CISA's KEV catalog on
+      2026-08-18. The Hacker News quotation, in the evidence and in the 2026-08-17 analysis, now
+      carries the article's own sentence instead of a bracketed insertion. A duplicated vCenter patch
+      action is folded into the one that also carries the compromise check. The sourcing note dates
+      its no-exploitation statement to first publication. The analysis sentence on out-of-cycle
+      handling is dated the same way. QUIRSO's single-appliance finding of activity consistent with
+      exploitation of CVE-2026-59309, reported on 2026-08-17 and missing from the entry, is added and
+      attributed. The 2026-08-28 attribution clause now cites The Hacker News, which carries it, ahead
+      of the Infosecurity Magazine quotation.
+    fields: [evidence, summary, actions, sources, sourcing_note, body]
 migrated_from: null
 ---
 
 Broadcom published VMSA-2026-0006 on 2026-07-29, covering five vulnerabilities across VMware ESX, vCenter, Workstation and Fusion, and stating that they "were privately reported to Broadcom" with updates available to remediate them ([Broadcom, 2026-07-29](https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017)). Three national CERTs picked it up immediately: NCSC-CH on 2026-07-29 ([NCSC Switzerland, 2026-07-29](https://security-hub.ncsc.admin.ch/#/posts/12814)), NCSC-NL on 2026-07-29 ([NCSC-NL, 2026-07-29](https://advisories.ncsc.nl/advisory?id=NCSC-2026-0269)), and BSI CERT-Bund, whose advisory is dated 2026-07-28 with a 2026-07-29 revision ([BSI CERT-Bund, 2026-07-29](https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2569)).
 
-Two of the five sit on vCenter and need no credentials. CVE-2026-59309 (CVSS 9.8) is an authentication bypass in the VMware Directory Service, and Broadcom's own attack-vector text is unambiguous about the prerequisite: "a malicious actor with network access to vCenter may exploit this issue to bypass authentication and gain unauthorized access to the system" ([Broadcom, 2026-07-29](https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017)). CVE-2026-59310, also CVSS 9.8, is a directory-traversal flaw in vCenter's Syslog server that reaches arbitrary code execution through manipulated file and directory paths ([Broadcom, 2026-07-29](https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017)). vCenter is the control plane for an entire virtual estate: an unauthenticated path into it is a path to every workload it manages, which is why an anonymous network-reachable bypass warrants out-of-cycle handling even with no exploitation reported.
+Two of the five sit on vCenter and need no credentials. CVE-2026-59309 (CVSS 9.8) is an authentication bypass in the VMware Directory Service, and Broadcom's own attack-vector text is unambiguous about the prerequisite: "a malicious actor with network access to vCenter may exploit this issue to bypass authentication and gain unauthorized access to the system" ([Broadcom, 2026-07-29](https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017)). CVE-2026-59310, also CVSS 9.8, is a directory-traversal flaw in vCenter's Syslog server that reaches arbitrary code execution through manipulated file and directory paths ([Broadcom, 2026-07-29](https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017)). vCenter is the control plane for an entire virtual estate: an unauthenticated path into it is a path to every workload it manages, which is why an anonymous network-reachable bypass warranted out-of-cycle handling even though no exploitation had been reported at first publication. CVE-2026-59310 has since been exploited in the wild, as the updates below record.
 
 The third flaw crosses the isolation boundary in the other direction. CVE-2026-47876 (CVSS 9.3) is an out-of-bounds write in the VMXNET3 virtual network adapter, and Broadcom scopes it precisely: "a malicious actor with local administrative privileges on a virtual machine with VMXNET3 virtual network adapter may exploit this issue to execute code on the host. Non VMXNET3 virtual adapters are not affected by this issue" ([Broadcom, 2026-07-29](https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017)). That precondition is the useful part of the triage: exposure is determined by adapter configuration rather than by ESX version alone, so the inventory question is which guests run VMXNET3 and how much you trust whoever administers them.
 
@@ -267,7 +280,7 @@ Two product families beyond the obvious ones are in scope and are easy to miss o
 
 Fixed builds differ per flaw and per track. vCenter takes 9.1.0.0300, 9.0.2.0100 or 8.0 U3k, with Cloud Foundation 5.x served by an async patch to 8.0 U3k; the VMXNET3 escape is fixed in ESXi-9.1.0.0200, ESXi-9.0.2.0100 and ESXi80U3k ([Broadcom, 2026-07-29](https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017)). Broadcom records no workaround for any of the five, which removes the usual option of mitigating while the maintenance window is arranged.
 
-Nothing here is reported exploited. Broadcom states the vulnerabilities "were privately reported to Broadcom" and credits Atredis Partners, Nguyen Hoang Thach of STARLabs SG working with Pwn2Own held by the Zero Day Initiative, an independent researcher, and CrowdStrike ([Broadcom, 2026-07-29](https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017)), and none of the three national CERTs reports in-the-wild activity. What earns this out-of-cycle attention is the reachability profile rather than an exploitation signal: two anonymous network paths into a virtualization control plane, with no interim control available.
+At first publication nothing here was reported exploited. Broadcom states the vulnerabilities "were privately reported to Broadcom" and credits Atredis Partners, Nguyen Hoang Thach of STARLabs SG working with Pwn2Own held by the Zero Day Initiative, an independent researcher, and CrowdStrike ([Broadcom, 2026-07-29](https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017)), and none of the three national CERTs reported in-the-wild activity. What earned this out-of-cycle attention at publication was the reachability profile rather than an exploitation signal: two anonymous network paths into a virtualization control plane, with no interim control available. CVE-2026-59310 has since been exploited in the wild and added to CISA's KEV catalog, as the updates below record.
 
 Detection on the vCenter side means watching the two named services rather than the appliance generally: authentication events from the Directory Service, where a successful bind that no operator session accounts for is the signal, and Syslog-server request logging, where path-traversal sequences in a requested file or directory path have no legitimate counterpart. For the guest-to-host escape the telemetry is host-side — hypervisor crash and process-fault records on ESX hosts running VMXNET3 guests, since a failed escape attempt is far more likely to surface as an anomalous fault than as a clean compromise. On hardening, NCSC-NL is the source that spells out the architectural control: access to ESX and vCenter should be made available only from a separated management environment and not reachable directly from the internet or external networks ([NCSC-NL, 2026-07-29](https://advisories.ncsc.nl/advisory?id=NCSC-2026-0269)). Broadcom's own advisory offers no hardening section and records "Workarounds: None" against every one of the five.
 
@@ -293,8 +306,14 @@ A second, separate signal sits alongside it and should not be merged with the fi
 
 CISA added CVE-2026-59310 to its Known Exploited Vulnerabilities catalog on 2026-08-18 — a jurisdiction-agnostic confirmation of active exploitation, independent of any US-FCEB remediation deadline, layered on top of NCSC-CH's own actively-exploited determination already recorded above.
 
-QUIRSO's continued work on the campaign this entry has tracked since 13 August now attributes the activity to a suspected China-nexus actor and reports that Babuk-derived ransomware was deployed against ESXi hosts in at least one investigated case: "the digital forensics company assessed a suspected advanced persistent threat (APT) actor was responsible, counting 361 victim IP addresses across 47 countries" ([Infosecurity Magazine, citing QUIRSO GmbH, 2026-08-14](https://www.infosecurity-magazine.com/news/vcenter-cve-2026-59310-exploited/)). The ransomware deployment (`.babyk` extension) is assessed by QUIRSO as plausibly a smokescreen rather than the operation's goal: "the deployment [of Babuk-derived ransomware] may not have been the primary objective of the campaign" ([The Hacker News, paraphrasing QUIRSO's assessment, 2026-08-17](https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html)) — plausibly intended to encrypt ESXi log files and hinder forensics rather than for extortion.
+QUIRSO's continued work on the campaign this entry has tracked since 13 August now attributes the activity to a suspected China-nexus actor and reports that Babuk-derived ransomware was deployed against ESXi hosts in at least one investigated case ([The Hacker News, 2026-08-17](https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html)). Infosecurity Magazine reports the same assessment: "the digital forensics company assessed a suspected advanced persistent threat (APT) actor was responsible, counting 361 victim IP addresses across 47 countries" ([Infosecurity Magazine, citing QUIRSO GmbH, 2026-08-14](https://www.infosecurity-magazine.com/news/vcenter-cve-2026-59310-exploited/)). The ransomware deployment (`.babyk` extension) is assessed by QUIRSO as plausibly a smokescreen rather than the operation's goal: the deployment of "the locker", the Babuk-derived payload, "may not have been the primary objective of the campaign" ([The Hacker News, paraphrasing QUIRSO's assessment, 2026-08-17](https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html)) — plausibly intended to encrypt ESXi log files and hinder forensics rather than for extortion.
 
 Both findings warrant the same caveat this entry already applies to the CVE-2026-59309 scanning correlation: every outlet surveyed (The Hacker News, Infosecurity Magazine, and further security-press pickup) cites QUIRSO's own Medium write-ups as the sole source for the China-nexus attribution (built on a UTC+08:00 activity pattern, Chinese-language code artefacts, and reuse of a Chinese security publication) at QUIRSO's own stated moderate confidence, and for the ransomware finding. Two outlets reporting one firm's conclusion is wide distribution of a single assessor's work, not independent corroboration of it — the attribution and the ransomware-deployment finding should be read as QUIRSO's own assessment, not as cross-verified intelligence, and are recorded here on that basis rather than folded into this entry's overall A/1 rating, which reflects the multi-CERT-corroborated vulnerability and initial-exploitation facts.
 
 Nothing in this update changes the remediation guidance already given above: patch every internet-reachable vCenter to the fixed builds, and treat any instance that was internet-reachable and unpatched between 29 July and 3 August as a compromise-assessment candidate rather than a patch-and-close item — that assessment should now explicitly include a check for Babuk-derived (`.babyk`) file extensions on any ESXi hosts the appliance manages, alongside the reverse_ssh persistence and cron-entry artefacts already described.
+
+## Correction — 2026-09-29T23:38:24Z
+
+CVE-2026-59310, the vCenter Syslog traversal, has been exploited in the wild since before the update of 2026-08-13, and CISA added it to its Known Exploited Vulnerabilities catalog on 2026-08-18 ([CISA KEV](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). The patch guidance is unchanged, and the compromise check in the actions applies to any vCenter that was exposed and unpatched.
+
+The Directory Service authentication bypass may not be far behind. On one compromised vCenter appliance that QUIRSO analysed, the evidence shows malicious activity consistent with exploitation of CVE-2026-59309 as early as 2026-08-01, followed by the creation of an administrative account on vCenter, with no login events for the legitimate administrator account used to create it ([The Hacker News, 2026-08-17](https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html)). That is one appliance and a "consistent with" finding, and CVE-2026-59309 is not in CISA's KEV catalog, so its status here stays patch-available. On an exposed vCenter, an administrative account created without a matching administrator login is the signal to look for.

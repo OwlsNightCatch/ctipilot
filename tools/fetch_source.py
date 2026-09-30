@@ -142,6 +142,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import zlib
 from typing import Any
 
 
@@ -411,6 +412,35 @@ def _read_capped(resp, max_bytes: int) -> bytes:
     return bytes(buf)
 
 
+def _inflate_unrequested(body: bytes, headers: dict[str, str], max_bytes: int) -> bytes:
+    """Decode a gzip or deflate body the server sent although the request
+    asked for `identity`. Some publishers ignore the header (kb.cert.org does,
+    2026-09-29), and returning the compressed bytes made every CERT/CC note
+    look like binary noise to extraction and to the gate's quote check. The
+    output is capped at `max_bytes` like any other body."""
+    enc = next((v for k, v in headers.items() if k.lower() == "content-encoding"), "").lower()
+    if "gzip" in enc or body[:2] == b"\x1f\x8b":
+        wbits = 16 + zlib.MAX_WBITS
+    elif "deflate" in enc:
+        wbits = zlib.MAX_WBITS
+    else:
+        return body
+    try:
+        d = zlib.decompressobj(wbits)
+        out = d.decompress(body, max_bytes + 1)
+    except zlib.error:
+        if wbits != zlib.MAX_WBITS:
+            return body
+        try:  # raw deflate, as some servers send it
+            d = zlib.decompressobj(-zlib.MAX_WBITS)
+            out = d.decompress(body, max_bytes + 1)
+        except zlib.error:
+            return body
+    if len(out) > max_bytes or d.unconsumed_tail:
+        raise RuntimeError(f"refused: decoded response body exceeds cap of {max_bytes} bytes")
+    return out
+
+
 def fetch(
     url: str,
     *,
@@ -450,7 +480,8 @@ def fetch(
     try:
         with _OPENER.open(req, timeout=DEFAULT_TIMEOUT) as resp:
             body = _read_capped(resp, max_bytes)
-            return resp.status, body, dict(resp.headers)
+            hdrs = dict(resp.headers)
+            return resp.status, _inflate_unrequested(body, hdrs, max_bytes), hdrs
     except urllib.error.HTTPError as e:
         # Surface the upstream status verbatim so the agent can tell why a fetch failed.
         try:
@@ -2178,6 +2209,8 @@ _PDF_BFCHAR_RE = re.compile(rb"beginbfchar(.*?)endbfchar", re.DOTALL)
 _PDF_BFRANGE_RE = re.compile(rb"beginbfrange(.*?)endbfrange", re.DOTALL)
 _PDF_HEXTOK_RE = re.compile(rb"<([0-9A-Fa-f\s]+)>")
 _PDF_HEXBODY_RE = re.compile(rb"[0-9A-Fa-f\s]+")
+_PDF_BFRANGE_LINE_RE = re.compile(
+    rb"<([0-9A-Fa-f\s]+)>\s*<([0-9A-Fa-f\s]+)>\s*(<[0-9A-Fa-f\s]*>|\[[^\]]*\])")
 
 
 def _pdf_streams(data: bytes) -> list[bytes]:
@@ -2266,17 +2299,29 @@ def _pdf_tounicode_map(streams: list[bytes]) -> dict[int, str]:
                 if len(codes) == 1 and dst:
                     cmap.setdefault(codes[0], dst)
         for body in _PDF_BFRANGE_RE.findall(s):
-            toks = _PDF_HEXTOK_RE.findall(body)
-            for i in range(0, len(toks) - 2, 3):
-                lo = _pdf_hex_to_codes(toks[i])
-                hi = _pdf_hex_to_codes(toks[i + 1])
-                dst = _pdf_hex_to_text(toks[i + 2])
-                if len(lo) != 1 or len(hi) != 1 or not dst:
+            # A range's destination is either one start value (incremented
+            # across the range) or an array naming each code's text in turn.
+            # Tokenising every hex string blindly misaligns on the array form.
+            for lo_t, hi_t, dst_t in _PDF_BFRANGE_LINE_RE.findall(body):
+                lo = _pdf_hex_to_codes(lo_t)
+                hi = _pdf_hex_to_codes(hi_t)
+                if len(lo) != 1 or len(hi) != 1:
                     continue
                 if hi[0] < lo[0] or hi[0] - lo[0] > 65535:
                     continue
+                if dst_t.startswith(b"["):
+                    for code, tok in zip(range(lo[0], hi[0] + 1), _PDF_HEXTOK_RE.findall(dst_t)):
+                        txt = _pdf_hex_to_text(tok)
+                        if txt:
+                            cmap.setdefault(code, txt)
+                    continue
+                dst = _pdf_hex_to_text(dst_t.strip(b"<>"))
+                if not dst:
+                    continue
                 base = ord(dst[-1])
                 for n, code in enumerate(range(lo[0], hi[0] + 1)):
+                    if base + n > 0x10FFFF:
+                        break
                     cmap.setdefault(code, dst[:-1] + chr(base + n))
     return cmap
 
@@ -2431,6 +2476,329 @@ def _pdf_render(content_streams: list[bytes], cmap: dict[int, str]) -> tuple[str
     return d, "byte-encoding"
 
 
+# ── per-font decoding (2026-09-29) ──
+#
+# The merged-CMap render above decodes a whole file one way. That fails on
+# the most common producer there is: Microsoft Word writes spaces through a
+# simple WinAnsi font and every other glyph through a subset Type0 font
+# whose codes are glyph ids. The byte-wise decode then turns "North Korean"
+# into "1RUWK.RUHDQ" and drops every digit (their glyph ids sit below 32),
+# and because that mojibake still counts as prose it outscores the CMap
+# decode. Measured on the 2026-09-18 NPA/FBI joint advisory on WaterPlum
+# (ic3.gov CSA 260918): the old path returned unreadable text for all 25
+# pages. The per-font path below resolves each page's font resources, reads
+# every font's own ToUnicode CMap and code width, and decodes each string
+# with the font active at that point in the stream, which is what a PDF
+# viewer does. It needs the object graph, so it falls back to the merged
+# path when the file's objects cannot be walked (encrypted, or a
+# cross-reference stream layout this parser does not follow).
+
+_PDF_OBJ_RE = re.compile(rb"(?<![0-9])(\d+)\s+(\d+)\s+obj\b(.*?)\bendobj", re.DOTALL)
+_PDF_REF_RE = re.compile(rb"(\d+)\s+\d+\s+R\b")
+_PDF_NAMEREF_RE = re.compile(rb"/([^\s/<>\[\]()]+)\s*(\d+)\s+\d+\s+R\b")
+_PDF_SIMPLE_ENCODINGS = {b"WinAnsiEncoding": "cp1252", b"MacRomanEncoding": "mac_roman"}
+
+
+def _pdf_inflate(head: bytes, raw: bytes) -> bytes | None:
+    if b"/FlateDecode" not in head and b"/Fl " not in head and b"/Fl/" not in head:
+        return raw if b"/Filter" not in head else None
+    for attempt in (lambda: zlib.decompress(raw), lambda: zlib.decompressobj().decompress(raw)):
+        try:
+            return attempt()
+        except zlib.error:
+            continue
+    return None
+
+
+def _pdf_objects(data: bytes) -> dict[int, tuple[bytes, bytes | None]]:
+    """Object number → (dictionary bytes, inflated stream or None), including
+    objects packed in object streams. Later definitions of a number win, as
+    an incremental update intends."""
+    objs: dict[int, tuple[bytes, bytes | None]] = {}
+    for m in _PDF_OBJ_RE.finditer(data):
+        body = m.group(3)
+        sm = re.search(rb"\bstream\r?\n", body)
+        if not sm:
+            objs[int(m.group(1))] = (body, None)
+            continue
+        head, raw = body[:sm.start()], body[sm.end():]
+        end = raw.rfind(b"endstream")
+        if end != -1:
+            raw = raw[:end]
+        objs[int(m.group(1))] = (head, _pdf_inflate(head, raw.rstrip(b"\r\n")))
+    for head, stream in list(objs.values()):
+        if not stream or b"/ObjStm" not in head:
+            continue
+        n_m = re.search(rb"/N\s+(\d+)", head)
+        f_m = re.search(rb"/First\s+(\d+)", head)
+        if not n_m or not f_m:
+            continue
+        first = int(f_m.group(1))
+        nums = re.findall(rb"\d+", stream[:first])
+        pairs = [(int(a), int(b)) for a, b in zip(nums[0::2], nums[1::2])][: int(n_m.group(1))]
+        for i, (num, off) in enumerate(pairs):
+            end = first + pairs[i + 1][1] if i + 1 < len(pairs) else len(stream)
+            objs.setdefault(num, (stream[first + off:end], None))
+    return objs
+
+
+def _pdf_dict_value(head: bytes, key: bytes) -> bytes | None:
+    """The raw value of `/key` in a dictionary: a nested `<< >>` dictionary,
+    an `[ ]` array or a single token such as an indirect reference."""
+    m = re.search(rb"/" + key + rb"(?![A-Za-z0-9])\s*", head)
+    if not m:
+        return None
+    i = m.end()
+    if head[i:i + 2] == b"<<":
+        depth, j = 0, i
+        while j < len(head) - 1:
+            if head[j:j + 2] == b"<<":
+                depth += 1
+                j += 2
+                continue
+            if head[j:j + 2] == b">>":
+                depth -= 1
+                j += 2
+                if not depth:
+                    return head[i:j]
+                continue
+            j += 1
+        return head[i:]
+    if head[i:i + 1] == b"[":
+        j = head.find(b"]", i)
+        return head[i:j + 1] if j != -1 else head[i:]
+    r = re.match(rb"\d+\s+\d+\s+R\b|/[^\s/<>\[\]()]+|[^\s/<>\[\]()]+", head[i:])
+    return r.group(0) if r else None
+
+
+def _pdf_resolve_dict(objs: dict, value: bytes | None) -> bytes:
+    """A dictionary value that may be given inline or as a reference."""
+    if not value:
+        return b""
+    r = re.fullmatch(rb"(\d+)\s+\d+\s+R", value.strip())
+    if r:
+        return objs.get(int(r.group(1)), (b"", None))[0]
+    return value
+
+
+def _pdf_font(objs: dict, num: int, cache: dict) -> tuple[int, dict[int, str], str]:
+    """(bytes per code, the font's own ToUnicode map, simple-font codec)."""
+    if num in cache:
+        return cache[num]
+    head = objs.get(num, (b"", None))[0]
+    width = 2 if re.search(rb"/Subtype\s*/Type0\b", head) else 1
+    cmap: dict[int, str] = {}
+    tu = _pdf_dict_value(head, b"ToUnicode")
+    r = re.fullmatch(rb"(\d+)\s+\d+\s+R", (tu or b"").strip())
+    if r:
+        stream = objs.get(int(r.group(1)), (b"", None))[1]
+        if stream:
+            cmap = _pdf_tounicode_map([stream])
+    enc = _pdf_dict_value(head, b"Encoding") or b""
+    codec = "latin-1"
+    for name, c in _PDF_SIMPLE_ENCODINGS.items():
+        if name in enc or name in _pdf_resolve_dict(objs, enc):
+            codec = c
+    cache[num] = (width, cmap, codec)
+    return cache[num]
+
+
+def _pdf_resources(objs: dict, head: bytes) -> tuple[dict[bytes, int], dict[bytes, int]]:
+    """(font name → font object, XObject name → object) for a page or form."""
+    res = _pdf_resolve_dict(objs, _pdf_dict_value(head, b"Resources"))
+    fonts = {k: int(v) for k, v in _PDF_NAMEREF_RE.findall(
+        _pdf_resolve_dict(objs, _pdf_dict_value(res, b"Font")))}
+    xobjs = {k: int(v) for k, v in _PDF_NAMEREF_RE.findall(
+        _pdf_resolve_dict(objs, _pdf_dict_value(res, b"XObject")))}
+    return fonts, xobjs
+
+
+def _pdf_text_ops(content: bytes):
+    """Yield the text-relevant operations of a content stream in order:
+    ("font", name), ("str", is_hex, bytes), ("gap",) for a wide `TJ` kern,
+    ("nl",) for an operator implying a line break, ("do", name). Skips
+    dictionaries, so a marked-content property list such as
+    `<</Lang (en-US)>>` is never mistaken for page text."""
+    i, n, depth_arr, num_start = 0, len(content), 0, -1
+    while i < n:
+        c = content[i]
+        if c == 0x3C and content[i + 1:i + 2] == b"<":  # << … >>, nesting-aware
+            depth, j = 0, i
+            while j < n - 1:
+                if content[j:j + 2] == b"<<":
+                    depth += 1
+                    j += 2
+                    continue
+                if content[j:j + 2] == b">>":
+                    depth -= 1
+                    j += 2
+                    if not depth:
+                        break
+                    continue
+                j += 1
+            i = j
+            continue
+        if c == 0x28 or (c == 0x3C and content[i + 1:i + 2] != b"<"):
+            for is_hex, s in _pdf_literal_strings(content[i:i + _pdf_string_len(content, i)]):
+                if s != b"\n":
+                    yield ("str", is_hex, s)
+            i += _pdf_string_len(content, i)
+            continue
+        if c == 0x5B:
+            depth_arr += 1
+        elif c == 0x5D:
+            depth_arr = max(0, depth_arr - 1)
+        elif c == 0x2F:  # a name: font selection or an XObject invocation
+            m = re.match(rb"/([^\s/<>\[\]()]+)\s+(?:[-+\d.]+\s+Tf|Do)\b", content[i:i + 80])
+            if m:
+                yield ("font" if m.group(0).endswith(b"Tf") else "do", m.group(1))
+                i += m.end()
+                continue
+        elif depth_arr and (c == 0x2D or 0x30 <= c <= 0x39):
+            m = re.match(rb"-?\d+(?:\.\d+)?", content[i:i + 20])
+            if m:
+                if float(m.group(0)) <= -250:
+                    yield ("gap",)
+                i += m.end()
+                continue
+        elif c in (0x54, 0x45) and content[i:i + 2] in (b"Td", b"TD", b"T*", b"ET"):
+            yield ("nl",)
+            i += 2
+            continue
+        elif c in (0x27, 0x22):
+            yield ("nl",)
+        i += 1
+
+
+def _pdf_string_len(content: bytes, i: int) -> int:
+    """Length of the string operand starting at content[i] (`(` or `<`)."""
+    n = len(content)
+    if content[i] == 0x3C:
+        j = content.find(b">", i + 1)
+        return (j - i + 1) if j != -1 else n - i
+    depth, j = 0, i
+    while j < n:
+        ch = content[j]
+        if ch == 0x5C:
+            j += 2
+            continue
+        if ch == 0x28:
+            depth += 1
+        elif ch == 0x29:
+            depth -= 1
+            if not depth:
+                return j - i + 1
+        j += 1
+    return n - i
+
+
+def _pdf_decode_string(is_hex: bool, s: bytes, font: tuple[int, dict[int, str], str]) -> str:
+    width, cmap, codec = font
+    if is_hex:
+        h = re.sub(rb"[^0-9A-Fa-f]", b"", s)
+        if len(h) % 2:
+            h += b"0"
+        raw = bytes.fromhex(h.decode("ascii"))
+    else:
+        raw = s
+    if width == 2:
+        codes = [int.from_bytes(raw[k:k + 2], "big") for k in range(0, len(raw) - 1, 2)]
+        return "".join(cmap.get(c, "") for c in codes)
+    if cmap:
+        return "".join(cmap.get(b, None) or bytes([b]).decode(codec, "replace") for b in raw)
+    return raw.decode(codec, "replace")
+
+
+def _pdf_render_by_font(data: bytes) -> tuple[str, int] | None:
+    """Per-font text extraction over the page tree. Returns (text, pages)
+    or None when no page with content could be resolved."""
+    objs = _pdf_objects(data)
+    font_cache: dict = {}
+    pages = [num for num, (head, _) in sorted(objs.items())
+             if re.search(rb"/Type\s*/Page(?![s\w])", head)]
+    out: list[str] = []
+
+    def render(stream: bytes, fonts: dict[bytes, int], xobjs: dict[bytes, int], depth: int) -> None:
+        font = (1, {}, "latin-1")
+        for op in _pdf_text_ops(stream):
+            kind = op[0]
+            if kind == "font":
+                num = fonts.get(op[1])
+                font = _pdf_font(objs, num, font_cache) if num is not None else (1, {}, "latin-1")
+            elif kind == "str":
+                out.append(_pdf_decode_string(op[1], op[2], font))
+            elif kind == "gap":
+                out.append(" ")
+            elif kind == "nl":
+                out.append("\n")
+            elif kind == "do" and depth < 4:
+                num = xobjs.get(op[1])
+                head, sub = objs.get(num, (b"", None)) if num is not None else (b"", None)
+                if sub and re.search(rb"/Subtype\s*/Form\b", head):
+                    f2, x2 = _pdf_resources(objs, head)
+                    render(sub, f2 or fonts, x2 or xobjs, depth + 1)
+
+    rendered = 0
+    for num in pages:
+        head = objs[num][0]
+        # Resources are inheritable from the page tree.
+        node, hops = head, 0
+        while _pdf_dict_value(node, b"Resources") is None and hops < 16:
+            parent = re.fullmatch(rb"(\d+)\s+\d+\s+R", (_pdf_dict_value(node, b"Parent") or b"").strip())
+            if not parent:
+                break
+            node = objs.get(int(parent.group(1)), (b"", None))[0]
+            hops += 1
+        fonts, xobjs = _pdf_resources(objs, node)
+        refs = [int(x) for x in _PDF_REF_RE.findall(_pdf_dict_value(head, b"Contents") or b"")]
+        streams: list[bytes] = []
+        for ref in refs:
+            h, st = objs.get(ref, (b"", None))
+            if st is not None:
+                streams.append(st)
+            else:  # an indirect array of content streams
+                streams.extend(objs.get(int(x), (b"", None))[1] or b""
+                               for x in _PDF_REF_RE.findall(h))
+        if not streams:
+            continue
+        render(b"\n".join(streams), fonts, xobjs, 0)
+        out.append("\n\n")
+        rendered += 1
+    if not rendered:
+        return None
+    return "".join(out), rendered
+
+
+# Below this many recovered prose characters a per-font result is treated as
+# a failed page walk and the merged decode is kept instead.
+_PDF_BY_FONT_MIN_PROSE = 200
+
+
+def _pdf_extract(body: bytes) -> tuple[str, str, list[bytes], list[bytes], dict[int, str]]:
+    """Decode a PDF's bytes to text: (text, method, streams, content, cmap).
+
+    The per-font decode wins whenever the page tree could be walked and it
+    recovered real text. It is never compared with the merged decode on
+    volume: the merged path also turns embedded font programs and other
+    binary streams into "prose", so on the 2026-09-18 WaterPlum advisory it
+    scored ten times the per-font count while being unreadable, and a volume
+    comparison kept the mojibake. The merged decode stays as the fallback for
+    a file whose objects this parser cannot walk."""
+    streams = _pdf_streams(body)
+    cmap = _pdf_tounicode_map(streams)
+    content = [s for s in streams if b"Tj" in s or b"TJ" in s or b"BT" in s]
+    text, method = _pdf_render(content, cmap)
+    try:
+        by_font = _pdf_render_by_font(body)
+    except Exception:  # noqa: BLE001 — a malformed object graph falls back, never fails the fetch
+        by_font = None
+    if by_font and _pdf_prose_chars(by_font[0]) >= _PDF_BY_FONT_MIN_PROSE:
+        text, method = by_font[0], f"per-font ToUnicode over {by_font[1]} page(s)"
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    return text, method, streams, content, cmap
+
+
 def pdf_text(url: str) -> dict[str, Any]:
     """Fetch a PDF and return its extracted text.
 
@@ -2451,12 +2819,7 @@ def pdf_text(url: str) -> dict[str, Any]:
             f"refused: {url} is not a PDF (Content-Type {ctype}, "
             f"first bytes {body[:8]!r}) — use `url` for HTML"
         )
-    streams = _pdf_streams(body)
-    cmap = _pdf_tounicode_map(streams)
-    content = [s for s in streams if b"Tj" in s or b"TJ" in s or b"BT" in s]
-    text, method = _pdf_render(content, cmap)
-    text = re.sub(r"[ \t]{2,}", " ", text)
-    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    text, method, streams, content, cmap = _pdf_extract(body)
     notes = [f"decode: {method}"]
     if not content:
         notes.append(

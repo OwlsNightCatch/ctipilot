@@ -1,0 +1,318 @@
+# SR2 source-repair result - run 2026-09-29T2134Z-audit - 9 records (input: source-repair-input.SR2.json)
+# Probe harness used for every "verified" health-check line: tools/source_health.py::_content_assess called with the record + proposed fix
+# (work/2026-09-29T2134Z-audit/sr2/probe.py). Working files (raw bodies, feeds, sitemaps) are in work/2026-09-29T2134Z-audit/sr2/.
+# Root-cause tally by primary cause: recipe wrong/moved = 3 (adobe-psirt, google-tag, project-discovery); tool false positive on undated listing
+#   (source live) = 4 (ibm-xforce, projectzero, sansec-research, withsecure-labs); publisher quiet = 2 (exodus-intelligence, xlab-qianxin); unreachable = 0.
+#   8 of 9 records carry a `fix` block (ibm-xforce needs a probe-side change, not a record change).
+# Tool suggestions for source_health.py (not applied - out of scope for this spawn):
+#   1. _DATE_PATTERNS "ymd" ends with \b, so ISO timestamps "2026-08-27T09:00:00" never match: JSON/API recipes (adobe chimera, withsecure REST)
+#      report newest_item null (verdict still relevant). Ending the pattern with (?!\d) instead would let staleness work on JSON records.
+#   2. For listings that carry no inline post dates (ibm-xforce, projectzero, sansec, withsecure) the page-level meta date is read as "newest item";
+#      consider verdict `undated` (or drilling the first same-host article link) instead of `stale`.
+#   3. Records with fetch_method rss but no rss_url (exodus-intelligence, xlab-qianxin) probe the homepage, not the feed; the feed URL only lives in the notes.
+
+- id: adobe-psirt
+  diagnosis: >-
+    Configured url https://helpx.adobe.com/security/security-bulletin.html now returns a 1,092-alnum
+    stub (extract: 758 bytes, title "Adobe Trust Center: Security bulletins and advisories", "Last Updated:
+    September 22, 2026", tab labels only, no bulletin rows). Adobe moved all 2026 bulletins to the Adobe Trust
+    Center (helpx.adobe.com/security.html states verbatim: "Adobe security bulletins have moved to the Adobe
+    Trust Center. All 2026 bulletins are available now, and existing helpx URLs will automatically redirect.
+    Bulletins prior to 2025 will remain on this page"); the helpx pages now serve the archive ("Archived Security Bulletins &
+    Advisories by Product (Through December 2025)") and the configured security-bulletin.html now redirects to the Trust Center. The Trust Center listing
+    https://www.adobe.com/trust/security/bulletins-and-advisories.html (21 KB) is a JS shell: its tab fragment
+    /trust/security/fragments/security-bulletin-tab1 is a Milo CaaS (Content-as-a-Service) collection whose
+    embedded config (gzip+base64 in the caas tool link) sets includeTags=caas:trust-center/security-bulletin,
+    contentTypeTags=caas:content-type/documentation. Milo's own utils.js (https://www.adobe.com/libs/blocks/caas/utils.js)
+    shows the collection endpoint is https://www.adobe.com/chimera-api/collection with default
+    originSelection=hawks and collectionTags=<includeTags>. That endpoint returns clean JSON:
+    108 cards / 176,955 bytes, each with title (APSB id), url, description (Priority N + type), cardDate,
+    modifiedDate and the CVE ids in search.search. Newest cardDate 2026-09-22 (APSB26-155/157/145/147/148/150/151),
+    then 2026-09-08 (APSB26-98 Experience Manager, APSB26-119 ColdFusion Priority 1, APSB26-130 Photoshop, ...).
+    Ordering is NOT by date (the size parameter truncates an arbitrary/ascending list, size=20 returns January
+    cards), so use size=250 (all 108 cards) and sort client-side on cardDate.
+  root_cause: >-
+    blog moved (publisher migrated bulletins from helpx.adobe.com to the Adobe Trust Center, a JS/CaaS-rendered
+    SPA); the old URL is now an archive/redirect stub, so the probe sees a shell with 2 security terms.
+    Not a tool false positive: the recipe as written really yields no bulletin list.
+  fix:
+    fetch_method: bridge
+    url: "https://www.adobe.com/chimera-api/collection?originSelection=hawks&contentTypeTags=caas:content-type/documentation&collectionTags=caas:trust-center/security-bulletin&language=en&country=us&size=250&draft=false"
+  verified: >-
+    python3 tools/fetch_source.py url "<chimera URL above>" --direct -> 176,955 bytes JSON, 108 cards; newest by
+    cardDate 2026-09-22 (APSB26-155 Substance3D Modeler, APSB26-157 Premiere Pro, APSB26-150 Connect Priority 2,
+    APSB26-151 AEM Forms Priority 2), then 2026-09-08 APSB26-119 ColdFusion Priority 1
+    (https://www.adobe.com/trust/security/products/coldfusion/apsb26-119). Health-probe harness
+    (source_health._content_assess with url override) -> content_verdict relevant, alnum 248,120, has_cve true;
+    _bridge_check -> bridge-ok 176,955 B. Per-bulletin drill: python3 tools/fetch_source.py url
+    https://www.adobe.com/trust/security/products/coldfusion/apsb26-119.html --direct returns 36,989 B raw HTML
+    with the per-CVE table (CWE / impact / severity / CVSS score / vector / CVE); `extract` on the same page drops
+    the tables (5,240 B, headings only), so use raw url for per-bulletin CVSS mapping. Old helpx per-bulletin URLs
+    (helpx.adobe.com/security/products/coldfusion/apsb26-119.html) still resolve (200) and carry the same
+    Trust-Center canonical.
+  notes_append: >-
+    2026-09-29: bulletins moved to Adobe Trust Center (helpx now archive-only through Dec 2025; old security-bulletin.html
+    is a stub). Working listing recipe = bridge url on the Milo CaaS JSON endpoint
+    https://www.adobe.com/chimera-api/collection?originSelection=hawks&contentTypeTags=caas:content-type/documentation&collectionTags=caas:trust-center/security-bulletin&language=en&country=us&size=250&draft=false
+    (108 cards; fields title=APSB id, contentArea.url, description=Priority N, cardDate, search.search=CVE ids;
+    sort client-side on cardDate, size< total truncates in ascending order). Drill per bulletin with `url <bulletin>.html --direct`
+    (raw body has the CVSS table; `extract` drops tables). Human page https://www.adobe.com/trust/security/bulletins-and-advisories.html is a JS shell.
+  recommendation: fix
+
+- id: google-tag
+  diagnosis: >-
+    https://blog.google/threat-analysis-group/ now serves Google's generic Security page (extract: 502 bytes,
+    title "Security", url https://blog.google/security/, 1,426 alnum incl. raw chrome, one featured Android post,
+    2 security terms) - the section landing has been folded into /security/. The documented RSS
+    https://blog.google/threat-analysis-group/rss/ is 404 (feed and url --direct both 404); the legacy path
+    /technology/safety-security/threat-analysis-group also resolves to the generic Security page. The blog.google
+    en-us sitemap (https://blog.google/en-us/sitemap.xml, 11,683 URLs, 1.76 MB) lists only 68 /threat-analysis-group/ URLs;
+    the newest TAG-branded post is TAG Bulletin: Q4 2025 (2026-01-29); earlier ones 2025-11-14, 2025-07-21, 2025-05-15,
+    2025-02-19, 2025-01-14 (quarterly influence-operations bulletins; the four 2026-03-19 lastmods are old posts touched
+    in a bulk edit, not new posts). The TAG bulletin was then RENAMED and moved: "Influence Operations Bulletin Q1 2026"
+    (https://blog.google/security/influence-operations-bulletin-q1-2026/, dated 2026-05-08, author Trust & Safety) and
+    "Influence Operations Bulletin Q2 2026" (https://blog.google/security/influence-operations-bulletin-q2-2026/, 2026-07-31).
+    Threat-actor research that used to carry TAG branding is now published as Google Threat Intelligence Group (GTIG) on
+    cloud.google.com (already covered by source mandiant-gtig) with occasional summary posts under
+    blog.google/innovation-and-ai/infrastructure-and-cloud/google-cloud/gtig-* (2026-01-30, 2026-02-12, 2026-05-11).
+    https://blog.google/security/rss/ is a live, dated feed (15 items, newest Thu 24 Sep 2026, oldest 12 May 2026; mostly
+    Android/Chrome/enterprise-security product posts plus the quarterly Influence Operations Bulletin).
+  root_cause: >-
+    blog moved / publisher rebrand: the TAG blog section was retired into blog.google/security (quarterly TAG Bulletin
+    renamed Influence Operations Bulletin) and TAG threat research now ships under GTIG on cloud.google.com. The
+    configured URL is a redirect to a generic page, so the probe's irrelevant verdict is correct.
+  fix:
+    fetch_method: rss
+    url: "https://blog.google/security/"
+    rss_url: "https://blog.google/security/rss/"
+  verified: >-
+    python3 tools/fetch_source.py feed https://blog.google/security/rss/ 15 -> method direct, 15 items, newest
+    "Agentic Hacks, Real Proofs: Inside Google's PageBreak Project" (Thu, 24 Sep 2026), also "Influence Operations Bulletin Q2
+    2026" (Fri, 31 Jul 2026). Health harness (source_health._content_assess with fetch_method rss + this rss_url):
+    content_verdict relevant, transport feed, alnum 3,756, terms credential/patch/security/vulnerab, newest_item 2026-09-24
+    (5 d). Caveat: signal value for the pipeline is low (quarterly influence-ops bulletin + Android/Chrome product security);
+    operator may prefer to merge the record into mandiant-gtig (GTIG carries the former TAG research) instead - flagged
+    for review in notes, not demoted by this repair.
+  notes_append: >-
+    2026-09-29: TAG blog folded into blog.google/security (threat-analysis-group/rss/ 404; landing = generic Security page).
+    Quarterly TAG Bulletin renamed "Influence Operations Bulletin" (Q1 2026 dated 2026-05-08, Q2 2026 dated 2026-07-31, under
+    /security/); TAG threat-actor research now ships as GTIG on cloud.google.com (see mandiant-gtig). Working recipe: feed
+    https://blog.google/security/rss/ 15 (dated items, mostly Android/Chrome product security) then extract <post URL>. Sitemap
+    https://blog.google/en-us/sitemap.xml (lastmod per URL) is a fallback discovery path. Low pipeline value; candidate for merge into mandiant-gtig.
+  recommendation: fix
+
+- id: ibm-xforce
+  diagnosis: >-
+    The recipe is readable, the verdict is a probe artefact. `url https://www.ibm.com/think/x-force` (and `--direct`)
+    returns 145,120 bytes of server-rendered HTML (NOT the content-free shell the 2026-09-13/09-20 audits recorded) whose
+    "Latest / Featured" spotlight carries six drillable X-Force posts: /think/x-force/shodan-ot-risks-local-government
+    (Published 02 Sep 2026), /think/x-force/trapping-a-mustang-panda (2026-08-20), /think/x-force/2026-cost-of-a-data-breach-ai-adversaries-enterprise-risk
+    (2026-07-29), /think/x-force/bloodhound-kube (2026-07-29), /think/x-force/interlock-and-rhysida-within-the-ransonware-ecosystem
+    (2026-06-12), /think/x-force/when-offensive-security-knowledge-becomes-ai-training-data (2026-05-21); dates read from each
+    post's `extract` frontmatter / "Published" line. `extract` of the listing keeps only 757 bytes (hero text) and its
+    frontmatter date is the PAGE's own 2025-03-27 (meta article:published_time / dcterms.date), which is exactly the
+    newest_item the probe reported (551 d). The listing itself has no inline post dates (cards show topic + title + author
+    only), a "Browse the latest insights" list is client-rendered ("No results found" in the raw HTML), and there is no RSS/Atom
+    feed (candidate feed paths return the Think 404 template; securityintelligence.com does not resolve from this egress).
+    Sitemap https://www.ibm.com/us-en.sitemap.xml (1.5 MB) lists 213 /think/x-force/ URLs but with no lastmod. Real cadence:
+    roughly 1-2 posts a month on the hub; newest post is 27 days old (inside the 60 d default).
+  root_cause: >-
+    tool false positive (listing-without-inline-dates): the source is live and current; the health probe took the hub page's
+    own 2025-03-27 metadata date as "newest item". Also corrects the earlier "shell / dark" diagnosis in the notes.
+  verified: >-
+    python3 tools/fetch_source.py url https://www.ibm.com/think/x-force -> 145,120 B, 6 unique href="https://www.ibm.com/think/x-force/<slug>"
+    links (slugs above). python3 tools/fetch_source.py extract <slug URL> -> frontmatter date 2026-09-02 (shodan-ot-risks-local-government,
+    "Do you show up on Shodan? The risks of internet-exposed OT to local governments", relevant to local-government OT), 2026-08-20
+    ("Trapping a Mustang Panda"), 2026-07-29 ("Bloodhound-Kube: Graphing attack paths in Kubernetes"). Health harness on the unchanged
+    record reproduces content_verdict stale, newest_item 2025-03-27. Suggested tool-side fix for source_health._content_assess: when a
+    page-shaped source yields no listing-item dates, drill the first same-host article link found in the raw body and use that
+    article's extract `date:`; or report `undated` instead of `stale` when the only date seen is the page-level metadata date.
+  notes_append: >-
+    2026-09-29: RECIPE WORKS, prior "shell" diagnosis superseded. `url https://www.ibm.com/think/x-force` returns 145 KB server-rendered
+    HTML with a Latest/Featured spotlight of 6 post links (href="https://www.ibm.com/think/x-force/<slug>"); dates are NOT on the
+    listing - drill each with `extract <post URL>` (frontmatter `date:` / "Published DD Month YYYY" line). Newest seen 2026-09-02
+    (Shodan/OT local-government), then 2026-08-20, 2026-07-29 x2, 2026-06-12, 2026-05-21. No RSS. Health probe flags stale only because the hub
+    page's own metadata date is 2025-03-27 (tool false positive; do not raise max_staleness_days to mask it).
+  recommendation: review
+
+- id: projectzero
+  diagnosis: >-
+    The configured recipe (webfetch/extract of https://projectzero.google/) is healthy: extract returns 21,720 bytes with
+    frontmatter date 2026-09-21 and the raw listing (44,317 B) links the newest posts (/2026/09/windows-dangling-com.html,
+    /2026/09/maccconc-race-condition.html, /2026/05/pixel-10-exploit.html ...). But the listing shows NO inline post dates
+    (year/month only appear inside href paths); the only dated strings on the page are "November 7, 2025" and 2025-03-31/2025-05-19,
+    which is why the probe read newest_item 2025-11-07 (326 d). The Atom feed https://projectzero.google/feed.xml (already documented in the
+    notes) is live and dated: newest "Windows Exploitation Techniques: Dangling COM Object Registrations" 2026-09-21 (CVE-2026-66804,
+    James Forshaw), "Testing race conditions with memory access tracing and stack-based delay injection" 2026-09-08. Real cadence
+    is bursty: 2026-01-14 (x2), 01-26, 01-30, 02-12, 02-26, 03-05, 05-13, 09-08, 09-21 - i.e. a 118-day gap between 05-13 and 09-08.
+  root_cause: >-
+    tool false positive (listing has no inline dates) - publisher is live; fix is to read the dated feed the notes already name
+    and to give the bursty cadence headroom.
+  fix:
+    fetch_method: rss
+    rss_url: "https://projectzero.google/feed.xml"
+    max_staleness_days: 125
+  verified: >-
+    python3 tools/fetch_source.py feed https://projectzero.google/feed.xml 15 -> method direct, 12,386 B JSON, 10 items (2026-09-21 back to two
+    2026-01-14 posts), newest 2026-09-21 "Windows Exploitation Techniques: Dangling COM Object Registrations"
+    (https://projectzero.google/2026/09/windows-dangling-com.html), then 2026-09-08 "Testing race conditions with memory access tracing
+    and stack-based delay injection" (https://projectzero.google/2026/09/maccconc-race-condition.html). Health harness
+    (source_health._content_assess with fetch_method rss + this rss_url + max_staleness_days 125): content_verdict relevant,
+    transport feed, alnum 8,486, has_cve true, newest_item 2026-09-20 (9 d; the feed carries a +02:00 offset).
+  notes_append: >-
+    2026-09-29: switch to rss - `feed https://projectzero.google/feed.xml 15` (bridge feed handles the >10 MB feed; canonical host
+    projectzero.google) returns dated items; the HTML listing has no inline dates (year/month only in hrefs), which made the content
+    health probe read 2025-11-07 as newest. Then `extract https://projectzero.google/YYYY/MM/<slug>.html` for the body. Cadence is bursty
+    (2026: Jan 14 x2, Jan 26, Jan 30, Feb 12, Feb 26, Mar 5, May 13, Sep 8, Sep 21), so max_staleness_days 125.
+  recommendation: fix
+
+- id: sansec-research
+  diagnosis: >-
+    https://sansec.io/research is readable (extract 937 B hero text only, frontmatter date 2026-04-14; raw 167,747 B) and the raw HTML
+    lists 109 unique href="/research/<slug>" entries in NEWEST-FIRST order (brevo-supply-chain-attack, stylesmuggler-0day,
+    shopware-fixes-store-api-admin-takeover-vulnerability, adobe-commerce-account-takeover-apsb26-92, amasty-mass-disclosure ...), but the
+    listing shows NO inline post dates (only 2026-04-14, 2019-01-20, 2018-09-07 appear as stray strings), so the probe's newest_item came
+    from unrelated page text (2020-07-01, 2281 d). The page head advertises the real dated feed:
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml">. https://sansec.io/atom.xml is live and dated (15 items in the
+    cut, newest 2026-09-16 "Brevo supply chain attack hits 100k+ sites with Wordpress backdoors and Clickfix malware",
+    2026-09-05 "StyleSmuggler: Magento and Adobe Commerce 0-day RCE (CVE-2026-75650) under active attack", 2026-08-25 Shopware Store API
+    admin takeover, 2026-08-11 Adobe Commerce ATO APSB26-92, 2026-07-02 Amasty). Cadence ~2-3 posts/month, longest 2026 gap 40 d
+    (07-02 -> 08-11), so the default 60 d limit holds. High-value content: StyleSmuggler is an exploited Adobe Commerce 0-day whose
+    Adobe bulletin APSB26-146 also appears in the Adobe chimera listing (dated 2026-09-07).
+  root_cause: >-
+    tool false positive on an undated (but newest-first) listing; a dated Atom feed exists and is advertised in the page head, so
+    switching the recipe to the feed both fixes the probe and gives the run reliable dates. Publisher is active, not quiet.
+  fix:
+    fetch_method: rss
+    rss_url: "https://sansec.io/atom.xml"
+  verified: >-
+    python3 tools/fetch_source.py feed https://sansec.io/atom.xml 15 -> method direct, 15 items, newest 2026-09-16 "Brevo supply chain
+    attack hits 100k+ sites with Wordpress backdoors and Clickfix malware" (https://sansec.io/research/brevo-supply-chain-attack), then
+    2026-09-05 "StyleSmuggler: Magento and Adobe Commerce 0-day RCE (CVE-2026-75650) under active attack"
+    (https://sansec.io/research/stylesmuggler-0day). Health harness (fetch_method rss + rss_url): content_verdict relevant, transport feed,
+    alnum 3,268, has_cve true, newest_item 2026-09-16 (13 d). Drill: extract https://sansec.io/research/stylesmuggler-0day returns
+    frontmatter date 2026-09-05 plus body (Published in Threat Research, last updated September 14, 2026).
+  notes_append: >-
+    2026-09-29: /research listing is newest-first but carries no inline dates (probe read stray 2020-07-01). Working recipe = feed
+    https://sansec.io/atom.xml 15 (advertised via <link rel=alternate atom> in the page head; dated, newest 2026-09-16), then extract
+    https://sansec.io/research/<slug> for the body (frontmatter date + tags incl. CVE/APSB ids). Use rss fetch_method, keep url as the human page.
+  recommendation: fix
+
+- id: withsecure-labs
+  diagnosis: >-
+    https://www.withsecure.com/en/resources-hub/w-labs/ is readable (extract 2,781 B, raw 170,018 B; 12 article links in page order:
+    initial-access-via-seo-poisoning, greyvibe, 10919, clickfix-social-media, ivanti-epmm-exploitation, ...) but the listing carries NO
+    inline publication dates; the only dated strings are 2026-05-07/-19/-21 (page/asset metadata), so the probe's newest_item was 2026-05-21
+    (131 d). Per-article `extract` frontmatter dates are also unreliable: the site touched every post on 2026-09-08 (frontmatter date
+    2026-09-08 for the 2026-08-27 post), which is why earlier drills mis-dated items. The site is WordPress; the page head advertises the
+    REST root https://www.withsecure.com/en/wp-json/ (626 KB route map, 471 routes) and that root enumerates the custom post type route
+    /wp/v2/lab_item behind this listing. GET https://www.withsecure.com/en/wp-json/wp/v2/lab_item?per_page=15&orderby=date&order=desc&_fields=date,modified,link,title
+    returns 2,982 B JSON, 12 items (the whole W/Labs archive), with true publication dates: 2026-08-27 "Stolen creds and stinging loaders: An initial
+    access campaign via SEO poisoning", 2026-05-28 GREYVIBE (x2 entries), 2026-04-15 ClickFix-style commands disguised as tech tips, 2026-03-25 Ivanti EPMM
+    Exploitation: Hit-and-Run, 2026-03-12 Cybercrime-as-a-Service economics, 2026-01-22 Andariel, then 2025-11-27 TangleCrypt, 2025-10-27 WEBJACK,
+    2025-10-03 TamperedChef, 2025-07-30 Email-Delivered RMM, 2025-07-24 ToolShell. Publisher is low-cadence (about 12 items in 14 months) with a
+    91-day gap 2026-05-28 -> 2026-08-27; newest post is 33 days old.
+  root_cause: >-
+    tool false positive on an undated listing + publisher genuinely low-cadence; the dated source of truth is the WordPress REST route, not the HTML.
+    (Not a dead source: a new post landed 2026-08-27.)
+  fix:
+    fetch_method: bridge
+    url: "https://www.withsecure.com/en/wp-json/wp/v2/lab_item?per_page=15&orderby=date&order=desc&_fields=date,modified,link,title"
+    max_staleness_days: 120
+  verified: >-
+    python3 tools/fetch_source.py url "https://www.withsecure.com/en/wp-json/wp/v2/lab_item?per_page=15&orderby=date&order=desc&_fields=date,modified,link,title" --direct
+    -> 2,982 B JSON, 12 items, newest date 2026-08-27 ("Stolen creds and stinging loaders: An initial access campaign via SEO poisoning",
+    https://www.withsecure.com/en/resources-hub/w-labs/initial-access-via-seo-poisoning/), next 2026-05-28 GREYVIBE (.../w-labs/greyvibe/). Health harness
+    (fetch_method bridge + that url + max_staleness_days 120): content_verdict relevant, alnum 4,264; _bridge_check -> bridge-ok 2,982 B. Note
+    for the probe: the JSON dates are ISO "2026-08-27T..." so the probe's date regex (\b after the day) does not match them and newest_item is
+    null (verdict still relevant); making that regex accept a trailing "T" would let staleness work on API/JSON records too.
+  notes_append: >-
+    2026-09-29: HTML listing is undated and every post carries site-wide modified date 2026-09-08 in extract frontmatter (do not trust it). Working
+    recipe: bridge url on the WordPress REST route https://www.withsecure.com/en/wp-json/wp/v2/lab_item?per_page=15&orderby=date&order=desc&_fields=date,modified,link,title
+    (advertised via the page head api.w.org link; `date` = true publication date, `link` = article URL), then extract <link> for the body. Low cadence:
+    12 items in 14 months (2026: Jan 22, Mar 12, Mar 25, Apr 15, May 28 x2, Aug 27); max_staleness_days 120.
+  recommendation: fix
+
+- id: exodus-intelligence
+  diagnosis: >-
+    Recipe is healthy and current, the publisher is quiet. `feed https://blog.exodusintel.com/feed/ 20` returns 10 dated items
+    (method direct, WordPress RSS 2.0, lastBuildDate Mon, 27 Jul 2026 15:02:33 +0000): 2026-07-27 "From Virtual Share to Physical Shell:
+    Leveraging Windows' Inconsistent Access Control for LPE", 2026-07-20 "Dnsmasq DNS Remote Heap Buffer Overflow", 2026-07-06 "Microsoft Windows
+    Installer Folder Delete Privilege Escalation", 2026-06-22 V8 AsmJS "Ubercage", 2026-06-15 VirtualBox "Zombie COTables", 2026-06-08 Linux nf_tables UAF,
+    2026-06-01 Adobe Acrobat Escript.api UAF, then 2025-10-20, 2025-08-04, 2024-12-02. Cross-checks agree nothing newer exists: the blog homepage
+    (70,789 B) lists the same newest post (2026-07-27), the WP REST /wp/v2/posts (per_page=5) newest date 2026-07-27T10:02:32, and the Yoast
+    sitemap index shows post-sitemap lastmod 2026-07-27T15:02:33+00:00. A web search for newer posts found none. The 64-day age exceeds the 60 d
+    default only because the publisher bursts: weekly Monday posts 2026-06-01..07-27, then silence; earlier gaps 2024-12-02 -> 2025-08-04 (245 d),
+    2025-08-04 -> 2025-10-20 (77 d), 2025-10-20 -> 2026-06-01 (224 d).
+  root_cause: >-
+    publisher quiet (bursty, low-cadence lab blog); the feed is fine, but the record is fetch_method rss with NO rss_url field (the feed
+    URL lives only in the notes), so the health probe fell back to reading the homepage (extract+direct) instead of the feed.
+  fix:
+    rss_url: "https://blog.exodusintel.com/feed/"
+    max_staleness_days: 260
+  verified: >-
+    python3 tools/fetch_source.py feed https://blog.exodusintel.com/feed/ 20 -> method direct, count 10, newest "From Virtual Share to Physical Shell:
+    Leveraging Windows' Inconsistent Access Control for LPE" (2026-07-27, https://blog.exodusintel.com/2026/07/27/from-virtual-share-to-physical-shell-leveraging-windows-inconsistent-access-control-for-lpe/),
+    "Dnsmasq DNS Remote Heap Buffer Overflow" (2026-07-20). Health harness on the unchanged record -> stale (64 d, transport extract+direct on the homepage because rss_url is unset); with rss_url +
+    max_staleness_days 260 -> content_verdict relevant, transport feed, newest_item 2026-07-27 (64 d).
+  notes_append: >-
+    2026-09-29: recipe confirmed (feed https://blog.exodusintel.com/feed/ 20 returns 10 dated items; homepage, WP REST and sitemap agree). Publisher is quiet since
+    2026-07-27 (weekly Monday posts Jun 1-Jul 27 2026, before that 2025-10-20, 2025-08-04, 2024-12-02): bursty cadence, so max_staleness_days 260
+    (longest observed gap 245 d). Add rss_url so the probe and agents read the feed.
+  recommendation: fix
+
+- id: xlab-qianxin
+  diagnosis: >-
+    Recipe works, publisher is between bursts. `feed https://blog.xlab.qianxin.com/rss/ 30` returns 15 dated items (method direct, Ghost 6.25;
+    lastBuildDate is always "now", Tue, 29 Sep 2026 22:19:30 GMT, so it is not a freshness signal): newest Wed, 29 Jul 2026 "Botnet Rising Star: The
+    Evolution and In-Depth Technical Analysis of Dysphoria" (EN slug) + its zh twin 2026-07-25, then NadMesh botnet 2026-07-17, RustDuck 2026-06-30,
+    AryStinger 2026-06-17, Ghost CMS CVE-2026-26980 ClickFix 2026-05-21, Mr_Rot13 cPanel CVE-2026-41940 2026-05-11, Funnull/RingH23 2026-03-02.
+    Cross-checks agree nothing is newer: the homepage (59,917 B) shows the same newest datetime 2026-07-29 and the Ghost sitemap-posts.xml lastmod is
+    2026-07-29T02:35:25Z. Post dates from the homepage/page 2 show the cadence is bursty: 2025-06-19, 2025-08-27, 2025-09-15, 2025-10-15, 2025-10-29,
+    2025-12-17/24, 2026-02-12, 2026-02-27/03-02, 2026-05-11/21, 2026-06-17/30, 2026-07-17/25/29 - gaps up to about 70 d (2026-03-02 -> 2026-05-11;
+    2025-06-19 -> 2025-08-27). The record is fetch_method rss but has NO rss_url field (the feed URL is only in the notes), so the health probe fell back to
+    reading the homepage (extract+direct) instead of the feed.
+  root_cause: >-
+    publisher quiet (62 d since 2026-07-29; within its own historic ~70 d gaps) + record missing rss_url; the feed itself is fine (Chinese + English twin posts,
+    prefer the English slug).
+  fix:
+    rss_url: "https://blog.xlab.qianxin.com/rss/"
+    max_staleness_days: 100
+  verified: >-
+    python3 tools/fetch_source.py feed https://blog.xlab.qianxin.com/rss/ 30 -> method direct, count 15, newest 2026-07-29 "Botnet Rising Star: The Evolution and In-Depth
+    Technical Analysis of Dysphoria" (https://blog.xlab.qianxin.com/botnet-rising-star-the-evolution-and-in-depth-technical-analysis-of-dysphoria/), then 2026-07-17
+    "NadMesh Botnet Analysis: A Product-Grade Threat for the AI Service Era". Health harness (rss_url set + max_staleness_days 100): content_verdict relevant,
+    transport feed, newest_item 2026-07-29 (62 d). On the unchanged record the harness reads the homepage (extract+direct) and reports stale (62 d > 60).
+  notes_append: >-
+    2026-09-29: recipe confirmed (feed https://blog.xlab.qianxin.com/rss/ 30; add rss_url to the record; feed lastBuildDate is always current so use item dates). Quiet since
+    2026-07-29 (homepage datetimes and Ghost sitemap-posts lastmod agree); cadence is bursty with gaps up to ~70 d, so max_staleness_days 100. Prefer the -en slugs.
+  recommendation: fix
+
+- id: project-discovery
+  diagnosis: >-
+    https://projectdiscovery.io/blog is a featured-content page, not the chronological list: extract returns 1,721 B (one featured post + "Related
+    stories" + cookie banner; frontmatter date 2026-07-21) and the raw HTML (714,641 B; the first `url --direct` attempt hit a transient TLS handshake timeout, the retry
+    worked) shows only a handful of dated cards, newest "July 21, 2026" (/blog/oh-my-rogue-agent) - hence newest_item 2026-07-21 (70 d). The full newest-first, dated
+    listing is https://projectdiscovery.io/blog/stories/1 (linked from the /blog page as href="/blog/stories/1"; paginated, sitemap lists stories/1..16): raw 518,385 B,
+    14 cards each with a "Month D, YYYY" date: August 16, 2026 (Supply Chain Security Analysis of a 9.5M-Install VS Code Extension, 5 CVEs in Markdown Preview
+    Enhanced, CVE-2026-50733 etc.; extract frontmatter date 2026-08-16), August 3 (Watching agents work: behavioral audit of offensive-security LLM runs), July 22
+    (oh-my-rogue-agent), July 21 (internal network scanning), July 13, June 18, June 15, June 1, May 21, May 12 (nuclei-templates-april-2026), April 28, April 27. The blog also
+    carries neo-v1 (2026-08-16, product launch) that neither page's card list shows. Sitemap lastmod is 2026-09-29 on every URL (build date), useless for recency.
+    No RSS/Atom link in the page head. Real cadence ~2 posts/month with product/AI-agent focus; nothing after 2026-08-16 (44 d).
+  root_cause: >-
+    listing shows curated/featured subset (stale dates) instead of newest posts; the chronological dated list lives at /blog/stories/1. Publisher is slowing but not dark.
+  fix:
+    url: "https://projectdiscovery.io/blog/stories/1"
+    max_staleness_days: 75
+  verified: >-
+    python3 tools/fetch_source.py url https://projectdiscovery.io/blog/stories/1 -> 518,385 B HTML, 14 dated cards, newest August 16, 2026
+    (https://projectdiscovery.io/blog/a-9-5m-install-vs-code-extension-one-markdown-file-and-a-supply-chain-foothold), then August 3, 2026
+    (https://projectdiscovery.io/blog/watching-agents-work-a-behavioral-audit-of-offensive-security-llm-runs). Health harness (url stories/1): content_verdict relevant,
+    transport extract+direct, alnum 7,977, newest_item 2026-08-16 (44 d); on the unchanged record it reports stale, newest_item 2026-07-21 (70 d). `extract` of stories/1 keeps
+    only the cookie banner (trafilatura drops the cards), so read this listing with `url` (raw), not `extract`; per-post `extract` works and gives frontmatter date + body.
+  notes_append: >-
+    2026-09-29: /blog is a featured/curated page (newest visible card July 21, 2026) - use https://projectdiscovery.io/blog/stories/1 (chronological, dated "Month D, YYYY" cards, paginated /blog/stories/N)
+    with `url` (raw; `extract` returns only the cookie banner), then `extract https://projectdiscovery.io/blog/<slug>` per post. Newest 2026-08-16; ~2 posts/month, mostly product/AI-agent
+    (Neo) with occasional CVE research; max_staleness_days 75. The first `url --direct` GET can hit a transient TLS handshake timeout - retry once.
+  recommendation: fix
+

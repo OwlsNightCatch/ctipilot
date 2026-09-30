@@ -2,7 +2,7 @@
 schema: 1
 kind: incident
 title: "AFP-FBI-WAPF disrupt TeamPCP: two Western Australia men charged over the npm/GitHub supply-chain worm operation AFP estimates compromised 1,000+ organisations, 500,000+ credentials and 300+ GB of data"
-headline: "The first law-enforcement disruption of the Shai-Hulud npm-worm operator, with AFP's own scale estimate now on the public record"
+headline: "A law-enforcement disruption of the Shai-Hulud npm-worm operator, with AFP's own scale estimate now on the public record"
 summary: >
   The AFP, FBI and Western Australia Police jointly announced on 2026-08-27 that two men, 21 and
   23, were charged with 14 Commonwealth cybercrime offences following investigations that began
@@ -38,8 +38,12 @@ evidence:
     publisher: "Australian Federal Police"
   - quote: "These men are allegedly members of the cybercriminal group TeamPCP, whose malicious code potentially compromised more than a thousand organizations worldwide."
     publisher: "Australian Federal Police"
-  - quote: "It is not a structured criminal crew with a single operator. It is a peer community of individually-skilled actors, with one clear center of gravity."
-    publisher: "KrebsOnSecurity"
+  - quote: "It is not a structured criminal crew with a single operator"
+    publisher: "Austin Larsen (Google Threat Intelligence Group), via KrebsOnSecurity"
+    source_url: "https://krebsonsecurity.com/2026/08/two-alleged-teampcp-hackers-arrested-in-australia/"
+  - quote: "It is a peer community of individually-skilled actors, with one clear center of gravity."
+    publisher: "Austin Larsen (Google Threat Intelligence Group), via KrebsOnSecurity"
+    source_url: "https://krebsonsecurity.com/2026/08/two-alleged-teampcp-hackers-arrested-in-australia/"
 verification: multi-source
 sourcing_note: >
   The AFP's own joint media release with the FBI and WAPF is the primary; KrebsOnSecurity
@@ -67,6 +71,17 @@ updates:
       pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
       restated the summary or padded without responder value. No factual claim changed.
     fields: [body]
+  - at: "2026-09-29T23:45:34Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: correction
+    summary: >
+      The headline and analysis called the AFP, FBI and WA Police action TeamPCP's first
+      law-enforcement disruption, which neither the AFP release nor KrebsOnSecurity states, and both
+      now drop the claim. The Google Threat Intelligence Group assessment quoted by KrebsOnSecurity
+      was joined into one passage across the attribution clause and credited to KrebsOnSecurity. It is
+      now two quotations credited to Austin Larsen of GTIG, via KrebsOnSecurity, in the evidence and
+      the analysis.
+    fields: [evidence, headline, body]
 migrated_from: null
 ---
 
@@ -76,6 +91,10 @@ AFP states the syndicate "allegedly inserted malicious code into software availa
 
 KrebsOnSecurity, which had independently identified one of the defendants — the group's self-described spokesperson — in June and interviewed him extensively via Signal, corroborates and adds operational-model detail: TeamPCP's core tactic is cyclical, compromising a developer's credentials to insert malicious code into a widely-depended-upon open-source package, harvesting the credentials of downstream developers who install it, and repeating against the next package — powered principally by the self-propagating "Shai-Hulud" worm (three iterations to date, whose source TeamPCP itself open-sourced). Prior TeamPCP campaigns already tracked by named security vendors include the March 2026 compromise of the LiteLLM open-source AI gateway (CloudSEK: 2,500+ organisations' cloud-service keys and CI/CD secrets harvested) and a May 2026 claim of roughly 3,800 compromised GitHub repositories.
 
-Google's Threat Intelligence Group characterises TeamPCP's structure directly: "it is not a structured criminal crew with a single operator. It is a peer community of individually-skilled actors, with one clear center of gravity" ([Austin Larsen, Google Threat Intelligence Group, via KrebsOnSecurity, 2026-08-27](https://krebsonsecurity.com/2026/08/two-alleged-teampcp-hackers-arrested-in-australia/)), tracing its likely primary operator's residential/mobile internet connections to South Africa during at least some of its attacks. Investigators note further arrests are not ruled out; both defendants were held in custody pending an 18 September court date.
+Google's Threat Intelligence Group characterises TeamPCP's structure directly. Austin Larsen says "It is not a structured criminal crew with a single operator" and "It is a peer community of individually-skilled actors, with one clear center of gravity" ([Austin Larsen, Google Threat Intelligence Group, via KrebsOnSecurity, 2026-08-27](https://krebsonsecurity.com/2026/08/two-alleged-teampcp-hackers-arrested-in-australia/)), tracing its likely primary operator's residential/mobile internet connections to South Africa during at least some of its attacks. Investigators note further arrests are not ruled out; both defendants were held in custody pending an 18 September court date.
 
-This is TeamPCP's first law-enforcement disruption. It does not change the remediation guidance already published for the LiteLLM/Trivy and coding-agent CI-harness campaigns attributed to the same actor — a decentralised peer community losing two participants does not retire the worm's self-propagating infrastructure or the copycat variants it has already spawned; the standing guidance on pinning dependencies and auditing for Shai-Hulud-family indicators still applies.
+The arrests do not change the remediation guidance already published for the LiteLLM/Trivy and coding-agent CI-harness campaigns attributed to the same actor — a decentralised peer community losing two participants does not retire the worm's self-propagating infrastructure or the copycat variants it has already spawned; the standing guidance on pinning dependencies and auditing for Shai-Hulud-family indicators still applies.
+
+## Correction — 2026-09-29T23:45:34Z
+
+Neither the Australian Federal Police release nor KrebsOnSecurity describes the arrests as the first law-enforcement action against TeamPCP ([Australian Federal Police, 2026-08-27](https://www.afp.gov.au/news-centre/media-release/two-wa-men-charged-following-afp-fbi-wapf-disruption-alleged-global); [KrebsOnSecurity, 2026-08-27](https://krebsonsecurity.com/2026/08/two-alleged-teampcp-hackers-arrested-in-australia/)), and the entry no longer calls them that. The scale estimate, the charges and the assessment of the group's structure are unchanged.

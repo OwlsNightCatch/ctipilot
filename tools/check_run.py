@@ -1803,7 +1803,7 @@ def _scan_iocs(text: str) -> list[str]:
 
     version_context_re = re.compile(
         r"(?i)\b(version|versions?|patched|fixed|fix|firmware|build|release|"
-        r"branch|prior\s+to|before|earlier\s+than|≥|>=|<=|≤|EPMM|EPMS|EPSS|patch)\b"
+        r"releases|builds|branch|trains?|prior\s+to|before|earlier\s+than|≥|>=|<=|≤|EPMM|EPMS|EPSS|patch)\b"
     )
 
     flagged: list[str] = []
@@ -2247,7 +2247,10 @@ _MIN_PAGE_SKELETON = 600
 # Their structured recipes (`bsi-csaf`, `ncsc-nl csaf`, `msrc cve`) are the
 # real read, and the verifier checks quotes from them by hand.
 _JS_RENDERED_HOSTS = {"wid.cert-bund.de", "advisories.ncsc.nl", "msrc.microsoft.com",
-                      "security-hub.ncsc.admin.ch", "psirt.global.sonicwall.com"}
+                      "security-hub.ncsc.admin.ch", "psirt.global.sonicwall.com",
+                      # EUVD is an Angular app; git.kernel.org and lore.kernel.org
+                      # answer with an Anubis proof-of-work page (2026-09-29 triage).
+                      "euvd.enisa.europa.eu", "git.kernel.org", "lore.kernel.org"}
 
 
 def _page_skeletons(urls: list[str], run_id: str) -> dict[str, list[str]]:
@@ -2306,6 +2309,11 @@ def _page_skeletons(urls: list[str], run_id: str) -> dict[str, list[str]]:
                 # Decode those escapes first, then strip the tags they reveal.
                 text = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), text)
                 text = _html.unescape(re.sub(r"<[^>]+>", "", text))
+                if mode == "extract":
+                    # A markdown link's target sits inside the sentence it links
+                    # from ("…exploited [flaws](https://…) in SMA1000…"), and its
+                    # letters would break every quote that spans the link.
+                    text = re.sub(r"\]\([^)\s]*(?:\s+\"[^\"]*\")?\)", "]", text)
                 out.append(_quote_skeleton(text))
         # A JS redirect or consent shell ("Redirecting... click here") reads as
         # a page with no content, which would turn every check into a false
@@ -2414,9 +2422,11 @@ def check_evidence_quotes_literal(run_entries: list[dict], run_id: str, *, skip:
             for b in bodies.get(u) or []:
                 if skel in b:
                     return True
-                # The bridge's PDF text extraction can drop the digit glyphs of
-                # Identity-H fonts (the IC3 WaterPlum advisory, 2026-09-29), so a
-                # PDF page also matches on the digit-free skeleton.
+                # PDF text extraction dropped the digit glyphs of Identity-H fonts
+                # before the per-font decode (the IC3 WaterPlum advisory,
+                # 2026-09-29). Bodies cached before that fix, and PDFs whose fonts
+                # carry no usable ToUnicode map, still can, so a PDF page also
+                # matches on the digit-free skeleton.
                 if urlsplit(u).path.lower().endswith(".pdf") and \
                         nodigit in "".join(ch for ch in b if not ch.isdigit()):
                     return True
@@ -2529,7 +2539,10 @@ def check_citation_cves(run_entries: list[dict], run_id: str, *, skip: bool,
     flagged, unreadable, matched = [], 0, 0
     for eid, cve, us, clause in todo:
         readable = [b for u in us for b in bodies.get(u) or []]
-        if not readable:
+        if not readable or any(not bodies.get(u) for u in us):
+            # A clause citing a page no direct transport could read may carry
+            # the id on exactly that page (a JS-rendered EUVD record beside a
+            # GHSA that predates the CVE), so a miss on the others proves nothing.
             unreadable += 1
             continue
         if any(_quote_skeleton(cve) in b for b in readable):
