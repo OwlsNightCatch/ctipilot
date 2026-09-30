@@ -175,6 +175,11 @@ TRANSPORT_BLOCKED_UNREACHABLE: frozenset = frozenset({
     # the reader; the legacy www.censys.io/blog/rss.xml is 404. Re-probe each
     # run and drop it from this set the moment the origin relaxes.
     "censys-blog",
+    # ssd-disclosure (2026-09-30): SiteGround's sgcaptcha answers HTTP 202 with
+    # a challenge page to the direct fetch, the bridge, the funded jina reader
+    # (8 of 8 tries with 10 live keys) and, after one cached read, the
+    # agent-side WebFetch. Discovery runs through WebSearch leads.
+    "ssd-disclosure",
 })
 
 
@@ -502,14 +507,45 @@ def _rss_check(s: dict[str, Any], host: str, *, timeout: float) -> tuple[str, st
 # ---------------------------------------------------------------------------
 
 # Challenge / shell markers, matched on the first part of the fetched body.
-_SHELL_MARKERS = (
+# The challenge markers are a front refusing this container (a bot wall, a
+# JS gate, a 403); the dead-page markers are a page that is gone or parked,
+# which no reader outside the container would fix.
+_CHALLENGE_MARKERS = (
     "just a moment", "checking your browser", "attention required", "cf-browser-verification",
     "cf-chl", "enable javascript", "please enable js", "javascript is required",
     "you need to enable javascript", "access denied", "request blocked", "are you a robot",
-    "captcha", "verify you are human", "ddos protection", "redirecting...",
-    "please wait while", "403 forbidden", "404 not found", "page not found",
+    "captcha", "verify you are human", "ddos protection", "please wait while", "403 forbidden",
+)
+_DEAD_MARKERS = (
+    "redirecting...", "404 not found", "page not found",
     "this domain is for sale", "domain parked", "buy this domain",
 )
+_SHELL_MARKERS = _CHALLENGE_MARKERS + _DEAD_MARKERS
+
+
+def _blocked_handled(fetch_method: str, source_id: str, verdict: str,
+                     status: int | None, shell_markers) -> bool:
+    """True when a documented unreachable host (`fetch_method: blocked`, listed
+    in TRANSPORT_BLOCKED_UNREACHABLE) returns its known wall: a challenge page,
+    or nothing at all from the direct transports this probe uses for it. That
+    is a handled coverage gap, never a recipe to demote, whether or not the
+    reader pool has credit. A readable page still flags as a `blocked` record
+    that now reads, and a dead page (HTTP 404/410, a dead or parked marker) is
+    not a wall, so a removal still surfaces."""
+    if not (fetch_method == "blocked" and source_id in TRANSPORT_BLOCKED_UNREACHABLE):
+        return False
+    if verdict not in ("unreadable", "shell") or status in (404, 410):
+        return False
+    return not any(m in _DEAD_MARKERS for m in (shell_markers or ()))
+
+
+def _walled(cls: str, shell_markers) -> bool:
+    """True when the container is walled out of the host: a refused UA, a
+    blocked bridge, an empty reader pool, or a challenge page. A dead or parked
+    page is not a wall (v4.18)."""
+    if cls in ("ua-blocked", "bridge-blocked", "reader-quota"):
+        return True
+    return any(m in _CHALLENGE_MARKERS for m in (shell_markers or ()))
 
 # Security vocabulary in the languages the source list covers. A source is
 # relevant when at least RELEVANCE_MIN distinct terms appear (or any CVE id).
@@ -669,6 +705,12 @@ def _content_fetch(s: dict[str, Any], *, timeout: float) -> tuple[str, str, str,
             if items:
                 text = "\n".join(f"{i.get('title', '')} {i.get('summary', '')}" for i in items)
                 return f"feed (discovered {feed_url})", text, "", [str(i.get("published") or "") for i in items]
+    if fm == "blocked":
+        # A `blocked` record is probed by the direct transports only: the reader
+        # already fails on it, and a direct read that starts working is exactly
+        # what should flag it. No reader credit is spent on a known wall.
+        raw = _run_fetch(["url", url, "--direct"], timeout)
+        return "direct", _strip_html(raw), raw, []
     # Pages: the trafilatura capture is what a reader gets; the direct raw body
     # carries the listing's titles and dates when the capture keeps only the
     # page chrome. The metered reader is used only for records pinned to it.
@@ -690,7 +732,8 @@ _QUERY_SOURCE_IDS = {"sec-disclosures-edgar"}
 
 def _content_assess(s: dict[str, Any], *, timeout: float, now: datetime) -> dict[str, Any]:
     """Verdict on what the source actually returns: `relevant`, `stale`,
-    `irrelevant`, `shell`, or `unreadable`, with the evidence behind it."""
+    `irrelevant`, `shell`, or `unreadable`, with the evidence behind it. The caller
+    turns a walled result on a `fetch_method: webfetch` record into `webfetch-only`."""
     transport, text, raw, feed_dates = _content_fetch(s, timeout=timeout)
     low = text.lower()
     n_alnum = _alnum_len(text)
@@ -984,15 +1027,66 @@ def main() -> int:
             # agents' tier-3 transport use. If the reader reaches it, the source
             # IS fetchable cleanly, so class it `jina-ok` (healthy) rather than
             # floating it as an unsolved block.
-            if cls not in _HEALTHY_CLASSES and (status in (403, 429) or status is None):
+            if cls not in _HEALTHY_CLASSES and (status in (403, 429) or status is None) \
+                    and fetch_method != "blocked":
                 if _jina_reachable(url, timeout=args.timeout):
                     cls = "jina-ok"
                     err = ""
         action, action_reason = _action(src_status, fetch_method, cls, status, sid)
         content = _content_assess(s, timeout=max(args.timeout, 30.0),
                                   now=datetime.now(timezone.utc))
+        def _transient(c: dict[str, Any]) -> bool:
+            # A walled read, or a feed record whose feed failed and fell back to
+            # the listing page (oneconsult-ch's feed answers about one call in
+            # three, and its blog page carries no security vocabulary).
+            # Also an `irrelevant` read with no security term and no date at all:
+            # sygnia's blog and sitemap each served such a variant (a loader or
+            # lazy-load page) one read in four, between clean reads.
+            return c["content_verdict"] in ("shell", "unreadable") or (
+                fetch_method == "rss" and c["content_verdict"] != "relevant"
+                and c.get("content_transport") != "feed") or (
+                c["content_verdict"] == "irrelevant" and not c.get("content_terms")
+                and not c.get("content_dated"))
+        tries = 0
+        while fetch_method != "blocked" and _transient(content) and tries < 2:
+            # Anti-bot fronts serve an intermittent "please wait" challenge: two
+            # 2026-09-30 sweeps each flagged a different source (sygnia, then
+            # oneconsult-ch) that read cleanly minutes later. Up to two retries
+            # after a pause keep a transient wall off the repair list; a
+            # persistent one still fails every read.
+            tries += 1
+            time.sleep(5)
+            content = _content_assess(s, timeout=max(args.timeout, 30.0),
+                                      now=datetime.now(timezone.utc))
+            content["content_retried"] = tries
         verdict = content["content_verdict"]
-        if src_status != "demoted" and verdict != "relevant":
+        # Only a host that actually walls the container out qualifies: a refused
+        # UA, a blocked bridge, an empty reader pool, or a challenge page. A
+        # webfetch record the container reads normally is judged like any other,
+        # and a 404 or parked page is not a wall, so a dead or repurposed page on
+        # one of the ~80 unwalled webfetch records still surfaces.
+        walled = _walled(cls, content.get("content_shell_markers"))
+        if fetch_method == "webfetch" and verdict in ("unreadable", "shell") and walled:
+            # v4.18 (operator directive 2026-09-30): the record's working reader is
+            # the agent-side WebFetch tool, which runs outside this container and so
+            # reads hosts whose front refuses our egress (cisa.gov's Akamai).
+            # This probe cannot exercise it, so the walled
+            # in-container result is expected, not a content defect; the research
+            # sub-agents' source ledger and the audit's WebFetch spot-check verify it.
+            verdict = content["content_verdict"] = "webfetch-only"
+            # The in-container 403 is the wall WebFetch goes around, so the
+            # reachability class must not float it as needing a bridge either.
+            if action in ("needs-bridge", "needs-demote"):
+                action, action_reason = ("none", "read through the agent-side WebFetch (v4.18): "
+                                         "the container is walled out of this host")
+        blocked_handled = _blocked_handled(fetch_method, sid, verdict, status,
+                                           content.get("content_shell_markers"))
+        if blocked_handled:
+            action, action_reason = ("none", "documented transport-blocked host (its challenge "
+                                     "answers every transport, the reader included) — coverage "
+                                     "gap, WebSearch substitute; see sources.json notes")
+        if src_status != "demoted" and not blocked_handled \
+                and verdict not in ("relevant", "webfetch-only"):
             if action == "none":
                 action = "stale-content" if verdict == "stale" else "needs-content-fix"
                 action_reason = _CONTENT_FAIL_REASON[verdict]
@@ -1133,7 +1227,8 @@ def main() -> int:
         v = r.get("content_verdict") or "not-assessed"
         by_verdict[v] = by_verdict.get(v, 0) + 1
     print("# content verdicts:")
-    for v in ("relevant", "stale", "irrelevant", "shell", "unreadable", "not-assessed"):
+    for v in ("relevant", "webfetch-only", "stale", "irrelevant", "shell", "unreadable",
+              "not-assessed"):
         if by_verdict.get(v):
             print(f"  {by_verdict[v]:>3}× {v}")
     print("# class breakdown:")
@@ -1177,8 +1272,8 @@ def main() -> int:
         "schema_version": 3,
         "schema": ("Periodic source health snapshot (every source, read through its own "
                    "recipe). Each result carries reachability (`status`, `fetch_method`, "
-                   "`class`) and content (`content_verdict` relevant|stale|irrelevant|shell|"
-                   "unreadable, with `content_alnum`, `content_terms`, `newest_item`, "
+                   "`class`) and content (`content_verdict` relevant|webfetch-only|stale|irrelevant|"
+                   "shell|unreadable, with `content_alnum`, `content_terms`, `newest_item`, "
                    "`newest_item_age_days`), and a derived `action` (none | needs-bridge | "
                    "needs-demote | needs-content-fix | stale-content). The Ops dashboard "
                    "floats only non-`none` actions."),

@@ -1,0 +1,67 @@
+# Findings summary (machine-readable) - iteration 3
+- code: F4
+  category: hallucinated-fact
+  section: tools/source_health.py
+  item: "webfetch-only verdict (walled test) vs prompts/CHANGELOG.md 4.18, run record Fetch policy paragraph, code comment"
+  url_or_quote: "walled = cls in (\"ua-blocked\", \"bridge-blocked\", \"reader-quota\") or bool(content.get(\"content_shell_markers\")) ... if fetch_method == \"webfetch\" and verdict in (\"unreadable\", \"shell\") and walled"
+  summary: "The claim that webfetch-only is granted only when the container is actually walled out (\"a refused UA, a blocked bridge, an empty reader pool or a challenge page\", and \"a dead or repurposed page on one of the ~80 unwalled webfetch records still surfaces\") is false for pages that carry a shell marker: _SHELL_MARKERS include \"404 not found\", \"page not found\", \"this domain is for sale\", \"domain parked\", \"buy this domain\", \"redirecting...\". Simulated _content_assess on a webfetch record: '404 Not Found...' -> shell ['404 not found']; 'This domain is for sale...' -> shell [...]. Such a record gets webfetch-only and action none (needs-demote reset), silencing exactly the dead/parked case iteration 2 #8 asked to keep. Fix: build walled from challenge-type markers only (just a moment, checking your browser, attention required, cf-chl, captcha, verify you are human, please wait while, access denied, request blocked, are you a robot, ddos protection, enable javascript) or require a blocked class, and add a test; or soften the three claims."
+- code: F4
+  category: hallucinated-fact
+  section: entities/registry.yaml
+  item: "report:g7-evian-2026"
+  url_or_quote: "NCSC-CH pre-event cyber advisory for the G7 Évian summit covering DDoS, intelligence collection and mobile targeting."
+  summary: "(low confidence) The NCSC page https://www.bacs.admin.ch/en/26-cyberresilienz-g7-en covers DDoS only (\"DDoS attacks expected\"); intelligence collection and mobile-device targeting come from the ZENDATA map, as the corrected entry says (\"an independent threat map additionally flags ...\"). This run linked the record from the entry, so the summary should follow it: DDoS only, or attribute the rest to ZENDATA."
+- code: F3
+  category: claim-not-supported
+  section: entries/2026-06-04/ncsc-switzerland-booking-com-breach-feeds-two-pronged-whatsa.md
+  item: "body: Variant 1 sentence, 'NCSC frames the targets ...' sentence; title/headline 'targets Swiss travellers'"
+  url_or_quote: "pages spoofing TWINT and Swiss bank portals ... NCSC frames the targets as Swiss hotel-booking customers generally"
+  summary: "(low confidence) https://www.bacs.admin.ch/en/26w22-en says the second phishing page belongs to \"a bank\" and speaks only of \"victims\"/\"recipients\"; \"Swiss\" appears only in the Suisse ePolice link. Same class as the 'Swiss employers' wording fixed at iteration 1. Reword to 'a bank's phishing page' and attribute the Swiss framing to analyst inference (or drop 'NCSC frames ... Swiss')."
+- code: F3
+  category: claim-not-supported
+  section: entries/2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit.md
+  item: "updates[0].summary"
+  url_or_quote: "The mapping is the ZIP attachment, the phishing link, browser-credential theft and remote email collection"
+  summary: "(low confidence) https://www.bacs.admin.ch/en/26w25-en says \"any login details, cookies or wallet information harvested by the malware\"; it never says browser. The same record two sentences later says \"credential-store and session-cookie theft\". Replace 'browser-credential theft' with 'credential theft'."
+- code: F16
+  category: org-triage
+  section: entries/2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit.md
+  item: "priority: high"
+  url_or_quote: "priority: high (sectors: [])"
+  summary: "(low confidence) This run demoted the 2026-06-04 booking-phishing entry from high to notable because NCSC describes a consumer scam and names no sector, and it cleared the W25 entry's sector tags and its 'Swiss public-sector staff are direct recipients' sentence for the same reason. What remains is a generic M365 voicemail-phish wave reported by NCSC with no named exposure of the constituency and no decision inside 7 days beyond the ZIP-attachment discriminator. Doubt resolves to notable (cti-run.md Phase 4 high bar)."
+- code: F11
+  category: editorial-advisory
+  section: the four updates[] records
+  item: "record summaries (rendered on the entry page Revision history and in feed-items.xml)"
+  url_or_quote: "an Admiralty rating of A3 ... the entry links the registry's report record, and an em dash in the summary is replaced / the spliced evidence quotation is two verbatim quotations, and an Admiralty rating of A2 is added"
+  summary: "Record summaries are reader-facing (site/_site feed-items.xml carries 'an Admiralty rating of A2 is added') and docs/pipeline.md asks for 1-3 self-contained sentences; each runs 4-6 sentences and names Admiralty letters, registry records and edit narration (check 12). Keep what changed for the reader (repoint, corrected wording, priority) and drop the metadata narration. Also 4c(d): the sections do not mention the mapping, rating or sector changes the summaries list."
+- code: F11
+  category: editorial-advisory
+  section: CLAUDE.md / prompts/cti-run.md / .claude/agents/cti-verification.md / .claude/agents/cti-research.md
+  item: "fetch_method: webfetch semantics"
+  url_or_quote: "cti-run.md: 'any record pinned `fetch_method: webfetch`'; cti-verification.md: 'The same holds for any page whose source record pins `fetch_method: webfetch`'; cti-research.md: '`webfetch` -> the record's working reader is the `WebFetch` tool itself, because the container is walled out of the host'"
+  summary: "83 records carry fetch_method webfetch; in the latest snapshot 80 are read by extract+direct and judged relevant, only cisa-news and cisa-directives are walled. As worded, the verifier and research agents are told to read all 83 through the summariser, contradicting CLAUDE.md's own 'use WebFetch where it is the reader that works, not where extract already does'. Say 'a webfetch record whose notes or health verdict (webfetch-only) say the container is walled'."
+- code: F11
+  category: editorial-advisory
+  section: entries/2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit.md
+  item: "techniques[]"
+  url_or_quote: "anyone who extracts and runs the file will unknowingly install malware, such as an infostealer"
+  summary: "(low confidence) A described behavior with no id: the user running the ZIP contents (T1204.002, active in v19.2), which the sibling W23 entry maps for the same kind of step."
+- code: F11
+  category: editorial-advisory
+  section: entries/2026-06-04/ncsc-switzerland-booking-com-breach-feeds-two-pronged-whatsa.md
+  item: "sources[0].publisher"
+  url_or_quote: "NCSC Switzerland — Week 22 report"
+  summary: "(low confidence) Em dash in a reader-facing source label on a line this run touched (the url beside it); use a comma or colon."
+- code: F11
+  category: editorial-advisory
+  section: entities/registry.yaml
+  item: "campaign:ncsc-ch-jobseeker-targeting-2026, incident:ncsc-ch-booking-hotel-phishing-2026"
+  url_or_quote: "name: \"Job-seeker targeting wave (CH)\" (type campaign); name: \"Booking.com-fed hotel phishing (CH)\""
+  summary: "(low confidence) Summaries were corrected but the names/type still say what the corrections retract: the W23 correction says 'three reported cases, not a coordinated campaign' and the W22 correction ties only one variant to the leak. Keys are permanent; names are editable."
+- code: F11
+  category: editorial-advisory
+  section: tools/fetch_source.py, .claude/agents/cti-research.md
+  item: "stale ladder text"
+  url_or_quote: "fetch_source.py header: '2. direct WebFetch -> the routine's WebFetch tool' ... 'cisa.gov dynamic paths' as reader-required host; cti-research.md: 'When `WebFetch` itself returns thin/empty/blocked content ... Next rung is `extract <URL>`'"
+  summary: "(low confidence) The module docstring (lines 46-60, 1014) still says it lists 'the same order the research agents follow' with WebFetch as rung 2 and cisa.gov as a reader-required host, and the cti-research 'when WebFetch itself returns thin' paragraph orders extract after WebFetch; both predate v4.18 but now contradict the v4.18 ladder (extract, structured recipe, WebFetch for walled hosts, jina last)."

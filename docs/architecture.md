@@ -459,8 +459,10 @@ every edit is recorded in the run record's `sources_changed[]`.
   bridge that re-issues requests with a current desktop-Chrome UA +
   matching client-hint headers. Solves the recurring 403 / 302-to-login on
   high-signal publishers (CISA, the Swiss NCSC Cyber Security Hub) that
-  filter the routine's default UA. **Mandatory every run for CISA +
-  NCSC.ch** — don't even attempt `WebFetch` there. Structured subcommands
+  filter the routine's default UA. **The structured recipes are mandatory every run for
+  CISA + NCSC.ch** (`cisa-kev`, `cisa csaf-recent`, `ncsc-csh`); cisa.gov pages
+  with no structured recipe are read with `WebFetch`, which runs outside the
+  walled container (v4.18). Structured subcommands
   (`cisa-kev`, `ncsc-csh`, `enisa-euvd`, `bsi-rss/csaf`, `ncsc-nl`,
   `cert-eu`, `cert-fr`, `ico-uk`, `sec-edgar`, `feed`, `msrc`) wrap
   JS-rendered listing pages. `pdf <URL>` extracts the text of a PDF-only
@@ -497,8 +499,12 @@ every edit is recorded in the run record's `sources_changed[]`.
   probe behind `state/source_health.json` (see § `state/`). Probes every
   source via its actual recipe — `feed` discovery for RSS, the documented
   bridge subcommand for `api`/`bridge`, browser-UA HEAD→GET for
-  `webfetch` — and derives an `action` (`none | needs-bridge |
-  needs-demote`) the Ops Health panel floats.
+  `webfetch` — judges the content (`relevant`, `stale`, `irrelevant`, `shell`,
+  `unreadable`, or `webfetch-only` for a walled host whose reader is the
+  agent-side WebFetch; a challenge page is a wall, a 404 or parked page is
+  not) and derives an `action` (`none | needs-bridge | needs-demote |
+  needs-content-fix | stale-content`) the Ops Health panel floats. Offline
+  suite: [`tools/test_source_health.py`](../tools/test_source_health.py).
 - [`tools/compose_prompts.py`](../tools/compose_prompts.py) — see
   § `config/org-profile.yaml` above.
 

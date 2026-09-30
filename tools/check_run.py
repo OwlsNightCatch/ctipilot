@@ -362,7 +362,8 @@ def _host_is_national_cert(host: str) -> bool:
 # v2 origin: check_brief.py KNOWN_UA_BLOCKED (~line 1208).
 # Hosts that reliably 403 the default UA but are otherwise alive — we treat
 # 403/429 from these as PASS during the liveness check, since the agent is
-# expected to use tools/fetch_source.py for them. A 403 here NEVER demotes
+# expected to use tools/fetch_source.py, or WebFetch for cisa.gov pages without
+# a structured recipe (v4.18), for them. A 403 here NEVER demotes
 # the entry: the WAF is filtering this check container's UA, not telling us
 # the content is gone.
 KNOWN_UA_BLOCKED: tuple[str, ...] = (
@@ -378,8 +379,11 @@ KNOWN_UA_BLOCKED: tuple[str, ...] = (
 # Bridge-allowlist source-id matchers. Source ids in sources.json are stable
 # strings; here we list the substrings that identify a bridge-allowlisted
 # source (case-insensitive substring match against the lowered source id).
+# cisa-news and cisa-directives left the list in v4.18 (operator directive
+# 2026-09-30): their working reader is the agent-side WebFetch, since the
+# container is walled out of cisa.gov and no structured recipe covers them.
 BRIDGE_REQUIRED_SOURCE_IDS = frozenset({
-    "cisa-kev", "cisa-advisories", "cisa-news", "cisa-directives",
+    "cisa-kev", "cisa-advisories",
     "ncsc-ch-security-hub", "ncsc-ch-incidents", "ncsc-ch-focus",
     "enisa-euvd",
     "bsi-de", "wid.cert-bund.de", "cert-bund",
@@ -2253,7 +2257,7 @@ def check_source_urls_resolve(run_entries: list[dict], *, skip: bool,
     if ua_blocked:
         ok("source-urls",
            f"{len(ua_blocked)} URL(s) on UA-blocked hosts (CISA/NCSC.ch/etc.) — "
-           "403 from these never demotes; they are fetched via tools/fetch_source.py")
+           "403 from these never demotes; they are fetched via tools/fetch_source.py or WebFetch")
     if not bad_404 and not other_errors:
         ok("source-urls", f"all {checked} source URL(s) returned HTTP 200 (or UA-blocked allowlisted)")
 

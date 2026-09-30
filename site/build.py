@@ -7587,7 +7587,28 @@ def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: s
         f'relevant, with a recently dated item. Only <strong>unsolved problems</strong> are '
         f'listed below · healthy sources and already-demoted sources are omitted.</p>'
     )
+    # v4.18: sources whose working reader is the agent-side WebFetch tool. The
+    # probe runs inside the container these hosts wall out, so it cannot judge
+    # their content; they are handled, not problems, and listed for visibility.
+    webfetch_only = sorted(str(r.get("id", "?")) for r in latest.values()
+                           if isinstance(r, dict) and r.get("content_verdict") == "webfetch-only")
+    if webfetch_only:
+        intro += (
+            f'<p class="muted">Read only through the agent-side <code>WebFetch</code> tool '
+            f'({len(webfetch_only)}): '
+            + ", ".join(_source_ref(i, prefix=prefix) for i in webfetch_only)
+            + '. This container cannot read these hosts, so the probe cannot judge their content; '
+              'the research sub-agents and the audit verify them with WebFetch.</p>'
+        )
     if not flagged:
+        if webfetch_only:
+            return (
+                intro
+                + '<p class="ops-pill ops-pill--ok ops-pill--wrap">✓ All '
+                + f'{total} sources working · {total - len(webfetch_only)} verified by this probe, '
+                + f'{len(webfetch_only)} through WebFetch · nothing needs a bridge, a recipe fix '
+                + 'or demotion.</p>'
+            )
         return (
             intro
             + '<p class="ops-pill ops-pill--ok ops-pill--wrap">✓ All '

@@ -1,0 +1,137 @@
+# SR1 source-recipe confirmation pass — operator-directed audit run 2026-09-30T0634Z-audit
+# Scope: independently confirm four source records read through the agent-side WebFetch tool
+# (CLAUDE.md v4.18 / record notes v4.17). No entries composed; sources/sources.json NOT edited.
+domain: SR1
+run_id: 2026-09-30T0634Z-audit
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-09-30T06:54:10Z
+ended_at: 2026-09-30T07:15:10Z
+self_telemetry:
+  webfetch_calls: 38          # 12 cisa.gov (12/12 returned content), 26 ssd-disclosure.com (2 returned content, both the same cached URL)
+  websearch_calls: 6
+  bridge_fetches: 5           # cisa csaf-recent, cisa csaf icsa-26-272-06, cisa-kev, fetch_source url --direct (ssd), fetch_source jina (ssd)
+summary_verdict:
+  cisa-news: "yes"
+  cisa-directives: "yes"
+  cisa-advisories: "yes (IT half via WebFetch; ICS half via bridge csaf-recent/csaf)"
+  ssd-disclosure: "NO / unreliable - 0 live reads; the single apparent success was a WebFetch-cache replay"
+records:
+  - id: cisa-news
+    recipe_works: "yes"
+    listing_url: https://www.cisa.gov/news-events/news
+    listing_result: "10 dated items (of 408) with title, date and full absolute item URLs; newest 2026-09-23"
+    newest_item:
+      date: "2026-09-23"
+      title: "CISA Whitepaper Charts Path to Establishing and Maturing CVE Program Quality"
+      url: "https://www.cisa.gov/news-events/news/cisa-whitepaper-charts-path-establishing-and-maturing-cve-program-quality"
+    drilled:
+      - url: "https://www.cisa.gov/news-events/news/cisa-whitepaper-charts-path-establishing-and-maturing-cve-program-quality"
+        outcome: "body came through: date, summary, 5 outbound links (incl. cve.org and the framework resource page), verbatim sentences"
+      - url: "https://www.cisa.gov/news-events/news/cisa-advisory-highlights-red-team-findings-help-organizations-assess-risk-identify-threats-and"
+        outcome: "body came through (2026-08-25); links to the AA26-237A advisory page"
+    on_topic: "yes - security programme/guidance/advisory announcements (CVE Program quality whitepaper, Cyber Storm X, CI detect/observe/impede guidance, NIST/CISA cloud identity token-theft guidelines, insider threat guide, China-based AI model distillation warning, red-team advisory, Gunra ransomware advisory)"
+    verbatim_sentence: "The CVE program is a common good, underpinning the global vulnerability ecosystem."
+    extra_checks:
+      - "WebFetch of the record's rss_url https://www.cisa.gov/news.xml ALSO reads: 10 items with dates (e.g. 'Wed, 23 Sep 26') and links; item descriptions come back empty, so the feed gives discovery + dates only."
+      - "Feed and HTML listing differ at the tail: feed item 10 = 2026-08-10 Gunra ransomware advisory news; listing item 10 = 2026-08-11 Cyber Storm X blog. The Gunra item is only in the feed."
+    caveats:
+      - "WebFetch summariser reports 'no outbound links' for listing pages but the item URLs are present in the item lines - use those."
+      - "Quotes are produced by the WebFetch summariser model and cannot be re-checked against raw HTML in-container (bridge and jina both blocked)."
+  - id: cisa-directives
+    recipe_works: "yes"
+    listing_url: https://www.cisa.gov/directives
+    listing_result: "6 directive links (ED 25-03 V1, ED 25-03 Supplemental Direction, ED 26-03 V1, BOD 26-04, BOD 26-04 Implementation Guidance, BOD 26-02) as RELATIVE urls, no dates on the listing. The record's own url https://www.cisa.gov/news-events/directives returns the identical list."
+    newest_item:
+      date: "2026-06-10"
+      title: "BOD 26-04: Prioritizing Security Updates Based on Risk"
+      url: "https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk"
+    drilled:
+      - url: "https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk"
+        outcome: "issue date June 10, 2026; requirements, 60-day/180-day timelines, 16 outbound links, verbatim quotes"
+      - url: "https://www.cisa.gov/news-events/directives/v1-ed-26-03-mitigate-vulnerabilities-cisco-sd-wan-systems"
+        outcome: "issue date March 11, 2026 (supersedes the original ED 26-03 of 2026-02-25); links to three Cisco PSIRT/hardening pages"
+    on_topic: "yes - federal binding/emergency directives (Cisco SD-WAN, Cisco ASA, end-of-support edge devices, risk-based patching)"
+    verbatim_sentence: "For each asset detected to contain an instance of a CVE ID, the vulnerability shall be remediated within the timeline defined in Table 1."
+    caveats:
+      - "Listing urls come back relative (/news-events/directives/<slug>); prefix https://www.cisa.gov."
+      - "Issue dates exist only on the detail pages. Newest directive is still BOD 26-04 (2026-06-10, 112 days old on 2026-09-30; inside max_staleness_days 180)."
+  - id: cisa-advisories
+    recipe_works: "yes (IT half via WebFetch; ICS half via bridge)"
+    listing_url: https://www.cisa.gov/news-events/cybersecurity-advisories
+    listing_result: "10 dated items 2026-09-18..2026-09-29 with type and full absolute urls (Alerts incl. KEV additions, one Fact Sheet). The 10-item window held no ICS advisory and no AA-series item."
+    newest_item:
+      date: "2026-09-29"
+      title: "CISA Adds One Known Exploited Vulnerability to Catalog"
+      url: "https://www.cisa.gov/news-events/alerts/2026/09/29/cisa-adds-one-known-exploited-vulnerability-catalog"
+    drilled:
+      - url: "https://www.cisa.gov/news-events/alerts/2026/09/27/critical-zero-day-vulnerabilities-exploited-citrix-netscaler-adc-gateway"
+        outcome: "body came through: CVE-2026-88771..88778, 12 outbound links incl. the Citrix bulletin. Independently corroborated: CVE-2026-88771 and CVE-2026-88772 are in the KEV JSON (bridge cisa-kev) with dateAdded 2026-09-27, vendor Citrix."
+      - url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-237a"
+        outcome: "AA-series page reads in full (reached via the 2026-08-25 news item): title 'A Tale of Two SOCs', alert code AA26-237A, ATT&CK ids, ~45 outbound links incl. the advisory PDF on cisa.gov"
+    ics_half:
+      command: "python3 tools/fetch_source.py cisa csaf-recent 5"
+      result: "OK in-container: total 3944 index rows; 5 items all released 2026-09-29T06:00:00Z (icsa-26-272-03..07)"
+      drill: "python3 tools/fetch_source.py cisa csaf icsa-26-272-06 -> full CSAF JSON (MikroTik RouterOS)"
+      verbatim_sentence: "Successful exploitation of this vulnerability could allow an attacker to achieve remote code execution or cause a denial of service."
+    on_topic: "yes - KEV additions, Citrix NetScaler zero-day alert, ICS third-party-integrator fact sheet, red-team advisory, ICS advisories"
+    verbatim_sentence: "Threat actors are actively exploiting these vulnerabilities globally."
+    extra_checks:
+      - "WebFetch of the record's rss_url https://www.cisa.gov/cybersecurity-advisories/all.xml reads, but the summariser returned ONLY six ICS advisories dated 2026-09-29 - a partial / ICS-biased view, not an enumeration of alerts or AA-series. Do not use it as the IT-half enumerator; use the HTML listing."
+  - id: ssd-disclosure
+    recipe_works: "no (0 live reads; WebSearch discovery works, but only as snippets)"
+    listing_result: "https://ssd-disclosure.com/advisories/, /advisories/page/4/ and the homepage returned an empty body to WebFetch on every attempt (also after the cache TTL)."
+    fetch_evidence:
+      distinct_urls_webfetched: 18
+      calls: 26
+      calls_with_content: 2
+      note: "Both content-bearing calls were the same plain URL https://ssd-disclosure.com/unisoc-t612-lpe/ (title, 2026-08-17, affected devices Xiaomi Redmi A5 / Motorola E13 / Realme C33, verbatim sentences) within ~1 min of each other at ~06:55-06:56Z. Re-fetched at 07:13Z, after the 15-minute WebFetch cache TTL, the same URL returned an empty body; a cache-busted ?query variant of it also returned empty. Conclusion: that read was a replay of a response cached by an earlier fetch, not a live read. Live reads: 0 of 18 distinct URLs."
+      empty_urls:
+        - https://ssd-disclosure.com/
+        - https://ssd-disclosure.com/advisories/
+        - https://ssd-disclosure.com/advisories/page/4/
+        - https://ssd-disclosure.com/unisoc-t612-rce/
+        - https://ssd-disclosure.com/cisco-unified-communications-manager-arbitrary-file-write-to-rce/
+        - https://ssd-disclosure.com/linux-bridge-stp-timer-use-after-free/
+        - https://ssd-disclosure.com/ssd-advisory-linux-kernel-taprio-oob/
+        - https://ssd-disclosure.com/ssd-advisory-linux-kernel-hfsplus-slab-out-of-bounds-write/
+        - https://ssd-disclosure.com/ssd-advisory-linux-kernel-pipapo-set-double-free-lpe/
+        - https://ssd-disclosure.com/ssd-advisory-uniview-preauth-rce/
+        - https://ssd-disclosure.com/ssd-advisory-cldflt-heap-based-overflow-pe/
+        - https://ssd-disclosure.com/ssd-advisory-palo-alto-expedition-rce-regionsdiscovery/
+        - https://ssd-disclosure.com/ssd-advisory-multiple-foscam-x5-vulnerabilities/
+        - https://ssd-disclosure.com/ssd-advisory-qnap-qts-unauthenticated-remote-code-execution/
+        - https://ssd-disclosure.com/ssd-advisory-vestacp-multiple-vulnerabilities/
+        - https://ssd-disclosure.com/ssd-advisory-macos-finder-rce/
+        - https://ssd-disclosure.com/ssd-advisory-voipmonitor-unauth-rce/
+    container_transports:
+      direct: "fetch_source.py url --direct https://ssd-disclosure.com/unisoc-t612-rce/ -> upstream HTTP 202 (challenge)"
+      jina: "fetch_source.py jina ... -> HTTP 402 balance exhausted on every rotating key"
+    newest_item:
+      date: "2026-08-17"
+      title: "UNISOC T612 LPE - SSD Secure Disclosure"
+      url: "https://ssd-disclosure.com/unisoc-t612-lpe/"
+      basis: "page body read via the cached WebFetch replay; no newer body-verified item found"
+    discovery_via_websearch:
+      works: "partly - 6 queries return 8-10 ssd-disclosure.com URLs each with a title and a snippet description (leads only)"
+      snippet_only_items:
+        - "Cisco Unified Communications Manager arbitrary file write to RCE, CVE-2026-20230 (https://ssd-disclosure.com/cisco-unified-communications-manager-arbitrary-file-write-to-rce/)"
+        - "Linux Bridge STP timer use-after-free, TyphoonPWN 2026 (https://ssd-disclosure.com/linux-bridge-stp-timer-use-after-free/)"
+      warning: "Snippet dates are unreliable: a snippet dated UNISOC T612 RCE to 2026-03-11 while the sibling LPE page body says 2026-08-17. Most results are years-old advisories (Uniview, QNAP QTS 4.3.x, macOS Finder inetloc, Palo Alto Expedition)."
+    on_topic: "yes - the content that is reachable is on-topic vulnerability research (UNISOC modem firmware MPU/SDP flaws, Cisco UCM, Linux kernel)"
+    verbatim_sentence: "By disabling protections on the first memory region (ID 0) of the Memory Protection Unit (MPU), an attacker can gain unrestricted read and write access to physical memory."
+    verbatim_sentence_provenance: "WebFetch cache replay of /unisoc-t612-lpe/ (see fetch_evidence)"
+proposed_note_corrections:
+  # Text to APPEND to each record's `notes` (pipe-separated dated convention). sources.json was NOT edited.
+  cisa-news: |
+    2026-09-30 SR1 (independent WebFetch pass, audit 2026-09-30T0634Z): recipe CONFIRMED. WebFetch https://www.cisa.gov/news-events/news returned 10 dated items of 408 (newest 2026-09-23, CVE Program quality whitepaper) with full item URLs, and a drilled item returned its body, date, five outbound links and verbatim sentences. The rss_url https://www.cisa.gov/news.xml also reads via WebFetch (10 items with dates and links, descriptions empty) and differs from the HTML listing at the tail (feed carries the 2026-08-10 Gunra ransomware advisory item, the listing the 2026-08-11 Cyber Storm X blog), so use both for completeness. Listing summaries claim no outbound links but the item URLs are in the item lines. WebFetch quotes are summariser output that cannot be re-checked against raw HTML in-container. Quiet: nothing newer than 2026-09-23.
+  cisa-directives: |
+    2026-09-30 SR1 (independent WebFetch pass): recipe CONFIRMED. https://www.cisa.gov/directives and the canonical https://www.cisa.gov/news-events/directives both return the same six links (ED 25-03 V1, ED 25-03 Supplemental, ED 26-03 V1, BOD 26-04, BOD 26-04 Implementation Guidance, BOD 26-02) as relative URLs (prefix https://www.cisa.gov), with no dates on the listing; issue dates come from the detail page: BOD 26-04 = 2026-06-10, ED 26-03 V1 = 2026-03-11 (supersedes the original of 2026-02-25). Newest directive is still BOD 26-04 (112 days old, inside max_staleness_days 180).
+  cisa-advisories: |
+    2026-09-30 SR1 (independent pass): both halves CONFIRMED. IT half: WebFetch of the listing returned 10 dated items 2026-09-18..2026-09-29 (alerts incl. KEV additions and the 2026-09-27 Citrix NetScaler zero-day alert, one fact sheet) with full absolute URLs; the alert body came through and its two KEV CVEs (CVE-2026-88771/88772) are independently in the KEV JSON with dateAdded 2026-09-27; the AA-series page /news-events/cybersecurity-advisories/aa26-237a (2026-08-25) reads in full incl. ATT&CK ids and the PDF link. The 10-item listing window held no ICS advisory and no AA-series item, so AA-series discovery also runs through the cisa-news listing (announcements link to the AA page). ICS half: `cisa csaf-recent 5` returned five items released 2026-09-29 (icsa-26-272-03..07) and `cisa csaf icsa-26-272-06` returned the full CSAF JSON in-container. WARNING: WebFetch of rss_url all.xml returned only six ICS advisories dated 2026-09-29 (partial, ICS-biased summary) and is NOT a reliable alert/AA enumerator; lead with the HTML listing. Older notes' 'REQUIRED: cisa page / cisa feed' and 'AVOID WebFetch' lines are superseded.
+  ssd-disclosure: |
+    2026-09-30 SR1 (independent pass): the WebFetch recipe does NOT work reliably - correct the v4.17 note that it 'reads individual advisory pages'. 26 WebFetch calls over 18 distinct ssd-disclosure.com URLs (listing /advisories/, /advisories/page/4/, homepage, 15 advisory pages incl. the 2026 ones) between 06:55 and 07:14Z returned an empty body every time except https://ssd-disclosure.com/unisoc-t612-lpe/ (2026-08-17), which answered twice within a minute and then returned empty after the 15-minute WebFetch cache TTL and empty as a cache-busted ?query variant: that read was a cache replay of an earlier fetch, not a live read (0 of 18 live). Container transports unchanged (direct HTTP 202 challenge; jina 402). The 2026-09-29 note that WebFetch read /advisories/ and the article pages cleanly is therefore time-variable at best. Working discovery is WebSearch `site:ssd-disclosure.com` (titles and snippet descriptions only; snippet dates unreliable - e.g. one dated UNISOC T612 RCE to 2026-03-11 while the sibling LPE page says 2026-08-17; leads such as Cisco UCM CVE-2026-20230 and the Linux bridge STP timer UAF surface only as snippets). Newest body-verified item stays 2026-08-17. Recommend: keep fetch_method webfetch only as best-effort (one try, an empty body is a transport gap, not 'no content'); never bump last_successful_fetch on a WebFetch response that may be a cache replay; do not read source_health `webfetch-only` for this record as 'readable'.
+other_observations:
+  - "CLAUDE.md in the working tree is already at v4.18 (WebFetch sanctioned on cisa.gov pages without a structured recipe) while the record notes cite v4.17; cosmetic, but a future note could cite v4.18."
+  - "CLAUDE.md v4.18 asserts WebFetch reads ssd-disclosure.com advisories reliably; this pass could not reproduce that (see ssd-disclosure). Suggest softening the wording to 'best-effort, often empty'."
+  - "12 of 12 cisa.gov WebFetch calls returned content, including the news.xml and all.xml feeds, so the CISA half of the directive is solid."

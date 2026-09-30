@@ -2052,6 +2052,15 @@ assert_not_in("source-health: healthy source omitted", ">ok-src<", _sh_html)
 _sh_ok = {"last_updated": "x", "latest": {"ok-src": _sh["latest"]["ok-src"]}}
 assert_in("source-health: all-clear wording", "returning relevant, current content",
           build._ops_render_source_health(_sh_ok))
+# v4.18: a webfetch-only source is listed as handled, never floated as a problem.
+_sh_wf = {"last_updated": "x", "latest": {
+    "ok-src": _sh["latest"]["ok-src"],
+    "wf-src": {"id": "wf-src", "status": "active", "fetch_method": "webfetch", "class": "bridge-blocked",
+               "action": "none", "content_verdict": "webfetch-only"}}}
+_sh_wf_html = build._ops_render_source_health(_sh_wf)
+assert_in("source-health: webfetch-only note", "Read only through the agent-side", _sh_wf_html)
+assert_in("source-health: webfetch-only all-clear", "1 through WebFetch", _sh_wf_html)
+assert_not_in("source-health: webfetch-only not a problem", "Reachable, but not returning usable content", _sh_wf_html)
 
 # ---------------------------------------------------------------------
 # Result

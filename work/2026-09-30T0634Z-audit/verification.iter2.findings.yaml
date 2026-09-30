@@ -1,0 +1,85 @@
+# Findings summary (machine-readable), iteration 2
+- code: F4
+  category: hallucinated-fact
+  section: run-record
+  item: "runs/2026-09-30/2026-09-30T0634Z-audit.md, Fetch policy paragraph"
+  url_or_quote: "retries a `shell` or `unreadable` read once before flagging it"
+  summary: "tools/source_health.py loops `while _transient(content) and fetch_method != \"webfetch\" and tries < 2` (up to twice, also for an undated no-vocabulary read and a failed feed read), and the report and CHANGELOG say 'up to twice'. Iteration 1 #12 was fixed in the report only; the run record still says 'once', although its own remediation note says the retry wording matches. Fix: 'up to twice'."
+- code: F4
+  category: hallucinated-fact
+  section: policy-docs
+  item: "prompts/CHANGELOG.md 4.18 Why; docs/audits/2026-09-30-quality-audit.md Verdict; run record Fetch policy; .claude/memory/source-fetch-blocks.md WebFetch section"
+  url_or_quote: "it read the cisa.gov news listing, the directives list and the cybersecurity-advisories listing, each with dates and item URLs (CHANGELOG); 'all returned dated lists with item URLs' (memory)"
+  summary: "The directives listing carries no dates. WebFetch of https://www.cisa.gov/news-events/directives this pass: 'The listing page does not display dates for individual directive items' (six titles, each 'no date shown'), and the cisa-directives note (SR1) says 'no dates'. Only the news and advisories listings are dated. Fix in all four places: directives list with item URLs only, issue dates on the item pages."
+- code: F4
+  category: hallucinated-fact
+  section: policy-docs
+  item: "prompts/CHANGELOG.md 4.18, cti-run.md bullet"
+  url_or_quote: "`docs/architecture.md` and `docs/operating.md` lose their \"don't attempt WebFetch on CISA\" lines."
+  summary: "(low confidence) git show HEAD:docs/operating.md has no such line (its only WebFetch mention is the cti-verification tools row); the reworded fetch_failures row said 'already routed via tools/fetch_source.py'. Only docs/architecture.md carried 'don't even attempt `WebFetch` there'. Fix: say architecture.md lost the line and operating.md's fetch_failures row now names the WebFetch route."
+- code: F4
+  category: hallucinated-fact
+  section: entries/2026-06-25 (W25)
+  item: "entries/2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit.md"
+  url_or_quote: "installs an infostealer harvesting browser credentials, session cookies and wallet data; techniques: [T1566.001, T1566.002, T1555.003, T1114.002]"
+  summary: "(low confidence) https://www.bacs.admin.ch/en/26w25-en says only 'any login details, cookies or wallet information harvested by the malware' (and 'malware, such as an infostealer'); it names no browser and no session cookies, so 'browser credentials' and T1555.003 (Credentials from Web Browsers) exceed the page. W23's mapping used the generic T1555 + T1539 for the same wording. Fix: 'login details, cookies and wallet data', T1555 (and T1539 for cookies)."
+- code: F4
+  category: hallucinated-fact
+  section: entries frontmatter
+  item: "W25 sectors [public-sector, finance]; W23 sectors [public-sector]; W22 sectors [public-sector, finance]"
+  url_or_quote: "W25 correction record: 'NCSC ... names no sector; the text now follows the page'"
+  summary: "(low confidence) The correction removed the uncited 'Swiss public-sector staff are direct recipients' from the W25 body, but the machine-consumed `sectors` (targeted sectors per docs/pipeline.md) still asserts public-sector and finance; none of the three pages names a targeted sector. Fix: drop or justify the tags in the same correction record (fields: sectors)."
+- code: F5
+  category: missing-citation
+  section: entries/2026-06-03 (G7)
+  item: "entries/2026-06-03/ncsc-switzerland-warns-of-cyber-operations-around-the-g7-via.md"
+  url_or_quote: "Although the summit sits on French soil, most delegations transit Geneva Airport and lodge on the Swiss side (Geneva, Vaud, Valais)"
+  summary: "(low confidence) Uncited; the fact is ZENDATA's ('most of the delegations ... will land at GVA, sleep on the Swiss side'), the NCSC page cited one sentence earlier does not carry it. Fix: attach the ZENDATA citation to this sentence."
+- code: F16
+  category: org-triage
+  section: entries/2026-06-04 (W22)
+  item: "entries/2026-06-04/ncsc-switzerland-booking-com-breach-feeds-two-pronged-whatsa.md"
+  url_or_quote: "priority: high"
+  summary: "(low confidence) A consumer hotel-booking card-phishing scam; the body itself concedes the SOC link is 'analyst inference' and the correction removed the 'more dangerous' ranking. No SOC decision within 7 days beyond the regular cycle is named, and doubt resolves to notable (cti-run.md Phase 4 high bar). Consider notable via the calibration duty; priority was not touched by this run."
+- code: F11
+  category: editorial-advisory
+  section: tools/source_health.py
+  item: "webfetch-only conversion, tools/source_health.py lines ~1017-1031"
+  url_or_quote: "if fetch_method == \"webfetch\" and verdict in (\"unreadable\", \"shell\"):  verdict = content[\"content_verdict\"] = \"webfetch-only\""
+  summary: "Substantive: the conversion keys on fetch_method alone, not on evidence of a wall. 83 records carry fetch_method webfetch; the latest snapshot shows 80 of them read `relevant` in-container (81 have reachability class ok; only cisa-news and cisa-directives are ua-blocked, one more is a demoted stale record). A future JS shell, challenge or dead host on any of the 81 unwalled records is now reported `webfetch-only`, action none, and the retry loop skips them, silencing the v4.16 dark-but-green check for them. CHANGELOG/report say 'whose in-container transports come back walled', which the code does not test. Fix: require the wall (cls == \"ua-blocked\", or an explicit record field) before converting; otherwise flag as before."
+- code: F11
+  category: editorial-advisory
+  section: sources/sources.json
+  item: "cisa-kev notes (2 segments); cisa-news and cisa-directives duplicated note blocks"
+  url_or_quote: "Do NOT call WebFetch on cisa.gov; treat the 403 as a transport block ... AVOID: Do NOT WebFetch cisa.gov — reliably 403s the routine UA. The api subcommand is the only supported path."
+  summary: "The operator asked for a grep of any leftover rule forbidding WebFetch on cisa.gov: the cisa-kev record still carries a blanket ban with no v4.18 supersession line (the run appended one to cisa-news, cisa-directives and cisa-advisories only). KEV itself stays on the bridge, so append 'KEV JSON stays on cisa-kev; the WebFetch ban on other cisa.gov pages is superseded by v4.18'. Also cisa-news and cisa-directives still carry a duplicated pre-existing block including the now-false '2026-09-29 ... CLAUDE.md forbids WebFetch on CISA'; the supersession line covers it but the duplicates could be dropped."
+- code: F11
+  category: editorial-advisory
+  section: tools/check_run.py
+  item: "BRIDGE_REQUIRED_SOURCE_IDS"
+  url_or_quote: "\"cisa-kev\", \"cisa-advisories\", \"cisa-news\", \"cisa-directives\""
+  summary: "(low confidence) The gate check fetch-failure-bridge-required FAILs a fetch_failures entry for these ids whose attempted_methods has no `bridge:*`. Under v4.18 cisa-news and cisa-directives are pinned fetch_method webfetch, so a future failure entry listing only `webfetch` would FAIL the gate against the new policy. Drop cisa-news and cisa-directives (and cisa-advisories' IT half) from the set or accept `webfetch` for them."
+- code: F11
+  category: editorial-advisory
+  section: entities/registry.yaml and entries
+  item: "G7 and W25 entries `entities: []`; registry summaries for W23 and W22"
+  url_or_quote: "registry: report:g7-evian-2026 (first_seen 2026-06-03); campaign:ncsc-ch-m365-voicemail-phishing-week25 (first_seen 2026-06-25); campaign:ncsc-ch-jobseeker-targeting-2026 summary 'NCSC-CH Week 23: coordinated job-seeker targeting'"
+  summary: "Entity-linking miss on two touched entries: both registry keys exist for these very findings, no entry references them (grep), and the corrections left `entities: []`. Separately the W23 registry summary still says 'coordinated' after the correction removed that claim, and the W22 registry summary still ties the leak to both variants ('Booking.com breach data feeds WhatsApp hotel-booking phishing — TWINT/bank spoofing plus booking-channel account takeover'). Fix in the same corrections (fields: entities) and refresh the two summaries."
+- code: F11
+  category: editorial-advisory
+  section: entries (style)
+  item: "G7 summary; W22 body 'Why it matters to us'; W25 summary"
+  url_or_quote: "G7 summary: '(15–17 June) — the NCSC explicitly anticipates'; W22: 'not a spoofed sender — detection has to move'; W25 summary: 'in Switzerland — Week 25 review documents'"
+  summary: "Em dashes remain in reader-facing text of three entries this run rewrote around (rule 12: none in reader-facing text). W23's were cleaned; these were not."
+- code: F11
+  category: editorial-advisory
+  section: entries (changelog contract 4c(d))
+  item: "all four records vs their sections"
+  url_or_quote: "record summary: 'an Admiralty rating of A3 ... are added' / 'The WhatsApp lure is mapped as spearphishing via a service'"
+  summary: "(low confidence) The four records' summaries carry the repoint, the ATT&CK mapping and the Admiralty rating, none of which the W22, W23 and W25 sections mention (the G7 section mentions only the new address). Either trim the record summaries to what the sections state, or note the mapping and rating in the sections."
+- code: F11
+  category: editorial-advisory
+  section: docs
+  item: "docs/architecture.md ~L499-503; .claude/memory/source-fetch-blocks.md L61"
+  url_or_quote: "architecture: 'browser-UA HEAD→GET for `webfetch` — and derives an `action` (`none | needs-bridge | needs-demote`)'; memory: 'The agent-side `WebFetch` runs outside the container and reads them.'"
+  summary: "(low confidence) architecture.md still describes source_health as pre-v4.16 (no content verdicts, no webfetch-only) while v4.18 changes what a webfetch record's probe means; the memory paragraph's first sentence says WebFetch reads ssd-disclosure.com, which the next sentences and the run refute. Minor wording fixes."

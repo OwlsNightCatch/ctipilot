@@ -1,0 +1,52 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-09-30T07:26:19Z · ended_at=2026-09-30T07:39:05Z · duration_seconds=766
+
+## Verification report — 2026-09-30T0634Z-audit (iteration 1)
+
+Scope walked: the four repointed June entries (whole entries, 28-claim ledger built from `tools/claim_ledger.py` in memory, all 28 answered in `verification.iter1.claims.yaml`), the v4.18 rule set, `sources/sources.json`, `tools/source_health.py`, `site/build.py`, `site/test_build.py` (passes), the run record and the report. `compose_prompts.py --check`: in sync. `check_run.py --pre-verify`: 54 pass, the expected `run-clock` FAIL, 1 expected warn.
+
+What held (no finding): all four new bacs.admin.ch URLs are the same pages the old citations named (titles and page dates 2026-06-01 / 06-02 / 06-09 / 06-23 match the entries' `event_date`; the old ncsc.admin.ch paths answer 301 to a bacs.admin.ch path that is 404); every W25 evidence quote is verbatim on the page (punctuation-insensitive, as the gate reads it); every added `techniques[]` id is active in the pinned v19.2 dataset; Admiralty ratings A2/A2/A2/A3 are defensible (NCSC-CH is a tier-A source, `bacs.admin.ch` is in `NATIONAL_CERT_HOSTS`, single-source national CERT = 2, an expectation advisory with an independent threat map = 3); each record is `internal: true`, has no body section, and its `fields` match the diff. No other entry in the store cites an old `ncsc.admin.ch/ncsc/` path. The 4.17 CHANGELOG entry is intact (the diff is +28 / -0). I re-ran the CISA recipes with WebFetch and the outbound-links template: news listing (10 dated items, newest 2026-09-23), directives (six relative links), advisories listing (10 dated items 2026-09-18..09-29, incl. the Citrix zero-day alert) and the BOD 26-04 drill (issued June 10, 2026) all read; `cisa csaf-recent` reads in-container; ssd-disclosure.com returned an empty body to WebFetch for me too. The latest `state/source_health.json` snapshot (2026-09-30T07:21:50Z, 206 sources) shows 201 relevant, 2 `webfetch-only` (cisa-news, cisa-directives), and the single UNSOLVED item is `ssd-disclosure` (`needs-content-fix`), as the report and run record say. The Apple CVE-2026-86950 claims hold (intel entry committed 06:44:26Z carries CVSS 8.8 and EPSS 0.81; no registry or `cves_seen` residue from the dropped draft).
+
+### Citation does not support the claim
+- **#1 (low confidence)** `entries/2026-06-03/ncsc-switzerland-warns-of-cyber-operations-around-the-g7-via.md`: "social-engineering against event staff as plausible vectors" (ZENDATA). The map says "the criminal groups that specialise in social engineering hotel help-desks have proven extremely effective"; it does not name event staff. Reword to hotel help-desk social engineering.
+
+### Unsupported / hallucinated facts
+- **#2** `entries/2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit.md`: `techniques: [T1566.001, T1555.003, T1114.003, T1098]` and body "(`T1114.003`, `T1098`)". `https://www.bacs.admin.ch/en/26w25-en` says only "By reading these messages, they can piece together information about ongoing projects, payment arrangements, and internal hierarchies" and that the mailbox is used to send phishing to contacts; no forwarding rule, no persistence, no account manipulation (0 hits for forward/rule/persist). T1114.003 is Email Forwarding Rule, T1098 Account Manipulation. Fix: T1114.002 (Remote Email Collection) for the read, drop T1114.003 and T1098 from `techniques[]` and prose; also map the described forged-login link (T1566.002) (advisory #22).
+- **#3** `entries/2026-06-10/ncsc-ch-week-23-coordinated-surge-in-job-seeker-targeting-fa.md`: `techniques` includes T1059.001 and T1078. The page says "after the commands were executed, an 'infostealer' installed itself" (no PowerShell) and that login credentials "were sent directly to the scammers" (no use of the account). Fix: T1059 (or T1204.002) in place of T1059.001; drop T1078 or cite a source that describes the login.
+- **#4** same entry, body: "fake interview-confirmation emails for plausible Swiss employers", "identity documents for \"onboarding,\"", "a \"technical assessment\" or \"onboarding\" GitHub repository". The page describes a job advertisement, a phone-interview slot confirmed "via a Google Calendar entry", and a "technical interview" with "a private GitHub repository ... a small programming task". "Emails" (case 1), "Swiss employers", "onboarding" and "technical assessment" do not occur (grep), yet two are set in quotation marks. Fix: reword to the page.
+- **#5 (low confidence)** `entries/2026-06-04/ncsc-switzerland-booking-com-breach-feeds-two-pronged-whatsa.md`: T1566.002 for a WhatsApp lure. The pinned T1566.002 text is "spearphishing emails with a malicious link"; T1566.003 is "messages via third-party services". Fix: T1566.003.
+- **#6 (low confidence)** same entry, title "Booking.com breach feeds two-pronged WhatsApp hotel-booking phishing". The page ties only Variant 1 to the April 2026 leak; Variant 2 is "albeit long-known", reaching victims "via the platform's official messaging system or additionally via email or WhatsApp".
+- **#12 (low confidence)** `docs/audits/2026-09-30-quality-audit.md`, Changes table: "A `shell` or `unreadable` read is retried once before it is flagged." `tools/source_health.py` loops `while _transient(content) ... and tries < 2` (up to twice, and also retries irrelevant-no-terms and failed-feed reads), which the same report and the CHANGELOG state elsewhere.
+- **#13 (low confidence)** report and CHANGELOG: "The first sweep of the day read `sygnia` as a shell ... and the second read `oneconsult-ch` the same way" / "(sygnia, then oneconsult-ch)". `state/source_health.json` `runs[]`: 07:00:03Z flagged oneconsult-ch (`irrelevant`), 07:17:58Z flagged sygnia (`irrelevant`); the oneconsult-ch source note itself says it "read as irrelevant". Dry-run sweeps leave no snapshot, so this may be incomplete.
+
+### Claims missing inline citation
+- **#14 (low confidence)** W25 entry: "Swiss public-sector staff are direct recipients." Uncited; the page names no sector or recipient group.
+
+### Analytical-link-as-fact
+- **#7 (low confidence)** W23 entry title "NCSC-CH Week 23: coordinated surge in job-seeker targeting". The only source: "Using three reported cases, the NCSC demonstrates how these scams work"; "coordinated" appears nowhere and nothing links the three cases to one actor.
+
+### Quantifier without source
+- **#8** W25 entry: "legitimate voicemail notifications deliver `.wav`/`.mp3`, never a ZIP". Page: "Genuine voice messages or voicemails from telephone systems are usually sent as audio files, such as .wav or .mp3, rather than as ZIP archives." "never" is the entry's.
+- **#9 (low confidence)** W25 entry: "stolen credentials are frequently resold and resurface ... weeks later". Page: "may also be resold on the dark web. In some cases, this information only resurfaces weeks or months later", and for malware-harvested data.
+- **#10 (low confidence)** W22 entry: "Variant 2 is the more dangerous". NCSC does not rank the variants; it puts "The danger" on Variant 1's credibility and calls Variant 2 "long-known".
+- **#11** "26 empty bodies" in `prompts/CHANGELOG.md` (4.18 Why), `.claude/agents/cti-research.md` rung 4, `sources/sources.json` (ssd-disclosure note: "26 WebFetch calls over 18 URLs ... all came back empty"), the report Verdict and the run-record notes. `SR1.findings.yaml` `fetch_evidence`: calls 26, calls_with_content 2 (both a cache replay of the first read), so 24 came back empty. The run record's own "1 live read in 27 calls" is consistent; say "24 of 26 empty, the other two replays of the cached first read".
+
+### Editorial / less-is-more flags (advisory)
+- **#15 docs/architecture.md:463** still reads "**Mandatory every run for CISA + NCSC.ch** — don't even attempt `WebFetch` there." That is a leftover rule forbidding WebFetch on cisa.gov, the contradiction the brief asked to be absent; the file is outside the change set. Update to the v4.18 wording.
+- **#16 .claude/memory/source-fetch-blocks.md**: the appended v4.18 section contradicts three older lines: the ladder (line 15) has no WebFetch rung and files cisa.gov under jina; the CISA table row (line 21) still names `cisa page` / `cisa feed`; and line 57 says the four June entries "are a repoint job for the next audit", now done by this run.
+- **#17 prompts/cti-run.md:654** (Phase 5 `needs-bridge` playbook) still routes cisa.gov through the reader ("`cisa page`/`cisa feed` route through it too") and has no WebFetch step, unlike the v4.18 ladder elsewhere.
+- **#18** W23 entry closes "This is a national-CERT primary disclosure for its own jurisdiction." A composition-rationale sentence in reader text; move to `sourcing_note` or cut.
+- **#19 (low confidence)** W25 `evidence[0].quote` writes `'audio_Y6CEKNH8OE.zip'` where the page has double quotes; the run split the sibling quote for changed marks. Use escaped double quotes.
+- **#20** "the reader is the one untried rung, pending credit" (`sources.json` ssd-disclosure note) and "is the one rung not yet tried" (CHANGELOG) contradict the same note's "reader keys are out of credit (402)" and the run record's `bridge:jina` attempt. Say "untried with credit".
+- **#21 (low confidence)** `sources.json` bookkeeping: `cisa-directives` shows `consecutive_fetch_failures: 1` beside `last_successful_fetch: 2026-09-30` (cisa-news reset to 0); `ssd-disclosure`'s `last_successful_fetch` was bumped although SR1 advised against bumping on a possibly cached WebFetch response (the run's own 06:47Z read is the one live read).
+- **#22** (see #2) W25 `techniques[]` omits the forged-login link / HTML-attachment variant; add T1566.002.
+- **#23 (low confidence)** sygnia note: `extract https://www.sygnia.co/blog/` returned the "One moment, please..." challenge twice, 6 s apart, for me; the sitemap `https://www.sygnia.co/post-sitemap.xml` returned 200 with lastmod 2026-09-23. The challenge is intermittent, not always transient; consider leading with the sitemap.
+
+### Missed angles
+None raised. This is an operator-directed maintenance run; the coverage duty is the Apple item, which the 2026-09-30T0404Z intel entry covers.
+
+### Verdict
+NEEDS_FIXES (truth: 13, editorial: 1, advisory: 9)
+
+### Findings summary (machine-readable)
+See `work/2026-09-30T0634Z-audit/verification.iter1.findings.yaml` (23 records).

@@ -2,10 +2,13 @@
 """fetch_source.py — fetch publicly-readable content from CTI sources that
 block the Anthropic-managed routine's default User-Agent.
 
-The routine's WebFetch tool fronts requests with a UA the publisher
-recognises as automation; CISA, the Swiss NCSC Security Hub, and a
-handful of other sites either return HTTP 403 or refuse the connection
-outright. From a normal desktop browser the same URLs resolve fine.
+The container's default transports carry a UA or an egress the publisher
+recognises as automation; the Swiss NCSC Security Hub and a handful of
+other sites either return HTTP 403 or refuse the connection outright, while
+a normal desktop browser resolves the same URLs fine. (cisa.gov walls this
+container's egress on every UA; since v4.18 its pages without a structured
+recipe are read with the agent-side WebFetch, which runs outside the
+container. The KEV catalogue and CSAF recipes below stay the CISA path.)
 
 This script is the operator-blessed bridge: it hits the upstream API or
 HTML page with a stable browser UA, optionally drives the small set of
@@ -26,10 +29,11 @@ The script will NEVER:
 - Fetch hidden / authenticated content (the agent must respect TLP).
 - Run third-party JS or load any other origin.
 
-Fetch ladder recap: try `feed` (RSS) → the routine's WebFetch → `url` / a
-dedicated bridge recipe (direct browser-UA GET / publisher API) → `jina` (the
-r.jina.ai reader proxy) as the LAST RESORT, and keep a backup. The `url`
-command folds the last two together (direct → reader auto-fallback).
+Fetch ladder recap (v4.18): try `feed` (RSS) → `extract` → `url` / a dedicated
+bridge recipe (direct browser-UA GET / publisher API) → the agent-side WebFetch
+for hosts that wall the container out → `jina` (the r.jina.ai reader proxy) as
+the LAST RESORT, and keep a backup. The `url` command folds the direct GET and
+the reader together (direct → reader auto-fallback).
 
 Hosts the direct bridge cannot get content from — but the `jina` reader CAN
 (it fetches from its own egress and runs page JS, defeating the anti-bot / geo
@@ -45,21 +49,24 @@ Recovered earlier by the UA bump — use the feed path: databreaches.net
 (`feed https://databreaches.net/feed/`), www.darkreading.com (its /rss.xml),
 www.inside-it.ch (its /rss.xml).
 
-Fetch ladder (cheapest-first, jina LAST — the same order the research agents follow):
+Fetch ladder (cheapest-first, jina LAST, the same order the research agents follow, v4.18):
     1. RSS/Atom feed   → `feed <URL>` (structured, dated, carries outbound links)
-    2. direct WebFetch → the routine's WebFetch tool (agent-side; not this script)
+    2. trafilatura     → `extract <URL>` (human-header GET, clean article body)
     3. direct bridge   → `url <URL>` (browser-UA GET, full raw body) or the
                           structured subcommands below (publisher API / CSAF /
                           OData / sitemap)
-    4. jina reader     → `jina <URL>` — the LAST RESORT. Its server-side egress
+    4. WebFetch        → the agent-side WebFetch tool (not this script). It runs
+                          outside the container, so it reads hosts that wall our
+                          egress out: cisa.gov pages without a structured recipe
+                          (news, alerts, AA-series advisories, directives).
+    5. jina reader     → `jina <URL>`, the LAST RESORT. Its server-side egress
                           bypasses anti-bot / WAF / geo blocks and executes page
                           JS, but every fetch spends metered API-key credit.
-                          Reach for it only when every direct transport failed,
+                          Reach for it only when every other transport failed,
                           or the host is a KNOWN reader-required host
-                          (sources.json `fetch_method: jina`; e.g. heise.de
-                          article bodies, cisa.gov dynamic paths, the
-                          ccn-cert.cni.es geo-gate).
-The `url` command folds rungs 3→4 into one call: it tries a direct browser-UA
+                          (sources.json `fetch_method: jina`; no record
+                          pins it today).
+The `url` command folds rungs 3→5 into one call: it tries a direct browser-UA
 GET and AUTO-FALLS-BACK to the jina reader on a 403 / anti-bot / challenge body,
 so every page has a backup transport. Force one transport with `--direct` / `jina`.
 
@@ -1011,12 +1018,12 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
 def jina_page(url: str, *, html: bool = False) -> str:
     """Fetch ANY HTTPS page's body through the r.jina.ai reader proxy. This is
     the operator-facing `jina <URL>` transport — the LAST rung of the fetch
-    ladder (RSS → direct WebFetch → direct bridge / structured recipe → jina
-    reader). Every reader fetch spends metered API-key credit, so reach for it
-    only when every direct transport failed — an anti-bot/WAF/geo block, a
-    JS-only shell — or the host is a known reader-required host (sources.json
-    `fetch_method: jina`; e.g. heise.de article bodies, cisa.gov dynamic
-    paths). It returns clean, readable content (markdown by default;
+    ladder (RSS → extract → direct bridge / structured recipe → agent-side
+    WebFetch for walled hosts → jina reader, v4.18). Every reader fetch spends
+    metered API-key credit, so reach for it only when every other transport
+    failed (an anti-bot/WAF/geo block, a JS-only shell) or the host is a known
+    reader-required host (sources.json `fetch_method: jina`; no record pins
+    it today). It returns clean, readable content (markdown by default;
     simplified HTML with `html=True`)."""
     return _jina_fetch(url, fmt="html" if html else None)
 

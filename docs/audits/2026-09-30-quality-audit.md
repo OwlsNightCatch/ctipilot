@@ -1,0 +1,37 @@
+# Quality audit, 2026-09-30 (operator-directed follow-up)
+
+Run `2026-09-30T0634Z-audit`, prompt v4.18. It follows up the [2026-09-29 audit](2026-09-29-quality-audit.md) on the operator's instruction: resolve recommendation 1 (the CISA and SSD transport question) by using `WebFetch` where it makes sense and changing CLAUDE.md, and close the two items that report left open.
+
+## Verdict
+
+**Two of the three sources the container could not read now have a working reader, and the third has none.** `WebFetch` runs outside the container, and on 2026-09-30 it read the cisa.gov news listing and the cybersecurity-advisories listing with dates and item URLs, and the directives list with item URLs, which an independent pass (SR1) confirmed down to drilled pages. ssd-disclosure.com did not hold up: `WebFetch` read one advisory page once, then SR1's 26 calls over 18 URLs returned 24 empty bodies and 2 replays of that cached read. The reader pool was refilled during the run, and the funded reader got the same captcha on every try, so no transport reads SSD. It is now recorded as `blocked`, a documented coverage gap served by WebSearch leads. v4.17's setup review, which landed during this run, had already moved the three records to `fetch_method: webfetch`, but CLAUDE.md, the prompts and the agent definitions still forbade that reader for CISA and the health check still reported the records unreadable. v4.18 makes the rules and the check agree with the records.
+
+**The two open items are closed.** The 2026-09-30T0404Z intel fire published the Apple CVE-2026-86950 entry. This run had drafted one too and dropped it as a duplicate when the intel fire landed on main mid-run. The four June entries with dead NCSC-CH citations now point at the same pages on bacs.admin.ch.
+
+## Changes
+
+| Area | Change |
+|---|---|
+| CLAUDE.md | The "NEVER `WebFetch` CISA / NCSC.ch" rule now reads "structured recipes first, `WebFetch` where the container is walled out". `cisa-kev`, `cisa csaf-recent` and `ncsc-csh` stay on the bridge. "Avoid `WebFetch` for article bodies" becomes "use it where it is the reader that works, not where `extract` already does", with the summariser discipline: verbatim quotes only, full version tables asked for, no "not affected" read into an absence. |
+| Fetch ladder | `WebFetch` is rung 4 for walled hosts, ahead of the metered reader (`cti-research.md`, `cti-verification.md`, `cti-run.md`, `sources.json` ladder text, the `fetch_source.py` docstring). Most of the 83 `fetch_method: webfetch` records predate `extract` and read cleanly with it, so `extract` stays first for them and `WebFetch` is their reader only where the notes or the health verdict say the container is walled out. |
+| Source records | `cisa-news` and `cisa-directives` keep v4.17's `fetch_method: webfetch`, each note carrying the confirmed recipe. `ssd-disclosure` goes to `blocked` and joins the health check's documented unreachable set, since no transport reads it, the funded reader included; its note records WebSearch discovery (leads only) and `WebFetch` as best-effort. `cisa-advisories` keeps `cisa csaf-recent` for ICS and gains the `WebFetch` recipe for alerts and AA-series advisories. |
+| Source health | A `webfetch` record whose in-container read is walled (refused UA, blocked bridge, empty reader pool or challenge page) gets the verdict `webfetch-only` (handled, action `none`) instead of `unreadable` or `needs-bridge`. A 404 or parked page is not a wall and still surfaces, which `tools/test_source_health.py` pins. A `shell` or `unreadable` read, an undated read with no security vocabulary and a failed feed read are retried up to twice before a source is flagged. The Ops panel lists those sources separately, and the audit reads each one with `WebFetch` (quality-audit Phase 3 item 3). |
+| Org profile | The `policy_watch` hint for NCSC.ch announcements points at bacs.admin.ch and `ncsc-csh` instead of "direct WebFetch 403s", re-composed into the prompts. |
+| Repointed citations | The G7 Évian warning and the week 22, 23 and 25 reviews now cite bacs.admin.ch. Re-reading each page against its entry also found wording the page does not support, so each change is a correction with its own section: W23 described a "coordinated surge" and details the page does not carry, W22 tied both scam variants to the Booking.com leak, W25 mapped mailbox forwarding rules the page never mentions and hardened its hedges, and the G7 entry misnamed one of ZENDATA's vectors. W22 and W25 move from high to notable, since NCSC names no sector and no constituency exposure for either. Each record also adds the ATT&CK mapping (now limited to what the page supports) and the Admiralty rating these pre-v3.18 entries lacked. |
+
+## Findings: systemic and operational
+
+**Transient challenges read as broken sources.** The sweeps flagged `sygnia` as irrelevant (a no-content variant of its blog page, persisted at 07:17:58Z) and, in a dry-run sweep that left no snapshot, as a shell ("Please wait while your request is being verified"). They flagged `oneconsult-ch` as a shell behind its anti-bot wall on 2026-09-29 and as irrelevant on 2026-09-30. Both read cleanly minutes later, and sygnia's blog also answered 403 on 3 of 4 direct tries during verification. The recipes stand, Sygnia's note records the post sitemap as a fallback listing, and the probe now retries such a read, an undated read with no security vocabulary (Sygnia's other variant) and a feed read that failed, up to twice before flagging it.
+
+**Records added by v4.17 needed their health surface.** The sweep after merging v4.17 flagged `europol-newsroom` and `srf-news` as irrelevant (their feeds cover every topic, so they now carry `content_scope: general-news`) and `msrc-update-guide` as a shell (its URL is a JS app, so the check now runs the `msrc recent` recipe the record names).
+
+**A funded reader pool changes what `extract` reads.** Once the pool was refilled (about 07:40Z), `extract` fell back to the reader on small pages. That spends credit in the health sweep and pads a tiny listing with the reader's link list. The 12:31Z sweep flagged `swarmcha-se` (a three-post static index) as irrelevant for that reason, so its record now probes with `url --direct`, which reads the page's own HTML.
+
+## Recommendation (operator decision)
+
+1. **ssd-disclosure.com.** No transport reads it: the container and the bridge get SiteGround's captcha, `WebFetch` returned one live read, then 24 empty bodies and 2 cache replays in 26 calls, and the reader, refilled at about 07:40Z with 10 live keys, got the same captcha on all 8 tries and again at 12:3xZ. The record is `blocked` and works as a WebSearch lead list, corroborated through outlets that cover SSD advisories. The one remaining option is outside this repository: ask SSD for a feed or an allowlisted route. Otherwise keep it as a lead list.
+
+## Watch items
+
+- **`webfetch-only` sources.** Two records (`cisa-news`, `cisa-directives`) rely on a reader the health probe cannot run. While the reader pool has credit, the probe reads them through the reader's fallback (the 12:31Z sweep judged both relevant). While it is empty, they report `webfetch-only`, the audit's `WebFetch` read is their only independent check, and a quiet failure would surface only at the next audit.
+- **Quotes from `WebFetch`-only pages** are not machine-checkable. They rest on the verifier's hand check, as before.
