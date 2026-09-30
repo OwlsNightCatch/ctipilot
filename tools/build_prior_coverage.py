@@ -24,10 +24,22 @@ key match. Coverage OUTSIDE this window is caught by the store-wide metadata
 check (state/cves_seen.json + the mechanical gate), not by this file.
 
 Full record shape (one per entry):
-  {id, kind, date, discovered_at, updated_at, update_count,
-   last_update: {at, type, summary} | null, priority, title, headline,
-   summary, cves[], entities[], primary_source_url, deep_dive,
+  {id, kind, date, discovered_at, updated_at, last_changed_at, update_count,
+   last_update: {at, type, summary} | null,
+   last_development: {at, summary} | null  (last non-internal `update`),
+   priority, title, headline,
+   summary, cves[], entities[], actions[], primary_source_url, deep_dive,
    deep_dive_category}
+
+Plus one top-level list the window cannot carry by itself:
+  deep_dive_history          every `deep_dive: true` entry of the last 30
+                             days as {id, date, deep_dive_category} — the
+                             Phase 3 category-rotation input, which reaches
+                             further back than the dedup window.
+
+`actions` is the entry's CURRENT do-now list, so the composer can see that an
+in-window entry already carries an action before it writes the same one again
+(the rendered brief's action list is a union).
 
 A candidate matching a record's CVEs or entity keys is never a new entry —
 it is an `updates[]` record appended to that entry (or nothing when there is
@@ -47,6 +59,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -66,6 +79,12 @@ def build_records(window_days: int, today: str) -> list:
             continue
         updates = [u for u in (e.get("updates") or []) if isinstance(u, dict)]
         last = updates[-1] if updates else None
+        # The last material development (non-internal `update`): what the story
+        # last did in the world, as opposed to the last bookkeeping fix.
+        devs = [u for u in updates if u.get("type") == "update" and not u.get("internal")]
+        last_dev = devs[-1] if devs else None
+        visible = [u for u in updates if not u.get("internal")]
+        last_changed = max([e.get("discovered_at") or ""] + [str(u.get("at") or "") for u in visible])
         primary = None
         for s in e.get("sources") or []:
             if isinstance(s, dict) and s.get("url"):
@@ -82,22 +101,64 @@ def build_records(window_days: int, today: str) -> list:
                 {"at": last.get("at"), "type": last.get("type"),
                  "summary": last.get("summary")} if last else None
             ),
+            "last_development": (
+                {"at": last_dev.get("at"), "summary": last_dev.get("summary")}
+                if last_dev else None
+            ),
+            "last_changed_at": last_changed,
             "priority": e.get("priority"),
             "title": e.get("title"),
             "headline": e.get("headline"),
             "summary": e.get("summary"),
             "cves": [c.get("id") for c in (e.get("cves") or []) if isinstance(c, dict)],
             "entities": list(e.get("entities") or []),
+            "actions": [a for a in (e.get("actions") or []) if isinstance(a, str)],
             "primary_source_url": primary,
             "deep_dive": bool(e.get("deep_dive")),
             "deep_dive_category": e.get("deep_dive_category"),
         })
-    records.sort(key=lambda r: (r["discovered_at"] or "", r["id"]))
+    # Newest activity FIRST: the file is larger than one Read, and a truncated
+    # read must lose the oldest coverage, never today's earlier runs (the most
+    # likely duplicates).
+    records.sort(key=lambda r: (r["last_changed_at"] or "", r["id"]), reverse=True)
     return records
 
 
-_KEYS_FIELDS = ("id", "kind", "date", "discovered_at", "updated_at", "update_count",
-                "priority", "cves", "entities", "deep_dive", "deep_dive_category")
+def build_deep_dive_history(today: str, days: int = 30) -> list:
+    anchor = datetime.strptime(today, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    cutoff = (anchor - timedelta(days=days)).strftime("%Y-%m-%d")
+    out = [
+        {"id": e["id"], "date": e.get("date"), "deep_dive_category": e.get("deep_dive_category")}
+        for e in cm.collect_entries()
+        if e.get("deep_dive") and cutoff <= (e.get("date") or "") <= today
+    ]
+    out.sort(key=lambda r: (r["date"] or "", r["id"]))
+    return out
+
+
+_KEYS_FIELDS = ("id", "kind", "date", "discovered_at", "updated_at", "last_changed_at",
+                "update_count", "priority", "cves", "entities", "deep_dive",
+                "deep_dive_category")
+
+
+def _dump_lines(doc: dict) -> str:
+    """JSON with one record per line (valid JSON, compact, chunk-readable)."""
+    head = {k: v for k, v in doc.items() if k not in ("records", "deep_dive_history")}
+    out = ["{"]
+    for k, v in head.items():
+        out.append(f" {json.dumps(k)}: {json.dumps(v, ensure_ascii=False)},")
+    for key in ("deep_dive_history", "records"):
+        if key not in doc:
+            continue
+        items = doc[key]
+        out.append(f" {json.dumps(key)}: [")
+        for i, r in enumerate(items):
+            out.append("  " + json.dumps(r, ensure_ascii=False, separators=(",", ":"))
+                       + ("," if i < len(items) - 1 else ""))
+        out.append(" ],")
+    out[-1] = out[-1].rstrip(",")
+    out.append("}")
+    return "\n".join(out) + "\n"
 
 
 def main() -> int:
@@ -108,7 +169,11 @@ def main() -> int:
     ap.add_argument("--today", help="override today's UTC date (testing)")
     args = ap.parse_args()
 
-    today = args.today or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    # The run id carries the Phase 0 network-verified date; the container clock
+    # has been days wrong before (2026-08-24), and a wrong "today" silently
+    # drops the newest coverage from the dedup index.
+    m = re.match(r"^(\d{4}-\d{2}-\d{2})T\d{4}Z-", args.run_id)
+    today = args.today or (m.group(1) if m else datetime.now(timezone.utc).strftime("%Y-%m-%d"))
     out_dir = Path(args.out_dir) if args.out_dir else ROOT / "work" / args.run_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -119,6 +184,7 @@ def main() -> int:
         "today": today,
         "record_count": len(records),
         "records": records,
+        "deep_dive_history": build_deep_dive_history(today),
     }
     keys = {
         "run_id": args.run_id,
@@ -129,11 +195,15 @@ def main() -> int:
     }
     p_full = out_dir / "prior_coverage.json"
     p_keys = out_dir / "prior_coverage_keys.json"
-    p_full.write_text(json.dumps(full, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    p_keys.write_text(json.dumps(keys, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    # One record per line, no indentation: the reader pays tokens for text,
+    # not whitespace, and a line-oriented file can be read in offset chunks.
+    p_full.write_text(_dump_lines(full), encoding="utf-8")
+    p_keys.write_text(_dump_lines(keys), encoding="utf-8")
+    est = p_full.stat().st_size // 4
     print(f"prior_coverage: {len(records)} records "
-          f"({p_full.stat().st_size} B full, {p_keys.stat().st_size} B keys) "
-          f"window={args.window_days}d today={today}")
+          f"({p_full.stat().st_size} B full ≈ {est} tokens, {p_keys.stat().st_size} B keys) "
+          f"window={args.window_days}d today={today} — newest activity first; if one Read "
+          f"truncates, continue with offset until the last line")
     return 0
 
 

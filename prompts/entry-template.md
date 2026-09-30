@@ -19,9 +19,22 @@ described as behavior (the MITRE ATT&CK ids live in `techniques[]`
 frontmatter, inline in prose only where essential), exploitation
 prerequisites, affected and patched versions to vendor-stated precision,
 named campaign clusters, behavioural detection and hardening tied to the
-specificity (no IOCs, no rule code).
+specificity (no IOCs, no rule code). The labelled lines are the
+actionability contract (`prompts/cti-run.md` Phase 4 § The actionability
+contract): a reader who reads only them knows whether they are exposed,
+how the activity shows up in telemetry, how to tell it from benign
+activity, and what decision changes. The site lifts them onto entity and
+product pages, and a triage agent can read them field by field.
 
-> A supply-chain compromise injected a malicious post-install script into the fictitious npm `@org/x-cli` package across versions 4.2.7 → 4.3.1; the script invokes `osascript` on macOS / `powershell.exe -enc` on Windows to harvest browser cookie jars from each browser's per-profile cookie store on disk and exfiltrates them via DNS-over-HTTPS to an attacker-operated edge-serverless resolver — TLS-encrypted, blends with normal browser DoH traffic, evades classic egress proxies that don't terminate DoH ([Vendor primary, YYYY-MM-DD](url)). The install-time execution is a supply-chain compromise of the package's install hook and the DoH channel is DNS-based application-layer command-and-control — both mapped in this entry's `techniques[]` frontmatter (`T1195.002`, `T1071.004`), which is where machine consumers and the ATT&CK matrix read them; the prose stays readable without the numbers. Detection concepts, telemetry-class first: in process-creation telemetry with parent lineage (e.g. Sysmon EID 1, auditd `execve`, EDR process events), alert on script interpreters (`osascript`, `powershell.exe -enc`) spawning from `node` / `npm` / `npx` parent trees; inventory installed `@org/*` package versions across developer endpoints; in egress telemetry, surface DoH resolvers other than the corporate ones. **Triage:** developer machines legitimately spawn interpreters from `node` trees during builds — the discriminators are the DoH egress to a non-corporate resolver in the same process tree and reads of browser cookie stores by a non-browser process; either alone is weak, the sequence is the signal. Hardening: pin npm dependencies via lockfile + `--ignore-scripts`; require signed packages for the affected scope. Affected versions: 4.2.7 through 4.3.1; fixed in 4.3.2.
+> A supply-chain compromise injected a malicious post-install script into the fictitious npm `@org/x-cli` package across versions 4.2.7 → 4.3.1; the script invokes `osascript` on macOS / `powershell.exe -enc` on Windows to harvest browser cookie jars from each browser's per-profile cookie store on disk and exfiltrates them via DNS-over-HTTPS to an attacker-operated edge-serverless resolver: TLS-encrypted, it blends with normal browser DoH traffic and evades classic egress proxies that don't terminate DoH ([Vendor primary, YYYY-MM-DD](url)). Affected versions: 4.2.7 through 4.3.1; fixed in 4.3.2.
+>
+> **Exposure:** any developer endpoint or CI runner that installed `@org/x-cli` 4.2.7 to 4.3.1 without `--ignore-scripts`; `npm ls @org/x-cli` or the lockfile shows the installed version.
+>
+> **Detection:** in process-creation telemetry with parent lineage (e.g. Sysmon EID 1, auditd `execve`, EDR process events), alert on script interpreters (`osascript`, `powershell.exe -enc`) spawning from `node` / `npm` / `npx` parent trees; inventory installed `@org/*` package versions across developer endpoints; in egress telemetry, surface DoH resolvers other than the corporate ones.
+>
+> **Triage:** developer machines legitimately spawn interpreters from `node` trees during builds; the discriminators are the DoH egress to a non-corporate resolver in the same process tree and reads of browser cookie stores by a non-browser process; either alone is weak, the sequence is the signal.
+>
+> **Defender takeaway:** remove 4.2.7 to 4.3.1 from every endpoint and runner now and treat every browser session on an affected machine as stolen (revoke and re-authenticate); install hooks are the durable lever: pin dependencies via lockfile and install with `--ignore-scripts`.
 
 The example is purely illustrative — actual depth is whatever the linked
 primary source supports. **Better to write less than to fabricate
@@ -46,14 +59,14 @@ omitted entirely when the sources give no honest basis for one.
 ---
 schema: 1
 kind: vulnerability
-title: "CVE-YYYY-NNNNN — {Vendor} {Product}: {one-line description} (CVSS N.N)"
+title: "CVE-YYYY-NNNNN, {Vendor} {Product}: {one-line description} (CVSS N.N)"   # no em dash anywhere a reader sees
 headline: "{Vendor} patches {an actively-exploited pre-auth RCE} in {Product}"
 summary: >
   1–3 self-contained sentences naming the product, versions, exploitation
   status, and who must act. This is the TL;DR bullet, the RSS description,
   and the notification text.
 discovered_at: "YYYY-MM-DDTHH:MM:SSZ"   # first publication — never changes
-updated_at: null                         # == updates[-1].at once the entry has a changelog record
+updated_at: null                         # == at of the last non-internal `type: update` record; null otherwise
 event_date: "YYYY-MM-DD"
 run_id: YYYY-MM-DDTHHMMZ-intel           # the originating fire — never changes
 priority: high
@@ -119,9 +132,16 @@ updates: []                      # the changelog — empty on a new entry; see �
 migrated_from: null
 ---
 
-{2–5 sentence body: what it is, prerequisites, exploitation status, who it
-affects, detection + hardening — inline links at point of claim, worked-good
-depth. No metadata footer line — frontmatter carries all metadata.}
+{3–6 sentence narrative: the mechanism, prerequisites, exploitation status
+and affected/fixed versions, inline links at point of claim, worked-good
+depth. Then the labelled lines the sources support, each its own
+paragraph: **Exposure:** (who is affected and how to tell: component,
+default-on vs opt-in, internet-facing or not, how to read the running
+version), **Detection:** (telemetry class first, then the platform anchor;
+plus the post-patch compromise check when patching does not evict the
+attacker), **Triage:** only when the mechanism gives an honest
+discriminator, and **Defender takeaway:** (the decision that changes).
+No metadata footer line: frontmatter carries all metadata.}
 ````
 
 **Classification — every entry carries exactly one rating, never zero.**
@@ -154,10 +174,12 @@ Variants:
 - **threat / incident** — same skeleton with `kind: threat` (campaign /
   actor activity) or `kind: incident` (breach / disclosure), usually
   `cves: []`, `org_triage: null` + a `classification` block (above), body
-  ends with a `**Defender takeaway:**` line and — where the cited
-  mechanism supports a benign-lookalike discriminator — a `**Triage:**`
-  line adjacent to it (see `prompts/cti-run.md` Phase 4 § Triage-ready
-  behavioral description; omit rather than invent).
+  closes with the same labelled lines: `**Exposure:**` (the targeted
+  technology, sector or configuration, and what in the reader's estate
+  shows it), `**Detection:**`, a `**Triage:**` line where the cited
+  mechanism supports a benign-lookalike discriminator (omit rather than
+  invent), and `**Defender takeaway:**` (see `prompts/cti-run.md` Phase 4
+  § The actionability contract and § Triage-ready behavioral description).
 - **critical entry** — `priority: critical` plus:
 
   ```yaml
@@ -177,7 +199,7 @@ Variants:
   block, body names the obligation and its date.
 - **closed-source entry** — `closed_sources: [{title, provider, date, ref}]`,
   inline attribution in the body as plain text
-  `(Provider, YYYY-MM-DD — closed source)`, never a fabricated URL. There is
+  `(Provider, YYYY-MM-DD, closed source)`, never a fabricated URL. There is
   no TLP gate: intel/ material is processed like any other source (a legacy
   `tlp` key, if present, is ignored). The classification block still applies —
   a single closed-source document is usually reliability `B`/`A` (per the
@@ -193,12 +215,14 @@ file (`prompts/cti-run.md` Phase 4 § Updating an existing entry; normative:
 `docs/pipeline.md` § Entry lifecycle). `Read` the entry, then land the
 record, the section and the frontmatter changes in one `Edit`/`Write`.
 
-The frontmatter after two changes — a KEV listing (an `update`) and a later
-audit correction of the fixed version:
+The frontmatter after three changes: a KEV listing (an `update`), a later
+audit correction of the fixed version, and a metadata-only fix with nothing
+to tell the reader (an `internal: true` record, no section):
 
 ````yaml
 discovered_at: "2026-07-03T04:21:09Z"      # unchanged
-updated_at: "2026-07-11T14:40:12Z"         # == the last record's at
+updated_at: "2026-07-05T04:40:12Z"         # == the last non-internal type:update record; corrections, improvements
+                                           # and internal records never move it
 run_id: 2026-07-03T0412Z-intel             # unchanged — updating fires appear in updates[]
 priority: high                             # moved from notable by the 07-05 record
 cves:
@@ -231,14 +255,24 @@ updates:
       The fixed version was stated as 4.3.0; the vendor advisory's fix table names 4.2.2 as the
       first fixed release. Corrected in the CVE record, the action and the body.
     fields: [cves, actions, body]
+  - at: "2026-07-12T04:31:02Z"
+    run_id: 2026-07-12T0409Z-intel
+    type: improvement
+    internal: true
+    summary: >
+      Added the second affected-product spelling the vendor uses to affected_products; nothing
+      the reader acts on changed.
+    fields: [affected_products]
 ````
 
-The body: the main analysis first (corrected where it was wrong — the
-correction record's `fields` says `body`), then one section per record,
-same order, heading exactly `## <Type> — <at>`:
+The body: the main analysis first (corrected where it was wrong; the
+correction record's `fields` says `body`), then one section per
+non-internal record, same order, heading exactly `## <Type> — <at>` (the
+heading's em dash is the one sanctioned exception: the renderer turns it
+into a timestamped block). The internal record has no section:
 
 ````markdown
-{The main analysis — a complete, readable entry on its own. Where the
+{The main analysis: a complete, readable entry on its own. Where the
 07-11 correction applies, this text now says 4.2.2, not 4.3.0.}
 
 ## Update — 2026-07-05T04:40:12Z
@@ -246,7 +280,7 @@ same order, heading exactly `## <Type> — <at>`:
 CISA added CVE-YYYY-NNNNN to the Known Exploited Vulnerabilities catalog on 2026-07-04
 ([CISA, 2026-07-04](https://…)). {Lab} observed exploitation against internet-exposed
 {Product} instances beginning 2026-07-02, with {the observable behaviour the source
-describes — telemetry class first} ([{Lab}, 2026-07-04](https://…)). The delta only —
+describes, telemetry class first} ([{Lab}, 2026-07-04](https://…)). The delta only:
 no recap of the original analysis.
 
 ## Correction — 2026-07-11T14:40:12Z
@@ -257,9 +291,10 @@ analysis above now say 4.2.2. Readers who patched to 4.2.2 on the original guida
 already fixed; the misstatement affected only the version boundary.
 ````
 
-Rules the gate enforces: one record ⇔ one section, in order, same `at`;
-`at` strictly later than `discovered_at` and than the previous record;
-`updated_at` mirrors the last record; every new source cited in a section is
+Rules the gate enforces: every non-internal record ⇔ one section, in order,
+same `at`; an `internal: true` record has none; `at` strictly later than
+`discovered_at` and than the previous record; `updated_at` mirrors the last
+non-internal `type: update` record (null when none); every new source cited in a section is
 appended to `sources[]`; `discovered_at` / `run_id` / the path never change;
 an entry file modified in the working tree without a record for the modifying
 run FAILs (`silent-edit`). The updating run lists the entry id in its run

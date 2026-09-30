@@ -724,8 +724,25 @@ def _looks_blocked(text: str) -> bool:
         "enable javascript and cookies to continue",
         "please enable javascript to view",
         "verify you are human",
+        # SPA shells that answer HTTP 200 with only a <noscript> line; trafilatura
+        # with favor_recall returns that line as "the article" (tooling review
+        # 2026-09-29), so it must read as a failed rung, not as content.
+        "you need to enable javascript to run this app",
+        "enable javascript to run this app",
+        "requires javascript to be enabled",
     )
     return any(m in head for m in cf_markers)
+
+
+def _substantive(extracted: str | None, min_alnum: int = 300) -> bool:
+    """True when an extraction carries real body text, not a shell. The
+    trafilatura metadata header (--- title/author/url --- block) is not body."""
+    if not extracted:
+        return False
+    body = re.sub(r"\A---\n.*?\n---\n", "", extracted, count=1, flags=re.DOTALL)
+    if _looks_blocked(body):
+        return False
+    return sum(ch.isalnum() for ch in body) >= min_alnum
 
 
 def _jina_keys() -> list[str]:
@@ -1156,8 +1173,10 @@ def extract_page(url: str) -> tuple[str, str]:
             if not _looks_blocked(text):
                 raw = text
                 extracted = extract_readable(text, url)
-                if extracted:
+                if _substantive(extracted):
                     return extracted, "trafilatura-direct"
+                if extracted:
+                    direct_err = "direct body extracted to a near-empty shell"
             else:
                 direct_err = "direct hit returned an anti-bot/challenge body"
         else:
@@ -1167,11 +1186,11 @@ def extract_page(url: str) -> tuple[str, str]:
     html = _trafilatura_fetch(url)
     if html:
         extracted = extract_readable(html, url)
-        if extracted:
+        if _substantive(extracted):
             return extracted, "trafilatura-fetch"
         if raw is None:
             raw = html
-    if raw is not None:
+    if raw is not None and _substantive(raw, min_alnum=1500):
         # Reachable but not article-shaped (or trafilatura missing): hand the
         # caller the raw body rather than spending reader credit on a page we
         # already hold.
@@ -1843,10 +1862,21 @@ def feed_recent(feed_url: str, count: int = 20) -> dict[str, Any]:
                 ) from None
             # Direct parse succeeded but returned 0 items (empty feed) — that
             # is a legitimate empty result, not a transport failure.
+        if not items and direct_err:
+            # The direct transport FAILED and the reader found nothing: a moved
+            # feed that now serves HTML reads as "count: 0" otherwise, and an
+            # agent concludes the source was quiet (tooling review 2026-09-29).
+            raise RuntimeError(
+                f"feed unreadable for {feed_url}: direct=({direct_err}); "
+                f"jina returned no items"
+            )
     # Use the hostname as a stable `source` field so a multi-feed run can
     # be sorted / aggregated downstream without re-parsing the URL.
-    return {"source": host or "feed", "feed": feed_url, "method": method,
-            "count": len(items), "items": items}
+    out = {"source": host or "feed", "feed": feed_url, "method": method,
+           "count": len(items), "items": items}
+    if direct_err:
+        out["direct_error"] = direct_err
+    return out
 
 
 # ── Microsoft MSRC Update Guide ───────────────────────────────
@@ -2451,6 +2481,11 @@ def pdf_text(url: str) -> dict[str, Any]:
             f"refused: {url} is not a PDF (Content-Type {ctype}, "
             f"first bytes {body[:8]!r}) — use `url` for HTML"
         )
+    if b"/Encrypt" in body[:4096] or re.search(rb"/Encrypt\s+\d+\s+\d+\s+R", body[-4096:]):
+        raise RuntimeError(
+            f"{url} is an encrypted PDF: its text cannot be extracted here, which says "
+            "nothing about what it contains — find an unencrypted copy or the HTML advisory"
+        )
     streams = _pdf_streams(body)
     cmap = _pdf_tounicode_map(streams)
     content = [s for s in streams if b"Tj" in s or b"TJ" in s or b"BT" in s]
@@ -2782,7 +2817,9 @@ def main(argv: list[str]) -> int:
                     file=sys.stderr,
                 )
                 sys.stdout.write(rec["text"] + "\n")
-            return 0
+            # Exit 3 on an empty extraction: "no text" must never look like a
+            # successful read of a document that says nothing.
+            return 3 if rec["chars"] == 0 else 0
     except (RuntimeError, ValueError) as e:
         print(f"fetch_source: {e}", file=sys.stderr)
         return 1

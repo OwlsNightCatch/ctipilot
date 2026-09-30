@@ -35,9 +35,11 @@ Usage
         # ^ the shape a fire should use: also writes work/<run-id>/kev-window.txt,
         #   so the forensic artefact exists without depending on a shell redirect.
 
-Coverage is checked against BOTH `state/cves_seen.json` (the flat store-wide
-index) and the `cves[]` frontmatter of every entry, so a CVE covered by an
-entry whose id never reached the index still reports as covered.
+Coverage is an entry's `cves[]` record. Four states: COVERED (an entry
+carries the CVE and already says exploited / cisa-kev), COVERED-STALE (an
+entry carries it but does not yet say exploited: the listing is the PD-13
+exploitation-status change, an `update` record), MENTION-ONLY (only
+`state/cves_seen.json` knows it, from a body mention), NOT COVERED.
 
 Exit codes: 0 always when the feed was read (uncovered rows are information,
 not a gate failure); 2 when the KEV feed could not be fetched or parsed.
@@ -77,20 +79,21 @@ def _fetch_kev(kev_file: Path | None) -> dict:
     return json.loads(proc.stdout)
 
 
-def _store_cve_ids() -> tuple[set[str], dict[str, str]]:
-    """Every CVE id the store knows, plus id -> first entry that carries it."""
-    ids: set[str] = set()
-    owner: dict[str, str] = {}
+def _store_cve_ids() -> tuple[dict[str, dict], set[str]]:
+    """({cve: {"entry": id, "exploited": bool}} for every CVE an entry's
+    `cves[]` carries, {cve ids only in state/cves_seen.json}).
 
-    index = ROOT / "state" / "cves_seen.json"
-    if index.is_file():
-        data = json.loads(index.read_text(encoding="utf-8"))
-        for rec in data.get("cves", []):
-            cid = str(rec.get("id") or "").upper()
-            if cid:
-                ids.add(cid)
-                owner.setdefault(cid, "state/cves_seen.json")
-
+    Coverage means an entry's `cves[]` record, never the flat index alone:
+    the index also holds CVEs an entry body merely mentions (history,
+    comparisons), and 71 KEV CVEs were reported "covered" that way in the
+    2026-09-29 tooling review while no entry told the reader they were
+    exploited. `stale` lists every carrying entry whose record does not yet
+    say `exploited` or `cisa-kev`: for each, the listing is the PD-13
+    exploitation-status change that ships as an `update` record (an entry
+    whose summary still says "no known exploitation" misleads its reader even
+    when a later entry covers the exploitation).
+    """
+    covered: dict[str, dict] = {}
     entries_dir = ROOT / "entries"
     if entries_dir.is_dir():
         for day in sorted(entries_dir.iterdir()):
@@ -104,17 +107,42 @@ def _store_cve_ids() -> tuple[set[str], dict[str, str]]:
                 data = entry.data if hasattr(entry, "data") else entry
                 for rec in (data.get("cves") or []):
                     cid = str((rec or {}).get("id") or "").upper()
-                    if cid:
-                        ids.add(cid)
-                        owner[cid] = data.get("id", str(path))
-    return ids, owner
+                    if not cid:
+                        continue
+                    status = set((rec or {}).get("status") or [])
+                    eid = data.get("id", str(path))
+                    cur = covered.setdefault(cid, {"entry": eid, "stale": []})
+                    cur["entry"] = eid  # newest carrying entry
+                    if not status & {"exploited", "cisa-kev"}:
+                        cur["stale"].append(eid)
+    index_only: set[str] = set()
+    index = ROOT / "state" / "cves_seen.json"
+    if index.is_file():
+        data = json.loads(index.read_text(encoding="utf-8"))
+        for rec in data.get("cves", []):
+            cid = str(rec.get("id") or "").upper()
+            if cid and cid not in covered:
+                index_only.add(cid)
+    return covered, index_only
+
+
+def _now_from_args(args: argparse.Namespace) -> datetime:
+    """The Phase 0 network-verified start (--now, else the run id), never the
+    container clock when either is given: the clock has been days wrong."""
+    if args.now:
+        return datetime.strptime(args.now, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    m = re.match(r"^(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})Z-", str(args.run_id or ""))
+    if m:
+        return datetime.strptime(f"{m.group(1)}T{m.group(2)}:{m.group(3)}:00Z",
+                                 "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc)
 
 
 def _since_from_args(args: argparse.Namespace) -> date:
     if args.since:
         return date.fromisoformat(args.since)
     hours = args.window_hours if args.window_hours is not None else 24
-    return (datetime.now(timezone.utc) - timedelta(hours=hours)).date()
+    return (_now_from_args(args) - timedelta(hours=hours)).date()
 
 
 def main() -> int:
@@ -129,6 +157,9 @@ def main() -> int:
     p.add_argument("--json", action="store_true", help="machine-readable output")
     p.add_argument("--kev-file", type=Path,
                    help="read the KEV catalog from a local JSON file instead of fetching")
+    p.add_argument("--now", metavar="YYYY-MM-DDTHH:MM:SSZ",
+                   help="the run's verified start (Phase 0 STARTED); default: derived "
+                        "from --run-id, else the container clock")
     p.add_argument("--run-id", metavar="RUN_ID",
                    help="also persist this report to work/<RUN_ID>/kev-window.txt "
                         "(the forensic artefact the run record's KEV note refers to)")
@@ -147,7 +178,7 @@ def main() -> int:
         print("FATAL: KEV payload has no `vulnerabilities` list", file=sys.stderr)
         return 2
 
-    known, owner = _store_cve_ids()
+    covered_map, index_only = _store_cve_ids()
 
     rows = []
     for v in vulns:
@@ -155,6 +186,10 @@ def main() -> int:
         if not added or added < since.isoformat():
             continue
         cid = str(v.get("cveID") or "").upper()
+        cov = covered_map.get(cid)
+        state = ("covered" if cov and not cov["stale"] else
+                 "stale" if cov else
+                 "mentioned" if cid in index_only else "uncovered")
         rows.append({
             "cve": cid,
             "date_added": added,
@@ -162,11 +197,12 @@ def main() -> int:
             "product": v.get("product"),
             "name": v.get("vulnerabilityName"),
             "ransomware": v.get("knownRansomwareCampaignUse"),
-            "covered": cid in known,
-            "covered_by": owner.get(cid),
+            "state": state,
+            "covered": state == "covered",
+            "covered_by": (", ".join(cov["stale"]) if cov and cov["stale"] else cov["entry"]) if cov else None,
         })
     rows.sort(key=lambda r: (r["date_added"], r["cve"]))
-    uncovered = [r for r in rows if not r["covered"]]
+    uncovered = [r for r in rows if r["state"] != "covered"]
 
     if args.json:
         payload = json.dumps({"since": since.isoformat(), "total_in_window": len(rows),
@@ -180,16 +216,25 @@ def main() -> int:
     if not rows:
         out.append("  none — the window carries no KEV additions")
     for r in rows:
-        mark = "COVERED  " if r["covered"] else "NOT COVERED"
+        mark = {"covered": "COVERED      ", "stale": "COVERED-STALE",
+                "mentioned": "MENTION-ONLY ", "uncovered": "NOT COVERED  "}[r["state"]]
         out.append(f"  {mark} {r['date_added']}  {r['cve']:18s} {r['vendor']} {r['product']}")
-        out.append(f"              {r['name']}")
-        if r["covered"]:
-            out.append(f"              already in: {r['covered_by']}")
+        out.append(f"                {r['name']}")
+        if r["state"] == "covered":
+            out.append(f"                already in: {r['covered_by']}")
+        elif r["state"] == "stale":
+            out.append(f"                carried by {r['covered_by']}, whose cves[] record does not "
+                       "yet say exploited: the KEV listing is an exploitation-status change (PD-13), "
+                       "an `update` record on that entry")
+        elif r["state"] == "mentioned":
+            out.append("                only mentioned in an entry body (state/cves_seen.json); no "
+                       "entry covers it as a finding")
     if uncovered:
-        out += ["", "Every NOT COVERED row needs a disposition in this run: a new entry, "
-                    "an `update` changelog record on the entry that already covers the "
-                    "finding, or an explicit `borderline-drop:` line in the run record "
-                    "saying why it is out of scope (PD-11). Silence is not a disposition."]
+        out += ["", "Every NOT COVERED, MENTION-ONLY and COVERED-STALE row needs a disposition "
+                    "in this run: a new entry, an `update` changelog record on the entry that "
+                    "already covers the finding (for COVERED-STALE: the record that moves its "
+                    "cves[].status to exploited), or an explicit `borderline-drop:` line in the "
+                    "run record saying why it is out of scope (PD-11). Silence is not a disposition."]
     report = "\n".join(out)
     print(report)
     _persist(args.run_id, report)

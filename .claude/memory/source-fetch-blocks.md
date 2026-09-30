@@ -26,7 +26,7 @@ RSS feed → `fetch_source.py extract <URL>` (human-header GET + trafilatura →
 | NCSC-CH / BACS (moved 2026-08-20 to bacs.admin.ch — Nuxt SPA; old ncsc.admin.ch redirects are explicitly NOT permanent) | **`extract <url>` reads both pages in full via trafilatura-direct — verified 2026-09-27 on `/de/aktuelle-vorfaelle` and `/de/im-fokus`, dated item lists and all.** `ncsc-ch-focus`/`-incidents` = `fetch_method: bridge`. They had drifted to `jina` and sat unreadable for two windows against an empty key pool while this direct path worked; if you find them on `jina` again, that is the bug. Official PDFs on `cms.news.admin.ch`; CSH API = `ncsc-csh` (`/api/v1/posts/...`), cite `security-hub.ncsc.admin.ch/#/posts/<id>` |
 | PDF-only advisories (joint advisories, authority reports) | `fetch_source.py pdf <URL>` — select on CONTENT TYPE, never as a failure rung; mirrors (media.defense.gov, ic3.gov) count as the same document |
 | infoguard-labs | RSS `https://labs.infoguard.ch/rss.xml` |
-| heise-sec | `feed https://www.heise.de/security/feed.xml N` → `jina <article>` (browser engine; needs a live key; free articles only) |
+| heise-sec | `feed https://www.heise.de/security/feed.xml N` → `extract <article>` (trafilatura-direct, no reader; verified 2026-09-29 on article 11469864 — the older jina-only recipe is superseded; free articles only) |
 | Reader-unreachable even via jina | coe.int, downloads.seppmail.com — stay `blocked` |
 
 `TRANSPORT_BLOCKED_UNREACHABLE` in `source_health.py` marks a blocked host as handled; add an id ONLY after direct AND jina AND bridge all fail.

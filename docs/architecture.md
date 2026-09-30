@@ -150,7 +150,7 @@ timestamped `updates[]` changelog record with a matching
 `## Update — <at>` body section; corrections fix the wrong statement where
 it stands and record a `correction`; added precision is an `improvement`.
 The frontmatter always reflects the current state, `discovered_at` /
-`run_id` / the entry id never change, `updated_at` mirrors the last record,
+`run_id` / the entry id never change, `updated_at` mirrors the last non-internal `type: update` record,
 and the gate FAILs any edit that ships without a record for the editing
 fire (no silent edits — `docs/pipeline.md` § Entry lifecycle). Volume
 follows a strict relevance/actionability gate rather than a count — no
@@ -259,7 +259,7 @@ into `ORG-PROFILE:BEGIN/END` managed marker blocks inside five files:
 § Organization profile & watchlists data block, and the `org-policy-watch`
 block that tasks S2), `prompts/verification.md` (the
 `org-certs` carve-out list), the `cti-research` definition (mission,
-audience, watchlist values, `org-certs`), and both verifier definitions
+audience, watchlist values, `org-certs`), and the `cti-verification` definition
 (§ Organization context). The static policy text around the blocks
 (anti-overshoot rules, sweep ownership, the `org_triage` frontmatter
 spec) lives in the prompts, is deliberately org-neutral, and follows the
@@ -661,7 +661,7 @@ entries.
                                │ detect intel/<date>/ drops (⇒ S5)      │
                                └──────────┬────────────────────────────┘
                                           │ spawn in parallel (isolated
-                                          ▼ contexts; xhigh effort, 45-min cap)
+                                          ▼ contexts; xhigh effort, no time cap)
  ┌────────────────────────────────────────────────────┐
  │ S1 active threats & trending vulns  (+product sweep)│
  │ S2 home region & sector                             │

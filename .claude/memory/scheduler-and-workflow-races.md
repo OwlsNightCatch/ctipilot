@@ -24,12 +24,12 @@ Interactive sessions on this repo can run CONCURRENTLY IN THE SAME WORKING TREE 
 
 - An overtaking fire's window is gap-to-last-**published**-run, so it swallows yours whole. Check `origin/main` at every phase boundary, not only Phase 6.
 - Dedup by **reading**, not by index: two of the eight duplicates had no CVE and no shared entity key.
-- Resolve the merge by taking `main`'s shared state and re-applying only your genuinely-new records — `--ours` on registry/`cves_seen`/source_health discards other fires' work (union-merge `cves_seen.json` keyed on `id`). Check your *tooling* diffs the same way: a local fix may be a rediscovery of a better one already on `main`.
+- Resolve a conflicted merge with `python3 tools/merge_state.py resolve` (since 2026-09-29; the workflow and Phase 6 run it too): a record-aware three-way merge of `cves_seen.json` (union by id), `sources.json` (per source/field, both sides' `notes`), the registry (per entity key, both sides' new entities), the backlog (per row) and `source_health.json` (newest snapshot). The old whole-file `--ours`/`--theirs` discarded other fires' work. It prints a NOTE when an entity was edited on both sides with conflicting lines and one block won: check that entity. Check your *tooling* diffs by reading, not by merge: a local fix may be a rediscovery of a better one already on `main`.
 - A still-valuable duplicate survives as a changelog record appended to the overtaking entry; its `at` must be later than that entry's last activity. **The audit fire appends records too** — re-read the target entry on `origin/main` for a newer record before appending yours (one record per fire; `at` strictly increasing; a second correction of the same defect is no record at all). A dropped entry's non-actionable extra fact goes to a correction-owed row in `state/coverage_backlog.md`.
 
 ## Auto-merge conflicts
 
-- **`state/coverage_backlog.md` ALWAYS conflicts on interleaved pushes** — it is outside the workflow's four auto-resolution paths (`cves_seen`/`source_health` →ours, registry →ours, sources.json →theirs) and every fire touches it. Resolve locally: union both sides' rows, published rows move to `## Struck`, push clean. Same row can appear twice after the merge (conflict hunk + common context) — diff the row sets via `git show :1:/:2:/:3:`.
+- **`state/coverage_backlog.md` conflicts on interleaved pushes**: every fire touches it. Since 2026-09-29 `merge_state.py` merges it by row (a row struck on either side is struck; an open row edited on both keeps the longer). Same row can appear twice after the merge (conflict hunk + common context) — diff the row sets via `git show :1:/:2:/:3:`.
 - compose-profile × auto-merge branch-delete race: compose falls back to checking `main` when the branch is gone (fixed 2026-07-09).
 
 ## Reading history

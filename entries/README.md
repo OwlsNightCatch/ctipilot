@@ -19,8 +19,10 @@ Ground rules (see the spec for the rest):
   appended to the *same* entry as a timestamped `updates[]` changelog
   record (`type: update | correction | improvement`, `at`, `run_id`,
   `summary`) paired with a `## <Type> — <at>` body section; the frontmatter
-  is brought to the current state and `updated_at` mirrors the last record
-  (it floats the entry back to the top of the live brief). A correction
+  is brought to the current state and `updated_at` mirrors the last
+  non-internal `type: update` record (a material development floats the
+  entry back to the top of the live brief; corrections and improvements
+  do not). A correction
   fixes the wrong statement where it stands *and* records what changed.
   Never a second entry, never a silent edit — `discovered_at`, `run_id` and
   the entry id are fixed forever, and `tools/check_run.py` FAILs an edit
@@ -34,7 +36,7 @@ Ground rules (see the spec for the rest):
 - **The body is the analysis** — same technical register and sourcing
   discipline as ever: inline links at the point of claim, no IOCs, no
   vanity metrics, English only.
-- **The brief is a rendering.** `/live/` on the site renders any time
+- **The brief is a rendering.** The landing page renders any time
   window over these files (default: last 24 h), ordered by each entry's
   activity moment. Nothing here is "the brief" by itself.
 

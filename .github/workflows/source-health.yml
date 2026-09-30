@@ -3,10 +3,11 @@ name: Weekly source-health snapshot
 # Independent weekly health-check of every active source.
 #
 # Runs `tools/source_health.py` on a weekly cron (and manual
-# workflow_dispatch). HEAD-only against every `status: active` source in
-# `sources/sources.json`, records `(id, status_code, latency_ms,
-# fetched_at, class)` per source into `state/source_health.json` (bounded
-# history), then commits + pushes the file directly to `main`.
+# workflow_dispatch). Reads every source in `sources/sources.json` through its
+# own recipe and records reachability AND content (`content_verdict`:
+# relevant | stale | irrelevant | shell | unreadable, v4.16) per source into
+# `state/source_health.json` (bounded history), then commits + pushes the
+# file directly to `main`.
 #
 # The Ops dashboard at /ops/ reads `state/source_health.json` and
 # surfaces consistently-failing sources separately from intermittently-
@@ -36,10 +37,12 @@ concurrency:
 jobs:
   snapshot:
     runs-on: ubuntu-latest
-    # The sweep itself is budget-bounded (tools/source_health.py --budget,
-    # default 420 s, parallel workers, carry-forward on exhaustion); this is
-    # the belt-and-braces outer cap so a hung network can never wedge the job.
-    timeout-minutes: 15
+    # The routine runs the sweep with no budget (every probe is bounded by its
+    # own subprocess timeouts). Here the job has a hard cap, so the sweep gets
+    # an explicit --budget below it: sources the budget does not reach carry
+    # their previous snapshot forward instead of the whole job being killed
+    # with nothing written.
+    timeout-minutes: 25
     steps:
       - name: Clone repo
         env:
@@ -58,7 +61,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p state
-          python3 tools/source_health.py --timeout 12
+          # trafilatura backs `fetch_source.py extract` (the content read); the
+          # sweep degrades gracefully without it, so an install failure is not fatal.
+          python3 -m pip install --quiet trafilatura || echo "trafilatura install failed; continuing"
+          python3 tools/source_health.py --timeout 12 --budget 1080
 
       - name: Commit + push if source_health.json changed
         env:
@@ -81,9 +87,16 @@ jobs:
               echo "pushed source_health.json to main on attempt ${attempt}"
               exit 0
             fi
-            echo "push attempt ${attempt} failed; refetching + retrying"
+            echo "push attempt ${attempt} failed; re-applying the snapshot on the new main tip"
+            # The file is regenerated wholesale, so re-committing it on top of
+            # the fresh tip is exact; a rebase on a depth-1 clone has no merge
+            # base and used to fail silently here.
+            cp state/source_health.json "${RUNNER_TEMP}/source_health.json"
             git fetch --no-tags --depth=1 origin main
-            git rebase --autostash origin/main || true
+            git reset --hard origin/main
+            cp "${RUNNER_TEMP}/source_health.json" state/source_health.json
+            git add state/source_health.json
+            git commit -m "source-health: weekly snapshot $(date -u +%F)" || { echo "nothing to commit after re-apply"; exit 0; }
             sleep $((attempt * 5))
           done
           echo "ERROR: push failed after 3 attempts" >&2
