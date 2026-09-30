@@ -59,7 +59,7 @@ closed_sources: []
 evidence:
   - quote: "The application accepts a specially crafted authentication request containing a generated 'code of the day.'"
     publisher: "Claroty Team82"
-  - quote: "The field value being formatted into the shell command is not sanitized and could include OS shell directives controlled by an attacker."
+  - quote: "The field value being formatted into the shell command is not sanitized according to our analysis and could potentially include OS shell directives that yield subsequent commands controlled by a potential attacker."
     publisher: "Claroty Team82"
   - quote: "An attacker could abuse it to implant arbitrary routing directives into the Internet-facing Nginx configuration."
     publisher: "Claroty Team82"
@@ -68,7 +68,7 @@ evidence:
 verification: single-source
 sourcing_note: >
   Claroty Team82 is the sole source; Danfoss's own advisory (DSA-2025-08-01) is linked from the
-  Claroty page but was not independently fetched this run, so verification stays single-source on
+  Claroty page but was not independently fetched at publication, so verification stays single-source on
   Claroty alone. CVE identifiers are 2025-dated despite the 2026-08-09 public disclosure —
   reserved-then-disclosed-later is a normal CNA pattern, not a dating error. The RCE and
   Nginx-injection primitives require prior authentication; Claroty's article does not explicitly
@@ -95,11 +95,20 @@ updates:
       pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
       restated the summary or padded without responder value. No factual claim changed.
     fields: [body]
+  - at: "2026-09-29T23:44:28Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The Claroty quotation, in the evidence and in the analysis, had dropped the researchers' hedges
+      ("according to our analysis", "could potentially", "a potential attacker"). Both now carry the
+      sentence as Claroty wrote it. No fact changed.
+    fields: [evidence, sourcing_note, body]
 migrated_from: null
 ---
 
 Companion disclosure to Claroty Team82's Copeland XWEB Pro research, published the same day (2026-08-09T17:59Z), covering the Danfoss AK-SM 800A refrigeration system-manager platform used in supermarkets, cold-storage facilities and commercial HVAC. Claroty found "thousands of publicly accessible management interfaces" via internet-wide scan data, using platforms including Shodan and Censys: "to understand the real-world exposure of the Danfoss AK-SM 800A, we searched publicly available internet-wide scanning platforms" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/freeze-the-controller-defrost-the-food-uncovering-vulnerabilities-in-danfoss-refrigeration-controllers)) — Claroty does not publish a precise device count.
 
-CVE-2025-41450 (CWE-287 Improper Authentication, CVSS 3.1 8.2) is a hidden, undocumented "code-of-the-day" authentication mechanism: the application accepts a specially crafted authentication request containing a generated "code of the day" that bypasses normal login and discloses a web report with internal IPs, usernames and store names — "the application accepts a specially crafted authentication request containing a generated 'code of the day'" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/freeze-the-controller-defrost-the-food-uncovering-vulnerabilities-in-danfoss-refrigeration-controllers)) — patched in firmware build 4.2. CVE-2025-41451 (CWE-77 OS Command Injection, CVSS 3.1 7.6) is a post-authenticated command injection in the alarm-to-email (SMTP) configuration field: a user-supplied value is formatted unsanitized into a shell command executed on the device, which Claroty used to achieve remote code execution: "the field value being formatted into the shell command is not sanitized and could include OS shell directives controlled by an attacker" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/freeze-the-controller-defrost-the-food-uncovering-vulnerabilities-in-danfoss-refrigeration-controllers)). CVE-2025-41452 (CWE-15 External Control of Configuration Setting, CVSS 3.1 5.4) lets a post-authenticated user inject arbitrary Nginx directives via the exposed `headers.conf` include: "an attacker could abuse it to implant arbitrary routing directives into the Internet-facing Nginx configuration" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/freeze-the-controller-defrost-the-food-uncovering-vulnerabilities-in-danfoss-refrigeration-controllers)), enabling denial-of-service. Danfoss shipped firmware R4.3.1 fixing CVE-2025-41451/41452 (build 4.2 for CVE-2025-41450). The RCE and Nginx-injection primitives require prior authentication; Claroty's article does not explicitly confirm the code-of-the-day mechanism as a pre-auth path into the two post-auth primitives, so this entry treats the chain as auth-gated unless a combined path is independently confirmed.
+CVE-2025-41450 (CWE-287 Improper Authentication, CVSS 3.1 8.2) is a hidden, undocumented "code-of-the-day" authentication mechanism: the application accepts a specially crafted authentication request containing a generated "code of the day" that bypasses normal login and discloses a web report with internal IPs, usernames and store names — "the application accepts a specially crafted authentication request containing a generated 'code of the day'" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/freeze-the-controller-defrost-the-food-uncovering-vulnerabilities-in-danfoss-refrigeration-controllers)) — patched in firmware build 4.2. CVE-2025-41451 (CWE-77 OS Command Injection, CVSS 3.1 7.6) is a post-authenticated command injection in the alarm-to-email (SMTP) configuration field: a user-supplied value is formatted unsanitized into a shell command executed on the device, which Claroty used to achieve remote code execution: "the field value being formatted into the shell command is not sanitized according to our analysis and could potentially include OS shell directives that yield subsequent commands controlled by a potential attacker" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/freeze-the-controller-defrost-the-food-uncovering-vulnerabilities-in-danfoss-refrigeration-controllers)). CVE-2025-41452 (CWE-15 External Control of Configuration Setting, CVSS 3.1 5.4) lets a post-authenticated user inject arbitrary Nginx directives via the exposed `headers.conf` include: "an attacker could abuse it to implant arbitrary routing directives into the Internet-facing Nginx configuration" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/freeze-the-controller-defrost-the-food-uncovering-vulnerabilities-in-danfoss-refrigeration-controllers)), enabling denial-of-service. Danfoss shipped firmware R4.3.1 fixing CVE-2025-41451/41452 (build 4.2 for CVE-2025-41450). The RCE and Nginx-injection primitives require prior authentication; Claroty's article does not explicitly confirm the code-of-the-day mechanism as a pre-auth path into the two post-auth primitives, so this entry treats the chain as auth-gated unless a combined path is independently confirmed.
 
 **Triage:** monitor authentication attempts against AK-SM 800A management interfaces for requests carrying a non-standard authentication parameter shape (a "code" field distinct from the normal username/password flow) — legitimate operator logins never use the code-of-the-day mechanism, so its presence in a request is itself the discriminator. On the post-auth side, unexpected shell-metacharacter content in the alarm-email SMTP configuration field, or unexplained changes to the device's Nginx routing configuration, have no benign explanation for a device whose configuration should change only through documented administrative workflows.

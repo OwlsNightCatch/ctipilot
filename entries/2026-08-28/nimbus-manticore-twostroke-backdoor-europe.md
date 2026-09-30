@@ -30,9 +30,20 @@ sources:
     publisher: "Group-IB"
     date: "2026-08-26"
     role: primary
+  - url: "https://unit42.paloaltonetworks.com/tracking-iran-apt-screening-serpens/"
+    publisher: "Unit 42"
+    role: corroborating
+  - url: "https://securelist.com/mirage-kitten-new-tools/120811/"
+    publisher: "Kaspersky Securelist (GReAT)"
+    date: "2026-07-28"
+    role: corroborating
 closed_sources: []
 evidence:
-  - quote: "Execution of this command establishes an SSH connection to the operator's infrastructure ... on port 443 to set up a reverse tunnel. As a result, traffic sent to [a local port] on the C2 server is redirected back through the tunnel directly into the compromised network."
+  - quote: "Execution of this command establishes an SSH connection to the operator’s infrastructure"
+    publisher: "Group-IB"
+  - quote: "on port 443 to set up a reverse tunnel."
+    publisher: "Group-IB"
+  - quote: "on the C2 server is redirected back through the tunnel directly into the compromised network."
     publisher: "Group-IB"
   - quote: "Masquerading as the Windows terminal server SDK DLL (wtsapi32.dll), this backdoor forward-exports all legitimate SDK functions. It appears to be designed for DLL search-order hijacking, tricking legitimate executables into loading the backdoor."
     publisher: "Group-IB"
@@ -45,7 +56,9 @@ sourcing_note: >
   actor as background. This entry documents only the toolset and infrastructure genuinely new to
   this window.
 confidence: medium
-references: []
+references:
+  - "2026-05-23/unit-42-iran-s-screening-serpens-unc1549-smoke-sandstorm-nim"
+  - "2026-07-29/mirage-kitten-nightledger-proxy-aware-websocket-tunnelers"
 deep_dive: false
 deep_dive_category: null
 org_triage: null
@@ -64,12 +77,23 @@ updates:
       pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
       restated the summary or padded without responder value. No factual claim changed.
     fields: [sourcing_note, summary, body]
+  - at: "2026-09-29T23:44:54Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The Group-IB quotation elided an infrastructure address and a local port, which keeps indicators
+      out of the entry but made it a non-contiguous quote. It is now three contiguous fragments that
+      carry no indicators. No fact changed. The analysis quotes the same passage as three fragments,
+      matching the evidence. The toolset history now cites Unit 42 and Kaspersky, and the two earlier
+      entries that covered those refreshes are listed as references.
+    fields: [evidence, sources, references, body]
 migrated_from: null
 ---
 
-Group-IB documents new infrastructure and a new toolset for Nimbus Manticore — the Iranian, IRGC-affiliated actor also tracked as Screening Serpens, UNC1549, Smoke Sandstorm and Mirage Kitten (Group-IB itself uses "Tortoiseshell"). This is the third distinct toolset refresh reported for this actor within roughly seven months: six new RAT variants (MiniUpdate/MiniJunk V2) via AppDomainManager hijacking February–April 2026, the NightLedger backdoor with BridgeHead/ArcBridge WebSocket tunnelers documented by Kaspersky in July 2026, and now — reported by Group-IB on 2026-08-26 — a new reverse SSH tunneling utility and a TWOSTROKE-family C++ backdoor.
+Group-IB documents new infrastructure and a new toolset for Nimbus Manticore — the Iranian, IRGC-affiliated actor also tracked as Screening Serpens, UNC1549, Smoke Sandstorm and Mirage Kitten (Group-IB itself uses "Tortoiseshell"). This is the third distinct toolset refresh reported for this actor within roughly seven months: six new RAT variants (MiniUpdate/MiniJunk V2) via AppDomainManager hijacking February–April 2026 ([Unit 42](https://unit42.paloaltonetworks.com/tracking-iran-apt-screening-serpens/)), the NightLedger backdoor with BridgeHead/ArcBridge WebSocket tunnelers documented by Kaspersky in July 2026 ([Kaspersky Securelist, 2026-07-28](https://securelist.com/mirage-kitten-new-tools/120811/)), and now — reported by Group-IB on 2026-08-26 — a new reverse SSH tunneling utility and a TWOSTROKE-family C++ backdoor.
 
-The SSH tunneler establishes an SSH connection to operator infrastructure over port 443, blending with normal HTTPS-port egress filtering, to set up a reverse tunnel: "execution of this command establishes an SSH connection to the operator's infrastructure ... on port 443 to set up a reverse tunnel. As a result, traffic sent to [a local port] on the C2 server is redirected back through the tunnel directly into the compromised network" ([Group-IB, 2026-08-26](https://www.group-ib.com/blog/tortoiseshell-apt-toolset-infrastructure/)) — giving the operator interactive network access into the victim environment without an inbound listener on the victim side. The TWOSTROKE-like backdoor masquerades as the Windows Terminal Server SDK DLL (`wtsapi32.dll`), forward-exporting all legitimate SDK functions so that a legitimate executable loading it via DLL search-order hijacking continues to function normally while the backdoor executes alongside it: "masquerading as the Windows terminal server SDK DLL (wtsapi32.dll), this backdoor forward-exports all legitimate SDK functions. It appears to be designed for DLL search-order hijacking, tricking legitimate executables into loading the backdoor" ([Group-IB, 2026-08-26](https://www.group-ib.com/blog/tortoiseshell-apt-toolset-infrastructure/)). It encrypts stack strings, derives a unique per-victim identifier from the device hostname, and communicates with multiple hardcoded control servers over HTTPS.
+The SSH tunneler establishes an SSH connection to operator infrastructure over port 443, blending with normal HTTPS-port egress filtering, to set up a reverse tunnel. Group-IB writes that "Execution of this command establishes an SSH connection to the operator’s infrastructure" and does so "on port 443 to set up a reverse tunnel", so that traffic sent to a local port "on the C2 server is redirected back through the tunnel directly into the compromised network" ([Group-IB, 2026-08-26](https://www.group-ib.com/blog/tortoiseshell-apt-toolset-infrastructure/)) — giving the operator interactive network access into the victim environment without an inbound listener on the victim side. The TWOSTROKE-like backdoor masquerades as the Windows Terminal Server SDK DLL (`wtsapi32.dll`), forward-exporting all legitimate SDK functions so that a legitimate executable loading it via DLL search-order hijacking continues to function normally while the backdoor executes alongside it: "masquerading as the Windows terminal server SDK DLL (wtsapi32.dll), this backdoor forward-exports all legitimate SDK functions. It appears to be designed for DLL search-order hijacking, tricking legitimate executables into loading the backdoor" ([Group-IB, 2026-08-26](https://www.group-ib.com/blog/tortoiseshell-apt-toolset-infrastructure/)). It encrypts stack strings, derives a unique per-victim identifier from the device hostname, and communicates with multiple hardcoded control servers over HTTPS.
 
 Group-IB's infrastructure analysis, based on geographically-labeled subdomain naming conventions, indicates expanded targeting into European nations specifically named as the UK, France, Albania and Belarus, alongside continued Middle Eastern targeting: "the group's infrastructure and targeting profile span across countries in Europe and the Middle East. Specific targets include European nations such as the UK, France, Albania, and Belarus, alongside Middle Eastern regions including Israel, Turkey, and GCC member states" ([Group-IB, 2026-08-26](https://www.group-ib.com/blog/tortoiseshell-apt-toolset-infrastructure/)) — a materially widened European footprint for an actor consistently reported as espionage-focused on aerospace, aviation, defence and telecommunications.
 

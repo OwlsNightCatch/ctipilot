@@ -28,23 +28,33 @@ sources:
     publisher: "Proofpoint"
     date: "2026-08-27"
     role: primary
+  - url: "https://thehackernews.com/2026/06/china-linked-ta4922-expands-phishing.html"
+    publisher: "The Hacker News"
+    date: "2026-06-04"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "With this new payload, TA4922 is expanding its arsenal of initial-access malware, much of which originates in the Chinese-speaking cybercrime ecosystem."
     publisher: "Proofpoint"
   - quote: "PackClient is a full featured, modular command and control (C2) framework that supports data theft, surveillance, and downloading of additional plugins and payloads."
     publisher: "Proofpoint"
-  - quote: "Distinct Rundll32 command line used to launch PackClient. PackClient config stored in registry (HKCU\\SOFTWARE\\PackClientConsole\\). Distinct process tree and command line flags."
+  - quote: "Distinct Rundll32 command line used to launch PackClient."
+    publisher: "Proofpoint"
+  - quote: "PackClient config stored in registry (HKCU\\SOFTWARE\\PackClientConsole\\)."
+    publisher: "Proofpoint"
+  - quote: "Distinct process tree and command line flags"
     publisher: "Proofpoint"
 verification: single-source
 sourcing_note: >
   Proofpoint is the sole source. The observed campaign targets mainland China and India, not this
-  constituency's home region directly; included because TA4922 is an already-tracked actor this
-  store separately notes is expanding tooling and targeting into Germany, the UK and Italy, so a
-  new Telegram-proliferated C2 framework is transferable tradecraft, and a MaaS tool sold on
-  Telegram is not exclusive to one actor.
+  constituency's home region directly; included because TA4922 is an already-tracked actor that
+  Proofpoint reported in June 2026 as expanding its targeting to the UK, Germany, Italy and South
+  Africa (The Hacker News, 2026-06-04, covered here on 2026-06-05), so a new Telegram-proliferated
+  C2 framework is transferable tradecraft, and a MaaS tool sold on Telegram is not exclusive to
+  one actor.
 confidence: medium
-references: []
+references:
+  - "2026-06-05/proofpoint-ta4922-a-china-nexus-cybercrime-cluster-expands-f"
 deep_dive: false
 deep_dive_category: null
 org_triage: null
@@ -63,13 +73,25 @@ updates:
       pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
       restated the summary or padded without responder value. No factual claim changed.
     fields: [summary, body]
+  - at: "2026-09-29T23:44:54Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The Proofpoint quotation joined three separate hunting bullets and dropped the examples between
+      them. It is now three quotations, one per bullet. No fact changed. The sourcing note no longer
+      refers to the entry store. The expansion into Europe that justifies inclusion now cites its June
+      2026 reporting, and the earlier entry that covered it is listed as a reference. The analysis
+      quotes the three hunting bullets as separate items too. The opening paragraph cites the same
+      June reporting for the actor background.
+    fields: [evidence, sourcing_note, sources, references, body]
 migrated_from: null
 ---
 
-Proofpoint documents PackClient, a modular remote-access trojan and command-and-control framework actively sold on Telegram, now in use by TA4922 — an already-tracked China-nexus, financially-motivated cluster, previously associated with Atlas RAT, RomulusLoader and SilentRunLoader and separately reported as expanding into Germany, the UK and Italy: "with this new payload, TA4922 is expanding its arsenal of initial-access malware, much of which originates in the Chinese-speaking cybercrime ecosystem" ([Proofpoint, 2026-08-27](https://www.proofpoint.com/us/blog/threat-insight/carry-compromise-ta4922-packs-packclient)).
+Proofpoint documents PackClient, a modular remote-access trojan and command-and-control framework actively sold on Telegram, now in use by TA4922 — an already-tracked China-nexus, financially-motivated cluster, previously associated with Atlas RAT, RomulusLoader and SilentRunLoader and reported in June as expanding its targeting to the UK, Germany, Italy and South Africa ([The Hacker News, 2026-06-04](https://thehackernews.com/2026/06/china-linked-ta4922-expands-phishing.html)). Proofpoint writes that "with this new payload, TA4922 is expanding its arsenal of initial-access malware, much of which originates in the Chinese-speaking cybercrime ecosystem" ([Proofpoint, 2026-08-27](https://www.proofpoint.com/us/blog/threat-insight/carry-compromise-ta4922-packs-packclient)).
 
-PackClient's delivery chain uses `rundll32` execution and reflective DLL loading, with persistence via a registry RunOnce key, and stores its configuration under `HKCU\SOFTWARE\PackClientConsole`: "distinct Rundll32 command line used to launch PackClient. PackClient config stored in registry (HKCU\SOFTWARE\PackClientConsole\). Distinct process tree and command line flags" ([Proofpoint, 2026-08-27](https://www.proofpoint.com/us/blog/threat-insight/carry-compromise-ta4922-packs-packclient)). It supports keylogging, webcam and screen capture, file exfiltration and plugin/payload management over dual C2 channels using a custom TCP protocol with distinctive handshake byte sequences (Proofpoint names them PLH1/PLC1): "PackClient is a full featured, modular command and control (C2) framework that supports data theft, surveillance, and downloading of additional plugins and payloads" ([Proofpoint, 2026-08-27](https://www.proofpoint.com/us/blog/threat-insight/carry-compromise-ta4922-packs-packclient)).
+PackClient's delivery chain uses `rundll32` execution and reflective DLL loading, with persistence via a registry RunOnce key, and stores its configuration under `HKCU\SOFTWARE\PackClientConsole`. Proofpoint's hunting guidance lists, as separate items, a "Distinct Rundll32 command line used to launch PackClient.", "PackClient config stored in registry (HKCU\SOFTWARE\PackClientConsole\)." and a "Distinct process tree and command line flags" ([Proofpoint, 2026-08-27](https://www.proofpoint.com/us/blog/threat-insight/carry-compromise-ta4922-packs-packclient)). It supports keylogging, webcam and screen capture, file exfiltration and plugin/payload management over dual C2 channels using a custom TCP protocol with distinctive handshake byte sequences (Proofpoint names them PLH1/PLC1): "PackClient is a full featured, modular command and control (C2) framework that supports data theft, surveillance, and downloading of additional plugins and payloads" ([Proofpoint, 2026-08-27](https://www.proofpoint.com/us/blog/threat-insight/carry-compromise-ta4922-packs-packclient)).
 
 In the observed campaigns TA4922 used tax-themed phishing lures against organisations in mainland China and India, with post-compromise activity that included deploying ManageEngine remote-monitoring-and-management tooling — a legitimate RMM abused for continued access, consistent with this actor's established pattern of using commodity or legitimate management tools post-compromise. Proofpoint does not name a MITRE ATT&CK technique explicitly, but the described behaviours map to registry Run-key persistence, DLL side-loading/reflective loading defence evasion, and collection via keylogging and screen capture.
 
-The campaign targeting is mainland China and India, not this constituency's home region or profiled sectors directly, but the relevance rests on two points: TA4922 is separately reported as expanding tooling and targeting into Germany, the UK and Italy, so a new Telegram-proliferated C2 framework in this actor's toolkit is transferable tradecraft to watch for; and a MaaS tool sold on Telegram is not exclusive to one actor and may surface again against a different, more directly-relevant target set. **Triage:** a registry key at `HKCU\SOFTWARE\PackClientConsole` on any endpoint has no legitimate application association and is a direct compromise indicator; process trees showing `rundll32` launched with non-standard command-line flags followed by reflective DLL-loading behaviour (no corresponding file on disk for the loaded module) are the discriminator against ordinary `rundll32` usage, which normally loads a named, on-disk DLL export.
+The campaign targeting is mainland China and India, not this constituency's home region or profiled sectors directly, but the relevance rests on two points: TA4922 was reported in June 2026 as expanding its targeting to the UK, Germany, Italy and South Africa ([The Hacker News, 2026-06-04](https://thehackernews.com/2026/06/china-linked-ta4922-expands-phishing.html)), so a new Telegram-proliferated C2 framework in this actor's toolkit is transferable tradecraft to watch for; and a MaaS tool sold on Telegram is not exclusive to one actor and may surface again against a different, more directly-relevant target set. **Triage:** a registry key at `HKCU\SOFTWARE\PackClientConsole` on any endpoint has no legitimate application association and is a direct compromise indicator; process trees showing `rundll32` launched with non-standard command-line flags followed by reflective DLL-loading behaviour (no corresponding file on disk for the loaded module) are the discriminator against ordinary `rundll32` usage, which normally loads a named, on-disk DLL export.

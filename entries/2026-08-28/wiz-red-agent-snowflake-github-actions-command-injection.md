@@ -36,7 +36,9 @@ evidence:
     publisher: "Wiz Research"
   - quote: "adjusted its payload to use ; echo ' to properly close the shell block, and"
     publisher: "Wiz Research"
-  - quote: "Within seconds, our listener received the callback from a GitHub Actions runner containing base64-encoded credentials."
+  - quote: "Within seconds, our listener received the callback from a GitHub Actions runner"
+    publisher: "Wiz Research"
+  - quote: "containing base64-encoded credentials."
     publisher: "Wiz Research"
   - quote: "Snowflake patched the workflow on June 23, 2026 (1dc7766, PR #1402), fully restoring the safe env: variable and jq --arg parsing pattern."
     publisher: "Wiz Research"
@@ -66,11 +68,21 @@ updates:
       pipeline-internal jargon from reader-facing text; tightened or cut paragraphs that 
       restated the summary or padded without responder value. No factual claim changed.
     fields: [body]
+  - at: "2026-09-29T23:45:34Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The Wiz quotation silently dropped a parenthetical infrastructure address. It is now two
+      contiguous fragments on either side of it, which keeps the indicator out. No fact changed. The
+      analysis now quotes the same passage as two fragments instead of joining them across the omitted
+      runner address.
+    fields: [evidence, body]
 migrated_from: null
 ---
 
 Wiz Research's autonomous "Red Agent" AI red-teaming tool independently discovered and exploited a GitHub Actions script-injection vulnerability in Snowflake's public `snowflake-connector-net` repository, introduced via PR #1218 (18 June 2026) and undetected by GitHub Advanced Security despite the flaw sitting directly in the analysed workflow. The injectable pattern entered the `jira_issue.yml` workflow in commit `094038e` and went live when PR #1218 was squash-merged as commit `4a1b8ce`: "the injectable pattern was added to jira_issue.yml in commit 094038e and became live when PR #1218 was squash-merged as commit 4a1b8ce" ([Wiz Research, 2026-08-17](https://www.wiz.io/blog/red-agent-snowflake-copilot-cicd-bug)), allowing an unauthenticated actor to inject shell commands via a crafted GitHub issue title interpolated unsanitised into the workflow's shell step.
 
-When the agent's initial payload (using `#` to comment out the rest of the line) hit an unexpected bash syntax error — the comment character also consumed the closing parenthesis of the shell's `TITLE=$(...)` construct — it did not stop or fail. Instead it "autonomously analyzed the syntax execution error" and "adjusted its payload to use ; echo ' to properly close the shell block, and" ([Wiz Research, 2026-08-17](https://www.wiz.io/blog/red-agent-snowflake-copilot-cicd-bug)) retried — recovering from its own exploitation error without human direction. Within seconds, Wiz's listener received an out-of-band callback from the GitHub Actions runner carrying base64-encoded Jira API credentials tied to a `qa@snowflake.net` account: "within seconds, our listener received the callback from a GitHub Actions runner containing base64-encoded credentials" ([Wiz Research, 2026-08-17](https://www.wiz.io/blog/red-agent-snowflake-copilot-cicd-bug)). Snowflake patched the workflow the same day of disclosure (23 June 2026, commit `1dc7766`/PR #1402), restoring safe `env:` variable interpolation and `jq --arg` parsing.
+When the agent's initial payload (using `#` to comment out the rest of the line) hit an unexpected bash syntax error — the comment character also consumed the closing parenthesis of the shell's `TITLE=$(...)` construct — it did not stop or fail. Instead it "autonomously analyzed the syntax execution error" and "adjusted its payload to use ; echo ' to properly close the shell block, and" ([Wiz Research, 2026-08-17](https://www.wiz.io/blog/red-agent-snowflake-copilot-cicd-bug)) retried — recovering from its own exploitation error without human direction. Within seconds, Wiz's listener received an out-of-band callback from the GitHub Actions runner carrying base64-encoded Jira API credentials tied to a `qa@snowflake.net` account. Wiz writes that "our listener received the callback from a GitHub Actions runner", a callback "containing base64-encoded credentials" ([Wiz Research, 2026-08-17](https://www.wiz.io/blog/red-agent-snowflake-copilot-cicd-bug)). Snowflake patched the workflow the same day of disclosure (23 June 2026, commit `1dc7766`/PR #1402), restoring safe `env:` variable interpolation and `jq --arg` parsing.
 
 This is a further, vendor-independent data point in the CI/CD trust-boundary thread already covered here around GitHub Actions script injection. The autonomous-error-recovery behaviour — diagnosing a failed exploitation attempt and adjusting the payload without human intervention — is itself a capability marker worth tracking regardless of which side deploys it: the same recovery loop that let Wiz's defensive tool self-correct mid-exploit is available to an offensive operator running comparable tooling against any organisation's own public CI/CD workflows. **Triage:** GitHub Actions workflows that interpolate untrusted issue or pull-request titles directly into shell steps, rather than passing them through `env:` variables with `jq --arg`-style safe parsing, are the systemic pattern this flaw exemplifies — an audit of any organisation's public-repository workflows for this exact interpolation shape is the actionable takeaway, independent of this specific incident.

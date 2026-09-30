@@ -2,7 +2,7 @@
 schema: 1
 kind: threat
 title: "SPECTRE unlinks EDR's kernel callbacks one at a time using a two-driver BYOVD toolkit and an offset table for thirteen Windows builds — and its Linux half hides through ftrace rather than the syscall table"
-headline: "A cross-platform implant that blinds named endpoint products to process, thread and image-load events for the rest of the session"
+headline: "A cross-platform implant that blinds callback-dependent endpoint security products to process, thread and image-load events for the rest of the session"
 summary: >
   Cisco Talos published an analysis on 2026-08-20 of SPECTRE, a cross-platform C backdoor deployed by
   a Chinese-speaking intrusion actor it tracks as UAT-10147 against compromised IIS and Linux web
@@ -10,8 +10,7 @@ summary: >
   service, locates the kernel image through a documented information call, and uses a hardcoded
   per-build offset table covering thirteen Windows versions to unlink registered process-creation,
   thread-creation and image-load notification callbacks from their linked lists — blinding
-  callback-dependent endpoint products, which Talos names as CrowdStrike Falcon, SentinelOne and
-  Microsoft Defender, for the remainder of the session. Credential access deliberately avoids LSASS
+  callback-dependent endpoint security products for the remainder of the session. Credential access deliberately avoids LSASS
   entirely, and the C2 configuration is held in an alternate data stream on the hosts file so it can be
   rotated without recompiling. The Linux variant persists as a systemd unit ordered ahead of security
   tooling and hides through the kernel's ftrace debugging interface rather than by patching the syscall
@@ -55,7 +54,7 @@ closed_sources: []
 evidence:
   - quote: "By performing targeted kernel writes, the SPECTRE safely unlinks each registered EDR callback from its doubly-linked list"
     publisher: "Cisco Talos"
-  - quote: "kernel-callback-dependent security products such as CrowdStrike Falcon, SentinelOne, Microsoft Defender"
+  - quote: "kernel-callback-dependent security products are rendered completely blind to new process creations, thread creations, and image load events for the remainder of the session"
     publisher: "Cisco Talos"
   - quote: "This strategy allows the threat actor to easily update the C2 configuration by modifying the ADS, thereby circumventing firewall blocklists without needing to recompile the binary."
     publisher: "Cisco Talos"
@@ -82,12 +81,22 @@ classification:
 watchlist_hit: false
 actions:
   - "Check whether RTCore64.sys and DBUtil_2_3.sys can load in your estate — Microsoft's vulnerable-driver blocklist covers both, and confirming it is enforced (rather than merely available) removes this implant's entire kernel-write path."
+updates:
+  - at: "2026-09-29T23:43:02Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: correction
+    summary: >
+      Cisco Talos revised its SPECTRE post and no longer names any endpoint product in the passage on
+      kernel-callback unlinking; the list of CrowdStrike Falcon, SentinelOne and Microsoft Defender
+      this entry attributed to Talos is gone from the headline, the summary, the evidence and the analysis. The
+      mechanism and the blinding claim are unchanged on the page.
+    fields: [summary, evidence, headline, body]
 migrated_from: null
 ---
 
 Cisco Talos published an analysis on 2026-08-20 of SPECTRE, a cross-platform C backdoor run by a Chinese-speaking intrusion actor it designates UAT-10147, which compromises internet-facing IIS and Linux web servers and monetises them through search-engine fraud ([Cisco Talos, 2026-08-20](https://blog.talosintelligence.com/uat-10147-deploys-spectre-a-cross-platform-implant-with-linux-rootkit-and-byovd-capabilities/)). The Windows build implements 45 commands, the Linux build 29. The interesting half is not the command set but how each variant makes itself unobservable, and both answers are instructive for tooling choices rather than for signature lists.
 
-**Blinding the endpoint on Windows.** SPECTRE downloads one of two long-known vulnerable drivers from its command-and-control server — MSI's `RTCore64.sys` (CVE-2019-16098) or Dell's `DBUtil_2_3.sys` (CVE-2021-21551) — writes it to the temporary directory, installs it as a transient kernel service through the Service Control Manager, and opens a device handle to it. Neither is a new flaw; both are being reused as an arbitrary kernel read/write primitive. With that primitive it locates the kernel image in memory through a documented system-information call, then consults a hardcoded offset table covering thirteen Windows versions to compute where the notification-callback arrays live, and performs targeted writes: *"By performing targeted kernel writes, the SPECTRE safely unlinks each registered EDR callback from its doubly-linked list"*. The three callback classes it removes are process creation, thread creation and image load — the events most endpoint products depend on to see anything happen at all. Talos names the affected class as *"kernel-callback-dependent security products such as CrowdStrike Falcon, SentinelOne, Microsoft Defender"*, alongside other unnamed vendors. The blinding lasts for the remainder of the session, which matters for response scoping: it is not a permanent modification, and a reboot restores callback registration, but everything the implant does after that point produced no callback-derived telemetry.
+**Blinding the endpoint on Windows.** SPECTRE downloads one of two long-known vulnerable drivers from its command-and-control server — MSI's `RTCore64.sys` (CVE-2019-16098) or Dell's `DBUtil_2_3.sys` (CVE-2021-21551) — writes it to the temporary directory, installs it as a transient kernel service through the Service Control Manager, and opens a device handle to it. Neither is a new flaw; both are being reused as an arbitrary kernel read/write primitive. With that primitive it locates the kernel image in memory through a documented system-information call, then consults a hardcoded offset table covering thirteen Windows versions to compute where the notification-callback arrays live, and performs targeted writes: *"By performing targeted kernel writes, the SPECTRE safely unlinks each registered EDR callback from its doubly-linked list"*. The three callback classes it removes are process creation, thread creation and image load — the events most endpoint products depend on to see anything happen at all. Talos describes the affected class as "kernel-callback-dependent security products" without naming vendors. The blinding lasts for the remainder of the session, which matters for response scoping: it is not a permanent modification, and a reboot restores callback registration, but everything the implant does after that point produced no callback-derived telemetry.
 
 **Execution, privilege and credentials.** Talos also documents the implant's injection tradecraft — standard process hollowing, targeting a common Windows service host by default, and an asynchronous-procedure-call injection variant executed early in a target process's lifetime. Escalation is named-pipe impersonation — the implant creates a pipe under a predictable per-thread name and acquires a SYSTEM token from a client that connects to it. Credential access is then deliberately built to avoid the one place defenders watch hardest: with SYSTEM in hand it saves the SAM, SYSTEM and SECURITY registry hives to disk for offline hash extraction, enumerates stored Windows credentials by capturing the output of the built-in credential-manager listing utility — Talos emphasises this happens without any LSASS access — and copies Chrome and Edge login-data and local-state files for offline DPAPI decryption with a named public post-exploitation tool. No process ever opens a handle to LSASS, so a detection strategy anchored on LSASS access sees none of it.
 
@@ -98,3 +107,7 @@ Cisco Talos published an analysis on 2026-08-20 of SPECTRE, a cross-platform C b
 **On the AI claim, at the source's own confidence.** Talos makes three separate and differently-hedged statements here, and they should not be collapsed. Scoped to the Linux rootkit's source code specifically, it states: *"Talos investigated the source code of the Specter rootkit and assesses with medium confidence that UAT-10147 leveraged a combination of AI-assisted development and human expertise in the creation of this rootkit, which is designed to be invoked directly by SPECTRE."* It rests that on four observations — an opening comment block that reads like a generated feature list narrating what the code is about to do, decorative separators of machine-like uniformity across more than ten sections, pedagogical inline comments explaining basic kernel concepts a developer would not explain to themselves, and three redundant implementations explicitly labelled as alternative methods where a human targeting one kernel would pick one. That last observation is the most portable: producing every known approach rather than selecting one is a completeness reflex, and it is a heuristic that works independently of this actor. Separately and without a confidence qualifier, Talos assesses the actor is gradually incorporating AI-assisted development more broadly, extending the suggestion to the SPECTRE backdoor itself without the same enumerated evidence. And separately again, build-path strings inside the actor's custom privilege-escalation tools reference an "AI" directory, which Talos describes only as strongly suggesting AI assistance in developing those tools — weaker wording, different tools, and not part of the medium-confidence rootkit assessment.
 
 **Defender takeaway:** the two Windows-side dependencies are both removable in advance. The kernel-write primitive requires one of two specific third-party drivers to load, and Microsoft's vulnerable-driver blocklist covers both — so the question worth answering this week is not whether the blocklist exists but whether it is actually enforced on your servers, because if it is, the callback-unlinking step has no primitive to build on. On Linux, integrity checking that inspects only the syscall table is not sufficient against this implant; ftrace registration state and the kernel module list need to be compared against a known-good baseline, and a systemd unit ordered ahead of system initialisation is worth inventorying on its own. **Triage:** loading a signed third-party driver as a transient service is something legitimate vendor tooling and hardware utilities also do, and both drivers here are genuine signed products — the discriminators are the driver being written to a temporary directory rather than a vendor install path, the service existing only briefly around the load, and endpoint telemetry from that host going quiet for process and image-load events while the host demonstrably stays up and serving traffic. That last one inverts the usual reasoning: a sudden absence of routine callback-derived events from a busy server is itself the signal.
+
+## Correction — 2026-09-29T23:43:02Z
+
+Talos has revised the SPECTRE post and no longer names any vendor in the passage on callback unlinking. It now says only that "kernel-callback-dependent security products are rendered completely blind to new process creations, thread creations, and image load events for the remainder of the session" ([Cisco Talos, revised since](https://blog.talosintelligence.com/uat-10147-deploys-spectre-a-cross-platform-implant-with-linux-rootkit-and-byovd-capabilities/)). This entry had attributed a list of three named products to Talos, and that attribution no longer holds. The technique, and its effect on any product that depends on kernel callbacks, is unchanged.

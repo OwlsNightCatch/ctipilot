@@ -1,0 +1,392 @@
+[
+ {
+  "category": [
+   "active-breaking",
+   "gov"
+  ],
+  "consecutive_failures": 0,
+  "consecutive_fetch_failures": 0,
+  "consecutive_quiet_periods": 7,
+  "fetch_method": "bridge",
+  "id": "cisa-advisories",
+  "language": [
+   "en"
+  ],
+  "last_covered_in_brief": "2026-07-29",
+  "last_successful_fetch": "2026-09-14",
+  "notes": "US government joint advisories often co-signed with allied CERTs (UK NCSC, ACSC AU, NCSC-NZ, CCCS CA, BSI DE, CERT-EU). WebFetch is reliably HTTP 403 on cisa.gov (re-confirmed 2026-05-08). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories`. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → api/bridge: python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories  (then `cisa page <alert_url>` to drill). AVOID: WebFetch reliably HTTP 403 on cisa.gov — skip it entirely. Use the bridge `cisa page` subcommand.. | 2026-07-04: bridge (cisa page) upstream HTTP 403 again — consecutive_fetch_failures 2; 403 is transport blocking (does NOT demote per lifecycle rules). CISA KEV JSON API still works via the bridge. | 2026-07-05 root-cause confirmed: www.cisa.gov dynamic paths (/news-events/*, all .xml feeds, and the CSAF .well-known) are blocked by Akamai bot management (`Access Denied`, `Reference #18.*`) for EVERY UA/header combination tested (chrome/firefox/googlebot/curl/minimal/+Referer all 403) — the block keys off the egress TLS/behavioural fingerprint, so it is unfixable from request headers. Only the STATIC /sites/default/files/feeds/ path (KEV JSON) is served. No reachable alternative for the advisory HTML content (search.gov results are a JS shell needing an API key; Wayback has no snapshots). SUBSTITUTE: `cisa-kev` JSON API for exploited-vuln ground truth + WebSearch corroboration for advisory narrative (covered_anyway). STAYS ACTIVE — a 403 is a transport block and NEVER demotes (hard rule). source_health.py now classifies this `bridge-blocked` (handled), not `needs-demote`, so the routine stops re-flagging it every run. | 2026-07-05 RECOVERED — CISA dynamic content is now reachable. The Akamai 403 on every UA still holds for a DIRECT fetch, but `tools/fetch_source.py` routes cisa.gov through the r.jina.ai reader proxy (server-side fetch, bypasses the Akamai fingerprint) for `cisa page` / `cisa feed`, and through the cisagov/CSAF GitHub mirror (raw.githubusercontent.com, not proxy-blocked) for `cisa csaf-recent` / `cisa csaf` (fully-structured ICS advisories). This SUPERSEDES the earlier KEV+WebSearch-substitute handling — the advisory/directive/news content itself is now fetchable with full detail. `cisa-kev` JSON remains the exploited-vuln ground truth. FETCH now works via the reader-proxy recipe: `python3 tools/fetch_source.py cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml` to discover items (title+link), then `cisa page <advisory_url>` for the full body. For ICS/OT advisories prefer the fully-structured CSAF mirror: `cisa csaf-recent [N]` (dated index) + `cisa csaf <icsa-YY-DDD-NN>`. | 2026-07-05 admiralty audit: A (primary-authority) — CISA advisories; bridge 403 is a known transport block (does NOT demote per lifecycle rules), host confirmed live via KEV. Status stays active. | 2026-07-09 structured-listing recipe (v3.14): the /news-events/cybersecurity-advisories listing is a JS shell — `cisa page` on it returns only the filter UI. REQUIRED listing fetch: `python3 tools/fetch_source.py cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml 20` (structured {title,link} items, newest first); drill each item with `cisa page <link>`. Confirmed working 2026-07-09. | 2026-07-10: recipe recovered — `python3 tools/fetch_source.py cisa page` returned 200 full listing (S2); freshest item 07-07, no in-window content. Rotation-gap cleared; fetch_method/bridge path works. | 2026-07-10 (2009Z run): page URL returned only filter/facet UI in static HTML (no enumerated advisory rows); S1 recovered content via the RSS feed https://www.cisa.gov/cybersecurity-advisories/all.xml, which surfaced the in-window KEV addition. Prefer the RSS feed over the page URL for enumeration. | 2026-07-26 weekly quality audit: RUN-TIME RECIPE DIVERGENCE FIXED: the 2026-07-25 and 2026-07-26 fires both logged HTTP 403 fetching the /news-events/cybersecurity-advisories HTML listing while source_health.py probed the record green — because the health probe uses the working feed recipe (`cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml`), which is what a sweep must lead with too. This is an IGNORED-recipe problem, not a missing one: that feed URL was already this record's rss_url and the 2026-07-10 note already said to prefer it, and the fires still swept the url field. LEAD WITH rss_url. NEVER sweep the /news-events/cybersecurity-advisories HTML listing: Akamai 403s it for every UA. | 2026-08-04 run: FETCH NOTE — `cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml` returns 30 items cleanly, but the parsed `published` field comes back EMPTY. In-window filtering requires the date path in each alert URL (/news-events/alerts/YYYY/MM/DD/...) or the ICS day-of-year id (icsa-26-NNN-XX). | 2026-08-16: third consecutive run unreachable: cisa.gov Akamai-403s every direct UA and the jina reader pool — the documented recovery transport — returned HTTP 402 on all seven keys, so the full ladder failed. NOT demoted (403 is transport blocking, not content death). The CISA KEV and CSAF endpoints do not route through jina and covered the advisory surface this run; they are the load-bearing CISA path until reader credit is restored. | 2026-08-17: unreachable again — direct transport refused and the jina reader pool returned HTTP 402 on every rotating key, so the documented ladder had no last rung. Transport blocking plus an exhausted reader quota; NOT demoted. | 2026-08-18: fifth consecutive run unreachable — cisa.gov refuses the direct transport on every user agent and the reader pool returned HTTP 402 on all seven keys, so the documented ladder again had no last rung. NOT demoted (403 is transport blocking, not content death). The KEV API and the cisagov CSAF mirror do not route through the reader and covered the exploited-vulnerability and ICS surfaces this run; the general AA-series advisory listing was reachable by no transport. | 2026-08-19: sixth consecutive unreachable run — HTTP 403 to every direct transport with the reader fallback credit-exhausted; NOT demoted, a transport block is not content death. The KEV JSON feed remains the working substitute for the exploited-vulnerability surface. | 2026-09-04: advisories/directives listing returned only filter-facet shell content on the bridge `cisa page` transport, consistent with prior 403/JS-shell condition; CISA KEV JSON feed unaffected and confirmed 0 in-window additions separately. | 2026-09-05 audit: bridge cisa page transport returned an unfiltered/unsorted facet page with no dated item list; CISA KEV JSON feed (separate source) unaffected and confirmed 0 in-window additions. | 2026-09-06: bridge `cisa page` again returned only the filter-facet shell (same long-documented JS-shell condition); the feed substitute (`cisa feed .../all.xml`) worked and confirmed the newest KEV-adjacent alert was already covered, no further in-window items.",
+  "publisher": "CISA Cybersecurity Advisories",
+  "reliability": "A",
+  "rss_url": "https://www.cisa.gov/cybersecurity-advisories/all.xml",
+  "status": "active",
+  "tier": "essential",
+  "url": "https://www.cisa.gov/news-events/cybersecurity-advisories",
+  "health_probe": {
+   "action": "needs-content-fix",
+   "class": "reader-quota",
+   "content_verdict": "unreadable",
+   "content_transport": "extract+direct",
+   "content_alnum": 0,
+   "content_terms": [],
+   "newest_item": null,
+   "newest_item_age_days": null,
+   "content_shell_markers": []
+  }
+ },
+ {
+  "category": [
+   "gov",
+   "active-breaking"
+  ],
+  "consecutive_failures": 0,
+  "consecutive_fetch_failures": 1,
+  "consecutive_quiet_periods": 8,
+  "fetch_method": "bridge",
+  "id": "cisa-directives",
+  "language": [
+   "en"
+  ],
+  "last_covered_in_brief": "2026-06-18",
+  "last_successful_fetch": "2026-09-14",
+  "notes": "Binding Operational Directives and Emergency Directives — high-priority defender signal. WebFetch HTTP 403 (re-confirmed 2026-05-08). REQUIRED: `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/directives`. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → bridge: python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/directives to discover /news-events/directives/{slug} hrefs, then `cisa page <full URL>` per directive for the body.. AVOID: WebFetch 403s the CISA UA — skip it, go straight to the bridge `cisa page` subcommand.. | 2026-07-04: bridge (cisa page) upstream HTTP 403 again — consecutive_fetch_failures 2; 403 is transport blocking (does NOT demote per lifecycle rules). CISA KEV JSON API still works via the bridge. | 2026-07-05 root-cause confirmed: www.cisa.gov dynamic paths (/news-events/*, all .xml feeds, and the CSAF .well-known) are blocked by Akamai bot management (`Access Denied`, `Reference #18.*`) for EVERY UA/header combination tested (chrome/firefox/googlebot/curl/minimal/+Referer all 403) — the block keys off the egress TLS/behavioural fingerprint, so it is unfixable from request headers. Only the STATIC /sites/default/files/feeds/ path (KEV JSON) is served. No reachable alternative for the advisory HTML content (search.gov results are a JS shell needing an API key; Wayback has no snapshots). SUBSTITUTE: `cisa-kev` JSON API for exploited-vuln ground truth + WebSearch corroboration for advisory narrative (covered_anyway). STAYS ACTIVE — a 403 is a transport block and NEVER demotes (hard rule). source_health.py now classifies this `bridge-blocked` (handled), not `needs-demote`, so the routine stops re-flagging it every run. | 2026-07-05 RECOVERED — CISA dynamic content is now reachable. The Akamai 403 on every UA still holds for a DIRECT fetch, but `tools/fetch_source.py` routes cisa.gov through the r.jina.ai reader proxy (server-side fetch, bypasses the Akamai fingerprint) for `cisa page` / `cisa feed`, and through the cisagov/CSAF GitHub mirror (raw.githubusercontent.com, not proxy-blocked) for `cisa csaf-recent` / `cisa csaf` (fully-structured ICS advisories). This SUPERSEDES the earlier KEV+WebSearch-substitute handling — the advisory/directive/news content itself is now fetchable with full detail. `cisa-kev` JSON remains the exploited-vuln ground truth. FETCH now works: `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/directives` (reader-proxy, full body) to read BOD/ED text; the filtered listing `.../directives/all?f[0]=directive_type:35` works via `cisa page` too. | 2026-07-05 admiralty audit: A (primary-authority) — CISA directives; bridge 403 is a known transport block (no demotion), directive series confirmed current via KEV references. Status stays active. | 2026-07-09: no RSS feed exists for directives; the listing DOES hydrate through the reader — `cisa page https://www.cisa.gov/news-events/directives` then grep /news-events/directives/<slug> hrefs for discovery (confirmed 2026-07-09: returns current BOD/ED links); new directives are also announced in the cisa-news feed (news.xml). | 2026-07-25: S1 reported no `cisa-directives` bridge subcommand in fetch_source.py; content reachable via `cisa page <advisory-url>`. fetch_method kept as-is pending a recipe; not demoted (403/tooling-gap, not source death). | 2026-08-04 run: RECIPE CONFIRMED — `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/directives` works and returns the full ED/BOD listing with drillable per-directive URLs. Caveat: the listing carries no per-item publish dates, so recency must come from the drilled directive page. Newest substantive item BOD 26-04 (2026-06-10), out of window. | 2026-08-16: unreachable this run for the same reason as cisa-advisories (direct 403 + reader pool exhausted). NOT demoted. No evidence a new directive published in-window. | 2026-08-17: unreachable again — direct transport refused and the jina reader pool returned HTTP 402 on every rotating key, so the documented ladder had no last rung. Transport blocking plus an exhausted reader quota; NOT demoted. | 2026-08-18: same cisa.gov condition, fourth consecutive run; rotation-priority source. NOT demoted. No evidence from any other source that a directive published in-window. | 2026-08-19: fifth consecutive unreachable run, same cisa.gov condition; rotation-priority source, NOT demoted. | 2026-09-07: S2 confirms the bridge/jina fetch of the directives listing still returns only the site's filter-facet JS shell (6th+ consecutive occurrence per prior notes) -- a recipe gap (no structured CISA directives feed/API identified yet), not an anti-bot block; not demoted, needs a recipe fix on a future run. | 2026-09-13 intel run (S1/S2): bridge/jina still return only the JS filter-facet shell; recipe gap persists, not demoted (403/anti-bot-shaped block, never demotes).",
+  "publisher": "CISA Directives",
+  "reliability": "A",
+  "status": "active",
+  "tier": "essential",
+  "url": "https://www.cisa.gov/news-events/directives",
+  "health_probe": {
+   "action": "needs-content-fix",
+   "class": "reader-quota",
+   "content_verdict": "unreadable",
+   "content_transport": "extract+direct",
+   "content_alnum": 0,
+   "content_terms": [],
+   "newest_item": null,
+   "newest_item_age_days": null,
+   "content_shell_markers": []
+  }
+ },
+ {
+  "category": [
+   "gov",
+   "news"
+  ],
+  "consecutive_failures": 0,
+  "consecutive_fetch_failures": 0,
+  "consecutive_quiet_periods": 4,
+  "fetch_method": "bridge",
+  "id": "cisa-news",
+  "language": [
+   "en"
+  ],
+  "last_covered_in_brief": "2026-06-18",
+  "last_successful_fetch": "2026-09-13",
+  "notes": "CISA news index — broader announcements beyond formal advisories. WebFetch is reliably HTTP 403 on cisa.gov (re-confirmed 2026-05-08). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/news`. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → api/bridge: python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/news (listing) then `cisa page <article_url>` for body. AVOID: WebFetch reliably HTTP 403 on cisa.gov — skip it entirely. Do not WebFetch any cisa.gov URL.. | 2026-07-04: bridge (cisa page) upstream HTTP 403 again — consecutive_fetch_failures 2; 403 is transport blocking (does NOT demote per lifecycle rules). CISA KEV JSON API still works via the bridge. | 2026-07-05 root-cause confirmed: www.cisa.gov dynamic paths (/news-events/*, all .xml feeds, and the CSAF .well-known) are blocked by Akamai bot management (`Access Denied`, `Reference #18.*`) for EVERY UA/header combination tested (chrome/firefox/googlebot/curl/minimal/+Referer all 403) — the block keys off the egress TLS/behavioural fingerprint, so it is unfixable from request headers. Only the STATIC /sites/default/files/feeds/ path (KEV JSON) is served. No reachable alternative for the advisory HTML content (search.gov results are a JS shell needing an API key; Wayback has no snapshots). SUBSTITUTE: `cisa-kev` JSON API for exploited-vuln ground truth + WebSearch corroboration for advisory narrative (covered_anyway). STAYS ACTIVE — a 403 is a transport block and NEVER demotes (hard rule). source_health.py now classifies this `bridge-blocked` (handled), not `needs-demote`, so the routine stops re-flagging it every run. | 2026-07-05 RECOVERED — CISA dynamic content is now reachable. The Akamai 403 on every UA still holds for a DIRECT fetch, but `tools/fetch_source.py` routes cisa.gov through the r.jina.ai reader proxy (server-side fetch, bypasses the Akamai fingerprint) for `cisa page` / `cisa feed`, and through the cisagov/CSAF GitHub mirror (raw.githubusercontent.com, not proxy-blocked) for `cisa csaf-recent` / `cisa csaf` (fully-structured ICS advisories). This SUPERSEDES the earlier KEV+WebSearch-substitute handling — the advisory/directive/news content itself is now fetchable with full detail. `cisa-kev` JSON remains the exploited-vuln ground truth. FETCH now works: `python3 tools/fetch_source.py cisa feed https://www.cisa.gov/news.xml` for recent items, then `cisa page <news_url>` for the body. (Note: /cisa/blog.xml is a deprecated feed — CISA returns Access Denied even server-side; do not use it.) | 2026-07-05 admiralty audit: A (primary-authority) — CISA News, first-party government communications; bridge 403 is a known transport block (no demotion), host confirmed live. Status stays active. | 2026-07-09 structured-listing recipe (v3.14): the /news-events/news listing is a JS shell. REQUIRED listing fetch: `python3 tools/fetch_source.py cisa feed https://www.cisa.gov/news.xml 20`; drill with `cisa page <link>`. New directives are announced here too. Confirmed working 2026-07-09. | 2026-08-17: unreachable again — direct transport refused and the jina reader pool returned HTTP 402 on every rotating key, so the documented ladder had no last rung. Transport blocking plus an exhausted reader quota; NOT demoted. | 2026-08-18: same cisa.gov condition. NOT demoted. | 2026-08-19: same cisa.gov condition; NOT demoted.",
+  "publisher": "CISA News",
+  "reliability": "A",
+  "rss_url": "https://www.cisa.gov/news.xml",
+  "status": "active",
+  "tier": "standard",
+  "url": "https://www.cisa.gov/news-events/news",
+  "health_probe": {
+   "action": "needs-content-fix",
+   "class": "reader-quota",
+   "content_verdict": "unreadable",
+   "content_transport": "extract+direct",
+   "content_alnum": 0,
+   "content_terms": [],
+   "newest_item": null,
+   "newest_item_age_days": null,
+   "content_shell_markers": []
+  }
+ },
+ {
+  "category": [
+   "vulns",
+   "active-breaking"
+  ],
+  "consecutive_failures": 0,
+  "consecutive_fetch_failures": 0,
+  "consecutive_quiet_periods": 0,
+  "fetch_method": "api",
+  "id": "enisa-euvd",
+  "language": [
+   "en"
+  ],
+  "last_successful_fetch": "2026-09-28",
+  "notes": "EU vulnerability database mandated by NIS2 Art. 12(2), operated by ENISA — the EU counterpart to CISA KEV for exploitation ground truth, plus CVSS/EPSS-enriched coverage of newly published vulnerabilities. Records carry EUVD-YYYY-NNNNN ids aliased to CVE/GHSA ids, references to vendor advisories, `baseScore`/`epss`, and — on the exploited listing — `exploitedSince` (EU-side actively-exploited signal to read NEXT TO cisa-kev every run; the two catalogs overlap but neither is a superset). tier: essential — attempted on EVERY intel run, and the check means ALL THREE listing endpoints, not just one: (1) newest records → `python3 tools/fetch_source.py enisa-euvd recent lastvulnerabilities` (≙ https://euvd.enisa.europa.eu/); (2) critical CVSS 9.0–10.0 → `python3 tools/fetch_source.py enisa-euvd recent criticals` (≙ https://euvd.enisa.europa.eu/search?fromScore=9&toScore=10); (3) actively exploited → `python3 tools/fetch_source.py enisa-euvd recent exploited` (≙ https://euvd.enisa.europa.eu/search?exploited=true). Drill one record with `enisa-euvd advisory <EUVD-id>`. REQUIRED FETCH METHOD: the bridge api subcommands only — the SPA at euvd.enisa.europa.eu returns an empty <noscript> shell to WebFetch (not a fetch failure; recipe transition per the agent definition). The JSON API lives on the separate services host euvdservices.enisa.europa.eu (bridge re-pointed 2026-05-11). Citation discipline: the API JSON is the data, never the citation — cite the vendor advisory / CERT primary the record references (CVE primary-source order puts EUVD below vendor/CERT but above researcher write-ups); where the EUVD entry itself is the source, cite the human detail page https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/<EUVD-id>, never the search/listing URL. | 2026-07-09 added as tier: essential on operator request (EUVD ground truth next to CISA KEV): all three listing endpoints verified live and current same day — lastvulnerabilities, criticals, and exploited each returned in-window JSON (exploited carries exploitedSince; e.g. EUVD-2026-40121 / CVE-2026-56290 exploitedSince Jul 7). | 2026-07-18 weekly audit: 'attempted' must mean a DISCOVERY SWEEP of the recent/criticals/exploited listings, not only per-CVE enrichment lookups. The 2026-07-18 intel fire used EUVD solely for CVE checks and missed WordPress WP2Shell (EUVD-2026-45280/45236, published 07-17, recovered by the audit) that the listings carried. S1 must walk the listing endpoints every run. | 2026-08-19: exploited and criticals listings plus two per-advisory lookups; supplied the structured affected/fixed build ranges behind two entries and independently corroborated both exploitation dates.",
+  "publisher": "ENISA EU Vulnerability Database (EUVD)",
+  "reliability": "A",
+  "status": "active",
+  "tier": "essential",
+  "url": "https://euvd.enisa.europa.eu/",
+  "health_probe": {
+   "action": "needs-content-fix",
+   "class": "bridge-ok",
+   "content_verdict": "shell",
+   "content_transport": "extract+direct",
+   "content_alnum": 377,
+   "content_terms": [
+    "vulnerab"
+   ],
+   "newest_item": null,
+   "newest_item_age_days": null,
+   "content_shell_markers": []
+  }
+ },
+ {
+  "category": [
+   "ch-eu",
+   "gov"
+  ],
+  "consecutive_failures": 0,
+  "consecutive_fetch_failures": 0,
+  "consecutive_quiet_periods": 0,
+  "fetch_method": "webfetch",
+  "id": "cert-at",
+  "language": [
+   "en",
+   "de"
+  ],
+  "last_successful_fetch": "2026-09-28",
+  "notes": "Austrian national CERT; DACH region coverage. Confirmed working sub-paths (2026-05-08): /en/news/ (blog cadence is sparse, ~monthly). Confirmed BROKEN sub-paths: /en/warnings/ → HTTP 404. Drill into /en/news/ for the news listing. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → webfetch https://www.cert.at/en/news/ (listing) then webfetch the /en/blog/YYYY/M/<slug> article URL for body. AVOID: /en/warnings/ is HTTP 404 per prior note; cadence is sparse (~monthly) so do not expect daily items. | 2026-07-05 admiralty audit: A (HIGH->A) — Austrian national CERT, first-party authority for its jurisdiction; stays active, no change. Cadence sparse (~monthly), /en/warnings/ still 404 — drill /en/news/ then the /en/blog/YYYY/M/<slug> article. | 2026-08-04 run: RECIPE FIX — /en/, /de/aktuelles/news/ and /en/news/ return no drillable dated rows (and /de/warnungen/aktuelles/ 404s). The BARE HOMEPAGE https://www.cert.at/ is the working discovery surface: it carries dated headlines (this run: 24.07.2026, 20.07.2026, 18.06.2026). FETCH → scrape the bare homepage for dated headlines, then drill /de/blog/<YYYY>/<M>/<slug>. | 2026-08-23 audit: recipe healthy (bare-homepage WebFetch returns dated headlines; /en/, /de/aktuelles/news/ and /en/news/ remain undrillable). Genuinely quiet rather than dark — the single in-window item (2026-08-14, booking-platform fraud) is consumer-fraud advisory content, not incident or vulnerability signal. | 2026-09-15 intel run: cert.at/en/ returned only a JS-shell/navigation HTML via direct bridge fetch; WebSearch fallback found no in-window CERT.at bulletin. No structured recipe available yet. | 2026-09-20 quality audit (G2 re-sweep): the recorded transport (webfetch against /en/ or /en/news/) returns navigation-only content, which is why this essential-tier source sat at 10 consecutive quiet periods with last_covered_in_brief never set. WORKING RECIPE: python3 tools/fetch_source.py url https://www.cert.at/de/meldungen (server-rendered HTML, no reader needed) returns dated advisory items; https://www.cert.at/de/meldungen/tagesberichte carries CERT.at's daily media-monitoring digest as a discovery aggregator. Cadence is genuinely sparse (roughly monthly), so quiet periods here are partly real; the one in-window item (15.09.2026, Cisco Secure Email Gateway CVE-2026-76461) was already covered.",
+  "publisher": "CERT.at (Austria)",
+  "reliability": "A",
+  "status": "active",
+  "tier": "essential",
+  "url": "https://www.cert.at/de/meldungen",
+  "health_probe": {
+   "action": "stale-content",
+   "class": "ok",
+   "content_verdict": "stale",
+   "content_transport": "extract+direct",
+   "content_alnum": 10440,
+   "content_terms": [
+    "advisory",
+    "angriff",
+    "cyber",
+    "patch",
+    "schwachstelle",
+    "security",
+    "sicherheit",
+    "sicherheitslücke",
+    "warnung"
+   ],
+   "newest_item": "2026-05-07",
+   "newest_item_age_days": 145,
+   "content_shell_markers": []
+  }
+ },
+ {
+  "category": [
+   "ch-eu",
+   "gov"
+  ],
+  "consecutive_failures": 0,
+  "consecutive_fetch_failures": 0,
+  "consecutive_quiet_periods": 4,
+  "fetch_method": "bridge",
+  "id": "csirt-acn-it",
+  "language": [
+   "en",
+   "it"
+  ],
+  "last_successful_fetch": "2026-09-13",
+  "notes": "Italian national CSIRT under ACN; English and Italian alerts and bulletins. WebFetch returns HTTP 403 (transport-side block, ongoing since 2026-05-06; re-confirmed 2026-05-08). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py url https://www.acn.gov.it/portale/en/csirt-italia/alert-e-bollettini`. | 2026-06-20 full audit (v2.62): live=Y, drill=N. FETCH → feed https://www.acn.gov.it/portale/feedrss/-/journal/rss/20119/723192 5 (title+date+one-line severity/product summary+link); OR bridge: python3 tools/fetch_source.py url https://www.acn.gov.it/portale/en/csirt-italia/alert-e-bollettini for the listing. AVOID: WebFetch 403s both the listing and the advisory detail pages — skip WebFetch entirely. Advisory detail pages are a Liferay/React SPA: bridge 'url' returns only the shell (no body text). Use the RSS feed; its summary gives severity + affected products, then pivot to the underlying vendor advisory.. | 2026-06-20 v2.64 fetch-waste review: no readable path — WebFetch 403, advisory body is a React SPA, and the referenced RSS (csirt.gov.it/data/indexer/rss) does not parse. DEMOTED as fetch-waste. Recover if ACN exposes a parseable feed or a CSAF endpoint. | 2026-07-05 admiralty audit: A reliability (national CSIRT / primary authority) but KEPT demoted — no method yields drillable content (SPA shell via bridge, all RSS variants 403). Recover if ACN exposes a parseable feed/CSAF endpoint; if recovered it is an A-tier source worth reinstating. | 2026-08-04 RECOVERED from demoted — the demotion premise (\"no method yields drillable content\") is demonstrably false: `python3 tools/fetch_source.py url https://www.acn.gov.it/portale/w/operational-summary-1-semestre-2026` returned HTTP 200 with the FULL server-rendered publication body plus the linked PDF filename and publication date. RECIPE → the readable surface is the per-publication slug path /portale/{w,en/w}/<slug> via the bridge `url` recipe, NOT the alert-e-bollettini listing (still a Liferay/React SPA shell) and NOT the RSS variants. Discovery: the publications index https://www.acn.gov.it/portale/en/csirt-italia/pubblicazioni, then drill per slug. Reinstated as active per this record's own standing note that a recovered ACN is an A-tier source worth reinstating; Italy is a major EU jurisdiction and NIS2 reporting hub and the S2 slice otherwise carries no Italian authority. Its 2026-07-24 H1-2026 operational summary was surfaced this run and dropped on recency only (26 h window), not for unreadability.",
+  "publisher": "CSIRT Italia (ACN) — Alert e bollettini",
+  "reliability": "A",
+  "status": "active",
+  "tier": "standard",
+  "url": "https://www.acn.gov.it/portale/en/csirt-italia/alert-e-bollettini",
+  "health_probe": {
+   "action": "stale-content",
+   "class": "bridge-ok",
+   "content_verdict": "stale",
+   "content_transport": "extract+direct",
+   "content_alnum": 16749,
+   "content_terms": [
+    "apt",
+    "cyber",
+    "exploit",
+    "incident",
+    "security",
+    "sicurezza",
+    "vulnerab",
+    "vulnerabilità"
+   ],
+   "newest_item": "2024-10-16",
+   "newest_item_age_days": 713,
+   "content_shell_markers": []
+  }
+ },
+ {
+  "category": [
+   "ch-eu",
+   "gov"
+  ],
+  "consecutive_failures": 0,
+  "consecutive_fetch_failures": 0,
+  "consecutive_quiet_periods": 2,
+  "fetch_method": "jina",
+  "id": "ccn-cert-es",
+  "language": [
+   "es",
+   "en"
+  ],
+  "last_successful_fetch": "2026-09-13",
+  "notes": "Spanish national CERT under CNI. WebFetch returns HTTP 403; bridge fetcher ALSO returns 403 — Cloudflare / geo-IP gating from outside Spain or anti-bot protection. Surface as coverage gap in § 7 ('ccn-cert-es: 403 even with bridge fetcher'). NEVER demote on this transport block (Phase 5 rule A1). Retest periodically; recover if CCN-CERT publishes a CSAF feed at /.well-known/csaf/ or relaxes the geo block. | 2026-06-20 full audit (v2.well-known/csaf/ 403. Coverage gap; WebSearch-only. NEVER demote-on-transport beyond this; recover if the geo block relaxes or a CSAF feed appears. | 2026-07-05 admiralty audit: A (HIGH->A) reliability retained — national CERT authority is independent of transport. Recommend un-demote demoted->candidate: the block is a live-host 403 (geo/anti-bot), NOT a dead host/404/removed page, so per rule A1 it must not be demoted-on-transport; keep as coverage gap and recover if a CSAF feed at /.well-known/csaf/ appears or the geo block relaxes. | 2026-07-06 source_health handling: added to TRANSPORT_BLOCKED_UNREACHABLE in tools/source_health.py — direct + bridge both 403 (Cloudflare Managed-Challenge / geo-gate), so a probe 403 is now classed handled (action none, coverage gap, WebSearch substitute) instead of churning as needs-demote every sweep; still NEVER demote-on-403 (rule A1). | 2026-07-06 jina-fallback recovery: RECOVERED — fetch_method blocked -> jina. Direct fetch still 403s (geo/anti-bot), but the r.jina.ai reader proxy fetches server-side and returns the full body (39 KB, homepage + advisory pages). RECIPE: `python3 tools/fetch_source.py jina https://www.ccn-cert.cni.es/en/<path>` (or `url <path>`, which auto-falls-back to the reader). Removed from source_health TRANSPORT_BLOCKED_UNREACHABLE — it is now reachable, probes jina-ok/bridge-ok. Backup: WebSearch if the reader ever 401s. Cite the ccn-cert.cni.es page; the reader supplies the data, not the citation. | 2026-07-28: jina reader returned HTTP 402 (pooled credit exhausted) and the direct bridge returned only the navigation shell; transport block, not content death. No demotion — transport/anti-bot block, not content death. | 2026-08-03: 404 rotation priority RESOLVED. Working recipe: fetch_source.py jina on https://www.ccn-cert.cni.es/en/updated-security/ccn-news.html (news) and .../alertas-ccn-cert.html (alerts); the old landing path 404s. Fetched 200 this run, no in-window item. | 2026-08-06: RECOVERED. The jina recipe (`jina https://www.ccn-cert.cni.es/en/updated-security/ccn-news.html`) returns a full dated news listing again, clearing the 404 recorded on the previous attempt. Kept as candidate; no in-window security content this run (latest item 2026-07-28). | 2026-08-15: health-probe failure this run is an artifact of the exhausted reader key pool, not a recipe defect — fetch_method is pinned to the reader. Not demoted; re-probe once the pool is topped up. | 2026-08-16: re-probed serially this run: the direct transport fails and the fetch falls through to the reader, where all seven keys return HTTP 402. A genuine reader-quota casualty, not a recipe defect, and a 403/quota condition never demotes. NOT demoted; recheck once reader credit is restored. | 2026-08-16 weekly: re-probed on the Spanish avisos path, the English ccn-news path and the site root — all three return nothing on the direct transport, and the reader fallback is at HTTP 402 on every key. Unchanged from the prior run's finding: a reader-credit casualty, not a recipe defect, and a quota condition never demotes. NOT demoted, fetch_method left pinned to jina because the reader is the transport that has historically worked for this host. This will keep surfacing as UNSOLVED until reader credit is restored — that is an operator item, not something to mute. | 2026-08-17: still UNSOLVED, unchanged in cause. Every direct transport returns an empty body (bridge url on the advisories listing, three candidate feed paths and the site root all returned 0 bytes this run), and the reader that historically works was credit-exhausted across all keys. Confirms the standing assessment: a reader-quota condition, not content death. NOT demoted and deliberately not muted to fetch_method: blocked, because the host is reachable the moment reader credit returns. | 2026-08-18: not attempted beyond the standing note — pinned to the exhausted reader, and this run had no home-region signal need strong enough to justify re-probing a transport already logged as failing on 2026-08-16 and 2026-08-17. No claim made about in-window content either way. | 2026-08-18: UNSOLVED flag worked this run rather than deferred: four paths probed with a desktop browser user agent — the Spanish avisos listing, the English ccn-news listing, the site root and an obrss vulnerabilities feed — and all four returned HTTP 403. This is a transport block on our egress, which never demotes, and the documented way through is the reader, which has no credit. NOT demoted and deliberately NOT muted to fetch_method blocked, because `blocked` means unreachable by every transport including the reader and the reader has not been tested this run — it has only been unaffordable. Re-test the moment reader credit returns. | 2026-08-19: HTTP 403 direct and the reader fallback exhausted; consistent with the standing egress block on this host. NOT demoted. | 2026-08-19: recipe re-confirmed correct, no change needed. Four distinct paths probed with a browser user agent (Spanish and English advisory listings, the Joomla obRSS feed route and the index.php RSS route) all returned an identical 3,354-byte HTTP 403, i.e. a whole-host edge refusal rather than a per-path problem, so no direct recipe exists to author. The health probe's needs-demote flag on this record is a consequence of the reader-credit outage, not of a broken recipe.",
+  "publisher": "CCN-CERT (Spain)",
+  "reliability": "A",
+  "status": "candidate",
+  "tier": "standard",
+  "url": "https://www.ccn-cert.cni.es/en/updated-security/ccn-news.html",
+  "health_probe": {
+   "action": "needs-content-fix",
+   "class": "reader-quota",
+   "content_verdict": "unreadable",
+   "content_transport": "extract+direct",
+   "content_alnum": 0,
+   "content_terms": [],
+   "newest_item": null,
+   "newest_item_age_days": null,
+   "content_shell_markers": []
+  }
+ },
+ {
+  "id": "bfv-verfassungsschutz-de",
+  "publisher": "Bundesamt für Verfassungsschutz (Germany)",
+  "url": "https://www.verfassungsschutz.de/SharedDocs/kurzmeldungen/DE/2026/",
+  "rss_url": null,
+  "category": [
+   "ch-eu",
+   "gov"
+  ],
+  "tier": "standard",
+  "status": "candidate",
+  "fetch_method": "bridge",
+  "reliability": "A",
+  "language": [
+   "de"
+  ],
+  "last_successful_fetch": "2026-09-19",
+  "consecutive_failures": 0,
+  "consecutive_fetch_failures": 0,
+  "consecutive_quiet_periods": 0,
+  "notes": "Added 2026-09-19 as this run's ONE new candidate source (S2). Germany's domestic security service (BfV) co-issues joint international cybersecurity advisories with its own authoritative German-language notice and technical detail (e.g. the 2026-09-18 DPRK WaterPlum/Contagious Interview advisory jointly issued with FBI/NPA-Japan/NCO-Japan/DC3/ASD-ACSC/BND) not otherwise available from Swiss-facing sources -- DACH-region relevance for the home-region/sector-lens mission. FETCH -> python3 tools/fetch_source.py extract <kurzmeldung-URL> (trafilatura-direct, confirmed clean 2026-09-19). Candidate -> promote to active after 3 contributing runs.",
+  "health_probe": {
+   "action": "stale-content",
+   "class": "bridge-ok",
+   "content_verdict": "stale",
+   "content_transport": "extract+direct",
+   "content_alnum": 2914,
+   "content_terms": [
+    "angriff",
+    "cyber",
+    "espionage",
+    "sicherheit"
+   ],
+   "newest_item": "2026-07-25",
+   "newest_item_age_days": 66,
+   "content_shell_markers": []
+  }
+ },
+ {
+  "category": [
+   "breaches",
+   "ch-eu"
+  ],
+  "consecutive_failures": 0,
+  "consecutive_fetch_failures": 0,
+  "consecutive_quiet_periods": 5,
+  "fetch_method": "bridge",
+  "id": "ico-uk",
+  "language": [
+   "en"
+  ],
+  "last_covered_in_brief": "2026-06-21",
+  "last_successful_fetch": "2026-09-13",
+  "notes": "Information Commissioner's Office breach announcements. WebFetch returns HTTP 403 (ICO filters the routine UA; re-confirmed 2026-05-08). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py url https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/`. For specific enforcement action listings use `python3 tools/fetch_source.py url https://ico.org.uk/action-weve-taken/enforcement/`. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → api: python3 tools/fetch_source.py ico-uk enforcement N  (returns enforcement URLs from sitemap; then `url <enforcement_url>` for body). News index via `url https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/`.. AVOID: WebFetch 403s the routine UA — skip it, use the bridge. Article body text sits inside <main id='main-content'>; the page leads with a large cookie-banner JSON island so naive byte-range reads miss the body.. | 2026-07-05 admiralty audit: A — first-party government regulator publishing its own enforcement/breach decisions; primary authority for its jurisdiction. HIGH->A, stays active. | 2026-07-28: bridge returned the JS-rendered page shell with no dated listing. No demotion — transport/anti-bot block, not content death. | 2026-07-30: fetch_method bridge -> jina. S2 reached https://ico.org.uk/action-weve-taken/enforcement/ with HTTP 200 but the enforcement-action list sits behind a JS-hydrated block grid and no dated /enforcement/action/<slug> hrefs surface in the raw body. Switching fetch_method to jina to hydrate the listing. Transport block, not source death — no demotion (HTTP 200 throughout). | 2026-08-02: flagged needs-demote by the sweep, diagnosed as the reader-credential outage, NOT a recipe break. All four pooled jina keys report HTTP 402 (exhausted, negative balance) this run, and this record is pinned fetch_method: jina precisely because the listing is JS-hydrated. Direct alternatives probed this run: https://ico.org.uk/action-weve-taken/enforcement/ and the news-and-blogs listing both return HTTP 200 with a browser UA but expose no dated enforcement hrefs in the raw body (the hydration problem the 2026-07-30 note already recorded), and /rss paths under both return 404. No demotion — HTTP 200 throughout and the recipe is intact; the source returns as soon as reader credit is restored. | 2026-08-15: health-probe failure this run is an artifact of the exhausted reader key pool, not a recipe defect — fetch_method is pinned to the reader. Not demoted; re-probe once the pool is topped up. | 2026-08-16: source_health flagged needs-demote; a serial re-probe this run returned 50 KB through the generic `url` bridge. Same parallel-contention artifact as ncsc-ch-incidents. NOT demoted. | 2026-08-16 weekly (RECIPE FIX): fetch_method jina -> bridge. The record was pinned to the reader, which is why source_health kept flagging it needs-demote while the reader pool sat at HTTP 402 — the generic `url` bridge reaches this host directly and returned 50 KB for /action-weve-taken/enforcement/ and 40 KB for the media-centre listing on a serial probe this run. Pinning to the reader was the defect; this is a fix, not a workaround. Cite the per-action /action-weve-taken/enforcement/<year>/<month>/<slug> or media-centre URL. | 2026-08-18: RECIPE FIX CANDIDATE: /media-centre/news-and-blogs/ returned 404 on the direct transport this run, while current ICO news items resolve under /about-the-ico/media-centre/news-and-blogs/YYYY/MM/. The enforcement listing remains a client-side-filtered application with no server-rendered result links on any transport.",
+  "publisher": "UK ICO breach notifications",
+  "reliability": "A",
+  "status": "active",
+  "tier": "standard",
+  "url": "https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/",
+  "health_probe": {
+   "action": "needs-content-fix",
+   "class": "bridge-ok",
+   "content_verdict": "irrelevant",
+   "content_transport": "extract+direct",
+   "content_alnum": 1330,
+   "content_terms": [],
+   "newest_item": "2025-02-12",
+   "newest_item_age_days": 594,
+   "content_shell_markers": []
+  }
+ },
+ {
+  "category": [
+   "sanctions",
+   "gov"
+  ],
+  "consecutive_failures": 0,
+  "consecutive_fetch_failures": 0,
+  "consecutive_quiet_periods": 4,
+  "fetch_method": "bridge",
+  "id": "us-treasury-ofac",
+  "language": [
+   "en"
+  ],
+  "last_successful_fetch": "2026-09-14",
+  "notes": "Office of Foreign Assets Control sanctions designations — primary source for sanctioning ransomware-cashout networks, bulletproof-host operators, and state-actor-affiliated infrastructure (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 dated designations May 1-7 2026. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → bridge: python3 tools/fetch_source.py url https://ofac.treasury.gov/recent-actions (listing of /recent-actions/YYYYMMDD entries) then bridge url https://ofac.treasury.gov/recent-actions/YYYYMMDD for the designation body. AVOID: Do NOT WebFetch — ofac.treasury.gov 503s the routine UA on both listing and detail. Use the bridge (browser UA) for both; it returns full HTML.. | 2026-07-05 admiralty audit: A — first-party government sanctions authority publishing its own designations, the primary/definitive source for its own actions. Fetch only via bridge (WebFetch 503s). No status change. | 2026-07-14 intel run: bridge fetch of sb0559 + recent-actions/20260713, contributed the 1VPNS/cryptor-seller sanctions update entry.",
+  "publisher": "US Treasury OFAC — Recent Actions",
+  "reliability": "A",
+  "status": "active",
+  "tier": "standard",
+  "url": "https://ofac.treasury.gov/recent-actions",
+  "health_probe": {
+   "action": "needs-content-fix",
+   "class": "bridge-ok",
+   "content_verdict": "irrelevant",
+   "content_transport": "extract+direct",
+   "content_alnum": 4572,
+   "content_terms": [
+    "cyber"
+   ],
+   "newest_item": "2026-09-29",
+   "newest_item_age_days": 0,
+   "content_shell_markers": []
+  }
+ },
+ {
+  "category": [
+   "breaches"
+  ],
+  "consecutive_failures": 0,
+  "consecutive_fetch_failures": 0,
+  "consecutive_quiet_periods": 1,
+  "fetch_method": "api",
+  "id": "sec-disclosures-edgar",
+  "language": [
+   "en"
+  ],
+  "last_covered_in_brief": "2026-07-03",
+  "last_successful_fetch": "2026-09-11",
+  "notes": "US public-company breach disclosures via Item 1.05; primary source. Use the EDGAR full-text search API at https://efts.sec.gov/LATEST/search-index?q=...&forms=8-K with date range parameters (&dateRange=custom&startdt=YYYY-MM-DD&enddt=YYYY-MM-DD). Best query strings: q=%22Item+1.05%22 (most precise — only material cyber incidents) or q=%22cybersecurity+incident%22 (broader). The API returns metadata only (no doc_text); drill into each match's per-company filing index at https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=<CIK>&type=8-K to read the actual filing. Cite the per-filing URL (e.g. /Archives/edgar/data/<CIK>/<accession>/...). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → api: `python3 tools/fetch_source.py sec-edgar 8k <startdt> <enddt> 1.05` (returns Item 1.05 hits w/ filing_url) then bridge `url <filing_index>` to find the .htm doc, then bridge `url <doc.htm>` to read the Item 1.05 body. AVOID: The documented efts.sec.gov ...search-index API URL returns metadata only (no doc text) — don't expect the body there. Use the sec-edgar subcommand for discovery, then drill the per-filing .htm. WebFetch on efts JSON is unnecessary.. | 2026-07-05 admiralty audit: A (was HIGH) — SEC's official EDGAR system; Item 1.05 8-Ks are first-party regulatory breach disclosures by the companies, i.e. primary-authority ground truth. Justified A: government regulator + legally-accountable first-party filings. Status stays active.",
+  "publisher": "SEC EDGAR (8-K cyber filings)",
+  "reliability": "A",
+  "status": "active",
+  "tier": "standard",
+  "url": "https://efts.sec.gov/LATEST/search-index?q=%22Item+1.05%22&forms=8-K",
+  "health_probe": {
+   "action": "needs-content-fix",
+   "class": "bridge-ok",
+   "content_verdict": "shell",
+   "content_transport": "api",
+   "content_alnum": 241,
+   "content_terms": [],
+   "newest_item": "2026-09-29",
+   "newest_item_age_days": 0,
+   "content_shell_markers": []
+  }
+ }
+]

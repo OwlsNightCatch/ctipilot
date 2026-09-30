@@ -60,6 +60,10 @@ sources:
     publisher: "TrueConf"
     date: "2026-08-12"
     role: primary
+  - url: "https://ics-cert.kaspersky.com/vulnerabilities/trueconf-server-missing-authentication-for-critical-function/"
+    publisher: "Kaspersky ICS CERT (KLCERT-26-057)"
+    date: "2026-08-11"
+    role: primary
   - url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
     publisher: "CISA Known Exploited Vulnerabilities Catalog"
     date: "2026-08-20"
@@ -101,10 +105,20 @@ watchlist_hit: false
 actions:
   - "Patch TrueConf Server to 5.3.9, 5.4.9 or 5.5.5 and take port 4307/TCP off any internet-facing interface — it listens by default, and Kaspersky's own testing found the flaw present in every release since 2022, so an unpatched older build is affected even though it falls outside the published CVE ranges."
   - "Treat any TrueConf server that hosted external or contractor participants before patching as compromised until cleared: check whether the distributed Windows client installer under ClientInstFiles still carries a valid vendor signature, and check the web-accessible script directory for a modified locale.php."
+updates:
+  - at: "2026-09-29T23:43:46Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The clause naming CVE-2026-72529 cited Kaspersky ICS CERT's report, which identifies the flaw only
+      by its internal id KLCERT-26-057. It now also cites that advisory, which maps the id to
+      CVE-2026-72529. No fact changed.
+    fields: [sources, body]
 migrated_from: null
 ---
 
-CISA added both halves of this chain to its Known Exploited Vulnerabilities catalogue on 2026-08-20, and ENISA's EU Vulnerability Database independently records each as exploited since the same date. The chain is entirely pre-authentication and sits behind one port. **CVE-2026-72529** is a missing-authentication flaw: *"An unauthorized attacker can connect to TrueConf server versions 5.3.X before 5.3.9, 5.4.X before 5.4.9, 5.5.X before 5.5.5, as well as earlier versions (our internal analysis showed that all TrueConf server versions released since 2022 are vulnerable) via port 4307/TCP (open by default, according to TrueConf documentation) and execute a malicious script on the server by calling an undocumented function"* ([Kaspersky ICS CERT, 2026-08-12](https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/)). That parenthesis matters more than the version list around it: the vendor-stated affected ranges understate the real exposure, so an older build outside the published ranges is not safe by omission.
+CISA added both halves of this chain to its Known Exploited Vulnerabilities catalogue on 2026-08-20, and ENISA's EU Vulnerability Database independently records each as exploited since the same date. The chain is entirely pre-authentication and sits behind one port. **CVE-2026-72529** is a missing-authentication flaw: *"An unauthorized attacker can connect to TrueConf server versions 5.3.X before 5.3.9, 5.4.X before 5.4.9, 5.5.X before 5.5.5, as well as earlier versions (our internal analysis showed that all TrueConf server versions released since 2022 are vulnerable) via port 4307/TCP (open by default, according to TrueConf documentation) and execute a malicious script on the server by calling an undocumented function"* ([Kaspersky ICS CERT, 2026-08-12](https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/); [Kaspersky ICS CERT, KLCERT-26-057, 2026-08-11](https://ics-cert.kaspersky.com/vulnerabilities/trueconf-server-missing-authentication-for-critical-function/)). That parenthesis matters more than the version list around it: the vendor-stated affected ranges understate the real exposure, so an older build outside the published ranges is not safe by omission.
 
 The script lands inside a sandbox that deliberately withholds the dangerous standard libraries, which is where **CVE-2026-72530** comes in — a flaw in the sandbox's own code-generation logic. Kaspersky describes the join: *"The uploaded malicious script is executed in an isolated environment, where potentially hazardous libraries (io, os, etc.) are unavailable. However, attackers can exploit another vulnerability (assigned internal Kaspersky identifier KLCERT-26-058) to execute arbitrary code on the server with NT AUTHORITY\SYSTEM privileges"* ([Kaspersky ICS CERT, 2026-08-12](https://ics-cert.kaspersky.com/publications/reports/2026/08/12/head-mare-exploits-vulnerabilities-in-trueconf-server-to-deliver-phantomcore-malware/)). Both were fixed together on 2026-06-18 in 5.3.9, 5.4.9 and 5.5.5 — roughly two months before the exploitation listing, which is the usual and uncomfortable shape: the patch was available throughout the observed campaign.
 
