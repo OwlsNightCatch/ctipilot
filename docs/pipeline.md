@@ -1147,8 +1147,9 @@ the site smoke tests (`site/test_build.py`).
 
 v4.17 additions (run scope, gated on the run's prompt version):
 `changelog-fields` (a record's `fields` must name every frontmatter field
-its fire changed, plus `body` for an analysis edit; a body change carried
-only by `internal: true` records FAILs); `dedup-extended` (two new entries
+its fire changed, plus `body` for an analysis edit; an analysis edit of more
+than 12 words carried only by `internal: true` records FAILs, since an
+internal record may only re-point a citation or re-word a few words); `dedup-extended` (two new entries
 of one fire sharing a CVE, or a new entry sharing another entry's primary
 source URL plus an entity or most of its title, FAIL unless declared in
 `references[]`); `run-integrity` (iteration counter vs iterations listed,
