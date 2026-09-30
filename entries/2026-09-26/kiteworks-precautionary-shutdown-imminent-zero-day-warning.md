@@ -12,8 +12,12 @@ summary: >
   enforcement" of a possible imminent attack. No CVE has been assigned and
   Kiteworks says it is not aware of any actual compromise; the Central
   European shutdown window falls in the timezone Switzerland shares.
+  Kiteworks later said its engineering and security work during the shutdown
+  led to the discovery and fix of a previously unknown critical vulnerability
+  in a capability enabled for under 1% of its customers, with no indication
+  it was exploited.
 discovered_at: "2026-09-26T04:04:42Z"
-updated_at: "2026-09-29T04:50:00Z"
+updated_at: "2026-09-30T05:21:00Z"
 event_date: "2026-09-25"
 run_id: 2026-09-26T0404Z-intel
 priority: notable
@@ -54,6 +58,10 @@ sources:
     publisher: "BSI CERT-Bund (WID-SEC-2026-3602)"
     date: "2026-09-27"
     role: corroborating
+  - url: "https://www.kiteworks.com/company/press-releases/kiteworks-restores-systems-credible-threat/"
+    publisher: "Kiteworks"
+    date: "2026-09-28"
+    role: primary
 closed_sources: []
 evidence:
   - quote: "We have received credible threat intelligence from law enforcement indicating an attack on Kiteworks systems may be imminent this weekend. We strongly recommend you shut down your Kiteworks system for six hours"
@@ -78,6 +86,12 @@ evidence:
     publisher: "BSI CERT-Bund (WID-SEC-2026-3602)"
     source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3602"
     original: "Ein Angreifer kann eine Schwachstelle in Kiteworks Advanced Forms ausnutzen, um einen nicht näher spezifizierten Angriff durchzuführen."
+  - quote: "During the shutdown, this activity led to the discovery of a previously unknown critical vulnerability confined to a capability that is enabled for less than 1% of the customer base."
+    publisher: "Kiteworks"
+    source_url: "https://www.kiteworks.com/company/press-releases/kiteworks-restores-systems-credible-threat/"
+  - quote: "Kiteworks developed and deployed a fix during the window, applied an additional protective layer across all environments, and has no indication the vulnerability was ever exploited."
+    publisher: "Kiteworks"
+    source_url: "https://www.kiteworks.com/company/press-releases/kiteworks-restores-systems-credible-threat/"
 verification: multi-source
 sourcing_note: >
   Every outlet's reporting traces to Kiteworks' own customer notification and
@@ -99,7 +113,7 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Confirm any Kiteworks deployment, including the Advanced Forms module, runs release ≥9.5.1; the precautionary shutdown has been lifted and no further shutdown action is needed."
+  - "Confirm every Kiteworks deployment, including Advanced Forms, runs release 9.5.1 or later, and ask Kiteworks Support in writing whether the critical vulnerability found during the shutdown needs customer-side action on self-hosted instances."
 updates:
   - at: "2026-09-29T04:50:00Z"
     run_id: 2026-09-29T0405Z-intel
@@ -111,6 +125,15 @@ updates:
       fixed in 9.5.1; no CVE has been assigned. Priority moves from high to notable now that the acute
       threat has resolved without confirmed compromise.
     fields: [priority, tags, affected_products, sources, evidence, sourcing_note, actions, body]
+  - at: "2026-09-30T05:21:00Z"
+    run_id: 2026-09-30T0404Z-intel
+    type: update
+    summary: >
+      Kiteworks's own release of 2026-09-28 says its engineering and security work during the customer-wide shutdown
+      led to the discovery of a previously unknown critical vulnerability in a capability enabled for under 1% of its customers, that it deployed a fix during the
+      window and an extra protective layer across all environments, and that it has no indication the vulnerability
+      was exploited. The release names no component or CVE.
+    fields: [summary, sources, evidence, actions, body]
 migrated_from: null
 ---
 
@@ -146,3 +169,9 @@ technical detail from the vendor side even now, not withheld by this entry.
 **Defender takeaway (updated):** the acute threat has resolved without confirmed compromise; the remaining
 action is to confirm any Kiteworks deployment, including the Advanced Forms module specifically, runs release
 9.5.1 or later.
+
+## Update — 2026-09-30T05:21:00Z
+
+Kiteworks's own release, dated 2026-09-28, reports the outcome of the shutdown: the threat window "passed without incident", and the company has no indication that any Kiteworks or customer system was compromised ([Kiteworks, 2026-09-28](https://www.kiteworks.com/company/press-releases/kiteworks-restores-systems-credible-threat/)). It adds that its engineering and security activity during the shutdown led to the discovery of "a previously unknown critical vulnerability confined to a capability that is enabled for less than 1% of the customer base", that Kiteworks developed and deployed a fix during the window and applied an additional protective layer across all environments, and that it has no indication the vulnerability was ever exploited; all other Kiteworks products were unaffected ([Kiteworks, 2026-09-28](https://www.kiteworks.com/company/press-releases/kiteworks-restores-systems-credible-threat/)). The release names no component and no CVE; whether it is the Advanced Forms flaw that BSI listed on 2026-09-27 is not stated. The vendor's own statements are the only source for the discovery, the fix and the absence of exploitation, and customers with questions are pointed to Kiteworks Technical Support ([Kiteworks, 2026-09-28](https://www.kiteworks.com/company/press-releases/kiteworks-restores-systems-credible-threat/)).
+
+**Defender takeaway (updated):** the shutdown ended with a vendor-confirmed critical flaw found and fixed, though no exploitation is claimed. The release does not say whether self-hosted instances need customer-side action, so the written question to Kiteworks Support is the open task.

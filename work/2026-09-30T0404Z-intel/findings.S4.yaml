@@ -1,0 +1,585 @@
+# work/2026-09-30T0404Z-intel/findings.S4.yaml  (S4 — Incidents & disclosures)
+domain: S4
+run_id: 2026-09-30T0404Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-09-30T04:07:37Z
+ended_at: 2026-09-30T04:36:04Z
+duration_seconds: 1707
+self_telemetry:
+  webfetch_calls: 2          # inside-it.ch (HTTP 429 Vercel checkpoint), computerweekly.com/de (403)
+  websearch_calls: 52
+  bridge_fetches: 118        # fetch_source.py extract/url/feed/pdf/sec-edgar/ico-uk combined (approx.)
+items:
+
+  # ---------------------------------------------------------------------------
+  # 1. NEW — Swiss commune ransomware (home-region core: communal administration)
+  # ---------------------------------------------------------------------------
+  - title: "Swiss commune Manno (TI) confirms ransomware encryption of municipal servers on 2026-08-04, restored from backup; SafePay lists the commune on its leak site on 2026-09-28"
+    sources:
+      - { url: "https://www.manno.ch/manno/Informazione/albo-comunale/2026/09/Attacco-informatico.html", publisher: "Comune di Manno (Municipio) — official notice page", date: "2026-09-16", role: "primary" }
+      - { url: "https://www.manno.ch/manno/Informazione/albo-comunale/2026/09/Attacco-informatico/sidebar/0/items/0/file/Pubblicazione%20avviso%20attacco%20informatico.pdf.pdf", publisher: "Comune di Manno (Municipio) — signed PDF notice 'AVVISO ATTACCO INFORMATICO'", date: "2026-09-16", role: "primary" }
+      - { url: "https://www.ransomware.live/id/bWFubm8uY2hAc2FmZXBheQ==", publisher: "Ransomware.live (leak-site tracker; claim record)", date: "2026-09-28", role: "corroborating" }
+    discovery_trace: "first seen at: ransomware-live, URL https://api.ransomware.live/v2/recentvictims (manno.ch, group safepay, country CH, discovered 2026-09-28T08:34Z) -> WebSearch (\"Reichenau an der Rax Gemeinde Cyberangriff SafePay Hackerangriff\") surfaced inside-it.ch 'Tessiner Gemeinde wird Opfer von Cyberkriminellen' 2026-09-29 (URL https://www.inside-it.ch/tessiner-gemeinde-wird-opfer-von-cyberkriminellen-20260929 — NOT fetchable: Vercel Security Checkpoint HTTP 429 on direct/bridge/WebFetch, reader pool exhausted; content known only from WebSearch result text, so NOT cited) -> pivot: municipality homepage https://www.manno.ch (news tile 'Attacco informatico server comunale', 16 settembre 2026) -> primary: notice page https://www.manno.ch/manno/Informazione/albo-comunale/2026/09/Attacco-informatico.html and its PDF (https://www.manno.ch/manno/Informazione/albo-comunale/2026/09/Attacco-informatico/sidebar/0/items/0/file/Pubblicazione%20avviso%20attacco%20informatico.pdf.pdf) -> claim record https://www.ransomware.live/id/bWFubm8uY2hAc2FmZXBheQ== ; SafePay group context via https://api.ransomware.live/v2/groupvictims/safepay"
+    summary: |
+      The Municipio of Manno (Ticino) published a signed notice on 2026-09-16 stating that on
+      4 August 2026 part of the commune's servers suffered a cyberattack that resulted in encryption of the data.
+      The commune isolated the affected server; per the notice (text is font-shifted in the PDF and was decoded
+      by us) data and operations were restored "nel corso del pomeriggio" (within that afternoon) from existing
+      backups. The case was reported to the competent authorities and a criminal complaint against persons unknown
+      was filed; the notice tells residents to be wary of unexpected letters/e-mails demanding urgent payments or
+      personal/financial data and to verify via official channels. The notice names no actor, access vector, data-theft
+      finding or ransom demand. On 2026-09-28 (about seven weeks after the encryption) the SafePay extortion group
+      listed manno.ch on its leak site (Ransomware.live discovery timestamp 2026-09-28 08:34 UTC); the tracker shows
+      no data volume or samples. Per WebSearch result text of an inside-it.ch article dated 2026-09-29 (unfetchable,
+      not citable), SafePay claims an unspecified dataset from the administration and threatens publication within
+      three to four days, i.e. roughly 2026-10-01/02 — treat as an unverified claim by the criminals; the commune's
+      own statement says nothing about exfiltration. Ransomware.live lists 578 SafePay claims since 2024-11-19, of
+      which 8 Swiss; five of those Swiss listings fall in September 2026: ara-lyss.ch (2026-09-15; the Gemeindeverband
+      ARA-Region Lyss-Limpachtal wastewater-treatment operator, canton Bern — no victim statement or press pickup
+      found; ara-lyss.ch itself returns 403 to every transport), stoecklin-kuechen.ch (2026-09-15), and lfgholding.com,
+      bio-strath.com and manno.ch (2026-09-28). Those other Swiss listings are claim-only and are NOT asserted here.
+    region_nexus: "switzerland (Ticino commune) — home-region core"
+    primary_sector_nexus: "direct (communal administration)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1486]
+    techniques_note: "T1486 is source-stated by the victim ('ha comportato il criptaggio dei dati'). T1657 (extortion / data-theft threat) rests only on SafePay's leak-site listing and the unfetchable inside-it report — composer should carry it, if at all, as an attributed claim."
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:safepay", type: actor, name: "SafePay", aliases: ["Safepay"],
+          summary: "Ransomware / data-extortion group running a Tor leak site; Ransomware.live lists 578 claimed victims 2024-11-19..2026-09-28 (215 US, 128 DE, 8 CH), including the Swiss commune Manno (TI) on 2026-09-28 (Ransomware.live)." }
+      - { key: "incident:manno-ti-commune-ransomware-2026-08", type: incident, name: "Manno (TI) commune ransomware, 2026-08-04",
+          aliases: [], summary: "Encryption of part of the Ticino commune Manno's servers on 2026-08-04, restored from backup; SafePay leak-site listing 2026-09-28 (Comune di Manno notice 2026-09-16; Ransomware.live)." }
+    relation_suggestions:
+      - { subject: "incident:manno-ti-commune-ransomware-2026-08", object: "actor:safepay",
+          basis: "Ransomware.live records that SafePay listed manno.ch on its leak site on 2026-09-28 — the criminals' own claim, not confirmed by the commune (whose 2026-09-16 notice names no actor); relation should be typed as a claimed/overlap link, not attribution" }
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "Incident fact = the victim's own signed notice (primary, Admiralty A for its own event). Leak-site listing = tracker (C) repeating the criminals' claim. A third independent report (inside-it.ch, 2026-09-29) exists but could not be fetched (Vercel checkpoint), so it is not cited; a later fire or the verifier may retry when the checkpoint clears."
+    confidence: HIGH
+    confidence_note: "HIGH for the encryption incident (victim-confirmed); LOW-MEDIUM for SafePay's claimed data theft and the 3-4 day publication threat."
+    classification_suggestion: { reliability: A, credibility: 2 }
+    suggested_priority: notable
+    novelty: new
+    evidence:
+      - quote: "on 4 August 2026 part of the Commune's servers suffered an attack (translated from Italian)"
+        original: "il 4 agosto 2026 una parte dei server del Comune ha subito un attacco"
+        attribution: "Comune di Manno (Municipio), signed notice 16 Sept 2026"
+        source_url: "https://www.manno.ch/manno/Informazione/albo-comunale/2026/09/Attacco-informatico/sidebar/0/items/0/file/Pubblicazione%20avviso%20attacco%20informatico.pdf.pdf"
+      - quote: "[the attack] which resulted in the encryption of the data (translated from Italian)"
+        original: "che ha comportato il criptaggio dei dati"
+        attribution: "Comune di Manno (Municipio), signed notice 16 Sept 2026"
+        source_url: "https://www.manno.ch/manno/Informazione/albo-comunale/2026/09/Attacco-informatico/sidebar/0/items/0/file/Pubblicazione%20avviso%20attacco%20informatico.pdf.pdf"
+      - quote: "The case was immediately reported to the competent authorities and a criminal complaint against persons unknown was subsequently filed (translated from Italian)"
+        original: "in seguito è stata sporta denuncia contro"
+        attribution: "Comune di Manno (Municipio), signed notice 16 Sept 2026"
+        source_url: "https://www.manno.ch/manno/Informazione/albo-comunale/2026/09/Attacco-informatico/sidebar/0/items/0/file/Pubblicazione%20avviso%20attacco%20informatico.pdf.pdf"
+      - quote: "Ransomware.live discovered on 2026-09-28 that manno.ch has been claimed by Safepay ransomware group"
+        attribution: "Ransomware.live"
+        source_url: "https://www.ransomware.live/id/bWFubm8uY2hAc2FmZXBheQ=="
+    extended_notes: |
+      Detection/hunt angle (behavioral, no IOC): the commune restored the same day from backups, so operational
+      impact was hours, while the extortion listing followed ~7 weeks later — a long gap between encryption and
+      leak-site posting is itself a lesson for communal incident response (data-theft scoping cannot be closed by
+      a same-day restore). The notice does not
+      state whether exfiltration was assessed. Triage discriminator: a listed victim that reports same-day restore
+      and no ransom demand may still face a later publication threat. Watch: SafePay's stated publication window
+      (~2026-10-01/02) — re-check Manno's site and the tracker on the next fires for a data-publication or
+      follow-up notice; also re-check the ARA Lyss claim (no victim statement yet). SafePay's cluster of five Swiss
+      listings in 16 days (two 2026-09-15, three 2026-09-28) is the pattern worth tracking, whatever the
+      individual claims prove.
+
+  # ---------------------------------------------------------------------------
+  # 2. NEW — DACH public-sector data-exchange supplier ransomware (supplier nexus)
+  # ---------------------------------------------------------------------------
+  - title: "FTAPI, Munich secure-file-exchange vendor used by public authorities, confirms ransomware on an internal server (detected 2026-09-14) and exfiltration of archived former-employee e-mail; The Gentlemen claims the intrusion"
+    sources:
+      - { url: "https://www.heise.de/news/Cyberangriff-auf-Datenaustauschdienst-FTAPI-11469629.html", publisher: "heise online", date: "2026-09-29", role: "primary" }
+      - { url: "https://borncity.com/blog/2026/09/28/cybervorfall-bei-ftapi-com-opfer-der-gentlemen-ransomware/", publisher: "Borns IT- und Windows-Blog (reproduces FTAPI's customer notice)", date: "2026-09-28", role: "corroborating" }
+      - { url: "https://www.ransomware.live/id/RlRBUEkgU29mdHdhcmVAdGhlZ2VudGxlbWVu", publisher: "Ransomware.live (leak-site tracker; claim record)", date: "2026-09-26", role: "corroborating" }
+      - { url: "https://www.ftapi.com/presse/testierungen-fuer-regulierte-branchen", publisher: "FTAPI Software GmbH (own press release; Swiss/Austrian market statement)", date: "2026-09-30", role: "context" }
+    discovery_trace: "first seen at: ransomware-live, URL https://api.ransomware.live/v2/recentcyberattacks (FTAPI, DE, group thegentlemen, added 2026-09-29, linking heise) -> WebSearch (\"FTAPI Cyberangriff Datenaustausch Dienst Sicherheitsvorfall September 2026\") -> primary: heise online, URL https://www.heise.de/news/Cyberangriff-auf-Datenaustauschdienst-FTAPI-11469629.html (FTAPI confirmation to heise) -> corroboration: Borncity, URL https://borncity.com/blog/2026/09/28/cybervorfall-bei-ftapi-com-opfer-der-gentlemen-ransomware/ (customer notice text) -> claim record https://www.ransomware.live/id/RlRBUEkgU29mdHdhcmVAdGhlZ2VudGxlbWVu -> FTAPI press release https://www.ftapi.com/presse/testierungen-fuer-regulierte-branchen"
+    summary: |
+      FTAPI Software GmbH (Munich; data-exchange platform whose customers, per heise, include "Behörden und
+      Unternehmen" — FTAPI's own site, as summarised by heise, cites more than 2,000 corporate customers and over one
+      million users "aus Verwaltung, Gesundheit und Industrie") confirmed to heise online that it detected an IT
+      security incident on 14 September 2026: unauthorised parties gained access to a single locally operated internal
+      server and deployed ransomware on it. The customer notice reproduced by Borncity states the server hosted internal
+      services, test and lab environments without production data, and the mail archive of former FTAPI employees;
+      data was exfiltrated from that archived e-mail correspondence, "which could also relate to your company". FTAPI states
+      the FTAPI platform, customer systems and the data customers exchange were not affected and that its investigation
+      of customer systems is complete with no sign of compromise (vendor assertion; forensics of the internal server
+      continue). It has informed customers/partners, met regulatory notification duties and filed a criminal complaint.
+      The Gentlemen listed FTAPI on its leak site (Ransomware.live discovery 2026-09-26; est. attack date 2026-09-25) with
+      no details, and heise reports a countdown of about five days still running on 2026-09-29 (~2026-10-04). FTAPI has
+      not said how the intruders got in (heise: unclear whether a software flaw or stolen credentials). Defender
+      relevance: the exfiltrated material is real vendor-customer correspondence, so FTAPI itself warns of convincing
+      fraud attempts (spoofed FTAPI messages, bank-detail-change requests) in the coming weeks; FTAPI's own press
+      release names Switzerland and Austria as markets, but no fetched source establishes Swiss public-sector
+      customers.
+    region_nexus: "germany (Munich) — DACH neighbour; technology supplier to public administration; Swiss market presence stated only in FTAPI's own SOC 2 press release"
+    primary_sector_nexus: "indirect (supplier to Behörden / Verwaltung)"
+    sector: "public-sector (supplier: secure data exchange); also healthcare/industry customers"
+    cves: []
+    techniques: [T1486, T1657]
+    techniques_note: "T1486 stated by FTAPI ('Ransomware eingeschleust'). T1657 = The Gentlemen's leak-site extortion listing (claim). Exfiltration of the archived-mail store is confirmed by FTAPI but the method is not stated (candidate T1114 Email Collection is a composer's judgement; initial access unstated so T1190/T1078 must NOT be mapped)."
+    affected_products: []
+    entity_keys: ["actor:thegentlemen"]
+    new_entities:
+      - { key: "incident:ftapi-ransomware-2026-09", type: incident, name: "FTAPI internal-server ransomware, 2026-09-14",
+          aliases: [], summary: "Ransomware on a single internal FTAPI server detected 2026-09-14 with exfiltration of archived former-employee e-mail; The Gentlemen listed FTAPI ~2026-09-25/26 (heise, 2026-09-29; Ransomware.live)." }
+    relation_suggestions:
+      - { subject: "incident:ftapi-ransomware-2026-09", object: "actor:thegentlemen",
+          basis: "heise: 'Die Cybergang The Gentlemen ist bei der Datenaustauschplattform FTAPI eingebrochen. Das hat FTAPI gegenüber heise online bestätigt.' — heise's lead states FTAPI confirmed the intrusion; the group attribution itself rests on The Gentlemen's leak-site claim as reported by heise and Ransomware.live" }
+    verification: MULTI-SOURCE
+    sourcing_note: "heise (B) reports FTAPI's own confirmation; Borncity reproduces the customer notice (secondary text; reader-supplied); Ransomware.live records the criminals' claim. Access vector unknown; exfil scope 'still under analysis' per FTAPI."
+    confidence: HIGH
+    classification_suggestion: { reliability: B, credibility: 2 }
+    suggested_priority: notable
+    novelty: new
+    evidence:
+      - quote: "Dabei haben sich Unbefugte Zugang zu einem einzelnen, lokal betriebenen, internen Server verschafft"
+        attribution: "heise online (reporting FTAPI's confirmation; the sentence continues that ransomware was deployed on it)"
+        source_url: "https://www.heise.de/news/Cyberangriff-auf-Datenaustauschdienst-FTAPI-11469629.html"
+      - quote: "Die Cybergang The Gentlemen ist bei der Datenaustauschplattform FTAPI eingebrochen. Das hat FTAPI gegenüber heise online bestätigt."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Cyberangriff-auf-Datenaustauschdienst-FTAPI-11469629.html"
+      - quote: "Zur Kundschaft zählen etwa Behörden und Unternehmen."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Cyberangriff-auf-Datenaustauschdienst-FTAPI-11469629.html"
+      - quote: "Informationen dazu, wie die Erpresserbande in den Server eindringen konnte, hat FTAPI nicht genannt"
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Cyberangriff-auf-Datenaustauschdienst-FTAPI-11469629.html"
+      - quote: "Nach aktuellem Kenntnisstand sind im Zuge des Vorfalls auch Daten abgeflossen, die aus archivierter E-Mail-Kommunikation von ehemaligen Mitarbeitern stammen"
+        attribution: "FTAPI customer notice, as reproduced by Borns IT- und Windows-Blog"
+        source_url: "https://borncity.com/blog/2026/09/28/cybervorfall-bei-ftapi-com-opfer-der-gentlemen-ransomware/"
+    extended_notes: |
+      Triage-ready behaviour: attacker foothold was on an on-premises internal server outside the customer-facing
+      platform (segregation is FTAPI's stated design principle — a vendor claim not independently verified); the
+      staging value was the mail archive of ex-employees (customer correspondence, contracts, contacts). Downstream
+      risk for FTAPI customers is BEC/phishing with authentic context, not platform compromise. Customers should
+      treat any FTAPI-branded or FTAPI-contact mail asking for bank-detail changes or credentials as suspect and
+      confirm by phone with a known number (FTAPI's own advice). Watch: The Gentlemen countdown (~2026-10-04) for
+      data publication; any FTAPI update naming the entry vector; whether Swiss/German authorities' correspondence
+      appears in a leak. The Gentlemen is already tracked here (registry actor:thegentlemen) and also claimed the
+      Swiss security integrator Ixa Systems (backlog row c).
+
+  # ---------------------------------------------------------------------------
+  # 3. NEW (borderline) — Italian commune mailbox takeover, trusted-sender fraud
+  # ---------------------------------------------------------------------------
+  - title: "Lomazzo (CO, Lombardy) municipal technical-office mailbox taken over 26-28 Sept 2026 and used to send fake speeding-fine payment demands across Italy"
+    sources:
+      - { url: "https://ilsaronno.it/2026/09/29/attacco-informatico-alla-mail-del-comune-di-lomazzo-false-multe-inviate-in-tutta-italia/", publisher: "Il Saronno", date: "2026-09-29", role: "primary" }
+      - { url: "https://www.varesenews.it/2026/09/attacco-informatico-alla-mail-del-comune-di-lomazzo-false-multe-spedite-in-tutta-italia/2692786/", publisher: "VareseNews", date: "2026-09-29", role: "corroborating" }
+      - { url: "https://www.hwupgrade.it/news/sicurezza-software/hai-ricevuto-una-multa-per-eccesso-di-velocita-da-questo-comune-non-pagare-potrebbe-essere-una-truffa_159855.html", publisher: "Hardware Upgrade", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"attacco hacker comune Ticino Lombardia Piemonte ransomware dati comune 29 settembre 2026\") -> Il Saronno, URL https://ilsaronno.it/2026/09/29/attacco-informatico-alla-mail-del-comune-di-lomazzo-false-multe-inviate-in-tutta-italia/ -> VareseNews, URL https://www.varesenews.it/2026/09/attacco-informatico-alla-mail-del-comune-di-lomazzo-false-multe-spedite-in-tutta-italia/2692786/ -> Hardware Upgrade, URL https://www.hwupgrade.it/news/sicurezza-software/hai-ricevuto-una-multa-per-eccesso-di-velocita-da-questo-comune-non-pagare-potrebbe-essere-una-truffa_159855.html (the commune's own social-media notice — the true primary — was not reachable/fetched)"
+    summary: |
+      The Comune di Lomazzo (province of Como, Lombardy, a province bordering Ticino) alerted the public on its social
+      channels (as relayed by three independent Italian outlets on 2026-09-29) that between 26 and 28 September
+      2026 the institutional mailbox of its technical office was compromised and used to e-mail non-existent
+      speeding-fine payment requests to citizens across Italy. Hardware Upgrade stresses the messages came from the
+      genuine institutional mailbox, "temporaneamente sotto il controllo di terzi", not from a spoofed or look-alike
+      domain, which defeats sender-reputation checks. The commune tells recipients not to pay and to be wary of
+      follow-up e-mail, SMS or phone calls that might exploit data obtained in the attack, and points to the local
+      police as verification channel. No source states how the mailbox was taken over, how many messages went out,
+      who is behind it, or whether mailbox contents were read. Pattern value: this is the second communal mailbox in about six weeks used as a
+      trusted sender against outsiders in this store's region — Martigny-Combe (Valais) had its secretariat mailbox
+      compromised via a malicious e-mail on 2026-08-10 and used on 2026-08-18 to send a fraudulent message to roughly
+      450 of its contacts (store entry 2026-08-23/martigny-combe-valais-communal-mailbox-compromise); the Italian
+      government mailbox abused against Revolut (2026-09-13 entry) is the same mechanism at national level.
+    region_nexus: "italy (Lombardy, Ticino-adjacent) — neighbouring-country communal government"
+    primary_sector_nexus: "direct analogue (communal administration)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1586.002, T1566]
+    techniques_note: "T1586.002: the source-stated takeover of a genuine institutional mailbox for outbound fraud. T1566: fraudulent payment-demand e-mails to third parties (link/attachment form not stated, so no sub-technique). Initial access to the mailbox is NOT stated; do not map T1078/T1110."
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    sourcing_note: "Three outlets independently reported the commune's own notice (same origin: the municipal alert), none adds technical detail; the municipal social post itself was not fetched."
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    borderline: true
+    borderline_reason: "small foreign commune, access vector and scale unstated; value is that it is the second communal mailbox used as a trusted fraud sender within six weeks (Martigny-Combe VS, 2026-08) plus Ticino-adjacent domicile — main agent to decide whether it clears PD-11(b)/(c) as a new entry (references[] the Martigny-Combe entry) or is better folded into a pattern note"
+    references_suggestion: ["2026-08-23/martigny-combe-valais-communal-mailbox-compromise", "2026-09-13/revolut-fake-government-request-kyc-breach"]
+    novelty: new
+    evidence:
+      - quote: "The alarm was raised directly by the Comune, urging everyone to exercise the greatest caution (translated from Italian)"
+        original: "A lanciare l’allarme è stato direttamente il Comune, invitando tutti alla massima prudenza."
+        attribution: "Il Saronno"
+        source_url: "https://ilsaronno.it/2026/09/29/attacco-informatico-alla-mail-del-comune-di-lomazzo-false-multe-inviate-in-tutta-italia/"
+      - quote: "from the genuine institutional mailbox of the Comune, temporarily under third-party control (translated from Italian)"
+        original: "dalla vera casella istituzionale del Comune, temporaneamente sotto il controllo di terzi"
+        attribution: "Hardware Upgrade"
+        source_url: "https://www.hwupgrade.it/news/sicurezza-software/hai-ricevuto-una-multa-per-eccesso-di-velocita-da-questo-comune-non-pagare-potrebbe-essere-una-truffa_159855.html"
+      - quote: "The episode, which took place between 26 and 28 September, led to numerous citizens across Italy receiving messages (translated from Italian)"
+        original: "L’episodio, avvenuto tra il 26 e il 28 settembre, ha portato all’invio a numerosi cittadini"
+        attribution: "VareseNews"
+        source_url: "https://www.varesenews.it/2026/09/attacco-informatico-alla-mail-del-comune-di-lomazzo-false-multe-spedite-in-tutta-italia/2692786/"
+
+  # ---------------------------------------------------------------------------
+  # 4. BACKLOG (j) — DIVD: partial development; HOLD recommended until DIVD's 2026-10-01 update
+  # ---------------------------------------------------------------------------
+  - title: "DIVD update (2026-09-28): intruders exploited a technical vulnerability (not Citrix NetScaler) and an autonomous AI agent ran post-exploitation including a MITM attack polluted by password spraying; fuller update promised 2026-10-01"
+    sources:
+      - { url: "https://www.linkedin.com/posts/in-every-crisis-you-work-with-whatever-you-share-7510363577375993856--zPB/", publisher: "DIVD (Dutch Institute for Vulnerability Disclosure) — own LinkedIn update", date: "2026-09-28", role: "primary" }
+      - { url: "https://www.divd.nl/newsroom/articles/when-no-if/", publisher: "DIVD — original incident statement 'It was a matter of when, not if...'", date: "2026-09-24", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/automated-ai-agent-used-to-breach-cybersecurity-nonprofit-divd/", publisher: "BleepingComputer", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/news/security/ (listing, 'Automated AI agent used to breach cybersecurity nonprofit DIVD', 2026-09-29 11:39) -> BleepingComputer article URL https://www.bleepingcomputer.com/news/security/automated-ai-agent-used-to-breach-cybersecurity-nonprofit-divd/ -> primary: DIVD post https://www.divd.nl/newsroom/articles/when-no-if/ and DIVD LinkedIn update https://www.linkedin.com/posts/in-every-crisis-you-work-with-whatever-you-share-7510363577375993856--zPB/ (both fetched via extract)"
+    summary: |
+      Backlog row (j) waited for DIVD's promised technical follow-up. DIVD's 2026-09-28 update (LinkedIn) adds: the
+      team has "a pretty good idea of how they got in, by exploiting a technical vulnerability", but cannot share
+      details because that could interfere with the investigation or create more victims, and it was "not Citrix
+      Netscaler"; there is no link to any known public threat actor or to a former volunteer; worst-case scenarios
+      (targeted crown-jewel theft vs smash-and-grab) cannot be excluded yet. DIVD describes the attack as "loud and very
+      very messy": an agent that decided each next step itself at machine speed, with "sloppy logic", which
+      "polluted its own MITM attack with password spraying" (details "later"), and whose verbose self-explaining
+      comments make reverse-engineering easier. DIVD says it will scan for and notify other possible victims of the same
+      vulnerability once it can share more, and promised a fuller update on 2026-10-01 (per BleepingComputer, which
+      had not heard back on the flaw type or patch state). The vulnerable system, vulnerability class and the
+      MITM/spraying mechanics remain undisclosed, so the row's blocking condition (a stated mechanism) is only partly
+      met: T1190 (unnamed vulnerability), T1557 and T1110.003 are stated by the victim but without any product,
+      protocol or scope. Police, Autoriteit Persoonsgegevens and NCSC-NL were notified (DIVD 2026-09-24);
+      NCSC-NL, Merlon Security and NVISO are credited with support.
+    region_nexus: "netherlands (EU neighbour); security-community organisation (vulnerability-disclosure non-profit whose scan-and-notify outputs reach European public-sector operators)"
+    primary_sector_nexus: "indirect"
+    sector: "non-profit / security community"
+    cves: []
+    techniques: [T1190, T1557, T1110.003]
+    techniques_note: "All three are victim-stated but generic (undisclosed vulnerability; MITM attack; password spraying). Composer should decide whether a stated-but-unspecific mapping satisfies the evidence-bound rule; recommendation is to wait for the 2026-10-01 update rather than publish on this."
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:divd-agentic-ai-breach-2026-09", type: incident, name: "DIVD agentic-AI-driven breach, 2026-09",
+          aliases: [], summary: "Dutch Institute for Vulnerability Disclosure reports (2026-09-24, update 2026-09-28) an intrusion via an undisclosed technical vulnerability followed by autonomous AI-agent post-exploitation; fuller update promised 2026-10-01 (DIVD)." }
+    verification: MULTI-SOURCE
+    sourcing_note: "Victim's own two statements (primary) plus BleepingComputer (B) restating the second; no independent technical corroboration exists or is possible until DIVD discloses details. The DIVD LinkedIn page canonical URL differs from the BleepingComputer-linked URL fetched here; the fetched URL is cited."
+    confidence: MEDIUM
+    classification_suggestion: { reliability: A, credibility: 2 }
+    borderline: true
+    borderline_reason: "backlog row (j): the victim now states a vulnerability was exploited and a MITM + password-spraying agent phase, but names no product/class; DIVD promised a fuller technical update on 2026-10-01 (next fire's window) — recommend HOLD one cycle and publish on substance"
+    novelty: new
+    evidence:
+      - quote: "By now we have a pretty good idea of how they got in, by exploiting a technical vulnerability."
+        attribution: "DIVD"
+        source_url: "https://www.linkedin.com/posts/in-every-crisis-you-work-with-whatever-you-share-7510363577375993856--zPB/"
+      - quote: "But what we can say for sure is that it was not Citrix Netscaler."
+        attribution: "DIVD"
+        source_url: "https://www.linkedin.com/posts/in-every-crisis-you-work-with-whatever-you-share-7510363577375993856--zPB/"
+      - quote: "It also looks like the agent skipped a few steps on its learning curve, because it has done some pretty dumb things, like polluting its own MITM attack with password spraying."
+        attribution: "DIVD"
+        source_url: "https://www.linkedin.com/posts/in-every-crisis-you-work-with-whatever-you-share-7510363577375993856--zPB/"
+      - quote: "The organization promised to provide a more detailed update on October 1"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/automated-ai-agent-used-to-breach-cybersecurity-nonprofit-divd/"
+
+  # ---------------------------------------------------------------------------
+  # 5. UPDATE — Qbusoft/Medyc entry: the same actor's third Polish victim (Fakturownia.pl)
+  # ---------------------------------------------------------------------------
+  - title: "Polish invoicing SaaS Fakturownia.pl confirms unauthorised server access on 2026-09-28; Zaufana Trzecia Strona names the same actor 'Fingerprint' behind the MyDr and Medyc breaches and relays its claimed chain (time-based SQL oracle -> Rails master key -> forged cookie -> RCE)"
+    sources:
+      - { url: "https://zaufanatrzeciastrona.pl/post/nowe-wlamanie-fingerprinta-ofiara-firma-fakturowniapl/", publisher: "Zaufana Trzecia Strona", date: "2026-09-29", role: "primary" }
+      - { url: "https://fakturownia.pl/incydent", publisher: "Fakturownia (victim's own notice 'Komunikat z dnia 29.09.2026')", date: "2026-09-29", role: "primary" }
+    discovery_trace: "first seen at: zaufana-trzecia-strona, URL https://zaufanatrzeciastrona.pl/ (bridge url, homepage listing '29.09.2026 Nowe włamanie \"Fingerprinta\" - ofiarą firma Fakturownia.pl') -> drill: https://zaufanatrzeciastrona.pl/post/nowe-wlamanie-fingerprinta-ofiara-firma-fakturowniapl/ -> primary: victim notice https://fakturownia.pl/incydent"
+    summary: |
+      Fakturownia (a large Polish cloud invoicing/accounting service) published a notice on 2026-09-29 stating it
+      detected unauthorised access to its servers on 2026-09-28 after "an unauthorised person exploited a
+      vulnerability in the system"; it blocked access, is rotating application keys and service passwords, launched new
+      application servers, engaged external specialists and reported to the police cybercrime bureau (CBZC), CERT
+      Polska and the data-protection president. Data that may have been accessed: account data of all users and their
+      counterparties, invoices issued before 2023 (partly), password hashes, session/API/integration tokens generated
+      by Fakturownia, bank accounts and payment data, and application system keys and passwords; KSeF (national
+      e-invoicing) integrations, other integrations and card data were not affected, and no data was deleted (all
+      victim statements). Zaufana Trzecia Strona (which the actor uses as its contact point) received 'credible
+      information' that the same actor 'Fingerprint' behind the two medical-sector breaches (MyDr, Medyc) is responsible,
+      saw three screenshots supporting access (application folder, a customer-list slice, an exported-database file
+      listing) and relays the actor's own claims: 6 TB of invoices stolen (ZTS could not verify) and an entry chain of a
+      time-based oracle to extract the Ruby application master key, then a forged cookie giving remote code
+      execution — ZTS's own reading is that this is probably time-based blind SQL injection. The actor says it did not
+      wipe logs so the company could learn. Caveat: ZTS's paraphrase of the notice lists 'additional safeguards including
+      PDF generation', a phrase absent from the notice text fetched at 04:30Z on 2026-09-30 (the page may have been
+      edited). Sector nexus is Poland/EU SaaS supplier to SMEs; no Swiss or public-sector customer link is stated.
+    region_nexus: "poland (EU) — supplier nexus only"
+    primary_sector_nexus: "indirect"
+    sector: "technology / SaaS (SME invoicing)"
+    cves: []
+    techniques: [T1190, T1606.001]
+    techniques_note: "T1190: victim confirms a system vulnerability was exploited. T1606.001 (forged session cookie) and the SQL-oracle/master-key steps are the ACTOR'S claim as relayed by ZTS (attribute, do not assert). Theft of application keys/passwords is in the victim's exposed-data list but is not a stated technique, so no credential-access id is proposed."
+    affected_products: ["Fakturownia"]
+    entity_keys: ["actor:fingerprint"]
+    new_entities:
+      - { key: "incident:fakturownia-pl-breach-2026-09", type: incident, name: "Fakturownia.pl breach, 2026-09-28",
+          aliases: [], summary: "Unauthorised access to Fakturownia (Polish invoicing SaaS) detected 2026-09-28; account, counterparty, token and system-key data exposed; actor 'Fingerprint' credited by Zaufana Trzecia Strona (victim notice 2026-09-29)." }
+    relation_suggestions:
+      - { subject: "incident:fakturownia-pl-breach-2026-09", object: "actor:fingerprint",
+          basis: "Zaufana Trzecia Strona: 'Fingerprint', behind the break-ins at two medical services, this time reached Fakturownia's infrastructure (ZTS, 2026-09-29; actor supplied screenshots to ZTS, victim confirmed the intrusion but does not name the actor)" }
+    verification: MULTI-SOURCE
+    sourcing_note: "Victim notice (A) confirms the intrusion and data categories; actor identity, the 6 TB figure and the exploit chain rest on ZTS relaying the actor's own claims (ZTS B; single outlet, same one that broke MyDr and Medyc)."
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    suggested_priority: notable
+    novelty: "update-of:2026-09-27/qbusoft-medyc-poland-healthcare-breach-fingerprint-actor"
+    novelty_note: "Genuinely new third victim (invoicing SaaS, different sector) of the same tracked actor with a first claimed exploit chain and a victim-confirmed notice. The existing entry is titled around Qbusoft/Medyc; the main agent may prefer a NEW incident entry referencing it (a distinct finding building on it) — flagged either way."
+    evidence:
+      - quote: 'We have received credible information indicating that "Fingerprint", behind the break-ins to two medical services, this time got into the infrastructure of one of the largest firms offering invoicing, accounting and online warehouse services (translated from Polish)'
+        original: 'Otrzymaliśmy wiarygodne informacje wskazujące na to, że "Fingerprint", stojący za włamaniami do dwóch serwisów medycznych, tym razem dobrał się do infrastruktury jednej z największych firm oferujących usługi fakturowania'
+        attribution: "Zaufana Trzecia Strona"
+        source_url: "https://zaufanatrzeciastrona.pl/post/nowe-wlamanie-fingerprinta-ofiara-firma-fakturowniapl/"
+      - quote: "Asked how he got into Fakturownia, he replied that he used a so-called time oracle (translated from Polish)"
+        original: "Zapytany o to, jak dostał się do Fakturowni, odpowiedział, że wykorzystał tzw. wyrocznię czasową"
+        attribution: "Zaufana Trzecia Strona (relaying the actor)"
+        source_url: "https://zaufanatrzeciastrona.pl/post/nowe-wlamanie-fingerprinta-ofiara-firma-fakturowniapl/"
+      - quote: "then forging a cookie with it, through which he achieved remote code execution on the server (translated from Polish)"
+        original: "a następnie sfałszowania za jego pomocą ciasteczka, dzięki któremu osiągnął zdalne wykonanie kodu na serwerze"
+        attribution: "Zaufana Trzecia Strona (relaying the actor)"
+        source_url: "https://zaufanatrzeciastrona.pl/post/nowe-wlamanie-fingerprinta-ofiara-firma-fakturowniapl/"
+      - quote: "We are informing you that on 28.09.2026 we detected unauthorised access to Fakturownia's servers. (translated from Polish)"
+        original: "Informujemy, że 28.09.2026 wykryliśmy nieuprawniony dostęp do serwerów Fakturowni."
+        attribution: "Fakturownia (victim notice)"
+        source_url: "https://fakturownia.pl/incydent"
+      - quote: "An unauthorised person managed to exploit a vulnerability in the system, resulting in unauthorised access to part of the data. (translated from Polish)"
+        original: "Osoba nieuprawniona zdołała wykorzystać lukę w systemie, czego skutkiem był nieautoryzowany dostęp do części danych."
+        attribution: "Fakturownia (victim notice)"
+        source_url: "https://fakturownia.pl/incydent"
+      - quote: "session tokens, API tokens and integration tokens generated on Fakturownia's side (translated from Polish)"
+        original: "tokeny sesji, tokeny API i tokeny integracji generowane po stronie Fakturowni"
+        attribution: "Fakturownia (victim notice)"
+        source_url: "https://fakturownia.pl/incydent"
+    extended_notes: |
+      Behavior/telemetry for the entry's Triage line: the actor's claimed chain (extract the Ruby application
+      'master key', forge a session cookie, obtain remote code execution) is consistent with a signed/encrypted
+      session-cookie secret being recoverable through injection, but no source names the framework or confirms the
+      chain; the victim's own remedy list (rotation of application keys and service passwords, new application servers)
+      is at least consistent with secret theft.
+      Hunt/hardening concept (class level, derived from the claimed mechanism — not source-stated): rotate the application secret and invalidate all sessions after any SQLi
+      exposure; monitor for sessions signed with the rotated-out secret, unusual PDF-renderer/child-process spawns from the
+      web app, and long-duration timing-probe request patterns against a single parameter in access logs. Defender
+      relevance for public-sector reader: any SaaS invoicing/accounting supplier's token and bank-account data can seed
+      invoice-fraud (bank-detail-change) against the supplier's customers — Fakturownia itself warns of this.
+
+  # ---------------------------------------------------------------------------
+  # 6. UPDATE — Pentagon DMDC entry: DoD official scope figure supersedes 'up to 4 million'
+  # ---------------------------------------------------------------------------
+  - title: "Pentagon DMDC breach: a defense official puts the affected count at 2.76 million living and 294,000 deceased people, exposed to 'a small number of unauthorized users' — superseding the earlier unnamed-source estimate of about four million"
+    sources:
+      - { url: "https://abcnews.com/Politics/pentagon-breach-exposed-sensitive-data-3-million-people/story?id=136832909", publisher: "ABC News", date: "2026-09-29", role: "primary" }
+      - { url: "https://thegrio.com/2026/09/29/pentagon-data-breach-nearly-3-million-people/", publisher: "theGrio (relays ABC News)", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Pentagon DMDC breach unencrypted Social Security numbers 4 million update notification\") -> theGrio, URL https://thegrio.com/2026/09/29/pentagon-data-breach-nearly-3-million-people/ -> primary: ABC News, URL https://abcnews.com/Politics/pentagon-breach-exposed-sensitive-data-3-million-people/story?id=136832909"
+    summary: |
+      ABC News (2026-09-29), quoting a U.S. defense official, reports that the DMDC breach affected 2.76 million living
+      people and another 294,000 who are deceased (about 3.05 million), replacing the second-hand 'approximately
+      four million' that two unnamed people gave Military Times and which the existing entry carries as the only scale
+      figure. The official's statement describes 'unauthorized access of personally identifiable information by a small
+      number of unauthorized users between October 2025 and July 2026', immediately remediated on discovery; DoD sees no
+      evidence of misuse and offers identity-protection and credit-monitoring resources. ABC repeats that DMDC holds more
+      than 60 million personnel records and that the exposed files included job details of military and civilian
+      personnel. No vulnerability class, access vector or actor has been disclosed. The same ABC piece adds that the FBI
+      sent employees a notice on 2026-09-25 saying it is operating as if every FBI employee's personal information was
+      compromised in the fbijobs.gov breach and has begun notifying affected employees (already-covered separate entry).
+    region_nexus: "united-states (defense personnel data); armed-forces analogue"
+    primary_sector_nexus: "indirect (armed-forces personnel records — direct analogue of the Swiss Armed Forces' personnel-data exposure model)"
+    sector: "government / defense"
+    cves: []
+    techniques: []
+    techniques_note: "No new mapping: the existing entry carries T1213; the official statement says only that a 'vulnerability' was remediated (no class, no vector). Do not add T1190 on this evidence."
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    sourcing_note: "One unnamed defense official (quoted by ABC News, B); theGrio relays ABC. The figure is an official-source number, more authoritative than the earlier 'people familiar' estimate, but still anonymous."
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: "update-of:2026-09-27/pentagon-dmdc-military-personnel-data-breach-unencrypted-ssn"
+    evidence:
+      - quote: "The breach affected 2.76 million living people and another 294,000 who are deceased, the official said."
+        attribution: "ABC News"
+        source_url: "https://abcnews.com/Politics/pentagon-breach-exposed-sensitive-data-3-million-people/story?id=136832909"
+      - quote: "A Defense Manpower Data Center (DMDC) information system experienced unauthorized access of personally identifiable information by a small number of unauthorized users between October 2025 and July 2026."
+        attribution: "ABC News (statement attributed to a U.S. defense official)"
+        source_url: "https://abcnews.com/Politics/pentagon-breach-exposed-sensitive-data-3-million-people/story?id=136832909"
+    extended_notes: |
+      Corrective value: the existing entry states 'approximately four million' from two people familiar; readers who
+      size notification, credit-monitoring or counter-intelligence exposure from it now have a defense-official
+      figure roughly 25% lower. Main agent can express this as an `update` or (if it treats the earlier figure as a
+      wrong statement) a `correction`; the entry's own changelog rules apply.
+
+  # ---------------------------------------------------------------------------
+  # 7. UPDATE (borderline) — ShinyHunters / FBI: Dutch police detail, FBI surrender call, actor's post-arrest statement
+  # ---------------------------------------------------------------------------
+  - title: "ShinyHunters after the Dutch arrest: police add an attempted-incitement-to-murder suspicion (separate from the hacking case), the FBI calls the suspect an 'alleged leader' and urges members to surrender, and the group posts a leak-site statement that operations are unaffected and non-paying negotiators will be made examples of"
+    sources:
+      - { url: "https://www.politie.nl/nieuws/2026/september/29/11-verdachte-aangehouden-in-onderzoek-naar-hackersgroep-shinyhunters.html", publisher: "Politie (Dutch National Police)", date: "2026-09-29", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/fbi-tells-shinyhunters-members-to-turn-themselves-in-after-recent-arrest/", publisher: "BleepingComputer", date: "2026-09-29", role: "corroborating" }
+      - { url: "https://databreaches.net/2026/09/29/shocker-suspected-shinyhunters-member-charged-with-attempted-incitement-to-commit-two-murders/", publisher: "DataBreaches.net", date: "2026-09-29", role: "corroborating" }
+      - { url: "https://www.ransomware.live/id/V0FSTklOR0BzaGlueWh1bnRlcnM=", publisher: "Ransomware.live (records ShinyHunters' own leak-site statement)", date: "2026-09-30", role: "corroborating" }
+    discovery_trace: "first seen at: databreaches-net, URL https://databreaches.net/feed/ ('Shocker: suspected ShinyHunters member charged with attempted incitement to commit two murders', 2026-09-29) and bleepingcomputer, URL https://www.bleepingcomputer.com/news/security/ (listing) -> BleepingComputer article -> WebSearch (\"politie.nl 24-jarige man Amsterdam aangehouden ShinyHunters uitlokking moord Rotterdam rechtbank\") -> primary: Politie release https://www.politie.nl/nieuws/2026/september/29/11-verdachte-aangehouden-in-onderzoek-naar-hackersgroep-shinyhunters.html ; actor statement via https://api.ransomware.live/v2/recentvictims (entry 'WARNING', shinyhunters, 2026-09-30T00:02Z) -> https://www.ransomware.live/id/V0FSTklOR0BzaGlueWh1bnRlcnM="
+    summary: |
+      The Dutch police release of 2026-09-29 says a 24-year-old Amsterdam man arrested on 15 September is suspected of
+      playing a role in ShinyHunters and of participating in a criminal organisation; after the arrest a large amount of
+      information on his laptop, including about two murders to be committed abroad, led to a separate suspicion of
+      attempted incitement to two murders ("that suspicion stands apart from the ShinyHunters investigation"). Police add
+      the man was not arrested in the Odido-hack investigation, further arrests are not ruled out, and the Rotterdam court
+      kept him in pre-trial detention for at least another 90 days (BleepingComputer). The FBI, in a video the same day,
+      describes him as "one of the alleged leaders" and told remaining members to turn themselves in; it says the group and
+      alleged co-conspirators breached more than 140 organisations since last year and collected at least USD 70 million in
+      extortion payments (FBI figures as reported by BleepingComputer). DataBreaches.net notes the Dutch police only say
+      he "played a role" and that a police spokesperson said what role he had "is part of our investigation" — i.e. the
+      FBI's 'leader' label is not corroborated by the Dutch authority. At 2026-09-30T00:02Z ShinyHunters posted a leak-site
+      statement (tracked by Ransomware.live) that it is "okay", operations and infrastructure are fine, organisations in
+      negotiations who think it is falling apart are wrong, "we are eagerly waiting to make examples" of those hoping to
+      avoid paying "few tens of millions of dollars", and that their data is "still in our possession and at risk of being
+      published". Separately, ABC News (2026-09-29) reports the FBI told employees it is operating as if every FBI
+      employee's personal data was compromised via fbijobs.gov.
+    region_nexus: "global (netherlands/us law-enforcement action; actor targets EU/CH organisations)"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector (extortion actor)"
+    cves: []
+    techniques: []
+    techniques_note: "Law-enforcement/actor-statement update; no new attacker behaviour to map beyond the covered entry."
+    affected_products: []
+    entity_keys: ["actor:shinyhunters", "campaign:shinyhunters-peoplesoft-2026", "actor:scatteredlapsusshunters"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    classification_suggestion: { reliability: A, credibility: 1 }
+    borderline: true
+    borderline_reason: "delta on an already-updated entry (arrest confirmation is already there); genuinely new bits are the Politie detail, the FBI 'alleged leader'-vs-Dutch 'role' discrepancy and the group's 2026-09-30 continuity/extortion statement — worth a short update record only if the main agent wants the law-enforcement thread current"
+    novelty: "update-of:2026-09-24/shinyhunters-fbi-peoplesoft-breach-claim"
+    evidence:
+      - quote: "The suspect was not arrested in the investigation into the Odido hack. (translated from Dutch)"
+        original: "De verdachte is niet aangehouden in het onderzoek naar de hack bij Odido."
+        attribution: "Politie (Dutch National Police)"
+        source_url: "https://www.politie.nl/nieuws/2026/september/29/11-verdachte-aangehouden-in-onderzoek-naar-hackersgroep-shinyhunters.html"
+      - quote: "That suspicion stands apart from the ShinyHunters investigation. (translated from Dutch)"
+        original: "Die verdenking staat los van het onderzoek naar ShinyHunters."
+        attribution: "Politie (Dutch National Police)"
+        source_url: "https://www.politie.nl/nieuws/2026/september/29/11-verdachte-aangehouden-in-onderzoek-naar-hackersgroep-shinyhunters.html"
+      - quote: "The FBI says ShinyHunters and its alleged co-conspirators have breached more than 140 organizations since last year and collected at least $70 million in extortion payments."
+        attribution: "BleepingComputer (reporting FBI figures)"
+        source_url: "https://www.bleepingcomputer.com/news/security/fbi-tells-shinyhunters-members-to-turn-themselves-in-after-recent-arrest/"
+      - quote: "They do not allege that he is a leader of ShinyHunters."
+        attribution: "DataBreaches.net"
+        source_url: "https://databreaches.net/2026/09/29/shocker-suspected-shinyhunters-member-charged-with-attempted-incitement-to-commit-two-murders/"
+      - quote: "we are releasing this statement to confirm we are okay, our operations and infrastructure remains completely fine as it should be and WILL be."
+        attribution: "ShinyHunters (leak-site statement, as recorded by Ransomware.live)"
+        source_url: "https://www.ransomware.live/id/V0FSTklOR0BzaGlueWh1bnRlcnM="
+
+# ---------------------------------------------------------------------------
+# Backlog re-check (verified-but-unpublished rows) — ONLY new developments since each row was surfaced
+# ---------------------------------------------------------------------------
+backlog_recheck:
+  - { row: "(a) SRG SSR / SRF cyberattack (~340 employees)", development: none,
+      note: "Re-read SRG's statement as relayed by 20 Minuten, netzwoche.ch and IT Magazine (all 2026-09-28): data = names, functions, business and partly private contact data from 2020 of ~340 current/former SRF staff, mostly the 'Information' unit; 'betroffene Zugänge' deactivated, additional safeguards, authorities informed, criminal complaint filed, no evidence of publication/misuse, aim is to establish the cause and scope. Still no mechanism, actor or intrusion date. Blocking condition unchanged.",
+      sources: ["https://www.20min.ch/story/srg-cyberangriff-daten-von-340-srf-mitarbeitenden-gestohlen-103640479", "https://www.netzwoche.ch/news/2026-09-28/cyberkriminelle-stehlen-daten-von-srf-mitarbeitenden", "https://www.itmagazine.ch/artikel/88102/Datenklau_bei_der_SRG.html"] }
+  - { row: "(b) Touring Club Suisse — Qilin listing 2026-09-20", development: none,
+      note: "Two more WebSearch passes (FR + DE): still only tracker pages (Ransomware.live, DeXpose); no TCS statement, no Swiss press pickup." }
+  - { row: "(c) Ixa Systems SA (Crissier VD) — TheGentlemen listing", development: none,
+      note: "Still only Ransomware.live/GalaxyWarden; no victim statement or press. Context: The Gentlemen also hit FTAPI (see item 2)." }
+  - { row: "(d) UICC Geneva — Krybit listing", development: none,
+      note: "Still only tracker pages (DeXpose, GalaxyWarden, Ransomware.live); no UICC statement." }
+  - { row: "(e) Medela AG — ShinyHunters claim 2026-09-07", development: none,
+      note: "Still only trackers (DeXpose, Hookphish, Breachnews, GalaxyWarden); no Medela statement. ShinyHunters' 2026-09-30 leak-site statement (item 7) says negotiating organisations' data 'is still in our possession' — generic, names nobody." }
+  - { row: "(f) Ville du Tampon (La Réunion)", development: none,
+      note: "Newest reachable coverage (la1ere, linfo.re, zinfos974, freedom.fr, parallelesud) is still 2026-09-09..11; nature/scope/data still 'not specified'; no mechanism or actor." }
+  - { row: "(g) Communauté de communes des Pays de L'Aigle (FR)", development: none,
+      note: "No newer than fuitesinfos.fr/cyberattaque.org/FrenchBreaches 2026-09-17: mail server intrusion night of 14-15 Sept, gendarmerie complaint, CNIL/ANSSI notification in progress; no mechanism, actor or confirmed data theft." }
+  - { row: "(h) Maileva (Docaposte/La Poste)", development: none,
+      note: "Newest reachable sources are still FrenchBreaches 2026-09-24, Kohen Avocats 2026-09-25/27: customer notice says 'tentatives d'accès non autorisé' to send illegitimate mail, affected accounts blocked, service off since 2026-09-23 07:00, complaint filed, no exfiltration reported, no restoration date. maileva.com shows no incident banner; espaceclient.maileva.com is JS-only. No mechanism/actor; no restoration confirmation found.",
+      sources: ["https://frenchbreaches.com/alertes/maileva-mufora09gh9so92vdk"] }
+  - { row: "(i) Dyfed-Powys Police cyberattack", development: none,
+      note: "No new development beyond 2026-09-25 (The Register, The Record): identified 2026-09-14, non-emergency systems disrupted, no evidence public data accessed, staff data still being checked, ICO notified, Tarian leads; no actor, vector or ransomware claim. CAUTION: search-engine summaries attach a '135,000 pieces of data' claim to this incident — that figure belongs to the separate July 2026 Police National Legal Database (PNLD) breach and must NOT be carried onto Dyfed-Powys.",
+      sources: ["https://www.theregister.com/cyber-crime/2026/09/25/dyfed-powys-police-cops-to-cyberattack-staff-data-potentially-nicked/5299112", "https://therecord.media/wales-cyberattack-police-breach"] }
+  - { row: "(j) DIVD breach disclosure", development: partial,
+      note: "DIVD's 2026-09-28 update states a technical vulnerability (not Citrix NetScaler) was exploited, an autonomous AI agent ran post-exploitation with a MITM attack polluted by password spraying, no link to known actors; product/class undisclosed; fuller update promised 2026-10-01. See items[3]; recommendation HOLD one cycle.",
+      sources: ["https://www.linkedin.com/posts/in-every-crisis-you-work-with-whatever-you-share-7510363577375993856--zPB/", "https://www.bleepingcomputer.com/news/security/automated-ai-agent-used-to-breach-cybersecurity-nonprofit-divd/"] }
+  - { row: "(k) Securitas Group — Everest listing 2026-09-25", development: none,
+      note: "Still only tracker coverage (HackNotice, Ransomware.live, DeXpose); no Securitas statement or Admiralty A/B journalism." }
+  - { row: "(l) Boston Scientific incident vector", development: none,
+      note: "Search returns the same company statements (identified 2026-08-25, unauthorized activity confined to certain on-premises systems, CrowdStrike engaged, remote-monitoring activations resumable 2026-09-08); still only the generic external-facing network-management-device vector. No specific device class or flaw." }
+  - { row: "(m) reichenau.at — SafePay claim 2026-09-08", development: none,
+      note: "Still only tracker pages (DeXpose, GalaxyWarden, Ransomware.live); no municipal statement or Austrian press. NB SafePay's parallel Swiss listing Manno (TI) IS victim-confirmed — see item 1 — which raises the plausibility of SafePay's municipal claims generally but does not confirm Reichenau." }
+  - { row: "(n) NovoCure 8-K", development: none,
+      note: "No new filing or statement; row already dropped on deep-read 2026-09-09 (Jersey-incorporated, US-patient data). Not re-opened." }
+  - { row: "(o) Kimberly-Clark — ShinyHunters claim", development: none,
+      note: "Still only trackers (SOCRadar, DeXpose, GalaxyWarden); no company statement, no SEC 8-K, no Admiralty A/B journalism (SEC EDGAR Item 1.05 sweep: one hit in the last 14 days, Astrana Health 2026-09-23)." }
+
+# ---------------------------------------------------------------------------
+# Developments on covered incidents (asked for by the spawn message)
+# ---------------------------------------------------------------------------
+covered_incident_developments:
+  - { entry: "2026-09-24/shinyhunters-fbi-peoplesoft-breach-claim", development: "material-ish (borderline) — see items[6]" }
+  - { entry: "2026-09-27/pentagon-dmdc-military-personnel-data-breach-unencrypted-ssn", development: "material — official scale 2.76M living + 294k deceased supersedes 'up to 4M'; see items[5]" }
+  - { entry: "2026-09-27/qbusoft-medyc-poland-healthcare-breach-fingerprint-actor", development: "material — third victim Fakturownia.pl; see items[4]" }
+  - { entry: "2026-09-29/bitget-hot-wallet-theft-north-korea-nexus", development: "none new in window (BleepingComputer 2026-09-28 'Bitget resumes Bitcoin withdrawals' is already within the entry's 2026-09-28 sourcing; final loss ~USD 387.5M already reflected)" }
+  - { entry: "2026-09-13/revolut-fake-government-request-kyc-breach", development: "none in window (latest reachable reports 2026-09-17/25 already sourced)" }
+  - { entry: "2026-09-27/flink-lpg-group-crowdfund-extortion-order-hub-breach", development: "none in window; 2026-10-02 deadline still pending (etailment.de 2026-09-28 restates the ETH demand; no new fact)" }
+  - { entry: "2026-09-21/afpa-third-party-accommodation-tool-data-extraction", development: "none in window (only Kohen Avocats explainers)" }
+  - { entry: "2026-09-18/gyazo-helpfeel-data-breach-image-upload-rce", development: "minor, not recommended — Helpfeel notice 'Resumption of Gyazo Services': service resumed 2026-09-27, all pre-breach images reset to owner-only until each owner re-enables delivery, Gyazo Teams tweak 2026-09-29 (https://corp.helpfeel.com/en/news/news-20260927-02)" }
+  - { entry: "2026-09-18/brevo-cloudflare-worker-clickfix-supply-chain", development: "none in window" }
+
+# ---------------------------------------------------------------------------
+# Borderline drops (out-of-nexus or claim-only; PD-11 / PD-6) — main agent may override
+# ---------------------------------------------------------------------------
+borderline_drops:
+  - { title: "Junta de Andalucía — MedusaLocker leak-site claim (2026-09-28)", reason: "Spanish regional government (analogue to a canton) but claim-only: 198 e-mail addresses / assorted data categories per Escudo Digital and TechNadu (C-tier), no Junta statement; earlier July 2026 Séneca incident is separate. PD-6 fails.", seen_via_websearch_only: ["https://www.escudodigital.com/ciberseguridad/junta-de-andalucia-ciberataque.html", "https://www.technadu.com/meduza-locker-claims-ransomware-breach-of-spains-junta-de-andalucia/639716/"] }
+  - { title: "Alaxione (FR medical-appointment SaaS) — ChimeraZ escalates claim to 16.2M persons / 568,737 social-security numbers (FrenchBreaches update 2026-09-29)", reason: "Vendor acknowledged an intrusion on 2026-08-20 (claimed test data only, fuitesinfos.fr 2026-08-19); ChimeraZ (registry actor:chimeraz) sells the dataset; FrenchBreaches reports an IDOR -> SQLi -> RCE chain 'à confirmer'. French private health-software supplier, no Swiss/public nexus and no novel TTP — same precedent as the dropped ASP France item (2026-09-25 run). Scale and health-data content are the only argument.", fetched: ["https://frenchbreaches.com/alertes/alaxione-mukgc44jlfsfro727v", "https://fuitesinfos.fr/article/2026-08-19-alaxione"] }
+  - { title: "SafePay's other September Swiss listings — ara-lyss.ch (2026-09-15, wastewater-treatment operator, canton Bern), stoecklin-kuechen.ch (2026-09-15), lfgholding.com and bio-strath.com (2026-09-28)", reason: "Claim-only, no victim statements or press found (ara-lyss.ch returns 403 to every transport). ARA Lyss is the one with critical-infrastructure/communal-association nexus and should get a backlog row; folded into item 1 as context, not asserted.", fetched: ["https://www.ransomware.live/id/YXJhLWx5c3MuY2hAc2FmZXBheQ=="] }
+  - { title: "Netech (Neeser Technik AG, Seuzach ZH) — Payload leak-site claim (2026-09-28)", reason: "Swiss industrial-services firm, claim-only (ransomware.live, GalaxyWarden, X reposts); no statement; PD-6 fails. Candidate backlog row (home-region domicile).", seen_via_websearch_only: ["https://www.ransomware.live/id/TmV0ZWNoIChOZWVzZXIgVGVjaG5payBBRylAcGF5bG9hZA"] }
+  - { title: "CENELEC / CEN (Brussels) — Everest leak-site claim (2026-09-25, 159 GB)", reason: "EU standardisation body, claim-only (DeXpose/HackNotice/Ransomware.live), no statement. Not fetched further." }
+  - { title: "Keio Corporation (JP railway) ransomware; Times Car (JP, 6.6M accounts); Dodo Pizza (RU); Suffolk County jails EHR vendor CSI (US); Hogan Lovells Cadwalader / Silent Ransom Group (US law firm)", reason: "Out of nexus; no transferable TTP beyond what the store already holds." }
+  - { title: "LMU Munich student master-data breach (disclosed 2026-09-19, WebSearch only)", reason: "German state university; disclosure 11 days old, outside the 26 h window and no in-window delta found; not fetched." }
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Supplier watchlist is empty in this deployment — sweep is a no-op. Supplier-nexus items were nevertheless surfaced on the general bar (FTAPI, item 2)."
+
+leads_not_fetched:
+  - { url: "https://www.inside-it.ch/tessiner-gemeinde-wird-opfer-von-cyberkriminellen-20260929", publisher: "inside-it.ch", why: "HTTP 429 with a Vercel Security Checkpoint (JS challenge) on direct, bridge-url and WebFetch; jina reader pool exhausted (HTTP 402 on all rotating keys). Content known only from WebSearch result text: Manno servers encrypted early August, restored from backup within hours, complaint filed, SafePay claims an unspecified dataset and threatens publication within 3-4 days, three other Swiss companies plus a wastewater-treatment operator in canton Bern also listed. NOT cited anywhere in this file." }
+  - { url: "https://www.computerweekly.com/de/news/366651276/Die-Cyberangriffe-der-KW39-2026-im-Ueberblick", publisher: "ComputerWeekly.de", why: "HTTP 403 on every transport (WebFetch 403, extract no readable body, reader pool dead); weekly DACH incident overview skipped." }
+
+candidate_sources:
+  - { id: fuitesinfos, publisher: "Fuites Infos (fuitesinfos.fr)", url: "https://fuitesinfos.fr", category: breaches, language: fr,
+      why: "French breach tracker with per-incident dated write-ups that quote the victim's notice and separate claim from fact (e.g. Alaxione 2026-08-19 'confirme l'intrusion et la dit limitée à des données de test, les échantillons disent autre chose'; Pays de l'Aigle 2026-09-17); cited in standing backlog rows but not in sources.json. Extract works cleanly (trafilatura-direct)." }
+
+coverage_gaps:
+  - { source_id: inside-it-ch, reason: "ESSENTIAL Swiss source (not in this slice) now serves a Vercel Security Checkpoint (HTTP 429) to direct/bridge/WebFetch transports; reader pool exhausted, so no rung of the ladder can currently read article bodies. The Manno story (2026-09-29) was only visible via WebSearch. Recipe note suggested: inside-it-ch needs a working reader credential or an RSS/sitemap route; verify feed access." }
+  - { source_id: cyberattaque-org, reason: "Connection reset on article fetch (maileva-filiale-de-la-poste-victime-dune-cyberattaque); only reachable through WebSearch snippets this run — Le Tampon/Pays de l'Aigle backlog re-checks relied on FrenchBreaches/fuitesinfos instead." }
+  - { source_id: computerweekly-de, reason: "403 on all transports (see leads_not_fetched)." }
+  - { source_id: venarix, reason: "Listing slugs are newest-first but undated; drilled six slugs — dates 2026-08-11, 2026-08-10, 2026-07-31, 2026-07-29, 2026-07-14, 2026-06-21. Newest post is 7 weeks old; nothing in horizon. Suggest lowering rotation priority (cadence ~monthly)." }
+
+recipe_notes_for_sources_json:
+  - "ransomware-live: besides /v2/recentvictims, `https://api.ransomware.live/v2/recentcyberattacks` (records with press title/summary/link/added date) and `https://api.ransomware.live/v2/groupvictims/<group>` (full per-group history, e.g. safepay = 578 records) work via `fetch_source.py url`; recentcyberattacks surfaced FTAPI (press-confirmed) that recentvictims did not, so it is the better nexus filter for confirmed incidents."
+  - "zaufana-trzecia-strona: bridge `url` on the homepage lists posts with dates (text) and hrefs (/post/<slug>/); `extract <post-URL>` reads article bodies cleanly. Recipe confirmed 2026-09-30."
+  - "piyolog: `extract https://piyolog.hatenadiary.jp/archive` gives dated one-paragraph summaries of the newest ~20 posts; homepage extract returns only the top post."
+  - "ico-uk: sitemap recipe confirmed; https://ico.org.uk/sitemap.xml (5.2 MB) via `url --direct`; filter loc by /news-and-blogs/2026/ and /enforcement/2026/ against lastmod."
+  - "cnil-fr: French-language listing that works is https://www.cnil.fr/fr/actualites (extract; dated items); /fr/sanctions-prononcees-par-la-cnil stays 404 — repoint the record's French path to /fr/actualites; English /en/news remains valid."
+  - "ransom-isac: bridge `url https://ransom-isac.org/blog/` server-renders the listing with post dates (newest 2026-09-25)."
+  - "manno.ch-style Swiss communal notices: the news tile links to /albo-comunale/<year>/<month>/<slug>.html with the substantive notice as a PDF in /sidebar/0/items/0/file/; `fetch_source.py pdf` reads it (font-shifted text — Caesar +29 on capital letters decodes the garbled clauses)."
+
+# ---------------------------------------------------------------------------
+# REQUIRED: one row per slice record, in slice order
+# ---------------------------------------------------------------------------
+source_ledger:
+  - { id: sec-disclosures-edgar, tier: standard, attempted: true, transport: "bridge:sec-edgar 8k", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "1 Item 1.05 hit in trailing 14 d (Astrana Health 2026-09-23) — outside horizon and out of nexus" }
+  - { id: cnil-fr, tier: standard, attempted: true, transport: "extract https://www.cnil.fr/en/news", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "EN /news newest item 2026-09-23 (EDPB fining guidelines); latest fines EXTIA 09-09, Hôpital privé de la Loire 09-03. FR /fr/actualites extracted OK (newest 2026-09-28 'air 2026' event, 09-24 Solocal injunction closure) — nothing breach-relevant in window. FR paths /fr/sanctions-prononcees-par-la-cnil and /fr/tous-les-communiques-de-presse both 404 (guessed variants; only /fr/actualites confirmed live)" }
+  - { id: cyberinsider, tier: standard, attempted: true, transport: "extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "listing carries no per-item dates (page meta 2026-09-13 unreliable); visible items are S1/S3 topics or already covered (ShinyHunters/FBI, OpenAI Medicare, gambit skimmer)" }
+  - { id: databreaches-net, tier: standard, attempted: true, transport: "feed https://databreaches.net/feed/ + url", horizon_hours: 26, in_horizon_items: 5, returned: 1, note: "in-window: Suffolk County jails EHR vendor (US), Russian finance-ministry insurance (RU), ShinyHunters suspect charged (-> update item 7), FBI hackers won't publish (already covered), Dodo Pizza (RU); Hogan Lovells (09-28) outside horizon" }
+  - { id: frenchbreaches, tier: standard, attempted: true, transport: "extract + url (listing + 3 alert pages)", horizon_hours: 26, in_horizon_items: 8, returned: 0, note: "in-window French items are private-sector forum claims (SFR VAD portal, Krys, LCS, Proxitel, Alaxione update, FFR, Agefiph 09-27, KEL/Orisha); Alaxione logged as borderline-drop; Agefiph (public-funded body, 3,736 records, forum claim 2026-09-27) not verified" }
+  - { id: ico-uk, tier: standard, attempted: true, transport: "bridge:ico-uk enforcement + sitemap.xml", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "only in-window sitemap change: WASPI information-sharing code of conduct (2026-09-28); no enforcement action" }
+  - { id: ransomware-live, tier: standard, attempted: true, transport: "api: recentvictims, recentcyberattacks, groupvictims/safepay", horizon_hours: 26, in_horizon_items: 45, returned: 2, note: "Manno (item 1) and FTAPI (item 2) were nexus hits; ShinyHunters 'WARNING' statement used in item 7; Junta de Andalucía, Netech, CENELEC, ARA Lyss logged as borderline" }
+  - { id: bleepingcomputer, tier: standard, attempted: true, transport: "extract listing + article extracts", horizon_hours: 26, in_horizon_items: 12, returned: 2, note: "in-window items reviewed; ShinyHunters (item 7) and DIVD (item 4) returned; Citrix/Kiteworks/Apple covered or S1; Keio/Times Car out of nexus" }
+  - { id: piyolog, tier: standard, attempted: true, transport: "extract homepage + /archive", horizon_hours: 26, in_horizon_items: 4, returned: 0, note: "Japanese items only (Keio ransomware, Temairazu, Times Car, NetScaler roundup) — out of nexus/covered" }
+  - { id: ransom-isac, tier: standard, attempted: true, transport: "bridge:url", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-25 (XCTDH hash hiding, S3-type)" }
+  - { id: troyhunt, tier: standard, attempted: true, transport: "feed https://feeds.feedburner.com/TroyHunt", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "Weekly Update 523 (2026-09-28): commentary on ShinyHunters/Cl0p/FBI, no new facts" }
+  - { id: venarix, tier: standard, attempted: true, transport: "bridge:url listing + 6 slug extracts", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 2026-08-11" }
+  - { id: zaufana-trzecia-strona, tier: standard, attempted: true, transport: "bridge:url homepage + extract post", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "Fakturownia.pl 'Fingerprint' post 2026-09-29 (-> update item 5)" }
+
+store_observations:
+  - "Possible duplicate entries for ONE finding: entries/2026-08-23/martigny-combe-valais-communal-mailbox-compromise.md (run 2026-08-23T0409Z, techniques T1566/T1114/T1586.002) and entries/2026-08-28/martigny-combe-valais-municipal-email-compromise.md (run 2026-08-28T0409Z, technique T1078) describe the same Martigny-Combe mailbox compromise (event 2026-08-18) — a one-entry-per-finding violation the audit should merge via changelog; noticed while cross-referencing item 3."
+  - "Backlog housekeeping proposals: add rows for ARA-Region Lyss-Limpachtal (SafePay claim 2026-09-15, communal wastewater association, canton Bern) and Netech / Neeser Technik AG (Payload, 2026-09-28); add a watch note for SafePay's Manno publication window (~2026-10-01/02) and The Gentlemen's FTAPI countdown (~2026-10-04)."
+  - "Relevance precedent: the ASP France 'Coup de pouce énergie' breach (143,518 records) was dropped by two verifier passes on 2026-09-25, so French public-sector breaches without a novel TTP were NOT re-surfaced today."

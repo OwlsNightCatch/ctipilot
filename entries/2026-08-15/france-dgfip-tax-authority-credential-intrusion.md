@@ -2,8 +2,8 @@
 schema: 1
 kind: incident
 title: >
-  France's tax authority cut the intruders' accounts in June and July and found no data theft — it
-  took the criminal's sale listing two months later to establish that 678,000 records had already
+  France's tax authority says it cut the intruders' accounts in June and July and found no data theft;
+  it took the criminal's sale listing two months later to establish that 678,000 records had already
   gone
 headline: >
   DGFiP confirms a 678,000-record theft via a stolen agent account and a third party's credentials
@@ -11,12 +11,12 @@ headline: >
 summary: >
   France's Direction générale des Finances publiques confirmed on 2026-08-14 that intrusions in
   June and July 2026, using stolen credentials of a DGFiP agent and of an authorised third party,
-  were used to view and extract data on 678,000 individuals and businesses. DGFiP cut the accounts
-  when it detected the intrusions, but its access reviews at the time did not reveal that data had
+  were used to view and extract data on 678,000 individuals and businesses. DGFiP says it cut the
+  accounts when it detected the intrusions, but its access reviews at the time did not reveal that data had
   been stolen; only investigations opened after the attacker advertised the dataset on 2026-08-12
   established the theft.
 discovered_at: "2026-08-15T04:47:00Z"
-updated_at: "2026-09-06T04:55:00Z"
+updated_at: "2026-09-30T04:52:00Z"
 event_date: 2026-08-14
 run_id: 2026-08-15T0412Z-intel
 priority: high
@@ -39,9 +39,11 @@ entities:
   - "actor:cybernox"
   - "actor:epsilon-hacking-collective"
   - "malware:wavestealer"
+  - "report:anssi-dgfip-incident-report-2026-09"
 techniques:
   - T1078
   - T1199
+  - T1119
 affected_products: []
 cves: []
 sources:
@@ -85,6 +87,14 @@ sources:
     publisher: "ZATAZ.COM (Damien Bancal)"
     date: "2026-09-05"
     role: corroborating
+  - url: "https://cyber.gouv.fr/actualites/lanssi-publie-le-rapport-dincident-sur-les-cyberattaques-ayant-touche-la-dgfip/"
+    publisher: "ANSSI (cyber.gouv.fr)"
+    date: "2026-09-29"
+    role: primary
+  - url: "https://thehackernews.com/2026/09/french-tax-data-theft-using-stolen.html"
+    publisher: "The Hacker News"
+    date: "2026-09-29"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "Mercredi 12 et jeudi 13 août 2026, un acteur malveillant a revendiqué des accès illégitimes au système d'information de la Direction générale des Finances publiques (DGFiP), intervenus en juin et juillet 2026, reposant sur des usurpations d'identifiants d'un agent de la DGFIP et d'un tiers habilité."
@@ -123,6 +133,17 @@ evidence:
     original: "Après sa garde à vue, il a été libéré."
     publisher: "ZATAZ.COM (Damien Bancal)"
     source_url: "https://www.zataz.com/deux-suspects-interpelles-apres-le-piratage-du-fisc/"
+  - quote: "Neither of these exfiltration waves was detected, either by DGFiP's monitoring or by ANSSI's (translated from French)"
+    original: "Aucune de ces deux vagues d’exfiltration n’a été détectée, ni par les moyens de supervision de la DGFiP ni par ceux de l’ANSSI"
+    publisher: "ANSSI"
+    source_url: "https://cyber.gouv.fr/actualites/lanssi-publie-le-rapport-dincident-sur-les-cyberattaques-ayant-touche-la-dgfip/"
+  - quote: "The illegitimate recovery of these credentials followed their use on personal equipment, coupled with the absence of strong authentication on the portals giving access to sensitive resources (translated from French)"
+    original: "La récupération illégitime de ces identifiants est consécutive à leur utilisation sur des équipements personnels couplée à l’absence d’authentification forte sur les portails donnant accès à des ressources sensibles."
+    publisher: "ANSSI"
+    source_url: "https://cyber.gouv.fr/actualites/lanssi-publie-le-rapport-dincident-sur-les-cyberattaques-ayant-touche-la-dgfip/"
+  - quote: "The reset addressed the alert on PIGP but did not terminate the attacker's open session on ADER."
+    publisher: "The Hacker News"
+    source_url: "https://thehackernews.com/2026/09/french-tax-data-theft-using-stolen.html"
 verification: multi-source
 sourcing_note: >
   The confirmed facts come from the French Ministry of Economy and Finance's own statement about
@@ -200,12 +221,22 @@ updates:
       Pulsy). A third alias, xMetah, was not arrested and is suspected of a further leak posted
       after the arrests: the arrests have not ended the campaign.
     fields: [updated_at, entities, sources, evidence, body]
+  - at: "2026-09-30T04:52:00Z"
+    run_id: 2026-09-30T0404Z-intel
+    type: update
+    summary: >
+      ANSSI published its incident report on the DGFiP intrusions on 2026-09-29. It names three failures: staff
+      credentials stolen from personal equipment and used on portals with no strong authentication, sensitive
+      applications reachable from the inter-ministry network without segmentation, and detection gaps at both DGFiP
+      and ANSSI; The Hacker News, reading the full report, adds that the attack was unsophisticated, which is the
+      opposite of the ministry's August explanation for the missed theft.
+    fields: [title, summary, entities, techniques, sources, evidence, body]
 migrated_from: null
 ---
 
 France's Ministry of Economy and Finance confirmed on 2026-08-14 that a malicious actor had obtained illegitimate access to the information system of the Direction générale des Finances publiques — the national tax authority — during June and July 2026, on the basis of credential impersonation of a DGFiP agent and of an authorised third party ([Ministère de l'Économie et des Finances, 2026-08-14](https://presse.economie.gouv.fr/acces-illegitime-au-systeme-dinformation-de-la-direction-generale-des-finances-publiques/)). Investigations conducted since 2026-08-12 established that before the accesses were cut, they had been used to view and extract data on a total of 678,000 individuals and businesses: tax data including the reference taxable income, the family quotient and the withholding-tax rate, and for companies the registered name and SIREN identifier, along with cadastral data on the addresses and surface areas of properties. DGFiP states that users' own *Espaces Finances publiques* accounts were not compromised, and it notified the CNIL as soon as the data theft was identified ([Ministère de l'Économie et des Finances, 2026-08-14](https://presse.economie.gouv.fr/acces-illegitime-au-systeme-dinformation-de-la-direction-generale-des-finances-publiques/)).
 
-The operationally interesting part is the sequence, and it is a failure mode worth copying into a playbook. DGFiP detected the intrusions and immediately cut off every account involved — the containment step worked. But in the ministry's own words, the access reviews carried out at that point did not reveal that the intrusions had led to data theft, which it attributes to the sophistication of the attack. What surfaced the exfiltration was external: an actor using the alias ZeroBytes advertised the dataset on a cybercrime forum on 2026-08-12, and only the deep investigations that followed established the scope ([Ministère de l'Économie et des Finances, 2026-08-14](https://presse.economie.gouv.fr/acces-illegitime-au-systeme-dinformation-de-la-direction-generale-des-finances-publiques/) · [The Register, 2026-08-14](https://www.theregister.com/security/2026/08/14/french_tax_authority_admits_data_heist_after_crook_touts_2m_records/5287885)). Between containment and discovery lay roughly two months in which the organisation believed it had handled the incident. Two of the actor's claims go further than anything the government confirms, and the gap between them is worth holding onto. ZeroBytes advertised the database as containing details of more than 2 million French taxpayers — against the 678,000 the ministry has established — and claimed the access was obtained using stolen credentials and a multi-factor-authentication bypass technique; it also claimed to retain access to DGFiP's systems and offered to sell that alongside the data ([The Register, 2026-08-14](https://www.theregister.com/security/2026/08/14/french_tax_authority_admits_data_heist_after_crook_touts_2m_records/5287885)). DGFiP disputed the claim that ZeroBytes retained access in its statement of the following day ([The Register, 2026-08-14](https://www.theregister.com/security/2026/08/14/french_tax_authority_admits_data_heist_after_crook_touts_2m_records/5287885)); its own published statement addresses neither that claim nor the multi-factor element, and records instead further precautionary cut-offs of access to sensitive information systems while investigations continue to determine the precise nature and volume of extracted data ([Ministère de l'Économie et des Finances, 2026-08-14](https://presse.economie.gouv.fr/acces-illegitime-au-systeme-dinformation-de-la-direction-generale-des-finances-publiques/)).
+The operationally interesting part is the sequence, and it is a failure mode worth copying into a playbook. By the ministry's account, DGFiP detected the intrusions and immediately cut off every account involved. ANSSI's later report qualifies that: neither exfiltration wave was detected by DGFiP's or ANSSI's monitoring ([ANSSI, 2026-09-29](https://cyber.gouv.fr/actualites/lanssi-publie-le-rapport-dincident-sur-les-cyberattaques-ayant-touche-la-dgfip/)), and a June password reset left one attacker session open on a second portal ([The Hacker News, 2026-09-29](https://thehackernews.com/2026/09/french-tax-data-theft-using-stolen.html)); the update below carries the detail. In the ministry's own words, the access reviews carried out at that point did not reveal that the intrusions had led to data theft, which it attributes to the sophistication of the attack. What surfaced the exfiltration was external: an actor using the alias ZeroBytes advertised the dataset on a cybercrime forum on 2026-08-12, and only the deep investigations that followed established the scope ([Ministère de l'Économie et des Finances, 2026-08-14](https://presse.economie.gouv.fr/acces-illegitime-au-systeme-dinformation-de-la-direction-generale-des-finances-publiques/) · [The Register, 2026-08-14](https://www.theregister.com/security/2026/08/14/french_tax_authority_admits_data_heist_after_crook_touts_2m_records/5287885)). Between containment and discovery lay roughly two months in which the organisation believed it had handled the incident. Two of the actor's claims go further than anything the government confirms, and the gap between them is worth holding onto. ZeroBytes advertised the database as containing details of more than 2 million French taxpayers — against the 678,000 the ministry has established — and claimed the access was obtained using stolen credentials and a multi-factor-authentication bypass technique; it also claimed to retain access to DGFiP's systems and offered to sell that alongside the data ([The Register, 2026-08-14](https://www.theregister.com/security/2026/08/14/french_tax_authority_admits_data_heist_after_crook_touts_2m_records/5287885)). DGFiP disputed the claim that ZeroBytes retained access in its statement of the following day ([The Register, 2026-08-14](https://www.theregister.com/security/2026/08/14/french_tax_authority_admits_data_heist_after_crook_touts_2m_records/5287885)); its own published statement addresses neither that claim nor the multi-factor element, and records instead further precautionary cut-offs of access to sensitive information systems while investigations continue to determine the precise nature and volume of extracted data ([Ministère de l'Économie et des Finances, 2026-08-14](https://presse.economie.gouv.fr/acces-illegitime-au-systeme-dinformation-de-la-direction-generale-des-finances-publiques/)).
 
 The access path carries no vulnerability: it is a valid agent account plus an authorised external party's credentials, which is the same shape as the compromised professional account at France's Ministère de l'Éducation nationale in July and the external service-provider account at Żabka. DGFiP's teams are working with the ministries' senior defence and security official and with ANSSI, and the authority will file a criminal complaint and contact each affected individual and business directly ([Ministère de l'Économie et des Finances, 2026-08-14](https://presse.economie.gouv.fr/acces-illegitime-au-systeme-dinformation-de-la-direction-generale-des-finances-publiques/)).
 
@@ -248,3 +279,19 @@ The prosecutor's office's own victim list extends materially beyond the DGFiP/É
 The arrests have not ended the campaign. The alias xMetah was not arrested, and ZATAZ assesses him as very likely responsible for a further data-leak post made on 2026-09-01, after both arrests ([ZATAZ.COM, 2026-09-05](https://www.zataz.com/zerobytes-deux-arrestations-et-des-alias-a-demeler/)). That single fact is the operational takeaway: a loosely affiliated, multi-alias extortion cluster can lose two members to arrest, including one identified as a co-founder of its predecessor collective, and continue publishing new leaks days later under a surviving alias. Law-enforcement disruption of one identity is not disruption of the cluster.
 
 **Defender takeaway:** treat an arrest announcement against a named handle as a partial disruption signal, not a closure signal, for any ongoing extortion or leak campaign attributed to a multi-alias cluster: continue monitoring for fresh claims under the cluster's other known or newly surfacing aliases rather than standing down a watch once one member is in custody.
+
+## Update — 2026-09-30T04:52:00Z
+
+France's ANSSI delivered its incident report on the DGFiP intrusions to the Prime Minister on 2026-09-24 and published it on 2026-09-29. It reconstructs two exfiltration waves between May and August 2026, one against the impots.gouv.fr platform and one against land-registry data, and names three failures ([ANSSI, 2026-09-29](https://cyber.gouv.fr/actualites/lanssi-publie-le-rapport-dincident-sur-les-cyberattaques-ayant-touche-la-dgfip/)).
+
+**Identity.** The attackers stole and used legitimate DGFiP staff credentials; ANSSI ties the theft to those credentials having been used on personal equipment, combined with the absence of strong authentication on the portals that reach sensitive resources ([ANSSI, 2026-09-29](https://cyber.gouv.fr/actualites/lanssi-publie-le-rapport-dincident-sur-les-cyberattaques-ayant-touche-la-dgfip/)). The Hacker News, reading the full report, adds that the passwords were probably taken by infostealer malware from computers DGFiP did not manage, that two portals asked for a password only, and that the accounts held no special privileges yet could reach a large amount of data ([The Hacker News, 2026-09-29](https://thehackernews.com/2026/09/french-tax-data-theft-using-stolen.html)).
+
+**Architecture.** Sensitive applications were exposed on the Internet, or reachable from the inter-ministry network without segmentation, which allowed lateral movement from a third-party body's resources, in this case the Education ministry ([ANSSI, 2026-09-29](https://cyber.gouv.fr/actualites/lanssi-publie-le-rapport-dincident-sur-les-cyberattaques-ayant-touche-la-dgfip/)).
+
+**Detection.** Neither wave was detected by DGFiP's or ANSSI's monitoring: DGFiP's teams did not supervise one of the portals used to exfiltrate and nothing correlated the suspicious signals, and ANSSI's sensors sit only at the inter-ministry network's entry and exit points and the Internet, without access to application logs ([ANSSI, 2026-09-29](https://cyber.gouv.fr/actualites/lanssi-publie-le-rapport-dincident-sur-les-cyberattaques-ayant-touche-la-dgfip/)). The Hacker News reports that the data was pulled from the E-Contact tool through the second portal using automated scraping tools that copy data page by page ([The Hacker News, 2026-09-29](https://thehackernews.com/2026/09/french-tax-data-theft-using-stolen.html)), that a June password reset addressed the alert on the first portal but did not end the attacker's open session on the second, so data kept flowing for almost 16 more hours, and that no alert fired on data volume or per-user request counts, including the 11 GB moved in three days ([The Hacker News, 2026-09-29](https://thehackernews.com/2026/09/french-tax-data-theft-using-stolen.html)). It adds that the land-registry route went through a partner portal whose emailed one-time code was bypassed after a land surveyor's computer at a private firm was possibly compromised ([The Hacker News, 2026-09-29](https://thehackernews.com/2026/09/french-tax-data-theft-using-stolen.html)). It also reports that ANSSI's report calls the attack unsophisticated, which contrasts with the ministry's August statement that the theft escaped detection because of the attack's sophistication ([The Hacker News, 2026-09-29](https://thehackernews.com/2026/09/french-tax-data-theft-using-stolen.html)).
+
+**Recommendations.** As summarised by The Hacker News, ANSSI recommends revoking every active session on all applications whenever a password is reset, reviewing a compromised account's activity from the likely date of compromise, using multifactor authentication whose second factor survives password theft (an emailed code is not enough if the same password opens the mailbox), monitoring every business application in a SIEM with quotas on records, requests and data volume, and refusing personal devices for work resources ([The Hacker News, 2026-09-29](https://thehackernews.com/2026/09/french-tax-data-theft-using-stolen.html)). ANSSI's own page says an action plan addressing the exploited failures has been agreed with DGFiP ([ANSSI, 2026-09-29](https://cyber.gouv.fr/actualites/lanssi-publie-le-rapport-dincident-sur-les-cyberattaques-ayant-touche-la-dgfip/)).
+
+**Triage:** night-time logins, VPN or foreign-address connections and large volumes each cause false alarms alone; The Hacker News reports ANSSI's view that combined with a per-user request count they could have raised an alert ([The Hacker News, 2026-09-29](https://thehackernews.com/2026/09/french-tax-data-theft-using-stolen.html)).
+
+**Defender takeaway:** a password-reset runbook has to end every active session on every portal, not only the one that alerted, and each business application needs per-user request and volume limits that alert on their own.

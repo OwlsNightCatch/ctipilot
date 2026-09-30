@@ -1,0 +1,438 @@
+# work/2026-09-30T0404Z-intel/findings.S2.yaml
+domain: S2
+run_id: 2026-09-30T0404Z-intel
+model: "Sonnet 5.5"
+model_id: "claude-sonnet-5-5"
+started_at: 2026-09-30T04:07:21Z
+ended_at: 2026-09-30T04:35:14Z
+duration_seconds: 1673
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 52
+  bridge_fetches: 115
+window_hours: 26
+horizon_start_utc: 2026-09-29T02:07:00Z
+note_on_overlap: >
+  S4 (incidents) independently holds the Manno, FTAPI, SRG and TCS leads (see work/2026-09-30T0404Z-intel/S4.checkpoint1.md);
+  S1 independently holds the Citrix update and WatchGuard AP (NCSC-CH advisory 13007). The items below are the S2
+  (home-region / sector-lens) view of the same ground plus ground S1/S4 did not touch (Rhineland-Palatinate municipal
+  shutdown, Ticino eAutoindex delta, ENISA ETL 2026). Merge on entity/source, not on the separate finding ids.
+items:
+  - title: "Manno (TI) communal administration: ransomware encrypted part of the commune's servers on 2026-08-04; Safepay leak-site listing on 2026-09-28 is the first public tie to an actor"
+    sources:
+      - { url: "https://www.manno.ch/manno/Informazione/albo-comunale/2026/09/Attacco-informatico.html", publisher: "Comune di Manno (Municipio), notice 'Attacco informatico server comunale'", date: "2026-09-16", role: "primary" }
+      - { url: "https://www.manno.ch/manno/Informazione/albo-comunale/2026/09/Attacco-informatico/sidebar/0/items/0/file/Pubblicazione%20avviso%20attacco%20informatico.pdf.pdf", publisher: "Comune di Manno (Municipio), PDF 'Avviso attacco informatico'", date: "2026-09-16", role: "primary" }
+      - { url: "https://www.ransomware.live/id/bWFubm8uY2hAc2FmZXBheQ==", publisher: "Ransomware.live (leak-site tracker; claim only)", date: "2026-09-28", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/tessiner-gemeinde-wird-opfer-von-cyberkriminellen-20260929", publisher: "Inside IT (article body unreadable in-run: HTTP 429 Vercel checkpoint; only the RSS teaser from https://www.inside-it.ch/rss.xml was read)", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: "first seen at: inside-it-ch, URL https://www.inside-it.ch/rss.xml -> item 'Tessiner Gemeinde wird Opfer von Cyberkriminellen' (2026-09-29T12:54Z), article page HTTP 429 on extract and WebFetch -> WebSearch (\"Manno comune ransomware Safepay\") -> pivot: Ransomware.live, URL https://www.ransomware.live/id/bWFubm8uY2hAc2FmZXBheQ== (listing discovered 2026-09-28 08:34 UTC) -> pivot: https://www.manno.ch homepage (Comunicati list) -> primary: victim notice https://www.manno.ch/manno/Informazione/albo-comunale/2026/09/Attacco-informatico.html and its PDF"
+    summary: |
+      Facts (Comune di Manno, notice dated 2026-09-16, text of the attached PDF): on 4 August 2026 part of the commune's
+      servers suffered an attack that encrypted data; the commune isolated the affected server, restored data and
+      operations from existing backups, reported the case to the competent authorities and filed a criminal complaint
+      against unknown persons; residents are warned to distrust unexpected letters or messages demanding urgent payments
+      or personal/financial data and to use only official channels. The notice names no actor and no intrusion vector.
+      Claim (not victim-confirmed): Ransomware.live recorded on 2026-09-28 08:34 UTC that manno.ch was listed by the
+      Safepay ransomware group; Inside IT's 2026-09-29 teaser reports a ransomware gang attacking the commune's servers
+      and encrypting part of the data, with a rapid return to normal operations thanks to a backup (the article body,
+      which per WebSearch-relayed text adds Safepay's exfiltration claim and a publication countdown, could not be read
+      here). Whether the leak-site listing concerns the same 4 August event is the leak-site operator's implication, not
+      something Manno's notice states. Unknowns: initial-access vector, whether data left the network, ISG reporting
+      status. Timeline shape worth carrying: encryption 2026-08-04, public notice 2026-09-16 (six weeks later), leak-site
+      listing 2026-09-28 (eight weeks later). Transferable lesson for cantonal and communal defenders: a tested backup
+      and immediate server isolation turned an encryption event into hours of downtime, but the double-extortion
+      listing arrives weeks later regardless, so exfiltration assessment must not be closed on the strength of a clean
+      restore.
+    region_nexus: "switzerland (canton Ticino, communal administration)"
+    primary_sector_nexus: "direct (communal public administration)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1486]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:safepay", type: actor, name: "SafePay", aliases: ["Safepay"], summary: "SafePay ransomware group (double-extortion, operates its own leak site); Ransomware.live counts 578 claimed victims and last activity 2026-09-28 (Ransomware.live group profile, fetched 2026-09-30)." }
+      - { key: "incident:manno-ti-commune-ransomware-2026-08", type: incident, name: "Manno (TI) commune server ransomware, 4 August 2026", aliases: [], summary: "Part of the Swiss commune of Manno's servers was encrypted on 2026-08-04; restored from backup; notice 2026-09-16; Safepay leak-site listing 2026-09-28 (Comune di Manno; Ransomware.live)." }
+    relation_suggestions:
+      - { subject: "actor:safepay", object: "incident:manno-ti-commune-ransomware-2026-08", basis: "Ransomware.live records a Safepay leak-site listing of manno.ch on 2026-09-28; this is the group's own claim, Manno's notice names no actor (suggest overlaps-with / claims, not attribution)" }
+    verification: "SINGLE-SOURCE-VICTIM-PRIMARY (attack facts: the commune's own notice); actor claim: single tracker, unconfirmed by victim"
+    confidence: MEDIUM
+    classification_hint: { reliability: A, credibility: 2, note: "attack facts from the victim's own notice; actor attribution is a claim (would be C3 on its own)" }
+    novelty: new
+    evidence:
+      - quote: "Il Municipio di Manno informa che il 4 agosto 2026 una parte dei server del Comune ha subito un attacco"
+        attribution: "Comune di Manno (Municipio)"
+        source_url: "https://www.manno.ch/manno/Informazione/albo-comunale/2026/09/Attacco-informatico/sidebar/0/items/0/file/Pubblicazione%20avviso%20attacco%20informatico.pdf.pdf"
+      - quote: "Si invita la popolazione a prestare attenzione a comunicazioni inattese"
+        attribution: "Comune di Manno (Municipio)"
+        source_url: "https://www.manno.ch/manno/Informazione/albo-comunale/2026/09/Attacco-informatico/sidebar/0/items/0/file/Pubblicazione%20avviso%20attacco%20informatico.pdf.pdf"
+      - quote: "Ransomware.live discovered on 2026-09-28 that manno.ch has been claimed by Safepay ransomware group"
+        attribution: "Ransomware.live"
+        source_url: "https://www.ransomware.live/id/bWFubm8uY2hAc2FmZXBheQ=="
+    extended_notes: |
+      Detection/hunt angle is limited (no vector published): bulk file encryption on a communal file server, isolation
+      then restore. Hardening lever the notice itself demonstrates: existing (offline/immutable if possible) backups.
+      Benign-lookalike n/a. PDF extraction dropped accented characters; the quoted substrings are intact.
+      Suggested priority: medium (communal ransomware with a victim-confirmed encryption; no vector). S4 holds the same lead.
+
+  - title: "UPDATE — Rhineland-Palatinate: shared municipal data centres took centrally hosted citizen-service systems offline for all 194 municipal administrations on 2026-09-27 after a critical vulnerability disclosure that heise ties to the NetScaler zero-days"
+    sources:
+      - { url: "https://www.ak-kurier.de/akkurier/www/artikel/176375-kommunale-rechenzentren-schalten-fachverfahren-vorsorglich-ab", publisher: "ZIDKOR press release of 2026-09-28 (as reprinted by AK-Kurier, updated 2026-09-29)", date: "2026-09-28", role: "primary" }
+      - { url: "https://www.rhein-zeitung.de/rheinland-pfalz/it-sicherheitsluecke-erste-staedte-melden-ende-der-stoerung_arid-4158892.html", publisher: "Rhein-Zeitung / dpa (Landkreistag, Gemeinde- und Städtebund, Städtetag statement; Mainz city administration)", date: "2026-09-29", role: "corroborating" }
+      - { url: "https://www.heise.de/news/IT-Stoerung-trifft-Kommunalverwaltungen-in-Rheinland-Pfalz-11469044.html", publisher: "heise online (ties the trigger to the Citrix NetScaler zero-days; inference)", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml -> 'IT-Störung trifft Kommunalverwaltungen in Rheinland-Pfalz' (2026-09-29T06:40Z), URL https://www.heise.de/news/IT-Stoerung-trifft-Kommunalverwaltungen-in-Rheinland-Pfalz-11469044.html -> WebSearch (\"Rheinland-Pfalz Kommunalverwaltungen IT-Störung Verwaltungsnetz Sicherheitslücke Betriebsrechenzentren\") -> primary: ZIDKOR press release via https://www.ak-kurier.de/akkurier/www/artikel/176375-kommunale-rechenzentren-schalten-fachverfahren-vorsorglich-ab; dpa/Rhein-Zeitung as second source. heise's linked Rhein-Lahn-Kreis notice returned only an empty page body (not cited)."
+    summary: |
+      Facts (ZIDKOR press release, 2026-09-28): the two operating data centres of the Rhineland-Palatinate municipal IT
+      association ZIDKOR (KDZ Mainz and KGRZ Koblenz) shut down certain IT systems as a precaution on Sunday afternoon,
+      2026-09-27, after a security vulnerability became known over the weekend and was then confirmed; they were
+      installing the vendor's patches. All 194 full-time administered municipalities, cities and counties were affected
+      via the centrally operated specialist applications: resident registration, passport and ID-card offices, vehicle
+      registration, civil-registry offices, weapons registration and school administration; services relying on them
+      could not be delivered or only in part, and there were no central instructions, each administration ran its own
+      continuity process. The operators and the three municipal associations state it was not a successful cyberattack
+      and that personal data were not at risk. Dpa (2026-09-29): Mainz and Kaiserslautern were fully available again on
+      the morning of 2026-09-29; Mainz describes the trigger as a security notice rated highly critical for an IT product
+      used in the municipal data centres; the data centres expected normal operation by Tuesday.
+      Inference (heise, not the operators): the product was probably Citrix NetScaler, because updates for the two
+      exploited NetScaler zero-days (CVE-2026-88771, CVE-2026-88772) had been released the same weekend. Neither the
+      ZIDKOR release nor dpa names a vendor or CVE; the tie is heise's and heise added it in an edit.
+      Why it matters here: a shared municipal operator concentrating the citizen-facing specialist applications of a
+      whole state made "take it offline, patch, verify, reopen" the response to a critical edge-device zero-day, at the
+      cost of roughly two days of degraded services statewide. That is the operational shape Swiss cantonal IT offices
+      and communal service providers face with a shared NetScaler/Gateway front end; no Swiss public-sector NetScaler
+      outage or compromise was found in this window (WebSearch, NCSC-CH Security Hub and incidents page).
+    region_nexus: "germany (Rhineland-Palatinate), neighbouring the DACH constituency; transferable to Swiss cantonal/communal shared-service operators"
+    primary_sector_nexus: "direct-analogue (municipal shared IT operator serving registry, ID, vehicle-registration and civil-registry services)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: []
+    entity_keys: ["product:citrix-netscaler"]
+    new_entities:
+      - { key: "incident:zidkor-rlp-municipal-precautionary-shutdown-2026-09", type: incident, name: "Rhineland-Palatinate municipal data centres precautionary shutdown, 27-29 September 2026", aliases: [], summary: "ZIDKOR data centres (KDZ Mainz, KGRZ Koblenz) took central specialist applications of all 194 municipal administrations offline on 2026-09-27 after a critical vulnerability disclosure (heise ties it to the NetScaler zero-days); no successful attack reported (ZIDKOR, dpa, heise, 2026-09-28/29)." }
+    relation_suggestions:
+      - { subject: "incident:zidkor-rlp-municipal-precautionary-shutdown-2026-09", object: "product:citrix-netscaler", basis: "heise online assesses the trigger was probably the NetScaler updates released the same weekend; the operators do not name the product (suggest related-to, not exploits)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2, note: "operator statement + dpa agree on the facts; vendor tie is a single-outlet inference" }
+    novelty: "update-of:2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev"
+    evidence:
+      - quote: "haben am Sonntagnachmittag, 27. September 2026, bestimmte IT-Systeme vorsorglich heruntergefahren."
+        attribution: "ZIDKOR (press release, 2026-09-28)"
+        source_url: "https://www.ak-kurier.de/akkurier/www/artikel/176375-kommunale-rechenzentren-schalten-fachverfahren-vorsorglich-ab"
+      - quote: "Ein erfolgreicher Cyberangriff liegt nach Angaben der kommunalen Rechenzentren nicht vor"
+        attribution: "ZIDKOR (press release, 2026-09-28)"
+        source_url: "https://www.ak-kurier.de/akkurier/www/artikel/176375-kommunale-rechenzentren-schalten-fachverfahren-vorsorglich-ab"
+      - quote: "Es handelt sich nicht um einen erfolgreichen Cyberangriff, sondern um eine Vorsichtsmaßnahme, um die Daten zu schützen, bis die Lücke geschlossen ist"
+        attribution: "Landkreistag, Gemeinde- und Städtebund, Städtetag Rheinland-Pfalz (via dpa)"
+        source_url: "https://www.rhein-zeitung.de/rheinland-pfalz/it-sicherheitsluecke-erste-staedte-melden-ende-der-stoerung_arid-4158892.html"
+      - quote: "Wahrscheinlich haben die IT-Teams die Citrix-Netscaler-Software auf aktuellen Stand gebracht."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/IT-Stoerung-trifft-Kommunalverwaltungen-in-Rheinland-Pfalz-11469044.html"
+    extended_notes: |
+      Composer options: (a) fold into S1's Citrix update (its 2026-09-29 delta list has no operational-impact item), or
+      (b) ship as a distinct short incident-style entry with references[] to the Citrix entry (no CVE is named in the
+      operators' own sources, so the CVE-overlap gate should not trigger; if the vendor tie is kept, keep the
+      "heise assesses" wording). Behavioural takeaway, not a detection: shared operators need a pre-agreed
+      shutdown-and-verify runbook and a dependency map from citizen services to the edge devices that front them; the
+      ZIDKOR statement shows there was no central instruction and each municipality improvised its continuity plan.
+      Not an action item. Suggested priority: notable, only as an operational-impact delta on a critical entry.
+
+  - title: "UPDATE — Ticino becomes the seventh canton in the vehicle-owner lookup scraping campaign; NCSC-CH calls it 'mass scraping'; Ticino will switch to paid per-query eAutoindex lookups on 2026-11-01 as an anti-scraping control"
+    sources:
+      - { url: "https://www.tio.ch/ticino/attualita/1953115/dati-cantone-elenco-targhe-cambia", publisher: "Ticinonline (announcement by the cantonal Sezione della circolazione)", date: "2026-09-28", role: "primary" }
+      - { url: "https://www.cdt.ch/news/sottratti-nomi-e-indirizzi-dalle-targhe-lattacco-raggiunge-anche-il-ticino-438324", publisher: "Corriere del Ticino (quotes NCSC-CH / UFCS)", date: "2026-09-03", role: "corroborating" }
+      - { url: "https://www.rsi.ch/info/ticino-grigioni-e-insubria/Fuga-di-dati-sui-veicoli-colpito-anche-il-Ticino--4056336.html", publisher: "RSI (Ticino disclosure; page metadata 2026-08-28, audio items dated 2026-09-03)", date: "2026-09-03", role: "corroborating" }
+      - { url: "https://www.rsi.ch/info/ticino-grigioni-e-insubria/Targhe-la-ricerca-di-dati-sar%C3%A0-pi%C3%B9-sicura-e-a-pagamento--4117186.html", publisher: "RSI (paid eAutoindex from 2026-11-01)", date: "2026-09-28", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"attacco informatico Ticino comune OR cantone OR polizia settembre 2026 ransomware\") -> pivot: CdT, URL https://www.cdt.ch/news/sottratti-nomi-e-indirizzi-dalle-targhe-lattacco-raggiunge-anche-il-ticino-438324 -> pivot: RSI, URL https://www.rsi.ch/info/ticino-grigioni-e-insubria/Targhe-la-ricerca-di-dati-sar%C3%A0-pi%C3%B9-sicura-e-a-pagamento--4117186.html -> primary: cantonal announcement relayed by Ticinonline, URL https://www.tio.ch/ticino/attualita/1953115/dati-cantone-elenco-targhe-cambia; store match found by Grep of entries/ (entries/2026-08-29/swiss-cantons-eautoindex-vehicle-registry-data-harvesting.md, no changelog record, Ticino absent from its body)"
+    summary: |
+      Delta versus the existing entry (2026-08-29, five eAutoIndex cantons plus Valais, no changelog, Ticino absent):
+      1) Ticino is a further victim. Per the cantonal Sezione della circolazione (RSI, CdT, ~2026-09-03) the same kind of
+      automated bulk collection reached the "Elenco targhe Cantone Ticino" plate-lookup page: plate number, name and
+      address of vehicle holders, with the mechanisms limiting the number of queries deliberately bypassed; holders who
+      had asked for blocking were not affected; there was no intrusion into cantonal IT systems; the Department of
+      Institutions filed a criminal complaint against unknown persons with the public prosecutor, disabled the page as a
+      precaution, and (like the other cantons) does not intend to give in to ransom demands.
+      2) NCSC-CH characterisation (Corriere del Ticino, quoting the federal cybersecurity office): "mass scraping",
+      i.e. automated large-scale collection; "attack" refers only to the author having bypassed the per-user query
+      limits; the office says the data could feed financially motivated social-engineering campaigns. CdT's standfirst
+      adds that the office confirms identical ransom demands, suggesting linked episodes (CdT's summary; not seen in the
+      quoted body).
+      3) Countermeasure (announced 2026-09-28): from 2026-11-01 Ticino moves to the inter-cantonal eAutoindex platform
+      and single lookups become paid; the department says payment per lookup also acts as a technical and financial
+      barrier against scraping, making automated extraction of large volumes harder. Data of holders who blocked
+      publication stays unavailable, also through the new system. This is a deliberate economic control on top of
+      rate limits, which the original incident showed to be bypassable.
+      Recency note: the freshest source is dated 2026-09-28 (outside the 26 h window, inside the previous run's window
+      where it was not picked up); the Ticino victim disclosure dates from ~2026-09-03. Returned because it is a
+      Swiss cantonal-government campaign delta on a HIGH-priority entry with no changelog; drop if the recency bar is
+      applied strictly.
+    region_nexus: "switzerland (canton Ticino; campaign spans AG, LU, SH, VD, ZG, VS, TI)"
+    primary_sector_nexus: "direct (cantonal road-traffic offices' public lookup services)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1119]
+    affected_products: ["eAutoIndex (Viacar AG)"]
+    entity_keys: ["incident:swiss-cantons-eautoindex-databulk-harvest-2026-08", "product:eautoindex-viacar-ag"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    classification_hint: { reliability: B, credibility: 1, note: "cantonal statement relayed by three independent Ticino outlets, NCSC-CH characterisation quoted by CdT" }
+    novelty: "update-of:2026-08-29/swiss-cantons-eautoindex-vehicle-registry-data-harvesting"
+    borderline: true
+    borderline_reason: "freshest source 2026-09-28 (14 h outside the 26 h window; missed by the previous run); delta is one more canton plus a countermeasure, on an entry that has no changelog yet"
+    evidence:
+      - quote: "Dal primo di novembre il Cantone passerà alla piattaforma eAutoindex e le singole ricerche diventeranno a pagamento."
+        attribution: "Ticinonline (cantonal Sezione della circolazione)"
+        source_url: "https://www.tio.ch/ticino/attualita/1953115/dati-cantone-elenco-targhe-cambia"
+      - quote: "Il pagamento delle singole ricerche, spiega il Dipartimento, fungerà anche da barriera tecnica e finanziaria contro lo scraping"
+        attribution: "Ticinonline (Dipartimento delle istituzioni)"
+        source_url: "https://www.tio.ch/ticino/attualita/1953115/dati-cantone-elenco-targhe-cambia"
+      - quote: "I meccanismi di protezione dei portali, che limitavano il numero di interrogazioni effettuabili, sono stati intenzionalmente aggirati."
+        attribution: "Corriere del Ticino"
+        source_url: "https://www.cdt.ch/news/sottratti-nomi-e-indirizzi-dalle-targhe-lattacco-raggiunge-anche-il-ticino-438324"
+      - quote: "definisce quanto accaduto un caso di «mass scraping»"
+        attribution: "Corriere del Ticino, quoting the Ufficio federale della cibersicurezza (UFCS/NCSC-CH)"
+        source_url: "https://www.cdt.ch/news/sottratti-nomi-e-indirizzi-dalle-targhe-lattacco-raggiunge-anche-il-ticino-438324"
+      - quote: "Come gli altri Cantoni coinvolti, anche il Ticino non intende cedere a richieste di riscatto."
+        attribution: "RSI"
+        source_url: "https://www.rsi.ch/info/ticino-grigioni-e-insubria/Fuga-di-dati-sui-veicoli-colpito-anche-il-Ticino--4056336.html"
+    extended_notes: |
+      Defender takeaway tied to the mechanism (public lookup form, per-user rate limit bypassed by automation): a
+      per-identity limit alone is not an anti-scraping control (the existing entry already says so); per-query cost is
+      the lever Ticino chose. Telemetry class for cantonal portal owners: web/app access logs for high-volume lookups
+      distributed across many client identities. No action items.
+
+  - title: "FTAPI (Munich secure file-exchange supplier used by public authorities): The Gentlemen ransomware on one internal server, victim-confirmed to heise; vendor says platform and customer systems were not affected"
+    sources:
+      - { url: "https://www.heise.de/news/Cyberangriff-auf-Datenaustauschdienst-FTAPI-11469629.html", publisher: "heise online (with FTAPI statement given to heise)", date: "2026-09-29", role: "primary" }
+      - { url: "https://www.cert.at/de/tagesberichte/2026/9/tagesberichte-29092026", publisher: "CERT.at daily digest (relays heise; not independent)", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml -> 'Cyberangriff auf Datenaustauschdienst FTAPI' (2026-09-29T11:37Z), URL https://www.heise.de/news/Cyberangriff-auf-Datenaustauschdienst-FTAPI-11469629.html -> cross-check: CERT.at daily digest 2026-09-29 (relays heise) -> primary: FTAPI statement quoted in heise (no FTAPI-own page located)"
+    summary: |
+      Facts (FTAPI, via heise): the company detected an IT security incident on 2026-09-14; unauthorised parties gained
+      access to a single, locally operated internal server and placed ransomware on it; affected systems were isolated,
+      an external forensics team was engaged, customers and partners were informed, data-protection reporting duties
+      were met and a criminal complaint was filed. FTAPI says the FTAPI platform, customer systems and data exchanged by
+      customers were not affected, the customer-system investigation is complete with no sign of compromise, operation
+      was never restricted, and further forensics continue. Claim: the extortion group The Gentlemen listed FTAPI on its
+      leak site with no specifics beyond public company facts and a running countdown of about five days at heise's
+      reporting time; what the countdown activates is unclear. Unknown (heise): entry vector (software flaw or stolen
+      credentials). FTAPI states more than 2,000 corporate customers and over one million users from administration,
+      health and industry (per heise reading FTAPI's website). Swiss customers are not established by any source read.
+    region_nexus: "germany-based supplier; DACH public-authority customer base; Swiss exposure unverified"
+    primary_sector_nexus: "indirect (supplier of secure data exchange to public authorities)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1486]
+    affected_products: ["FTAPI"]
+    entity_keys: ["actor:thegentlemen"]
+    new_entities: []
+    relation_suggestions: []
+    verification: "SINGLE-SOURCE-OTHER (victim statement quoted by one outlet; leak-site claim unconfirmed)"
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2, note: "victim confirmation via heise; scope claims (customer data untouched) are the victim's own assertion" }
+    novelty: new
+    borderline: true
+    borderline_reason: "supplier to DACH authorities, actor already tracked; no Swiss customer link established; S4 (incidents) holds the same lead and owns the supplier lens"
+    evidence:
+      - quote: "Demnach hat das Unternehmen am 14. September einen IT-Sicherheitsvorfall festgestellt."
+        attribution: "heise online (relaying FTAPI)"
+        source_url: "https://www.heise.de/news/Cyberangriff-auf-Datenaustauschdienst-FTAPI-11469629.html"
+      - quote: "Das Unternehmen betont, dass die FTAPI-Plattform, die Kundensysteme und Daten, die Kunden darüber austauschen, nicht betroffen gewesen seien."
+        attribution: "heise online (relaying FTAPI)"
+        source_url: "https://www.heise.de/news/Cyberangriff-auf-Datenaustauschdienst-FTAPI-11469629.html"
+      - quote: "Zur Kundschaft zählen etwa Behörden und Unternehmen."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Cyberangriff-auf-Datenaustauschdienst-FTAPI-11469629.html"
+    extended_notes: |
+      Transferable point: an extortion listing can appear for an internal-server compromise at a data-exchange vendor
+      while the vendor asserts the customer platform is untouched; customers should ask their supplier for the
+      forensic scope statement rather than infer it from the listing. No action items.
+
+  - title: "ANNUAL REPORT — ENISA Threat Landscape 2026: public administration remains the most targeted EU sector; ransomware most impactful; vulnerabilities behind 60% of attributable intrusion vectors"
+    sources:
+      - { url: "https://www.enisa.europa.eu/news/exploring-the-evolution-of-the-cyber-threat-landscape-how-dependencies-weaken-our-digital-resilience", publisher: "ENISA", date: "2026-09-22", role: "primary" }
+      - { url: "https://www.enisa.europa.eu/sites/default/files/2026-09/ENISA%20Threat%20Landscape%202026_Final.pdf", publisher: "ENISA (full report PDF; text extraction fragmentary, not used for quotes)", date: "2026-09-22", role: "primary" }
+    discovery_trace: "first seen at: enisa, URL https://www.enisa.europa.eu/news (extract; featured-news block lists the report) -> primary: ENISA news item https://www.enisa.europa.eu/news/exploring-the-evolution-of-the-cyber-threat-landscape-how-dependencies-weaken-our-digital-resilience and the report PDF; WebSearch (\"ENISA Threat Landscape 2026 report public administration most targeted sector\") located the PDF URL; no store entry found (Grep entries/ for ENISA threat landscape)"
+    summary: |
+      ENISA's 2026 edition analyses incidents observed 2025-01-01 to 2025-12-31 from open sources plus anonymised
+      Member-State information. Headline findings per ENISA: ransomware remains the most short-term impactful incident
+      type; hacktivist-led DDoS campaigns against essential entities continue to follow geopolitical developments;
+      public administration continues to be the most targeted sector; social engineering, notably phishing kits and the
+      ClickFix technique, stays the common enabler; among unauthorised-access incidents where an intrusion vector could
+      be identified (5%), 60% leveraged a vulnerability (N-day and 0-day); threat groups reuse tools and techniques,
+      collaborate, and target dependencies (supply-chain and third-party attacks); AI models are expected to be used
+      increasingly in malicious operations. Relevance to the constituency: an authoritative EU-wide corroboration that
+      the public sector is the top target and that exploited vulnerabilities dominate identifiable entry; Switzerland is
+      not an EU Member State and is only named in a participant listing in the PDF.
+    region_nexus: "eu-wide; Switzerland outside scope but same threat distribution assumed by NCSC-CH's own reporting"
+    primary_sector_nexus: "direct (public administration named most targeted sector)"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    classification_hint: { reliability: A, credibility: 2, note: "ENISA is the authority for its own report; the 32% public-administration share cited by secondary coverage was NOT verified against the PDF and is not carried" }
+    novelty: new
+    borderline: true
+    borderline_reason: "published 2026-09-22, 8 days outside the window (ENISA lookback 26 h); no store entry; returned only as a late catch of an annual flagship for the audit/composer to decide"
+    evidence:
+      - quote: "Public administration continues to be is the most targeted sector."
+        attribution: "ENISA"
+        source_url: "https://www.enisa.europa.eu/news/exploring-the-evolution-of-the-cyber-threat-landscape-how-dependencies-weaken-our-digital-resilience"
+      - quote: "Ransomware remains the most short-term impactful type of incident."
+        attribution: "ENISA"
+        source_url: "https://www.enisa.europa.eu/news/exploring-the-evolution-of-the-cyber-threat-landscape-how-dependencies-weaken-our-digital-resilience"
+      - quote: "Across incidents of unauthorised access for which ENISA was able to identify an intrusion vector (5%), 60% were seen leveraging a vulnerability."
+        attribution: "ENISA"
+        source_url: "https://www.enisa.europa.eu/news/exploring-the-evolution-of-the-cyber-threat-landscape-how-dependencies-weaken-our-digital-resilience"
+    extended_notes: |
+      The ENISA page itself contains a typo ("continues to be is") that is preserved in the quote.
+
+backlog_recheck:
+  - row: "SRG SSR / SRF cyberattack (SRF statement 2026-09-28)"
+    status: "holds — no newer primary statement found since SRG's own release of 2026-09-28; no actor claim located"
+    detail: |
+      Primary: SRG SSR release 'SRG von Cybervorfall betroffen' (2026-09-28): unauthorised persons accessed data of SRF
+      staff; affected accesses deactivated ("Zugänge"), additional security measures; "Nach aktuellem Kenntnisstand sind
+      keine weiteren unberechtigten Zugriffe erfolgt, der Vorfall ist unter Kontrolle"; data outflow of contact and
+      organisational data from 2020 for around 340 current and former SRF employees, mostly today's "Information"
+      offering unit; names, functions, business and partly private contact details; no indication of passwords,
+      financial or bank data, journalistic sources, research data or communication content; affected persons informed
+      directly; authorities informed, criminal complaint filed; internal and external experts investigating causes and
+      scope; "keine Hinweise ... veröffentlicht oder missbräuchlich verwendet". Not disclosed: access vector, root cause,
+      actor. Scope has not widened in any source read up to 2026-09-30 (Swiss press 2026-09-28/29, ictjournal 2026-09-29
+      repeat the release). No leak-site listing, ransom demand or NCSC-CH note was found (NCSC-CH incidents page and
+      Security Hub checked 2026-09-30). Inference (mine, no owner): the 2020 vintage of the data points to a legacy
+      dataset or archive rather than current HR systems; the release does not say so.
+    urls:
+      - "https://www.srgssr.ch/de/news-medien/news/srg-von-cybervorfall-betroffen"
+      - "https://www.srf.ch/news/schweiz/zugriff-auf-daten-srg-von-cybervorfall-betroffen"
+      - "https://www.itmagazine.ch/artikel/88102/Datenklau_bei_der_SRG.html"
+      - "https://www.netzwoche.ch/news/2026-09-28/cyberkriminelle-stehlen-daten-von-srf-mitarbeitenden"
+      - "https://www.ictjournal.ch/news/2026-09-29/des-cybercriminels-derobent-des-donnees-de-collaborateurs-de-la-srf"
+    quotes:
+      - { quote: "Betroffen sind nach aktuellem Stand Kontakt- und Organisationsdaten aus dem Jahr 2020 von rund 340 aktuellen und ehemaligen SRF-Mitarbeitenden.", attribution: "SRG SSR", source_url: "https://www.srgssr.ch/de/news-medien/news/srg-von-cybervorfall-betroffen" }
+      - { quote: "Der SRG liegen derzeit keine Hinweise darauf vor, dass die Daten veröffentlicht oder missbräuchlich verwendet wurden.", attribution: "SRG SSR", source_url: "https://www.srgssr.ch/de/news-medien/news/srg-von-cybervorfall-betroffen" }
+      - { quote: "Nach aktuellem Kenntnisstand sind keine weiteren unberechtigten Zugriffe erfolgt, der Vorfall ist unter Kontrolle.", attribution: "SRG SSR", source_url: "https://www.srgssr.ch/de/news-medien/news/srg-von-cybervorfall-betroffen" }
+  - row: "Touring Club Suisse (TCS) Qilin leak-site listing (2026-09-20)"
+    status: "holds — still a bare leak-site claim; no victim confirmation, no NCSC-CH note"
+    detail: |
+      Ransomware.live records the Qilin listing (discovered 2026-09-20 12:13 UTC, est. attack date 2026-09-20). Searches in
+      German and French Swiss press and of TCS/NCSC-CH surfaces (2026-09-30) found no TCS statement, no confirmation of
+      data theft and no BACS mention; only aggregator pages (DeXpose, Galaxy Warden) repeating the listing and Hudson
+      Rock infostealer statistics, which are not incident evidence and were not fetched. Keep as an unconfirmed claim;
+      do not publish beyond the claim-attributed wording unless a TCS/BACS statement appears.
+    urls:
+      - "https://ransomware.live/id/VG91cmluZyBDbHViIFN1aXNzZUBxaWxpbg=="
+
+update_candidates_considered:
+  - covered_entry: "2026-09-26/switzerland-cybersecurity-act-csg-federal-council-mandate"
+    verdict: "no material in-window delta; not returned"
+    note: "BACS Im Fokus item 'Bundesrat will neues Cybersicherheitsgesetz schaffen' (Federal Council 2026-09-25, consultation draft due June 2027) is the same event already covered; no industry or parliamentary follow-up found in window (the Swico reaction found is dated 2025-12-10)."
+  - covered_entry: "2026-09-25/switzerland-sovereign-digital-infrastructure-motion-24-3209"
+    verdict: "no material in-window delta; not returned"
+    note: "The DVS study 'Alternativen zu M365 und Konsequenzen bei einem Wechsel' (fetched from the DVS homepage; item dated 2026-09-18; a complete switch 'possible but complex') is a related sovereignty document, but its primary date is 12 days old; Inside IT's 2026-09-28 write-up is the only in-window trace and was unreadable (429). Could support a later update-of if the audit wants it: https://www.digitale-verwaltung-schweiz.ch/ (news item dated 18.09.2026)."
+  - covered_entry: "2026-09-23/austria-nisg-2026-bcs-transposition"
+    verdict: "no in-window delta; not returned"
+    note: "Procedural details absent from the entry exist at the Austrian USP (page dated 2026-09-08, fetched): from 2026-10-01 the USP application 'NIS2 Services' handles registration and reporting of significant incidents; initial registration is due by 2027-01-01; reporting is mandatory from entry into force; access needs USP plus ID Austria. Source is outside the window, so returned only as a note: https://www.usp.gv.at/aktuelles/newsliste/NIS-2.html"
+  - covered_entry: "2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning"
+    verdict: "already current; not returned"
+    note: "NCSC-CH advisory 12985 last edited 2026-09-28 (vendor lifted the shutdown recommendation on 2026-09-27); the entry's 2026-09-29T04:50Z update already carries it."
+  - covered_entry: "2026-05-28/cve-2026-48842-roundcube-webmail-pre-authentication-sql-inje"
+    verdict: "already current; not returned"
+    note: "NCSC-CH advisory 12596 last edited 2026-09-24 (exploited status); entry updated 2026-09-25T04:29Z. CERT-FR bulletin CERTFR-2026-ACT-041 (2026-09-28) also lists it as exploited."
+  - covered_entry: "2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev"
+    verdict: "S1 carries the technical delta (CERT-EU write-up, watchTowr CVE-2026-88772, GTIG); S2 adds only the Rhineland-Palatinate operational-impact delta (item 2)"
+    note: "NCSC-CH advisory 13005 edited 2026-09-29T14:41Z (adds CERT-EU write-up, watchTowr write-up and PoC for CVE-2026-88772, Truesec-observed C2 indicators, which must not be carried as IOCs). No Swiss public-sector NetScaler compromise or outage was found."
+  - covered_entry: "2026-09-24/shinyhunters-fbi-peoplesoft-breach-claim"
+    verdict: "already current through 2026-09-29T04:45Z; not returned"
+    note: "Dutch police and FBI confirmation of the arrest are already in the entry; S4 holds the newer 2026-09-29 Politie detail (murder-incitement suspicion, court detention), which is not defender-relevant."
+  - covered_entry: "2026-09-01/jfrog-artifactory-cve-2026-82329-default-config-admin-bypass"
+    verdict: "already current; not returned"
+    note: "ACN's 2026-09-29 alert AL05/260929/CSIRT-ITA repeats exploitation the entry has recorded since 2026-09-02."
+
+dropped_or_unverified_leads:
+  - lead: "Sesam (Zurich) publishes Sesamvote election/voting software source code and opens a public bug bounty; focused testing phase until 2026-10-18 (Inside IT, 2026-09-29)"
+    reason: "single source (Inside IT, reliability C) whose article page returns HTTP 429 on every transport; content known only from WebSearch-relayed text, so no fetched URL supports it. Nexus is strong (cantonal election-result software; Sesam/Sesamvote is used by cantons such as Basel-Stadt and Basel-Landschaft per search results) and the defender consequence is real (authorised testing window; disclosures from open source code likely). A follow-up should try another outlet or Sesam's own announcement: https://www.inside-it.ch/sesam-oeffnet-wahlsoftware-fuer-security-forschende-20260929"
+  - lead: "BACS/BAFU pilot on cyber-resilience supervision of hazardous-substance (Störfall) plants using the CyRA questionnaire (BACS 2026-09-28, Netzwoche 2026-09-29)"
+    reason: "awareness-only (structured conversations, no obligation, no defender action); dropped under PD-11. https://www.bacs.admin.ch/de/26-stoerfallbetriebe-de"
+  - lead: "Partial revision of the Telecommunications Act consultation feedback (Art. 48b multi-vendor duty, Art. 48c supplier exclusion, domain-blocking extension), Netzwoche 2026-09-28"
+    reason: "consultation reactions of telecom operators, not an obligation in force, primary date outside the window; no public-sector defender consequence. https://www.netzwoche.ch/news/2026-09-28/telko-branche-haelt-nicht-viel-von-multi-vendor-pflicht-fuer-mehr-cybersicherheit"
+  - lead: "German BDBOS plans to exclude high-risk vendors from the 5G-based successor of the Tetra emergency-services radio (heise 2026-09-28)"
+    reason: "emergency-services policy statement in a neighbouring state, no Swiss obligation or defender action; dropped under PD-11."
+  - lead: "BACS Woche 39 weekly review (malware infection vectors) and OSZE cyber de-escalation conference in Zug (2026-09-29)"
+    reason: "general awareness / diplomacy, no operational content."
+  - lead: "Safepay listing of a wastewater-treatment operator in canton Bern (relayed by Inside IT via WebSearch)"
+    reason: "leak-site claim with no victim confirmation read; S4 tracks it (ARA Lyss BE, claim 2026-09-15)."
+  - lead: "CERT-FR / BSI / NCSC-NL / CERT-EU / CERT-PL / ACN vulnerability bulletins in window (Apple CoreGraphics, IBM Guardium CVE-2026-85542 exploited per ACN 2026-09-28, WatchGuard AP, MikroTik)"
+    reason: "vulnerability ground, S1's domain; IBM Guardium CVE-2026-85542 (ACN alert AL04/260928/CSIRT-ITA, authenticated RCE, exploitation reported) has no store entry and no KEV row in the run's KEV window file; passed to S1 as a cross-domain lead."
+
+candidate_sources:
+  - id: rsi-info-ticino
+    publisher: "RSI Info (Ticino, Grigioni, Insubria), Radiotelevisione svizzera di lingua italiana"
+    url: "https://www.rsi.ch/info/ticino-grigioni-e-insubria"
+    rss_url: null
+    category: ch-eu
+    language: it
+    why: "This run's Swiss items on Ticino (Manno commune, Ticino vehicle-lookup scraping, eAutoindex fee model) surfaced only through Italian-language regional press (RSI, Corriere del Ticino, Ticinonline) that carries cantonal and communal statements first-hand; the S2 slice has German-language Swiss press only. Article pages extract cleanly via trafilatura-direct. Overflow for a later run: ictjournal.ch (Romandie, French) which also carried the SRF incident on 2026-09-29. tio.ch's /rss feed is not well-formed XML (direct parse error), so no feed is proposed."
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "RSS listing readable (one direct handshake timeout on the first attempt, fine on the single retry) but every article page returns HTTP 429 (Vercel Security Checkpoint) on extract, WebFetch and archive fallback; jina pool exhausted (402). Consequence this run: the Manno article and the Sesamvote article are known only from RSS teasers/WebSearch text. Same failure recorded in the record's 2026-09-22 note."
+  - source_id: ncsc-ch-incidents
+    reason: "readable via extract, but the page's newest entry is the 2026-08-18 SwissNovaChat update; nothing in window (quiet, not a fetch failure)."
+  - source_id: cisa-directives
+    reason: "WebFetch of the listing works (bridge not needed); no new directive; list unchanged from the record's 2026-09-29 note."
+  - source_id: ec-digital-strategy-newsroom
+    reason: "record pins fetch_method jina, but `extract https://digital-strategy.ec.europa.eu/en/news` returned the listing via trafilatura-direct with no reader; no cybersecurity-policy item in window."
+  - source_id: ncc-research
+    reason: "url bridge returns the listing but with no dated hrefs surfaced in a href sweep; no in-window item identified."
+  - source_id: prodaft
+    reason: "url bridge /resources returns 272 KB with four undated /blog/ slugs, none identifiable as in-window."
+  - source_id: govcert-at
+    reason: "static institutional site (per the record's 2026-08-02 note); no advisory or news stream."
+
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 25 + feed https://feeds.ncsc.nl/nieuws.rss", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest advisory NCSC-2026-0394 (Citrix, 2026-09-27T16:55Z) already covered; news feed newest 2026-09-27" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:cert-fr avis-recent 25 + actu-recent 15, extract CERTFR-2026-ACT-041", horizon_hours: 26, in_horizon_items: 3, returned: 0, note: "vulnerability-only (Apple, MongoDB, Citrix); ACT-041 dated 2026-09-28; flat 00:00 timestamps as recorded" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss (raw XML, parsed by regex)", horizon_hours: 26, in_horizon_items: 45, returned: 0, note: "WID-SEC vulnerability volume only; no advisory specific to home region or sector" }
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed warnings/current/daily/blog", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "newest warning 2026-09-27 (Citrix, covered); only the 2026-09-29 daily digest is in horizon and it relays heise items (FTAPI, ShinyHunters)" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-014 (Citrix, 2026-09-27) covered; CERT-EU blog post on CVE-2026-88771 handled by S1" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml", horizon_hours: 26, in_horizon_items: 4, returned: 0, note: "CVE posts for niche products (Quick.Cart, MyPresta, Ghostscript, Das U-Boot); toll-fraud and MikroTrick analyses dated 2026-09-22/23" }
+  - { id: cisa-directives, tier: essential, attempted: true, transport: "WebFetch (agent-side)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "listing unchanged: ED 25-03, ED 26-03, BOD 26-04, BOD 26-02" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract https://www.enisa.europa.eu/news (works, featured block) + drill", horizon_hours: 26, in_horizon_items: 0, returned: 1, note: "ETL 2026 dated 2026-09-22 returned as late-catch borderline; CRA Single Reporting Platform 2026-09-11 and NIS360 outside horizon" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed https://www.heise.de/security/feed.xml + extract per item", horizon_hours: 26, in_horizon_items: 12, returned: 2, note: "Rhineland-Palatinate municipal shutdown; FTAPI. Others: ShinyHunters (covered), WatchGuard AP and Apple (S1), Digitalfunk (dropped)" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed https://www.inside-it.ch/rss.xml (articles 429)", horizon_hours: 26, in_horizon_items: 5, returned: 1, note: "Manno (returned), SRG/SRF (backlog), Sesamvote and M365 study (dropped/unverified), OSZE conference (dropped)" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "extract https://www.bacs.admin.ch/de/im-fokus + drill (trafilatura-direct, no reader)", horizon_hours: 26, in_horizon_items: 3, returned: 0, note: "Woche 39 (2026-09-29), Störfallbetriebe pilot (2026-09-28), OSZE Zug (2026-09-29): awareness only; CSG item (2026-09-25) already covered" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "extract https://www.bacs.admin.ch/de/aktuelle-vorfaelle", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest entry 2026-08-18" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 40", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "post 13005 Citrix (edited 2026-09-29T14:41Z; S1 carries the update) and post 13007 WatchGuard AP (created 2026-09-29T07:16Z; S1 carries it); 12985 Kiteworks and 12596 Roundcube last edited before the horizon and already reflected in the store" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest item 2026-09-28 Citrix exploitation (covered)" }
+  - { id: prodaft, tier: standard, attempted: true, transport: "bridge:url https://www.prodaft.com/resources", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "no dated listing; four undated slugs" }
+  - { id: safeonweb-be, tier: standard, attempted: true, transport: "extract https://safeonweb.be/en", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "consumer-fraud warnings only (page dated 2026-09-23)" }
+  - { id: compass-security, tier: standard, attempted: true, transport: "feed https://blog.compass-security.com/feed/", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-03 (CRA reporting)" }
+  - { id: csirt-acn-it, tier: standard, attempted: true, transport: "feed 30 items + extract 2 alerts", horizon_hours: 74, in_horizon_items: 14, returned: 0, note: "vulnerability alerts; JFrog exploitation alert repeats covered ground; IBM Guardium CVE-2026-85542 passed to S1" }
+  - { id: ec-digital-strategy-newsroom, tier: standard, attempted: true, transport: "extract (trafilatura-direct)", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "no cybersecurity-policy item in window" }
+  - { id: fbi-cyber-alerts, tier: standard, attempted: true, transport: "bridge:url https://www.ic3.gov/PSA", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest PSA260917" }
+  - { id: govcert-at, tier: standard, attempted: true, transport: "extract https://www.govcert.gv.at/en/", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "static site" }
+  - { id: infoguard-ch, tier: standard, attempted: true, transport: "feed https://www.infoguard.ch/en/blog/rss.xml (discovered on the blog page)", horizon_hours: 74, in_horizon_items: 1, returned: 0, note: "OT asset-discovery best practices (2026-09-28), generic; Q3/26 threat report dated 2026-09-21 outside horizon" }
+  - { id: lab52, tier: standard, attempted: true, transport: "feed https://lab52.io/blog/feed/", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest post 2026-07-03 (89-day gap, matching the record's staleness note)" }
+  - { id: ncc-research, tier: standard, attempted: true, transport: "bridge:url https://www.nccgroup.com/research-blog/", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "no dated hrefs in listing" }
+
+sources_changed_suggestions:
+  - id: ec-digital-strategy-newsroom
+    change: "fetch_method jina -> bridge/webfetch: `python3 tools/fetch_source.py extract https://digital-strategy.ec.europa.eu/en/news` returns the listing via trafilatura-direct (2026-09-30), no reader credit needed"
+  - id: infoguard-ch
+    change: "set rss_url to https://www.infoguard.ch/en/blog/rss.xml (parses over direct transport, dated weekly Monday posts back to 2026-07-31); fetch_method webfetch -> rss"
+  - id: bsi-de
+    change: "note: `bsi-rss` prints raw RSS XML (not JSON); a regex over <item> works; 250 items returned"
+  - id: inside-it-ch
+    change: "note: article pages 429 on all transports on 2026-09-30; RSS teasers (1-2 sentences) are usable as leads only; consider marking the record reliability C with a 'lead only, corroborate' line"
+  - id: enisa
+    change: "note: `extract https://www.enisa.europa.eu/news` now returns the featured-news block with article URLs (earlier note said only navigation HTML); dates come from the drilled article pages"
+  - id: cert-at
+    change: "no change; feeds healthy on direct transport (warnings/current/daily/blog)"

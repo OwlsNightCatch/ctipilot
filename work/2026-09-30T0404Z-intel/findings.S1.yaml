@@ -1,0 +1,500 @@
+# work/2026-09-30T0404Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-09-30T0404Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-09-30T04:07:12Z
+ended_at: 2026-09-30T04:27:07Z
+duration_seconds: 1195
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 30
+  bridge_fetches: 95
+window_hours: 26
+developing_window_hours: 72
+items:
+  # ---------------------------------------------------------------------------
+  # 1. NEW: Apple CoreGraphics zero-day (KEV 2026-09-29) - the standing KEV task
+  # ---------------------------------------------------------------------------
+  - title: "Apple CoreGraphics out-of-bounds write CVE-2026-86950 exploited in an 'extremely sophisticated' targeted attack; CISA KEV 2026-09-29 with forensic-triage requirement"
+    sources:
+      - { url: "https://support.apple.com/en-us/149226", publisher: "Apple Security (iOS 26.7.1 / iPadOS 26.7.1)", date: "2026-09-28", role: "primary" }
+      - { url: "https://support.apple.com/en-us/149228", publisher: "Apple Security (macOS Tahoe 26.7.1)", date: "2026-09-28", role: "primary" }
+      - { url: "https://support.apple.com/en-us/149229", publisher: "Apple Security (macOS Sequoia 15.8.1)", date: "2026-09-28", role: "primary" }
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA Known Exploited Vulnerabilities Catalog", date: "2026-09-29", role: "primary" }
+      - { url: "https://www.securityweek.com/apple-patches-meta-reported-zero-day-linked-to-extremely-sophisticated-attack/", publisher: "SecurityWeek", date: "2026-09-29", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/09/apple-patches-coregraphics-flaw.html", publisher: "The Hacker News", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev; catalog 2026.09.29, dateAdded 2026-09-29, CVE-2026-86950) and mechanical diff in work/2026-09-30T0404Z-intel/kev-window.txt -> pivot: apple-security, URL https://support.apple.com/en-us/100100 (release index: iOS/iPadOS 26.7.1, macOS Tahoe 26.7.1, macOS Sequoia 15.8.1 rows with CVE entries; iOS/macOS/watchOS/visionOS 27.0.1 'no published CVE entries') -> primary: Apple advisories, URLs https://support.apple.com/en-us/149226 , https://support.apple.com/en-us/149228 , https://support.apple.com/en-us/149229 -> corroborating: SecurityWeek (WebSearch 'CVE-2026-86950 Apple out-of-bounds write exploited') URL https://www.securityweek.com/apple-patches-meta-reported-zero-day-linked-to-extremely-sophisticated-attack/ ; The Hacker News URL https://thehackernews.com/2026/09/apple-patches-coregraphics-flaw.html ; ENISA EUVD record EUVD-2026-88445 via bridge enisa-euvd (exploited list)"
+    summary: |
+      Facts (Apple advisories, released 2026-09-28): CVE-2026-86950 is an out-of-bounds write (CWE-787) in the
+      CoreGraphics component; "processing a maliciously crafted file may lead to arbitrary code execution". Apple
+      states it "is aware of a report that this issue may have been exploited in an extremely sophisticated attack
+      against specific targeted individuals on versions of iOS before iOS 27". Fixed with improved bounds checking in
+      iOS 26.7.1 / iPadOS 26.7.1 (iPhone 11 and later; iPad Pro 12.9-inch 3rd gen+, Pro 11-inch 1st gen+, Air 3rd gen+,
+      iPad 8th gen+, mini 5th gen+), macOS Tahoe 26.7.1 and macOS Sequoia 15.8.1. Credit: Meta Product Security.
+      CISA added the CVE to KEV on 2026-09-29 (due 2026-10-02, three days; the KEV row carries forensicTriage=Yes,
+      i.e. CISA's BOD 26-04 forensic-triage requirement applies). ENISA EUVD records EUVD-2026-88445, CVSS 3.1 8.8
+      (AV:N/AC:L/PR:N/UI:R), EPSS 0.81, exploited-since 2026-09-29.
+      What the sources do NOT say: delivery vector, number of victims, first exploitation date, whether macOS was
+      actually attacked (Apple's exploitation sentence is phrased about iOS), and whether iOS 18.x / older-branch
+      devices or macOS Sonoma are affected (no fix is listed for those branches; absence of a listing is not a
+      statement of non-exposure). The iOS 27 / macOS Golden Gate 27 releases (2026-09-14) and the 27.0.1 updates list
+      no fix note for this CVE; SecurityWeek reads that as iOS 27 / Golden Gate 27 not being affected (SecurityWeek's
+      assessment, consistent with Apple's "before iOS 27" wording).
+      Claims/inferences (attributed): SecurityWeek infers that because CoreGraphics does 2D graphics and PDF rendering,
+      the file could arrive via web pages, email attachments or messaging apps where automatic previews could allow
+      zero-click exploitation (inference, no delivery evidence published). Meta told SecurityWeek it routinely reports
+      third-party bugs and did not say whether WhatsApp was involved; SecurityWeek notes the 2025 precedent of a
+      WhatsApp flaw chained with an Apple ImageIO zero-day (CVE-2025-55177 + CVE-2025-43300).
+      Defender takeaways: attack class is a file-parsing client-side exploit against a mobile OS used by targeted
+      individuals (mercenary-spyware profile); no IOCs or behavioural detections have been published by Apple, Meta
+      or CISA, so the actionable lever is version compliance. Telemetry: MDM / device-inventory OS-version reports
+      for iPhone/iPad still on the iOS 26 branch below 26.7.1 (iOS 27 is stated as outside the exploited range) and
+      Macs on Tahoe below 26.7.1 / Sequoia below 15.8.1. Devices that cannot leave an older branch (iPhone XS/XR class capped at iOS 18.x)
+      have no fix listed - track separately.
+      Triage lookalike: none applicable (no behavioural signature published); do not infer compromise from version
+      state alone - KEV forensic-triage language is about assessing exposed high-risk users, not about a known
+      indicator.
+    region_nexus: "global; Apple iOS/iPadOS and macOS are the dominant mobile/desktop OS in Swiss federal, cantonal and communal administrations (fleet-wide relevance; targeting profile is high-risk individuals)"
+    primary_sector_nexus: "direct (public-sector endpoint fleet; targeted-individual profile fits officials, diplomats, journalists, security-service staff)"
+    sector: "public-sector"
+    cves: [CVE-2026-86950]
+    techniques: [T1203]
+    affected_products: ["Apple iOS", "Apple iPadOS", "Apple macOS Tahoe", "Apple macOS Sequoia"]
+    entity_keys: ["product:apple-macos"]
+    new_entities:
+      - { key: "product:apple-ios-ipados", type: product, name: "Apple iOS and iPadOS", aliases: ["iOS", "iPadOS"],
+          summary: "Apple's mobile operating systems for iPhone and iPad; CVE-2026-86950 (CoreGraphics) exploited before iOS 27, fixed in 26.7.1 (Apple, 2026-09-28)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_priority: high
+    novelty: new
+    evidence:
+      - quote: "Apple is aware of a report that this issue may have been exploited in an extremely sophisticated attack against specific targeted individuals on versions of iOS before iOS 27."
+        attribution: "Apple"
+        source_url: "https://support.apple.com/en-us/149226"
+      - quote: "An out-of-bounds write issue was addressed with improved bounds checking."
+        attribution: "Apple"
+        source_url: "https://support.apple.com/en-us/149226"
+      - quote: "Apple iOS, macOS, and iPadOS contain an out-of-bounds write vulnerability in CoreGraphics that may lead to arbitrary code execution."
+        attribution: "CISA Known Exploited Vulnerabilities Catalog"
+        source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+      - quote: "the company offered no details on how many individuals were targeted, if any of those attempts were successful, or when the first instance of CVE-2026-86950 exploitation occurred"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/09/apple-patches-coregraphics-flaw.html"
+    extended_notes: |
+      Not a critical stop-and-act item for server-side exposure (no unauthenticated network reachability), but a
+      confirmed exploited zero-day on the constituency's dominant endpoint OS with a KEV due date of 2026-10-02.
+      The exploitation statement is scoped to iOS; the macOS builds are patched but Apple does not claim macOS
+      exploitation. For at-risk individuals Apple's own Lockdown Mode is the standard hardening lever, but that is
+      NOT stated in the fetched sources - composer should not attribute it to them.
+
+  # ---------------------------------------------------------------------------
+  # 2. UPDATE candidate on covered Citrix NetScaler entry (material new development)
+  # ---------------------------------------------------------------------------
+  - title: "UPDATE - Citrix NetScaler CVE-2026-88771 / CVE-2026-88772: Google GTIG/Mandiant confirms exploitation since early September with WHIPSHOT/SLAPSHOT tooling; public trigger for the DTLS bug; mass exploitation reported after the PoC"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/defending-against-active-exploitation-of-citrix-netscaler-adc-and-gateway-appliances", publisher: "Google Threat Intelligence Group / Mandiant", date: "2026-09-29", role: "primary" }
+      - { url: "https://labs.watchtowr.com/here-we-go-again-citrix-netscaler-dtls-preauth-memory-overflow-cve-2026-88772/", publisher: "watchTowr Labs", date: "2026-09-29", role: "primary" }
+      - { url: "https://www.esentire.com/security-advisories/update-ongoing-exploitation-of-citrix-netscaler-adc-and-netscaler-gateway-vulnerabilities-cve-2026-88771-cve-2026-88772", publisher: "eSentire TRU", date: "2026-09-29", role: "corroborating" }
+      - { url: "https://www.cert.europa.eu/blog/taking-execute-logging-a-bit-too-literally-cve-2026-88771", publisher: "CERT-EU", date: "2026-09-28", role: "corroborating" }
+      - { url: "https://www.greynoise.io/blog/swarming-against-citrix-0-day-exploitation", publisher: "GreyNoise", date: "2026-09-28", role: "corroborating" }
+      - { url: "https://censys.com/advisory/cve-2026-10747-2/", publisher: "Censys", date: "2026-09-29", role: "corroborating" }
+      - { url: "https://www.helpnetsecurity.com/2026/09/29/netscaler-zero-day-exploitation-escalates-into-mass-attacks-cve-2026-88771/", publisher: "Help Net Security", date: "2026-09-29", role: "corroborating" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13005", publisher: "NCSC Switzerland (Cyber Security Hub, advisory edited 2026-09-29)", date: "2026-09-29", role: "corroborating" }
+      - { url: "https://www.tenable.com/blog/frequently-asked-questions-about-reported-citrix-netscaler-zero-day-vulnerabilities", publisher: "Tenable", date: "2026-09-27", role: "corroborating" }
+      - { url: "https://unit42.paloaltonetworks.com/netscaler-zero-days-exploited/", publisher: "Palo Alto Networks Unit 42", date: "2026-09-28", role: "corroborating" }
+    discovery_trace: "first seen at: greynoise bridge (python3 tools/fetch_source.py extract https://www.greynoise.io/blog -> 'Swarming Against Citrix 0-Day Exploitation') and rapid7-research feed (https://www.rapid7.com/rss.xml -> Citrix ETR post 2026-09-28, already-covered ground) -> WebSearch ('Citrix NetScaler CVE-2026-88771 exploitation update September 29 2026 attackers compromised appliances') -> pivot: Help Net Security URL https://www.helpnetsecurity.com/2026/09/29/netscaler-zero-day-exploitation-escalates-into-mass-attacks-cve-2026-88771/ -> pivot: WebSearch ('Google Threat Intelligence Mandiant NetScaler CVE-2026-88771 webshell exploitation cluster UNC') -> primary: Google Cloud Blog (GTIG/Mandiant) URL https://cloud.google.com/blog/topics/threat-intelligence/defending-against-active-exploitation-of-citrix-netscaler-adc-and-gateway-appliances ; NCSC-CH bridge (ncsc-csh recent 8 -> post 13005 history: 'added article and PoC for CVE-2026-88772') -> primary: watchTowr Labs URL https://labs.watchtowr.com/here-we-go-again-citrix-netscaler-dtls-preauth-memory-overflow-cve-2026-88772/ ; eSentire URL and CERT-EU blog URL as listed; Censys advisory URL https://censys.com/advisory/cve-2026-10747-2/ (page slug is a reused IBM-MQ slug; content is the Citrix advisory)"
+    summary: |
+      Delta versus the existing entry (last changelog 2026-09-29T04:35Z, which covered watchTowr's CVE-2026-88771 root
+      cause): everything below is new since then.
+      1) Exploitation window and scope. Google GTIG/Mandiant (2026-09-29) attributes in-the-wild exploitation of
+      CVE-2026-88772 (pre-auth DTLS record parsing in the NetScaler packet engine, heap corruption to root-level
+      shellcode on the FreeBSD base; GTIG states it does not possess exploit code and reasons from frontline telemetry)
+      to a campaign "ongoing since at least early September", likely affecting government, financial-services,
+      technology, education and legal/professional-services organisations in North America and Europe. eSentire TRU
+      independently reports CVE-2026-88771 exploited against NetScaler Gateway appliances from 2026-09-05, more than
+      three weeks before disclosure, and GreyNoise recorded a pre-disclosure attempt on 2026-09-24 whose post-exploitation
+      playbook it revealed. No source attributes the activity to a named actor (CERT-EU, Google, eSentire each say so or
+      omit it); Kevin Beaumont's suggestion of an espionage motive is relayed by eSentire and Help Net Security and is
+      not a sourced attribution.
+      2) Post-exploitation behaviour (GTIG, eSentire, GreyNoise and CERT-EU converge). An installer web shell edits the
+      appliance web-server configuration to enable PHP and to register non-script file extensions (.deb, .sig; GreyNoise:
+      a dot-file behind an alias) as PHP handlers, and adds an AliasMatch so requests for non-existent image/CSS/icon
+      paths under /vpn/media/ execute a shell staged in the VPN client-plugin directory
+      (/var/netscaler/gui/vpn/scripts/linux). The shells return HTTP 404 while taking base64 commands from custom
+      request headers (NSC_CLIENTTYPE / HTTP_NSC_LDAP per GTIG/eSentire), set the setuid bit on /bin/sh, scrub
+      references to the staging directory from /etc/crontab, and force an appliance restart to activate the change.
+      GTIG names two custom tools: WHIPSHOT (PHP web shell that relays to a local proxy) and SLAPSHOT (Python TCP
+      tunneler bound to an ephemeral loopback port with lock/port files in /tmp, JSON-over-length-prefix protocol, idle
+      self-termination); in at least one intrusion the actor routed traffic through it for manual internal
+      reconnaissance and credential theft; GTIG describes the toolset as facilitating internal reconnaissance, lateral
+      movement and credential harvesting. CERT-EU's investigation started from NetScaler logs at the European Court of
+      Auditors and the European Central Bank that showed base64-encoded bash in the HTTP User-Agent, plus
+      authentication-log lines containing "PPE missed too many heartbeats"; the trigger is the crash-log script
+      ns_monuploadd_err.pl (already in the entry).
+      3) Exploit availability. watchTowr published a root-cause analysis and a Detection Artifact Generator for
+      CVE-2026-88772 on 2026-09-29: DTLS handshake reassembly keeps almost the whole record for each one-byte fragment,
+      so 120 records leave roughly 174 KB in a buffer chain that a NSPPE routine copies into a 35,840-byte scratch buffer
+      in .bss without a size check; nsppe has no PIE, no stack canary and no RELRO (ROP to mprotect then shellcode in
+      watchTowr's lab). DTLS listens on UDP 443 in the GTIG campaign (9462/UDP in watchTowr's lab config). NCSC-CH's
+      advisory now lists a proof of concept for both CVEs (edited 2026-09-29). The existing entry records only a
+      public detection tool for 88771 and no exploit-availability statement for 88772; Help Net Security's morning
+      2026-09-29 text still said no public PoC existed for 88772, so the change landed later that day.
+      4) Escalation to mass exploitation. Help Net Security (2026-09-29) reports the activity moved from stealthy
+      targeting to "spray and pray" exploitation fuelled by the 88771 root-cause analysis and PoC (Lupovis sensor
+      claim: opportunistic internet-wide attempts within minutes of watchTowr's release). Kevin Beaumont's social-media
+      statements as relayed by Help Net Security - fewer than 10% of exposed hosts patched, more than 100 victim
+      organisations each with a unique web shell - are unverified claims from a single researcher.
+      5) Exposure. Censys counts 42,735 NetScaler ADC/Gateway hosts (2026-09-28): US 32%, Germany 13%, and
+      Netherlands, UK and Switzerland roughly 4% each (about 1,700 Swiss hosts, derived, not a stated Censys figure;
+      a count of instances, not confirmed-vulnerable). Palo Alto Xpanse counted 50,277 potentially vulnerable instances
+      on 2026-09-27. Tenable notes the bulletin lists fixes only for 14.1 and 13.1; NetScaler 12.1 and 13.0 are end of
+      life and Citrix has not said whether they are affected - the existing entry does not mention EOL branches.
+      6) Mitigation nuance. GTIG describes DTLS-disable on Gateway virtual servers and blocking inbound UDP/443 upstream
+      as compensating controls for CVE-2026-88772 ONLY ("should not be relied on to mitigate CVE-2026-88771"); the
+      existing entry says no workaround exists (Citrix's position). GTIG also advises halting HA configuration sync
+      until both nodes are validated (a modified httpd.conf replicates to the standby), restricting appliance egress,
+      and checking that VPX appliances do not share Layer 2 with hypervisor management.
+      Hunt/detection concepts (vendor-neutral telemetry first): appliance web-server config integrity (handler,
+      php_flag and alias directives pointing public paths at script directories); file-type audit of client-plug-in and
+      media directories (ASCII/PHP content under binary-package extensions); web access logs for 404 responses on
+      media/icon paths with abnormal response size or duration; web error logs for parse errors on non-script
+      extensions; syslog for DTLS handshake failure ("Internal Error") followed by packet-engine termination and a
+      watchdog "NOT restarting" line; presence of loopback tunneler lock/port files in /tmp; SUID bit on /bin/sh;
+      forced restarts and manual web-server restarts in the shell log. Benign lookalike for the DTLS artefacts:
+      isolated handshake failures from scanners or misbehaving VPN clients without the follow-on process-termination
+      line and without config drift.
+    region_nexus: "global; Swiss exposure ~4% of ~42.7k hosts per Censys; NCSC-CH advisory 13005 applies; GTIG lists government victims in Europe"
+    primary_sector_nexus: "direct (NetScaler Gateway / ADC are common remote-access and load-balancer edge in public administrations; GTIG lists government among impacted sectors)"
+    sector: "public-sector"
+    cves: [CVE-2026-88771, CVE-2026-88772]
+    techniques: [T1190, T1505.003, T1548.001, T1090.001, T1070, T1036.005, T1059.004, T1059.006]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["product:citrix-netscaler"]
+    new_entities:
+      - { key: "malware:whipshot", type: malware, name: "WHIPSHOT", aliases: [],
+          summary: "Custom PHP web shell (Google GTIG/Mandiant, 2026-09-29) deployed on exploited NetScaler appliances; hides base64 C2 in native HTTP headers, returns spoofed 404 and relays client requests to a loopback proxy (SLAPSHOT)." }
+      - { key: "tool:slapshot", type: tool, name: "SLAPSHOT", aliases: [],
+          summary: "Python TCP tunneler (Google GTIG/Mandiant, 2026-09-29) binding an ephemeral loopback port with lock/port files in /tmp; proxies traffic from a compromised NetScaler into internal networks for reconnaissance and credential theft." }
+      - { key: "campaign:netscaler-zero-day-exploitation-2026-09", type: campaign, name: "NetScaler CVE-2026-88771 / CVE-2026-88772 exploitation (September 2026)", aliases: [],
+          summary: "Unattributed pre-disclosure exploitation of two NetScaler ADC/Gateway zero-days from at least early September 2026 (GTIG, eSentire), escalating to opportunistic mass exploitation after public PoC/root-cause releases (Help Net Security)." }
+    relation_suggestions:
+      - { subject: "malware:whipshot", object: "tool:slapshot", basis: "Google GTIG: WHIPSHOT reads the SLAPSHOT loopback port and relays client requests to it (GTIG, 2026-09-29)" }
+      - { subject: "campaign:netscaler-zero-day-exploitation-2026-09", object: "malware:whipshot", basis: "Google GTIG describes WHIPSHOT as part of the actor post-exploitation toolkit in this campaign (GTIG, 2026-09-29)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev"
+    suggested_update_fields: [summary, sources, evidence, techniques, actions, body, entities]
+    suggested_priority: critical
+    evidence:
+      - quote: "organizations in North America and Europe in the government, financial services, technology, education, and legal and professional services sectors were likely impacted by this exploitation campaign, which has been ongoing since at least early September"
+        attribution: "Google Threat Intelligence Group / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/defending-against-active-exploitation-of-citrix-netscaler-adc-and-gateway-appliances"
+      - quote: "The DTLS and UDP/443 controls below are specific to CVE-2026-88772 and should not be relied on to mitigate CVE-2026-88771."
+        attribution: "Google Threat Intelligence Group / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/defending-against-active-exploitation-of-citrix-netscaler-adc-and-gateway-appliances"
+      - quote: "capable of proxying traffic into internal networks for reconnaissance and credential theft"
+        attribution: "Google Threat Intelligence Group / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/defending-against-active-exploitation-of-citrix-netscaler-adc-and-gateway-appliances"
+      - quote: "The vulnerable function then copies that entire chain into the 35,840-byte scratch buffer without checking whether it fits."
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/here-we-go-again-citrix-netscaler-dtls-preauth-memory-overflow-cve-2026-88772/"
+      - quote: "observed a threat actor exploiting CVE-2026-88771 against Internet-facing Citrix NetScaler Gateway appliances as early as September 5th, more than three weeks before the vulnerability was publicly disclosed"
+        attribution: "eSentire TRU"
+        source_url: "https://www.esentire.com/security-advisories/update-ongoing-exploitation-of-citrix-netscaler-adc-and-netscaler-gateway-vulnerabilities-cve-2026-88771-cve-2026-88772"
+      - quote: "Colleagues from the European Court of Auditors and the European Central Bank swiftly identified some IP addresses in the NetScaler logs"
+        attribution: "CERT-EU"
+        source_url: "https://www.cert.europa.eu/blog/taking-execute-logging-a-bit-too-literally-cve-2026-88771"
+      - quote: "fueled by the publication of a root-cause analysis and a proof-of-concept exploit for CVE-2026-88771, which is remotely exploitable on unpatched devices with the default configuration"
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/09/29/netscaler-zero-day-exploitation-escalates-into-mass-attacks-cve-2026-88771/"
+      - quote: "The United States accounts for 13,549 hosts (32%), followed by Germany at 5,678 (13%), then the Netherlands, United Kingdom, and Switzerland at roughly 4% each."
+        attribution: "Censys"
+        source_url: "https://censys.com/advisory/cve-2026-10747-2/"
+      - quote: "NetScaler ADC and NetScaler Gateway versions 12.1 and 13.0 have reached end-of-life (EOL) and no longer receive security updates, and Citrix has not said whether they are affected by these vulnerabilities."
+        attribution: "Tenable"
+        source_url: "https://www.tenable.com/blog/frequently-asked-questions-about-reported-citrix-netscaler-zero-day-vulnerabilities"
+      - quote: "added article and PoC for CVE-2026-88772"
+        attribution: "NCSC Switzerland (Cyber Security Hub advisory history)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13005"
+    extended_notes: |
+      Possible new do-now actions for the entry (composer decides): (a) treat every NetScaler that was internet-facing
+      and unpatched at any time since 2026-09-01 as potentially compromised - patching does not remove the web-server
+      config persistence; run the GTIG hunting checks (httpd config directives, script content under plug-in/media
+      directories, /tmp loopback tunneler files, SUID /bin/sh) before AND after upgrade; (b) inventory any 12.1 / 13.0
+      appliances (EOL, no fix, exposure to these CVEs unconfirmed) and isolate/replace; (c) for HA pairs halt config
+      sync until both nodes are validated. Existing entry statements to reconcile: it says "no workaround exists"
+      (Citrix's position) while Mandiant offers DTLS-disable / upstream UDP-443 block for 88772 only, and it has no
+      exploit-availability statement for 88772. NCSC-CH advisory 13005 was
+      edited 2026-09-29T14:41Z; its cited technical write-up host sh3llc0d3.com was not fetched.
+
+  # ---------------------------------------------------------------------------
+  # 3. BORDERLINE: MikroTik RouterOS pre-auth root RCE in the web management service (new CVE)
+  # ---------------------------------------------------------------------------
+  - title: "MikroTik RouterOS CVE-2026-84411: pre-authentication integer underflow in the web management service reaches root code execution with a single request (CISA ICSA-26-272-06; no exploitation known)"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-272-06", publisher: "CISA ICS Advisory ICSA-26-272-06", date: "2026-09-29", role: "primary" }
+      - { url: "https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-272-06.json", publisher: "CISA CSAF (ICSA-26-272-06)", date: "2026-09-29", role: "primary" }
+      - { url: "https://securityonline.info/mikrotik-routeros-cve-2026-84411/", publisher: "SecurityOnline / Daily CyberSecurity", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-advisories, URL https://www.cisa.gov/cybersecurity-advisories/all.xml (WebFetch: ICSA-26-272-06 MikroTik RouterOS item) and bridge 'cisa csaf-recent 30' -> primary: CISA CSAF via bridge 'cisa csaf icsa-26-272-06' URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-272-06.json and advisory page https://www.cisa.gov/news-events/ics-advisories/icsa-26-272-06 -> WebSearch ('CVE-2026-84411 MikroTik RouterOS web management integer underflow pre-authentication') -> SecurityOnline URL https://securityonline.info/mikrotik-routeros-cve-2026-84411/ ; MikroTik vendor pages checked (https://mikrotik.com/supportsec/september-2026-vulnerability/ and https://download.mikrotik.com/routeros/7.24.3/CHANGELOG) - neither names this CVE"
+    summary: |
+      Facts (CISA advisory and CSAF, released 2026-09-29, reporter an anonymous researcher): the RouterOS web
+      management service contains an integer underflow (CWE-191) in HTTP request-body handling that is reachable before
+      authentication; an unauthenticated network attacker can achieve arbitrary code execution as root or a denial of
+      service "using a single crafted request". CVSS 3.1 9.8 (AV:N/AC:L/PR:N/UI:N). CISA states no known public
+      exploitation has been reported to CISA. Affected per CISA: RouterOS versions below 7.24; remediation text says
+      "update RouterOS to version 7.23 or later" - the two statements are inconsistent (7.23.x is a long-term branch
+      below 7.24) and MikroTik's own September security page and the 7.24.3 / 7.23.6 changelogs do not name this CVE
+      (they carry generic "www - improve stability" lines), so the exact fixed build per branch is not established from
+      primary vendor text. SecurityOnline states fixed releases 7.24.2 and 7.23.4 "also close the MikroTrick flaws" - a
+      secondary reading that does not source the mapping. Gap: no vendor advisory, no PoC, no exposure count.
+      Context: RouterOS already has an entry for the actively exploited SSH chain (CVE-2026-67279 / CVE-2026-86060,
+      fixed 6.49.21 / 7.23.4 / 7.24.2) and the WWW/WWW-SSL and SSH services are the same exposure class; this is a
+      distinct CVE in a different service (the WebFig-family unauth file read CVE-2026-67281 is also a separate bug).
+      Defender takeaways: the management-plane hardening that already answers MikroTrick (management services only on
+      a trusted management network / VPN, WWW/WWW-SSL/SSH/bandwidth-test not reachable from untrusted networks)
+      is also the only stated control for this bug; treat "patched to 7.23.4/7.24.2" as unconfirmed for this CVE until
+      MikroTik names the fixed builds. Telemetry: RouterOS web-service (www/www-ssl) access from non-management
+      source ranges, unexpected service restarts or crashes of the www process (DoS side effect), new users, scripts,
+      schedulers or proxy/tunnel config on devices reachable from the internet.
+    region_nexus: "global; RouterOS is common in small-office, ISP and municipal edge; Swiss deployment share not established from sources"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-84411]
+    techniques: [T1190]
+    affected_products: ["MikroTik RouterOS"]
+    entity_keys: ["product:mikrotik-routeros", "trend:mikrotik-routeros-mikrotrick-2026-09"]
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: "update-of:2026-09-06/mikrotik-routeros-mikrotrick-ssh-auth-bypass-privesc-chain"
+    borderline: true
+    borderline_reason: "Unexploited, CISA-only, fixed build unclear; relevant mainly because the same product line was mass-exploited three weeks ago and admins who patched to 7.23.4/7.24.2 may believe they are done. Alternative disposition: a new entry referencing the MikroTrick entry (no CVE overlap) or drop."
+    evidence:
+      - quote: "The web management service in affected RouterOS versions contains an integer underflow in its HTTP request body handling that is reachable before authentication."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-272-06"
+      - quote: "MikroTik recommends users update RouterOS to version 7.23 or later."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-272-06"
+      - quote: "No known public exploitation specifically targeting this vulnerability has been reported to CISA at this time."
+        attribution: "CISA"
+        source_url: "https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-272-06.json"
+
+  # ---------------------------------------------------------------------------
+  # 4. BORDERLINE: WatchGuard AP pre-auth API session + command injection (NCSC-CH advisory 13007)
+  # ---------------------------------------------------------------------------
+  - title: "WatchGuard AP firmware below 3.4.8: unauthenticated API-session acquisition (CVE-2026-101891) chains with OS command injection in the internal management API (CVE-2026-86102); NCSC-CH advisory, no known exploitation"
+    sources:
+      - { url: "https://psirt.watchguard.com/CVE-2026-101891/", publisher: "WatchGuard PSIRT", date: "2026-09-28", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-86102/", publisher: "WatchGuard PSIRT", date: "2026-09-28", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13007", publisher: "NCSC Switzerland (Cyber Security Hub)", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec listing WebFetch of https://www.heise.de/security/Alerts (WatchGuard AP item 2026-09-29 07:57) and bridge 'ncsc-csh recent 20' -> primary: NCSC-CH post 13007 (bridge ncsc-csh post 13007, citation URL https://security-hub.ncsc.admin.ch/#/posts/13007) -> primary: WatchGuard PSIRT URLs https://psirt.watchguard.com/CVE-2026-101891/ and https://psirt.watchguard.com/CVE-2026-86102/"
+    summary: |
+      Facts (WatchGuard PSIRT, published 2026-09-28): an improper access control flaw (CVE-2026-101891) in an internal
+      API service on WatchGuard Access Points lets an unauthenticated attacker with network access to the AP obtain a
+      valid API session; an OS command injection (CVE-2026-86102) in the internal management API lets an attacker with
+      network access execute arbitrary shell commands on the underlying OS. Affected: WatchGuard AP >= 1.0 and < 3.4.8;
+      fixed in AP firmware 3.4.8. WatchGuard states it "is not aware of any exploitation of this vulnerability in the
+      wild" (both pages); both discovered internally / by named researchers. NCSC-CH (2026-09-29) rates both CVSS 4.0
+      9.3, describes the pair as an attack chain (session acquisition then command injection) and lists exploitation
+      status as unknown; it also mentions a third flaw (CVE-2026-87969) needing authenticated administrator access to
+      the diagnostic CLI, which is not in the WatchGuard pages fetched.
+      Prerequisite is network reachability of the AP's management API, not internet exposure by design; the practical
+      exposure is wired/wireless client segments or management VLANs where APs are reachable from user devices.
+      Defender takeaways: inventory WatchGuard APs and their firmware; move to 3.4.8; keep AP management interfaces on
+      an isolated management network. Telemetry: firewall/NetFlow for client-VLAN-to-AP management-port connections,
+      AP configuration/audit logs for unexpected API sessions, and unexpected outbound connections from AP
+      management addresses.
+    region_nexus: "global; WatchGuard hardware appears in Swiss SME and public-sector networks (share not established from sources); Swiss authority advisory published"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-101891, CVE-2026-86102]
+    techniques: [T1190]
+    affected_products: ["WatchGuard AP"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:watchguard-ap", type: product, name: "WatchGuard AP (Access Points)", aliases: ["WatchGuard Access Points"],
+          summary: "WatchGuard wireless access points; CVE-2026-101891 / CVE-2026-86102 fixed in AP firmware 3.4.8 (WatchGuard PSIRT, 2026-09-28)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "Pre-auth chain to command execution (CVSS 4.0 9.3) with a Swiss national-authority advisory, but no known exploitation, no public technical detail and AP management planes are usually not internet-exposed - regular patch-cycle territory unless the composer wants the NCSC-CH-advised awareness item."
+    evidence:
+      - quote: "An improper access control vulnerability in an internal API service on WatchGuard Access Points allows an unauthenticated attacker with network access to the AP to obtain a valid API session."
+        attribution: "WatchGuard PSIRT"
+        source_url: "https://psirt.watchguard.com/CVE-2026-101891/"
+      - quote: "WatchGuard is not aware of any exploitation of this vulnerability in the wild."
+        attribution: "WatchGuard PSIRT"
+        source_url: "https://psirt.watchguard.com/CVE-2026-86102/"
+      - quote: "Successful exploitation allows unauthenticated attackers with network access to obtain valid API sessions and execute arbitrary OS commands on affected access points."
+        attribution: "NCSC Switzerland"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13007"
+
+  # ---------------------------------------------------------------------------
+  # 5. BORDERLINE: Zimbra 10.1.21 security release (unauthenticated password-reset code prediction)
+  # ---------------------------------------------------------------------------
+  - title: "Zimbra Collaboration 10.1.21: unauthenticated password-recovery code prediction (account takeover), WebDAV pre-MFA token acceptance, OnlyOffice-integration RCE and a batch of stored XSS; most CVEs still unassigned"
+    sources:
+      - { url: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories", publisher: "Zimbra Security Advisories (vendor)", date: "2026-09-24", role: "primary" }
+      - { url: "https://wiki.zimbra.com/wiki/Zimbra_Releases/10.1.21", publisher: "Zimbra 10.1.21 release notes (vendor)", date: "2026-09-24", role: "primary" }
+      - { url: "https://www.heise.de/news/Groupware-Zimbra-Update-schliesst-zahlreiche-Sicherheitsluecken-11468996.html", publisher: "heise security", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec listing WebFetch of https://www.heise.de/security/Alerts (Zimbra item 2026-09-29 08:31) -> pivot: heise article WebFetch URL https://www.heise.de/news/Groupware-Zimbra-Update-schliesst-zahlreiche-Sicherheitsluecken-11468996.html -> primary: Zimbra Security Advisories wiki URL https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories and release notes URL https://wiki.zimbra.com/wiki/Zimbra_Releases/10.1.21 (release date 2026-09-24)"
+    summary: |
+      Facts (Zimbra advisory table, release 10.1.21 dated 2026-09-24; heise reported it 2026-09-29): the release fixes
+      a flaw in the self-service password-recovery mechanism that "could allow an unauthenticated attacker to predict
+      recovery codes and reset a user's password" (no CVE yet, reported by Hyunwoo Kim and Himanshu Anand); WebDAV
+      authentication now rejects pre-MFA tokens (previously a token issued before MFA completion could reach WebDAV;
+      Redtail Technology); two OnlyOffice-integration issues - unauthorized file write leading to remote code execution
+      "under specific conditions" and a server-side JavaScript injection letting an authenticated user execute commands
+      (the latter credited to the Vatican City State Governorate SOC); several stored XSS in the Classic and Modern web
+      clients (two with CVEs, CVE-2026-66911 and CVE-2026-66912, reporter CERT.PL); OpenJDK 17.0.19. CVSS scores and
+      most CVE identifiers are still "TBD". No source reports exploitation. heise notes Zimbra is a frequent target of
+      criminal and state-intelligence actors (heise's context, not evidence for these bugs).
+      Note the store already carries a 2026-08-20 entry on the exploited Zimbra SNMP command injection (CVE-2026-73570,
+      fixed 10.1.20); 10.1.21 is the next cumulative release and is required for the password-recovery and WebDAV fixes.
+      Defender takeaways: Zimbra operators should move to 10.1.21 (the fixes are in the same cumulative release as the
+      earlier 10.1.20 SNMP fix); telemetry: password-recovery / reset-request volume and source-IP patterns on the
+      webmail front end, reset events for accounts followed by first logins from new networks, and WebDAV (DAV
+      endpoint) access by sessions that never completed MFA.
+    region_nexus: "global; Zimbra is used by European public bodies (share for Switzerland not established from sources)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-66911, CVE-2026-66912]
+    techniques: [T1190]
+    affected_products: ["Zimbra Collaboration"]
+    entity_keys: ["product:zimbra-collaboration"]
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Unauthenticated account takeover on a mail platform with a state-actor targeting history, but no exploitation, no CVE ids for the headline bug and no technical detail; sits at the regular patch-cycle line."
+    evidence:
+      - quote: "Fixed a security vulnerability in the self-service password recovery mechanism that could allow an unauthenticated attacker to predict recovery codes and reset a user's password."
+        attribution: "Zimbra"
+        source_url: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories"
+      - quote: "Pre-MFA tokens are now rejected with an HTTP status, requiring users to fully complete Multi-Factor Authentication before accessing WebDAV resources."
+        attribution: "Zimbra"
+        source_url: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories"
+      - quote: "Fixed a security issue in the OnlyOffice document editing integration that could allow unauthorized file writes and remote code execution under specific conditions."
+        attribution: "Zimbra"
+        source_url: "https://wiki.zimbra.com/wiki/Zimbra_Releases/10.1.21"
+
+  # ---------------------------------------------------------------------------
+  # 6. BORDERLINE UPDATE-GAP: F5 BIG-IP APM public PoC never reflected in the store entry (outside window)
+  # ---------------------------------------------------------------------------
+  - title: "UPDATE (store gap, source outside the 72 h window) - F5 BIG-IP APM CVE-2026-94127: watchTowr published the root cause and a working trigger on 2026-09-23; the existing entry has no changelog and never mentions public exploit availability"
+    sources:
+      - { url: "https://labs.watchtowr.com/is-this-a-joke-in-the-auth-header-f5-big-ip-unauth-heap-overflow-to-rce-cve-2026-94127/", publisher: "watchTowr Labs", date: "2026-09-23", role: "primary" }
+      - { url: "https://securityonline.info/exploited-f5-big-ip-rce-vulnerability-poc/", publisher: "SecurityOnline / Daily CyberSecurity", date: "2026-09-25", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch ('watchTowr OR \"public PoC\" CVE-2026-94127 F5 BIG-IP APM OAuth exploit released') -> pivot: SecurityOnline URL https://securityonline.info/exploited-f5-big-ip-rce-vulnerability-poc/ -> primary: watchTowr Labs (found via feed https://labs.watchtowr.com/rss/) URL https://labs.watchtowr.com/is-this-a-joke-in-the-auth-header-f5-big-ip-unauth-heap-overflow-to-rce-cve-2026-94127/"
+    summary: |
+      Existing entry (2026-09-23, updated_at null, no changelog) reports F5's exploited APM OAuth heap overflow but
+      contains no statement on exploit availability. watchTowr's 2026-09-23 write-up reverse-engineers the patch: the
+      fix adds a header-size check (0x4100) before copying an Authorization header into a heap buffer on the
+      OAuth UserInfo path, so an over-long Authorization header sent to the OAuth UserInfo endpoint overflows the
+      buffer on the TMM data plane, and the post shows a route from crash to shell via a TMM restart script.
+      SecurityOnline (2026-09-25) states researchers "publicly disclosed full technical details and a working
+      proof-of-concept exploit". Effect for defenders: the exploit barrier for a KEV-listed, already-exploited edge
+      RCE is gone; exposure is limited to virtual servers with both an APM access policy and an OAuth profile. This is
+      outside the 72 h developing window - flagged for the audit/composer as a coverage gap rather than a fresh
+      development; no fresh delta found in-window.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-94127]
+    techniques: [T1190]
+    affected_products: ["F5 BIG-IP Access Policy Manager (APM)"]
+    entity_keys: ["product:f5-big-ip-access-policy-manager-apm"]
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-09-23/cve-2026-94127-f5-big-ip-apm-oauth-heap-overflow-rce"
+    borderline: true
+    borderline_reason: "Freshest source is 2026-09-23/25 (outside window_hours and developing_window_hours); include only as a low-cost changelog record if the composer/audit wants the entry to carry PoC status."
+    evidence:
+      - quote: "It is simple: before the patch, there was no size check before copying the value to the heap buffer, and now there is one."
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/is-this-a-joke-in-the-auth-header-f5-big-ip-unauth-heap-overflow-to-rce-cve-2026-94127/"
+
+cve_table:
+  - { cve: "CVE-2026-86950", product: "Apple iOS/iPadOS/macOS (CoreGraphics)", cvss: "8.8 (CVSS 3.1, Apple CNA via ENISA EUVD-2026-88445)", epss: 0.81, kev: "yes, added 2026-09-29, due 2026-10-02, forensicTriage=Yes", exploited: "yes - Apple: 'extremely sophisticated attack against specific targeted individuals on versions of iOS before iOS 27'; no cluster named", patch: "iOS/iPadOS 26.7.1; macOS Tahoe 26.7.1; macOS Sequoia 15.8.1 (iOS 27 not listed as affected)", source: "https://support.apple.com/en-us/149226" }
+  - { cve: "CVE-2026-88771", product: "Citrix NetScaler ADC / Gateway (log-poisoning command injection)", cvss: "9.5 (CVSS 4.0, Citrix) / 9.8 (NVD 3.1)", epss: null, kev: "yes (2026-09-27, due 2026-09-30)", exploited: "yes, since at least 2026-09-05 (eSentire), attempt seen 2026-09-24 (GreyNoise); mass exploitation reported 2026-09-29 (Help Net Security); public PoC (watchTowr) since 2026-09-28", patch: "14.1-73.37; 13.1-64.23 (13.1-64.24 if 'show ns variable' returns entries); FIPS/NDcPP 13.1-37.279; 12.1/13.0 EOL with no fix", source: "https://cloud.google.com/blog/topics/threat-intelligence/defending-against-active-exploitation-of-citrix-netscaler-adc-and-gateway-appliances" }
+  - { cve: "CVE-2026-88772", product: "Citrix NetScaler ADC / Gateway (DTLS memory overflow)", cvss: "9.5 (CVSS 4.0) / 8.1 (NVD 3.1)", epss: null, kev: "yes (2026-09-27)", exploited: "yes, GTIG: campaign since at least early September (webshell + tunneler); trigger tool (watchTowr detection artifact generator) public since 2026-09-29", patch: "as CVE-2026-88771; Mandiant compensating controls for this CVE only: disable DTLS on Gateway vservers / block inbound UDP/443 upstream", source: "https://labs.watchtowr.com/here-we-go-again-citrix-netscaler-dtls-preauth-memory-overflow-cve-2026-88772/" }
+  - { cve: "CVE-2026-84411", product: "MikroTik RouterOS (web management service)", cvss: "9.8 (CVSS 3.1, CISA CSAF)", epss: null, kev: "no (catalog 2026.09.29)", exploited: "no known exploitation (CISA)", patch: "CISA: 'update to 7.23 or later'; affected '<7.24' - inconsistent, MikroTik does not name the CVE", source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-272-06" }
+  - { cve: "CVE-2026-101891", product: "WatchGuard AP (internal API access control)", cvss: "9.3 (CVSS 4.0, per NCSC-CH)", epss: null, kev: "no", exploited: "no (WatchGuard: not aware)", patch: "WatchGuard AP 3.4.8", source: "https://psirt.watchguard.com/CVE-2026-101891/" }
+  - { cve: "CVE-2026-86102", product: "WatchGuard AP (internal management API command injection)", cvss: "9.3 (CVSS 4.0, per NCSC-CH)", epss: null, kev: "no", exploited: "no (WatchGuard: not aware)", patch: "WatchGuard AP 3.4.8", source: "https://psirt.watchguard.com/CVE-2026-86102/" }
+  - { cve: "CVE-2026-66911", product: "Zimbra Collaboration Classic Web Client (stored XSS via attachment Content-Location)", cvss: "TBD", epss: null, kev: "no", exploited: "no", patch: "10.1.21", source: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories" }
+  - { cve: "CVE-2026-66912", product: "Zimbra Collaboration Classic Web Client (stored XSS via sender display name)", cvss: "TBD", epss: null, kev: "no", exploited: "no", patch: "10.1.21", source: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories" }
+  - { cve: "CVE-2026-94127", product: "F5 BIG-IP APM (OAuth heap overflow)", cvss: "9.8 (3.1) / 9.3 (4.0)", epss: null, kev: "yes (2026-09-22)", exploited: "yes (F5); public root cause + trigger since 2026-09-23 (watchTowr)", patch: "Hotfix-BIGIP-21.1.0.2.0.30.22 / 17.5.1.9.0.160.12 / 17.1.3.5.0.41.14; emergency iRule", source: "https://labs.watchtowr.com/is-this-a-joke-in-the-auth-header-f5-big-ip-unauth-heap-overflow-to-rce-cve-2026-94127/" }
+
+kev_sweep:
+  catalog_version: "2026.09.29"
+  date_released: "2026-09-29T13:51:33Z"
+  additions_since_2026-09-29: 1
+  additions_not_covered_before_this_run: ["CVE-2026-86950 (Apple, dateAdded 2026-09-29) - returned as item 1"]
+  additions_after_2026-09-29: "none - catalog version 2026.09.29 (released 2026-09-29T13:51Z) is the latest at fetch time 2026-09-30T04:08Z; ENISA EUVD 'exploited' list carries the same four rows (Apple 86950, Citrix 88771/88772, MikroTik 67279)"
+  disposition_of_not_covered: "CVE-2026-86950 -> new finding with Apple primary (item 1)"
+
+backlog_recheck:
+  - "(a) IBM MQ CVE-2026-10747 (CVSS 10.0 pre-auth heap overflow): NO new development since 2026-09-29. Not in KEV (catalog 2026.09.29 fetched 2026-09-30), no exploitation or public PoC found; Censys advisory of 2026-09-21 states none as of 2026-09-18 and sees the MQ web console on 120 hosts (not a vulnerable count); IBM bulletin dated 2026-09-14 (Server) / 2026-09-10 (Appliance); NCSC-NL NCSC-2026-0392 (2026-09-23). Keep in backlog, unchanged."
+  - "(b) Langflow OSS CVE-2026-79724 / CVE-2026-81204 / CVE-2026-85025 (unauth RCE, CVSS 9.8): NO new development found. None in KEV; no in-window exploitation report located for these three (NCSC-NL 2026-0392 of 2026-09-23 is the authority listing; a 2026-09-26 dev.to explainer cites ZoomEye 18,550 Langflow instances, a fingerprint count only). A cybersecuritynews.com article on 'exploited Langflow RCE' surfaced in search but could not be read (Cloudflare 202 on every transport; WebFetch empty), so its date and CVE are unverified - most likely the earlier CVE-2026-55255 story."
+  - "(c) Adobe September 2026 cycle (Campaign Classic APSB26-142 of 2026-09-08; Adobe Connect APSB26-150 and AEM Forms APSB26-151 of 2026-09-22): NO new development. Adobe Trust Center CaaS listing shows no bulletin newer than 2026-09-22; the only Adobe KEV rows in September remain the Adobe Commerce/Magento pair (CVE-2026-75650 on 2026-09-08, CVE-2026-71362 on 2026-09-24, already covered); no exploitation or PoC report found for the three bulletins."
+  - "(d) VMware VMSA-2026-0007 CVE-2026-59346 / CVE-2026-59347 (Workstation/Fusion VMXNET3 guest-to-host): NO new development. Broadcom advisory 38288 still shows 'Updated on 2026-09-03 (Initial Advisory)', 'Workarounds: None', not in KEV, no exploitation or PoC report found; only secondary coverage (SecurityAffairs 2026-09-05)."
+
+dropped_leads:
+  - "CISA ICS advisories of 2026-09-29 other than MikroTik: ICSA-26-272-01 Lantronix G520 (CVE-2026-84409/91191, CVSS 7.5, fixed 2.6.0.7R6, no exploitation), -02 Toptech TMS7/TopHAT (CVE-2026-71379 CVSS 10.0 unauth DB export, fixed 7.8, energy/terminal automation, no exploitation), -03 VIVOTEK cameras (CVE-2026-22755 command injection, no exploitation), -04 Baicells Nova 430H (radio-adjacent DoS, no fix planned), -05 Anjvision YSSD-RTMP-H5 (nine CVEs incl. CVE-2026-100291 unauth ONVIF CVSS 9.8, vendor unresponsive), -06 MikroTik (returned above), -07 Viidure dashcam app (cloud bucket public-read/hard-coded credentials, vendor unresponsive), ICSA-25-168-01 Siemens Mendix Studio Pro (revision) - none exploited, none in the constituency's core stack; dropped under PD-11 (VIVOTEK/Anjvision camera lines would be borderline only if a Swiss municipal video-surveillance estate were named)."
+  - "ENISA EUVD 'criticals': AiSOC CVE-2026-103056 (authenticated command injection in an obscure SOC-automation project), GLPI CVE-2026-48482 (form-admin path traversal, PR:H, fixed 11.0.8), two Ziroom ZHOME consumer-router CVEs - regular-cycle or irrelevant."
+  - "Mozilla MFSA 2026-97..100 (Firefox 157 / ESR 153.4 / 140.17 / 115.42, 2026-09-29): impact 'high', no critical, no exploited-in-the-wild statement - regular patch cycle."
+  - "GitHub Advisory Database critical/reviewed: PyJWT CVE-2026-102268 (algorithm-confusion guard bypass; needs a mixed HS/asymmetric allow-list AND a PEM key passed in an unusual byte form; page dated 2026-09-11) and @xhmikosr/decompress path traversal CVE-2026-101894 - library-level, precondition-heavy, regular cycle."
+  - "Chrome stable 154.0.8037.92/.93 (2026-09-29): 32 fixes, one Critical (ANGLE buffer overflow CVE-2026-102331), no in-the-wild statement - regular cycle."
+  - "SonicWall GMS CVE-2026-66147 / CVE-2026-66145 (search surfaced it as current): SecurityWeek dates the fix to 2026-08-12, discontinued product, no exploitation - out of window."
+  - "Rapid7 Citrix ETR post (2026-09-28) and Sophos / Unit 42 NetScaler briefs (2026-09-28): repeat of covered ground; used only as corroboration."
+  - "Covered-ground checks with no in-window delta: SharePoint CVE-2026-65660 (heise 2026-09-28 restates the KEV listing already in the entry), Kiteworks (entry already updated 2026-09-29; vendor lifted the shutdown advisory), Cisco ISE / Secure Email Gateway / FMC, Check Point management-plane flaws, Arista VeloCloud, WordPress CVE-2026-87902 (7.1.2 of 2026-09-22), GitLab CVE-2026-85706, Roundcube CVE-2026-48842 (entry updated 2026-09-25), Oracle PeopleSoft / ShinyHunters (entry updated 2026-09-29)."
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "product watchlist is empty in this deployment; sweep is a no-op"
+
+candidate_sources:
+  - id: censys-advisories
+    publisher: "Censys ARC advisories (censys.com/advisory/)"
+    url: "https://censys.com/advisory/"
+    category: vulns
+    why: "Per-CVE advisories with affected/fixed version tables, PoC and KEV status, and internet-exposure counts by country (the Citrix advisory gave Switzerland's share of 42,735 hosts; the IBM MQ advisory gave console exposure). Individual pages extract cleanly (trafilatura-direct); the /advisory/ listing timed out on the direct transport and no advisory feed was found (censys.com/feed/ carries only blog posts), so a listing recipe (sitemap or listing-scrape) still has to be established. Distinct from the existing censys-blog record."
+
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "cisa.gov per-alert pages ('CISA Adds One Known Exploited Vulnerability to Catalog', 2026-09-29) yielded no link targets from the WebFetch listing; KEV content taken from the KEV JSON feed instead (no loss). ICS advisories read through 'cisa csaf'."
+  - source_id: wiz-blog
+    reason: "feed https://www.wiz.io/api/feed/cloud-threat-landscape/rss.xml is live but its newest item is dated 2026-09-01 (threats.wiz.io incidents); quiet or stale - no in-horizon items either way."
+  - source_id: msrc-blog
+    reason: "blog listing is an SPA shell after the 301 to www.microsoft.com/en-us/msrc/blog (as documented); 'msrc recent 12' returned only Linux/X11 CVE mirrors without exploited flags and 'msft-secblog recent 6' returned threat-research posts belonging to S3 - no S1 items."
+  - source_id: censys.com/advisory/
+    reason: "listing timed out on every transport (direct read timeout, jina pool exhausted 402); individual advisory pages fine."
+  - source_id: cybersecuritynews.com
+    reason: "Cloudflare 202 challenge on extract and empty WebFetch; only usable as a search lead, not cited."
+  - source_id: jina-reader
+    reason: "reader credit pool exhausted (HTTP 402 on all keys) - normal condition, no rung needed it this run."
+
+source_ledger:
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + all.xml + bridge cisa csaf-recent/csaf", horizon_hours: 26, in_horizon_items: 8, returned: 1, note: "1 KEV alert (Apple, covered via KEV) + 7 ICS advisories 2026-09-29; MikroTik returned, the rest dropped" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "catalog 2026.09.29; only Apple CVE-2026-86950 is new; no additions after 2026-09-29" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd recent {exploited,criticals,lastvulnerabilities} + advisory", horizon_hours: 26, in_horizon_items: 5, returned: 0, note: "exploited list = Apple/Citrix x2/MikroTik (all handled); criticals dropped (AiSOC, GLPI, Ziroom x2)" }
+  - { id: snyk-research, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest 2026-09-24 marketing/thought-leadership" }
+  - { id: zdi, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-23 (Canon printer bug), outside scope" }
+  - { id: github-advisory, tier: standard, attempted: true, transport: "WebFetch + extract", horizon_hours: 74, in_horizon_items: 2, returned: 0, note: "two critical reviewed advisories dropped (PyJWT, decompress)" }
+  - { id: greynoise, tier: standard, attempted: true, transport: "bridge extract", horizon_hours: 74, in_horizon_items: 1, returned: 1, note: "Citrix swarm post 2026-09-28 folded into the Citrix update item" }
+  - { id: keycloak, tier: standard, attempted: true, transport: "feed", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest 2026-09-22 (CFP); latest release 26.7.4 on 2026-09-16" }
+  - { id: mozilla-mfsa, tier: standard, attempted: true, transport: "WebFetch + extract", horizon_hours: 74, in_horizon_items: 4, returned: 0, note: "MFSA 2026-97..100 high, no exploitation - dropped" }
+  - { id: rapid7-research, tier: standard, attempted: true, transport: "feed", horizon_hours: 74, in_horizon_items: 1, returned: 0, note: "Citrix ETR 2026-09-28 already covered ground; used as background" }
+  - { id: wiz-blog, tier: standard, attempted: true, transport: "feed", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest 2026-09-01 (see coverage_gaps)" }
+  - { id: wordpress-org-news, tier: standard, attempted: true, transport: "feed", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest 7.1.2 on 2026-09-22 (covered)" }
+  - { id: 0patch-blog, tier: standard, attempted: true, transport: "feed", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-27T22:00Z is a product/marketing post just outside the 50 h horizon" }
+  - { id: adobe-psirt, tier: standard, attempted: true, transport: "bridge url (Trust Center CaaS JSON)", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "108 cards; newest bulletins 2026-09-22; backlog (c) re-checked" }
+  - { id: apple-security, tier: standard, attempted: true, transport: "bridge extract", horizon_hours: 50, in_horizon_items: 3, returned: 1, note: "iOS/iPadOS 26.7.1, macOS Tahoe 26.7.1, macOS Sequoia 15.8.1 (2026-09-28); 27.0.1 updates have no CVE entries" }
+  - { id: cisco-psirt, tier: standard, attempted: true, transport: "feed", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest advisory 2026-09-24 (ISE multi-auth bypass), before horizon" }
+  - { id: msrc-blog, tier: standard, attempted: true, transport: "WebFetch (SPA shell) + bridge msrc/msft-secblog", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "see coverage_gaps" }
