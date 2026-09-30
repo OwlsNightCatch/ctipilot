@@ -26,7 +26,7 @@ RSS feed → `fetch_source.py extract <URL>` (human-header GET + trafilatura →
 | NCSC-CH / BACS (moved 2026-08-20 to bacs.admin.ch — Nuxt SPA; old ncsc.admin.ch redirects are explicitly NOT permanent) | **`extract <url>` reads both pages in full via trafilatura-direct — verified 2026-09-27 on `/de/aktuelle-vorfaelle` and `/de/im-fokus`, dated item lists and all.** `ncsc-ch-focus`/`-incidents` = `fetch_method: bridge`. They had drifted to `jina` and sat unreadable for two windows against an empty key pool while this direct path worked; if you find them on `jina` again, that is the bug. Official PDFs on `cms.news.admin.ch`; CSH API = `ncsc-csh` (`/api/v1/posts/...`), cite `security-hub.ncsc.admin.ch/#/posts/<id>` |
 | PDF-only advisories (joint advisories, authority reports) | `fetch_source.py pdf <URL>` — select on CONTENT TYPE, never as a failure rung; mirrors (media.defense.gov, ic3.gov) count as the same document |
 | infoguard-labs | RSS `https://labs.infoguard.ch/rss.xml` |
-| heise-sec | `feed https://www.heise.de/security/feed.xml N` → `jina <article>` (browser engine; needs a live key; free articles only) |
+| heise-sec | `feed https://www.heise.de/security/feed.xml N` → `extract <article>` (trafilatura-direct, no reader; verified 2026-09-29 on article 11469864 — the older jina-only recipe is superseded; free articles only) |
 | Reader-unreachable even via jina | coe.int, downloads.seppmail.com — stay `blocked` |
 
 `TRANSPORT_BLOCKED_UNREACHABLE` in `source_health.py` marks a blocked host as handled; add an id ONLY after direct AND jina AND bridge all fail.
@@ -42,6 +42,7 @@ RSS feed → `fetch_source.py extract <URL>` (human-header GET + trafilatura →
 - "no text objects found" = **not extractable** (image-only/scanned), NEVER "the document says nothing".
 - A CMap-approximated decode is labelled an approximation; selection between decodes is by volume of recovered prose, not a ratio.
 - Real PDFs find real bugs — test extractor changes against a genuine advisory, not only the synthetic suite.
+- **Decode per font, never file-wide (fixed 2026-09-29).** Microsoft Word PDFs write spaces in a simple font and every other glyph in Type0 fonts whose codes are glyph ids. The old merged-CMap decode turned "North Korean" into "1RUWK.RUHDQ", dropped every digit, and still won on prose volume (the IC3 WaterPlum advisory, CSA 260918, read as mojibake on all 9 pages). `_pdf_render_by_font` walks page resources and decodes each string with its own font's ToUnicode map, falling back to the merged path only when the page tree cannot be walked. If a PDF reads as letter-shifted gibberish or has no digits, suspect a regression here first.
 
 ## Health/probe traps
 
@@ -50,3 +51,7 @@ RSS feed → `fetch_source.py extract <URL>` (human-header GET + trafilatura →
 - `probe_url` field overrides the probe target when a publisher blocks its directory index but per-item fetches work (siemens-productcert-csaf).
 - A national-CERT domain change also needs `NATIONAL_CERT_HOSTS` in `check_run.py`, or the single-source carve-out reports as unearned.
 - A "reachable but stale" verdict needs the RAW body read in document order — ncsc-ch-incidents' accordion is newest-first and a truncated read concludes stale.
+
+## NCSC-CH moved to bacs.admin.ch (seen 2026-09-30)
+
+`www.ncsc.admin.ch/ncsc/...` article pages now answer 404; the same content lives under `www.bacs.admin.ch/de/<slug>` (the clickfix advisory is `https://www.bacs.admin.ch/de/clickfix-de`, and trafilatura `extract` reads it). Four June entries still cite the old paths (G7 events warning, week 22/23/25 reviews) and are a repoint job for the next audit. `security-hub.ncsc.admin.ch` is a separate host and still reads through the `ncsc-csh` bridge recipe.

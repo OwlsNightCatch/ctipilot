@@ -29,20 +29,24 @@ name: Auto-merge claude/* branches to main
 #      Delete the feature branch.
 #   3. Main advanced — both branches have unique commits. Try a regular
 #      merge. If git auto-resolves cleanly, push main + delete branch.
-#      If it conflicts, apply the auto-resolution rules:
-#         - state/cves_seen.json, state/source_health.json,
-#           entities/registry.yaml → "ours"
-#           (the routine's version: it has the freshest state for the
-#           run that just completed; main's appended state from earlier
-#           runs is already merged in via the merge commit's other
-#           parent for non-conflicting fields)
-#         - sources/sources.json → "theirs" (main's version: sources
-#           are maintained outside routines via human-reviewed PRs;
-#           the routine only writes transient `last_successful_fetch`
-#           fields that the next run resets anyway)
-#      After auto-resolution, complete the merge, push main, delete the
-#      branch. Any remaining conflict in other paths fails loud with an
-#      `::error::` annotation so the operator notices and resolves.
+#      If it conflicts, resolve the shared state files STRUCTURALLY with
+#      `tools/merge_state.py resolve` — a record-aware three-way merge:
+#         - state/cves_seen.json      union by CVE id
+#         - sources/sources.json      per-source, per-field merge by id
+#                                     (notes keep both sides' appends)
+#         - state/source_health.json  newer snapshot wins, histories unioned
+#         - entities/registry.yaml    block merge by entity key (both
+#                                     sides' new entities survive)
+#         - state/coverage_backlog.md row merge (struck on either side wins)
+#      The former whole-file `--ours` / `--theirs` fallback discarded the
+#      other side's work: a concurrent fire's CVE records, its registered
+#      entities (leaving its entries pointing at keys that no longer
+#      existed) and its source-recipe fixes. If merge_state.py is absent
+#      (a branch cut before it existed AND main without it) the legacy
+#      rules still apply. After resolution, complete the merge, push main,
+#      delete the branch. Any path merge_state.py cannot prove sound, and
+#      any conflict outside these paths, fails loud with an `::error::`
+#      annotation so the operator notices and resolves.
 #
 # This workflow is shell-only — no third-party Actions — because the
 # org's policy restricts Actions to the OwlsNightCatch org. The work
@@ -171,9 +175,24 @@ jobs:
             exit 0
           fi
 
-          # Conflict — apply the auto-resolution rules described in the
-          # header. Walk every conflicted path; resolve known patterns;
-          # if anything is left unresolved, abort and fail loud.
+          # Conflict — resolve the shared state files structurally (see the
+          # header). merge_state.py exits 0 when every conflicted path is
+          # resolved; otherwise it leaves the rest in the index and lists them.
+          if [ -f tools/merge_state.py ]; then
+            if python3 tools/merge_state.py resolve; then
+              git commit -m "Auto-merge $BRANCH into main (state files merged structurally by tools/merge_state.py)"
+              git push origin main
+              git push origin --delete "$BRANCH" || true
+              echo "Merged $BRANCH into main (merge commit + structural state merge); deleted feature branch."
+              exit 0
+            fi
+            echo "::error::Merge conflict that tools/merge_state.py could not resolve; resolve manually."
+            git diff --name-only --diff-filter=U
+            git merge --abort || true
+            exit 1
+          fi
+
+          # Legacy fallback (merge_state.py not present on either side).
           UNRESOLVED=""
           while IFS= read -r conflict_path; do
             [ -z "$conflict_path" ] && continue

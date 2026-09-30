@@ -33,7 +33,7 @@ sources:
     role: primary
 closed_sources: []
 evidence:
-  - quote: "We assess with medium confidence that the same threat actor is behind both backdoors, and that they are Chinese-speaking. However, at the time of publication, we couldn't attribute this activity to any known group."
+  - quote: "We assess with medium confidence that the same actor is behind both backdoors, and that they are Chinese-speaking. However, at the time of publication, we couldn't attribute this activity to any known group."
     publisher: "Kaspersky Securelist (GReAT)"
   - quote: "The backdoor loaders are customized for each victim and use information from the victim's machine to decrypt the payload. Both the loaders and the backdoors are heavily obfuscated, making analysis more complicated."
     publisher: "Kaspersky Securelist (GReAT)"
@@ -55,6 +55,15 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
+updates:
+  - at: "2026-09-29T23:38:24Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The Kaspersky quotation carried the word "threat" from the preceding sentence; the assessment
+      sentence itself says "the same actor". The evidence quotation now matches it. No fact changed.
+    fields: [evidence]
 migrated_from: null
 ---
 

@@ -29,6 +29,10 @@ sources:
     publisher: "Manchester Airports Group (first-party statement)"
     date: "2026-08-27"
     role: primary
+  - url: "https://mediacentre.magairports.com/mag-statement-on-cyber-security-incident/"
+    publisher: "Manchester Airports Group (spokesperson statement)"
+    date: "2026-08-27"
+    role: primary
   - url: "https://www.theregister.com/security/2026/08/27/cybercrooks-jet-off-with-manchester-airports-group-customer-data/5292943"
     publisher: "The Register"
     date: "2026-08-27"
@@ -55,8 +59,12 @@ sources:
     role: corroborating
 closed_sources: []
 evidence:
-  - quote: "Manchester Airports group has been subject to a cyber security incident by an unauthorised third party. A quantity of customer data has been obtained that relates to car park, lounge and Fast Track bookings and in-airport WIFI sign-ups at Manchester, Stansted, and East Midlands airports."
+  - quote: "Manchester Airports group has been subject to a cyber security incident by an unauthorised third party. A quantity of customer data has been obtained that relates to car park, lounge and Fast Track bookings and in-airport WIFI sign-ups at Manchester, Stansted and East Midlands airports."
+    publisher: "Manchester Airports Group (spokesperson statement)"
+    source_url: "https://mediacentre.magairports.com/mag-statement-on-cyber-security-incident/"
+  - quote: "If you have been notified that you were affected by the incident, your data was made publicly available."
     publisher: "Manchester Airports Group"
+    source_url: "https://www.manchesterairport.co.uk/help/data-security-incident/"
   - quote: "At no point has passenger safety or aviation security been compromised."
     publisher: "Manchester Airports Group"
   - quote: "The overwhelming majority of those affected have only had their email addresses compromised."
@@ -136,18 +144,31 @@ updates:
       approximately 8.8 million unique email addresses and phone numbers. No new access-vector
       information; the client-side API-credential vector is unchanged.
     fields: [updated_at, summary, sources, evidence, body]
+  - at: "2026-09-29T22:52:29Z"
+    run_id: 2026-09-29T2134Z-audit
+    type: correction
+    summary: >
+      The spokesperson statement this entry quotes was cited to MAG's customer help page, which has
+      since been reworded. The quotation is now cited to the media-centre statement that carries it
+      verbatim, together with the help page's current confirmation that notified customers' data was
+      made public. The main analysis still said no actor had claimed the incident and no access vector
+      was known, which the updates of 2026-08-31 and 2026-09-05 had overtaken. It now states
+      FulcrumSec's claim and its stated vector. The analysis also cites the Manage My Booking
+      suspension to Infosecurity Magazine and MAG's authorities statement to the media-centre
+      statement.
+    fields: [sources, evidence, body]
 migrated_from: null
 ---
 
 Manchester Airports Group (MAG), operator of Manchester, London Stansted and East Midlands airports, confirmed on 2026-08-27 that "an unauthorised third party" obtained "a quantity of customer data" relating to car-park, lounge and Fast Track bookings and in-airport WiFi sign-ups ([Manchester Airports Group, 2026-08-27](https://www.manchesterairport.co.uk/help/data-security-incident/)). Roughly 8.7 million customers are affected, the large majority with only an email address exposed — collected during public-WiFi signup: "the overwhelming majority of those affected have only had their email addresses compromised" ([The Register, 2026-08-27](https://www.theregister.com/security/2026/08/27/cybercrooks-jet-off-with-manchester-airports-group-customer-data/5292943)) — a smaller subset also had phone numbers, vehicle registrations and postcodes taken.
 
-MAG states neither it nor the accessed system holds bank or payment-card data, and that no operational or aviation-security system was touched: "at no point has passenger safety or aviation security been compromised" ([Manchester Airports Group, 2026-08-27](https://www.manchesterairport.co.uk/help/data-security-incident/)). The group has suspended its Manage My Booking self-service portal as a precaution while investigating. The Register reports — attributed to the outlet, not confirmed by MAG's own statement — that the intrusion compromised one internal system and then pulled files from a third-party-hosted database, that the attacker's ransom demand was notably lower than the group's typical extortion demand and was not paid, and that MAG characterises the incident internally as "a hack, not a lapse." At the time of MAG's initial disclosure, no extortion group had claimed the incident publicly and no outlet had named an access vector, an exploited product, or a CVE — that changed three days later, when FulcrumSec claimed responsibility and named an access vector (see the 2026-08-31 update below). The Register reports that the Information Commissioner's Office "asked MAG not to share details of the ransom note, the extortion demands, or the group name" ([The Register, 2026-08-27](https://www.theregister.com/security/2026/08/27/cybercrooks-jet-off-with-manchester-airports-group-customer-data/5292943)); no source states that the ICO has confirmed receiving a breach report, and MAG says only that it has "informed and are working with the relevant authorities".
+MAG states neither it nor the accessed system holds bank or payment-card data, and that no operational or aviation-security system was touched: "at no point has passenger safety or aviation security been compromised" ([Manchester Airports Group, 2026-08-27](https://www.manchesterairport.co.uk/help/data-security-incident/)). The group temporarily suspended its online Manage My Booking service as a precaution ([Infosecurity Magazine, 2026-08-27](https://www.infosecurity-magazine.com/news/manchester-airports-data-breach/)). The Register reports — attributed to the outlet, not confirmed by MAG's own statement — that the intrusion compromised one internal system and then pulled files from a third-party-hosted database, that the attacker's ransom demand was notably lower than the group's typical extortion demand and was not paid, and that MAG characterises the incident internally as "a hack, not a lapse." At the time of MAG's initial disclosure, no extortion group had claimed the incident publicly and no outlet had named an access vector, an exploited product, or a CVE — that changed three days later, when FulcrumSec claimed responsibility and named an access vector (see the 2026-08-31 update below). The Register reports that the Information Commissioner's Office "asked MAG not to share details of the ransom note, the extortion demands, or the group name" ([The Register, 2026-08-27](https://www.theregister.com/security/2026/08/27/cybercrooks-jet-off-with-manchester-airports-group-customer-data/5292943)); no source states that the ICO has confirmed receiving a breach report, and MAG says only that it has "informed and are working with the relevant authorities" ([Manchester Airports Group, 2026-08-27](https://mediacentre.magairports.com/mag-statement-on-cyber-security-incident/)).
 
-No source states an access vector, exploited product or CVE, and no extortion actor has claimed responsibility; per The Register's reporting the data was obtained from an internal system and a third-party-hosted database. The transferable point is scale rather than mechanism: 8.7 million records exposed through apparently low-sensitivity WiFi-signup collection shows how ancillary customer-facing services (guest WiFi, parking bookings) can carry disproportionate downstream exposure.
+The access vector came later and from the attacker: FulcrumSec, which claimed the intrusion on 2026-08-30, says it used airport-specific marketing-platform API credentials exposed in client-side JavaScript, and it has since published the dataset (both set out in the updates below). No exploited product or CVE is named. The transferable point is scale rather than mechanism: 8.7 million records exposed through apparently low-sensitivity WiFi-signup collection shows how ancillary customer-facing services (guest WiFi, parking bookings) can carry disproportionate downstream exposure.
 
 ## Correction — 2026-08-30T13:12:06Z
 
-This entry stated that the UK Information Commissioner's Office had confirmed receipt of a breach report and was assessing it. No source cited here says that. MAG's own statement names no regulator, saying only that it has "informed and are working with the relevant authorities" ([Manchester Airports Group, 2026-08-27](https://www.manchesterairport.co.uk/help/data-security-incident/)), and the closest the reporting comes is The Register's account that the ICO "asked MAG not to share details of the ransom note, the extortion demands, or the group name" ([The Register, 2026-08-27](https://www.theregister.com/security/2026/08/27/cybercrooks-jet-off-with-manchester-airports-group-customer-data/5292943)). The distinction matters for anyone reading this as a regulatory-timeline signal: engagement is on the record, a confirmed statutory filing is not.
+This entry stated that the UK Information Commissioner's Office had confirmed receipt of a breach report and was assessing it. No source cited here says that. MAG's own statement names no regulator, saying only that it has "informed and are working with the relevant authorities" ([Manchester Airports Group, 2026-08-27](https://mediacentre.magairports.com/mag-statement-on-cyber-security-incident/)), and the closest the reporting comes is The Register's account that the ICO "asked MAG not to share details of the ransom note, the extortion demands, or the group name" ([The Register, 2026-08-27](https://www.theregister.com/security/2026/08/27/cybercrooks-jet-off-with-manchester-airports-group-customer-data/5292943)). The distinction matters for anyone reading this as a regulatory-timeline signal: engagement is on the record, a confirmed statutory filing is not.
 
 ## Update — 2026-08-31T05:35:00Z
 
@@ -158,3 +179,7 @@ The exposure class this adds is distinct from the original disclosure: a third-p
 ## Update — 2026-09-05T05:00:00Z
 
 FulcrumSec has now published the full dataset rather than merely claiming it, and the confirmed scale is substantially larger than the ~86GB previously claimed: roughly 550GB uncompressed, comprising 8,672,291 customer profiles (email, name, mobile, home town, postal region, and the residential IP address the account last connected from), over 1.16 billion Iterable platform events (email sends, opens, clicks and bounces), 2,482,763 historical parking, lounge and Fast Track purchase records, 461,433 SMS messages containing booking date, car-park and vehicle-registration details in plain text, and roughly 108,000 distinct UK vehicle registration plates tied to owner contact and booking details ([Security Affairs, 2026-09-04](https://securityaffairs.com/198447/data-breach/crooks-behind-manchester-airports-group-hack-leaked-data-of-8-8-million-people.html)). Have I Been Pwned has processed the published dataset and added it to its breach database, confirming approximately 8.8 million unique email addresses and phone numbers alongside names, IP addresses, purchase history and vehicle registration plates. FulcrumSec's leak-site post separately claims the dataset includes government, judicial, military, police, NHS and defence-industry employees among the exposed customers, and that it withheld a subset of upcoming-travel records that would otherwise reveal when a victim's home will be empty — both claims are the extortion group's own framing and are not independently verified. No new access-vector information accompanies this development; the client-side API-credential vector already recorded above is unchanged.
+
+## Correction — 2026-09-29T22:52:29Z
+
+The statement quoted at the top of this entry is MAG's spokesperson statement of 2026-08-27, carried verbatim on its media centre ([Manchester Airports Group, 2026-08-27](https://mediacentre.magairports.com/mag-statement-on-cyber-security-incident/)). The customer help page it was cited to has since been reworded in the past tense, and now also says that customers who were notified had their data "made publicly available" ([Manchester Airports Group, 2026-08-27, revised since](https://www.manchesterairport.co.uk/help/data-security-incident/)), MAG's own acknowledgement of the leak described in the update of 2026-09-05. The incident is also no longer unclaimed or without a stated vector: FulcrumSec's claim of 2026-08-30 supplied both.

@@ -13,7 +13,8 @@ matches candidate items against keys *and aliases* — so "UNC6240" and
 Contract (normative version in [`docs/pipeline.md`](../docs/pipeline.md)):
 
 - `key` = `<type>:<kebab-slug>`, `type ∈ {actor, campaign, malware, tool,
-  incident, report, trend, policy}`. Keys are permanent — entries
+  incident, report, trend, policy, product}` (`product` records are
+  maintained by `tools/sync_products.py` from entries' `affected_products[]`). Keys are permanent — entries
   reference them.
 - `name` is the concise canonical entity name only — never the reporting
   vendor, never a headline sentence. Every other public name goes in
@@ -30,7 +31,7 @@ Contract (normative version in [`docs/pipeline.md`](../docs/pipeline.md)):
 - `relations` (optional) carries the entity's curated threat-graph edges:
   typed, directed, evidence-bound records `{to, type, source, note}` —
   `type` from the controlled vocabulary (`attributed-to`, `uses`,
-  `exploits`, `part-of`, `variant-of`, `successor-of`,
+  `exploits`, `affects`, `part-of`, `variant-of`, `successor-of`,
   `collaborates-with`, `overlaps-with`, `documented-in`, `related-to`;
   direction + endpoint constraints in `docs/pipeline.md` § Relationships),
   `to` an existing canonical key, `source` the entry id whose cited

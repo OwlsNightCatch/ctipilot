@@ -109,7 +109,8 @@ single living record of the finding: a later run (an intel fire or the
 quality audit) that learns something new about it, finds an error in it, or
 can make it more precise **edits this same file** — appending a dated
 `updates[]` changelog record and a matching `## <Type> — <at>` body section,
-bringing the frontmatter to the current truth, and bumping `updated_at`.
+bringing the frontmatter to the current truth, and (for a material new
+development, a `type: update` record) moving `updated_at`.
 There is never a second entry for the same finding, and there is never a
 silent edit: every change is a record the reader and the gate can see.
 Three things never change once published — the entry id/path,
@@ -138,9 +139,10 @@ summary: >
   text — a reader who sees ONLY this must know what is affected and why it
   matters.
 discovered_at: "2026-07-03T04:21:09Z"   # UTC moment the finding was FIRST published — never changes
-updated_at: null               # UTC moment of the latest changelog record (== updates[-1].at); null until
-                               # the first update. max(discovered_at, updated_at) is the entry's activity
-                               # moment — the live brief's sort key
+updated_at: null               # == `at` of the last NON-INTERNAL `type: update` record; null while there is
+                               # none (corrections, improvements and internal records never move it).
+                               # max(discovered_at, updated_at) is the entry's activity moment, the live
+                               # brief's sort key
 event_date: "2026-07-02"                # date of the underlying event / primary publication
 run_id: 2026-07-03T0412Z-intel          # the ORIGINATING fire — never changes; updating runs appear in updates[]
 priority: high                 # critical | high | notable | routine — see § Priority
@@ -157,8 +159,8 @@ entities: []                   # registry keys, e.g. [actor:shinyhunters, campai
 techniques: []                 # MITRE ATT&CK ids the sources support (T####[.###]) — the
                                # CANONICAL mapping surface (active ids per the pinned
                                # attack/enterprise-attack.json); every id must name a behavior
-                               # the body describes in prose (inline T-ids only where
-                               # essential); [] when the entry maps none
+                               # a cited source supports and the body does not contradict
+                               # (inline T-ids only where essential); [] when the entry maps none
 affected_products: []          # official product names ("Vendor Product" strings — what an
                                # alert or asset inventory would name); [] when not
                                # product-specific
@@ -186,6 +188,9 @@ closed_sources: []             # [{title, provider, date, ref}] — intel/ drop 
 evidence:                      # quotes binding claims to fetched sources — quote is ALWAYS English (v4.2)
   - quote: "An authenticated remote command injection vulnerability (CWE-78) in Coolify…"
     publisher: "coollabsio GHSA"
+    source_url: "https://github.com/coollabsio/coolify/security/advisories/GHSA-qqrq-r9h4-x6wp"
+                               # the page the quote is from — expected on every web-sourced
+                               # quote (the gate's quote-literal check searches it first)
   - quote: "first reported a data leak on 7 August (translated from German)"    # non-English source:
     original: "erstmals am 7. August einen Datenabfluss gemeldet"               # quote = marked English
     publisher: "Der Tagesspiegel"                                               # translation; original =
@@ -201,9 +206,10 @@ references: []                 # entry ids this entry builds on (a distinct find
 deep_dive: false               # true ⇒ this entry IS the deep-dive treatment
 deep_dive_category: null       # taxonomy-free rotation slug when deep_dive: true (see prompt)
 org_triage: null               # or {category: P1, rationale: "…"} on triage-kind entries when a scheme is defined
-classification: null           # null here (vulnerability is a triage kind → uses org_triage). EVERY
-                               # non-triage entry instead carries the NATO Admiralty code, e.g.:
-                               #   classification: {reliability: B, credibility: 2}
+classification:                # NATO Admiralty code. Vulnerability is a triage kind: it carries
+  reliability: A               # org_triage + classification: null ONLY while the profile configures a
+  credibility: 1               # triage scheme; with none configured (the shipped profile) it carries
+                               # this block like every other kind, e.g. {reliability: B, credibility: 2}
                                # reliability A–F (of the sourcing) + credibility 1–6 (of the item),
                                # assessed independently — config/org-profile.yaml `classification:`.
 watchlist_hit: false           # true only when inclusion was driven by an org-profile watchlist match
@@ -241,14 +247,16 @@ English only.
 
 ### Field semantics and hard rules
 
-- **`headline`** — bold-lead TL;DR headline, ≤ 120 chars, no trailing period.
+- **`headline`** — bold-lead TL;DR headline, ≤ 120 chars (the gate WARNs above 120 on a new entry; 160 is the parser's hard limit), no trailing period.
 - **`summary`** — the load-bearing standalone digest. Never empty.
 - **`discovered_at`** — the moment *this pipeline* first published the
   finding, set once, never backdated, never changed by an update. The folder
   date MUST equal its UTC date.
 - **`updated_at` / `updates[]`** — the entry's changelog (§ Entry
   lifecycle). `updates[]` is append-only, oldest first; `updated_at` MUST
-  equal the last record's `at` (null while the list is empty). The entry's
+  equal the `at` of the last non-internal `type: update` record (null while
+  there is none: corrections, improvements and internal records never move
+  it). The entry's
   **activity moment** is `max(discovered_at, updated_at)`
   (`content_model.entry_activity_ts`): it orders the live brief, the
   briefbook and the feeds, so an update floats the entry back to the top.
@@ -266,17 +274,19 @@ English only.
   bug is correctly `vector: zero-click` + `auth: post-auth`.
 - **`techniques[]`** — the entry's MITRE ATT&CK technique ids, validated
   against `T####`/`T####.###` (format — FAIL) and against the pinned
-  ATT&CK dataset `attack/enterprise-attack.json` (existence + lifecycle —
-  WARN; see § The ATT&CK layer). This is the **canonical mapping
+  ATT&CK dataset `attack/enterprise-attack.json` (existence + lifecycle:
+  FAIL on the run's own entries, WARN store-wide; see § The ATT&CK layer). This is the **canonical mapping
   surface**: the machine retrieval layer for alert-triage consumers
   (given an alert mapped to a technique, the matching entries are a field
   lookup), and the sole input to the derived entity/CVE TTP profiles, the
   `/attack/` matrix and the Navigator-layer exports — a technique missing
   here is invisible to all of them. Use active ids only (revoked ids
   resolve forward via `revoked_by`, but new entries reference survivors).
-  Every id must correspond to a behavior the body describes **in plain
-  prose**; inline T-ids in the body appear only where essential, and a
-  bare ID list in prose is a defect. An id no cited source supports is a
+  Every id must name a behavior a cited source supports and the body does
+  not contradict: the mapping follows the sources, not the length of the
+  prose, so a short entry maps a source-stated chain as completely as a long
+  one. Inline T-ids in the body appear only where essential, and a bare ID
+  list in prose is a defect. An id no cited source supports is a
   hallucination. Entries that predate this field (the migrated/early-v3
   tail) carry their mappings as in-prose T-ids only; consumers derive
   their effective set via `content_model.entry_technique_ids` (frontmatter
@@ -305,8 +315,9 @@ English only.
   `[SINGLE-SOURCE]` heading flag; renderers surface them as badges.
 - **`update_of`** — RETIRED in v4.0. The gate FAILs any non-null value:
   developments and corrections are `updates[]` records on the existing
-  entry, never a second entry. (Long-running campaigns still get ≤ 1
-  consolidated update record per week unless something critical changes.)
+  entry, never a second entry. (A long-running campaign's routine drip is
+  consolidated, typically about one update record a week; every material
+  development ships when it lands.)
 - **`references[]`** — entry ids this entry builds on. It is also the
   explicit dedup statement: a genuinely distinct finding whose `cves[]`
   intersect an existing entry's MUST list that entry here, or the gate
@@ -328,7 +339,9 @@ English only.
   classification scheme, selected by kind. Triage kinds
   (`classification.triage_kinds` in `config/org-profile.yaml`, default
   `vulnerability`) carry `org_triage: {category, rationale}` and
-  `classification: null`; every other kind carries the NATO Admiralty
+  `classification: null` **only while the profile configures a triage
+  scheme**; with none configured (the shipped profile) they carry the
+  Admiralty block like everything else. Every other kind carries the NATO Admiralty
   `classification: {reliability, credibility}` (letter A–F for the sourcing,
   number 1–6 for the item, assessed independently) and `org_triage: null`.
   Both schemes and the kind split are config-driven; the gate FAILs an
@@ -470,8 +483,9 @@ Rules, all enforced by `tools/check_run.py` (`entry-updates`, `silent-edit`) unl
    quality audit (soundness corrections, completeness improvements). The
    audit's former "immutability-exception ledger" is retired — the
    changelog *is* the ledger, and it lives with the entry.
-7. **Cadence discipline.** Long-running campaigns receive ≤ 1 consolidated
-   `update` record per week unless something critical changes; bookkeeping
+7. **Cadence discipline.** A long-running campaign's routine drip is
+   consolidated, typically about one `update` record a week, and every
+   material development ships when it lands; bookkeeping
    that changes nothing a reader would act on (a `cisa-kev` flag on a CVE
    the entry already calls exploited) is not a record.
 
@@ -517,18 +531,22 @@ protected from overflooding by the **gate**, not by a quota: every entry
 must earn its place, and a marginal item is dropped no matter how much room
 a numeric budget would have allowed.
 
-The gate is applied for two properties of **equal weight**:
+The gate is applied for two properties whose weight differs by severity
+(v4.2, operator directive 2026-08-28):
 
 - **Sound** — everything published is relevant, accurate, and actionable;
   very low false positives; no marginal, off-scope, or unverified item.
+  Applies with full force to every entry.
 - **Complete** — everything genuinely relevant to the reader's job is
   published; very low false negatives; a reader relying on ctipilot.ch alone
-  has no blind spot on anything that matters to their work. The gate removes
-  noise, never signal — a relevant item is never dropped to keep the count
-  down (there is no count to keep down).
+  has no blind spot on anything that matters to their work. Applies with
+  full force to the **critical and high-severity signal** (an exploited
+  exposure, an active campaign or confirmed incident touching the
+  constituency); below that bar, completeness yields to quality and a
+  marginal awareness item is better dropped or held to two sentences.
 
-A missed relevant item is as serious a failure as an included marginal one —
-and a silent one, since the reader never sees what they were not told — so
+A missed critical or high item is the worst failure the brief can have,
+and a silent one, since the reader never sees what they were not told, so
 completeness is verified deliberately (the intel run's Phase 2 completeness
 sweep; the verifier's coverage + missed-angle checks), not assumed.
 
@@ -540,9 +558,8 @@ sweep; the verifier's coverage + missed-angle checks), not assumed.
 - **Deep-dive treatment** is reserved for an item that earns the long form
   (see the intel prompt's Phase 3 criteria); it is rare by construction, not
   by quota. Category rotation is derived from the last 30 days of
-  `deep_dive: true` entries. Most UTC days carry one deep dive, some none;
-  a second on one day is legitimate only when it independently earns the
-  treatment, with the reason in the run record.
+  `deep_dive: true` entries. A day may carry none or several, each on its
+  own merit.
 - **`priority: critical`** is governed by its own extreme bar (§ Priority),
   not by a count — criticals stay rare because the bar is high.
 - Every run reads the window's already-published entries first (including
@@ -586,9 +603,9 @@ entities:
 ```
 
 Entity types: `actor | campaign | malware | tool | incident | report |
-trend | policy` (`trend` tracks named vulnerability/technique waves,
+trend | policy | product` (`trend` tracks named vulnerability/technique waves,
 `policy` tracks named regulatory items — both inherited from v2 coverage
-tracking).
+tracking; `product` records are derived from `affected_products[]`, § Products).
 
 Rules: `key` is `<type>:<kebab-slug>`, globally unique, never renamed once
 published (entries reference it). Aliases must not collide with another
@@ -901,7 +918,7 @@ completed: "2026-07-03T04:31:40Z"
 duration_seconds: 1177
 model: "…"                     # main-agent friendly name (self-ID: harness prompt line; env vars as marked fallback)
 model_id: "…"
-prompt_version: "v3.1"
+prompt_version: "v4.17"
 window_hours: 24               # gap-derived recency window this run covered (24 h floor)
 gap_hours: 7                   # hours since the previous run record
 entries_published: 3           # NEW entry files this run (run_id == this run)
@@ -943,8 +960,7 @@ verification_residual_count: 0 # never 0 when the final iteration was NEEDS_FIXE
 verification:
   confirmation_waived: null    # optional (v3.23+): non-null string ONLY when the run published
                                # on a CLEAN that no second pass confirmed (single CLEAN at the
-                               # iteration cap, watchdog-overrun single iteration, confirmation
-                               # spawn blocked) — the reason, verbatim. Normal confirmed-CLEAN
+                               # iteration cap, confirmation spawn blocked) — the reason, verbatim. Normal confirmed-CLEAN
                                # publishes omit it. `check_run.py` FAILs an unconfirmed final
                                # CLEAN on v3.23+ records unless this (or the cap) explains it.
   iterations:                  # v3.23+: a CLEAN publish requires the final TWO iterations both
@@ -960,8 +976,11 @@ verification:
       duration_seconds: 240
       verdict: CLEAN           # CLEAN | NEEDS_FIXES
       truth: 0                 # F1–F4 + F13–F15
-      editorial: 0             # F5–F10 + F12 + F16
+      editorial: 0             # F5–F10 + F12 + F16–F18
       advisory: 0              # F11
+      claims_in_scope: 214     # v4.17: the claim-ledger claims this pass had to answer for
+      claims_checked: 214      # v4.17: rows in verification.iter<N>.claims.yaml (== in-scope
+                               # for a complete pass; an incomplete pass's CLEAN never counts)
       findings: []             # rich per-finding records, v2 shape
     - n: 2                     # the confirmation pass — an independent cold read, also CLEAN
       model: "…"
@@ -983,7 +1002,7 @@ The v2 § 7 content, per run: borderline drops with reasons, single-source
 items and their carve-outs, reduced-confidence inclusions, contradictions,
 out-of-window drops, stalled sub-agents, and the parseable lines —
 `Coverage gaps: …`, `Watchlist: …`, `Closed-source intake: …`,
-`Essential-coverage: …`, budget-exceeded justifications.
+`Essential-coverage: …`.
 ```
 
 The rendered window brief concatenates the run-record bodies of every run
@@ -1122,7 +1141,29 @@ counters and prompt-version cross-check against `prompts/CHANGELOG.md`);
 closed-source citation traceability to `intel/` (no TLP gate); org-triage and
 Admiralty-classification vocabulary/placement; the ATT&CK layer (pinned
 dataset present + invariant-clean — FAIL; `techniques[]` ids unknown /
-revoked / deprecated in the pin, or prose-mapped ids missing from the
-frontmatter — WARN); and the site smoke tests (`site/test_build.py`).
+revoked / deprecated in the pin — FAIL on the run's own entries (v3.21),
+WARN store-wide; prose-mapped ids missing from the frontmatter — WARN); and
+the site smoke tests (`site/test_build.py`).
+
+v4.17 additions (run scope, gated on the run's prompt version):
+`changelog-fields` (a record's `fields` must name every frontmatter field
+its fire changed, plus `body` for an analysis edit; an analysis edit of more
+than 12 words carried only by `internal: true` records FAILs, since an
+internal record may only re-point a citation or re-word a few words); `dedup-extended` (two new entries
+of one fire sharing a CVE, or a new entry sharing another entry's primary
+source URL plus an entity or most of its title, FAIL unless declared in
+`references[]`); `run-integrity` (iteration counter vs iterations listed,
+`duration_seconds` vs the stamps, a NEEDS_FIXES final pass with no truth or
+editorial finding); `entry-shape` (a new body with no inline citation FAILs;
+headline over 120 characters, main analysis over 550 words or 1,100 for a
+deep dive, an uncited `sources[]` URL, an inline citation date differing from
+its `sources[]` record, `no-patch` beside a fixed version, a critical
+`immediate_action` naming no fixed version — WARN); `exploitation-consistency`
+(WARN on a sentence denying exploitation of a CVE the entry marks exploited);
+`reader-text-internals` extended to em dashes, KEV remediation deadlines and
+pipeline vocabulary across every reader-facing field; defanged indicators in
+the IOC scan; `cves_seen.json` duplicate records and duplicate registry keys
+FAIL; an exception inside any check is a `check-crashed` FAIL rather than a
+crashed script.
 
 

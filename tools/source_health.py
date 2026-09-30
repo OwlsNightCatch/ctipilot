@@ -684,6 +684,10 @@ def _content_fetch(s: dict[str, Any], *, timeout: float) -> tuple[str, str, str,
     return transport, text, raw, []
 
 
+_QUERY_RECIPES = {"sec-edgar", "osv"}
+_QUERY_SOURCE_IDS = {"sec-disclosures-edgar"}
+
+
 def _content_assess(s: dict[str, Any], *, timeout: float, now: datetime) -> dict[str, Any]:
     """Verdict on what the source actually returns: `relevant`, `stale`,
     `irrelevant`, `shell`, or `unreadable`, with the evidence behind it."""
@@ -729,7 +733,15 @@ def _content_assess(s: dict[str, Any], *, timeout: float, now: datetime) -> dict
                 if isinstance(hits, dict):
                     counts.append((hits.get("total") or {}).get("value")
                                   if isinstance(hits.get("total"), dict) else hits.get("total"))
-                empty_envelope = any(c == 0 for c in counts if isinstance(c, int))
+                # Only a QUERY recipe may legitimately answer "0 results"
+                # (an 8-K full-text search on a quiet day). A listing recipe
+                # (a CERT feed, a CSAF index, an enforcement list) that returns
+                # zero items is broken, never healthy (tooling review
+                # 2026-09-29: `{"count":0,"items":[]}` for cisa-news read as
+                # relevant).
+                recipe = (s.get("health_cmd") or [""])[0] if isinstance(s.get("health_cmd"), list) else ""
+                is_query = recipe in _QUERY_RECIPES or s.get("id") in _QUERY_SOURCE_IDS
+                empty_envelope = is_query and any(c == 0 for c in counts if isinstance(c, int))
                 lists = [payload.get(k) for k in ("hits", "items", "results", "vulnerabilities", "vulns")]
                 structured_hits = any(isinstance(v, list) and v for v in lists)
                 item_lists = [v for v in lists if isinstance(v, list) and v]

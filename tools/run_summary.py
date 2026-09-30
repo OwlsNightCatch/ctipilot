@@ -24,6 +24,7 @@ Phase 0 needs into one small JSON:
       "runs": {                        # from runs/** (content_model)
         "count": 71,
         "last_run": {"run_id", "kind", "date", "started", "completed", "publish_status"},
+        "last_intel_run": {...same keys...},   # the previous non-stood-down INTEL fire: the PD-7 gap anchor
         "fetch_gaps_in_window": [{"id", "runs_failing", "last_status"}]
       },
       "window24h": {                   # budget snapshot from entries/**
@@ -46,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -178,10 +180,19 @@ def _last_attempted_at(runs: list) -> dict:
         at = str(run.get("started") or run.get("date") or "")
         if not at:
             continue
+        # A fetch that failed outright with no alternate coverage read
+        # nothing, so it must not advance the cursor: otherwise the next
+        # sweep's lookback anchors at the failed attempt and everything the
+        # source published before it is never read (keycloak: succeeded
+        # 09-13, failed 09-21, next lookback anchored at 09-21).
+        failed = {str(f.get("id")) for f in (run.get("fetch_failures") or [])
+                  if isinstance(f, dict) and f.get("id") and f.get("covered_anyway") is not True}
         for sa in (run.get("sub_agents") or {}).values():
             if not isinstance(sa, dict):
                 continue
             for sid in _attempted_ids(sa):
+                if sid in failed:
+                    continue
                 if at > out.get(sid, ""):
                     out[sid] = at
     return out
@@ -302,6 +313,12 @@ def build_summary(now: datetime, recent_days: int, gap_runs: int,
     # --- Runs (runs/** via content_model) ----------------------------------
     runs = cm.collect_runs()
     last = runs[-1] if runs else None
+    # The intel window anchors on the previous INTEL fire that actually swept
+    # (PD-7): anchoring on the weekly audit shrank every following fire's
+    # window by the audit's offset (gap 15 h instead of 24 h each Monday) and
+    # hid real outages from the gap > 24 h backfill trigger.
+    intel_runs = [r for r in runs if r.get("kind") == "intel" and not r.get("stood_down")]
+    last_intel = intel_runs[-1] if intel_runs else None
     gap_counter: dict = {}
     for run in runs[-gap_window:]:
         for f in run.get("fetch_failures") or []:
@@ -316,6 +333,11 @@ def build_summary(now: datetime, recent_days: int, gap_runs: int,
             {k: last.get(k) for k in ("run_id", "kind", "date", "started",
                                       "completed", "publish_status")}
             if last else None
+        ),
+        "last_intel_run": (
+            {k: last_intel.get(k) for k in ("run_id", "kind", "date", "started",
+                                            "completed", "publish_status")}
+            if last_intel else None
         ),
         "fetch_gaps_in_window": [
             {"id": sid, **rec}
@@ -387,10 +409,19 @@ def main() -> int:
     ap.add_argument("--now", help="override 'now' (UTC ISO 8601 Z) for testing")
     args = ap.parse_args()
 
-    now = (
-        datetime.strptime(args.now, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-        if args.now else datetime.now(timezone.utc)
-    )
+    # "now" is the Phase 0 network-verified start when the caller passes it
+    # (--now "$STARTED") or when --out names the run's work directory; the
+    # container clock has been days wrong before (2026-08-24).
+    now = None
+    if args.now:
+        now = datetime.strptime(args.now, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    elif args.out:
+        m = re.search(r"(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})Z-(?:intel|audit)", str(args.out))
+        if m:
+            now = datetime.strptime(f"{m.group(1)}T{m.group(2)}:{m.group(3)}:00Z",
+                                    "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    if now is None:
+        now = datetime.now(timezone.utc)
     summary = build_summary(now, args.recent_days, args.gap_runs,
                             args.gap_window, args.promote_after, args.attempt_runs)
     if args.rotation is not None:

@@ -534,9 +534,18 @@ def check_registry(registry_path: Path, entries: list | None = None) -> dict[str
         return {}
     try:
         registry = cm.load_registry(registry_path)
+        raw_keys = re.findall(r'^  - key:\s*"?([^"\s]+)"?\s*$',
+                              registry_path.read_text(encoding="utf-8"), re.MULTILINE)
     except Exception as e:  # noqa: BLE001
         fail("registry", f"{rel} unparseable: {e}")
         return {}
+    # load_registry keeps the LAST record per key, so a duplicate silently
+    # drops the first record's aliases and relations before validate_registry
+    # can see it (tooling review 2026-09-29).
+    dup_keys = sorted({k for k in raw_keys if raw_keys.count(k) > 1})
+    if dup_keys:
+        fail("registry", f"{rel} carries more than one record for {dup_keys[:6]} — merge them into one "
+                         "record (aliases and relations unioned); a key appears once")
     entry_ids = {e["id"] for e in entries} if entries is not None else None
     errs = cm.validate_registry(registry, entry_ids=entry_ids)
     if errs:
@@ -1434,7 +1443,10 @@ def check_dedup(run: dict[str, Any], new_entries: list[dict],
     window_start = (run_date - timedelta(days=14)).isoformat()
     new_ids = {e["id"] for e in new_entries}
     others = [e for e in all_entries if e["id"] not in new_ids]
-    recent = [e for e in others if window_start <= e["date"] <= run_date_s]
+    # By last activity, not folder date: an entry updated inside the window is
+    # live coverage whatever day it was first published.
+    recent = [e for e in others
+              if window_start <= max(e["date"], (cm.entry_activity_ts(e) or "")[:10]) <= run_date_s]
     reg = registry or {}
 
     cve_hits: list[str] = []
@@ -1803,7 +1815,8 @@ def _scan_iocs(text: str) -> list[str]:
 
     version_context_re = re.compile(
         r"(?i)\b(version|versions?|patched|fixed|fix|firmware|build|release|"
-        r"branch|prior\s+to|before|earlier\s+than|≥|>=|<=|≤|EPMM|EPMS|EPSS|patch)\b"
+        r"releases|builds|branch|trains?|prior\s+to|before|earlier\s+than|≥|>=|<=|≤|EPMM|EPMS|EPSS|patch|"
+        r"upgrade|update|hotfix)\b"
     )
 
     flagged: list[str] = []
@@ -1819,8 +1832,8 @@ def _scan_iocs(text: str) -> list[str]:
         # four groups bounded by a non-(dot+digit) neighbour and stay flagged.
         before = text[max(0, m.start() - 1):m.start()]
         after = text[m.end():m.end() + 2]
-        if before == "." or re.match(r"\.\d", after):
-            continue
+        if before == "." or re.match(r"\.\d", after) or after[:1] == "+":
+            continue  # a longer dotted identifier, or a "5.2.3.16+" version floor
         # Look at the surrounding 80-char window for version-string cues.
         start = max(0, m.start() - 80)
         end = min(len(text), m.end() + 80)
@@ -1833,9 +1846,24 @@ def _scan_iocs(text: str) -> list[str]:
         if re.search(r"[\d.]+\s*[/,]\s*$", text[start:m.start()]) \
            or re.search(r"^\s*[/,]\s*[\d.]+", text[m.end():end]):
             continue
+        # A list of release numbers ("9.23.1.47 and 9.24.1.26", "7.0.10 to
+        # 10.0.2"): another dotted version within a few words either side.
+        near_before = text[max(0, m.start() - 30):m.start()]
+        near_after = text[m.end():m.end() + 30]
+        if re.search(r"\d+\.\d+\.\d+", near_before) or re.search(r"\d+\.\d+\.\d+", near_after):
+            continue
         flagged.append(ip)
     if flagged:
         findings.append(f"routable IPv4 address(es): {flagged[:3]}")
+
+    # Defanged indicators (v4.17): `evil[.]com`, `45.61.136[.]12`, `hxxps://`.
+    # Nobody defangs a benign name, so a defanged token is an indicator by the
+    # writer's own admission; two live entries carried attacker domains this
+    # way past the scan (tooling review 2026-09-29).
+    defanged = re.findall(r"\b[\w-]+(?:\[\.\]|\(\.\)|\{\.\}|\[dot\])[\w.\[\]-]+", text, re.IGNORECASE)
+    hxxp = re.findall(r"\bhxxps?://\S+", text, re.IGNORECASE)
+    if defanged or hxxp:
+        findings.append(f"defanged indicator(s): {(defanged + hxxp)[:3]}")
     return findings
 
 
@@ -1846,7 +1874,13 @@ def check_no_iocs(run_entries: list[dict]) -> None:
     the easy cases."""
     hit = False
     for e in run_entries:
-        blob = "\n".join(str(e.get(k) or "") for k in ("headline", "summary", "body"))
+        parts = [str(e.get(k) or "") for k in ("title", "headline", "summary", "sourcing_note", "body")]
+        parts += [str(a) for a in (e.get("actions") or [])]
+        ia = e.get("immediate_action")
+        if isinstance(ia, dict):
+            parts += [str(ia.get("title") or ""), str(ia.get("action") or "")]
+        parts += [str(r.get("summary") or "") for r in (e.get("updates") or []) if isinstance(r, dict)]
+        blob = "\n".join(parts)
         findings = _scan_iocs(blob)
         if findings:
             hit = True
@@ -2247,7 +2281,10 @@ _MIN_PAGE_SKELETON = 600
 # Their structured recipes (`bsi-csaf`, `ncsc-nl csaf`, `msrc cve`) are the
 # real read, and the verifier checks quotes from them by hand.
 _JS_RENDERED_HOSTS = {"wid.cert-bund.de", "advisories.ncsc.nl", "msrc.microsoft.com",
-                      "security-hub.ncsc.admin.ch", "psirt.global.sonicwall.com"}
+                      "security-hub.ncsc.admin.ch", "psirt.global.sonicwall.com",
+                      # EUVD is an Angular app; git.kernel.org and lore.kernel.org
+                      # answer with an Anubis proof-of-work page (2026-09-29 triage).
+                      "euvd.enisa.europa.eu", "git.kernel.org", "lore.kernel.org"}
 
 
 def _page_skeletons(urls: list[str], run_id: str) -> dict[str, list[str]]:
@@ -2306,6 +2343,11 @@ def _page_skeletons(urls: list[str], run_id: str) -> dict[str, list[str]]:
                 # Decode those escapes first, then strip the tags they reveal.
                 text = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), text)
                 text = _html.unescape(re.sub(r"<[^>]+>", "", text))
+                if mode == "extract":
+                    # A markdown link's target sits inside the sentence it links
+                    # from ("…exploited [flaws](https://…) in SMA1000…"), and its
+                    # letters would break every quote that spans the link.
+                    text = re.sub(r"\]\([^)\s]*(?:\s+\"[^\"]*\")?\)", "]", text)
                 out.append(_quote_skeleton(text))
         # A JS redirect or consent shell ("Redirecting... click here") reads as
         # a page with no content, which would turn every check into a false
@@ -2414,9 +2456,11 @@ def check_evidence_quotes_literal(run_entries: list[dict], run_id: str, *, skip:
             for b in bodies.get(u) or []:
                 if skel in b:
                     return True
-                # The bridge's PDF text extraction can drop the digit glyphs of
-                # Identity-H fonts (the IC3 WaterPlum advisory, 2026-09-29), so a
-                # PDF page also matches on the digit-free skeleton.
+                # PDF text extraction dropped the digit glyphs of Identity-H fonts
+                # before the per-font decode (the IC3 WaterPlum advisory,
+                # 2026-09-29). Bodies cached before that fix, and PDFs whose fonts
+                # carry no usable ToUnicode map, still can, so a PDF page also
+                # matches on the digit-free skeleton.
                 if urlsplit(u).path.lower().endswith(".pdf") and \
                         nodigit in "".join(ch for ch in b if not ch.isdigit()):
                     return True
@@ -2529,10 +2573,15 @@ def check_citation_cves(run_entries: list[dict], run_id: str, *, skip: bool,
     flagged, unreadable, matched = [], 0, 0
     for eid, cve, us, clause in todo:
         readable = [b for u in us for b in bodies.get(u) or []]
-        if not readable:
+        if not readable or any(not bodies.get(u) for u in us):
+            # A clause citing a page no direct transport could read may carry
+            # the id on exactly that page (a JS-rendered EUVD record beside a
+            # GHSA that predates the CVE), so a miss on the others proves nothing.
             unreadable += 1
             continue
-        if any(_quote_skeleton(cve) in b for b in readable):
+        # Exact id, not a prefix: "cve202620341" contains "cve20262034".
+        pat = re.compile(re.escape(_quote_skeleton(cve)) + r"(?!\d)")
+        if any(pat.search(b) for b in readable):
             matched += 1
         else:
             flagged.append((eid, cve, us, clause))
@@ -2778,7 +2827,15 @@ def check_cve_sync(scope_entries: list[dict], cves_seen: dict[str, Any] | None,
     if not cves_seen:
         fail("cve-sync", "state/cves_seen.json unavailable for comparison")
         return
-    seen_ids = {c["id"] for c in (cves_seen.get("cves") or []) if isinstance(c, dict)}
+    seen_list = [c.get("id") for c in (cves_seen.get("cves") or []) if isinstance(c, dict)]
+    seen_ids = set(seen_list)
+    # One record per CVE: a second record for the same id (a hand merge or a
+    # whole-file conflict resolution gone wrong) makes first_seen/last_seen
+    # ambiguous and a structured merge silently keeps only one of the two.
+    dupes = sorted({cid for cid in seen_list if seen_list.count(cid) > 1}) if len(seen_ids) != len(seen_list) else []
+    if dupes:
+        fail("cve-sync", f"cves_seen.json carries more than one record for {dupes[:8]} — merge them "
+                         "(first_seen = earliest, last_seen = latest, title/url from the latest sighting)")
     missing = sorted(set(all_ids) - seen_ids)
     if missing:
         detail = "; ".join(f"{cid} (in {all_ids[cid][:2]})" for cid in missing[:8])
@@ -2901,6 +2958,14 @@ VERIFIER_COUNTERS_FROM = (4, 11)
 # judgment call. Research/annual-report usually map but may legitimately
 # carry no TTP content (statistics, governance) → WARN. Policy entries may
 # map nothing at all.
+# v4.17 — the 2026-09-29 setup review's gate additions: a changelog record
+# must declare everything its fire changed, dedup reaches same-run twins and
+# primary-URL republication, reader text carries no em dash / KEV deadline /
+# pipeline narration, and the run record's counters and clock are internally
+# consistent. Gated so re-checking an older run record reports what its own
+# prompt version promised, not rules written after it.
+SETUP_REVIEW_FROM = (4, 17)
+
 ATTACK_REQUIRED_KINDS = {"threat", "incident", "vulnerability"}
 ATTACK_EXPECTED_KINDS = {"research", "annual-report"}
 
@@ -2923,11 +2988,14 @@ def _rating_enforced(run: dict[str, Any] | None) -> bool:
 
 
 def _parse_iso_utc(value: Any) -> datetime | None:
-    """`2026-07-09T20:09:30Z` → aware datetime; None when unparseable."""
+    """`2026-07-09T20:09:30Z` → aware datetime; None when unparseable. A value
+    without an offset is read as UTC: comparing a naive datetime with an aware
+    one raises, and a crash in the gate must never be how bad data gets past it."""
     try:
-        return datetime.fromisoformat(str(value or "").replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(str(value or "").replace("Z", "+00:00"))
     except ValueError:
         return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
 def _lifecycle_enforced(run: dict[str, Any] | None) -> bool:
@@ -3465,14 +3533,55 @@ def check_entry_id_uniqueness(entries: list[dict]) -> None:
         ok("entry-ids", f"{len(seen)} entry id(s) unique")
 
 
+def _setup_review_enforced(run: dict[str, Any] | None) -> bool:
+    """True for runs on prompt v4.17+ (the SETUP_REVIEW_FROM gate set)."""
+    if run is None:
+        return False
+    v = _prompt_version_tuple(run.get("prompt_version"))
+    return v is not None and v >= SETUP_REVIEW_FROM
+
+
 READER_FIELDS = ("title", "headline", "summary", "sourcing_note")
 
 # Production-process self-reference: the entry talking about the fire that
 # composed it instead of about the threat. `cti-run.md` § Style rules bans it
 # by name ("as of this run", "this run's own re-check" — use the date instead).
 _SELF_REF_RE = re.compile(
-    r"\b(?:as of )?th(?:is|e) (?:run|fire|pipeline|store)\b"
-    r"|\b(?:read|located|fetched|re-fetched|checked|seen) th(?:is|e) run\b",
+    r"\b(?:as of )?this (?:run|fire|pipeline|store)\b"
+    r"|\b(?:read|located|fetched|re-fetched|checked|seen) (?:in )?th(?:is|e) run\b",
+    re.IGNORECASE,
+)
+# "the run" / "the pipeline" / "the store" alone were dropped in v4.17: they
+# fired on the Windows Run dialog (every ClickFix entry), on a poisoned CI/CD
+# pipeline and on an app store, i.e. on the threat's own vocabulary.
+
+# v4.17 — the rest of the production-process vocabulary the 2026-09-29 entry
+# audit found in 36 of 65 entries, mostly in `sourcing_note`: the entry
+# narrating itself ("this entry", "tracked here", "see the 2026-07-31 entry"),
+# the rating machinery ("Admiralty B", "credibility 2", "carve-out"), fetch
+# transports (the reader pool, "every transport"), the audit, and registry
+# keys. A reader needs the provenance in two plain sentences, not the method.
+_META_REF_RE = re.compile(
+    r"\bthis (?:entry|brief|constituency)\b"
+    r"|\btracked here\b"
+    r"|\bsee the \d{4}-\d{2}-\d{2} entry\b"
+    r"|\bAdmiralty [A-F][1-6]?\b"
+    r"|\bcredibility [1-6]\b"
+    r"|\bcarve-out\b"
+    r"|\bjina\b|\breader(?:-| )pool\b|\bevery (?:fetch )?transport\b"
+    r"|\bquality audit\b"
+    r"|\b(?:actor|malware|campaign|tool|incident|report|product|trend|policy):[a-z0-9][a-z0-9-]+\b",
+    re.IGNORECASE,
+)
+
+# PD-13: a KEV remediation deadline is a US-FCEB compliance date, never a
+# reason for this constituency to act. Seven entries carried one in the
+# 2026-09-16..29 window, one in a critical entry's headline.
+_KEV_DEADLINE_RE = re.compile(
+    r"\b(?:KEV|CISA)(?:'s)? (?:remediation )?(?:deadline|due date)\b"
+    r"|\bremediation (?:deadline|due date)\b"
+    r"|\b(?:\d+|two|three|seven|fourteen|twenty-one)-day (?:KEV |remediation )?deadline\b"
+    r"|\bdue date of \d{4}-\d{2}-\d{2}\b",
     re.IGNORECASE,
 )
 
@@ -3525,7 +3634,8 @@ def _echoes_source_word(phrase: str, text: str) -> bool:
     return False
 
 
-def check_reader_text_internals(run_entries: list[dict], run_id: str | None = None) -> None:
+def check_reader_text_internals(run_entries: list[dict], run_id: str | None = None,
+                                enforce_v417: bool = False) -> None:
     """Reader-facing entry text must describe the threat, never the fire.
 
     `prompts/cti-run.md` § Style rules scopes this to the title, headline,
@@ -3567,9 +3677,32 @@ def check_reader_text_internals(run_entries: list[dict], run_id: str | None = No
         for sec in sections:
             if str(sec.get("at")) in own_ats:
                 surfaces.append((f"body section {sec.get('at')}", sec.get("body")))
+        is_new = run_id is not None and str(e.get("run_id") or "") == str(run_id)
+        for a in (e.get("actions") or []):
+            surfaces.append(("actions", a))
+        ia = e.get("immediate_action")
+        if isinstance(ia, dict):
+            surfaces.append(("immediate_action", f"{ia.get('title') or ''} {ia.get('action') or ''}"))
         for field, val in surfaces:
             if not isinstance(val, str):
                 continue
+            if enforce_v417:
+                mhit = _META_REF_RE.search(val)
+                if mhit:
+                    flagged.append(f"{e['id']}: {field} says {mhit.group(0)!r} — provenance and "
+                                   "method belong in the run record; the reader gets the fact "
+                                   "(a sourcing_note is two plain sentences of provenance)")
+                # The site strips em dashes at render, so on an UPDATED entry only
+                # this fire's own sections are checked: forcing a legacy clean-up
+                # of text the reader never sees would tax every update.
+                if "\u2014" in val and (is_new or field.startswith("body section")):
+                    flagged.append(f"{e['id']}: {field} carries an em dash — use a comma, colon, "
+                                   "semicolon or parentheses (operator directive 2026-08-29)")
+                khit = _KEV_DEADLINE_RE.search(val)
+                if khit:
+                    flagged.append(f"{e['id']}: {field} says {khit.group(0)!r} — a KEV remediation "
+                                   "deadline is a US federal compliance date, never a reason to "
+                                   "act (PD-13); say what the exploitation means instead")
             hit = _SELF_REF_RE.search(val)
             if hit and _echoes_source_word(hit.group(0), val):
                 hit = None
@@ -3911,6 +4044,350 @@ def check_all_run_records(runs: list[dict]) -> None:
            f"{len(runs)} run record(s) valid ({n_migrated} migrated, identity-checked only)")
 
 
+# --- v4.17 gate additions (2026-09-29 setup review) --------------------------
+
+
+def _frontmatter_and_body(text: str) -> tuple[dict, str]:
+    fm_text, body = cm.split_frontmatter(text)
+    return (cm.parse_yaml_subset(fm_text) or {}), (body or "")
+
+
+def check_changelog_declares_diff(run: dict[str, Any] | None, run_id: str,
+                                  content_root: Path, enforce: bool) -> None:
+    """A changelog record declares everything its fire changed (v4.17).
+
+    `silent-edit` asks only whether a modified entry carries SOME record from
+    this fire, so one `internal: true, fields: [tags]` record could carry a
+    rewritten analysis and a `cves[].status` moved from exploited to
+    patch-available past every check, invisibly: internal records never
+    render (reproduced by the 2026-09-29 tooling review on the TeamCity
+    entry). This diffs each modified entry against HEAD and requires every
+    changed top-level frontmatter key (except `updates` / `updated_at`,
+    which the changelog itself moves) to be named in this fire's `fields`,
+    plus `body` when the main analysis or an earlier section changed; a body
+    change carried only by internal records FAILs. The verifier found 38
+    `fields` mismatches by hand in September."""
+    try:
+        proc = subprocess.run(["git", "diff", "--name-only", "HEAD", "--", "entries/"],
+                              capture_output=True, text=True, cwd=content_root, timeout=15)
+    except Exception:
+        proc = None
+    if proc is None or proc.returncode != 0:
+        ok("changelog-fields", "skipped — git diff unavailable for the content root")
+        return
+    report = fail if enforce else warn
+    problems: list[str] = []
+    n = 0
+    for rel in [p for p in proc.stdout.split("\n") if p.strip().endswith(".md")]:
+        show = subprocess.run(["git", "show", f"HEAD:{rel}"], capture_output=True, text=True,
+                              cwd=content_root, timeout=15)
+        path = content_root / rel
+        if show.returncode != 0 or not path.is_file():
+            continue
+        try:
+            before, body_before = _frontmatter_and_body(show.stdout)
+            after, body_after = _frontmatter_and_body(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if str(after.get("run_id") or "") == str(run_id):
+            continue  # this fire's own new entry
+        recs = [r for r in (after.get("updates") or [])
+                if isinstance(r, dict) and str(r.get("run_id") or "") == str(run_id)]
+        if not recs:
+            continue  # silent-edit reports it
+        n += 1
+        changed = {k for k in set(before) | set(after)
+                   if k not in ("updates", "updated_at") and before.get(k) != after.get(k)}
+        own_ats = {str(r.get("at")) for r in recs}
+        main_a, secs_a = cm.split_update_sections(body_after)
+        kept = [main_a.strip()] + [f"{sec.get('at')}\n{(sec.get('body') or '').strip()}"
+                                   for sec in secs_a if str(sec.get("at")) not in own_ats]
+        main_b, secs_b = cm.split_update_sections(body_before)
+        prior = [main_b.strip()] + [f"{sec.get('at')}\n{(sec.get('body') or '').strip()}"
+                                    for sec in secs_b]
+        if kept != prior:
+            changed.add("body")
+        declared = {str(f) for r in recs for f in (r.get("fields") or [])}
+        eid = rel[len("entries/"):-len(".md")]
+        missing = sorted(changed - declared)
+        if missing:
+            problems.append(f"{eid}: this fire changed {missing} but its changelog record's "
+                            f"`fields` declares {sorted(declared) or 'nothing'} — name every "
+                            "changed field (and `body` for an edit to the analysis)")
+        if "body" in changed and all(r.get("internal") for r in recs):
+            # A citation re-pointed or a few words re-attributed is a metadata-
+            # grade fix; a rewritten claim is not. Measure the change in the
+            # prose itself (link targets stripped), in words.
+            import difflib
+            def _words(parts):
+                return re.sub(r"\]\([^)]*\)", "]", "\n".join(parts)).split()
+            wa, wb = _words(prior), _words(kept)
+            sm = difflib.SequenceMatcher(a=wa, b=wb, autojunk=False)
+            changed_words = sum(max(i2 - i1, j2 - j1) for tag, i1, i2, j1, j2 in sm.get_opcodes()
+                                if tag != "equal")
+            if changed_words > 12:
+                problems.append(f"{eid}: the analysis changed by {changed_words} words but this fire's "
+                                "only record is `internal: true` — a reader-facing change needs a "
+                                "non-internal record and its section (internal records may only "
+                                "re-point a citation or re-word a few words)")
+    for m in problems:
+        report("changelog-fields", m)
+    if not problems:
+        ok("changelog-fields", f"{n} updated entr{'y' if n == 1 else 'ies'}: every changed "
+           "field is declared in this fire's changelog record")
+
+
+def _title_tokens(text: str) -> set[str]:
+    stop = {"the", "a", "an", "and", "of", "in", "on", "for", "to", "with", "by", "via",
+            "from", "its", "is", "as", "at", "cve", "new"}
+    return {t for t in re.findall(r"[a-z0-9]+", str(text or "").lower())
+            if len(t) > 2 and t not in stop}
+
+
+def check_dedup_extended(run: dict[str, Any], new_entries: list[dict],
+                         all_entries: list[dict], registry: dict[str, dict],
+                         enforce: bool) -> None:
+    """Dedup shapes `check_dedup` cannot see (v4.17). (1) Two NEW entries of
+    this fire that share a CVE: `check_dedup` compares new entries only with
+    the rest of the store. (2) Republication without a CVE: a new entry whose
+    primary source URL is another entry's primary AND that shares an entity
+    key or most of its title is the same finding under a new slug (a
+    32-day-later republication of an incident passed every check in the
+    tooling review's fixture); the same primary URL alone WARNs. Both are
+    cleared by declaring the other entry in `references[]`."""
+    report = fail if enforce else warn
+    reg = registry or {}
+    hits: list[str] = []
+    soft: list[str] = []
+    new_ids = {e["id"] for e in new_entries}
+
+    def refs(e):
+        return {str(r) for r in (e.get("references") or []) if r}
+
+    for i, a in enumerate(new_entries):
+        for b in new_entries[i + 1:]:
+            overlap = _entry_cve_ids(a) & _entry_cve_ids(b)
+            if overlap and b["id"] not in refs(a) and a["id"] not in refs(b):
+                hits.append(f"{a['id']} and {b['id']} (both new this fire) share {sorted(overlap)} — "
+                            "one finding is one entry; merge them, or declare the distinct finding's "
+                            "relation in references[]")
+    primaries: dict[str, list[dict]] = {}
+    for e in all_entries:
+        if e["id"] in new_ids:
+            continue
+        srcs = [x for x in (e.get("sources") or []) if isinstance(x, dict) and x.get("url")]
+        if srcs:
+            primaries.setdefault(str(srcs[0]["url"]).rstrip("/"), []).append(e)
+    for e in new_entries:
+        srcs = [x for x in (e.get("sources") or []) if isinstance(x, dict) and x.get("url")]
+        if not srcs:
+            continue
+        url = str(srcs[0]["url"]).rstrip("/")
+        e_ents = {cm.resolve_entity_key(reg, str(k)) for k in (e.get("entities") or []) if k}
+        e_tok = _title_tokens(e.get("title"))
+        for p in primaries.get(url, []):
+            if p["id"] in refs(e):
+                continue
+            p_ents = {cm.resolve_entity_key(reg, str(k)) for k in (p.get("entities") or []) if k}
+            p_tok = _title_tokens(p.get("title"))
+            jacc = len(e_tok & p_tok) / max(1, len(e_tok | p_tok))
+            if (e_ents & p_ents) or jacc >= 0.5:
+                hits.append(f"{e['id']}: same primary source as {p['id']} ({url}) and "
+                            f"{'shared entity ' + str(sorted(e_ents & p_ents)) if e_ents & p_ents else f'title overlap {jacc:.0%}'}"
+                            " — a development on that finding is a changelog record on it; a distinct "
+                            "finding declares it in references[]")
+            else:
+                soft.append(f"{e['id']}: same primary source as {p['id']} ({url}) — confirm this "
+                            "is a distinct finding")
+    for m in hits:
+        report("dedup-extended", m)
+    for m in soft:
+        warn("dedup-extended", m)
+    if not hits and not soft:
+        ok("dedup-extended", f"{len(new_entries)} new entr{'y' if len(new_entries) == 1 else 'ies'}: "
+           "no same-fire CVE twins, no undeclared primary-source republication")
+
+
+_NO_EXPLOIT_RE = re.compile(
+    r"\bno (?:known |confirmed |public(?:ly reported)? |reported |observed |active |evidence of |"
+    r"sign of |indication of )*(?:in[- ]the[- ]wild )?exploitation\b"
+    r"(?!\s+(?:narrative|precondition|prerequisite|mechanism|details?|write-?up|path|technique|chain|vector))"
+    r"|\bnot (?:known to (?:be|have been)|reported (?:as|to (?:be|have been))|yet) "
+    r"(?:actively )?exploited\b"
+    r"|\bno (?:reports?|evidence) (?:of|that) (?:active |in-the-wild )?(?:exploitation|exploited)\b"
+    r"|\b(?:reports|states|says) no (?:known )?exploitation\b",
+    re.IGNORECASE,
+)
+_NARRATIVE_RE = re.compile(
+    r"\b(?:previously|initially|originally|at (?:the time of )?disclosure|had (?:reported|said|stated)|"
+    r"until|before (?:CISA|the KEV|it was)|moved from|was then|at publication|"
+    r"as of the \d{4}-\d{2}-\d{2} (?:disclosure|advisory|release|bulletin))\b", re.IGNORECASE)
+
+
+def check_exploitation_consistency(run_entries: list[dict], enforce: bool) -> None:
+    """An entry whose `cves[].status` says exploited must not tell the reader
+    there is no exploitation (v4.17). The 2026-09-29 tooling review found
+    three entries whose update record moved a CVE to `exploited` while the
+    summary kept saying "no known exploitation" (TeamCity, ServiceNow, macOS
+    Screen Sharing): the frontmatter a triage agent reads and the summary a
+    human reads said opposite things. A sentence is flagged when it denies
+    exploitation and names an exploited CVE or no CVE at all; sentences that
+    narrate the earlier state ("at disclosure", "previously") pass. WARN on
+    the run's own entries (the fire rewrites the stale sentence)."""
+    if not enforce:
+        return
+    problems: list[str] = []
+    for e in run_entries:
+        exploited = {str(c.get("id") or "").upper() for c in (e.get("cves") or [])
+                     if isinstance(c, dict) and "exploited" in (c.get("status") or [])}
+        if not exploited:
+            continue
+        all_cves = {str(c.get("id") or "").upper() for c in (e.get("cves") or []) if isinstance(c, dict)}
+        main, _ = cm.split_update_sections(e.get("body") or "")
+        for field, text in (("title", e.get("title")), ("headline", e.get("headline")),
+                            ("summary", e.get("summary")), ("body", main)):
+            for sent in re.split(r"(?<=[.!?])\s+", str(text or "")):
+                if not _NO_EXPLOIT_RE.search(sent) or _NARRATIVE_RE.search(sent):
+                    continue
+                named = {c.upper() for c in CVE_RE.findall(sent)}
+                if named and not (named & exploited):
+                    continue  # the sentence is about a companion CVE that is not exploited
+                if not named and len(all_cves) > len(exploited):
+                    continue  # ambiguous: an unexploited companion CVE may be meant
+                problems.append(f"{e['id']}: {field} says {sent.strip()[:140]!r} while cves[] marks "
+                                f"{sorted(exploited)} exploited — rewrite the stale sentence where it "
+                                "stands (supersession sweep)")
+                break
+    for m in problems:
+        warn("exploitation-consistency", m)
+    if not problems:
+        ok("exploitation-consistency", "no entry denies exploitation of a CVE its cves[] marks exploited")
+
+
+def check_run_record_integrity(run: dict[str, Any] | None, enforce: bool) -> None:
+    """Internal consistency of the run record's own numbers (v4.17): the
+    iteration counter equals the iterations listed, `duration_seconds`
+    equals completed − started (±5 min), both stamps are UTC `Z` times, and a
+    final NEEDS_FIXES carries at least one truth or editorial finding (an
+    advisory-only iteration is a CLEAN). The tooling review found a record
+    stating 0 iterations over six listed, and no check comparing the
+    re-stamped clock with the duration."""
+    if run is None or not enforce:
+        return
+    problems: list[str] = []
+    ver = run.get("verification") if isinstance(run.get("verification"), dict) else {}
+    iters = ver.get("iterations") if isinstance(ver.get("iterations"), list) else []
+    vi = run.get("verification_iterations")
+    if isinstance(vi, int) and vi != len(iters):
+        problems.append(f"verification_iterations {vi} != {len(iters)} iteration(s) listed")
+    ts_re = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+    for k in ("started", "completed"):
+        if not ts_re.match(str(run.get(k) or "")):
+            problems.append(f"{k} {run.get(k)!r} is not a UTC timestamp YYYY-MM-DDTHH:MM:SSZ")
+    st, co = _parse_iso_utc(run.get("started")), _parse_iso_utc(run.get("completed"))
+    dur = run.get("duration_seconds")
+    if st and co and isinstance(dur, int) and abs((co - st).total_seconds() - dur) > 300:
+        problems.append(f"duration_seconds {dur} != completed − started "
+                        f"({int((co - st).total_seconds())} s) — re-stamp both from main.ended_at")
+    if iters:
+        final = iters[-1] if isinstance(iters[-1], dict) else {}
+        if final.get("verdict") == "NEEDS_FIXES" and \
+                int(final.get("truth") or 0) + int(final.get("editorial") or 0) == 0:
+            problems.append("the final iteration is NEEDS_FIXES with no truth or editorial finding "
+                            "— an advisory-only pass is a CLEAN; record the verdict the findings support")
+    for m in problems:
+        fail("run-integrity", m)
+    if not problems:
+        ok("run-integrity", "iteration counter, clock stamps, duration and final verdict are consistent")
+
+
+_MD_LINK_TEXT_RE = re.compile(r"\[([^\]\n]*)\]\((?:https?://)[^)\s]*\)")
+_VERSIONISH_RE = re.compile(r"\b\d+(?:\.\d+)+(?:[-_.][0-9A-Za-z]+)*\b")
+
+
+def check_entry_shape_v417(new_entries: list[dict], run_entries: list[dict], run_id: str,
+                           enforce: bool) -> None:
+    """Composition-shape checks the 2026-09-29 entry audit found missing
+    (v4.17). New entries: the body carries at least one inline citation
+    (FAIL); the headline stays within 120 characters, the main analysis within
+    550 words (1,100 for a deep dive), every `sources[]` URL is cited inline
+    or by an evidence record (WARN). All of this fire's entries: an inline
+    citation's date equals its `sources[]` record's date for the same URL
+    (23 hand-found mislabels in September); a `no-patch` status beside a
+    `fixed` version with no `patch-available`; a critical entry whose
+    `immediate_action` names none of the fixed versions its `cves[]` carries
+    (WARN)."""
+    if not enforce:
+        return
+    fails: list[str] = []
+    warns: list[str] = []
+    for e in new_entries:
+        main, _ = cm.split_update_sections(e.get("body") or "")
+        links = _BODY_LINK_RE.findall(main)
+        if not links and not e.get("closed_sources"):
+            fails.append(f"{e['id']}: the body carries no inline citation — every claim is "
+                         "followed by ([Publisher, YYYY-MM-DD](URL)) (PD-2)")
+        if len(str(e.get("headline") or "")) > 120:
+            warns.append(f"{e['id']}: headline is {len(str(e.get('headline')))} characters — "
+                         "keep it within 120")
+        words = len(re.sub(r"\s+", " ", _MD_LINK_TEXT_RE.sub(r"\1", main)).split())
+        limit = 1100 if e.get("deep_dive") else 550
+        if words > limit:
+            warns.append(f"{e['id']}: main analysis is {words} words (limit {limit}) — cut "
+                         "background, recaps and repetition; the labelled lines carry the "
+                         "actionable part")
+        cited = set(_BODY_LINK_RE.findall(e.get("body") or "")) | {str(ev.get("source_url") or "") for ev in (e.get("evidence") or [])
+                              if isinstance(ev, dict)}
+        for src in e.get("sources") or []:
+            if isinstance(src, dict) and src.get("url") and src["url"] not in cited:
+                warns.append(f"{e['id']}: source {src['url']} is never cited inline or by an "
+                             "evidence record — cite it at the claim it supports or drop it (PD-2)")
+    for e in run_entries:
+        src_dates = {str(x.get("url")): str(x.get("date") or "") for x in (e.get("sources") or [])
+                     if isinstance(x, dict) and x.get("url")}
+        own_ats = {str(r.get("at")) for r in (e.get("updates") or [])
+                   if str(r.get("run_id") or "") == str(run_id)}
+        main, sections = cm.split_update_sections(e.get("body") or "")
+        texts = ([main] if str(e.get("run_id") or "") == str(run_id) else []) + \
+                [sec.get("body") or "" for sec in sections if str(sec.get("at")) in own_ats]
+        for text in texts:
+            for m in re.finditer(r"\[[^\]\n]*?(\d{4}-\d{2}-\d{2})\]\((https?://[^)\s]+)\)", text):
+                d, u = m.group(1), m.group(2)
+                if u in src_dates and src_dates[u] and src_dates[u] != d:
+                    warns.append(f"{e['id']}: inline citation dated {d} for {u}, whose sources[] "
+                                 f"record says {src_dates[u]} — use the page's own publication date")
+        for c in e.get("cves") or []:
+            if not isinstance(c, dict):
+                continue
+            st = c.get("status") or []
+            fixed = str(c.get("fixed") or "")
+            if "no-patch" in st and "patch-available" not in st and _VERSIONISH_RE.search(fixed) \
+                    and not re.search(r"\bno\b|none|not (?:yet )?(?:available|fixed|released)|unfixed|n/a",
+                                      fixed, re.IGNORECASE):
+                warns.append(f"{e['id']}: {c.get('id')} is `no-patch` while `fixed` names "
+                             f"{fixed[:60]!r} — add patch-available (keep no-patch only for a "
+                             "branch that genuinely has no fix)")
+        ia = e.get("immediate_action")
+        if e.get("priority") == "critical" and isinstance(ia, dict):
+            tokens = {t for c in (e.get("cves") or []) if isinstance(c, dict)
+                      for t in _VERSIONISH_RE.findall(str(c.get("fixed") or ""))}
+            text = f"{ia.get('title') or ''} {ia.get('action') or ''}"
+            if tokens and not any(t in text for t in tokens) and \
+                    not re.search(r"no (?:fix|patch)|mitigat|workaround|isolat|disconnect|shut",
+                                  text, re.IGNORECASE):
+                warns.append(f"{e['id']}: the immediate_action names none of the fixed versions "
+                             f"{sorted(tokens)[:4]} its cves[] carries — the on-call reader acts on "
+                             "this block alone")
+    for m in fails:
+        fail("entry-shape", m)
+    for m in warns:
+        warn("entry-shape", m)
+    if not fails and not warns:
+        ok("entry-shape", "citations present and dated like their sources, headline and length "
+           "within bounds, patch status and immediate actions consistent")
+
+
+
 def run_all_checks(entries: list[dict], runs: list[dict], taxonomy: dict,
                    registry: dict, parsed_state: dict[str, Any],
                    *, skip_build_tests: bool, content_root: Path = ROOT) -> None:
@@ -4079,7 +4556,8 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
         check_run_counters(run, new_entries, updated_entries)
 
     print("\n== reader-facing text: no production-process self-reference ==")
-    check_reader_text_internals(run_entries, run_id)
+    check_reader_text_internals(run_entries, run_id,
+                                enforce_v417=_setup_review_enforced(run))
 
     print("\n== cves[].epss units ==")
     check_cve_epss(run_entries)
@@ -4103,6 +4581,13 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
         print("\n== cross-run dedup (store-wide CVEs, 14-day entities) ==")
         check_dedup(run, new_entries, entries, entries_by_id, registry)
 
+        print("\n== dedup: same-fire CVE twins, primary-source republication ==")
+        check_dedup_extended(run, new_entries, entries, registry,
+                             enforce=_setup_review_enforced(run))
+
+        print("\n== run record: counters, clock and verdict consistency ==")
+        check_run_record_integrity(run, enforce=_setup_review_enforced(run))
+
     print("\n== entry lifecycle — changelog records ==")
     check_entry_updates(run_entries, runs_by_id, run_id, enforce=_lifecycle_enforced(run))
 
@@ -4111,6 +4596,16 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
 
     print("\n== changelog records are append-only ==")
     check_append_only_records(run_id, content_root)
+
+    print("\n== changelog records declare every change ==")
+    check_changelog_declares_diff(run, run_id, content_root,
+                                  enforce=_setup_review_enforced(run))
+
+    print("\n== exploitation status vs prose ==")
+    check_exploitation_consistency(run_entries, enforce=_setup_review_enforced(run))
+
+    print("\n== entry shape: citations, dates, length, patch status ==")
+    check_entry_shape_v417(new_entries, run_entries, run_id, enforce=_setup_review_enforced(run))
 
     print("\n== v4 shape (retired weekly fields / run kind) ==")
     check_legacy_shape(run, new_entries)
@@ -4138,6 +4633,11 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
     check_actions_discipline(run_entries, run)
 
     profile = _load_org_profile()
+    if profile is None and (ROOT / "config" / "org-profile.yaml").is_file():
+        # Without the profile the rating checks below report "n/a" and the
+        # always-rated rule silently switches off.
+        fail("org-profile", "config/org-profile.yaml exists but `compose_prompts.py --dump` could "
+                            "not load it — fix the config (compose_prompts.py --check) before publishing")
     print("\n== closed-source citations (traceability, no TLP gate) ==")
     check_closed_sources(run_entries, profile)
 
@@ -4261,6 +4761,35 @@ def report_dead_ack_rows(store_mode: bool) -> None:
              f"{str(r['match'])[:80]!r} silenced nothing on this pass — the "
              "warning it covers no longer fires. The quality audit deletes rows "
              "that have stopped silencing anything; the ledger is not an archive")
+
+
+# A check that raises must become a visible FAIL, never a crashed script:
+# the prompt's fallback for a crashed gate is to proceed, so an exception in
+# one check used to be a way for the data that caused it to skip the gate
+# (tooling review 2026-09-29: a timestamp without `Z` did exactly that).
+_CHECK_DEFAULTS = {"check_state_json_valid": {}, "check_taxonomy_loadable": {},
+                   "check_registry": {}, "check_attack_dataset": {},
+                   "check_verification_counters": 0, "check_run_clock": False}
+
+
+def _crash_guard(fn):
+    import functools
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as exc:  # noqa: BLE001
+            fail("check-crashed", f"{fn.__name__} raised {type(exc).__name__}: {exc} — a tooling "
+                 "defect: fix tools/check_run.py (or the data it choked on) in this run; if that is "
+                 "impossible, record it in the run notes (the one FAIL class that never blocks publish)")
+            return _CHECK_DEFAULTS.get(fn.__name__)
+    return wrapper
+
+
+for _name, _obj in list(globals().items()):
+    if _name.startswith("check_") and callable(_obj):
+        globals()[_name] = _crash_guard(_obj)
 
 
 def main() -> int:
