@@ -1,0 +1,678 @@
+# work/2026-10-02T0404Z-intel/findings.S1.yaml
+# S1 — Active threats & trending vulns. window_hours 50 (horizon 2026-09-30T02:07Z .. 2026-10-02T04:07Z).
+domain: S1
+run_id: 2026-10-02T0404Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-02T04:07:11Z
+ended_at: 2026-10-02T04:39:30Z
+duration_seconds: 1939
+self_telemetry:
+  webfetch_calls: 11
+  websearch_calls: 24
+  bridge_fetches: 125
+items:
+
+  # ---------------------------------------------------------------------------
+  # ITEM 1 — KEV extra duty (a): CVE-2026-76504 — DISPOSITION: ITEM (new)
+  # ---------------------------------------------------------------------------
+  - title: "CVE-2026-76504 — Cisco Catalyst SD-WAN Manager: a percent-encoded character in the login path skips the password check and mints an admin API session; exploited in the wild, CISA KEV 2026-09-30 (CVSS 9.8)"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU", publisher: "Cisco PSIRT", date: "2026-09-30", role: "primary" }
+      - { url: "https://www.vulncheck.com/blog/revenge-of-the-sd-wan-cve-2026-76504", publisher: "VulnCheck", date: "2026-10-01", role: "corroborating" }
+      - { url: "https://www.rapid7.com/blog/post/etr-critical-cisco-catalyst-sd-wan-manager-api-authentication-bypass-exploited-in-the-wild-cve-2026-76504/", publisher: "Rapid7", date: "2026-09-30", role: "corroborating" }
+      - { url: "https://horizon3.ai/attack-research/vulnerabilities/cve-2026-76504/", publisher: "Horizon3.ai", date: "2026-10-01", role: "corroborating" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/09/30/cisa-adds-one-known-exploited-vulnerability-catalog", publisher: "CISA", date: "2026-09-30", role: "corroborating" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13021", publisher: "NCSC Switzerland (Cyber Security Hub)", date: "2026-09-30", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0395", publisher: "NCSC-NL", date: "2026-09-30", role: "corroborating" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3681", publisher: "BSI CERT-Bund", date: "2026-10-01", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/cisco-warns-of-new-sd-wan-authentication-bypass-zero-day-exploited-in-attacks/", publisher: "BleepingComputer", date: "2026-09-30", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, bridge `fetch_source.py cisa-kev` (catalogVersion 2026.10.01), CVE-2026-76504 dateAdded 2026-09-30 and the entry's notes field naming the Cisco advisory -> also seen at cisco-psirt feed https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml (2026-09-30 13:00) and ncsc-ch-security-hub (bridge ncsc-csh recent, post 13021) -> primary: Cisco PSIRT, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU -> root cause: VulnCheck, URL https://www.vulncheck.com/blog/revenge-of-the-sd-wan-cve-2026-76504 -> corroboration: Rapid7, Horizon3, NCSC-NL NCSC-2026-0395, BSI WID-SEC-2026-3681, BleepingComputer."
+    summary: |
+      Cisco published cisco-sa-sdwan-webauth-xr8beuuU on 2026-09-30 for CVE-2026-76504, an unauthenticated API
+      authentication bypass in Cisco Catalyst SD-WAN Manager (formerly vManage) that yields admin-level API access
+      (CVSS 3.1 9.8, CWE-177). Cisco states its PSIRT became aware of active exploitation in September 2026; CISA added the
+      CVE to KEV the same day (due 2026-10-03). The flaw applies to every configuration: the authentication rule that
+      protects one API endpoint is evaded by URI-encoding a character of the path (the advisory's example encodes the
+      'j' of the j_security_check login path as %6a; Cisco stresses any single encoded character works). There is no
+      workaround; Cisco lists first-fixed releases per train: 20.9 -> 20.9.10.1, 20.12 -> 20.12.8.2, 20.15 -> 20.15.6.1,
+      20.18 -> 20.18.4.1, 26.1 -> 26.1.2.1, 26.2 -> 26.2.1; anything earlier than 20.9 must migrate to a fixed train. The
+      Cisco-managed cloud service (release 20.15.605) is already fixed, no customer action. On-premises operators are told
+      to cut internet access to the system and allow only known trusted hosts.
+      VulnCheck (exploit-development team, own reproduction) explains the mechanism: the WildFly/Undertow container decodes
+      the request path when matching its login security constraint, but Cisco's JAAS login module
+      (AppServerLoginModule.login) tests the raw, undecoded request URI for the string j_security_check before deciding
+      to call the real password check. An encoded path therefore skips the password verification and falls into a branch
+      written for continuing an already-trusted session, whose only gate is a substring match against four internal
+      viptela-reserved-* service-account names; supplying one of them as the username returns a fresh session cookie with
+      a 200 and no credential check. Only two of the four accounts carry roles that pass admin-endpoint RBAC (VulnCheck
+      demonstrates cloudops and expects uc to work; dca and cloud were refused on admin-only endpoints). Cisco's own hunt guidance keys on exactly these
+      names. VulnCheck counts roughly 1,500 internet-exposed vManage instances (its Target Intelligence), attributes the
+      exploitation to no named actor and says no legitimate public exploit existed as of 2026-10-01 (it reviewed and
+      rejected one fake public 'PoC' repository). Rapid7 recommends emergency patching outside normal cycles; BleepingComputer
+      and VulnCheck count this as the fifth actively exploited Catalyst SD-WAN zero-day of 2026.
+      NCSC Switzerland posted its own advisory (hub post 13021, 2026-09-30, status Actively Exploited), NCSC-NL (kans
+      medium, schade high; urges checking for the Cisco IOCs BEFORE installing the update) and BSI (kritisch) followed.
+    region_nexus: "Global management-plane flaw; NCSC Switzerland published a hub advisory for it on 2026-09-30, so Swiss operators of Catalyst SD-WAN are directly in scope. No Swiss victim or deployment is named by any source."
+    primary_sector_nexus: "indirect — SD-WAN controller is common in multi-site public-sector WANs; exposure depends on whether the Manager's HTTPS API is internet-reachable (VulnCheck: ~1,500 exposed worldwide)"
+    sector: "public-sector"
+    cves: [CVE-2026-76504]
+    techniques: [T1190]
+    affected_products: ["Cisco Catalyst SD-WAN Manager"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:cisco-catalyst-sd-wan-manager", type: product, name: "Cisco Catalyst SD-WAN Manager", aliases: ["Cisco SD-WAN vManage", "vManage", "Catalyst SD-WAN Manager"], summary: "Management plane of Cisco's Catalyst SD-WAN fabric (formerly vManage); subject of CVE-2026-76504, an exploited unauthenticated API authentication bypass fixed on 2026-09-30 (Cisco PSIRT)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "In September 2026, the Cisco PSIRT became aware of active exploitation of this vulnerability."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU"
+      - quote: "This vulnerability affects Cisco Catalyst SD-WAN Manager, regardless of system configuration."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU"
+      - quote: "which returns the raw, undecoded, path, and evaluates it to decide whether or not to run a real password check"
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/revenge-of-the-sd-wan-cve-2026-76504"
+      - quote: "there are no legitimate public exploits for CVE-2026-76504 as of October 1, 2026"
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/revenge-of-the-sd-wan-cve-2026-76504"
+      - quote: "Successful exploitation allows unauthenticated attackers to gain admin-level API access remotely."
+        attribution: "NCSC Switzerland (Cyber Security Hub)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13021"
+    extended_notes: |
+      Suggested handling: priority high-to-critical (exploited, pre-auth, management plane, fix available). Suggested
+      Admiralty A1 (first-party vendor, corroborated by CISA/NCSC-CH/NCSC-NL/BSI and two independent reproductions).
+      EPSS (FIRST, 2026-10-01) 0.01096. CISA KEV dueDate 2026-10-03, forensicTriage Yes.
+      Exposure check (vendor-documented): version of Catalyst SD-WAN Manager against the fixed-release table; whether the
+      Manager's web/API listener is reachable from the internet or from untrusted segments.
+      Detection (telemetry class: web/app access logs on the Manager): Cisco's two log sources are the service-proxy
+      access log (serviceproxy-access.log) and vmanage-server.log; hunt for POSTs whose login path contains any
+      percent-encoded character of j_security_check, and for server-log lines for that path tied to usernames beginning
+      viptela-reserved-. Cisco warns these entries can also occur in normal operation; judge against baseline.
+      Post-patch compromise check: Cisco says patching does not evict an earlier intruder; open a Sev-3 TAC case with the
+      CVE id in the title and attach an admin-tech file. NCSC-NL advises checking for the IOCs before installing the update.
+      Hardening: remove internet reachability of the Manager; restrict to known trusted hosts behind a filtering device
+      (Cisco Catalyst SD-WAN Hardening Guide).
+      Related store entries (distinct CVEs, same product line; candidates for references[]):
+      2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre..., 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi..., 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245.
+      Fake-PoC note: VulnCheck rejected one public repository claiming a PoC for this CVE; a search hit also lists a
+      same-named 'PoC' for the FortiMail CVE below. Treat unvetted PoC repositories for either CVE as untrusted.
+      Not stated by any source: threat-actor attribution, victim sectors, number of compromised instances.
+
+  # ---------------------------------------------------------------------------
+  # ITEM 2 — KEV extra duty (b): CVE-2026-104286 — DISPOSITION: ITEM (new)
+  # ---------------------------------------------------------------------------
+  - title: "CVE-2026-104286 — Fortinet FortiMail: unauthenticated path traversal / NULL-byte file write exploited as a zero-day, no fixed build yet; workaround is to disable IBE or pull the management interface off the internet (CVSS 9.8, CISA KEV 2026-10-01)"
+    sources:
+      - { url: "https://www.fortiguard.com/psirt/FG-IR-26-175", publisher: "Fortinet PSIRT (FortiGuard)", date: "2026-10-01", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/10/01/cisa-adds-one-known-exploited-vulnerability-catalog", publisher: "CISA", date: "2026-10-01", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/fortinet-warns-of-critical-fortimail-flaw-exploited-in-zero-day-attacks/", publisher: "BleepingComputer", date: "2026-10-01", role: "corroborating" }
+      - { url: "https://filestore.fortinet.com/fortiguard/rss/ir.xml", publisher: "Fortinet PSIRT RSS (CVSSv3 9.8 field)", date: "2026-10-01", role: "corroborating" }
+      - { url: "https://securityonline.info/fortimail-vulnerability-cve-2026-104286/", publisher: "Daily CyberSecurity (securityonline.info)", date: "2026-10-01", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, bridge `fetch_source.py cisa-kev` (catalogVersion 2026.10.01), CVE-2026-104286 dateAdded 2026-10-01, notes field naming FG-IR-26-175 -> also fortinet-psirt feed https://filestore.fortinet.com/fortiguard/rss/ir.xml (newest item, 2026-10-01, CVSSv3 9.8) and enisa-euvd recent exploited (EUVD-2026-91042, exploitedSince 2026-10-01) -> primary: Fortinet PSIRT, URL https://www.fortiguard.com/psirt/FG-IR-26-175 (via `extract`) -> CISA alert URL https://www.cisa.gov/news-events/alerts/2026/10/01/cisa-adds-one-known-exploited-vulnerability-catalog -> BleepingComputer, securityonline (aggregator, affected-version table disagrees with vendor, see notes)."
+    summary: |
+      Fortinet published FG-IR-26-175 on 2026-10-01: a path traversal (CWE-22) combined with improper neutralisation of
+      a NULL byte (CWE-158) in FortiMail lets an unauthenticated attacker write arbitrary files on the appliance through
+      crafted HTTP or HTTPS requests (CVSSv3 9.8 per Fortinet's feed). The advisory states the flaw 'has been reported to be
+      exploited in the wild'; CISA added CVE-2026-104286 to KEV the same day (due 2026-10-04) and ENISA's EUVD lists it as
+      exploited since 2026-10-01. Fortinet's Product Security team found it internally; the vendor names no actor and gives
+      no victim count.
+      Affected (vendor table): FortiMail 8.0.0-8.0.1, 7.6.0-7.6.6, 7.4.0-7.4.8, 7.2.0-7.2.9. No branch has a fixed build yet:
+      Fortinet lists 'upcoming' 8.0.2, 7.6.7 and 7.4.9, and says 7.2 should move to 7.4 or above. Workaround (vendor):
+      disable IBE (identity-based encryption) support in the FortiMail encryption configuration, or take the management
+      interface off the internet and restrict it to trusted private networks. Third-party reporting ties the vulnerable path
+      to the IBE web component; BleepingComputer states the flaw affects the management interface. A securityonline
+      aggregation lists different affected builds (7.6.0-7.6.5, 7.4.0-7.4.6) and a 7.0 branch that the vendor table does not
+      list; treat 7.0 as unconfirmed rather than unaffected and use the vendor's ranges.
+      Fortinet's compromise section describes what exploitation left behind, at behaviour level: a shared library added
+      under the appliance's data partition and registered through an ld.so.preload entry, a modified system binary,
+      additional service binaries, a modified web-server configuration and a modified admin-migration archive; a cron-launched
+      shell command referencing the migration (migadmin) path; an admin CLI session adding a mail 'archive account' whose destination is a
+      remote host with stored remote credentials (a mail-exfiltration path); and IBE decrypter exceptions for invalid Base64
+      input plus internal-user failed-login events in the logs. (File hashes and the attacker addresses are in the
+      advisory and are deliberately not carried here.)
+    region_nexus: "Global email-security appliance; Fortinet gateways are widely deployed in DACH organisations. No source names a Swiss victim or deployment and NCSC Switzerland had not posted on it at fetch time."
+    primary_sector_nexus: "direct if the constituency runs FortiMail as its inbound/outbound mail gateway (public-sector mail flow carries sensitive correspondence); exposure turns on whether the FortiMail GUI/IBE portal faces the internet"
+    sector: "public-sector"
+    cves: [CVE-2026-104286]
+    techniques: [T1190, T1574.006, T1053.003, T1554, T1114.003]
+    affected_products: ["Fortinet FortiMail"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:fortinet-fortimail", type: product, name: "Fortinet FortiMail", aliases: ["FortiMail"], summary: "Fortinet's email security gateway / mail server appliance; CVE-2026-104286 (FG-IR-26-175) is an exploited unauthenticated path-traversal file write disclosed 2026-10-01 with no fixed build yet (Fortinet PSIRT)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This has been reported to be exploited in the wild, customers are urged to apply the workaround below."
+        attribution: "Fortinet PSIRT (FortiGuard)"
+        source_url: "https://www.fortiguard.com/psirt/FG-IR-26-175"
+      - quote: "Disable the IBE feature support using the following CLI command:"
+        attribution: "Fortinet PSIRT (FortiGuard)"
+        source_url: "https://www.fortiguard.com/psirt/FG-IR-26-175"
+      - quote: "Alternatively: Disable access to the FortiMail management interface from the internet or limit the access only from trusted private network"
+        attribution: "Fortinet PSIRT (FortiGuard)"
+        source_url: "https://www.fortiguard.com/psirt/FG-IR-26-175"
+      - quote: "For affected FortiMail 7.4, 7.6, and 8.0 installations, security updates are not yet available"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/fortinet-warns-of-critical-fortimail-flaw-exploited-in-zero-day-attacks/"
+      - quote: "based on evidence of active exploitation."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/10/01/cisa-adds-one-known-exploited-vulnerability-catalog"
+    extended_notes: |
+      Suggested handling: priority high-to-critical for any FortiMail owner (exploited zero-day, NO patch on three of four
+      branches, mitigation only). Independence caveat: the exploitation claim is Fortinet's first-hand statement; CISA (KEV,
+      'evidence of active exploitation') and ENISA EUVD act on it, so two authorities concur but no second telemetry
+      holder has published its own observations. Marked MULTI-SOURCE on vendor + CISA + EUVD; suggested Admiralty A2
+      (first-party vendor, exploitation not independently observed by a second telemetry holder).
+      EPSS not yet published by FIRST (EUVD shows 0.0 at publication). The sole third-party technical analysis found is
+      aggregator-level; no watchTowr/Rapid7 root-cause at fetch time. A search hit lists a public 'PoC' repository for this
+      CVE; no source vets it and VulnCheck reports a fake PoC for the Cisco CVE above, so treat it as untrusted.
+      Detection (telemetry classes): appliance admin/CLI audit events (new archive account with a remote destination, config
+      changes from a CLI session that logs out from an unnamed address), cron/system-event log entries launching a script from
+      the migration directory, IBE decrypter exceptions for invalid Base64 in the application log, and file-integrity
+      comparison of the data partition against a known-good image (added shared library, ld.so.preload, altered system
+      binary and httpd configuration). Vendor IOC section lists the exact artifacts.
+      Post-patch/post-workaround compromise check: because file write precedes persistence in the vendor's description,
+      appliances that were internet-exposed before the workaround should be treated as possibly compromised; the vendor
+      published artifact lists for that purpose. Mailbox-level impact (what the archive account captured) is a question
+      for the mail owners.
+      Not stated: initial-access sequence beyond 'crafted HTTP/HTTPS requests', actor attribution, number of victims.
+
+  # ---------------------------------------------------------------------------
+  # ITEM 3 — Zammad zero-days (EUVD exploited list; NCSC-NL; DIVD) — new
+  # ---------------------------------------------------------------------------
+  - title: "CVE-2026-102489 / CVE-2026-102490 — Zammad helpdesk: session-hijack-to-RCE plus zammad-to-root escalation exploited since 2026-09-21 (first victim: DIVD, assessed as an agentic-AI-driven intrusion); the root-escalation flaw has no fix"
+    sources:
+      - { url: "https://www.ncsc.nl/alerts/actief-misbruik-van-zeroday-kwetsbaarheden-in-zammad-update-nu", publisher: "NCSC-NL", date: "2026-09-30", role: "primary" }
+      - { url: "https://csirt.divd.nl/DIVD-2026-00015", publisher: "DIVD CSIRT (vulnerability case, finder)", date: "2026-10-01", role: "primary" }
+      - { url: "https://csirt.divd.nl/cases/DIVD-2026-00014/", publisher: "DIVD CSIRT (victim incident statements)", date: "2026-10-01", role: "primary" }
+      - { url: "https://csirt.divd.nl/cves/CVE-2026-102489", publisher: "DIVD CSIRT (CVE record)", date: "2026-09-29", role: "corroborating" }
+      - { url: "https://csirt.divd.nl/cves/CVE-2026-102490", publisher: "DIVD CSIRT (CVE record)", date: "2026-09-29", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0396", publisher: "NCSC-NL advisory NCSC-2026-0396", date: "2026-09-30", role: "corroborating" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3694", publisher: "BSI CERT-Bund", date: "2026-10-01", role: "corroborating" }
+      - { url: "https://www.securityweek.com/zammad-zero-days-exploited-in-ai-powered-divd-hack/", publisher: "SecurityWeek", date: "2026-10-01", role: "corroborating" }
+      - { url: "https://www.helpnetsecurity.com/2026/10/01/divd-agentic-ai-attack-breach/", publisher: "Help Net Security", date: "2026-10-01", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/divd-says-zammad-zero-days-enabled-ai-driven-network-breach/", publisher: "BleepingComputer", date: "2026-09-30", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, bridge `fetch_source.py enisa-euvd recent exploited` (EUVD-2026-90080 / EUVD-2026-90081, DIVD-assigned, exploitedSince 2026-09-30) -> pivot: DIVD case URL https://csirt.divd.nl/DIVD-2026-00015 (listed in the EUVD references) -> victim statements https://csirt.divd.nl/cases/DIVD-2026-00014/ -> national CERT: NCSC-NL alert https://www.ncsc.nl/alerts/actief-misbruik-van-zeroday-kwetsbaarheden-in-zammad-update-nu (named in Help Net Security) and advisory NCSC-2026-0396 via advisories-ncsc-nl feed + `ncsc-nl csaf` -> BSI WID-SEC-2026-3694 via bsi-rss -> press: SecurityWeek, Help Net Security (found via WebSearch 'DIVD hacked agentic AI Zammad zero-day')."
+    summary: |
+      DIVD (the Dutch Institute for Vulnerability Disclosure) was breached from 2026-09-21; on 2026-09-30 it disclosed that
+      the attackers entered through two Zammad zero-days that 'together allowed session hijacking, remote code execution and
+      privilege escalation from the Zammad user to root, in seconds'. DIVD's finding rests on its own forensics with Merlon
+      Security; it assesses the attack as agentic-AI-driven (the attacker's scripts carried self-justifying comments) and says
+      it sees no link to any known threat actor; the attackers then reached other services and exfiltrated volunteer contact
+      data before network segmentation stopped them.
+      CVE-2026-102489: pre-authentication session hijack leading to code execution as the zammad user; DIVD and NCSC-NL list
+      Zammad 6.3.0 through 6.5.4 as exploitable; versions 7.0.0 through 7.1.3 contain the defect but DIVD says it is not
+      exploitable there 'due to environment conditions'. CVSS v4 8.7 on its own, 9.4 when chained (DIVD CVE record, E:A).
+      CVE-2026-102490: local privilege escalation from the zammad service user to root; DIVD lists all versions from 1.5.0
+      including the latest alpha as affected; no fix exists (NCSC-NL, 2026-09-30: 'nog niet opgelost'); CVSS v4 8.5, 9.4
+      chained. Both are reported as actively exploited since at least 2026-09-21 by NCSC-NL; neither is in CISA KEV at fetch
+      time, ENISA EUVD lists both as exploited since 2026-09-30. Zammad has released an update for CVE-2026-102489 (NCSC-NL);
+      DIVD advises moving to Zammad 7 or taking the instance offline. NCSC-NL asks operators to copy application and network
+      logs BEFORE updating because the unfixed second flaw may later need those logs to prove a compromise.
+      Fixed-build detail is inconsistent across sources and no Zammad-published advisory could be located: the DIVD CVE
+      record gives affected '>= 6.3.0 to < 6.5.4' (so 6.5.4 reads as fixed) while the DIVD case page and NCSC-NL say 6.3.0
+      through 6.5.4; the CVE record scopes the root flaw to '< 7.1.0-alpha' while DIVD and NCSC-NL say all versions including
+      the alpha. One aggregator (securityonline) reads the CVE record as 'fixed in 6.5.4, 7.0.0 / 7.1.0-alpha', which
+      contradicts NCSC-NL on the root flaw. Zammad's GitHub security-advisory listing, as read, did not show the two CVEs.
+      DIVD runs a log-check script for the RCE (published with its case) and is scanning for and notifying exposed instances.
+      Footprint (vendor claim relayed by BleepingComputer): Zammad's website claims over 2,000 customers and 55,000 users, self-hosted or hosted.
+    region_nexus: "Zammad GmbH is Berlin-based and the product is widely used as a DACH helpdesk; the store's registry summary for the earlier Zammad 7.1 security release describes it as widely used as a DACH public-sector helpdesk (a store-internal statement, not a source fetched this run). DIVD and NCSC-NL are Dutch; no Swiss victim or Swiss-authority notice was found."
+    primary_sector_nexus: "direct if the constituency runs self-hosted Zammad for citizen or internal service desks; the ticket store holds correspondence and attachments and the web UI is typically internet-reachable for customer portals"
+    sector: "public-sector"
+    cves: [CVE-2026-102489, CVE-2026-102490]
+    techniques: [T1190, T1068]
+    affected_products: ["Zammad"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:zammad", type: product, name: "Zammad", aliases: ["Zammad helpdesk", "Zammad GmbH Zammad"], summary: "Open-source helpdesk and ticketing system from Zammad GmbH (Berlin); two zero-days (CVE-2026-102489 session hijack to RCE, CVE-2026-102490 zammad-to-root) were exploited from 2026-09-21 (DIVD, NCSC-NL)." }
+      - { key: "incident:divd-breach-2026-09", type: incident, name: "DIVD breach via Zammad zero-days (2026-09)", aliases: ["DIVD-2026-00014", "When, not if..."], summary: "Dutch Institute for Vulnerability Disclosure breached from 2026-09-21 through two Zammad zero-days; DIVD assesses an agentic-AI-driven attack, reports volunteer contact data exfiltrated and no link to any known actor (DIVD case DIVD-2026-00014, 2026-10-01)." }
+    relation_suggestions:
+      - { subject: "incident:divd-breach-2026-09", object: "product:zammad", basis: "DIVD states the attackers got in through two zero-days in Zammad (DIVD-2026-00014, statement #4, 2026-09-30)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Beide kwetsbaarheden worden sinds 21 september 2026 actief misbruikt."
+        attribution: "NCSC-NL"
+        source_url: "https://www.ncsc.nl/alerts/actief-misbruik-van-zeroday-kwetsbaarheden-in-zammad-update-nu"
+      - quote: "De tweede kwetsbaarheid (CVE-2026-102490) is nog niet opgelost."
+        attribution: "NCSC-NL"
+        source_url: "https://www.ncsc.nl/alerts/actief-misbruik-van-zeroday-kwetsbaarheden-in-zammad-update-nu"
+      - quote: "We advise all users of Zammad to upgrade to version 7 of Zammad or to take it offline."
+        attribution: "DIVD CSIRT"
+        source_url: "https://csirt.divd.nl/DIVD-2026-00015"
+      - quote: "We explain the attackers got in through two zero-days in Zammad that together allowed session hijacking, remote code execution and privilege escalation from the Zammad user to root, in seconds due to the agentic part of this hack."
+        attribution: "DIVD CSIRT"
+        source_url: "https://csirt.divd.nl/cases/DIVD-2026-00014/"
+      - quote: "We see no link to any known public threat actor"
+        attribution: "DIVD CSIRT"
+        source_url: "https://csirt.divd.nl/cases/DIVD-2026-00014/"
+    extended_notes: |
+      Suggested handling: priority high (exploited since 2026-09-21, one fix outstanding, helpdesk commonly internet-facing,
+      DACH footprint). Suggested Admiralty A1 (national CERT plus the victim/finder's own first-hand case files).
+      EPSS (FIRST, 2026-10-01): CVE-2026-102489 0.00709, CVE-2026-102490 0.00319 (both new). Not in CISA KEV (fresh catalog
+      2026.10.01). BSI rates the advisory kritisch.
+      Backlog link: state/coverage_backlog.md carries an open row (surfaced 2026-09-26, S4 domain) for DIVD's breach
+      disclosure; this item supplies the root cause and should resolve that row (the S4 story is the incident angle, this is
+      the vulnerability angle - one entry or two is the main agent's call under the item-granularity rule).
+      Exposure: self-hosted Zammad of any version from 1.5.0 is exposed to the root flaw once a foothold exists; the RCE needs
+      6.3.0-6.5.4 per the sources; hosted Zammad Cloud is not discussed by any source.
+      Detection (telemetry classes): web-server/Rails application logs on the Zammad host (DIVD's log-check script targets the
+      RCE's indicators), process-creation events with the zammad service account as parent of shells, privilege transitions
+      zammad -> root (sudo/setuid or service-restart helpers), and outbound connections from the ticket host to internal
+      services it does not normally contact. Post-patch compromise check: NCSC-NL and DIVD both stress that updating the RCE
+      flaw does not clear an existing foothold and the root flaw stays open - preserve logs first, then hunt for a root-level
+      persistence on the Zammad host and for access to neighbouring services from it.
+      Hardening: take Zammad off the internet or put it behind an authenticating reverse proxy/VPN until CVE-2026-102490 is
+      fixed; segment the ticket host (DIVD credits segmentation for stopping lateral movement).
+      Attribution: none. DIVD's 'agentic AI' reading is the victim's assessment from attacker-script comments; no lab has
+      corroborated it.
+
+  # ---------------------------------------------------------------------------
+  # ITEM 4 — Kiteworks: update-of the 2026-09-26 shutdown-warning entry
+  # ---------------------------------------------------------------------------
+  - title: "Kiteworks publishes 61 CVEs on 2026-09-30, all fixed by release 9.5.1: two Critical account-takeover flaws (one unauthenticated, in Email Protection Gateway), an unauthenticated Secure Data Forms authentication bypass, no exploitation stated"
+    sources:
+      - { url: "https://github.com/kiteworks/security-advisories/security/advisories/GHSA-c9w5-4frw-7wqq", publisher: "Kiteworks (GitHub security advisory, Email Protection Gateway)", date: "2026-09-30", role: "primary" }
+      - { url: "https://github.com/kiteworks/security-advisories/security/advisories/GHSA-xgh2-fgj6-w93r", publisher: "Kiteworks (GitHub security advisory, Core)", date: "2026-09-30", role: "primary" }
+      - { url: "https://github.com/kiteworks/security-advisories/security/advisories/GHSA-vwvw-rp3m-rm37", publisher: "Kiteworks (GitHub security advisory, Secure Data Forms)", date: "2026-09-30", role: "primary" }
+      - { url: "https://github.com/kiteworks/security-advisories/security/advisories/GHSA-gmgg-7xhc-75f9", publisher: "Kiteworks (GitHub security advisory, Core)", date: "2026-09-30", role: "corroborating" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3695", publisher: "BSI CERT-Bund", date: "2026-10-01", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de RSS via `fetch_source.py bsi-rss` (not in the S1 slice; swept as a DACH cross-check), [NEU] [hoch] 'Kiteworks: Mehrere Schwachstellen' WID-SEC-2026-3695, 2026-10-01 -> `bsi-csaf WID-SEC-2026-3695` (61 CVE ids, reference 'KiteWorks Security Advisories vom 2026-09-30') -> pivot: WebFetch https://github.com/kiteworks/security-advisories/security/advisories (listing, 10 advisories visible) -> primary: per-advisory pages, each read with `extract` / WebFetch (GHSA-c9w5-4frw-7wqq, GHSA-xgh2-fgj6-w93r, GHSA-vwvw-rp3m-rm37, GHSA-gmgg-7xhc-75f9)."
+    summary: |
+      Delta for the existing entry 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning, which says Kiteworks
+      named no component or CVE. On 2026-09-30 Kiteworks published a set of GitHub security advisories for Kiteworks Core,
+      Email Protection Gateway (EPG) and Secure Data Forms (SDF); BSI CERT-Bund (WID-SEC-2026-3695, rated hoch) lists 61 CVE
+      ids, CVE-2026-102089 through CVE-2026-102150 with -102148 absent, covering authentication/access-control bypass,
+      account takeover, privilege escalation, arbitrary file write, SSRF, SQL and OS-command injection, RCE and DoS.
+      The four advisories read in full are all fixed in release 9.5.1 (the release Kiteworks told customers to run on 2026-09-28):
+      EPG account takeover CVE-2026-102149 (Critical, CVSS 3.1 9.4, network, no authentication or interaction; 'an access
+      control issue was addressed with improved checks'; all EPG versions before 9.5.1); Core account takeover CVE-2026-102147
+      (Critical, 9.3, CWE-79 injection, user interaction required, administrative access; before 9.5.1; bug-bounty finders);
+      Core arbitrary code execution CVE-2026-102142 (High, 7.2, administrator-authenticated template injection; before 9.5.1);
+      SDF security bypass CVE-2026-102150 (High, 7.2, no authentication, 'an authentication issue was addressed with improved
+      checks', affecting 9.3.0 up to before 9.5.1, versions before 9.3.0 not affected; published by a Kiteworks account, no external credit).
+      None of the pages states exploitation. The store entry's earlier fact (Advanced Forms enabled for under 1% of customers,
+      vulnerability confined to that product) is not tied to any of these advisories by a source: SDF is a plausible match
+      for that product but no source says the SDF bypass is the shutdown trigger, so the link stays an inference.
+      Net effect for the entry: the version requirement it already gives (9.5.1 or later) now has a documented, concrete
+      reason for every Kiteworks product, including a Critical unauthenticated account-takeover in EPG that is not limited to
+      the forms product.
+    region_nexus: "Kiteworks markets to government agencies; the entry's earlier update notes the shutdown window falls in Switzerland's timezone. No Swiss customer is named."
+    primary_sector_nexus: "direct for any public body running self-hosted Kiteworks (secure file transfer / email protection carries sensitive documents)"
+    sector: "public-sector"
+    cves: [CVE-2026-102149, CVE-2026-102147, CVE-2026-102142, CVE-2026-102150]
+    techniques: [T1190]
+    affected_products: ["Kiteworks Core", "Kiteworks Email Protection Gateway", "Kiteworks Secure Data Forms"]
+    entity_keys: ["product:kiteworks", "product:kiteworks-advanced-forms"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning"
+    evidence:
+      - quote: "A remote attacker may be able to gain access to user accounts."
+        attribution: "Kiteworks"
+        source_url: "https://github.com/kiteworks/security-advisories/security/advisories/GHSA-c9w5-4frw-7wqq"
+      - quote: "All Kiteworks Email Protection Gateway versions prior to 9.5.1."
+        attribution: "Kiteworks"
+        source_url: "https://github.com/kiteworks/security-advisories/security/advisories/GHSA-c9w5-4frw-7wqq"
+      - quote: "A remote attacker may be able to gain administrative access."
+        attribution: "Kiteworks"
+        source_url: "https://github.com/kiteworks/security-advisories/security/advisories/GHSA-xgh2-fgj6-w93r"
+      - quote: "Kiteworks Secure Data Forms versions 9.3.0 and above, prior to 9.5.1. Versions prior to 9.3.0 are not affected."
+        attribution: "Kiteworks"
+        source_url: "https://github.com/kiteworks/security-advisories/security/advisories/GHSA-vwvw-rp3m-rm37"
+      - quote: "Ein Angreifer kann mehrere Schwachstellen in Kiteworks ausnutzen, Authentifizierungs- oder Zugriffskontrollen zu umgehen, Benutzer- oder Administratorkonten zu übernehmen"
+        attribution: "BSI CERT-Bund"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3695"
+    extended_notes: |
+      Scores, CVE ids and CVSS vectors for the four advisories came from WebFetch summaries of the GitHub pages (the
+      impact/description/affected-version sentences quoted above were literal-checked with `extract`; the numeric CVSS
+      figures were not). EPSS (FIRST, 2026-10-01): CVE-2026-102149 0.00332, CVE-2026-102147 0.00435, CVE-2026-102150 0.00352.
+      Only ten of the 61 advisories were visible on the listing page fetched; the other 51 were not read individually.
+      Suggested priority: unchanged for the entry (notable); the Critical unauthenticated EPG flaw is a reason to keep the
+      9.5.1 action. Admiralty A1 (first-party vendor advisory + BSI).
+
+  # ---------------------------------------------------------------------------
+  # ITEM 5 — Citrix NetScaler: update-of the 2026-09-28 entry
+  # ---------------------------------------------------------------------------
+  - title: "Citrix NetScaler CVE-2026-88771 / CVE-2026-88772: Unit 42 telemetry dates first fingerprinting to 2026-08-21, documents the log-poisoning command-injection chain and a DEB-packaged web shell, and counts 50,277 exposed instances"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/netscaler-zero-days-exploited/", publisher: "Palo Alto Networks Unit 42", date: "2026-09-30", role: "primary" }
+      - { url: "https://support.citrix.com/external/article/CTX697096/citrix-netscaler-adc-and-citrix-netscale.html", publisher: "Citrix / Cloud Software Group", date: "2026-09-27", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0394", publisher: "NCSC-NL", date: "2026-09-30", role: "corroborating" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13005", publisher: "NCSC Switzerland (Cyber Security Hub)", date: "2026-10-01", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, bridge `fetch_source.py ncsc-csh recent` (post 13005, lastModified 2026-10-01T11:33Z, history entry 'Added Unit 42 publication') -> primary: Unit 42 threat brief, URL https://unit42.paloaltonetworks.com/netscaler-zero-days-exploited/ -> re-read Citrix CTX697096 (revision table: only 2026-09-27 entries, unchanged) and NCSC-NL advisory NCSC-2026-0394 (feed shows version 1.0.1 of 2026-09-30)."
+    summary: |
+      Delta for 2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev (last updated 2026-09-30). Unit 42's brief
+      (updated 2026-09-30; added to NCSC Switzerland's hub post on 2026-10-01) adds first-party telemetry the entry lacks:
+      (1) timeline - its earliest observed activity is version fingerprinting of NetScaler Gateways on 2026-08-21 from two hosts,
+      repeated against 100+ systems on 21-22 August, earlier than the early-September start the entry cites (Mandiant, eSentire
+      5 September); DTLS-path exploitation dropped DEB-packaged web shells hosted in the appliance's client-installer script
+      directory between 4 and 24 September from rotating source infrastructure; a stream of requests to the Gateway's
+      /logon/LogonPoint/Authentication/GetUserName page ran from 10 to 27 September and Unit 42 calls any activity to that path
+      anomalous; (2) mechanism of the CVE-2026-88771 chain as Unit 42 reconstructs it - a three-stage command injection: a
+      Base64 dropper command in the User-Agent of a request that returns 404 and lands in the VPN HTTP access log, a login
+      request whose extra text is logged by the packet engine as a 'pitboss PPE missed too many heartbeats' failure line, and a
+      Perl script that later processes the poisoned log and runs the injected text as a shell command (hence the
+      log-poisoning signature Unit 42 provides as a hunting query); (3) post-exploitation behaviours - a PHP web shell with
+      command, file-download and file-upload handlers using RC4-encrypted transport, setuid/setgid bits set on /bin/sh, a hidden
+      PHP file under the Gateway UI customisation directory exposed through Alias directives that make it look like a versioned
+      CSS asset, and a one-line edit of httpd.conf flipping php_flag engine from off to on followed by a graceful reload; (4)
+      exposure - Cortex Xpanse counted 50,277 potentially vulnerable internet-exposed instances as of 2026-09-27; (5) after the
+      2026-09-27 disclosure Unit 42 saw wide-scale scanning and testing and warns post-disclosure activity may not match the
+      original actor's indicators. Unit 42 notes the general hunting guidance it lists is not specific TTP it observed.
+      Other deltas: Citrix's bulletin CTX697096 is unchanged since 2026-09-27 (revision table shows two 2026-09-27 rows only);
+      NCSC-NL raised its NetScaler advisory to version 1.0.1 on 2026-09-30 adding Citrix's NetScaler Console scan script and IoC
+      references, and keeps 'kans high / schade high'.
+    region_nexus: "Global; the existing entry already carries NCSC Switzerland's advisory and the Rhineland-Palatinate municipal shutdown."
+    primary_sector_nexus: "direct (NetScaler Gateway fronts remote access for public bodies); exposure count is global, no Swiss figure given"
+    sector: "public-sector"
+    cves: [CVE-2026-88771, CVE-2026-88772]
+    techniques: [T1190, T1505.003, T1548.001, T1059.004]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["product:citrix-netscaler"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev"
+    evidence:
+      - quote: "The earliest activity we identified occurred on Aug. 21, 2026"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/netscaler-zero-days-exploited/"
+      - quote: "Palo Alto Networks Cortex Xpanse has identified 50,277 exposed instances that could potentially be vulnerable to these CVEs based on our telemetry."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/netscaler-zero-days-exploited/"
+      - quote: "We believe any activity to this URL path is anomalous and worth investigating."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/netscaler-zero-days-exploited/"
+      - quote: "We saw wide scale scanning and testing for these vulnerabilities once they were publicly disclosed on Sept. 27, 2026."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/netscaler-zero-days-exploited/"
+    extended_notes: |
+      Moderate delta on a critical-priority entry; the main agent should judge whether the earlier timeline (21 Aug
+      fingerprinting vs 4-5 Sep first exploitation) and the log-poisoning/web-shell behaviours change the entry's detection
+      and 'assume compromise since' guidance. Hunting concepts (behavioural, no IOCs): HTTP access-log entries on the VPN virtual
+      server with command-shaped, Base64 User-Agent values that return 404; packet-engine failure lines in ns.log containing
+      shell text after the 'NSPPE' marker; unexpected requests to the GetUserName logon page at steady rates; requests to the
+      client-installer script directory for package files; changes to httpd.conf enabling PHP (php_flag engine on) or adding
+      Alias directives under the logon customisation path; setuid bits on /bin/sh. Citrix's NetScaler Console scan script is the
+      vendor-supported check. Quote-literal check done against the extract of the Unit 42 page. Unit 42 IPs, hashes, keys and
+      passphrases exist in the source and are deliberately excluded.
+
+  # ---------------------------------------------------------------------------
+  # ITEM 6 — MikroTik RouterOS CVE-2026-84411 (backlog re-gate) — borderline
+  # ---------------------------------------------------------------------------
+  - title: "CVE-2026-84411 — MikroTik RouterOS before 7.24: pre-authentication integer underflow in the web management service reaches root code execution from a single HTTP request (CVSS 9.8); CISA corrected the fixed-version typo on 2026-09-30"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-272-06", publisher: "CISA (ICSA-26-272-06, revision 2)", date: "2026-09-30", role: "primary" }
+      - { url: "https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-272-06.json", publisher: "CISA CSAF record", date: "2026-09-30", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3661", publisher: "BSI CERT-Bund (derivative of the CISA advisory)", date: "2026-09-30", role: "corroborating" }
+      - { url: "https://cybernews.com/security/mikrotik-routeros-critical-flaw-remote-code-execution/", publisher: "Cybernews", date: "2026-10-01", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-advisories, bridge `fetch_source.py cisa csaf-recent` (icsa-26-272-06 listed with release 2026-09-30) -> primary: CSAF record via `cisa csaf icsa-26-272-06` and page https://www.cisa.gov/news-events/ics-advisories/icsa-26-272-06 (revision history: v1 2026-09-29, v2 2026-09-30 'Update A - Fixing upgrade version typo') -> state/coverage_backlog.md row of 2026-09-30 (held item, re-gate on MikroTik naming fixed builds, a PoC or exploitation) -> BSI WID-SEC-2026-3661, Cybernews (via WebSearch 'MikroTik RouterOS 7.24 CVE-2026-84411')."
+    summary: |
+      Re-gate of the open backlog row (2026-09-30) on today's facts. CISA's advisory ICSA-26-272-06 describes CVE-2026-84411
+      (CWE-191): the RouterOS web management service has an integer underflow in HTTP request-body handling reachable before
+      authentication, giving root code execution or denial of service from one crafted request; CVSS 3.1 9.8 (AV:N/AC:L/PR:N/UI:N);
+      reported to CISA by an anonymous researcher. CISA revised the advisory on 2026-09-30 ('Update A - Fixing upgrade version
+      typo'): affected is RouterOS below 7.24 and the single remediation text now reads 'update RouterOS to version 7.24 or
+      later', removing the contradiction (7.24 vs 7.23) that was one of the backlog row's stated blockers. CISA's SSVC field
+      records exploitation 'none'. BSI (hoch) simply relays CISA. Cybernews (2026-10-01) tells readers to update to RouterOS
+      7.24.5 and cites 367,000 internet-exposed web interfaces without attributing the figure; neither claim traces to a
+      MikroTik document, so the exact fixed build and the exposure count are unverified. The MikroTik changelog page read
+      this run rendered 7.23.7 (2026-09-16) as its newest build and carried no CVE reference; the open backlog row records that
+      MikroTik's own pages did not name the CVE.
+    region_nexus: "Global router OS with a very large internet-exposed base; the store already covers RouterOS as KEV-exploited via the separate MikroTrick SSH chain."
+    primary_sector_nexus: "indirect — RouterOS edge routers appear in small public sites and communal networks; exposure depends on the web (www) service being reachable"
+    sector: "public-sector"
+    cves: [CVE-2026-84411]
+    techniques: [T1190]
+    affected_products: ["MikroTik RouterOS"]
+    entity_keys: ["product:mikrotik-routeros"]
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "pre-auth root RCE at CVSS 9.8 on a product the store already tracks as exploited, and CISA has now removed the fixed-version contradiction; but still CISA-only, no exploitation, no public PoC, MikroTik has not named the CVE or the fixed build. Held-backlog item; publish only if the main agent judges the imminent-exploitation profile enough."
+    evidence:
+      - quote: "The web management service in affected RouterOS versions contains an integer underflow in its HTTP request body handling that is reachable before authentication."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-272-06"
+      - quote: "Update A - Fixing upgrade version typo"
+        attribution: "CISA CSAF"
+        source_url: "https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-272-06.json"
+      - quote: "MikroTik recommends users update RouterOS to version 7.24 or later."
+        attribution: "CISA CSAF"
+        source_url: "https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-272-06.json"
+    extended_notes: |
+      EPSS not yet scored. Detection concept: HTTP(S) requests with malformed or negative-looking Content-Length / body framing
+      to the router's www/www-ssl service from untrusted sources, followed by service restarts or unexpected processes; the
+      source gives no detection detail. Hardening: take the web management service off untrusted networks (IP service
+      restrictions), then upgrade to 7.24 or later (check MikroTik's download page for the build, since Cybernews names 7.24.5).
+      If the main agent publishes this, the existing entry 2026-09-06/mikrotik-routeros-mikrotrick-ssh-auth-bypass-privesc-chain
+      should be listed in references[] (distinct CVE and service).
+
+  # ---------------------------------------------------------------------------
+  # ITEM 7 — Zimbra Collaboration 10.1.21 — borderline
+  # ---------------------------------------------------------------------------
+  - title: "Zimbra Collaboration 10.1.21 (released 2026-09-24): unauthenticated prediction of password-recovery codes enables account takeover, WebDAV accepts pre-MFA tokens, an OnlyOffice integration allows file write to RCE; most flaws have no CVE or CVSS yet"
+    sources:
+      - { url: "https://wiki.zimbra.com/wiki/Zimbra_Releases/10.1.21", publisher: "Zimbra (release notes)", date: "2026-09-24", role: "primary" }
+      - { url: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories", publisher: "Zimbra (security advisories table)", date: "2026-09-29", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13022", publisher: "NCSC Switzerland (Cyber Security Hub)", date: "2026-10-01", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Groupware-Zimbra-Update-schliesst-zahlreiche-Sicherheitsluecken-11468996.html", publisher: "heise online", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, bridge `fetch_source.py ncsc-csh recent` (post 13022, 2026-10-01, exploitation status UNKNOWN) -> pivot: heise article URL https://www.heise.de/news/Groupware-Zimbra-Update-schliesst-zahlreiche-Sicherheitsluecken-11468996.html (named in the NCSC-CH references) -> primary: Zimbra release notes https://wiki.zimbra.com/wiki/Zimbra_Releases/10.1.21 and advisories table https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories."
+    summary: |
+      Zimbra's 10.1.21 patch release (2026-09-24) fixes, among others: a flaw in the self-service password-recovery mechanism
+      that lets an unauthenticated attacker predict recovery codes and reset a user's password (account takeover; credited to
+      two external reporters); WebDAV authentication that accepted pre-MFA tokens, now rejected until MFA completes (MFA
+      bypass); an OnlyOffice-integration issue allowing unauthorised file writes and remote code execution under specific
+      conditions and a second one allowing an authenticated user's server-side JavaScript injection to run commands; and six
+      stored-XSS issues in the Classic and Modern web clients (crafted sender names, attachment Content-Location headers,
+      share invitations, calendar counter-proposals). Zimbra's advisory table lists only CVE-2026-66911 and CVE-2026-66912
+      (both XSS, CVSS 'TBD'); the account-takeover, MFA-bypass and RCE rows read 'TBD' for CVE and CVSS at fetch time, and
+      no PoC or exploitation is reported by Zimbra, NCSC-CH (status 'UNKNOWN') or heise. heise notes Zimbra is often attacked
+      by state-linked actors because it runs in government and research bodies, and the store already carries an exploited Zimbra
+      SNMP command-injection entry (2026-08-20).
+    region_nexus: "NCSC Switzerland published a hub advisory on 2026-10-01; Zimbra is run by government and research bodies in DACH per heise. No Swiss victim."
+    primary_sector_nexus: "direct if the constituency self-hosts Zimbra Collaboration (cantonal/communal or university mail); exposure turns on the webmail, WebDAV and password-recovery endpoints being internet-facing"
+    sector: "public-sector"
+    cves: [CVE-2026-66911, CVE-2026-66912]
+    techniques: [T1190]
+    affected_products: ["Zimbra Collaboration"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:zimbra-collaboration", type: product, name: "Zimbra Collaboration", aliases: ["Zimbra", "ZCS", "Zimbra Collaboration Suite"], summary: "Groupware/webmail suite widely run by government and research bodies; repeatedly exploited (SNMP command injection in 2026-08, zero-click XSS CVE-2025-66376 by LAUNDRY BEAR); 10.1.21 of 2026-09-24 fixes unauthenticated password-recovery code prediction (Zimbra release notes)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "pre-auth account takeover in a mail platform common to public bodies, NCSC-CH advisory published; but no CVE or CVSS for the headline flaw, no PoC, no exploitation, and the vendor note is one sentence. Publish only as a short awareness item if the main agent judges NCSC-CH's attention enough."
+    evidence:
+      - quote: "Fixed a security vulnerability in the self-service password recovery mechanism that could allow an unauthenticated attacker to predict recovery codes and reset a user's password."
+        attribution: "Zimbra"
+        source_url: "https://wiki.zimbra.com/wiki/Zimbra_Releases/10.1.21"
+      - quote: "Pre-MFA tokens are now rejected with an HTTP status, requiring users to fully complete Multi-Factor Authentication before accessing WebDAV resources."
+        attribution: "Zimbra"
+        source_url: "https://wiki.zimbra.com/wiki/Zimbra_Releases/10.1.21"
+      - quote: "Nicht angemeldete Angreifer können Wiederherstellungscodes vorhersagen und damit Nutzerpasswörter zurücksetzen – damit ist die Übernahme des Kontos möglich."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Groupware-Zimbra-Update-schliesst-zahlreiche-Sicherheitsluecken-11468996.html"
+    extended_notes: |
+      Detection concept: webmail/auth logs for bursts of password-recovery code submissions per account or per source, resets
+      without a preceding recovery request, and WebDAV access with sessions that never completed MFA. Hardening: upgrade to
+      10.1.21; until then restrict the self-service password-recovery and WebDAV endpoints to trusted networks. If the main
+      agent publishes, reference 2026-08-20/cve-2026-73570-zimbra-snmp-command-injection-exploited as a sibling entry.
+
+# =============================================================================
+# CVE TABLE (S1 structured input; never rendered as a table)
+# =============================================================================
+cve_table:
+  - { cve: "CVE-2026-76504", product: "Cisco Catalyst SD-WAN Manager", cvss: "9.8 (CVSS 3.1, Cisco)", epss: 0.01096, kev: true, exploited: true,
+      affected: "all configurations; every release below the first-fixed release of its train (20.9, 20.12, 20.15, 20.18, 26.1, 26.2); releases earlier than 20.9 must migrate to a fixed train",
+      fixed: "20.9.10.1; 20.12.8.2; 20.15.6.1; 20.18.4.1; 26.1.2.1; 26.2.1 (Cisco-managed cloud release 20.15.605 already fixed, no customer action)",
+      type: "auth-bypass", vector: "network", auth: "pre-auth",
+      source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU" }
+  - { cve: "CVE-2026-104286", product: "Fortinet FortiMail", cvss: "9.8 (CVSSv3, Fortinet PSIRT feed)", epss: null, kev: true, exploited: true,
+      affected: "FortiMail 8.0.0-8.0.1; 7.6.0-7.6.6; 7.4.0-7.4.8; 7.2.0-7.2.9 (vendor table; 7.0 not listed by the vendor, one aggregator lists 7.0.0-7.0.9)",
+      fixed: "none released yet: upcoming 8.0.2, 7.6.7, 7.4.9; 7.2 users move to the 7.4 branch or above; workaround: disable IBE support or remove internet access to the management interface",
+      type: "path-traversal / arbitrary file write", vector: "network", auth: "pre-auth",
+      source: "https://www.fortiguard.com/psirt/FG-IR-26-175" }
+  - { cve: "CVE-2026-102489", product: "Zammad", cvss: "8.7 (CVSS 4.0 alone; 9.4 chained with CVE-2026-102490, DIVD CVE record)", epss: 0.00709, kev: false, exploited: true,
+      affected: "6.3.0 through 6.5.4 exploitable (DIVD case page, NCSC-NL); DIVD CVE record reads '>= 6.3.0 to < 6.5.4'; 7.0.0-7.1.3 contain the defect but DIVD says not exploitable due to environment conditions",
+      fixed: "NCSC-NL: Zammad has released security updates (builds not named in any fetched source; no Zammad advisory located); DIVD: upgrade to Zammad 7 or take offline",
+      type: "session-hijack to RCE as zammad user", vector: "network", auth: "pre-auth",
+      source: "https://csirt.divd.nl/DIVD-2026-00015" }
+  - { cve: "CVE-2026-102490", product: "Zammad", cvss: "8.5 (CVSS 4.0 alone; 9.4 chained, DIVD CVE record)", epss: 0.00319, kev: false, exploited: true,
+      affected: "all versions from 1.5.0 including the latest alpha (DIVD case page, NCSC-NL); DIVD CVE record reads '>= 1.5.0 to < 7.1.0-alpha'",
+      fixed: "none as of 2026-09-30 (NCSC-NL: 'nog niet opgelost')",
+      type: "priv-esc (zammad service user to root)", vector: "local", auth: "post-auth (low-privilege local user)",
+      source: "https://www.ncsc.nl/alerts/actief-misbruik-van-zeroday-kwetsbaarheden-in-zammad-update-nu" }
+  - { cve: "CVE-2026-84411", product: "MikroTik RouterOS", cvss: "9.8 (CVSS 3.1, CISA)", epss: null, kev: false, exploited: false,
+      affected: "RouterOS below 7.24",
+      fixed: "7.24 or later (CISA revision 2 of 2026-09-30; Cybernews names 7.24.5, unverified)",
+      type: "integer underflow to RCE/DoS", vector: "network", auth: "pre-auth",
+      source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-272-06" }
+  - { cve: "CVE-2026-102149", product: "Kiteworks Email Protection Gateway", cvss: "9.4 (CVSS 3.1, Critical)", epss: 0.00332, kev: false, exploited: false,
+      affected: "all EPG versions prior to 9.5.1", fixed: "9.5.1 or later",
+      type: "access-control / account takeover", vector: "network", auth: "pre-auth",
+      source: "https://github.com/kiteworks/security-advisories/security/advisories/GHSA-c9w5-4frw-7wqq" }
+  - { cve: "CVE-2026-102147", product: "Kiteworks Core", cvss: "9.3 (CVSS 3.1, Critical; user interaction required)", epss: 0.00435, kev: false, exploited: false,
+      affected: "all Core versions prior to 9.5.1", fixed: "9.5.1 or later",
+      type: "injection (CWE-79) to administrative account takeover", vector: "network", auth: "pre-auth (user interaction)",
+      source: "https://github.com/kiteworks/security-advisories/security/advisories/GHSA-xgh2-fgj6-w93r" }
+  - { cve: "CVE-2026-102142", product: "Kiteworks Core", cvss: "7.2 (CVSS 3.1, High)", epss: null, kev: false, exploited: false,
+      affected: "all Core versions prior to 9.5.1", fixed: "9.5.1 or later",
+      type: "template injection to command execution", vector: "network", auth: "post-auth (administrator)",
+      source: "https://github.com/kiteworks/security-advisories/security/advisories/GHSA-gmgg-7xhc-75f9" }
+  - { cve: "CVE-2026-102150", product: "Kiteworks Secure Data Forms", cvss: "7.2 (CVSS 3.1, High)", epss: 0.00352, kev: false, exploited: false,
+      affected: "9.3.0 up to before 9.5.1 (versions before 9.3.0 not affected)", fixed: "9.5.1 or later",
+      type: "authentication bypass (limited internal operations)", vector: "network", auth: "pre-auth",
+      source: "https://github.com/kiteworks/security-advisories/security/advisories/GHSA-vwvw-rp3m-rm37" }
+
+# =============================================================================
+# DISPOSITIONS — every KEV row, every scheduled release, every revision check
+# =============================================================================
+kev_dispositions:
+  - { cve: "CVE-2026-76504", kev_added: "2026-09-30", disposition: "ITEM (item 1, new)", note: "Swiss nexus: NCSC-CH hub advisory 13021; Admiralty A1 suggested" }
+  - { cve: "CVE-2026-104286", kev_added: "2026-10-01", disposition: "ITEM (item 2, new)", note: "exploited zero-day with no fixed build on 3 of 4 branches; vendor workaround only" }
+  - { cve: "CVE-2026-86950", kev_added: "2026-09-29", disposition: "COVERED (2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev); outside the window by KEV date; Apple pages 149226/149228/149229 and the Apple security-releases table show nothing newer than 2026-09-28; NCSC-NL NCSC-2026-0397 (2026-10-01) is a relay of the same fix", note: "no delta" }
+  - { cve: "(all other KEV rows, catalogVersion 2026.10.01, 1731 entries)", kev_added: "n/a", disposition: "none dated in window apart from the two above", note: "fresh `cisa-kev` fetch 2026-10-02T04:07Z" }
+
+scheduled_release_sweep:
+  - { vendor: "Microsoft", status: "no scheduled release in window (next Patch Tuesday 2026-10-13)", exploited_or_disclosed_or_preauth_9plus: "none first-party; `msrc recent 200` for 2026-09-30..10-01 shows only third-party/Azure-Linux and Chromium-for-Edge ingestion; no exploited or publiclyDisclosed flags", note: "data discrepancy: MSRC's structured record for CVE-2026-65660 (latestRevisionDate 2026-09-25) still shows exploited=No / 'Exploitation Less Likely' while the store entry and CISA KEV record exploitation; the article text of the same MSRC page carries the 'reliable evidence of observed attacks as of 9/25/2026' sentence the entry quotes" }
+  - { vendor: "Oracle", status: "no CPU/CSPU/alert in window; September CSPU Rev 1 (2026-09-15) already covered; next CPU 2026-10-20 (pre-release announcement Thursday before)", exploited_or_disclosed_or_preauth_9plus: "none new" }
+  - { vendor: "SAP", status: "no patch day in window (next 2026-10-13)", exploited_or_disclosed_or_preauth_9plus: "none" }
+  - { vendor: "Adobe", status: "newest bulletin cards dated 2026-09-22 (APSB26-142, -150, -151, -157 and others); nothing in window; the 2026-09-30 modifiedDate on ~100 cards is a bulk re-index, not new content", exploited_or_disclosed_or_preauth_9plus: "backlog row (Campaign Classic APSB26-142 eight CVSS 10 unauth, Connect APSB26-150, AEM Forms JEE) re-checked: still none KEV-listed, no new exploitation report" }
+  - { vendor: "Fortinet", status: "out-of-band FG-IR-26-175 only (2026-10-01); the 2026-09-08 bundle (FG-IR-26-164..174) is outside the window", exploited_or_disclosed_or_preauth_9plus: "CVE-2026-104286 -> item 2; of the 2026-09-08 bundle the feed shows FG-IR-26-168 (9.1, FortiPAM agent) and FG-IR-26-170 (9.6, FortiMonitor static JWT key), not re-assessed (outside window)" }
+  - { vendor: "Cisco", status: "out-of-band SD-WAN Manager advisory (2026-09-30) -> item 1; no scheduled bundle in window; advance notice (2026-09-30) for the 2026-10-07 publication names APIC, Finesse, License On-Prem (formerly Smart Software Manager On-Prem), Meraki and NX-OS for MDS 9000 / Nexus 3000, 7000, 9000 / ACI / UCS Fabric Interconnects, all as security hardening releases", exploited_or_disclosed_or_preauth_9plus: "CVE-2026-76504 only" }
+  - { vendor: "Citrix", status: "bulletin CTX697096 of 2026-09-27 unchanged (revision table: two rows, both 2026-09-27); already covered; CVE-2026-88773 (HTTP request smuggling, CVSS 4.0 9.3, HTTP configuration) is the third critical in the bulletin and is not reported exploited", exploited_or_disclosed_or_preauth_9plus: "CVE-2026-88771 and -88772 exploited (covered); update delta in item 5" }
+  - { vendor: "Ivanti", status: "no release in window (last 2026-09-08, next 2026-10-13)", exploited_or_disclosed_or_preauth_9plus: "none" }
+  - { vendor: "Siemens ProductCERT", status: "no new advisory in window (last revision 2026-09-28, SSA-627195 Mendix Studio Pro; next patch day 2026-10-13)", exploited_or_disclosed_or_preauth_9plus: "none" }
+  - { vendor: "Palo Alto Networks", status: "one advisory in window: CVE-2026-0307 GlobalProtect App local privilege escalation, Medium", exploited_or_disclosed_or_preauth_9plus: "none; dropped (local, medium)" }
+  - { vendor: "Google Chrome / Mozilla / Thunderbird", status: "Chrome 154.0.8037.92/.93 (2026-09-29, 32 fixes, one critical ANGLE overflow CVE-2026-102331, 25 high incl. five V8 type confusions); 154.0.8037.97/.98 posted 2026-10-01 with 'security changes will be updated shortly'; Firefox 157 and ESR 153.4/140.17/115.42 (MFSA 2026-97..100, 2026-09-29) and Thunderbird 157/153.4/140.17 (MFSA 2026-101..103, 2026-09-30)", exploited_or_disclosed_or_preauth_9plus: "none exploited (Google and Mozilla state none); highest Mozilla impact 'high'. DROPPED: routine browser cycle, no exploitation" }
+  - { vendor: "WatchGuard", status: "AP 3.4.8 advisories dated 2026-09-28 and Fireware OS 2026.3.2/2026.2.3/12.12.3/12.5.21 (15 CVEs) dated 2026-09-29, both before the window; WatchGuard states it is not aware of exploitation of any of them", exploited_or_disclosed_or_preauth_9plus: "AP CVE-2026-101891 + CVE-2026-86102 (9.3 each, unauthenticated API session then command injection, attacker needs network reach to the AP's internal API); Fireware CVE-2026-86131 (9.2, needs an attacker-controlled remote VPN server), CVE-2026-81433 (8.7, adjacent-network DHCP packet). DROPPED: outside window, not exploited, adjacent/LAN prerequisites. FLAG: no store entry mentions these CVEs (grep of entries/ finds none); the 2026-09-29 updates to the two WatchGuard entries concern earlier flaws" }
+  - { vendor: "Joomla (core 5.4.9 / 6.1.4)", status: "16 core advisories (20260901..20260916), fix date 2026-09-25, advisories 2026-09-29", exploited_or_disclosed_or_preauth_9plus: "none exploited; vendor impact Moderate/High (MFA bypass via rememberme cookie CVE-2026-92227, guest-level account creation via profile.save CVE-2026-90907). DROPPED: no exploitation, no pre-auth RCE. Joomla is common on communal sites; feed found as candidate source" }
+  - { vendor: "Keycloak 26.7.5 / 26.8.0", status: "2026-09-30 security release (14 CVEs incl. CVE-2026-16103 incomplete fix of a CIBA brute-force lockout bypass, CVE-2026-18217 SAML redirect-binding parameter pollution, CVE-2026-89298 client-secret disclosure to view-clients role) and 2026-10-01 feature release", exploited_or_disclosed_or_preauth_9plus: "none exploited, no CVSS published in the release notes. DROPPED" }
+  - { vendor: "GitLab", status: "critical patch releases 19.4.1/19.3.3/19.2.7 and 19.0.9/18.11.12 on 2026-09-23 (outside the 168 h lookback; never swept because the source was added 2026-09-29)", exploited_or_disclosed_or_preauth_9plus: "CVE-2026-89078 and CVE-2026-93577 (9.9, CI/CD regex parser memory corruption, authenticated user to code execution); not reported exploited. DROPPED: authenticated, not exploited. The CVE-2026-85706 entry (2026-09-12) is up to date (BSI revision 4 of 2026-09-29 only adds the new patch releases)" }
+  - { vendor: "OpenSSL / wolfSSL", status: "OpenSSL 14 CVEs (one High: CVE-2026-84782 DTLS retransmit heap disclosure, 8.2) and wolfSSL 5.9.4 (11 CVEs, three High certificate-validation bypasses), ~2026-09-30", exploited_or_disclosed_or_preauth_9plus: "none exploited. DROPPED: library bugs, conditional" }
+  - { vendor: "cPanel/WHM", status: "advisories 2026-09-29/30 (CVE-2026-93698 Multilang adminbin and two others, BSI WID-SEC-2026-3698 hoch)", exploited_or_disclosed_or_preauth_9plus: "none exploited, code execution requires an authenticated account. DROPPED" }
+  - { vendor: "Node/npm libraries (GitHub Advisory DB)", status: "vm2 sandbox-escape wave (about ten Critical advisories, 2026-10-01), Next.js next/og ImageResponse RCE GHSA-vcvr-r3jv-pc5j (CVSS 4.0 9.5, no CVE, published 2026-09-22, needs attacker-controlled SVG values in the Node ImageResponse path), piscina, SiYuan unauthenticated SQLi", exploited_or_disclosed_or_preauth_9plus: "none exploited. DROPPED" }
+  - { vendor: "CISA ICS advisories 2026-10-01 (ICSA-26-274-01..06) and ICSA-26-272-06 (2026-09-30 revision)", status: "Armatura One (embedded ActiveMQ OpenWire CVE-2023-46604, CVSS 9.8, four further 8.4-4.0 flaws, fixed in V4.7.2 / V4.6.1_USA), Monta EV-charging platform (CVE-2026-95102, 9.4), ABB PCM600, Johnson Controls EasyIO, Meari IoT cloud, CISA Malcolm update; MikroTik -> item 6", exploited_or_disclosed_or_preauth_9plus: "none exploited per CISA SSVC. DROPPED (no constituency footprint shown): Armatura One is the only one with a pre-auth network 9.8 (a physical-access-control platform whose default OpenWire listener fronts a deserialization flaw with long public exploit history); flagged here in case the main agent wants a one-line mention" }
+
+revision_sweep:
+  - { advisory: "Citrix CTX697096 (cited by 2026-09-28 entry)", result: "unchanged since 2026-09-27; delta comes from Unit 42 and NCSC-NL v1.0.1 -> item 5" }
+  - { advisory: "Kiteworks (2026-09-26 entry)", result: "new vendor advisory set on 2026-09-30 -> item 4" }
+  - { advisory: "Cisco cisco-sa-onprem-fmc-authbypass (v2.6), cisco-sa-fmc-static-cred (v1.6), cisco-sa-asaftd-vpn-dos (v1.1), cisco-sa-ISE-ABP (v1.0), cisco-sa-ise-multiauth-bypass (v1.1 2026-09-24 'added an additional researcher')", result: "all revisions dated 2026-09-16 or earlier/2026-09-24 cosmetic; already reflected in the store entries (updated 2026-09-18/20/29); nothing newer" }
+  - { advisory: "Arista Security Advisory 0183 (VeloCloud Orchestrator, 2026-09-23 entry)", result: "revision table shows 1.0 (09-22) and 1.1 (09-23, CSAF added) only; fixed trains unchanged (5.2.3.16+, 6.4.2.8+; 6.1.x and 7.0.x still unfixed); page text says 'Fixes are coming out ... will be updated here when ready'. No delta" }
+  - { advisory: "Check Point sk1000171 / sk1000117 / sk1000118", result: "last modified 2026-09-22 / 2026-09-24 / 2026-09-18; already reflected (entries updated 2026-09-29). No delta" }
+  - { advisory: "MSRC CVE-2026-65660 (SharePoint entry 2026-09-26)", result: "latestRevisionDate 2026-09-25; see scheduled_release_sweep Microsoft note about the structured exploited field; no new facts" }
+  - { advisory: "MikroTik ICSA-26-272-06", result: "CISA revision 2 (2026-09-30) fixed the 7.23/7.24 typo -> item 6 (borderline, held-backlog row)" }
+  - { advisory: "WatchGuard (entries 2026-07-03, 2026-08-31)", result: "09-28/09-29 releases are separate CVEs, not revisions; see scheduled_release_sweep" }
+  - { advisory: "Apple CoreGraphics (2026-09-30 entry)", result: "no revision; Apple security-releases table has nothing newer than 2026-09-28" }
+
+backlog_rechecks:
+  - { row: "IBM MQ CVE-2026-10747 + Langflow CVE-2026-79724/81204/85025", result: "none in CISA KEV (catalogVersion 2026.10.01); BSI updated its Langflow advisory on 2026-09-30 (revision only, no exploitation statement read); no exploitation report found. No change" }
+  - { row: "Adobe September cycle", result: "no bulletin newer than 2026-09-22; none KEV-listed. No change" }
+  - { row: "VMware CVE-2026-59346/59347", result: "not in KEV 2026.10.01; no new exploitation report. No change" }
+  - { row: "IBM Guardium CVE-2026-85542", result: "not in KEV 2026.10.01; no IBM confirmation found. No change" }
+  - { row: "MikroTik CVE-2026-84411", result: "CISA corrected the fixed version on 2026-09-30; still CISA-only; see item 6" }
+  - { row: "DIVD breach disclosure (surfaced 2026-09-26, S4)", result: "root cause now public: two Zammad zero-days; see item 3, which should resolve the row" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist is configured for this deployment; the product sweep is a no-op"
+
+candidate_sources:
+  - id: divd-csirt
+    publisher: "DIVD CSIRT (Dutch Institute for Vulnerability Disclosure) - cases and CVE records"
+    url: "https://csirt.divd.nl/"
+    rss_url: "https://csirt.divd.nl/feed.xml"
+    category: vulns
+    why: "Primary for coordinated-disclosure cases and victim notifications in Europe (Zammad zero-days, MikroTik MikroTrick, Ivanti EPMM, Hashtopolis); feed returns dated case updates directly (verified 2026-10-02, method direct); DIVD-2026-00014/-00015 were the primary for item 3."
+  - id: joomla-security-centre
+    publisher: "Joomla! Security Centre (Joomla Security Strike Team)"
+    url: "https://developer.joomla.org/security-centre.html"
+    rss_url: "https://developer.joomla.org/security-centre.feed?type=rss"
+    category: vendor-psirt
+    why: "Joomla core advisories (16 in the 5.4.9/6.1.4 release) for a CMS common on Swiss communal and regional sites; feed verified direct 2026-10-02 (items dated 2026-09-25)."
+  - id: watchguard-psirt
+    publisher: "WatchGuard PSIRT"
+    url: "https://psirt.watchguard.com/"
+    category: vendor-psirt
+    why: "First-party per-CVE advisories with product-status tables and an explicit exploitation-status line for Firebox/Fireware, WatchGuard AP, AuthPoint and Dimension; the store tracks three WatchGuard entries and none covers the 2026-09-28/29 release. No RSS (feed guesses returned 403); the listing and per-CVE pages read cleanly with `extract` (verified 2026-10-02)."
+  - id: zimbra-security-advisories
+    publisher: "Zimbra Security Advisories / Releases wiki"
+    url: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories"
+    category: vendor-psirt
+    why: "First-party advisory table and per-release security-fix lists for Zimbra Collaboration, a repeatedly exploited groupware product run by public bodies; reads cleanly with `extract` (verified 2026-10-02); the page names an advisory feed (https://wiki.zimbra.com/security-advisory-feed.php, 'no details')."
+
+coverage_gaps:
+  - { source_id: "chrome-releases", reason: "RECIPE CHANGE: the Atom feed https://chromereleases.googleblog.com/feeds/posts/default now answers HTTP 302 on the direct transport and the jina fallback returned no items (`feed` fails). Working recipe verified 2026-10-02: `python3 tools/fetch_source.py extract https://chromereleases.googleblog.com/` (front page lists the newest posts with links), then `extract <post URL>` for the build and the 'Security changes' section." }
+  - { source_id: "tp-link-omada-psirt", reason: "RECIPE NOTE: `extract` on the bulletin URL returns only a cookie banner; `python3 tools/fetch_source.py url \"https://support.omadanetworks.com/en/bulletin/?bulletinsResourceTypeIdList=1111\"` returns the 538 KB server-rendered HTML with every bulletin link and its MM-DD-YYYY date (regex href=\"/en/bulletin/<id>/\" plus the date strings); newest was 09-21-2026 (CVE-2026-81531)." }
+  - { source_id: "adobe-psirt", reason: "RECIPE NOTE: in the chimera-api JSON, `contentArea.title` is the APSB id and `cardDate` is the publication date; `modifiedDate` was bulk-rewritten on 2026-09-30 (about 100 cards stamped 15:15-18:54Z with old cardDates) and must NOT be used for recency." }
+  - { source_id: "checkpoint-support", reason: "RECIPE NOTE: the record URL is one SK (sk185222, dated 2026-08-01), not a listing, so it cannot discover new advisories. `python3 tools/fetch_source.py url https://support.checkpoint.com/results/sk/<id>` returns the Next.js page whose __NEXT_DATA__ JSON carries lastModified and the full text; discovery of new SK ids has to come from Check Point's blog or CERT relays." }
+  - { source_id: "msrc-update-guide", reason: "RECIPE NOTE: `msrc recent N` interleaves third-party Azure-Linux (CBL-Mariner) and Chromium-for-Edge CVEs with first-party ones; filter on the exploited/publiclyDisclosed flags and on non-third-party titles. 200 rows reached back only to 2026-09-28." }
+  - { source_id: "ncsc-ch-security-hub", reason: "RECIPE NOTE: `ncsc-csh recent N` posts that were never edited have no lastModified key; scripts must use .get('lastModified'). Post URLs follow https://security-hub.ncsc.admin.ch/#/posts/<id>." }
+  - { source_id: "enisa-euvd", reason: "RECIPE NOTE: `enisa-euvd recent {exploited|criticals|lastvulnerabilities}` returns only 4 items per list, so it is a spot check, not a sweep; it did surface the two Zammad CVEs (exploited, exploitedSince 2026-09-30) and FortiMail." }
+  - { source_id: "bsi-de (not in slice)", reason: "RECIPE NOTE: `fetch_source.py bsi-rss` prints RSS XML, not JSON (250 items, `[NEU] [kritisch]/[hoch]` markers in titles); a regex over <item> works. It surfaced the Kiteworks 61-CVE advisory (WID-SEC-2026-3695) that no slice source carried." }
+  - { source_id: "vulncheck / unit42 (standard research sources)", reason: "both carried the best technical primaries for items 1 and 5 and read cleanly with `extract`; worth treating as essential-rotation for S1 on edge-device zero-days." }
+
+# =============================================================================
+# SOURCE LEDGER — one row per slice record, slice order
+# =============================================================================
+source_ledger:
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 50, in_horizon_items: 2, returned: 2 }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd.recent (exploited/criticals/lastvulnerabilities) + advisory", horizon_hours: 50, in_horizon_items: 3, returned: 2, note: "exploited list = FortiMail + two Zammad CVEs (JFrog CVE-2026-82329 older, already covered)" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + cisa page + bridge cisa csaf-recent / csaf", horizon_hours: 50, in_horizon_items: 11, returned: 1, note: "3 KEV alerts (2 in window), 8 ICS advisories in window; MikroTik ICSA-26-272-06 returned borderline; rest dropped (see scheduled_release_sweep)" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc recent 200 + msrc cve", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "only third-party/Edge ingestion in window; no first-party exploited or disclosed CVE; Patch Tuesday 2026-10-13" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed(direct)+extract", horizon_hours: 50, in_horizon_items: 1, returned: 1 }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed(direct)", horizon_hours: 50, in_horizon_items: 1, returned: 0, note: "CVE-2026-0307 GlobalProtect App LPE, Medium" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed(direct)", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-29 (Citrix CVE-2026-88772), before the window and covered" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 40", horizon_hours: 50, in_horizon_items: 3, returned: 3, note: "Cisco SD-WAN 13021, Zimbra 13022, Citrix 13005 (edited 2026-10-01)" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest advisory 2026-014 (Citrix, 2026-09-27), covered" }
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "feed + bridge:ncsc-nl csaf", horizon_hours: 50, in_horizon_items: 4, returned: 3, note: "0396 Zammad, 0395 Cisco SD-WAN, 0394 NetScaler v1.0.1; 0397 Apple CoreGraphics is covered" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed(direct)", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest item 2026-09-28 (Citrix), covered" }
+  - { id: gitlab-security, tier: standard, attempted: true, transport: "feed(direct)+extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest posts 2026-09-23 (two critical patch releases), just outside the 168 h horizon; read anyway: authenticated 9.9 RCEs, not exploited, dropped" }
+  - { id: ivanti-psirt, tier: standard, attempted: true, transport: "feed(direct)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "last 2026-09-08" }
+  - { id: sap-security-notes, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "next patch day 2026-10-13" }
+  - { id: siemens-productcert, tier: standard, attempted: true, transport: "feed(direct)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "SSA-627195 V1.2 (2026-09-28) Mendix Studio Pro zip path traversal revision, not relevant" }
+  - { id: shadowserver, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "no item newer than 2026-09-07 (quiet, not a failure)" }
+  - { id: tp-link-omada-psirt, tier: standard, attempted: true, transport: "bridge:url (direct HTML)", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "newest bulletin 2026-09-21" }
+  - { id: oracle-cpu, tier: standard, attempted: true, transport: "bridge:url + extract", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "no CPU/CSPU/alert after 2026-09-15; next CPU 2026-10-20" }
+  - { id: chrome-releases, tier: standard, attempted: true, transport: "feed failed (HTTP 302) -> extract of blog front page and post", horizon_hours: 73, in_horizon_items: 2, returned: 0, note: "154.0.8037.92 (2026-09-29, no ITW) and 2026-10-01 placeholder post; recipe change reported in coverage_gaps" }
+  - { id: checkpoint-support, tier: standard, attempted: true, transport: "bridge:extract/url (SK pages, NEXT_DATA JSON) + WebSearch", horizon_hours: 73, in_horizon_items: 0, returned: 0, note: "sk1000171/117/118 last modified 2026-09-22/24/18, covered; record is a single SK, cannot list new advisories" }
+  - { id: github-advisory, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 50, in_horizon_items: 13, returned: 0, note: "vm2 wave, piscina, SiYuan, Next.js GHSA; no exploitation; dropped" }
+  - { id: keycloak, tier: standard, attempted: true, transport: "feed(direct)+extract", horizon_hours: 50, in_horizon_items: 2, returned: 0, note: "26.7.5 security release (14 CVEs, none exploited) and 26.8.0; dropped" }
+  - { id: mozilla-mfsa, tier: standard, attempted: true, transport: "extract", horizon_hours: 50, in_horizon_items: 3, returned: 0, note: "Thunderbird MFSA 2026-101..103 (2026-09-30); Firefox MFSA 2026-97..100 of 2026-09-29 just before the horizon; no ITW" }
+  - { id: cisco-psirt, tier: standard, attempted: true, transport: "feed(direct)+extract", horizon_hours: 50, in_horizon_items: 2, returned: 1, note: "SD-WAN advisory -> item 1; Oct 7 advance notice recorded in scheduled_release_sweep" }
+  - { id: apple-security, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest releases 2026-09-28 (covered CoreGraphics fix)" }
+  - { id: adobe-psirt, tier: standard, attempted: true, transport: "bridge:url (chimera-api JSON)", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest cardDate 2026-09-22; modifiedDate bulk re-index flagged" }
