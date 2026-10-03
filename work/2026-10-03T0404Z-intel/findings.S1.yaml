@@ -1,0 +1,405 @@
+# work/2026-10-03T0404Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-10-03T0404Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-03T04:06:22Z
+ended_at: 2026-10-03T04:29:47Z
+duration_seconds: 1405
+window: "26 h ending 2026-10-03T04:04:32Z (window start 2026-10-02T02:04Z); rotational records swept at their own lookback_hours"
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 22
+  bridge_fetches: 110
+  jina_reader_calls_spent: 7   # unintended fall-throughs (extract/feed auto-fallback): csirt.divd.nl x2, GHSA page 404, advisories.ncsc.nl redirect stub, Fortinet feed, Flatt feed, one guessed Aikido slug (404); no deliberate jina use
+
+summary_line: >
+  Window is quiet on new exploitation: both KEV additions (Zammad) and every other KEV/EUVD-exploited record are already
+  covered and the only new in-window signal is three deltas on covered entries (Cisco SD-WAN Live Protect shield,
+  FortiMail workaround correction, Citrix Swiss exposure share) plus one borderline Joomla extension item. No new
+  confirmed-exploited vulnerability, no scheduled multi-product release with an exploited or pre-auth 9.0+ network-reachable CVE.
+
+items:
+  # ---------------------------------------------------------------------------------------------------------------
+  - title: "Cisco Catalyst SD-WAN Manager CVE-2026-76504: Cisco advisory revision 1.1 (2026-10-02) adds a Live Protect shield as a temporary, partial control"
+    novelty: "update-of:2026-10-02/cve-2026-76504-cisco-catalyst-sd-wan-manager-auth-bypass-kev"
+    suggested_update_type: update
+    suggested_fields: [summary, actions, immediate_action, sources, evidence, body]
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU", publisher: "Cisco PSIRT", date: "2026-10-02", role: "primary" }
+      - { url: "https://www.cisco.com/c/en/us/td/docs/routers/sdwan/26x-later/network-monitoring/network-monitoring-guide/live-protect-for-cisco-catalyst-sd-wan.html", publisher: "Cisco (Catalyst SD-WAN Network Monitoring Guide, Live Protect)", date: "2026-10-03", role: "corroborating" }
+    discovery_trace: >
+      first seen at: S1 duty-1 re-fetch of the covered entry's primary, URL
+      https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU (extract, fetched 2026-10-03T04:09Z; revision table row "1.1 ... 2026-OCT-02")
+      -> pivot: Cisco Live Protect feature page, URL
+      https://www.cisco.com/c/en/us/td/docs/routers/sdwan/26x-later/network-monitoring/network-monitoring-guide/live-protect-for-cisco-catalyst-sd-wan.html
+    summary: |
+      Cisco revised its advisory for CVE-2026-76504 to version 1.1 on 2026-OCT-02 ("Added information about Live Protect
+      shield availability"). The covered entry (written from the 2026-09-30 version 1.0) says Cisco lists no workaround and
+      stops at "restrict access and upgrade". Cisco now states it has released a Live Protect shield for this CVE "to provide
+      temporary security coverage to allow time for software upgrade planning", that the shield "offers only temporary partial
+      protection", and that "the only way to remediate this vulnerability is to upgrade to the first fixed software release".
+      Documented side effect: with the shield applied, a legitimate user with URI encoding might not be able to log in to the
+      Manager. Cisco's Live Protect page lists the feature from Catalyst SD-WAN Control Components release 20.18.3 and describes
+      two shield modes (monitoring: visibility into exploit attempts without enforcement; protecting/enforce: applies the
+      mitigation policy), applied without a reload. The "no workaround" statement still stands: Cisco keeps "There are no
+      workarounds that address this vulnerability" and the network-restriction mitigation for on-prem deployments is unchanged.
+      Nothing else moved: exploitation status (Cisco PSIRT aware of active exploitation in September 2026), KEV listing (added
+      2026-09-30), the per-train fixed releases (20.9.10.1, 20.12.8.2, 20.15.6.1, 20.18.4.1, 26.1.2.1, 26.2.1; Cisco-managed cloud
+      20.15.605) and CVSS 9.8 are identical to the entry. Detection concept is unchanged (serviceproxy-access.log and
+      vmanage-server.log entries for j_security_check from unknown sources, viptela-reserved- usernames).
+    region_nexus: "global; Catalyst SD-WAN Manager is internet-reachable management plane at public-sector WAN operators incl. Switzerland (NCSC-CH advisory already cited by the entry)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-76504]
+    techniques: [T1190]
+    affected_products: ["Cisco Catalyst SD-WAN Manager"]
+    entity_keys: ["product:cisco-catalyst-sd-wan-manager"]
+    new_entities: []
+    verification: SINGLE-SOURCE-VENDOR-PRIMARY
+    confidence: HIGH
+    classification_hint: "A2"
+    evidence:
+      - quote: "Cisco has released a Live Protect shield for CVE-2026-76504 to provide temporary security coverage"
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU"
+      - quote: "This shield offers only temporary partial protection."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU"
+      - quote: "A legitimate user with URI encoding might not be able to login to SDWAN Manager."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU"
+      - quote: "Added information about Live Protect shield availability."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU"
+      - quote: "Cisco Catalyst SD-WAN Control Components Release 20.18.3"
+        attribution: "Cisco"
+        source_url: "https://www.cisco.com/c/en/us/td/docs/routers/sdwan/26x-later/network-monitoring/network-monitoring-guide/live-protect-for-cisco-catalyst-sd-wan.html"
+    extended_notes: |
+      Suggested action delta (keep to the do-now bar): where a Manager cannot be upgraded today, the vendor-documented interim layer is
+      the Live Protect shield (feature present from Control Components 20.18.3), run in enforce mode only after weighing the stated login
+      side effect, on top of (not instead of) restricting Manager access to trusted hosts; it does not replace the upgrade and does not
+      evict an attacker already inside. The entry's headline "no workaround" is still accurate for workarounds; the shield is a separate
+      vendor control, so the headline needs no change. I could not read the shield's release/version prerequisites for pre-20.18.3 trains
+      (the Live Protect page extract was a feature-history stub), so do not assert shield availability on older trains.
+
+  # ---------------------------------------------------------------------------------------------------------------
+  - title: "FortiMail CVE-2026-104286: Fortinet's own workaround names the webmail interface and a WAF rule on POST /ibe, not the management interface; fixed builds still 'upcoming'"
+    novelty: "update-of:2026-10-02/cve-2026-104286-fortimail-path-traversal-zero-day-kev"
+    suggested_update_type: correction
+    suggested_fields: [summary, actions, immediate_action, evidence, sources, body]
+    sources:
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175", publisher: "Fortinet PSIRT (FG-IR-26-175, initial publication 2026-10-01, no revision)", date: "2026-10-01", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/2026/ncsc-2026-0398.html", publisher: "NCSC-NL", date: "2026-10-02", role: "corroborating" }
+      - { url: "https://www.helpnetsecurity.com/2026/10/02/fortinet-fortimail-vulnerability-cve-2026-104286/", publisher: "Help Net Security", date: "2026-10-02", role: "corroborating" }
+    discovery_trace: >
+      first seen at: S1 duty-1 re-fetch of the covered entry's primary, URL https://fortiguard.fortinet.com/psirt/FG-IR-26-175 (extract, fetched 2026-10-03T04:07Z;
+      timeline still "2026-10-01: Initial publication", fix column still "upcoming") -> pivot: NCSC-NL RSS item NCSC-2026-0398 via bridge ncsc-nl recent 15
+      (https://advisories.ncsc.nl/rss/advisories) -> NCSC-NL detail page https://advisories.ncsc.nl/2026/ncsc-2026-0398.html -> Help Net Security,
+      URL https://www.helpnetsecurity.com/2026/10/02/fortinet-fortimail-vulnerability-cve-2026-104286/ (carries the "management interface" wording)
+    summary: |
+      Comparing the covered entry with Fortinet's advisory page fetched this run shows the entry paraphrases one of Fortinet's workarounds wrongly
+      (the same 'management interface' wording appears in Help Net Security, SecurityWeek and The Hacker News, all fetched this run). Fortinet lists three alternatives: disable IBE feature support; or
+      "Disable access to the FortiMail webmail interface from the internet or limit the access only from trusted private network"; or,
+      with a WAF in front of FortiMail, "block POST requests to /ibe that contain '../'". The entry's headline action and immediate_action
+      say to take the "management interface" off the internet, and its third workaround (WAF rule on POST /ibe) is missing. An operator who
+      follows the entry literally and restricts only the administrative interface leaves the webmail-side path to /ibe untouched; Fortinet
+      does not say the management interface is the reachable surface. NCSC-NL adds a scoping statement the entry lacks: it reads the
+      affected builds (7.2.0-7.2.9, 7.4.0-7.4.8, 7.6.0-7.6.6, 8.0.0-8.0.1) as affected "waarbij de functionaliteit IBE (Identity Based
+      Encryption) is aangezet" (with the IBE function enabled); Fortinet's table does not state that precondition, so treat it as NCSC-NL's
+      reading. NCSC-NL's advisory title says "kwetsbaarheid verholpen" and its text says Fortinet released security updates, which
+      contradicts Fortinet's own table ("Upgrade to upcoming 8.0.2 / 7.6.7 / 7.4.9"): Fortinet is authoritative, no fixed FortiMail build
+      is documented as of 2026-10-03T04:07Z, and the 7.2 branch still has no fix in place ("Upgrade to branch 7.4 or above", itself
+      affected below 7.4.9). Everything else in the entry is unchanged: exploited-in-the-wild statement, CVSS 9.8, KEV 2026-10-01
+      (due 2026-10-04), Fortinet "Virtual Patch: No", discovered internally by Fortinet Product Security.
+    region_nexus: "global; FortiMail is common email-security-gateway infrastructure in European public-sector mail chains; NCSC-CH advisory 13027 already cited"
+    primary_sector_nexus: "direct (mail gateways at administrations)"
+    sector: "public-sector"
+    cves: [CVE-2026-104286]
+    techniques: [T1190]
+    affected_products: ["Fortinet FortiMail"]
+    entity_keys: ["product:fortinet-fortimail"]
+    new_entities: []
+    verification: SINGLE-SOURCE-VENDOR-PRIMARY
+    confidence: HIGH
+    classification_hint: "A2"
+    evidence:
+      - quote: "Disable access to the FortiMail webmail interface from the internet or limit the access only from trusted private network"
+        attribution: "Fortinet PSIRT"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175"
+      - quote: "block POST requests to /ibe that contain '../'"
+        attribution: "Fortinet PSIRT"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175"
+      - quote: "Upgrade to upcoming 8.0.2 or above"
+        attribution: "Fortinet PSIRT"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175"
+      - quote: "This has been reported to be exploited in the wild, customers are urged to apply the workaround below."
+        attribution: "Fortinet PSIRT"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175"
+      - quote: "waarbij de functionaliteit IBE (Identity Based Encryption) is aangezet"
+        attribution: "NCSC-NL"
+        source_url: "https://advisories.ncsc.nl/2026/ncsc-2026-0398.html"
+      - quote: "administrators can block internet access to the management interface or restrict it to a trusted private network"
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/10/02/fortinet-fortimail-vulnerability-cve-2026-104286/"
+    extended_notes: |
+      Suggested edit set for the changelog record (type correction, no re-float): (1) immediate_action and actions[0]: replace "remove internet access to the
+      management interface" with Fortinet's wording (webmail interface) and add the WAF alternative (block POST requests to /ibe containing '../'); (2) Exposure:
+      add NCSC-NL's IBE-enabled reading as NCSC-NL's, not Fortinet's; (3) add NCSC-NL's "fixed" wording as a contradicted statement only if the entry wants to
+      surface it. The Help Net Security wording ("management interface") is a likely origin of the drift; SecurityWeek and The Hacker News use the same words (BleepingComputer, which the entry cites,
+      was not re-read this run), so a reader cross-checking against press will see the entry "confirmed" by secondary sources: cite Fortinet for the workaround text.
+      Exposure check that follows from Fortinet's text: is the webmail interface reachable from the internet, is IBE enabled (config system encryption ibe).
+
+  # ---------------------------------------------------------------------------------------------------------------
+  - title: "Citrix NetScaler CVE-2026-88771/88772: Censys exposure population (42,735 hosts, Switzerland about 4%) is not in the entry"
+    novelty: "update-of:2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev"
+    suggested_update_type: improvement
+    suggested_fields: [body, sources, evidence]
+    sources:
+      - { url: "https://censys.com/advisory/cve-2026-88771-cve-2026-88772/", publisher: "Censys", date: "2026-09-28", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/09/29/netscaler-zero-day-exploitation-escalates-into-mass-attacks-cve-2026-88771/", publisher: "Help Net Security", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: >
+      first seen at: S1 duty-1 check of the covered Citrix entry -> WebSearch ("NetScaler CVE-2026-88771 CVE-2026-88772 exploitation October 2026") ->
+      Help Net Security, URL https://www.helpnetsecurity.com/2026/09/29/netscaler-zero-day-exploitation-escalates-into-mass-attacks-cve-2026-88771/ (already a source of the entry)
+      -> primary: Censys advisory, URL https://censys.com/advisory/cve-2026-88771-cve-2026-88772/ (already a source of the entry, figures not used)
+    summary: |
+      No material delta since 2026-10-02 (Citrix bulletin CTX697096 unchanged since its 2026-09-27 revision, still no new fixed build; both CVEs KEV-listed since
+      2026-09-27; no new victims, actor attribution or exploitation-status change found). One Swiss-relevant fact that the entry cites sources for but never states:
+      Censys counted 42,735 internet-facing NetScaler ADC/Gateway hosts as of 2026-09-28, with the United States at 13,549 (32%), Germany 5,678 (13%) and "the
+      Netherlands, United Kingdom, and Switzerland at roughly 4% each" (about 1,700 Swiss hosts by simple arithmetic on Censys' rounded share; Censys states these
+      are exposed instances, not confirmed-vulnerable counts). Help Net Security relays security researcher Kevin Beaumont's statement (social-media post, not
+      independently verified here) that fewer than 10% of exposed hosts were patched on 2026-09-29 and that he was tracking over 100 victim organisations; treat that as
+      a claim, not a finding. Arctic Wolf (2026-10-01, via Help Net Security's update) published indicators for the follow-on opportunistic CVE-2026-88771 wave and
+      Mandiant for the initial CVE-2026-88772 intrusions; indicators are out of scope for entries.
+    region_nexus: "switzerland (about 4% of exposed NetScaler hosts per Censys), europe, global"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-88771, CVE-2026-88772]
+    techniques: [T1190]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["product:citrix-netscaler"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_hint: "B2"
+    evidence:
+      - quote: "The United States accounts for 13,549 hosts (32%), followed by Germany at 5,678 (13%), then the Netherlands, United Kingdom, and Switzerland at roughly 4% each."
+        attribution: "Censys"
+        source_url: "https://censys.com/advisory/cve-2026-88771-cve-2026-88772/"
+      - quote: "These are total exposed instances, not confirmed-vulnerable counts"
+        attribution: "Censys"
+        source_url: "https://censys.com/advisory/cve-2026-88771-cve-2026-88772/"
+    borderline: true
+    borderline_reason: "improvement-only (no new fact since the 2026-10-02 record; exposure-size context with a Swiss share); the main agent may skip it, it never re-floats the entry"
+
+  # ---------------------------------------------------------------------------------------------------------------
+  - title: "OrdaSoft OS CCK for Joomla CVE-2026-102427: unauthenticated PHP upload (CVSS 10.0), fixed in 8.3.16 but the vendor update server still offers 8.3.14"
+    novelty: new
+    lookback: true
+    sources:
+      - { url: "https://mysites.guru/blog/ordasoft-os-cck-sql-injection/", publisher: "mySites.guru (Phil E Taylor)", date: "2026-09-30", role: "primary" }
+    discovery_trace: >
+      first seen at: mysites-guru, URL https://mysites.guru/rss.xml (feed, fetched 2026-10-03T04:08Z; item "OS CCK 8.3.16 for Joomla Fixes a No-Login PHP Upload and an SQL Injection, but the Updater Still Offers 8.3.14", 2026-09-30,
+      inside the record's 121 h lookback) -> primary: https://mysites.guru/blog/ordasoft-os-cck-sql-injection/ (extract). CVE record (Joomla CNA, published 2026-09-30T15:14Z, finder Ala Arfaoui, CVSS 4.0 10.0, CISA ADP SSVC
+      "Exploitation: none / Automatable: yes / Technical Impact: total") read through https://cveawg.mitre.org/api/cve/CVE-2026-102427 (not citable as a source URL; named in the sourcing note instead)
+    summary: |
+      OrdaSoft's OS CCK (com_os_cck) Joomla content-construction-kit extension up to 8.3.15 exposes site/uploader.php through the component's normal front-end routing
+      (task=getContent) with no authentication or ACL check. The handler runs a magic-byte MIME check but its extension allow-list was commented out and the saved
+      file keeps the attacker-supplied extension, so an image/PHP polyglot saved as .php under the web root is executed (CWE-434, unauthenticated remote code execution).
+      The Joomla CNA scores it CVSS 4.0 10.0. Fixed in 8.3.16 (extension allow-list jpg/jpeg/png/gif/webp restored); mySites.guru, which read the 8.3.16 package, also reports a
+      separate no-login SQL injection in the listing sort-order fixed in the same release with no CVE. mySites.guru says OrdaSoft's own update server still advertises 8.3.14,
+      so no affected site is offered 8.3.16 and it must be installed by hand. No exploitation is reported (mySites.guru: "There is no public report of exploitation yet"; CISA
+      ADP SSVC: exploitation none, automatable yes); not in CISA KEV. The Joomla CNA's own CVSS vector carries E:A (attacked) but mySites.guru notes that is the CNA's default
+      on every record it publishes, so it is not an exploitation signal. Hunt concept: front-end requests with task=getContent to the component followed by a new .php file
+      under images/com_os_cck<n>/original/ and a later request to it (web-server access logs; file-integrity check of that directory for script files).
+      Prior-art calibration: the store covers three exploited unauthenticated Joomla extension upload/auth-bypass flaws (Balbooa Forms 2026-07-09, Gridbox 2026-07-26, SP Page
+      Builder 2026-08-02) and one unexploited unauthenticated Joomla extension RCE kept at notable (Aimy Captcha 2026-08-01, justified by that wave).
+    region_nexus: "global; Joomla is common on Swiss communal and regional sites (joomla-security-centre record note), but OS CCK is a niche listings/directory extension and no Swiss deployment is evidenced"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-102427]
+    techniques: [T1190, T1505.003]
+    affected_products: ["OrdaSoft OS CCK (com_os_cck) for Joomla"]
+    entity_keys: ["product:joomla"]
+    new_entities:
+      - { key: "product:ordasoft-os-cck-for-joomla", type: product, name: "OrdaSoft OS CCK (com_os_cck) for Joomla", aliases: ["OrdaSoft Joomla CCK", "com_os_cck"], summary: "OrdaSoft's Joomla content-construction-kit extension; versions up to 8.3.15 carry an unauthenticated PHP upload (CVE-2026-102427, fixed in 8.3.16) per the Joomla CNA record and mySites.guru (2026-09-30)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: "B2"
+    evidence:
+      - quote: "any visitor could upload a file to a site running OS CCK below 8.3.16 and have the server run it as PHP"
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/ordasoft-os-cck-sql-injection/"
+      - quote: "There is no public report of exploitation yet."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/ordasoft-os-cck-sql-injection/"
+      - quote: "still tells Joomla that the current version is the older, vulnerable 8.3.14, so no affected site is offered 8.3.16"
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/ordasoft-os-cck-sql-injection/"
+    borderline: true
+    borderline_reason: >
+      Pre-auth, trivially automatable, CVSS 10.0, details effectively public and the updater will not deliver the fix (mechanics-driven manual install), but no exploitation, no KEV, niche
+      extension with no Swiss deployment evidenced, and the standing vulnerability bar asks for exploited / imminent mass exploitation / mechanics-forced timeline. Recommendation:
+      drop unless the main agent wants the Joomla-extension wave covered; if kept, notable priority and a short entry (precedent: Aimy Captcha, 2026-08-01).
+    extended_notes: |
+      Same mySites.guru stream, below the bar and not returned: JCTables unauthenticated SQLi (CVE-2026-76570, fixed 1.21.1 on 2026-08, CVE on 2026-09-30), three OrdaSoft extensions with
+      unauthenticated SQLi in sort order (2026-09-28), Quix Page Builder 6.3.4 guest access and editor code execution (no CVEs), Phoca Cart 6.1.9 download IDOR, SP Page Builder Joomla 3 patch 1.0.3
+      (captcha bypass CVE-2026-79701 extended to Joomla 3, medium), Joomla core 5.4.9/6.1.4 (16 CVEs, 2026-09-29; two High both need a backend login; none exploited).
+
+# ---------------------------------------------------------------------------------------------------------------
+covered_story_review:
+  # one line per story the spawn named; 'delta' = material delta exists
+  - story: "Fortinet FortiMail CVE-2026-104286 (FG-IR-26-175)"
+    delta: "yes (correction)"
+    note: "Fixed builds 8.0.2 / 7.6.7 / 7.4.9 are STILL 'upcoming' (FG-IR-26-175 fetched 2026-10-03T04:07Z, timeline only '2026-10-01: Initial publication'); no new victims or attribution (Fortinet, HNS, SecurityWeek, THN, BleepingComputer all say none disclosed); KEV since 2026-10-01 (due 2026-10-04). Delta is the workaround wording: Fortinet says webmail interface (not management interface) and lists a WAF rule on POST /ibe; NCSC-NL reads affected as IBE-enabled. See item 2."
+  - story: "Zammad CVE-2026-102489/102490 (DIVD-2026-00015)"
+    delta: "no"
+    note: "CVE-2026-102490 (zammad-to-root) still unfixed: DIVD case page (last modified 2026-10-01 13:27 CEST, status Open) says 'We have reported the vulnerability to Zammad who are working on a fix'; zammad.com/en/releases newest is 7.2 (2026-09-23), the GitHub advisory page lists nothing for either CVE (the GHSA-hgff-g8g3-4xr8 URL returns 404), NCSC-NL NCSC-2026-0396 unchanged since 2026-09-30. Both KEV since 2026-10-02 (CISA catalogVersion 2026.10.02). No new victims."
+  - story: "Cisco Catalyst SD-WAN Manager CVE-2026-76504"
+    delta: "yes (update)"
+    note: "Advisory revision 1.1 (2026-10-02) adds the Live Protect shield; no new fixed version, no status change. See item 1."
+  - story: "Citrix NetScaler CVE-2026-88771/88772"
+    delta: "no material delta"
+    note: "CTX697096 last revision 2026-09-27 ('Added a link to the NetScaler blog'); both KEV since 2026-09-27; no new fixed build; no new victims. Only the Censys exposure population / Swiss share is missing from the entry (item 3, improvement)."
+  - story: "Kiteworks CVE-2026-54154 (+ 85065/85066/102115 and the 9.5.1 set)"
+    delta: "no"
+    note: "kiteworks/security-advisories GitHub list: all advisories published 2026-09-30, none states exploitation, none newer; none of the CVEs is in KEV (catalog 2026.10.02); search found no exploitation report."
+  - story: "Apple CVE-2026-86950 (iOS/iPadOS 26.7.1, macOS 26.7.1/15.8.1)"
+    delta: "no"
+    note: "support.apple.com/en-us/149226 unchanged (Released September 28, 2026; 'extremely sophisticated attack ... versions of iOS before iOS 27'); Apple security-releases page newest entries are 28 Sep (iOS 27.0.1 has no published CVE entries); KEV since 2026-09-29; the Calif PoC is already in the entry."
+  - story: "Check Point CVE-2026-93616 / 85102 / 85103"
+    delta: "no"
+    note: "sk1000171 last modified 2026-09-22, sk1000117 2026-09-24, sk1000118 2026-09-18 (page data); CVE-2026-93616 and CVE-2026-85102 KEV since 2026-09-22, CVE-2026-85103 not in KEV."
+  - story: "Other covered exploited stories spot-checked for revisions"
+    delta: "no"
+    note: "Arista VeloCloud CVE-2026-93952 advisory: revisions 1.0 (2026-09-22) and 1.1 (2026-09-23, CSAF added) only; fixed 5.2.3.16+ and 6.4.2.8+, 6.1.x/7.0.x still unfixed (matches entry); Microsoft SharePoint CVE-2026-65660 MSRC revision 1.2 (2026-09-25, observed attacks) already in the entry; Zimbra CVE-2026-73570 entry already carries 10.1.21 (password-recovery code prediction) and the NCSC-CH advisory of 2026-10-01; JFrog CVE-2026-82329 (EUVD exploitedSince 2026-09-02) covered."
+
+backlog_recheck:
+  - row: "IBM MQ CVE-2026-10747 + Langflow CVE-2026-79724/81204/85025"
+    status: "condition unmet"
+    note: "None in CISA KEV (catalog 2026.10.02); no exploitation report or public PoC found (searches; IBM bulletin node 7284690 of 2026-09-10 states no exploit/exploitation and 'Workarounds and Mitigations: None'; Langflow GitHub advisory list shows no entry naming the three CVEs). EPSS CVE-2026-10747 0.0057."
+  - row: "MikroTik RouterOS CVE-2026-84411"
+    status: "condition unmet"
+    note: "Still CISA-only (ICSA-26-272-06, single revision, now says 'update RouterOS to version 7.24 or later', affected <7.24, 'No known public exploitation ... reported to CISA'); EUVD ingested it 2026-10-02 (assigner icscert, <7.24, references CISA only). MikroTik's own changelogs name no CVE: 7.24.2 and 7.23.4 are labelled 'an important security update ... we are not currently publishing detailed information' with 'www - improve stability'; current channels are stable 7.24.5 (2026-09-29), long-term 7.23.7 (2026-09-16), testing 7.25rc1. Not KEV, no PoC."
+  - row: "IBM Guardium CVE-2026-85542"
+    status: "condition unmet"
+    note: "Not in CISA KEV; IBM bulletin 7288035 (2026-09-17) carries no exploitation statement; ACN AL04/260928/CSIRT-ITA (2026-09-28) remains the only exploitation signal ('Presente'); no constituency deployment surfaced. Context for the re-gate only: IBM's 2026-09-17 bulletins 7288035/7288040 for the same fix pack SqlGuard_12.0p233 also list unauthenticated 9.8 flaws (CVE-2026-82967 IP-based access-control bypass to the management interface, CVE-2026-84275 arbitrary file write to the Collector, CVE-2026-82340 unauthenticated deserialization), none reported exploited."
+
+scheduled_release_review:
+  - release: "WatchGuard 2026-09-28/29 (Fireware OS 2026.3.2 / 2026.2.3 / 12.12.3 / 12.5.21 for T15/T35; WatchGuard AP 3.4.8; AuthPoint Gateway; Endpoint Security 2026-10-01)"
+    verdict: "dropped, 0 exploited"
+    note: "Every per-CVE page read says 'WatchGuard is not aware of any exploitation'. Highest items: AP CVE-2026-101891 (unauthenticated API session, 9.3) + CVE-2026-86102 (command injection, 9.3), both 'network access to the AP', fixed 3.4.8 (NCSC-CH advisory 13007 of 2026-09-29 covers them); Fireware CVE-2026-81433 fingerd pre-auth stack overflow RCE (8.7, adjacent network via DHCP, fixed 2026.3.2/2026.2.3/12.12.3); CVE-2026-86131 BOVPN-over-TLS client code injection to root (9.2, needs an attacker-controlled VPN server); CVE-2026-18145 spamd RCE (needs administrator). No pre-auth internet-reachable RCE at 9.0+."
+  - release: "Apache HTTP Server 2.4.69 (2026-10-01, 20 CVEs)"
+    verdict: "dropped"
+    note: "Apache's own ratings are low (15) and moderate (5); none important/critical; no exploitation. EUVD/CISA-ADP show CVSS 9.8 for CVE-2026-59797, CVE-2026-57941 (mod_http2 UAF) and CVE-2026-56154 (mod_rewrite UAF) against Apache's low/moderate rating; no PoC found. Regular patch cycle."
+  - release: "Chrome 154.0.8037.92/.93 (2026-09-29, 32 fixes) and 154.0.8037.97/.98 (2026-10-01/02, 11 fixes, CVE-2026-103628 WebGL OOB write rated Critical)"
+    verdict: "dropped"
+    note: "Neither release notes page carries an 'exploit exists in the wild' statement."
+  - release: "Microsoft (MSRC Security Update Guide, 2026-10-02)"
+    verdict: "dropped"
+    note: "No Patch Tuesday in window (next 2026-10-13). One first-party item: Exchange Server EoP CVE-2026-96940 (8.8, authenticated, same-organisation mailbox access, exploited No, publicly disclosed No, 'Exploitation More Likely', fix via Exchange Server updates, Exchange Online already fixed). Everything else in 'msrc recent 60' is third-party (Azure Linux, Edge/Chromium)."
+  - release: "Palo Alto Networks (2026-09-30 CVE-2026-0307, 2026-10-02 CVE-2026-0250)"
+    verdict: "dropped"
+    note: "CVE-2026-0250 GlobalProtect app buffer overflow: Medium (CVSS-BT 5.2 / CVSS-B 7.7), adjacent MitM, 'not aware of any malicious exploitation', Windows 6.3.3-h9 / macOS 6.3.3-h9 / Android 6.3.5 / Linux 6.3.3-h15 (ETA 10/06). No PAN-OS exploited item."
+  - release: "Fortinet PSIRT"
+    verdict: "dropped (nothing new but FG-IR-26-175)"
+    note: "Direct RSS read with dates: FG-IR-26-175 (2026-10-01) is the only item in window; the 12 FG-IR-26-164..174 items are dated 2026-09-08 (monthly cycle, next 2026-10-13)."
+  - release: "Joomla core 5.4.9 / 6.1.4 (2026-09-29, 16 CVEs CVE-2026-90906..92232)"
+    verdict: "dropped"
+    note: "Highest two (High) need a backend login (cache-purge directory deletion, SSRF); anonymous guest-account creation CVE-2026-90907 is Moderate; no exploitation."
+
+dropped_leads:
+  - "Dell CSM Authorization (DSA-2026-448, 2026-10-01/02): CVE-2026-63688/63692 unauthenticated admin takeover of the storage authorization proxy plus four more criticals; Dell flags no exploitation; Kubernetes-internal service, fixed in CSM 1.18.0. Below bar."
+  - "GitLab AI Gateway CVE-2026-90970 (CVSS 9.9, 2026-10-02): needs an authenticated user with Duo Agent Platform access; fixed in 19.2.4/19.3.2/19.4.1; hosted gateway already protected. Below bar."
+  - "Foreman / Red Hat Satellite CVE-2026-96658/96659/12423/12540-12544 (BSI WID-SEC-2026-3712 'kritisch, ungepatcht', 2026-10-01): the critical items need authenticated low-privilege or local sudo access; no exploitation. Below bar."
+  - "Zimbra 10.1.21 (released 2026-09-24; unauthenticated password-recovery code prediction, WebDAV MFA bypass, OnlyOffice RCE): already carried by the covered CVE-2026-73570 entry (updated 2026-10-02); no CVE yet for the unauthenticated recovery flaw."
+  - "Thales SConnect CVE-2026-18397 (native-host unauthenticated RCE via a web page, CVSS 4.0 9.4, fixed 2.16.1.0, EUVD 2026-10-01): CNA record only, vendor advisory page not located, no exploitation. Below bar."
+  - "cPanel/WP Squared CVE-2026-93698 (Multilang adminbin command execution, CVSS 9.9): requires a low-privilege login (PR:L); fixed 11.138.0.11 / 11.136.0.45 / 11.134.0.61 / 11.110.0.148; no exploitation. Below bar."
+  - "ConvertX CVE-2026-105080 (9.4, calibre recipe execution, fixed 0.19.0), UTMStack CVE-2026-82042 (9.3 internal-key auth bypass, fixed 11.2.16), Digi EX/Connect families CVE-2026-75937 (9.4, adjacent web admin POST), CPython CVE-2026-19445 (9.2 DoS/UAF on sni_callback): no exploitation, niche or non-internet-reachable. Below bar."
+  - "WordPress plugin auth-bypass cluster in EUVD 2026-10-01/02 (Divi Membership CVE-2026-19652/19660, DevKit Pro CVE-2026-14378, JSON API Auth CVE-2026-97637, Authorizer CVE-2026-103752): single-plugin disclosures, no exploitation reported."
+
+cross_domain_leads:
+  - "Symantec/Carbon Black report on Warlock ransomware (Longlegs / Storm-2603 cluster) via on-prem SharePoint exploitation against a water utility, a telecom operator, a regional government body and a university, EDR killer via BYOVD, ransomware staged in SYSVOL (BleepingComputer 2026-10-02 https://www.bleepingcomputer.com/news/security/warlock-ransomware-breach-sharepoint-in-water-telecom-operator-attacks/ , SecurityWeek 2026-10-02; primary https://www.security.com/threat-intelligence/warlock-ransomware-critical-infrastructure not fetched): S3/S4 material; touches the covered SharePoint entries only generically (ToolShell)."
+  - "Horizon3 'Anthropic Mythos and Rejetto HFS' (2026-09-30, CVE-2026-61500 session forgery via V8 Math.random() state recovery to admin RCE; no fixed version or advisory stated, no exploitation): S3 research lead (https://horizon3.ai/attack-research/disclosures/anthropic-mythos-rejetto-hfs-rce/)."
+  - "Aikido 'Send GitLab an email, push to main' (GitLab incoming-email token in the private address lets a holder create issues/MRs and trigger CI under the owner's identity; GitLab documents tokens as non-expiring, behaviour not a CVE): S3 research lead; I could not fetch the Aikido article (guessed slug 404; WebSearch snippet only), so nothing here is citable."
+
+cve_table:
+  - { cve: CVE-2026-76504, product: "Cisco Catalyst SD-WAN Manager (formerly vManage)", cvss: "9.8 (CVSS 3.1, Cisco)", epss: 0.01575, kev: true, exploited: true,
+      affected: "All releases regardless of configuration, every release before the first fixed release of its train; releases earlier than 20.9 must migrate",
+      fixed: "20.9.10.1; 20.12.8.2; 20.15.6.1; 20.18.4.1; 26.1.2.1; 26.2.1 (Cisco-managed cloud fixed in 20.15.605); Live Protect shield (temporary, partial; Control Components 20.18.3+) is not a fix",
+      type: auth-bypass, vector: "network, crafted HTTP request with one percent-encoded character in the login path (j_security_check)", auth: pre-auth,
+      source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU" }
+  - { cve: CVE-2026-104286, product: "Fortinet FortiMail", cvss: "9.8 (CVSS 3.1, Fortinet; EUVD E:P/RL:O/RC:C vector)", epss: 0.01779, kev: true, exploited: true,
+      affected: "FortiMail 8.0.0-8.0.1, 7.6.0-7.6.6, 7.4.0-7.4.8, 7.2.0-7.2.9 (NCSC-NL reads: with IBE enabled)",
+      fixed: "none released as of 2026-10-03T04:07Z; upcoming 8.0.2, 7.6.7, 7.4.9; 7.2 users told to move to 7.4 or above; workarounds: disable IBE, restrict the webmail interface, or WAF-block POST /ibe containing '../'",
+      type: path-traversal-arbitrary-file-write, vector: "network, crafted HTTP/HTTPS requests (POST /ibe per Fortinet's WAF rule)", auth: pre-auth,
+      source: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175" }
+  - { cve: CVE-2026-102427, product: "OrdaSoft OS CCK (com_os_cck) for Joomla", cvss: "10.0 (CVSS 4.0, Joomla CNA)", epss: 0.00792, kev: false, exploited: false,
+      affected: "1.0.0 through 8.3.15",
+      fixed: "8.3.16 (manual install: the OrdaSoft update server still offers 8.3.14)",
+      type: unrestricted-file-upload-rce, vector: "network, anonymous request task=getContent to site/uploader.php, image/PHP polyglot saved with a .php extension", auth: pre-auth,
+      source: "https://mysites.guru/blog/ordasoft-os-cck-sql-injection/" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured; sweep is a no-op"
+
+candidate_sources:
+  - id: mikrotik-routeros-changelog
+    publisher: "MikroTik RouterOS release channels and per-version changelogs (upgrade.mikrotik.com)"
+    url: "https://upgrade.mikrotik.com/routeros/NEWESTa7.stable"
+    category: vendor-psirt
+    why: >
+      First-party, plain-text and dated: NEWESTa7.stable / .long-term / .testing return '<version> <epoch>' and https://upgrade.mikrotik.com/routeros/<version>/CHANGELOG returns the full release notes
+      (verified 2026-10-03 for 7.23.4-7.23.7 and 7.24-7.24.5). MikroTik labels silent security releases ('an important security update ... not currently publishing detailed information', 7.23.4 / 7.24.2) and
+      names CVEs only later (CVE-2026-67278 / 16347 in 7.23.6 / 7.24.3), so it is the vendor-side ground truth for the RouterOS CVEs the store tracks (MikroTrick SSH chain, CVE-2026-84411). Fetch method: bridge url --direct.
+  - id: apache-httpd-security
+    publisher: "Apache HTTP Server Project security vulnerabilities (httpd.apache.org)"
+    url: "https://httpd.apache.org/security/vulnerabilities_24.html"
+    category: vendor-psirt
+    why: >
+      First-party list with the project's own impact rating (low / moderate / important / critical), fixed-in version, report date and finder per CVE; reads cleanly with extract (verified 2026-10-03, 2.4.69 / 20 CVEs). The project's
+      rating is the discriminator against EUVD/CISA-ADP CVSS 9.8 scores for the same CVEs. Ubiquitous in public-sector web estates. Fetch method: extract.
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "No transport reads the host: direct GETs on /advisories/ and /feed/ return HTTP 202 (SiteGround captcha, empty body), WebFetch returns an empty body, WebSearch site: and allowed_domains queries return only old advisories. Recipe unchanged (fetch_method blocked); no reader call spent. Zero in-window visibility on this source again."
+  - source_id: fortinet-psirt
+    reason: "RECIPE FIX: `feed https://filestore.fortinet.com/fortiguard/rss/ir.xml 20` fell back to the jina reader and returned items WITHOUT dates. Working command that returns the full XML with pubDate per item: `python3 tools/fetch_source.py url --direct https://filestore.fortinet.com/fortiguard/rss/ir.xml` (50 items; FG-IR-26-175 = Thu 01 Oct 2026, FG-IR-26-164..174 = Tue 08 Sep 2026). Use it, then `extract https://fortiguard.fortinet.com/psirt/FG-IR-26-NNN`."
+  - source_id: enisa-euvd
+    reason: "RECIPE FIX: `enisa-euvd recent` is a 4-item spot check; the EUVD service supports a real sweep: `python3 tools/fetch_source.py url --direct \"https://euvdservices.enisa.europa.eu/api/search?fromDate=2026-10-01&toDate=2026-10-03&fromScore=8.5&toScore=10&page=0&size=100\"` returned {items,total:198} with description, score, aliases (CVE), vendor/product, references, assigner, epss, exploitedSince (verified 2026-10-03; page=1 gives the rest). Suggested as the S1 in-window sweep; every item carries the CVE id for the store-wide dedup."
+  - source_id: yeswehack
+    reason: "RECIPE FIX: https://www.yeswehack.com/feed is a working direct RSS with pubDate (8 items, newest 2026-10-01); record still says webfetch with rss_url null. Set rss_url and fetch_method rss."
+  - source_id: censys-blog
+    reason: "RECIPE FIX: `feed https://censys.com/feed/ 8` works on the direct transport (method direct, dated items, newest 2026-09-24); the record is pinned webfetch with the 2026-08-05 'blocked on every transport' note in recipe_note. Candidate for rss_url + fetch_method rss. Advisory pages (https://censys.com/advisory/<slug>/) read with extract."
+  - source_id: flatt-security
+    reason: "`feed https://flatt.tech/research/index.xml` falls to jina and returns undated items; the listing HTML read by extract carries the date in a badge per post (newest: 'Jun 1, 26'); no in-lookback post. Use the HTML listing for dates."
+  - source_id: joomla-security-centre
+    reason: "Feed pubDate for the 16 core advisories is 2026-09-25 14:00 but the advisories went live about an hour after the 2026-09-29 release (mySites.guru); feed dates are creation dates, not publication dates. Note when applying lookback."
+  - source_id: morphisec
+    reason: "extract of the listing drops titles; titles are in the raw HTML (`url --direct`). Content was marketing only (30 Sep 'Aligning AI speed with AI trust', 23 Sep MTD, 16 Sep polymorphic malware): nothing relevant."
+  - source_id: csirt.divd.nl (not a slice record; divd-csirt exists in sources.json)
+    reason: "extract on csirt.divd.nl/DIVD-2026-00015 and /CVE-2026-102490 fell through to jina (trafilatura-direct failed); WebFetch/ jina read them. Note for the divd-csirt record."
+
+source_ledger:
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "catalog 2026.10.02 (1733 entries); only additions in window are the two covered Zammad CVEs; no delta" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd recent x3 + url --direct euvdservices search API (8.5-10, 2026-10-01..03, 198 items)", horizon_hours: 26, in_horizon_items: 198, returned: 0, note: "exploited list = Zammad x2, FortiMail (covered), JFrog Artifactory (covered); new criticals reviewed and dropped (see dropped_leads)" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-09-29 (Citrix DTLS CVE-2026-88772), already covered" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "url --direct RSS + extract FG-IR-26-175", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "FG-IR-26-175 only; correction delta on the covered entry" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc recent 60 + msrc cve", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "Exchange EoP CVE-2026-96940, exploited No; rest third-party" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "CVE-2026-0250 GlobalProtect app, Medium, not exploited" }
+  - { id: ssd-disclosure, tier: standard, attempted: true, transport: "url --direct (HTTP 202 captcha), WebFetch (empty), WebSearch site:", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "blocked on every transport; coverage gap, recipe unchanged" }
+  - { id: joomla-security-centre, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 16, returned: 0, note: "16 core advisories (release 2026-09-29), none exploited, High ones need backend login; feed pubDate 2026-09-25 is creation date" }
+  - { id: watchguard-psirt, tier: standard, attempted: true, transport: "extract (listing + 8 per-CVE pages)", horizon_hours: 168, in_horizon_items: 17, returned: 0, note: "2026-09-28/29 Fireware/AP release plus 2026-10-01 Endpoint Security: all 'not aware of any exploitation'; dropped with reasons in scheduled_release_review" }
+  - { id: calif-codex, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest 2026-09-11 (WeWorm follow-up)" }
+  - { id: flatt-security, tier: standard, attempted: true, transport: "extract (listing HTML dates) + feed(jina, undated)", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest post Jun 1, 2026" }
+  - { id: horizon3-ai, tier: standard, attempted: true, transport: "extract (category listing) + extract article", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "2026-09-30 Rejetto HFS CVE-2026-61500 (research, no fixed version/advisory stated); cross_domain_leads" }
+  - { id: yeswehack, tier: standard, attempted: true, transport: "feed (direct) + extract", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "2026-10-01 opinion piece 'Pentests are dead'; nothing vulnerability-relevant" }
+  - { id: aikido-security, tier: standard, attempted: true, transport: "extract (listing, undated)", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "GitLab incoming-email token write-up (no CVE, documented behaviour) and supply-chain items belong to S3; article not fetched (guessed slug 404)" }
+  - { id: censys-blog, tier: standard, attempted: true, transport: "feed (direct) + extract + raw listing", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest blog 2026-09-24; advisory page for NetScaler read (used in item 3)" }
+  - { id: exodus-intelligence, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-07-27, as expected for this publisher" }
+  - { id: morphisec, tier: standard, attempted: true, transport: "extract + url --direct (titles)", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "marketing-only 30 Sep post" }
+  - { id: mysites-guru, tier: standard, attempted: true, transport: "feed (direct) + extract x7", horizon_hours: 121, in_horizon_items: 13, returned: 1, note: "OS CCK CVE-2026-102427 returned borderline; Joomla core 5.4.9/6.1.4, JCTables, OrdaSoft SQLi trio, Quix, Phoca Cart, SP Page Builder Joomla 3 patch dropped below bar" }

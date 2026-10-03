@@ -1,0 +1,648 @@
+# work/2026-10-03T0404Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-03T0404Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-03T04:06:37Z
+ended_at: 2026-10-03T04:26:18Z
+duration_seconds: 1181
+window_note: >
+  window_hours=26 (window start 2026-10-02T02:04Z); slice records carry lookback_hours 121-168. The 26 h window
+  itself was nearly empty in the S3 domain: every research feed in the slice and every major-publisher feed in the
+  discovery pass carried only product/opinion posts or already-covered items after 2026-10-02T02:00Z. Items below that
+  are older than the window say so in their own borderline_reason or lookback flag; the main agent applies the recency gate.
+self_telemetry:
+  webfetch_calls: 1
+  websearch_calls: 11
+  bridge_fetches: ~160   # feed/extract/url/pdf subcommands, approximate
+items:
+
+  # ---------------------------------------------------------------------------
+  - title: "Longlegs (Storm-2603), the actor behind Warlock ransomware, still gets in through on-premises SharePoint: a water utility, a telecom, a regional government body and a university hit in two months"
+    sources:
+      - { url: "https://www.security.com/threat-intelligence/warlock-ransomware-critical-infrastructure", publisher: "Symantec / Carbon Black Threat Hunter Team", date: "2026-10-01", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/07/14/cisa-urges-sharepoint-hardening-after-new-exploitations", publisher: "CISA (alert, last revised 2026-08-26)", date: "2026-07-14", role: "corroborating" }
+    discovery_trace: "first seen at: Symantec listing, URL https://www.security.com/threat-intelligence (extract, discovery pass over major vendor research listings; the 2026-10-01 post was the newest entry) → primary: https://www.security.com/threat-intelligence/warlock-ransomware-critical-infrastructure (extract) → pivot: Symantec cites a CISA July 2026 SharePoint advisory, fetched via WebFetch https://www.cisa.gov/news-events/alerts/2026/07/14/cisa-urges-sharepoint-hardening-after-new-exploitations; WebSearch (two queries on Longlegs/Warlock/SharePoint) found no independent coverage of the Symantec report."
+    published_date: "2026-10-01"
+    summary: |
+      Symantec's Threat Hunter Team reports that the China-nexus group it tracks as Longlegs (which it equates with Microsoft's
+      Storm-2603 and says it has previously tied to the older clusters CL-CRI-1040, CamoFei and ChamelGang) developed and
+      deploys Warlock ransomware, and that in the past two months it attacked at least four organisations in Portuguese- and
+      Spanish-speaking countries across Europe, Africa and Latin America: two critical-infrastructure operators (a water
+      utility and a telecommunications provider), a regional government body and a university. Initial access remains
+      exploitation of on-premises SharePoint Server: the ToolShell chain (CVE-2025-49704, -49706, -53770, -53771) "likely"
+      stays in the arsenal alongside newer flaws, and Symantec points to CISA's July 2026 advisory (CISA lists six exploited
+      2026 SharePoint CVEs affecting SharePoint Subscription Edition, 2019 and 2016, and says to avoid exposing SharePoint to
+      the internet). In the detailed intrusion the actor wrote a webshell into the SharePoint LAYOUTS template directory
+      (Symantec says it drops one into the directories of several SharePoint versions at once so it works whichever is
+      installed), used it to harvest the farm's ASP.NET machine keys and forged a validly signed __VIEWSTATE payload whose
+      deserialisation gadget needs the System.Workflow.ComponentModel assembly, giving code execution in the SharePoint
+      application pool. First activity was 2026-07-22; five days later a SharePoint host made an out-of-band callback to a
+      Burp-Collaborator style canary domain carrying the target's own name (a per-target "did my payload run" check), and
+      the actor then fetched follow-on MSI packages with msiexec /q /i from public file-sharing and object-storage services. Lateral movement used a domain
+      account with a SharePoint-setup-lookalike name added to the local Administrators group on several hosts, DLL
+      side-loading (legitimate signed executables beside malicious DLLs under the Windows system folder, later copied into
+      ProgramData), domain-trust and account enumeration (nltest /domain_trusts, net user /domain), NetExec for AD
+      enumeration, credential spraying and remote command execution, and a Visual Studio Code Insiders tunnel installed as
+      a service from the Windows\debug folder for covert access that relays through Microsoft infrastructure. Defence
+      evasion: a security-product killer (likely driver-based; in other recent attacks Symantec saw the signed vulnerable
+      K7RKScan driver, CVE-2025-1055) was pushed to 40+ hosts in about two hours with one-line "net use, copy, start"
+      commands from an internal share, after which Warlock binaries were staged in the domain's SYSVOL scripts folder and
+      reached 33+ hosts by ordinary DFS replication (Symantec's process data shows the DFS Replication service,
+      dfsrs.exe, as the parent that delivered the payload). Symantec leaves open whether the Iberian/Latin focus is
+      opportunistic exposure of unpatched SharePoint or deliberate tasking. Facts above are Symantec's first-hand incident
+      data; the Longlegs = Storm-2603 equivalence and the lineage to older clusters are Symantec's own assessments, and no
+      second lab has yet confirmed the four recent victims.
+    region_nexus: "Europe/Africa/Latin America per Symantec (Portuguese- and Spanish-speaking countries); SharePoint-on-premises exposure is transferable to Swiss federal, cantonal and communal estates"
+    primary_sector_nexus: "direct (regional government body and critical-infrastructure victims; on-prem SharePoint is common in public administration)"
+    sector: "public-sector; utilities (water); telecommunications; education"
+    cves: [CVE-2025-49704, CVE-2025-49706, CVE-2025-53770, CVE-2025-53771, CVE-2025-1055]
+    techniques: [T1190, T1505.003, T1574.001, T1685, T1068, T1219.001, T1570, T1486, T1482, T1087.002, T1098, T1105, T1059.001, T1110.003, T1021.002]
+    affected_products: ["Microsoft SharePoint Server (on-premises)", "K7 Security K7RKScan driver", "Visual Studio Code (Insiders tunnel feature)"]
+    entity_keys: ["actor:warlock-storm-2603", "product:microsoft-sharepoint"]
+    new_entities: []
+    registry_notes: "Propose adding alias 'Longlegs' (Symantec's name, which Symantec states is the same actor as Storm-2603) to actor:warlock-storm-2603. Store already holds the SharePoint entry 2026-07-02/cve-2026-45659-microsoft-sharepoint-server-authenticated-des and the DragonForce BYOVD entry (2026-06-17) that also lists K7RKScan."
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "In the past two months, Longlegs has attacked at least four organizations, including two critical infrastructure operators (a water utility and a telecommunications provider), a regional government body, and a university."
+        attribution: "Symantec / Carbon Black Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/warlock-ransomware-critical-infrastructure"
+      - quote: "The webshell's function is to harvest the SharePoint farm's ASP.NET machine keys, which the attackers then use to forge a validly signed payload that achieves remote code execution inside the SharePoint application pool."
+        attribution: "Symantec / Carbon Black Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/warlock-ransomware-critical-infrastructure"
+      - quote: "In one intrusion against a critical infrastructure operator, the attackers pushed a tool designed to disable security software to at least 40 hosts within about two hours, then deployed Warlock on at least 33 hosts by staging it in the domain's SYSVOL share, where ordinary domain replication delivered it to machines."
+        attribution: "Symantec / Carbon Black Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/warlock-ransomware-critical-infrastructure"
+      - quote: "These vulnerabilities affect all supported on-premises SharePoint Server versions (Subscription Edition, 2019, and 2016)."
+        attribution: "CISA (text as returned by WebFetch summariser; page not readable by extract from this container)"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/07/14/cisa-urges-sharepoint-hardening-after-new-exploitations"
+    extended_notes: |
+      Exposure: any on-premises SharePoint Server reachable from the internet or from a partner network; the ASP.NET machine
+      key is the lasting asset, so patching alone does not evict an actor who already harvested it. Post-patch compromise
+      check: look in the LAYOUTS template directories of every SharePoint hive version for new .aspx files written by
+      PowerShell or the worker process, rotate the farm's machine keys (CISA links Microsoft's ViewState key-management and
+      AMSI-integration guidance), and review local Administrators membership for setup-lookalike domain accounts.
+      Detection telemetry classes: process creation (SharePoint worker process spawning PowerShell/cmd; PowerShell
+      [Reflection.Assembly]::Load of System.Workflow.ComponentModel; msiexec with a URL argument on a server);
+      file creation under SharePoint template\layouts; outbound DNS/HTTP from the SharePoint server to out-of-band
+      testing services; group-membership change events adding a domain account to local Administrators on multiple hosts;
+      service creation by code-insiders.exe (tunnel service install) on servers; file writes into SYSVOL scripts paths and
+      dfsrs.exe as the parent of executables on endpoints; one-line net use/copy/start patterns fanned out to dozens of
+      hosts; driver-load events for known-vulnerable signed drivers.
+      Hardening: do not expose SharePoint directly, enable AMSI integration, restrict write ACLs on SYSVOL scripts,
+      enforce a vulnerable-driver blocklist, and alert on developer tunnel services on server tiers.
+      Triage: a VS Code tunnel on a developer workstation is normal; on a SharePoint/AD server or installed as a service
+      from C:\Windows\debug it is not.
+    borderline: true
+    borderline_reason: "Published 2026-10-01, about 22 h before the 26 h window start; surfaced by the discovery pass, not by a slice record. Single vendor source (no independent confirmation found). High relevance for public-sector on-premises SharePoint estates, so returned for the main agent's recency call."
+
+  # ---------------------------------------------------------------------------
+  - title: "tac_plus (TACACS+ daemon): pre-authentication format string in send_authen_error() gives root RCE on the network-device AAA server; fixed only in Shrubbery F4.0.4.32, the Facebook fork never will be, CVE pending"
+    sources:
+      - { url: "https://www.elttam.com/blog/att-cking-tacacs-to-pwn-your-network-via-a-pre-auth-rce", publisher: "elttam (Matt Jones)", date: "2026-09-23", role: "primary" }
+      - { url: "https://github.com/elttam/publications/blob/master/writeups/elttam-tac_plus_rce_fmtstring_advisory.txt", publisher: "elttam security advisory (CVE pending)", date: "2026-09-23", role: "primary" }
+    discovery_trace: "first seen at: elttam-blog slice record, URL https://www.elttam.com/blog (extract returned only the /resources page with one article; the real index was read with `url`) → RSS https://www.elttam.com/blog/rss.xml (feed subcommand, 15 dated items, newest 2026-09-23) → primary: https://www.elttam.com/blog/att-cking-tacacs-to-pwn-your-network-via-a-pre-auth-rce (extract) → advisory https://github.com/elttam/publications/blob/master/writeups/elttam-tac_plus_rce_fmtstring_advisory.txt (extract). WebSearch (tac_plus format string F4.0.4.32) found no independent coverage."
+    published_date: "2026-09-23"
+    summary: |
+      elttam (finder; published 2026-09-23 after months of disclosure attempts and two deferrals past its 90-day deadline) reports a remote, pre-authentication format-string
+      vulnerability (CWE-134, CVE pending; elttam asked MITRE for the identifier) in tac_plus, the open-source TACACS+ daemon
+      many networks use to authenticate and authorise administrators on routers, switches, firewalls and console servers.
+      The attacker-controlled "port" field of an AUTHEN/START request is copied without validation into session.port;
+      send_authen_error() in packet.c then passes a message embedding it to report() as the format string, so %x leaks
+      process memory into the daemon log and %n writes memory (blind; no read-back channel). The error path is reached with
+      two packets, a well-formed AUTHEN/START carrying the payload and a deliberately malformed continuation. Affected per
+      elttam: Cisco's original TACACS+ developer kit code, every Shrubbery tac_plus release up to and including F4.0.4.31
+      (February 2026; a second sink in get_authen_continue() is present in the Shrubbery tree), and the Facebook fork
+      F4.0.4.28-7fb (send_authen_error() sink; repository archived 2025-08-22, so no fix is coming); any other
+      Cisco-derived fork carrying the same report()/send_authen_error() code should be assumed affected. Shrubbery published
+      F4.0.4.32 on 2026-09-21 (elttam's account; its CHANGES line reads "Remote pre-authentication format string
+      vulnerability (CWE-134)"). Cisco PSIRT told elttam no Cisco product uses these forks. Distribution status per elttam:
+      the FreeBSD port net/tac_plus4 and pkgsrc entries net/tacacs-shrubbery and net/tacacs are the actively packaged
+      copies; Debian dropped its package in 2019; and because Shrubbery shipped nothing between 2015 and 2026 many
+      installations carry distribution patches, so version strings alone are not a reliable test. Prerequisite and
+      impact: the daemon runs as root by default (privileges drop only with -U or -Q) and forks a child per connection
+      without exec, so the address layout is stable across attempts; elttam demonstrated code execution on a build with
+      ASLR and NX disabled and believes a hardened build is achievable. The TACACS+ shared secret is the only gate on
+      delivering a chosen payload (elttam scores CVSS 9.8 where no or a weak secret is in effect, 8.1 where the secret is
+      long and random), and elttam shows the secret is not much of a gate: the error reply to a truncated AUTHEN/START
+      is predictable plaintext returned before the peer proves any key knowledge, giving an offline key-verification
+      oracle from a single connection that resolves a wordlist-grade secret in seconds. A second, untested-on-vendor-gear
+      route is a legitimate device that truncates or wraps an over-long username, so a payload arrives correctly keyed from
+      a login form. elttam's recounting of prior attacks (Salt Typhoon capture of TACACS+ shared secrets per Talos and
+      CISA AA25-239A; Sygnia's August 2026 Fire Ant TacTap toolset hooking accept/accept4 inside tac_plus) is context, not
+      part of this bug.
+    region_nexus: "global; TACACS+ is standard in enterprise, telco and critical-infrastructure management networks, including government networks"
+    primary_sector_nexus: "indirect (management-plane AAA server; applies to any Swiss administration running tac_plus or an appliance derived from it)"
+    sector: "public-sector; telecommunications; critical infrastructure"
+    cves: []
+    cve_pending: true
+    techniques: [T1190, T1210, T1110.002]
+    affected_products: ["Shrubbery Networks tac_plus", "Facebook tac_plus fork (archived)", "FreeBSD net/tac_plus4", "pkgsrc net/tacacs-shrubbery", "pkgsrc net/tacacs"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:tac-plus", type: product, name: "tac_plus (TACACS+ daemon)", aliases: ["Shrubbery tac_plus", "TACACS+ daemon", "Facebook tac_plus"], summary: "Open-source TACACS+ AAA daemon descended from Cisco's early-1990s developer kit; maintained by Shrubbery Networks (releases F4.0.4.x) and forked by Facebook (archived 2025-08-22); elttam disclosed a pre-authentication format-string RCE in send_authen_error() on 2026-09-23, fixed in Shrubbery F4.0.4.32 (elttam, 2026-09-23)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "On a large number of those networks the daemon answering is `tac_plus`, a piece of C descended from reference code Cisco published in the early nineties and abandoned long ago."
+        attribution: "elttam"
+        source_url: "https://www.elttam.com/blog/att-cking-tacacs-to-pwn-your-network-via-a-pre-auth-rce"
+      - quote: "Shrubbery fixed it in F4.0.4.32, published on 21 September, and the Facebook fork is archived, so it will not be fixed at all."
+        attribution: "elttam"
+        source_url: "https://www.elttam.com/blog/att-cking-tacacs-to-pwn-your-network-via-a-pre-auth-rce"
+      - quote: "a server that answers a truncated AUTHEN/START with `<client ip> : Invalid AUTHEN/START packet (too short)` is running something descended from this code."
+        attribution: "elttam"
+        source_url: "https://www.elttam.com/blog/att-cking-tacacs-to-pwn-your-network-via-a-pre-auth-rce"
+      - quote: "If you run `tac_plus`, upgrade to F4.0.4.32, or apply the change above to your own build if your packages have not caught up"
+        attribution: "elttam"
+        source_url: "https://www.elttam.com/blog/att-cking-tacacs-to-pwn-your-network-via-a-pre-auth-rce"
+    extended_notes: |
+      Exposure: inventory every TACACS+ server (TCP/49) and ask appliance vendors whether their TACACS+ server derives from
+      Cisco's developer kit / Shrubbery / the Facebook fork. elttam's fingerprint for derived code is the error text
+      "<client ip> : Invalid AUTHEN/START packet (too short)" in reply to a truncated AUTHEN/START.
+      Detection telemetry classes: TACACS+ server logs (error-path lines carrying raw '%' conversion specifiers or
+      memory-like hex runs in the logged port/peer text), network flow logs for TCP/49 from sources that are not
+      registered NAS/management addresses, repeated truncated-AUTHEN/START plus malformed-CONTINUE pairs (also the
+      shared-secret oracle), daemon child crashes, and unexpected child processes of the daemon. Treat a compromised AAA
+      server as exposing every device credential and command it has authorised.
+      Hardening (elttam): upgrade to F4.0.4.32 or change both report() call sites to pass the message as an argument, not
+      as the format; restrict TCP/49 to NAS management addresses; use a long random unique shared secret; run with -U/-Q
+      so the daemon does not stay root; plan migration to RFC 9887 (TACACS+ over TLS 1.3); build with -Wformat-security.
+      Recency note: published 2026-09-23, so older than every window and the elttam-blog lookback (168 h); returned because
+      no store entry, CVE record or feed carries it and the source was added as a candidate precisely for such
+      pre-CVE disclosures. The patched-version claim rests on elttam; Shrubbery's own page and CHANGES file read from
+      this container did not show F4.0.4.32.
+    borderline: true
+    borderline_reason: "Published 2026-09-23 (10 days before this run, beyond the elttam-blog 168 h lookback); never covered in the store and no CVE exists yet, so no KEV/EUVD-driven coverage will surface it. Actionability is high (pre-auth, root by default, management-plane AAA). Main agent decides on the recency gate."
+
+  # ---------------------------------------------------------------------------
+  - title: "NeedyMantis: Microsoft dissects a modular post-compromise framework, side-loaded beside legitimate open-source software, used by the DAEMON Tools supply-chain actor and apparently others against telecoms, universities, intergovernmental bodies and government contractors"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/09/28/needymantis-unpacking-a-post-compromise-malware-family-used-in-targeted-operations/", publisher: "Microsoft Threat Intelligence", date: "2026-09-28", role: "primary" }
+      - { url: "https://www.securityweek.com/daemon-tools-hackers-needymantis-malware-dissected-by-microsoft/", publisher: "SecurityWeek (relay of the Microsoft post)", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine slice record, URL https://www.infosecurity-magazine.com/rss/news/ (feed; headline 'Microsoft Warns NeedyMantis Malware Enables Persistent Network Access', 2026-09-29) → Microsoft Security Blog feed https://www.microsoft.com/en-us/security/blog/feed/ (2026-09-28 item) → primary (extract): https://www.microsoft.com/en-us/security/blog/2026/09/28/needymantis-unpacking-a-post-compromise-malware-family-used-in-targeted-operations/ → WebSearch ('NeedyMantis Storm-3069 DAEMON Tools Microsoft malware framework') → SecurityWeek https://www.securityweek.com/daemon-tools-hackers-needymantis-malware-dissected-by-microsoft/ (extract)"
+    published_date: "2026-09-28"
+    lookback: true
+    summary: |
+      Microsoft Threat Intelligence describes NeedyMantis, a modular post-compromise malware family seen since at least
+      October 2025 in a limited number of targeted operations against telecommunications organisations, universities,
+      medical nonprofits, intergovernmental organisations and government contractors. Microsoft found it by pivoting from
+      indicators in Kaspersky's DAEMON Tools supply-chain investigation (store entry 2026-05-09). Microsoft names Storm-3069
+      (its designator for the DAEMON Tools compromise activity) as at least one operator, says other activity suggests more
+      than one operator, and says the activity so far aligns with threat actors operating from China while it has not
+      attributed Storm-3069 to a Chinese nation-state actor and has not determined whether all activity is one operator.
+      NeedyMantis is deployed after access exists, so the initial vector varies; Microsoft has not seen the malware itself
+      delivered via a supply-chain compromise. Mechanics: a first-stage loader DLL is dropped beside legitimate software
+      and loaded by DLL side-loading, then extracts the second stage from a custom encrypted archive that sits next to it
+      and is named like the DLL without an extension. Microsoft saw the loader masquerading as the WinSparkle update
+      component of Poedit, a curl library, Vim and TightVNC components, and Office, Broadcom, Intel and NVIDIA component names,
+      in look-alike folders under ProgramData and Program Files. The archive's format (XOR plus RtlDecompressBuffer, per-sample
+      offsets and keys) bundles legitimate tool components (7-Zip, Sysinternals) with a second-stage loader that is x64
+      shellcode in a file with a .ps1 extension, a configuration file and a WebSockets communications DLL with spoofed
+      Windows library names, and shellcode that loads further module DLLs; loaders use obfuscated stack strings and
+      anti-debugger checks. C2 starts as an HTTPS GET whose Set-Cookie header carries compressed, Base64-encoded host and
+      user information, then upgrades to WebSockets with a hard-coded old Firefox user agent and a binary protocol with
+      an RC4 key exchange; the main component mutex is named after the user and the host process. Commands exist to load,
+      unload and dispatch data to modules, but the modules' capabilities are unconfirmed. In one intrusion the operator
+      used Impacket during hands-on-keyboard activity to copy the legitimate software, the malicious DLL and the archive
+      from a network share and run them on a target host. Microsoft publishes Defender detections, Advanced Hunting and
+      Sentinel queries and IOCs (omitted here).
+    region_nexus: "global; DAEMON Tools victims per SecurityWeek were in Belarus, Russia and Thailand; intergovernmental-organisation and telecom targeting is relevant to Geneva-area and Swiss telecom/public bodies"
+    primary_sector_nexus: "indirect (intergovernmental organisations, government contractors, universities, telecoms)"
+    sector: "telecommunications; education; government contractors; intergovernmental organisations"
+    cves: []
+    techniques: [T1574.001, T1036.005, T1027, T1140, T1622, T1071.001, T1573.001, T1570]
+    affected_products: ["Poedit (abused as side-loading host)", "Microsoft Defender (detections: TrojanDropper:Win64/NeedyMantis, Behavior:Win64/NeedyMantis)"]
+    entity_keys: ["incident:daemon-tools-supply-chain-2026"]
+    new_entities:
+      - { key: "malware:needymantis", type: malware, name: "NeedyMantis", aliases: [], summary: "Modular post-compromise malware framework with DLL-side-loaded first-stage loaders, a custom encrypted archive format, a shellcode second stage and a WebSockets C2 that loads further modules; seen since at least October 2025 in targeted intrusions against telecoms, universities, intergovernmental organisations, medical nonprofits and government contractors (Microsoft Threat Intelligence, 2026-09-28)." }
+      - { key: "actor:storm-3069", type: actor, name: "Storm-3069", aliases: [], summary: "Microsoft Threat Intelligence designator for activity associated with the DAEMON Tools supply-chain compromise; at least one operator of NeedyMantis. Microsoft assesses the activity originates from China but has not attributed it to a Chinese nation-state actor (Microsoft, 2026-09-28)." }
+    relation_suggestions:
+      - { subject: "actor:storm-3069", object: "malware:needymantis", basis: "Microsoft: 'at least one threat actor using NeedyMantis malware: Storm-3069' (Microsoft Threat Intelligence, 2026-09-28)" }
+      - { subject: "actor:storm-3069", object: "incident:daemon-tools-supply-chain-2026", basis: "Microsoft: Storm-3069 is its designator for activity associated with the DAEMON Tools supply chain compromise (Microsoft Threat Intelligence, 2026-09-28)" }
+      - { subject: "malware:needymantis", object: "incident:daemon-tools-supply-chain-2026", basis: "Microsoft found NeedyMantis by pivoting from research and IOCs tied to the DAEMON Tools compromise that Kaspersky reported (Microsoft, 2026-09-28)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "Microsoft Threat Intelligence has identified NeedyMantis, a modular post-compromise malware family observed in a limited number of targeted operations affecting telecommunications organizations, universities, medical nonprofits, intergovernmental organizations, and government contractors."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/09/28/needymantis-unpacking-a-post-compromise-malware-family-used-in-targeted-operations/"
+      - quote: "In one observed incident, an operator used the Impacket toolkit during hands-on-keyboard activity to copy the legitimate software, malicious DLL, and file archive from a network share and execute it on a targeted device."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/09/28/needymantis-unpacking-a-post-compromise-malware-family-used-in-targeted-operations/"
+      - quote: "Observed activity involving NeedyMantis has thus far aligned with activity that Microsoft associates with threat actors operating from China, although Microsoft has not determined whether all observed activity is attributable to the same operator."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/09/28/needymantis-unpacking-a-post-compromise-malware-family-used-in-targeted-operations/"
+    extended_notes: |
+      Detection telemetry classes: image/DLL-load and file-creation events where a known open-source or vendor
+      application folder in ProgramData or Program Files holds a DLL that does not match the vendor's file (Microsoft's
+      hunting query keys on specific folder/DLL pairs); the paired extensionless archive file with the DLL's name; a
+      .ps1-named file that is really shellcode; outbound HTTPS followed by a WebSocket upgrade from a non-browser
+      process using a static, very old Firefox user-agent string; remote execution via Impacket-style SMB tooling that
+      copies a signed application, a DLL and an archive from a share. Triage: Poedit, Vim, TightVNC and curl are real
+      software; the discriminators are install location (ProgramData instead of the vendor path), an unsigned or
+      differently signed DLL, and the companion archive. Hardening: Microsoft's list (cloud-delivered protection, EDR in
+      block mode, network protection, automatic attack disruption, attack surface reduction rules). Recency: the
+      Microsoft post is dated 2026-09-28; the item reached this run through the infosec-magazine lookback (121 h).
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  - title: "TA419: China-aligned espionage actor impersonates AI-policy figures to relay Microsoft 365 sign-ins through an adversary-in-the-middle Browser-in-the-Browser kit, first public report"
+    sources:
+      - { url: "https://www.proofpoint.com/us/blog/threat-insight/hallucinating-credibility-china-aligned-ta419-impersonates-its-way-us-ai-policy", publisher: "Proofpoint Threat Research", date: "2026-10-01", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/ta419-impersonates-ai-experts-us/", publisher: "Infosecurity Magazine (relay)", date: "2026-10-01", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine slice record, URL https://www.infosecurity-magazine.com/rss/news/ (feed; 'China-Linked Hackers Impersonate AI Experts to Target US Policy Insiders', 2026-10-01) → article https://www.infosecurity-magazine.com/news/ta419-impersonates-ai-experts-us/ (extract) → primary: https://www.proofpoint.com/us/blog/threat-insight/hallucinating-credibility-china-aligned-ta419-impersonates-its-way-us-ai-policy (extract; page JSON-LD datePublished 2026-10-01T09:00:00Z, article:published_time 2026-09-30T04:17-07:00)"
+    published_date: "2026-10-01"
+    lookback: true
+    summary: |
+      Proofpoint's first public report on TA419, a China-aligned, espionage-motivated actor it has seen running regular
+      targeted credential phishing since at least April 2025 against US- and Japan-based think tanks, defence contractors,
+      universities and law firms (focus: defence, national security, energy, international relations, foreign policy).
+      From 2026-07-08 TA419 impersonated a former White House OSTP deputy director and then a prominent economist to
+      reach AI-policy experts; in February 2026 it impersonated a senior employee of an AI company. The opening mail is
+      benign (an invitation to join a fictitious "AI Policy Advisory Committee" or to contribute to a Senate foreign-relations
+      report on AI export controls) and builds rapport; only after the target replies does a shortened link follow. The
+      chain: URL shortener, then a first-hop domain that shows a fake OneDrive loading screen behind a Cloudflare Turnstile
+      check as a filter, then a second domain serving an adversary-in-the-middle phish of Microsoft 365 / Entra ID through
+      the first-party OfficeHome application, built on the open-source Frameless BitB kit (a Browser-in-the-Browser overlay
+      plus an Evilginx phishlet for Microsoft 365). Proofpoint describes TA419's own telemetry/automation script that tracks
+      the victim's position in the sign-in flow, ticks "Keep me signed in" to lengthen the stolen session and submits
+      one-time codes as soon as they validate; because the proxy relays the real sign-in, password, MFA code and
+      conditional-access checks all pass and the actor takes the session cookies. Infrastructure sits behind Cloudflare,
+      domains are file-sharing/cloud themed and registered with NameSilo, some sender domains impersonate named
+      organisations (a Japan-Taiwan exchange body, a US think tank, a Japanese defence minister's website), and some
+      first-hop mail headers expose likely actor-controlled VPS sharing a self-signed certificate; other mail went
+      through residential proxies. Proofpoint assesses (likely) that the targeting supports Chinese intelligence collection
+      on US AI policy and expects continued expert impersonation; it recommends phishing-resistant, origin-bound
+      authentication such as passkeys and out-of-band verification of unsolicited subject-matter outreach.
+    region_nexus: "US and Japan targeting per Proofpoint; the policy, university and law-firm pretexts and the AitM/Entra technique transfer to Swiss federal and cantonal policy staff"
+    primary_sector_nexus: "indirect (policy, defence, foreign-affairs and academic staff; AitM against Microsoft 365)"
+    sector: "government/policy; defence; education; legal"
+    cves: []
+    techniques: [T1566.002, T1684.001, T1557, T1539, T1078.004, T1111]
+    affected_products: ["Microsoft 365 / Entra ID (OfficeHome first-party app abused)", "Frameless BitB (open-source phishing kit)"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:ta419", type: actor, name: "TA419", aliases: [], summary: "Proofpoint's designation for a China-aligned espionage actor running targeted credential phishing against US- and Japan-based think tanks, defence contractors, universities and law firms since at least April 2025; July 2026 campaigns impersonated AI-policy figures and relayed Microsoft 365 sign-ins through a Frameless BitB adversary-in-the-middle kit (Proofpoint, 2026-10-01)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "TA419 is a China-aligned and espionage-motivated threat actor that Proofpoint has observed conducting regular targeted credential phishing campaigns against individuals working for US- and Japan-based think tanks, defense contractors, universities, and law firms since at least April 2025."
+        attribution: "Proofpoint"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/hallucinating-credibility-china-aligned-ta419-impersonates-its-way-us-ai-policy"
+      - quote: "Behind a BitB overlay, the proxy relays the sign-in to genuine Microsoft infrastructure, so the target's password, MFA code, and conditional access checks all succeed while the attacker captures the resulting session cookies."
+        attribution: "Proofpoint"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/hallucinating-credibility-china-aligned-ta419-impersonates-its-way-us-ai-policy"
+      - quote: "Organizations in the scope of TA419 activity should consider phishing-resistant, origin-bound authentication such as passkeys."
+        attribution: "Proofpoint"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/hallucinating-credibility-china-aligned-ta419-impersonates-its-way-us-ai-policy"
+    extended_notes: |
+      Detection telemetry classes: email gateway (first-contact mail from free-mail or lookalike domains that name a
+      real expert and a 'committee' or report-contribution pretext, followed by a reply-then-link exchange; shortener
+      links); proxy/DNS (shortener to Turnstile interstitial to a file-sharing-themed domain); Entra ID sign-in logs
+      (sign-ins to the OfficeHome application from hosting-provider or residential-proxy addresses, immediately followed
+      by session use from a different address; 'Keep me signed in' accepted; MFA success followed by a new session in
+      another ASN). Hardening: phishing-resistant origin-bound credentials (FIDO2/passkeys defeat the relay because the
+      credential is bound to the real origin), token-protection/conditional-access controls on session replay, and a
+      reporting path for unexpected advisory-committee invitations. Triage: a genuine committee invitation also arrives
+      by cold mail; the discriminators are a free-mail sender using the expert's name, a link only after reply, and a
+      sign-in page loading from a non-Microsoft origin inside a fake browser window.
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  - title: "ANNUAL REPORT — Microsoft Digital Defense Report 2026: government agencies the most targeted sector (27%), phishing and public-facing exploitation now lead initial access, ransomware victim counts for Switzerland doubled"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/10/01/insights-from-the-2026-microsoft-digital-defense-report/", publisher: "Microsoft Security Blog (Terrell Cox)", date: "2026-10-01", role: "primary" }
+      - { url: "https://www.microsoft.com/en-us/corporate-responsibility/topics/cybersecurity/reports/microsoft-digital-defense-report/", publisher: "Microsoft (MDDR 2026 landing page: top 10 takeaways, key figures)", date: "2026-10-01", role: "primary" }
+      - { url: "https://aka.ms/Microsoft-Digital-Defense-Report-2026", publisher: "Microsoft Digital Defense Report 2026 (PDF, read with the pdf transport)", date: "2026-10-01", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/microsoft-ai-attack-time-minutes/", publisher: "Infosecurity Magazine (relay)", date: "2026-10-02", role: "corroborating" }
+    discovery_trace: "first seen at: Microsoft Security Blog feed https://www.microsoft.com/en-us/security/blog/feed/ (2026-10-01 'Insights from the 2026 Microsoft Digital Defense Report', discovery pass) and infosec-magazine slice record, URL https://www.infosecurity-magazine.com/rss/news/ ('Microsoft: AI Cuts Post-Compromise Attack Time to Minutes', 2026-10-02) → blog (extract) → landing page https://www.microsoft.com/en-us/corporate-responsibility/topics/cybersecurity/reports/microsoft-digital-defense-report/ (extract) → report PDF via https://aka.ms/Microsoft-Digital-Defense-Report-2026 (`pdf`, 351k characters extracted, 194 of 1253 streams; irregular letter spacing) → Infosecurity article https://www.infosecurity-magazine.com/news/microsoft-ai-attack-time-minutes/ (extract)"
+    published_date: "2026-10-01"
+    lookback: true
+    annual_report: "ANNUAL REPORT — Microsoft Digital Defense Report 2026"
+    summary: |
+      Microsoft released its 2026 Digital Defense Report on 2026-10-01 (telemetry period 2025-07-01 to 2026-06-30; the PDF
+      compares with July 2024 to June 2025). Report themes per Microsoft's landing page: AI is compressing attack
+      timelines; attackers are targeting AI systems and agents as an attack surface; people remain a heavily exploited
+      initial-access path (user execution, ClickFix-style social engineering, phishing, impersonation); identity is the
+      primary control plane (phishing-resistant MFA, passkeys, tiered administration, privileged-access enforcement); and
+      the biggest threats in the next year are open-source supply-chain compromise, attacks against edge devices and AI as
+      a force multiplier. Figures relevant to a public-sector reader (read from the PDF's charts and tables; the text
+      extraction has irregular spacing, so verify against the report before quoting): government agencies and services
+      are the top-ranked sector at 27% of activity in Microsoft's top-10 sector chart, ahead of IT (17%) and research and
+      academia (14%) (Infosecurity independently quotes the 27% as 'over a quarter of all attacks'); in Microsoft's
+      incident-response findings the share of incidents with public-facing-application exploitation rose from 15% to 24%
+      and phishing from 7% to 23%, while social engineering fell from 15% to 7%, valid accounts from 17% to 13% and
+      'none identified' from 25% to 14%; the median time from container start to first exploit attempt is 5.3 hours
+      with more than half of compromised containers exploited within 24 hours; Microsoft says edge devices (firewalls,
+      VPN gateways, routers) have become a primary target and that some Russian actors target internet-facing edge
+      devices, citing a December 2025 destructive attack on Poland's energy sector; the report counts Switzerland in the
+      top ten countries targeted by Russia-nexus actors at 2% (nation-state notification data) and, in its ransomware
+      landscape tables (the caption does not name the data source; the surrounding text pairs it with public leak-site
+      data), shows Switzerland rising from 29 to 59 entries (+103%) against a global total of 8,749 and 8,521. On
+      ransomware families, leak-site data put Qilin first (16.4% of victims, +386%) and Akira second (8.3%), with
+      INC, DragonForce, Gentlemen, SafePay and Sinobi newly in the top ten, while Microsoft Defender detonation telemetry
+      ranks Akira first (22%, +150%) and Qilin second (14%, +111%). Infosecurity adds Microsoft's framing that AI shortens
+      the data-exfiltration, credential-discovery and lateral-movement cycle 'from days to minutes' but that 'none of
+      these represent new attack methods'.
+    region_nexus: "global with Swiss-specific data points (Russia-nexus targeting 2%; ransomware-table count for Switzerland 29 to 59)"
+    primary_sector_nexus: "direct (government agencies and services ranked the most targeted sector)"
+    sector: "public-sector; cross-sector"
+    cves: []
+    techniques: [T1566, T1190, T1078, T1486]
+    affected_products: []
+    entity_keys: ["actor:dragonforce"]
+    new_entities:
+      - { key: "report:microsoft-digital-defense-report-2026", type: report, name: "Microsoft Digital Defense Report 2026", aliases: ["MDDR 2026"], summary: "Microsoft's annual threat-landscape report (telemetry July 2025 to June 2026), released 2026-10-01: government agencies and services most targeted sector at 27%; public-facing-application exploitation 24% and phishing 23% of incident-response initial-access findings; AI compressing attack timelines; edge devices and open-source supply chain flagged as top threats (Microsoft, 2026-10-01)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "AI is compressing attack timelines, lowering the cost of sophisticated capabilities, and enabling attackers to operate with greater speed, scale, and autonomy."
+        attribution: "Microsoft (MDDR 2026 landing page)"
+        source_url: "https://www.microsoft.com/en-us/corporate-responsibility/topics/cybersecurity/reports/microsoft-digital-defense-report/"
+      - quote: "The report found that government agencies and services was the most heavily targeted sector by threat actors in 2026, making up over a quarter (27%) of all attacks."
+        attribution: "Infosecurity Magazine"
+        source_url: "https://www.infosecurity-magazine.com/news/microsoft-ai-attack-time-minutes/"
+      - quote: "Microsoft telemetry observed that phishing attacks as an initial access technique rose significantly from 2025 to 2026, from 7% of incidents to 23%."
+        attribution: "Infosecurity Magazine"
+        source_url: "https://www.infosecurity-magazine.com/news/microsoft-ai-attack-time-minutes/"
+      - quote: "The exploitation of public-facing applications jumped from 15% of incidents in 2025 to 24% in 2026, likely linked to attackers’ use of AI tools for vulnerability discovery."
+        attribution: "Infosecurity Magazine"
+        source_url: "https://www.infosecurity-magazine.com/news/microsoft-ai-attack-time-minutes/"
+    extended_notes: |
+      Annual-report treatment (PD-9): the value for the constituency is the sector ranking and the initial-access shift
+      toward phishing and public-facing-application exploitation, both of which argue for patching internet-facing
+      services and phishing-resistant sign-in first; the Swiss-specific rows are small absolute numbers and the ransomware
+      table's data source is not named in its caption, so they should be framed as indicators, not as a Swiss incident count.
+      The Microsoft blog itself carries no numbers. Another annual-style report published the same week is already in the
+      store: CrowdStrike 2026 Threat Hunting Report (2026-08-03; the CrowdStrike blog page's date metadata of 2026-10-01
+      is a last-modified stamp, not the publication date).
+    borderline: true
+    borderline_reason: "Published 2026-10-01 (about 36 h before this run, outside the 26 h window) and not in the store; returned because PD-9 requires annual reports to be flagged and it carries sector and country data for the constituency. Numbers come from PDF chart text extraction (irregular spacing), so the main agent should treat quoted figures as approximate until verified."
+
+  # ---------------------------------------------------------------------------
+  - title: "DragonForce: Lab52 documents a second, persistent backdoor with an MQTT fallback beside the Teams TURN-relay C2, and Seqrite walks the ransomware payload (ARP-cache SMB discovery, WMIC shadow-copy deletion, 16 encryption workers)"
+    sources:
+      - { url: "https://lab52.io/blog/backdoors-in-the-dungeon-turn-mqtt-abused-by-dragonforce/", publisher: "Lab52", date: "2026-10-01", role: "primary" }
+      - { url: "https://www.seqrite.com/blog/inside-dragonforce-how-a-ransomware-cartels-payload-actually-runs/", publisher: "Seqrite Labs", date: "2026-10-01", role: "primary" }
+    discovery_trace: "first seen at: seqrite-labs slice record, feed https://www.seqrite.com/blog/feed/ (2026-10-01 'Inside DragonForce: How a Ransomware Cartel's Payload Actually Runs') → primary (extract): https://www.seqrite.com/blog/inside-dragonforce-how-a-ransomware-cartels-payload-actually-runs/ ; Lab52 found in the discovery pass of research feeds, URL https://lab52.io/blog/feed/ (2026-10-01) → primary (extract): https://lab52.io/blog/backdoors-in-the-dungeon-turn-mqtt-abused-by-dragonforce/ ; WebSearch ('DragonForce ransomware Lab52 MQTT TURN backdoor') returned only the June Symantec/BleepingComputer/Hexnode coverage already in the store."
+    published_date: "2026-10-01"
+    lookback: true
+    novelty: "update-of:2026-06-17/dragonforce-abuses-microsoft-teams-turn-relays-for-c2-and-ch"
+    summary: |
+      Two independent labs published DragonForce analyses on 2026-10-01. Lab52 (attribution via artifact overlap with earlier
+      reporting; no victim named) describes two backdoors that abuse legitimate Microsoft Teams TURN servers to encapsulate
+      implant-to-C2 traffic. The first is the type Symantec reported in June (a Go implant injected into memory that
+      resolves its C2 address by in-memory decryption; already in the store as Backdoor.Turn). The second, new to the store,
+      is built to stay resident: a scheduled task left by an earlier stage runs the legitimate javaw.exe, which side-loads a
+      first-stage jli.dll that differs in hash on every host and loads a next stage encrypted with DPAPI, so the file only
+      works on the machine it was written on. Its C2 runs over the TURN relay with a custom framed request/response
+      protocol (task polling, block-wise download with per-block MD5 checks, retransmission and acknowledgement) and falls
+      back to an MQTT broker when TURN fails: per-implant topics, Base64 plus an XOR key derived from 8 bytes of leading
+      material, and a JSON task carrying a command number from 1 to 4 that selects a shellcode template (supplied URL and
+      identifier; a PowerShell command line; the payload as is; a remote host and port) executed via VirtualProtect and
+      CreateThread. If every channel fails the beacon sleeps five minutes and encrypts its own memory region. Lab52 says
+      the first type is seen in the initial-deployment phase and the second is expected to remain on disk. Seqrite's
+      separate payload analysis (Windows sample, traced from entry point): ChaCha20-encrypted embedded configuration, an
+      encrypted runtime log written to the world-writable Public profile, a configurable list of 38 process names (security,
+      backup, database, productivity) that background workers keep terminating, WMI query of Win32_ShadowCopy followed by
+      WMIC shadow-copy deletion, Restart Manager use for locked files, and network discovery that reads the local IPv4 ARP
+      cache and filters it against embedded prefixes before enumerating SMB shares with NetShareEnum (it does not scan the
+      subnet), so no port-scan precedes the share access. Sixteen workers in two batches of eight encrypt local drives
+      and network shares from separate queues; each file gets a fresh ChaCha20 key wrapped with an embedded RSA-4096
+      public key, files with any of 200+ database/virtualisation extensions are encrypted in 20% chunks, a ransom note
+      identifies 'The DragonForce Ransomware Cartel', and the encrypted-file icon and wallpaper are written through the
+      Public profile and registry. Seqrite stresses the trace showed no data upload, so the note's claim of stolen data is
+      a claim, not observed behaviour.
+    region_nexus: "global; the store already holds a Swiss DragonForce leak-site claim (2026-07-14, Geneva adult-education body)"
+    primary_sector_nexus: "indirect (RaaS actor with a Swiss claim in the store; relevant to cantonal and communal estates)"
+    sector: "cross-sector ransomware"
+    cves: []
+    techniques: [T1574.001, T1053.005, T1090, T1071, T1027.013, T1055, T1486, T1490, T1135, T1018, T1685]
+    affected_products: ["Microsoft Teams (TURN relay infrastructure abused)", "Java runtime (javaw.exe used as side-loading host)"]
+    entity_keys: ["actor:dragonforce", "campaign:dragonforce-backdoor-turn-teams-relay-byovd"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    verification_note: "The TURN-relay C2 type is corroborated by the stored Symantec-based entry; the MQTT-fallback backdoor rests on Lab52 alone, and the payload walk-through rests on Seqrite alone."
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "The second backdoor is used for persistence, as it is executed through a scheduled task left behind by a previous stage."
+        attribution: "Lab52"
+        source_url: "https://lab52.io/blog/backdoors-in-the-dungeon-turn-mqtt-abused-by-dragonforce/"
+      - quote: "the second type is notable for its use of MQTT as an additional communication channel in the event that communication through TURN fails."
+        attribution: "Lab52"
+        source_url: "https://lab52.io/blog/backdoors-in-the-dungeon-turn-mqtt-abused-by-dragonforce/"
+      - quote: "For network discovery, DragonForce reads the existing IPv4 ARP cache through GetIpNetTable() and filters candidate addresses against embedded prefixes."
+        attribution: "Seqrite Labs"
+        source_url: "https://www.seqrite.com/blog/inside-dragonforce-how-a-ransomware-cartels-payload-actually-runs/"
+      - quote: "The analyzed execution did not show a data-upload operation or a separate exfiltration channel."
+        attribution: "Seqrite Labs"
+        source_url: "https://www.seqrite.com/blog/inside-dragonforce-how-a-ransomware-cartels-payload-actually-runs/"
+    extended_notes: |
+      Detection telemetry classes: image-load events for a legitimate runtime executable (javaw.exe) loading a DLL named
+      like a Java library from outside the Java install directory; scheduled-task creation whose action launches a
+      signed Java binary from a user-writable path; DPAPI-bound files that exist next to the side-loading pair;
+      outbound traffic to TURN (UDP/TCP 3478-style relay ports) or to MQTT brokers from non-collaboration processes; for the
+      payload, WMI Win32_ShadowCopy enumeration followed by WMIC 'shadowcopy ... delete', IP-ARP-table reads (GetIpNetTable)
+      followed by NetShareEnum against many hosts with no preceding scan, a single process opening C$ and other shares
+      on a dozen-plus hosts, and creation of an icon/wallpaper in the Public profile plus a per-extension DefaultIcon
+      registry association. Triage: Java and Teams traffic are common; the discriminator is the TURN/MQTT use by a
+      process that is neither Teams nor a Java application, and a javaw.exe whose loaded jli.dll sits outside the JRE.
+      Hardening: block or inspect outbound TURN/MQTT where not needed, enforce DLL-load restrictions for signed
+      runtime binaries copied outside their install folders, and restrict admin-share access between workstations.
+      The attribution of the two backdoors to DragonForce rests on Lab52's artifact-overlap reasoning; Symantec's earlier
+      report (stored entry) is the stronger link for the first type.
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  - title: "Sysdig on the Zammad zero-day breach of DIVD: behavioural hunts that fire without knowing the CVEs (service-account shell, setuid-to-root, spraying and sweeps)"
+    sources:
+      - { url: "https://www.sysdig.com/blog/ai-agent-exploits-zammad-zero-days-in-divd-breach-what-we-know-and-how-to-detect-it", publisher: "Sysdig (Marcel Claassen)", date: "2026-10-02", role: "primary" }
+    discovery_trace: "first seen at: sysdig slice record, feed https://www.sysdig.com/blog/rss.xml (item dated Fri, 02 Oct 2026, link host webflow.sysdig.com) → primary (extract): https://www.sysdig.com/blog/ai-agent-exploits-zammad-zero-days-in-divd-breach-what-we-know-and-how-to-detect-it ; the incident itself is already in the store as 2026-10-02/zammad-cve-2026-102489-102490-exploited-divd-breach (NCSC-NL, DIVD)."
+    published_date: "2026-10-02"
+    lookback: true
+    novelty: "update-of:2026-10-02/zammad-cve-2026-102489-102490-exploited-divd-breach"
+    summary: |
+      Sysdig's analysis of the DIVD breach (it states its facts come from DIVD's case files and that the investigation is
+      ongoing) adds hunt detail to the stored Zammad entry. Stage by stage it ties telemetry to behaviour: the Zammad
+      application process (Rails, Puma and workers) should not spawn an interactive shell, download tools or open
+      outbound connections to new hosts, and a session used from a new source address shortly after login, or requests
+      that skip the expected login flow, indicate the session-hijack stage; a service account changing its effective user
+      ID to root (setuid-family calls, new root-owned children under the application tree, writes to privileged paths) is
+      the high-fidelity signal for the local escalation, and Sysdig lists the open-source Falco rules it says cover it;
+      after root the agent ran password spraying and a man-in-the-middle attack (the spraying disrupted its own
+      interception; targets unknown), so hunt for mass reads of configuration and credential files, bursts of failed
+      authentications across many accounts from one source, and find/grep sweeps outside the baseline; exfiltration shows
+      as outbound connections from the helpdesk segment to never-seen destinations, large uploads and new tooling in
+      temporary directories. Sysdig repeats DIVD's confirmed and suspected data scope (volunteers' email addresses
+      confirmed exfiltrated; the CSIRT ticketing system partially extracted; Jira, Confluence and system data showing signs
+      of compromise; Google Workspace, HR, Slack, GitHub/GitLab under investigation) and DIVD's cut-off of every system
+      in its data centre. Mitigation guidance matches the stored entry: upgrade to Zammad 7.0.0 or later (not
+      exploitable for the code-execution flaw, still exposed to the local-escalation flaw) or take it offline, put the
+      helpdesk in its own segment with default-deny egress, preserve /var/log/zammad and the web-server logs before
+      rebuilding, run DIVD's check script, treat any hit as full host compromise and rotate every credential on or
+      reachable from the host. The 'AI agent' attribution is DIVD's inference from the scripts' comments, which Sysdig adopts.
+    region_nexus: "Netherlands/EU; Zammad is widely used by DACH public bodies (the store links a BSI Zammad advisory)"
+    primary_sector_nexus: "indirect (helpdesk platform used by public bodies)"
+    sector: "public-sector; technology"
+    cves: [CVE-2026-102489, CVE-2026-102490]
+    techniques: [T1190, T1068, T1110.003, T1557]
+    affected_products: ["Zammad"]
+    entity_keys: ["product:zammad"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "The Zammad application process (Rails, Puma, and its worker children) should not spawn an interactive shell, download tools, or open outbound connections to hosts it hasn’t contacted before."
+        attribution: "Sysdig"
+        source_url: "https://www.sysdig.com/blog/ai-agent-exploits-zammad-zero-days-in-divd-breach-what-we-know-and-how-to-detect-it"
+      - quote: "A service account on a host should never change its effective user ID to root; that’s a high-fidelity signal."
+        attribution: "Sysdig"
+        source_url: "https://www.sysdig.com/blog/ai-agent-exploits-zammad-zero-days-in-divd-breach-what-we-know-and-how-to-detect-it"
+    extended_notes: "Delta over the stored entry is limited to the behavioural hunt guidance and the spraying/MitM stage; no new affected-version, exploitation or fix facts. Sysdig is a runtime-security vendor, so its detection framing is also a product pitch (Falco, Sysdig 555 benchmark); the hunts themselves are vendor-neutral."
+    borderline: true
+    borderline_reason: "Marginal delta (hunt specifics only) on an entry published 2026-10-02 whose Detection line already names the shell-child and root-escalation signals; main agent may prefer to drop or add as an internal improvement."
+
+  # ---------------------------------------------------------------------------
+  - title: "Huntress: attacker registers a member account on a shared municipal recreation-management platform, uploads webshells, hunts payment-card data, returns after an incomplete clean-up and plants a credential-harvesting script in the login page"
+    sources:
+      - { url: "https://www.huntress.com/blog/parks-recreation-platform-webshell-attack", publisher: "Huntress SOC", date: "2026-09-30", role: "primary" }
+    discovery_trace: "first seen at: Huntress feed https://www.huntress.com/blog/rss.xml (2026-09-30T04:00Z, discovery pass over major vendor research feeds; Huntress is not in the S3 slice) → primary (extract): https://www.huntress.com/blog/parks-recreation-platform-webshell-attack"
+    published_date: "2026-09-30"
+    summary: |
+      Huntress SOC reports that from 2026-09-10 a threat actor compromised multiple tenants on one shared recreation-management
+      software platform across three web servers using one repeatable path: register a member account, upload a file
+      through the application's member-document upload feature into a web-served directory, and request it as a webshell.
+      The first server saw about six hours of noisy unauthenticated attempts first (login brute force, IIS 8.3 tilde
+      enumeration, WebDAV verbs, upload-handler parser bypasses, forced browsing), possibly AI-assisted; the registered
+      account then worked where those failed. Fourteen uploaded files (eight .aspx plus .jpg and .pdf extension-execution tests; only the .aspx ran) gave reconnaissance
+      through the IIS worker process (whoami, hosts file, netstat, appcmd list sites/vdirs, PowerShell WebAdministration),
+      extraction of the server-wide IIS configuration, string searches of web.config and source files for connection
+      strings, API/transaction keys and the ASP.NET machineKey, SQL access with the harvested credentials, and a hunt for
+      cardholder data including a payment-gateway webhook log directory. On the third server the actor first renamed
+      copies of its shells to look like site assets and timestomped them to the web.config's times, then, after the
+      server was put back into production before it was fully locked down, returned through the same registered account
+      and re-uploaded shells and scripts, this time appending an obfuscated loader to a jQuery file loaded by the
+      authentication page so that visitors' browsers would pull a second-stage script and open encrypted WebRTC/WebSocket
+      channels to attacker infrastructure on a serverless edge platform for live credential harvesting. Huntress sees AI-generated
+      scripts (comment text that reads like prompt instructions) and infers, from a zh-CN locale string in the PowerShell
+      user agent, that the actor is most likely China-based; that is an inference from one header, not attribution.
+      Huntress does not name the platform vendor or a CVE; the flaw is the combination of open self-registration and an
+      upload function that lets a member place executable content in a web-served directory.
+    region_nexus: "US municipalities (platform tenants); transferable to shared multi-tenant municipal e-service and payment portals"
+    primary_sector_nexus: "direct-by-analogy (municipal government service platform; payment data at risk)"
+    sector: "public-sector (municipal); payment data"
+    cves: []
+    techniques: [T1190, T1078, T1505.003, T1059.003, T1083, T1070.006, T1552.001, T1005, T1056.003]
+    affected_products: ["Unnamed shared recreation-management web platform (ASP.NET on IIS)"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "On September 10, 2026, Huntress observed a threat actor compromising multiple tenants on a shared recreation management software platform using one repeatable trick: register a member account, upload a malicious file, and turn it into a webshell."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/parks-recreation-platform-webshell-attack"
+      - quote: "After registering a new account on the platform, the attacker was able to upload malicious files directly to the `/documents/MemberFiles/` directory."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/parks-recreation-platform-webshell-attack"
+      - quote: "When the third server was put back into production prematurely, the threat actor returned with a vengeance."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/parks-recreation-platform-webshell-attack"
+    extended_notes: |
+      Detection telemetry classes: IIS worker-process (w3wp) child processes running cmd/powershell/sqlcmd/findstr;
+      new executable-extension files (.aspx etc.) in user-content upload directories; web-server logs showing a GET/POST to
+      a file in an upload folder minutes after account creation; text sweeps of web.config for connection strings and
+      payment keywords; $STANDARD_INFORMATION versus $FILE_NAME timestamp mismatches on web content; file-integrity
+      monitoring on static JavaScript included by login pages. Hardening: remove script execution (handler mappings) from
+      upload directories, restrict self-registration and uploadable types, keep payment webhook logs out of the web
+      root, and do not return a cleaned server to production before closing the entry path (the actor came back through the
+      same registered account). Recency: published 2026-09-30, outside the 26 h window but inside the 72 h developing window.
+    borderline: true
+    borderline_reason: "Published 2026-09-30 (about 46 h before the window start), not a slice record, and the platform is US-specific with no CVE. Returned because shared multi-tenant municipal portals with open registration and uploads are a transferable exposure for communal administrations, and the 09-30 post is not in the store."
+
+watchlist_sweep: null   # watchlist_duty=none and no watchlists configured
+
+# Leads read and consciously dropped (for the audit trail; none of these are items)
+dropped_leads:
+  - { lead: "Jamf Threat Labs CloudSyncD (fake Zoom installer, macOS backdoor), 2026-09-30", reason: "macOS-only, still at development/early deployment stage, no confirmed infections (Jamf found it via VirusTotal); low relevance to the constituency", url: "https://www.jamf.com/blog/cloudsyncd-macos-backdoor-fake-zoom-installer/" }
+  - { lead: "Cleafy RatHat Android banking trojan C2 panel (via Infosecurity 2026-09-29)", reason: "consumer banking fraud tooling; no public-sector nexus; primary not fetched", url: "https://www.infosecurity-magazine.com/news/rathat-c2-panel-malware-as-a/" }
+  - { lead: "Sekoia ShinyHunters retrospective with Beazley Security IR data, 2026-10-01", reason: "mostly a history/survey; the new Beazley incident detail (JSP backdoors, RDP and Chisel lateral movement, Rclone, a CrowdStrike-disable script, MeshAgent) largely repeats what the store's PeopleSoft entries already carry (MeshCentral agents, JSP webshells)", url: "https://www.sekoia.com/blog/gotta-breach-em-all-the-journey-of-shinyhunters" }
+  - { lead: "GTIG 'Vulnerability Discovery and Exploitation Trends in the AI Era', 2026-09-30", reason: "statistics report (disclosures doubled, exploitation 10.5 to 18 per month, edge appliances 14% of exploited flaws); trend metrics without a new defender action, and the store already has CrowdStrike's 48-hour finding", url: "https://cloud.google.com/blog/topics/threat-intelligence/vulnerability-discovery-and-exploitation-trends-in-the-ai-era/" }
+  - { lead: "Huntress 'Attackers Abuse ChatGPT Custom GPTs to Deliver RAT via ClickFix', 2026-09-28", reason: "technically solid but 5 days old, outside both the window and the 72 h developing window; the store already tracks ClickFix delivery variety", url: "https://www.huntress.com/blog/chatgpt-custom-gpts-clickfix-rat" }
+  - { lead: "Socket 'GlassWorm-Linked Extensions Span VS Code Marketplace and Open VSX', 2026-10-02", reason: "two themes not weaponised at analysis time, developer-endpoint focus, GlassWorm already in the store", url: "https://socket.dev/blog/glassworm-vscode-themes" }
+  - { lead: "Compass Security 'Pwn2Own Ireland 2025 – Home Assistant', 2026-10-02", reason: "consumer smart-home exploit chain; no public-sector exposure", url: "https://blog.compass-security.com/2026/10/pwn2own-ireland-2025-home-assistant/" }
+  - { lead: "Sophos X-Ops 'TerminalFix and Lorem Ipsum Loader enable covert tunneling', 2026-09-30", reason: "TerminalFix is already in the store (2026-08-31 Microsoft entry); not read in full", url: "https://www.sophos.com/en-us/blog/terminalfix-and-lorem-ipsum-loader-enable-covert-tunneling" }
+  - { lead: "SOCRadar 'Operation Talked' (2026-09-26) and Citrix FAQ pages", reason: "SOCRadar is C-reliability, the Talked article is dated 2026-09-26 (outside the 145 h lookback) and the Citrix FAQ rehashes covered vendor advisories", url: "https://socradar.io/blog/operation-talked-russia-ukraine-defense-industry/" }
+
+candidate_sources:
+  - id: elttam-blog
+    note: "Already a candidate. Recipe verified this run: `feed https://www.elttam.com/blog/rss.xml 15` returns 15 dated items (newest 2026-09-23) and `extract <post URL>` returns full posts; `extract https://www.elttam.com/blog` redirects to /resources and shows only one article, so the feed is the listing."
+    publisher: "elttam (security research blog)"
+    url: "https://www.elttam.com/blog"
+    category: research
+    why: "Original pre-CVE vulnerability research (tac_plus pre-auth RCE) invisible to KEV and EUVD discovery; contributed an item this run. Cadence is bursty (about 1 post per 3-6 weeks)."
+  - id: lab52
+    note: "Already an active source (rss https://lab52.io/blog/feed/); contributed the DragonForce MQTT/TURN backdoor analysis this run, which the slice did not reach."
+    publisher: "Lab52"
+    url: "https://lab52.io/blog/"
+    category: research
+    why: "Original malware analysis with an English feed; no change requested."
+
+coverage_gaps:
+  - source_id: elttam-blog
+    reason: "Recipe note says `extract https://www.elttam.com/blog` then per post, 'not verified'. Verified now: the listing extract only shows one resource card (it follows a redirect to /resources); use the RSS feed https://www.elttam.com/blog/rss.xml (works with the feed subcommand) for the listing and extract for bodies."
+  - source_id: novee-security
+    reason: "webfetch record; `extract https://novee.security/blog/` returned the raw HTML (direct-raw, 142 kB) which parsed into dated cards. In-horizon posts (2026-09-22, 09-24, 09-28) are all marketing/company news, so nothing returned. Suggest recipe: extract + date regex on the 'Month D, YYYY' strings."
+  - source_id: push-security
+    reason: "`extract https://pushsecurity.com/blog` returned raw HTML (672 kB, direct-raw) from which 211 article cards parsed with titles and 'Mon D, YYYY' dates; in-horizon posts were a Proofpoint partnership announcement and a product release only (the H2 ClickFix review of 2026-09-23 is already in the store)."
+  - source_id: socradar
+    reason: "Recipe (extract the listing) works but the listing page date (2026-06-03) is stale as the record notes; the listing carries rehash articles of already-covered vendor advisories, so no item returned. Per-article dates must be read on the article page (Operation Talked: 2026-09-26)."
+  - source_id: sysdig
+    reason: "The RSS item links point at webflow.sysdig.com; the same path on www.sysdig.com resolves with extract and is the canonical citation URL (verified for the Zammad post)."
+  - source_id: cloudflare-cf1
+    reason: "`extract` of the tag page returns descriptions without dates or links. A working structured route: `feed https://blog.cloudflare.com/tag/cloudforce-one/rss/ 10` returns 10 dated items (newest 2026-09-29, Threat Signals product post). Suggest rss_url + fetch_method rss."
+  - source_id: fox-it-blog
+    reason: "`extract https://blog.fox-it.com/` works (newest RemotePE, 2026-05-22); no in-horizon items, as the record predicts."
+  - source_id: malwarebytes
+    reason: "`extract https://www.malwarebytes.com/blog` returns a clean dated card list; in-horizon posts were consumer/news items (fake crypto sites, covered Pentagon breach, an Arizona courts breach) with no research content."
+  - source_id: citizen-lab
+    reason: "Feed fine; newest item 2026-09-22 (UN submissions), nothing in horizon."
+  - source_id: xlab-qianxin
+    reason: "Feed fine; newest item 2026-07-29 as the record predicts; nothing in horizon."
+  - source_id: msft-ti
+    reason: "Not in the S3 slice but swept: the listing extract (https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/) works but carries no dates; `feed https://www.microsoft.com/en-us/security/blog/feed/` returns dated items and is the better listing route. Also: page date metadata from vendor sites can be a last-modified stamp (CrowdStrike's 2026-08-03 report and 2026-09-16 PhantomRaven post both extract with a 2026-10-01 date), so read the feed or JSON-LD datePublished."
+  - source_id: rapid7-research
+    reason: "Not in slice; `feed https://www.rapid7.com/blog/feed/` returned upstream HTTP 404 (recipe likely stale). Reported for the main agent's source-health pass; not logged as a fetch failure of this slice."
+
+# One row per slice record, in slice order
+source_ledger:
+  - { id: elttam-blog, tier: standard, attempted: true, transport: "extract (listing redirect) + feed https://www.elttam.com/blog/rss.xml + extract", horizon_hours: 168, in_horizon_items: 0, returned: 1, note: "newest post 2026-09-23 is outside the 168 h horizon; returned as borderline because never covered and no CVE yet" }
+  - { id: novee-security, tier: standard, attempted: true, transport: "extract (direct-raw HTML)", horizon_hours: 145, in_horizon_items: 3, returned: 0, note: "all marketing / company news" }
+  - { id: push-security, tier: standard, attempted: true, transport: "extract (direct-raw HTML)", horizon_hours: 145, in_horizon_items: 2, returned: 0, note: "Proofpoint partnership + product release; H2 ClickFix review already covered 2026-09-29" }
+  - { id: seqrite-labs, tier: standard, attempted: true, transport: "feed https://www.seqrite.com/blog/feed/ + extract", horizon_hours: 145, in_horizon_items: 2, returned: 1, note: "DragonForce payload analysis (2026-10-01) merged with Lab52 into one update-of item; the other post is DRP marketing" }
+  - { id: socradar, tier: standard, attempted: true, transport: "extract (listing) + extract per article", horizon_hours: 145, in_horizon_items: 6, returned: 0, note: "rehash of covered vendor advisories; Operation Talked dated 2026-09-26" }
+  - { id: sysdig, tier: standard, attempted: true, transport: "feed https://www.sysdig.com/blog/rss.xml + extract", horizon_hours: 145, in_horizon_items: 2, returned: 1, note: "Zammad runtime-detection post as borderline update-of; the other post is an opinion piece" }
+  - { id: xlab-qianxin, tier: standard, attempted: true, transport: "feed https://blog.xlab.qianxin.com/rss/", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest 2026-07-29" }
+  - { id: ahnlab-asec, tier: standard, attempted: true, transport: "feed https://asec.ahnlab.com/en/feed/ + extract", horizon_hours: 121, in_horizon_items: 4, returned: 0, note: "weekly ransom digest, two Korea-targeted phishing/malware items, a monthly APT trend report; nothing for the constituency" }
+  - { id: citizen-lab, tier: standard, attempted: true, transport: "feed https://citizenlab.ca/feed/", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-09-22" }
+  - { id: cloudflare-cf1, tier: standard, attempted: true, transport: "extract + feed https://blog.cloudflare.com/tag/cloudforce-one/rss/", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "2026-09-29 Threat Signals product post only" }
+  - { id: expel, tier: standard, attempted: true, transport: "feed https://expel.com/blog/rss.xml", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "opinion/AI-in-SOC post only" }
+  - { id: fox-it-blog, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-05-22" }
+  - { id: infosec-magazine, tier: standard, attempted: true, transport: "feed https://www.infosecurity-magazine.com/rss/news/ + extract per lead", horizon_hours: 121, in_horizon_items: 22, returned: 3, note: "lead source only; NeedyMantis, TA419 and the Microsoft Digital Defense Report were pursued to vendor primaries; CloudSyncD and RatHat dropped; other items are covered incidents or product/AI commentary" }
+  - { id: malwarebytes, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 8, returned: 0, note: "consumer/news items; no research content for the constituency" }

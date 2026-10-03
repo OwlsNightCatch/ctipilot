@@ -1,0 +1,424 @@
+# work/2026-10-03T0404Z-intel/findings.S2.yaml
+domain: S2
+run_id: 2026-10-03T0404Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-03T04:06:31Z
+ended_at: 2026-10-03T04:28:10Z
+duration_seconds: 1299
+self_telemetry:
+  webfetch_calls: 10
+  websearch_calls: 46
+  bridge_fetches: 75
+window_note: >
+  window_hours 26 (window start 2026-10-02T02:04Z). Swiss public-sector signal in the window was genuinely thin:
+  NCSC.ch / BACS published no new incident notice, no new weekly review (Woche 39 is dated 2026-09-29, Woche 40 is due
+  Monday 2026-10-05), and no cantonal or communal incident, emergency-service incident or Swiss supplier incident
+  surfaced in Netzwoche, SwissCybersecurity.net, Inside IT, SRF/NZZ/watson feeds, BACS pages, news.admin.ch or ransomware.live
+  inside the window. The two substantive deltas are an update on a covered European public-sector incident (Belnet) and
+  its link to a covered critical zero-day (FortiMail), plus one new national-CERT sector report (CERT-FR/CERT Santé).
+items:
+  # ---------------------------------------------------------------------------------------------------------------
+  - title: "Belnet update (2026-10-02 11:00): the 'external supplier' zero-day is Fortinet's, and the notice points to FG-IR-26-175, the FortiMail path-traversal advisory"
+    sources:
+      - { url: "https://www.belnet.be/en/news-events/news/security-and-privacy-incident-affecting-belnets-it-infrastructure", publisher: "Belnet", date: "2026-10-02", role: "primary" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175", publisher: "Fortinet PSIRT (FG-IR-26-175)", date: "2026-10-01", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Belnet cyberattaque zero-day supplier mail copied update\") -> primary re-read: Belnet incident notice, URL https://www.belnet.be/en/news-events/news/security-and-privacy-incident-affecting-belnets-it-infrastructure (page now carries 'Update 2 October 2026 - 11:00', the covered entry cites the 2026-10-01 version) -> pivot: Fortinet advisory linked from the notice, URL https://fortiguard.fortinet.com/psirt/FG-IR-26-175 (served via the jina fallback of extract)"
+    summary: |
+      Belnet's own incident notice, updated 2026-10-02 at 11:00, now names the external supplier as Fortinet and links Fortinet's
+      security advisory FG-IR-26-175 for the vulnerability "including the corresponding CVE". That advisory (published 2026-10-01)
+      is the FortiMail unauthenticated path-traversal file-write flaw, CVE-2026-104286, which Fortinet reports exploited in the wild.
+      Belnet itself does not name the product; the product link is the notice's pointer to the FortiMail advisory (an inference
+      from that pointer, not a Belnet statement). New facts versus the covered entry: (1) supplier named; (2) the vulnerability
+      was "remediated on Friday, 25 September at 08:10" per Belnet; (3) Belnet engaged the Centre for Cybersecurity Belgium for incident
+      response and forensics; (4) on 29 September Belnet removed still-active FileSender/FedSender download links and disabled
+      transfers created during the affected window, which generated notifications to senders and recipients; (5) Belnet restates
+      the scope: all incoming mail to Belnet-owned domains (including guest-roaming and BNIX addresses) with sender details,
+      content and attachments, plus the download links FileSender and FedSender generated and sent directly, between 2026-07-22
+      and the morning of 2026-09-25; password-protected or user-authenticated transfers cannot be read unless the password was put in
+      the upload comment. Belnet still names no actor ("no further information is available regarding the identity or affiliation
+      of the threat actor"). Belnet does not say how it remediated on 2026-09-25, although Fortinet listed no fixed FortiMail
+      build as of 2026-10-02.
+    region_nexus: "europe (Belgium; Belnet serves the Belgian federal administration and research/education bodies); transferable to Swiss federal and cantonal administrations that run shared mail/file-transfer gateways"
+    primary_sector_nexus: "direct (government and research network as victim; shared-service supplier-zero-day pattern)"
+    sector: "public-sector, education"
+    cves: [CVE-2026-104286]
+    techniques: [T1190, T1114]
+    affected_products: ["Fortinet FortiMail"]
+    entity_keys: ["product:fortinet-fortimail"]
+    new_entities:
+      - { key: "incident:belnet-fortinet-zero-day-mail-copy-2026-09", type: incident, name: "Belnet mail and transfer-link copying via a Fortinet zero-day (2026-07-22 to 2026-09-25)", aliases: ["Belnet security and privacy incident"], summary: "Belnet (Belgian government and research network) disclosed that attackers exploited a zero-day in technology from its supplier Fortinet to copy all incoming mail to Belnet-owned domains and the FileSender/FedSender download links between 2026-07-22 and 2026-09-25 (Belnet, updated 2026-10-02)." }
+    relation_suggestions:
+      - { subject: "incident:belnet-fortinet-zero-day-mail-copy-2026-09", object: "product:fortinet-fortimail", basis: "Belnet's 2026-10-02 notice names Fortinet as the supplier and links Fortinet advisory FG-IR-26-175, which describes the FortiMail IBE path traversal; Belnet does not itself name FortiMail (Belnet, 2026-10-02; Fortinet PSIRT, 2026-10-01)" }
+    verification: SINGLE-SOURCE-OTHER
+    verification_note: "victim's own notice (carve-out analogue: first-party disclosure) plus the vendor advisory it points to; no independent third-party confirmation that the Belnet incident is the FortiMail flaw"
+    confidence: HIGH
+    classification_hint: { reliability: A, credibility: 2 }
+    novelty: "update-of:2026-10-02/belnet-supplier-zero-day-mail-copied-65-days"
+    evidence:
+      - quote: "The incident was caused by the exploitation of a zero-day vulnerability affecting technology provided by our external supplier Fortinet."
+        attribution: "Belnet"
+        source_url: "https://www.belnet.be/en/news-events/news/security-and-privacy-incident-affecting-belnets-it-infrastructure"
+      - quote: "Fortinet has published further technical information about the vulnerability, including the corresponding CVE."
+        attribution: "Belnet"
+        source_url: "https://www.belnet.be/en/news-events/news/security-and-privacy-incident-affecting-belnets-it-infrastructure"
+      - quote: "Belnet removed download links that were still active and disabled transfers created during the affected period."
+        attribution: "Belnet"
+        source_url: "https://www.belnet.be/en/news-events/news/security-and-privacy-incident-affecting-belnets-it-infrastructure"
+      - quote: "At this stage, no further information is available regarding the identity or affiliation of the threat actor responsible for the incident."
+        attribution: "Belnet"
+        source_url: "https://www.belnet.be/en/news-events/news/security-and-privacy-incident-affecting-belnets-it-infrastructure"
+    extended_notes: |
+      Triage cue for recipients of Belnet transfers: Belnet's automatic notifications of 2026-09-29 ("transfer disabled / no longer
+      available") mark transfers created inside the affected window; if the files still matter, the sender must create a new transfer
+      (Belnet cannot recreate them). The covered entry's Exposure and Defender-takeaway lines should be rewritten around "Fortinet
+      zero-day (FortiMail advisory FG-IR-26-175)" instead of "unnamed supplier"; its sourcing_note ("Belnet names no supplier, product,
+      vulnerability class or actor") is now out of date. Cross-entry: same source feeds the FortiMail update item below.
+  # ---------------------------------------------------------------------------------------------------------------
+  - title: "FortiMail CVE-2026-104286: Belnet's notice puts exploitation at 2026-07-22 or earlier, about ten weeks before Fortinet's 2026-10-01 advisory, with a European public-sector victim"
+    sources:
+      - { url: "https://www.belnet.be/en/news-events/news/security-and-privacy-incident-affecting-belnets-it-infrastructure", publisher: "Belnet", date: "2026-10-02", role: "primary" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175", publisher: "Fortinet PSIRT (FG-IR-26-175)", date: "2026-10-01", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13027", publisher: "NCSC Switzerland (Cyber Security Hub)", date: "2026-10-02", role: "corroborating" }
+    discovery_trace: "first seen at: bridge ncsc-csh recent 40 (post 13027, FortiMail advisory, URL https://security-hub.ncsc.admin.ch/#/posts/13027) -> pivot: Belnet notice update, URL https://www.belnet.be/en/news-events/news/security-and-privacy-incident-affecting-belnets-it-infrastructure (found via WebSearch 'Belnet cyberattaque zero-day supplier mail copied update') -> primary: Fortinet PSIRT FG-IR-26-175, URL https://fortiguard.fortinet.com/psirt/FG-IR-26-175"
+    summary: |
+      Belnet, the Belgian government and research network, says an exploited zero-day in technology from its supplier Fortinet let
+      attackers copy all incoming mail to Belnet-owned domains between 2026-07-22 and the morning of 2026-09-25, and links Fortinet's
+      advisory FG-IR-26-175 for the flaw. That advisory is the FortiMail IBE path traversal (CVE-2026-104286), published 2026-10-01
+      with the flag "Known Exploited: Yes". Reading the two together (an inference from Belnet's pointer; Belnet does not name
+      FortiMail), the earliest observed exploitation is 2026-07-22, roughly ten weeks before Fortinet's advisory and CISA's KEV listing,
+      and the attacker's objective in a public-sector victim was bulk copying of inbound mail and attachments rather than
+      appliance disruption. The covered entry carries a 2026-10-01 disclosure and no earlier exploitation date. NCSC Switzerland's
+      advisory of 2026-10-02 (CSH post 13027) adds the observed post-exploitation artefacts: "malicious binaries and modified system
+      files (e.g., ld.so.preload, webconsole, mailservice)". Fortinet lists no fixed build for 7.4, 7.6 or 8.0 as of its advisory
+      (upcoming 7.4.9, 7.6.7, 8.0.2), so the workaround (disable IBE support, restrict the webmail interface, or block POST
+      requests to /ibe containing '../') remains the only vendor control.
+    region_nexus: "global; Belgian public-sector victim; FortiMail is common in European administrations and in Swiss cantonal and communal mail perimeters"
+    primary_sector_nexus: "direct (exploited internet-facing mail gateway at a government network)"
+    sector: "public-sector, education"
+    cves: [CVE-2026-104286]
+    techniques: [T1190, T1114]
+    affected_products: ["Fortinet FortiMail"]
+    entity_keys: ["product:fortinet-fortimail"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    verification_note: "vendor advisory + victim notice + national CERT advisory; the Belnet-to-FortiMail link is an inference from Belnet's advisory pointer"
+    confidence: MEDIUM
+    classification_hint: { reliability: A, credibility: 2 }
+    novelty: "update-of:2026-10-02/cve-2026-104286-fortimail-path-traversal-zero-day-kev"
+    evidence:
+      - quote: "This has been reported to be exploited in the wild, customers are urged to apply the workaround below."
+        attribution: "Fortinet PSIRT (FG-IR-26-175)"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175"
+      - quote: "The incident was caused by the exploitation of a zero-day vulnerability affecting technology provided by our external supplier Fortinet."
+        attribution: "Belnet"
+        source_url: "https://www.belnet.be/en/news-events/news/security-and-privacy-incident-affecting-belnets-it-infrastructure"
+      - quote: "Fortinet has published further technical information about the vulnerability, including the corresponding CVE."
+        attribution: "Belnet"
+        source_url: "https://www.belnet.be/en/news-events/news/security-and-privacy-incident-affecting-belnets-it-infrastructure"
+      - quote: "Observed attacks deploy malicious binaries and modified system files (e.g., ld.so.preload, webconsole, mailservice), indicating post-exploitation persistence and code execution."
+        attribution: "NCSC Switzerland (Cyber Security Hub)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13027"
+    extended_notes: |
+      Suggested edits to the covered FortiMail entry: (a) Detection / post-compromise check: the look-back for webmail-IBE
+      access logs and for unexpected changes to ld.so.preload, the webconsole and mailservice binaries should reach back to at
+      least 2026-07-22, not to the 2026-10-01 disclosure; (b) mail-flow audit: check whether a gateway forwarded or copied mail to
+      destinations outside the organisation, since Belnet's loss was bulk inbound mail with attachments; (c) NCSC-CH advisory 13027
+      is not yet cited by the entry (the entry cites Fortinet, BleepingComputer, CISA KEV). Priority already critical; no change
+      suggested. NCSC-NL (NCSC-2026-0398), CERT-FR (CERTFR-2026-AVI-1257), BSI WID and Truesec also carry the advisory (not re-fetched
+      for this item). Single-source on the Belnet-FortiMail link: no third party has confirmed it.
+  # ---------------------------------------------------------------------------------------------------------------
+  - title: "CERT-FR and CERT Santé: health-software vendors leave critical, easily exploited flaws open for over a year, with exposed admin secrets, unauthenticated remote access and broken access control (CERTFR-2026-CTI-007)"
+    sources:
+      - { url: "https://www.cert.ssi.gouv.fr/cti/CERTFR-2026-CTI-007/", publisher: "ANSSI / CERT-FR", date: "2026-10-02", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/uploads/CERTFR-2026-CTI-007.pdf", publisher: "ANSSI / CERT-FR (report PDF)", date: "2026-10-02", role: "primary" }
+      - { url: "https://www.cyberattaque.org/sante-82-des-etablissements-francais-ont-eu-connaissance-de-vulnerabilites-en-un-an/", publisher: "Cyberattaque.org", date: "2026-10-02", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr, URL https://www.cert.ssi.gouv.fr/cti/feed/ (CERT-FR CTI feed, item CERTFR-2026-CTI-007 dated 2 Oct 2026) -> primary: report page URL https://www.cert.ssi.gouv.fr/cti/CERTFR-2026-CTI-007/ -> PDF (href found on the page), URL https://www.cert.ssi.gouv.fr/uploads/CERTFR-2026-CTI-007.pdf (read with fetch_source pdf) -> corroboration: cyberattaque.org article of 2026-10-02 confirming same-day publication"
+    summary: |
+      CERT Santé and CERT-FR published on 2026-10-02 an anonymised experience report on vulnerabilities in digital products
+      deployed in French health establishments. Findings stated by the two CERTs: for four important health-sector vendors the handling
+      of vulnerabilities still open has lasted over a year, and in one case the last patch for a medium-severity flaw was scheduled
+      five years after the report; causes named are security fixes bundled into infrequent, sometimes paid functional releases,
+      many supported versions, no customer-notification channel, late security design and medical-device regulation. Observed
+      weaknesses: secrets retrievable by anyone via a URL (in one case the password of the server hosting the service),
+      an exposed .git directory leaking application source with secrets, administrator credentials embedded in application code,
+      default remote-maintenance credentials left on various sites; XSS and SQL injection reappearing a year after a first fix;
+      many internet-exposed instances of one health application reachable without authentication (the vendor says some customers kept
+      VNC access open and signed liability waivers); and missing tenant separation, which the report says is "particularly
+      exploited at present" on SaaS health solutions: attackers first compromise a health professional's account by phishing or
+      compromised passwords, then widen access to other users' and establishments' data, which is hard to detect. In one case, credentials
+      recovered from code plus server access authorised for dozens of establishments could have enabled lateral movement into them and
+      access to thousands of patients' data. The report cites an Agence du Numérique en Santé survey (82% of respondents aware of
+      vulnerabilities in the last twelve months, 74% faced vendors that delay or refuse fixes, 90% without a formal channel to
+      report vulnerabilities to vendors) and CERT Santé malicious incidents rising from 328 (2024) to 400 (2025). It also states that
+      Article 14 of the EU Cyber Resilience Act (vendors must report actively exploited vulnerabilities and severe incidents on a single
+      EU platform) has applied since 2026-09-11, full application is 2027-12-11, medical devices are excluded, and ANFR will be France's
+      market-surveillance authority (administrative fines up to EUR 15 million or 2.5% of worldwide turnover). The CERTs recommend
+      detection and alerting on unusual or massive access to sensitive data, and robust native authentication on remote-maintenance
+      tools before heavier measures (MFA, VPN).
+    region_nexus: "france (health sector); transferable to Swiss cantonal and communal hospitals, care providers and the health-software suppliers that serve them"
+    primary_sector_nexus: "indirect (public hospitals and health software suppliers are public institutions' technology suppliers)"
+    sector: "healthcare, public-sector"
+    cves: []
+    techniques: [T1190, T1078, T1566, T1552.001, T1078.001, T1021.005]
+    affected_products: []
+    entity_keys: ["policy:eu-cyber-resilience-act"]
+    new_entities:
+      - { key: "report:certfr-2026-cti-007-health-software-vulnerability-handling", type: report, name: "CERTFR-2026-CTI-007: health-sector product vulnerabilities, CERT Santé and CERT-FR experience report", aliases: ["CERT Santé / CERT-FR retour d'expérience vulnérabilités secteur santé"], summary: "ANSSI/CERT-FR and CERT Santé experience report of 2026-10-02 on critical, easily exploited vulnerabilities and slow vendor remediation in digital products used by French health establishments, with CRA Article 14 context." }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    verification_note: "national CERT as primary disclosing party for its own report (carve-out); cyberattaque.org relays it the same day"
+    confidence: HIGH
+    classification_hint: { reliability: A, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "Pour 4 éditeurs importants du secteur santé, le traitement de vulnérabilités actuellement en cours dure"
+        attribution: "ANSSI / CERT-FR (report PDF)"
+        source_url: "https://www.cert.ssi.gouv.fr/uploads/CERTFR-2026-CTI-007.pdf"
+      - quote: "Ce type de vulnérabilité est particulièrement exploité actuellement sur des solutions numériques de santé,"
+        attribution: "ANSSI / CERT-FR (report PDF)"
+        source_url: "https://www.cert.ssi.gouv.fr/uploads/CERTFR-2026-CTI-007.pdf"
+      - quote: "exposées sur Internet, accessibles sans authentification."
+        attribution: "ANSSI / CERT-FR (report PDF)"
+        source_url: "https://www.cert.ssi.gouv.fr/uploads/CERTFR-2026-CTI-007.pdf"
+      - quote: "sécurité des produits sur une plateforme unique européenne s’applique d’ores et déjà depuis le 11 septembre 2026."
+        attribution: "ANSSI / CERT-FR (report PDF)"
+        source_url: "https://www.cert.ssi.gouv.fr/uploads/CERTFR-2026-CTI-007.pdf"
+    extended_notes: |
+      Defender angle for the entry body: telemetry class = application/access logs of health SaaS and on-prem health software showing
+      one authenticated professional account reading records across many patients or establishments (unusual or bulk reads), plus
+      internet-exposure checks for VNC/remote-maintenance listeners and for .git or secret-bearing URLs on supplier-run web front ends;
+      procurement lever = ask suppliers for a vulnerability-notification channel and security-fix cadence independent of functional
+      releases (the CRA Annex I expectations the report quotes). The report names no vendors and no CVEs. CRA SRP already launched
+      per ENISA (2026-09-11), registry key policy:eu-cyber-resilience-act exists. Note the CERT-FR RSS timestamp is flat 00:00 UTC;
+      same-day publication confirmed by cyberattaque.org ("publient ce 2 octobre 2026").
+  # ---------------------------------------------------------------------------------------------------------------
+  - title: "Swiss Parliament refers motion 24.4393 to the Federal Council: .ch and .swiss domains only to identified holders, wider blocking powers for authorities"
+    sources:
+      - { url: "https://ws.parlament.ch/odata.svc/Business?$filter=ID%20eq%2020244393%20and%20Language%20eq%20'DE'&$format=json", publisher: "Swiss Parliament (Curia Vista web service, business 24.4393)", date: "2026-10-01", role: "primary" }
+    discovery_trace: "first seen at: inside-it-ch, URL https://www.inside-it.ch/rss.xml (RSS teaser 'Schweizer Domains werden besser geschuetzt', 2026-10-02: 'Ein Vorstoss ist in beiden Kammern im Bundeshaus erfolgreich'; article page returns HTTP 429, not cited) -> WebSearch (\"Ständerat Identifikationspflicht Domainregistrierung .ch .swiss Motion Götte Oktober 2026\") identified motion 24.4393 -> primary: parlament.ch web service record, URL https://ws.parlament.ch/odata.svc/Business?$filter=ID%20eq%2020244393%20and%20Language%20eq%20'DE'&$format=json (Curia Vista's own SPA page is template-only)"
+    summary: |
+      Motion 24.4393 (Michael Götte, SVP/SG, submitted 2024-12-17, "Es braucht griffige Massnahmen gegen die missbräuchliche
+      Verwendung von schweizerischen Domains!") instructs the Federal Council to change the legal basis so that .ch and .swiss
+      domains are issued only to clearly identified natural or legal persons and so that authorities can block domains in
+      abuse cases beyond phishing and malware. The Curia Vista record shows the status "Überwiesen an den Bundesrat" dated 2026-10-01
+      06:40 UTC (SWICO's session recommendation, seen only as a search snippet, had the Council of States treating it on 2026-10-01),
+      with the Federal Council on record (2025-02-12) proposing adoption. Search snippets of parliament.ch and trade press (not fetched)
+      say the National Council insisted on the original text on 2026-06-18 against the Council of States' weaker version; the fetched record
+      shows only the National Council vote of 2026-06-18 on "original version vs Council of States version" without its result, does not state
+      which text was finally referred, and holds no vote detail for the Council of States. No implementing ordinance
+      draft (VID, SR 784.104.2) exists yet; Inside IT's teaser says the motion succeeded in both chambers. Defender relevance is
+      indirect and future-dated: identification of registrants and a broader blocking basis would change how look-alike and phishing
+      domains impersonating cantonal and communal services can be taken down, and who must be identified when administrations
+      register domains.
+    region_nexus: "switzerland"
+    primary_sector_nexus: "indirect (anti-phishing/domain-abuse tooling relevant to public administrations; no immediate obligation)"
+    sector: "public-sector, technology"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "policy:switzerland-motion-24-4393-domain-identification", type: policy, name: "Swiss motion 24.4393: identification of .ch/.swiss domain holders and wider blocking powers", aliases: ["Motion Götte Domains", "24.4393"], summary: "Motion adopted by both chambers of the Swiss Parliament (Curia Vista status 'referred to the Federal Council', 2026-10-01) instructing the Federal Council to require identified holders for .ch and .swiss domains and to widen the grounds on which authorities may block domains (Swiss Parliament, 2026-10-01)." }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    verification_note: "authority-owned primary (the parliament's own data service); not a CERT, treat as authority single-source; Inside IT teaser corroborates direction but its article page was not fetchable"
+    confidence: MEDIUM
+    classification_hint: { reliability: A, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "Der Bundesrat beantragt die Annahme der Motion."
+        attribution: "Swiss Parliament (Curia Vista web service, business 24.4393)"
+        source_url: "https://ws.parlament.ch/odata.svc/Business?$filter=ID%20eq%2020244393%20and%20Language%20eq%20'DE'&$format=json"
+      - quote: "schweizerische Domains (.ch und .swiss) einerseits nur an eindeutig identifizierte"
+        attribution: "Swiss Parliament (Curia Vista web service, business 24.4393)"
+        source_url: "https://ws.parlament.ch/odata.svc/Business?$filter=ID%20eq%2020244393%20and%20Language%20eq%20'DE'&$format=json"
+    borderline: true
+    borderline_reason: "A motion adopted by both chambers is a mandate to draft law, not an obligation or advice that changes what defenders do now; included because it is a genuine new step on the standing policy watch (domain abuse / anti-phishing basis) and nobody has covered it. Single data-service source; which text was referred is not stated."
+    extended_notes: |
+      Human-readable page (JS SPA, not fetchable): https://www.parlament.ch/de/ratsbetrieb/suche-curia-vista/geschaeft?AffairId=20244393 .
+      Responsible department UVEK (BAKOM is the domain-regulation office). SWICO's session recommendation of 2026-09-01 had recommended
+      rejection with a proportionality caveat. Recipe worth keeping: the Curia Vista OData service works for status dates (see candidate_sources).
+  # ---------------------------------------------------------------------------------------------------------------
+  - title: "BSI advises against Classic McEliece for new developments after cryptanalysis progress; ML-KEM and FrodoKEM unaffected, TR-02102 revision due early 2027"
+    sources:
+      - { url: "https://www.bsi.bund.de/DE/Service-Navi/Presse/Alle-Meldungen-News/Meldungen/2026/Classic-McEliece_261001.html", publisher: "BSI (Germany)", date: "2026-10-01", role: "primary" }
+      - { url: "https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/Krypto/Hinweis_Classic_McEliece.pdf?__blob=publicationFile", publisher: "BSI (Germany), Hinweis zu Classic McEliece (PDF)", date: "2026-10-01", role: "primary" }
+    discovery_trace: "first seen at: bsi-de, URL https://www.bsi.bund.de/DE/Service-Navi/Presse/Alle-Meldungen-News/alle-meldungen-news_node.html (BSI news listing, fetched with url --direct; first row dated 01.10.2026; the WID RSS recipe does not surface it) -> primary: BSI news page and its Hinweis PDF (read with fetch_source pdf)"
+    summary: |
+      On 2026-10-01 BSI published a notice recommending that Classic McEliece, a code-based post-quantum key-encapsulation scheme listed
+      in BSI TR-02102 since 2020, not be used for new developments or when planning new cryptographic applications, because recent
+      cryptanalysis suggests a markedly lower security level than assumed. BSI states that with the TR-02102-1 parameter sets no
+      practical attack is possible today, that TR-02102 always required Classic McEliece only in hybrid combination with a classical key
+      agreement (so the hybrid still delivers at least the classical security), and that TR-02102-1 will be revised in the next version, planned
+      for early 2027. FrodoKEM and ML-KEM, the other post-quantum KEMs it recommends, are named as unaffected and preferable; HQC is
+      also unaffected and will be recommended once its standard exists. BSI keeps its urgency message that migration of key agreement
+      to post-quantum cryptography should be done by 2031 at the latest and stresses crypto-agility. The notice matters beyond Germany
+      because TR-02102 is the reference behind BSI's TLS minimum standard and TR-03116 (cryptographic requirements for federal projects)
+      and is widely used by DACH administrations and suppliers as a cryptographic baseline.
+    region_nexus: "germany / DACH; relevant to Swiss federal and cantonal PQC planning (Swiss Council of States treated a national PQC roadmap motion 26.3628 on 2026-09-16, per a SWICO session recommendation found in search, not fetched)"
+    primary_sector_nexus: "indirect (cryptographic baseline for government projects and suppliers)"
+    sector: "public-sector, technology"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "policy:bsi-classic-mceliece-recommendation-2026-10", type: policy, name: "BSI recommendation against new use of Classic McEliece (2026-10-01)", aliases: ["BSI Hinweis Classic McEliece"], summary: "BSI notice of 2026-10-01 recommending that Classic McEliece not be used for new developments after cryptanalysis progress; TR-02102-1 revision planned for early 2027; ML-KEM, FrodoKEM and HQC stated unaffected (BSI, 2026-10-01)." }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    verification_note: "BSI is on the national-CERT carve-out list and is the originating authority of TR-02102"
+    confidence: HIGH
+    classification_hint: { reliability: A, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "Das Bundesamt für Sicherheit in der Informationstechnik (BSI) empfiehlt, das kryptographische Verfahren Classic McEliece derzeit nicht für Neuentwicklungen zu verwenden."
+        attribution: "BSI (Germany)"
+        source_url: "https://www.bsi.bund.de/DE/Service-Navi/Presse/Alle-Meldungen-News/Meldungen/2026/Classic-McEliece_261001.html"
+      - quote: "sind nicht von den Entwicklungen betroffen."
+        attribution: "BSI (Germany)"
+        source_url: "https://www.bsi.bund.de/DE/Service-Navi/Presse/Alle-Meldungen-News/Meldungen/2026/Classic-McEliece_261001.html"
+      - quote: "Die Veröffentlichung ist für Anfang 2027 geplant."
+        attribution: "BSI (Germany)"
+        source_url: "https://www.bsi.bund.de/DE/Service-Navi/Presse/Alle-Meldungen-News/Meldungen/2026/Classic-McEliece_261001.html"
+    borderline: true
+    borderline_reason: "Dated 2026-10-01, about a day outside the 26 h window (the previous fire did not sweep BSI's news page, so nobody has covered it); a crypto-recommendation change, not an exploited threat; relevance is PQC migration planning rather than a do-now action."
+    extended_notes: |
+      No key-recovery attack is claimed; BSI frames the results as structural-attack progress (distinguishers on binary Goppa codes with
+      estimated complexity still far above the TR-02102 level for recommended parameters, per the PDF) that weakens trust. Check inventories for
+      Classic McEliece in new designs (VPN/TLS hybrids, long-term-secret protocols); existing hybrid deployments remain protected by the
+      classical component.
+  # ---------------------------------------------------------------------------------------------------------------
+  - title: "Région Hauts-de-France notifies individuals after a cyberattack at its procurement-platform supplier ATEXO (names, first names, email addresses)"
+    sources:
+      - { url: "https://www.cyberattaque.org/region-hauts-de-france-des-donnees-personnelles-exposees-suite-a-une-cyberattaque-chez-atexo/", publisher: "Cyberattaque.org", date: "2026-10-02", role: "primary" }
+    discovery_trace: "first seen at: cyberattaque-org, URL https://www.cyberattaque.org/feed/ (item 2026-10-02 16:51 UTC) -> primary reading: the article itself, which says the outlet obtained a copy of the Region's notification letter; no second source found (3 WebSearch reformulations: 'ATEXO cyberattaque ...', '\"ATEXO\" incident de sécurité prestataire ...', '\"Atexo\" fuite de données ...')"
+    summary: |
+      Cyberattaque.org reports that the French Region Hauts-de-France is informing certain people of a security incident at ATEXO, one of
+      its service providers: an unauthorised third party accessed personal data ATEXO processes on the Region's behalf. According to the
+      outlet's copy of the notification, three categories are officially named (name, first name, email address), investigations continue
+      into whether other data were reachable, the attack method is not known, the number of people concerned is not given, and the Region
+      warns of phishing in its name. The outlet does not identify ATEXO's business; ATEXO is known in France for public-procurement
+      platform software (background knowledge, not from a fetched source). It is a single-source report relaying a notification letter; the Region
+      has published nothing that could be found, and no leak-site claim was seen.
+    region_nexus: "france (regional government supplier); transferable as a public-sector supplier-notification case"
+    primary_sector_nexus: "indirect (supplier to public authorities)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1199]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    verification_note: "single secondary outlet (Admiralty C) relaying a notification copy it says it obtained; no corroboration found"
+    confidence: LOW
+    classification_hint: { reliability: C, credibility: 3 }
+    novelty: new
+    evidence:
+      - quote: "La méthode employée par l’attaquant n’est pas connue."
+        attribution: "Cyberattaque.org"
+        source_url: "https://www.cyberattaque.org/region-hauts-de-france-des-donnees-personnelles-exposees-suite-a-une-cyberattaque-chez-atexo/"
+      - quote: "Les investigations techniques se poursuivent afin de déterminer si"
+        attribution: "Cyberattaque.org"
+        source_url: "https://www.cyberattaque.org/region-hauts-de-france-des-donnees-personnelles-exposees-suite-a-une-cyberattaque-chez-atexo/"
+    borderline: true
+    borderline_reason: "Single-source, low-impact (names and emails), French rather than Swiss, no TTP; only value is the public-sector-supplier pattern already running through the store (DGFiP, SDIS, AFPA). Recommend dropping unless a second source or an ATEXO/Region statement appears."
+  # ---------------------------------------------------------------------------------------------------------------
+  - title: "SRG reports theft of data on about 340 current and former SRF employees (2020 contact and organisational data), cause under investigation"
+    lookback: true
+    sources:
+      - { url: "https://www.swisscybersecurity.net/news/2026-09-28/cyberkriminelle-stehlen-daten-von-srf-mitarbeitenden", publisher: "SwissCybersecurity.net", date: "2026-09-28", role: "primary" }
+      - { url: "https://www.swissinfo.ch/eng/workplace/staff-data-stolen-in-cyberattack-on-swiss-public-broadcaster/92131693", publisher: "swissinfo.ch (Keystone-SDA)", date: "2026-09-28", role: "corroborating" }
+    discovery_trace: "first seen at: swisscybersecurity-net, URL https://www.swisscybersecurity.net/ (WebFetch listing, item 28.09.2026 16:22 'Rund 340 Personen betroffen') -> primary reading: article URL https://www.swisscybersecurity.net/news/2026-09-28/cyberkriminelle-stehlen-daten-von-srf-mitarbeitenden (relays the SRG statement) -> corroboration: swissinfo/Keystone-SDA, URL https://www.swissinfo.ch/eng/workplace/staff-data-stolen-in-cyberattack-on-swiss-public-broadcaster/92131693; the SRG's own release was not located (WebSearch 'SRG SSR Medienmitteilung Cyberangriff Daten SRF-Mitarbeitende ...' found only press relays)"
+    summary: |
+      The Swiss broadcaster SRG reported (relayed 2026-09-28 by SwissCybersecurity.net and Keystone-SDA/swissinfo) that unauthorised persons
+      obtained data on about 340 current and former employees of SRF, mostly from today's "Information" unit. SRG's analysis says the
+      data are contact and organisational data from 2020 (names, functions, work and partly private contact details); personal passwords,
+      financial or bank data, journalistic sources, research data and communications content are stated as not affected. SRG deactivated the
+      affected accesses, added security measures, notified the competent authorities and filed a criminal complaint; it says nothing has been published or
+      misused so far. The cause and the vector are not disclosed. No actor or leak-site claim was found.
+    region_nexus: "switzerland"
+    primary_sector_nexus: "indirect (public-service media institution; not an administration or emergency service)"
+    sector: "media, public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    verification_note: "two outlets, one origin (SRG statement); SRG's own release not fetched"
+    confidence: MEDIUM
+    classification_hint: { reliability: C, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "Die Schweizerische Radio- und Fernsehgesellschaft (SRG) hat einen Cyberangriff festgestellt."
+        attribution: "SwissCybersecurity.net"
+        source_url: "https://www.swisscybersecurity.net/news/2026-09-28/cyberkriminelle-stehlen-daten-von-srf-mitarbeitenden"
+      - quote: "Bisherigen Analysen der SRG zufolge handelt es sich bei den Daten um Kontakt- und Organisationsdaten aus dem Jahr 2020."
+        attribution: "SwissCybersecurity.net"
+        source_url: "https://www.swisscybersecurity.net/news/2026-09-28/cyberkriminelle-stehlen-daten-von-srf-mitarbeitenden"
+      - quote: "Gemäss SRG wurden bislang keine gestohlenen Daten veröffentlicht oder missbraucht."
+        attribution: "SwissCybersecurity.net"
+        source_url: "https://www.swisscybersecurity.net/news/2026-09-28/cyberkriminelle-stehlen-daten-von-srf-mitarbeitenden"
+    borderline: true
+    borderline_reason: "Surfaced through the swisscybersecurity-net rotational lookback (published 2026-09-28, five days old, outside the 26 h window); Swiss public-service institution but low severity (2020 contact data, no vector, no actor). Recommend dropping unless S4 finds a vector or leak publication."
+candidate_sources:
+  - id: parlament-ch-curia-vista-odata
+    publisher: "Swiss Parliament web services (Curia Vista OData)"
+    url: "https://ws.parlament.ch/odata.svc/Business"
+    category: gov
+    why: "Standing policy watch needs dated parliamentary status (motion adopted, referred, bill stages). The Curia Vista pages are a JS template that WebFetch/extract cannot read; the OData service answers with status text, status date, submitted text and Federal Council response. Working recipe: `python3 tools/fetch_source.py url --direct \"https://ws.parlament.ch/odata.svc/Business?\\$filter=ID eq <AffairId e.g. 20244393> and Language eq 'DE'&\\$format=json\"` (URL-encode spaces; a $select clause timed out, the plain filter worked; retry once if the first call times out); `Vote?$filter=BusinessNumber eq <id>` lists recorded electronic votes only (Council of States hand votes are absent)."
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Article pages still return the Vercel checkpoint (HTTP 429) to WebFetch; RSS teasers (20 items, newest 2026-10-02 13:43 UTC) were the only readable layer. Used as a lead for the Götte motion, not cited."
+  - source_id: ncsc-ch-incidents
+    reason: "Listing is undated (page date 2026-08-18); no in-window addition can be determined. extract works; content unchanged since the 2026-08 items."
+  - source_id: bsi-de
+    reason: "RECIPE GAP: the WID RSS (bridge bsi-rss, 250-item cap) carries only vulnerability advisories; BSI's non-WID announcements (crypto/PQC, CRA, KRITIS, NIS2 items) are on https://www.bsi.bund.de/DE/Service-Navi/Presse/Alle-Meldungen-News/alle-meldungen-news_node.html. Working command: `python3 tools/fetch_source.py url --direct <that URL>` returns a server-rendered, dated listing (regex <a href=...Meldungen/2026/...> and dd.mm.yyyy), then `extract <item URL>` reads the item; `extract` on the listing itself returns raw HTML (direct-raw). The Pressemitteilungen listing is empty of dated rows. Suggest adding this as the S2 drill path on the bsi-de record."
+  - source_id: anssi-fr
+    reason: "CERT-FR feeds carry flat 00:00 UTC timestamps (known limit); same-day publication of CERTFR-2026-CTI-007 had to be confirmed from cyberattaque.org. Also useful: https://www.cert.ssi.gouv.fr/cti/feed/ and https://www.cert.ssi.gouv.fr/alerte/feed/ list CTI reports and alerts that `cert-fr avis-recent/actu-recent` do not (actu-recent returns only weekly bulletins); PDFs read with `fetch_source.py pdf https://www.cert.ssi.gouv.fr/uploads/CERTFR-2026-CTI-NNN.pdf` (href is on the CTI page)."
+  - source_id: news-admin-ch
+    reason: "Recipe confirmed: `url --direct <listing URL with start_date/end_date>` returns 12 server-rendered items for 2026-09-26..2026-10-03 (page 1). `extract` of a /de/newnsb/<id> page works for Federal Council releases but returns raw HTML (direct-raw) for 'Fremdmitteilung' items; read the visible text with an HTML strip. Nothing security-relevant in the window (2026-10-02: KI/process-automation report in fulfilment of postulate 24.3582; EJPD consultation on the Third Additional Protocol to the MLA convention)."
+  - source_id: europol-newsroom (not in slice)
+    reason: "WebFetch of https://www.europol.europa.eu/media-press/newsroom returned only a 'Loading application' SPA shell; law-enforcement action sweep relied on KillSwitch already covered; no other in-window action found by WebSearch (results were not date-reliable)."
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 15", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "NCSC-2026-0398 FortiMail (2026-10-02 07:21Z) already covered by the CVE-2026-104286 entry" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:cert-fr avis-recent 15 + actu-recent 10 + feed (alerte, cti) + url --direct + pdf", horizon_hours: 26, in_horizon_items: 12, returned: 1, note: "11 vendor avis of 2026-10-02 (flat timestamps; S1 domain) + CERTFR-2026-CTI-007 returned; no new alerte since 2026-09-28; no bulletin since ACT-041 (2026-09-28)" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss (250 items) + url --direct news listing + extract + pdf", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "WID items are S1 vulnerability advisories; one non-WID BSI notice (Classic McEliece, 2026-10-01) returned borderline" }
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed x4 (warnings, current, daily, blog) + extract", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "newest warnings item 2026-09-27 (Citrix), current 2026-09-08; Tageszusammenfassung 02.10 is a digest of third-party links" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest advisory 2026-014 (Citrix, 2026-09-27)" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "gotop CVE-2026-91784 (2026-10-02): low-relevance single-vendor CVE, S1 domain" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "webfetch listing", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "2026-10-02 'CISA Adds Two Known Exploited Vulnerabilities' belongs to S1/KEV sweep; no AA-series advisory since the 2026-09-23 ICS-integrator fact sheet" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract listing + extract per item for dates", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-09-30 (Cybersecurity Month awareness); CRA SRP launch is dated 2026-09-11, ETL 2026 dated 2026-09-22" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed 20 + extract", horizon_hours: 26, in_horizon_items: 7, returned: 0, note: "FortiMail (covered), RSA signature attack, Graykey, 1Password, OpenAI staff: none S2; LMU Munich (2026-09-30, 600,000 student records) is outside the window and not a Swiss/sector delta" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed rss (teasers); article pages 429", horizon_hours: 26, in_horizon_items: 8, returned: 1, note: "domain-security motion lead -> parliament primary; other Oct-2 items are policy/market (nearshoring motion rejected by Council of States, constitution digitalisation article, 'Rang 13' threat ranking)" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest Cyber Security Month release 2026-10-01 (consumer awareness), Woche 39 dated 2026-09-29" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "undated listing, page date 2026-08-18; nothing new identifiable" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 40", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "post 13027 (FortiMail, 2026-10-02) used as corroboration inside the FortiMail update item; Zimbra post 13022 (2026-10-01, CVE-2026-66911/66912) and WatchGuard AP post 13007 (2026-09-29, CVE-2026-101891/86102) have no entry in the store: S1 domain, passed on" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest item 2026-09-28 (Citrix exploitation)" }
+  - { id: bacs-press, tier: essential, attempted: true, transport: "extract listing + extract items + url --direct hrefs", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest release 2026-10-01 (Cyber Security Month, consumer); 2026-09-29 OSZE conference; 2026-09-28 Störfall pilot; 2026-09-25 CSG mandate already covered" }
+  - { id: news-admin-ch, tier: standard, attempted: true, transport: "url --direct listing (start/end date) + extract", horizon_hours: 168, in_horizon_items: 12, returned: 0, note: "no security items; see coverage_gaps recipe confirmation" }
+  - { id: borncity, tier: standard, attempted: true, transport: "feed 25", horizon_hours: 168, in_horizon_items: 20, returned: 0, note: "German incident sightings: e-invoicing hack summary (French VosFactures/Fakturownia, previously borderline-dropped as out of nexus), KillSec (covered), Exchange/TeamViewer patch news (S1)" }
+  - { id: bfv-verfassungsschutz-de, tier: standard, attempted: true, transport: "feed 15", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "2026-09-28 'Fünfter Lagebericht Rechtsextremisten in Sicherheitsbehörden' not cyber; DPRK joint advisory 2026-09-18 outside lookback and already covered (WaterPlum)" }
+  - { id: cyberattaque-org, tier: standard, attempted: true, transport: "feed 15 + extract", horizon_hours: 121, in_horizon_items: 10, returned: 1, note: "ATEXO/Région Hauts-de-France returned borderline; CERT Santé report coverage used as corroboration; Cnam, ADMR, LDLC, NaturaBuy, FMG etc. are French consumer/corporate leaks without Swiss or public-administration nexus" }
+  - { id: netzwoche, tier: standard, attempted: true, transport: "webfetch listing 20 + webfetch two articles", horizon_hours: 121, in_horizon_items: 20, returned: 0, note: "used for leads only: Microsoft Digital Defense Report 2026 coverage (2026-10-02, Switzerland rank 13 in Europe, 39 worldwide; annual-report lead for S3, primary not located), BACS ClickFix warning = weekly review of 2026-09-29" }
+  - { id: sekoia, tier: standard, attempted: true, transport: "feed https://blog.sekoia.io/feed/ 10", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-24 (ShinyHunters history)" }
+  - { id: swisscybersecurity-net, tier: standard, attempted: true, transport: "webfetch listing 15 + extract", horizon_hours: 121, in_horizon_items: 13, returned: 1, note: "SRG/SRF employee-data theft (2026-09-28) returned borderline lookback; BACS-BAFU Störfall pilot (2026-09-29) dropped: sector-supervision pilot, no obligation or threat content" }
+  - { id: synacktiv, tier: standard, attempted: true, transport: "webfetch listing", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest publication 2026-08-31" }
+  - { id: truesec, tier: standard, attempted: true, transport: "feed 9 + extract", horizon_hours: 121, in_horizon_items: 5, returned: 0, note: "Danish SAMSIK threat-level post (2026-09-29) relays the 2026-09-24 Danish announcement (destructive-attack threat raised to high), outside any window and not Swiss; other items are S1 vulnerability posts (FortiMail, TeamViewer, GitLab, Citrix)" }
+  - { id: zataz, tier: standard, attempted: true, transport: "feed 10 + extract", horizon_hours: 121, in_horizon_items: 10, returned: 0, note: "Everest claim against Securitas Group (2026-09-30) is an unconfirmed leak-site claim about a Swedish group, not Swiss-confirmed: dropped; VosFactures/AIFE suspension (2026-10-01) out of nexus, previously borderline-dropped" }
+  - { id: ccb-belgium, tier: standard, attempted: true, transport: "bridge url (server-rendered listing with dates)", horizon_hours: 97, in_horizon_items: 7, returned: 0, note: "listing now parses (dd/mm/yyyy dates, 10 advisories 2026-09-24..2026-10-01); all are vendor-vulnerability warnings (Cisco SD-WAN, WatchGuard, Rancher, Zimbra, Citrix): S1 domain; no CCB statement on the Belnet incident found" }
+  - { id: ccn-cert-es, tier: standard, attempted: true, transport: "feed atom 10", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "newest relevant AL 09/26 Citrix (2026-09-28) outside 97 h; 2026-09-30 PILAR training notice is not threat content" }
+policy_watch_result: |
+  Covered-and-unchanged (no new step in window): Swiss Cybersecurity Act (CSG) Federal Council mandate of 2026-09-25 (BACS press list shows no follow-up),
+  Swiss sovereign-cloud motion 24.3209, Austria NISG 2026 (in force 2026-10-01, already in store; heise 2026-09-30 only repeats it),
+  ECA special report. Swiss e-ID: start 2026-12-01 per the Federal Council announcement of 2026-02-25, nothing new in window.
+  New step found: motion 24.4393 (domain identification and blocking basis) referred to the Federal Council on 2026-10-01 (borderline item above).
+  Also found and returned: BSI's Classic McEliece recommendation (2026-10-01, borderline) and ANSSI/CERT-FR/CERT Santé health-software report (2026-10-02),
+  whose CRA Article 14 note confirms the single reporting platform obligation has applied since 2026-09-11.
+  No in-window EU cyber-sanction listing, Europol/Eurojust or OFAC action against actor infrastructure was found (WebSearch is not date-reliable;
+  Europol newsroom unreadable), apart from Operation KillSwitch already covered.
+unconfirmed_claims_not_returned:
+  - "Everest leak-site claim against Securitas Group (ZATAZ, 2026-09-30): unconfirmed, Swedish group, not Swiss-confirmed."
+  - "ransomware.live (via WebFetch summary, claims only): SafePay listings of manno.ch (already covered by the Manno entry), bio-strath.com (victim-confirmed per Inside IT 2026-09-30, private company), lfgholding.com; Payload listing of Netech (Neeser Technik AG). No Swiss public-sector victim beyond Manno."
+cross_domain_leads:
+  - "S1: NCSC-CH CSH 13022 Zimbra Collaboration 10.1.21 fixes (CVE-2026-66911, CVE-2026-66912, 2026-10-01) and CSH 13007 WatchGuard AP (CVE-2026-101891, CVE-2026-86102, 2026-09-29) are not in the store; Dell Container Storage Modules maximum-severity flaws (BleepingComputer via CERT.at daily, 2026-10-02); Exchange Server updates of 2026-10-02 (CVE-2026-96940, Borns blog)."
+  - "S3: Microsoft Digital Defense Report 2026 (annual report; Netzwoche 2026-10-02 relays Swiss rank 13 in Europe, 39 worldwide; primary not located); Symantec Warlock-ransomware critical-infrastructure/SharePoint report (The Record via CERT.at daily 2026-10-02); Quarkslab Cato VPN client CVE-2026-10739."
+  - "S4: FTAPI leak-site countdown ran to about 2026-10-04 (covered entry); a publication or FTAPI statement after that date would be an update-of."

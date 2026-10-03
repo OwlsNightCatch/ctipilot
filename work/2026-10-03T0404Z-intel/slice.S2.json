@@ -1,0 +1,603 @@
+{
+ "run_id": "2026-10-03T0404Z-intel",
+ "domain": "S2",
+ "window_hours": 26,
+ "records": [
+  {
+   "id": "advisories-ncsc-nl",
+   "publisher": "NCSC-NL \u2014 Security Advisories",
+   "url": "https://advisories.ncsc.nl/rss/advisories",
+   "rss_url": null,
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "rss",
+   "reliability": "A",
+   "language": [
+    "en",
+    "nl"
+   ],
+   "category": [
+    "ch-eu",
+    "gov",
+    "active-breaking",
+    "vulns"
+   ],
+   "last_successful_fetch": "2026-10-02",
+   "newest_note": "2026-10-02 (2026-10-02T0404Z-intel): human advisory pages (advisory?id=NCSC-2026-NNNN) fall through `extract` to the jina reader and spend credit; `ncsc-nl csaf NCSC-2026-NNNN` returns the same content free as CSAF with vendor references and per-CVE vectors, so it is the first rung. NCSC prose can disagree with the CVE entry's own vector.",
+   "recipe_note": "2026-10-02 (2026-10-02T0404Z-intel): human advisory pages (advisory?id=NCSC-2026-NNNN) fall through `extract` to the jina reader and spend credit; `ncsc-nl csaf NCSC-2026-NNNN` returns the same content free as CSAF with vendor references and per-CVE vectors, so it is the first rung. NCSC prose can disagree with the CVE entry's own vector."
+  },
+  {
+   "id": "anssi-fr",
+   "publisher": "ANSSI / CERT-FR",
+   "url": "https://www.cert.ssi.gouv.fr/",
+   "rss_url": null,
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "api",
+   "reliability": "A",
+   "language": [
+    "fr",
+    "en"
+   ],
+   "category": [
+    "ch-eu",
+    "gov",
+    "active-breaking"
+   ],
+   "last_successful_fetch": "2026-10-02",
+   "newest_note": "2026-07-11: KNOWN LIMIT \u2014 CERT-FR RSS feed renders a flat 00:00:00 +0000 timestamp for every item regardless of true publish time; for a \"yesterday-dated\" CERT-FR item the 24h recency floor is ambiguous, so corroborate the true publish time from the avis/actu page before dropping or including.",
+   "recipe_note": "2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api: python3 tools/fetch_source.py cert-fr avis-recent 5 (advisories) and cert-fr actu-recent 5 (alerts); then bridge `url https://www.cert.ssi.gouv.fr/avis/{id}/` per-advisory for CVE list + affected versions. WebFetch on the root also works.. AVOID: Don't expect CVSS scores in CERT-FR text; they cite CVE IDs and affected versions only. No need to WebFetch the root when the avis/alerte feeds are cleaner.."
+  },
+  {
+   "id": "bsi-de",
+   "publisher": "BSI Germany \u2014 CERT-Bund WID",
+   "url": "https://wid.cert-bund.de/content/public/securityAdvisory/rss",
+   "rss_url": null,
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "rss",
+   "reliability": "A",
+   "language": [
+    "de",
+    "en"
+   ],
+   "category": [
+    "ch-eu",
+    "gov",
+    "active-breaking",
+    "vulns"
+   ],
+   "last_successful_fetch": "2026-09-29",
+   "newest_note": "2026-10-02 (2026-10-02T0404Z-intel): `fetch_source.py bsi-rss` prints RSS XML (not JSON), capped at 250 items with `[NEU] [kritisch]/[hoch]` markers in titles; a regex over <item> works, but the cap means the oldest hours of a 50 h window may be missing.",
+   "recipe_note": "2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://wid.cert-bund.de/content/public/securityAdvisory/rss 5  (then per-advisory body via api: python3 tools/fetch_source.py bsi-csaf WID-SEC-YYYY-NNNN). AVOID: Do NOT WebFetch the /portal/wid/kurzinformationen index \u2014 it is a JS-rendered SPA returning only the header. Never cite the index; cite the per-advisory securityadvisory?name=WID-SEC URL.."
+  },
+  {
+   "id": "cert-at",
+   "publisher": "CERT.at (Austria)",
+   "url": "https://www.cert.at/de/meldungen",
+   "rss_url": "https://www.cert.at/cert-at.de.warnings.rss_2.0.xml",
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "rss",
+   "reliability": "A",
+   "language": [
+    "en",
+    "de"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "last_successful_fetch": "2026-09-28",
+   "newest_note": "2026-09-29: RSS feeds exist (listed at https://www.cert.at/de/services/feeds, all fetch direct with no reader): warnings https://www.cert.at/cert-at.de.warnings.rss_2.0.xml (primary, advisories/active exploitation; article path /de/warnungen/<YYYY>/<M>/<slug>), current https://www.cert.at/cert-at.de.current.rss_2.0.xml (Aktuelles; /de/aktuelles/...), daily https://www.cert.at/cert-at.de.daily.rss_2.0.xml (Tagesberichte digest), blog https://www.cert.at/cert-at.de.blog.rss_2.0.xml. Sweep `warnings` AND `current` each run; drill with `extract <item link>`. Warnings cadence 2-6 weeks so quiet periods are partly real. (2026-09-29T2134Z-audit)",
+   "recipe_note": "2026-09-29: RSS feeds exist (listed at https://www.cert.at/de/services/feeds, all fetch direct with no reader): warnings https://www.cert.at/cert-at.de.warnings.rss_2.0.xml (primary, advisories/active exploitation; article path /de/warnungen/<YYYY>/<M>/<slug>), current https://www.cert.at/cert-at.de.current.rss_2.0.xml (Aktuelles; /de/aktuelles/...), daily https://www.cert.at/cert-at.de.daily.rss_2.0.xml (Tagesberichte digest), blog https://www.cert.at/cert-at.de.blog.rss_2.0.xml. Sweep `warnings` AND `current` each run; drill with `extract <item link>`. Warnings cadence 2-6 weeks so quiet periods are partly real. (2026-09-29T2134Z-audit)"
+  },
+  {
+   "id": "cert-eu",
+   "publisher": "CERT-EU",
+   "url": "https://cert.europa.eu/publications/security-advisories",
+   "rss_url": null,
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "api",
+   "reliability": "A",
+   "language": [
+    "en"
+   ],
+   "category": [
+    "ch-eu",
+    "gov",
+    "active-breaking",
+    "vulns"
+   ],
+   "last_successful_fetch": "2026-09-30",
+   "newest_note": "2026-08-23 audit: use the structured subcommand `python3 tools/fetch_source.py cert-eu recent N` \u2014 it returned 10 dated full-text advisories back to Jan 2026. The direct-URL bridge on /publications/security-advisories is the DEAD rung (JS-rendered listing, empty <main>). Also a content-type point that explains the long zero-contribution streak: CERT-EU's advisory series is exclusively vendor-vulnerability bulletins, so the incidents/regulator sweep will structurally never credit this source; it belongs to the vulnerability sweep.",
+   "recipe_note": "2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api: python3 tools/fetch_source.py cert-eu recent 5  (then webfetch per-advisory URL https://cert.europa.eu/publications/security-advisories/{YYYY-NNN}/ for body). AVOID: Do not cite /publications root \u2014 it is a navigation page. Use the per-advisory /security-advisories/{YYYY-NNN}/ URL.."
+  },
+  {
+   "id": "cert-pl",
+   "publisher": "CERT Polska / NASK",
+   "url": "https://cert.pl/en/news/",
+   "rss_url": "https://cert.pl/en/rss.xml",
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "rss",
+   "reliability": "A",
+   "language": [
+    "en",
+    "pl"
+   ],
+   "category": [
+    "ch-eu",
+    "gov",
+    "active-breaking"
+   ],
+   "last_successful_fetch": "2026-09-23",
+   "newest_note": "2026-09-29: fetch_method webfetch -> rss: rss_url is set and the 2026-08-05 note prefers the feed because /en/posts/ returns 403. (2026-09-29 operator-directed setup review)",
+   "recipe_note": "2026-08-05: RSS RECIPE \u2014 with both HTML listings unusable this run (/en/posts/ 403, /en/news/ no drillable dated rows), the feeds https://cert.pl/en/rss.xml (English) and https://cert.pl/rss.xml (Polish) both return HTTP 200 with dated advisory items linking to /en/posts/<YYYY>/<MM>/<CVE-ID>/. Prefer the feed for discovery."
+  },
+  {
+   "id": "cisa-advisories",
+   "publisher": "CISA Cybersecurity Advisories",
+   "url": "https://www.cisa.gov/news-events/cybersecurity-advisories",
+   "rss_url": "https://www.cisa.gov/cybersecurity-advisories/all.xml",
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "en"
+   ],
+   "category": [
+    "active-breaking",
+    "gov"
+   ],
+   "last_successful_fetch": "2026-10-02",
+   "newest_note": "2026-09-30: both halves confirmed (SR1): the WebFetch listing returned 10 dated items with URLs, alert and AA-series pages read in full, and csaf-recent returned five ICS advisories of 2026-09-29. WebFetch of all.xml returned only ICS items, so do not use it to enumerate alerts; AA-series items also surface through the cisa-news listing. The older 'AVOID WebFetch' lines are superseded. (2026-09-30T0634Z-audit)",
+   "recipe_note": "2026-08-04 run: FETCH NOTE \u2014 `cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml` returns 30 items cleanly, but the parsed `published` field comes back EMPTY. In-window filtering requires the date path in each alert URL (/news-events/alerts/YYYY/MM/DD/...) or the ICS day-of-year id (icsa-26-NNN-XX)."
+  },
+  {
+   "id": "enisa",
+   "publisher": "ENISA",
+   "url": "https://www.enisa.europa.eu/news",
+   "rss_url": null,
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "webfetch",
+   "reliability": "A",
+   "language": [
+    "en"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "last_successful_fetch": "2026-09-14",
+   "newest_note": "2026-10-02 (2026-10-02T0404Z-intel): the /news listing is undated; per-item dates need `extract` on each article (frontmatter date), one fetch per item.",
+   "recipe_note": "2026-10-02 (2026-10-02T0404Z-intel): the /news listing is undated; per-item dates need `extract` on each article (frontmatter date), one fetch per item."
+  },
+  {
+   "id": "heise-sec",
+   "publisher": "heise Security",
+   "url": "https://www.heise.de/security/",
+   "rss_url": "https://www.heise.de/security/feed.xml",
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "rss",
+   "reliability": "B",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "ch-eu",
+    "news"
+   ],
+   "last_successful_fetch": "2026-10-02",
+   "newest_note": "2026-09-29: RECIPE: `feed https://www.heise.de/security/feed.xml N` then `extract <article link>` reads the full article body over the direct transport (verified on heise article 11469864, served via trafilatura-direct). The older 'only jina drill works' note is superseded; the reader is no longer needed for heise bodies. (2026-09-29 operator-directed setup review)",
+   "recipe_note": "2026-09-29: RECIPE: `feed https://www.heise.de/security/feed.xml N` then `extract <article link>` reads the full article body over the direct transport (verified on heise article 11469864, served via trafilatura-direct). The older 'only jina drill works' note is superseded; the reader is no longer needed for heise bodies. (2026-09-29 operator-directed setup review)"
+  },
+  {
+   "id": "inside-it-ch",
+   "publisher": "Inside IT Switzerland",
+   "url": "https://www.inside-it.ch/",
+   "rss_url": "https://www.inside-it.ch/rss.xml",
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "rss",
+   "reliability": "C",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "ch-eu",
+    "news"
+   ],
+   "last_successful_fetch": "2026-09-26",
+   "newest_note": "2026-10-02 (2026-10-02T0404Z-intel): article pages still return a Vercel Security Checkpoint (HTTP 429) to extract, direct and jina; RSS teasers read. A later bridge `url <article>` probe on 2026-10-02 was served through the reader fallback, so the route is intermittent and spends reader credit.",
+   "recipe_note": "2026-10-02 (2026-10-02T0404Z-intel): article pages still return a Vercel Security Checkpoint (HTTP 429) to extract, direct and jina; RSS teasers read. A later bridge `url <article>` probe on 2026-10-02 was served through the reader fallback, so the route is intermittent and spends reader credit."
+  },
+  {
+   "id": "ncsc-ch-focus",
+   "publisher": "NCSC Switzerland \u2014 Im Fokus",
+   "url": "https://www.bacs.admin.ch/de/im-fokus",
+   "rss_url": null,
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "last_successful_fetch": "2026-09-30",
+   "newest_note": "2026-09-27 audit: fetch_method moved jina -> bridge. The jina pin dated from a fire that concluded only the reader hydrates this page; that is no longer true and the reader pool has been empty for two windows (0 live keys), so the page was unreadable by its pinned transport while a working direct one existed. Verified this fire: `python3 tools/fetch_source.py extract <url>` returns the full dated item list via trafilatura-direct, no metered credit. Only fetch_method and these notes changed: the audit probed the transport, it did not fetch-and-use the page for an entry, so last_successful_fetch and the quiet counter are left where the fires put them.",
+   "recipe_note": "2026-09-27 audit: fetch_method moved jina -> bridge. The jina pin dated from a fire that concluded only the reader hydrates this page; that is no longer true and the reader pool has been empty for two windows (0 live keys), so the page was unreadable by its pinned transport while a working direct one existed. Verified this fire: `python3 tools/fetch_source.py extract <url>` returns the full dated item list via trafilatura-direct, no metered credit. Only fetch_method and these notes changed: the audit probed the transport, it did not fetch-and-use the page for an entry, so last_successful_fetch and the quiet counter are left where the fires put them."
+  },
+  {
+   "id": "ncsc-ch-incidents",
+   "publisher": "NCSC Switzerland \u2014 Aktuelle Vorf\u00e4lle",
+   "url": "https://www.bacs.admin.ch/de/aktuelle-vorfaelle",
+   "rss_url": null,
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "last_successful_fetch": "2026-09-14",
+   "newest_note": "2026-10-02 (2026-10-02T0404Z-intel): the listing is undated (page date 2026-08-18), so in-window additions cannot be dated from it; `extract` works for the page.",
+   "recipe_note": "2026-10-02 (2026-10-02T0404Z-intel): the listing is undated (page date 2026-08-18), so in-window additions cannot be dated from it; `extract` works for the page."
+  },
+  {
+   "id": "ncsc-ch-security-hub",
+   "publisher": "NCSC Switzerland \u2014 Cyber Security Hub (CSH) / GovCERT.ch",
+   "url": "https://security-hub.ncsc.admin.ch/#/dashboard",
+   "rss_url": null,
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "api",
+   "reliability": "A",
+   "language": [
+    "de",
+    "fr",
+    "it",
+    "en"
+   ],
+   "category": [
+    "ch-eu",
+    "active-breaking",
+    "gov",
+    "vulns"
+   ],
+   "last_successful_fetch": "2026-10-02",
+   "newest_note": "2026-10-02 (2026-10-02T0404Z-intel): `ncsc-csh recent N` posts that were never edited have no lastModified key (use .get('lastModified')); post URLs follow https://security-hub.ncsc.admin.ch/#/posts/<id>.",
+   "recipe_note": "2026-08-06 (run 2026-08-06T0411Z-intel): RECIPE FIXED. The unversioned /api/posts/** tree stopped serving GET \u2014 every path under it, including paths that never existed, returns HTTP 405 with `Allow: DELETE, PUT`, while unknown roots still 404 (an edge rule on the whole subtree, so probing sibling paths finds nothing). The public read API moved under /api/v1/: GET /api/v1/posts/dashboard?pageSize=N&pageIndex=0 and GET /api/v1/posts/{id}/details, both confirmed 200 with TLP:Clear content. tools/fetch_source.py ncsc-csh list|post|recent updated accordingly and re-tested. Route table is recoverable from the SPA bundle (main-*.js) if it moves again."
+  },
+  {
+   "id": "ncsc-uk",
+   "publisher": "NCSC UK",
+   "url": "https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories",
+   "rss_url": "https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml",
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "en"
+   ],
+   "category": [
+    "gov",
+    "active-breaking"
+   ],
+   "last_successful_fetch": "2026-09-29",
+   "newest_note": "2026-08-23 audit: the RSS feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml resolves cleanly on the DIRECT transport (fetch_source.py reported method=direct) \u2014 no jina fallback needed. Older notes calling the HTML listing a JS/consent shell still hold for the listing, but the feed is the healthy rung and should be the default. Zero cited contributions across 2026-08-09 to 2026-08-23 is content, not transport: every in-window item was guidance/blog, none incident- or advisory-shaped.",
+   "recipe_note": "2026-07-11 audit: WORKING RECIPE FOUND \u2014 the combined feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml (reports + guidance + blog) is FRESH (items dated within days, verified 2026-07-11), unlike report-rss-feed.xml which lags months. Fetch via `python3 tools/fetch_source.py feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml 20` for discovery, then drill into item links for citation. This replaces the consent-banner-blocked HTML listing as the discovery path; the HTML listing kept returning a cookie-consent shell to WebFetch AND jina (recurring 'recipe gap' in July run records despite green last_successful_fetch \u2014 reachability is not readability)."
+  },
+  {
+   "id": "bacs-press",
+   "publisher": "Swiss Federal Office for Cybersecurity (BACS / NCSC.ch), press releases",
+   "url": "https://www.bacs.admin.ch/de/medienmitteilungen",
+   "rss_url": null,
+   "tier": "essential",
+   "status": "active",
+   "lookback_hours": 26,
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "de",
+    "fr",
+    "it"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "last_successful_fetch": null,
+   "newest_note": "Added 2026-09-29: the BACS press-release listing, the 'NCSC.ch announcements' line of the standing policy watch (Federal Council mandates, cybersecurity-law steps, half-year reports, international agreements). The 2026-09-26 cybersecurity-act entry cites this page but reached it through Netzwoche, a day late. RECIPE: `extract https://www.bacs.admin.ch/de/medienmitteilungen` reads the listing without the reader (newest item 2026-09-29 at probe); the listing carries no dates, so take each date from the /de/newnsb/<id> detail page. Use the DE page; FR/IT equivalents mirror it. (2026-09-29 operator-directed setup review)",
+   "recipe_note": "Added 2026-09-29: the BACS press-release listing, the 'NCSC.ch announcements' line of the standing policy watch (Federal Council mandates, cybersecurity-law steps, half-year reports, international agreements). The 2026-09-26 cybersecurity-act entry cites this page but reached it through Netzwoche, a day late. RECIPE: `extract https://www.bacs.admin.ch/de/medienmitteilungen` reads the listing without the reader (newest item 2026-09-29 at probe); the listing carries no dates, so take each date from the /de/newnsb/<id> detail page. Use the DE page; FR/IT equivalents mirror it. (2026-09-29 operator-directed setup review)"
+  },
+  {
+   "id": "news-admin-ch",
+   "publisher": "Swiss federal news portal (news.admin.ch)",
+   "url": "https://www.news.admin.ch/de/newnsb",
+   "rss_url": null,
+   "tier": "standard",
+   "status": "candidate",
+   "lookback_hours": 168,
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "de",
+    "en"
+   ],
+   "category": [
+    "gov",
+    "ch-eu"
+   ],
+   "last_successful_fetch": null,
+   "newest_note": "Added 2026-10-02: central listing of every federal publisher (BACS, fedpol, OAG, VBS, EFD, Federal Council) with date and publisher filters; the KillSec joint statement appears there on 2026-10-01. RECIPE: `python3 tools/fetch_source.py url --direct \"https://www.news.admin.ch/de/newnsb?display=list&sort=dateDecreasing&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD&topicIDs=all&newsCategoryIDs=all&publisherIDs=all\"` returns server-rendered /de/newnsb/<id> hrefs (page 1; pagination not verified), then `extract <href>`. (2026-10-02T0404Z-intel)",
+   "recipe_note": "Added 2026-10-02: central listing of every federal publisher (BACS, fedpol, OAG, VBS, EFD, Federal Council) with date and publisher filters; the KillSec joint statement appears there on 2026-10-01. RECIPE: `python3 tools/fetch_source.py url --direct \"https://www.news.admin.ch/de/newnsb?display=list&sort=dateDecreasing&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD&topicIDs=all&newsCategoryIDs=all&publisherIDs=all\"` returns server-rendered /de/newnsb/<id> hrefs (page 1; pagination not verified), then `extract <href>`. (2026-10-02T0404Z-intel)"
+  },
+  {
+   "id": "borncity",
+   "publisher": "Borns IT- und Windows-Blog",
+   "url": "https://borncity.com/blog/",
+   "rss_url": "https://borncity.com/blog/feed/",
+   "tier": "standard",
+   "status": "candidate",
+   "lookback_hours": 168,
+   "fetch_method": "rss",
+   "reliability": "C",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "news",
+    "breaches",
+    "ch-eu"
+   ],
+   "last_successful_fetch": null,
+   "newest_note": "Added 2026-10-02: German-language daily incident sightings (first to see the FTAPI leak-site listing on 2026-09-28; also GUTcert, mylife). Admiralty C: leads to corroborate against a primary. RECIPE: `feed https://borncity.com/blog/feed/ 20` (verified 2026-10-02) then `extract <link>`. (2026-10-02T0404Z-intel)",
+   "recipe_note": "Added 2026-10-02: German-language daily incident sightings (first to see the FTAPI leak-site listing on 2026-09-28; also GUTcert, mylife). Admiralty C: leads to corroborate against a primary. RECIPE: `feed https://borncity.com/blog/feed/ 20` (verified 2026-10-02) then `extract <link>`. (2026-10-02T0404Z-intel)"
+  },
+  {
+   "id": "bfv-verfassungsschutz-de",
+   "publisher": "Bundesamt f\u00fcr Verfassungsschutz (Germany)",
+   "url": "https://www.verfassungsschutz.de/DE/themen/cyberabwehr/cyberabwehr_node.html",
+   "rss_url": "https://www.verfassungsschutz.de/SiteGlobals/Functions/RSSNewsFeed/AlleMeldungen.xml",
+   "tier": "standard",
+   "status": "candidate",
+   "lookback_hours": 121,
+   "fetch_method": "rss",
+   "reliability": "A",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "last_successful_fetch": "2026-09-19",
+   "newest_note": "2026-09-29: working recipe is the RSS feed https://www.verfassungsschutz.de/SiteGlobals/Functions/RSSNewsFeed/AlleMeldungen.xml (30 items direct, newest same week); drill each item with `extract <link>`. The feed is BfV-wide (extremism, reports, press), so filter to /praevention_wirtschafts-und_wissenschaftsschutz/, /spionage-und-proliferationsabwehr/, /cyberabwehr/ paths and titles containing Cyber / Sicherheitshinweis / Joint Cybersecurity Advisory; cyber-relevant cadence is roughly one item per 4-8 weeks (18 Sep, 23 Jul, 24 Jun, 9 Jun 2026). The year-bound /SharedDocs/kurzmeldungen/DE/2026/ URL serves the homepage, not a listing. (2026-09-29T2134Z-audit)",
+   "recipe_note": "2026-09-29: working recipe is the RSS feed https://www.verfassungsschutz.de/SiteGlobals/Functions/RSSNewsFeed/AlleMeldungen.xml (30 items direct, newest same week); drill each item with `extract <link>`. The feed is BfV-wide (extremism, reports, press), so filter to /praevention_wirtschafts-und_wissenschaftsschutz/, /spionage-und-proliferationsabwehr/, /cyberabwehr/ paths and titles containing Cyber / Sicherheitshinweis / Joint Cybersecurity Advisory; cyber-relevant cadence is roughly one item per 4-8 weeks (18 Sep, 23 Jul, 24 Jun, 9 Jun 2026). The year-bound /SharedDocs/kurzmeldungen/DE/2026/ URL serves the homepage, not a listing. (2026-09-29T2134Z-audit)"
+  },
+  {
+   "id": "cyberattaque-org",
+   "publisher": "Cyberattaque.org",
+   "url": "https://www.cyberattaque.org/feed/",
+   "rss_url": null,
+   "tier": "standard",
+   "status": "active",
+   "lookback_hours": 121,
+   "fetch_method": "rss",
+   "reliability": "C",
+   "language": [
+    "fr"
+   ],
+   "category": [
+    "news",
+    "ch-eu"
+   ],
+   "last_successful_fetch": "2026-09-27",
+   "newest_note": "2026-09-07: second independent reviewer (alongside frenchbreaches) of the ChimeraZ/Aveyron leak, explicitly contradicting frenchbreaches' access-vector claim rather than repeating it; S4 independently suggested this as a new candidate, not realizing it was already tracked (active since 2026-08-02) \u2014 no duplicate added.",
+   "recipe_note": null
+  },
+  {
+   "id": "netzwoche",
+   "publisher": "Netzwoche (Swiss IT/cybersecurity trade press)",
+   "url": "https://www.netzwoche.ch/",
+   "rss_url": null,
+   "tier": "standard",
+   "status": "active",
+   "lookback_hours": 121,
+   "fetch_method": "webfetch",
+   "reliability": "C",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "ch-eu"
+   ],
+   "last_successful_fetch": "2026-09-26",
+   "newest_note": "2026-08-16: HTTP 503 on the direct transport this run; single-attempt rule applied, not retried. Transient server error, not a recipe defect \u2014 no change to fetch_method.",
+   "recipe_note": "2026-08-16: HTTP 503 on the direct transport this run; single-attempt rule applied, not retried. Transient server error, not a recipe defect \u2014 no change to fetch_method."
+  },
+  {
+   "id": "sekoia",
+   "publisher": "Sekoia.io blog",
+   "url": "https://www.sekoia.com/blog",
+   "rss_url": null,
+   "tier": "standard",
+   "status": "active",
+   "lookback_hours": 121,
+   "fetch_method": "webfetch",
+   "reliability": "B",
+   "language": [
+    "en",
+    "fr"
+   ],
+   "category": [
+    "ch-eu",
+    "research"
+   ],
+   "last_successful_fetch": "2026-09-14",
+   "newest_note": "2026-07-31: url corrected from https://blog.sekoia.io/ to https://www.sekoia.com/blog (blog.sekoia.io no longer resolves a usable feed; the live listing is the Webflow page, which renders publish dates client-side so a dated feed path still needs identifying). Metadata drift correction, NOT a demotion.",
+   "recipe_note": "2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: feed https://blog.sekoia.io/feed/ 5  (or webfetch the feed) then webfetch per-article URL for body. Homepage webfetch also works.. AVOID: Nothing blocks it. Feed and HTML both clean.."
+  },
+  {
+   "id": "swisscybersecurity-net",
+   "publisher": "SwissCybersecurity.net (Swiss cybersecurity trade press)",
+   "url": "https://www.swisscybersecurity.net/",
+   "rss_url": null,
+   "tier": "standard",
+   "status": "active",
+   "lookback_hours": 121,
+   "fetch_method": "webfetch",
+   "reliability": "C",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "ch-eu"
+   ],
+   "last_successful_fetch": "2026-09-26",
+   "newest_note": "2026-08-17: health sweep flagged needs-demote after an 11.4 s timeout, and a serial bridge re-probe returned only a 1.3 KB stub. Not a death signal \u2014 a research pass fetched the site listing and drilled a 2026-08-16 article body in full by plain WebFetch the same run. The bridge transport is what fails on this host, and fetch_method is already webfetch, which works. NOT demoted.",
+   "recipe_note": null
+  },
+  {
+   "id": "synacktiv",
+   "publisher": "Synacktiv Publications",
+   "url": "https://www.synacktiv.com/publications.html",
+   "rss_url": null,
+   "tier": "standard",
+   "status": "active",
+   "lookback_hours": 121,
+   "fetch_method": "webfetch",
+   "reliability": "B",
+   "language": [
+    "en",
+    "fr"
+   ],
+   "category": [
+    "ch-eu",
+    "research",
+    "vulns"
+   ],
+   "last_successful_fetch": "2026-09-14",
+   "newest_note": "2026-07-05 admiralty audit: B \u2014 first-hand vuln/exploit research; live. Keep active. Reminder: reconstruct article URLs as https://www.synacktiv.com/publications/<slug>.",
+   "recipe_note": "2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.synacktiv.com/publications.html (listing \u2014 note WebFetch mangles relative hrefs; real article URLs are https://www.synacktiv.com/publications/<slug>) then webfetch the absolute per-article URL. AVOID: WebFetch returns article links as broken relative paths (https://publications/<slug>) \u2014 prepend https://www.synacktiv.com/ to form the real URL. Some posts are in French.."
+  },
+  {
+   "id": "truesec",
+   "publisher": "Truesec",
+   "url": "https://www.truesec.com/hub/blog",
+   "rss_url": "https://www.truesec.com/hub/blog/feed/",
+   "tier": "standard",
+   "status": "active",
+   "lookback_hours": 121,
+   "fetch_method": "rss",
+   "reliability": "B",
+   "language": [
+    "en"
+   ],
+   "category": [
+    "ch-eu",
+    "research",
+    "vulns"
+   ],
+   "last_successful_fetch": "2026-09-14",
+   "newest_note": "2026-07-30: source_health flagged this needs-demote on HTTP 502 via the webfetch listing path. NOT demoted \u2014 a 5xx is transport failure, not source death. Probed the ladder and found a working cheaper rung: the WordPress blog feed https://www.truesec.com/hub/blog/feed/ returns dated items (verified in-run: posts dated 2026-07-28, 2026-07-20, 2026-07-16). fetch_method webfetch -> rss with that rss_url; drill into /hub/blog/{slug} per post for full bodies as before. The direct bridge also reaches the HTML listing with HTTP 200, so the 502 was transient at the origin.",
+   "recipe_note": "2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch (listing) https://www.truesec.com/hub/blog then webfetch https://www.truesec.com/hub/blog/{slug} per post. List view shows per-post dates and authors.. AVOID: Nothing \u2014 WebFetch works cleanly on listing and article. No bridge needed.."
+  },
+  {
+   "id": "zataz",
+   "publisher": "ZATAZ.COM",
+   "url": "https://www.zataz.com/",
+   "rss_url": "https://www.zataz.com/feed/",
+   "tier": "standard",
+   "status": "active",
+   "lookback_hours": 121,
+   "fetch_method": "bridge",
+   "reliability": "B",
+   "language": [
+    "fr"
+   ],
+   "category": [
+    "news",
+    "ch-eu"
+   ],
+   "last_successful_fetch": "2026-09-14",
+   "newest_note": "2026-09-01 intel run: promoted candidate\u2192active per the promotion rule (3 contributing runs counted by tools/run_summary.py's sources.promotion_due: 2026-07-27, 2026-08-24-window, 2026-08-31).",
+   "recipe_note": "ADDED as candidate by the 2026-07-27 intel run (this run's one new candidate): long-running French security-journalism outlet by Damien Bancal, surfaced as the corroborating primary for the Cybernox 'Chat Control' doxing of 24 French and EU officials. Originates reporting on France-nexus hacktivism, leak claims and public-sector incidents rather than re-reporting, which is why it is rated B against cyberattaque-org's C. FETCH -> direct WebFetch returns HTTP 403; use `python3 tools/fetch_source.py url <article-URL>` (worked 2026-07-27) and extract the body on disk. RSS at /feed/ documented but not yet exercised. Promote to active after 3 contributing runs."
+  },
+  {
+   "id": "ccb-belgium",
+   "publisher": "Centre for Cybersecurity Belgium (CCB)",
+   "url": "https://ccb.belgium.be/advisories",
+   "rss_url": null,
+   "tier": "standard",
+   "status": "active",
+   "lookback_hours": 97,
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "en",
+    "nl",
+    "fr"
+   ],
+   "category": [
+    "ch-eu",
+    "gov",
+    "vulns",
+    "active-breaking"
+   ],
+   "last_successful_fetch": "2026-09-13",
+   "newest_note": "2026-09-10 (S1): full page HTML (Drupal) fetched successfully but no advisory list surfaced within the fetched portion \u2014 flagged as ambiguous (not confirmed empty vs. not extracted), not counted as a fetch failure or a quiet period this run.",
+   "recipe_note": "2026-09-10 (S1): full page HTML (Drupal) fetched successfully but no advisory list surfaced within the fetched portion \u2014 flagged as ambiguous (not confirmed empty vs. not extracted), not counted as a fetch failure or a quiet period this run."
+  },
+  {
+   "id": "ccn-cert-es",
+   "publisher": "CCN-CERT (Spain)",
+   "url": "https://www.ccn.cni.es/es/actualidad-ccn",
+   "rss_url": "https://www.ccn.cni.es/es/actualidad-ccn?format=feed&type=atom",
+   "tier": "standard",
+   "status": "candidate",
+   "lookback_hours": 97,
+   "fetch_method": "rss",
+   "reliability": "A",
+   "language": [
+    "es",
+    "en"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "last_successful_fetch": "2026-09-13",
+   "newest_note": "2026-09-29: ccn-cert.cni.es is behind a Transparent Edge 'Voight-Kampff Browser Test' JS proof-of-work challenge (403, 6,901 B on every path; jina-only, reader pool empty; not solved/attempted). Working free recipe = the parent CCN site www.ccn.cni.es, which republishes CCN-CERT alerts (AL nn/26) under /es/actualidad-ccn/<id>-<slug>: `feed 'https://www.ccn.cni.es/es/actualidad-ccn?format=feed&type=atom' 10` (type=atom only; 10-item cap; newest 2026-09-28) then `extract <item link>`. Alert cadence ~2 in Sept 2026 (AL 08/26 15 Sep, AL 09/26 28 Sep) with other CCN news in between; CERT-only content on the challenged host (technical reports, IA) stays reader-only. (2026-09-29T2134Z-audit)",
+   "recipe_note": "2026-09-29: ccn-cert.cni.es is behind a Transparent Edge 'Voight-Kampff Browser Test' JS proof-of-work challenge (403, 6,901 B on every path; jina-only, reader pool empty; not solved/attempted). Working free recipe = the parent CCN site www.ccn.cni.es, which republishes CCN-CERT alerts (AL nn/26) under /es/actualidad-ccn/<id>-<slug>: `feed 'https://www.ccn.cni.es/es/actualidad-ccn?format=feed&type=atom' 10` (type=atom only; 10-item cap; newest 2026-09-28) then `extract <item link>`. Alert cadence ~2 in Sept 2026 (AL 08/26 15 Sep, AL 09/26 28 Sep) with other CCN news in between; CERT-only content on the challenged host (technical reports, IA) stays reader-only. (2026-09-29T2134Z-audit)"
+  }
+ ]
+}
