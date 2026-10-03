@@ -1,0 +1,414 @@
+/* brief.js — the live rolling brief's client-side windowing.
+ *
+ * The /live/ page is server-rendered for the default 24 h window as a
+ * run-grouped timeline. This script re-renders that timeline from
+ * data/briefbook.json when the reader changes the window (the range
+ * <select> or the "Load older findings" button), and re-applies the
+ * active chip filters (kept in sync via the `cti:filterchange` event
+ * dispatched by app.js). It mirrors the server markup exactly
+ * (render_timeline_item / render_run_divider in site/build.py).
+ *
+ * Windowing is by ACTIVITY (docs/pipeline.md § Entry lifecycle): each
+ * briefbook entry carries `activity_at` (max of discovered_at and
+ * updated_at), `activity_run_id` (the run that published it, or the run
+ * that made its latest changelog record) and `activity_is_update`. An
+ * updated entry therefore floats back into the window under the run that
+ * updated it, flagged UPD with the record's type + summary.
+ *
+ * It also keeps the critical alarm header (render_alarm) and the feed's
+ * count line in step with the window, makes each timeline row open its
+ * permalink on click (text stays selectable; inner links keep working),
+ * and offers a Summaries / Headlines density toggle, remembered per
+ * browser.
+ *
+ * Progressive enhancement: without JS the page shows the server-rendered
+ * 24 h timeline and every link still works.
+ */
+(function () {
+  'use strict';
+
+  document.addEventListener('DOMContentLoaded', init);
+
+  function sitePrefix() {
+    var m = document.querySelector('meta[name="cti-site-prefix"]');
+    return (m && m.getAttribute('content')) || '';
+  }
+
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var PRI_LABEL = { critical: 'CRITICAL', high: 'HIGH', notable: 'NOTABLE', routine: 'ROUTINE' };
+  var PRI_CLASS = { critical: 'crit', high: 'pri' };
+  var PRI_DOT = { critical: 'var(--crit)', high: 'var(--accent)' };
+
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function stamp(d) { return pad(d.getUTCDate()) + ' ' + MONTHS[d.getUTCMonth()] + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + 'Z'; }
+  // Mirrors _rail_stamp_html in site/build.py: the rail stamp breaks
+  // date-over-time deliberately, not wherever the gutter runs out.
+  function railStamp(d) { return '<span class="d">' + pad(d.getUTCDate()) + ' ' + MONTHS[d.getUTCMonth()] + '</span><span class="t">' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + 'Z</span>'; }
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+  }
+
+  function init() {
+    var cfgEl = document.getElementById('brief-config');
+    var container = document.querySelector('[data-brief-timeline]');
+    if (!cfgEl || !container) return;
+    var cfg;
+    try { cfg = JSON.parse(cfgEl.textContent); } catch (_) { return; }
+
+    var refTs = new Date(cfg.reference_ts);
+    var defaultHours = cfg.default_hours || 24;
+    var hours = defaultHours;
+    var filterSets = { priority: [], kind: [], tag: [], region: [] };
+    var data = null;
+
+    var select = document.querySelector('[data-window-select]');
+    var more = document.querySelector('[data-window-more]');
+    var endMsg = document.querySelector('[data-window-end]');
+    var alarmEl = document.querySelector('[data-alarm]');
+
+    function passesFilter(e) {
+      var s = filterSets;
+      if (s.priority.length && s.priority.indexOf(e.priority) < 0) return false;
+      if (s.kind.length && s.kind.indexOf(e.kind) < 0) return false;
+      if (s.tag.length && !s.tag.some(function (t) { return (e.tags || []).indexOf(t) >= 0; })) return false;
+      if (s.region.length && !s.region.some(function (r) { return (e.regions || []).indexOf(r) >= 0; })) return false;
+      return true;
+    }
+
+    function relUrl(e) {
+      // briefbook url is prefixed for the /brief/ page ("../entries/…/"); strip
+      // that and re-apply the live sitePrefix so it resolves anywhere.
+      return (e.url || '').replace(/^(\.\.\/)+/, '');
+    }
+
+    function badgesHtml(e) {
+        var b = ['<span class="b ' + (PRI_CLASS[e.priority] || '') + '">' + esc(PRI_LABEL[e.priority] || String(e.priority).toUpperCase()) + '</span>'];
+        if (e.cve_label && e.cve_ids && e.cve_ids.length) {
+          b.push('<a class="b cve" href="' + esc(sitePrefix() + 'entities/' + e.cve_ids[0] + '/') + '">' + esc(e.cve_label) + '</a>');
+        } else if (e.cve_label) {
+          b.push('<span class="b cve">' + esc(e.cve_label) + '</span>');
+        }
+        if (e.exploited) b.push('<span class="b exp">exploited</span>');
+        if (e.update_count) b.push('<span class="b upd" title="' + esc(e.update_count + ' changelog record' + (e.update_count === 1 ? '' : 's')) + '">updated</span>');
+        // Reliability rating — server-rendered badge HTML from briefbook.json
+        // (build-time generated by render_classification_badge /
+        // render_org_triage_badge, so client and server markup can't drift).
+        if (e.classification_html) b.push(e.classification_html);
+        if (e.org_triage_html) b.push(e.org_triage_html);
+        return '<div class="badges">' + b.join('') + '</div>';
+    }
+
+    function sourceLine(e) {
+        var srcs = e.sources_min || [];
+        if (!srcs.length) return '';
+        var bits = srcs.map(function (s) {
+          return '<a href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer">' + esc(s.publisher) + '</a>';
+        });
+        return '<div class="f-sources"><span class="f-sources__l">Sources:</span> ' + bits.join(' · ') + '</div>';
+    }
+
+    var TYPE_LABEL = { update: 'Update', correction: 'Correction', improvement: 'Improvement' };
+
+    // Headline / summary fields may carry inline **emphasis** (migrated
+    // content); render it like the server's _inline_text, drop strays.
+    function inline(t) {
+      return esc(t).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\*\*/g, '');
+    }
+
+    // Critical alarm header: one compact row per critical entry in the
+    // window. Mirrors render_alarm / _alarm_text in site/build.py. It
+    // follows the window, never the chip filters: an alarm is not a view.
+    function alarmText(e) {
+      var ia = e.immediate_action;
+      var t = (ia && ia.title && ia.title.trim()) ? ia.title.trim() : (e.headline || e.title || e.id);
+      return String(t).replace(/\*\*/g, '');
+    }
+
+    function alarmHtml(crit) {
+      return crit.map(function (e) {
+        var meta = [];
+        if (e.cve_label) meta.push(e.cve_label);
+        if (e.exploited) meta.push('exploited');
+        meta.push((e.activity_is_update ? 'updated ' : '') + stamp(activityDate(e)));
+        return '<a class="alarm-row" href="' + esc(sitePrefix() + relUrl(e)) + '" data-entry-id="' + esc(e.id) + '">'
+          + '<span class="alarm-tag"><span class="adot" aria-hidden="true"></span>Critical</span>'
+          + '<span class="alarm-t">' + esc(alarmText(e)) + '</span>'
+          + '<span class="alarm-m">' + esc(meta.join(' · ')) + '</span>'
+          + '<span class="alarm-go" aria-hidden="true">→</span></a>';
+      }).join('');
+    }
+
+    // Section-body order (entry_sort_key): org-lens regions, then
+    // priority, then newest first.
+    var lens = cfg.lens_regions || [];
+    var rank = cfg.priority_rank || {};
+    function sortKey(a, b) {
+      var la = (a.regions || []).some(function (r) { return lens.indexOf(r) >= 0; }) ? 0 : 1;
+      var lb = (b.regions || []).some(function (r) { return lens.indexOf(r) >= 0; }) ? 0 : 1;
+      if (la !== lb) return la - lb;
+      var ra = rank[a.priority] == null ? 2 : rank[a.priority];
+      var rb = rank[b.priority] == null ? 2 : rank[b.priority];
+      if (ra !== rb) return ra - rb;
+      var da = a.discovered_at || '', db = b.discovered_at || '';
+      if (da !== db) return da < db ? 1 : -1;
+      return a.id < b.id ? -1 : 1;
+    }
+
+    function activityDate(e) {
+      var a = e.activity_at || e.discovered_at;
+      return a ? new Date(a) : refTs;
+    }
+
+    function latestRecord(e) {
+      var u = e.updates || [];
+      return u.length ? u[u.length - 1] : null;
+    }
+
+    function runItem(e, isNew) {
+      // Mirrors render_timeline_item in site/build.py.
+      var isUpd = !!e.activity_is_update;
+      var rec = isUpd ? latestRecord(e) : null;
+      var d = isUpd ? activityDate(e) : (e.discovered_at ? new Date(e.discovered_at) : refTs);
+      var flag = isUpd ? 'UPD' : (isNew ? 'NEW' : '');
+      var flagCls = isUpd ? ' flag--upd' : (isNew ? ' flag--new' : '');
+      var url = esc(sitePrefix() + relUrl(e));
+      var meta = ['<div class="prov tl-meta">'];
+      if (e.kind) meta.push('<span>' + esc(e.kind) + '</span>');
+      meta.push('<span class="' + esc(e.verification_class || 'p-warn') + '">' + esc(e.verification_label || '') + '</span>');
+      if (isUpd && e.discovered_at) meta.push('<span>first published ' + esc(stamp(new Date(e.discovered_at))) + '</span>');
+      meta.push('<a class="refs tl-go" href="' + url + '" tabindex="-1" aria-hidden="true">Full analysis <span class="arw">→</span></a></div>');
+      var line;
+      if (isUpd && rec) {
+        var t = rec.type || 'update';
+        line = '<p class="tl-sum tl-update tl-update--' + esc(t) + '"><b>' + esc(TYPE_LABEL[t] || 'Update') + '</b> · '
+          + inline(rec.summary || '') + '</p>';
+      } else {
+        line = '<p class="tl-sum">' + inline(e.summary || e.headline || '') + '</p>';
+      }
+      return '<div class="tl-item' + (isUpd ? ' tl-item--updated' : '') + '" data-card data-entry-id="' + esc(e.id) + '">'
+        + '<div class="tl-rail"><span class="tl-node" style="background:' + (PRI_DOT[e.priority] || 'var(--text-muted)') + '"></span>'
+        + '<span class="time">' + railStamp(d) + '</span><span class="flag' + flagCls + '">' + esc(flag) + '</span></div>'
+        + '<div class="tl-body">'
+        + badgesHtml(e)
+        + '<h3 class="tl-title"><a href="' + url + '">' + esc(e.title || e.id) + '</a></h3>'
+        + line
+        + meta.join('')
+        + sourceLine(e)
+        + '</div></div>';
+    }
+
+    function runDivider(label, gap, count, rid) {
+      // Mirrors render_run_divider in site/build.py — the timestamp label
+      // links to the run's detail page (/runs/<run-id>/) when the run id is
+      // known; identical markup/classes otherwise.
+      var n = count === 0 ? 'quiet window' : count + ' finding' + (count === 1 ? '' : 's');
+      var g = (gap ? gap + ' · ' : '') + n;
+      var cls = count === 0 ? 'tl-run tl-run--quiet' : 'tl-run';
+      var lbl = rid
+        ? '<a class="rl" href="' + esc(sitePrefix() + 'runs/' + rid + '/') + '" title="Open run details · verification & coverage notes">' + esc(label) + '</a>'
+        : '<span class="rl">' + esc(label) + '</span>';
+      return '<div class="' + cls + '"><div class="tl-rail rail-e"><span class="runnode"></span></div>'
+        + '<div class="run-h">' + lbl + '<span class="rg">· run · ' + esc(g) + '</span></div></div>';
+    }
+
+    function render() {
+      if (!data) return;
+      var since = new Date(refTs.getTime() - hours * 3600000);
+      var runsById = {};
+      (data.runs || []).forEach(function (r) { if (r.run_id) runsById[r.run_id] = r; });
+
+      // Window membership + ordering are by ACTIVITY: an entry updated inside
+      // the window is in the window even if first published long before it.
+      var ops = (data.entries || []).filter(function (e) {
+        var d = (e.activity_at || e.discovered_at) ? activityDate(e) : null;
+        if (!d || d < since || d > refTs) return false;
+        return passesFilter(e);
+      });
+      ops.sort(function (a, b) {
+        var da = a.activity_at || a.discovered_at || '', db = b.activity_at || b.discovered_at || '';
+        if (da !== db) return da < db ? 1 : -1;
+        return a.id < b.id ? 1 : -1;
+      });
+
+      // has-older ignores active filters (it's a window boundary, not a filter).
+      var hasOlder = (data.entries || []).some(function (e) {
+        var d = (e.activity_at || e.discovered_at) ? activityDate(e) : null;
+        return d && d < since;
+      });
+
+      // Group in-window entries by the run of their latest activity (the
+      // publishing run, or the run that made the latest changelog record).
+      var byRun = {};
+      ops.forEach(function (e) {
+        var k = e.activity_run_id || e.run_id || '';
+        (byRun[k] = byRun[k] || []).push(e);
+      });
+
+      // EVERY run in the window gets a divider (incl. 0-finding quiet runs),
+      // union with any run referenced by an in-window entry.
+      var runTs = function (rid) {
+        var r = runsById[rid];
+        if (r && (r.completed || r.started)) return new Date(r.completed || r.started);
+        var es = byRun[rid] || [];
+        return es.length ? activityDate(es[0]) : new Date(0);
+      };
+      var inWindowRuns = (data.runs || []).filter(function (r) {
+        if (!r.run_id) return false;
+        var t = r.completed || r.started ? new Date(r.completed || r.started) : null;
+        return t && t >= since && t <= refTs;
+      }).map(function (r) { return r.run_id; });
+      var keyset = {};
+      inWindowRuns.concat(Object.keys(byRun)).forEach(function (k) { if (k) keyset[k] = 1; });
+      var keys = Object.keys(keyset).sort(function (a, b) { return runTs(b) - runTs(a); });
+      var firstNonEmpty = keys.filter(function (k) { return (byRun[k] || []).length; })[0];
+
+      var activeCount = filterSets.priority.length + filterSets.kind.length + filterSets.tag.length + filterSets.region.length;
+      var html = '';
+      if (!keys.length) {
+        html = '<div class="section-empty" style="padding:40px 0 0;">'
+          + 'No runs in this window' + (activeCount ? ' matching the active filters' : '')
+          + '. Load older findings to reach further back.</div>';
+      } else {
+        var prevTs = null;
+        keys.forEach(function (rid) {
+          var ts = runTs(rid);
+          var gap = '';
+          if (prevTs && ts.getTime() > 0) {
+            var dh = (prevTs.getTime() - ts.getTime()) / 3600000;
+            if (dh >= 1) gap = 'gap ' + Math.round(dh) + 'h';
+          }
+          if (ts.getTime() > 0) prevTs = ts;
+          var items = byRun[rid] || [];
+          html += runDivider(stamp(ts), gap, items.length, rid);
+          items.forEach(function (e) { html += runItem(e, rid === firstNonEmpty && !e.activity_is_update); });
+        });
+      }
+      container.innerHTML = html;
+
+      // The alarm follows the window, never the chip filters.
+      if (alarmEl) {
+        var crit = (data.entries || []).filter(function (e) {
+          if (e.priority !== 'critical') return false;
+          var d = (e.activity_at || e.discovered_at) ? activityDate(e) : null;
+          return d && d >= since && d <= refTs;
+        }).sort(sortKey);
+        alarmEl.innerHTML = alarmHtml(crit);
+        alarmEl.hidden = !crit.length;
+      }
+
+      var nCrit = 0, nHigh = 0, nUpd = 0, nExp = 0;
+      ops.forEach(function (e) {
+        if (e.priority === 'critical') nCrit++;
+        if (e.priority === 'high') nHigh++;
+        if (e.activity_is_update) nUpd++;
+        if (e.exploited) nExp++;
+      });
+      var counts = { total: ops.length, crit: nCrit, high: nHigh, exp: nExp, upd: nUpd };
+      Object.keys(counts).forEach(function (k) {
+        var el = document.querySelector('[data-window-' + k + ']');
+        if (!el) return;
+        el.textContent = String(counts[k]);
+        var chip = el.closest('.fs');
+        if (chip) chip.classList.toggle('fs--zero', counts[k] === 0);
+      });
+      if (endMsg) endMsg.hidden = hasOlder;
+      if (more) more.hidden = !hasOlder;
+    }
+
+    function load() {
+      fetch(sitePrefix() + (cfg.briefbook_url || 'data/briefbook.json'))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { if (j) { data = j; render(); } })
+        .catch(function () { /* keep the server-rendered timeline */ });
+    }
+
+    if (select) select.addEventListener('change', function () {
+      hours = parseInt(select.value, 10) || defaultHours;
+      render();
+    });
+    if (more) more.addEventListener('click', function () {
+      hours += 24;
+      if (select) {
+        var has = Array.prototype.some.call(select.options, function (o) { return parseInt(o.value, 10) === hours; });
+        if (!has) {
+          // Keep the control honest: the window it shows is the window the
+          // timeline renders, even past the preset choices.
+          var opt = document.createElement('option');
+          opt.value = String(hours);
+          opt.textContent = 'last ' + hours + ' h';
+          opt.setAttribute('data-extended', '');
+          select.appendChild(opt);
+        }
+        select.value = String(hours);
+      }
+      render();
+    });
+
+    // A timeline row opens its permalink from anywhere on the row. Inner
+    // links (CVE badge, title, sources) keep their own targets, a text
+    // selection is never hijacked into a navigation, and modifier / middle
+    // clicks open a new tab like a real link would.
+    function rowLink(ev) {
+      var row = ev.target.closest && ev.target.closest('[data-card]');
+      if (!row || !container.contains(row)) return null;
+      if (ev.target.closest('a, button, input, select, summary, label')) return null;
+      var sel = window.getSelection ? String(window.getSelection()) : '';
+      if (sel.trim()) return null;
+      return row.querySelector('.tl-title a');
+    }
+    // A click on summary prose waits one double-click interval before it
+    // navigates, so double-clicking a word (a CVE id, a product name) to
+    // copy it selects the word instead of leaving the page.
+    var pending = null;
+    container.addEventListener('click', function (ev) {
+      if (pending) { clearTimeout(pending); pending = null; }
+      if (ev.defaultPrevented || ev.button !== 0 || ev.detail > 1) return;
+      var a = rowLink(ev);
+      if (!a) return;
+      if (ev.metaKey || ev.ctrlKey || ev.shiftKey) { window.open(a.href, '_blank', 'noopener'); return; }
+      var go = function () {
+        pending = null;
+        var sel = window.getSelection ? String(window.getSelection()) : '';
+        if (!sel.trim()) window.location.href = a.href;
+      };
+      if (ev.target.closest('.tl-sum')) pending = setTimeout(go, 280); else go();
+    });
+    container.addEventListener('auxclick', function (ev) {
+      if (ev.button !== 1) return;
+      var a = rowLink(ev);
+      if (a) { ev.preventDefault(); window.open(a.href, '_blank', 'noopener'); }
+    });
+
+    // Summaries / Headlines density toggle (per-browser convenience only).
+    var viewToggle = document.querySelector('[data-view-toggle]');
+    var VIEW_KEY = 'cti-brief-view';
+    function setView(v, persist) {
+      var compact = v === 'compact';
+      container.classList.toggle('tl--compact', compact);
+      if (viewToggle) {
+        Array.prototype.forEach.call(viewToggle.querySelectorAll('[data-view]'), function (b) {
+          b.setAttribute('aria-pressed', String(b.getAttribute('data-view') === (compact ? 'compact' : 'full')));
+        });
+      }
+      if (persist) { try { localStorage.setItem(VIEW_KEY, compact ? 'compact' : 'full'); } catch (_) { /* storage blocked */ } }
+    }
+    if (viewToggle) {
+      viewToggle.hidden = false;
+      var saved = null;
+      try { saved = localStorage.getItem(VIEW_KEY); } catch (_) { saved = null; }
+      setView(saved === 'compact' ? 'compact' : 'full', false);
+      viewToggle.addEventListener('click', function (ev) {
+        var b = ev.target.closest('[data-view]');
+        if (b) setView(b.getAttribute('data-view'), true);
+      });
+    }
+
+    document.addEventListener('cti:filterchange', function (e) {
+      if (e.detail && e.detail.sets) { filterSets = e.detail.sets; if (data) render(); }
+    });
+
+    load();
+  }
+})();
