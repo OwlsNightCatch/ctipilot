@@ -1,0 +1,477 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-09-30T11:45:05Z · ended_at=2026-09-30T12:16:31Z · duration_seconds=1886
+
+## Verification report — 2026-09-30T0639Z-audit (iteration 2, slice s3)
+
+Scope: the 21 entries of scope.iter1.s3.txt, read whole, every claim of `claims.iter2.s3.yaml` (373 of 373) given a verdict row in `verification.iter2.s3.claims.yaml` (336 ok, 19 F3, 12 F4, 3 F5, 3 F14; none unreadable). Every cited page was fetched this iteration (extract, raw HTML where a negative claim depended on it, bridge for CISA/NCSC-CH, CSAF/PDF for HPE, BSI, Mandiant, SlowMist, all 17 kernel.org ChangeLogs). Method caveat found this pass: trafilatura dropped a collapsed accordion on ddropattack.eu, which is how a supported claim was wrongly withdrawn; negative claims ("not on their page") need a raw-HTML check.
+
+### Prior-iteration deltas walk (remediation.iter1.s3.yaml)
+
+- HPE 52/34 CVE counts, 7.3.3-and-below scope, HPE exploitation wording, HPE CSAF primaries, AFC/AOS-CX ranges: confirmed against HPESBNW05133 (52 CVEs, 5 Critical) and HPESBNW05134 (34 CVEs, 4.9 to 8.8, 10.10.x EoM note). No "could not be retrieved" wording remains. Priority-high decline holds (default-service unauthenticated CVSS 10.0, HPE "strongly urged").
+- Check Point: Java-class quote now cited to the blog (verbatim there); sk1000171 dated 2026-09-20 (Date Created); title/immediate_action say attacks observed on 2026-07-23. Residual: takeaway "first attacks" (F14 low).
+- Unbound: no 8.4 figure remains except the withdrawal text; 9.1 cited to NCSC-CH (post 12957 says CVSS4.0 9.1 CRITICAL). New defect: NLnet Labs oss-sec announcement carries CRITICAL/HIGH severities and the release date, so the record rationale is wrong (F4) and the fix count is understated (F14).
+- Kiteworks: BSI-only version bound and NCSC-CH edit date confirmed (post history Edited 2026-09-28T06:24Z); CISO quote via Heise and TechCrunch count confirmed; exactly one Defender takeaway. Residual: unqualified "No CVE has been assigned to date" in the 2026-09-29 section (F14).
+- actions-cool: THN names maintain-one-comment (not issues-helper); Socket "likely linked", npm only; techniques T1195.002/T1105/T1059.006/T1003.007/T1041 each tied to a StepSecurity behaviour; summary free of Nx Console. New defect: Harden-Runner "allow-listing" (F3).
+- NTC: Huawei-only tender is SRF's account and the authority's denial is stated (confirmed). New defects: takeaway punctuation/attribution, "independently", "No CVEs were assigned".
+- Linux KEV: unsourced reassurance and source-file names removed; headline/section say public exploits exist (THN quotes Red Hat); all 17 kernel.org ChangeLogs contain the named fix commit; 7.0.13 added correctly.
+- Cisco FMC: "7.0 and earlier" present in body, summary, cves and action (advisory table "7.0 and earlier | 7.0.10"); Triage removed; KEV sentence cited. Hot-fix names in cves.fixed no longer on the current advisory (F3 low).
+- Dragos: title/headline follow Dragos wording; removed figures (62%, 34%, NIS2, IEC 62443, SARI) are absent from both Dragos pages (NIS2/62443 appear only in site navigation). Confirmed.
+- TeamCity: Cloud described as already mitigated (no "not affected" remains); KEV citation date 2026-09-29 and Cadence 2026-08-28 match sources[]; sourcing note is provenance only; JetBrains 2026-08-07 follow-up used correctly in Detection/Triage.
+- Gentlemen: CVE-2025-24799 now [poc-public, patch-available]; GHSA-jv89-g7f7-jwfg confirms endpoint, 10.0.18 and CVSS 7.5 (raw HTML); record free of the Japan rationale. SolarWinds, Qbusoft, OpenAI record/sourcing-note fixes confirmed.
+- Citrix: headline "publishes no workaround" matches watchTowr; "before any fix existed" and the evidence-capture sequence are on the watchTowr FAQ; one Triage line; no US directive used. New low findings on GTIG artifact pairing and an uncited deployment claim.
+- Plugin4Shell: Claude Code fix attributed to AIR everywhere and Codex 0.146.0 to OpenAI (confirmed). The credibility-1 decline holds (THN reproduced the Git behaviour; OpenAI's public fix describes the same bug). New truth defects: heise now reports the Copilot fix and corrects GitLab.
+- Kairos: reliability C matches sources.json for FrenchBreaches; body is two sentences plus takeaway with every fact cited; takeaway claims all supported. Residual: summary "data-theft-only".
+- Swiss motion: Federal Council reasoning matches Netzwoche (Alleingang nicht umsetzbar, EMBAG Art. 11, Postulat Z'Graggen, teilweise erfuellt); 126:66 and 13:12 match the 25.9.2026 update. Residual: citation date drifts to 2026-03-23.
+- DDRop: body is two short paragraphs plus takeaway, but the trim and its Correction section rest on a bad extraction and withdraw supported facts (F4, the most consequential defect of this slice).
+- Bitget (F10 remediation): Update section, appliance-class Detection and new techniques match Mandiant (appliances A/B, web shell on B, C2, lateral movement to the wallet job server, malicious packages) and SlowMist (2026-08-31 start, zero-day in a Product A service, Product B employee-identity abuse, recovered withdrawal tool). updated_at equals the record at. Notable is defensible (transferable TTP, vendors unnamed). Residuals: dropped "attempting", TraderTraitor alias, $464M citation.
+- F16 declines (HPE, actions-cool) and F17 decline (Plugin4Shell) hold.
+
+### Citation does not support the claim
+
+**#1 F3** `2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass`: Plugin4Shell: 'Google's security researchers received confirmation'
+- Quote: body: "Google's security researchers received confirmation of this on 2026-08-04" ([heise online, 2026-09-21])
+- Evidence: heise: "Am 4. August erhielten die Sicherheitsforscher von Google die Bestaetigung, dass Gemini CLI fuer Consumer-Nutzer eingestellt wird": the (AIR) researchers received confirmation from Google. The entry inverts who received it. Claim 1718a43ffc.
+
+**#2 F3** `2026-05-20/actions-cool-issues-helper-github-action-compromised-53-tags`: actions-cool: 'Allow-listing runner egress, as StepSecurity's Harden-Runner does'
+- Quote: takeaway: "Allow-listing runner egress, as StepSecurity's Harden-Runner does, keeps harvested credentials from leaving the runner even when a compromised action executes" ([StepSecurity, 2026-05-18])
+- Evidence: The StepSecurity page describes adding the attacker's exfiltration domain to Harden-Runner's 'global block list' ("Any workflow protected by Harden-Runner will automatically block outbound connections to this domain - even in audit mode"); it says nothing about allow-listing egress. Reword to the block-list behaviour. Claim 8d45bc1f80.
+
+**#3 F3** `2026-09-29/bitget-hot-wallet-theft-north-korea-nexus`: Bitget: TraderTraitor attribution of Bybit and AFX Bridge and UNC4899/PUKCHONG aliases cited to TRM
+- Quote: body: "the 2025 Bybit and AFX Bridge hacks, both attributed to the DPRK-linked TraderTraitor cluster (also known as UNC4899/PUKCHONG)" ([TRM Labs, 2026-09-25])
+- Evidence: TRM (https://www.trmlabs.com/resources/blog/bitget-loses-usd-3516-million-in-hot-wallet-breach-in-likely-north-korea-attack) calls Bybit and AFX Bridge "previously identified North Korean thefts" and says the laundering group "is the same one used by TraderTraitor in other recent hacks"; it does not attribute both hacks to TraderTraitor and carries no UNC4899/PUKCHONG alias. Claim aa406d2688.
+
+**#4 F3** `2026-09-29/bitget-hot-wallet-theft-north-korea-nexus`: Bitget Update: SlowMist 'attempting' turned into completed actions
+- Quote: Update: "used the platform's web execution endpoint to change server configuration, write a communication relay file and upload malicious program files in batches"
+- Evidence: SlowMist: "The attacker subsequently submitted code through the platform's web execution endpoint, attempting to modify server configuration, write a communication relay file, and upload and assemble malicious program files in batches." The hedge is dropped in a detection-relevant sentence. Claim b8307a9d15.
+
+**#5 F3** `2026-09-29/bitget-hot-wallet-theft-north-korea-nexus`: (low confidence) Bitget: $464M User Protection Fund not on the cited Bitget page
+- Quote: body: "Bitget's approximately $464M User Protection Fund will cover the loss" (paragraph ends with a Bitget incident-page citation)
+- Evidence: The Bitget page says only that the Protection Fund covers the financial impact; the USD 464 million figure is in TRM's summary. Cite TRM for it. Claim 945066ecaf.
+
+**#6 F3** `2026-09-18/ntc-swiss-solar-inverter-cybersecurity-assessment`: (low confidence) NTC: Federal Office of Energy 'independently confirms'
+- Quote: body: "Switzerland's Federal Office of Energy independently confirms NTC's risk assessment, per SRF"; sourcing_note: "the Federal Office of Energy endorsed the analysis rather than conducting its own"
+- Evidence: SRF: "Das Bundesamt fuer Energie bestaetigt die Analyse". 'Independently' is not in SRF and contradicts the entry's own sourcing note. Claim ca82bdae91.
+
+**#7 F3** `2026-09-18/ntc-swiss-solar-inverter-cybersecurity-assessment`: NTC: takeaway rewritten this run reads as a broken sentence and misattributes the concession
+- Quote: takeaway: "...disable or network-isolate local maintenance interfaces on installed inverters , the gap canton Bern's building authority concedes when it says cybersecurity is still barely anchored in its tenders."
+- Evidence: A stray ' ,' remains from the dash edit, and the authority's concession (SRF: cybersecurity is "noch wenig verankert" in tenders) concerns tender specifications, not maintenance-interface isolation. Split into two sentences. Claim a4683c146e.
+
+**#8 F3** `2026-09-25/switzerland-sovereign-digital-infrastructure-motion-24-3209`: Swiss motion: Netzwoche citation dated 2026-03-23 for content from the 25.9.2026 update
+- Quote: body and Correction: "the National Council followed by 126 votes to 66, after its committee backed the motion 13 to 12 ..." ([Netzwoche, 2026-03-23])
+- Evidence: The 126:66 vote, the 13:12 committee vote and the minority quote sit in the 'Update vom 25.9.2026' block of the Netzwoche page; 2026-03-23 is the original report (Council of States 31:11 only). Date the citation 2026-09-25 (update). Claims c143d6d845, 27ae74bfb8.
+
+**#9 F3** `2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning`: Kiteworks: chained facts under one citation to Kiteworks' 09-27 release
+- Quote: body: "emailed customers worldwide on 2026-09-25 urging a precautionary shutdown ... staggered by timezone and reported as six hours (Kiteworks' own press release later gave nine) ([Kiteworks, 2026-09-27])"
+- Evidence: The Kiteworks release carries the nine-hour window only. The email date and staggering are in Heise, the 'rebrand from Accellion in late 2021' in TechCrunch. Add the right citations. Claim ba11096f23.
+
+**#10 F3** `2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev`: (low confidence) Citrix: GTIG log artifacts 'belong together'
+- Quote: Triage/Correction: "GTIG names two log artifacts of successful exploitation that belong together"; "GTIG presents them as a pair, so check for both together"
+- Evidence: GTIG (https://cloud.google.com/blog/topics/threat-intelligence/defending-against-active-exploitation-of-citrix-netscaler-adc-and-gateway-appliances): correlating the DTLS failure with an NSPPE termination is 'a strong exploitation signal', but for the pitboss 'NOT restarting' message it says "Alert on these messages and NSPPE kernel termination/crash events independently rather than requiring both conditions to occur." Requiring both can miss cases. Claims 7feab86d25, dac9be0e7c, 99ce327b83.
+
+**#11 F3** `2026-07-30/cisco-secure-fmc-cve-2026-20316-static-credential-exploited`: (low confidence) Cisco FMC: hot-fix file names in cves[].fixed
+- Quote: cves.fixed: "They replace the per-train hot fixes first issued (for example Hotfix_GB-7.0.9.1-3, Hotfix_AM-7.7.12.1-2, Hotfix_P-10.0.1.1-2)"
+- Evidence: The current advisory (v1.6: "Added Fixed Releases table and removed Hot Fixes table") carries no hot-fix file names, so the cited page does not support them. Drop them or cite an archived revision. Claim a2a6d4b2cb.
+
+**#12 F3** `2026-07-30/cisco-secure-fmc-cve-2026-20316-static-credential-exploited`: (low confidence) Cisco FMC: 'fix ... may not address existing compromise' is Cisco's sentence about the hot fix files
+- Quote: takeaway: "Cisco states the fix is 'for preventing future exploitation only and may not address existing compromise'"; summary repeats it
+- Evidence: Cisco: "The hot fix files listed in this advisory are for preventing future exploitation only and may not address existing compromise." v1.6 replaced hot fixes with hardening releases ("Cisco recommends that customers upgrade to the appropriate hardening release"); the sentence now concerns a superseded artefact. Claim 5f6cb4185b.
+
+**#13 F3** `2026-09-04/hpe-aruba-fabric-composer-arubaos-cx-cvss10-bundle`: (low confidence) HPE: English NCSC-NL quote not on the cited HTML page
+- Quote: body and evidence: "allows unauthenticated remote attackers to gain administrative access and execute arbitrary commands, risking full system compromise" ([NCSC-NL, 2026-09-03] advisory?id=NCSC-2026-0339)
+- Evidence: The HTML advisory is Dutch; the English sentence exists only in the advisory's CSAF JSON (per-CVE note). HPE's own HPESBNW05133 (now first primary) has equivalent text and is a better citation. Claim c921143345.
+
+**#14 F3** `2026-09-04/hpe-aruba-fabric-composer-arubaos-cx-cvss10-bundle`: (low confidence) HPE Correction: HPE-side clause under a CERT-FR citation
+- Quote: Correction: "HPE lists 10.18.0001 as the affected build and CERT-FR reads the branch as every 10.18.x release before 10.18.1002 ([CERT-FR, 2026-09-02])"
+- Evidence: CERT-FR carries only the second half; the 10.18.0001 listing is in HPESBNW05134. Cite both. Claim 08b8f2448e.
+
+**#15 F3** `2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft`: (low confidence) Gentlemen: Talos 'assessment' that the group is Russian-speaking-operator-led
+- Quote: body: "support Talos's existing assessment that The Gentlemen is Russian-speaking-operator-led"
+- Evidence: Talos: "there is a possibility that Russian-speaking individuals are involved" and "As The Gentlemen is suspected to be led by individuals based in Russia, this further supports the connection". Keep the hedges. Claim c4c82e253f.
+
+**#16 F3** `2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass`: (low confidence) Plugin4Shell: discriminator 'AIR names'
+- Quote: Detection: "that mismatch is the only reliable discriminator AIR names" (HEAD resolves to a symbolic ref rather than a detached commit)
+- Evidence: AIR names an assertion that `git rev-parse HEAD` equals the pinned SHA, not a symbolic-ref versus detached-HEAD test. Attribute accurately. Claim fd334c8c86.
+
+### Unsupported / hallucinated facts
+
+**#17 F4** `2026-09-17/ddrop-dram-interposer-defeats-confidential-computing`: DDRop: Correction section withdraws install time and access vectors as 'not on their page'
+- Quote: Correction: "the installation time and the list of access vectors (data-center technicians, supply-chain tampering, state seizure) given earlier are not on their page and are withdrawn"; body and section: "The researchers describe the prerequisite only as a brief, one-time visit"; record summary: "dropping detail the research page does not carry"
+- Evidence: https://ddropattack.eu/ carries both in its raw HTML (the trafilatura extract drops the collapsed accordion, which is how the withdrawal went wrong): "can be installed in minutes" (twice) and "Possible ways to get that access include: Data-center insiders (Rogue technicians, sysadmins, or contractors with server rack access) / Supply-chain tampering / Compelled access (Physical hardware access compelled by law enforcement or governments)". The pre-run body was right on these points; the withdrawal, the word 'only' and the record summary are false. Restore install time and access vectors with the citation and rewrite the Correction. Claims 028f55c2db, 6243afa6c2.
+
+**#18 F4** `2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass`: Plugin4Shell: Copilot stated as unfixed in headline, summary, body, action and takeaway
+- Quote: headline: "Copilot and Gemini CLI unfixed"; summary: "Microsoft has shipped no Copilot fix"; body: "Microsoft has shipped no fix for Copilot"; action: "GitHub Copilot and consumer Gemini CLI have no fix ... until Microsoft ships a fix"; takeaway: "for Copilot and consumer Gemini CLI, where no fix exists"
+- Evidence: The entry's own cited source heise (https://www.heise.de/news/Kritische-Luecke-bei-Claude-Code-OpenAI-Codex-GitHub-Copilot-und-Gemini-CLI-11459862.html) now says: "GitHub hat die Luecke inzwischen auch in Copilot geschlossen. Nach Angaben des GitHub-Supports steckt der Fix in der Copilot CLI ab Version 1.0.87 ... und in der Copilot-App ab Version 1.1.23 ... Der Fix prueft, ob der ausgecheckte Code dem gepinnten Commit entspricht." github/copilot-cli release 1.0.87 is dated 2026-09-21. Five reader-facing statements are superseded; needs an update record and a changed action (update Copilot CLI and app). Claims 92b972d244, 2f81aa8083, c3cd759ef0, df0aef62cd, 3045d8b9d1.
+
+**#19 F4** `2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass`: Plugin4Shell: 'heise online additionally names GitLab'
+- Quote: body: "AIR and The Hacker News name Bitbucket and self-hosted git servers, and heise online additionally names GitLab (translated from German)"
+- Evidence: heise's current text: "Der Absatz zu den angreifbaren Plattformen wurde erweitert und korrigiert: Anders als urspruenglich angegeben ist GitLab nicht angreifbar, da es wie GitHub Branch-Namen im Format eines Commit-Hashes ablehnt." GitLab is named as NOT vulnerable. Claim d416c73fca.
+
+**#20 F4** `2026-09-19/cve-2026-81642-cve-2026-82717-unbound-dnssec-rce`: Unbound: record summary says only the listing page carries the High rating
+- Quote: record: "the High rating is dropped because only NLnet Labs' advisory listing page carries it"; section: "no citable source publishes a score for CVE-2026-82717"
+- Evidence: NLnet Labs' own oss-sec announcement https://seclists.org/oss-sec/2026/q3/800 (Yorgos Thessalonikefs, Wed 16 Sep 2026) states "CVE-2026-81642 - severity: CRITICAL" and "CVE-2026-82717 - severity: HIGH". A citable first-party severity exists. Claim 7f83ceb3db.
+
+**#21 F4** `2026-09-29/openai-dns-tunnel-sandbox-escape-self-replicating-injection`: (low confidence) OpenAI: Triage lists base32/64-like labels
+- Quote: Triage: "hostname structure encodes non-hostname data (unusually long labels, base32/64-like character sets ...)"
+- Evidence: OpenAI's report shows plain-language questions embedded in hostnames via a delegation service ('What is the capital of France ...'); no cited source describes base32/64 encoding. The discriminator does not follow from the cited mechanism. Claim 0bbb550da9.
+
+**#22 F4** `2026-09-17/kairos-libercourt-commune-ransomware-confirmed`: (low confidence) Kairos: summary calls the actor 'data-theft-only'
+- Quote: summary: "The data-theft-only extortion actor Kairos had listed the commune"
+- Evidence: No cited source says this: Ransomware.live calls Kairos a 'ransomware group' and Escudo Digital calls the Valdemoro case a ransomware attack. The body sentence that supported it was removed this run but the summary claim stayed.
+
+**#23 F4** `2026-09-17/ddrop-dram-interposer-defeats-confidential-computing`: (low confidence) DDRop: summary overstates vendor positions
+- Quote: summary: "Intel and AMD confirmed the findings but both declare physical DRAM-bus attacks out of scope; neither is assigning a CVE or shipping a mitigation"
+- Evidence: AMD-SB-3048 hedges ("a physical attack technique that they say can potentially undermine") and says it will not assign a CVE or release mitigations; Intel's announcement says nothing about a CVE and says it is evaluating hardening. The researchers write that vendors 'acknowledged' the findings.
+
+**#24 F4** `2026-09-17/ddrop-dram-interposer-defeats-confidential-computing`: (low confidence) DDRop takeaway extends attestation forgery to AMD SEV-SNP
+- Quote: takeaway: "Intel TDX or AMD SEV-SNP attestation is no longer a hard trust boundary against whoever physically holds the hardware"
+- Evidence: The research page demonstrates attestation forgery 'on Intel TDX'; for SEV-SNP it says DDRop 'can interfere with protected virtual machines'. Claim d925b7e872.
+
+**#25 F4** `2026-09-24/solarwinds-observability-cve-2026-28324-28325-unauth-rce`: (low confidence) SolarWinds record summary: 'neither flaw is exploited'
+- Quote: record: "neither flaw is exploited, CVE-2026-28324 needs a non-default, non-secure configuration ..."
+- Evidence: Sources only report no exploitation (absence of reports). Say 'no exploitation is reported'. Claim 0ca3f91e77.
+
+**#26 F4** `2026-05-20/actions-cool-issues-helper-github-action-compromised-53-tags`: (low confidence) actions-cool: event_date one day after the primary source
+- Quote: event_date: 2026-05-19; body: "StepSecurity disclosed on 2026-05-18"
+- Evidence: StepSecurity published and dated the event 2026-05-18 (imposter commits 2026-05-18T19:10Z to 19:13Z); THN is 2026-05-19.
+
+### Claims missing inline citation
+
+**#27 F5** `2026-07-29/cve-2026-63077-teamcity-onprem-unauth-deserialization-rce`: (low confidence) TeamCity: KEV flag history uncited
+- Quote: Update 2026-09-30: "The catalog still listed that flag as unknown on 2026-09-18, so the change is recent."
+- Evidence: Only the pipeline's own 2026-09-18 KEV snapshot (catalogVersion 2026.09.16, flag Unknown) supports it; a reader cannot check a past feed state. Drop or reword. Claim 636e71a59f.
+
+**#28 F5** `2026-07-30/cisco-secure-fmc-cve-2026-20316-static-credential-exploited`: (low confidence) Cisco FMC: FMC stores credentials for every managed device, uncited
+- Quote: body: "it holds policy, device inventory, credentials and certificates for every sensor it manages"; action 2: "the management server holds credentials for every device it manages"
+- Evidence: Not on the Cisco advisory (which since v1.2 tells customers to contact TAC and dropped the rotate-everything advice); action 2 and the takeaway rest on it. Cite Cisco product documentation or soften. Claim ae66e4a1c7.
+
+**#29 F5** `2026-09-29/openai-dns-tunnel-sandbox-escape-self-replicating-injection`: (low confidence) OpenAI: two other incidents described without citation
+- Quote: body: "OpenAI-attributed agents' scanning of a UN Trade and Development data portal, and an unauthorized access to an Australian government Medicare statistics portal"
+- Evidence: No inline citation; the facts live in other entries. Add a citation or reduce to a references pointer. Claim 7eb6dd648e.
+
+**#30 F5** `2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev`: (low confidence) Citrix: 'widely deployed perimeter VPN ... across European public-sector networks'
+- Quote: takeaway: "NetScaler Gateway is a widely deployed perimeter VPN and remote-access layer across European public-sector networks"
+- Evidence: No cited source states public-sector deployment in Europe (Censys is cited only for host counts in the update). Cite or drop.
+
+### Surface contradiction
+
+**#31 F9** `2026-09-19/cisa-kev-linux-kernel-ktls-af-alg-ebtables-snat`: (low confidence) CVE-2025-39682: THN says local, Red Hat says remote
+- Quote: summary: "network-reachable where kernel TLS is in use"
+- Evidence: The entry's cited THN article describes CVE-2025-39682 as one "that could allow local authenticated users to trigger memory disclosure or denial-of-service"; Red Hat says it "can be remotely triggered only when kernel TLS ... is in use" (and scores AV:N). The entry follows Red Hat silently; add a Contradiction line.
+
+**#32 F9** `2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning`: (low confidence) 'law enforcement' versus 'federal intelligence authorities'
+- Quote: summary: "credible threat intelligence from law enforcement"
+- Evidence: Customer email via Heise/TechCrunch: 'from law enforcement'. Kiteworks' own 2026-09-27 and 2026-09-28 releases and its statements to BleepingComputer and The Record: 'federal intelligence authorities'. Surface the difference.
+
+### Editorial / less-is-more flags (advisory)
+
+**#33 F11** `several`: Em dashes in reader-facing text
+- Quote: Check Point body (two paragraphs this run rewrote: "— different components, no CVE overlap", "— the only mitigation available short of patching"), actions[0], cves.fixed; DDRop title and summary; Gentlemen body, takeaway, triage; Entra ID summary and body; NTC body ("— because most inverters stay permanently connected"); Unbound actions[0]
+- Evidence: Rule: no em dash in reader-facing entry text. Only the Check Point paragraphs are lines this run wrote; the rest predate the run. Verbatim quotes and publisher metadata are exempt.
+
+**#34 F11** `several`: Record summaries name the internal routine; Unbound record typed improvement
+- Quote: DDRop, Kairos, NTC, Plugin4Shell records: "Priority recalibrated from notable to routine by the quality audit"; Unbound: type improvement for a section that withdraws a published score ("the 8.4 given for it earlier is withdrawn")
+- Evidence: If record summaries render, 'the quality audit' is workflow vocabulary; a withdrawn figure is a correction, not an improvement. TeamCity also has no main-text Exposure line and its takeaways live only in dated sections.
+
+**#35 F11** `2026-09-27/qbusoft-medyc-poland-healthcare-breach-fingerprint-actor ; 2026-09-29/openai-dns-tunnel-sandbox-escape-self-replicating-injection`: Routine, out-of-nexus items carried at full length
+- Quote: Qbusoft (routine: 'outside the constituency's region and sector', about 600 words, four paragraphs); OpenAI (routine, three long paragraphs plus takeaway and triage; sourcing_note three sentences)
+- Evidence: Kairos and DDRop were cut to two short paragraphs when demoted; these two were demoted (internal records) without being shortened. Quality-over-quantity suggests two sentences plus takeaway.
+
+### Single-source items missing [SINGLE-SOURCE] flag
+
+**#36 F12** `2026-09-18/ntc-swiss-solar-inverter-cybersecurity-assessment ; 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning`: (low confidence) verification value contradicts sourcing_note
+- Quote: NTC: verification multi-source; sourcing_note: 'the corroboration is editorial rather than a second assessment'. Kiteworks: verification multi-source; sourcing_note: 'Every outlet's reporting traces to Kiteworks' own customer notification ... same assessor with a second publisher'
+- Evidence: Both notes say there is one underlying assessor; the HPE bundle was set to single-source on the same logic. Use single-source (NTC) and single-source-victim (Kiteworks).
+
+### Analytical-link-as-fact
+
+**#37 F13** `2026-09-27/qbusoft-medyc-poland-healthcare-breach-fingerprint-actor`: (low confidence) Qbusoft: title and headline state the same-actor link as fact
+- Quote: title: "is breached via SQL injection by the same actor behind August's over-18-million-patient MyDr leak"; headline: "falls to the same actor"
+- Evidence: Only Zaufana Trzecia Strona asserts it (the perpetrators used the pseudonym 'fingerprint'); DataBreaches.net: "Whether it's the same attacker ... has not been disclosed"; the body itself says to treat it as ZTS's attribution. Attribute in title and headline.
+
+### Quantifier without source
+
+**#38 F14** `2026-09-18/ntc-swiss-solar-inverter-cybersecurity-assessment`: NTC: 'No CVEs were assigned to any of the findings'
+- Quote: body: "No CVEs were assigned to any of the findings, and neither NTC nor cash.ch names one"
+- Evidence: Neither cited page says anything about CVE assignment (NTC withheld product names and technical detail). Only 'neither source names a CVE' is supportable. Claim d13b57dec1.
+
+**#39 F14** `2026-09-19/cve-2026-81642-cve-2026-82717-unbound-dnssec-rce`: (low confidence) Unbound: 'fixing two heap-corruption vulnerabilities' and the ship date
+- Quote: body: "NLnet Labs shipped Unbound 1.26.1 on 2026-09-16, fixing two heap-corruption vulnerabilities" ([NLnet Labs, 2026-09-16] on CVE-2026-81642.txt)
+- Evidence: The cited .txt is undated (Last-Modified 2026-09-29) and covers one CVE. The oss-sec announcement ('releasing 1.26.1 as a security release today (September 16)') lists nine CVEs in 1.26.1 including CVE-2026-81634 HIGH 'Possible heap buffer overflow during DNSSEC canonicalization'. Cite the announcement and drop or qualify 'two'. Claim e1dbd008d8.
+
+**#40 F14** `2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning`: Kiteworks: 'No CVE has been assigned to date' stated as fact in the 2026-09-29 section
+- Quote: Update 2026-09-29: "No CVE has been assigned to date, and the BSI record carries no vulnerability-class (CWE) description"
+- Evidence: Uncited. The only support is watchTowr's 2026-09-25 remark quoted by The Record, and The Record adds that Kiteworks did not answer whether a CVE existed; the 2026-09-30 Correction itself says the no-CVE statement is watchTowr's. The unqualified sentence in the earlier section contradicts the correction's own caution.
+
+**#41 F14** `2026-09-23/cve-2026-93616-check-point-security-mgmt-path-traversal`: (low confidence) Check Point: 'the first attacks on 2026-07-23'
+- Quote: takeaway: "Check Point observed the first attacks on 2026-07-23, two months before the fix"
+- Evidence: Check Point Research: "we observed a handful of pinpointed attacks on July 23, 2026"; nothing says these were the first. Say 'attacks observed on 2026-07-23'. Claim 00a0949039.
+
+### Classification missing / inconsistent
+
+**#42 F17** `2026-09-19/cve-2026-81642-cve-2026-82717-unbound-dnssec-rce`: (low confidence) Unbound: credibility 1 on vendor advisory plus a relay
+- Quote: classification: {reliability: A, credibility: 1}; sources: NLnet Labs advisories plus NCSC-CH advisory
+- Evidence: NCSC-CH's post restates the NLnet advisory (its only primary reference), which the store treats as 'one assessor with several publishers' elsewhere (HPE bundle credibility 2 for relays; NTC corrected to 2 on 2026-09-20). Consistency suggests 2.
+
+### Verdict
+
+NEEDS_FIXES (truth: 31, editorial: 8, advisory: 3)
+
+Blocking, high-confidence items: DDRop false withdrawal (#1), Plugin4Shell Copilot fix and GitLab (#2, #3, #4), actions-cool Harden-Runner wording (#5), Bitget alias/hedge (#6, #7), Unbound record rationale (#11). The rest are marked low confidence where the evidence is an adjacency, hedge or quantifier issue.
+
+### Findings summary (machine-readable)
+
+```yaml
+# Findings summary (machine-readable) - iteration 2, slice s3
+- code: F4
+  category: hallucinated-fact
+  section: 2026-09-17/ddrop-dram-interposer-defeats-confidential-computing
+  item: 'DDRop: Correction section withdraws install time and access vectors as ''not on their page'''
+  url_or_quote: 'Correction: "the installation time and the list of access vectors (data-center technicians, supply-chain tampering, state seizure) given earlier are not on their page and are withdrawn"; body and section: "The researchers describe the prerequisite only as a brief, one-time visit"; record summary: "dropping detail the research page does not carry"'
+  summary: 'https://ddropattack.eu/ carries both in its raw HTML (the trafilatura extract drops the collapsed accordion, which is how the withdrawal went wrong): "can be installed in minutes" (twice) and "Possible ways to get that access include: Data-center insiders (Rogue technicians, sysadmins, or contractors with server rack access) / Supply-chain tampering / Compelled access (Physical hardware access compelled by law enforcement or governments)". The pre-run body was right on these points; the withdrawal, the word ''only'' and the record summary are false. Restore install time and access vectors with the citation and rewrite the Correction. Claims 028f55c2db, 6243afa6c2.'
+- code: F4
+  category: hallucinated-fact
+  section: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  item: 'Plugin4Shell: Copilot stated as unfixed in headline, summary, body, action and takeaway'
+  url_or_quote: 'headline: "Copilot and Gemini CLI unfixed"; summary: "Microsoft has shipped no Copilot fix"; body: "Microsoft has shipped no fix for Copilot"; action: "GitHub Copilot and consumer Gemini CLI have no fix ... until Microsoft ships a fix"; takeaway: "for Copilot and consumer Gemini CLI, where no fix exists"'
+  summary: 'The entry''s own cited source heise (https://www.heise.de/news/Kritische-Luecke-bei-Claude-Code-OpenAI-Codex-GitHub-Copilot-und-Gemini-CLI-11459862.html) now says: "GitHub hat die Luecke inzwischen auch in Copilot geschlossen. Nach Angaben des GitHub-Supports steckt der Fix in der Copilot CLI ab Version 1.0.87 ... und in der Copilot-App ab Version 1.1.23 ... Der Fix prueft, ob der ausgecheckte Code dem gepinnten Commit entspricht." github/copilot-cli release 1.0.87 is dated 2026-09-21. Five reader-facing statements are superseded; needs an update record and a changed action (update Copilot CLI and app). Claims 92b972d244, 2f81aa8083, c3cd759ef0, df0aef62cd, 3045d8b9d1.'
+- code: F4
+  category: hallucinated-fact
+  section: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  item: 'Plugin4Shell: ''heise online additionally names GitLab'''
+  url_or_quote: 'body: "AIR and The Hacker News name Bitbucket and self-hosted git servers, and heise online additionally names GitLab (translated from German)"'
+  summary: 'heise''s current text: "Der Absatz zu den angreifbaren Plattformen wurde erweitert und korrigiert: Anders als urspruenglich angegeben ist GitLab nicht angreifbar, da es wie GitHub Branch-Namen im Format eines Commit-Hashes ablehnt." GitLab is named as NOT vulnerable. Claim d416c73fca.'
+- code: F3
+  category: claim-not-supported
+  section: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  item: 'Plugin4Shell: ''Google''s security researchers received confirmation'''
+  url_or_quote: 'body: "Google''s security researchers received confirmation of this on 2026-08-04" ([heise online, 2026-09-21])'
+  summary: 'heise: "Am 4. August erhielten die Sicherheitsforscher von Google die Bestaetigung, dass Gemini CLI fuer Consumer-Nutzer eingestellt wird": the (AIR) researchers received confirmation from Google. The entry inverts who received it. Claim 1718a43ffc.'
+- code: F3
+  category: claim-not-supported
+  section: 2026-05-20/actions-cool-issues-helper-github-action-compromised-53-tags
+  item: 'actions-cool: ''Allow-listing runner egress, as StepSecurity''s Harden-Runner does'''
+  url_or_quote: 'takeaway: "Allow-listing runner egress, as StepSecurity''s Harden-Runner does, keeps harvested credentials from leaving the runner even when a compromised action executes" ([StepSecurity, 2026-05-18])'
+  summary: The StepSecurity page describes adding the attacker's exfiltration domain to Harden-Runner's 'global block list' ("Any workflow protected by Harden-Runner will automatically block outbound connections to this domain - even in audit mode"); it says nothing about allow-listing egress. Reword to the block-list behaviour. Claim 8d45bc1f80.
+- code: F3
+  category: claim-not-supported
+  section: 2026-09-29/bitget-hot-wallet-theft-north-korea-nexus
+  item: 'Bitget: TraderTraitor attribution of Bybit and AFX Bridge and UNC4899/PUKCHONG aliases cited to TRM'
+  url_or_quote: 'body: "the 2025 Bybit and AFX Bridge hacks, both attributed to the DPRK-linked TraderTraitor cluster (also known as UNC4899/PUKCHONG)" ([TRM Labs, 2026-09-25])'
+  summary: TRM (https://www.trmlabs.com/resources/blog/bitget-loses-usd-3516-million-in-hot-wallet-breach-in-likely-north-korea-attack) calls Bybit and AFX Bridge "previously identified North Korean thefts" and says the laundering group "is the same one used by TraderTraitor in other recent hacks"; it does not attribute both hacks to TraderTraitor and carries no UNC4899/PUKCHONG alias. Claim aa406d2688.
+- code: F3
+  category: claim-not-supported
+  section: 2026-09-29/bitget-hot-wallet-theft-north-korea-nexus
+  item: 'Bitget Update: SlowMist ''attempting'' turned into completed actions'
+  url_or_quote: 'Update: "used the platform''s web execution endpoint to change server configuration, write a communication relay file and upload malicious program files in batches"'
+  summary: 'SlowMist: "The attacker subsequently submitted code through the platform''s web execution endpoint, attempting to modify server configuration, write a communication relay file, and upload and assemble malicious program files in batches." The hedge is dropped in a detection-relevant sentence. Claim b8307a9d15.'
+- code: F3
+  category: claim-not-supported
+  section: 2026-09-29/bitget-hot-wallet-theft-north-korea-nexus
+  item: '(low confidence) Bitget: $464M User Protection Fund not on the cited Bitget page'
+  url_or_quote: 'body: "Bitget''s approximately $464M User Protection Fund will cover the loss" (paragraph ends with a Bitget incident-page citation)'
+  summary: The Bitget page says only that the Protection Fund covers the financial impact; the USD 464 million figure is in TRM's summary. Cite TRM for it. Claim 945066ecaf.
+- code: F3
+  category: claim-not-supported
+  section: 2026-09-18/ntc-swiss-solar-inverter-cybersecurity-assessment
+  item: '(low confidence) NTC: Federal Office of Energy ''independently confirms'''
+  url_or_quote: 'body: "Switzerland''s Federal Office of Energy independently confirms NTC''s risk assessment, per SRF"; sourcing_note: "the Federal Office of Energy endorsed the analysis rather than conducting its own"'
+  summary: 'SRF: "Das Bundesamt fuer Energie bestaetigt die Analyse". ''Independently'' is not in SRF and contradicts the entry''s own sourcing note. Claim ca82bdae91.'
+- code: F3
+  category: claim-not-supported
+  section: 2026-09-18/ntc-swiss-solar-inverter-cybersecurity-assessment
+  item: 'NTC: takeaway rewritten this run reads as a broken sentence and misattributes the concession'
+  url_or_quote: 'takeaway: "...disable or network-isolate local maintenance interfaces on installed inverters , the gap canton Bern''s building authority concedes when it says cybersecurity is still barely anchored in its tenders."'
+  summary: 'A stray '' ,'' remains from the dash edit, and the authority''s concession (SRF: cybersecurity is "noch wenig verankert" in tenders) concerns tender specifications, not maintenance-interface isolation. Split into two sentences. Claim a4683c146e.'
+- code: F14
+  category: quantifier-without-source
+  section: 2026-09-18/ntc-swiss-solar-inverter-cybersecurity-assessment
+  item: 'NTC: ''No CVEs were assigned to any of the findings'''
+  url_or_quote: 'body: "No CVEs were assigned to any of the findings, and neither NTC nor cash.ch names one"'
+  summary: Neither cited page says anything about CVE assignment (NTC withheld product names and technical detail). Only 'neither source names a CVE' is supportable. Claim d13b57dec1.
+- code: F4
+  category: hallucinated-fact
+  section: 2026-09-19/cve-2026-81642-cve-2026-82717-unbound-dnssec-rce
+  item: 'Unbound: record summary says only the listing page carries the High rating'
+  url_or_quote: 'record: "the High rating is dropped because only NLnet Labs'' advisory listing page carries it"; section: "no citable source publishes a score for CVE-2026-82717"'
+  summary: 'NLnet Labs'' own oss-sec announcement https://seclists.org/oss-sec/2026/q3/800 (Yorgos Thessalonikefs, Wed 16 Sep 2026) states "CVE-2026-81642 - severity: CRITICAL" and "CVE-2026-82717 - severity: HIGH". A citable first-party severity exists. Claim 7f83ceb3db.'
+- code: F14
+  category: quantifier-without-source
+  section: 2026-09-19/cve-2026-81642-cve-2026-82717-unbound-dnssec-rce
+  item: '(low confidence) Unbound: ''fixing two heap-corruption vulnerabilities'' and the ship date'
+  url_or_quote: 'body: "NLnet Labs shipped Unbound 1.26.1 on 2026-09-16, fixing two heap-corruption vulnerabilities" ([NLnet Labs, 2026-09-16] on CVE-2026-81642.txt)'
+  summary: The cited .txt is undated (Last-Modified 2026-09-29) and covers one CVE. The oss-sec announcement ('releasing 1.26.1 as a security release today (September 16)') lists nine CVEs in 1.26.1 including CVE-2026-81634 HIGH 'Possible heap buffer overflow during DNSSEC canonicalization'. Cite the announcement and drop or qualify 'two'. Claim e1dbd008d8.
+- code: F3
+  category: claim-not-supported
+  section: 2026-09-25/switzerland-sovereign-digital-infrastructure-motion-24-3209
+  item: 'Swiss motion: Netzwoche citation dated 2026-03-23 for content from the 25.9.2026 update'
+  url_or_quote: 'body and Correction: "the National Council followed by 126 votes to 66, after its committee backed the motion 13 to 12 ..." ([Netzwoche, 2026-03-23])'
+  summary: The 126:66 vote, the 13:12 committee vote and the minority quote sit in the 'Update vom 25.9.2026' block of the Netzwoche page; 2026-03-23 is the original report (Council of States 31:11 only). Date the citation 2026-09-25 (update). Claims c143d6d845, 27ae74bfb8.
+- code: F3
+  category: claim-not-supported
+  section: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  item: 'Kiteworks: chained facts under one citation to Kiteworks'' 09-27 release'
+  url_or_quote: 'body: "emailed customers worldwide on 2026-09-25 urging a precautionary shutdown ... staggered by timezone and reported as six hours (Kiteworks'' own press release later gave nine) ([Kiteworks, 2026-09-27])"'
+  summary: The Kiteworks release carries the nine-hour window only. The email date and staggering are in Heise, the 'rebrand from Accellion in late 2021' in TechCrunch. Add the right citations. Claim ba11096f23.
+- code: F14
+  category: quantifier-without-source
+  section: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  item: 'Kiteworks: ''No CVE has been assigned to date'' stated as fact in the 2026-09-29 section'
+  url_or_quote: 'Update 2026-09-29: "No CVE has been assigned to date, and the BSI record carries no vulnerability-class (CWE) description"'
+  summary: Uncited. The only support is watchTowr's 2026-09-25 remark quoted by The Record, and The Record adds that Kiteworks did not answer whether a CVE existed; the 2026-09-30 Correction itself says the no-CVE statement is watchTowr's. The unqualified sentence in the earlier section contradicts the correction's own caution.
+- code: F3
+  category: claim-not-supported
+  section: 2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev
+  item: '(low confidence) Citrix: GTIG log artifacts ''belong together'''
+  url_or_quote: 'Triage/Correction: "GTIG names two log artifacts of successful exploitation that belong together"; "GTIG presents them as a pair, so check for both together"'
+  summary: 'GTIG (https://cloud.google.com/blog/topics/threat-intelligence/defending-against-active-exploitation-of-citrix-netscaler-adc-and-gateway-appliances): correlating the DTLS failure with an NSPPE termination is ''a strong exploitation signal'', but for the pitboss ''NOT restarting'' message it says "Alert on these messages and NSPPE kernel termination/crash events independently rather than requiring both conditions to occur." Requiring both can miss cases. Claims 7feab86d25, dac9be0e7c, 99ce327b83.'
+- code: F14
+  category: quantifier-without-source
+  section: 2026-09-23/cve-2026-93616-check-point-security-mgmt-path-traversal
+  item: '(low confidence) Check Point: ''the first attacks on 2026-07-23'''
+  url_or_quote: 'takeaway: "Check Point observed the first attacks on 2026-07-23, two months before the fix"'
+  summary: 'Check Point Research: "we observed a handful of pinpointed attacks on July 23, 2026"; nothing says these were the first. Say ''attacks observed on 2026-07-23''. Claim 00a0949039.'
+- code: F3
+  category: claim-not-supported
+  section: 2026-07-30/cisco-secure-fmc-cve-2026-20316-static-credential-exploited
+  item: '(low confidence) Cisco FMC: hot-fix file names in cves[].fixed'
+  url_or_quote: 'cves.fixed: "They replace the per-train hot fixes first issued (for example Hotfix_GB-7.0.9.1-3, Hotfix_AM-7.7.12.1-2, Hotfix_P-10.0.1.1-2)"'
+  summary: 'The current advisory (v1.6: "Added Fixed Releases table and removed Hot Fixes table") carries no hot-fix file names, so the cited page does not support them. Drop them or cite an archived revision. Claim a2a6d4b2cb.'
+- code: F3
+  category: claim-not-supported
+  section: 2026-07-30/cisco-secure-fmc-cve-2026-20316-static-credential-exploited
+  item: '(low confidence) Cisco FMC: ''fix ... may not address existing compromise'' is Cisco''s sentence about the hot fix files'
+  url_or_quote: 'takeaway: "Cisco states the fix is ''for preventing future exploitation only and may not address existing compromise''"; summary repeats it'
+  summary: 'Cisco: "The hot fix files listed in this advisory are for preventing future exploitation only and may not address existing compromise." v1.6 replaced hot fixes with hardening releases ("Cisco recommends that customers upgrade to the appropriate hardening release"); the sentence now concerns a superseded artefact. Claim 5f6cb4185b.'
+- code: F3
+  category: claim-not-supported
+  section: 2026-09-04/hpe-aruba-fabric-composer-arubaos-cx-cvss10-bundle
+  item: '(low confidence) HPE: English NCSC-NL quote not on the cited HTML page'
+  url_or_quote: 'body and evidence: "allows unauthenticated remote attackers to gain administrative access and execute arbitrary commands, risking full system compromise" ([NCSC-NL, 2026-09-03] advisory?id=NCSC-2026-0339)'
+  summary: The HTML advisory is Dutch; the English sentence exists only in the advisory's CSAF JSON (per-CVE note). HPE's own HPESBNW05133 (now first primary) has equivalent text and is a better citation. Claim c921143345.
+- code: F3
+  category: claim-not-supported
+  section: 2026-09-04/hpe-aruba-fabric-composer-arubaos-cx-cvss10-bundle
+  item: '(low confidence) HPE Correction: HPE-side clause under a CERT-FR citation'
+  url_or_quote: 'Correction: "HPE lists 10.18.0001 as the affected build and CERT-FR reads the branch as every 10.18.x release before 10.18.1002 ([CERT-FR, 2026-09-02])"'
+  summary: CERT-FR carries only the second half; the 10.18.0001 listing is in HPESBNW05134. Cite both. Claim 08b8f2448e.
+- code: F3
+  category: claim-not-supported
+  section: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  item: '(low confidence) Gentlemen: Talos ''assessment'' that the group is Russian-speaking-operator-led'
+  url_or_quote: 'body: "support Talos''s existing assessment that The Gentlemen is Russian-speaking-operator-led"'
+  summary: 'Talos: "there is a possibility that Russian-speaking individuals are involved" and "As The Gentlemen is suspected to be led by individuals based in Russia, this further supports the connection". Keep the hedges. Claim c4c82e253f.'
+- code: F3
+  category: claim-not-supported
+  section: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  item: '(low confidence) Plugin4Shell: discriminator ''AIR names'''
+  url_or_quote: 'Detection: "that mismatch is the only reliable discriminator AIR names" (HEAD resolves to a symbolic ref rather than a detached commit)'
+  summary: AIR names an assertion that `git rev-parse HEAD` equals the pinned SHA, not a symbolic-ref versus detached-HEAD test. Attribute accurately. Claim fd334c8c86.
+- code: F4
+  category: hallucinated-fact
+  section: 2026-09-29/openai-dns-tunnel-sandbox-escape-self-replicating-injection
+  item: '(low confidence) OpenAI: Triage lists base32/64-like labels'
+  url_or_quote: 'Triage: "hostname structure encodes non-hostname data (unusually long labels, base32/64-like character sets ...)"'
+  summary: OpenAI's report shows plain-language questions embedded in hostnames via a delegation service ('What is the capital of France ...'); no cited source describes base32/64 encoding. The discriminator does not follow from the cited mechanism. Claim 0bbb550da9.
+- code: F4
+  category: hallucinated-fact
+  section: 2026-09-17/kairos-libercourt-commune-ransomware-confirmed
+  item: '(low confidence) Kairos: summary calls the actor ''data-theft-only'''
+  url_or_quote: 'summary: "The data-theft-only extortion actor Kairos had listed the commune"'
+  summary: 'No cited source says this: Ransomware.live calls Kairos a ''ransomware group'' and Escudo Digital calls the Valdemoro case a ransomware attack. The body sentence that supported it was removed this run but the summary claim stayed.'
+- code: F4
+  category: hallucinated-fact
+  section: 2026-09-17/ddrop-dram-interposer-defeats-confidential-computing
+  item: '(low confidence) DDRop: summary overstates vendor positions'
+  url_or_quote: 'summary: "Intel and AMD confirmed the findings but both declare physical DRAM-bus attacks out of scope; neither is assigning a CVE or shipping a mitigation"'
+  summary: AMD-SB-3048 hedges ("a physical attack technique that they say can potentially undermine") and says it will not assign a CVE or release mitigations; Intel's announcement says nothing about a CVE and says it is evaluating hardening. The researchers write that vendors 'acknowledged' the findings.
+- code: F4
+  category: hallucinated-fact
+  section: 2026-09-17/ddrop-dram-interposer-defeats-confidential-computing
+  item: (low confidence) DDRop takeaway extends attestation forgery to AMD SEV-SNP
+  url_or_quote: 'takeaway: "Intel TDX or AMD SEV-SNP attestation is no longer a hard trust boundary against whoever physically holds the hardware"'
+  summary: The research page demonstrates attestation forgery 'on Intel TDX'; for SEV-SNP it says DDRop 'can interfere with protected virtual machines'. Claim d925b7e872.
+- code: F4
+  category: hallucinated-fact
+  section: 2026-09-24/solarwinds-observability-cve-2026-28324-28325-unauth-rce
+  item: '(low confidence) SolarWinds record summary: ''neither flaw is exploited'''
+  url_or_quote: 'record: "neither flaw is exploited, CVE-2026-28324 needs a non-default, non-secure configuration ..."'
+  summary: Sources only report no exploitation (absence of reports). Say 'no exploitation is reported'. Claim 0ca3f91e77.
+- code: F4
+  category: hallucinated-fact
+  section: 2026-05-20/actions-cool-issues-helper-github-action-compromised-53-tags
+  item: '(low confidence) actions-cool: event_date one day after the primary source'
+  url_or_quote: 'event_date: 2026-05-19; body: "StepSecurity disclosed on 2026-05-18"'
+  summary: StepSecurity published and dated the event 2026-05-18 (imposter commits 2026-05-18T19:10Z to 19:13Z); THN is 2026-05-19.
+- code: F13
+  category: analytical-link-as-fact
+  section: 2026-09-27/qbusoft-medyc-poland-healthcare-breach-fingerprint-actor
+  item: '(low confidence) Qbusoft: title and headline state the same-actor link as fact'
+  url_or_quote: 'title: "is breached via SQL injection by the same actor behind August''s over-18-million-patient MyDr leak"; headline: "falls to the same actor"'
+  summary: 'Only Zaufana Trzecia Strona asserts it (the perpetrators used the pseudonym ''fingerprint''); DataBreaches.net: "Whether it''s the same attacker ... has not been disclosed"; the body itself says to treat it as ZTS''s attribution. Attribute in title and headline.'
+- code: F5
+  category: missing-citation
+  section: 2026-07-29/cve-2026-63077-teamcity-onprem-unauth-deserialization-rce
+  item: '(low confidence) TeamCity: KEV flag history uncited'
+  url_or_quote: 'Update 2026-09-30: "The catalog still listed that flag as unknown on 2026-09-18, so the change is recent."'
+  summary: Only the pipeline's own 2026-09-18 KEV snapshot (catalogVersion 2026.09.16, flag Unknown) supports it; a reader cannot check a past feed state. Drop or reword. Claim 636e71a59f.
+- code: F5
+  category: missing-citation
+  section: 2026-07-30/cisco-secure-fmc-cve-2026-20316-static-credential-exploited
+  item: '(low confidence) Cisco FMC: FMC stores credentials for every managed device, uncited'
+  url_or_quote: 'body: "it holds policy, device inventory, credentials and certificates for every sensor it manages"; action 2: "the management server holds credentials for every device it manages"'
+  summary: Not on the Cisco advisory (which since v1.2 tells customers to contact TAC and dropped the rotate-everything advice); action 2 and the takeaway rest on it. Cite Cisco product documentation or soften. Claim ae66e4a1c7.
+- code: F5
+  category: missing-citation
+  section: 2026-09-29/openai-dns-tunnel-sandbox-escape-self-replicating-injection
+  item: '(low confidence) OpenAI: two other incidents described without citation'
+  url_or_quote: 'body: "OpenAI-attributed agents'' scanning of a UN Trade and Development data portal, and an unauthorized access to an Australian government Medicare statistics portal"'
+  summary: No inline citation; the facts live in other entries. Add a citation or reduce to a references pointer. Claim 7eb6dd648e.
+- code: F5
+  category: missing-citation
+  section: 2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev
+  item: '(low confidence) Citrix: ''widely deployed perimeter VPN ... across European public-sector networks'''
+  url_or_quote: 'takeaway: "NetScaler Gateway is a widely deployed perimeter VPN and remote-access layer across European public-sector networks"'
+  summary: No cited source states public-sector deployment in Europe (Censys is cited only for host counts in the update). Cite or drop.
+- code: F17
+  category: classification
+  section: 2026-09-19/cve-2026-81642-cve-2026-82717-unbound-dnssec-rce
+  item: '(low confidence) Unbound: credibility 1 on vendor advisory plus a relay'
+  url_or_quote: 'classification: {reliability: A, credibility: 1}; sources: NLnet Labs advisories plus NCSC-CH advisory'
+  summary: NCSC-CH's post restates the NLnet advisory (its only primary reference), which the store treats as 'one assessor with several publishers' elsewhere (HPE bundle credibility 2 for relays; NTC corrected to 2 on 2026-09-20). Consistency suggests 2.
+- code: F12
+  category: single-source-flag-missing
+  section: 2026-09-18/ntc-swiss-solar-inverter-cybersecurity-assessment ; 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  item: (low confidence) verification value contradicts sourcing_note
+  url_or_quote: 'NTC: verification multi-source; sourcing_note: ''the corroboration is editorial rather than a second assessment''. Kiteworks: verification multi-source; sourcing_note: ''Every outlet''s reporting traces to Kiteworks'' own customer notification ... same assessor with a second publisher'''
+  summary: Both notes say there is one underlying assessor; the HPE bundle was set to single-source on the same logic. Use single-source (NTC) and single-source-victim (Kiteworks).
+- code: F9
+  category: surface-contradiction
+  section: 2026-09-19/cisa-kev-linux-kernel-ktls-af-alg-ebtables-snat
+  item: '(low confidence) CVE-2025-39682: THN says local, Red Hat says remote'
+  url_or_quote: 'summary: "network-reachable where kernel TLS is in use"'
+  summary: The entry's cited THN article describes CVE-2025-39682 as one "that could allow local authenticated users to trigger memory disclosure or denial-of-service"; Red Hat says it "can be remotely triggered only when kernel TLS ... is in use" (and scores AV:N). The entry follows Red Hat silently; add a Contradiction line.
+- code: F9
+  category: surface-contradiction
+  section: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  item: (low confidence) 'law enforcement' versus 'federal intelligence authorities'
+  url_or_quote: 'summary: "credible threat intelligence from law enforcement"'
+  summary: 'Customer email via Heise/TechCrunch: ''from law enforcement''. Kiteworks'' own 2026-09-27 and 2026-09-28 releases and its statements to BleepingComputer and The Record: ''federal intelligence authorities''. Surface the difference.'
+- code: F11
+  category: editorial-advisory
+  section: several
+  item: Em dashes in reader-facing text
+  url_or_quote: 'Check Point body (two paragraphs this run rewrote: "— different components, no CVE overlap", "— the only mitigation available short of patching"), actions[0], cves.fixed; DDRop title and summary; Gentlemen body, takeaway, triage; Entra ID summary and body; NTC body ("— because most inverters stay permanently connected"); Unbound actions[0]'
+  summary: 'Rule: no em dash in reader-facing entry text. Only the Check Point paragraphs are lines this run wrote; the rest predate the run. Verbatim quotes and publisher metadata are exempt.'
+- code: F11
+  category: editorial-advisory
+  section: several
+  item: Record summaries name the internal routine; Unbound record typed improvement
+  url_or_quote: 'DDRop, Kairos, NTC, Plugin4Shell records: "Priority recalibrated from notable to routine by the quality audit"; Unbound: type improvement for a section that withdraws a published score ("the 8.4 given for it earlier is withdrawn")'
+  summary: If record summaries render, 'the quality audit' is workflow vocabulary; a withdrawn figure is a correction, not an improvement. TeamCity also has no main-text Exposure line and its takeaways live only in dated sections.
+- code: F11
+  category: editorial-advisory
+  section: 2026-09-27/qbusoft-medyc-poland-healthcare-breach-fingerprint-actor ; 2026-09-29/openai-dns-tunnel-sandbox-escape-self-replicating-injection
+  item: Routine, out-of-nexus items carried at full length
+  url_or_quote: 'Qbusoft (routine: ''outside the constituency''s region and sector'', about 600 words, four paragraphs); OpenAI (routine, three long paragraphs plus takeaway and triage; sourcing_note three sentences)'
+  summary: Kairos and DDRop were cut to two short paragraphs when demoted; these two were demoted (internal records) without being shortened. Quality-over-quantity suggests two sentences plus takeaway.
+```

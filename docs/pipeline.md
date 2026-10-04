@@ -223,7 +223,8 @@ updates: []                    # the changelog — append-only, oldest first (§
 #       CISA added CVE-2026-34038 to KEV on 2026-07-04; status moved to exploited.   # the timeline row
 #     fields: [cves, priority, summary]   # optional: frontmatter fields changed in place ("body" for
 #                                         # an edit to the main analysis)
-#     merged_from: null                   # migration provenance only (a v3 update_of entry folded here)
+#     merged_from: null                   # the entry id(s) folded into this one: a v3 update_of entry
+#                                         # (migration) or duplicates folded by tools/fold_entries.py (list)
 migrated_from: null            # v2 provenance (briefs/YYYY-MM-DD.md) — migration tool only
 ---
 
@@ -415,8 +416,9 @@ updates:
                                     # reader-facing delta). Internal records have NO body section,
                                     # are never rendered anywhere on the site, and never move
                                     # updated_at — the changelog documents them for the operator only
-    merged_from: null               # optional, migration provenance only: the v3 update_of entry id
-                                    # that was folded into this record (the build redirects its old URL)
+    merged_from: null               # optional: the entry id folded into this record by the v4.0
+                                    # migration, or a list of duplicate ids folded by
+                                    # tools/fold_entries.py (v4.19); the build redirects each old URL
 updated_at: "2026-07-05T04:40:12Z"  # == at of the last `type: update` non-internal record; null when none
 ```
 
@@ -511,9 +513,25 @@ Rules, all enforced by `tools/check_run.py` (`entry-updates`, `silent-edit`) unl
 - **`data/alerts.json`**: an entry enters the 7-day window by activity
   moment and carries `updated_at` + a compact `updates[]` (`at`, `type`,
   `summary`), so a hook can alert on a critical/high entry's update.
-- **Redirects**: for every record with `merged_from`, the build emits a
-  meta-refresh stub at the folded entry's old permalink pointing at the
-  living entry (noindex, excluded from the sitemap).
+- **Redirects**: for every id in a record's `merged_from` (a string or a
+  list), the build emits a meta-refresh stub at the folded entry's old
+  permalink pointing at the living entry, anchored to the record's section
+  (the entry top for an internal record); noindex, excluded from the sitemap.
+
+**Duplicate folding (v4.19).** A second entry for a finding that already has
+one is folded, never left standing: legacy "UPDATE (originally covered …)"
+entries without `update_of`, same-day brief/deep-dive twins from the v2
+migration, and any later duplicate. The composer brings the survivor to the
+current verified state with one record for the fire (material facts only the
+duplicate held are carried over with their citations; unverified legacy text
+is not), then `python3 tools/fold_entries.py --run <run-id> --into <survivor>
+<duplicate>…` adds the ids to that record's `merged_from`, re-points
+`references[]` in other entries (each gets an internal record, or its existing
+record for the fire gains `references`) and registry `relations[].source`,
+and deletes the duplicate files. `check_run.py` `silent-edit` FAILs any other
+deleted entry file. The quality audit owns consolidation (Phase 3 item 13) and
+the legacy re-verification queue (`state/legacy_review.json`,
+`tools/legacy_review.py`, Phase 0 step 6b).
 - **Run records**: `entries_updated` counts the entries a fire appended a
   record to and `updated_entry_ids[]` names them (§ Run records); the run's
   detail page and the ops dashboard list them beside its new entries.
@@ -1157,7 +1175,8 @@ source URL plus an entity or most of its title, FAIL unless declared in
 editorial finding); `entry-shape` (a new body with no inline citation FAILs;
 headline over 120 characters, main analysis over 550 words or 1,100 for a
 deep dive, an uncited `sources[]` URL, an inline citation date differing from
-its `sources[]` record, `no-patch` beside a fixed version, a critical
+its `sources[]` record, an inline citation whose URL has no `sources[]`
+record (v4.19), `no-patch` beside a fixed version, a critical
 `immediate_action` naming no fixed version — WARN); `exploitation-consistency`
 (WARN on a sentence denying exploitation of a CVE the entry marks exploited);
 `reader-text-internals` extended to em dashes, KEV remediation deadlines and

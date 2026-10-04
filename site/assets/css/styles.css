@@ -2962,8 +2962,15 @@ body::after {
   letter-spacing: 0.1em;
   color: var(--accent-soft);
 }
+.callout--exposure {
+  background:
+    linear-gradient(180deg, rgba(var(--info-rgb), 0.06), transparent 70%),
+    var(--bg-elev);
+  border-left-color: var(--info);
+}
 .callout--action  .callout__label { color: var(--warn); }
 .callout--detection .callout__label { color: var(--ok); }
+.callout--exposure .callout__label { color: var(--info); }
 /* The immediate-action block leads the entry permalink: the task on its
    own line above the reasoning, so a reader who stops there still knows
    what to do. It carries no quote and no self-link — the Cited-evidence
@@ -3010,6 +3017,14 @@ body::after {
 }
 :root[data-theme="light"] .callout--detection {
   background: linear-gradient(180deg, rgba(45, 122, 75, 0.05), transparent 70%), #fff;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .callout--exposure {
+    background: linear-gradient(180deg, rgba(var(--info-rgb), 0.05), transparent 70%), #fff;
+  }
+}
+:root[data-theme="light"] .callout--exposure {
+  background: linear-gradient(180deg, rgba(var(--info-rgb), 0.05), transparent 70%), #fff;
 }
 
 /* ---------- Item footer (Sources / Region / Tags / CVE) ---------- */
@@ -3865,13 +3880,13 @@ a.atk-cell:hover { border-color: var(--accent); text-decoration: none; }
 .entity-intel { margin-top: 1.4rem; display: grid; gap: 1.2rem; }
 .entity-intel .section-head { margin-top: 0; }
 .entity-intel__note { margin: 0.2rem 0 0.7rem; font-size: 0.86rem; }
-.entity-intel__actions {
+.entity-intel__actions, .action-panel {
   background: var(--bg-elev); border: 1px solid var(--border-soft);
   border-left: 3px solid var(--warn); border-radius: 11px; padding: 12px 18px 14px;
 }
-.entity-intel__actions .action-list { list-style: none; padding-left: 0; }
-.entity-intel__actions .action-list__item { position: relative; padding-left: 15px; }
-.entity-intel__actions .action-list__item::before {
+.entity-intel__actions .action-list, .action-panel .action-list { list-style: none; padding-left: 0; }
+.entity-intel__actions .action-list__item, .action-panel .action-list__item { position: relative; padding-left: 15px; }
+.entity-intel__actions .action-list__item::before, .action-panel .action-list__item::before {
   content: ""; position: absolute; left: 0; top: 0.62em;
   width: 5px; height: 5px; border-radius: 50%; background: var(--warn);
 }
@@ -4451,6 +4466,17 @@ a.trends-card:hover .trends-card__go { text-decoration: underline; }
 .feedstats .fs--high b { color: var(--accent-soft); }
 .feedstats .fs--upd b { color: var(--warn); }
 .feedstats .fs--zero b { color: var(--text-muted); }
+/* The action-items count links down to the list under the feed. */
+.feedstats a.fs { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--border); }
+.feedstats a.fs:hover, .feedstats a.fs:focus-visible { color: var(--text); border-bottom-color: currentColor; }
+
+/* ── landing: § Action items under the feed ─────────────────────────
+   The do-now tasks of the window's findings, in the same warn-edged panel
+   as an entity page's action items. It sits BELOW the timeline: nothing
+   but the critical alarm goes between the head and the findings. */
+.landing-actions { margin-top: 44px; }
+.action-panel .section-head { margin-top: 0; }
+.action-panel__note { margin: 0.2rem 0 0.7rem; font-size: 0.86rem; }
 .feedhead-tools { margin-left: auto; gap: 8px; }
 .viewseg {
   display: inline-flex; gap: 2px; padding: 2px;
@@ -4727,24 +4753,35 @@ button.chip.active:hover, button.chip[aria-pressed="true"]:hover { color: var(--
 .erail-cve .frow { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; }
 .erail-cve .frow__v { text-align: left; }
 
+/* /cves/: the exploitation badges sit on one line; a long fix string wraps. */
+table.data[data-filter-table="cves"] td.cve-exp .b + .b { margin-left: 4px; }
+table.data[data-filter-table="cves"] td.cve-fixed { min-width: 16ch; max-width: 26ch; font-size: 0.86em; overflow-wrap: break-word; }
+table.data[data-filter-table="cves"] td.cve-cov a { white-space: nowrap; }
+table.data[data-filter-table="cves"] td.cve-t { overflow-wrap: anywhere; }
+
 /* ── /cves/ table stacks into cards on a phone ────────────────────── */
 @media (max-width: 639px) {
   table.data[data-filter-table="cves"] thead { display: none; }
   table.data[data-filter-table="cves"], table.data[data-filter-table="cves"] tbody { display: block; min-width: 0; width: 100%; }
   table.data[data-filter-table="cves"] tr {
-    display: grid; grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "id cov" "title title" "first last";
+    display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "id id id cov" "title title title title" "cvss exp fixed fixed" "first first last last";
     gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--border-soft);
   }
   table.data[data-filter-table="cves"] td { display: block; padding: 0; border: 0; }
-  table.data[data-filter-table="cves"] td:nth-child(1) { grid-area: id; }
-  table.data[data-filter-table="cves"] td:nth-child(1) a { display: inline-block; padding: 3px 0; }
-  table.data[data-filter-table="cves"] td:nth-child(2) { grid-area: title; font-size: 14px; line-height: 1.45; }
-  table.data[data-filter-table="cves"] td:nth-child(3) { grid-area: first; font-size: 11.5px; }
-  table.data[data-filter-table="cves"] td:nth-child(3)::before { content: "first "; }
-  table.data[data-filter-table="cves"] td:nth-child(4) { grid-area: last; font-size: 11.5px; text-align: right; }
-  table.data[data-filter-table="cves"] td:nth-child(4)::before { content: "last "; }
-  table.data[data-filter-table="cves"] td:nth-child(5) { grid-area: cov; }
+  table.data[data-filter-table="cves"] td.cve-id { grid-area: id; }
+  table.data[data-filter-table="cves"] td.cve-id a { display: inline-block; padding: 3px 0; }
+  table.data[data-filter-table="cves"] td.cve-t { grid-area: title; font-size: 14px; line-height: 1.45; }
+  table.data[data-filter-table="cves"] td.cve-cvss { grid-area: cvss; font-size: 11.5px; }
+  table.data[data-filter-table="cves"] td.cve-cvss::before { content: "CVSS "; color: var(--text-muted); }
+  table.data[data-filter-table="cves"] td.cve-exp { grid-area: exp; }
+  table.data[data-filter-table="cves"] td.cve-fixed { grid-area: fixed; font-size: 11.5px; min-width: 0; max-width: none; overflow-wrap: anywhere; }
+  table.data[data-filter-table="cves"] td.cve-fixed::before { content: "fixed "; color: var(--text-muted); }
+  table.data[data-filter-table="cves"] td.cve-first { grid-area: first; font-size: 11.5px; }
+  table.data[data-filter-table="cves"] td.cve-first::before { content: "first "; }
+  table.data[data-filter-table="cves"] td.cve-last { grid-area: last; font-size: 11.5px; text-align: right; }
+  table.data[data-filter-table="cves"] td.cve-last::before { content: "last "; }
+  table.data[data-filter-table="cves"] td.cve-cov { grid-area: cov; }
 }
 
 /* === GRAPH + ATT&CK INTERACTION PASS (2026-09-29) === */

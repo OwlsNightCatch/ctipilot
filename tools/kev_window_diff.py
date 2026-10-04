@@ -79,6 +79,9 @@ def _fetch_kev(kev_file: Path | None) -> dict:
     return json.loads(proc.stdout)
 
 
+RANSOMWARE_SINCE = "2026-01-01"  # older listings are background, not news
+
+
 def _store_cve_ids() -> tuple[dict[str, dict], set[str]]:
     """({cve: {"entry": id, "exploited": bool}} for every CVE an entry's
     `cves[]` carries, {cve ids only in state/cves_seen.json}).
@@ -105,14 +108,20 @@ def _store_cve_ids() -> tuple[dict[str, dict], set[str]]:
                 except Exception:  # noqa: BLE001 — a parse error is not this tool's finding
                     continue
                 data = entry.data if hasattr(entry, "data") else entry
+                says_ransomware = ("ransomware" in (data.get("tags") or [])
+                                   or "ransomware" in str(data.get("summary") or "").lower()
+                                   or "ransomware" in str(data.get("body") or "").lower())
                 for rec in (data.get("cves") or []):
                     cid = str((rec or {}).get("id") or "").upper()
                     if not cid:
                         continue
                     status = set((rec or {}).get("status") or [])
                     eid = data.get("id", str(path))
-                    cur = covered.setdefault(cid, {"entry": eid, "stale": []})
+                    cur = covered.setdefault(cid, {"entry": eid, "stale": [], "entries": [],
+                                                   "ransomware": False})
                     cur["entry"] = eid  # newest carrying entry
+                    cur["entries"].append(eid)
+                    cur["ransomware"] = cur["ransomware"] or says_ransomware
                     if not status & {"exploited", "cisa-kev"}:
                         cur["stale"].append(eid)
     index_only: set[str] = set()
@@ -204,9 +213,28 @@ def main() -> int:
     rows.sort(key=lambda r: (r["date_added"], r["cve"]))
     uncovered = [r for r in rows if r["state"] != "covered"]
 
+    # CISA flips `knownRansomwareCampaignUse` from Unknown to Known without a
+    # date, long after the listing (CVE-2026-63077, TeamCity: Unknown on the
+    # 2026-09-18 catalog, Known by 2026-09-30, found by hand in the 2026-09-30
+    # audit). Any covered CVE listed since RANSOMWARE_SINCE whose KEV record
+    # says Known while no carrying entry mentions ransomware is a development
+    # the reader has not been told about. Store-wide, not windowed, because
+    # the flip carries no date.
+    ransomware_rows = []
+    for v in vulns:
+        cid = str(v.get("cveID") or "").upper()
+        cov = covered_map.get(cid)
+        if (str(v.get("knownRansomwareCampaignUse") or "").lower() == "known" and cov
+                and not cov["ransomware"] and str(v.get("dateAdded") or "") >= RANSOMWARE_SINCE):
+            ransomware_rows.append({"cve": cid, "date_added": v.get("dateAdded"),
+                                    "vendor": v.get("vendorProject"), "product": v.get("product"),
+                                    "entries": sorted(set(cov["entries"]))})
+    ransomware_rows.sort(key=lambda r: (str(r["date_added"]), r["cve"]))
+
     if args.json:
         payload = json.dumps({"since": since.isoformat(), "total_in_window": len(rows),
-                              "uncovered": len(uncovered), "rows": rows}, indent=2)
+                              "uncovered": len(uncovered), "rows": rows,
+                              "ransomware_unreflected": ransomware_rows}, indent=2)
         print(payload)
         _persist(args.run_id, payload)
         return 0
@@ -235,6 +263,16 @@ def main() -> int:
                     "already covers the finding (for COVERED-STALE: the record that moves its "
                     "cves[].status to exploited), or an explicit `borderline-drop:` line in the "
                     "run record saying why it is out of scope (PD-11). Silence is not a disposition."]
+    if ransomware_rows:
+        out += ["", f"RANSOMWARE-UNREFLECTED: {len(ransomware_rows)} covered CVE(s) whose KEV record "
+                    "marks known ransomware campaign use while no carrying entry mentions ransomware"]
+        for r in ransomware_rows:
+            out.append(f"  RANSOMWARE    {r['date_added']}  {r['cve']:18s} {r['vendor']} {r['product']}")
+            out.append(f"                carried by {', '.join(r['entries'])}")
+        out += ["", "Each RANSOMWARE row is a development on a covered finding: an `update` record on "
+                    "the entry (the ransomware flag, cited to the KEV catalog, and what it changes for "
+                    "the reader), or an explicit `borderline-drop:` line saying why it does not matter "
+                    "(for example, the CVE is historical background in an actor entry)."]
     report = "\n".join(out)
     print(report)
     _persist(args.run_id, report)

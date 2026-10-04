@@ -2,7 +2,7 @@
 schema: 1
 kind: incident
 title: "Flink refuses a corporate ransom after an Order Hub breach, so extortion actor \"LPG Group\" pivots to crowdfund-style individual extortion of at least 10,000 customers"
-headline: "A refused corporate ransom becomes 10,000+ individual shakedown emails: an extortion playbook worth recognizing before it recurs"
+headline: "A refused corporate ransom becomes individual extortion emails to at least 10,000 Flink customers in the Netherlands"
 summary: >
   Quick-commerce grocery delivery service Flink (Germany, also operating in the
   Netherlands) confirmed a breach of an internal order-management system; after
@@ -15,7 +15,7 @@ discovered_at: "2026-09-27T04:32:00Z"
 updated_at: null
 event_date: "2026-09-25"
 run_id: 2026-09-27T0404Z-intel
-priority: notable
+priority: routine
 immediate_action: null
 tags: [data-breach, organized-crime, phishing]
 regions: [europe, dach]
@@ -84,6 +84,15 @@ updates:
       had been disclosed. The 10,000 figure now says customers, the two outlets' differing readings of the 100 ETH
       demand are stated, and Flink's more cautious notice on the order details is carried.
     fields: [title, summary, techniques, sources, evidence, sourcing_note, body]
+  - at: "2026-10-04T10:36:29Z"
+    run_id: 2026-09-30T0639Z-audit
+    type: correction
+    internal: true
+    summary: >
+      The priority moves from notable to routine: a retailer extortion incident outside Switzerland
+      whose access vector, compromised credentials, is generic. The headline states the reported
+      facts.
+    fields: [priority, headline]
 migrated_from: null
 ---
 

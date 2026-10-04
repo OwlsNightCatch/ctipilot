@@ -1,18 +1,18 @@
 ---
 schema: 1
 kind: threat
-title: "Storm-3168 (JADEPUFFER): a sub-eight-minute, automated Azure resource-destruction campaign via a service-principal secret that stayed valid in a GitHub issue's edit history after the visible text was redacted"
-headline: "Microsoft ties JADEPUFFER's cloud operations to a service principal that enumerated an Azure tenant for 15+ hours, then destroyed resources in minutes"
+title: "Storm-3168 (JADEPUFFER): compromised Azure service principals enumerate a tenant for hours, then an automated burst destroys storage, Key Vault and app resources in about seven minutes"
+headline: "Microsoft ties JADEPUFFER's cloud operations to two Azure service principals: one enumerated a tenant for 15+ hours, the other destroyed resources in minutes"
 summary: >
   Microsoft Security Research documents Azure resource-destruction activity by JADEPUFFER (tracked by Microsoft as
   Storm-3168), the actor Sysdig disclosed in July 2026 as the first documented agentic-ransomware operation. Two
   compromised service principals from one tenant enumerated resources for over 15 hours before a roughly seven-minute
   destructive burst attempted 100+ storage-account deletions (most succeeded, some blocked by resource locks),
-  deleted a Key Vault, a Function App and an App Service plan, and attempted to disable Azure Site Recovery and
-  Backup protection locks before harvesting storage-account keys. Timing evidence
-  points to automated, scripted execution; likely initial access traces to a service-principal secret an employee
-  posted in plaintext in a public GitHub issue, whose text was later redacted but which remained retrievable through
-  the issue's edit history; Microsoft states this specific credential's use in the activity was not confirmed.
+  deleted a Key Vault, a Function App and an App Service plan, and attempted to delete Azure Site Recovery and
+  Backup protection locks before harvesting storage-account keys. Timing evidence points to automated, scripted
+  execution. Microsoft says it is unclear how the service principal was compromised. As possible initial access it
+  notes a service-principal secret an employee posted in plaintext in a public GitHub issue, which stayed
+  retrievable through the issue's edit history after redaction, but it could not confirm that secret was used.
 discovered_at: "2026-09-28T04:04:46Z"
 updated_at: null
 event_date: "2026-09-25"
@@ -54,12 +54,27 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Rotate every Azure service-principal client secret, tenant ID or connection string that has ever appeared in a public GitHub issue, PR, commit or gist, including ones since edited or deleted."
-updates: []
+  - "Revoke or rotate every Azure service-principal client secret, storage key or connection string that has ever appeared in a public GitHub issue, PR, commit or gist, including ones since edited or deleted, and investigate each credential's historical use, as Microsoft advises."
+updates:
+  - at: "2026-09-30T07:00:42Z"
+    run_id: 2026-09-30T0639Z-audit
+    type: correction
+    summary: >
+      The title presented the GitHub-exposed secret as the campaign's route and the summary called
+      it the likely initial access, but Microsoft lists it only as possible initial access and could
+      not confirm it was used. The takeaway called resource locks and deletion protection the only
+      control that stopped deletions, while the Azure SQL deletions failed on an unsupported API
+      version. The rotation step named a tenant ID, which is not a credential, and now adds
+      Microsoft's advice to investigate each exposed credential's historical use. The headline
+      merged the two service principals Microsoft reports into one. The summary said the actor tried
+      to disable the Site Recovery and Backup protection locks, which Microsoft reports as failed
+      deletion attempts, and the main text said Microsoft attributes the activity to JADEPUFFER,
+      which Microsoft describes as associated with it.
+    fields: [title, summary, body, actions, headline]
 migrated_from: null
 ---
 
-Microsoft Security Research has identified Azure resource-destruction activity it attributes to JADEPUFFER, the
+Microsoft Security Research has identified Azure resource-destruction activity it associates with JADEPUFFER, the
 threat actor Sysdig disclosed in July 2026 as the first documented agentic-ransomware operation, giving the first
 detailed view into the actor's cloud-native operations under Microsoft's own tracking designation Storm-3168
 ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/)).
@@ -115,7 +130,8 @@ parallel from principals with no prior operational history of this pattern.
 
 **Defender takeaway:** treat any service-principal secret, storage key or connection string that has ever appeared in
 a public repository, issue, commit or gist as compromised the moment it is discovered, whatever its current
-visibility; Microsoft's own conclusion is that an edit or redaction does not revoke the value. Independent
-safeguards that do not rely on the compromised identity's own permissions, such as Azure resource locks and
-storage-account deletion protection, were the only thing that stopped part of this campaign's deletions once the
-service principal itself was compromised with broad rights.
+visibility; Microsoft's own conclusion is that an edit or redaction does not revoke the value. Independent safeguards that do not rely on the compromised identity's own permissions, such as Azure resource locks and storage-account deletion protection, blocked the deletion of some storage accounts even though the service principal held broad rights ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/)). The Azure SQL database deletions failed for a different reason, an unsupported API version in the actor's requests ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/)).
+
+## Correction — 2026-09-30T07:00:42Z
+
+Microsoft does not tie the campaign to the GitHub-exposed secret. It lists the secret under possible initial access, says it is unclear how the service principal was initially compromised, and states it could not confirm whether the secret was used ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/)). Resource locks and storage-account deletion protection blocked deletion for a few storage accounts, and the Azure SQL database deletions failed because the actor used an unsupported API version ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/)), so the locks were not the only control that stopped deletions. The headline said one service principal enumerated the tenant and then destroyed resources. Microsoft reports two: one performed reconnaissance and resource discovery, and the other performed discovery, destructive operations and credential collection ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/)). The summary said the actor attempted to disable the Azure Site Recovery and Backup protection locks, and the main text said Microsoft attributes the activity to JADEPUFFER. Microsoft reports multiple unsuccessful deletion attempts against those locks and describes the activity as associated with JADEPUFFER ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/)).

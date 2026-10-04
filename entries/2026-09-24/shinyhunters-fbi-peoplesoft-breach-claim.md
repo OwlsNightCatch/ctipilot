@@ -1,27 +1,29 @@
 ---
 schema: 1
 kind: incident
-title: "ShinyHunters claims a breach of the FBI's own recruitment infrastructure via an unconfirmed Oracle PeopleSoft zero-day; the FBI now confirms the compromise itself while still investigating scope"
-headline: "The FBI confirms ShinyHunters compromised its jobs portal; a Dutch arrest exposes an internal power struggle over the ShinyHunters brand"
+title: "ShinyHunters claims it breached the FBI's recruitment portal through Oracle PeopleSoft; the FBI says the point of breach is undetermined and has not confirmed the data taken or attribution"
+headline: "ShinyHunters claims it stole FBI staff and applicant data via PeopleSoft; the FBI says the point of breach is still undetermined"
 summary: >
-  The extortion group ShinyHunters claims it exploited a new, undisclosed
-  Oracle PeopleSoft zero-day on the night of 2026-09-21 to compromise the
-  FBI's recruitment site (apply.fbijobs.gov), then pivoted into FBI-managed
-  AWS GovCloud infrastructure and stole employee and applicant data. The FBI
-  has since issued its own press release confirming the fbijobs.gov
-  compromise and "alleged impact" to employee PII, while still investigating
-  scope and root cause; reported stolen data includes psychiatric/medical
-  files, a separate roughly 5,000-entry sample of names, addresses, phone
-  numbers and relatives' information, and reporting that the exposed data
-  separately identifies counterintelligence-relevant staff, including Remote
-  Operations Unit personnel. Dutch police separately confirmed an arrest connected to the
-  ShinyHunters investigation, and multiple sources describe a collective
-  called ScatteredLapsussHunters as now directing ShinyHunters' operations.
+  The extortion group ShinyHunters claims it exploited a new Oracle PeopleSoft zero-day
+  on the night of 2026-09-21 to compromise the FBI's recruitment site (apply.fbijobs.gov), then
+  pivoted into FBI-managed AWS GovCloud infrastructure and stole employee and applicant data. The
+  group later told BleepingComputer it used the URL-encoded WAF bypass for the known PeopleSoft flaw
+  CVE-2026-35273 against FBI Jobs, while still claiming a further unknown flaw. The FBI's
+  2026-09-23 statement, titled as a statement on the "Compromise of fbijobs.gov Portal", says a
+  group is claiming a compromise, that the point of breach, a third party or the FBI's own
+  enterprise, is still undetermined, and that it is investigating. Krebs on Security reads the
+  statement as confirming the hack, while CyberScoop reports that the FBI has not confirmed the data
+  involved or attribution to ShinyHunters. Reuters, which examined
+  documents the group shared, reports psychiatric and medical files, the group sent journalists a
+  roughly 5,000-entry sample of names, addresses, phone numbers and relatives' information, and
+  Nextgov/FCW reports, citing two people familiar with the matter, that the data covers intelligence
+  analysts and Remote Operations Unit personnel. Dutch police separately confirmed an arrest
+  connected to the ShinyHunters investigation, and Krebs's sources say a cybercriminal known as Rey, who operates as part of a collective called ScatteredLapsussHunters, has taken over ShinyHunters' operations.
 discovered_at: "2026-09-24T04:50:00Z"
 updated_at: "2026-09-29T04:45:00Z"
 event_date: "2026-09-21"
 run_id: 2026-09-24T0405Z-intel
-priority: high
+priority: notable
 immediate_action: null
 tags: [data-breach, organized-crime]
 regions: [us, global]
@@ -29,7 +31,16 @@ sectors: [public-sector]
 entities: ["actor:shinyhunters", "incident:shinyhunters-fbi-peoplesoft-breach-claim-2026-09", "product:oracle-peoplesoft", "actor:scatteredlapsusshunters"]
 techniques: [T1190, T1530, T1491.002]
 affected_products: ["Oracle PeopleSoft"]
-cves: []
+cves:
+  - id: CVE-2026-35273
+    cvss: "9.8"
+    epss: null
+    type: rce
+    vector: zero-click
+    auth: pre-auth
+    status: [exploited, cisa-kev, patch-available]
+    affected: Oracle PeopleSoft PeopleTools (PSEMHUB component)
+    fixed: Oracle security alert CVE-2026-35273 (2026-06-10)
 sources:
   - url: "https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/"
     publisher: "BleepingComputer"
@@ -79,6 +90,14 @@ sources:
     publisher: "Nextgov/FCW"
     date: "2026-09-24"
     role: corroborating
+  - url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+    publisher: "CISA KEV catalog"
+    date: "2026-06-12"
+    role: corroborating
+  - url: "https://www.fbi.gov/news/press-releases/fbi-statement-on-compromise-of-fbijobsgov-portal-and-alleged-impact-to-fbi-employee-pii"
+    publisher: "FBI National Press Office"
+    date: "2026-09-23"
+    role: primary
 closed_sources: []
 evidence:
   - quote: "The threat actors told BleepingComputer the vulnerability allows remote code execution and that they used it Monday night to access FBI systems before moving laterally into FBI-managed AWS GovCloud infrastructure."
@@ -92,6 +111,9 @@ evidence:
   - quote: "ShinyHunters told Axios in an email that the stolen data includes names, FBI agent statuses, emails, phone numbers, home addresses and \"sometimes even spouse information,\" including their Social Security numbers."
     publisher: "Axios"
   - quote: "ShinyHunters has confirmed to BleepingComputer that they used this WAF bypass against FBI Jobs, but continue to claim that they also exploited \"NEW unknown vulnerability in the same PSEMHUB component.\""
+    publisher: "BleepingComputer"
+    source_url: "https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/"
+  - quote: "The FBI confirmed that it was investigating claims of unauthorized activity affecting FBIjobs.gov but did not confirm that its systems had been breached or that data was stolen."
     publisher: "BleepingComputer"
     source_url: "https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/"
   - quote: "The FBI hasn't confirmed the type or amount of data compromised or attributed the breach to ShinyHunters directly. The agency said it is \"actively and aggressively investigating\" the incident, the root cause and its alleged impact to FBI employees' personally identifiable data in a statement Wednesday."
@@ -109,19 +131,22 @@ evidence:
   - quote: "Reuters reported Friday that records circulated by the hackers included psychiatric and medical evaluations. The BBC also reported seeing blood and urine test results."
     publisher: "Nextgov/FCW"
     source_url: "https://www.nextgov.com/cybersecurity/2026/09/shinyhunters-says-it-wont-publish-fbi-data/416280/"
+  - quote: "The FBI is aware of a cybercriminal enterprise group claiming a compromise of the fbijobs.gov portal and alleged impact to FBI employee personally identifiable information (PII)."
+    publisher: "FBI National Press Office"
+    source_url: "https://www.fbi.gov/news/press-releases/fbi-statement-on-compromise-of-fbijobsgov-portal-and-alleged-impact-to-fbi-employee-pii"
 verification: multi-source
-sourcing_note: "Multi-source on the facts that are independently confirmed: the FBIjobs.gov defacement and takedown, the FBI's own statements (first 'aware of claims ... investigating', now upgraded to its own press release confirming the compromise and 'alleged impact' to employee PII), and the Dutch police arrest (confirmed via a statement on X). The psychiatric/medical-file and blood/urine-test findings are attributed to Reuters and the BBC respectively as relayed by Nextgov/FCW (both outlets' own reporting was not independently fetched); the counterintelligence-role and Remote Operations Unit staffing detail and the roughly-5,000-entry sample count are Nextgov/FCW's own reporting across two of its articles (2026-09-24 and 2026-09-28), not an FBI confirmation of scope. The ScatteredLapsussHunters/Rey leadership narrative is attributed to Krebs's sourcing ('multiple sources say') and CyberScoop's independent quote from researcher Jon DiMaggio describing ShinyHunters as a 'fluid network' brand, which corroborates the fragmentation picture without confirming the specific SLSH narrative. Credibility moves from 3 to 2: the core compromise is now government-confirmed by the FBI itself, though the full data scope remains sourced to journalist review of actor-supplied samples."
+sourcing_note: "Multi-source on the defacement and takedown, the FBI's statements and the Dutch arrest. The CVE-2026-35273 link rests on ShinyHunters' own statement to BleepingComputer, the psychiatric, medical and blood-test findings are Reuters' and the BBC's as relayed by Nextgov/FCW, the analyst-role detail is Nextgov/FCW's reporting from two people familiar with the matter, and the ScatteredLapsussHunters leadership account rests on Krebs's sources. Sources differ on whether the FBI's 2026-09-23 statement confirms the compromise."
 confidence: medium
-references: []
+references:
+  - 2026-06-11/shinyhunters-oracle-peoplesoft-campaign-gadget-chain-access
 deep_dive: false
 deep_dive_category: null
 org_triage: null
 classification:
   reliability: B
-  credibility: 2
+  credibility: 3
 watchlist_hit: false
-actions:
-  - "Watch Oracle's own security-alert channel for an emergency PeopleSoft advisory in the coming days; any organization running an internet-facing PeopleSoft component, especially a recruitment or HR/jobs-portal instance matching the FBI's own claimed entry point, should treat unexplained PeopleSoft process activity or unusual outbound connections as a priority hunt lead until Oracle confirms or denies the claim."
+actions: []
 updates:
   - at: "2026-09-27T04:36:00Z"
     run_id: 2026-09-27T0404Z-intel
@@ -150,26 +175,39 @@ updates:
       describe a collective calling itself ScatteredLapsussHunters as now directing ShinyHunters'
       operations.
     fields: [title, headline, summary, entities, classification, sources, evidence, sourcing_note, body]
+  - at: "2026-09-30T06:56:58Z"
+    run_id: 2026-09-30T0639Z-audit
+    type: correction
+    summary: >
+      The takeaway said no CVE or Oracle advisory was involved, although ShinyHunters told
+      BleepingComputer it used the WAF bypass for CVE-2026-35273 against FBI Jobs. That link is now
+      attributed to the group, the CVE is recorded with a link to the PeopleSoft campaign entry that
+      carries the patch and hunt actions, the watch-for-an-advisory action is removed, and the
+      priority moves from high to notable because the defender value lies in the already-covered
+      CVE. The FBI's 2026-09-23 statement leaves the point of breach undetermined, and sources
+      differ on whether it confirms the compromise: Krebs on Security reads it as confirmation,
+      while CyberScoop reports no confirmed scope or attribution. The
+      group's motive is now given in its own words, including its later description of the
+      confrontation as a marketing campaign. Figures and the analyst-role detail are cited to the
+      outlets that carry them, the takeaways are folded into one, and the arrested suspect is no
+      longer named.
+    fields: [priority, cves, references, actions, sources, body, title, headline, summary, classification, sourcing_note, evidence]
 migrated_from: null
 ---
 
-The extortion group ShinyHunters claims it breached the FBI's own recruitment infrastructure using a new, undisclosed remote-code-execution zero-day in Oracle PeopleSoft, often used by human resources and recruiters to store job applicants' personal information ([TechCrunch, 2026-09-22](https://techcrunch.com/2026/09/22/hacking-group-shinyhunters-claims-it-breached-the-fbi-stole-agents-and-applicants-data/)). "The threat actors told BleepingComputer the vulnerability allows remote code execution and that they used it Monday night to access FBI systems before moving laterally into FBI-managed AWS GovCloud infrastructure" ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)). ShinyHunters claims it stole 2-3TB of data — names, agent statuses, emails, phone numbers, home addresses and in some cases spouses' information including Social Security numbers ([Axios, 2026-09-22](https://www.axios.com/2026/09/22/shinyhunters-fbi-employees-data-hack)) — spanning current and former FBI employees and job applicants, and that it compromised additional internal services including Criminal Justice, HR and Medlink systems along the way ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)). The group defaced the FBI's careers site, apply.fbijobs.gov, with its Umbreon Pokémon logo and a message claiming the theft; the FBI took the site offline, and it now shows a maintenance page. The FBI's confirmed response is limited to a single statement: "The FBI is aware of claims regarding unauthorized activity affecting FBIjobs.gov and is currently investigating," ([FBI, quoted by BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)) — the bureau has not confirmed a breach occurred, its scope, or the claimed PeopleSoft zero-day, and "BleepingComputer has not independently verified the alleged zero-day, lateral movement, or amount of stolen data" ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)).
+The extortion group ShinyHunters claims it breached the FBI's own recruitment infrastructure using a new Oracle PeopleSoft zero-day ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)). PeopleSoft is often used by human resources and recruiters to store job applicants' personal information ([TechCrunch, 2026-09-22](https://techcrunch.com/2026/09/22/hacking-group-shinyhunters-claims-it-breached-the-fbi-stole-agents-and-applicants-data/)). "The threat actors told BleepingComputer the vulnerability allows remote code execution and that they used it Monday night to access FBI systems before moving laterally into FBI-managed AWS GovCloud infrastructure" ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)). ShinyHunters claims it stole between 2TB and 3TB of data spanning current and former FBI employees and job applicants, and that it compromised additional internal services including Criminal Justice, HR and Medlink systems along the way ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)). It told Axios the data includes names, agent statuses, emails, phone numbers, home addresses and in some cases spouses' information including Social Security numbers, a claim Axios reports as more than 2 terabytes ([Axios, 2026-09-22](https://www.axios.com/2026/09/22/shinyhunters-fbi-employees-data-hack)). According to the group, which shared a screenshot, it defaced the FBI's careers site, apply.fbijobs.gov, with its Umbreon Pokémon logo and a message claiming the theft ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)); the site was down on 2026-09-22 ([TechCrunch, 2026-09-22](https://techcrunch.com/2026/09/22/hacking-group-shinyhunters-claims-it-breached-the-fbi-stole-agents-and-applicants-data/)) and remained offline on 2026-09-28 ([CyberScoop, 2026-09-28](https://cyberscoop.com/fbi-data-breach-shinyhunters-agent-safety-risk/)). The FBI's first response was a single statement: "The FBI is aware of claims regarding unauthorized activity affecting FBIjobs.gov and is currently investigating," ([FBI, quoted by BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)), and "BleepingComputer has not independently verified the alleged zero-day, lateral movement, or amount of stolen data" ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)). The FBI did not then confirm whether its systems were breached or data was stolen ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)). Its statement of 2026-09-23, titled "FBI Statement on Compromise of fbijobs.gov Portal and Alleged Impact to FBI Employee PII", says it is aware of a group "claiming a compromise" of the portal, that "the point of breach is still undetermined" between a third party and the FBI's own enterprise, and that it is investigating with the third-party providers that support fbijobs.gov ([FBI, 2026-09-23](https://www.fbi.gov/news/press-releases/fbi-statement-on-compromise-of-fbijobsgov-portal-and-alleged-impact-to-fbi-employee-pii)). **Contradiction:** Krebs on Security describes that release as a brief statement "confirming the hack" ([Krebs on Security, 2026-09-28](https://krebsonsecurity.com/2026/09/dutch-police-arrest-reformed-hacker-in-shiny-hunters-investigation/)), while CyberScoop reports that the FBI "hasn't confirmed the type or amount of data compromised or attributed the breach to ShinyHunters directly" ([CyberScoop, 2026-09-28](https://cyberscoop.com/fbi-data-breach-shinyhunters-agent-safety-risk/)) and BleepingComputer, recapping the FBI's first response, that it "did not confirm that its systems had been breached or that data was stolen" ([BleepingComputer, 2026-09-26](https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/)).
 
-404 Media first reported the claim after receiving a sample of roughly 5,000 alleged FBI personnel records; "the publication said it verified that some information in the sample was accurate, including phone numbers corresponding to people with the same names and numbers associated with US Department of Justice personnel" ([BleepingComputer, relaying 404 Media, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)), which supports that some genuine personnel data changed hands without confirming the exploitation mechanism or the full claimed volume. ShinyHunters' own account of the vulnerability is unusually specific but still entirely self-reported: "The Oracle product we exploited the 0day in is PeopleSoft. We found another one yesterday and immediately exploited it on the FBI," ([ShinyHunters, quoted by BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)) and the group says it is now exploiting the same alleged flaw against other organizations, including Fortune 500 companies, after previously targeting the education sector with a PeopleSoft campaign ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)). ShinyHunters frames the FBI intrusion as retaliation for a May 2026 FBI/IC3 flash report naming the group, demanding a correction within one week rather than a ransom and claiming the demand is not financially motivated ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)). The same week, ShinyHunters separately defaced the ransomware group Clop's own Tor leak site over an unrelated dispute, using it to extort Clop directly ([BleepingComputer, 2026-09-19](https://www.bleepingcomputer.com/news/security/shinyhunters-hacks-clop-leak-site-threatens-to-extort-ransomware-gang/)) — a parallel campaign against a different victim that this entry does not otherwise cover.
+404 Media first reported the claim after receiving a sample of roughly 5,000 alleged FBI personnel records; "the publication said it verified that some information in the sample was accurate, including phone numbers corresponding to people with the same names and numbers associated with US Department of Justice personnel" ([BleepingComputer, relaying 404 Media, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)), which supports that some genuine personnel data changed hands without confirming the exploitation mechanism or the full claimed volume. ShinyHunters' own account of the vulnerability is unusually specific but still entirely self-reported: "The Oracle product we exploited the 0day in is PeopleSoft. We found another one yesterday and immediately exploited it on the FBI," ([ShinyHunters, quoted by BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)) and the group says it is now exploiting the same alleged flaw against other organizations, including Fortune 500 companies, after previously targeting the education sector with a PeopleSoft campaign ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)). ShinyHunters frames the FBI intrusion as retaliation for a May 2026 FBI/IC3 flash report naming the group, demanding a correction within one week rather than a ransom and claiming the demand is not financially motivated ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)). The week before, ShinyHunters separately defaced the ransomware group Clop's own Tor leak site over an unrelated dispute, using it to extort Clop directly ([BleepingComputer, 2026-09-19](https://www.bleepingcomputer.com/news/security/shinyhunters-hacks-clop-leak-site-threatens-to-extort-ransomware-gang/)).
 
-**Defender takeaway:** treat this strictly as an unconfirmed claim under active investigation, not a confirmed vulnerability or breach. No CVE, Oracle advisory, or independent technical analysis of the alleged PeopleSoft zero-day exists as of 2026-09-24. The transferable lesson for any government security function, including the national and cantonal police forces this constituency includes, is that ShinyHunters has both the intent and a demonstrated pattern of targeting law-enforcement and HR/recruitment infrastructure directly; any organization running an internet-facing Oracle PeopleSoft deployment, particularly a recruitment or applicant-facing instance, should watch Oracle's own security-alert channel closely in the coming days and treat unexplained PeopleSoft activity as a priority hunt item until the claim is confirmed or refuted.
+**Defender takeaway:** ShinyHunters says it reached FBI Jobs through the URL-encoded WAF bypass for CVE-2026-35273 in PeopleSoft's PSEMHUB component, and still claims a further unknown flaw in the same component ([BleepingComputer, 2026-09-26](https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/)). The FBI has not said how the portal was reached and still names a third-party provider as a possible point of breach ([FBI, 2026-09-23](https://www.fbi.gov/news/press-releases/fbi-statement-on-compromise-of-fbijobsgov-portal-and-alleged-impact-to-fbi-employee-pii)). For Swiss police and other government security functions, any internet-facing PeopleSoft instance, particularly an applicant-facing one, is a priority patch-and-hunt target. A WAF rule that blocks the literal `/PSEMHUB/` path misses the encoded `/%50SEMHUB/` form, and Google warns of other percent-encoded or mixed-case variants, so install the security update rather than rely on WAF string matching, and search WebLogic access logs for requests to `/PSEMHUB/` and its encoded variants ([BleepingComputer, 2026-09-26](https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/)). Patch and hunting guidance for the flaw is in the [PeopleSoft campaign entry of 2026-06-11](../2026-06-11/shinyhunters-oracle-peoplesoft-campaign-gadget-chain-access.md). Researchers quoted by CyberScoop warn that the assignment and contact data in the samples creates counterintelligence and safety risk for personnel ([CyberScoop, 2026-09-28](https://cyberscoop.com/fbi-data-breach-shinyhunters-agent-safety-risk/)), which makes staff-directory and personnel-system data worth protecting and monitoring independent of any ransom potential.
 
 ## Update — 2026-09-27T04:36:00Z
 
-Part of this entry's central open question, whether ShinyHunters' claimed FBI-specific zero-day was real, is now partially resolved. Mandiant/GTIG's report on a separate, wider mass-exploitation wave against the already-known CVE-2026-35273 documents a URL-encoded WAF-bypass technique (requesting `/%50SEMHUB/` in place of `/PSEMHUB/`), and BleepingComputer reports: "ShinyHunters has confirmed to BleepingComputer that they used this WAF bypass against FBI Jobs, but continue to claim that they also exploited "NEW unknown vulnerability in the same PSEMHUB component."" ([BleepingComputer, 2026-09-26](https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/)). At least part of the FBI Jobs intrusion therefore used a known technique against a known CVE rather than the wholly undisclosed zero-day this entry originally reported, though ShinyHunters still claims an additional, still-unconfirmed vulnerability was also involved; the FBI has not updated its own statement and no party has confirmed or denied either technical claim.
-
-**Defender takeaway (updated):** any organization running Oracle PeopleSoft, not only recruitment or applicant-facing instances, should treat the WAF-bypass technique as active and in use against government targets specifically; a WAF rule blocking the literal `/PSEMHUB/` path is not sufficient, since ShinyHunters is confirmed using the URL-encoded `/%50SEMHUB/` variant, and Mandiant warns further encoded or mixed-case variants may follow. Patch to a supported PeopleTools release or remove PSEMHUB rather than relying on WAF string-matching alone.
+ShinyHunters has now given a partial answer of its own to the central open question, whether its claimed FBI-specific zero-day was real. Mandiant/GTIG's report on a separate, wider mass-exploitation wave against the already-known CVE-2026-35273 documents a URL-encoded WAF-bypass technique (requesting `/%50SEMHUB/` in place of `/PSEMHUB/`), and BleepingComputer reports: "ShinyHunters has confirmed to BleepingComputer that they used this WAF bypass against FBI Jobs, but continue to claim that they also exploited "NEW unknown vulnerability in the same PSEMHUB component."" ([BleepingComputer, 2026-09-26](https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/)). By the group's own account, at least part of the FBI Jobs intrusion used a known technique against a known CVE rather than the wholly undisclosed zero-day it first claimed, though ShinyHunters still claims an additional, still-unconfirmed vulnerability was also involved. The FBI has not confirmed that its systems were breached or that data was stolen ([BleepingComputer, 2026-09-26](https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/)), and no party has confirmed or denied either technical claim.
 
 ## Update — 2026-09-29T04:45:00Z
 
-The FBI has now issued its own press release confirming the fbijobs.gov compromise and "alleged impact" to
-employee personally identifiable information, superseding its prior "aware of claims ... investigating"
-holding statement: "The FBI hasn't confirmed the type or amount of data compromised or attributed the breach
+The FBI has issued a further statement on the fbijobs.gov incident ([FBI, 2026-09-23](https://www.fbi.gov/news/press-releases/fbi-statement-on-compromise-of-fbijobsgov-portal-and-alleged-impact-to-fbi-employee-pii)). CyberScoop reports: "The FBI hasn't confirmed the type or amount of data compromised or attributed the breach
 to ShinyHunters directly. The agency said it is 'actively and aggressively investigating' the incident, the
 root cause and its alleged impact to FBI employees' personally identifiable data in a statement Wednesday"
 ([CyberScoop, 2026-09-28](https://cyberscoop.com/fbi-data-breach-shinyhunters-agent-safety-risk/)). Nextgov/FCW
@@ -179,9 +217,7 @@ by the hackers included psychiatric and medical evaluations. The BBC also report
 results"
 ([Nextgov/FCW, 2026-09-28](https://www.nextgov.com/cybersecurity/2026/09/shinyhunters-says-it-wont-publish-fbi-data/416280/)).
 The group separately provided Nextgov/FCW a roughly 5,000-entry sample of names, home addresses, phone numbers
-and relatives' information, and Nextgov/FCW's own earlier reporting found the exposed data identifies
-employees working intelligence matters involving Russia, China, Hezbollah and cartels, plus personnel in the
-Bureau's Remote Operations Unit, which develops tools to target computers and networks
+and relatives' information, and Nextgov/FCW's earlier reporting, citing two people familiar with the matter, says the exposed data covers intelligence analysts working on Russia, China, Hezbollah and cartel matters, plus personnel in the Bureau's Remote Operations Unit, which develops tools to target computers and networks
 ([Nextgov/FCW, 2026-09-24](https://www.nextgov.com/cybersecurity/2026/09/stolen-fbi-data-reveals-employees-roles-intelligence-and-surveillance/416182/)).
 CyberScoop separately reports: "Limited samples of the stolen data contain FBI agents'
 personal contact information, details on family members, office and duty assignments and, in some cases,
@@ -192,36 +228,26 @@ exposure creates counterintelligence and physical-safety risk for agents on sens
 already shared with journalists as proof samples is irretrievably disseminated regardless of any later takedown.
 ShinyHunters told Nextgov/FCW it will not publish the stolen data: "Since the very beginning we had made our
 decision that we would never publish this data. We have never intended to nor have we ever planned to"
-([Nextgov/FCW, 2026-09-28](https://www.nextgov.com/cybersecurity/2026/09/shinyhunters-says-it-wont-publish-fbi-data/416280/)),
-and states the intrusion's motive is coercive rather than financial: it is demanding the FBI retract or amend a
-May 2026 public advisory (PSA260515) describing the group's operations and tactics, disputes any affiliation
-with "The Com" cybercrime ecosystem, and denies using sextortion-style threats.
+([Nextgov/FCW, 2026-09-28](https://www.nextgov.com/cybersecurity/2026/09/shinyhunters-says-it-wont-publish-fbi-data/416280/)).
+The group had earlier said the attack was retaliation for the FBI's May 2026 advisory on its operations (PSA260515), gave the FBI one week to correct or remove it while calling the demand neither financially motivated nor extortion, rejected claims that it is part of "The Com", and disputed the advisory's claims that it harasses victims and their relatives, conducts swatting attacks and falsely claims to hold compromising material ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)). In its later statement to Nextgov/FCW, it called the confrontation "a marketing campaign to protect our business and actively combat disinformation", said "This was not a threat. It may have been worded like a threat", and claimed it had never expected compliance ([Nextgov/FCW, 2026-09-28](https://www.nextgov.com/cybersecurity/2026/09/shinyhunters-says-it-wont-publish-fbi-data/416280/)).
 
-Dutch police separately confirmed, via a statement on X on 2026-09-28, the arrest of a 24-year-old suspect
-connected to the ShinyHunters investigation; three sources identify him to Krebs on Security as Pepijn van der
-Stap ("Umbreon"), a previously convicted cybercriminal who volunteered at the Dutch Institute for Vulnerability
-Disclosure and worked as a software engineer at a Dutch cybersecurity firm. Dutch police are separately asking
+Dutch police separately confirmed, via a statement on X on 2026-09-28, the arrest of a 24-year-old suspect connected to the ShinyHunters investigation ([Krebs on Security, 2026-09-28](https://krebsonsecurity.com/2026/09/dutch-police-arrest-reformed-hacker-in-shiny-hunters-investigation/)). Dutch police are separately asking
 the public to help identify a voice in a recorded February 2026 call in which a ShinyHunters member
 social-engineered access into Odido, the country's largest mobile carrier; Krebs states it remains unclear
-whether police have matched that voice to a confirmed identity, so this entry does not treat the Odido case as
-resolved or connected to the September arrest. Krebs reports: "In the days immediately following the suspect's arrest,
+whether police have matched that voice to a confirmed identity, so the Odido case should not be read as resolved or connected to the September arrest. Krebs reports: "In the days immediately following the suspect's arrest,
 remaining ShinyHunters members dramatically escalated their attacks, stealing highly sensitive data from the
 FBI and extorting the Russian ransomware group Cl0p"
 ([Krebs on Security, 2026-09-28](https://krebsonsecurity.com/2026/09/dutch-police-arrest-reformed-hacker-in-shiny-hunters-investigation/)).
-Multiple sources cited by Krebs describe a collective calling itself ScatteredLapsussHunters, led by a
-Jordan-based teenage cybercriminal known as "Rey," as having taken effective control of ShinyHunters' operations
-and driven its 2026 pivot toward high-risk, non-financially-motivated targets including the FBI and Cl0p; the
-FBI defacement reused van der Stap's old "Umbreon" artwork, which sources say may have been an attempt to pin
-the FBI intrusion on the arrested Dutch hacker rather than the group's current operators. CyberScoop separately
+Multiple sources cited by Krebs describe a teenage cybercriminal known as "Rey," who operates as part of a collective calling itself ScatteredLapsussHunters, as having taken effective control of ShinyHunters' operations
+and driven what they call "a major pivot away from the more measured tenor of the hacking gang's operations", toward high-risk targets including the FBI and Cl0p; sources say the FBI defacement reused artwork associated with the arrested suspect, possibly to pin the FBI intrusion on him rather than on the group's current operators. CyberScoop separately
 quotes DiMaggio's independent assessment that "ShinyHunters" today operates as a criminal brand used by a fluid
 network rather than a single fixed group, corroborating the brand-fragmentation picture without itself
 confirming the ScatteredLapsussHunters/Rey narrative.
 
-**Defender takeaway (updated):** treat "ShinyHunters" as a brand a fluid, currently fragmenting network of
-operators uses, not a fixed group with stable objectives; its current operators have demonstrated willingness to
-target law-enforcement and national-security-adjacent personnel data specifically, and to pursue coercive,
-non-financial demands rather than the financially motivated pattern this constituency may have hunted for
-previously. For a national or cantonal police service or defense IT estate, the transferable lesson is that
-staff-directory and personnel-system data (contact details, duty assignments, family information) carries a
-counterintelligence and physical-safety value to this actor class independent of any ransom potential, and
-should be protected and monitored accordingly.
+## Correction — 2026-09-30T06:56:58Z
+
+ShinyHunters told BleepingComputer it used the URL-encoded WAF bypass against FBI Jobs, and it still claims a further unknown flaw in the same PSEMHUB component ([BleepingComputer, 2026-09-26](https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/)). That bypass is the technique used against CVE-2026-35273, which CISA listed as exploited on 2026-06-12 ([CISA KEV catalog, 2026-06-12](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). The takeaway previously said no CVE was involved. The CVE link is the group's own account, and the FBI says the point of breach, a third party or its own enterprise, is still undetermined ([FBI, 2026-09-23](https://www.fbi.gov/news/press-releases/fbi-statement-on-compromise-of-fbijobsgov-portal-and-alleged-impact-to-fbi-employee-pii)).
+
+The FBI's statement of 2026-09-23 is titled as a statement on the "Compromise of fbijobs.gov Portal" but says a group is "claiming a compromise" ([FBI, 2026-09-23](https://www.fbi.gov/news/press-releases/fbi-statement-on-compromise-of-fbijobsgov-portal-and-alleged-impact-to-fbi-employee-pii)). Krebs on Security reads it as confirming the hack ([Krebs on Security, 2026-09-28](https://krebsonsecurity.com/2026/09/dutch-police-arrest-reformed-hacker-in-shiny-hunters-investigation/)), while CyberScoop reports that the FBI has not confirmed the type or amount of data or attributed the breach to ShinyHunters ([CyberScoop, 2026-09-28](https://cyberscoop.com/fbi-data-breach-shinyhunters-agent-safety-risk/)). The 2026-09-29 update presented the statement as a confirmation without noting that this reading is disputed, and is corrected in place.
+
+The 2026-09-29 update also called the group's motive coercive rather than financial. The group had framed its demand that the FBI correct or remove its May advisory as neither financially motivated nor extortion ([BleepingComputer, 2026-09-22](https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/)), and later told Nextgov/FCW the confrontation was "a marketing campaign" and "not a threat", claiming it had never expected compliance ([Nextgov/FCW, 2026-09-28](https://www.nextgov.com/cybersecurity/2026/09/shinyhunters-says-it-wont-publish-fbi-data/416280/)).

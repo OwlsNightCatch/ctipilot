@@ -1554,9 +1554,9 @@ def check_silent_edits(run: dict[str, Any] | None, run_id: str,
     """No silent edits (docs/pipeline.md § Entry lifecycle rule 2): every
     entry file the working tree has modified or added relative to HEAD must
     be a NEW entry of this run (`run_id` == run) or carry an `updates[]`
-    record with this run's id; a DELETED entry file always FAILs (entries
-    are never removed by a run — a wrong entry is corrected through its
-    changelog). Skipped gracefully when git is unavailable (fixture roots).
+    record with this run's id; a DELETED entry file FAILs (entries are never
+    removed by a run — a wrong entry is corrected through its changelog)
+    unless this fire folded it into its survivor (`merged_from`). Skipped gracefully when git is unavailable (fixture roots).
     FAIL on v4.0+ runs; WARN on records from before the lifecycle."""
     try:
         proc = subprocess.run(
@@ -1591,14 +1591,25 @@ def check_silent_edits(run: dict[str, Any] | None, run_id: str,
             n_ok += 1
             continue
         silent.append(f"{eid} (modified, run_id {e.get('run_id')!r}, no updates[] record for {run_id})")
+    # A duplicate folded into the surviving entry for the same finding
+    # (tools/fold_entries.py, v4.19) is the one sanctioned removal: this
+    # fire's record on the survivor names it in `merged_from`, and the build
+    # keeps its permalink alive as a redirect.
+    folded = {mf for e in entries_by_id.values() for r in _entry_update_records(e, run_id)
+              for mf in cm.merged_ids(r)}
     for d in deleted:
+        if d[len("entries/"):-len(".md")] in folded:
+            n_ok += 1
+            continue
         report("silent-edit", f"{d} deleted in the working tree — entries are never removed by a "
-               "run; correct a wrong entry through a `correction` changelog record")
+               "run except as a duplicate folded into its survivor (this fire's record there names "
+               "it in `merged_from`; tools/fold_entries.py); correct a wrong entry through a "
+               "`correction` changelog record")
     for m in silent:
         report("silent-edit", f"{m} — every change to a published entry ships as an updates[] "
                "record whose run_id is this fire (type update|correction|improvement) plus a "
                "`## <Type> — <at>` section")
-    if not silent and not deleted:
+    if not silent and not [d for d in deleted if d[len("entries/"):-len(".md")] not in folded]:
         ok("silent-edit", f"{n_ok} changed entry file(s) in the working tree, every one a new "
            "entry of this run or carrying this run's changelog record")
 
@@ -4124,11 +4135,36 @@ def check_changelog_declares_diff(run: dict[str, Any] | None, run_id: str,
             # prose itself (link targets stripped), in words.
             import difflib
             def _words(parts):
-                return re.sub(r"\]\([^)]*\)", "]", "\n".join(parts)).split()
+                # Removing inline ATT&CK ids (techniques[] carries the mapping) or
+                # a defanged indicator (never allowed in an entry) is a policy
+                # cleanup with nothing to tell the reader: neither counts.
+                # An inline citation group added, removed or re-pointed changes
+                # no claim either: drop whole "([Publisher, date](url); …)" groups.
+                text = re.sub(r"\s*\(\s*\[[^\]\n]+\]\([^)\s]+\)(?:\s*[;·,]\s*\[[^\]\n]+\]\([^)\s]+\))*\s*\)",
+                              "", "\n".join(parts))
+                text = re.sub(r"\]\([^)]*\)", "]", text)
+                text = re.sub(r"\s*\(\s*T\d{4}(?:\.\d{3})?(?:\s*[,;/]\s*T\d{4}(?:\.\d{3})?)*\s*\)", "", text)
+                text = re.sub(r"`?\b[\w.-]+\[\.\][\w.\-/]+`?", "", text)
+                return text.split()
             wa, wb = _words(prior), _words(kept)
             sm = difflib.SequenceMatcher(a=wa, b=wb, autojunk=False)
-            changed_words = sum(max(i2 - i1, j2 - j1) for tag, i1, i2, j1, j2 in sm.get_opcodes()
-                                if tag != "equal")
+            changed_words = 0
+            for tag, i1, i2, j1, j2 in sm.get_opcodes():
+                if tag == "equal":
+                    continue
+                gone = " ".join(wa[i1:i2])
+                # Deleting pipeline narration ("this entry does not restate…",
+                # an Admiralty letter, a registry key) tells the reader nothing;
+                # when the cut also re-punctuates the neighbouring word the
+                # opcode is a replace, so only what was inserted counts.
+                narration = any(rx.search(gone) for rx in (_META_REF_RE, _SELF_REF_RE,
+                                                          _FIELD_REF_RE, _HOUSE_REF_RE))
+                if narration and tag == "delete":
+                    continue
+                if narration and tag == "replace" and (j2 - j1) <= 2:
+                    changed_words += j2 - j1
+                    continue
+                changed_words += max(i2 - i1, j2 - j1)
             if changed_words > 12:
                 problems.append(f"{eid}: the analysis changed by {changed_words} words but this fire's "
                                 "only record is `internal: true` — a reader-facing change needs a "
@@ -4307,6 +4343,9 @@ def check_run_record_integrity(run: dict[str, Any] | None, enforce: bool) -> Non
 
 _MD_LINK_TEXT_RE = re.compile(r"\[([^\]\n]*)\]\((?:https?://)[^)\s]*\)")
 _VERSIONISH_RE = re.compile(r"\b\d+(?:\.\d+)+(?:[-_.][0-9A-Za-z]+)*\b")
+# `([Publisher, YYYY-MM-DD](URL))` with one level of parentheses allowed inside the URL
+# (e.g. OData keys such as Business(ID=…,Language='DE')).
+_CITATION_LINK_RE = re.compile(r"\[[^\]\n]*?(\d{4}-\d{2}-\d{2})\]\((https?://(?:[^()\s]|\([^()\s]*\))+)\)")
 
 
 def check_entry_shape_v417(new_entries: list[dict], run_entries: list[dict], run_id: str,
@@ -4354,6 +4393,17 @@ def check_entry_shape_v417(new_entries: list[dict], run_entries: list[dict], run
         main, sections = cm.split_update_sections(e.get("body") or "")
         texts = ([main] if str(e.get("run_id") or "") == str(run_id) else []) + \
                 [sec.get("body") or "" for sec in sections if str(sec.get("at")) in own_ats]
+        # v4.19: a citation whose page is not a sources[] record escapes the liveness,
+        # blocked-URL and date checks (the 2026-09-30 audit lost a sources[] record while
+        # five inline citations to it stayed). Checked over the new entry's main text,
+        # this fire's sections, and the main text of an entry this fire rewrote (`body`).
+        rewrote = any(str(r.get("run_id") or "") == str(run_id) and "body" in (r.get("fields") or [])
+                      for r in (e.get("updates") or []) if isinstance(r, dict))
+        for text in texts + ([main] if rewrote and main not in texts else []):
+            for m in _CITATION_LINK_RE.finditer(text):
+                if m.group(2) not in src_dates:
+                    warns.append(f"{e['id']}: inline citation {m.group(2)} is not in sources[] — "
+                                 "add the record (PD-2) or re-cite the claim to a listed source")
         for text in texts:
             for m in re.finditer(r"\[[^\]\n]*?(\d{4}-\d{2}-\d{2})\]\((https?://[^)\s]+)\)", text):
                 d, u = m.group(1), m.group(2)

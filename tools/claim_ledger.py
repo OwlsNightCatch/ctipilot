@@ -189,7 +189,9 @@ def _dump(claims: list[dict], header: dict) -> str:
 def _load_ids(path: Path) -> set[str]:
     if not path.is_file():
         return set()
-    return set(re.findall(r"claim_id:\s*([0-9a-f]{10})", path.read_text(encoding="utf-8")))
+    # Verifiers write rows as block or flow mappings, with or without JSON
+    # quoting ("claim_id": "…"); accept every YAML spelling of the key.
+    return set(re.findall(r"""["']?claim_id["']?\s*:\s*["']?([0-9a-f]{10})""", path.read_text(encoding="utf-8")))
 
 
 def main(argv=None) -> int:

@@ -295,6 +295,28 @@ assert_true("github classic token detected",
             scan_for_secrets("ghp_" + "A" * 40))
 assert_true("aws key id detected", scan_for_secrets("AKIA" + "A" * 16))
 assert_eq("clean text clean", scan_for_secrets("nothing to see CVE-2026-1234"), [])
+# One sample per pattern (built at runtime, never a literal token): every
+# label must still be detected through the anchor gate, and a new pattern
+# without a sample here fails the count check.
+_SECRET_SAMPLES = {
+    "AWS access key id": "key AKIA" + "B" * 16 + " end",
+    "AWS secret access key (heuristic)": "AWS_Secret_Access_Key = " + "a" * 40,
+    "GitHub fine-grained PAT": "github_pat_" + "A" * 22 + "_" + "B" * 59,
+    "GitHub classic / OAuth token": "token ghs_" + "A" * 40,
+    "Anthropic API key": "sk-ant-api03-" + "A" * 30,
+    "OpenAI API key": "(sk-proj-" + "A" * 40 + ")",
+    "Slack token": "xoxb-" + "1" * 12,
+    "Stripe live key": "rk_live_" + "A" * 24,
+    "Google API key": "key=AIza" + "A" * 35,
+    "PEM private key block": "-----BEGIN OPENSSH PRIVATE KEY-----",
+    "JWT (eyJ. style)": "eyJ" + "a" * 10 + "." + "b" * 10 + "." + "c" * 10,
+}
+assert_eq("one secret sample per pattern", sorted(_SECRET_SAMPLES), sorted(l for l, _p in build._SECRET_PATTERNS))
+assert_eq("every pattern has a scan anchor", sorted(build._SECRET_ANCHORS), sorted(l for l, _p in build._SECRET_PATTERNS))
+for _lbl, _smp in _SECRET_SAMPLES.items():
+    assert_true(f"secret gate passes the {_lbl} sample",
+                _lbl in [l for l, _x in scan_for_secrets("prose before " + _smp + " prose after")])
+assert_eq("a word-glued anchor never gates a pattern in", scan_for_secrets("a high-risk-" + "a" * 40 + " finding"), [])
 
 print("== render_cve_pill multi-CVE split ==")
 multi = render_cve_pill("CVE-2026-1111, CVE-2026-2222")
@@ -2061,6 +2083,394 @@ _sh_wf_html = build._ops_render_source_health(_sh_wf)
 assert_in("source-health: webfetch-only note", "Read only through the agent-side", _sh_wf_html)
 assert_in("source-health: webfetch-only all-clear", "1 through WebFetch", _sh_wf_html)
 assert_not_in("source-health: webfetch-only not a problem", "Reachable, but not returning usable content", _sh_wf_html)
+
+# ---------------------------------------------------------------------
+# Repo-path links (2026-09-30): a link authored relative to the source file
+# (an entry linking a sibling entry, an audit run record linking its report,
+# an imported entry linking a retired /briefs/ route) reaches a real page.
+# ---------------------------------------------------------------------
+_rl = build._remap_repo_link
+_saved_universe = (set(build._LINK_ENTRY_IDS), set(build._LINK_RUN_IDS), set(build._LINK_DAY_PAGES))
+build._LINK_ENTRY_IDS.clear()
+build._LINK_ENTRY_IDS.update({"2026-06-29/mozilla-0din-x", "2026-07-11/friendly-fire"})
+build._LINK_RUN_IDS.clear()
+build._LINK_RUN_IDS.update({"2026-07-18T1208Z-audit"})
+build._LINK_DAY_PAGES.clear()
+build._LINK_DAY_PAGES.update({"2026-05-25", "2026-06-29"})
+assert_eq("repo-link: sibling entry, relative to the entry",
+          _rl("../2026-06-29/mozilla-0din-x.md", "../../../", src_dir="entries/2026-07-11"),
+          "../../../entries/2026-06-29/mozilla-0din-x/")
+assert_eq("repo-link: unknown entry degrades to its day page",
+          _rl("../2026-06-29/gone.md", "", src_dir="entries/2026-07-11"), "daily/2026-06-29/")
+assert_eq("repo-link: unknown entry on a day without a page degrades to the archive",
+          _rl("../2026-06-30/gone.md", "", src_dir="entries/2026-07-11"), "daily/")
+assert_eq("repo-link: retired /briefs/<day>/ route with a day page",
+          _rl("/briefs/2026-05-25/", "../../", src_dir="entries/2026-05-29"), "../../daily/2026-05-25/")
+assert_eq("repo-link: retired /briefs/<day>/ route without a day page",
+          _rl("/briefs/2026-05-26/", "../../", src_dir="entries/2026-05-29"), "../../daily/")
+assert_eq("repo-link: retired /weekly/ route",
+          _rl("/weekly/2026-W21/", "", src_dir="entries/2026-05-29"), "daily/")
+assert_match("repo-link: audit report from a run record goes to GitHub",
+             r"^https://github\.com/[^/]+/[^/]+/blob/main/docs/audits/2026-07-18-quality-audit\.md$",
+             _rl("../../docs/audits/2026-07-18-quality-audit.md", "../../", src_dir="runs/2026-07-18"))
+assert_eq("repo-link: sibling run record",
+          _rl("2026-07-18T1208Z-audit.md", "../../", src_dir="runs/2026-07-18"),
+          "../../runs/2026-07-18T1208Z-audit/")
+assert_eq("repo-link: doc to doc, relative to docs/",
+          _rl("pipeline.md#entry-lifecycle", "../../../", src_dir="docs"),
+          "../../../about/docs/pipeline/#entry-lifecycle")
+assert_eq("repo-link: absolute URL untouched",
+          _rl("https://example.com/a.md", "", src_dir="entries/2026-07-11"), "https://example.com/a.md")
+assert_eq("repo-link: fragment untouched", _rl("#sources", "", src_dir="docs"), "#sources")
+_rl_entry = mk_entry("friendly-fire", day="2026-07-11", ts="2026-07-11T04:00:00Z",
+                     body="Builds on [0DIN](../2026-06-29/mozilla-0din-x.md) and "
+                          "[the brief](/briefs/2026-05-25/).")
+_rl_card = render_entry_card(_rl_entry, prefix="../")
+assert_in("repo-link: entry card routes a sibling-entry link",
+          'href="../entries/2026-06-29/mozilla-0din-x/"', _rl_card)
+assert_in("repo-link: entry card routes a retired brief link", 'href="../daily/2026-05-25/"', _rl_card)
+_rl_feed = render_entry_card(_rl_entry, prefix="https://site.test/",
+                             base_url="https://site.test/entries/2026-07-11/friendly-fire/")
+assert_in("repo-link: feed card links absolute",
+          'href="https://site.test/entries/2026-06-29/mozilla-0din-x/"', _rl_feed)
+_rl_page = render_entry_page(
+    _rl_entry, entries_by_id={}, registry={}, runs_by_id={}, day_pages=set(),
+    site_url="https://site.test/", cachebust="x", prefix="../../../",
+    canonical="https://site.test/entries/2026-07-11/friendly-fire/")
+assert_in("repo-link: entry page resolves against the site root",
+          'href="https://site.test/entries/2026-06-29/mozilla-0din-x/"', _rl_page)
+_rl_run = mk_run("2026-07-18T1208Z-audit", date="2026-07-18", path="runs/2026-07-18/2026-07-18T1208Z-audit.md",
+                 body="Report: [audit](../../docs/audits/2026-07-18-quality-audit.md).")
+_rl_note = build.render_run_note(_rl_run, prefix="../../")
+assert_match("repo-link: run note routes the audit report to GitHub",
+             r'href="https://github\.com/[^"]+/blob/main/docs/audits/2026-07-18-quality-audit\.md"', _rl_note)
+
+# Daily feed (2026-09-30): the still-rolling UTC day has no day page yet, so
+# it gets no item; completed days keep theirs.
+_df_days = {"2026-07-02": [mk_entry("yesterday", day="2026-07-02", ts="2026-07-02T09:00:00Z")],
+            "2026-07-03": [mk_entry("today-item", day="2026-07-03", ts="2026-07-03T09:00:00Z")]}
+_df_xml, _ = build.build_daily_feed(_df_days, {}, site_url="https://x.example/", ref_ts=REF_TS)
+assert_eq("daily feed is valid XML", _xml_validate(_df_xml), [])
+assert_in("daily feed carries the completed day", "https://x.example/daily/2026-07-02/", _df_xml)
+assert_not_in("daily feed skips the unfinished day", "daily/2026-07-03/", _df_xml)
+
+build._LINK_ENTRY_IDS.clear(); build._LINK_ENTRY_IDS.update(_saved_universe[0])
+build._LINK_RUN_IDS.clear(); build._LINK_RUN_IDS.update(_saved_universe[1])
+build._LINK_DAY_PAGES.clear(); build._LINK_DAY_PAGES.update(_saved_universe[2])
+
+# ---------------------------------------------------------------------
+# Change signal + briefbook permalinks (2026-09-30)
+# ---------------------------------------------------------------------
+print("== change signal (last_changed_at) ==")
+_LC_CORR = "2026-07-02T06:00:00Z"
+_LC_INT = "2026-07-03T11:00:00Z"
+E_LC = mk_entry(
+    "lc-item", day="2026-06-20", ts="2026-06-20T10:00:00Z", priority="high",
+    # A correction never moves updated_at, but it IS a change a poller must
+    # see; an internal record is neither.
+    updates=[{"at": _LC_CORR, "run_id": RUN2_ID, "type": "correction",
+              "summary": "CVSS corrected.", "fields": ["cves", "body"]},
+             {"at": _LC_INT, "run_id": RUN2_ID, "type": "improvement",
+              "summary": "metadata", "fields": ["techniques"], "internal": True}],
+    body="Body.\n\n## Correction — " + _LC_CORR + "\n\nCVSS corrected.",
+)
+assert_eq("last_changed_at: a correction moves it", build.entry_last_changed_at(E_LC), _LC_CORR)
+assert_eq("last_changed_at: never-changed entry = discovered_at",
+          build.entry_last_changed_at(E_HIGH), E_HIGH["discovered_at"])
+assert_eq("latest_change_type: new", build.latest_change_type(E_HIGH), "new")
+assert_eq("latest_change_type: internal record ignored", build.latest_change_type(E_LC), "correction")
+assert_true("_entry_exploited: cisa-kev status counts",
+            build._entry_exploited(mk_entry("kev-only", tags=[], cves=[{"id": "CVE-2026-1", "status": ["cisa-kev"]}])))
+assert_true("_entry_kev", build._entry_kev(E_CRIT) and not build._entry_kev(E_HIGH))
+assert_eq("_cve_min_record", build._cve_min_record(E_CRIT["cves"][0]),
+          {"id": "CVE-2026-34038", "cvss": "9.9", "status": ["exploited", "patch-available", "cisa-kev"],
+           "affected": "≤ v4.0.0-beta.420", "fixed": "v4.0.0-beta.469"})
+
+_book2 = build_briefbook([E_CRIT, E_LC], [RUN], ref_ts=REF_TS, prefix="../",
+                         site_url="https://x.example/")
+_be2 = {x["id"]: x for x in _book2["entries"]}
+assert_eq("briefbook permalink absolute", _be2[E_CRIT["id"]]["permalink"],
+          "https://x.example/entries/2026-07-03/coolify-rce/")
+assert_eq("briefbook markdown_permalink absolute", _be2[E_CRIT["id"]]["markdown_permalink"],
+          "https://x.example/entries/2026-07-03/coolify-rce/index.md")
+assert_eq("briefbook last_changed_at", _be2[E_LC["id"]]["last_changed_at"], _LC_CORR)
+assert_eq("briefbook runs[].url is the run page", _book2["runs"][0]["url"], "../runs/2026-07-03T0412Z-intel/")
+
+print("== alerts.json change signal ==")
+# E_LC: discovered 2026-06-20 (outside the 7-day window), corrected
+# 2026-07-02 (inside): it enters on the correction, not on updated_at.
+_al2 = build_alerts([E_CRIT, E_HIGH, E_LC, E_NOTE], ref_ts=REF_TS, site_url="https://x.example/")
+_al2m = {a["id"]: a for a in _al2["alerts"]}
+assert_true("alerts: a correction inside the window brings the entry in", E_LC["id"] in _al2m)
+assert_eq("alerts: last_changed_at emitted", _al2m[E_LC["id"]]["last_changed_at"], _LC_CORR)
+assert_true("alerts: notable stays out", E_NOTE["id"] not in _al2m)
+assert_eq("alerts: sorted by last_changed_at desc", [a["id"] for a in _al2["alerts"]][0], E_CRIT["id"])
+_ac = _al2m[E_CRIT["id"]]
+for field in ("permalink", "markdown_url", "kind", "actions", "affected_products", "cves",
+              "exploited", "kev", "last_changed_at"):
+    assert_true(f"alerts field `{field}`", field in _ac)
+assert_eq("alerts: markdown_url absolute", _ac["markdown_url"],
+          "https://x.example/entries/2026-07-03/coolify-rce/index.md")
+assert_eq("alerts: kev flag", (_ac["kev"], _al2m[E_HIGH["id"]]["kev"]), (True, False))
+assert_eq("alerts: cves carry fixed", _ac["cves"][0]["fixed"], "v4.0.0-beta.469")
+assert_in("alerts comment: alert on a changed last_changed_at", "changed `last_changed_at`", _al2["_comment"])
+_al_old = build_alerts([E_LC], ref_ts=datetime(2026, 7, 12, tzinfo=timezone.utc), site_url="https://x.example/")
+assert_eq("alerts: a change older than 7 days drops out", _al_old["alerts"], [])
+
+print("== actions.json ==")
+E_ACT_NOTE = mk_entry(
+    "notable-with-action", ts="2026-07-02T09:00:00Z", priority="notable",
+    actions=["Block the vendor's legacy update endpoint at the proxy."],
+    affected_products=["Microsoft SharePoint Server 2019", "Unknown Widget 3.1"],
+)
+E_ACT_OLD = mk_entry("stale-action", day="2026-06-01", ts="2026-06-01T09:00:00Z",
+                     priority="critical", actions=["Old task."])
+_act = build.build_actions([E_CRIT, E_HIGH, E_ACT_NOTE, E_ACT_OLD, E_LC], ref_ts=REF_TS,
+                           site_url="https://x.example/", registry=_preg)
+_ids = [it["id"] for it in _act["items"]]
+assert_eq("actions: window_days", _act["window_days"], 14)
+assert_eq("actions: only entries with a task, in the window, priority-ranked",
+          _ids, [E_CRIT["id"], E_ACT_NOTE["id"]])
+_ai = {it["id"]: it for it in _act["items"]}
+_crit_it = _ai[E_CRIT["id"]]
+for field in ("id", "permalink", "markdown_url", "priority", "kind", "headline", "summary",
+              "last_changed_at", "change", "immediate_action", "actions", "exploited", "kev",
+              "cves", "affected_products", "product_keys", "techniques", "classification",
+              "verification"):
+    assert_true(f"actions item field `{field}`", field in _crit_it)
+assert_eq("actions: change type of an updated entry", _crit_it["change"], "update")
+assert_eq("actions: change type of a new entry", _ai[E_ACT_NOTE["id"]]["change"], "new")
+assert_eq("actions: immediate_action carried", _crit_it["immediate_action"]["title"], "Patch Coolify now")
+assert_eq("actions: exploited + kev", (_crit_it["exploited"], _crit_it["kev"]), (True, True))
+assert_eq("actions: product_keys resolve through the registry",
+          _ai[E_ACT_NOTE["id"]]["product_keys"], ["product:microsoft-sharepoint"])
+assert_eq("actions: affected_products kept verbatim",
+          _ai[E_ACT_NOTE["id"]]["affected_products"],
+          ["Microsoft SharePoint Server 2019", "Unknown Widget 3.1"])
+assert_eq("actions: null immediate_action without one", _ai[E_ACT_NOTE["id"]]["immediate_action"], None)
+assert_true("actions: absolute permalink", _crit_it["permalink"].startswith("https://x.example/entries/"))
+assert_eq("entry_product_links: unknown product has no key",
+          build.entry_product_links(E_ACT_NOTE, _preg)[1], ("Unknown Widget 3.1", ""))
+
+print("== entry page run link ==")
+_rp = render_entry_page(
+    E_HIGH, entries_by_id={}, registry={}, runs_by_id={RUN["run_id"]: RUN}, day_pages=set(),
+    site_url="https://x.example/", cachebust="t", prefix="../../../",
+    canonical="https://x.example/entries/2026-07-03/fortibleed-campaign/")
+assert_in("Produced by links the run page", 'href="../../../runs/2026-07-03T0412Z-intel/"', _rp)
+assert_not_in("Produced by no longer needs the ops script", "ops/#run=", _rp)
+_rp2 = render_entry_page(
+    E_HIGH, entries_by_id={}, registry={}, runs_by_id={}, day_pages=set(),
+    site_url="https://x.example/", cachebust="t", prefix="../../../",
+    canonical="https://x.example/entries/2026-07-03/fortibleed-campaign/")
+assert_not_in("a run without a record is named, not linked", 'href="../../../runs/2026-07-03T0412Z-intel/"', _rp2)
+assert_in("a run without a record is still named", ">2026-07-03T0412Z-intel</span>", _rp2)
+
+print("== cves.json ==")
+E_CVE_OLD = mk_entry(
+    "cve-first", day="2026-06-30", ts="2026-06-30T09:00:00Z", priority="notable",
+    cves=[{"id": "CVE-2026-34038", "cvss": "9.1", "status": ["patch-available"],
+           "affected": "≤ v4.0.0-beta.400", "fixed": ""}],
+    affected_products=["Microsoft SharePoint Server"],
+)
+_cp = build.build_cves_payload([E_CRIT, E_CVE_OLD, E_HIGH], ref_ts=REF_TS, registry=_preg)
+_c = _cp["cves"]["CVE-2026-34038"]
+assert_eq("cves.json: only CVEs the store analyses", sorted(_cp["cves"]), ["CVE-2026-34038"])
+assert_eq("cves.json: details from the newest citing entry", (_c["cvss"], _c["fixed"]),
+          ("9.9", "v4.0.0-beta.469"))
+assert_eq("cves.json: status union across citing records", _c["status_union"],
+          ["cisa-kev", "exploited", "patch-available"])
+assert_eq("cves.json: exploited + kev", (_c["exploited"], _c["kev"]), (True, True))
+assert_eq("cves.json: max priority", _c["max_priority"], "critical")
+assert_eq("cves.json: entry ids newest first", _c["entry_ids"], [E_CRIT["id"], E_CVE_OLD["id"]])
+assert_eq("cves.json: products from citing entries", _c["products"], ["product:microsoft-sharepoint"])
+assert_eq("cves.json: last_changed_at = newest change of any citing entry", _c["last_changed_at"], UPD_AT)
+
+print("== run links only to run pages ==")
+_saved_runs = set(build._LINK_RUN_IDS)
+build._LINK_RUN_IDS.clear()
+build._LINK_RUN_IDS.update({"2026-07-03T0412Z-intel"})
+_ub = build.render_update_block(E_CRIT, E_CRIT["updates"][0], None, prefix="../")
+assert_not_in("update block: a run without a record is not linked", 'href="../runs/' + RUN2_ID, _ub)
+assert_in("update block: the run is still named", "run " + RUN2_ID, _ub)
+_chg = render_changes_page([E_CRIT], site_url="https://x.example/", cachebust="t", prefix="../",
+                           canonical="https://x.example/changes/")
+assert_not_in("changes page: no link to a missing run page", 'href="../runs/' + RUN2_ID, _chg)
+build._LINK_RUN_IDS.clear()
+build._LINK_RUN_IDS.update(_saved_runs)
+
+print("== landing action items + 7-day open criticals ==")
+E_CRIT_OLD = mk_entry(
+    "weekend-critical", day="2026-06-29", ts="2026-06-29T09:00:00Z", priority="critical",
+    immediate_action={"title": "Isolate the weekend appliance", "action": "Pull it off the network."},
+)
+E_CRIT_STALE = mk_entry("stale-critical", day="2026-06-20", ts="2026-06-20T09:00:00Z",
+                        priority="critical")
+assert_eq("open_criticals: the 7-day alerts window",
+          sorted(e["id"] for e in build.open_criticals([E_CRIT, E_CRIT_OLD, E_CRIT_STALE, E_HIGH], REF_TS)),
+          sorted([E_CRIT["id"], E_CRIT_OLD["id"]]))
+_land = render_live_brief_page(
+    [E_CRIT, E_HIGH], [RUN, RUN2],
+    all_entries=[E_CRIT, E_HIGH, E_CRIT_OLD, E_CRIT_STALE], all_runs=[RUN, RUN2],
+    ref_ts=REF_TS, entries_by_id={}, card_html_by_id={},
+    site_url="https://x.example/", cachebust="t", prefix="", canonical="https://x.example/",
+)
+assert_not_in("landing alarm follows the reading window (a 4-day-old critical stays out)", "Isolate the weekend appliance", _land)
+assert_not_in("landing alarm drops a critical older than 7 days", "entries/2026-06-20/stale-critical/", _land)
+assert_in("landing § Action items renders the window's tasks",
+          'id="action-items" data-action-items', _land)
+assert_in("landing action item text", "Patch Coolify to", _land)
+assert_in("landing action item links its finding", 'class="action-ref" href="entries/2026-07-03/coolify-rce/"', _land)
+assert_true("landing action items sit below the timeline",
+            _land.index("data-action-items") > _land.index("data-brief-timeline"))
+assert_in("feed counts link down to the action items", 'href="#action-items"><b data-window-act>1</b>', _land)
+assert_in("brief config carries the alarm window", '"alarm_days": 7', _land)
+_land_none = render_live_brief_page(
+    [E_HIGH], [RUN], all_entries=[E_HIGH], all_runs=[RUN], ref_ts=REF_TS,
+    entries_by_id={}, card_html_by_id={}, site_url="https://x.example/", cachebust="t",
+    prefix="", canonical="https://x.example/")
+assert_in("no task in the window: the section ships hidden and empty",
+          'data-action-items aria-labelledby="action-items-h" hidden>', _land_none)
+_ai_html, _ai_n = build.render_action_items([E_HIGH, E_CRIT], prefix="../../")
+assert_eq("render_action_items counts tasks", _ai_n, 1)
+assert_in("render_action_items list", '<ul class="action-list" data-action-list>', _ai_html)
+assert_eq("render_action_items: nothing to do renders nothing", build.render_action_items([E_HIGH], prefix=""), ("", 0))
+_bb3 = {x["id"]: x for x in build_briefbook([E_CRIT], [], ref_ts=REF_TS, prefix="../")["entries"]}
+assert_eq("briefbook action_label", _bb3[E_CRIT["id"]]["action_label"], "CVE-2026-34038")
+assert_eq("briefbook actions_html is the rendered task",
+          _bb3[E_CRIT["id"]]["actions_html"], ["Patch Coolify to ≥ v4.0.0-beta.469."])
+
+print("== day page: task-changing records ==")
+_RAISE_AT = "2026-07-03T06:00:00Z"
+E_RAISED = mk_entry(
+    "raised-to-critical", day="2026-07-01", ts="2026-07-01T09:00:00Z", priority="critical",
+    immediate_action={"title": "Rotate the exposed signing key", "action": "Rotate it now."},
+    actions=["Revoke every token minted with the old signing key."],
+    updates=[{"at": _RAISE_AT, "run_id": RUN2_ID, "type": "update",
+              "summary": "Exploitation confirmed; raised to critical.",
+              "fields": ["priority", "immediate_action", "actions", "body"]}],
+    updated_at=_RAISE_AT,
+    body="Body.\n\n## Update — " + _RAISE_AT + "\n\nExploitation confirmed.",
+)
+E_BODY_ONLY = mk_entry(
+    "body-only-update", day="2026-07-01", ts="2026-07-01T10:00:00Z", priority="critical",
+    actions=["A task that did not change today."],
+    updates=[{"at": _RAISE_AT, "run_id": RUN2_ID, "type": "update",
+              "summary": "More detail.", "fields": ["body"]}],
+    updated_at=_RAISE_AT,
+    body="Body.\n\n## Update — " + _RAISE_AT + "\n\nMore detail.",
+)
+assert_true("task_changed_on: priority/actions in fields", build.task_changed_on(E_RAISED, "2026-07-03"))
+assert_true("task_changed_on: a body-only record does not count",
+            not build.task_changed_on(E_BODY_ONLY, "2026-07-03"))
+assert_true("task_changed_on: another day does not count", not build.task_changed_on(E_RAISED, "2026-07-02"))
+assert_eq("day_task_entries", [e["id"] for e in build.day_task_entries([E_HIGH], [E_RAISED, E_BODY_ONLY], "2026-07-03")],
+          [E_HIGH["id"], E_RAISED["id"]])
+_dp = render_day_page(
+    "2026-07-03", [E_HIGH], [RUN], entries_by_id={}, site_url="https://x.example/", cachebust="t",
+    prefix="../../", canonical="https://x.example/daily/2026-07-03/",
+    updated_entries=[E_RAISED, E_BODY_ONLY])
+assert_in("day alarm carries the entry raised to critical that day", "Rotate the exposed signing key", _dp)
+assert_in("day action items carry its changed task", "Revoke every token minted", _dp)
+assert_not_in("a body-only update adds no action item", "A task that did not change today.", _dp)
+assert_not_in("a body-only update raises no alarm", 'class="alarm-row" href="../../entries/2026-07-01/body-only-update/"', _dp)
+
+print("== /cves/ list + entity last covered ==")
+_ents10, _ = build_entities({}, [E_CVE_OLD, E_CRIT, E_LC], {"cves": []}, {"sources": []}, set())
+_cve10 = {e["key"]: e for e in _ents10}["CVE-2026-34038"]
+assert_eq("CVE entity carries the newest citing facts", (_cve10["cve_facts"]["cvss"], _cve10["cve_facts"]["kev"]),
+          ("9.9", True))
+assert_eq("CVE entity names its latest entry", _cve10["latest_entry_id"], E_CRIT["id"])
+assert_eq("CVE last covered follows the latest change (an update after publication)",
+          _cve10["last_covered"], UPD_AT[:10])
+_cvel = build.render_cve_list_page([_cve10], site_url="https://x.example/", cachebust="t",
+                                   prefix="../", canonical="https://x.example/cves/")
+assert_in("/cves/: CVSS column", '<td class="cve-cvss num nowrap"><span class="mono" title="9.9">9.9</span>', _cvel)
+_cve_note = dict(_cve10, cve_facts=dict(_cve10["cve_facts"], cvss="9.8 (CNA) / 7.0 (NVD re-score, AV:N/AC:H)"))
+assert_in("/cves/: a scoring note shows its leading score, full text in the tooltip",
+          'title="9.8 (CNA) / 7.0 (NVD re-score, AV:N/AC:H)">9.8</span>',
+          build.render_cve_list_page([_cve_note], site_url="https://x.example/", cachebust="t",
+                                     prefix="../", canonical="https://x.example/cves/"))
+assert_in("/cves/: exploited + KEV badges", ">KEV</span>", _cvel)
+assert_in("/cves/: fixed column", "v4.0.0-beta.469", _cvel)
+assert_in("/cves/: latest coverage links the entry",
+          '<a href="../entries/2026-07-03/coolify-rce/" class="mono">2026-07-03</a>', _cvel)
+assert_in("/cves/: count of the other entries", "+1 more", _cvel)
+assert_not_in("/cves/: coverage never links a day page", '<td class="cve-cov"><a href="../daily/', _cvel)
+_lc_cve = dict(E_LC, cves=[{"id": "CVE-2026-7777", "status": ["patch-available"]}])
+_ents10b, _ = build_entities({}, [_lc_cve], {"cves": []}, {"sources": []}, set())
+_c7 = {e["key"]: e for e in _ents10b}["CVE-2026-7777"]
+assert_eq("entity last covered: a correction after publication moves it",
+          (_c7["first_covered"], _c7["last_covered"]), ("2026-06-20", _LC_CORR[:10]))
+
+print("== Exposure labelled line ==")
+_exp_html = enhance_brief_item_html(render_markdown(
+    "Analysis.\n\n**Exposure:** internet-facing gateways on 7.x; check the admin banner."))
+assert_in("Exposure becomes a callout", '<aside class="callout callout--exposure" role="note">', _exp_html)
+assert_in("Exposure callout label", '<span class="callout__label">Exposure</span>', _exp_html)
+_exp_entry = mk_entry("exposure-fixture", entities=["actor:unc9999"], body=(
+    "Body.\n\n**Exposure:** every tenant on the legacy connector; check the connector log.\n\n"
+    "**Detection:** process creation from the connector service.\n\n"
+    "**Defender takeaway:** retire the legacy connector."))
+_exp_ins = build.entry_insights(_exp_entry)
+assert_eq("entry_insights lifts the Exposure line",
+          _exp_ins["exposure"], "Every tenant on the legacy connector; check the connector log.")
+assert_eq("_insight_kind exposure", build._insight_kind("Exposure"), "exposure")
+_exp_intel = build.render_entity_intel({"key": "actor:unc9999", "type": "actor", "title": "UNC9999"},
+                                       [_exp_entry], prefix="../../")
+assert_in("entity insights surface Exposure", '<span class="callout__label">Exposure</span>', _exp_intel)
+assert_in("entity insights name Exposure in the fold", "Exposure · detection", _exp_intel)
+_exp_only = mk_entry("exposure-only", body="Body.\n\n**Exposure:** only the exposure line here.")
+assert_in("an entry with only an Exposure line still earns an insight card",
+          "Only the exposure line here.",
+          build.render_entity_intel({"key": "x", "type": "actor", "title": "X"}, [_exp_only], prefix=""))
+
+print("== llms.txt ==")
+with tempfile.TemporaryDirectory() as _td:
+    _lp = Path(_td) / "llms.txt"
+    build.write_llms_txt(_lp, site_url="https://x.example/", counts={"entries": 1},
+                         latest_day="2026-07-02", generated="g")
+    _lt = _lp.read_text(encoding="utf-8")
+_mach = _lt[_lt.index("## Machine endpoints"):]
+_order = [_mach.index(k) for k in ("data/actions.json", "data/cves.json", "data/alerts.json",
+                                    "data/briefbook.json", "data/search.json", "data/graph.json",
+                                    "data/attack.json", "stix/bundle.json", "attack-layer.json")]
+assert_eq("llms.txt lists actions.json first, then the other endpoints in order", _order, sorted(_order))
+assert_in("llms.txt summarises the actions.json fields", "last_changed_at, change (new|update|correction|improvement)", _mach)
+assert_in("llms.txt names the briefbook permalinks", "markdown_permalink", _mach)
+assert_not_in("llms.txt carries no em dash", "\u2014", _lt)
+
+print("== source_health load warning ==")
+import contextlib  # noqa: E402
+import io  # noqa: E402
+with tempfile.TemporaryDirectory() as _td:
+    _bad = Path(_td) / "source_health.json"
+    _bad.write_text("{not json", encoding="utf-8")
+    _err = io.StringIO()
+    with contextlib.redirect_stderr(_err):
+        _sh_loaded = build.load_source_health(_bad)
+    assert_eq("unparseable source_health.json loads as None", _sh_loaded, None)
+    assert_in("unparseable source_health.json is announced", "warning: source_health.json not loaded", _err.getvalue())
+    _good = Path(_td) / "ok.json"
+    _good.write_text('{"latest": {}}', encoding="utf-8")
+    assert_eq("valid source_health.json loads", build.load_source_health(_good), {"latest": {}})
+    assert_eq("absent source_health.json is silent None", build.load_source_health(Path(_td) / "none.json"), None)
+
+print("== briefbook carries corrected entries for the client alarm ==")
+E_CORR_OLD = mk_entry(
+    "old-critical-corrected", day="2026-05-01", ts="2026-05-01T09:00:00Z", priority="critical",
+    updates=[{"at": "2026-07-02T09:00:00Z", "run_id": RUN2_ID, "type": "correction",
+              "summary": "Affected range corrected.", "fields": ["cves", "body"]}],
+    body="Body.\n\n## Correction — 2026-07-02T09:00:00Z\n\nAffected range corrected.")
+_bbc = build_briefbook([E_CORR_OLD, E_HIGH], [], ref_ts=REF_TS, prefix="../")
+assert_true("briefbook includes an old entry corrected inside the window",
+            E_CORR_OLD["id"] in [x["id"] for x in _bbc["entries"]])
+assert_true("open_criticals and briefbook agree on it",
+            E_CORR_OLD["id"] in [e["id"] for e in build.open_criticals([E_CORR_OLD], REF_TS)])
+
+assert_in("alarm stamp names a correction as the last change", "corrected 02 Jul 09:00Z",
+          render_alarm([E_CORR_OLD]))
+assert_in("alarm stamp names an update", "updated 03 Jul 08:00Z", render_alarm([E_CRIT]))
 
 # ---------------------------------------------------------------------
 # Result

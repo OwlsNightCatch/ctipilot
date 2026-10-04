@@ -37,7 +37,7 @@ cves:
     affected: "claude-code from 0.2.54 until 2.1.163"
     fixed: "2.1.163"
   - id: CVE-2026-12537
-    cvss: "10.0 (CVSS 4.0, CNA-assigned, labelled 'Secondary' by NVD) / 7.8 (CVSS 3.1, NVD's own 'Primary'-labelled rating)"
+    cvss: "10.0 (Google)"
     epss: null
     type: logic-flaw
     vector: zero-click
@@ -58,6 +58,10 @@ sources:
     publisher: "OSV"
     date: "2026-04-24"
     role: corroborating
+  - url: "https://github.com/google-github-actions/run-gemini-cli/security/advisories/GHSA-wpqr-6v78-jr5g"
+    publisher: "Google (GitHub Security Advisory)"
+    date: "2026-04-24"
+    role: primary
 closed_sources: []
 evidence:
   - quote: "It is loaded from disk on every single invocation and injected as instructions the model treats as authoritative"
@@ -71,12 +75,11 @@ sourcing_note: >
   The write-up is the technical primary. Identifier binding is stated carefully because it is easy to
   get wrong: Anthropic's advisory assigns CVE-2026-54316 specifically to the pre-approved bare
   hostname in the fetch-tool allowlist, not to the command-validator or path-check rounds described
-  alongside it, which carry no identifier. Google's advisory record itself lists no CVE; the
-  CVE-2026-12537 alias and the affected ranges come from the OSV record for that advisory, which is
-  cited directly rather than attributed to Google. Both CVEs predate this write-up by weeks to
-  months and were already fixed, so this entry is composed as a mechanism explainer plus one
-  genuinely new finding, not as fresh vulnerability news. The OpenAI Codex finding carries no CVE or
-  advisory from any party — an absence this run confirmed rather than an omission.
+  alongside it, which carry no identifier. Google's advisory gives the rating, vector and fixed
+  versions but lists no CVE. The CVE-2026-12537 alias comes from the OSV record for that advisory.
+  Both CVEs predate this write-up by weeks to months and were already fixed, so the value here is
+  the mechanism plus one new finding, not fresh vulnerability news. The OpenAI Codex finding carries
+  no CVE or advisory from any party, an absence confirmed rather than an omission.
 confidence: high
 update_of: null
 references: []
@@ -110,14 +113,23 @@ updates:
       v4.2 migration: the 2026-08-28 CVSS-divergence correction rewritten reader-facing 
       (record-field narration removed); updated_at recomputed under the new float rule.
     fields: [updated_at, body]
+  - at: "2026-09-30T07:18:24Z"
+    run_id: 2026-09-30T0639Z-audit
+    type: correction
+    summary: >
+      The severity of CVE-2026-12537 came from the NVD record rather than a cited advisory, and showed a 7.8 rating with a local, user-interaction vector beside the 10.0. The rating, vector
+      and fixed versions now cite Google's own advisory, which gives only the network-reachable
+      10.0, with OSV kept for the CVE alias. The 7.8 figure is removed from the text and the
+      structured score, and a self-reference to other coverage is removed from the text.
+    fields: [cves, body, sourcing_note, sources]
 migrated_from: null
 ---
 
 Three AI coding-agent CI harnesses were broken in different ways by the same underlying question: what, inside an automated pipeline, is the agent allowed to treat as authoritative? Novee Security tested each against the vendor's own public repository in default configuration ([Novee Security, 2026-08-05](https://novee.security/blog/critical-flaws-in-anthropic-google-and-openais-coding-agents/)).
 
-The Claude Code Action work is best read as three successive rounds of patch-and-bypass, and only the last of them carries an identifier. Round one turned on an ordering mistake in defensive code: the command-injection validation pipeline strips single-quoted content before inspecting a command — a sensible-looking measure to avoid false positives on shell metacharacters inside string literals — which means an injected payload placed inside single quotes is examined only after the interesting part has been removed. A validator that sanitises its input before deciding whether the input is dangerous is checking something other than what will execute. Round two was an asymmetry in the allowlist itself, where commands classed as read-only were exempted from path checking, so a read-only utility could be pointed at any file on the runner. Neither round carries a CVE. The identifier belongs to the third round, and Anthropic's own advisory states what it covers: "Because the hostname huggingface.co was pre-approved as a bare hostname for the WebFetch tool, any path on that domain—including attacker-controlled model repositories—was auto-approved without a permission prompt or being subject to --allowedTools restrictions." The advisory records the affected range as 0.2.54 up to 2.1.163 and the fix in 2.1.163 ([Anthropic, 2026-06-13](https://github.com/anthropics/claude-code/security/advisories/GHSA-fg94-h982-f3mm)). The Google finding is tracked as CVE-2026-12537, rated 10.0 CRITICAL by the assigning CNA with no user interaction required, fixed in gemini-cli 0.39.1 and run-gemini-cli 0.1.22 ([NVD/MITRE CVE record, 2026-08-28](https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-12537)).
+The Claude Code Action work is best read as three successive rounds of patch-and-bypass, and only the last of them carries an identifier. Round one turned on an ordering mistake in defensive code: the command-injection validation pipeline strips single-quoted content before inspecting a command, a sensible-looking measure to avoid false positives on shell metacharacters inside string literals. That means an injected payload placed inside single quotes is examined only after the interesting part has been removed. A validator that sanitises its input before deciding whether the input is dangerous is checking something other than what will execute. Round two was an asymmetry in the allowlist itself, where commands classed as read-only were exempted from path checking, so a read-only utility could be pointed at any file on the runner. Neither round carries a CVE. The identifier belongs to the third round, and Anthropic's own advisory states what it covers: "Because the hostname huggingface.co was pre-approved as a bare hostname for the WebFetch tool, any path on that domain—including attacker-controlled model repositories—was auto-approved without a permission prompt or being subject to --allowedTools restrictions." The advisory records the affected range as 0.2.54 up to 2.1.163 and the fix in 2.1.163 ([Anthropic, 2026-06-13](https://github.com/anthropics/claude-code/security/advisories/GHSA-fg94-h982-f3mm)). The Google finding is tracked as CVE-2026-12537 ([OSV, 2026-04-24](https://api.osv.dev/v1/vulns/GHSA-wpqr-6v78-jr5g)). Google's own advisory rates it Critical, CVSS 10.0, and fixes it in `@google/gemini-cli` 0.39.1 and `run-gemini-cli` 0.1.22 ([Google, 2026-04-24](https://github.com/google-github-actions/run-gemini-cli/security/advisories/GHSA-wpqr-6v78-jr5g)).
 
-Both of those were patched weeks to months before the write-up appeared, so for those two vendors the action is a version check, not an incident. Their mechanics are still worth carrying, because the lesson generalises to anyone building command allowlists rather than merely consuming these products — and because the exfiltration target the researchers reached is already known here from a different flaw in the same product family. The write-up's phrasing of that step is worth quoting for how narrow the distinction is: "cat /proc/$PPID/environ reads the parent, not self, and pulls from the process that still holds every single thing the isolation was built to keep away."
+Both of those were patched weeks to months before the write-up appeared, so for those two vendors the action is a version check, not an incident. Their mechanics are still worth carrying, because the lesson generalises to anyone building command allowlists rather than merely consuming these products. In the Gemini CLI finding, where the environment was sanitised only for a child process, the write-up's phrasing of the step that reached the runner's secrets is worth quoting for how narrow the distinction is: "cat /proc/$PPID/environ reads the parent, not self, and pulls from the process that still holds every single thing the isolation was built to keep away." ([Novee Security, 2026-08-05](https://novee.security/blog/critical-flaws-in-anthropic-google-and-openais-coding-agents/))
 
 The third finding is the one that is genuinely current, and it has no CVE because, as the researchers observe, nobody files one for newly documented behaviour. In an OpenAI Codex workflow, two agent passes ran over a single shared checkout, and the agent's own default instruction file sat in that checkout outside the protected-metadata set. That file "is loaded from disk on every single invocation and injected as instructions the model treats as authoritative" — so a first pass induced to modify it dictates what the second pass believes it has been told to do. The fix was structural rather than a patch: "3 Days after our report they fixed it and the two passes on openai/codex were split into separate jobs, each with its own checkout." That change landed in the vendor's own repository. It does not propagate to anyone else's pipeline, because the flaw is not in a shipped component — it is in a workflow shape.
 
@@ -125,4 +137,8 @@ The third finding is the one that is genuinely current, and it has no CVE becaus
 
 ## Correction — 2026-08-28T04:55:00Z
 
-CVE-2026-12537 (Google Gemini CLI) carries two sharply divergent official severity ratings, and the divergence itself is the triage-relevant fact. The assigning CNA rates the flaw CVSS 4.0, 10.0 CRITICAL, with the vector `CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/...` — network-reachable, no privileges, no user interaction ([NVD/MITRE CVE record, 2026-08-28](https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-12537)). NVD's own CVSS 3.1 assessment of the same record is 7.8, with vector `CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H` — a local attack vector with user interaction required ([NVD/MITRE CVE record, 2026-08-28](https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-12537)). Both ratings now stand above; the CNA's zero-click, unauthenticated rating is the more severe of the two and the one that should drive triage, with NVD's narrower rating alongside it as a named divergence rather than a substitute.
+Google rates the flaw CVSS 10.0, the maximum score, in its own advisory, with a network-reachable, no-privilege, no-interaction CVSS 3.1 vector, `CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H`, and the fixes in `@google/gemini-cli` 0.39.1 and `run-gemini-cli` 0.1.22 ([Google, 2026-04-24](https://github.com/google-github-actions/run-gemini-cli/security/advisories/GHSA-wpqr-6v78-jr5g)). OSV maps that advisory to CVE-2026-12537 ([OSV, 2026-04-24](https://api.osv.dev/v1/vulns/GHSA-wpqr-6v78-jr5g)). Triage should follow that zero-click, unauthenticated rating.
+
+## Correction — 2026-09-30T07:18:24Z
+
+Google's own advisory, GHSA-wpqr-6v78-jr5g, rates the flaw Critical, CVSS 10.0, with a network-reachable, no-privilege, no-interaction vector, and fixes it in `@google/gemini-cli` 0.39.1 and `run-gemini-cli` 0.1.22 ([Google, 2026-04-24](https://github.com/google-github-actions/run-gemini-cli/security/advisories/GHSA-wpqr-6v78-jr5g)). OSV maps that advisory to CVE-2026-12537 ([OSV, 2026-04-24](https://api.osv.dev/v1/vulns/GHSA-wpqr-6v78-jr5g)). Google's advisory carries only that network-reachable 10.0 rating, not the 7.8 rating with a local, user-interaction vector shown earlier, so triage follows Google's rating.

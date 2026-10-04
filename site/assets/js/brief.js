@@ -15,8 +15,10 @@
  * updated entry therefore floats back into the window under the run that
  * updated it, flagged UPD with the record's type + summary.
  *
- * It also keeps the critical alarm header (render_alarm) and the feed's
- * count line in step with the window, makes each timeline row open its
+ * It also keeps the critical alarm header (render_alarm; it follows the
+ * reading window), the Action Items list below the feed
+ * (render_action_items) and the feed's count line in step with the
+ * window, makes each timeline row open its
  * permalink on click (text stays selectable; inner links keep working),
  * and offers a Summaries / Headlines density toggle, remembered per
  * browser.
@@ -67,6 +69,7 @@
     var more = document.querySelector('[data-window-more]');
     var endMsg = document.querySelector('[data-window-end]');
     var alarmEl = document.querySelector('[data-alarm]');
+    var actionsEl = document.querySelector('[data-action-items]');
 
     function passesFilter(e) {
       var s = filterSets;
@@ -110,6 +113,7 @@
     }
 
     var TYPE_LABEL = { update: 'Update', correction: 'Correction', improvement: 'Improvement' };
+    var CHANGE_WORD = { update: 'updated ', correction: 'corrected ', improvement: 'improved ' };
 
     // Headline / summary fields may carry inline **emphasis** (migrated
     // content); render it like the server's _inline_text, drop strays.
@@ -131,13 +135,40 @@
         var meta = [];
         if (e.cve_label) meta.push(e.cve_label);
         if (e.exploited) meta.push('exploited');
-        meta.push((e.activity_is_update ? 'updated ' : '') + stamp(activityDate(e)));
+        // Mirrors render_alarm: the last reader-facing change, named.
+        var rec = latestRecord(e);
+        var lc = e.last_changed_at ? new Date(e.last_changed_at) : activityDate(e);
+        meta.push((rec ? (CHANGE_WORD[rec.type || 'update'] || '') : '') + stamp(lc));
         return '<a class="alarm-row" href="' + esc(sitePrefix() + relUrl(e)) + '" data-entry-id="' + esc(e.id) + '">'
           + '<span class="alarm-tag"><span class="adot" aria-hidden="true"></span>Critical</span>'
           + '<span class="alarm-t">' + esc(alarmText(e)) + '</span>'
           + '<span class="alarm-m">' + esc(meta.join(' · ')) + '</span>'
           + '<span class="alarm-go" aria-hidden="true">→</span></a>';
       }).join('');
+    }
+
+    // Action Items: every do-now task of the window's findings, in brief
+    // order, each with a pill to its finding. Mirrors render_action_items in
+    // site/build.py; the task text is the server's own rendering
+    // (actions_html), its links re-based from data/ onto this page.
+    function rebase(h) {
+      return String(h || '').replace(/(\shref=")(?:\.\.\/)+/g, '$1' + esc(sitePrefix()));
+    }
+    function actionItemsHtml(list) {
+      var rows = [];
+      list.forEach(function (e) {
+        var url = esc(sitePrefix() + relUrl(e));
+        var label = esc(e.action_label || e.title || e.id);
+        (e.actions_html || []).forEach(function (h) {
+          rows.push('<li class="action-list__item" data-entry-id="' + esc(e.id) + '">'
+            + '<div class="action-list__body">' + rebase(h) + '</div>'
+            + '<a class="action-ref" href="' + url + '" aria-label="Open finding: ' + label + '">'
+            + '<span class="action-ref__tag">Finding</span>'
+            + '<span class="action-ref__label">' + label + '</span>'
+            + '<span class="action-ref__go" aria-hidden="true">→</span></a></li>');
+        });
+      });
+      return rows;
     }
 
     // Section-body order (entry_sort_key): org-lens regions, then
@@ -281,21 +312,35 @@
           }
           if (ts.getTime() > 0) prevTs = ts;
           var items = byRun[rid] || [];
-          html += runDivider(stamp(ts), gap, items.length, rid);
+          // Only a run with a record (briefbook runs[]) has a page to link.
+          html += runDivider(stamp(ts), gap, items.length, runsById[rid] ? rid : '');
           items.forEach(function (e) { html += runItem(e, rid === firstNonEmpty && !e.activity_is_update); });
         });
       }
       container.innerHTML = html;
 
-      // The alarm follows the window, never the chip filters.
+      // The alarm follows the reading window, never the chip filters
+      // (operator directive 2026-09-29: a very short alarm). Mirrors build.py.
       if (alarmEl) {
+        var alarmSince = new Date(refTs.getTime() - hours * 3600000);
         var crit = (data.entries || []).filter(function (e) {
           if (e.priority !== 'critical') return false;
-          var d = (e.activity_at || e.discovered_at) ? activityDate(e) : null;
-          return d && d >= since && d <= refTs;
+          var t = e.last_changed_at || e.activity_at || e.discovered_at;
+          var d = t ? new Date(t) : null;
+          return d && d >= alarmSince && d <= refTs;
         }).sort(sortKey);
         alarmEl.innerHTML = alarmHtml(crit);
         alarmEl.hidden = !crit.length;
+      }
+
+      // Action Items follow the window AND the chip filters, like the feed.
+      var actRows = actionItemsHtml(ops.slice().sort(sortKey));
+      if (actionsEl) {
+        var actList = actionsEl.querySelector('[data-action-list]');
+        var actCount = actionsEl.querySelector('[data-action-count]');
+        if (actList) actList.innerHTML = actRows.join('');
+        if (actCount) actCount.textContent = '(' + actRows.length + ')';
+        actionsEl.hidden = !actRows.length;
       }
 
       var nCrit = 0, nHigh = 0, nUpd = 0, nExp = 0;
@@ -305,7 +350,7 @@
         if (e.activity_is_update) nUpd++;
         if (e.exploited) nExp++;
       });
-      var counts = { total: ops.length, crit: nCrit, high: nHigh, exp: nExp, upd: nUpd };
+      var counts = { total: ops.length, crit: nCrit, high: nHigh, exp: nExp, upd: nUpd, act: actRows.length };
       Object.keys(counts).forEach(function (k) {
         var el = document.querySelector('[data-window-' + k + ']');
         if (!el) return;

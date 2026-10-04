@@ -28,8 +28,16 @@ content, first-class AI-agent readability, mobile-friendly.
   but a very short critical alarm.** § Do now (`render_donow`), the big
   ACT NOW card (`render_actnow`) and the window pulse panel (`.pulsepanel`,
   category chips, window-bounds line) are DELETED in build.py, brief.js
-  and the CSS; do not reintroduce them. `actions[]` still renders on day
-  pages (§ Action Items) and entry permalinks (Defender actions).
+  and the CSS; do not reintroduce them. `actions[]` renders on day pages
+  (§ Action Items), entry permalinks (Defender actions) and, since
+  2026-09-30, in a landing § Action items panel BELOW the timeline
+  (`render_action_items`, `.action-panel`; follows the window and the chip
+  filters). Agents get the same list as `data/actions.json` (14 days).
+- **The alarm follows the reading window (2026-09-30).** A site sub-agent
+  widened it to every critical changed in the last 7 days (6 rows that
+  week); reverted the same day because the directive asks for a very short
+  alarm. The 7-day span lives in `data/alerts.json` (`open_criticals`) for
+  notification hooks only.
 - **Critical alarm (`render_alarm`, `.alarm` / `.alarm-row`)**: one compact
   row per `priority: critical` entry in the window: CRITICAL tag,
   `immediate_action.title` (short imperative; headline fallback via

@@ -1,22 +1,22 @@
 ---
 schema: 1
 kind: research
-title: "DDRop: a $159 DDR5 hardware interposer silently drops targeted memory writes, defeating Intel TDX/SGX and AMD SEV-SNP integrity guarantees — no CVE, no vendor fix"
+title: "DDRop: a $159 DDR5 hardware interposer silently drops targeted memory writes, defeating Intel TDX/SGX and AMD SEV-SNP integrity guarantees, with no vendor fix"
 headline: "Researchers show a cheap hardware add-on can forge Intel TDX attestation reports by tampering with memory writes at the DRAM bus"
 summary: >
   Researchers from KU Leuven, ETH Zurich, Durham University and Google disclosed DDRop, an
   open-source DDR5 hardware interposer costing about $159 that abuses the memory bus's own
-  error-handling path to silently drop targeted writes, defeating the confidentiality and
-  integrity guarantees of Intel TDX, Intel Scalable SGX and AMD SEV-SNP confidential computing —
-  including forging Intel TDX remote-attestation reports. Intel and AMD confirmed the findings
-  but both declare physical DRAM-bus attacks out of scope for their current threat models; neither
-  is assigning a CVE or shipping a mitigation. The prerequisite is brief physical access to the
-  hardware, not a software bug.
+  error-handling path to silently drop targeted writes. They show it undermining the protection of
+  Intel TDX, Intel Scalable SGX and AMD SEV-SNP confidential computing, and on Intel TDX forging
+  remote-attestation reports. Intel and AMD acknowledged the findings but place physical attacks on
+  the memory bus outside their threat models. AMD does not plan to assign a CVE or release mitigations, and
+  Intel is evaluating further hardening. The prerequisite is brief physical access to install the
+  interposer, which takes minutes, not a software bug.
 discovered_at: "2026-09-17T04:44:00Z"
 updated_at: null
 event_date: "2026-09-14"
 run_id: 2026-09-17T0409Z-intel
-priority: notable
+priority: routine
 immediate_action: null
 tags: [cloud]
 regions: [global]
@@ -64,12 +64,26 @@ classification:
   credibility: 1
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-30T06:56:08Z"
+    run_id: 2026-09-30T0639Z-audit
+    type: correction
+    summary: >
+      Priority recalibrated from notable to routine: hardware research needing physical access, with
+      no near-term decision for Swiss public bodies. The body is shortened to suit that priority, and
+      the vendor positions are narrowed to what Intel and AMD published: AMD does not plan to assign a CVE
+      or release mitigations, and Intel is evaluating further hardening. The title no longer says
+      neither vendor assigns a CVE, since only AMD says so.
+    fields: [priority, body, summary, title]
 migrated_from: null
 ---
 
-Researchers from KU Leuven, ETH Zurich, Durham University and Google disclosed DDRop, an open-source DDR5 hardware interposer that costs roughly $159 in parts and installs in minutes ([DDRop research team, 2026-09-14](https://ddropattack.eu/)). Unlike earlier passive bus-snooping attacks (Membuster, WireTap, TEE.fail), DDRop actively abuses the DDR5 bus's error-handling path: it forges a parity error on a targeted write and suppresses the resulting alert, so the memory module silently discards the command while the processor believes the write completed, leaving stale, attacker-chosen ciphertext in place. Unlike earlier passive interposers, which had to slow the memory bus to work with second-hand lab equipment — making the tampering easier to notice — DDRop runs at native DDR5 speed ([DDRop research team, 2026-09-14](https://ddropattack.eu/)). Against Intel TDX, the team used this to corrupt the TDX module's initialization writes to Secure Extended Page Tables, letting an attacker-controlled Trust Domain remap its own memory onto any physical RAM address; under TDX's default Logical Integrity mode this also lets an attacker corrupt a target Trust Domain's own debug-mode-attribute bit, giving roughly a 50% chance per attempt of forcing the hypervisor's debug API to dump that victim's plaintext memory before the original ciphertext is restored. Even under TDX's stronger Cryptographic Integrity mode, an attacker can still forge their own Trust Domain's launch-measurement attestation, so a backdoored VM passes remote attestation as trusted ([DDRop research team, 2026-09-14](https://ddropattack.eu/)).
+Researchers from KU Leuven, ETH Zurich, Durham University and Google disclosed DDRop, an open-source DDR5 hardware interposer that costs about $159 in parts and, unlike earlier passive interposers, runs at native bus speed ([DDRop research team, 2026-09-14](https://ddropattack.eu/)). It forges a parity error on a targeted write and suppresses the alert, so the memory module silently drops the write and stale, attacker-chosen ciphertext stays in place. Against Intel TDX this corrupts the TDX module's initialization of Secure Extended Page Tables, so an attacker-controlled Trust Domain can remap its memory onto other physical memory. Under TDX's default logical integrity mode that lets the attacker flip a victim Trust Domain's debug attribute and read its memory through the hypervisor's debug API, and even under cryptographic integrity mode the attacker can forge the launch measurement of a rogue VM of their own so that it passes remote attestation ([DDRop research team, 2026-09-14](https://ddropattack.eu/)).
 
-The only prerequisite is brief physical access to install the interposer, on top of the standard confidential-computing threat model of a compromised hypervisor or BIOS; the researchers list malicious data-center technicians, hardware supply-chain tampering and law-enforcement or state seizure as realistic access vectors. Intel and AMD confirmed the findings under coordinated disclosure but both declared physical DRAM-bus attacks out of scope for their current products' threat model, and neither is assigning a CVE or shipping a mitigation ([Intel PSIRT, 2026-09-14](https://www.intel.com/content/www/us/en/security-center/announcement/intel-security-announcement-2026-08-11-001.html); [AMD Product Security, 2026-09-15](https://www.amd.com/en/resources/product-security/bulletin/amd-sb-3048.html)). Intel says it is evaluating "Platform Owner Endorsements" — a mechanism to let remote parties verify who physically holds sensitive hardware ([Intel PSIRT, 2026-09-14](https://www.intel.com/content/www/us/en/security-center/announcement/intel-security-announcement-2026-08-11-001.html)) — and, per heise's reporting, next-generation memory-encryption schemes with stronger hardware protection ([heise Security, 2026-09-16](https://www.heise.de/news/DDROP-Adapterstecker-hebelt-Confidential-Computing-aus-11454579.html)). Research code, hardware schematics and firmware are published publicly; no in-the-wild exploitation is claimed or plausible given the physical-access requirement.
+The attack needs a brief, one-time visit to install the interposer, which takes minutes, on top of the standard confidential-computing threat model in which the adversary controls the hypervisor and BIOS. The researchers name data-center insiders, supply-chain tampering and hardware access compelled by law enforcement or governments as ways to get that access ([DDRop research team, 2026-09-14](https://ddropattack.eu/)). Intel and AMD both place physical attacks on the memory bus outside their threat models; AMD does not plan to assign a CVE, and Intel is evaluating further hardening and detection options ([Intel PSIRT, 2026-09-14](https://www.intel.com/content/www/us/en/security-center/announcement/intel-security-announcement-2026-08-11-001.html); [AMD Product Security, 2026-09-15](https://www.amd.com/en/resources/product-security/bulletin/amd-sb-3048.html)). Schematics, board files, firmware and proof-of-concept code are public ([DDRop research team, 2026-09-14](https://ddropattack.eu/)), and no in-the-wild use is claimed.
 
-**Defender takeaway:** DDRop undercuts the specific assurance that makes confidential computing attractive for hosting sensitive workloads on infrastructure an organization does not physically control — that a compromised host operator cannot read or tamper with a workload's memory, and that remote attestation can prove it. Any procurement or risk decision that treats Intel TDX/SGX or AMD SEV-SNP attestation as a hard trust boundary against a malicious data-center operator or seized hardware should now account for a low-cost, publicly documented physical bypass with no vendor fix; the only available lever is procedural — restricting and monitoring physical access to hardware and vetting supply-chain handling — not a patch.
+**Defender takeaway:** Confidential computing on Intel TDX, Intel Scalable SGX or AMD SEV-SNP is no longer a hard trust boundary against whoever physically holds the hardware, including the cloud provider it is meant to exclude, and on Intel TDX even remote attestation can be forged ([DDRop research team, 2026-09-14](https://ddropattack.eu/)). A risk decision that relies on it for that case must account for a cheap, public physical bypass with no vendor fix. Restricting and monitoring physical access to servers, as Intel advises, is the remaining lever ([Intel PSIRT, 2026-09-14](https://www.intel.com/content/www/us/en/security-center/announcement/intel-security-announcement-2026-08-11-001.html)).
+
+## Correction — 2026-09-30T06:56:08Z
+
+Intel and AMD acknowledged the findings and place physical attacks on the memory bus outside their threat models ([DDRop research team, 2026-09-14](https://ddropattack.eu/)). Only AMD says it does not plan to assign a CVE or release mitigations ([AMD Product Security, 2026-09-15](https://www.amd.com/en/resources/product-security/bulletin/amd-sb-3048.html)). Intel's announcement does not mention a CVE and says Intel is evaluating additional architectural hardening options and detection mechanisms ([Intel PSIRT, 2026-09-14](https://www.intel.com/content/www/us/en/security-center/announcement/intel-security-announcement-2026-08-11-001.html)). The earlier statement that both vendors confirmed the findings and that neither is assigning a CVE went beyond what they published.

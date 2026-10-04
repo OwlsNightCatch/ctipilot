@@ -20,7 +20,7 @@ discovered_at: "2026-09-17T04:52:00Z"
 updated_at: null
 event_date: "2026-09-15"
 run_id: 2026-09-17T0409Z-intel
-priority: high
+priority: notable
 immediate_action: null
 tags: [ai-abuse, supply-chain, identity, cloud]
 regions: [global]
@@ -62,7 +62,15 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-30T06:56:11Z"
+    run_id: 2026-09-30T0639Z-audit
+    type: correction
+    internal: true
+    summary: >
+      Priority recalibrated from high to notable: an annual AI-risk report with
+      no finding that forces a decision within a week.
+    fields: [priority]
 migrated_from: null
 ---
 

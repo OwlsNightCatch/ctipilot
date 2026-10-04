@@ -1094,6 +1094,20 @@ def _is_str_list(v) -> bool:
     return isinstance(v, list) and all(isinstance(i, str) for i in v)
 
 
+
+def merged_ids(rec: object) -> list[str]:
+    """Entry ids a changelog record folded into its entry (`merged_from`).
+
+    A string for the v4.0 migration's one-to-one folds; a list when a later
+    consolidation folds several duplicate entries of one finding into the
+    surviving entry in a single record (v4.19). Consumers (redirect stubs,
+    link resolution) always go through this helper."""
+    mf = rec.get("merged_from") if isinstance(rec, dict) else None
+    if mf is None or mf == "":
+        return []
+    vals = mf if isinstance(mf, list) else [mf]
+    return [str(v) for v in vals if v not in (None, "")]
+
 def validate_entry(entry: dict, taxonomy: dict, registry_keys=None) -> list:
     """Return a list of human-readable schema errors (empty = valid)."""
     errs = []
@@ -1291,8 +1305,8 @@ def validate_entry(entry: dict, taxonomy: dict, registry_keys=None) -> list:
         if fields is not None and not _is_str_list(fields):
             err(f"{where}.fields must be a list of frontmatter field names (or \"body\")")
         mf = rec.get("merged_from")
-        if mf is not None and not ENTRY_ID_RE.match(str(mf)):
-            err(f"{where}.merged_from {mf!r} is not an entry id")
+        if mf is not None and (not merged_ids(rec) or any(not ENTRY_ID_RE.match(x) for x in merged_ids(rec))):
+            err(f"{where}.merged_from {mf!r} is not an entry id (or a list of entry ids)")
     updated_at = entry.get("updated_at")
     if float_ats:
         if updated_at != float_ats[-1]:

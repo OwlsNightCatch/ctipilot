@@ -17,7 +17,7 @@ discovered_at: "2026-09-24T04:45:00Z"
 updated_at: null
 event_date: "2026-09-22"
 run_id: 2026-09-24T0405Z-intel
-priority: notable
+priority: routine
 immediate_action: null
 tags: [ai-abuse, infostealer, vulnerabilities]
 regions: [global]
@@ -57,7 +57,15 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-30T06:56:07Z"
+    run_id: 2026-09-30T0639Z-audit
+    type: correction
+    internal: true
+    summary: >
+      No in-the-wild deployment of the implant is confirmed.
+      The priority moves from notable to routine.
+    fields: [priority]
 migrated_from: null
 ---
 

@@ -137,12 +137,19 @@ _site/
 │   └── extension-schema.json             #   JSON Schema behind the property extension
 ├── about/…                               # README, docs/ (incl. pipeline.md), prompts/, changelog
 └── data/
-    ├── briefbook.json                    # last ~35 days of entries BY ACTIVITY + runs with pre-rendered
-    │                                     #   HTML cards and the changelog (updates, updated_at,
-    │                                     #   activity_at, activity_run_id, activity_is_update) — the
-    │                                     #   /live/ client data
-    ├── alerts.json                       # last 7 days (by activity) of critical/high entries with
-    │                                     #   immediate_action + updated_at/updates — the notification-hook surface
+    ├── actions.json                      # do-now tasks (actions[] / immediate_action) of every entry whose
+    │                                     #   last_changed_at is in the last 14 days, priority-ranked, with
+    │                                     #   CVEs (fixed versions), products, exploited/kev: the agent poll surface
+    ├── cves.json                         # every analysed CVE: cvss, status_union, exploited, kev, affected,
+    │                                     #   fixed (newest citing entry), products, max_priority, entry_ids
+    ├── briefbook.json                    # last ~35 days of entries BY ACTIVITY (or last change) + runs with
+    │                                     #   pre-rendered HTML cards, actions_html, absolute permalink /
+    │                                     #   markdown_permalink, last_changed_at and the changelog (updates,
+    │                                     #   updated_at, activity_at, activity_run_id, activity_is_update);
+    │                                     #   runs[].url is the run page: the landing's client data
+    ├── alerts.json                       # critical/high entries whose last_changed_at (max of discovered_at
+    │                                     #   and every non-internal updates[].at) is in the last 7 days, with
+    │                                     #   immediate_action, actions, CVEs, products: the notification-hook surface
     ├── graph.json                        # the threat graph: entity/CVE/technique nodes +
     │                                     #   curated typed edges (with source entries) +
     │                                     #   derived co-occurrence/CVE/technique edges
@@ -214,8 +221,9 @@ AI agents) and points at the sitemap. No `og:image` ships by default (the
 site is deliberately image-free); the `seo["image"]` hook lets a fork add
 one. `/llms.txt` (operator directive 2026-08-29) gives AI agents a one-fetch
 site map: what the site is, the reading surfaces, and the machine endpoints
-(briefbook.json, per-entry raw Markdown, search.json, alerts.json, feeds,
-STIX) to prefer over scraping HTML — classic Google ignores it, but agentic
+(actions.json first, then cves.json, alerts.json, briefbook.json,
+per-entry raw Markdown, search/graph/attack.json, feeds, STIX, Navigator
+layers) to prefer over scraping HTML — classic Google ignores it, but agentic
 readers are first-class consumers of this site.
 
 ## Cross-references

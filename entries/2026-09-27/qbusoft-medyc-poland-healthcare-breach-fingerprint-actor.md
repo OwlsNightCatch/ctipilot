@@ -1,23 +1,20 @@
 ---
 schema: 1
 kind: incident
-title: "Qbusoft's Medyc practice-management software, used by Polish healthcare providers, is breached via SQL injection by the same actor behind August's over-18-million-patient MyDr leak"
-headline: "A second Polish health-records vendor falls to the same actor, and it never told the national CERT"
+title: "Qbusoft's Medyc practice-management software, used by Polish healthcare providers, is breached via SQL injection, and Zaufana Trzecia Strona attributes it to the actor behind August's MyDr leak"
+headline: "A second Polish health-records vendor is breached by what Zaufana Trzecia Strona says is the MyDr actor"
 summary: >
   Qbusoft Sp. z o.o., maker of the Medyc practice-management software used by
   Polish medical clinics, suffered a SQL-injection intrusion on 22-23 August
   2026 that exfiltrated an encrypted database archive; the company only
-  discovered it in the night of 8-9 September and, as of late September, had
-  still not made any public statement of its own, with the breach surfacing
-  instead through a patient facility's own notice. Zaufana Trzecia Strona,
-  the outlet that broke August's MyDr breach, identifies the same self-styled
-  actor "fingerprint" behind both intrusions and reports Qbusoft never
-  looped in Poland's healthcare-sector CERT or CERT Polska.
+  discovered it in the night of 8-9 September, and the breach surfaced through
+  a patient facility's own notice. Zaufana Trzecia Strona attributes both intrusions to the self-styled actor
+  "fingerprint", a link DataBreaches.net says has not been disclosed, and reports that, as of 2026-09-25, Qbusoft had not looped in Poland's healthcare-sector CERT or CERT Polska.
 discovered_at: "2026-09-27T04:34:00Z"
 updated_at: null
 event_date: "2026-08-22"
 run_id: 2026-09-27T0404Z-intel
-priority: notable
+priority: routine
 immediate_action: null
 tags: [data-breach, sqli, organized-crime]
 regions: [europe]
@@ -70,23 +67,11 @@ evidence:
     source_url: "https://databreaches.net/2026/09/26/poland-reports-a-second-medical-data-cyberattack-in-recent-weeks/"
 verification: multi-source
 sourcing_note: >
-  Zaufana Trzecia Strona (ZTS) is the same investigative outlet that broke
-  and continued to cover August's MyDr breach; its two Medyc/Qbusoft posts are
-  this entry's primaries. TVP World independently confirms only the base
-  facts, the Qbusoft/Medyc breach itself, the Inowrocław facility's own
-  notice, and a Gawkowski statement that the Central Office for Combating
-  Cybercrime is investigating, without crediting ZTS, so those facts are
-  corroborated by a second, independently-reporting outlet. The
-  CERT-notification-gap finding (Qbusoft reported to the cybercrime office
-  but never to CSIRT CEZ or CERT Polska) rests on ZTS's second post alone,
-  which quotes a different, more specific Gawkowski statement TVP World does
-  not carry, and is single-source accordingly. DataBreaches.net's relay adds
-  no new fact and explicitly notes the same-actor question "has not been
-  disclosed" from its own vantage, which this entry preserves as a caveat:
-  the same-actor attribution rests on ZTS's own reporting, not on
-  independent confirmation by a second assessor. The 5-million/8-million-photo
-  figures are the attackers' own unverified claim, relayed by ZTS without
-  independent confirmation, and are presented here as a claim, not a fact.
+  Zaufana Trzecia Strona's two posts are the primaries, and TVP World independently confirms the
+  breach itself, the Inowrocław facility's notice and the minister's statement that the cybercrime
+  office is investigating. The finding that Qbusoft had not notified CSIRT CEZ or CERT Polska as of 2026-09-25, the
+  same-actor link to August's MyDr breach and the attackers' photo counts rest on Zaufana Trzecia
+  Strona alone.
 confidence: medium
 references: ["2026-08-13/mydr-poland-ehr-criminal-intrusion-confirmed-processor-gap"]
 deep_dive: false
@@ -97,14 +82,28 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-09-30T06:56:01Z"
+    run_id: 2026-09-30T0639Z-audit
+    type: correction
+    summary: >
+      Priority recalibrated from notable to routine: a Polish healthcare-software breach outside Switzerland and the public sector, whose SQL-injection vector names no product or technique
+      detail a defender here can act on, so it is awareness only. The body is shortened to suit that
+      priority, the title, headline and summary present the link to the MyDr actor as Zaufana
+      Trzecia Strona's attribution, and the sourcing note states provenance only. The attackers'
+      five-million patient claim is set against Zaufana Trzecia Strona's own estimate of at least a
+      million, with only the photo count unconfirmed, and the summary no longer describes the outlet
+      as the one that broke the MyDr story, which none of the sources states.
+    fields: [priority, sourcing_note, title, headline, summary, body]
 migrated_from: null
 ---
 
-Qbusoft Sp. z o.o., the Polish company behind the Medyc practice-management application used by medical clinics across the country, was breached via an SQL-injection vulnerability on 22-23 August 2026; the attackers exfiltrated an "encrypted database archive," per the Inowrocław facility's own breach notice ([Zaufana Trzecia Strona, 2026-09-24](https://zaufanatrzeciastrona.pl/post/sprawcy-wycieku-mydr-ponownie-atakuja-tym-razem-ofiara-aplikacja-medyc/)). Qbusoft itself did not learn of the intrusion until the night of 8-9 September, roughly two and a half weeks later, and had made no public statement of its own as of this reporting, even in response to ZTS's direct press questions sent days earlier; the breach surfaced instead when the Addiction and Psychiatric Treatment Center in Inowrocław notified its own patients that their data had leaked from the Medyc system, the same facility that had earlier notified patients of the unrelated MyDr leak ([Zaufana Trzecia Strona, 2026-09-24](https://zaufanatrzeciastrona.pl/post/sprawcy-wycieku-mydr-ponownie-atakuja-tym-razem-ofiara-aplikacja-medyc/)). Stolen fields include name, surname, national PESEL identity number, residential address, phone number and email address; per the facility's own notice, the name, surname and PESEL fields were stored encrypted, but the vendor had told the facility the encryption was easy to break, so the attackers could still reach that data, and ZTS assesses there is a good chance medical discharge-summary data was taken as well ([Zaufana Trzecia Strona, 2026-09-24](https://zaufanatrzeciastrona.pl/post/sprawcy-wycieku-mydr-ponownie-atakuja-tym-razem-ofiara-aplikacja-medyc/)).
+Qbusoft, maker of the Medyc practice-management application used by Polish clinics, was breached through SQL injection on 22-23 August 2026 and an encrypted database archive was taken. The company learned of it only in the night of 8-9 September, and the breach surfaced through a patient notice from the Inowrocław addiction and psychiatric treatment centre. Name, surname and PESEL were stored encrypted, but the vendor told the facility the encryption was easy to break ([Zaufana Trzecia Strona, 2026-09-24](https://zaufanatrzeciastrona.pl/post/sprawcy-wycieku-mydr-ponownie-atakuja-tym-razem-ofiara-aplikacja-medyc/)).
 
-Zaufana Trzecia Strona, the outlet that first revealed August's MyDr breach of more than 18 million Polish patients' records, identifies the actor behind both intrusions as the same self-styled group or individual using the pseudonym "fingerprint": "The perpetrators of the leak are the same people who were behind the attack on the MyDr systems, from which the data of over 18 million Poles was stolen" (translated from Polish) ([Zaufana Trzecia Strona, 2026-09-24](https://zaufanatrzeciastrona.pl/post/sprawcy-wycieku-mydr-ponownie-atakuja-tym-razem-ofiara-aplikacja-medyc/)). A follow-up ZTS post relays the attackers' own claim of far greater scale than the outlet's initial estimate: "we ourselves assessed the scale of the incident at at least a million people; according to the perpetrators it is five million. The perpetrators also mention that they stole 8 million \"very private\" photos" (translated from Polish) ([Zaufana Trzecia Strona, 2026-09-25](https://zaufanatrzeciastrona.pl/post/sprawcy-ataku-na-system-medyc-twierdza-ze-ukradli-dane-5-milionow-pacjentow-i-8-milionow-zdjec/)); ZTS states plainly it could not confirm the claimed photo count reached the perpetrators, though it does not dispute that photos of some kind may have been taken, and DataBreaches.net separately notes that whether this is genuinely the same attacker "has not been disclosed" from its own reporting vantage ([DataBreaches.net, 2026-09-26](https://databreaches.net/2026/09/26/poland-reports-a-second-medical-data-cyberattack-in-recent-weeks/)); treat the same-actor link as ZTS's own attribution, not an independently confirmed fact. A second ZTS source states that, as with MyDr, Qbusoft's main company resources were stored in cloud services, specifically Microsoft Azure infrastructure, unlike MyDr's AWS-hosted environment ([Zaufana Trzecia Strona, 2026-09-25](https://zaufanatrzeciastrona.pl/post/sprawcy-ataku-na-system-medyc-twierdza-ze-ukradli-dane-5-milionow-pacjentow-i-8-milionow-zdjec/)).
+Zaufana Trzecia Strona attributes the intrusion to "fingerprint", the pseudonym of the actor behind August's MyDr breach ([Zaufana Trzecia Strona, 2026-09-24](https://zaufanatrzeciastrona.pl/post/sprawcy-wycieku-mydr-ponownie-atakuja-tym-razem-ofiara-aplikacja-medyc/)), which exposed data on almost 19 million Poles ([TVP World, 2026-09-26](https://tvpworld.com/95581628/poland-hit-by-cyberattack-weeks-after-19-million-medical-records-breach)). DataBreaches.net notes that whether it is the same attacker has not been disclosed ([DataBreaches.net, 2026-09-26](https://databreaches.net/2026/09/26/poland-reports-a-second-medical-data-cyberattack-in-recent-weeks/)). The attackers claim data on five million patients, against ZTS's own estimate of at least a million, and 8 million photos, a count ZTS could not confirm. Poland's digital affairs minister said Qbusoft reported the intrusion to the Central Office for Combating Cybercrime but not to the healthcare-sector CSIRT CEZ or to CERT Polska ([Zaufana Trzecia Strona, 2026-09-25](https://zaufanatrzeciastrona.pl/post/sprawcy-ataku-na-system-medyc-twierdza-ze-ukradli-dane-5-milionow-pacjentow-i-8-milionow-zdjec/)).
 
-Poland's Digital Affairs Minister Krzysztof Gawkowski confirmed the incident and disclosed a notification gap: although Qbusoft reported the intrusion to the Central Office for Combating Cybercrime, it never passed information to CSIRT CEZ, the CERT established specifically for the healthcare sector, or to CERT Polska, the national CERT that coordinated the MyDr incident and holds Poland's deepest incident-response experience ([Zaufana Trzecia Strona, 2026-09-25](https://zaufanatrzeciastrona.pl/post/sprawcy-ataku-na-system-medyc-twierdza-ze-ukradli-dane-5-milionow-pacjentow-i-8-milionow-zdjec/)). As of this reporting, the attackers had not published or offered the stolen data for sale, consistent with their pattern after the MyDr breach.
+**Defender takeaway:** a vendor's confirmed breach does not automatically reach the sector or national CERT, so vendor incident-response clauses should name the CERT a critical software vendor must notify on confirmation. Encrypted fields are not protected when the vendor itself calls the encryption easy to break ([Zaufana Trzecia Strona, 2026-09-24](https://zaufanatrzeciastrona.pl/post/sprawcy-wycieku-mydr-ponownie-atakuja-tym-razem-ofiara-aplikacja-medyc/)).
 
-**Defender takeaway:** the incident-response gap is as significant as the breach itself, and directly transferable: a victim organization's own management chain does not automatically route a confirmed intrusion to the sector CERT or national CERT best placed to help, even when that help is free and the same coordinating body already has direct experience with the same actor. Any organization's supply-chain or vendor incident-response playbook should specify, in advance, which national or sectoral CERT a critical software vendor is expected to loop in on confirmation of a breach, and should not assume a vendor will do so voluntarily. Separately, "encrypted" is not a synonym for "protected": a database field description alone does not establish whether the encryption resists the effort an attacker who already has full database access will make against it.
+## Correction — 2026-09-30T06:56:01Z
+
+The link between the Medyc and MyDr breaches is Zaufana Trzecia Strona's attribution ([Zaufana Trzecia Strona, 2026-09-24](https://zaufanatrzeciastrona.pl/post/sprawcy-wycieku-mydr-ponownie-atakuja-tym-razem-ofiara-aplikacja-medyc/)). DataBreaches.net notes that whether it is the same attacker has not been disclosed ([DataBreaches.net, 2026-09-26](https://databreaches.net/2026/09/26/poland-reports-a-second-medical-data-cyberattack-in-recent-weeks/)). The earlier title and headline stated the link as fact. The earlier headline also said the vendor never told the national CERT. The minister's statement relayed by Zaufana Trzecia Strona says that, as of 2026-09-25, the information had not been passed to CSIRT CEZ or CERT Polska ([Zaufana Trzecia Strona, 2026-09-25](https://zaufanatrzeciastrona.pl/post/sprawcy-ataku-na-system-medyc-twierdza-ze-ukradli-dane-5-milionow-pacjentow-i-8-milionow-zdjec/)).

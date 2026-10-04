@@ -4,6 +4,27 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.19 — 2026-09-30 (the legacy corpus gets a repair queue, duplicates get folded, KEV ransomware flips get noticed, and the site serves agents directly)
+
+### Why
+
+The 2026-09-30 audit correction run looked past the trailing window for the first time and found the store's older half unverified. 478 of 966 entries came from the v2 daily briefs (May to July 2026) and only 3 had received a record from an audit before 2026-09-30. The ones it opened carried claims no source makes: ABW's water-plant report was cited for an APT28/APT29/UNC1151 attribution it never made; the Ivanti EPMM cluster marked five CVEs exploited and KEV-listed where Ivanti reported one, framed two separate flaws as an exploited pre-auth chain, and moved four European public bodies into the wrong exploitation wave; Eurail's entry reported regulator reviews that never opened; Dragos was cited for statistics absent from its report. The same pass found 48 of 54 CVE-sharing entry pairs with no link between them, 24 legacy "UPDATE" entries never folded into their finding, and two CVE-2026-50751 twins that disagreed about which CVE was exploited. It also caught by hand that CISA had flipped TeamCity CVE-2026-63077 to known ransomware use after the entry was written; nothing in the pipeline would have noticed.
+
+### What changed
+
+- **Legacy re-verification queue.** `tools/legacy_review.py` and `state/legacy_review.json` list every v2-migrated entry with its review status. `quality-audit.md` Phase 0 step 6b makes each audit re-verify the next batch (about 20, oldest first) against fetched primaries, correct or fold what is wrong, and mark the batch; the queue is the standing repair order until empty. Seven entries were reviewed in this run.
+- **Duplicate folding.** `tools/fold_entries.py --run <run-id> --into <survivor> <duplicate>…` adds the folded ids to the fire's record on the survivor (`merged_from` may now be a list), re-points `references[]` and registry `relations[].source`, and deletes the duplicates; `site/build.py` keeps their permalinks as redirects (anchored to the record's section, or the entry top for an internal record). `check_run.py` `silent-edit` accepts a deleted entry only when a record of this fire names it in `merged_from`. `quality-audit.md` Phase 3 item 13 makes consolidation an audit duty. The Ivanti EPMM cluster (four entries) was folded into one corrected entry in this run.
+- **KEV ransomware flips.** `tools/kev_window_diff.py` now lists, store-wide, every covered CVE listed since 2026-01-01 whose KEV record says known ransomware campaign use while no carrying entry mentions ransomware (RANSOMWARE rows). `cti-run.md` Phase 0 makes each row need a disposition; `quality-audit.md` item 11 sweeps them. TeamCity, Cisco Secure FMC and the Nx/TanStack entry were updated in this run; PAN-OS CVE-2026-0257 rides the twin fold.
+- **Changelog-fields refinement.** The internal-record word allowance in `check_run.py` ignores removed inline ATT&CK ids, removed defanged indicators and added, removed or re-pointed citation groups, and counts only the inserted words when deleted pipeline narration re-punctuates its neighbour. Policy cleanups no longer need a reader section; rewritten claims still do.
+- **Inline citations must be sources.** `check_run.py` `entry-shape` now WARNs when a citation-shaped inline link (`([Publisher, YYYY-MM-DD](URL))`) points at a URL with no `sources[]` record, over a new entry's main text, this fire's sections and the main text of an entry this fire rewrote. Such a citation escaped the liveness, blocked-URL and date checks: the 2026-09-30 audit lost a `sources[]` record through a helper bug while five inline citations to it stayed, and nothing noticed.
+- **Site for agent readers** (built by a sub-agent from the 4.17 site review): `data/actions.json` (the do-now list across the last 14 days, with CVE, product, KEV and exploitation facts per action), `data/cves.json` (one record per CVE: CVSS, affected, fixed, status union, KEV, products, entries newest first), `alerts.json` windowed and sorted on `last_changed_at` with permalinks and CVE facts, briefbook entries with absolute permalinks and `last_changed_at`, `llms.txt` listing the endpoints, repo-relative prose links resolved on every render path, an Exposure callout on entry and entity pages, a landing Action items panel, CVE list columns for CVSS, KEV and fixed version, and a build cut from 1m50s to about 45s.
+
+### Entries corrected in the 2026-09-30 audit run
+
+75 entries received a record: stale exploitation statements (Gitea, FortiSandbox, TeamCity, ServiceNow, Kemp, macOS Screen Sharing, Check Point), swapped statuses (CVE-2026-50751/50752), attacker domains and mutex values removed from seven entries, 28 of 36 banned citations replaced or removed with the facts they carried re-verified (the other 8 sit on twin entries left for a consolidation fold), priority recalibration against the 4.17 `high` bar, and the legacy rewrites above. Details are in `docs/audits/2026-09-30-correction-audit.md`.
+
+---
+
 ## 4.18 — 2026-09-30 (WebFetch where the container is walled out)
 
 ### Why

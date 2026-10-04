@@ -50,9 +50,17 @@ classification:
   reliability: B
   credibility: 2
 watchlist_hit: false
-actions:
-  - "Scope SSPR to a specific, minimal security group rather than tenant-wide in every Entra ID tenant, and enforce phishing-resistant MFA (FIDO2 or certificate-based) on every administrator and privileged role — Microsoft cannot let admin accounts opt out of SSPR-based enumeration at the platform level, so a stronger factor is the only control that neutralises what the portal reveals about them."
-updates: []
+actions: []
+updates:
+  - at: "2026-09-30T07:03:26Z"
+    run_id: 2026-09-30T0639Z-audit
+    type: correction
+    internal: true
+    summary: >
+      The single action restated the Defender takeaway's hardening advice, including generic
+      phishing-resistant MFA guidance, rather than a task the team starts now. It is removed, and
+      the hardening guidance stays in the takeaway.
+    fields: [actions]
 migrated_from: null
 ---
 

@@ -1,22 +1,18 @@
 ---
 schema: 1
 kind: incident
-title: "Unauthorized users had nine months of unencrypted access to a Pentagon HR file-sharing server; a defense official counts 2.76 million living and 294,000 deceased people affected, with Social Security numbers exposed"
+title: "Unauthorized users read unencrypted Social Security numbers on a Pentagon DMDC personnel file server for nine months; a defense official counts about 3 million people affected"
 headline: "A vulnerable Pentagon HR file server sat unencrypted and reachable for nine months before anyone noticed"
 summary: >
-  A breach-notification letter reviewed independently by Military Times and
-  CNN discloses that unauthorized users accessed an unencrypted file-sharing
-  server operated by the Defense Manpower Data Center (DMDC), the Pentagon's
-  central personnel-data repository holding 60+ million records, between
-  October 2025 and 16 July 2026. Social Security numbers and other
-  identifying data were exposed; DoD states it has no indication of misuse,
-  and a U.S. defense official told ABC News the breach affected 2.76 million
-  living people and another 294,000 who are deceased.
+  Unauthorized users accessed an unencrypted file-sharing server of the Defense Manpower Data Center
+  (DMDC), the Pentagon's central personnel-data repository, between October 2025 and 16 July 2026,
+  exposing Social Security numbers and other identifying data. A U.S. defense official told ABC News
+  the breach affected 2.76 million living people and another 294,000 who are deceased.
 discovered_at: "2026-09-27T04:33:00Z"
 updated_at: "2026-09-30T04:52:00Z"
 event_date: "2026-09-24"
 run_id: 2026-09-27T0404Z-intel
-priority: high
+priority: routine
 immediate_action: null
 tags: [data-breach]
 regions: [us, global]
@@ -64,14 +60,11 @@ evidence:
     source_url: "https://abcnews.com/Politics/pentagon-breach-exposed-sensitive-data-3-million-people/story?id=136832909"
 verification: multi-source
 sourcing_note: >
-  Military Times and CNN each independently reviewed and quote the same
-  breach-notification letter, and Military Times separately had its
-  authenticity confirmed by two defense officials; DataBreaches.net's
-  same-window relay corroborates recency but adds no independent fact.
-  Neither original report, nor the letter itself, names a CVE, exploit
-  class, or whether the affected server was reachable from outside DMDC's
-  own network, so this entry does not map an initial-access technique
-  beyond what is stated.
+  Military Times and CNN each independently reviewed and quote the same breach-notification letter,
+  and two defense officials confirmed its authenticity to Military Times; ABC News carries a defense
+  official's later count. No report names a CVE, an exploit class or whether the server was
+  reachable from outside DMDC's network, so no initial-access technique is mapped beyond what is
+  stated.
 confidence: high
 references: []
 deep_dive: false
@@ -92,17 +85,26 @@ updates:
       official's statement describes unauthorized access by a small number of unauthorized users between October 2025 and
       July 2026 and says the vulnerability was remediated on discovery.
     fields: [title, summary, sources, evidence, body]
+  - at: "2026-09-30T07:31:59Z"
+    run_id: 2026-09-30T0639Z-audit
+    type: correction
+    summary: >
+      Priority is lowered from high to routine: a US military data breach with no vector or
+      tradecraft defenders can act on. The title, summary, body and the earlier
+      2026-09-30 update section are trimmed to routine-incident length, and the sourcing note is
+      plain provenance. The exposed data is now described as the letter recipient's rather than every affected person's, and the takeaway drops an access-logging recommendation no source makes.
+    fields: [priority, sourcing_note, title, summary, body]
 migrated_from: null
 ---
 
-A breach-notification letter dated September 2026 and sent 18 September to affected individuals, reviewed independently by both Military Times and CNN and confirmed authentic by two defense officials, discloses that unauthorized users accessed a vulnerable file-sharing server operated by the Defense Manpower Data Center (DMDC) ([Military Times, 2026-09-24](https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/)). DMDC describes itself as the Pentagon's central source for identifying, authenticating, authorizing and providing information on personnel during and after their affiliation with the department, and its own website says it maintains more than 60 million records on military and civilian personnel, contractors, family members, retirees and veterans ([Military Times, 2026-09-24](https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/)). Access to the server ran from October 2025 through 16 July 2026, roughly nine months, before DMDC discovered what the notification letter calls a "security vulnerability," patched it and restored the system; neither the letter nor either outlet names a CVE, exploit class, or states whether the server was reachable from outside DMDC's own network ([Military Times, 2026-09-24](https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/)).
+Unauthorized users accessed files holding unencrypted personal data on a vulnerable file-sharing server of the Defense Manpower Data Center (DMDC), the Pentagon's central personnel-data repository, from October 2025 until DMDC discovered the vulnerability on 16 July 2026 and patched it, and the notification letter says they reached its recipient's Social Security number and at least one further identifying field ([Military Times, 2026-09-24](https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/) · [CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)). A U.S. defense official put the count at 2.76 million living and 294,000 deceased people, and no report names a vulnerability class, access vector or actor ([ABC News, 2026-09-29](https://abcnews.com/Politics/pentagon-breach-exposed-sensitive-data-3-million-people/story?id=136832909)). The lesson for public administrations: a government's central personnel-data store kept identity numbers unencrypted and readable for nine months before discovery ([CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)).
 
-Data taken from each affected individual's own record included an unencrypted Social Security number plus at least one further identifying field: name, date of birth, contact information, sex, race, or military-personnel and occupational-specialty data ([Military Times, 2026-09-24](https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/)). "The stolen data wasn’t encrypted, according to the letter" ([CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)) despite that being, in CNN's framing, standard security practice for data of this sensitivity. DoD states it has no indication the data has been misused and is offering affected individuals one year of credit monitoring and identity-restoration services through contractor IDX. Two people familiar with the incident first told Military Times that approximately four million Department of Defense personnel may be affected ([Military Times, 2026-09-24](https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/)); a U.S. defense official later put the count at 2.76 million living people and another 294,000 who are deceased ([ABC News, 2026-09-29](https://abcnews.com/Politics/pentagon-breach-exposed-sensitive-data-3-million-people/story?id=136832909)).
-
-CNN frames the exposure as a counterintelligence concern, not only a fraud one: combined with other datasets using identifiers like Social Security numbers, the accessed occupational-specialty data could give foreign adversaries a clearer read on who does what for the US military in various parts of the world ([CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)). A bad actor could pair the DMDC data with other commercial datasets to “learn about or even target [defense personnel] based on their earnings, debts, marriages, spending habits, browsing activities, and worse,” according to Justin Sherman, CEO of Global Cyber Strategies ([CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)). No party has publicly named who was behind the intrusion.
-
-**Defender takeaway:** the transferable lesson is not a specific vulnerability but a data-handling failure that any organization running a central personnel or HR data store, including a Swiss Armed Forces or civil-protection records system, should treat as a standing audit item: identifying data of this sensitivity, particularly a national identity number, sat unencrypted on a server for nine months without the exposure being detected through the organization's own monitoring, only surfacing when the underlying vulnerability was found. Verify that personnel data stores encrypt identifying fields at rest regardless of the access-control layer in front of them, and confirm that access logging on those stores is sufficient to answer, retroactively, who read what and when, since that is precisely the question this incident could not answer for nine months.
+**Defender takeaway:** check that central personnel and HR data stores encrypt identifying fields at rest, which CNN notes is standard security practice and which DMDC's server lacked ([CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)).
 
 ## Update — 2026-09-30T04:52:00Z
 
-A U.S. defense official told ABC News that the breach affected 2.76 million living people and another 294,000 who are deceased, about 3.05 million in all, against the roughly four million the earlier reporting carried ([ABC News, 2026-09-29](https://abcnews.com/Politics/pentagon-breach-exposed-sensitive-data-3-million-people/story?id=136832909)). The official's statement says a DMDC information system experienced unauthorized access to personally identifiable information by "a small number of unauthorized users" between October 2025 and July 2026, and that DMDC remediated the vulnerability on discovery ([ABC News, 2026-09-29](https://abcnews.com/Politics/pentagon-breach-exposed-sensitive-data-3-million-people/story?id=136832909)). Defense officials told ABC they have found no evidence so far that the exposed information has been misused and are offering identity-protection and credit-monitoring resources ([ABC News, 2026-09-29](https://abcnews.com/Politics/pentagon-breach-exposed-sensitive-data-3-million-people/story?id=136832909)). The statement still names no vulnerability class, access vector or actor.
+A U.S. defense official told ABC News the breach affected 2.76 million living and 294,000 deceased people, against the roughly four million earlier reported, and described access by "a small number of unauthorized users" between October 2025 and July 2026 that DMDC remediated on discovery ([ABC News, 2026-09-29](https://abcnews.com/Politics/pentagon-breach-exposed-sensitive-data-3-million-people/story?id=136832909) · [Military Times, 2026-09-24](https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/)).
+
+## Correction — 2026-09-30T07:31:59Z
+
+Military Times quotes the notification letter as exposing its recipient's Social Security number and at least one further identifying field ([Military Times, 2026-09-24](https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/)). The entry previously generalised this to every affected person and advised access logging, which no cited report discusses. CNN reports that the data was not encrypted and that encrypting sensitive data is a standard security practice ([CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)).
