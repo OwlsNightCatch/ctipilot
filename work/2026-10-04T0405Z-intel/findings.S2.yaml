@@ -1,0 +1,282 @@
+# work/2026-10-04T0405Z-intel/findings.S2.yaml
+domain: S2
+run_id: 2026-10-04T0405Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-04T04:07:46Z
+ended_at: 2026-10-04T04:28:33Z
+duration_seconds: 1247
+self_telemetry:
+  webfetch_calls: 5
+  websearch_calls: 39
+  bridge_fetches: 105
+window_note: >
+  Window 26 h (opens 2026-10-03T02:05Z) is a quiet Sunday/holiday-weekend window: every Swiss and neighbouring-authority
+  record in the essential tier (NCSC-CH/BACS, CERT.at, ENISA, Inside IT, heise) has its newest relevant item BEFORE the
+  window, except heise's 2026-10-03 NetScaler report, which pivoted to a new vendor bulletin (item 1). Home-region
+  policy / regulatory watch swept (BACS, ISG and cantonal implementation, NIS2/CRA, e-ID / e-government, Council of
+  Europe, sanctions and law enforcement): no in-window development clears PD-11 (details in coverage_gaps).
+items:
+  - title: "CVE-2026-88779, Citrix NetScaler ADC and Gateway: SAML-configured appliances crash on an unauthenticated memory overflow that Citrix says is being used in targeted attacks; builds that fixed CVE-2026-88771/88772 do not fix it"
+    sources:
+      - { url: "https://community.citrix.com/techzone-blogs/110_security-updates/understanding-and-addressing-cve-2026-88779-in-citrix-netscaler-adc-and-citrix-netscaler-gateway/", publisher: "Citrix / NetScaler (vendor blog, published 2026-10-03 PDT)", date: "2026-10-04", role: "primary" }
+      - { url: "https://support.citrix.com/support-home/kbsearch/article?articleNumber=CTX697174", publisher: "Citrix Security Bulletin CTX697174", date: "2026-10-04", role: "primary" }
+      - { url: "https://community.citrix.com/techzone-blogs/110_security-updates/security-update-guidance-for-netscaler-saml-authentication-deployments/", publisher: "Citrix / NetScaler (pre-bulletin SAML guidance, published 2026-10-02, updated 2026-10-03)", date: "2026-10-03", role: "primary" }
+      - { url: "https://www.cyber.gov.au/about-us/view-all-content/alerts-and-advisories/critical-vulnerabilities-in-citrix-netscaler-adc-and-citrix-netscaler-gateway-products", publisher: "ASD's ACSC (Australia), update of 2026-10-03", date: "2026-10-03", role: "corroborating" }
+      - { url: "https://www.heise.de/en/news/Netscaler-admins-beware-Zero-day-causes-crashes-and-code-execution-11474996.html", publisher: "heise online (Dr Christopher Kunz), written before the patch existed", date: "2026-10-03", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Netscaler-Admins-aufgepasst-Zero-Day-verursacht-Crashes-und-Codeausfuehrung-11474971.html", publisher: "heise Security (German original of the same report)", date: "2026-10-03", role: "corroborating" }
+      - { url: "https://cyberpress.org/new-citrix-netscaler-saml-flaw-triggers-crashes-and-suspected-exploitation-attempts/", publisher: "Cyberpress (relays community reports; secondary)", date: "2026-10-03", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, feed https://www.heise.de/security/feed.xml → heise article https://www.heise.de/news/Netscaler-Admins-aufgepasst-Zero-Day-verursacht-Crashes-und-Codeausfuehrung-11474971.html (2026-10-03T08:23Z, says no patch) → pivot: Citrix guidance blog https://community.citrix.com/techzone-blogs/110_security-updates/security-update-guidance-for-netscaler-saml-authentication-deployments/ (403 to extract and WebFetch; read via the jina reader) → its links to the new bulletin and CVE blog → primary: https://support.citrix.com/support-home/kbsearch/article?articleNumber=CTX697174 and https://community.citrix.com/techzone-blogs/110_security-updates/understanding-and-addressing-cve-2026-88779-in-citrix-netscaler-adc-and-citrix-netscaler-gateway/ → CVE record confirmed on the CVE Program record and ENISA EUVD (EUVD-2026-92065, EPSS 0.0 at publication) → ACSC alert https://www.cyber.gov.au/about-us/view-all-content/alerts-and-advisories/critical-vulnerabilities-in-citrix-netscaler-adc-and-citrix-netscaler-gateway-products (3 October update)"
+    summary: |
+      Citrix published security bulletin CTX697174 on 2026-10-04 (CVE record dated 2026-10-04T02:35Z, CNA public date 02:19Z) for
+      CVE-2026-88779, a CWE-119 memory overflow in NetScaler ADC and NetScaler Gateway. Precondition per the bulletin: the appliance
+      is configured as a SAML service provider (`add authentication samlAction`) or SAML identity provider (`add authentication
+      samlIdPProfile`) on a Gateway or AAA virtual server. Citrix rates it CVSS v4.0 8.7 (AV:N/AC:L/AT:N/PR:N/UI:N, availability
+      impact only, VA:H) and states it "has observed targeted attacks on unmitigated NetScaler deployments which can lead to
+      Denial of Service". Fixed releases: 14.1-73.41, 13.1-64.28, 14.1-73.41 FIPS and 13.1-37.282 (13.1 FIPS and NDcPP); affected is
+      everything earlier, which includes the 14.1-73.37 / 13.1-64.23 builds that fixed the eight CTX697096 flaws (CVE-2026-88771
+      to CVE-2026-88778). Citrix says the issue "is independent of the vulnerabilities disclosed in" CTX697096 and tells operators who
+      upgraded to the CTX697096 builds and meet the SAML precondition to upgrade again. Interim mitigation (NetScaler Console
+      "virtual patching"): Global Deny List signatures, only in builds from 14.1-73.37 up to 14.1-73.41 and from 13.1-64.23 up
+      to 13.1-64.28; Citrix says they "can help to mitigate" and the upgrade is the fix. Timeline: Citrix posted SAML guidance on
+      2026-10-02 (no CVE, builds or workaround), admins reported reboot loops on patched 14.1-73.37 appliances from the evening of
+      2 October, heise relayed Kevin Beaumont's honeypot observation of a downloaded binary running on patched appliances and a
+      watchTowr statement that it had reproduced the flaw, and ACSC added on 3 October that the issue "may induce system crashes,
+      denial of service and potential exploitation" and that it is aware of impacts to Australian organisations. Contradiction to
+      carry: Citrix scopes the flaw to denial of service with no integrity impact; the code-execution reading (malware binary on
+      patched honeypots, payload-bearing SAML usernames) rests on researcher and community observations that no vendor, CERT or
+      lab has confirmed, and cyberpress itself says the crashes "appear to be a distinct issue, not evidence that the original patch has been bypassed". Not in CISA KEV
+      as of its 2026-10-02 release; EPSS 0.0 at publication.
+    region_nexus: "global; internet-facing remote-access / SAML gateways. No Swiss-specific exposure figure in any fetched source. NCSC-CH's security hub already carries advisory 13005 for the sibling CVE-2026-88771/88772 and has not yet posted this CVE."
+    primary_sector_nexus: "indirect (public-administration remote-access and identity front-ends are a standard NetScaler use; sources give no public-sector victim)"
+    sector: "public-sector"
+    cves: [CVE-2026-88779]
+    techniques: [T1190, T1499.004]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["product:citrix-netscaler"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    references_suggested: ["2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev"]
+    priority_note: "Recommend high; critical only if code execution is substantiated. A changelog `update` on the 2026-09-28 NetScaler entry is also warranted: Citrix says its fixed CTX697096 builds must be upgraded again where SAML is configured."
+    classification_suggested: { reliability: A, credibility: 1 }
+    evidence:
+      - quote: "Citrix has observed targeted attacks on unmitigated NetScaler deployments which can lead to Denial of Service."
+        attribution: "Citrix / NetScaler"
+        source_url: "https://community.citrix.com/techzone-blogs/110_security-updates/understanding-and-addressing-cve-2026-88779-in-citrix-netscaler-adc-and-citrix-netscaler-gateway/"
+      - quote: "please upgrade your deployment again with the software released as part of the"
+        attribution: "Citrix / NetScaler"
+        source_url: "https://community.citrix.com/techzone-blogs/110_security-updates/understanding-and-addressing-cve-2026-88779-in-citrix-netscaler-adc-and-citrix-netscaler-gateway/"
+      - quote: "Memory overflow vulnerability leading to Denial of Service"
+        attribution: "Citrix Security Bulletin CTX697174"
+        source_url: "https://support.citrix.com/support-home/kbsearch/article?articleNumber=CTX697174"
+      - quote: "This issue is independent of the vulnerabilities disclosed in"
+        attribution: "Citrix / NetScaler"
+        source_url: "https://community.citrix.com/techzone-blogs/110_security-updates/security-update-guidance-for-netscaler-saml-authentication-deployments/"
+      - quote: "A remote attacker exploiting the issue may induce system crashes, denial of service and potential exploitation."
+        attribution: "ASD's ACSC"
+        source_url: "https://www.cyber.gov.au/about-us/view-all-content/alerts-and-advisories/critical-vulnerabilities-in-citrix-netscaler-adc-and-citrix-netscaler-gateway-products"
+      - quote: "security researchers claim to have observed malware on their test devices"
+        attribution: "heise online"
+        source_url: "https://www.heise.de/en/news/Netscaler-admins-beware-Zero-day-causes-crashes-and-code-execution-11474996.html"
+    extended_notes: |
+      Exposure test (Citrix): search the running configuration of every NetScaler ADC / Gateway for `add authentication samlAction` (SAML
+      SP) or `add authentication samlIdPProfile` (SAML IdP), on Gateway or AAA virtual servers; read the build and compare with
+      14.1-73.41 / 13.1-64.28 / 14.1-73.41 FIPS / 13.1-37.282 (13.1 FIPS and NDcPP). Secure Private Access Hybrid deployments that use
+      NetScaler instances are named as affected. Citrix-managed cloud services are patched by Citrix.
+      Mitigation detail (Citrix): Global Deny List signatures need NetScaler Console (on-premises with Cloud Connect, or the service) with
+      "Virtual patching" enabled; verify with `show appfw signatures` (default signature version at least v24) and `stat denylist
+      global AAA_REQUEST` (counters and Last Hit Time above 0); Citrix says the upgrade remains the fix and also points to the
+      appliance IP blocklist and perimeter firewall rules.
+      Behaviour that defenders can watch (community-reported through heise and cyberpress, NOT stated by Citrix): repeated crashes of
+      the authentication daemon (nsaaad) with watchdog restarts, forced reboots and high-availability failovers on internet-facing Gateway
+      or AAA appliances, correlated in time with inbound SAML authentication requests; cyberpress advises preserving core files and logs
+      before restarting. Benign lookalikes: reboots after an upgrade can have other causes (community trackers report a 13.1 upgrade
+      reboot-loop condition, not verified here), so correlate reboot times with SAML request volume and the daemon crash record
+      before declaring an attack.
+      Post-patch compromise check: this CVE is availability-class per Citrix, but the same SAML front-end was reported with payload-bearing
+      requests; operators who ran the September builds should keep the compromise review from the CVE-2026-88771/88772 campaign (web-server
+      configuration persistence reported by Mandiant and GTIG) in scope, since the covered entry already carries that guidance.
+      heise's text says no patch exists; Citrix released builds about two hours before this run (bulletin created 2026-10-04 02:03, blog
+      published 2026-10-03 18:42 PDT = 2026-10-04 01:42Z), so heise's "no patch yet" is superseded.
+      Aggregator note: pitscaler.com (community tracker, unknown authorship) lists payload-server and file-path indicators attributed to
+      community write-ups; none is vendor-, CERT- or lab-confirmed, so this item carries none of them.
+  - title: "DragonForce second-stage backdoor: a resident Microsoft Teams TURN-relay implant sideloaded through javaw.exe with an MQTT fallback channel (Lab52)"
+    sources:
+      - { url: "https://lab52.io/blog/backdoors-in-the-dungeon-turn-mqtt-abused-by-dragonforce/", publisher: "Lab52 (S2 Grupo)", date: "2026-10-01", role: "primary" }
+    discovery_trace: "first seen at: lab52, feed https://lab52.io/blog/feed/ → primary (no pivot needed): https://lab52.io/blog/backdoors-in-the-dungeon-turn-mqtt-abused-by-dragonforce/ (the post links Symantec's earlier DragonForce Teams-TURN report, already covered in the store as 2026-06-17/dragonforce-abuses-microsoft-teams-turn-relays-for-c2-and-ch)"
+    summary: |
+      Lab52 (2026-10-01) describes two backdoors from a recent DragonForce operation that tunnel command-and-control through legitimate
+      Microsoft Teams TURN servers. Backdoor 1 is a Go binary (metadata name Shell.dll) injected straight into memory during the initial
+      deployment phase; Lab52 links it to Symantec's earlier Backdoor.Turn report. Backdoor 2 is the new part and is built to stay
+      resident: a scheduled task left by an earlier stage starts a DLL-sideloading chain in which the legitimate javaw.exe loads jli.dll
+      (first-stage loader, a different hash on every host), which loads rvsdiqw.txt, a payload encrypted with DPAPI so it only runs on that
+      machine. Its C2 runs over TURN with a second channel over an MQTT broker as fallback when TURN fails. Tasks arrive in checksummed
+      chunks, are decoded with a short XOR key and run as code templates in memory (VirtualProtect, CreateThread); the JSON task carries a
+      command number that selects fetching a URL, running a PowerShell command line, running the template unchanged, or opening a
+      connection to a given remote host and port. On a failed channel the beacon sleeps five minutes and encrypts its own memory region.
+      Lab52 names no victim, sector, region or initial-access vector and carries no CVE; the post is a protocol and loader analysis and its
+      conclusion calls DragonForce a "ransomware cartel" that supplies infrastructure and tooling to affiliates.
+    region_nexus: "global; no victim or region stated. DragonForce is already tracked in the store with a Swiss leak-site listing (2026-07-14 entry)."
+    primary_sector_nexus: "indirect (ransomware affiliate tooling; no sector stated)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1090, T1071, T1574.001, T1053.005, T1055]
+    affected_products: ["Microsoft Teams", "Java runtime (javaw.exe, abused as sideload host)"]
+    entity_keys: ["actor:dragonforce", "campaign:dragonforce-backdoor-turn-teams-relay-byovd"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-06-17/dragonforce-abuses-microsoft-teams-turn-relays-for-c2-and-ch"
+    lookback: true
+    classification_suggested: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "the second type is notable for its use of MQTT as an additional communication channel in the event that communication through TURN fails"
+        attribution: "Lab52"
+        source_url: "https://lab52.io/blog/backdoors-in-the-dungeon-turn-mqtt-abused-by-dragonforce/"
+      - quote: "The second backdoor is used for persistence, as it is executed through a scheduled task left behind by a previous stage."
+        attribution: "Lab52"
+        source_url: "https://lab52.io/blog/backdoors-in-the-dungeon-turn-mqtt-abused-by-dragonforce/"
+      - quote: "The attackers abuse legitimate Microsoft Teams TURN servers, thereby masking their traffic."
+        attribution: "Lab52"
+        source_url: "https://lab52.io/blog/backdoors-in-the-dungeon-turn-mqtt-abused-by-dragonforce/"
+    extended_notes: |
+      Delta against the covered 2026-06-17 entry (Symantec's Backdoor.Turn: Teams anonymous-token TURN relay with QUIC, BYOVD chain): Lab52
+      adds a second, persistent implant with an MQTT fallback and a per-host DPAPI-bound payload. Detection concepts that follow mechanically
+      from Lab52's description (Lab52 states no rule): process-creation telemetry for a java launcher (javaw.exe) running from an unexpected
+      directory or loading jli.dll from outside the JRE folder, especially started by a scheduled task; image-load events for jli.dll with
+      a hash that differs per host; egress telemetry for Teams TURN relay endpoints contacted by processes that are not the Teams client,
+      and for MQTT client traffic from hosts with no MQTT use. Hardening: restrict outbound access to Teams media-relay ranges to the Teams
+      client where policy allows, and block unmanaged MQTT egress. Weak point: the Lab52 post publishes no victim or intrusion-chain data, so
+      the sideload and TURN observations cannot be tied to an initial-access technique or to a Swiss target.
+    borderline: true
+    borderline_reason: "single-source (B-reliability lab) technical delta on an already-covered high-priority entry; no sector, victim or Swiss nexus stated, so only the loader and egress behaviours are transferable. Main agent decides between a changelog `update` on the covered entry and a drop."
+  - title: "Dolibarr CVE-2026-89013: unauthenticated arbitrary file read via a crafted hashp parameter is exploited in the wild (CSIRT Italia), fixed in 24.0.1"
+    sources:
+      - { url: "https://www.acn.gov.it/portale/w/dolibarr-rilevato-sfruttamento-in-rete-della-cve-2026-89013", publisher: "ACN CSIRT Italia, alert AL01/260930/CSIRT-ITA", date: "2026-09-30", role: "primary" }
+      - { url: "https://www.vulncheck.com/advisories/dolibarr-authorization-bypass-via-hashp-parameter-in-document-php", publisher: "VulnCheck (CNA advisory)", date: "2026-09-11", role: "primary" }
+    discovery_trace: "first seen at: csirt-acn-it, feed https://www.acn.gov.it/portale/feedrss/-/journal/rss/20119/723192 → ACN alert https://www.acn.gov.it/portale/w/dolibarr-rilevato-sfruttamento-in-rete-della-cve-2026-89013 → pivot: CVE record references via https://cve.threatint.com/CVE/CVE-2026-89013 (VulnCheck CNA text, Dolibarr 24.0.1 release notes and patch commit listed) → primary: https://www.vulncheck.com/advisories/dolibarr-authorization-bypass-via-hashp-parameter-in-document-php"
+    summary: |
+      ACN's CSIRT Italia alert of 2026-09-30 reports active exploitation in the wild of CVE-2026-89013 in Dolibarr, the open-source
+      ERP/CRM, and marks both a public proof of concept and exploitation as present. VulnCheck, the CNA, describes it as an authorization
+      bypass in the document-storage endpoints: an unauthenticated request carrying `hashp=shared` skips token validation while
+      satisfying the authorization condition in `htdocs/document.php` and `htdocs/viewimage.php`, which exposes application logs,
+      uploaded business documents, database backups containing password hashes and files of other multicompany entities. CVSS 4.0
+      8.7 (VC:H, no authentication or interaction); affected Dolibarr 23.0.4 up to but excluding 24.0.1, fixed in 24.0.1 (CVE published
+      2026-09-10/11). VulnCheck lists it in its own KEV database. It was not in CISA KEV in the 2026-10-02 catalogue release.
+    region_nexus: "global (alert from the Italian CSIRT); no Swiss exposure data in the sources"
+    primary_sector_nexus: "indirect (open-source business application; sources name no public-sector victim)"
+    sector: "cross-sector"
+    cves: [CVE-2026-89013]
+    techniques: [T1190, T1005]
+    affected_products: ["Dolibarr ERP CRM"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    classification_suggested: { reliability: A, credibility: 2 }
+    evidence:
+      - quote: "Dolibarr 23.0.4 before 24.0.1 contains an authorization bypass vulnerability that allows unauthenticated attackers to read arbitrary files through the document storage endpoints by supplying a crafted hashp parameter value."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/advisories/dolibarr-authorization-bypass-via-hashp-parameter-in-document-php"
+      - quote: "Rilevato lo sfruttamento attivo in rete della vulnerabilità CVE-2026-89013"
+        original: "Rilevato lo sfruttamento attivo in rete della vulnerabilità CVE-2026-89013"
+        translation: "Active exploitation in the wild of CVE-2026-89013 has been detected (translated from Italian)"
+        attribution: "ACN CSIRT Italia"
+        source_url: "https://www.acn.gov.it/portale/w/dolibarr-rilevato-sfruttamento-in-rete-della-cve-2026-89013"
+    extended_notes: |
+      Detection concept that follows from the CNA description: web-server access logs for requests to document.php or viewimage.php with a
+      hashp parameter whose value is `shared` and no authenticated session; hunt for large or repeated document-endpoint reads from one
+      source. Post-patch check: the exposed file classes include database backups with password hashes and application logs, so rotate
+      credentials and secrets stored in or backed up beside the instance and review what sat in the document directory before the upgrade
+      to 24.0.1. The ACN text does not say who is exploiting it or at what scale.
+    borderline: true
+    borderline_reason: "exploited per a carve-out authority, but a niche open-source ERP/CRM with no stated public-sector or Swiss nexus; vulnerability triage is S1's domain and this was found through ACN's 98 h lookback, so the main agent should dedupe against S1."
+backlog_rechecks:
+  - row: "Qilin leak-site listing of Touring Club Suisse (TCS), 2026-09-20"
+    disposition: still-held
+    recommendation: "strike on 2026-10-05 as scheduled (condition unmet through 2026-10-04); no condition-met evidence exists"
+    evidence: >
+      Condition (TCS statement, data samples or Swiss press pickup) unmet on 2026-10-04. ransomware.live API countryvictims/CH
+      still shows only the leak-site post (published 2026-09-20T12:12Z, no data size). tcs.ch/de homepage fetched 2026-10-04 carries a
+      Newsticker whose newest item is 30.09.2026 (Stellantis battery shortage) and no incident notice. German and French searches return
+      only trackers (SOCRadar labels the claim "Alleged"; Breachsense records leak size unknown and says its credential counts (425
+      @tcs.ch accounts, infostealer logins) are not necessarily connected to the ransomware claim). No BACS, TCS or Swiss-press item.
+  - row: "SafePay listing of ARA-Region Lyss-Limpachtal (BE wastewater association), 2026-09-15"
+    disposition: still-held
+    recommendation: "keep held to the 2026-10-14 expiry"
+    evidence: >
+      No victim statement and no press confirmation found (German searches, Bernese regional press, BACS pages). ara-lyss.ch is now
+      readable (served through the reader) and its homepage carries no incident notice. Tracker records only: ransomware.live
+      (published 2026-09-15T19:29Z), Breachsense (leak size unknown), DeXpose (relays SafePay's text "The full leak will be published
+      soon, unless a company representative contacts us"). No data-publication signal.
+  - row: "Payload ransomware listing of Netech / Neeser Technik AG (Seuzach ZH), 2026-09-28"
+    disposition: still-held
+    recommendation: "keep held to the 2026-10-14 expiry"
+    evidence: >
+      netech.ch homepage fetched 2026-10-04 has no incident notice; no press report in German searches; trackers only (ransomware.live
+      post published 2026-09-28T16:58Z; Breachsense search snippet gives a 33 GB leak size, a tracker claim). No victim statement.
+  - row: "Manno TI (2026-09-30 entry): SafePay countdown to about 2026-10-01"
+    disposition: no new development (no update-of item)
+    recommendation: "no changelog record warranted"
+    evidence: >
+      ransomware.live record unchanged (listed 2026-09-28T08:34Z, no data size or publication flag); the manno.ch homepage fetched
+      2026-10-04 (page dated 2026-10-03) shows no new notice and the 2026-09-16 Albo notice is unchanged; Italian and German searches and
+      the tio.ch / laRegione topic pages carry no follow-up report; Inside IT's 2026-09-29 teaser is already cited by the entry. The
+      countdown has expired (about 2026-10-01) with no public evidence of data publication on the tracker.
+  - row: "Cross-check for S4"
+    disposition: info
+    evidence: >
+      ransomware.live countryvictims/CH (fetched 2026-10-04) lists no new Swiss victim after 2026-09-28T16:59Z (Netech); the newest
+      press-confirmed Swiss incident in countrycyberattacks/CH is SRG (2026-09-27, already struck). Inside IT 2026-09-30 reports
+      Bio-Strath (SafePay listing 2026-09-28) as a victim-confirmed ransomware attack; not in the store or backlog, private-sector, outside this window.
+candidate_sources:
+  - id: vaud-soc-cyber-threat-review
+    publisher: "Etat de Vaud, Centre opérationnel de sécurité (SOC), Revue des cybermenaces (monthly, TLP:CLEAR)"
+    url: "https://www.vd.ch/actualites/actualite/news/26621-revue-des-cybermenaces-aout-2026"
+    category: [ch-eu, gov]
+    why: "A cantonal government SOC publishing a monthly public threat review (international and Swiss incidents, phishing of the month, actionable recommendations, full PDF). August 2026 edition dated 2026-09-15; the September edition is due about mid-October. Discovered through dcod.ch's 2026-09-27 post. Primary authority source on the canton-level view the constituency cares about; listing/feed route not yet identified (item URLs follow /actualites/actualite/news/<id>-revue-des-cybermenaces-<month>-2026)."
+coverage_gaps:
+  - source_id: le-monde-info
+    reason: "Recipe drift: https://www.lemondeinformatique.fr/securite-10.html now serves the operating-system section (Windows, macOS, Linux items), not security. The security section is https://www.lemondeinformatique.fr/securite-informatique-3.html: `extract` returns only a stub there, so use `python3 tools/fetch_source.py url <that URL>` and parse `<span class=\"theme\"><b>le DD Mois YYYY</b>` plus the following `<h2><a href>` pairs (17 items, newest 2026-10-01 at probe, nothing in horizon relevant)."
+  - source_id: dcod-ch
+    reason: "Working feed found: `python3 tools/fetch_source.py feed https://dcod.ch/feed/ 15` returns 15 dated items over the direct transport (daily roundups, ENISA Threat Landscape summary 2026-09-30, Vaud SOC pointer 2026-09-27). The record has rss_url null and fetch_method webfetch; the homepage extract is a static tool page."
+  - source_id: intrinsec
+    reason: "Working feed found: `python3 tools/fetch_source.py feed https://www.intrinsec.com/feed/ 10` (10 dated items); `extract` on /blog/ returns only the cookie banner. rss_url is null in the record."
+  - source_id: inside-it-ch
+    reason: "RSS teasers read (newest 2026-10-02T13:43Z, nothing in window); article bodies still blocked (Vercel checkpoint) per the record's notes, not retried. Teasers of interest already past the window: policy item 'Schweizer Domains werden besser geschützt' (motion 24.4393 on .ch identification, both chambers) and 'Schweizer Verfassung bekommt Digitalisierungsartikel'; neither clears PD-11 (no defender-side obligation)."
+  - source_id: enisa
+    reason: "Listing undated again (dates need per-item `extract`). Items probed: Cybersecurity Month awareness (2026-09-30), ENISA Threat Landscape 2026 (2026-09-22), CRA Single Reporting Platform launched (2026-09-11), CVE Program role (2026-08-06), EUMSS consultation (2026-07-24); all outside the 26 h horizon. LEAD for S3 / the audit, not returned: the ETL 2026 annual report (public administration most targeted at 32% of incidents; 82% of public-administration events ideology-driven DDoS; 60% of intrusions with an identified vector used a vulnerability; ClickFix growth; NIS360 names public administrations and drinking and wastewater among lower-maturity sectors) is not yet in the store (grep of entries finds no ETL 2026 coverage), and dcod.ch summarised it on 2026-09-30."
+  - source_id: citrix-community
+    reason: "community.citrix.com blog pages return HTTP 403 to `extract` and WebFetch; the jina reader (pool live at probe) returned the full pages and support.citrix.com bulletin CTX697174. Without reader credit these primaries are unreadable; no alternate vendor mirror found."
+  - source_id: policy-watch
+    reason: "Standing policy / regulatory sweep, no in-window item cleared PD-11: BACS (newest item 2026-10-01 Cyber Security Month; Woche 39 weekly review 2026-09-29; Störfallbetriebe pilot 2026-09-28); Federal Council 2026-10-02 decisions (AI and process-automation report, Third Additional Protocol to the European Convention on Mutual Assistance in Criminal Matters sent to consultation: neither is a cybersecurity obligation); ISG and cantonal implementation (Bern law in force 2026-11-01 already covered 2026-09-11; Zug ISG consultation to 2026-11-09 dated July); EU: Commission proposal for an EU Critical Communication System for first responders (2026-09-30, a proposal not an obligation), Eurobarometer survey (2026-09-30), CRA reporting platform (2026-09-11); sanctions and law enforcement: no new OFAC or Europol cyber action beyond the covered KillSec takedown; the Council of Europe cybercrime items: none found."
+  - source_id: cert-at
+    reason: "Quiet, not a transport signal: warnings feed newest 2026-09-27 (NetScaler, covered), current feed newest 2026-09-08."
+source_ledger:
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed (warnings + current)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "warnings newest 2026-09-27, current newest 2026-09-08" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract (listing + per-item extract for dates)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-09-30 awareness item; ETL 2026 (2026-09-22) outside horizon, logged as lead" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed + extract", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "NetScaler 2026-10-03 pivoted to Citrix CVE-2026-88779 bulletin (item 1)" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed (teasers only)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-02T13:43Z before window; article bodies blocked (not retried)" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "extract + url (card dates and hrefs)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest card 2026-10-01 (Cyber Security Month)" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "listing undated (page date 2026-08-18), unchanged content" }
+  - { id: bacs-press, tier: essential, attempted: true, transport: "extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-01; no new press release since the covered 2026-09-25 CSG item" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 15 (not in slice, run per spawn note)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-02T04:50 (FortiMail, covered); Zimbra 2026-10-01 and NetScaler 13005 edits are older or covered" }
+  - { id: cisa-news, tier: standard, attempted: true, transport: "webfetch (title/date/href prompt) + feed", horizon_hours: 102, in_horizon_items: 1, returned: 0, note: "only Cybersecurity Awareness Month launch 2026-10-01" }
+  - { id: compass-security, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 98, in_horizon_items: 1, returned: 0, note: "Pwn2Own Ireland 2025 Home Assistant write-up 2026-10-02: consumer smart-home RCE research, no public-sector nexus" }
+  - { id: csirt-acn-it, tier: standard, attempted: true, transport: "feed (40 items) + extract", horizon_hours: 98, in_horizon_items: 24, returned: 1, note: "Dolibarr exploited (borderline item 3); Zammad, FortiMail, Cisco SD-WAN, Apple CoreGraphics already covered; Next.js CVE-2026-94545 PoC, TeamViewer, n8n, JetBrains, Fortra BoKS etc. left to S1" }
+  - { id: dcod-ch, tier: standard, attempted: true, transport: "feed https://dcod.ch/feed/ (recipe found) + extract", horizon_hours: 121, in_horizon_items: 6, returned: 0, note: "daily aggregator roundups; ETL 2026 summary and Vaud SOC pointer used as leads (candidate source)" }
+  - { id: ec-digital-strategy-newsroom, tier: standard, attempted: true, transport: "url (raw HTML, dated cards) + extract per item", horizon_hours: 98, in_horizon_items: 8, returned: 0, note: "first-responder Critical Communication System proposal and Eurobarometer 2026-09-30: proposal/survey, no obligation" }
+  - { id: google-tag, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "Android Advanced Protection 2026-10-01, product feature" }
+  - { id: govcert-at, tier: standard, attempted: true, transport: "extract", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "static institutional page, no advisory stream (as documented)" }
+  - { id: infoguard-ch, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest 2026-09-28 OT asset discovery; Q3/26 threat report 2026-09-21 outside horizon" }
+  - { id: intrinsec, tier: standard, attempted: true, transport: "feed https://www.intrinsec.com/feed/ (recipe found)", horizon_hours: 121, in_horizon_items: 3, returned: 0, note: "agentic attacks essay, Acer NitroSense LPE (CVE-2026-50610), AI-assisted development: no public-sector or Swiss nexus" }
+  - { id: kudelski-security, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-09-07 DPRK research with Sekoia" }
+  - { id: lab52, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 98, in_horizon_items: 1, returned: 1, note: "DragonForce TURN and MQTT backdoors 2026-10-01 (borderline update-of item 2)" }
+  - { id: le-monde-info, tier: standard, attempted: true, transport: "extract + url (section path drift found)", horizon_hours: 121, in_horizon_items: 4, returned: 0, note: "security section newest 2026-10-01 AI-safety accord; French items (Carrefour/Shipup leak 2026-09-30, Bercy) not constituency-relevant" }

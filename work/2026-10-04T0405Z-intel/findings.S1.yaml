@@ -1,0 +1,486 @@
+# work/2026-10-04T0405Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-10-04T0405Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-04T04:07:38Z
+ended_at: 2026-10-04T04:31:01Z
+duration_seconds: 1403
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 20
+  bridge_fetches: 130   # approximate: feed/extract/url/cisa/msrc/ncsc/enisa subcommand calls
+window_hours: 26
+window_opens: 2026-10-03T02:05Z
+kev_catalogue:
+  version: "2026.10.02"
+  released: "2026-10-02T15:19:38Z"
+  count: 1733
+  additions_dated_2026-10-03_or_later: 0
+  newest_addition_date: "2026-10-02"
+  newest_additions: [CVE-2026-102489, CVE-2026-102490]   # Zammad, both dated 2026-10-02, due 2026-10-05
+  pd13_findings:
+    - "CVE-2026-102489 / CVE-2026-102490 (Zammad): KEV 2026-10-02; the store entry 2026-10-02/zammad-... does not mention KEV and carries status exploited only (update-of item 3)."
+    - "CVE-2026-87902 (WordPress Core): KEV 2026-09-25 (due 2026-09-28); entry 2026-09-24/wordpress-cve-2026-87902-... predates the listing and carries no cisa-kev status (update-of item 4)."
+    - "No store CVE moved from not-exploited to exploited by a KEV listing; every other store CVE present in KEV is already marked."
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "product watchlist is empty; sweep is a no-op"
+scheduled_release_duty:
+  note: >
+    No scheduled multi-product vendor release landed in the window (Sunday 2026-10-04; next scheduled cycle is
+    Microsoft/SAP/Adobe/Fortinet-monthly on 2026-10-13, Oracle CPU later in October). Off-cycle and unscheduled releases
+    read from vendor primaries are dispositioned below under dropped_or_held.
+items:
+  # ------------------------------------------------------------------ ITEM 1 (NEW, headline)
+  - title: "CVE-2026-88779, Citrix NetScaler ADC and Gateway: a pre-auth memory overflow in SAML authentication crashes fully patched appliances, Citrix confirms targeted attacks, and the fixed-build floor moves up again (CVSS 4.0 8.7)"
+    sources:
+      - { url: "https://support.citrix.com/external/article/CTX697174/citrix-netscaler-adc-and-citrix-netscale.html", publisher: "Citrix (Cloud Software Group), security bulletin CTX697174", date: "2026-10-03", role: "primary" }
+      - { url: "https://community.citrix.com/techzone-blogs/110_security-updates/understanding-and-addressing-cve-2026-88779-in-citrix-netscaler-adc-and-citrix-netscaler-gateway/", publisher: "Citrix NetScaler cyber threat intelligence (Tech Zone blog)", date: "2026-10-03", role: "primary" }
+      - { url: "https://community.citrix.com/techzone-blogs/110_security-updates/security-update-guidance-for-netscaler-saml-authentication-deployments/", publisher: "Citrix (Tech Zone blog, SAML guidance)", date: "2026-10-03", role: "primary" }
+      - { url: "https://www.heise.de/en/news/Netscaler-admins-beware-Zero-day-causes-crashes-and-code-execution-11474996.html", publisher: "heise online", date: "2026-10-03", role: "corroborating" }
+      - { url: "https://cyberpress.org/new-citrix-netscaler-saml-flaw-triggers-crashes-and-suspected-exploitation-attempts/", publisher: "Cyber Press (relays Reddit administrator reports)", date: "2026-10-03", role: "corroborating" }
+      - { url: "https://cybersecuritynews.com/citrix-netscaler-0-day-patch", publisher: "Cyber Security News (relays Reddit administrator reports)", date: "2026-10-03", role: "corroborating" }
+    discovery_trace: >
+      first seen at: enisa-euvd, URL https://euvdservices.enisa.europa.eu/api/search?fromDate=2026-10-02&toDate=2026-10-04&fromScore=8.5&toScore=10&page=0&size=100
+      (EUVD-2026-92065, CVE-2026-88779, published 2026-10-04T02:35Z, vendor NetScaler, 'before 14.1-73.41 / 13.1-64.28') →
+      EUVD detail https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-92065 (reference CTX697174) →
+      primary: Citrix bulletin https://support.citrix.com/external/article/CTX697174/citrix-netscaler-adc-and-citrix-netscale.html →
+      Citrix blog https://community.citrix.com/techzone-blogs/110_security-updates/understanding-and-addressing-cve-2026-88779-in-citrix-netscaler-adc-and-citrix-netscaler-gateway/ →
+      pivot: heise security feed https://www.heise.de/security/feed.xml → https://www.heise.de/en/news/Netscaler-admins-beware-Zero-day-causes-crashes-and-code-execution-11474996.html →
+      Citrix SAML guidance blog https://community.citrix.com/techzone-blogs/110_security-updates/security-update-guidance-for-netscaler-saml-authentication-deployments/ (read via jina fallback inside extract) →
+      pivot: WebSearch ("Citrix NetScaler new zero-day SAML exploit patched appliances Beaumont watchTowr reproduced") → https://cybersecuritynews.com/citrix-netscaler-0-day-patch , https://cyberpress.org/new-citrix-netscaler-saml-flaw-triggers-crashes-and-suspected-exploitation-attempts/ .
+      CVE record read at https://cveawg.mitre.org/api/cve/CVE-2026-88779 (verification only, state PUBLISHED, datePublic 2026-10-04T02:19Z; do not cite). NVD REST returned 0 results at 04:11Z (not yet ingested).
+    summary: |
+      Citrix security bulletin CTX697174 (2026-10-03) describes CVE-2026-88779, a memory-overflow flaw (CWE-119) in customer-managed
+      NetScaler ADC and NetScaler Gateway that an unauthenticated network attacker reaches when the appliance is configured as a SAML
+      service provider (`add authentication samlAction`) or SAML identity provider (`add authentication samlIdPProfile`) on a Gateway
+      or AAA virtual server. Citrix rates it CVSS 4.0 8.7 with availability impact only; its companion blog states "Citrix has
+      observed targeted attacks on unmitigated NetScaler deployments which can lead to Denial of Service" and that it has not
+      identified an impact on the integrity of customer data. Citrix states the issue is independent of the CVE-2026-88771 to
+      CVE-2026-88778 bulletin CTX697096. Fixed builds are 14.1-73.41, 13.1-64.28, 14.1-73.41 FIPS and 13.1-37.282 (13.1-FIPS and
+      NDcPP), so appliances patched to the previous floor (14.1-73.37 / 13.1-64.23) are still affected. Citrix's interim mitigation is
+      a set of Global Deny List signatures delivered through NetScaler Console virtual patching (builds from 14.1-73.37 up to
+      14.1-73.41 and from 13.1-64.23 up to 13.1-64.28). Before the bulletin, administrators and researchers reported repeated
+      crashes and forced reboots of fully patched appliances from the evening of 2026-10-02; heise relays British researcher Kevin
+      Beaumont's report that a downloaded binary was running on one of his patched honeypots and a claim that watchTowr Labs
+      reproduced the flaw, with possible code execution. Citrix does not confirm code execution and its CVSS vector scores no
+      confidentiality or integrity impact, so DoS is the vendor-stated impact and code execution is an unconfirmed
+      researcher claim. CISA KEV (catalogue 2026.10.02) does not list it yet and NCSC Switzerland has no advisory yet.
+    region_nexus: "global; internet-facing NetScaler Gateway / AAA with SAML is standard remote-access and SSO infrastructure in European and Swiss public administrations; NCSC-CH, CERT-EU and NCSC-NL already issued advisories on the same product line's 2026-09-27 zero-days"
+    primary_sector_nexus: "direct (government remote-access / SSO edge appliances); no source names a public-sector victim"
+    sector: "public-sector"
+    cves: [CVE-2026-88779]
+    techniques: [T1190, T1499.004]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["product:citrix-netscaler"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    references_existing_entry: "2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev"
+    why_new_not_update: >
+      Distinct CVE, distinct bulletin (CTX697174), distinct precondition (SAML SP/IdP) and distinct fixed builds; Citrix itself
+      states the issue is independent of CTX697096. The new entry should list the 2026-09-28 entry in references[]. A companion
+      update-of record for that entry is item 2, because its immediate action's target builds no longer cover SAML-configured appliances.
+    suggested_priority: "high (critical only if CISA lists it in KEV, NCSC-CH or a second vendor-independent source confirms code execution; Citrix-stated impact is DoS)"
+    classification_suggestion: "A2 (Citrix PSIRT first-party for its own product; exploitation is vendor-stated and independently suggested by honeypot reports, but the code-execution claim is unconfirmed)"
+    evidence:
+      - quote: "Citrix has observed targeted attacks on unmitigated NetScaler deployments which can lead to Denial of Service."
+        attribution: "Citrix NetScaler cyber threat intelligence (Tech Zone blog)"
+        source_url: "https://community.citrix.com/techzone-blogs/110_security-updates/understanding-and-addressing-cve-2026-88779-in-citrix-netscaler-adc-and-citrix-netscaler-gateway/"
+      - quote: "NetScaler ADC or NetScaler Gateway must be configured as a SAML SP OR SAML IdP"
+        attribution: "Citrix (security bulletin CTX697174)"
+        source_url: "https://support.citrix.com/external/article/CTX697174/citrix-netscaler-adc-and-citrix-netscale.html"
+      - quote: "NetScaler ADC and NetScaler Gateway 14.1-73.41 and later releases"
+        attribution: "Citrix (security bulletin CTX697174)"
+        source_url: "https://support.citrix.com/external/article/CTX697174/citrix-netscaler-adc-and-citrix-netscale.html"
+      - quote: "This issue is independent of the vulnerabilities disclosed in"
+        attribution: "Citrix (Tech Zone blog, SAML guidance)"
+        source_url: "https://community.citrix.com/techzone-blogs/110_security-updates/security-update-guidance-for-netscaler-saml-authentication-deployments/"
+      - quote: "Since the evening of October 2, 2026, an exploit for a new security vulnerability on Citrix NetScaler devices has apparently been circulating."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/en/news/Netscaler-admins-beware-Zero-day-causes-crashes-and-code-execution-11474996.html"
+      - quote: "the watchTowr Labs team has now successfully reproduced this vulnerability."
+        attribution: "heise online (quoting a security expert)"
+        source_url: "https://www.heise.de/en/news/Netscaler-admins-beware-Zero-day-causes-crashes-and-code-execution-11474996.html"
+    extended_notes: |
+      Exposure: customer-managed NetScaler ADC and Gateway only (Citrix upgrades Citrix-managed cloud services and Citrix-managed
+      Adaptive Authentication itself); Secure Private Access Hybrid deployments that use NetScaler instances are also affected
+      (bulletin note). The vendor-documented check is a configuration search for `add authentication samlAction` or
+      `add authentication samlIdPProfile`; Citrix ties applicability to a Gateway or AAA virtual server using SAML. Fixed builds:
+      14.1 -> 14.1-73.41+, 13.1 -> 13.1-64.28+, ADC 14.1-FIPS -> 14.1-73.41 FIPS+, ADC 13.1-FIPS/NDcPP -> 13.1-37.282+.
+      Mitigation (Citrix blog): Global Deny List signatures via NetScaler Console (on-premises with Cloud Connect, or the Console
+      service) with "Virtual patching" enabled, signature version at least v24 per `show appfw signatures`, counters visible
+      through `stat denylist global AAA_REQUEST`; applies only to builds >= 14.1-73.37 and < 14.1-73.41 or >= 13.1-64.23 and
+      < 13.1-64.28. Citrix also suggests blocking suspicious source addresses with the NetScaler blocklist feature.
+      Detection (community-reported, NOT vendor-stated, via Cyber Press and Cyber Security News relaying Reddit administrator
+      threads): repeated crashes of the `nsaaad` authentication daemon, the `pitboss` watchdog restarting the appliance after a
+      crash threshold, HA failovers, files in /var/core, one administrator seeing an apparent script-download command in
+      appliance logs (download did not succeed), and a payload delivered in the username field of crafted SAML traffic.
+      Preserve core files, logs and a support bundle before the next restart. Triage: reboot loops alone are not proof of
+      compromise (Cyber Security News says so explicitly); correlate reboot times with inbound SAML request bursts, firewall logs and
+      identity-provider logs. Post-patch: this bulletin adds no persistence guidance; the earlier 2026-09-27 zero-day compromise
+      checks remain separate.
+      Conflicts to hold: (1) Citrix says DoS and no data-integrity impact; heise relays researcher claims of code execution and
+      a downloaded binary on a patched honeypot (Beaumont), a watchTowr reproduction, and speculation that it bypasses the CVE-2026-88771/88772 fix.
+      Cyber Security News notes the reboot reports "do not yet prove attackers have bypassed the September patch". (2) heise
+      (published before the bulletin) says no patch existed; the bulletin and fixed builds appeared 2026-10-03 PDT. Citrix
+      thanks Bishop Fox and watchTowr in the bulletin; no Bishop Fox or watchTowr write-up is public yet (checked bishopfox.com/blog,
+      labs.watchtowr.com RSS, watchtowr.com/intelligence).
+      Timing: bulletin 2026-10-03 (PDT); Citrix blog published 2026-10-03T18:42 PDT (= 2026-10-04T01:42Z); CVE record datePublic
+      2026-10-04T02:19Z; EUVD ingest 2026-10-04T02:35Z. FIRST EPSS has no score yet (CVE too new).
+      Not found: NCSC-CH, CERT-EU, NCSC-NL, BSI or CISA output on this CVE as of 2026-10-04T04:30Z.
+      Recommended defender takeaway: patch SAML-configured appliances to the .41/.28 floor even if already on 14.1-73.37 / 13.1-64.23;
+      until then check SAML configuration, apply the Global Deny List mitigation where Console virtual patching is available, and watch
+      nsaaad crashes.
+
+  # ------------------------------------------------------------------ ITEM 2 (update-of Citrix 2026-09-28 entry)
+  - title: "Citrix NetScaler 2026-09-27 zero-day entry: the fixed-build floor for SAML-configured appliances is now 14.1-73.41 / 13.1-64.28 (CVE-2026-88779)"
+    sources:
+      - { url: "https://support.citrix.com/external/article/CTX697174/citrix-netscaler-adc-and-citrix-netscale.html", publisher: "Citrix (Cloud Software Group), security bulletin CTX697174", date: "2026-10-03", role: "primary" }
+      - { url: "https://community.citrix.com/techzone-blogs/110_security-updates/security-update-guidance-for-netscaler-saml-authentication-deployments/", publisher: "Citrix (Tech Zone blog, SAML guidance)", date: "2026-10-03", role: "primary" }
+    discovery_trace: "same chain as item 1 (EUVD sweep → Citrix bulletin CTX697174 → Citrix SAML guidance blog)"
+    summary: |
+      Companion delta for the entry 2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev. Its immediate action and
+      actions[] tell operators to upgrade to 14.1-73.37 or 13.1-64.23 (13.1-37.279 FIPS). Citrix's new bulletin CTX697174 raises the
+      floor to 14.1-73.41, 13.1-64.28, 14.1-73.41 FIPS and 13.1-37.282 for appliances configured as SAML service provider or identity provider,
+      because CVE-2026-88779 (pre-auth memory overflow, Citrix-confirmed targeted attacks, DoS) is present in the 2026-09-27 fixed builds.
+      Citrix states the new issue is independent of CTX697096. The earlier entry's compromise-check guidance is unaffected.
+    update_type: update
+    update_delta: >
+      add a cross-reference to the new CVE-2026-88779 entry and amend the upgrade target for SAML-configured appliances to the
+      14.1-73.41 / 13.1-64.28 / 14.1-73.41 FIPS / 13.1-37.282 builds; the entry's actions[] first item names 14.1-73.37 / 13.1-64.23 as the target.
+    region_nexus: "global"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-88779]
+    techniques: [T1190]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["product:citrix-netscaler"]
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev"
+    classification_suggestion: "A2"
+    evidence:
+      - quote: "NetScaler ADC and NetScaler Gateway 14.1-73.41 and later releases"
+        attribution: "Citrix (security bulletin CTX697174)"
+        source_url: "https://support.citrix.com/external/article/CTX697174/citrix-netscaler-adc-and-citrix-netscale.html"
+      - quote: "This issue is independent of the vulnerabilities disclosed in"
+        attribution: "Citrix (Tech Zone blog, SAML guidance)"
+        source_url: "https://community.citrix.com/techzone-blogs/110_security-updates/security-update-guidance-for-netscaler-saml-authentication-deployments/"
+
+  # ------------------------------------------------------------------ ITEM 3 (update-of Zammad)
+  - title: "Zammad CVE-2026-102489 / CVE-2026-102490: CISA lists both in KEV (due 2026-10-05); Zammad says current versions are not affected by the first and that it cannot verify the second"
+    sources:
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA Known Exploited Vulnerabilities Catalog (version 2026.10.02)", date: "2026-10-02", role: "primary" }
+      - { url: "https://community.zammad.org/t/take-care-local-privilege-escalation-cve-2026-102490-is-reported-as-being-actively-exploited/21297", publisher: "Zammad GmbH (vendor statement, community forum)", date: "2026-10-01", role: "primary" }
+      - { url: "https://csirt.divd.nl/DIVD-2026-00015/", publisher: "DIVD CSIRT (case DIVD-2026-00015, last modified 2026-10-01)", date: "2026-10-01", role: "corroborating" }
+    discovery_trace: >
+      first seen at: cisa-kev, URL https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json (python3 tools/fetch_source.py cisa-kev; two Zammad rows dated 2026-10-02) →
+      KEV `notes` field names https://community.zammad.org/t/take-care-local-privilege-escalation-cve-2026-102490-is-reported-as-being-actively-exploited/21297 → primary: Zammad statement →
+      DIVD case https://csirt.divd.nl/DIVD-2026-00015/ ; Zammad GitHub advisory list https://github.com/zammad/zammad/security/advisories read 2026-10-04 (no advisory for either CVE) .
+    summary: |
+      Two deltas since the entry's 2026-10-02T04:45Z text. (1) CISA added both CVEs to KEV on 2026-10-02 with a due date of 2026-10-05;
+      the KEV rows describe CVE-2026-102489 as a session fixation leading to code execution as the zammad user and CVE-2026-102490 as
+      a local zammad-to-root escalation, "chained" with each other, and carry the forensic-triage flag. (2) Zammad GmbH's own statement of
+      2026-10-01 contradicts the entry's open fix questions: it says CVE-2026-102489 is exploitable only on Zammad 6.5 and older because of
+      the runtime environment those versions use, that 7.0 and later are not affected (DIVD's own page also says not exploitable there),
+      that it hardened the code anyway in Zammad 7.2.0 (the current stable release, dated 2026-09-23 on the releases page) and that 6.5 and older
+      no longer receive security fixes. For CVE-2026-102490 Zammad says DIVD has given it no technical details, that it cannot confirm
+      the flaw, scope or affected versions, and that it will publish verified results; it also disputes DIVD's handling, citing a report
+      on 2026-09-24 and public disclosure on 2026-09-26. DIVD's page says the flaw was reported and Zammad "are working on a fix". As of 2026-10-04 the Zammad
+      GitHub advisory list carries no advisory for either CVE, so no fix for CVE-2026-102490 exists and the vendor is not confirming it.
+    update_type: update
+    update_delta: >
+      add the KEV listing (both CVEs, 2026-10-02, due 2026-10-05) to the status lists and body; replace "fixed builds are not named" with
+      the vendor statement (7.2.0 current stable; 7.0+ not exploitable for CVE-2026-102489; 6.5 and older EOL with no fix);
+      record that Zammad has not confirmed CVE-2026-102490 and that its disclosure dispute with DIVD is open; keep the sourcing note's
+      "no Zammad advisory located" line current (still none on 2026-10-04).
+    region_nexus: "global; Zammad is widely used as a DACH public-sector helpdesk (registry summary); the breached party is the Dutch DIVD"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-102489, CVE-2026-102490]
+    techniques: [T1190, T1068]
+    affected_products: ["Zammad"]
+    entity_keys: ["product:zammad"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-02/zammad-cve-2026-102489-102490-exploited-divd-breach"
+    classification_suggestion: "A2"
+    evidence:
+      - quote: "Zammad GmbH Zammad contains an improper privilege management vulnerability that can allow the local zammad user to escalate privileges to root."
+        attribution: "CISA Known Exploited Vulnerabilities Catalog"
+        source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+      - quote: "Exploitation is only possible on Zammad 6.5 and older, because of the runtime environment those versions use."
+        attribution: "Zammad GmbH"
+        source_url: "https://community.zammad.org/t/take-care-local-privilege-escalation-cve-2026-102490-is-reported-as-being-actively-exploited/21297"
+      - quote: "Up to today, DIVD has not given us any technical details about this vulnerability."
+        attribution: "Zammad GmbH"
+        source_url: "https://community.zammad.org/t/take-care-local-privilege-escalation-cve-2026-102490-is-reported-as-being-actively-exploited/21297"
+      - quote: "Update to Zammad 7.2.0, the current stable release."
+        attribution: "Zammad GmbH"
+        source_url: "https://community.zammad.org/t/take-care-local-privilege-escalation-cve-2026-102490-is-reported-as-being-actively-exploited/21297"
+    extended_notes: |
+      KEV dueDate 2026-10-05, knownRansomwareCampaignUse Unknown, forensicTriage Yes. EPSS (FIRST, 2026-10-03): CVE-2026-102489 0.01396,
+      CVE-2026-102490 0.00629. EUVD lists exploitedSince 2026-09-30 for both. The vendor and the finder disagree on both versions and
+      timing: DIVD's CVE record scopes CVE-2026-102490 to < 7.1.0-alpha, its case page and NCSC-NL say all versions; Zammad says it
+      cannot verify any scope. Attribute each claim to its maker. Operators should still copy logs before changing anything
+      (NCSC-NL guidance already in the entry).
+
+  # ------------------------------------------------------------------ ITEM 4 (update-of WordPress, stale KEV)
+  - title: "WordPress CVE-2026-87902: CISA added the page-template file-inclusion flaw to KEV on 2026-09-25 (due 2026-09-28), after the entry was written"
+    sources:
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA Known Exploited Vulnerabilities Catalog (version 2026.10.02)", date: "2026-09-25", role: "primary" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json → PD-13 cross-check of every store CVE against the live catalogue (entry 2026-09-24/wordpress-cve-2026-87902-... carries status exploited, poc-public, patch-available but no cisa-kev and no mention of KEV in its body)"
+    summary: |
+      The KEV catalogue lists CVE-2026-87902 ("WordPress Core Remote File Inclusion Vulnerability", CWE-98) with dateAdded 2026-09-25 and a federal due
+      date of 2026-09-28; the row describes an unauthenticated attacker making page-template resolution include a chosen readable local
+      .php file outside the active theme directories, leading to remote code execution, and carries the forensic-triage flag. The store entry
+      (last changed 2026-09-24, before the listing) records exploitation from Patchstack and a public Nuclei template but not the KEV listing.
+      FIRST EPSS on 2026-10-03 is 0.455 (percentile 0.988).
+    update_type: improvement
+    update_delta: "add cisa-kev to the status list for CVE-2026-87902 and one inline-cited sentence on the 2026-09-25 listing; a metadata-style correction (the entry already says exploited), so no float on updated_at"
+    region_nexus: "global; WordPress Core is ubiquitous on public-sector sites"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-87902]
+    techniques: [T1190]
+    affected_products: ["WordPress Core"]
+    entity_keys: ["product:wordpress-core"]
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: "update-of:2026-09-24/wordpress-cve-2026-87902-page-template-traversal-rce"
+    classification_suggestion: "A1"
+    evidence:
+      - quote: "WordPress Core contains a remote file inclusion vulnerability which could allow an unauthenticated attacker to make page-template resolution include a chosen readable local `.php` file outside the active theme directories, leading to remote code execution."
+        attribution: "CISA Known Exploited Vulnerabilities Catalog"
+        source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+
+  # ------------------------------------------------------------------ ITEM 5 (borderline update-of Kiteworks scale)
+  - title: "Kiteworks 2026-09-30 advisories: SecurityWeek counts over 100 advisories in one day across Core, Email Protection Gateway, Secure Data Forms and MFT Server, a dozen critical"
+    sources:
+      - { url: "https://www.securityweek.com/in-other-news-15k-icloud-spoofing-bugs-ai-policy-experts-phished-adblocker-spies-on-ai-chats/", publisher: "SecurityWeek", date: "2026-10-02", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"Kiteworks zero-day vulnerability exploited October 2026\") → SecurityWeek 'In Other News' roundup https://www.securityweek.com/in-other-news-15k-icloud-spoofing-bugs-ai-policy-experts-phished-adblocker-spies-on-ai-chats/ → Kiteworks GitHub advisory list https://github.com/kiteworks/security-advisories/security/advisories (listing read; first 10 rows all 2026-09-30T16:58Z, pagination shows at least five pages; listing page not cited)"
+    summary: |
+      The store entry names eight Kiteworks CVEs published 2026-09-30. SecurityWeek's 2026-10-02 roundup says Kiteworks published over 100
+      security advisories on 2026-09-30 covering its Core platform, Email Protection Gateway, Secure Data Forms and MFT Server, a dozen
+      rated critical, mostly Email Protection Gateway flaws leading to account takeover, code execution or access to internal network resources,
+      with dozens more high. The entry's body does not mention MFT Server or the scale. No exploitation is reported; this is a
+      scope correction, not a new exploitation signal.
+    update_type: improvement
+    update_delta: "state the scale (over 100 advisories, about a dozen critical, MFT Server included) and keep the entry's patch floor (9.5.1) advice; check the Kiteworks list for MFT Server versions before quoting a fixed build"
+    region_nexus: "global; Kiteworks is marketed to government agencies (registry summary)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Kiteworks Core", "Kiteworks Email Protection Gateway", "Kiteworks Secure Data Forms", "Kiteworks MFT Server"]
+    entity_keys: ["product:kiteworks"]
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning"
+    borderline: true
+    borderline_reason: "scope correction on an existing entry from a roundup item (secondary reporter); MFT Server fixed builds not read from the vendor list"
+    classification_suggestion: "B3"
+    evidence:
+      - quote: "A dozen are rated critical, mostly Email Protection Gateway bugs that can lead to account takeover, code execution, or access to internal network resources."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/in-other-news-15k-icloud-spoofing-bugs-ai-policy-experts-phished-adblocker-spies-on-ai-chats/"
+
+  # ------------------------------------------------------------------ ITEM 6 (borderline new: Exchange SU V2)
+  - title: "Exchange Server September 2026 SU re-released as V2: CVE-2026-96940, an authenticated cross-mailbox read rated Exploitation More Likely, is in V2 only"
+    sources:
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-96940", publisher: "Microsoft Security Response Center (Security Update Guide)", date: "2026-10-02", role: "primary" }
+      - { url: "https://techcommunity.microsoft.com/blog/exchange/released-september-2026-v2-exchange-server-security-updates/4561718", publisher: "Microsoft Exchange Team Blog", date: "2026-10-02", role: "primary" }
+    discovery_trace: "first seen at: msrc-update-guide, `python3 tools/fetch_source.py msrc recent 60` (CVE-2026-96940, releaseDate 2026-10-02T07:00-07:00, release 2026-Oct) → `msrc cve CVE-2026-96940` (CVRF-style JSON) → primary: Exchange Team Blog https://techcommunity.microsoft.com/blog/exchange/released-september-2026-v2-exchange-server-security-updates/4561718 (read via extract, direct-raw HTML meta/JSON-LD); also in the ENISA EUVD sweep as EUVD-2026-91771"
+    summary: |
+      Microsoft released a V2 of the September 2026 Exchange Server security updates on 2026-10-02; the Exchange team states the only
+      difference from the original September release is the addition of CVE-2026-96940. MSRC describes it as weak authorization in Exchange Server that lets an authenticated attacker elevate
+      privileges over the network (CWE-1390, CVSS 3.1 8.8, severity Important, publiclyDisclosed No, exploited No) and rates it "Exploitation
+      More Likely". Per the MSRC FAQ, a successful attacker could read other users' mailboxes and attachments within the same organization;
+      tenant boundaries are not crossed, and Exchange Online already carries a service-side fix. SUs apply to Exchange Server Subscription Edition RTM and, under the
+      Period 2 ESU programme, Exchange 2019 CU14/CU15 and 2016 CU23. Administrators who installed the original September SU therefore
+      need the V2 packages to get this fix. No exploitation or public proof of concept is reported; FIRST EPSS 0.00496 on 2026-10-03.
+    region_nexus: "global; on-premises Exchange footprint in Swiss public administrations is plausible but no source states it"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-96940]
+    techniques: [T1114.002, T1068]
+    affected_products: ["Microsoft Exchange Server Subscription Edition", "Microsoft Exchange Server 2019", "Microsoft Exchange Server 2016"]
+    entity_keys: ["product:microsoft-exchange-server"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "not exploited, authenticated, no PoC; publication (2026-10-02T14:00Z MSRC, 19:07Z blog) is about 7 hours before the window opens and it was not covered by the 2026-10-03 fire. Included for the V2-re-release action (SU installers must re-apply) and 'Exploitation More Likely' on widely deployed on-prem mail; main agent decides"
+    classification_suggestion: "A2"
+    evidence:
+      - quote: "Weak authorization in Microsoft Exchange Server allows an authenticated attacker to elevate privileges over a network."
+        attribution: "Microsoft Security Response Center"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-96940"
+      - quote: "The difference between the original September 2026 Security Update release and this V2 release is an addition of CVE-2026-96940."
+        attribution: "Microsoft Exchange Team Blog"
+        source_url: "https://techcommunity.microsoft.com/blog/exchange/released-september-2026-v2-exchange-server-security-updates/4561718"
+    extended_notes: |
+      MSRC FAQ (verbatim sense): an authenticated attacker could gain unauthorized access to other users' mailboxes within the same
+      organization and read email messages and attachments. Detection guidance is not in either source. Inference (labelled): non-owner
+      mailbox access in Exchange mailbox-audit or Unified Audit Log records is the observable to hunt; confirm against Microsoft's audit documentation before putting it
+      in an entry. CVSS vector CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H/E:U/RL:O/RC:C (temporal 7.7). MSRC: latestSoftwareRelease
+      'Exploitation More Likely'.
+
+cve_table:
+  - { cve: CVE-2026-88779, product: "Citrix NetScaler ADC and NetScaler Gateway", cvss: "8.7 (CVSS 4.0, Citrix)", epss: null, kev: false, exploited: "Citrix: targeted attacks observed (DoS); researcher claims of code execution unconfirmed", affected: "14.1 before 14.1-73.41; 13.1 before 13.1-64.28; ADC 14.1-FIPS before 14.1-73.41 FIPS; ADC 13.1-FIPS/NDcPP before 13.1-37.282; only when configured as SAML SP (add authentication samlAction) or SAML IdP (add authentication samlIdPProfile)", fixed: "14.1-73.41; 13.1-64.28; 14.1-73.41 FIPS; 13.1-37.282", type: "memory-corruption (CWE-119) leading to DoS", vector: "network", auth: "pre-auth", source: "Citrix CTX697174 (2026-10-03)" }
+  - { cve: CVE-2026-102489, product: "Zammad", cvss: "8.7 (CVSS 4.0, DIVD)", epss: 0.01396, kev: true, exploited: "yes (DIVD breach; NCSC-NL; KEV 2026-10-02)", affected: "6.3.0 through 6.5.4 exploitable (DIVD/NCSC-NL); Zammad: exploitable on 6.5 and older only; 7.0.0-7.1.3 contain the defect but not exploitable (DIVD)", fixed: "Zammad: 7.0+ not affected; hardening in 7.2.0 (current stable); 6.5 and older EOL, no fix", type: "session fixation to RCE as zammad user", vector: "network (user interaction passive per DIVD CVSS)", auth: "pre-auth", source: "Zammad statement 2026-10-01; CISA KEV 2026-10-02" }
+  - { cve: CVE-2026-102490, product: "Zammad", cvss: "8.5 (CVSS 4.0, DIVD)", epss: 0.00629, kev: true, exploited: "yes (DIVD, NCSC-NL; KEV 2026-10-02)", affected: "all versions from 1.5.0 (DIVD case page, NCSC-NL); DIVD CVE record: >= 1.5.0 to < 7.1.0-alpha; Zammad cannot verify", fixed: "none; Zammad has no details from DIVD and has not confirmed the flaw (2026-10-01)", type: "local privilege escalation zammad to root", vector: "local", auth: "post-auth (local zammad user)", source: "Zammad statement 2026-10-01; CISA KEV 2026-10-02" }
+  - { cve: CVE-2026-87902, product: "WordPress Core", cvss: null, epss: 0.45501, kev: true, exploited: "yes (Patchstack telemetry in store entry; KEV 2026-09-25)", affected: "see store entry", fixed: "see store entry", type: "remote file inclusion to RCE (CWE-98)", vector: "network", auth: "pre-auth", source: "CISA KEV 2026-09-25" }
+  - { cve: CVE-2026-96940, product: "Microsoft Exchange Server (SE RTM; 2019 CU14/CU15; 2016 CU23 under ESU Period 2)", cvss: "8.8 (CVSS 3.1, Microsoft)", epss: 0.00496, kev: false, exploited: "No (MSRC); publicly disclosed No; Exploitation More Likely", affected: "Exchange SE RTM; Exchange 2019 CU14, CU15; Exchange 2016 CU23", fixed: "September 2026 Security Update V2 packages (released 2026-10-02)", type: "weak authorization / privilege escalation, cross-mailbox read (CWE-1390)", vector: "network", auth: "post-auth", source: "MSRC Security Update Guide; Exchange Team Blog 2026-10-02" }
+
+backlog_rechecks:
+  - row: "IBM MQ CVE-2026-10747 and Langflow OSS CVE-2026-79724 / CVE-2026-81204 / CVE-2026-85025"
+    disposition: "still-held"
+    evidence: >
+      CISA KEV catalogue 2026.10.02 (read 2026-10-04T04:07Z) lists none of the four. WebSearch for each id found no exploitation report and no
+      public proof of concept (aggregator pages state not known exploited). IBM's own bulletin for CVE-2026-10747 (dated 2026-09-10,
+      https://www.ibm.com/support/pages/node/7284690, extract-read 2026-10-04) covers IBM MQ APPLIANCE only (9.4 LTS 9.4.0.0-9.4.0.25,
+      9.4 CD 9.4.1.0-9.4.5.2, 10.0.0.0-10.0.0.1), remediation APAR DT472411, CVSS 3.1 10.0, no exploitation statement; FIRST EPSS 0.0057.
+      Langflow itself has repeated KEV history (CVE-2026-9198, 0770, 55255, 33017, 2025-3248) but none of these three CVEs is listed.
+      The narrow MQ Appliance footprint strengthens the hold; the row expires 2026-10-11 and can be struck then if nothing changes.
+  - row: "MikroTik RouterOS CVE-2026-84411"
+    disposition: "still-held"
+    evidence: >
+      CISA CSAF icsa-26-272-06 (revision 2, 2026-09-30, 'Update A - Fixing upgrade version typo') now reads "update RouterOS to version 7.24
+      or later" with affected '<7.24', CVSS 3.1 9.8, and states "No known public exploitation specifically targeting this vulnerability has been reported to CISA at this time"
+      (SSVC E:N); EUVD-2026-91836 shows exploitedSince None, CVSS 4.0 9.3, no PoC; not in KEV 2026.10.02; EPSS 0.00945 (EUVD's 'epss' field is a
+      percent, 0.95 means 0.95%). MikroTik's changelog page and forum do not name the CVE; SecurityOnline says RouterOS 7.24.2 and 7.23.4
+      (both 2026-09-03, which also carry the exploited MikroTrick chain fixes) are the latest fixed releases, which is the outlet's inference, not a MikroTik statement.
+      Nothing meets the condition; expires 2026-10-14. (MikroTik's upgrade.mikrotik.com NEWEST7.* files return stale 7.12.1 data through this egress and cannot be used.)
+  - row: "IBM Guardium Data Protection CVE-2026-85542 (ACN alert AL04/260928/CSIRT-ITA)"
+    disposition: "still-held"
+    evidence: >
+      Not in CISA KEV 2026.10.02; no IBM confirmation of exploitation found (IBM's 2026-09-17 Guardium bulletin node 7288040 lists other CVEs and no exploitation
+      statement; WebSearch finds only NVD-mirror pages stating not KEV-listed); no constituency deployment surfaced. Expires 2026-10-14.
+
+developing_story_checks:
+  - entry: "2026-10-02/cve-2026-104286-fortimail-path-traversal-zero-day-kev"
+    result: "no delta since last_changed_at 2026-10-03T04:55Z"
+    evidence: >
+      FG-IR-26-175 (extract-read 2026-10-04T04:09Z; Timeline shows only '2026-10-01: Initial publication') still reads "Upgrade to upcoming 8.0.2", "upcoming 7.6.7",
+      "upcoming 7.4.9" and "Upgrade to branch 7.4 or above" for 7.2; workaround and IoC lists unchanged; fixed builds NOT shipped. Fortinet RSS ir.xml newest item is FG-IR-26-175.
+      NCSC-NL NCSC-2026-0398 (2026-10-02) boilerplate says Fortinet "has released security updates", which contradicts the advisory table; the table governs.
+      NCSC-NL says the affected builds are exposed when IBE (Identity Based Encryption) is enabled and Fortinet's first workaround is to disable IBE; the entry already carries the workaround.
+      KEV due date for CVE-2026-104286 is 2026-10-04 (today).
+  - entry: "2026-10-02/zammad-cve-2026-102489-102490-exploited-divd-breach"
+    result: "delta: KEV listing 2026-10-02 and Zammad vendor statement 2026-10-01 (item 3)"
+  - entry: "2026-10-02/cve-2026-76504-cisco-catalyst-sd-wan-manager-auth-bypass-kev"
+    result: "no delta"
+    evidence: "Cisco advisory still at version 1.1 (2026-OCT-02, Live Protect shield); first fixed releases unchanged (20.9.10.1, 20.12.8.2, 20.15.6.1, 20.18.4.1, 26.1.2.1, 26.2.1); KEV due 2026-10-03 passed; no new exploitation detail found (extract-read 2026-10-04T04:12Z)."
+  - entry: "2026-09-23/cve-2026-93952-arista-velocloud-orchestrator-exploited"
+    result: "no delta"
+    evidence: "Arista advisory 0183 still revision 1.1 (2026-09-23, CSAF added); Resolution lists only 5.2.3.16+ and 6.4.2.8+ and says other trains 'will be added over time'; 6.1.x (6.1.3.7 and below) and 7.0.x (7.0.0.2 and below) still unfixed."
+  - entry: "2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning"
+    result: "scale delta only (item 5, borderline)"
+  - entry: "2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev"
+    result: "delta: new bulletin CTX697174 / CVE-2026-88779 raises the fixed-build floor for SAML appliances (items 1 and 2)"
+  - entry: "2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev"
+    result: "no delta"
+    evidence: "support.apple.com/en-us/100100 lists no Apple security release after 2026-09-28; 149226 unchanged (iOS/iPadOS 26.7.1, 'extremely sophisticated attack against specific targeted individuals'); KEV 2026-09-29 unchanged."
+  - entry: "2026-09-23/cve-2026-93616-check-point-security-mgmt-path-traversal"
+    result: "no delta"
+    evidence: "sk1000171 (Date Created 2026-09-20) unchanged: R82.20 hotfix and Jumbo Hotfix Accumulators (R82.10 take 45, R82 take 127, R81.20 take 170, R81.10 take 192), no LivePatch, 'exploited in the Wild' for a handful of customers."
+
+dropped_or_held:
+  - { item: "MikroTik CVE-2026-84411", disposition: "held (see backlog_rechecks)" }
+  - { item: "Fortra BoKS (advisory 2026-10-01; CVE-2026-12627 9.8 stack overflow in autoregistration, CVE-2026-79901 9.9 predictable AD service-account password, CVE-2026-79898 9.1 crlserver command injection)", disposition: "dropped: SecurityWeek 2026-10-03 says Fortra reports no exploitation; privileged-access manager niche; advisory older than the window; 12627's pre-auth status not stated" }
+  - { item: "GitLab AI Gateway CVE-2026-90970 (9.9, 2026-10-02)", disposition: "dropped: needs a logged-in Duo Agent Platform user, self-hosted gateway only, CISA SSVC exploitation none" }
+  - { item: "Dell CSM max-severity flaws (2026-10-02, BleepingComputer/THN)", disposition: "dropped: out of window, no exploitation reported, not fetched beyond headlines" }
+  - { item: "Chrome 154.0.8037.97 (2026-10-02: 11 fixes, CVE-2026-103628 WebGL critical)", disposition: "dropped: Chrome Releases lists no in-the-wild exploit statement" }
+  - { item: "Mozilla MFSA 2026-97..103 (Firefox 157, ESR, Thunderbird, 2026-09-29/30)", disposition: "dropped: scheduled release, no exploitation stated" }
+  - { item: "Zimbra 10.1.21 (NCSC-CH advisory 13022, 2026-10-01; CVE-2026-66911/66912 unauthenticated account takeover paths, CVEs reserved)", disposition: "dropped/watch: exploitation status UNKNOWN per NCSC-CH, no PoC found, out of window; Zimbra is routinely exploited so re-check for a PoC" }
+  - { item: "WatchGuard AP CVE-2026-101891 / CVE-2026-86102 (9.3, fixed 3.4.8 per CCCS AV26-972 and SecurityOnline search snippets, NCSC-CH advisory 13007 2026-09-29)", disposition: "dropped: no exploitation or PoC reported (snippet-level, vendor page not read), out of window" }
+  - { item: "OpenAM CVE-2026-105115 (unauthenticated arbitrary class instantiation via /jaxrpc/*, CVSS 4.0 8.8, fixed 16.1.3, VulnCheck 2026-10-03)", disposition: "dropped: no exploitation or PoC, RCE only 'potentially via gadget chains', no store coverage of the product; re-check for a PoC" }
+  - { item: "Digi International web-admin unauthenticated root command execution CVE-2026-75937 (9.4), cPanel/WHM Multilang adminbin CVE-2026-93698 (9.9), UTMStack auth bypass CVE-2026-82042 (9.3), Apache Karaf CVE-2026-91012, Moxa MGate, Tenda, AWS Loom/SageMaker (EUVD 2026-10-02/03)", disposition: "dropped: out of window and/or no exploitation or PoC signal; EUVD exploited list holds only items already in the store" }
+  - { item: "Foreman multiple flaws, unpatched critical (BSI WID-SEC-2026-3712, 2026-10-02)", disposition: "dropped: out of window, no exploitation, upstream GitHub advisories only" }
+  - { item: "PAN GlobalProtect App CVE-2026-0250 (Medium, 2026-10-02) / CVE-2026-0307 (Medium)", disposition: "dropped: Medium, no exploitation" }
+  - { item: "0patch micropatches for Windows WalletService LPE CVE-2026-49176 (2026-10-01)", disposition: "dropped: legacy-Windows micropatch of a July-patched local EoP; a public PoC by David Carliez exists per 0patch, no exploitation reported" }
+  - { item: "JVNVU#90160989 FUJIFILM Business Innovation / Sharp MFP path traversal CVE-2026-78249 (2026-09-30)", disposition: "dropped: CVSS 3.1 4.9, requires web-management access with high privileges" }
+
+candidate_sources:
+  - id: citrix-netscaler-security-bulletins
+    publisher: "Citrix / Cloud Software Group - NetScaler security bulletins (Tech Zone 'Security Updates' blog feed and support.citrix.com CTX bulletins)"
+    url: "https://community.citrix.com/techzone-blogs/110_security-updates/"
+    rss_url: "https://community.citrix.com/rss/3-citrix-tech-zone-blogs.xml/"
+    category: "vendor-psirt"
+    why: >
+      First-party PSIRT for NetScaler ADC/Gateway, the edge product with two exploited zero-days in the last week (CVE-2026-88771/88772 on 2026-09-27, CVE-2026-88779 on 2026-10-03). sources.json has no Citrix record, so this run reached
+      the bulletin only through the ENISA EUVD API and a heise lead. Working recipe verified 2026-10-04: `python3 tools/fetch_source.py feed https://community.citrix.com/rss/3-citrix-tech-zone-blogs.xml/ 10`
+      returns dated items on the direct transport (the CVE-2026-88779 blog at 2026-10-04T03:42+02, the SAML guidance post at 2026-10-02, the 2026-09-27 bulletin blog); `extract https://support.citrix.com/external/article/CTX<number>` reads the bulletin
+      itself on trafilatura-direct (affected/fixed tables, preconditions, revision history); the blog pages sometimes fall through to the jina reader inside extract. Recommend essential tier (national-CERT-grade relevance for a Swiss public-sector NetScaler estate).
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "rotation-priority record tried once on every rung this run: `extract` returned the CAPTCHA shell, `url --direct` /feed/ and /wp-json/wp/v2/posts both HTTP 202, WebFetch returned an empty body, WebSearch site:ssd-disclosure.com returned nothing from the host. Recipe unchanged; remains a coverage gap (no reader credit spent)."
+  - source_id: msrc-blog
+    reason: "WebFetch of https://www.microsoft.com/en-us/msrc/blog returned a landing shell with one undated post (MSRC 2026 MVRs); no in-window posts discoverable. msrc-update-guide (`msrc recent` / `msrc cve`) carries the CVE data. Recipe unchanged."
+  - source_id: fbi-cyber-alerts
+    reason: "`extract https://www.ic3.gov/PSA` returns the IC3 complaint terms-and-conditions modal, not the PSA list. WebFetch of https://www.ic3.gov/PSA returned a dated list of 10 PSAs with URLs (newest 2026-09-17), so use WebFetch for this record; no in-window PSA."
+  - source_id: depthfirst
+    reason: "`extract https://depthfirst.com/research` was served via the jina reader (credit spent) and the listing has no dates. Cheaper recipe: `url --direct https://depthfirst.com/research/<slug>` and read the `article:published_time` meta tag (dates seen: 2026-07-24, 07-27, 07-30, 08-19); nothing in the 121 h lookback."
+  - source_id: pwn-ai
+    reason: "`extract https://pwn.ai/blog/` shows a single 2025-12-26 post; no in-window content, the blog looks dormant."
+  - source_id: bsi-de
+    reason: "WID RSS (`bsi-rss`) newest item is 2026-10-02T11:26Z (250 items back to 2026-10-01T10:07Z); nothing since, so the Saturday/Sunday window shows no BSI output. Confirm on a weekday that weekend publication is not suppressed upstream."
+  - source_id: enisa-euvd
+    reason: "RECIPE NOTE (works): `python3 tools/fetch_source.py url --direct \"https://euvdservices.enisa.europa.eu/api/search?exploited=true&fromDate=YYYY-MM-DD&toDate=YYYY-MM-DD&page=0&size=100\"` returns the full exploited list (7 items 2026-09-25..10-04, all already covered) where `recent exploited` returns 4. The API's `epss` field is a percent (0.95 = 0.95%), not a probability; use https://api.first.org/data/v1/epss?cve=<ids> for the probability."
+  - source_id: fortinet-psirt
+    reason: "RECIPE NOTE: `url --direct https://filestore.fortinet.com/fortiguard/rss/ir.xml` hit one transient connection reset on the first two calls in this run and succeeded on the next try (no reader fallback); retry the direct fetch before escalating."
+  - source_id: extract-github-404
+    reason: "RECIPE NOTE: `extract` on a GitHub URL that returns 404 (an unpublished advisory id) falls through to the jina reader and burns credit for a 404 page; probe GitHub advisory URLs with `url --direct` first."
+
+fetch_failures: []
+
+bridge_uses:
+  - { id: cisa-kev, method: "bridge:cisa-kev", outcome: ok }
+  - { id: enisa-euvd, method: "bridge:enisa-euvd.recent + bridge:url(search API)", outcome: ok }
+  - { id: advisories-ncsc-nl, method: "bridge:ncsc-nl.recent + bridge:ncsc-nl.csaf", outcome: ok }
+  - { id: bsi-de, method: "bridge:bsi-rss + bridge:bsi-csaf", outcome: ok }
+  - { id: cert-eu, method: "bridge:cert-eu.recent", outcome: ok }
+  - { id: anssi-fr, method: "bridge:cert-fr.avis-recent + actu-recent", outcome: ok }
+  - { id: ncsc-ch-security-hub, method: "bridge:ncsc-csh.recent + post", outcome: ok }
+  - { id: msrc-update-guide, method: "bridge:msrc.recent + msrc.cve", outcome: ok }
+  - { id: cisa-advisories, method: "bridge:cisa.csaf-recent + bridge:cisa.csaf + WebFetch listing", outcome: ok }
+  - { id: fortinet-psirt, method: "bridge:url --direct (ir.xml) + extract", outcome: ok }
+  - { id: ssd-disclosure, method: "bridge:extract/url --direct + WebFetch + WebSearch", outcome: "blocked (HTTP 202 captcha)" }
+
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl.recent 25 + csaf NCSC-2026-0398", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest NCSC-2026-0398 FortiMail 2026-10-02T07:21Z; the 0394-0398 set is covered by the store" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:cert-fr.avis-recent 40 + actu-recent 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest AVI-1257 FortiMail dated 2026-10-02 (flat 00:00 stamps); AVI-1248 Apache HTTP Server and AVI-1249 VMware (Spring/Tanzu dependency bumps) are 2026-10-02 and below the bar; latest bulletin ACT-041 2026-09-28" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss + bsi-csaf WID-SEC-2026-3712", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-02T11:26Z; Foreman unpatched critical read and dropped" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu.recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-014 Citrix (2026-09-27)" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-02 gotop CVE-2026-91784; nothing relevant" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + bridge:cisa.csaf-recent 10 + feed all.xml (jina, undated)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest alert 2026-10-02 (two KEV additions = Zammad); ICS CSAF newest 2026-10-01; icsa-26-272-06 MikroTik read for the backlog re-check" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev (full catalogue)", horizon_hours: 26, in_horizon_items: 0, returned: 2, note: "catalogue 2026.10.02, no addition dated 2026-10-03 or later; two stale-KEV update-of items (Zammad, WordPress)" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd.recent + url --direct search API (score>=8.5, 118 items, 2 pages; exploited=true since 2026-09-25)", horizon_hours: 26, in_horizon_items: 118, returned: 2, note: "found CVE-2026-88779 (item 1) and CVE-2026-96940 (item 6); every exploited entry already covered" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh.recent 25 + post 13022", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 13027 FortiMail 2026-10-02T04:50Z; no NetScaler SAML advisory yet; Zimbra 13022 read and dropped" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed all-rss-feed.xml (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-09-28 Citrix NetScaler exploitation page" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed https://labs.watchtowr.com/rss/ (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-09-29 (NetScaler DTLS); heise says watchTowr reproduced the SAML flaw but no post yet" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "url --direct ir.xml + extract FG-IR-26-175", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-175 (2026-10-01); fixed builds still 'upcoming'" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc.recent 60 + msrc.cve", horizon_hours: 26, in_horizon_items: 49, returned: 1, note: "47 of the rows are third-party (U-Boot, OpenSSL, zlib, rpm...) 2026-10-03 imports; sole first-party hit Exchange CVE-2026-96940 (borderline item 6); nothing flagged exploited" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed rss.xml (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest CVE-2026-0250 GlobalProtect App BO (Medium) 2026-10-02T08:15Z" }
+  - { id: ssd-disclosure, tier: standard, attempted: true, transport: "extract / url --direct / WebFetch / WebSearch site:", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "still blocked: HTTP 202 captcha direct, WebFetch empty, no search hits; coverage gap, recipe unchanged" }
+  - { id: 0patch-blog, tier: standard, attempted: true, transport: "feed (Blogger Atom, direct)", horizon_hours: 98, in_horizon_items: 1, returned: 0, note: "2026-10-01 WalletService micropatch (legacy Windows) dropped" }
+  - { id: cisa-directives, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "same six directives (ED 25-03, ED 26-03, BOD 26-04 x2, BOD 26-02), no new directive" }
+  - { id: depthfirst, tier: standard, attempted: true, transport: "extract (served via jina) + url --direct per post", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "post dates 2026-07-24..08-19; listing undated" }
+  - { id: esentire, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 102, in_horizon_items: 1, returned: 0, note: "newest 2026-10-01 Cisco SD-WAN advisory (covered); no SAML NetScaler advisory yet" }
+  - { id: fbi-cyber-alerts, tier: standard, attempted: true, transport: "extract (T&C modal) then WebFetch of /PSA", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest PSA260917; use WebFetch for this record" }
+  - { id: greynoise, tier: standard, attempted: true, transport: "extract + url --direct listing + 5 post extracts", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "relevant posts dated 2026-09-28 (Citrix swarming, covered), 2026-09-21, 2026-09-09; none new" }
+  - { id: hadrian-labs, tier: standard, attempted: true, transport: "extract (direct-raw 235 KB)", horizon_hours: 121, in_horizon_items: 3, returned: 0, note: "marketing/AI-pentest posts only (2026-09-29, 10-01, funding release dated 10-06)" }
+  - { id: jpcert, tier: standard, attempted: true, transport: "WebFetch listing + extract JVNVU90160989", horizon_hours: 121, in_horizon_items: 3, returned: 0, note: "newest 2026-09-30 FUJIFILM/Sharp MFP path traversal (CVSS 4.9) dropped" }
+  - { id: msrc-blog, tier: standard, attempted: true, transport: "WebFetch landing", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "SPA shell; one undated post; no in-window content discoverable" }
+  - { id: onapsis, tier: standard, attempted: true, transport: "WebFetch /blog/", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest 2026-09-18 SAPMAP; next SAP Patch Day 2026-10-13" }
+  - { id: projectzero, tier: standard, attempted: true, transport: "feed projectzero.google/feed.xml 12 (direct)", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-09-21 dangling COM (covered)" }
+  - { id: pwn-ai, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "only a 2025-12-26 post visible" }

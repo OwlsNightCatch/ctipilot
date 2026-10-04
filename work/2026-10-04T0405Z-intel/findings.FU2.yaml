@@ -1,0 +1,256 @@
+# work/2026-10-04T0405Z-intel/findings.FU2.yaml
+# Scoped follow-up to verifier finding F10 (missed angle): Bishop Fox weaponization write-up for CVE-2026-93616.
+domain: FU2
+run_id: 2026-10-04T0405Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-04T05:05:28Z
+ended_at: 2026-10-04T05:10:39Z
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 8
+  bridge_fetches: 22
+verdict: "delta-worth-a-changelog-record: YES (type: update, non-internal; priority stays critical). The first public end-to-end exploit method (a vendor-independent researcher reproduction) plus a public patch-state scanner landed 2026-10-01, and the post directly contradicts two load-bearing statements of the existing entry's Detection/Triage text (indicator 2 is not sufficient or exhaustive; indicator 1 is attributed by Bishop Fox to the separate CVE-2026-91843)."
+items:
+  - title: "CVE-2026-93616 (Check Point Security Management): Bishop Fox publishes end-to-end pre-auth root chain over TCP 19009 and a public patch-state scanner; vendor's second indicator misses the route, file-integrity monitoring is the control"
+    sources:
+      - { url: "https://bishopfox.com/blog/weaponizing-check-point-management-cve-2026-93616", publisher: "Bishop Fox (Threat Enablement & Analysis Team, Jon Williams)", date: "2026-10-01", role: "primary" }
+      - { url: "https://github.com/BishopFox/CVE-2026-93616-check", publisher: "Bishop Fox (GitHub detection tool, README)", date: "2026-10-01", role: "primary" }
+      - { url: "https://support.checkpoint.com/results/sk/sk1000171/", publisher: "Check Point Support (sk1000171)", date: "2026-09-22", role: "corroborating" }
+      - { url: "https://support.checkpoint.com/results/sk/sk1000155", publisher: "Check Point Support (sk1000155, CVE-2026-91843)", date: "2026-09-23", role: "corroborating" }
+      - { url: "https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/", publisher: "Check Point Research (blog)", date: "2026-09-22", role: "corroborating" }
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA KEV (catalogueVersion 2026.10.02)", date: "2026-09-22", role: "corroborating" }
+    discovery_trace: "first seen at: verifier finding F10 (spawn message) naming Bishop Fox 'One Port to Root' -> WebSearch (\"Bishop Fox \\\"One Port to Root\\\" CVE-2026-93616 Check Point\") returned only aggregators -> bridge extract https://bishopfox.com/blog (listing; title 'One Port to Root: Weaponizing Check Point Management CVE-2026-93616', Oct 1 2026) -> raw bridge url --direct of the listing for the href -> primary: https://bishopfox.com/blog/weaponizing-check-point-management-cve-2026-93616 (extract) -> linked tool page https://github.com/BishopFox/CVE-2026-93616-check (extract; GitHub contents API confirms the repo holds only the scanner script, one 'Initial commit' 2026-10-01T13:16:22Z) -> vendor re-read: https://support.checkpoint.com/results/sk/sk1000171/ (extract, Last Modified 2026-09-22), https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/ (extract), https://support.checkpoint.com/results/sk/sk1000155 (extract) -> authorities: cisa-kev bridge (catalogVersion 2026.10.02), ncsc-csh recent 25 (post 12965), ncsc-nl recent 40 (NCSC-2026-0387 [1.00]), cert-eu recent 30 + https://cert.europa.eu/publications/security-advisories/2026-012/ (no 93616 content)."
+    summary: |
+      NEW since the 2026-09-23 entry. On 2026-10-01 Bishop Fox (Jon Williams, Threat
+      Enablement & Analysis Team) published a full weaponization analysis of
+      CVE-2026-93616 and states it reproduced an end-to-end unauthenticated root
+      remote code execution chain against unpatched R81.10 and R82.10 lab servers,
+      with every step over the CPM SOAP listener on TCP 19009 (Java process, Apache
+      CXF, /cpmws/; reachable on all interfaces by default per the tool README).
+      The exploit script itself is NOT public; what is public is the mechanism
+      description and a defender-oriented scanner repository (single commit,
+      scanner script only).
+
+      Mechanism as Bishop Fox states it (no payloads or code reproduced here): (1) the
+      management service issues a session through an unauthenticated login method that
+      accepts the caller's identity as a plain string and takes the distinguished name
+      from the caller-supplied CN= text without checking that a client certificate was
+      presented, so an attacker who presents the server's own SIC name (published in
+      the certificate the server shows on 19009) is authenticated as the server itself
+      and receives a read-write session; (2) the file-upload service takes its
+      destination filename from a SOAP header and concatenates it onto a temporary
+      directory without canonicalization, so path-separator sequences become an
+      arbitrary file write as root; (3) overwriting an existing stock scheduled-task
+      file under /etc/cron.d (inherited from the Linux mdadm tooling, not shipped by
+      Check Point; it must overwrite an existing root-owned file so cron accepts the
+      permissions) yields command execution as root at the next minute boundary with no
+      trigger request; (4) output is staged in the server's SMC_Files directory and
+      read back over the same session. Bishop Fox also confirmed two further
+      write-to-execution vectors (directory-load of the upgrade service's component
+      tree on servers with an upgrade history, and a configuration file re-read on a
+      timer on newer releases) and says closing any single one would leave the others.
+      A second traversal in the upgrade service (parameter targetVersion) is a further
+      path to root that the post does not walk through.
+
+      Scope of the patch, per Bishop Fox's jar diffing of Jumbo Hotfix R82.10 Take 45
+      (a researcher assessment from bytecode comparison, not a vendor statement): the
+      hotfix closes three defects, not the two the advisory names - the forged-login
+      session mint (dleserver.jar), the unbounded root file write (java_is.jar) and a
+      character allow-list on targetVersion in the upgrade service (upgrade_web_services.jar).
+      Either of the first two alone breaks the chain. On the patched lab host the chain
+      dies at step one (remote authentication rejected, no session minted). Bishop Fox
+      states Check Point is the CNA, credited no external finder, and the issue was
+      identified from in-the-wild exploitation.
+
+      Detection delta. Check Point's sk1000171 (still Last Modified 2026-09-22) lists two
+      cpm.elg-based indicators. Bishop Fox assesses (a) the second indicator (ERROR line
+      from ReflectionUtils 'Failed to load allResourceFiles map from' with ../ in the
+      path) fires only when an upgrade-tools load fails; the weaponized route never
+      calls that service, so it leaves neither that line nor a ../ , and a legitimate
+      upgrade can trip the grep on its own - 'a weak net both ways'; (b) the first
+      indicator (over-long username next to an fwm/mds core dump) is the crash signature
+      of the separate CVE-2026-91843 (Check Point sk1000155: stack overflow in the
+      unauthenticated login, indicator 'Administrator failed to log in: Username too
+      long'), 'not evidence of this traversal'. Bishop Fox's recommended catch is
+      file-integrity monitoring on every path a root write can reach: /etc/cron.d and
+      other scheduled-task directories; authorized_keys and startup paths; the
+      normally-empty /opt/CPupgrade-tools-*/jars/ directory; $FWDIR/conf/log4j2.xml and
+      other CPM configuration and program-tree files; and anything new under
+      $FWDIR/conf/SMC_Files. Because the cron route touches only stock OS files whose
+      content is identical on every build, an attacker can restore originals byte for
+      byte, so a scheduled hash comparison alone can miss it; pair file checks with
+      execution telemetry, cron reload events and an alert on the CPM Java process
+      spawning a shell. (The existing entry's Detection and Triage text treats indicator
+      2 as 'sufficient on its own' and indicator 1 as a crash consistent with exploitation
+      of this CVE; both need qualification.)
+
+      Public detection tool: BishopFox/CVE-2026-93616-check (MIT, Python stdlib). It is
+      an unauthenticated remote patch-state probe: one request to the login method
+      loginAsApplicationReadOnlyPublicSession on the CPM listener with a single illegal
+      character in targetVersion (never a traversal sequence); a server that answers
+      'targetVersion contains illegal characters' is PATCHED (fix present; the check
+      validates this parameter's pattern, not the login or file-write fixes, but BF
+      states the fixes ship in the same bundle so it is a reliable proxy), a server that
+      accepts and dispatches the value is VULNERABLE, an R80.40-era (pre-R81.10) build
+      that rejects the primary probe at XML unmarshalling and then dispatches a
+      legacy-shape follow-up is reported VULNERABLE 'affected-eos-no-fix', and an answer
+      without dispatch is INCONCLUSIVE (not 'patched'). It does not authenticate, upload,
+      or execute, does not read a Jumbo take number, and 'does not detect prior
+      compromise'. Side effect on a vulnerable host: a failed execution attempt on a
+      non-existent path (NullPointerException before Runtime.exec) logged in cpm.elg;
+      Bishop Fox says its probes send the application name bf-check, 'recognizable in the
+      log as this tool rather than an attack'. Assessment (ours, not stated by either
+      source): because the probe is a single unauthenticated request against 19009, anyone
+      who can reach the port can read patch state the same way, which raises the value of
+      closing 19009 exposure over patching alone; and a defender running the tool will
+      leave a cpm.elg line on unpatched hosts that can resemble upgrade-service abuse.
+
+      Other deltas. (1) Post-patch posture: Bishop Fox advises that code execution runs as
+      root inside the process holding the policy and the internal CA, so on any server that
+      was exposed and unpatched 'plan for credential and certificate rotation, not only a
+      patch'. (2) Exposure: the Trusted Clients restriction is a Permissions &
+      Administrators setting that emits an implied rule, not a rule-base entry, so a
+      rule-base audit alone can miss it (Bishop Fox); 'internal' is not the same as
+      reachable only from management stations. (3) CISA KEV record is unchanged in
+      substance (added 2026-09-22, due 2026-09-25, ransomware use Unknown) but carries
+      forensicTriage 'Yes' under BOD 26-04 - a catalogue attribute the existing entry does
+      not mention.
+
+      Unchanged: sk1000171 (Last Modified 2026-09-22, Status Approved, same affected
+      versions and fixed builds: R82.20 Security Hotfix; Jumbo HFA R82.10 Take 45+, R82
+      Take 127+, R81.20 Take 170+, R81.10 Take 192+; no LivePatch) and the Check Point
+      Research blog (2026-09-22; 'a handful of pinpointed attacks on July 23, 2026') show no
+      new indicators, builds or exploitation-status change, and neither carries any
+      statement on the Bishop Fox route as of 2026-10-04T05:10Z (absence in those two
+      pages plus the searches, not proof Check Point has said nothing elsewhere). No
+      new advisory text in NCSC-CH (post 12965, history shows only 'Published' 2026-09-23,
+      status Actively Exploited), NCSC-NL (NCSC-2026-0387 still version 1.00, 2026-09-23),
+      or CERT-EU (2026-012 of 2026-09-10 covers CVE-2026-85102/85103, not 93616; no later
+      Check Point item). The Belgian CCB advisory (2026-09-23, 'Last update: 23/09/2026')
+      is also unchanged. Exploitation status: no public report found of the ITW actor,
+      tooling or post-exploitation (CCB: 'Check Point has not disclosed post-exploitation
+      activity'). An aggregator (rescana) lists IPs as 'known network indicators'; they do
+      not appear in sk1000171 or the Check Point blog, so that claim is uncorroborated and
+      not carried here.
+    region_nexus: "global; Check Point management servers are common in Swiss cantonal and communal network estates (no source-stated Swiss telemetry)"
+    primary_sector_nexus: "direct (management plane of the perimeter firewall estate; policy store and internal CA)"
+    sector: "public-sector"
+    cves: [CVE-2026-93616]
+    techniques: [T1190, T1053.003]
+    technique_notes: "T1190: unauthenticated network exploitation of the management web service (existing entry already has it). T1053.003 Cron: Bishop Fox's simplest weaponization overwrites a stock /etc/cron.d fragment for root execution. The existing entry's T1505.003 (web shell) is NOT supported by either Check Point or Bishop Fox text - neither mentions a web shell - the verifier/composer should confirm or drop it."
+    affected_products: ["Check Point Security Management Server", "Check Point Multi-Domain Security Management Server", "Check Point Log Server", "Check Point Multi-Domain Log Server", "Check Point SmartEvent"]
+    entity_keys: ["product:check-point-security-management-server", "product:check-point-multi-domain-security-management-server", "product:check-point-log-server", "product:check-point-multi-domain-log-server", "product:check-point-smartevent"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-09-23/cve-2026-93616-check-point-security-mgmt-path-traversal"
+    evidence:
+      - quote: "The primitive underneath is an arbitrary root write, so what catches this is file-integrity monitoring rather than a log grep."
+        attribution: "Bishop Fox"
+        source_url: "https://bishopfox.com/blog/weaponizing-check-point-management-cve-2026-93616"
+      - quote: "It fires only when an upgrade-tools load fails, which makes it a weak net both ways."
+        attribution: "Bishop Fox"
+        source_url: "https://bishopfox.com/blog/weaponizing-check-point-management-cve-2026-93616"
+      - quote: "whose crash signature, an over-long username next to a core dump, is the advisory’s first indicator, not evidence of this traversal."
+        attribution: "Bishop Fox"
+        source_url: "https://bishopfox.com/blog/weaponizing-check-point-management-cve-2026-93616"
+      - quote: "One exploit ran end to end against both unpatched hosts, confirming root on each, self-contained over the exposed port."
+        attribution: "Bishop Fox"
+        source_url: "https://bishopfox.com/blog/weaponizing-check-point-management-cve-2026-93616"
+      - quote: "Check Point remediated more than it described."
+        attribution: "Bishop Fox"
+        source_url: "https://bishopfox.com/blog/weaponizing-check-point-management-cve-2026-93616"
+      - quote: "It does not upload a file. The file-write half of the exploit chain uses a different service, which this tool never calls."
+        attribution: "Bishop Fox (GitHub README)"
+        source_url: "https://github.com/BishopFox/CVE-2026-93616-check"
+    # Additional verbatim substrings verified present in the fetched pages (usable as extra evidence):
+    extra_verified_quotes:
+      - { quote: "A scheduled hash check can miss the change entirely.", source_url: "https://bishopfox.com/blog/weaponizing-check-point-management-cve-2026-93616" }
+      - { quote: "On any box that was exposed and unpatched, plan for credential and certificate rotation, not only a patch.", source_url: "https://bishopfox.com/blog/weaponizing-check-point-management-cve-2026-93616" }
+      - { quote: "Every vector we confirmed ends with a file appearing where the server does not normally write one, which is what makes file-integrity monitoring the control most likely to catch this.", source_url: "https://bishopfox.com/blog/weaponizing-check-point-management-cve-2026-93616" }
+      - { quote: "The third is the forged login, the defect that makes the other two reachable without credentials.", source_url: "https://bishopfox.com/blog/weaponizing-check-point-management-cve-2026-93616" }
+      - { quote: "does not detect prior compromise", source_url: "https://github.com/BishopFox/CVE-2026-93616-check" }
+      - { quote: "By default TCP 19009 listens on all interfaces.", source_url: "https://github.com/BishopFox/CVE-2026-93616-check" }
+      - { quote: "If this command returns an output, this means that there has been a potential attempt to exploit this CVE in your environment.", source_url: "https://support.checkpoint.com/results/sk/sk1000171/" }
+      - { quote: "Last Modified2026-09-22", source_url: "https://support.checkpoint.com/results/sk/sk1000171/" }
+      - { quote: "Administrator failed to log in: Username too long", source_url: "https://support.checkpoint.com/results/sk/sk1000155" }
+      - { quote: "As of the advisory publications date, we observed a handful of pinpointed attacks on July 23, 2026.", source_url: "https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616/" }
+      - { quote: '"forensicTriage": "Yes"', source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json" }
+    extended_notes: |
+      WHAT THE EXISTING ENTRY GETS WRONG OR OMITS (for the changelog record):
+      - Detection: it calls the second indicator 'sufficient on its own' and treats the
+        first as a crash 'consistent with exploitation attempt'. Bishop Fox: indicator 2
+        only fires on the upgrade-service traversal route and not on the login-forgery +
+        file-write + cron route; indicator 1 is the CVE-2026-91843 crash signature.
+        sk1000171 itself still presents both as CVE-2026-93616 indicators (unchanged);
+        sk1000155 for CVE-2026-91843 carries 'Administrator failed to log in: Username
+        too long' as its own attack indicator. The store's entry for CVE-2026-91843 (2026-09-18)
+        says no source reports exploitation; the over-long-username crash pattern is therefore
+        a pointer to attempts against that separate CVE if it appears in logs (Bishop Fox's
+        assessment; Check Point has not said this).
+      - Absence of both vendor indicators on an unpatched, exposed server is not evidence of
+        no compromise. Telemetry that does catch the described routes: file-integrity
+        events on cron/scheduled-task directories, authorized_keys/startup paths, the
+        CPM program tree and SMC_Files staging; process-creation events with the CPM Java
+        process as parent of a shell; cron reload events. Triage discriminator for the
+        scanner: application name 'bf-check' in cpm.elg (source-stated).
+      - Post-patch: rotate management credentials and internal-CA-issued certificates on
+        any server that was reachable and unpatched; patching does not evict an
+        attacker who already wrote to root-owned paths. Check cron directories and
+        authorized_keys for persistence that survives the hotfix.
+      - Exposure-check lever: external patch-state scan over TCP 19009 (public tool) answers
+        'build' but not 'who can reach it'; Trusted Clients (implied rule) must be
+        reviewed separately from the rule base.
+      - Scope-of-fix inference: the Bishop Fox patch-scope claim (3 defects) is a researcher
+        bytecode comparison; Check Point's advisory text names a directory traversal and a
+        file upload only. Treat as an assessment attributed to Bishop Fox.
+      - Not new / unsupported: no ITW actor, tooling or victim data beyond 'a handful' on
+        2026-07-23; no Check Point statement on the Bishop Fox route; no public exploit
+        code located (GitHub repository search for the CVE id returns only the Bishop Fox
+        scanner and a third-party IOC-check repo, WadesWeaponShed/CVE-2026-93616_Checks,
+        created 2026-09-22; the latter was not fetched or assessed). Weaponization detail
+        is now described publicly at mechanism level by a credible lab, so a copycat
+        exploit is plausible (assessment, not source-stated); EPSS 0.1965 (97.3rd
+        percentile) as of 2026-10-03.
+      - Bishop Fox lab scope: R81.10 and R82.10 (unpatched) and R82.10 Take 45 (patched).
+        Scanner validated against an R82.10 Take 44/45 pair and the legacy path against
+        R80.40; R82, R81.20 and R82.20 not separately A/B tested (README limitations).
+    borderline: false
+cve_table:
+  - cve: CVE-2026-93616
+    product: "Check Point Security Management Server / Multi-Domain Security Management Server / Log Server / Multi-Domain Log Server / SmartEvent"
+    cvss: "9.8 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, per CCB and the Bishop Fox README)"
+    epss: 0.19654   # FIRST.org 2026-10-03; percentile 0.97323
+    kev: true       # added 2026-09-22, due 2026-09-25, knownRansomwareCampaignUse Unknown, forensicTriage Yes, CWE-22
+    exploited: "Yes - Check Point: a handful of pinpointed attacks observed 2026-07-23 (zero-day); no actor named; Bishop Fox independently reproduced the chain in the lab 2026-10-01"
+    affected: "R82.20 (all, without the hotfix); R82.10 Jumbo Hotfix Take 44 or lower; R82 Take 126 or lower; R81.20 Take 166 or lower; R81.10 Take 190 or lower (EoS); R80, R80.10, R80.20, R80.30, R80.40, R81 (all EoS)"
+    fixed: "R82.20 Security Hotfix; Jumbo Hotfix Accumulator R82.10 Take 45+, R82 Take 127+, R81.20 Take 170+, R81.10 Take 192+ (no LivePatch; EoS trains R80-R81 never fixed, upgrade only; sk1000171 Last Modified 2026-09-22, unchanged)"
+    type: "path traversal / arbitrary file write (CWE-22) chained, per Bishop Fox, with forged-identity login; arbitrary-path script execution and Java class load per Check Point"
+    vector: "network, TCP 19009 (CPM SOAP web service /cpmws/)"
+    auth: "none (pre-auth)"
+    source: "https://support.checkpoint.com/results/sk/sk1000171/ ; https://bishopfox.com/blog/weaponizing-check-point-management-cve-2026-93616"
+candidate_sources:
+  - id: bishopfox-blog
+    publisher: "Bishop Fox (offensive security research blog, Threat Enablement & Analysis Team)"
+    url: "https://bishopfox.com/blog"
+    rss_url: "https://bishopfox.com/feeds/blog.rss"
+    category: research
+    why: "Weaponization / patch-diff write-ups with public safe-detection tools for KEV-class edge and management-plane products within about 10 days of the vendor advisory (NetScaler CVE-2026-19490 on 2026-09-10, MikroTik RouterOS chain 2026-09-17, SolarWinds ARM CVE-2026-28326 on 2026-09-25, Veeam VSPC 2026-08-26, JFrog Artifactory CVE-2026-82329, Check Point CVE-2026-93616 on 2026-10-01). Not in sources.json (grep for 'bishopfox' = 0). Working recipe 2026-10-04: feed https://bishopfox.com/feeds/blog.rss (direct, returns title/link/date/summary; /feed/rss 404s), then extract <link> returns the full body; GitHub API reachable via bridge url. Reliability B (original research with lab validation)."
+coverage_gaps:
+  - source_id: bishopfox-blog
+    reason: "Not in sources.json - the cold verifier's F10 miss is a collection gap: no research or vulnerability record covered Bishop Fox, so a weaponization write-up of an already-covered critical CVE was invisible to S1/S3. Recipe above."
+  - source_id: sk1000171-revision-history
+    reason: "extract shows Last Modified 2026-09-22 / Date Created 2026-09-20 / Status Approved but no revision log; 'unchanged since 2026-09-23' is established by the Last Modified field and a content comparison against the entry's quoted facts (affected/fixed versions, two indicators, no LivePatch), not by a diff of page history."
+  - source_id: certeu-2026-012
+    reason: "Advisory covers Check Point CVE-2026-85102 and CVE-2026-85103 (2026-09-09) only; CERT-EU has not published anything on CVE-2026-93616 as of 2026-10-04 (recent 30 listing, newest 2026-014 Citrix)."
+source_ledger:
+  - { id: bishopfox-blog, tier: candidate, attempted: true, transport: "extract + raw url + feed (/feeds/blog.rss)", horizon_hours: 72, in_horizon_items: 1, returned: 1 }
+  - { id: checkpoint-sk1000171, tier: essential, attempted: true, transport: "extract", horizon_hours: 72, in_horizon_items: 1, returned: 1, note: "unchanged since 2026-09-22 per Last Modified" }
+  - { id: checkpoint-blog, tier: essential, attempted: true, transport: "extract", horizon_hours: 72, in_horizon_items: 1, returned: 0, note: "unchanged, 2026-09-22" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 72, in_horizon_items: 0, returned: 0, note: "CVE-2026-93616 record unchanged; catalogVersion 2026.10.02" }
+  - { id: ncsc-csh, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 25", horizon_hours: 72, in_horizon_items: 0, returned: 0, note: "post 12965 unchanged (Published 2026-09-23 only)" }
+  - { id: ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 40", horizon_hours: 72, in_horizon_items: 0, returned: 0, note: "NCSC-2026-0387 [1.00], 2026-09-23" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 30 + extract", horizon_hours: 72, in_horizon_items: 0, returned: 0, note: "no 93616 advisory" }
+  - { id: ccb-belgium, tier: standard, attempted: true, transport: "extract", horizon_hours: 72, in_horizon_items: 0, returned: 0, note: "2026-09-23, unchanged" }
