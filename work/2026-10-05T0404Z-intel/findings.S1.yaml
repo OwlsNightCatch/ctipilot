@@ -1,0 +1,319 @@
+# work/2026-10-05T0404Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-10-05T0404Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-05T04:06:54Z
+ended_at: 2026-10-05T04:21:31Z
+duration_seconds: 877
+self_telemetry:
+  webfetch_calls: 7
+  websearch_calls: 17
+  bridge_fetches: 75   # approximate: feed / url / extract / api subcommands, 5 of them served by the metered reader
+window_note: >
+  Quiet weekend window (Sunday 2026-10-04 02:05Z to Monday 2026-10-05 04:05Z). Every authority and vendor feed in the
+  slice has its newest in-window item already covered by the store. One genuine delta on a covered entry (KEV listing)
+  and one borderline new item are returned; everything else is a one-line drop or re-gate answer below.
+
+items:
+  - title: "CISA lists CVE-2026-88779 (Citrix NetScaler SAML memory overflow) in KEV on 2026-10-04, due 2026-10-07; the covered entry still says it is not in KEV"
+    novelty: "update-of:2026-10-04/cve-2026-88779-citrix-netscaler-saml-overflow-exploited"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/10/04/cisa-adds-one-known-exploited-vulnerability-catalog", publisher: "CISA", date: "2026-10-04", role: "primary" }
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA Known Exploited Vulnerabilities Catalog (catalogVersion 2026.10.04, dateReleased 2026-10-04T18:52:56Z)", date: "2026-10-04", role: "primary" }
+      - { url: "https://community.citrix.com/techzone-blogs/110_security-updates/understanding-and-addressing-cve-2026-88779-in-citrix-netscaler-adc-and-citrix-netscaler-gateway/", publisher: "Citrix (Cloud Software Group)", date: "2026-10-04", role: "corroborating" }
+      - { url: "https://support.citrix.com/external/article/CTX697174/citrix-netscaler-adc-and-citrix-netscale.html", publisher: "Citrix (Cloud Software Group)", date: "2026-10-03", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/citrix-patches-netscaler-saml-zero-day-exploited-in-attacks/", publisher: "BleepingComputer", date: "2026-10-04", role: "corroborating" }
+    discovery_trace: >
+      first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev, catalogVersion 2026.10.04), URL
+      https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json -> CVE-2026-88779 newest addition
+      (dateAdded 2026-10-04); kev-window.txt marked it COVERED by CVE id, but the covered entry's summary says "not in CISA's
+      KEV catalog as of 2026-10-04" -> primary: CISA alert, URL
+      https://www.cisa.gov/news-events/alerts/2026/10/04/cisa-adds-one-known-exploited-vulnerability-catalog (WebFetch) ->
+      Citrix blog URL https://community.citrix.com/techzone-blogs/110_security-updates/understanding-and-addressing-cve-2026-88779-in-citrix-netscaler-adc-and-citrix-netscaler-gateway/
+      (extract, reader-served) for the vendor's exploitation wording -> BleepingComputer 2026-10-04 for the in-window press state.
+    summary: |
+      CISA added CVE-2026-88779 to the KEV catalog on 2026-10-04 (catalog release 2026.10.04, 18:52Z, after the previous fire
+      composed the entry) with a federal remediation due date of 2026-10-07. The KEV record describes it as a NetScaler ADC /
+      Gateway "improper restriction of operations within the bounds of a memory buffer vulnerability that could allow for a
+      denial of service" (CWE-119), sets knownRansomwareCampaignUse to Unknown and forensicTriage to Yes (the record's
+      requiredAction cites BOD 26-04 and CISA's Forensics Triage Requirements). The KEV scope matches Citrix's: Citrix says it
+      "has observed targeted attacks on unmitigated NetScaler deployments which can lead to Denial of Service" and has not
+      identified an integrity impact; BleepingComputer (2026-10-04) adds that researchers are still investigating whether the
+      flaw can also be exploited for remote code execution, so code execution remains unconfirmed by Citrix or CISA. ENISA EUVD
+      carries it as EUVD-2026-92065 (CVSS 4.0 8.7) with an exploitation-since date of 2026-10-02; FIRST EPSS is 0.00276
+      (2026-10-04). Fixed builds are unchanged: 14.1-73.41, 13.1-64.28, 14.1-73.41 FIPS and 13.1-37.282 (13.1-FIPS/NDcPP); the
+      only precondition is a SAML SP (add authentication samlAction) or IdP (add authentication samlIdPProfile) configuration.
+      Citrix bulletin CTX697174 and the covered NetScaler entry are otherwise unrevised (bulletin history: 2026-10-03 initial
+      publication plus the blog link).
+    suggested_update_shape: >
+      type: update (non-internal; it is a reader-facing fact that changes the entry's own sentence). Replace the summary clause
+      "the flaw is not in CISA's KEV catalog as of 2026-10-04" with the KEV listing (added 2026-10-04, due 2026-10-07,
+      forensic-triage flag set); add the KEV record's description as scope confirmation. No new action needed (the entry's two
+      actions already cover upgrade and evidence preservation). Priority: S1 reads high as still right (denial-of-service
+      scope per both Citrix and CISA, code execution unconfirmed); the KEV listing does not itself change that.
+    region_nexus: "global; edge appliance common in Swiss public-sector remote access"
+    primary_sector_nexus: "direct (internet-facing NetScaler Gateway / AAA with SAML is a typical administration SSO front)"
+    sector: "public-sector"
+    cves: [CVE-2026-88779]
+    techniques: [T1190, T1499.004]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["product:citrix-netscaler"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    classification_suggestion: { reliability: A, credibility: 1 }
+    evidence:
+      - quote: "CVE-2026-88779 Citrix NetScaler Improper Restriction of Operations within the Bounds of a Memory Buffer Vulnerability"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/10/04/cisa-adds-one-known-exploited-vulnerability-catalog"
+      - quote: "BOD 26-04 requires federal agencies to prioritize rapid remediation of high-risk vulnerabilities, specifically those identified by CVEs listed in CISA's KEV Catalog."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/10/04/cisa-adds-one-known-exploited-vulnerability-catalog"
+      - quote: "contain an improper restriction of operations within the bounds of a memory buffer vulnerability that could allow for a denial of service."
+        attribution: "CISA Known Exploited Vulnerabilities Catalog"
+        source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+      - quote: "Citrix has observed targeted attacks on unmitigated NetScaler deployments which can lead to Denial of Service."
+        attribution: "Citrix (Cloud Software Group)"
+        source_url: "https://community.citrix.com/techzone-blogs/110_security-updates/understanding-and-addressing-cve-2026-88779-in-citrix-netscaler-adc-and-citrix-netscaler-gateway/"
+      - quote: "with researchers investigating whether it can also be exploited for remote code execution"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/citrix-patches-netscaler-saml-zero-day-exploited-in-attacks/"
+    extended_notes: |
+      KEV JSON fields read this fire: dueDate 2026-10-07, knownRansomwareCampaignUse "Unknown", forensicTriage "Yes", cwes
+      [CWE-119]; the KEV notes field links CTX697174, the Citrix blog and BOD 26-04. The forensicTriage field is new to the KEV
+      schema as served by the bridge (worth carrying into any KEV bookkeeping the pipeline does).
+
+  - title: "ZITADEL identity platform: CVE ids published 2026-10-04 for eight-plus unauthenticated or cross-tenant account-takeover and MFA-enrollment bypass advisories (CVSS 4.0 8.7-9.3), GitHub advisories dating from 2026-07-29"
+    novelty: new
+    borderline: true
+    borderline_reason: >
+      Recency and relevance both marginal. The vendor's GitHub advisories were published 2026-07-29 to 2026-09-28 (weeks old);
+      only the CVE ids (VulnCheck CNA records, ENISA EUVD EUVD-2026-92100..92108) landed 2026-10-04, inside the window. No
+      exploitation, no public PoC and no KEV or EUVD-exploited flag found. Relevance rests on ZITADEL being an internet-facing
+      IdP where a victim's login name alone yields account takeover (administrator included) and on a web-search lead that the
+      vendor is Swiss-founded (aggregator company profiles only, not verified against a primary). The main agent should drop
+      unless it finds a Swiss public-sector deployment or an exploitation signal.
+    sources:
+      - { url: "https://github.com/zitadel/zitadel/security/advisories/GHSA-45f2-5q3r-xgg6", publisher: "ZITADEL (GitHub security advisory)", date: "2026-07-29", role: "primary" }
+      - { url: "https://github.com/zitadel/zitadel/security/advisories/GHSA-g8gj-gq47-xgf4", publisher: "ZITADEL (GitHub security advisory)", date: "2026-09-04", role: "primary" }
+      - { url: "https://github.com/zitadel/zitadel/security/advisories/GHSA-3gwm-5wx8-4gm6", publisher: "ZITADEL (GitHub security advisory)", date: "2026-08-14", role: "primary" }
+      - { url: "https://github.com/zitadel/zitadel/security/advisories/GHSA-738m-7888-jfv8", publisher: "ZITADEL (GitHub security advisory)", date: "2026-07-29", role: "primary" }
+      - { url: "https://www.vulncheck.com/advisories/zitadel-before-3.4.14-and-4.16.2-account-takeover-via-passkey-enrollment", publisher: "VulnCheck (CNA record for CVE-2026-105212)", date: "2026-10-04", role: "corroborating" }
+    discovery_trace: >
+      first seen at: enisa-euvd (python3 tools/fetch_source.py url --direct
+      "https://euvdservices.enisa.europa.eu/api/search?fromDate=2026-10-03&toDate=2026-10-05&fromScore=8.5&toScore=10&page=0&size=100",
+      human form euvd.enisa.europa.eu/enisa/EUVD-2026-92100 .. 92108) -> nine ZITADEL records published 2026-10-04 13:10 with
+      GHSA references -> primary: ZITADEL GitHub advisories, URLs
+      https://github.com/zitadel/zitadel/security/advisories/GHSA-45f2-5q3r-xgg6 and the three above (extract) ->
+      corroborating: VulnCheck CNA advisory URL
+      https://www.vulncheck.com/advisories/zitadel-before-3.4.14-and-4.16.2-account-takeover-via-passkey-enrollment .
+      GitHub advisory list (https://github.com/zitadel/zitadel/security/advisories, extract) read to date each advisory.
+    summary: |
+      ZITADEL (open-source identity platform, self-hosted or cloud; hosted Login V1 and Login V2 UIs, OIDC/SAML) received a block
+      of CVE ids (CVE-2026-105207 to CVE-2026-105215, VulnCheck as CNA, 2026-10-04) for GitHub advisories the project issued from
+      2026-07-29 to 2026-09-28. The headline flaws need no authentication beyond knowing a victim's login name. GHSA-45f2
+      (CVE-2026-105212, CVSS 4.0 8.7; Login V1 and V2): enrollment of a passkey or other authenticator was accepted on an
+      identify-only session before any primary factor, so the attacker registers an authenticator and logs in as the victim,
+      bypassing the password and MFA; affects 4.0.0 to 4.16.1 and 3.0.0 to 3.4.13, fixed in 4.16.2 and 3.4.14. GHSA-g8gj
+      (CVE-2026-105207, 9.3; Login V2 and the User Service V2 AddIDPLink endpoint): an unauthenticated attacker can bind their own
+      external-IdP identity to the victim's account in organizations that allow external IdP linking; affects 4.0.0 to 4.17.2
+      and 3.0.0 to 3.4.15, fixed in 4.17.3, and the 3.x line reached end of life on 2026-08-31 so it gets no fix. GHSA-3gwm
+      (CVE-2026-105211, 9.2; Login V2): where the victim has both OTP-Email and OTP-SMS enrolled, both codes can be read from
+      the server-action response, giving a fully MFA-authenticated session including administrator takeover; 4.0.0 to 4.17.0,
+      fixed in 4.17.1. GHSA-738m (CVE-2026-105215, 9.3; Login V1 only): a forged external-IdP callback pre-creates an account
+      bound to a victim's public external identity, fixed in 3.4.14 and 4.16.2. The set also holds a cross-organization passkey
+      enrollment-code flaw (CVE-2026-105209, 9.3; needs user-write permission in another organization, fixed 3.4.15 / 4.17.1),
+      forgeable IdP-intent tokens (CVE-2026-105208, 8.7; 4.17.3), unauthenticated Login V1 MFA enrollment (CVE-2026-105210,
+      8.8) and sign-in for users of a deactivated organization (CVE-2026-105213, 8.8; 4.17.1). The vendor says no configuration
+      fully closes the gaps on unpatched versions; disabling external IdP linking only closes the Login V2 vector of GHSA-g8gj.
+      No source reports exploitation.
+    region_nexus: "global; web-search company profiles describe ZITADEL as Swiss-founded (Zurich), unverified against a primary source"
+    primary_sector_nexus: "indirect (IdP used for administration or citizen portals only where deployed; no deployment evidenced)"
+    sector: "public-sector"
+    cves: [CVE-2026-105207, CVE-2026-105208, CVE-2026-105209, CVE-2026-105210, CVE-2026-105211, CVE-2026-105212, CVE-2026-105213, CVE-2026-105215]
+    techniques: [T1190, T1098.005, T1078]
+    affected_products: ["ZITADEL"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:zitadel", type: product, name: "ZITADEL", aliases: ["Zitadel", "ZITADEL Login V1", "ZITADEL Login V2"],
+          summary: "Open-source identity and access management platform (hosted Login V1 / Login V2 UIs, OIDC, SAML, passkeys, external IdP linking); ENISA EUVD and VulnCheck list eight-plus CVSS 4.0 8.7-9.3 authentication-bypass CVEs for it published 2026-10-04 (ENISA EUVD, 2026-10-04)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: { reliability: A, credibility: 2 }
+    evidence:
+      - quote: "An attacker who knows a valid login name can take over the corresponding account without knowing the password, using an existing passkey, completing MFA, or interacting with the victim."
+        attribution: "ZITADEL (GitHub security advisory)"
+        source_url: "https://github.com/zitadel/zitadel/security/advisories/GHSA-45f2-5q3r-xgg6"
+      - quote: "release line reached end-of-life on 2026-08-31 and will not receive a fix for this vulnerability"
+        attribution: "ZITADEL (GitHub security advisory)"
+        source_url: "https://github.com/zitadel/zitadel/security/advisories/GHSA-g8gj-gq47-xgf4"
+      - quote: "allowed an unauthenticated attacker who knows only a victim’s login name to obtain a fully MFA-authenticated session for that victim"
+        attribution: "ZITADEL (GitHub security advisory)"
+        source_url: "https://github.com/zitadel/zitadel/security/advisories/GHSA-3gwm-5wx8-4gm6"
+      - quote: "Unauthenticated attackers knowing only a victim's login name can register an attacker-controlled authenticator and log in as that user, bypassing existing passwords and MFA."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/advisories/zitadel-before-3.4.14-and-4.16.2-account-takeover-via-passkey-enrollment"
+    extended_notes: |
+      Defender angle if the main agent keeps it: exposure is any ZITADEL instance on 4.x before 4.17.3 (or any 3.x, which is
+      EOL as of 2026-08-31 and unfixed for the later flaws); check with the running version and whether Login V1 or Login V2
+      is exposed. Detection concept: IdP audit events for authenticator enrollment, external-IdP link creation or OTP
+      challenges on a session that has not completed a primary factor, and new authenticators on administrator accounts;
+      post-patch compromise check is review of authenticators and IdP links added since 2026-07-29 on privileged accounts.
+      Only four of the eight-plus advisories were read in full; the rest rely on the EUVD record text. The EUVD records were
+      read through the ENISA API; the human URL form is euvd.enisa.europa.eu/enisa/EUVD-2026-92100 to 92108 and was not
+      fetched. Swiss origin comes only from search-result company profiles (and a DINAcon awards page that did not render
+      content in extract); verify before using as a nexus claim.
+
+cve_table:
+  - { cve: CVE-2026-88779, product: "Citrix NetScaler ADC and NetScaler Gateway", cvss: "4.0 8.7", epss: 0.00276, kev: true, exploited: true,
+      affected: "14.1 before 14.1-73.41; 13.1 before 13.1-64.28; ADC 14.1-FIPS before 14.1-73.41 FIPS; ADC 13.1-FIPS and 13.1-NDcPP before 13.1-37.282; only with a SAML SP (add authentication samlAction) or IdP (add authentication samlIdPProfile) configuration",
+      fixed: "14.1-73.41; 13.1-64.28; 14.1-73.41 FIPS; 13.1-37.282 (13.1-FIPS and 13.1-NDcPP); 12.1 and 13.0 are end of life, no fix named",
+      type: memory-corruption, vector: network-zero-click, auth: pre-auth,
+      source: "Citrix CTX697174 (2026-10-03); CISA KEV 2026-10-04, due 2026-10-07" }
+  - { cve: CVE-2026-105207, product: "ZITADEL", cvss: "4.0 9.3", epss: null, kev: false, exploited: false,
+      affected: "3.0.0 to 3.4.15; 4.0.0 to 4.17.2", fixed: "4.17.3 (3.x EOL 2026-08-31, no fix)", type: auth-bypass, vector: network, auth: pre-auth (login name known),
+      source: "GHSA-g8gj-gq47-xgf4; EUVD-2026-92100" }
+  - { cve: CVE-2026-105208, product: "ZITADEL", cvss: "4.0 8.7", epss: null, kev: false, exploited: false,
+      affected: "4.x before 4.17.3; 3.x through 3.4.15", fixed: "4.17.3", type: session-hijack, vector: network, auth: authenticated + timing race,
+      source: "GHSA-jh3m-cr2x-qp88 (listing only); EUVD-2026-92101" }
+  - { cve: CVE-2026-105209, product: "ZITADEL", cvss: "4.0 9.3", epss: null, kev: false, exploited: false,
+      affected: "3.x before 3.4.15; 4.x before 4.17.1", fixed: "3.4.15; 4.17.1", type: improper-authorization, vector: network, auth: user-write permission in another organization,
+      source: "GHSA-pq2q-2c6r-75c4 (listing only); EUVD-2026-92102" }
+  - { cve: CVE-2026-105210, product: "ZITADEL", cvss: "4.0 8.8", epss: null, kev: false, exploited: false,
+      affected: "3.x before 3.4.15; 4.x before 4.17.1 (Login V1)", fixed: "3.4.15; 4.17.1", type: missing-authentication, vector: network, auth: pre-auth (login name known),
+      source: "GHSA-72q5-mv5c-vxv4 (listing only); EUVD-2026-92103" }
+  - { cve: CVE-2026-105211, product: "ZITADEL", cvss: "4.0 9.2", epss: null, kev: false, exploited: false,
+      affected: "4.0.0 to 4.17.0 (Login V2; victim needs OTP-Email and OTP-SMS enrolled)", fixed: "4.17.1", type: auth-bypass, vector: network, auth: pre-auth (login name known),
+      source: "GHSA-3gwm-5wx8-4gm6; EUVD-2026-92104" }
+  - { cve: CVE-2026-105212, product: "ZITADEL", cvss: "4.0 8.7", epss: null, kev: false, exploited: false,
+      affected: "3.0.0 to 3.4.13; 4.0.0 to 4.16.1 (Login V1 and V2)", fixed: "3.4.14; 4.16.2", type: auth-bypass, vector: network, auth: pre-auth (login name known),
+      source: "GHSA-45f2-5q3r-xgg6; VulnCheck; EUVD-2026-92105" }
+  - { cve: CVE-2026-105213, product: "ZITADEL", cvss: "4.0 8.8", epss: null, kev: false, exploited: false,
+      affected: "4.x before 4.17.1 (Login V2)", fixed: "4.17.1", type: auth-bypass, vector: network, auth: valid credentials of a deactivated organization's user,
+      source: "GHSA-558c-v5wc-9w4q (listing only); EUVD-2026-92106" }
+  - { cve: CVE-2026-105215, product: "ZITADEL", cvss: "4.0 9.3", epss: null, kev: false, exploited: false,
+      affected: "before 3.4.14; 4.x before 4.16.2 (Login V1 only)", fixed: "3.4.14; 4.16.2", type: account-pre-hijack, vector: network, auth: pre-auth,
+      source: "GHSA-738m-7888-jfv8; EUVD-2026-92108" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "product watchlist is empty in the org profile, so the sweep is a no-op; general coverage rules applied unchanged"
+
+# KEV: catalogVersion 2026.10.04 (dateReleased 2026-10-04T18:52:56Z, 1734 entries). Newest additions: CVE-2026-88779 (2026-10-04),
+# CVE-2026-102489 and CVE-2026-102490 Zammad (2026-10-02), CVE-2026-104286 FortiMail (2026-10-01), CVE-2026-76504 Cisco SD-WAN
+# Manager (2026-09-30), CVE-2026-86950 Apple (2026-09-29). Only CVE-2026-88779 is inside the window. Flag changes: none seen;
+# the only RANSOMWARE-UNREFLECTED row remains CVE-2026-0257 (kev-window.txt), needs no S1 action. KEV listing of CVE-2026-88779
+# carries a new forensicTriage field (Yes).
+kev_check:
+  catalog_version: "2026.10.04"
+  additions_in_window: ["CVE-2026-88779"]
+  not_covered_by_store: []
+  stale_statement_in_store: ["2026-10-04/cve-2026-88779-citrix-netscaler-saml-overflow-exploited: summary says not in KEV as of 2026-10-04 (returned above as update-of)"]
+  held_backlog_cves_in_kev: []
+
+scheduled_release_duty:
+  note: >
+    No scheduled multi-product release fell inside the window. Microsoft's "October 2026 Early Security Updates" (initial
+    release 2026-10-02, outside the window) holds one first-party CVE in the CVRF (Exchange Server CVE-2026-96940, CVSS 8.8,
+    exploited No, publicly disclosed No); the other 105 rows are third-party Linux/Go/Python/RabbitMQ components. MSRC recent
+    rows carry no exploited or publicly-disclosed flag. Adobe PSIRT newest bulletins are the 2026-09-22 batch. Palo Alto newest
+    advisory is CVE-2026-0250 (GlobalProtect App, Medium, 2026-10-02). Fortinet newest is FG-IR-26-175 (2026-10-01).
+
+advisory_revision_checks:
+  # advisories cited by recent entries; "unchanged" = page re-read this fire, no revision after the entry's cited state
+  - { advisory: "Citrix CTX697096 (CVE-2026-88771..88778)", url: "https://support.citrix.com/external/article/CTX697096/citrix-netscaler-adc-and-citrix-netscale.html", state: "unchanged; history shows only 2026-09-27 initial publication plus the blog link" }
+  - { advisory: "Citrix CTX697174 (CVE-2026-88779)", url: "https://support.citrix.com/external/article/CTX697174/citrix-netscaler-adc-and-citrix-netscale.html", state: "unchanged; history 2026-10-03 initial publication plus blog link; no RCE or compromise-indicator language added; Citrix SAML guidance blog last updated 2026-10-03 and the 88779 blog (2026-10-04) both already cited by the entry" }
+  - { advisory: "Cisco cisco-sa-sdwan-webauth-xr8beuuU (CVE-2026-76504)", url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU", state: "unchanged since v1.1 (2026-10-02, Live Protect shield), already in the entry" }
+  - { advisory: "Fortinet FG-IR-26-175 (CVE-2026-104286)", url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175", state: "unchanged; timeline shows only 2026-10-01 initial publication; fixes still 'upcoming' (8.0.2, 7.6.7, 7.4.9); workaround and IoC lists as the entry states; Known Exploited: Yes" }
+  - { advisory: "Check Point sk1000171 (CVE-2026-93616)", url: "https://support.checkpoint.com/results/sk/sk1000171/", state: "Last Modified 2026-09-22, unchanged" }
+  - { advisory: "Check Point sk1000117 (CVE-2026-85102)", url: "https://support.checkpoint.com/results/sk/sk1000117/", state: "lastModified 2026-09-24, unchanged" }
+  - { advisory: "Zammad statement / DIVD-2026-00015", url: "https://community.zammad.org/t/take-care-local-privilege-escalation-cve-2026-102490-is-reported-as-being-actively-exploited/21297", state: "unchanged since the 2026-10-01 statement (7.2.0 current; CVE-2026-102490 still unverified by Zammad); DIVD case page lists no event after 2026-09-26, case still open to 2026-10-09" }
+  - { advisory: "Oracle CSPU September 2026", url: "https://www.oracle.com/security-alerts/cspusep2026.html", state: "page re-fetched, no revision signal; no exploitation statement" }
+  - { advisory: "Kiteworks", url: "https://github.com/kiteworks/security-advisories/security/advisories", state: "newest GitHub advisories 2026-09-30, already in the entry; restoration notice 2026-09-28 unchanged" }
+  - { advisory: "WatchGuard CVE-2026-13368", url: "https://psirt.watchguard.com/CVE-2026-13368", state: "unchanged; 'not aware of any exploitation'; T15/T35 12.5.19, EUCC 12.11.9 as in the entry" }
+  - { advisory: "PaperCut NG/MF bulletin", url: "https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/", state: "last updated 2026-09-10, unchanged" }
+  - { advisory: "Apple iOS/iPadOS 26.7.1 (CVE-2026-86950)", url: "https://support.apple.com/en-us/149226", state: "unchanged; Apple's security-releases list newest 2026-09-28" }
+  - { advisory: "Arista SA 0183 (CVE-2026-93952)", url: "https://www.arista.com/en/support/advisories-notices/security-advisory/24765-security-advisory-0183", state: "rev 1.1 (2026-09-23) only; fixes for 6.1.x and 7.0.x trains still 'coming'" }
+  - { advisory: "F5 BIG-IP APM (CVE-2026-94127), WSO2-2026-5328, SharePoint CVE-2026-65660", url: "n/a", state: "no new CERT/vendor revision surfaced in any in-window feed (CERT-EU, NCSC-NL, NCSC-CH, BSI, CERT-FR feeds read)" }
+
+backlog_regate:
+  # state/coverage_backlog.md ## Open rows named in the spawn message; hold conditions on today's facts (2026-10-05)
+  - row: "IBM MQ CVE-2026-10747 + Langflow OSS CVE-2026-79724 / 81204 / 85025"
+    condition_met: false
+    note: "Not in CISA KEV (catalog 2026.10.04); no exploitation report or public PoC found; HOL Guard record for CVE-2026-79724 (source checked 2026-10-05) still reads 'Not marked as known exploited', fixed in Langflow OSS 1.11.6. Hold expiry 2026-10-11 unchanged."
+  - row: "MikroTik RouterOS CVE-2026-84411"
+    condition_met: false
+    note: "MikroTik still does not name the CVE: stable 7.24.5 (2026-09-29) and long-term 7.23.7 (2026-09-16) changelogs carry no security wording; 7.24.2 and 7.23.4 (2026-09-03) say 'important security update ... not currently publishing detailed information' with 'www - improve stability'. Third-party relays repeat CISA's text (fixed 7.24.2 / 7.23.4). Not in KEV, no PoC, no exploitation report. Hold expiry 2026-10-14 unchanged."
+  - row: "IBM Guardium Data Protection CVE-2026-85542"
+    condition_met: false
+    note: "Not in KEV; ACN alert AL04/260928/CSIRT-ITA unchanged (re-read); no IBM confirmation of exploitation found; no constituency deployment surfaced. Hold expiry 2026-10-14 unchanged."
+  - row: "watch items from the 2026-10-04 run record (not backlog rows)"
+    condition_met: false
+    note: "Zimbra 10.1.21 CVE-2026-66911/66912: no PoC found. OpenAM CVE-2026-105115 (GHSA-wxmx-q96f-w4gw): technical details withheld by the project until 16.1.3, fixed release now exists (EUVD record 2026-10-03), still no PoC or exploitation."
+
+drops:
+  - "AhsayCBS CVE-2026-105134 (EUVD-2026-92078, VulDB, CVSS 4.0 10.0, os command injection in /rps/api/json/UpdateReceivers.do, fixed 10.3.4): release notes of 2026-08-05 carry no security wording, VulDB lists a published exploit but no exploitation or KEV, niche MSP backup product, auth requirement unstated; vuldb.com 403 on every transport"
+  - "WWBN AVideo CVE-2026-105086 / 105089 (CVSS 9.3): stored XSS needing upload permission; no exploitation"
+  - "Resecurity 2026-10-01 'Session Cookie Authentication Bypass': single authorized-test anecdote on an unnamed yard-management system; the article page itself is dated 2026-08-25"
+  - "Rapid7 'SMTP is the key: BPFDoor and AVERAT' (page dated 2026-09-29, feed date 2026-10-02): telecom-edge Linux implants for Korean and Taiwanese targets; threat-research (S3) shape, outside the 122 h lookback by page date, no Swiss or public-sector nexus"
+  - "LevelBlue SpiderLabs 'Citrix NetScaler CVE-2026-88771: Observed Exploitation Artifacts and Hunt Indicators' (2026-09-30) and 'Citrix NetScaler Zero-Day Exploited Globally' (2026-09-29): inside the 145 h lookback but the covered Citrix entry already holds Mandiant, GTIG, Unit 42 and watchTowr; a third vendor's artifact list adds no new decision (read from the listing only)"
+  - "Wordfence weekly vulnerability report (2026-10-01): roundup, no exploited item; WordPress core CVE-2026-87902 already covered"
+  - "Microsoft Exchange Server CVE-2026-96940 (October early update, 2026-10-02): authenticated cross-mailbox read, not exploited, not disclosed; already borderline-dropped by the 2026-10-04 run"
+  - "Palo Alto GlobalProtect App CVE-2026-0250 (Medium, 2026-10-02), CERT.PL gotop CVE-2026-91784 (2026-10-02): below the gate"
+  - "BSI WID Foreman 'UNGEPATCHT kritisch' (2026-10-02), GitLab AI Gateway, Dell CSM, Fortra BoKS: outside the window and already borderline-dropped by the 2026-10-03/04 runs"
+
+candidate_sources: []
+
+coverage_gaps:
+  - { source_id: ssd-disclosure, reason: "one probe: https://ssd-disclosure.com/ answered the robot-challenge interstitial through `url` (jina reader fallback); 5th consecutive failing run; no in-window content recoverable" }
+  - { source_id: rapid7-research, reason: "RECIPE FIX: rss_url pinned 2026-09-29 to https://www.rapid7.com/blog/feed/ returns HTTP 404 (jina returned no items). The working feed is https://www.rapid7.com/rss.xml (`feed https://www.rapid7.com/rss.xml 15` returned 15 dated items, method direct, newest 2026-10-02). Repin rss_url." }
+  - { source_id: fortinet-psirt, reason: "`extract https://fortiguard.fortinet.com/psirt/FG-IR-26-175` was served via the metered reader (trafilatura direct failed); the page still read fully including the timeline and workaround table. `url --direct` on ir.xml (50 items with pubDate) remains the discovery recipe." }
+  - { source_id: cisa-advisories, reason: "`feed https://www.cisa.gov/cybersecurity-advisories/all.xml 10` was served via the reader and returns titles without dates (alerts plus ICS items); the WebFetch listing of /news-events/cybersecurity-advisories returned 10 dated rows with hrefs and is the working discovery route (confirms the 2026-09-30 note)." }
+  - { source_id: adobe-psirt, reason: "recipe note: the chimera-api collection (`url --direct`, 109 cards) carries cardDate/modifiedDate and ctaLink (product path plus APSB id) but the top-level `title` key is empty; titles are nested elsewhere. Newest cardDate 2026-09-22, nothing in window." }
+  - { source_id: community.citrix.com, reason: "extract on community.citrix.com blog pages is served via the reader (403 direct), as the citrix-netscaler-security-bulletins candidate record already notes; `feed https://community.citrix.com/rss/3-citrix-tech-zone-blogs.xml/ 12` works directly and listed the 2026-10-02 SAML guidance post and the 2026-10-04 CVE-2026-88779 post." }
+  - { source_id: vuldb.com, reason: "403 on direct and challenge via the reader; not a slice record (VulDB advisory pages for CVE-2026-105134/105135 unread)" }
+
+fetch_failures:
+  - id: ssd-disclosure
+    url_tried: "https://ssd-disclosure.com/"
+    fetch_method: bridge:url
+    status_code: 202
+    error_class: other
+    error_message: "Title: Robot Challenge Screen ... Checking the site connection security (jina reader fallback relayed the challenge)"
+    attempted_methods: [bridge:url]
+    mitigation_applied: "none — coverage gap (single probe per the spawn message)"
+    covered_anyway: false
+
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 30", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "NCSC-2026-0399 (Citrix CVE-2026-88779, 2026-10-04 11:19Z) already covered; csaf read, no exploitation language" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:cert-fr avis-recent 40", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest avis CERTFR-2026-AVI-1257 (FortiMail, 2026-10-02); feed timestamps are flat 00:00" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss (250 items)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-02 11:26Z (weekend lull); cap of 250 covers well past the window" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-014 (Citrix, 2026-09-27)" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-02 (gotop CVE-2026-91784), below gate" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + alert page; feed all.xml (reader)", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "2026-10-04 KEV alert is a source of the update-of item; ICS advisories newest 2026-10-01 via csaf-recent" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "catalog 2026.10.04; CVE-2026-88779 is the only in-window addition; stale 'not in KEV' statement in the covered entry" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:url --direct euvdservices API (exploited=true; score>=8.5)", horizon_hours: 26, in_horizon_items: 41, returned: 1, note: "exploited list (6 since 2026-09-28) all covered; ZITADEL block surfaced from the high-score sweep" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 25", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 13027 FortiMail (2026-10-02T04:50), covered" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-09-28 Citrix exploitation notice" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-09-29 (Citrix CVE-2026-88772)" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "bridge:url --direct ir.xml + extract (reader)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-175 (2026-10-01), unrevised" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc recent 60 + releases + release 2026-Oct", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "no exploited or publicly-disclosed first-party CVE; only Exchange CVE-2026-96940 (2026-10-02) first-party" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest CVE-2026-0250 Medium 2026-10-02" }
+  - { id: mikrotik-routeros-changelog, tier: standard, attempted: true, transport: "bridge:url --direct (NEWESTa7.stable, long-term, 7.24.5/7.23.7/7.24.2/7.23.4/7.24/7.23.5 CHANGELOG)", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "7.24.5 (2026-09-29) and 7.23.7 (2026-09-16) no security wording; backlog row answered" }
+  - { id: resecurity, tier: standard, attempted: true, transport: "WebFetch listing + extract", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "2026-10-01 post is a pentest anecdote; dropped" }
+  - { id: sansec-research, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest 2026-09-16" }
+  - { id: trustwave-spiderlabs, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 145, in_horizon_items: 3, returned: 0, note: "two Citrix posts (covered) and a WordPress credential-toolkit post (S3 shape); listing read only" }
+  - { id: wordfence, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "weekly roundup 2026-10-01 only" }
+  - { id: rapid7-research, tier: standard, attempted: true, transport: "feed https://www.rapid7.com/rss.xml (pinned /blog/feed/ is 404)", horizon_hours: 122, in_horizon_items: 3, returned: 0, note: "Oct 2 BPFDoor/AVERAT (page dated 09-29, dropped), Oct 1 SOC roles, Sep 30 Cisco SD-WAN (covered)" }
+  - { id: snyk-research, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 122, in_horizon_items: 2, returned: 0, note: "AI AppSec posts only" }
+  - { id: tenable-research, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 126, in_horizon_items: 0, returned: 0, note: "newest Citrix FAQ 2026-09-27" }
+  - { id: wiz-blog, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-09-26" }
+  - { id: wordpress-org-news, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 7.1.2 release 2026-09-22" }
+  - { id: zdi, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-23" }
+  - { id: adobe-psirt, tier: standard, attempted: true, transport: "bridge:url --direct chimera-api", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest bulletins 2026-09-22" }
+  - { id: apple-security, tier: standard, attempted: true, transport: "WebFetch listing + extract of 149226", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest releases 2026-09-28 (iOS 26.7.1 / 27.0.1), covered" }
+  - { id: ssd-disclosure, tier: rotation-priority, attempted: true, transport: "bridge:url (jina fallback relayed robot challenge)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "fetch gap; captcha again; see fetch_failures" }

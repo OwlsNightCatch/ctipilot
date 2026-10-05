@@ -53,6 +53,41 @@ def _assess(body: str) -> dict:
         sh._content_fetch = real
 
 
+def _assess_record(body: str, record: dict) -> dict:
+    """Same stubbed read as `_assess`, for a caller-supplied source record."""
+    real = sh._content_fetch
+    sh._content_fetch = lambda s, timeout: ("feed", body, body, [])
+    try:
+        return sh._content_assess(dict(record), timeout=1.0, now=_NOW)
+    finally:
+        sh._content_fetch = real
+
+
+_QUIET_NEWS = "\n".join(
+    f"2026-09-29 Regional election results and weather outlook for the weekend, item {i}"
+    for i in range(30))
+
+
+def test_general_news_feed_with_no_security_terms_is_relevant():
+    """A quiet-day general-news feed is readable, dated and current: not irrelevant."""
+    rec = dict(_RECORD, fetch_method="rss", content_scope="general-news")
+    assert _assess_record(_QUIET_NEWS, rec)["content_verdict"] == "relevant"
+
+
+def test_security_scoped_source_with_no_security_terms_stays_irrelevant():
+    """The floor drops only for the declared general-news scope."""
+    rec = dict(_RECORD, fetch_method="rss")
+    assert _assess_record(_QUIET_NEWS, rec)["content_verdict"] == "irrelevant"
+
+
+def test_latvian_security_news_is_relevant():
+    """CERT.LV's news stream is Latvian: its own vocabulary must count."""
+    body = "\n".join(
+        f"2026-10-02 CERT.LV kiberdrošības situācija: ievainojamību atklāšana un uzbrukumi, ziņa {i}"
+        for i in range(12))
+    assert _assess_record(body, dict(_RECORD, fetch_method="bridge"))["content_verdict"] == "relevant"
+
+
 def test_marker_sets_are_disjoint_and_complete():
     assert not set(sh._CHALLENGE_MARKERS) & set(sh._DEAD_MARKERS)
     assert set(sh._SHELL_MARKERS) == set(sh._CHALLENGE_MARKERS) | set(sh._DEAD_MARKERS)

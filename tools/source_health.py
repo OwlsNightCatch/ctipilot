@@ -565,6 +565,8 @@ _SECURITY_TERMS = (
     # nl / pl / es / pt / ja
     "kwetsbaarheid", "beveiliging", "podatność", "atak", "bezpieczeństw", "vulnerabilidad",
     "ataque", "seguridad", "segurança", "脆弱性", "攻撃", "セキュリティ",
+    # lv
+    "kiberdrošīb", "ievainojamīb", "uzbrukum", "apdraudējum", "drošīb",
 )
 RELEVANCE_MIN = 3
 # Below this many letters/digits a body counts as unread (the same floor the
@@ -797,7 +799,11 @@ def _content_assess(s: dict[str, Any], *, timeout: float, now: datetime) -> dict
                         age = int((now - newest).total_seconds() // 86400)
             else:
                 structured_hits = bool(payload)
-    min_terms = 1 if s.get("content_scope") == "general-news" else RELEVANCE_MIN
+    # A general-news feed (SRF, Le Monde) legitimately carries no security
+    # vocabulary on a quiet day: its readable, dated, current body is what the
+    # verdict checks (shell, unreadable and stale still apply), so the term
+    # floor is zero. A security-scoped source keeps RELEVANCE_MIN.
+    min_terms = 0 if s.get("content_scope") == "general-news" else RELEVANCE_MIN
     if empty_envelope:
         verdict = "relevant"
     elif structured_hits and not (age is not None and age > limit):

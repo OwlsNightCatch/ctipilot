@@ -1,0 +1,227 @@
+# work/2026-10-05T0404Z-intel/findings.S4.yaml
+domain: S4
+run_id: 2026-10-05T0404Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-05T04:07:14Z
+ended_at: 2026-10-05T04:26:21Z
+duration_seconds: 1147
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 41
+  bridge_fetches: 85
+# Standing sweeps: ransomware.live (countryvictims/CH, countrycyberattacks/CH, recentcyberattacks, recentvictims,
+# sectorvictims Government & Defense, groupvictims thegentlemen/everest/qilin) and EDGAR 8-K Item 1.05
+# (2026-09-21..2026-10-05: one hit, Astrana Health 2026-09-23, outside window, out of nexus).
+# Swiss feeds are quiet: the newest Swiss listings on ransomware.live are 2026-09-28 (Netech/Payload, manno.ch/SafePay,
+# lfgholding.com and bio-strath.com/SafePay); the newest Swiss press-confirmed incident is SRG SSR (2026-09-28, struck on 2026-10-02).
+items:
+  - title: "DIVD says the ticketing system its CSIRT uses was the way in: anyone who wrote to or answered csirt@divd.nl should assume those messages may be in the attackers' hands"
+    novelty: "update-of:2026-10-02/zammad-cve-2026-102489-102490-exploited-divd-breach"
+    update_type_hint: update
+    lookback: true
+    lookback_note: "DIVD's data-investigation page carries a header time of 2026-10-02 08:30 GMT (about 68 h before this run: outside divd-csirt's 50 h lookback, inside the 72 h developing-story window); the covered entry (updated 2026-10-04) does not cite it."
+    sources:
+      - { url: "https://csirt.divd.nl/DIVD-2026-00014/overview_data_investigation/", publisher: "DIVD CSIRT (data-investigation overview, victim's own statement)", date: "2026-10-02", role: "primary" }
+      - { url: "https://csirt.divd.nl/cases/DIVD-2026-00014/", publisher: "DIVD CSIRT (case DIVD-2026-00014, statements #1-#5)", date: "2026-10-01", role: "primary" }
+    discovery_trace: "first seen at: divd-csirt, URL https://csirt.divd.nl/feed.xml (feed item 'Case update: DIVD-2026-00014 - When, not if...', 2026-10-01) → drilled URL https://csirt.divd.nl/cases/DIVD-2026-00014/ (statement #5 links the data overview) → primary: https://csirt.divd.nl/DIVD-2026-00014/overview_data_investigation/ (read in full; fetched via the reader fallback of `extract`)"
+    summary: |
+      DIVD's own data-investigation page says the attackers got in through the ticketing system its CSIRT team uses, which holds every email sent to the CSIRT mailbox and every reply, but not DIVD's initial notifications. DIVD says the attackers had difficulty extracting information, so only part of it left, but tells any organisation or individual that has been emailing back and forth with the CSIRT team to assume the attackers may have that information, and lists what such correspondence can hold: follow-up requests on scan data including IP addresses of vulnerable systems, vulnerabilities reported through the mailbox, and extracts of credential dumps with masked passwords. The page's status table, as read on 2026-10-05, marks the CSIRT ticket system, the Jira and Confluence project-support environment and system data on supporting IT systems as showing "signs of compromise"; DIVD's Google Workspace office and HR environment, Slack, source-code repositories, vulnerable-system lists, fingerprints, de-weaponised PoCs, zero-day material and private researcher correspondence are still under investigation with no preliminary result, and its accounting systems and bank account (handled by an external party) show no signs of compromise. Confirmed so far: DIVD email addresses and possibly volunteer contact details were exfiltrated, and DIVD warns this makes it easier to pose as a DIVD volunteer. The Zammad zero-day mechanics and the AI-agent assessment are already in the covered entry; the ticket-system exposure of third-party correspondents is not.
+    region_nexus: "Europe/global; no source names Swiss correspondents. Any Swiss organisation that has replied to or initiated mail with csirt@divd.nl or *@csirt.divd.nl (notification follow-ups, vulnerability reports, credential-dump queries) is in scope; organisations that only received a DIVD notification and never replied are, by DIVD's statement, not in the ticket system."
+    primary_sector_nexus: "indirect (a coordinated-disclosure team's correspondents; not a public-sector breach)"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-102489, CVE-2026-102490]
+    techniques: [T1190, T1068, T1213]
+    affected_products: ["Zammad"]
+    entity_keys: ["product:zammad"]
+    new_entities:
+      - { key: "incident:divd-csirt-breach-2026-09", type: incident, name: "DIVD CSIRT breach through Zammad zero-days, September 2026 (case DIVD-2026-00014)", aliases: ["DIVD-2026-00014", "When, not if"],
+          summary: "DIVD says attackers first reached its data centre on 2026-09-21 through two Zammad zero-days, reached the ticketing system used by its CSIRT team and exfiltrated at least volunteer email addresses; the extent of exposure of correspondents' messages is under investigation (DIVD, 2026-10-01/02)." }
+    relation_suggestions:
+      - { subject: "incident:divd-csirt-breach-2026-09", object: "product:zammad", basis: "DIVD states its attackers got in via two Zammad zero-days, CVE-2026-102489 and CVE-2026-102490 (DIVD case page 2026-10-01)" }
+    verification: SINGLE-SOURCE-VICTIM
+    verification_note: "Victim's own first-party statement on its own incident (the covered entry already treats it that way); Zammad's contrary statements about the disclosure are covered in the entry and not affected by this delta. Third-party corroboration of the ticket-system exposure not located."
+    confidence: HIGH
+    classification_suggestion: { reliability: A, credibility: 2 }
+    evidence:
+      - quote: "We know for sure that the attackers got in through the ticketing system our CSIRT team uses."
+        attribution: "DIVD CSIRT"
+        source_url: "https://csirt.divd.nl/DIVD-2026-00014/overview_data_investigation/"
+      - quote: "If an organisation or individual has been emailing back and forth with our CSIRT team, assume the attackers may have that information."
+        attribution: "DIVD CSIRT"
+        source_url: "https://csirt.divd.nl/DIVD-2026-00014/overview_data_investigation/"
+      - quote: "This could be follow-up requests on scan data (including IP addresses of vulnerable systems), vulnerabilities reported to us through the CSIRT mailbox and extracts of credential dumps with masked passwords."
+        attribution: "DIVD CSIRT"
+        source_url: "https://csirt.divd.nl/DIVD-2026-00014/overview_data_investigation/"
+      - quote: "What we know for sure is that volunteer data got out, such as DIVD email addresses and possibly contact details."
+        attribution: "DIVD CSIRT"
+        source_url: "https://csirt.divd.nl/cases/DIVD-2026-00014/"
+    extended_notes: |
+      Exposure: the system "holds every email sent to the CSIRT mailbox and every reply, but not our initial notifications", so the exposed population is correspondents who replied or wrote in, not everyone DIVD notified. DIVD adds that its setup meant "the attacker had to work for every bit of data they got out" and that the extraction scope is still being worked out.
+      Detection / post-incident check (follows from DIVD's own risk statement, not a vendor IOC list): inventory internal mailboxes and ticket systems for correspondence with the DIVD CSIRT domains; for each thread, list the IP addresses, vulnerabilities and credential-dump extracts it contained and treat them as potentially known to an attacker (re-verify the exposure, rotate anything a credential extract touched even though passwords were masked); treat unsolicited contact claiming to come from DIVD as unverified until confirmed through the DIVD communications mailbox, which DIVD itself directs recipients to ("check with us first at communications@divd.nl", case page statement #5).
+      Hardening lever DIVD credits: network segmentation ("Thanks to proper network segmentation ... we were able to stop the attackers from going deeper", statement #4), which the covered entry already quotes in its takeaway.
+      Suggested handling: a dated update on the covered Zammad entry (the existing Exposure/Defender-takeaway lines gain the correspondents' exposure); no new entry, no actions[] beyond the correspondents' inventory (the do-now bar is met only for orgs that corresponded with DIVD, which no source quantifies).
+
+  - title: "Reuters: ShinyHunters member 'Rey' detained in Jordan on 2026-09-29, reportedly helping the FBI identify other members"
+    novelty: "update-of:2026-09-24/shinyhunters-fbi-peoplesoft-breach-claim"
+    update_type_hint: update
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/shinyhunters-hacker-reportedly-detained-in-jordan-aiding-fbi/", publisher: "BleepingComputer (relaying Reuters)", date: "2026-10-03", role: "primary" }
+      - { url: "https://thehackernews.com/2026/10/shinyhunters-suspect-rey-reportedly.html", publisher: "The Hacker News (relaying Reuters)", date: "2026-10-04", role: "corroborating" }
+      - { url: "https://databreaches.net/2026/10/03/shinyhunters-hacker-rey-allegedly-involved-in-fbi-data-theft-detained-in-jordan/", publisher: "DataBreaches.net (Reuters excerpt)", date: "2026-10-03", role: "corroborating" }
+      - { url: "https://www.troyhunt.com/weekly-update-524/", publisher: "Troy Hunt (Weekly Update 524, comment only)", date: "2026-10-04", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/feed/ (feed item 'ShinyHunters hacker reportedly detained in Jordan, aiding FBI', 2026-10-03) → pivot: extract of the article, URL https://www.bleepingcomputer.com/news/security/shinyhunters-hacker-reportedly-detained-in-jordan-aiding-fbi/ → pivot: The Hacker News, URL https://thehackernews.com/2026/10/shinyhunters-suspect-rey-reportedly.html and DataBreaches.net, URL https://databreaches.net/2026/10/03/shinyhunters-hacker-rey-allegedly-involved-in-fbi-data-theft-detained-in-jordan/ → primary (Reuters, https://www.reuters.com/world/middle-east/key-shinyhunters-hacker-detained-jordan-is-cooperating-sources-say-2026-10-03/) not readable: reader returned a CAPTCHA page; read through the three relays"
+    summary: |
+      Reuters, relayed by BleepingComputer, The Hacker News and DataBreaches.net, reports that Jordanian authorities detained Saif al-Din Khader, the ShinyHunters-linked actor known as "Rey" (the same alias the covered entry carries from Krebs's reporting as the person who took effective control of the group's operations), this week, with The Hacker News dating it to 2026-09-29 and BleepingComputer to "Tuesday", the same day. Reuters's three anonymous sources say he is cooperating with the FBI and international law enforcement and is walking investigators through his devices and communications to locate co-conspirators; Jordan has not confirmed it and Reuters could not establish the circumstances. It follows the Dutch arrest of a 24-year-old on 2026-09-15 that the entry already covers; BleepingComputer adds that an affiliate who had spoken to press about the FBI intrusion and a Cl0p leak-site hack shut down their messaging account the same day. This is an anonymously sourced report, not a statement by a government. No source links the detention to a change in the group's extortion or leak behaviour.
+    region_nexus: "global; ShinyHunters is on Swiss victim lists this year (ransomware.live shows Medela, Logitech/Streamlabs and Alcon claims), the PeopleSoft campaign is the entry's defender hook"
+    primary_sector_nexus: "indirect (law-enforcement context for an actor that hit a US federal agency and a mass PeopleSoft campaign)"
+    sector: "public-sector, technology"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Oracle PeopleSoft"]
+    entity_keys: ["actor:shinyhunters"]
+    verification: SINGLE-SOURCE-OTHER
+    verification_note: "All three relays trace to one Reuters report (three unnamed sources); not independent confirmations. Reuters's own page unreadable here."
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 3 }
+    evidence:
+      - quote: "A suspected ShinyHunters hacking group member known online as \"Rey\" has reportedly been detained in Jordan and is cooperating with the FBI to help locate other members of the extortion group."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/shinyhunters-hacker-reportedly-detained-in-jordan-aiding-fbi/"
+      - quote: "Rey, whose real name is Saif al-Din Khader, is said to have been brought into custody on September 29, 2026"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/10/shinyhunters-suspect-rey-reportedly.html"
+      - quote: "was detained this week in Jordan, three people familiar with the matter told Reuters."
+        attribution: "DataBreaches.net (quoting Reuters)"
+        source_url: "https://databreaches.net/2026/10/03/shinyhunters-hacker-rey-allegedly-involved-in-fbi-data-theft-detained-in-jordan/"
+    extended_notes: |
+      Value is context for the entry's actor paragraph (Krebs's "Rey took control" narrative now has a reported detention), not a new defender action. Left unflagged as borderline because it directly changes a statement already in a published entry; the composer may fold it into one sentence of the existing entry or drop it.
+
+  - title: "Securitas Group confirms an incident to Swedish trade press after Everest listed it: 'limited', no sign customer data was disclosed (backlog row: condition met, PD-11 still weak)"
+    novelty: "new"
+    backlog_row: "2026-09-26 Everest ransomware group lists Securitas Group (held; condition: a Securitas statement or Admiralty A/B press pickup)"
+    borderline: true
+    borderline_reason: "The hold condition is literally met (Securitas press-office statement, relayed by the trade site SecurityWorldMarket), but the statement is a bare acknowledgement with no vector, system, data category or actor beyond Everest's own listing; Swiss nexus is not established (Blick describes Securitas AG, the large SEM asylum-centre security contractor, as a family firm from Zollikofen, and no fetched source ties it to the Swedish Group's incident). Recommend strike or a two-sentence routine entry; main agent decides."
+    sources:
+      - { url: "https://www.securityworldmarket.com/se/Nyheter/Foretagsnyheter/securitas-utsatt-for-dataintrang1", publisher: "SecurityWorldMarket (Swedish security trade press)", date: "2026-10-01", role: "primary" }
+      - { url: "https://www.ransomware.live/id/U2VjdXJpdGFzIEdyb3VwQGV2ZXJlc3Q", publisher: "Ransomware.live (leak-site tracker, claim record)", date: "2026-09-25", role: "corroborating" }
+      - { url: "https://www.dexpose.io/everest-ransomware-group-strikes-securitas-group/", publisher: "DeXpose (leak-site tracker)", date: "2026-09-26", role: "corroborating" }
+      - { url: "https://www.blick.ch/politik/das-dicke-geschaeft-mit-der-sicherheit-in-bundesasylzentren/qg97g8q", publisher: "Blick (context: Securitas AG and the SEM)", date: "2025-01-14", role: "background" }
+    discovery_trace: "first seen at: backlog row 2026-09-26 (Everest / Securitas Group) → WebSearch (\"Securitas Everest ransomware RVS Software data breach statement\") → pivot: SecurityWorldMarket, URL https://www.securityworldmarket.com/se/Nyheter/Foretagsnyheter/securitas-utsatt-for-dataintrang1 (victim press-office statement; direct fetch 403, read through the reader fallback) → pivot: Ransomware.live, URL https://www.ransomware.live/id/U2VjdXJpdGFzIEdyb3VwQGV2ZXJlc3Q, DeXpose, URL https://www.dexpose.io/everest-ransomware-group-strikes-securitas-group/ → context: Blick, URL https://www.blick.ch/politik/das-dicke-geschaeft-mit-der-sicherheit-in-bundesasylzentren/qg97g8q"
+    summary: |
+      Everest listed Securitas Group (securitas.com, Sweden) on its leak site on 2026-09-25 per Ransomware.live. On 2026-10-01 SecurityWorldMarket reported that Securitas' press service confirmed an incident took place, saying the company is investigating, is confident on current knowledge that it is limited, and sees no indication that customer data was disclosed. The company named no affected system, vector, data category or timeline, and the attribution to Everest rests on the group's own listing. The earlier backlog row recorded the claim as a roughly 92 GB archive of RVS Software video-security-system technical materials (not re-verified this run; the trackers fetched this run carry no data description). For the constituency: Securitas AG is the biggest recipient of Swiss State Secretariat for Migration security contracts according to Blick (CHF 283 million 2018-2023), but Blick calls it a family company from Zollikofen and nothing fetched shows it shares systems with the Swedish Group, so supplier exposure is an open question rather than a finding.
+    region_nexus: "Sweden (Group HQ); Swiss exposure unestablished (Securitas AG, Zollikofen BE, is the main SEM security contractor per Blick, relationship to the Swedish Group not shown by any fetched source)"
+    primary_sector_nexus: "supplier-adjacent (physical-security services; government clients stated on the tracker's company description, not by Securitas)"
+    sector: "public-sector (supplier), professional-services"
+    cves: []
+    techniques: [T1657]
+    affected_products: []
+    entity_keys: ["actor:everest-ransomware"]
+    new_entities:
+      - { key: "incident:securitas-group-everest-claim-2026-09", type: incident, name: "Securitas Group Everest leak-site listing, September 2026", aliases: [],
+          summary: "Everest ransomware group listed Securitas Group on 2026-09-25; Securitas told SecurityWorldMarket on 2026-10-01 that an incident occurred, that it believes it is limited and that it sees no sign customer data was disclosed." }
+    relation_suggestions:
+      - { subject: "incident:securitas-group-everest-claim-2026-09", object: "actor:everest-ransomware", basis: "Ransomware.live records Everest's own leak-site listing of Securitas Group on 2026-09-25 (a claim by the group, acknowledged only as 'an incident' by Securitas)" }
+    verification: SINGLE-SOURCE-OTHER
+    verification_note: "Incident acknowledgement rests on one trade-press article quoting the victim's press office; the Everest claim rests on leak-site trackers. No Admiralty A/B outlet and no Securitas-published notice located (securitas.com not checked in this run)."
+    confidence: LOW
+    classification_suggestion: { reliability: C, credibility: 3 }
+    evidence:
+      - quote: "Securityworldmarket.com har nu fått bekräftat av Securitas att en incident ägt rum."
+        attribution: "SecurityWorldMarket"
+        source_url: "https://www.securityworldmarket.com/se/Nyheter/Foretagsnyheter/securitas-utsatt-for-dataintrang1"
+      - quote: "Vi utreder ärendet, men utifrån vad vi vet idag är vi trygga med att detta är begränsat"
+        attribution: "Securitas press service (quoted by SecurityWorldMarket)"
+        source_url: "https://www.securityworldmarket.com/se/Nyheter/Foretagsnyheter/securitas-utsatt-for-dataintrang1"
+      - quote: "Vi ser inga indikationer på att någon kunddata har röjts."
+        attribution: "Securitas press service (quoted by SecurityWorldMarket)"
+        source_url: "https://www.securityworldmarket.com/se/Nyheter/Foretagsnyheter/securitas-utsatt-for-dataintrang1"
+      - quote: "Ransomware.live discovered on 2026-09-25 that Securitas Group has been claimed by Everest ransomware group"
+        attribution: "Ransomware.live"
+        source_url: "https://www.ransomware.live/id/U2VjdXJpdGFzIEdyb3VwQGV2ZXJlc3Q"
+    extended_notes: |
+      Translations (Swedish): "Securityworldmarket.com has now had it confirmed by Securitas that an incident has taken place"; "We are investigating the matter, but on what we know today we are confident that this is limited"; "We see no indications that any customer data has been disclosed."
+
+# Drops, logged as borderline-drop (reason attached). Each was weighed against the PD-11 incident gate.
+borderline_drops:
+  - "borderline-drop: Technical University of Denmark (DTU) IAM breach, up to 200,000 current and former users incl. Danish CPR numbers — DTU's own notice (2026-10-02, https://www.dtu.dk/english/NewsArchive/2026/10/Cyberattack-on-DTU_Notification-of-a-personal-data-breach) says unauthorised persons compromised DTU profiles and used them to reach the identity-management system DTUBasen; BleepingComputer (2026-10-03) says compromised credentials. Out of nexus (Denmark), freshest source at least 41 h old (BleepingComputer 2026-10-03 10:35 UTC; outside the 26 h window; not a covered story), no actor, no new TTP beyond credential abuse against an IAM store; the only transferable lesson (an IAM database keeping 20 years of identity data, reachable from ordinary profiles) is generic. Reconsider only if DTU names the credential source or MFA gap."
+  - "borderline-drop: ChimeraZ claim on Région Hauts-de-France (about 708,000 people, 782,583 rows, plus 90,011 files / 48 GB incl. 36,720 RIBs and 37,585 apprenticeship contracts), posted 2026-10-03 — single source (FrenchBreaches, Admiralty C, https://frenchbreaches.com/alertes/r-gion-hauts-de-france-muqbs0geks60ywxsfd and https://frenchbreaches.com/blog/fuite-de-donnees-hauts-de-france-plus-de-700-000-personnes-et-90-000-documents-concernes) which says the figures 'n’ont pas été confirmés par la Région Hauts-de-France'; no Région statement, no press pickup found in two further searches; freshest source 2026-10-03 (outside the 26 h window). Actor and pattern already tracked (entries 2026-08-31/france-sdis-fire-rescue-data-leak-campaign and 2026-09-07/chimeraz-aveyron-onrecrute-breach: ChimeraZ keeps working through French sub-national public bodies). Suggest a backlog row (condition: a Région statement or A/B press pickup) rather than publication; the Aveyron precedent was published on two independent tracker reviews, this one has one."
+  - "borderline-drop: French Office français de la biodiversité (OFB) hunting-permit service, IDOR in a payment API claimed by 'm0rphyn' (LunarisSec), site taken offline 2026-10-04 (FrenchBreaches, Fuites Infos) — France, claim-only, OFB has not confirmed; the service's January 2026 compromise is already public; routine web-app IDOR."
+  - "borderline-drop: other leak-site-only French/Belgian claims on 2026-10-03/05 (CNAM, IFAPME, Cours Thalès, QPM Pro, Predige, AMCEN, Sport 2000, April, Euroditel via FrenchBreaches / Fuites Infos) — no victim statement, out of nexus, no TTP."
+  - "borderline-drop: Astrana Health 8-K Item 1.05 (filed 2026-09-23, the only EDGAR hit in 14 days) — US healthcare-technology company, filed outside the window, no vector or actor stated in the filing coverage; out of nexus."
+  - "borderline-drop: Bio-Strath AG (Küsnacht ZH) ransomware, SafePay listing 2026-09-28 and Inside IT report 2026-09-30 — Swiss domicile but private nutraceutical manufacturer, freshest source about 4.5 days old (outside the window), no vector or public-sector link."
+  - "borderline-drop: STMicroelectronics listing by The Gentlemen (2026-09-26, claim-only; Inside IT 2026-10-01 says the group 'behauptet') — Geneva-domiciled but claim-only, no company statement found, outside the window."
+  - "borderline-drop: Dyfed-Powys Police (UK) cyberattack detected 2026-09-14, staff data possibly accessed — police force (constituency type) but reported 2026-09-25 with no October development, no vector or actor; out of window and out of nexus."
+  - "borderline-drop: municipal IT outages without a stated vector — Svedala kommun (SE), City of Vicksburg (US), Terrebonne Parish (US), City of Radford (US), 2026-09-29/10-01 — outside the window, no vector, actor or behaviour beyond the impact."
+  - "borderline-drop: Bundesagentur für Arbeit online-service outage since 2026-09-29 — the agency rules out a cyberattack (BR via borncity, 2026-10-03); a technical fault, not an incident."
+  - "borderline-drop: Nikkei Microsoft 365 account takeover with about 9,000 impersonation emails (Piyolog 2026-10-05), Yamato Transport, Keio, SK Logi and other Japanese disclosures — out of nexus, generic account-takeover pattern."
+  - "borderline-drop: Mandurah State Emergency Service (AU, The Gentlemen listing 2026-10-03 06:25 UTC, outside the 26 h window), Juntadeandalucia (ES, MedusaLocker listing 2026-09-28) — claim-only government/emergency-service listings outside the home region, no corroboration."
+  - "borderline-drop: Frontline Education breach (US school-district HR vendor, BleepingComputer 2026-10-02), Slate Valley USD (Kairos, 2026-10-04), Microsoft X-account hijack (2026-10-01), Microsoft Titan researcher report — out of nexus and/or not incidents."
+  - "borderline-drop: Stadt Wien documentation-platform theft (covered 2026-10-02) — no in-window development; note for the audit: the entry omits facts from the same primary press release (counts 2,885 citizens, 2,083 employees, 856 contractors to be notified within a week; voluntary NIS-Gesetz report 2026-09-10; statutory data-protection-authority report 2026-09-15) and APA's CIO interview line that a scan-AI is suspected ('Vermutet wird', https://www.news.at/politik/angriff-auf-it-system-der-stadt-wien, 2026-09-30); all dated 2026-09-30, not an in-window delta."
+
+backlog_regate:
+  - row: "Qilin / Touring Club Suisse (TCS) leak-site claim (2026-09-20)"
+    condition_met: false
+    note: "No TCS statement (tcs.ch press page https://www.tcs.ch/de/der-tcs/presse/ lists releases 2026-09-01..2026-10-01, none on an incident), no data samples, no Swiss or French press pickup in DE/FR/EN searches; only trackers (DeXpose, SOCRadar, Breachsense, Ransomware.live). The row's own expiry is today, 2026-10-05: strike per its hold condition."
+  - row: "Everest / Securitas Group (2026-09-25)"
+    condition_met: true
+    note: "Securitas press-office statement relayed by SecurityWorldMarket 2026-10-01 (https://www.securityworldmarket.com/se/Nyheter/Foretagsnyheter/securitas-utsatt-for-dataintrang1): confirms an incident, says it is limited, sees no sign of customer-data disclosure. Condition literally met; PD-11 still weak (no vector, Swiss nexus unestablished). Returned as a borderline item above; recommended disposition: strike (expires 2026-10-10) or at most a short routine entry."
+  - row: "SafePay / ARA-Region Lyss-Limpachtal (BE) (2026-09-15)"
+    condition_met: false
+    note: "No victim statement or press report found (two German-language searches, Swiss feeds checked, ara-lyss.ch homepage shows only a cookie banner in the reader capture); only DeXpose and Breachsense repeat the claim. Held to the 2026-10-14 expiry."
+  - row: "Payload / Netech (Neeser Technik AG, Seuzach ZH) (2026-09-28)"
+    condition_met: false
+    note: "No victim statement or press report found (search returns only a Hendry Adrian aggregator post and generic Payload analyses; netech.ch homepage shows no notice; neesertechnik.ch does not resolve). Held to the 2026-10-14 expiry."
+
+covered_incident_deltas:
+  - "Manno (TI) / SafePay: no development. The commune's notice (https://www.manno.ch/manno/Informazione/albo-comunale/2026/09/Attacco-informatico.html) is unchanged, Ransomware.live record unchanged (2026-09-28), no Swiss press report of a data publication after the ~2026-10-01 countdown found."
+  - "FTAPI / The Gentlemen: no development. heise (2026-09-29) and Cybernews (2026-09-30) unchanged; Ransomware.live shows FTAPI Software listed 2026-09-26 with no data size; the countdown (about five days from 2026-09-29) has passed with no public leak or new FTAPI statement found."
+  - "Belnet: no development. Belnet's notice is still 'Update 2 October 2026 - 11:00' (https://www.belnet.be/en/news-events/news/security-and-privacy-incident-affecting-belnets-it-infrastructure), says no further information on the actor's identity."
+  - "SDIS 66 / France fire-and-rescue campaign: no development located (no new ICI/Radio France or tracker item after 2026-10-01); ChimeraZ's separate Région Hauts-de-France claim is logged under borderline-drop."
+  - "Stadt Wien: no in-window development (see drop note on omitted 2026-09-30 facts)."
+  - "Flink / LPG Group: no real delta. Later coverage repeats the claims already in the entry (Cybernews, De Belegger: stolen credentials as vector, 100 ETH from the company, about 10 euros per customer); LPG's claim of over one million customers and 13,000 employees is unverified."
+  - "Recreation-platform webshell incident (Huntress): no development; no vendor or CVE named."
+  - "Zammad / DIVD: real delta, returned as item 1."
+  - "ShinyHunters FBI claim: real delta, returned as item 2."
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Supplier watchlist is empty, so the sweep is a no-op. FTAPI (supplier to authorities, already covered) and Securitas (supplier-adjacent) were handled on their own merits above, not as watchlist hits."
+
+candidate_sources:
+  - id: securityworldmarket
+    publisher: "SecurityWorldMarket (Nordic security trade press)"
+    url: "https://www.securityworldmarket.com/se/Nyheter"
+    category: breaches
+    why: "Only publisher found carrying a first-hand victim press-office statement on the Securitas incident (2026-10-01); Admiralty C trade press. Direct fetch returns 403 (Cloudflare), the /se/rss path is not a feed, and `extract` reads it only through the jina reader (metered), so the recipe is weak; keep as a lead source only."
+
+coverage_gaps:
+  - source_id: ransomware-live
+    reason: "Not a gap: all endpoints returned data. Observation for the recipe note: recentcyberattacks lags (newest 'added' 2026-10-02 on a 2026-10-05 read) while recentvictims is current to 2026-10-04 19:37 UTC, so use recentvictims plus countryvictims/CH for the day-of sweep and recentcyberattacks for press links only."
+  - source_id: inside-it-ch
+    reason: "Not in this slice; observation: articles are paywalled after the lead paragraph and the host answered one `extract` with a Vercel 429 checkpoint, so only the feed lead and teaser are readable."
+  - source_id: reuters
+    reason: "Primary of the Rey-detention report is unreadable on every transport (jina returns a CAPTCHA page); the item is carried through three relays."
+  - source_id: sec-disclosures-edgar
+    reason: "Quiet, not a gap: `sec-edgar 8k` (default Item 1.05, 2026-09-21..2026-10-05) returned one hit, Astrana Health 2026-09-23."
+
+source_ledger:
+  - { id: bitdefender-threat-debrief, tier: standard, attempted: true, transport: "webfetch listing", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-01 (KillSec takedown, already covered by 2026-10-02/operation-killswitch-killsec-takedown-fedpol-oag); September debrief dated 2026-09-08" }
+  - { id: divd-csirt, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 50, in_horizon_items: 0, returned: 1, note: "no feed item inside 50 h (newest 2026-10-01); the item returned comes from the case page's linked data overview (header time 2026-10-02 08:30 GMT) under the 72 h developing-story window" }
+  - { id: fuitesinfos, tier: standard, attempted: true, transport: "webfetch listing + extract", horizon_hours: 50, in_horizon_items: 4, returned: 0, note: "OFB, QPM Pro, Predige, AMCEN: claim-only French leaks, dropped" }
+  - { id: piyolog, tier: standard, attempted: true, transport: "webfetch listing", horizon_hours: 50, in_horizon_items: 3, returned: 0, note: "Nikkei M365 takeover, Yamato Transport, WordPress CVE roll-up: out of nexus or covered" }
+  - { id: ransom-isac, tier: standard, attempted: true, transport: "feed", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "feed works directly; newest post 2026-09-25" }
+  - { id: troyhunt, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 50, in_horizon_items: 1, returned: 0, note: "Weekly Update 524 (2026-10-04) used only as a corroborating comment for the Rey detention" }
+  - { id: venarix, tier: standard, attempted: true, transport: "bridge url listing + extract of 5 posts", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "listing slugs undated; drilled posts date 2025-06-20, 2025-12-03, 2026-07-14, 2026-07-29, 2026-08-11" }
+  - { id: bleepingcomputer, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 26, in_horizon_items: 2, returned: 1, note: "in-window items: Citrix SAML zero-day (covered) and an AI-voice-data story; the Rey detention (2026-10-03 15:09) and DTU (2026-10-03 10:35) are older than 26 h, Rey kept via in-window relays, DTU dropped" }
+  - { id: borncity, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 26, in_horizon_items: 4, returned: 0, note: "Citrix SAML (covered), Rey detention (relay), Titan researcher report, others out of nexus; Arbeitsagentur outage is not a cyberattack" }
+  - { id: cnil-fr, tier: standard, attempted: true, transport: "webfetch listing", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest item 2026-09-23" }
+  - { id: cyberinsider, tier: standard, attempted: true, transport: "webfetch listing", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-02" }
+  - { id: databreaches-net, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "South Korea banks probe and Slate Valley USD: out of nexus; the Rey post (2026-10-03) is a Reuters excerpt used as a relay" }
+  - { id: frenchbreaches, tier: standard, attempted: true, transport: "webfetch listing + extract", horizon_hours: 26, in_horizon_items: 9, returned: 0, note: "claim-only items; Région Hauts-de-France (2026-10-03) logged as borderline-drop" }
+  - { id: ico-uk, tier: standard, attempted: true, transport: "sitemap (url --direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest news item 2026-10-02 (office address change); Norfolk/Suffolk Constabulary reprimand pages (lastmod 2026-09-30) concern Excel metadata disclosure, not a cyber incident" }
+  - { id: ransomware-live, tier: standard, attempted: true, transport: "api via bridge url", horizon_hours: 26, in_horizon_items: 16, returned: 0, note: "recentvictims 16 listings since 2026-10-04 02:05, none Swiss, none a covered incident; countryvictims/CH newest 2026-09-28; sectorvictims Government & Defense: none in window (newest Mandurah SES, AU, 2026-10-03 06:25 UTC); Securitas, TCS, Netech and ARA Lyss records re-read for the backlog re-gate, unchanged" }
+  - { id: sec-disclosures-edgar, tier: standard, attempted: true, transport: "bridge sec-edgar 8k", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "one Item 1.05 hit in 14 days (Astrana Health, 2026-09-23)" }

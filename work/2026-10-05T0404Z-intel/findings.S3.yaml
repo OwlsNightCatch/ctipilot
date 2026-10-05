@@ -1,0 +1,266 @@
+# work/2026-10-05T0404Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-05T0404Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-05T04:07:08Z
+ended_at: 2026-10-05T04:22:38Z
+duration_seconds: 930
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 17
+  bridge_fetches: 95
+window_note: >
+  Weekend window (Sun 2026-10-04 / Mon 2026-10-05). The 26 h horizon (since 2026-10-04T02:07Z) holds no
+  substantive primary research from the ten majors walked (Microsoft, GTIG/Mandiant, Talos, Unit 42, Check Point
+  Research, ESET, Securelist, SentinelOne, Proofpoint, Trend Micro): newest posts are 2026-09-30 (Unit 42, GTIG,
+  Sophos), 2026-10-01 (Microsoft, Talos opinion posts), 2026-09-28 (Check Point weekly digest), 2026-09-25 (Trend),
+  2026-09-24 (Securelist), 2026-09-18 (SentinelLABS). Everything returned below therefore comes through the slice
+  records' rotational lookback (122-168 h) and is flagged lookback: true. No periodic/annual report landed inside the
+  26 h window (see periodic_reports_seen).
+items:
+  - title: "Sophos X-Ops: the TerminalFix intrusions are one campaign (STAC4924) running since March, with 19 DLL side-load pairings, a word-encoded shellcode loader and a Python tunnel, linked to GOLD VICTOR / Vice Society-Rhysida"
+    sources:
+      - { url: "https://www.sophos.com/en-us/blog/terminalfix-and-lorem-ipsum-loader-enable-covert-tunneling", publisher: "Sophos X-Ops", date: "2026-09-30", role: "primary" }
+      - { url: "https://www.bluevoyant.com/blog/orem-ipsum-clickfix-rapid-brigantine", publisher: "BlueVoyant", date: "2026-06-16", role: "corroborating" }
+    discovery_trace: "first seen at: sophos-xops feed, URL https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 (item dated 2026-09-30) → primary: Sophos X-Ops article, URL https://www.sophos.com/en-us/blog/terminalfix-and-lorem-ipsum-loader-enable-covert-tunneling (fetched via extract; datePublished 2026-09-30 read from the page HTML) → pivot: Sophos' own link to BlueVoyant's attribution post, URL https://www.bluevoyant.com/blog/orem-ipsum-clickfix-rapid-brigantine (fetched via url/jina fallback; WebFetch 403) → store check: entries/2026-08-31/microsoft-terminalfix-clickfix-reverse-tunnel-campaign.md carries the Microsoft + BSI reporting but no Sophos/STAC4924 content. The 2026-10-04 run record lists this exact Sophos post as a lead for the audit 'possible changelog record on the 2026-08-31 TerminalFix entry', not recovered."
+    summary: |
+      FACTS (Sophos, first-hand MDR telemetry). From August 2026 Sophos analysts investigated Managed Detection and
+      Response cases in which ClickFix-style lures told users to open a Windows Terminal window (instead of the Run
+      dialog) and paste a command, ending in a Python-based tunneling implant. Sophos states TerminalFix "is not linked
+      to a specific threat group or a single campaign" and that several 2026 campaigns used the lure; it ties these
+      intrusions, through Lorem Ipsum Loader, C2 infrastructure, persistence and DLL sideloading, to one campaign active
+      since at least March that it tracks as STAC4924.
+      Chain as Sophos describes it: the pasted PowerShell downloads a ZIP holding a legitimate Windows executable, a
+      malicious DLL and a batch script; the batch script installs several persistence mechanisms and launches the
+      legitimate LockScreenContentServer.exe, which sideloads dui70.dll (the Lorem Ipsum Loader). The loader stores
+      shellcode bytes as English words with a separate word-to-byte lookup table (to evade entropy-based detection),
+      reads an attacker-controlled profile page on a legitimate community platform (Letsdiskuss) to decode the current
+      C2 list, and talks to C2 over HTTP POST requests that appear to carry JPEG files but hold encoded data. PowerShell
+      then does reconnaissance and persistence and pulls the legitimate embedded Python package from python.org into
+      Users\Public\indigo, where client.py runs as an encrypted WebSocket tunnel with a per-host UUID.
+      The delta against the store: Sophos publishes 19 sideload pairings (legitimate binary / malicious DLL name)
+      observed March to September, not only LockScreenContentServer.exe + dui70.dll: e.g. changepk.exe with slc.dll,
+      faultrep.dll or sppcext.dll; werfaultsecure.exe (also renamed ResilientStorageCoordinator.exe) with faultrep.dll;
+      embeddedapplauncher.exe with sspicli.dll or secur32.dll; certenrollctrl.exe with certenroll.dll; phoneactivate.exe,
+      sessionmsg.exe and wlrmdr.exe with dui70.dll/duser.dll; vdsldr.exe with vdsutil.dll; wuauclt.exe with sspicli.dll;
+      plus binaries renamed to look like Microsoft components (net runtime optimization service.exe with mscoree.dll,
+      Microsoft Edge Updates Helper.exe and Microsoft Teams Revo Helper.exe with msvcp140.dll). The covered entry's
+      Triage and takeaway lines name a single binary and are therefore too narrow.
+      TWO PHASES (Sophos; BlueVoyant reaches the same inference independently). March-April: SEO-poisoned sites
+      distributing trojanized, signed Microsoft Teams MSI installers feeding a multi-stage PowerShell loader and
+      victim-specific C2 with dead-drop profiles. From late May: TerminalFix lures, "coinciding with Microsoft's takedown
+      of the malware-signing service that supplied the fraudulently obtained certificates" (the 19 May 2026 Fox Tempest
+      action already in the store). Sophos says phase 2 "has continued through September" with DLL sideloading,
+      image-based steganography, Active Directory reconnaissance and the Python reverse tunnel.
+      ASSESSMENTS (owner stated). Sophos assesses with moderate confidence that the two phases are the same or closely
+      associated actors (per-victim UUID callback, the dead-drop resolver on one platform, the sideloading tradecraft,
+      auto-run entries masquerading as Microsoft or update components reinforced by scheduled tasks). BlueVoyant
+      attributed Lorem Ipsum Loader to Rapid Brigantine, which Sophos CTU tracks as GOLD VICTOR (Vanilla Tempest, DEV-0832,
+      VICE SPIDER, Vice Society), linked to the Vice Society and Rhysida ransomware families; Sophos says its tooling,
+      infrastructure and delivery-shift observations "support BlueVoyant's attribution" but it "has not observed
+      encryption in the STAC4924 campaign". This is a third independent line (Sophos telemetry, BlueVoyant telemetry,
+      BSI incident handling already in the entry) converging on the same group.
+      CONTRADICTIONS HELD, NOT RESOLVED. (1) Sophos says BlueVoyant first observed Lorem Ipsum Loader in February 2026;
+      BlueVoyant's own June post says it first documented the family in May 2026 (the registry follows BlueVoyant).
+      (2) BlueVoyant (2026-06-16) reports the dead-drop resolver moving from letsdiskuss to digitalpoint after its public
+      disclosure, while Sophos still describes letsdiskuss profiles in the August-September TerminalFix chain: parallel
+      infrastructure or divergent sub-clusters, unexplained by either source. (3) The covered entry frames TerminalFix as
+      a campaign; Sophos frames it as a lure technique shared across campaigns with STAC4924 as one of them.
+      DEFENDER USE (telemetry classes, no IOCs): (a) process-creation with parent lineage: Windows Terminal or PowerShell
+      parent spawning a download-and-extract of a ZIP into ProgramData or Users\Public, then a Windows system binary
+      executing from that user-writable directory rather than System32/SystemApps; (b) image-load events where a
+      system-named DLL loads from an application directory next to the executable (the 19 pairings are a hunt list); (c) a
+      python.exe/pythonw.exe running from a user-writable path with a client.py argument on a non-developer endpoint, and
+      a PowerShell download of the python.org embeddable package; (d) proxy/DNS: non-browser processes fetching a
+      community-platform profile page followed by HTTP POSTs with image content types to non-CDN hosts; (e) autorun and
+      scheduled-task entries named like Microsoft/Teams/Edge updaters that point at user-writable directories; (f) Active
+      Directory enumeration launched from a user-session child process. Sophos' own warning that persistence is
+      redundant means removing one artefact does not evict the access; treat the host as a pivot and rotate credentials
+      reachable from it (the covered entry already says so).
+    region_nexus: "global; DACH public-sector relevance through BSI's confirmation that TerminalFix was the access vector of the Berlin state-administration Landesnetz compromise (existing entry)"
+    primary_sector_nexus: "direct: public-sector networks are an evidenced victim class of the same chain (BSI/Berlin); Sophos reports MDR cases across customers without naming sectors"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1204.004, T1059.001, T1574.001, T1036.005, T1608.006, T1204.002, T1553.002, T1027.013, T1102.001, T1001.002, T1572, T1105, T1071.001, T1547.001, T1053.005]
+    affected_products: ["Microsoft Windows"]
+    entity_keys: ["campaign:terminalfix-clickfix-reverse-tunnel-2026", "actor:rhysida", "malware:loremipsumloader", "actor:fox-tempest", "incident:microsoft-dcu-disrupts-fox-tempest-malware-signing-as-a-servi"]
+    new_entities:
+      - { key: "campaign:stac4924", type: campaign, name: "STAC4924", aliases: [],
+          summary: "Sophos X-Ops designation for a Lorem Ipsum Loader campaign active since at least March 2026: trojanized signed Teams installers via SEO poisoning (March-April), then TerminalFix ClickFix lures from late May, DLL sideloading, a Python WebSocket tunnel and Active Directory reconnaissance; Sophos observed no encryption and supports BlueVoyant's attribution to Rapid Brigantine / GOLD VICTOR (Sophos, 2026-09-30)." }
+    alias_suggestions:
+      - { key: "actor:rhysida", add_aliases: ["Rapid Brigantine", "GOLD VICTOR"], basis: "BlueVoyant tracks Lorem Ipsum Loader's operators as Rapid Brigantine a.k.a. Vanilla Tempest; Sophos CTU states it tracks Rapid Brigantine as GOLD VICTOR (also Vanilla Tempest, DEV-0832, VICE SPIDER, Vice Society), linked to Vice Society and Rhysida" }
+      - { key: "malware:loremipsumloader", add_aliases: ["Lorem Ipsum Loader"], basis: "Sophos and BlueVoyant spell the family with spaces" }
+    relation_suggestions:
+      - { subject: "campaign:stac4924", object: "malware:loremipsumloader", basis: "Sophos: STAC4924 intrusions deploy Lorem Ipsum Loader (Sophos X-Ops, 2026-09-30)" }
+      - { subject: "campaign:stac4924", object: "campaign:terminalfix-clickfix-reverse-tunnel-2026", basis: "Sophos: STAC4924's second phase (from late May) delivers via TerminalFix lures, which Sophos says are not tied to a single campaign or group (Sophos X-Ops, 2026-09-30)" }
+      - { subject: "campaign:stac4924", object: "actor:rhysida", basis: "BlueVoyant attributes Lorem Ipsum Loader to Rapid Brigantine; Sophos says its STAC4924 observations support that attribution (GOLD VICTOR, linked to Vice Society and Rhysida) but saw no encryption (Sophos 2026-09-30; BlueVoyant 2026-06-16)" }
+      - { subject: "campaign:stac4924", object: "incident:microsoft-dcu-disrupts-fox-tempest-malware-signing-as-a-servi", basis: "Sophos and BlueVoyant both tie the late-May shift from signed Teams installers to TerminalFix/ClickFix lures to the 19 May 2026 takedown of the signing service (Sophos 2026-09-30; BlueVoyant 2026-06-16, 'high confidence')" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-31/microsoft-terminalfix-clickfix-reverse-tunnel-campaign"
+    lookback: true
+    evidence:
+      - quote: "Sophos analysts track this campaign as STAC4924."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/terminalfix-and-lorem-ipsum-loader-enable-covert-tunneling"
+      - quote: "TerminalFix is not linked to a specific threat group or a single campaign."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/terminalfix-and-lorem-ipsum-loader-enable-covert-tunneling"
+      - quote: "The second phase has continued through September and leverages DLL sideloading, image-based steganography, Active Directory reconnaissance, and a Python reverse-tunnel implant."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/terminalfix-and-lorem-ipsum-loader-enable-covert-tunneling"
+      - quote: "This loader attempts to evade entropy-based detections by storing shellcode bytes as English words rather than raw binary data."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/terminalfix-and-lorem-ipsum-loader-enable-covert-tunneling"
+      - quote: "The tooling, infrastructure, and shift in delivery mechanisms that Sophos analysts observed in STAC4924 support BlueVoyant’s attribution. However, Sophos analysts have not observed encryption in the STAC4924 campaign."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/terminalfix-and-lorem-ipsum-loader-enable-covert-tunneling"
+      - quote: "BlueVoyant assesses with high confidence that the Lorem Ipsum ecosystem is operationally linked to Rapid Brigantine (a.k.a. Vanilla Tempest) activity"
+        attribution: "BlueVoyant"
+        source_url: "https://www.bluevoyant.com/blog/orem-ipsum-clickfix-rapid-brigantine"
+    extended_notes: |
+      Recommended shape: a type: update changelog record on 2026-08-31/microsoft-terminalfix-clickfix-reverse-tunnel-campaign
+      (reader-facing delta, so a section and updated_at moves). The body fix that matters most: the entry's Triage and
+      Defender-takeaway lines key on LockScreenContentServer.exe alone, while Sophos documents 19 rotating pairings, so
+      the discriminator should become "a Windows system executable (or a lookalike Microsoft/Teams/Edge updater name)
+      running from a user-writable directory next to a DLL bearing a system-library name". Phase-1 and attribution
+      content belongs in the update section, not the main analysis. The Sophos IOC list sits in its GitHub repository
+      (not fetched, and not for the entry). Sophos' own detection names (Troj/Loader-RV/RW/RN/RT, ATK/PyTune-B) are
+      vendor-specific and add nothing for a non-Sophos SOC.
+      Admiralty hint for the changelog: Sophos B (first-hand telemetry), credibility 1 with the BlueVoyant and BSI
+      convergence; the phase-link inside Sophos is an explicit moderate-confidence assessment, not a fact.
+  - title: "CloudSyncD: fake Zoom disk image phishes the macOS login password, hides it in a decoy config with zero-width Unicode, and launches an embedded backdoor via sudo (Jamf Threat Labs)"
+    sources:
+      - { url: "https://www.jamf.com/blog/cloudsyncd-macos-backdoor-fake-zoom-installer/", publisher: "Jamf Threat Labs", date: "2026-09-30", role: "primary" }
+      - { url: "https://securityaffairs.com/200293/malware/fake-zoom-installer-hides-macos-backdoor-cloudsyncd.html", publisher: "Security Affairs", date: "2026-10-03", role: "corroborating" }
+    discovery_trace: "first seen at: securityaffairs, listing URL https://securityaffairs.com/ (title 'Fake Zoom installer hides macOS backdoor CloudSyncD') → article URL https://securityaffairs.com/200293/malware/fake-zoom-installer-hides-macos-backdoor-cloudsyncd.html (fetched via extract) → primary: Jamf Threat Labs, URL https://www.jamf.com/blog/cloudsyncd-macos-backdoor-fake-zoom-installer/ (fetched via extract, full body). The story also appears in the SecurityWeek and borncity.com feeds (seen in the feed sweep, not fetched, not cited)."
+    summary: |
+      FACTS (Jamf Threat Labs, who found the sample while monitoring executables on VirusTotal and first saw it on
+      15 September 2026 in a plainly unfinished build). The family arrives as a disk image mounting as a volume named
+      Zoom whose background artwork walks the user through System Settings > Privacy & Security > Open Anyway and
+      entering the administrator password, because the bundle is only ad-hoc signed. The first stage, Zoom.app/Contents/
+      MacOS/app_installer, shows a fake authorization dialog and does not continue until the typed password validates
+      against the local account via dscl; it shows a fake "Downloading Zoom..." progress window with no download behind
+      it. The password is written to ~/.config/zoom/data.json, base64-encoded and buried in a padded "cache" value whose
+      offset and length are encoded by 48 zero-width Unicode characters (U+200B, U+200C) after the visible "1.0.0" in the
+      neighbouring version field. The dropper carries a complete universal Mach-O (about 756 KB in the development
+      build); it first tries to run it from an anonymous file descriptor via /dev/fd (which fails on most Macs under
+      System Integrity Protection), then writes it to a temporary file and executes it with sudo using the stolen
+      password. A self-deleting shell script (.app_swap_<pid>.sh in the temp directory) was meant to swap in a decoy
+      app bundle but the bundle was absent in every build Jamf holds. Both stages accept any TLS server certificate.
+      The second stage ("cloudsyncd" after its disguised daemon name; ad-hoc signed, arm64 and x86_64) decrypts an
+      embedded configuration, creates a hidden tree under ~/.local/share/cloudsync/.config/logs, writes ChaCha20-Poly1305
+      log records to sync.err, sends a host survey of just under 2 KB (hardware UUID, CPU, RAM, OS, user name, MAC, model
+      and raw ioreg output) and then beacons every 8 to 16 seconds with only the hardware UUID. Tasking returns either a
+      gzipped tar (unpacked with /usr/bin/tar) or a raw Mach-O (executed directly), so the observable is a newly written
+      or fileless Mach-O, not shell commands. Jamf did not observe persistence (no LaunchAgent or LaunchDaemon). Within
+      two days of first sight Jamf saw builds pointed at live C2 on two domains (the beacon URI mimics a jQuery fetch;
+      both domains were registered in 2011 through one registrar, sit behind Cloudflare and had no detections), and all
+      builds share one C2 key and IV, so one sample decrypts traffic of the others.
+      WHAT IS NOT KNOWN: no victim count, no delivery channel for the DMG (Jamf names none), no actor attribution.
+      Jamf calls it a quieter implant that "lies low until further access is needed".
+      DEFENDER USE: macOS telemetry classes: a process (the unsigned app_installer) spawning dscl authentication checks
+      right after a "Zoom" image mount, a sudo-launched executable from a mkstemp-style temp path, a tar or Mach-O
+      materialising under ~/.local/share, ChaCha20-record log files in a hidden user directory, and periodic 8-16 s
+      HTTPS beacons to a Cloudflare-fronted host with a jQuery-style path from a non-browser process. Hardening: the
+      installer needs the user to override Gatekeeper and type the admin password, so block Open Anyway for standard
+      users via MDM-managed Gatekeeper policy and restrict sudo for non-admins.
+    region_nexus: "global; no region or sector targeting stated"
+    primary_sector_nexus: "indirect (generic fake-Zoom lure against macOS endpoints; no sector named)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1204.002, T1056.002, T1548.003, T1620, T1027, T1564.001, T1036.005, T1105, T1071.001, T1082, T1070.004]
+    affected_products: ["Apple macOS", "Zoom"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:cloudsyncd", type: malware, name: "CloudSyncD", aliases: ["cloudsyncd"],
+          summary: "Two-stage macOS backdoor named by Jamf Threat Labs: a fake Zoom installer phishes the login password, hides it with zero-width Unicode in a decoy config, and launches an embedded implant via sudo; tasking delivers archives or Mach-O executables (Jamf Threat Labs, 2026-09-30)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "Technically rich and actionable on macOS telemetry, but one lab's finding with no victim count, no delivery channel, no attribution and an implant Jamf says was still in development; Security Affairs only relays Jamf. Comparable fake-Zoom macOS entries exist in the store (2026-08-07). The 2026-10-04 fire swept jamf-threat-labs and did not ship it."
+    evidence:
+      - quote: "While performing routine monitoring of executables in VirusTotal, Jamf Threat Labs identified a macOS dropper buried within a disguised Zoom client."
+        attribution: "Jamf Threat Labs"
+        source_url: "https://www.jamf.com/blog/cloudsyncd-macos-backdoor-fake-zoom-installer/"
+      - quote: "Tasking delivers executables, not shell commands, so the observable is a newly written or fileless Mach-O rather than suspicious shell activity."
+        attribution: "Jamf Threat Labs"
+        source_url: "https://www.jamf.com/blog/cloudsyncd-macos-backdoor-fake-zoom-installer/"
+      - quote: "We did not observe persistence being established: no LaunchAgent or LaunchDaemon, no binary placed at the configured install path"
+        attribution: "Jamf Threat Labs"
+        source_url: "https://www.jamf.com/blog/cloudsyncd-macos-backdoor-fake-zoom-installer/"
+      - quote: "After two days of monitoring, we identified samples of the same family configured against live infrastructure across more than one command-and-control domain, indicating the operators have moved from testing toward deployment."
+        attribution: "Jamf Threat Labs"
+        source_url: "https://www.jamf.com/blog/cloudsyncd-macos-backdoor-fake-zoom-installer/"
+    extended_notes: |
+      Jamf's IOC section and the exact C2 domains were deliberately left out (no IOCs in entries). If the main agent
+      ships it, a short threat entry with the telemetry list above is enough; do not deep-dive.
+dropped_leads:
+  - lead: "Oxygen Forensics (Russian-owned forensic-extraction vendor, DOJ complaint 2026-09-23/24)"
+    reason: "Re-checked for the 10-04 re-open condition (a Swiss licensee or authority guidance): none found in two German and two English searches. New delta since 10-04 only abroad: the Metropolitan Police and Romania's anticorruption directorate stopped using the software; DOJ states no evidence of malicious code in it; The Record reports nearly 10,000 contracts in more than 150 countries. Sources read: The Record 2026-09-24, Security Affairs 2026-09-30 (relaying Politico Europe, which WebFetch refused). Still a provenance story with no adversary behavior to map; the audit may want it as a policy/supply-chain entry for police forensic tooling if a Swiss licensee surfaces."
+  - lead: "Swarmchasers, 'We found a Chinese agent fleet' (swarmcha.se, preliminary, evidence as of 2026-10-05 00:45Z)"
+    reason: "A Tencent-hosted agent fleet (code reaching inboxes through a proxy named hysandbox-ats, 2,479 urlquery.net submissions 28 Sep to 4 Oct) pulls Amap map-page data via urlquery.net and webhook.site; the post itself says no coordination between agents was found, the report is marked preliminary, and it is a single volunteer source. No Swiss or public-sector nexus; the agent-saga entries already carry the urlquery.net technique. Re-open if the full report names government targets."
+  - lead: "ReliaQuest 'What's Trending: Top Cyber Attacker Techniques, June-August 2026' (2026-09-30, quarterly)"
+    reason: "Mostly a recap of identity-led intrusions the store already carries (ShinyHunters, Helix, BlackFile/UNC6671 vishing and device-code phishing). The only extra detail (Gryxa RMM persistence with a five-minute C2 heartbeat that disables Defender and uninstalls EDR after three failures; a Booba ransomware case staged from an EDR-less VM over SMB) lives in earlier ReliaQuest spotlights dated 2026-09-10 or older."
+  - lead: "SEC Consult 'From: anyone@icloud.com' (Timo Longin, 2026-10-01)"
+    reason: "Header-smuggling spoofing of arbitrary icloud.com senders that passed SPF, DKIM and DMARC; needs valid iCloud SMTP credentials; Apple fixed one variant by October 2024 and the second by December 2025; no CVE. Retrospective disclosure, no live exposure."
+  - lead: "Poper Blocker (Bay Area Labs 2026-09-28; GridinSoft relay 2026-09-30)"
+    reason: "Chrome extension (about 2 million users, store-featured) pulling server-delivered collection programs that harvest URLs and AI chat bodies (23 of 40 captured programs target AI services). Outside every horizon and from one small lab; noted for the audit as a browser-extension governance angle for staff AI use."
+  - lead: "Microsoft Titan unsigned-JWT admin access (16-year-old researcher, borncity 2026-10-04, The Register 2026-09-30)"
+    reason: "Flaw in a Microsoft-internal analytics platform, fixed server-side with a 5,000 USD bounty; no customer exposure, no defender action."
+  - lead: "Schneier 'Using Device Linking to Eavesdrop on WhatsApp and Signal' (2026-09-29) and 'New Attack Against RSA' (2026-09-28)"
+    reason: "Commentary on a netzpolitik report of German customs using linked-device features for lawful interception (consent or phishing of the verification code required) and on a 2007 RSA forgery technique that only works on unpadded signatures. Neither changes a SOC decision."
+  - lead: "SANS ISC diaries 2026-09-29 to 2026-10-04 (Wordfence scans, ScreenConnect abuse, YARA-X 1.21.0, user-agent curiosities, TTY logs)"
+    reason: "Small observations or well-understood patterns (ScreenConnect installer mailed as a paid-invoice link, RMM abuse already covered); no new technique."
+  - lead: "AIR Security (2026-10-05 framework post; 2026-09-17 skill-scanner bypass)"
+    reason: "The new post is a vendor framework pitch; the scanner-bypass research is 18 days old and outside the 145 h lookback."
+  - lead: "malware.news mirrors of malware-traffic-analysis.net exercises (AMOS ad impersonating Claude Code 2026-10-02, SmartApeSG CNCmachineRMS 2026-09-30, Macfinger ClickFix 2026-09-29)"
+    reason: "Link-only mirrors of IOC-centric traffic exercises with no analysis text."
+  - lead: "Zscaler 2CLoader (2026-09-30), Huntress Defender exclusion abuse (2026-09-30), Elastic KREMLIN (covered), Sekoia ShinyHunters retrospective (2026-10-01), Sekoia Exvicy ErrTraffic copycat, Group-IB Milk Dragon / BraZetsu (2026-10-01/02)"
+    reason: "Seen in the beyond-slice feed sweep, outside the 26 h window and outside any lookback of this slice (their records are rotated elsewhere); listed so the owning rotation or the audit can pick them up."
+periodic_reports_seen:
+  - { name: "Microsoft Digital Defense Report 2026", date: "2026-10-01", note: "dropped by the 10-02, 10-03 and 10-04 fires (vendor statistics, no defender decision)" }
+  - { name: "ENISA Threat Landscape 2026 (incidents 1 Jan to 31 Dec 2025)", date: "2026-09-22", note: "ENISA publication page read (date and scope only). Figures via dcod.ch 2026-09-30, not the report body: 8,257 incidents; DoS about 51%; public administration about 32% of the incidents; phishing about 78% of social-engineering tactics; vulnerability exploitation in about six of ten intrusions; ransomware actors favouring data theft (about 73%) over encryption (under 14%). Still no store entry (flagged by the 10-04 fire as an audit lead); public administration as the most targeted sector is directly on-constituency, so the audit should read the PDF." }
+  - { name: "ReliaQuest Q3 attacker-techniques report (June-August 2026)", date: "2026-09-30", note: "see dropped_leads" }
+  - { name: "Zscaler ThreatLabz 2026 Ransomware Report", date: "2026-09-30", note: "listing only, not read" }
+  - { name: "Check Point AI Threat Landscape Digest July-August 2026", date: "2026-09-17", note: "outside lookback" }
+watchlist_sweep: null
+candidate_sources:
+  - id: transluce
+    publisher: "Transluce (AI-agent activity research)"
+    url: "https://transluce.org/agent-activity"
+    category: research
+    why: "Primary for the urlquery.net AI-agent activity disclosure (2026-09-23: agent swarms linked to OpenAI, attempted hacks of public data providers including an Australian government site, activity back to 6 March 2026) that the store's five OpenAI-agent entries currently reach only through secondary writers and swarmcha.se. No RSS found; single long report pages, so low rotation cost. Fetched with extract this run."
+coverage_gaps:
+  - source_id: offseq
+    reason: "Recipe fix, not a failure: the listing page advertises https://offseq.com/en/research/rss.xml; `feed https://offseq.com/en/research/rss.xml 15` returned 7 dated items (newest 2026-09-06, so nothing in the 168 h lookback). sources.json has rss_url null and fetch_method webfetch; suggest rss_url = that feed and fetch_method rss."
+  - source_id: reliaquest
+    reason: "Sitemap recipe works but its lastmod values are bulk re-index stamps (2026-09-29T23:4x and 2026-09-09T18:0x for hundreds of old posts), so lastmod cannot date a post; only genuinely new URLs surface. Drill each candidate with extract (its front-matter date is correct). One real in-lookback post found (2026-09-30 quarterly report)."
+  - source_id: swarmcha-se
+    reason: "`url --direct https://swarmcha.se/` lists four dated posts and costs no reader credit; `extract https://swarmcha.se/` fell back to the jina reader on the tiny index (one reader call spent). Per-post `extract https://swarmcha.se/posts/<slug>` works direct (trafilatura-direct). Note the post's metadata date (2026-08-25) is wrong; the body says evidence as of 2026-10-05 00:45Z."
+  - source_id: bluevoyant
+    reason: "Not in the source list. WebFetch returns 403; `fetch_source.py url` and `extract` both reached it only through the jina reader fallback. Cited as the corroborating primary for Lorem Ipsum Loader attribution."
+  - source_id: politico-eu
+    reason: "WebFetch refused www.politico.eu outright ('unable to fetch'); the Oxygen Forensics story was read through The Record and Security Affairs instead (dropped lead, no loss)."
+  - source_id: rapid7-research
+    reason: "Not in this slice. Seen in passing: https://www.rapid7.com/blog/feed/ now returns HTTP 404 (feed moved); sources.json rss_url is stale."
+  - source_id: eset
+    reason: "Not in this slice. The welivesecurity RSS mirror carries consumer and video posts; ESET Research posts are only on https://www.welivesecurity.com/en/eset-research/ (raw HTML via extract, hrefs only, dates need a per-article drill). Newest research post at probe: 2026-09-17 (SparroWocky/FamousSparrow)."
+source_ledger:
+  - { id: offseq, tier: standard, attempted: true, transport: "url listing -> feed (rss.xml found on listing)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-06" }
+  - { id: sans-isc, tier: standard, attempted: true, transport: "feed + extract per diary", horizon_hours: 168, in_horizon_items: 5, returned: 0, note: "Wordfence scans, ScreenConnect abuse, YARA-X release, UA strings, TTY logs; Stormcast items filtered" }
+  - { id: sans-newsbites, tier: standard, attempted: true, transport: "extract listing + issues xxviii-73 and xxviii-72", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "issues of 2026-09-29 and 2026-10-02; every story already covered; SEC Consult iCloud lead dropped" }
+  - { id: schneier, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "commentary only" }
+  - { id: swarmcha-se, tier: standard, attempted: true, transport: "url --direct listing + extract post", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "Chinese agent fleet preliminary report, dropped lead" }
+  - { id: air-security, tier: standard, attempted: true, transport: "url/extract listing + 2 posts", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "vendor framework pitch" }
+  - { id: krebs, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest 2026-09-28T15:08Z, outside lookback" }
+  - { id: malware-news, tier: standard, attempted: true, transport: "feed (Discourse RSS, 20 items) + extract", horizon_hours: 145, in_horizon_items: 20, returned: 0, note: "link-only mirrors and news relays; no original analysis" }
+  - { id: reliaquest, tier: standard, attempted: true, transport: "url sitemap + extract article", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "quarterly spotlight 2026-09-30, repeat of covered ground" }
+  - { id: team-cymru, tier: standard, attempted: true, transport: "url listing + extract 4 posts for dates", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-22" }
+  - { id: recordedfuture-insikt, tier: standard, attempted: true, transport: "feed", horizon_hours: 122, in_horizon_items: 3, returned: 0, note: "product-launch blog posts only; newest research post 2026-09-15" }
+  - { id: redcanary, tier: standard, attempted: true, transport: "feed", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest item 2026-08-20" }
+  - { id: securityaffairs, tier: standard, attempted: true, transport: "url listing + extract per article", horizon_hours: 122, in_horizon_items: 3, returned: 1, note: "CloudSyncD (borderline, traced to Jamf); Oxygen Forensics relay dropped; remainder already covered" }
+  - { id: sophos-xops, tier: standard, attempted: true, transport: "feed + extract + url (publish date)", horizon_hours: 122, in_horizon_items: 2, returned: 1, note: "STAC4924 update-of TerminalFix entry; Sep 28 and Sep 25 posts covered by Citrix/Kiteworks entries" }
