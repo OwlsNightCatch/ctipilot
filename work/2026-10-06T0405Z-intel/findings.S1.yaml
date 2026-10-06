@@ -1,0 +1,618 @@
+# work/2026-10-06T0405Z-intel/findings.S1.yaml  (S1 — Active threats & trending vulnerabilities)
+domain: S1
+run_id: 2026-10-06T0405Z-intel
+model: Claude Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-06T04:07:03Z
+ended_at: 2026-10-06T04:45:58Z
+duration_seconds: 2335
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 27
+  bridge_fetches: 150
+window_hours: 26
+window_start_utc: 2026-10-05T02:05:06Z
+developing_window_hours: 72
+# Standing duties answered (see items[], backlog_regate, revised_advisories_checked, kev_check):
+#  - KEV: catalog 2026.10.04 (dateReleased 2026-10-04T18:52:56Z, 1734 entries), re-fetched at 04:07Z and again at 04:35Z: 0 additions since 2026-10-05; newest addition CVE-2026-88779 (2026-10-04, covered).
+#  - Scheduled multi-product releases in window: NONE (next dates: Microsoft/SAP/Siemens/Ivanti/Fortinet Patch Tuesday 2026-10-13, Atlassian regular bulletin 2026-10-20, Oracle CPU 2026-10-20). One OUT-OF-BAND multi-product advisory landed: Atlassian CVE-2026-21589 (item 1).
+kev_check:
+  catalog_version: "2026.10.04"
+  date_released: "2026-10-04T18:52:56Z"
+  additions_since_2026_10_05: 0
+  cve_2026_0257_record: >
+    dateAdded 2026-05-29, dueDate 2026-06-01, knownRansomwareCampaignUse "Known", forensicTriage "No",
+    required action 'Apply mitigations per vendor instructions, follow applicable BOD 22-01 guidance for cloud services, or discontinue use of the product if mitigations are unavailable',
+    notes = the Palo Alto PSIRT page and the NVD page only; the record names no ransomware group. Reported as item 3 (update-of).
+  tracked_cves_not_in_kev: [CVE-2026-10747, CVE-2026-79724, CVE-2026-81204, CVE-2026-85025, CVE-2026-84411, CVE-2026-85542, CVE-2026-104334, CVE-2026-21589, CVE-2026-61500, CVE-2026-96940, CVE-2026-104711, CVE-2026-90970]
+items:
+  # ------------------------------------------------------------------ ITEM 1 (NEW)
+  - title: "Atlassian: unauthenticated arbitrary file access in every version of eight self-managed Data Center products (CVE-2026-21589, CVSS 4.0 9.3), no exploitation known, WAF and Tomcat stop-gaps published"
+    sources:
+      - { url: "https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html", publisher: "Atlassian Security Advisories (CVE-2026-21589)", date: "2026-10-05", role: "primary" }
+      - { url: "https://jira.atlassian.com/browse/JRASERVER-79546", publisher: "Atlassian (Jira Data Center public security ticket)", date: "2026-10-05", role: "primary" }
+      - { url: "https://jira.atlassian.com/browse/CONFSERVER-104488", publisher: "Atlassian (Confluence Data Center public security ticket)", date: "2026-10-05", role: "primary" }
+      - { url: "https://www.theregister.com/security/2026/10/06/atlassian-warns-of-critical-file-access-flaw-in-its-datacenter-products/5301284", publisher: "The Register", date: "2026-10-06", role: "corroborating" }
+      - { url: "https://euvd.enisa.europa.eu/enisa/EUVD-2026-92807", publisher: "ENISA EUVD (EUVD-2026-92807)", date: "2026-10-05", role: "corroborating" }
+      - { url: "https://github.com/advisories/GHSA-gr66-x5pq-8g2g", publisher: "GitHub Advisory Database (GHSA-gr66-x5pq-8g2g)", date: "2026-10-06", role: "corroborating" }
+      - { url: "https://securityonline.info/atlassian-data-center-vulnerability-cve-2026-21589/", publisher: "SecurityOnline", date: "2026-10-06", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, API search (fromScore=9, 2026-10-04..06) via `python3 tools/fetch_source.py url --direct \"https://euvdservices.enisa.europa.eu/api/search?fromDate=2026-10-04&toDate=2026-10-06&fromScore=9&toScore=10&page=0&size=100\"` listing EUVD-2026-92807 (Atlassian, 9.3) → pivot: GitHub global advisory https://api.github.com/advisories/GHSA-gr66-x5pq-8g2g (fix list, CVSS 4.0 vector) → pivot: SecurityOnline https://securityonline.info/atlassian-data-center-vulnerability-cve-2026-21589/ (links the per-product trackers) → pivot: Atlassian tracker https://jira.atlassian.com/browse/JRASERVER-79546 and https://jira.atlassian.com/browse/CONFSERVER-104488 → pivot: Atlassian advisories index https://confluence.atlassian.com/security/security-advisories-bulletins-1236937381.html → primary: https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html; independent press confirmation found later in the run via theregister.com security feed https://www.theregister.com/security/2026/10/06/atlassian-warns-of-critical-file-access-flaw-in-its-datacenter-products/5301284"
+    summary: |
+      Atlassian disclosed on 2026-10-05 (Monday) CVE-2026-21589, an unauthenticated arbitrary file access flaw in the web
+      application root of ALL versions of eight self-managed products: Bitbucket, Confluence, Jira Service Management, Jira
+      Software, Bamboo and Crowd Data Center, plus Crucible and Fisheye. Atlassian rates it Critical, CVSS 4.0 9.3
+      (AV:N/AC:L/AT:N/PR:N/UI:N, high confidentiality impact, subsequent-system impact high). Atlassian says the attacker must
+      know the exact name and path of the target file, that directory contents cannot be listed, and that in some
+      configurations sensitive files are present. The Atlassian tracker classes it "Path Traversal (Arbitrary Read/Write)".
+      Atlassian Cloud is already patched and Atlassian's investigation found no evidence of exploitation; for Data Center
+      it tells customers to patch immediately or, failing that, remove internet exposure and apply one of three stop-gaps:
+      a WAF/proxy rule that blocks any URL with '..' next to '/', '\' or '::' (including URL-encoded forms), a Tomcat
+      RewriteValve rewrite.config (Confluence, Jira, JSM, Bamboo, Crowd) or a urlrewrite.xml rule (Bitbucket).
+      Fixed builds per Atlassian's advisory page: Bitbucket DC 9.4.26 / 10.2.8 / 10.5.1; Confluence DC 9.2.26 / 10.2.19;
+      Jira Service Management DC 5.12.40 / 10.3.26 / 11.3.12; Jira Software DC 9.12.40 / 10.3.26 / 11.3.12; Bamboo DC
+      10.2.24 / 12.1.12; Crowd DC 6.3.7 / 7.0.3 / 7.1.7 / 7.2.4; Crucible 4.9.15; Fisheye 4.9.15. Atlassian's Crowd tracker
+      page (CWD-6610) lists 7.1.6 and the GitHub/EUVD records list 7.1.1 for the 7.1 line; the advisory page says 7.1.7 and
+      is the one to follow. Versions outside the support window may also be affected. No public proof of concept, scanning
+      report or KEV listing was found as of 2026-10-06 04:40Z (EPSS not yet scored); one independent outlet (The Register)
+      reports Atlassian emailed customers "Action required". Assessment (analyst, not a source claim): a pre-authentication
+      path-handling flaw in widely deployed Java web applications, with a vendor-published URL-pattern signature, is the
+      profile that is typically reverse-engineered from the patch diff quickly; the exact-file-name precondition limits
+      impact to known web-root files.
+    region_nexus: "global; no region-specific reporting. Relevant wherever self-managed Atlassian Data Center is deployed; Swiss public-sector relevance is the analyst's inference (intranet collaboration and software-delivery estates commonly run Jira, Confluence and Bitbucket), not stated by any source"
+    primary_sector_nexus: "indirect (supplier-class software used inside public-sector IT)"
+    sector: "technology"
+    cves: [CVE-2026-21589]
+    techniques: [T1190, T1005]
+    affected_products: ["Atlassian Bitbucket Data Center", "Atlassian Confluence Data Center", "Atlassian Jira Service Management Data Center", "Atlassian Jira Software Data Center", "Atlassian Bamboo Data Center", "Atlassian Crowd Data Center", "Atlassian Crucible", "Atlassian Fisheye"]
+    entity_keys: ["product:atlassian-confluence"]
+    new_entities:
+      - { key: "product:atlassian-jira", type: product, name: "Atlassian Jira", aliases: ["Jira Software Data Center", "Jira Service Management Data Center"], summary: "Atlassian issue-tracking and service-management products; Data Center editions affected by CVE-2026-21589 (Atlassian, 2026-10-05)." }
+      - { key: "product:atlassian-bitbucket", type: product, name: "Atlassian Bitbucket", aliases: ["Bitbucket Data Center"], summary: "Atlassian Git hosting product; Data Center edition affected by CVE-2026-21589 (Atlassian, 2026-10-05)." }
+      - { key: "product:atlassian-bamboo", type: product, name: "Atlassian Bamboo", aliases: ["Bamboo Data Center"], summary: "Atlassian CI/CD server; Data Center edition affected by CVE-2026-21589 (Atlassian, 2026-10-05)." }
+      - { key: "product:atlassian-crowd", type: product, name: "Atlassian Crowd", aliases: ["Crowd Data Center"], summary: "Atlassian identity-management and SSO product; Data Center edition affected by CVE-2026-21589 (Atlassian, 2026-10-05)." }
+      - { key: "product:atlassian-fisheye-crucible", type: product, name: "Atlassian Fisheye and Crucible", aliases: ["Fisheye", "Crucible"], summary: "Atlassian source-browsing and code-review products; both affected by CVE-2026-21589 (Atlassian, 2026-10-05)." }
+    verification: SINGLE-SOURCE-OTHER
+    verification_note: "Atlassian is the vendor PSIRT for its own products (advisory page plus per-product tracker pages, same publisher); EUVD, the GitHub advisory and SecurityOnline derive from Atlassian's CNA record; The Register reports Atlassian's customer email. No independent technical reproduction exists yet. Suggest Admiralty A2 (vendor primary, not independently confirmed)."
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "All versions of Bitbucket Data Center, Confluence Data Center, Jira Service Management Data Center, Jira Software Data Center, Bamboo Data Center, Crowd Data Center, Crucible, and Fisheye are affected by this vulnerability."
+        attribution: "Atlassian Security Advisories (CVE-2026-21589)"
+        source_url: "https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html"
+      - quote: "Affected Atlassian Cloud products have been patched, and our investigation has not found evidence of exploitation."
+        attribution: "Atlassian Security Advisories (CVE-2026-21589)"
+        source_url: "https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html"
+      - quote: "This Arbitrary File Access vulnerability allows an unauthenticated attacker to access specific files within the web application root directory in affected versions."
+        attribution: "Atlassian (Jira Data Center public security ticket)"
+        source_url: "https://jira.atlassian.com/browse/JRASERVER-79546"
+      - quote: "Remove your instance from the internet until you can patch or apply mitigations, if possible."
+        attribution: "Atlassian Security Advisories (CVE-2026-21589)"
+        source_url: "https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html"
+      - quote: "Atlassian has told its users to patch its datacenter products, pronto, to prevent attackers accessing their files."
+        attribution: "The Register"
+        source_url: "https://www.theregister.com/security/2026/10/06/atlassian-warns-of-critical-file-access-flaw-in-its-datacenter-products/5301284"
+    extended_notes: |
+      Exposure (vendor-stated): every Data Center version of the eight products is affected (EoL versions may be too); Atlassian Cloud is not.
+      Read the running version from each product's admin/About page and compare to the fixed table. "Instances accessible to the public
+      internet, including those with user authentication" are the ones Atlassian says to isolate first.
+      Detection concept (telemetry class: reverse-proxy / WAF / Tomcat access logs in front of the Atlassian application): requests whose
+      path contains '..' immediately adjacent to '/', '\' or '::' in plain, single- or double-URL-encoded form (the exact pattern in
+      Atlassian's WAF regex), especially with HTTP 200 and an unexpected content type or size; the vendor publishes no compromise
+      indicators and no list of exposed files. Post-patch compromise check (analyst inference, flagged as such): if an instance was
+      reachable while unpatched, treat configuration or secret-bearing files inside the web-application root as possibly read and
+      rotate the credentials they hold; Atlassian says only that "in some configurations, there may be sensitive files present".
+      Hardening levers named by Atlassian: patch to the fixed builds; remove internet exposure; WAF/proxy regex rule; Tomcat RewriteValve
+      plus rewrite.config (needs a node restart; per-product WEB-INF directory paths are in the advisory); Bitbucket uses a urlrewrite.xml rule.
+      Suggested priority for the composer: high (pre-authentication, eight products, vendor 'Action required' email; no exploitation known).
+      The advisory page is not dated in its extracted text; 2026-10-05 is taken from EUVD ingest (2026-10-05 21:30), Atlassian's tracker
+      'Resolved' stamp and The Register's 'on Monday' wording; GitHub's advisory is stamped 2026-10-06T00:32Z.
+  # ------------------------------------------------------------------ ITEM 2 (UPDATE-OF FortiMail)
+  - title: "FortiMail CVE-2026-104286: Fortinet's 2026-10-05 solution update names fixed builds 8.0.2, 7.6.7 and 7.4.9; docs library dates 7.6.7 and 8.0.2 release notes 2026-10-02 and 2026-10-03"
+    sources:
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175", publisher: "Fortinet PSIRT (FG-IR-26-175)", date: "2026-10-05", role: "primary" }
+      - { url: "https://filestore.fortinet.com/fortiguard/psirt/csaf_improper-limitation-of-a-pathname-to-a-restricted-directory_fg-ir-26-175.json", publisher: "Fortinet PSIRT (FG-IR-26-175 CSAF record)", date: "2026-10-05", role: "primary" }
+      - { url: "https://docs.fortinet.com/document/fortimail/8.0.2/release-notes", publisher: "Fortinet Document Library (FortiMail 8.0.2 release notes)", date: "2026-10-03", role: "corroborating" }
+      - { url: "https://docs.fortinet.com/document/fortimail/7.6.7/release-notes", publisher: "Fortinet Document Library (FortiMail 7.6.7 release notes)", date: "2026-10-02", role: "corroborating" }
+    discovery_trace: "first seen at: fortinet-psirt, URL https://filestore.fortinet.com/fortiguard/rss/ir.xml via `url --direct` (FG-IR-26-175 listed, pubDate 2026-10-01) and EUVD exploited-list API showing EUVD-2026-91042 dateUpdated 2026-10-05 → primary: https://fortiguard.fortinet.com/psirt/FG-IR-26-175 (Timeline: '2026-10-05: Solution update') → CSAF https://filestore.fortinet.com/fortiguard/psirt/csaf_improper-limitation-of-a-pathname-to-a-restricted-directory_fg-ir-26-175.json (found in the advisory HTML's Download links; current_release_date 2026-10-05, known_not_affected 8.0.2/7.6.7/7.4.9) → pivot: https://docs.fortinet.com/document/fortimail/8.0.2/release-notes and https://docs.fortinet.com/document/fortimail/7.6.7/release-notes (the 7.4.9 release-notes page at docs.fortinet.com/document/fortimail/7.4.9/release-notes was read for existence only)"
+    summary: |
+      Update to the existing FortiMail CVE-2026-104286 entry (which states no fixed build existed as of 2026-10-03). Fortinet
+      revised FG-IR-26-175 on 2026-10-05: its Timeline now reads "2026-10-01: Initial publication / 2026-10-05: Solution update";
+      the Solution table gives "Upgrade to 8.0.2 or above" (affected 8.0.0 through 8.0.1), "Upgrade to 7.6.7 or above" (7.6.0
+      through 7.6.6), "Upgrade to 7.4.9 or above" (7.4.0 through 7.4.8) and, for 7.2.0 through 7.2.9, "Upgrade to branch 7.4 or
+      above" (no 7.2 fix). The advisory's CSAF record carries current_release_date 2026-10-05 and lists FortiMail 8.0.2, 7.6.7 and
+      7.4.9 as known_not_affected with the same vendor_fix text. Fortinet's documentation library shows the fixed builds were
+      published earlier than the advisory text says: the FortiMail 7.6.7 release notes carry the change-log entry 2026-10-02
+      and the 8.0.2 notes 2026-10-03, and each lists a CWE-22 path-traversal fix under "Common Vulnerabilities and Exposures"
+      without naming CVE-2026-104286 or FG-IR-26-175 (the 7.4.9 release-notes page, build 630, exists but its change-log date was
+      not read). The advisory is otherwise unchanged: "Known Exploited: Yes", CVSS 9.8, the IBE-disable / FortiMail-webmail-isolation /
+      WAF-block-'../'-on-/ibe workarounds, and the compromise artefacts remain; CISA KEV listing 2026-10-01; EPSS 0.022.
+      Discrepancy: one search-engine summary mentioned a "7.2.10" build; Fortinet's advisory gives no 7.2 fix and the docs-library URL
+      for 7.2.10 resolves to the 7.2.9 notes, so a 7.2.10 is unconfirmed.
+    region_nexus: "global; the same entry already carries the Belnet (Belgium) supplier incident and the NCSC-CH advisory"
+    primary_sector_nexus: "direct (mail gateways in public-administration estates; Belnet case)"
+    sector: "public-sector"
+    cves: [CVE-2026-104286]
+    techniques: [T1190]
+    affected_products: ["Fortinet FortiMail"]
+    entity_keys: ["product:fortinet-fortimail"]
+    verification: SINGLE-SOURCE-OTHER
+    verification_note: "Fortinet PSIRT is the first-party source for its own advisory (advisory page, CSAF and docs library are all Fortinet); the exploitation facts were already multi-sourced in the existing entry."
+    confidence: HIGH
+    novelty: "update-of:2026-10-02/cve-2026-104286-fortimail-path-traversal-zero-day-kev"
+    evidence:
+      - quote: "2026-10-05: Solution update"
+        attribution: "Fortinet PSIRT (FG-IR-26-175)"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175"
+      - quote: "FortiMail 7.4: Upgrade to 7.4.9 or above"
+        attribution: "Fortinet PSIRT (FG-IR-26-175 CSAF record)"
+        source_url: "https://filestore.fortinet.com/fortiguard/psirt/csaf_improper-limitation-of-a-pathname-to-a-restricted-directory_fg-ir-26-175.json"
+      - quote: "This has been reported to be exploited in the wild, customers are urged to apply the workaround below."
+        attribution: "Fortinet PSIRT (FG-IR-26-175)"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175"
+      - quote: "is no longer vulnerable to the following CVE/CWE-References"
+        attribution: "Fortinet Document Library (FortiMail 7.6.7 release notes)"
+        source_url: "https://docs.fortinet.com/document/fortimail/7.6.7/release-notes"
+    extended_notes: |
+      What changes for the reader: the entry's immediate action ('no fixed build exists for 7.4, 7.6 or 8.0, apply the workaround')
+      is superseded: upgrade to 8.0.2 / 7.6.7 / 7.4.9 (7.2 users must move to the 7.4 branch or later), keep the workaround until the
+      upgrade lands, and the compromise check back to at least 2026-07-22 (Belnet's reported start) still applies because patching
+      does not evict an attacker. The exploitation-start date is only Belnet's claim; Fortinet gives none.
+      Reader-facing wording suggestion: the docs library dates the fixed builds 2026-10-02/03 although the advisory only named them on 2026-10-05.
+  # ------------------------------------------------------------------ ITEM 3 (UPDATE-OF PAN-OS CVE-2026-0257: KEV ransomware flag)
+  - title: "PAN-OS CVE-2026-0257: CISA KEV now marks known ransomware use; Arctic Wolf documented Qilin ransomware deployments that started from this GlobalProtect bypass in June 2026"
+    sources:
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA Known Exploited Vulnerabilities Catalog (catalog version 2026.10.04)", date: "2026-10-04", role: "primary" }
+      - { url: "https://arcticwolf.com/resources/blog/exploitation-of-cve-2026-0257-leads-to-qilin-ransomware/", publisher: "Arctic Wolf Labs", date: "2026-07-20", role: "primary" }
+      - { url: "https://securityaffairs.com/195730/cyber-crime/qilin-ransomware-affiliates-abuse-cve-2026-0257-to-gain-unauthorized-vpn-access.html", publisher: "Security Affairs", date: "2026-07-21", role: "corroborating" }
+      - { url: "https://security.paloaltonetworks.com/CVE-2026-0257", publisher: "Palo Alto Networks PSIRT", date: "2026-06-03", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, `python3 tools/fetch_source.py cisa-kev` (catalog 2026.10.04: CVE-2026-0257 knownRansomwareCampaignUse 'Known') and the run's kev-window.txt RANSOMWARE row → pivot: WebSearch (\"CVE-2026-0257 GlobalProtect ransomware exploitation ransomware group initial access PAN-OS\") → pivot: Security Affairs https://securityaffairs.com/195730/cyber-crime/qilin-ransomware-affiliates-abuse-cve-2026-0257-to-gain-unauthorized-vpn-access.html → primary: Arctic Wolf Labs https://arcticwolf.com/resources/blog/exploitation-of-cve-2026-0257-leads-to-qilin-ransomware/ ; vendor page https://security.paloaltonetworks.com/CVE-2026-0257 re-read (last timeline line 2026-06-03, no ransomware wording)"
+    summary: |
+      Update to the existing CVE-2026-0257 entries (neither mentions ransomware). CISA's KEV record for CVE-2026-0257 (dateAdded
+      2026-05-29) now carries knownRansomwareCampaignUse "Known"; the record names no group and its notes cite only Palo Alto's advisory
+      and the NVD page, and the date the flag changed is not shown. The supporting incident-response reporting is Arctic Wolf Labs'
+      2026-07-20 report: it "investigated multiple distinct intrusions during June 2026 that resulted in Qilin ransomware deployment,
+      all originating from exploitation of CVE-2026-0257 against Palo Alto Networks firewall appliances", and assesses that post-exploitation
+      tradecraft "varied across intrusions, from rapid encryption-only operations to full double-extortion, possibly suggesting multiple
+      affiliates" of the Qilin RaaS. Observed chain (Arctic Wolf): the authentication-override cookie forgery gives an authenticated
+      GlobalProtect VPN session, some from hosts self-identifying as 'kali'; persistence through registry Run values (an asterisk plus six
+      random lowercase letters pointing at the staged ransomware binary) and, in one case, a MeshAgent scheduled task; remote-access tools
+      (AnyDesk, Ngrok, LogMeIn) in several intrusions; LSASS dumping with rundll32/comsvcs.dll MiniDump executed through a randomly named
+      service; NTDS extraction; PsExec execution over administrative shares from a PerfLogs staging directory; password-protected ransomware
+      payloads; log clearing; and, in the slower intrusions, exfiltration to cloud storage before encryption. Arctic Wolf found overlapping
+      exploitation source infrastructure across intrusions and says this suggests a shared toolkit or coordinated infrastructure. Palo Alto's
+      own page still says only that it "has become aware of limited exploit attempts on unpatched PAN-OS devices without mitigations applied"
+      (last timeline line 2026-06-03). EPSS 0.964 (percentile 99.9). No other IR firm's independent Qilin attribution was found; Security
+      Affairs and trade outlets repeat Arctic Wolf.
+    region_nexus: "global; Arctic Wolf names no victim regions for the Qilin intrusions (its earlier 2026-06-11 report, already cited by the entry, lists North America and Europe)"
+    primary_sector_nexus: "direct (perimeter VPN used by public-sector networks)"
+    sector: "public-sector"
+    cves: [CVE-2026-0257]
+    techniques: [T1133, T1003.001, T1003.003, T1021.002, T1569.002, T1547.001, T1053.005, T1219, T1567.002, T1486]
+    affected_products: ["Palo Alto Networks PAN-OS GlobalProtect"]
+    entity_keys: ["product:palo-alto-networks-pan-os", "actor:qilin"]
+    relation_suggestions:
+      - { subject: "actor:qilin", object: "product:palo-alto-networks-pan-os", basis: "Arctic Wolf Labs: Qilin ransomware deployments in June 2026 all originated from exploitation of CVE-2026-0257 against PAN-OS GlobalProtect (Arctic Wolf, 2026-07-20)" }
+    verification: SINGLE-SOURCE-OTHER
+    verification_note: "The KEV flag is CISA's own catalog field (first-party for the flag); the Qilin attribution rests on one telemetry holder, Arctic Wolf Labs. Security Affairs re-reports it. Suggest Admiralty B2."
+    confidence: MEDIUM
+    novelty: "update-of:2026-05-30/cve-2026-0257-palo-alto-pan-os-globalprotect-pre-auth-authen"
+    evidence:
+      - quote: "\"knownRansomwareCampaignUse\": \"Known\""
+        attribution: "CISA Known Exploited Vulnerabilities Catalog"
+        source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+      - quote: "Arctic Wolf investigated multiple distinct intrusions during June 2026 that resulted in Qilin ransomware deployment, all originating from exploitation of CVE-2026-0257 against Palo Alto Networks firewall appliances."
+        attribution: "Arctic Wolf Labs"
+        source_url: "https://arcticwolf.com/resources/blog/exploitation-of-cve-2026-0257-leads-to-qilin-ransomware/"
+      - quote: "Post-exploitation tradecraft varied across intrusions, from rapid encryption-only operations to full double-extortion, possibly suggesting multiple affiliates operating under the Qilin ransomware-as-a-service (RaaS) umbrella."
+        attribution: "Arctic Wolf Labs"
+        source_url: "https://arcticwolf.com/resources/blog/exploitation-of-cve-2026-0257-leads-to-qilin-ransomware/"
+      - quote: "Palo Alto Networks has become aware of limited exploit attempts on unpatched PAN-OS devices without mitigations applied."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-0257"
+    extended_notes: |
+      Housekeeping for the main agent: TWO entries exist for this CVE under 2026-05-30 (the kind=vulnerability 'critical' entry
+      cve-2026-0257-palo-alto-pan-os-globalprotect-pre-auth-authen and the deep-dive 'notable' entry
+      cve-2026-0257-pan-os-globalprotect-pre-auth-vpn-authenticati, which has empty actions and migrated v2 metadata); the second
+      looks like the duplicate to fold with tools/fold_entries.py. The surviving entry has `techniques: []` and `affected_products: []`, so
+      the update can also populate them.
+      Reader value of the delta: this is no longer only a remote-access bypass with 'limited exploit attempts'; the observed outcome in
+      Arctic Wolf's June intrusions was domain-wide ransomware within the same intrusion, so a GlobalProtect gateway that ran the
+      vulnerable build with authentication-override cookies enabled before patching warrants a compromise assessment, not only a patch.
+      Detection (telemetry classes): GlobalProtect gateway logs for cookie-based logins from unexpected sources and from hosts whose
+      reported hostname is 'kali'; endpoint process-creation for rundll32 loading comsvcs.dll with MiniDump from a service context;
+      service-creation events with random names on file servers/DCs (PsExec); new Run-key values of the form '*' plus six lowercase letters;
+      new scheduled tasks named like a MeshAgent task; first-seen AnyDesk, Ngrok or LogMeIn installs; large uploads to cloud storage; cleared
+      Windows event logs.
+  # ------------------------------------------------------------------ ITEM 4 (UPDATE-OF Zammad)
+  - title: "Zammad CVE-2026-102489 / CVE-2026-102490: vendor advisory of 2026-10-05 ties the root escalation to a packager.io vulnerability and says no fix yet; RCE only on out-of-support 6.5 and older"
+    sources:
+      - { url: "https://zammad.com/en/advisories/cve-2026-102489-cve-2026-102490", publisher: "Zammad GmbH (security advisory)", date: "2026-10-05", role: "primary" }
+      - { url: "https://csirt.divd.nl/cases/DIVD-2026-00015/", publisher: "DIVD CSIRT (case DIVD-2026-00015, last modified 2026-10-01)", date: "2026-10-01", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Warnung-vor-Angriffen-auf-Zammad-und-Citrix-NetScaler-11475555.html", publisher: "heise online", date: "2026-10-05", role: "corroborating" }
+      - { url: "https://community.zammad.org/t/take-care-local-privilege-escalation-cve-2026-102490-is-reported-as-being-actively-exploited/21297", publisher: "Zammad GmbH (community statement)", date: "2026-10-01", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd exploited-list API (EUVD-2026-90080/90081 dateUpdated 2026-10-05 10:25) → pivot: heise WebFetch https://www.heise.de/news/Warnung-vor-Angriffen-auf-Zammad-und-Citrix-NetScaler-11475555.html (links the vendor advisory) → primary: https://zammad.com/en/advisories/cve-2026-102489-cve-2026-102490 ; DIVD case https://csirt.divd.nl/cases/DIVD-2026-00015/ re-read (unchanged since 2026-10-01 13:27 CEST)"
+    summary: |
+      Update to the existing Zammad entry (last updated 2026-10-04). Zammad published its own security advisory on 2026-10-05 (DIVD case
+      DIVD-2026-00015). For CVE-2026-102489 it repeats that exploitation is possible "only on Zammad 6.5 and earlier versions" (out of
+      support, no security updates), that Zammad 7.0 and later "are not affected in practice", and that the code was hardened in 7.2.0.
+      For CVE-2026-102490 it now says it has received DIVD's technical details (the 2026-10-01 community statement said it had none), is
+      analysing it as high priority, assesses it as "a local privilege escalation vulnerability that cannot be exploited remotely on its own",
+      and states that "This issue is related to a confirmed vulnerability in packager.io, and our team is working on a solution" — a new
+      fact: the escalation is tied to a flaw in a third-party packaging/runtime component rather than only in Zammad code (analyst
+      reading from the vendor's wording; background knowledge, not stated in the advisory, is that Zammad's DEB/RPM package installs
+      are built with packager.io; the advisory does not say which installs are affected). The advisory names no
+      fixed build for CVE-2026-102490 and advises restricting access to the underlying server to trusted administrators and moving 6.5 and
+      older to a supported release. DIVD's case page still lists patch status "Available" and the recommendation to upgrade to Zammad 7;
+      heise (2026-10-05) reports that Zammad has not yet published a fix for the privilege escalation. EPSS: 0.014 (102489), 0.006 (102490).
+      Both CVEs remain in CISA KEV (added 2026-10-02).
+    region_nexus: "europe, dach (DIVD is Dutch; Zammad GmbH is German)"
+    primary_sector_nexus: "indirect (helpdesk/ticketing used by public bodies)"
+    sector: "public-sector"
+    cves: [CVE-2026-102489, CVE-2026-102490]
+    techniques: [T1190, T1068]
+    affected_products: ["Zammad"]
+    entity_keys: ["product:zammad"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-02/zammad-cve-2026-102489-102490-exploited-divd-breach"
+    evidence:
+      - quote: "this is a local privilege escalation vulnerability that cannot be exploited remotely on its own."
+        attribution: "Zammad GmbH"
+        source_url: "https://zammad.com/en/advisories/cve-2026-102489-cve-2026-102490"
+      - quote: "This issue is related to a confirmed vulnerability in packager.io, and our team is working on a solution."
+        attribution: "Zammad GmbH"
+        source_url: "https://zammad.com/en/advisories/cve-2026-102489-cve-2026-102490"
+      - quote: "Zammad 7.0 and later are not affected in practice"
+        attribution: "Zammad GmbH"
+        source_url: "https://zammad.com/en/advisories/cve-2026-102489-cve-2026-102490"
+    borderline: true
+    borderline_reason: "Delta is modest: the vendor advisory formalises positions already in the entry (2026-10-01 statement) and adds the packager.io root-cause link and 'details received, still no fix'. Worth a short update only if the composer wants the packager.io fact; otherwise a one-line changelog."
+    extended_notes: |
+      Not independently verified: whether other apps installed through packager.io share the root-escalation weakness; no packager.io
+      advisory was found (WebFetch of packager.io shows none).
+  # ------------------------------------------------------------------ ITEM 5 (UPDATE-OF Rejetto HFS)
+  - title: "Rejetto HFS CVE-2026-61500: VulnCheck canaries record exploitation attempts from 2026-10-01 (single China Telecom address, small-scale reconnaissance); public PoC and VulnCheck KEV listing; not in CISA KEV"
+    sources:
+      - { url: "https://www.vulncheck.com/advisories/rejetto-hfs-session-forgery-via-predictable-signing-key", publisher: "VulnCheck (advisory dated 2026-07-13; page shows the VulnCheck KEV flag when fetched 2026-10-06)", date: "2026-07-13", role: "primary" }
+      - { url: "https://www.theregister.com/security/2026/10/03/anthropics-super-bug-hunting-model-mythos-is-hardcore-good-at-math-as-latest-vuln-under-attack-shows/5300933", publisher: "The Register", date: "2026-10-03", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/10/attackers-target-rejetto-hfs-flaw-that.html", publisher: "The Hacker News", date: "2026-10-05", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/rejetto-hfs-servers-now-actively-scanned-for-critical-rce-flaw/", publisher: "BleepingComputer", date: "2026-10-05", role: "corroborating" }
+      - { url: "https://www.techtimes.com/articles/328531/20261005/cve-2026-61500-anthropic-mythos-finds-rejetto-hfs-flaw-exploited-within-one-day.htm", publisher: "TechTimes", date: "2026-10-05", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"exploitation observed in the wild new advisory \\\"October 5, 2026\\\" OR \\\"October 6, 2026\\\" vulnerability patch\") → pivot: TechTimes https://www.techtimes.com/articles/328531/20261005/cve-2026-61500-anthropic-mythos-finds-rejetto-hfs-flaw-exploited-within-one-day.htm → pivot: The Register https://www.theregister.com/security/2026/10/03/anthropics-super-bug-hunting-model-mythos-is-hardcore-good-at-math-as-latest-vuln-under-attack-shows/5300933 (quotes VulnCheck's Garrity) → pivot: The Hacker News https://thehackernews.com/2026/10/attackers-target-rejetto-hfs-flaw-that.html and BleepingComputer (both quote VulnCheck's Condon: 'small-scale reconnaissance') → primary: VulnCheck advisory https://www.vulncheck.com/advisories/rejetto-hfs-session-forgery-via-predictable-signing-key (carries 'This advisory is in the VulnCheck KEV database'); the originating VulnCheck LinkedIn posts were not fetched (social, not citable)"
+    summary: |
+      Update to the existing Rejetto HFS entry, which says "no exploitation reported yet" (2026-07-13). VulnCheck reports that its Canary
+      Intelligence honeypots detected exploitation attempts against CVE-2026-61500 starting Thursday 2026-10-01, the day after Horizon3's
+      2026-09-30 write-up and exploit video: VulnCheck's Patrick Garrity (via The Register, 2026-10-03) says "Our canaries detected an actor in
+      China targeting real vulnerable hosts in the US" (the Register adds Japan) and four further attempts followed from two addresses in one
+      subnet, apparently via a proxy; VulnCheck's Caitlin Condon characterises the activity as "small-scale reconnaissance only, with a
+      single China Telecom IP probing Canary deployments in Japan and the United States" (The Hacker News, BleepingComputer). VulnCheck's advisory
+      page flags the CVE as in its own KEV database; CISA has not listed it (KEV 2026.10.04). TechTimes and SecurityWeek wording ('hit US and
+      Japanese servers', 'threat actors are exploiting') is stronger than VulnCheck's own statement; no compromise of a real victim is
+      reported. Mechanics unchanged from the entry: HFS 3.0.0 to 3.2.0 derives its session-cookie signing key from Math.random() and leaks
+      outputs to unauthenticated clients at login, so an attacker recovers the generator state, forges an administrator cookie and reaches RCE
+      through the server_code feature; fixed in 3.2.1 (2026-07-13). A public exploit demonstration exists (Horizon3's video and write-up).
+      The finding was made by Horizon3 with Anthropic's Mythos model; VulnCheck's tracker counts it as the second Glasswing/Mythos-credited
+      CVE exploited in the wild (claim of Garrity's tracker, per The Register and TechTimes). EPSS 0.0099. Attribution to a 'China-linked' actor
+      rests only on the source IP's network (China Telecom); no group is named.
+    region_nexus: "global; VulnCheck canaries in the US and Japan"
+    primary_sector_nexus: "low (small self-hosted file server; no constituency exposure reported)"
+    sector: "technology"
+    cves: [CVE-2026-61500]
+    techniques: [T1190, T1550.004, T1059]
+    affected_products: ["Rejetto HFS"]
+    entity_keys: ["product:rejetto-hfs"]
+    verification: MULTI-SOURCE
+    verification_note: "All exploitation claims trace to one telemetry holder (VulnCheck canaries); the outlets repeat it, so the independent-source count for exploitation is one. Suggest Admiralty B2."
+    confidence: MEDIUM
+    novelty: "update-of:2026-07-13/rejetto-hfs-session-forgery-prng-rce-cve-2026-61500"
+    evidence:
+      - quote: "This advisory is in the VulnCheck KEV database"
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/advisories/rejetto-hfs-session-forgery-via-predictable-signing-key"
+      - quote: "Our canaries detected an actor in China targeting real vulnerable hosts in the US"
+        attribution: "The Register (quoting VulnCheck's Patrick Garrity)"
+        source_url: "https://www.theregister.com/security/2026/10/03/anthropics-super-bug-hunting-model-mythos-is-hardcore-good-at-math-as-latest-vuln-under-attack-shows/5300933"
+      - quote: "Activity so far looks to be small-scale reconnaissance only, with a single China Telecom IP probing Canary deployments in Japan and the United States"
+        attribution: "The Hacker News (quoting VulnCheck's Caitlin Condon)"
+        source_url: "https://thehackernews.com/2026/10/attackers-target-rejetto-hfs-flaw-that.html"
+    borderline: true
+    borderline_reason: "Exploitation status of a covered CVSS 9.3 pre-auth RCE changed (no exploitation -> canary-observed attempts), but constituency relevance is low (small file server, honeypot-only evidence); the composer may prefer a short update record."
+    extended_notes: |
+      Detection concept (telemetry class: web access logs of the HFS instance): a burst of login/SRP handshake requests from one source (the
+      attacker needs a small number of login responses to recover PRNG state), followed by an admin-session request from the same source
+      and a configuration change enabling server_code. Sources differ on the day-names of the dates (TechTimes says Oct 2/3, The Register says
+      'Thursday', which is 2026-10-01; 2026-09-30 was a Wednesday); the dates above follow the calendar.
+  # ------------------------------------------------------------------ ITEM 6 (UPDATE-OF Citrix 88779: NCSC-CH advisory)
+  - title: "Citrix NetScaler CVE-2026-88779: NCSC Switzerland published its own advisory on 2026-10-05 (actively exploited, SAML SP/IdP precondition, vendor patches available)"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13030", publisher: "NCSC Switzerland (Cyber Security Hub advisory, post 13030)", date: "2026-10-05", role: "primary" }
+      - { url: "https://support.citrix.com/external/article/CTX697174/citrix-netscaler-adc-and-citrix-netscale.html", publisher: "Citrix (Cloud Software Group, CTX697174; unchanged, dateModified 2026-10-03)", date: "2026-10-03", role: "corroborating" }
+      - { url: "https://www.theregister.com/security/2026/10/05/citrix-netscaler-security-snafus-get-even-worse-amid-more-0-day-reports/5301232", publisher: "The Register", date: "2026-10-05", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, `python3 tools/fetch_source.py ncsc-csh recent 25` (post 13030 created 2026-10-05T08:41Z) → `ncsc-csh post 13030` → primary: https://security-hub.ncsc.admin.ch/#/posts/13030 ; Citrix bulletin CTX697174 re-read (unchanged); The Register https://www.theregister.com/security/2026/10/05/citrix-netscaler-security-snafus-get-even-worse-amid-more-0-day-reports/5301232 found via theregister.com security feed"
+    summary: |
+      Source-addition update to the existing CVE-2026-88779 entry. The Swiss national authority (NCSC Switzerland, Cyber Security Hub
+      post 13030, 2026-10-05 08:41Z, TLP clear) now carries its own advisory: unauthenticated remote attackers can cause denial of service,
+      "Current exploitation status: Actively Exploited", precondition "NetScaler configured as SAML SP or SAML IdP; network access to the
+      SAML authentication endpoint", vendor patches available, with the Citrix bulletin as primary reference. Nothing in Citrix's own
+      bulletin changed (dateModified 2026-10-03; builds 14.1-73.41, 13.1-64.28, 14.1-FIPS 14.1-73.41, 13.1-FIPS/NDcPP 13.1-37.282 as in
+      the entry). The Register (2026-10-05) adds watchTowr's statement that the flaw is "incredibly simple to trigger, with a single specially
+      crafted request", that watchTowr reproduced it on Friday, and its suspicion (a claim, not a finding) that the bug has been used to
+      purposely crash appliances and speed up exploitation of CVE-2026-88771; Citrix did not answer The Register's questions on the number
+      of affected instances or post-exploitation activity. The entry already cites watchTowr's reproduction.
+    region_nexus: "switzerland (home authority advisory), global"
+    primary_sector_nexus: "direct (NetScaler gateways in Swiss public-sector estates are the audience of NCSC-CH advisories)"
+    sector: "public-sector"
+    cves: [CVE-2026-88779]
+    techniques: [T1190, T1499.004]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["product:citrix-netscaler"]
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: "update-of:2026-10-04/cve-2026-88779-citrix-netscaler-saml-overflow-exploited"
+    evidence:
+      - quote: "Successful exploitation allows unauthenticated remote attackers to cause a denial-of-service, potentially rendering SAML-dependent NetScaler services unavailable."
+        attribution: "NCSC Switzerland"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13030"
+      - quote: "NetScaler configured as SAML SP or SAML IdP; network access to the SAML authentication endpoint."
+        attribution: "NCSC Switzerland"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13030"
+      - quote: "This vulnerability is incredibly simple to trigger, with a single specially crafted request being all that is needed to knock an appliance offline"
+        attribution: "The Register (quoting watchTowr's Jake Knott)"
+        source_url: "https://www.theregister.com/security/2026/10/05/citrix-netscaler-security-snafus-get-even-worse-amid-more-0-day-reports/5301232"
+    borderline: true
+    borderline_reason: "Source addition only (home-authority advisory the entry lacks; no new technical fact). Include as a one-line improvement record so Swiss readers see the NCSC-CH link; skip if the composer judges the delta too thin."
+    extended_notes: |
+      Citrix's techzone blog (community.citrix.com, the second Citrix primary the entry cites) returned HTTP 403 to WebFetch and failed on every
+      `extract` transport this run; the facts above rely on the CTX697174 bulletin instead.
+  # ------------------------------------------------------------------ ITEM 7 (BORDERLINE, lookback, backlog row (a))
+  - title: "IBM Langflow OSS bulletin of 2026-10-02: 25 CVEs including an unauthenticated code-injection RCE (CVE-2026-104334, CVSS 9.8), fixed in 1.12.3; no exploitation reported"
+    sources:
+      - { url: "https://www.ibm.com/support/pages/node/7290694", publisher: "IBM Support (Security Bulletin: Langflow OSS is affected by multiple vulnerabilities)", date: "2026-10-02", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3728", publisher: "BSI WID (WID-SEC-2026-3728, Langflow: mehrere Schwachstellen)", date: "2026-10-05", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, `python3 tools/fetch_source.py bsi-rss` (WID-SEC-2026-3728 '[NEU] [hoch] Langflow: Mehrere Schwachstellen', 2026-10-05) → `bsi-csaf WID-SEC-2026-3728` (reference https://www.ibm.com/support/pages/node/7290694) → primary: IBM bulletin https://www.ibm.com/support/pages/node/7290694 via `url` (ibm-support-security-bulletins record)"
+    summary: |
+      IBM, the CNA for Langflow OSS, published on 2026-10-02 a bulletin covering 25 CVEs in Langflow OSS 1.0.0 to 1.12.2, fixed in 1.12.3, with
+      "Workarounds and Mitigations: None". One is unauthenticated: CVE-2026-104334 (CWE-94 improper control of code generation, CVSS 3.1 9.8,
+      AV:N/AC:L/PR:N): "Langflow OSS could allow a remote attacker to execute arbitrary code due to improper control of code generation". The
+      rest need an authenticated user (examples: CVE-2026-97676 sandbox-escape code execution 8.8, CVE-2026-97678 and CVE-2026-97673 code
+      execution via input-validation/protection-mechanism failures 8.8, CVE-2026-97677 path traversal 8.1, CVE-2026-97680 vertex-cache access
+      control 8.3). This is a new, wider set than the 2026-09-23 NCSC-NL relay held in the backlog (CVE-2026-79724/81204/85025, fixed 1.11.6):
+      anything on 1.12.2 or below is affected by this bulletin. No exploitation report, public proof of concept or KEV listing was found for
+      any CVE of the bulletin as of 2026-10-06 (KEV 2026.10.04); NVD does not yet hold CVE-2026-104334 and FIRST has no EPSS score for it.
+      Context from the store: Langflow's earlier unauthenticated RCEs (CVE-2026-33017, CVE-2026-0769/0770) were exploited in the wild.
+    region_nexus: "global"
+    primary_sector_nexus: "low (AI workflow builder; no constituency exposure established)"
+    sector: "technology"
+    cves: [CVE-2026-104334, CVE-2026-97676, CVE-2026-97678, CVE-2026-97673, CVE-2026-97677, CVE-2026-97680, CVE-2026-101329]
+    techniques: [T1190, T1059]
+    affected_products: ["IBM Langflow OSS"]
+    entity_keys: ["product:ibm-langflow-oss", "product:langflow"]
+    verification: SINGLE-SOURCE-OTHER
+    verification_note: "IBM is the CNA/PSIRT for the bulletin; BSI's relay is derived from it."
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "Langflow OSS could allow a remote attacker to execute arbitrary code due to improper control of code generation."
+        attribution: "IBM Support"
+        source_url: "https://www.ibm.com/support/pages/node/7290694"
+      - quote: "02 Oct 2026: Initial Publication"
+        attribution: "IBM Support"
+        source_url: "https://www.ibm.com/support/pages/node/7290694"
+    borderline: true
+    borderline_reason: "Pre-auth RCE (9.8) in a product whose siblings were exploited, but no exploitation/PoC/KEV and no constituency exposure; belongs with the held backlog row (a) rather than as a standalone entry unless exploitation appears."
+  # ------------------------------------------------------------------ ITEM 8 (BORDERLINE, 3 days outside window)
+  - title: "Microsoft Exchange Server CVE-2026-96940 (authenticated cross-mailbox privilege escalation, CVSS 8.8, 'Exploitation More Likely'): out-of-band fix for SE RTM, 2019 CU14/CU15 and 2016 CU23; not exploited"
+    sources:
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-96940", publisher: "Microsoft Security Response Center (CVE-2026-96940)", date: "2026-10-02", role: "primary" }
+      - { url: "https://thehackernews.com/2026/10/microsoft-exchange-flaw-lets.html", publisher: "The Hacker News", date: "2026-10-05", role: "corroborating" }
+      - { url: "https://www.helpnetsecurity.com/2026/10/05/exchange-server-vulnerability-cve-2026-96940/", publisher: "Help Net Security", date: "2026-10-05", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Microsoft-schiebt-Exchange-Update-nach-11475517.html", publisher: "heise online", date: "2026-10-05", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, `python3 tools/fetch_source.py bsi-rss` (WID-SEC-2026-3718 '[NEU] [hoch] Microsoft Exchange Server: Schwachstelle ermöglicht Privilegieneskalation', 2026-10-05; CERT-FR CERTFR-2026-AVI-1258 of the same day in the avis feed) → `msrc recent 60` and `msrc cve CVE-2026-96940` (releaseDate 2026-10-02T07:00-07:00) → `msrc cvrf 2026-Oct` (fixed builds/KBs) → pivot: The Hacker News https://thehackernews.com/2026/10/microsoft-exchange-flaw-lets.html (found via thehackernews.com feed, 2026-10-05 21:51Z)"
+    summary: |
+      Microsoft published CVE-2026-96940 on 2026-10-02 (not a Patch Tuesday release): "Weak authorization in Microsoft Exchange Server allows an
+      authenticated attacker to elevate privileges over a network" (CWE-1390, CVSS 3.1 8.8, vector AV:N/AC:L/PR:L/UI:N; Microsoft: exploited
+      "No", publicly disclosed "No", exploitability assessment "Exploitation More Likely"). In practice an authenticated user can read other
+      users' mailboxes and attachments within the same organisation; no cross-tenant access. Exchange Online already has a service-side fix. Fixed
+      builds per Microsoft's CVRF: Exchange Server Subscription Edition RTM KB5129955 (15.02.2562.053), Exchange 2019 CU15 KB5129956
+      (15.02.1748.053), Exchange 2019 CU14 KB5129957 (15.02.1544.048), Exchange 2016 CU23 KB5129958 (15.01.2507.075). The Hacker News
+      (2026-10-05) calls them out-of-band updates and notes no evidence of weaponisation. Help Net Security (2026-10-05) quotes the Exchange Server
+      Team: "are not aware of active exploitation", says the flaw was found internally, that the Exchange Online service-side fix went out late last
+      week ahead of the intended schedule without a KB article, and relays the team's advice to install the 'September 2026 v2' update on all Exchange
+      servers and on every server and workstation running the Exchange Management Tools. heise (2026-10-05) adds that the 2016 and 2019 updates need
+      the Extended Security Update programme (Period 2), and that the release carries two known issues (published calendars may return HTTP 500;
+      a ContentEngine deadlock for Korean word-breaking). The Exchange team's own blog post could not be read (JS-rendered). EPSS 0.005. The relay by
+      BSI and CERT-FR on 2026-10-05 is why it surfaced inside the window; the vendor release is three days older.
+    region_nexus: "global"
+    primary_sector_nexus: "direct if on-premises Exchange is run (common in public-sector mail estates); no exploitation evidence"
+    sector: "public-sector"
+    cves: [CVE-2026-96940]
+    techniques: [T1068, T1114.002]
+    affected_products: ["Microsoft Exchange Server Subscription Edition", "Microsoft Exchange Server 2019", "Microsoft Exchange Server 2016"]
+    entity_keys: ["product:microsoft-exchange-server"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Weak authorization in Microsoft Exchange Server allows an authenticated attacker to elevate privileges over a network."
+        attribution: "Microsoft Security Response Center"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-96940"
+      - quote: "there is no evidence of the flaw being weaponized in the wild"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/10/microsoft-exchange-flaw-lets.html"
+      - quote: "are not aware of active exploitation"
+        attribution: "Help Net Security (quoting the Exchange Server Team)"
+        source_url: "https://www.helpnetsecurity.com/2026/10/05/exchange-server-vulnerability-cve-2026-96940/"
+    borderline: true
+    borderline_reason: "Vendor release is 2026-10-02 (outside the 26 h and 72 h windows) but five in-window relays exist (BSI, CERT-FR, heise, Help Net Security, The Hacker News, all 2026-10-05; all derive from Microsoft); authenticated, not exploited or publicly disclosed ('Exploitation More Likely'); on-prem Exchange is core mail infrastructure, so a short low-priority awareness entry is defensible; composer's call (analyst leans include-short)."
+  # ------------------------------------------------------------------ ITEM 9 (BORDERLINE)
+  - title: "Apache Struts S2-075 (CVE-2026-104711): OGNL injection to RCE in the deprecated legacy RESTful action mapper, non-default; fixed in 6.12.0 and 7.4.0 (three further S2 bulletins are DoS or data-mixing)"
+    sources:
+      - { url: "https://cwiki.apache.org/confluence/display/WW/S2-075", publisher: "Apache Struts Security Bulletin S2-075", date: "2026-10-02", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3723", publisher: "BSI WID (WID-SEC-2026-3723, Apache Struts: mehrere Schwachstellen)", date: "2026-10-05", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, `python3 tools/fetch_source.py bsi-rss` (WID-SEC-2026-3723 '[NEU] [hoch] Apache Struts: Mehrere Schwachstellen', 2026-10-05) → `bsi-csaf WID-SEC-2026-3723` (references S2-075 to S2-078) → primary: https://cwiki.apache.org/confluence/display/WW/S2-075 (and S2-076/077/078 read via `extract`)"
+    summary: |
+      Apache published four Struts bulletins around 2026-10-02 (S2-075 created 2026-10-02). S2-075 / CVE-2026-104711: "OGNL injection in the legacy
+      RESTful action mapper can lead to remote code execution"; Apache's maximum security rating is Moderate. Preconditions: the application uses
+      the legacy RESTful action mapper (not the default mapper, not 'restful2', not the REST plugin) and, on Struts 7, only when the OGNL
+      allowlist is disabled ("Struts 7 is not affected in its default configuration, where the OGNL allowlist is enabled"). Affected: 2.0.0 to
+      2.3.37 (EOL), 2.5.0 to 2.5.33 (EOL), 6.0.0 to 6.11.0, 7.0.0 to 7.3.0; fixed in 6.12.0 and 7.4.0; workaround: switch to the default,
+      restful2 or REST-plugin mapper. The other three are unauthenticated denial of service by response amplification for BigDecimal
+      parameters rendered through the tag library (S2-076, CVE-2026-104712), unbounded REST-plugin request-body read (S2-077, CVE-2026-104713,
+      Important) and a shared message formatter that can show one user's date value to another (S2-078, CVE-2026-104714). No public proof of
+      concept or exploitation was found; Struts RCEs have historically been weaponised quickly once an OGNL path is public, which is the
+      analyst's reason for flagging it, not a source claim.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect (legacy Java web applications in public-sector estates)"
+    sector: "technology"
+    cves: [CVE-2026-104711, CVE-2026-104712, CVE-2026-104713, CVE-2026-104714]
+    techniques: [T1190]
+    affected_products: ["Apache Struts"]
+    entity_keys: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "OGNL injection in the legacy RESTful action mapper can lead to remote code execution"
+        attribution: "Apache Struts Security Bulletin S2-075"
+        source_url: "https://cwiki.apache.org/confluence/display/WW/S2-075"
+      - quote: "Struts 7 is not affected in its default configuration, where the OGNL allowlist is enabled."
+        attribution: "Apache Struts Security Bulletin S2-075"
+        source_url: "https://cwiki.apache.org/confluence/display/WW/S2-075"
+    borderline: true
+    borderline_reason: "Apache rates it Moderate and the vulnerable mapper is deprecated and non-default; no PoC or exploitation. Drop-leaning unless the composer wants a one-line watch item for legacy Struts apps."
+# ---------------------------------------------------------------------------------------------- CVE TABLE (structured, never rendered)
+cve_table:
+  - { cve: CVE-2026-21589, product: "Atlassian Bitbucket / Confluence / Jira Software / Jira Service Management / Bamboo / Crowd Data Center, Crucible, Fisheye", cvss: "9.3 (CVSS 4.0, Atlassian; AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:H/SI:H/SA:H)", epss: null, kev: false, exploited: "no evidence (Atlassian: Cloud investigation found none; no report found)", affected: "all versions of the eight products (EoL versions may also be affected)", fixed: "Bitbucket DC 9.4.26, 10.2.8, 10.5.1; Confluence DC 9.2.26, 10.2.19; JSM DC 5.12.40, 10.3.26, 11.3.12; Jira Software DC 9.12.40, 10.3.26, 11.3.12; Bamboo DC 10.2.24, 12.1.12; Crowd DC 6.3.7, 7.0.3, 7.1.7 (tracker CWD-6610 says 7.1.6, GHSA 7.1.1), 7.2.4; Crucible 4.9.15; Fisheye 4.9.15", type: path-traversal, vector: zero-click, auth: pre-auth, source: "https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html" }
+  - { cve: CVE-2026-104286, product: "Fortinet FortiMail", cvss: "9.8 (CVSS 3.1)", epss: 0.02201, kev: true, exploited: "yes (Fortinet: reported exploited; CISA KEV 2026-10-01)", affected: "FortiMail 8.0.0-8.0.1, 7.6.0-7.6.6, 7.4.0-7.4.8, 7.2.0-7.2.9", fixed: "8.0.2, 7.6.7, 7.4.9 (named in the 2026-10-05 solution update); 7.2: upgrade to branch 7.4 or above", type: path-traversal, vector: zero-click, auth: pre-auth, source: "https://fortiguard.fortinet.com/psirt/FG-IR-26-175" }
+  - { cve: CVE-2026-0257, product: "Palo Alto Networks PAN-OS GlobalProtect (and Prisma Access)", cvss: "7.8 (CVSS 4.0)", epss: 0.96382, kev: true, exploited: "yes; KEV knownRansomwareCampaignUse = Known; Arctic Wolf: Qilin ransomware deployments from June 2026", affected: "PAN-OS 10.2/11.1/11.2/12.1 builds below the fixed hotfixes with authentication override cookies enabled and a shared certificate; Prisma Access 10.2.0-10.2.10-h35, 11.2.0-11.2.7-h12", fixed: "unchanged by this update: fixed hotfix/maintenance builds per Palo Alto's vendor table (carried in the existing entry; Arctic Wolf restates 12.1.4-h6 / 12.1.7, 11.2.4-h17 / 11.2.7-h14 / 11.2.10-h7, 11.1.4-h33 / 11.1.6-h32 / 11.1.7-h6 / 11.1.10-h25 / 11.1.13-h5 / 11.1.15, 10.2.7-h34 / 10.2.10-h36 / 10.2.13-h21 / 10.2.16-h7 / 10.2.18-h6)", type: auth-bypass, vector: zero-click, auth: pre-auth, source: "https://security.paloaltonetworks.com/CVE-2026-0257" }
+  - { cve: CVE-2026-102489, product: "Zammad", cvss: "8.7 (CVSS 4.0; 9.4 chained)", epss: 0.01396, kev: true, exploited: "yes (NCSC-NL, DIVD; KEV 2026-10-02)", affected: "6.3.0-6.5.4 per DIVD (Zammad: exploitable only on 6.5 and older)", fixed: "7.0 and later not affected in practice (Zammad); 7.2.0 hardens the code; 6.5 and older get no fixes", type: rce, vector: user-interaction, auth: pre-auth, source: "https://zammad.com/en/advisories/cve-2026-102489-cve-2026-102490" }
+  - { cve: CVE-2026-102490, product: "Zammad", cvss: "8.5 (CVSS 4.0; 9.4 chained)", epss: 0.00629, kev: true, exploited: "yes (NCSC-NL, DIVD; KEV 2026-10-02)", affected: "all versions from 1.5.0 including the latest alpha (DIVD); Zammad: local escalation, not remotely exploitable on its own", fixed: "no fix named as of 2026-10-05 (Zammad: working on a solution, tied to a packager.io vulnerability)", type: priv-esc, vector: local, auth: post-auth, source: "https://zammad.com/en/advisories/cve-2026-102489-cve-2026-102490" }
+  - { cve: CVE-2026-61500, product: "Rejetto HFS", cvss: "9.3 (CVSS 4.0)", epss: 0.00987, kev: false, exploited: "attempts observed by VulnCheck canaries from 2026-10-01 (small-scale reconnaissance per VulnCheck); VulnCheck KEV yes; CISA KEV no", affected: "3.0.0-3.2.0", fixed: "3.2.1 (2026-07-13)", type: auth-bypass, vector: zero-click, auth: pre-auth, source: "https://www.vulncheck.com/advisories/rejetto-hfs-session-forgery-via-predictable-signing-key" }
+  - { cve: CVE-2026-88779, product: "Citrix NetScaler ADC and Gateway", cvss: "8.7 (CVSS 4.0)", epss: 0.00534, kev: true, exploited: "yes (Citrix; CISA KEV 2026-10-04; NCSC-CH advisory 2026-10-05)", affected: "14.1 before 14.1-73.41; 13.1 before 13.1-64.28; 14.1-FIPS before 14.1-73.41 FIPS; 13.1-FIPS/NDcPP before 13.1-37.282; SAML SP or IdP configured", fixed: "14.1-73.41; 13.1-64.28; 14.1-73.41 FIPS; 13.1-37.282", type: memory-corruption, vector: zero-click, auth: pre-auth, source: "https://support.citrix.com/external/article/CTX697174/citrix-netscaler-adc-and-citrix-netscale.html" }
+  - { cve: CVE-2026-104334, product: "IBM Langflow OSS", cvss: "9.8 (CVSS 3.1, IBM)", epss: null, kev: false, exploited: "no report found", affected: "1.0.0-1.12.2", fixed: "1.12.3", type: code-injection, vector: zero-click, auth: pre-auth, source: "https://www.ibm.com/support/pages/node/7290694" }
+  - { cve: CVE-2026-96940, product: "Microsoft Exchange Server (SE RTM, 2019 CU14/CU15, 2016 CU23)", cvss: "8.8 (CVSS 3.1; temporal 7.7)", epss: 0.00496, kev: false, exploited: "no (Microsoft: Exploited No, Publicly disclosed No, Exploitation More Likely)", affected: "Exchange SE RTM; 2019 CU14, CU15; 2016 CU23", fixed: "KB5129955 (SE RTM, 15.02.2562.053); KB5129956 (2019 CU15, 15.02.1748.053); KB5129957 (2019 CU14, 15.02.1544.048); KB5129958 (2016 CU23, 15.01.2507.075)", type: priv-esc, vector: network, auth: post-auth, source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-96940" }
+  - { cve: CVE-2026-104711, product: "Apache Struts", cvss: "n/a (Apache rating: Moderate)", epss: null, kev: false, exploited: "no report found", affected: "2.0.0-2.3.37 (EOL), 2.5.0-2.5.33 (EOL), 6.0.0-6.11.0, 7.0.0-7.3.0 (7 only with the OGNL allowlist disabled); legacy RESTful action mapper only", fixed: "6.12.0, 7.4.0", type: rce, vector: network, auth: pre-auth, source: "https://cwiki.apache.org/confluence/display/WW/S2-075" }
+# ---------------------------------------------------------------------------------------------- BACKLOG RE-GATE (state/coverage_backlog.md, held rows)
+backlog_regate:
+  - row: "IBM MQ CVE-2026-10747"
+    result: "still no exploitation report, public PoC or KEV listing; CORRECTION to the 2026-10-04 footprint note"
+    evidence: "KEV 2026.10.04 (fetched 04:07Z and 04:35Z): not listed. FIRST EPSS 0.0057 (percentile 0.45, 2026-10-05). IBM's MAIN IBM MQ bulletin (https://www.ibm.com/support/pages/security-bulletin-ibm-mq-vulnerable-unauthenticated-remote-code-execution-cve-2026-10747, Change History '14 Sep 2026: Initial Publication', no later revision) covers IBM MQ Server 9.1.0.0-9.1.0.37 LTS, 9.2.0.0-9.2.0.43 LTS, 9.3.0.0-9.3.0.41 LTS, 9.3.0.0-9.3.5.1 CD, 9.4.0.0-9.4.0.25 LTS, 9.4.0.0-9.4.5.1 CD and 10.0.0.0, CVSS 3.1 10.0 (AV:N/AC:L/PR:N), 'Workarounds and Mitigations: None', fixes 9.1.0.38 / 9.2.0.44 / 9.3.0.42 / 9.4.0.26 and, for 9.3 CD and 9.4 CD, upgrade to 10.0.0.5. The 2026-10-04 note read the 2026-09-10 MQ Appliance bulletin only; the footprint is the whole MQ Server line, not only the appliance. Searches this run found no exploitation or PoC."
+    recommendation: "keep held (condition unmet; expires 2026-10-11) but the footprint statement in the row should be corrected; a pre-auth CVSS 10.0 listener flaw across every supported MQ line with no workaround is closer to the gate than the appliance-only reading suggested."
+  - row: "Langflow CVE-2026-79724 / 81204 / 85025"
+    result: "no exploitation report, PoC or KEV listing; new wider IBM bulletin of 2026-10-02"
+    evidence: "KEV: none of the three. EPSS 0.0067 / 0.0086 / 0.0061 (2026-10-05). No exploitation report found in searches or in the Langflow GitHub advisory list (37 advisories, newest 2026-09-28). NEW: IBM's 2026-10-02 bulletin (https://www.ibm.com/support/pages/node/7290694) lists 25 CVEs for Langflow OSS 1.0.0-1.12.2 (fixed 1.12.3) including unauthenticated CVE-2026-104334 (9.8); reported as item 7 (borderline)."
+    recommendation: "keep held; fold the two sets into one watch note (1.12.3 now supersedes the 1.11.6 fix level)."
+  - row: "MikroTik RouterOS CVE-2026-84411"
+    result: "MikroTik still has not named the CVE or the fixed builds; no PoC, exploitation or KEV"
+    evidence: "KEV: not listed. EPSS 0.0095 (percentile 0.60). EUVD-2026-91836 published 2026-10-02 (references only mikrotik.com/download and the CISA ICS advisory; BSI added the EUVD reference on 2026-10-04). CISA ICSA-26-272-06 (released 2026-09-29, initial publication, read 2026-10-06): affected 'RouterOS <7.24', 'MikroTik recommends users update RouterOS to version 7.24 or later', 'No known public exploitation specifically targeting this vulnerability has been reported to CISA'. MikroTik's own changelogs (https://upgrade.mikrotik.com/routeros/<ver>/CHANGELOG): 7.24 (2026-08-14) no www entry; 7.24.1 (2026-08-21) 'www - improve service responsiveness when receiving malformed packets'; 7.24.2 and 7.23.4 (2026-09-03) 'This is an important security update. Most configurations are not at risk, but upgrading is highly recommended. To give time to update your systems, we are not currently publishing detailed information.' with 'www - improve stability'; 7.24.3 and 7.23.6 (2026-09-14) name only CVE-2026-67278 and CVE-2026-16347; newest stable 7.24.5 (2026-09-29), newest long-term 7.23.7 (2026-09-16). Reading: CISA's '<7.24' implies the 7.23 long-term line is not fixed unless MikroTik backported; MikroTik has not confirmed either way."
+    recommendation: "keep held (condition unmet; expires 2026-10-14)."
+  - row: "IBM Guardium Data Protection CVE-2026-85542"
+    result: "not KEV-listed; no IBM confirmation of exploitation found"
+    evidence: "KEV: not listed. EPSS 0.0241 (percentile 0.835, 2026-10-05). IBM Guardium bulletins located this run (support nodes 7285152, 7288035, 7288036, 7288040) cover other CVEs and none mentions CVE-2026-85542 or exploitation; aggregator pages (OpenCVE, stack.watch) give publication 2026-09-25, CVSS 8.8, authenticated, Guardium 12.2 only. The ACN alert of 2026-09-28 is unchanged. No constituency deployment surfaced."
+    recommendation: "keep held (condition unmet; expires 2026-10-14)."
+# ---------------------------------------------------------------------------------------------- REVISED-ADVISORY CHECKS (duty 2)
+revised_advisories_checked:
+  - { advisory: "Citrix CTX697174 (CVE-2026-88779)", result: "unchanged since 2026-10-03 (page dateModified 10-03-2026 19:19; same builds). Citrix techzone blog unreadable (403/transport failure). New: NCSC-CH advisory 2026-10-05 and watchTowr quotes in The Register (item 6)." }
+  - { advisory: "Fortinet FG-IR-26-175 FortiMail", result: "REVISED 2026-10-05 (solution update): fixed builds 8.0.2 / 7.6.7 / 7.4.9 named (item 2)." }
+  - { advisory: "Check Point sk1000171 (CVE-2026-93616)", result: "unchanged: Last Modified 2026-09-22; still 'exploited in the Wild ... a handful of customers'; Bishop Fox write-up already in the entry; no new public PoC found." }
+  - { advisory: "Zammad CVE-2026-102489/102490", result: "NEW vendor advisory 2026-10-05; still no fix for 102490 (item 4)." }
+  - { advisory: "Cisco SD-WAN CVE-2026-76504", result: "advisory unchanged since v1.1 (2026-10-02, Live Protect shield added); no new fixed releases, KEV unchanged." }
+  - { advisory: "Kiteworks (GitHub kiteworks/security-advisories)", result: "no new advisory: 20 newest all published 2026-09-30, last update 2026-10-02 03:59Z (already in the entry's correction)." }
+  - { advisory: "Apple CVE-2026-86950", result: "no new release: security-releases listing newest 2026-09-28 (iOS/iPadOS 26.7.1, 27.0.1, macOS 26.7.1/15.8.1); Calif PoC and WhatsApp speculation already in the entry." }
+  - { advisory: "Arista VeloCloud CVE-2026-93952 (SA 0183)", result: "unchanged: revision 1.1 (2026-09-23, CSAF added); fixes still only 5.2.3.16 and 6.4.2.8; 6.1.x and 7.0.x have no fix." }
+  - { advisory: "Synology-SA-26:13", result: "unchanged: Last Updated 2026-09-18, Status Resolved, Mitigation None; no exploitation or PoC report found." }
+  - { advisory: "WatchGuard (covered CVE-2026-13368, 19313, 19315 ...)", result: "no change relevant to the entries (PSIRT pages updated 2026-08-27 / 09-11 / 09-03; 'not aware of any exploitation'). A separate, never-covered WatchGuard bundle (2026-09-28..10-01) is listed under dropped_or_noted." }
+  - { advisory: "Cisco ISE CVE-2026-76460, F5 BIG-IP APM CVE-2026-94127, SharePoint CVE-2026-65660 (spot checks)", result: "no in-window development found in searches." }
+# ---------------------------------------------------------------------------------------------- CONSIDERED AND DROPPED / NOTED (for audit)
+dropped_or_noted:
+  in_window_or_lookback_dropped:
+    - "Dell Container Storage Modules DSA-2026-448 (NCSC-NL NCSC-2026-0400, 2026-10-05; 13 CVEs, Kubernetes storage modules; no exploitation) - niche, dropped. BleepingComputer 2026-10-05 also reports a Dell System Update root-privilege flaw (local) - not read, dropped."
+    - "GitLab AI Gateway critical patch release 19.2.4 / 19.3.2 / 19.4.1 (2026-10-02, CVE-2026-90970, CVSS 9.9): needs an authenticated user with Duo Agent Platform access and only self-hosted AI Gateway installs - dropped (CERT-FR AVI-1262 relays it on 2026-10-05)."
+    - "Keycloak 26.7.5 (2026-09-30) / 26.8.0 (2026-10-01): hardening CVEs (CVE-2026-16103, 18203, 18206, 18207, 18208, 18211, 18217; SAML redirect-binding parameter pollution, client-policy wildcard matching); BSI WID-SEC-2026-3727 (2026-10-05) flags CVE-2026-105301/105302/105306 as unpatched at BSI (information disclosure, bypass). Dropped, outside the 98 h lookback and low severity."
+    - "ZITADEL (EUVD 2026-10-04): CVE-2026-105209, 105211, 105215 and related, CVSS 4.0 9.2-9.3 account-takeover and authentication-bypass bundle (Login V2 OTP returnCode takeover; fixed 3.4.14/3.4.15/4.16.2/4.17.1/4.17.3); no exploitation, small footprint - noted only."
+    - "HPE iLO 7 CVE-2026-79820 (HPESBHF05163 rev.1, 2026-10-05, CVSS 3.1 9.0 AC:H, 'Using COM, User Validation Failure', COM probably HPE Compute Ops Management, unverified): bulletin body unreadable (JS shell); noted only."
+    - "vm2 (npm) sandbox-escape GHSA burst 2026-10-05 (about ten critical GHSAs), Perforce P4 Search, Totolink and other EUVD criticals 2026-10-04..06: library or consumer-grade products, no exploitation - dropped."
+    - "Rapid7 Velociraptor CVE-2026-78411/78412/78413 (BSI WID-SEC-2026-3731, 2026-10-05; authenticated; InfoGuard Labs research post 2026-09-28): DFIR tooling, authenticated - noted only."
+    - "Chrome Stable 154.0.8037.97/.98 (2026-10-01; 11 fixes, one Critical WebGL out-of-bounds write CVE-2026-103628; no in-the-wild statement) and Mozilla MFSA 2026-97..103 (2026-09-29/30): routine, outside the lookback, no exploitation."
+    - "Palo Alto GlobalProtect app CVE-2026-0250 (MEDIUM 5.2, 2026-10-02) and CVE-2026-0307 (2026-09-30): not exploited, MEDIUM."
+    - "Security researcher claim of a KVM guest-to-host escape in Firecracker microVMs (The Register 2026-10-06): unverified claim, not read in full."
+  never_assessed_note: "Outside every window; none of these CVEs appears in prior_coverage.json, entries/ or state/cves_seen.json. Offered for the audit's G1 re-sweep, not as intel-run items."
+  never_assessed_older_items_seen:
+    - "GitLab critical patch release 19.4.1 / 19.3.3 / 19.2.7 and 19.0.9 / 18.11.12 (2026-09-23): CVE-2026-89078 and CVE-2026-93577, CVSS 9.9 code execution (CERT-FR ACT-042 lists both as 'critical of the week', no exploitation info)."
+    - "OpenBao / HashiCorp Vault (2026-09-23): four combinable flaws that bypass authentication and in some cases run commands; OpenBao before 2.6.3 affected and the flaws are present in Vault (CERT-FR ACT-042; GHSA ids in that bulletin)."
+    - "HPE Aruba Networking Instant On CVE-2026-76723 / 76724 / 76725 (2026-09-29, CVSS 9.6 code execution, CERT-FR AVI-1238); Moxa MGate MB3170/3270 CVE-2026-86325 (2026-10-02, 9.4)."
+    - "WatchGuard bundle published 2026-09-28..10-01 (https://psirt.watchguard.com/CVE-2026-81433/ and neighbours): Fireware OS fixed in 2026.3.2 / 2026.2.3 / 12.12.3 / 12.5.21 (EUCC 12.11.10) covering about 15 CVEs; CVE-2026-81433 (CVSS 4.0 8.7, 'pre-authentication' stack overflow in the DHCP fingerprinting daemon fingerd) needs an unauthenticated attacker with adjacent network access sending a crafted DHCP packet, so it is not internet-reachable; also CVE-2026-86131 BOVPN-over-TLS client code injection, CVE-2026-13046 samld deserialization, CVE-2026-18145 spamd overflow; WatchGuard AP CVE-2026-101891 and CVE-2026-86102 (2026-09-28; NCSC-CH post 13007 'authentication bypass and command injection'); Endpoint Security CVE-2026-13043 (kernel memory access driver, missing authentication, 2026-10-01). No exploitation reported."
+    - "Zimbra Collaboration CVE-2026-66912 / 66911 (account takeover and XSS; NCSC-CH post 13022, 2026-10-01): no exploitation."
+# ---------------------------------------------------------------------------------------------- DISCOVERY / RECIPE NOTES
+candidate_sources:
+  - id: atlassian-security-advisories
+    publisher: "Atlassian Security Advisories & Bulletins (Data Center / Server products)"
+    url: "https://confluence.atlassian.com/security/security-advisories-bulletins-1236937381.html"
+    category: vendor-psirt
+    why: "First-party PSIRT for Jira, Confluence, Bitbucket, Bamboo, Crowd, Crucible and Fisheye, none of which is in sources.json; this run found its out-of-band CVE-2026-21589 advisory only through EUVD/GHSA. Recipe verified 2026-10-06: `extract` the index (the per-advisory slugs appear as hrefs; monthly bulletins are the third Tuesday: next 2026-10-20, plus out-of-band standalone pages), then `extract` the advisory page or the jira.atlassian.com/browse/<KEY> public security tickets (fix tables and WAF/Tomcat mitigations read cleanly)."
+  - id: theregister-security-feed
+    publisher: "The Register - Security (discovery feed, reliability C)"
+    url: "https://www.theregister.com/security/headlines.atom"
+    category: news-discovery
+    why: "Dated Atom feed read directly (`feed https://www.theregister.com/security/headlines.atom 30`) surfaced the Atlassian advisory hours ahead of any national-CERT relay and quotes watchTowr and VulnCheck primaries; The Hacker News (`feed https://feeds.feedburner.com/TheHackersNews 30`, found the Exchange out-of-band story) read the same way. Leads only, never terminal sources."
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "RECIPE UPDATE: the listing now returns through `python3 tools/fetch_source.py extract https://ssd-disclosure.com/advisories/` (served by the jina reader fallback, undated list; each article page carries 'Published Time'); newest advisory is DCOM PsmServiceExtHost LPE, 2026-09-10 (Microsoft CVE-2026-69459, patched September), so 0 in-horizon items. Direct GET still answers the captcha shell; the record's 'blocked' status could move to bridge/jina if the operator accepts the reader credit."
+  - source_id: searchlight-cyber
+    reason: "RECIPE UPDATE: `extract https://slcyber.io/research-center/` returns raw HTML whose hrefs list /research/<slug> article links (six listed); dates are only on the article pages ('Month D, 2026' near the title). Newest read is 2026-07-20 (goja RCE, WordPress RCE with GPT-5.6), so 0 in-horizon items."
+  - source_id: fortinet-psirt
+    reason: "RECIPE UPDATE: the advisory HTML's 'Download CSAF' href (filestore.fortinet.com/fortiguard/psirt/csaf_<slug>_fg-ir-26-NNN.json, readable with `url --direct`) gives current_release_date and structured remediations; the page's Timeline block names revisions ('2026-10-05: Solution update'), which the RSS pubDate does not."
+  - source_id: msrc-update-guide
+    reason: "RECIPE UPDATE: `msrc recent N` plus `msrc cve <CVE>` give no KB/fixed-build list; `python3 tools/fetch_source.py msrc cvrf <release-id>` (here 2026-Oct, 14 KB, the out-of-band release holding only CVE-2026-96940) returns the Remediations with KB numbers and FixedBuild values."
+  - source_id: github-advisory
+    reason: "RECIPE UPDATE: `python3 tools/fetch_source.py url \"https://api.github.com/advisories?per_page=100&severity=critical&type=reviewed&sort=published&direction=desc\"` returns the newest critical reviewed advisories as JSON in one call (used for the in-window sweep); the per-repo security-advisories endpoint works for kiteworks and langflow."
+  - source_id: chrome-releases
+    reason: "RECIPE UPDATE: `extract https://chromereleases.googleblog.com/search/label/Stable%20updates` returns the Security Fixes sections with build numbers; the front page lists only titles."
+  - source_id: mikrotik-routeros-changelog
+    reason: "RECIPE UPDATE (candidate record): plain-text changelogs are readable with `url --direct https://upgrade.mikrotik.com/routeros/<version>/CHANGELOG` and `url --direct https://upgrade.mikrotik.com/routeros/NEWESTa7.<stable|long-term|testing|development>` gives the newest build per channel; the mikrotik.com/download/changelogs page is a JS shell ('Loading')."
+  - source_id: "community.citrix.com (Citrix techzone blog, cited by the CVE-2026-88779 entry)"
+    reason: "WebFetch HTTP 403 and `extract` 'all transports failed' for https://community.citrix.com/techzone-blogs/110_security-updates/understanding-and-addressing-cve-2026-88779-in-citrix-netscaler-adc-and-citrix-netscaler-gateway/; covered anyway through the CTX697174 bulletin on support.citrix.com (reads with `extract`)."
+  - source_id: "techcommunity.microsoft.com (Exchange team blog 'Released: September 2026 V2 Exchange Server Security Updates')"
+    reason: "JS-rendered; `extract` and WebFetch return only the title; covered by the MSRC CVRF."
+  - source_id: "reader credit use"
+    reason: "jina reader fallback fired for: ssd-disclosure listing and article (2 calls), a wrong-slug Register URL (1), an NVD REST query (1, empty because the CVE is not yet in NVD) and an HPE bulletin (1); no key exhaustion seen."
+  - source_id: advisories-ncsc-nl
+    reason: "Quiet-day observation, not a failure: the feed holds one in-window advisory (NCSC-2026-0400 Dell CSM); NCSC-2026-0399 (Citrix, 2026-10-04) is covered."
+# ---------------------------------------------------------------------------------------------- SOURCE LEDGER (one row per slice record, slice order)
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 30 (+ncsc-nl csaf)", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "NCSC-2026-0400 Dell Container Storage Modules (2026-10-05) dropped; 0399 Citrix (10-04) covered" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:cert-fr avis-recent 40 + actu-recent 15; extract ACT-042 and AVI-1249", horizon_hours: 26, in_horizon_items: 7, returned: 0, note: "AVI-1258..1263 and ACT-042 (flat 00:00 timestamps, true publication time ambiguous); ACT-042 weekly bulletin read in full and gave the never-assessed list; AVI-1258 Exchange relays item 8" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss (250 items) + bsi-csaf for 3718/3723/3727/3728/3731/3027/3712/3661", horizon_hours: 26, in_horizon_items: 17, returned: 3, note: "about 190 in-window rows, almost all [UPDATE] kernel/distribution noise; 17 [NEU]; first-seen lead for items 7, 8 and 9 (Langflow, Exchange, Struts)" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-014 (2026-09-27)" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "bridge:feed https://cert.pl/en/rss.xml 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-02 (gotop CVE-2026-91784)" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + bridge:cisa csaf-recent", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest alert 2026-10-04 (KEV, Citrix, covered); ICS CSAF newest 2026-10-01; next ICS release is the Tuesday 2026-10-06 batch, after this run" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 0, returned: 1, note: "catalog 2026.10.04, 0 additions since 2026-10-05; CVE-2026-0257 ransomware flag -> item 3; re-fetched 04:35Z" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:url --direct euvdservices api/search (exploited=true 2026-09-29..10-06; fromScore=9 2026-10-04..06) + enisa-euvd advisory", horizon_hours: 26, in_horizon_items: 46, returned: 1, note: "5 exploited records all already covered (FortiMail and Zammad updated 10-05); 41 criticals scanned; first-seen lead for Atlassian CVE-2026-21589 (item 1); EUVD-2026-91836 read for the MikroTik row" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 25 + post 13030", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "post 13030 Citrix CVE-2026-88779 (2026-10-05) -> item 6" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "bridge:feed all-rss-feed.xml 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-09-28 (Citrix exploitation notice, covered)" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "bridge:feed rss 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-09-29 (NetScaler DTLS CVE-2026-88772, covered)" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "bridge:url --direct ir.xml + extract advisory + CSAF JSON + docs library", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "FG-IR-26-175 revised 2026-10-05 -> item 2; no other FG-IR since 2026-09-08" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc recent 60 + msrc cve + msrc cvrf 2026-Oct", horizon_hours: 26, in_horizon_items: 0, returned: 1, note: "newest rows are third-party (Rpm, RabbitMQ, OpenSSL ...) dated 2026-10-03; Exchange CVE-2026-96940 (2026-10-02) is outside the window -> borderline item 8; no scheduled release (Patch Tuesday 2026-10-13)" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "bridge:feed rss.xml 15 + extract CVE-2026-0257 page", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest CVE-2026-0250 (2026-10-02, MEDIUM); CVE-2026-0257 page re-read for item 3" }
+  - { id: ssd-disclosure, tier: standard, attempted: true, transport: "bridge:extract (jina reader fallback; direct GET is the captcha shell)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "listing readable but undated; newest advisory 2026-09-10 (DCOM PsmServiceExtHost LPE); recipe note in coverage_gaps" }
+  - { id: chrome-releases, tier: standard, attempted: true, transport: "bridge:extract front page + Stable updates label page", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest Stable 154.0.8037.97/.98 on 2026-10-01 (before the 2026-10-02T02:05Z cutoff); only ChromeOS beta and Dev posts inside" }
+  - { id: github-advisory, tier: standard, attempted: true, transport: "bridge:url api.github.com/advisories (critical, reviewed, newest first) + repo advisories (kiteworks, langflow)", horizon_hours: 98, in_horizon_items: 22, returned: 0, note: "vm2/npm library bursts, Langflow republications, Atlassian GHSA-gr66-x5pq-8g2g (used as corroboration for item 1)" }
+  - { id: gitlab-security, tier: standard, attempted: true, transport: "bridge:feed 6 + extract", horizon_hours: 98, in_horizon_items: 1, returned: 0, note: "AI Gateway critical patch (2026-10-02, date-only) CVE-2026-90970 authenticated and niche -> dropped" }
+  - { id: ibm-support-security-bulletins, tier: standard, attempted: true, transport: "bridge:url (full body)", horizon_hours: 98, in_horizon_items: 1, returned: 1, note: "Langflow OSS bulletin 2026-10-02 -> item 7 (lookback); IBM MQ main bulletin 2026-09-14 re-read for the backlog row" }
+  - { id: infoguard-labs, tier: standard, attempted: true, transport: "bridge:feed rss.xml 8", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest 'AI Ate My Velociraptor' 2026-09-28" }
+  - { id: ivanti-psirt, tier: standard, attempted: true, transport: "bridge:feed 10", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest September 2026 Security Update (2026-09-08); next 2026-10-13" }
+  - { id: keycloak, tier: standard, attempted: true, transport: "bridge:feed 10 + extract 26.7.5 release notes", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "26.7.5 (09-30) and 26.8.0 (10-01) are before the cutoff; hardening-level CVEs" }
+  - { id: mozilla-mfsa, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest MFSA 2026-103 (2026-09-30); no in-the-wild statement" }
+  - { id: oracle-cpu, tier: standard, attempted: true, transport: "bridge:extract", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest CSPU September 2026 (covered); next Critical Patch Update 2026-10-20" }
+  - { id: sap-security-notes, tier: standard, attempted: true, transport: "bridge:extract", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "page undated; next Security Patch Day is the second Tuesday, 2026-10-13" }
+  - { id: searchlight-cyber, tier: standard, attempted: true, transport: "bridge:extract /research-center/ + six article pages", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest article 2026-07-20; recipe note in coverage_gaps" }
+  - { id: shadowserver, tier: standard, attempted: true, transport: "bridge:extract", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest news item 2026-09-07" }
+  - { id: siemens-productcert, tier: standard, attempted: true, transport: "bridge:feed atom 15", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest SSA-627195 (2026-09-28); next Patch Tuesday batch 2026-10-13" }
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured in the organization profile; sweep is a no-op"
+fetch_failures: []

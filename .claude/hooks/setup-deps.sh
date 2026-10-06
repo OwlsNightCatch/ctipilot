@@ -21,7 +21,10 @@ if python3 -c "import trafilatura" 2>/dev/null; then
 fi
 
 echo "[setup-deps] installing trafilatura (first run in this container)…" >&2
-pip install --quiet --timeout 120 --retries 3 trafilatura >&2 || {
+# `python3 -m pip` installs for the interpreter that the bridge actually runs as
+# `python3` (2026-10-06: a bare `pip` belonged to /usr/bin/python3 while PATH resolved
+# python3 to /usr/local/bin/python3, so every `extract` fell back to raw HTML).
+python3 -m pip install --quiet --timeout 120 --retries 3 trafilatura >&2 || {
     echo "[setup-deps] trafilatura install failed — fetch_source.py falls back to direct/jina" >&2
     exit 0
 }
