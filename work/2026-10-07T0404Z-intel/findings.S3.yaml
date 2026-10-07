@@ -1,0 +1,447 @@
+# work/2026-10-07T0404Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-07T0404Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-07T04:06:51Z
+ended_at: 2026-10-07T04:25:08Z
+duration_seconds: 1097
+self_telemetry:
+  webfetch_calls: 5
+  websearch_calls: 18
+  bridge_fetches: 92
+items:
+
+  # ------------------------------------------------------------------ 1
+  - title: "CVE-2026-21589, Atlassian Data Center: watchTowr publishes the root cause and a checker, and shows how the file read reaches Crowd administrator"
+    sources:
+      - { url: "https://labs.watchtowr.com/you-wont-hear-about-these-even-in-myths-atlassian-jira-confluence-and-more-pre-auth-arbitrary-file-read-cve-2026-21589/", publisher: "watchTowr Labs", date: "2026-10-06", role: "primary" }
+      - { url: "https://github.com/watchtowrlabs/watchTowr-vs-Atlassian-CVE-2026-21589", publisher: "watchTowr (GitHub)", date: "2026-10-06", role: "primary" }
+    discovery_trace: "first seen at: watchtowr, feed URL https://labs.watchtowr.com/rss/ (item dated 2026-10-06 17:01Z; safety-net feed sweep beyond the S3 slice) → primary: watchTowr Labs post, URL https://labs.watchtowr.com/you-wont-hear-about-these-even-in-myths-atlassian-jira-confluence-and-more-pre-auth-arbitrary-file-read-cve-2026-21589/ → pivot: watchTowr GitHub repository linked from the post, URL https://github.com/watchtowrlabs/watchTowr-vs-Atlassian-CVE-2026-21589. Dedup: prior_coverage entry 2026-10-06/cve-2026-21589-atlassian-data-center-arbitrary-file-access states there was no independent technical analysis."
+    summary: |
+      watchTowr Labs (2026-10-06) diffed a vulnerable and a fixed build of the atlassian-plugins-webresource library
+      (6.0.7 against 6.0.8), the component shared by Jira, Confluence and Bitbucket, and places the flaw in the web-resource
+      Router: it converts a double colon in a request path into a slash before it resolves a plugin resource, so a
+      "..::" sequence walks out of the resource directory through a deprecated relative-path resolver that is still
+      reachable. watchTowr reports reading any file inside the application server's Tomcat context, WEB-INF included, but
+      not outside it, and verified routes on Jira, Confluence and Bitbucket (Bitbucket blocks web.xml but not other
+      WEB-INF files). Impact claim, from watchTowr's own lab build: where a product is integrated with Atlassian Crowd,
+      WEB-INF/classes/crowd.properties stores the application name and its password in plaintext, and watchTowr used
+      those against the Crowd REST API to create an account and add it to the Jira administrators group; it notes that a
+      Crowd IP allow-list would make that step harder. watchTowr also published a GitHub "Detection Artifact Generator"
+      that sends the traversal to Jira, Confluence and Bitbucket hosts to test them. This is the first independent
+      technical analysis of the flaw; it does not contradict Atlassian's advisory, but it changes the exploitation outlook
+      from "no evidence of exploitation, root cause unpublished" to "root cause, request shape and a runnable checker are
+      public". watchTowr reports no in-the-wild exploitation, and estimates exposure from its own internet search (nearly
+      700,000 Confluence login pages), an estimate not a measured vulnerable count.
+    region_nexus: "global; self-managed Atlassian Data Center is common in public-sector development and service-desk estates"
+    primary_sector_nexus: "indirect (generic enterprise/public-sector software)"
+    sector: "technology"
+    cves: [CVE-2026-21589]
+    techniques: [T1190, T1005, T1552.001, T1136]
+    affected_products: ["Atlassian Bitbucket Data Center", "Atlassian Confluence Data Center", "Atlassian Jira Service Management Data Center", "Atlassian Jira Software Data Center", "Atlassian Crowd Data Center"]
+    entity_keys: ["product:atlassian-bitbucket-data-center", "product:atlassian-confluence-data-center", "product:atlassian-jira-service-management-data-center", "product:atlassian-jira-software-data-center", "product:atlassian-crowd-data-center"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-06/cve-2026-21589-atlassian-data-center-arbitrary-file-access"
+    evidence:
+      - quote: "While we are not able to traverse outside of the Tomcat context, we discovered it is possible to read any file within the application server itself."
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/you-wont-hear-about-these-even-in-myths-atlassian-jira-confluence-and-more-pre-auth-arbitrary-file-read-cve-2026-21589/"
+      - quote: "The password for the application, in plaintext."
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/you-wont-hear-about-these-even-in-myths-atlassian-jira-confluence-and-more-pre-auth-arbitrary-file-read-cve-2026-21589/"
+      - quote: "When you access Atlassian Crowd directly with the leaked credentials, it is basically game over."
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/you-wont-hear-about-these-even-in-myths-atlassian-jira-confluence-and-more-pre-auth-arbitrary-file-read-cve-2026-21589/"
+      - quote: "Detection Artifact Generator attempts to check if the target is vulnerable to CVE-2026-21589."
+        attribution: "watchTowr (GitHub)"
+        source_url: "https://github.com/watchtowrlabs/watchTowr-vs-Atlassian-CVE-2026-21589"
+    extended_notes: |
+      Delta for the existing entry (changelog record, type update): (1) independent root-cause analysis now public (shared
+      web-resource library, "::" to "/" mapping, deprecated relative-path resolver) plus a runnable checker on GitHub, so
+      the "no independent technical analysis" caveat no longer holds; (2) the impact is not limited to reading files the
+      attacker must already know: the Crowd integration file gives a plaintext application credential and a path to
+      directory-service administrator; (3) post-patch compromise check: after upgrading, rotate the Crowd application
+      password stored in crowd.properties of every Jira/Confluence/Bitbucket integrated with Crowd, and review Crowd for
+      accounts created or group memberships changed since the exposure began (the existing log hunt for ".." next to "::"
+      stays the entry point); (4) hardening lever beyond the patch: restrict Crowd REST access to an allow-list of the
+      integrated application hosts, which watchTowr says makes the pivot harder. The fetched watchTowr text does not state
+      a CVSS change or exploitation. Atlassian's own advisory (already cited in the entry) remains the patch reference.
+      Overlap note: S1 (watchtowr is an essential record there) may return the same post; one changelog record is enough.
+
+  # ------------------------------------------------------------------ 2
+  - title: "CL-STA-1178 'Blinder Tunnel': a recruitment-lure Visual Studio project executes on project load, then an AppDomainManager hijack disables ETW and GitHub carries the C2"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/blinder-tunnel-targets-critical-infrastructure/", publisher: "Palo Alto Networks Unit 42", date: "2026-10-06", role: "primary" }
+      - { url: "https://www.elastic.co/security-labs/the-shelby-strategy", publisher: "Elastic Security Labs", date: "2025-03-26", role: "corroborating" }
+    discovery_trace: "first seen at: unit42, feed URL https://unit42.paloaltonetworks.com/feed/ (item dated Tue, 06 Oct 2026 10:00:33 +0000) → primary: Unit 42 article, URL https://unit42.paloaltonetworks.com/blinder-tunnel-targets-critical-infrastructure/ (extract) → background pivot from the article's own link: Elastic Security Labs 'The Shelby Strategy', URL https://www.elastic.co/security-labs/the-shelby-strategy (describes the earlier SHELBYLOADER/SHELBYC2 GitHub-C2 activity; does not cover the 2026 campaign)"
+    summary: |
+      Unit 42 (2026-10-06) tracks an Iranian state-aligned cluster as CL-STA-1178 and names its March 2026 campaign against
+      an individual in Iraqi critical infrastructure "Blinder Tunnel"; infrastructure was staged from November 2025, and the
+      same actor ran conflict-themed Google Drive credential phishing against an Israeli entity in May-June 2026. Delivery:
+      a recruiter persona impersonating a Dubai Airports IT department sent a decoy Inno Setup "career portal", then a
+      weaponised C# Visual Studio project as an at-home coding test. The project file overrides the GetFrameworkPaths
+      target that Visual Studio runs in its design-time build, so code executes the moment the project is opened, before any
+      compile; it copies a Microsoft-signed Visual Studio host binary under a renamed filename into a user-profile
+      folder and launches it. A .config file beside that binary replaces the .NET AppDomainManager to load the malware and
+      sets etwEnable to false, which Unit 42 says impairs ETW-based detection; a DLL then sideloads. The loader (ShelbyLoader
+      V2) uses the GitHub API with a hard-coded personal access token for tasking and, if that is revoked, a dead-drop in
+      GitHub issue comments hidden in HTML comment markers and encrypted per machine. Follow-on: ShelbyC2 V2 RAT, a module
+      that runs PowerShell inside a hosted runspace in the hijacked process so no powershell.exe is created, and Blackwood,
+      a loader for the open-source Chisel tunnelling tool giving a reverse SOCKS proxy. Attribution is Unit 42's own
+      assessment (high confidence, Iranian nexus) resting on Iranian-hosted infrastructure, MP3 metadata pointing to an
+      Iranian music site, regional victimology, and TTP resemblance (AppDomainManager hijack to disable ETW like
+      Screening Serpens; in-memory .NET PowerShell wrappers like Agent Serpens), which Unit 42 itself calls low-confidence
+      overlaps; the link to Elastic's earlier Shelby research rests on the shared "Peaky Blinders" naming. GitHub removed
+      the malicious infrastructure Unit 42 identified. Unit 42 states it knows of no breach of Dubai Airports.
+    region_nexus: "Middle East (Iraq, UAE, Israel); no Swiss or European target stated"
+    primary_sector_nexus: "indirect: transferable developer-workstation and living-off-the-cloud tradecraft"
+    sector: "critical-infrastructure"
+    cves: []
+    techniques: [T1204.002, T1127.001, T1574.014, T1574.001, T1685, T1102.001, T1059.001, T1572, T1547.001]
+    affected_products: ["Microsoft Visual Studio", "Microsoft .NET Framework", "GitHub"]
+    entity_keys: ["actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt"]
+    new_entities:
+      - { key: "actor:cl-sta-1178", type: actor, name: "CL-STA-1178", aliases: [],
+          summary: "Unit 42 designation for an Iranian state-aligned cluster behind the Blinder Tunnel campaign, using Peaky-Blinders-themed infrastructure and linked by Unit 42 to the activity Elastic documented as The Shelby Strategy (Unit 42, 2026-10-06)." }
+      - { key: "campaign:blinder-tunnel", type: campaign, name: "Blinder Tunnel", aliases: [],
+          summary: "March 2026 campaign by CL-STA-1178 against Iraqi critical infrastructure using a fake Dubai Airports recruitment lure, a trojanized Visual Studio project and GitHub-API C2 (Unit 42, 2026-10-06)." }
+      - { key: "malware:shelbyloader", type: malware, name: "ShelbyLoader / ShelbyC2", aliases: ["ShelbyLoader V2", "ShelbyC2 V2", "SHELBYLOADER", "SHELBYC2"],
+          summary: "C# loader and RAT pair that uses GitHub (API and issue comments) for C2; documented by Elastic in 2025 and as V2 by Unit 42 in 2026." }
+      - { key: "malware:blackwood", type: malware, name: "Blackwood", aliases: [],
+          summary: "Loader that runs the open-source Chisel tunnelling tool in memory (reverse SOCKS proxy); earlier documented by CPX and used by CL-STA-1178 per Unit 42 (2026-10-06)." }
+    relation_suggestions:
+      - { subject: "actor:cl-sta-1178", object: "malware:shelbyloader", basis: "Unit 42 (2026-10-06): the attackers deployed ShelbyLoader V2 and ShelbyC2 V2" }
+      - { subject: "actor:cl-sta-1178", object: "malware:blackwood", basis: "Unit 42 (2026-10-06): the actor deployed the Blackwood Chisel loader" }
+      - { subject: "actor:cl-sta-1178", object: "actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt", basis: "Unit 42 (2026-10-06) reports low-confidence overlaps in TTPs (AppDomainManager hijacking to disable ETW) with Screening Serpens; not an equivalence claim" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "No Swiss or European target; value is the transferable chain (design-time project execution, AppDomainManager config with ETW disabled, GitHub API as C2, in-process PowerShell runspace) for developer and IT workstations; single vendor source."
+    evidence:
+      - quote: "We discovered that an Iranian state-aligned threat actor has been masquerading as the Dubai Airports IT department to deliver trojanized coding challenges to high-value targets."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/blinder-tunnel-targets-critical-infrastructure/"
+      - quote: "the attackers defined a custom XML target with this exact name in their malicious .csproj file, overriding the safe Microsoft default behavior."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/blinder-tunnel-targets-critical-infrastructure/"
+      - quote: "Because Event Tracing for Windows (ETW) is critical for monitoring execution and detecting in-memory threats, this flag could impair detection capabilities."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/blinder-tunnel-targets-critical-infrastructure/"
+      - quote: "We assess with high confidence that this activity aligns with an Iranian-nexus threat."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/blinder-tunnel-targets-critical-infrastructure/"
+    extended_notes: |
+      Exposure: developers and IT staff who open third-party Visual Studio projects (coding tests, recruiter or contractor
+      repositories) on a workstation with unrestricted outbound HTTPS. Detection (telemetry classes, from the source's
+      mechanism): process-creation lineage showing msbuild.exe or the Visual Studio design-time build copying executables and
+      launching one from a user-profile folder; a renamed Microsoft-signed .NET host binary with a sidecar .config that
+      names an appDomainManager assembly or sets etwEnable to false; DLL loads from the application's own folder by a
+      binary that normally lives elsewhere; non-browser, non-git processes calling api.github.com with a personal access
+      token or the issue-search API; a loaded System.Management.Automation module in a process that is not powershell.exe,
+      pwsh.exe or a known host. Benign lookalike: genuine developer tooling legitimately calls GitHub APIs and
+      MSBuild targets copy files; the discriminators are an unexpected parent (project open, not a build the developer
+      started), an unsigned or unexpected DLL beside a signed host and a .config that changes ETW or app-domain
+      settings. Unit 42 lists a Cortex XDR block on the sideload; no Microsoft mitigation for the design-time build
+      behaviour is stated in the article. Hardening named by Unit 42 is limited to securing developer environments and
+      monitoring anomalous cloud-platform traffic. The article carries hashes, IPs and domains (not reproduced here).
+
+  # ------------------------------------------------------------------ 3
+  - title: "The Gentlemen affiliate 'Azazel': a parallel leak site, an all-CI/CD-secrets intrusion chain and the first reported MCP-driven attack execution (CloudSEK)"
+    lookback: true
+    event_date: "2026-10-05"
+    sources:
+      - { url: "https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files", publisher: "CloudSEK TRIAD", date: "2026-10-05", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/affiliate-doublecrosses-raas/", publisher: "Infosecurity Magazine", date: "2026-10-06", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine, feed URL https://www.infosecurity-magazine.com/rss/news/ (item 'Ransomware Affiliate Double-Crosses RaaS Operator to Steal Victim Funds', Tue 06 Oct 2026 08:30 GMT) → pivot: Infosecurity Magazine article, URL https://www.infosecurity-magazine.com/news/affiliate-doublecrosses-raas/ → primary: CloudSEK TRIAD report, URL https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files (dated 2026-10-05, also in feed https://www.cloudsek.com/blog/rss.xml). Infosecurity is a rewrite of the CloudSEK report, not an independent source."
+    summary: |
+      CloudSEK (2026-10-05) analysed two exposed servers (an open directory) belonging to "Azazel", a Russian-speaking
+      affiliate of The Gentlemen RaaS, and reports about 6 TB of stolen data across more than two dozen victims in six
+      countries (logistics, insurance, pharmaceutical, AI, medical devices and "government-adjacent infrastructure"), none
+      named. Claims, all CloudSEK's: Azazel used the Gentlemen's tooling and negotiation channel but published victims
+      on his own leak site (LEAKNED) and kept the proceeds, bypassing the operator. Every non-AI victim was reached
+      through stolen CI/CD secrets: GitLab CI/CD variable stores and git history mined with GitLab-focused enumeration and
+      secret-scanning tools, one GitLab instance serving two unrelated organisations gave footholds at both, and in
+      one case a single CI/CD token reached more than 150 databases and hundreds of source repositories across a SaaS
+      platform and its clients. A second chain against an AI medical-imaging company ran for weeks: SSRF through an
+      unauthenticated API that fetches user-supplied URLs reached internal services, a Jasypt master key decrypted every
+      configuration secret, a JWT bypass token removed from the code but still in git history gave permanent access,
+      Grafana database hashes were cracked offline, a MinIO bucket was mirrored continuously and kubeconfig files were swept
+      from the loot. A platform hosting a government-linked financial registry lost over 120,000 records and had its
+      PostgreSQL process killed and data directory deleted after exfiltration. Ransom-note delivery was scripted across
+      eight surfaces (message of the day, SSH banner, a PostgreSQL parameter, a database admin login template, a repository
+      README and a GitLab issue among them). CloudSEK reports Azazel registered a reverse-shell handler as a tool in an AI coding
+      assistant over MCP and drove attack commands through a loopback-bound MCP port, and ran internet-wide scanning for
+      exposed MCP ports; CloudSEK states it has found no earlier public report of MCP used operationally this way. Exfil path:
+      cloud sync, scp, pg_dump or HTTP POST to a C2 host, then a dedicated staging server, then MEGA.
+    region_nexus: "global (six countries, unnamed); no Swiss victim stated"
+    primary_sector_nexus: "indirect: government-adjacent victims; GitLab/Kubernetes/MinIO estates common in public-sector platforms"
+    sector: "multiple (technology, logistics, healthcare, government-adjacent)"
+    cves: []
+    techniques: [T1190, T1213.003, T1552.001, T1078, T1530, T1567.002, T1485, T1491.001]
+    affected_products: ["GitLab", "MinIO", "Grafana", "Kubernetes", "Model Context Protocol (MCP) servers"]
+    entity_keys: ["actor:thegentlemen", "product:gitlab", "product:model-context-protocol-mcp"]
+    new_entities:
+      - { key: "actor:azazel", type: actor, name: "Azazel", aliases: ["LEAKNED operator"],
+          summary: "Russian-speaking Gentlemen RaaS affiliate that, per CloudSEK (2026-10-05), ran his own leak site LEAKNED alongside the program, reached victims through stolen CI/CD secrets and drove attack commands through an MCP-connected AI coding assistant." }
+    relation_suggestions:
+      - { subject: "actor:azazel", object: "actor:thegentlemen", basis: "CloudSEK (2026-10-05): Azazel is an affiliate of the Gentlemen ransomware group using its tooling and ransom note template" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Every confirmed victim was reached through stolen CI/CD secrets."
+        attribution: "CloudSEK TRIAD"
+        source_url: "https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files"
+      - quote: "Azazel registered a reverse shell handler as a tool inside an AI coding assistant via MCP, then drove attack execution through it."
+        attribution: "CloudSEK TRIAD"
+        source_url: "https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files"
+      - quote: "He built and operated his own independent leak site under the brand LEAKNED"
+        attribution: "CloudSEK TRIAD"
+        source_url: "https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files"
+      - quote: "It’s likely the secrets were deleted by their developers from the current version of Git repositories but remained in earlier commits, which Azazel found."
+        attribution: "Infosecurity Magazine"
+        source_url: "https://www.infosecurity-magazine.com/news/affiliate-doublecrosses-raas/"
+    extended_notes: |
+      Why it matters beyond the actor: the access path is credentials, not exploits, and it is reproducible against any
+      self-hosted GitLab or CI runner estate. Detection concepts (CloudSEK's mitigations restated by telemetry class):
+      CI/CD audit logs for variable reads and token use from addresses outside the runner fleet; git and project audit events
+      for bulk repository clone or history walks by one token; object-storage access logs for a bulk mirror/sync client
+      from an unexpected source; web/API logs for server-side URL-fetch endpoints requesting link-local or internal addresses;
+      for MCP, inventory any MCP server bound beyond loopback and log initialize/exec-style tool calls from clients outside
+      an allowlist (CloudSEK calls the client identity "hermes" and the scanner fingerprint "internet-census-mcp-scanner"
+      malicious indicators for this operator). Hardening: secrets manager instead of pipeline variables, rotation of any
+      credential that was ever committed (history, not only the current branch), IMDS/loopback egress controls for URL-fetch
+      features, do not treat Jasypt ENC() values as a boundary. Dedup/context: The Gentlemen are already tracked
+      (actor:thegentlemen; FTAPI incident entry 2026-10-02 and several earlier entries), so this is a delta on tradecraft and
+      affiliate-model dynamics, not a new actor story. CloudSEK is a single vendor source and the leak-site/victim details are
+      its own reading of exposed infrastructure; the Sigma rule in the report was not reproduced.
+
+  # ------------------------------------------------------------------ 4
+  - title: "Attackers hijacked the .gh, .sl and .as ccTLD registries, edited authoritative DNS and obtained valid certificates for Google and other brands (Chrome)"
+    sources:
+      - { url: "https://blog.google/security/chromes-response-to-recent-cctld-registry-hijacks/", publisher: "Google (Chrome Secure Web and Networking Team)", date: "2026-10-06", role: "primary" }
+      - { url: "https://securityonline.info/cctld-registry-hijack/", publisher: "Daily CyberSecurity", date: "2026-10-07", role: "corroborating" }
+    discovery_trace: "first seen at: google-tag, feed URL https://blog.google/security/rss/ (item 'Chrome's Response to Recent ccTLD Registry Hijacks', Tue 06 Oct 2026 11:53, safety-net sweep of research feeds beyond the S3 slice) → primary: Google blog post, URL https://blog.google/security/chromes-response-to-recent-cctld-registry-hijacks/ → pivot: WebSearch ('Chrome blocks certificates ccTLD hijacks .gh .sl .as Google domains Certificate Transparency') → Daily CyberSecurity rewrite, URL https://securityonline.info/cctld-registry-hijack/ (not independent; no other independent coverage or registry statement was located)"
+    summary: |
+      Google's Chrome team (2026-10-06) says that "last week" it became aware of a series of domain hijacks in the .gh (Ghana),
+      .sl (Sierra Leone) and .as (American Samoa) country-code namespaces: attackers compromised the third-party ccTLDs, which
+      puts every domain under them at risk, modified authoritative DNS records, and obtained unauthorized HTTPS certificates
+      covering several Google domains and domains of other organizations. Google's statement that the CAs did nothing wrong
+      follows from how validation works: control of the authoritative DNS passes automated domain-control checks. Chrome
+      blocked the certificates through CRLSets and worked with the issuing CAs to have them revoked; Certificate Transparency
+      data then revealed further affected brands and services, which Chrome also blocked, contacting owners where possible.
+      Google does not name the affected domains, the CAs, the certificate count, the registries' own status or any actor, and
+      says it cannot guarantee it found every affected domain nor that browser blocking protects non-Chrome clients. Advice
+      to domain owners: monitor Certificate Transparency for the whole domain portfolio including parked or regional
+      ccTLD domains; publish restrictive CAA records bound to specific ACME accounts and validation methods, because CAs may
+      reuse cached domain-validation results, so a restrictive policy restored after the hijack prevents certificate minting
+      from cached validation. No independent corroboration of the registry compromises (registry statements) was found.
+    region_nexus: "global; Africa and Pacific ccTLD registries; no Swiss target stated"
+    primary_sector_nexus: "indirect: DNS and certificate hygiene for any government domain portfolio"
+    sector: "technology"
+    cves: []
+    techniques: [T1584.001, T1584.002]
+    affected_products: ["Google Chrome", "ccTLD registries .gh .sl .as"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:cctld-registry-hijacks-gh-sl-as", type: incident, name: "ccTLD registry hijacks (.gh, .sl, .as) used to obtain certificates",
+          aliases: [],
+          summary: "September-October 2026 compromises of the Ghana, Sierra Leone and American Samoa country-code registries; attackers changed authoritative DNS and obtained unauthorized HTTPS certificates for Google and other brands (Google Chrome, 2026-10-06)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "No Swiss or constituency domain named and the affected registries are outside the constituency's TLDs; value is the transferable CT-monitoring and CAA-with-ACME-binding control and the cached-validation point. Single first-party source; no registry statement or actor named."
+    evidence:
+      - quote: "attackers modified authoritative DNS records and obtained unauthorized HTTPS certificates covering several Google domains, as well as domains belonging to other organizations."
+        attribution: "Google (Chrome Secure Web and Networking Team)"
+        source_url: "https://blog.google/security/chromes-response-to-recent-cctld-registry-hijacks/"
+      - quote: "browser-side intervention should not be relied on to protect your users."
+        attribution: "Google (Chrome Secure Web and Networking Team)"
+        source_url: "https://blog.google/security/chromes-response-to-recent-cctld-registry-hijacks/"
+      - quote: "Due to the nature of the attacks, we have no reason to believe the Certification Authorities (CAs) that issued the impacted certificates did anything wrong."
+        attribution: "Google (Chrome Secure Web and Networking Team)"
+        source_url: "https://blog.google/security/chromes-response-to-recent-cctld-registry-hijacks/"
+    extended_notes: |
+      Exposure: any organization holding or relying on domains under .gh, .sl or .as (including defensive or parked
+      registrations) and any service whose users do not run Chrome. Detection: Certificate Transparency monitor alerts on
+      issuance for owned names from an unexpected CA or ACME account; authoritative DNS change/NS-delegation monitoring for
+      every ccTLD domain in the portfolio; passive DNS or resolver logs showing a registered name suddenly resolving to
+      new addresses. Hardening (Google's): CAA with accounturi and validationmethods (RFC 8657) restored after DNS control
+      is regained; short certificate lifetimes and reduced validation reuse are cited as ecosystem direction. The post does
+      not say whether the .ch/.li registries or any European TLD were affected.
+
+  # ------------------------------------------------------------------ 5
+  - title: "FBI says a contractor's unapplied patch on a third-party-managed platform caused the fbijobs.gov breach; Reuters sources name Accenture and PeopleSoft (update to the ShinyHunters claim)"
+    sources:
+      - { url: "https://www.securityweek.com/fbi-blames-contractors-missed-patch-for-shinyhunters-breach/", publisher: "SecurityWeek", date: "2026-10-06", role: "primary" }
+    discovery_trace: "first seen at: securityweek, WebFetch listing of https://www.securityweek.com/ (headline 'FBI Blames Contractor's Missed Patch for ShinyHunters Breach', 2026-10-06) → primary available: SecurityWeek article, URL https://www.securityweek.com/fbi-blames-contractors-missed-patch-for-shinyhunters-breach/, which relays an FBI statement and a Reuters report → Reuters original (https://www.reuters.com/technology/accenture-contractor-removed-fbi-following-damaging-data-breach-sources-say-2026-10-06/) blocked to WebFetch; no fbi.gov statement page found by WebSearch (two queries)"
+    summary: |
+      Reuters reported on 2026-10-06, per SecurityWeek, that the FBI removed an Accenture contractor after the breach that
+      exposed personal information of thousands of bureau employees. The FBI has not named the contractor or the
+      platform; Reuters' two sources say the system was Oracle's PeopleSoft human-resources platform. The FBI cyber chief's
+      statement, as quoted by SecurityWeek, attributes the incident to "a security failure of a platform managed by a
+      third-party organization" after "a contractor failed to implement a security patch explicitly issued to secure the
+      platform". Accenture did not answer questions and said it is proud to support the FBI's mission. Delta against the
+      existing entry: the FBI's statement of 2026-09-23 said the point of breach was undetermined between a third party and
+      its own enterprise; the FBI now states the cause is an unapplied vendor patch on a third-party-managed platform. The
+      quoted statement does not say which patch, or whether the contractor relied on a firewall-rule workaround instead of
+      the patch. SecurityWeek also notes
+      ShinyHunters' site is still live, its payment-pressure post was removed and its latest victim post is dated
+      2026-09-22. Reuters' separate report of a ShinyHunters member detained in Jordan (SecurityWeek, 2026-10-05) is
+      sourced to anonymous people and the FBI did not confirm it; earlier fires dropped it and it is not carried here.
+    region_nexus: "United States; relevant by analogy to public-sector HR/ERP platforms run by a contractor"
+    primary_sector_nexus: "direct by analogy: government agency breach through a third-party-managed platform"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1199]
+    affected_products: ["Oracle PeopleSoft"]
+    entity_keys: ["actor:shinyhunters", "campaign:shinyhunters-peoplesoft-2026"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-09-24/shinyhunters-fbi-peoplesoft-breach-claim"
+    evidence:
+      - quote: "after a contractor failed to implement a security patch explicitly issued to secure the platform"
+        attribution: "SecurityWeek (quoting FBI cyber chief Brett Leatherman)"
+        source_url: "https://www.securityweek.com/fbi-blames-contractors-missed-patch-for-shinyhunters-breach/"
+      - quote: "The FBI has removed an Accenture contractor over a data breach that exposed personal information of thousands of bureau employees, Reuters reported on Tuesday, citing two people familiar with the matter."
+        attribution: "SecurityWeek (relaying Reuters)"
+        source_url: "https://www.securityweek.com/fbi-blames-contractors-missed-patch-for-shinyhunters-breach/"
+      - quote: "the system in question is Oracle’s PeopleSoft human resources platform"
+        attribution: "SecurityWeek (relaying Reuters' sources)"
+        source_url: "https://www.securityweek.com/fbi-blames-contractors-missed-patch-for-shinyhunters-breach/"
+    extended_notes: |
+      Also an S4-domain overlap (the main agent may already hold it from S4). Defender takeaway for the Swiss public sector:
+      the FBI's own root-cause line is a missed vendor patch on a platform operated by a contractor, so confirm for every
+      outsourced ERP/HR/portal platform that patches, not only WAF workarounds, are contractually required and evidenced.
+      The FBI statement text is only available second-hand (SecurityWeek, Reuters); the Reuters page itself was not
+      reachable (WebFetch refused the host; an earlier fire recorded a CAPTCHA wall).
+
+  # ------------------------------------------------------------------ 6
+  - title: "Harbor container registry: any user who can create a project can aim a webhook at internal addresses and cloud metadata (GHSA-2phj-cp9f-qq6w), fixed in 2.13.6, 2.14.5, 2.15.3 and 2.16.0"
+    sources:
+      - { url: "https://www.ox.security/blog/harbor-ssrf-vulnerability-cloud-credentials/", publisher: "OX Security", date: "2026-10-06", role: "primary" }
+      - { url: "https://github.com/goharbor/harbor/security/advisories/GHSA-2phj-cp9f-qq6w", publisher: "Harbor project (GitHub security advisory)", date: "2026-10-06", role: "primary" }
+    discovery_trace: "first seen at: ox-security, raw listing https://www.ox.security/blog/ (post dated October 6, 2026, bridge url) → primary: OX Security article, URL https://www.ox.security/blog/harbor-ssrf-vulnerability-cloud-credentials/ (extract) → vendor primary: Harbor GitHub advisory GHSA-2phj-cp9f-qq6w, URL https://github.com/goharbor/harbor/security/advisories/GHSA-2phj-cp9f-qq6w"
+    summary: |
+      OX Research disclosed, and the Harbor project published the same day (2026-10-06), an SSRF in Harbor's webhook delivery,
+      tracked as GHSA-2phj-cp9f-qq6w (no CVE identifier appears in either source; OX rates it CVSS 6.4 moderate, CWE-918).
+      Root cause per OX: validateTargets() when a webhook policy is created only checks that the scheme is http or https and
+      that the URL parses, and delivery by the jobservice passes the stored address to a plain HTTP client, so loopback,
+      RFC 1918 and link-local addresses, including the cloud metadata endpoint, are accepted. Prerequisite: the
+      NotificationPolicy create permission, which every user receives as project admin of a project they create; with the
+      default setting Project Creation "Everyone", any registered account suffices. Affected: every Harbor version with
+      webhooks (1.7.0 and later); fixed in v2.13.6, v2.14.5, v2.15.3 and v2.16.0, and after upgrading private, loopback
+      and link-local webhook targets are rejected and existing ones stop being delivered unless the operator sets the
+      allow_private_network_access option (or the HARBOR_ALLOW_PRIVATE_NETWORK_ACCESS variable). The sources differ on
+      impact: OX says the instance's temporary cloud IAM credentials can be harvested and also leak into the
+      project-readable task log, while the Harbor advisory words it more narrowly (the POST reaches internal services and
+      the response body is logged only when the target answers with an error status). OX also claims that a Shodan-based
+      scan on 2026-09-23 found 6,370 reachable instances, all on pre-fix versions, 718 on cloud ranges and 25 with
+      self-registration; this is OX's own measurement. No exploitation is reported; OX says a proof of concept is forthcoming.
+    region_nexus: "global; Harbor is a common registry in public-sector Kubernetes and CI/CD platforms (no Swiss instance named)"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: []
+    techniques: [T1190, T1552.005]
+    affected_products: ["Harbor (CNCF container registry)"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:harbor", type: product, name: "Harbor (CNCF container registry)", aliases: ["goharbor/harbor"],
+          summary: "Open-source CNCF container registry hosting images for CI/CD and Kubernetes; subject of GHSA-2phj-cp9f-qq6w (webhook SSRF), October 2026." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "Moderate CVSS (6.4), authenticated prerequisite, no exploitation reported and no CVE yet; relevant only where Harbor runs with Project Creation set to Everyone or on a cloud host whose metadata service is reachable from the jobservice."
+    evidence:
+      - quote: "validateTargets() only confirms the scheme is http/https and that the URL parses."
+        attribution: "OX Security"
+        source_url: "https://www.ox.security/blog/harbor-ssrf-vulnerability-cloud-credentials/"
+      - quote: "If the target answers with an error status, the response body is written to the webhook execution log, which project members can read."
+        attribution: "Harbor project (GitHub security advisory)"
+        source_url: "https://github.com/goharbor/harbor/security/advisories/GHSA-2phj-cp9f-qq6w"
+      - quote: "so untrusted users cannot become project admin"
+        attribution: "Harbor project (GitHub security advisory)"
+        source_url: "https://github.com/goharbor/harbor/security/advisories/GHSA-2phj-cp9f-qq6w"
+    extended_notes: |
+      Exposure check (vendor): you are affected if you run Harbor 1.7.0+, untrusted users can become project admin (default
+      Project Creation: Everyone) and the jobservice can reach internal services or a cloud metadata endpoint. Interim
+      controls (vendor): set Project Creation to Admin Only, restrict outbound traffic from the jobservice
+      (NetworkPolicy or firewall, always block 169.254.169.254), require token-based metadata access (IMDSv2 or the provider
+      equivalent). Post-patch / compromise check (vendor): review existing webhook targets for private IP literals,
+      localhost, link-local or internal service names with a query on the notification_policy table, and read the execution
+      logs of those policies; if any target pointed at a metadata endpoint, rotate the instance role credentials.
+
+watchlist_sweep: null
+
+dead_ends:
+  - { lead: "Rapid7 'SMTP is the key: BPFDoor and AVERAT hitting the network edge'", reason: "Page datePublished 2026-09-29T20:03Z (dateModified 2026-10-02); Infosecurity rewrite of 2026-10-05 is not a fresh source; the 2026-10-05 fire already dropped it (no constituency nexus)." }
+  - { lead: "FortiGuard 'ClingSTUN Linux backdoor abuses public STUN infrastructure' (2026-10-05)", reason: "In lookback, fetched in full (24 exploited IoT/edge CVEs including old Ivanti Connect Secure CVE-2023-46805/CVE-2024-21887, STUN keepalive back-connect proxy) but the 2026-10-06 fire already dropped it as opportunistic with no public-sector targeting; no new development. Primary: https://www.fortinet.com/blog/threat-research/clingstun-linux-backdoor-abuses-public-stun-infrastructure" }
+  - { lead: "Microsoft Digital Defense Report 2026 (annual, 2026-10-01; government agencies the most targeted sector at 27%)", reason: "Published before the lookback horizon and already borderline-dropped by the 2026-10-02, 10-03, 10-04 and 10-06 fires as vendor statistics with no defender decision; not re-returned. Flag only: ANNUAL REPORT - Microsoft Digital Defense Report 2026 is on the calendar-miss list." }
+  - { lead: "AhnLab ASEC 'Q3 2026 Attack Techniques Trend Report' (2026-10-06/07, quarterly, premium excerpt only)", reason: "Periodic report, quarterly recap of already-covered events (NetScaler CVE-2026-88771/88772 web-shell paths already in the NetScaler entry; Cisco FMC; npm provenance abuse; passkey/help-desk identity attacks) plus vendor KEV statistics; no new defender decision. Flagged for the audit's periodic-report list: https://asec.ahnlab.com/en/95733/" }
+  - { lead: "Huntress 'Mapping an Akira ransomware attack' (2026-10-06)", reason: "Forensic reconstruction without EDR telemetry (RDP from an unmanaged workstation, AV console stopped, procdump and GOST tunnel staged from C:\\PerfLogs, rclone, Akira log file and shellbags); no new TTP over CISA AA24-109A; case study. https://www.huntress.com/blog/mapping-akira-ransomware-attack" }
+  - { lead: "Seqrite 'CVE-2026-3854 Git push options metadata injection' (GitHub Enterprise Server RCE, 2026-10-06)", reason: "Late technical write-up of an older, already fixed GHES flaw; S1 domain; no exploitation or new exposure." }
+  - { lead: "Sysdig 'AI agent exploits Zammad zero-days in DIVD breach' (originally 2026-10-02, republished 2026-10-06)", reason: "Fully covered by entry 2026-10-02/zammad-cve-2026-102489-102490-exploited-divd-breach (including the unfixed root-escalation flaw)." }
+  - { lead: "The Record 'ClickFix campaign in Ukraine compromises over 100 websites to spread Lunex malware' (CERT-UA UAC-0277, 2026-10-06)", reason: "Primary CERT-UA article is an Angular SPA (extract returned only the shell, WebFetch confirmed empty), so only a news reading exists; ClickFix is heavily covered; Ontinue's Lunex analysis (BYOVD, native-messaging backdoor) is dated 2026-09-24, before the horizon. Dropped." }
+  - { lead: "Project Zero 'How to fix a bug in a fix' (2026-10-06)", reason: "Vendor-facing guidance on emergency patch delivery systems; no defender decision." }
+  - { lead: "SecurityWeek/Checkmarx MALFEX npm campaign (2026-10-06); Rejetto HFS CVE-2026-61500 (VulnCheck canary exploitation, 2026-10-05)", reason: "MALFEX: no org or geographic targeting, 8 niche packages. Rejetto HFS: niche file server, S1 domain (KEV/VulnCheck); not in prior coverage, left to S1." }
+  - { lead: "Citizen Lab items 2026-10-05 and 2026-10-06 (UAE Sheikh Tahnoon in-the-media piece; Toronto VPN provider and lawful-access bill)", reason: "Media commentary and policy advocacy, no technical research." }
+  - { lead: "Infosecurity/Record/Malwarebytes breach stories (ASOS push notifications, Domino's credential stuffing, Nikkei cloud accounts, Frontline Education, Osaka Metropolitan University, Arizona court system, Denmark CPR 8.8 million figure)", reason: "S4 domain incidents; S4 handles. Denmark CPR already has an entry (2026-10-06)." }
+
+candidate_sources:
+  - id: cloudsek-triad
+    publisher: "CloudSEK TRIAD (adversary intelligence blog)"
+    url: "https://www.cloudsek.com/blog"
+    rss_url: "https://www.cloudsek.com/blog/rss.xml"
+    category: research
+    why: "Primary research on exposed threat-actor infrastructure; the 'Caught in 4K' series (Aurora and now Gentlemen affiliate) is first-hand. Feed verified working 2026-10-07 (direct feed, dated items); /feed and /rss.xml are 404."
+  - id: ontinue-cdc
+    publisher: "Ontinue Cyber Defence Centre (Swiss MDR vendor, research resources)"
+    url: "https://www.ontinue.com/resource/"
+    rss_url: null
+    category: research
+    why: "Swiss-based vendor with reverse-engineering write-ups (Lunex Unmasked, 2026-09-24); home-region relevance. No feed found (/feed/ returns non-XML, /resource/feed/ 404); extract reads individual posts cleanly; listing recipe not yet established."
+  - id: cert-ua
+    publisher: "CERT-UA (Computer Emergency Response Team of Ukraine)"
+    url: "https://cert.gov.ua/"
+    rss_url: null
+    category: authority
+    why: "National CERT publishing UAC-#### campaign write-ups that news outlets cite; articles at cert.gov.ua/article/<id> are an Angular SPA that extract and WebFetch return as an empty shell. Needs a structured recipe (API or jina) before it can be a source; no record exists today."
+
+coverage_gaps:
+  - { source_id: sentinellabs, reason: "Not a failure. Recipe update: `url https://sentinellabs.com/labs/` returns direct HTTP 404 (and the reader pool answers 422/403); `extract https://www.sentinelone.com/labs/` gives a dated title list without per-post hrefs and its page-level date metadata is stale (2026-09-18); WebFetch on https://www.sentinelone.com/labs/ with an href-and-date prompt returned 12 posts with dates and sentinellabs.com/labs/<slug> URLs, newest 2026-09-18 (TraderTraitor, LABScon). Keep fetch_method webfetch." }
+  - { source_id: ahnlab-asec, reason: "Not a failure. Recipe note: `extract https://asec.ahnlab.com/en/` returns excerpts with dates trailing a group of posts (dates ambiguous); WebFetch with an href prompt returns title, date, category and /en/<id>/ URL per post (newest 2026-10-06/07, the premium Q3 report); per-post `extract https://asec.ahnlab.com/en/<id>/` works." }
+  - { source_id: cloudflare-cf1, reason: "Not a failure. Feed https://blog.cloudflare.com/tag/cloudforce-one/rss/ works (15 dated items, newest 2026-09-29). Threat reports live under cloudflare.com/threat-intelligence/research/report/<slug> and cloudflare.com/cloudforce-one/research/ (listing without dates; per-report `extract` carries the date), not in the blog feed: EvilTokens disruption 2026-09-22 sits only there." }
+  - { source_id: risky-biz-news, reason: "Not a failure. https://news.risky.biz/rss/ returns 15 dated items (newest 2026-10-02); no Risky Bulletin since the Friday 2026-10-02 issue was published at fetch time." }
+  - { source_id: proofpoint, reason: "Not a failure. `url` raw HTML parses with <time datetime>; the Threat Insight listing exposes only three post hrefs (newest threat-insight post 2026-09-22); nothing since 2026-10-02." }
+  - { source_id: therecord, reason: "Not a failure. https://therecord.media/feed returns 5 items (2026-10-06); older headlines via WebSearch only (recipe as recorded). The CERT-UA primary cited by one of those items is an SPA (see candidate cert-ua)." }
+
+source_ledger:
+  - { id: ox-security, tier: standard, attempted: true, transport: "bridge:url (raw HTML listing) + extract", horizon_hours: 122, in_horizon_items: 1, returned: 1, note: "Harbor SSRF (2026-10-06) returned borderline; next newest post 2026-09-29 is before the horizon" }
+  - { id: project-discovery, tier: standard, attempted: true, transport: "bridge:url (stories/1)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest post 2026-08-16" }
+  - { id: proofpoint, tier: standard, attempted: true, transport: "bridge:url", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest Threat Insight 2026-09-22 (TeamFiltration); BlueMoon 2026-09-09 already covered" }
+  - { id: risky-biz-news, tier: standard, attempted: true, transport: "bridge:feed + extract home", horizon_hours: 122, in_horizon_items: 1, returned: 0, note: "2026-10-02 KillSec bulletin already covered by operation-killswitch entry" }
+  - { id: securityweek, tier: standard, attempted: true, transport: "WebFetch listing + extract per article", horizon_hours: 122, in_horizon_items: 17, returned: 1, note: "FBI contractor patch update-of returned; Rejetto HFS/MALFEX/ClingSTUN dropped, S4 breach headlines left to S4" }
+  - { id: sentinellabs, tier: standard, attempted: true, transport: "extract + WebFetch (url direct 404)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-18" }
+  - { id: talos, tier: standard, attempted: true, transport: "bridge:feed", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "feed newest 2026-10-01 18:00Z, before the 2026-10-02 sweep; UAT-11587 and CLOSEDQUORUM already covered" }
+  - { id: therecord, tier: standard, attempted: true, transport: "bridge:feed (5 items) + extract", horizon_hours: 122, in_horizon_items: 5, returned: 0, note: "all five 2026-10-06 headlines dropped (S4 breach stories, Korea AI-agent bank hacks already dropped, Lunex primary unreachable)" }
+  - { id: trellix, tier: standard, attempted: true, transport: "extract (dated listing)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-09-24 (Dark Web Roast); SideCopy 2026-09-17" }
+  - { id: unit42, tier: standard, attempted: true, transport: "bridge:feed + extract", horizon_hours: 122, in_horizon_items: 1, returned: 1, note: "Blinder Tunnel (2026-10-06) returned borderline; NetScaler threat brief (2026-09-30) already covered" }
+  - { id: ahnlab-asec, tier: standard, attempted: true, transport: "extract + WebFetch", horizon_hours: 98, in_horizon_items: 1, returned: 0, note: "only the Q3 2026 Attack Techniques Trend Report (quarterly recap) is in the horizon; flagged in dead_ends" }
+  - { id: citizen-lab, tier: standard, attempted: true, transport: "bridge:feed + extract", horizon_hours: 98, in_horizon_items: 2, returned: 0, note: "both items are media commentary/policy, no technical research" }
+  - { id: cloudflare-cf1, tier: standard, attempted: true, transport: "bridge:feed", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest 2026-09-29 (Threat Signals product post)" }
+  - { id: fox-it-blog, tier: standard, attempted: true, transport: "extract", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest 2026-05-22 (RemotePE); very low cadence as recorded" }
+  - { id: infosec-magazine, tier: standard, attempted: true, transport: "bridge:feed (40 items) + extract", horizon_hours: 98, in_horizon_items: 13, returned: 1, note: "lead to CloudSEK Gentlemen Files returned; ClingSTUN/BPFDoor/ClickFix-cache leads checked against primaries and dropped or covered; MDDR already dropped" }
+  - { id: malwarebytes, tier: standard, attempted: true, transport: "extract", horizon_hours: 98, in_horizon_items: 6, returned: 0, note: "consumer scams and breach news (ASOS, Domino's); no research item" }
+
+additional_sweeps:
+  note: "Beyond the slice, a safety-net feed sweep of 30 research feeds (mandiant-gtig, checkpoint-research, dfirreport, huntress, sophos-xops, recordedfuture-insikt, volexity, google-tag, zscaler-threatlabz, trendmicro-research, rapid7-research, group-ib, infoguard-labs, infoguard-ch, oneconsult-ch, compass-security, sans-isc, intel471, seqrite-labs, lab52, acronis-tru, sysdig, wiz-blog, tenable-research, truesec, intrinsec, sansec-research, watchtowr, projectzero, 0patch-blog) for items since 2026-10-02 02:00Z surfaced the watchTowr, Chrome ccTLD and Harbor-adjacent leads; all other items in those feeds were product, policy or already-covered posts. Not slice records; no ledger credit claimed."
+
+registry_hygiene:
+  - "actor:thegentlemen is the canonical key; actor:gentlemen-raas-gentlekiller is already tombstoned (merged_into). Use only the canonical key."

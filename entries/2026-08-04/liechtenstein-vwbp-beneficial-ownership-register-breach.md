@@ -15,14 +15,17 @@ summary: >
   as a targeted attack on that register with no attacks found on other systems, but the government
   progressively took the eMWST VAT portal, the Lides reporting platform, the central account
   register and the Intax tax system offline as a precaution. The attackers reached the register
-  through a vulnerability in its reporting portal rather than the database directly, registering a
+  through its reporting portal rather than the database directly (NZZ reports a vulnerability in the portal), registering a
   new user account and enumerating every record one by one; no actor has been identified and no
-  ransom demand reported. The breach is declared under GDPR Article 33.
+  ransom demand reported. The breach is declared under GDPR Article 33. The government later called the cause faulty
+  authorisation-checking logic abused through repeated individual API requests, said an upstream eID step will
+  strengthen account verification, and reported the register back in restricted operation on 2026-10-05 with no sign of
+  misuse of the copied data.
 discovered_at: "2026-08-04T04:48:00Z"
 updated_at: "2026-09-02T04:50:00Z"
 event_date: 2026-07-30
 run_id: 2026-08-04T0411Z-intel
-priority: high
+priority: notable
 immediate_action: null
 tags:
   - data-breach
@@ -78,6 +81,14 @@ sources:
     publisher: "Exxpress (Reuters wire)"
     date: 2026-08-31
     role: corroborating
+  - url: "https://www.presseportal.ch/de/pm/100000148/100941692"
+    publisher: "Regierung des Fürstentums Liechtenstein"
+    date: 2026-08-19
+    role: primary
+  - url: "https://www.inside-it.ch/liechtenstein-will-nach-cyberangriff-luecken-geschlossen-haben-20261006"
+    publisher: "Inside IT"
+    date: 2026-10-06
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "Dabei wurden Datenkopien von rund 31'000 Rechtsträgern widerrechtlich abgegriffen."
@@ -108,13 +119,21 @@ evidence:
   - quote: "The government will bring the register into operation as planned on 1 October, it declared on Monday. Various measures are planned to guarantee the 'highest possible level of protection.' (translated from German)"
     original: "Die Regierung werde das Register wie geplant zum 1. Oktober in Betrieb nehmen, erklärte sie am Montag. Es seien verschiedene Maßnahmen vorgesehen, um ein „höchstmögliches Schutzniveau“ zu gewährleisten."
     publisher: "Exxpress (Reuters wire), on the Swiss Federal Council's 2026-08-31 statement"
+  - quote: "The security analysis has shown that unauthorised access to the data was possible due to faulty authorisation-checking logic."
+    publisher: "Regierung des Fürstentums Liechtenstein"
+    source_url: "https://www.presseportal.ch/de/pm/100000148/100941692"
+  - quote: "The operation of the affected VwbP register was also resumed in restricted form on 5 October. (translated from German)"
+    original: "Auch der Betrieb des betroffenen VwbP-Registers sei am 5. Oktober in eingeschränkter Form wieder aufgenommen worden."
+    publisher: "Inside IT"
+    source_url: "https://www.inside-it.ch/liechtenstein-will-nach-cyberangriff-luecken-geschlossen-haben-20261006"
 verification: multi-source
 sourcing_note: >
   The government is the primary disclosing party for its own incident; The Record and SRF
-  corroborate the scope independently. NZZ's 2026-08-07 reporting, sourced to a named Liechtenstein
-  IT-office official at the government's own press briefing, is the first source to state the
+  corroborate the scope independently. NZZ's 2026-08-07 reporting is the first source to state the
   access mechanism — exploiting a vulnerability in the reporting portal, mapped alongside the
-  bulk-collection behaviour the original disclosure already established.
+  bulk-collection behaviour the original disclosure already established. The government's release of 2026-08-19 states
+  the cause and the planned fix; the status of 2026-10-06 is Inside IT's report of the Head of Government's answer to a
+  Landtag question.
 confidence: high
 references: []
 deep_dive: false
@@ -124,8 +143,7 @@ classification:
   reliability: A
   credibility: 1
 watchlist_hit: false
-actions:
-  - "Brief fiduciary, trustee and private-banking teams that genuine VwbP breach notifications will arrive over the coming days by an indirect route — Amt für Justiz to the legal entity, then the legal entity to the beneficial owner — and that forged notifications imitating that same two-hop chain should be expected in the same window."
+actions: []
 updates:
   - at: "2026-08-05T04:12:23Z"
     run_id: 2026-08-05T0412Z-intel
@@ -174,12 +192,21 @@ updates:
       the banking lobby (SBVg) separately raised the same concern. The Swiss Federal Council
       confirmed on 31 August 2026 it will proceed with the launch unchanged.
     fields: [sources, evidence, body]
+  - at: "2026-10-07T04:54:00Z"
+    run_id: 2026-10-07T0404Z-intel
+    type: improvement
+    summary: >
+      The government's release of 2026-08-19 states the cause as faulty authorisation-checking logic abused through repeated
+      individual API requests, not a classic software vulnerability, and adds an upstream eID step to account verification
+      and wider monitoring; the Head of Government told the Landtag the weaknesses are fixed, data integrity was checked and the
+      register resumed in restricted form on 2026-10-05, with no sign of misuse of the copied data.
+    fields: [summary, priority, sources, evidence, sourcing_note, actions, body]
 migrated_from: null
 ---
 
 The Verzeichnis wirtschaftlich berechtigter Personen (VwbP, "register of beneficial owners") exists because Liechtenstein implemented the EU's 5th Anti-Money-Laundering Directive: the VwbPG has been in force since 2021, and the register records the natural persons behind Rechtsträger — companies, foundations and trust arrangements. On 2026-08-02 the government disclosed that the register had been attacked and that "Datenkopien von rund 31'000 Rechtsträgern" ("copies of data on around 31,000 legal entities") were unlawfully taken ([Regierung des Fürstentums Liechtenstein, 2026-08-02](https://www.presseportal.ch/de/pm/100000148/100941487)). The Record and SRF both carry the same figure ([The Record, 2026-08-03](https://therecord.media/hackers-steal-records-liechtenstein-companies-foundations); [SRF, 2026-08-03](https://www.srf.ch/news/international/31-000-geklaute-datensaetze-taeterschaft-von-cyberangriff-in-liechtenstein-weiterhin-unklar)).
 
-The government's own timeline is worth reading as a benchmark, because detection was human and internal rather than telemetry-driven. Unauthorised digital access occurred overnight into 2026-07-30; irregularities were noticed at the Amt für Justiz during that day; the Amt für Informatik was brought in, secured the data and took the affected system off the network the same day; the government was informed on 31 July that the attack had potentially succeeded, and the first confirmed preliminary findings arrived on the afternoon of 1 August. A crisis unit convened that evening under Head of Government Brigitte Haas and Justice Minister Emanuel Schädler, was formally confirmed on 2 August, and a media conference was announced for 2026-08-04. The government states there is no indication that data in the system was altered or deleted, and the register is unavailable to external users through the LLV.li portal.
+The government's own timeline is worth reading as a benchmark, because detection was human and internal rather than telemetry-driven. Unauthorised digital access occurred overnight into 2026-07-30; irregularities were noticed at the Amt für Justiz during that day; the Amt für Informatik was brought in, secured the data and took the affected system off the network without delay; the government was informed on 31 July that the attack had potentially succeeded, and the first confirmed preliminary findings arrived on the afternoon of 1 August. A crisis unit convened that evening under Head of Government Brigitte Haas and Justice Minister Emanuel Schädler, was formally confirmed on 2 August, and a media conference was announced for 2026-08-04 ([Regierung des Fürstentums Liechtenstein, 2026-08-02](https://www.presseportal.ch/de/pm/100000148/100941487); [Regierung des Fürstentums Liechtenstein, 2026-08-03](https://www.presseportal.ch/de/pm/100000148/100941500)). The government states there is no indication that data in the system was altered or deleted, and, as of 2026-08-02, the register is unavailable to external users through the LLV.li portal; it resumed in restricted form on 2026-10-05 (see the Improvement of 2026-10-07).
 
 The forensic update on 2026-08-03 is where the operationally interesting tension sits. First findings characterise the event as a targeted attack on the VwbP at the Amt für Justiz, and "Weitere Angriffe auf andere Systeme konnten nicht festgestellt werden" ("no further attacks on other systems could be established") — yet the government kept widening the shutdown: the eMWST VAT portal and the Lides electronic reporting and data-exchange platform came off the network on 31 July, and on 3 August the central account register and the central tax system Intax followed, explicitly as precautionary measures with no indication of unlawful access ([Regierung des Fürstentums Liechtenstein, 2026-08-03](https://www.presseportal.ch/de/pm/100000148/100941500)). Law-enforcement authorities are now engaged alongside the Amt für Informatik and external partners. No actor has been named and no ransom demand or criminal-market offering reported; the access vector is covered in the update below.
 
@@ -201,9 +228,9 @@ The Amt für Justiz has filed a criminal complaint against persons unknown, and 
 
 ## Update — 2026-09-01T04:18:40Z
 
-The access vector this entry previously recorded as undisclosed is now named. Reporting from the Neue Zürcher Zeitung, sourced to Liechtenstein's Office for IT director Fabian Schmid speaking at the government's 2026-08-04 press briefing, states that the attackers did not reach the register's database directly: they exploited a vulnerability in the register's reporting portal, or in the interface between that portal and the database, to scrape the complete dataset ([Neue Zürcher Zeitung, 2026-08-07](https://www.nzz.ch/wirtschaft/nach-hackerangriff-in-liechtenstein-wie-sicher-sind-heikle-finanzdaten-beim-bund-ld.10018419)). To do so, they registered a new user account on the portal and then queried every one of the roughly 31,000 records individually; the interface has no bulk-query function, which is why the download took several hours ([Neue Zürcher Zeitung, 2026-08-07](https://www.nzz.ch/wirtschaft/nach-hackerangriff-in-liechtenstein-wie-sicher-sind-heikle-finanzdaten-beim-bund-ld.10018419)).
+The access vector, earlier reported as undisclosed, is now named. Reporting from the Neue Zürcher Zeitung states that the attackers did not reach the register's database directly: they exploited a vulnerability in the register's reporting portal, or in the interface between that portal and the database, to scrape the complete dataset ([Neue Zürcher Zeitung, 2026-08-07](https://www.nzz.ch/wirtschaft/nach-hackerangriff-in-liechtenstein-wie-sicher-sind-heikle-finanzdaten-beim-bund-ld.10018419)). To do so, they registered a new user account on the portal and then queried every one of the roughly 31,000 records individually; the interface has no bulk-query function, which is why the download took several hours, as the head of Liechtenstein's Office for IT, Fabian Schmid, told the media ([Neue Zürcher Zeitung, 2026-08-07](https://www.nzz.ch/wirtschaft/nach-hackerangriff-in-liechtenstein-wie-sicher-sind-heikle-finanzdaten-beim-bund-ld.10018419)).
 
-**Defender takeaway:** this is a defence-in-depth failure, not a single flaw. Reporting portals that let external parties (here, the fiduciaries and companies who file beneficial-ownership data) write into a government register are a routine design pattern, and their access controls to the underlying data store are exactly where an attacker who cannot reach the database directly will look. That the interface enforced a per-request query pattern but no per-account rate limit, and produced no alert across several hours of an account querying tens of thousands of sequential records overnight, is the gap: volumetric behaviour, not a signature, was the available signal, and no control acted on it.
+**Defender takeaway:** this reads as a defence-in-depth failure at the access-control layer; the government later put the cause as faulty authorisation-checking logic ([Liechtenstein Government, 2026-08-19](https://www.presseportal.ch/de/pm/100000148/100941692)). Reporting portals that let external parties (here, the fiduciaries and companies who file beneficial-ownership data) write into a government register are a routine design pattern, and their access controls to the underlying data store are exactly where an attacker who cannot reach the database directly will look. That a newly registered account could query all of the roughly 31,000 records one by one over several hours, as NZZ reports, is the gap: volumetric behaviour, not a signature, was the available signal.
 
 ## Update — 2026-09-02T04:50:00Z
 
@@ -212,3 +239,9 @@ This breach has become the argument in a live Swiss policy fight over a comparab
 Unlike Liechtenstein's compromised portal, the Swiss register is designed to run inside a dedicated secured network of the Federal Department of Justice and Police, is an in-house Confederation build rather than an external vendor's system, and restricts direct database access to the operating office and a Federal Department of Finance control unit; external reporting parties reach it only through the EasyGov portal or a dedicated interface — the same portal-mediated access pattern that let the Liechtenstein attacker enumerate all 31,000 records one by one through a vulnerable reporting interface ([Neue Zürcher Zeitung, 2026-08-07](https://www.nzz.ch/wirtschaft/nach-hackerangriff-in-liechtenstein-wie-sicher-sind-heikle-finanzdaten-beim-bund-ld.10018419)).
 
 **Defender takeaway (updated):** for Swiss fiduciaries, trustees and banks, both jurisdictions' registers reach the same client population, so the 1 October go-live of the Swiss register adds a second authoritative identity-verification dataset attackers can draw on for the pretexting risk this entry already describes. The detection lesson carries over directly: a single reporting account exceeding its own historical query volume by orders of magnitude in one session is the signal to watch for on the Swiss register's EasyGov-mediated access path, portal-side rate limiting or not.
+
+## Improvement — 2026-10-07T04:54:00Z
+
+The government's release of 2026-08-19 gives its own account of the cause: Fabian Schmid, head of the Office of Information Technology, said the security analysis showed the unauthorised access was possible "due to faulty authorisation-checking logic", which allowed the application programming interface to be exploited "through repeated individual requests in a manner that was not intended", and that it was "not a classic software vulnerability" ([Liechtenstein Government, 2026-08-19](https://www.presseportal.ch/de/pm/100000148/100941692)). The fixes it announced are an upstream eID step in the requirements for verifying user accounts and checking identity, and wider monitoring and detection so that unauthorised access is noticed earlier ([Liechtenstein Government, 2026-08-19](https://www.presseportal.ch/de/pm/100000148/100941692)).
+
+On 2026-10-06 Inside IT reported the Head of Government's answer to a Landtag question: the identified weaknesses have been fixed, a check of data integrity found no sign that register data was altered, the register resumed operation in restricted form on 5 October, there is still no indication of concrete misuse of the copied data, and an external IT review is expected to report in the first half of 2027 (translated from German) ([Inside IT, 2026-10-06](https://www.inside-it.ch/liechtenstein-will-nach-cyberangriff-luecken-geschlossen-haben-20261006)). The perpetrators remain unknown ([Inside IT, 2026-10-06](https://www.inside-it.ch/liechtenstein-will-nach-cyberangriff-luecken-geschlossen-haben-20261006)).

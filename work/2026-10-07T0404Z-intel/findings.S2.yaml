@@ -1,0 +1,499 @@
+# work/2026-10-07T0404Z-intel/findings.S2.yaml
+domain: S2
+run_id: 2026-10-07T0404Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-07T04:06:47Z
+ended_at: 2026-10-07T04:26:49Z
+duration_seconds: 1202
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 24
+  bridge_fetches: 85   # approximate count of fetch_source.py invocations (feed/extract/url/pdf)
+window_note: >
+  window_hours 26 (window opens 2026-10-06T02:04Z). Swiss home-region signal in the window is thin: no
+  new Swiss incident, no BACS/NCSC advisory, no federal cyber release (news.admin.ch 6 Oct carries only the
+  digital key-projects release, dropped as non-security). The returned items are one clear update-of
+  (Liechtenstein) and five borderline items with explicit keep/drop leans.
+items:
+
+  # ------------------------------------------------------------------ 1
+  - title: "Liechtenstein VwbP register breach: government states the root cause as faulty authorisation-checking logic abused through single-record API requests; register back in restricted operation 2026-10-05"
+    sources:
+      - { url: "https://www.presseportal.ch/de/pm/100000148/100941692", publisher: "Regierung des Fürstentums Liechtenstein", date: "2026-08-19", role: "primary" }
+      - { url: "https://www.presseportal.ch/de/pm/100000148/100941875", publisher: "Regierung des Fürstentums Liechtenstein (2026-08-31 release)", date: "2026-08-31", role: "primary" }
+      - { url: "https://www.inside-it.ch/liechtenstein-will-nach-cyberangriff-luecken-geschlossen-haben-20261006", publisher: "Inside IT", date: "2026-10-06", role: "primary" }
+      - { url: "https://www.inside-it.ch/liechtenstein-verstaerkt-it-schutz-nach-datenklau-20260819", publisher: "Inside IT (2026-08-20)", date: "2026-08-20", role: "corroborating" }
+      - { url: "https://www.bj.admin.ch/de/newnsb/L0rkU9ZvCFSw", publisher: "Bundesamt für Justiz (BJ)", date: "2026-10-01", role: "corroborating" }
+    discovery_trace: >-
+      first seen at: inside-it-ch, URL https://www.inside-it.ch/rss.xml (item 2026-10-06 09:37Z) → drill (extract):
+      https://www.inside-it.ch/liechtenstein-will-nach-cyberangriff-luecken-geschlossen-haben-20261006 (relays the Head of
+      Government's answer to a Landtag inquiry; the government's own reply text was not located) → pivot: Inside IT
+      2026-08-20 https://www.inside-it.ch/liechtenstein-verstaerkt-it-schutz-nach-datenklau-20260819 → primary: Government of
+      Liechtenstein release 2026-08-19 https://www.presseportal.ch/de/pm/100000148/100941692 (found via WebSearch
+      ("Sicherheitsanalyse VwbP abgeschlossen fehlerhafte Logik Überprüfung der Berechtigungen eID vorgeschaltet Regierung
+      Liechtenstein Medienmitteilung")) → https://www.presseportal.ch/de/pm/100000148/100941875 (2026-08-31, external review);
+      Swiss context: WebSearch ("Transparenzregister Schweiz Start 1. Oktober 2026 ...") → BJ release
+      https://www.bj.admin.ch/de/newnsb/L0rkU9ZvCFSw
+    summary: |
+      The entry for this incident records the access mechanism only as "a vulnerability in the reporting portal" (NZZ via the
+      Liechtenstein IT office). The government's own release of 2026-08-19, which the entry does not carry, is more precise:
+      the security analysis found that unauthorised access to the beneficial-ownership register (VwbP) was possible "due to
+      faulty authorisation-checking logic", which let the attacker abuse the register's API "through repeated individual
+      requests in a manner that was not intended". The Head of the Office of Information Technology, Fabian Schmid, adds it
+      "was not a classic software vulnerability" and withholds further technical detail for investigative reasons. The weak
+      spot sat in the registration area; the announced fixes are an eID step placed upstream of user-account verification and
+      identity checking, plus extended monitoring and detection so unauthorised access is noticed earlier. The government
+      announced on 2026-08-31 that an international audit firm will review this incident, audit further systems holding
+      sensitive data and review IT procurement, control and administration.
+      On 2026-10-06 Inside IT, relaying Head of Government Brigitte Haas's answer to a Landtag inquiry, reports: no
+      indication of concrete misuse of the copied data; the identified vulnerabilities are fixed and data integrity was
+      checked with no sign that VwbP data was altered; the other state systems taken offline as a precaution have passed
+      their security reviews and are back in service; the VwbP itself resumed in restricted form on 2026-10-05; criminal
+      investigations continue and the actor is still unknown; the external IT review is still in procurement and the
+      government expects results in the first half of 2027. The 2026-10-06 status rests on that single relayed account.
+      Swiss context: the federal Transparenzregister (Bundesamt für Justiz) went live on 2026-10-01, the date the Federal
+      Council had confirmed in the thread this entry already carries (VSV/SBVg concern, 2026-08-31). The BJ release states
+      that the number of possible queries is limited, access is protected by multi-stage authentication, the system runs in a
+      specially secured network with data held on a single physical server in Switzerland, and internal and external
+      vulnerability tests recur; some services (full-register query, difference report) are not yet available.
+    region_nexus: "Liechtenstein (customs- and currency-union neighbour of Switzerland); Swiss federal Transparenzregister went live 2026-10-01 and holds the equivalent dataset"
+    primary_sector_nexus: "direct (national government register; Swiss federal parallel)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1213]
+    affected_products: []
+    entity_keys: ["incident:liechtenstein-vwbp-register-breach-2026-07"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_hint: { reliability: A, credibility: 2, note: "root cause is the victim government's own statement (A, corroborated by Inside IT); the 2026-10-06 status is single-source via Inside IT (C), so credibility 2 rather than 1" }
+    novelty: "update-of:2026-08-04/liechtenstein-vwbp-beneficial-ownership-register-breach"
+    evidence:
+      - quote: "The security analysis has shown that unauthorised access to the data was possible due to faulty authorisation-checking logic."
+        attribution: "Regierung des Fürstentums Liechtenstein"
+        source_url: "https://www.presseportal.ch/de/pm/100000148/100941692"
+      - quote: "This vulnerability made it possible to exploit the application programming interface (API) through repeated individual requests in a manner that was not intended. It was not a classic software vulnerability."
+        attribution: "Regierung des Fürstentums Liechtenstein"
+        source_url: "https://www.presseportal.ch/de/pm/100000148/100941692"
+      - quote: "The requirements for verifying user accounts and checking identity will be strengthened by adding an upstream eID step."
+        attribution: "Regierung des Fürstentums Liechtenstein"
+        source_url: "https://www.presseportal.ch/de/pm/100000148/100941692"
+      - quote: "Auch der Betrieb des betroffenen VwbP-Registers sei am 5. Oktober in eingeschränkter Form wieder aufgenommen worden."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/liechtenstein-will-nach-cyberangriff-luecken-geschlossen-haben-20261006"
+      - quote: "Es liegen weiterhin keine Hinweise auf einen konkreten Missbrauch der abgegriffenen Daten vor."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/liechtenstein-will-nach-cyberangriff-luecken-geschlossen-haben-20261006"
+      - quote: "Die Regierung gehe davon aus, dass in der ersten Hälfte 2027 Ergebnisse vorliegen werden."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/liechtenstein-will-nach-cyberangriff-luecken-geschlossen-haben-20261006"
+      - quote: "Ausserdem wird die Anzahl der möglichen Abfragen beschränkt und durch eine mehrstufige Authentifizierung gesichert."
+        attribution: "Bundesamt für Justiz (BJ)"
+        source_url: "https://www.bj.admin.ch/de/newnsb/L0rkU9ZvCFSw"
+    extended_notes: |
+      Suggested changelog scope (type update): body gains a short "Update" section carrying the 2026-08-19 root-cause
+      statement (authorisation-logic flaw, API abused via repeated single requests, not a classic software vulnerability),
+      the eID-upstream and monitoring remediation, the 2026-10-05 restricted restart and the 2026-10-06 status; fields:
+      summary, body, sources, evidence, sourcing_note. The existing techniques (T1213, T1190) already fit; the "new user account"
+      step (NZZ 2026-08-07, already in the entry) is also what the government's registration-area finding concerns.
+      Detection concept the sources support (telemetry class: web/API access logs of the register's application tier):
+      one external principal issuing a long run of single-entity lookups far above its own and the legitimate-user
+      baseline; the entry's Triage paragraph already carries that discriminator. Analyst inference (mine, not a source
+      claim): a per-account query cap, which BJ describes for the Swiss register, would bound exactly this enumeration
+      pattern (NZZ: it took the attacker several hours to read 31,000 records one by one). The existing entry's action
+      about forged breach notifications is unaffected. Prior-fire visibility: the BJ go-live release (2026-10-01) and the
+      2026-08-19 government release were available to earlier fires and are not in the store; the Oct-6 status is the new
+      trigger.
+
+  # ------------------------------------------------------------------ 2
+  - title: "ShinyHunters: a member reported detained in Jordan is cooperating with the FBI, the group's dark-web site vanished and it signals de-escalation (Reuters, relayed)"
+    sources:
+      - { url: "https://www.heise.de/news/Bericht-FBI-Angreifer-von-ShinyHunters-gefasst-und-kooperativ-11475303.html", publisher: "heise online", date: "2026-10-04", role: "primary" }
+      - { url: "https://www.swisscybersecurity.net/news/2026-09-24/cyberkriminelle-erpressen-fbi-mit-angeblich-abgegriffenen-daten", publisher: "SwissCybersecurity.net", date: "2026-10-06", role: "corroborating" }
+      - { url: "https://dcod.ch/2026/10/06/shinyhunters-fbi-vol-de-donnees/", publisher: "DCOD", date: "2026-10-06", role: "corroborating" }
+    discovery_trace: >-
+      first seen at: swisscybersecurity-net via WebFetch https://www.swisscybersecurity.net/ (item "Update: Polizei verhaftet
+      Shinyhunters-Mitglied", 2026-10-06) → drill (extract) https://www.swisscybersecurity.net/news/2026-09-24/cyberkriminelle-erpressen-fbi-mit-angeblich-abgegriffenen-daten
+      → pivot: heise-sec RSS https://www.heise.de/security/feed.xml → extract https://www.heise.de/news/Bericht-FBI-Angreifer-von-ShinyHunters-gefasst-und-kooperativ-11475303.html
+      → primary named by both: Reuters 2026-10-03 (https://www.reuters.com/world/middle-east/key-shinyhunters-hacker-detained-jordan-is-cooperating-sources-say-2026-10-03/)
+      — fetch returned only a CAPTCHA stub via the reader, so Reuters is NOT cited as a source here; dcod-ch RSS https://dcod.ch/feed/ → https://dcod.ch/2026/10/06/shinyhunters-fbi-vol-de-donnees/
+    summary: |
+      Reuters, citing three sources and relayed by heise (2026-10-04) and SwissCybersecurity.net (update of 2026-10-06),
+      reports that a ShinyHunters member active under the handle "Rey" was detained in Jordan this week and is cooperating with
+      the FBI, handing investigators access to his devices so they can map the group's network, identities and locations;
+      SwissCybersecurity.net names him as Sali at-Din Khader and says he "reportedly" gave the FBI his digital
+      correspondence. The FBI would not confirm the Reuters report directly but, per heise, said there had already been
+      several arrests in the case; the stored entry records only the earlier Dutch arrest of a 24-year-old. heise adds, again
+      citing Reuters, that the group's dark-web site disappeared on Wednesday (2026-09-30), that Reuters and 404 Media lost
+      contact with their ShinyHunters sources, and that a group-linked email told Reuters the group wants no further
+      escalation with the FBI (SwissCybersecurity.net: a "complete retreat"). dcod relays 404 Media that the group says it
+      will not publish the 2-3 TB taken from the FBI recruitment portal. All of this is anonymous-source reporting and a
+      criminal group's own statement: the detention is unconfirmed by the FBI, the Reuters piece itself could not be read in
+      this run, and a no-publication pledge does not remove the data from the group's hands.
+    region_nexus: "global; no Swiss nexus (re-reported by Swiss trade press)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Oracle PeopleSoft"]
+    entity_keys: ["actor:shinyhunters", "incident:shinyhunters-fbi-peoplesoft-breach-claim-2026-09"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: LOW
+    classification_hint: { reliability: B, credibility: 3, note: "one Reuters report (anonymous sources) relayed by three outlets counts as one independent source; FBI declined to confirm the detention" }
+    novelty: "update-of:2026-09-24/shinyhunters-fbi-peoplesoft-breach-claim"
+    lookback: true
+    evidence:
+      - quote: "Wie die Nachrichtenagentur Reuters von drei Quellen erfahren haben will, wurde in dieser Woche ein Verdächtiger in Jordanien festgenommen."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Bericht-FBI-Angreifer-von-ShinyHunters-gefasst-und-kooperativ-11475303.html"
+      - quote: "gab aber an, dass es in dem Fall schon mehrere Festnahmen gegeben habe"
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Bericht-FBI-Angreifer-von-ShinyHunters-gefasst-und-kooperativ-11475303.html"
+      - quote: "Am Mittwoch verschwand laut Reuters auch die Webseite der Bande aus dem Darknet."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Bericht-FBI-Angreifer-von-ShinyHunters-gefasst-und-kooperativ-11475303.html"
+      - quote: "Jordanische Behörden haben angeblich Sali at-Din Khader, Mitglied der Hackergruppe Shinyhunters, verhaftet."
+        attribution: "SwissCybersecurity.net"
+        source_url: "https://www.swisscybersecurity.net/news/2026-09-24/cyberkriminelle-erpressen-fbi-mit-angeblich-abgegriffenen-daten"
+    extended_notes: |
+      Likely also surfaces in S4 (incidents) via Reuters/BleepingComputer; the main agent should dedupe. Event date
+      2026-10-03 (Reuters); in-window sources are the 2026-10-06 re-reports, hence lookback: true. The entry's last
+      changelog record is dated 2026-09-30. Naming an individual suspect rests solely on SwissCybersecurity.net's reading of
+      Reuters; the composer may prefer the handle only.
+    borderline: true
+    borderline_reason: "No Swiss/public-sector-defender action; value is keeping a covered FBI-breach entry current. Lean KEEP as a short update-of only if S4 does not return the same delta; otherwise drop the duplicate."
+
+  # ------------------------------------------------------------------ 3
+  - title: "ANNUAL REPORT — Microsoft Digital Defense Report 2026: Switzerland 13th in Europe by customer impact, Swiss ransomware table 29 to 59, Switzerland in Russian state-actor top ten (a secondary's North Korea ranking not found in the report)"
+    sources:
+      - { url: "https://news.microsoft.com/source/emea/2026/10/la-suisse-se-classe-au-13%E1%B5%89-rang-des-pays-europeens-les-plus-touches-par-les-cyberactivites/?lang=fs", publisher: "Microsoft Source EMEA (Microsoft Switzerland)", date: "2026-10-01", role: "primary" }
+      - { url: "https://www.microsoft.com/en-us/corporate-responsibility/topics/cybersecurity/reports/microsoft-digital-defense-report/", publisher: "Microsoft", date: "2026-10-02", role: "primary" }
+      - { url: "https://aka.ms/Microsoft-Digital-Defense-Report-2026", publisher: "Microsoft Digital Defense Report 2026 (PDF)", date: "2026-10-02", role: "primary" }
+      - { url: "https://www.netzwoche.ch/news/2026-10-02/schweizer-microsoft-kunden-geraten-vergleichsweise-haeufig-ins-visier-von", publisher: "Netzwoche", date: "2026-10-02", role: "corroborating" }
+      - { url: "https://dcod.ch/2026/10/05/cyberattaques-suisse-russie-coree-du-nord/", publisher: "DCOD", date: "2026-10-05", role: "corroborating" }
+    discovery_trace: >-
+      first seen at: dcod-ch RSS https://dcod.ch/feed/ (item 2026-10-05 14:30Z "Cyberattaques : la Suisse visée par la Russie et la Corée du Nord")
+      → drill (extract) https://dcod.ch/2026/10/05/cyberattaques-suisse-russie-coree-du-nord/ → pivot: Microsoft Source EMEA
+      https://news.microsoft.com/source/emea/2026/10/la-suisse-se-classe-au-13%E1%B5%89-rang-des-pays-europeens-les-plus-touches-par-les-cyberactivites/?lang=fs
+      → pivot: https://www.microsoft.com/en-us/corporate-responsibility/topics/cybersecurity/reports/microsoft-digital-defense-report/
+      → primary: full report PDF via `pdf` https://aka.ms/Microsoft-Digital-Defense-Report-2026 (103 pages decoded; tables read);
+      Netzwoche corroboration found via WebSearch ("Microsoft Digital Defense Report 2026 Schweiz Rang 13 Europa 39 weltweit Cyberangriffe")
+      → https://www.netzwoche.ch/news/2026-10-02/schweizer-microsoft-kunden-geraten-vergleichsweise-haeufig-ins-visier-von
+    summary: |
+      Microsoft's Digital Defense Report 2026 (reporting period 2025-07-01 to 2026-06-30; published 1-2 October) is the
+      week's annual report and is not in the store. Its Swiss-specific content, read from the report PDF itself: Microsoft
+      Switzerland states that Swiss customers rank 13th in Europe and 39th worldwide for how often they are hit by malicious
+      activity (Ukraine, UK and Germany lead Europe, France sixth). In the PDF's nation-state section Switzerland is listed
+      with 20 in the Europe block of the regional sample of observed activity (eighth of ten listed) and appears tenth, at
+      2%, in the top-ten targeted countries for Russian state actors (that table's sector split: think tanks and NGOs 25%,
+      government 14%, other 13%, IT 11%, research and academia 11%, defense industry 5%). The ransomware-landscape section
+      carries a year-over-year country table that lists Switzerland at 29 for the 2025 period and 59 for the 2026 period
+      (+103%); the extracted text does not state the unit, and the section's context is public leak-site victims and
+      Defender-detected ransom events. The same section's industry table lists "Government agencies and services" rising from 57
+      to 133, and Microsoft names Qilin the leading family by leak-site victims (16.4%, up 386%) with Akira the most active
+      in Defender-detected enterprise events (22%, up 150%; Qilin 14%, up 111%). On Russian tradecraft the report says actors
+      lean harder on identity and cloud abuse, including OAuth-application abuse and token replay, some use adversary-in-the-
+      middle capability at the network edge and at ISP level for selective interception, and some target internet-facing edge
+      devices; it ties the December 2025 destructive attack on Poland's energy sector to that edge-device access vector.
+      Correction of a secondary: dcod's Swiss article says Switzerland is fifth most targeted by North Korean groups (about 2%)
+      and that Russian espionage in Switzerland concentrates on administrations, NGOs and energy; the report's North Korea
+      top-ten countries table (United States 43%, Republic of Korea 7%, UK 5%, India 4%, Germany 4%, Japan 4%, Australia 3%,
+      Canada 2%, France 2%, Philippines 1%) does not list Switzerland, and the Russia sector split is global, not Swiss. dcod's
+      ransomware doubling (29 to 59) and Russia top-ten placement do match the PDF.
+    region_nexus: "Switzerland (country ranking and tables); Europe/global threat landscape"
+    primary_sector_nexus: "indirect (public-sector ransomware and Russian state targeting data; Swiss communes run on Microsoft 365)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1550.001, T1557, T1190, T1486]
+    affected_products: ["Microsoft Entra ID", "Microsoft 365"]
+    entity_keys: ["actor:qilin"]
+    new_entities:
+      - { key: "report:microsoft-digital-defense-report-2026", type: report, name: "Microsoft Digital Defense Report 2026", aliases: ["MDDR 2026"], summary: "Microsoft's annual threat-landscape report for the period July 2025 to June 2026, published 2026-10-01/02; covers AI-accelerated attacks, identity as the primary control plane, nation-state and ransomware landscapes with country and sector tables (Microsoft, 2026-10-02)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2, note: "Microsoft first-party telemetry report; Swiss figures read from the PDF tables, units of the ransomware country table not stated in the extracted text" }
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "la Suisse se classe au 13ᵉ rang des pays européens dont les clients ont été le plus souvent touchés par des cyberactivités, et au 39ᵉ rang mondial"
+        attribution: "Microsoft Source EMEA (Microsoft Switzerland)"
+        source_url: "https://news.microsoft.com/source/emea/2026/10/la-suisse-se-classe-au-13%E1%B5%89-rang-des-pays-europeens-les-plus-touches-par-les-cyberactivites/?lang=fs"
+      - quote: "This map pulls from data from July 1, 2025 – June 30, 2026 on how frequently customers are targeted by malicious activity in each country."
+        attribution: "Microsoft"
+        source_url: "https://www.microsoft.com/en-us/corporate-responsibility/topics/cybersecurity/reports/microsoft-digital-defense-report/"
+      - quote: "Im europäischen Vergleich landet die Schweiz auf Rang 13, weltweit auf Rang 39."
+        attribution: "Netzwoche"
+        source_url: "https://www.netzwoche.ch/news/2026-10-02/schweizer-microsoft-kunden-geraten-vergleichsweise-haeufig-ins-visier-von"
+    extended_notes: |
+      PDF locations (extracted text, page numbers approximate): nation-state section pp. 38-45 (Russia top-ten tables ~p. 43,
+      DPRK tables ~p. 45, regional activity sample ~p. 40); ransomware landscape pp. 76-77 (country table p. 77). The PDF text
+      is not quotable as clean single-line strings, so the evidence quotes come from the Microsoft pages and Netzwoche; the
+      composer should treat the PDF table readings as read-by-the-agent facts and attribute them to the report. Note the two
+      Swiss trade-press framings of a different study (item 6) diverge from each other; this item has no such conflict, only
+      dcod's unreproducible North Korea ranking. Prior-fire visibility: Netzwoche and Inside IT ("Schweiz ist stark von
+      Cyberbedrohungen betroffen", 2026-10-02) carried the rank from 2 October and nothing was published; the full-report
+      content (country and sector tables, Russian identity/edge tradecraft) is what was not read earlier. S3 may return the
+      global report; the main agent should merge, keeping this item's Swiss-specific table readings.
+    borderline: true
+    borderline_reason: "Annual report from a telemetry holder with the only Swiss country-level nation-state and ransomware table readings available, but primary publication was 1-2 Oct (outside the 26 h window; only the dcod re-report is in a source lookback) and earlier fires saw the headline rank and passed. Lean KEEP as one short research/annual-report item if S3 does not already return MDDR 2026; otherwise fold the Swiss readings into S3's item."
+
+  # ------------------------------------------------------------------ 4
+  - title: "Switzerland: parliament refers motion 24.4393 to the Federal Council: identification duty for .ch/.swiss registrants and a wider legal basis for blocking abused domains"
+    sources:
+      - { url: "https://ws.parlament.ch/odata.svc/Business(ID=20244393,Language='DE')?$format=json", publisher: "Swiss Federal Assembly (Curia Vista OData, motion 24.4393)", date: "2026-10-01", role: "primary" }
+      - { url: "https://www.swisscybersecurity.net/news/2026-03-20/parlament-will-betruegern-das-handwerk-legen", publisher: "SwissCybersecurity.net", date: "2026-10-06", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/schweizer-domains-werden-besser-geschuetzt-20261002", publisher: "Inside IT", date: "2026-10-02", role: "corroborating" }
+    discovery_trace: >-
+      first seen at: netzwoche via WebFetch https://www.netzwoche.ch/ (item "Update: Parlament fordert mehr Schutz für Schweizer
+      Internetadressen", 2026-10-06) and swisscybersecurity-net via WebFetch https://www.swisscybersecurity.net/ → drill (extract)
+      https://www.swisscybersecurity.net/news/2026-03-20/parlament-will-betruegern-das-handwerk-legen → pivot: inside-it-ch RSS
+      https://www.inside-it.ch/rss.xml → https://www.inside-it.ch/schweizer-domains-werden-besser-geschuetzt-20261002 → primary:
+      Curia Vista OData (the parlament.ch geschaeft page is a client-rendered template) fetched with `url`:
+      https://ws.parlament.ch/odata.svc/Business(ID=20244393,Language='DE')?$format=json and /BusinessStates?$format=json
+    summary: |
+      Motion 24.4393 (Michael Götte, SVP/SG) "Es braucht griffige Massnahmen gegen die missbräuchliche Verwendung von
+      schweizerischen Domains!" carries the Curia Vista status "Überwiesen an den Bundesrat" dated 2026-10-01. It instructs
+      the Federal Council to change the legal basis so that .ch and .swiss domains are issued only to unambiguously
+      identified natural or legal persons, and so that the technical and administrative blocking of an abused domain by the
+      authorities is no longer limited to phishing and malware but covers other abuse cases (the motion's reasoning points at
+      Art. 15(1) of the Internet Domains Ordinance, VID, and at registrars who currently face little consequence for
+      inadequate registrant checks, with Switch to be involved). After a second round in the National Council and again in the
+      Council of States, the Council of States followed the National Council's original text and kept the identification duty;
+      the Federal Council recommended acceptance. SwissCybersecurity.net also quotes Hostpoint's co-founder opposing an
+      identification duty as a cost with little benefit. No operational change yet: the Federal Council must now draft the
+      ordinance or law changes. For defenders it signals a wider future takedown route (other criminal abuse beyond phishing
+      and malware) and stricter registrant identity checks behind .ch/.swiss registrations; current reporting and blocking
+      channels are unchanged.
+    region_nexus: "Switzerland (federal)"
+    primary_sector_nexus: "indirect (affects the domain-abuse takedown route used by Swiss authorities and defenders)"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "policy:switzerland-domain-abuse-motion-24-4393", type: policy, name: "Swiss motion 24.4393 on abuse of .ch/.swiss domains", aliases: ["Motion Götte Domains", "griffige Massnahmen gegen die missbräuchliche Verwendung von schweizerischen Domains"], summary: "Motion referred to the Federal Council on 2026-10-01 (Curia Vista) ordering an identification duty for .ch/.swiss registrants and a broader legal basis for blocking abused domains beyond phishing and malware." }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    classification_hint: { reliability: A, credibility: 1, note: "Curia Vista is the authoritative record; Swiss trade press corroborates the content" }
+    novelty: new
+    evidence:
+      - quote: "Schlussendlich folgte der Ständerat dem Nationalrat und bejahte die Forderung nach einer Identifikationspflicht."
+        attribution: "SwissCybersecurity.net"
+        source_url: "https://www.swisscybersecurity.net/news/2026-03-20/parlament-will-betruegern-das-handwerk-legen"
+      - quote: "Namentlich begrüssten sie die Forderung, dass Behörden missbrauchte Domains künftig nicht nur in Zusammenhang mit Phishing oder Malware blockieren können sollen, sondern auch im Fall anderer Missbrauchsfälle."
+        attribution: "SwissCybersecurity.net"
+        source_url: "https://www.swisscybersecurity.net/news/2026-03-20/parlament-will-betruegern-das-handwerk-legen"
+      - quote: "Der Ständerat folgte dem Antrag, damit kann sich der Bundesrat an die Umsetzung machen."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/schweizer-domains-werden-besser-geschuetzt-20261002"
+    extended_notes: |
+      Same family as the stored entry for motion 24.3209 (sovereign cloud, published as a policy entry at priority notable):
+      a referral with no operational obligation yet. The exact vote date is not stated in the fetched sources; Curia Vista
+      status date is 2026-10-01 and Inside IT reported it on 2026-10-02. The 2026-03-19/20 and 2026-06-19 steps (other
+      motions on spoofing and number/domain blocking) are earlier history in the SwissCybersecurity.net item.
+    borderline: true
+    borderline_reason: "Policy item that changes no obligation today. Inside IT carried it on 2026-10-02 and four earlier fires saw it and published nothing; the only new element is a 2026-10-06 trade-press update. Lean DROP; keep only if the main agent wants Swiss policy-watch continuity with the 24.3209 entry."
+
+  # ------------------------------------------------------------------ 5
+  - title: "Chrome blocks unauthorized certificates after registry-level hijacks of the .gh, .sl and .as ccTLDs; Google urges CT monitoring of every domain and restrictive CAA with ACME account binding"
+    sources:
+      - { url: "https://blog.google/security/chromes-response-to-recent-cctld-registry-hijacks/", publisher: "Google (Chrome Secure Web and Networking Team)", date: "2026-10-06", role: "primary" }
+    discovery_trace: >-
+      first seen at: google-tag RSS https://blog.google/security/rss/ (item 2026-10-06 11:53Z) → drill (extract)
+      https://blog.google/security/chromes-response-to-recent-cctld-registry-hijacks/ → primary (no pivot needed); corroboration
+      attempted with three WebSearch queries (".gh .sl .as ccTLD registry hijack unauthorized certificates ...", "Sierra Leone .sl domain
+      registry compromised ...", "Chrome CRLSets blocks certificates after .gh .sl .as ccTLD ...") and found none
+    summary: |
+      Google's Chrome security team reports that in the week before 2026-10-06 it learned of a series of domain hijacks in the
+      .gh (Ghana), .sl (Sierra Leone) and .as (American Samoa) country-code namespaces. Google says the incidents were not a
+      compromise of its own systems: attackers compromised the third-party ccTLDs, modified authoritative DNS records and
+      obtained unauthorized HTTPS certificates covering several Google domains and domains of other organizations; Google has
+      no reason to believe the issuing certificate authorities erred. Chrome blocked the certificates through CRLSets, worked
+      with the CAs to get them revoked, and, after Certificate Transparency log data showed more affected organizations
+      including several leading global brands, proactively blocked those as well and notified owners where possible. Google
+      cautions that it cannot guarantee it found every affected domain and that its Chrome-side blocks do not protect other
+      clients. Domain-owner guidance: monitor Certificate Transparency for all domains including parked and regional ccTLD
+      properties, and publish restrictive CAA records with ACME account bindings and validation-method restrictions, which
+      cannot stop issuance during an active DNS hijack but stop an attacker reusing cached domain-control-validation state
+      after the hijack ends. The registry operators, the hijack mechanism at the registries, the actor and the exact
+      timeline are not stated in the post.
+    region_nexus: "global; no stated Swiss nexus (relevant only to domains under .gh/.sl/.as; guidance transfers to every domain portfolio)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1584.001, T1588.004]
+    affected_products: ["Google Chrome"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2, note: "first-party statement from the browser vendor about its own response; no independent corroboration found; registries silent" }
+    novelty: new
+    evidence:
+      - quote: "Last week, we became aware of a series of domain hijacks in the .gh (Ghana), .sl (Sierra Leone), and .as (American Samoa) country-code top-level namespaces (i.e., ccTLDs)."
+        attribution: "Google (Chrome Secure Web and Networking Team)"
+        source_url: "https://blog.google/security/chromes-response-to-recent-cctld-registry-hijacks/"
+      - quote: "During these hijacks, attackers modified authoritative DNS records and obtained unauthorized HTTPS certificates covering several Google domains, as well as domains belonging to other organizations."
+        attribution: "Google (Chrome Secure Web and Networking Team)"
+        source_url: "https://blog.google/security/chromes-response-to-recent-cctld-registry-hijacks/"
+      - quote: "Perform ongoing monitoring of Certificate Transparency for all of your domains"
+        attribution: "Google (Chrome Secure Web and Networking Team)"
+        source_url: "https://blog.google/security/chromes-response-to-recent-cctld-registry-hijacks/"
+    extended_notes: |
+      Hunt/hardening concepts the post supports: telemetry class = Certificate Transparency log monitoring and DNS
+      change/authoritative-record monitoring for every domain the organization owns (parked and country-code properties
+      included); lever = CAA with accounturi and validationmethods (RFC 8657) restored promptly after any DNS hijack. No Swiss
+      public-sector exposure is known; the Swiss registry (Switch, .ch/.li) is not named. S1/S3 may judge it a DNS/PKI
+      infrastructure item of general interest.
+    borderline: true
+    borderline_reason: "No Swiss nexus and single first-party source; concrete, low-cost hardening levers for any organization that owns country-code domains. Lean KEEP as a short threat item only if the main agent wants a DNS/PKI-trust lens; otherwise drop."
+
+  # ------------------------------------------------------------------ 6
+  - title: "Swiss communes' e-mail authentication: SPF near-universal but strict DMARC on ~13%, and 87% of Microsoft 365 communes lack a strict DMARC policy (ESORICS 2026 workshop paper, 2,109 Swiss municipalities)"
+    sources:
+      - { url: "https://papers.mxmap-project.org/secassure2026.pdf", publisher: "Bischof, Huser, Ochsner, Petrlic, Portmann (ESORICS 2026 workshop accepted manuscript)", date: "2026-10-06", role: "primary" }
+      - { url: "https://www.swisscybersecurity.net/news/2026-10-06/mehr-als-jede-zweite-schweizer-gemeinde-setzt-auf-microsoft", publisher: "SwissCybersecurity.net", date: "2026-10-06", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/schweizer-gemeinden-gut-geschuetzt-vor-e-mail-betrug-20261005", publisher: "Inside IT", date: "2026-10-05", role: "corroborating" }
+    discovery_trace: >-
+      first seen at: swisscybersecurity-net via WebFetch https://www.swisscybersecurity.net/ (item 2026-10-06 "Mehr als jede zweite Schweizer Gemeinde
+      setzt auf Microsoft") → drill (extract) https://www.swisscybersecurity.net/news/2026-10-06/mehr-als-jede-zweite-schweizer-gemeinde-setzt-auf-microsoft
+      → primary: paper PDF linked there, read with `pdf` https://papers.mxmap-project.org/secassure2026.pdf (Swiss table row read);
+      second framing: inside-it-ch RSS https://www.inside-it.ch/rss.xml → https://www.inside-it.ch/schweizer-gemeinden-gut-geschuetzt-vor-e-mail-betrug-20261005
+    summary: |
+      Researchers at the University of Fribourg, Lucerne University of Applied Sciences and two German universities of applied
+      sciences measured provider dependence and e-mail authentication across more than 15,000 municipal domains in Germany,
+      Austria and Switzerland (DNS fingerprinting plus active SPF, DMARC and DANE probes, April 2026). For Switzerland (2,109
+      municipalities in the paper's table) SPF is present on 99.2% of domains with a strict policy on 79.9%, DMARC is present
+      on 55.5% but enforcement at the strictest level (reject) on only 13.4%, and DANE on 7.3%. Roughly 52% of Swiss
+      communes (1,099) run Microsoft 365 and 87% of those have no strict DMARC rule; domestic providers show about twice the
+      strict-DMARC coverage of US-cloud providers in every country. The authors read provider category as shaping which
+      mechanisms get deployed rather than as a scalar security level. The two Swiss trade-press write-ups of the same paper
+      frame it oppositely (Inside IT: communes "mostly well protected"; SwissCybersecurity.net: "clear gaps" in sender
+      protection); the paper's own abstract says strict enforcement policies and effective DMARC configurations are rare.
+      Actionable lever for communal IT: publish DMARC at p=reject (after report-only monitoring) on every sending and
+      non-sending domain; spoofed tax-authority and municipal mail is the scenario the press ties this to.
+    region_nexus: "Switzerland (communal level), DACH comparison"
+    primary_sector_nexus: "direct (communal administrations)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1672, T1566]
+    affected_products: ["Microsoft 365"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2, note: "peer-reviewed workshop paper (accepted manuscript) with passive measurement; press framings conflict, primary numbers are consistent across both" }
+    novelty: new
+    evidence:
+      - quote: "Zwar haben knapp 56 Prozent der Schweizer Gemeinden DMARC eingerichtet, doch nur gut 13 Prozent verlangen die strengste Konsequenz und lassen solche Nachrichten abweisen."
+        attribution: "SwissCybersecurity.net"
+        source_url: "https://www.swisscybersecurity.net/news/2026-10-06/mehr-als-jede-zweite-schweizer-gemeinde-setzt-auf-microsoft"
+      - quote: "Auch bei Microsoft 365 bleibt diese Lücke gross: 87 Prozent der Schweizer Gemeinden, die den Dienst nutzen, haben keine strikte DMARC-Regel aktiviert."
+        attribution: "SwissCybersecurity.net"
+        source_url: "https://www.swisscybersecurity.net/news/2026-10-06/mehr-als-jede-zweite-schweizer-gemeinde-setzt-auf-microsoft"
+    extended_notes: |
+      Table row read from the paper (columns as extracted): Switzerland 2,109 | 99.2% | 79.9% | 55.5% | 13.4% | 7.3%
+      (column headers were not recoverable from the extracted text; the press reports map them to SPF present, SPF strict,
+      DMARC present, DMARC strict, DANE). Passive DNS measurement of April 2026; 93 Swiss communes could not be attributed to
+      a provider because upstream security gateways mask the infrastructure. Inside IT's lead sentence ("2110 Gemeinden setzen
+      auf Microsoft 365") misreads the sample size as the Microsoft count.
+    borderline: true
+    borderline_reason: "Direct communal-tier posture data with a clear hardening lever (DMARC enforcement) but routine, point-in-time measurement; no incident or exploitation. Lean DROP unless the main agent wants one short communal-tier research entry."
+
+# Backlog re-gate (state/coverage_backlog.md): reported once here, never an item.
+backlog_regate:
+  - row: "Beyond Gravity (Confederation-owned space supplier, ex-RUAG) cyberattack first detected 2026-08-12, investigated with BACS and Mandiant, disclosed 2026-10-02"
+    status: "UNCHANGED - condition unmet; keep Open (expires 2026-10-20)"
+    checked: >-
+      Inside IT 2026-10-05 (extract), bluewin/Keystone-SDA 2026-10-02 (extract), swissinfo EN 2026-10-03
+      (WebFetch), SwissCybersecurity.net and Netzwoche 2026-10-06 (extract; both rewrite the Swissinfo/AWP text),
+      Beyond Gravity's own news overview (extract; newest item 2026-09-23, no cyber release listed), BACS focus / press /
+      incidents pages (extract and url; nothing on Beyond Gravity), news.admin.ch 2026-10-02..07 (nothing).
+    finding: >-
+      Still no access vector, no actor and no data named. Every in-window source repeats the company's statement as relayed by
+      Keystone-SDA/AWP: first indications of malicious activity on 2026-08-12, "a highly professional actor" suspected, actor
+      unknown, criminal complaint filed, security measures extended, affected devices forensically analysed, investigation
+      with BACS and Mandiant; the spokesperson explained the near two-month delay as thoroughness over speed. No BACS or
+      Mandiant statement exists. Re-check next fire for: a BACS press line, a Mandiant/Google GTIG attribution, a
+      Nachrichtendienst (NDB) comment, or follow-up from NZZ/SRF/Tages-Anzeiger.
+
+dropped_leads:
+  - "heise 2026-10-06 Qilin developer extradited from Japan to Germany: single-defendant prosecution, no Swiss nexus, no infrastructure takedown; Qilin is already tracked (actor:qilin). Drop."
+  - "heise 2026-10-06 BSI advises against Classic McEliece for new post-quantum projects: cryptographic policy, no SOC/IR action. Drop."
+  - "BACS weekly review 26w40 (2026-10-06, 'Mythen zu Schadsoftware'): consumer awareness; its one signal (BACS 'receives more reports of targeted malware attacks') names no technique. Drop."
+  - "news.admin.ch 2026-10-06 'Neue Schlüsselprojekte der digitalen Transformation und Informatik' (sovereign workplace software, EasyGov 2.0): IT governance, not security. Drop."
+  - "Inside IT 2026-10-06 'Aussendepartement ersetzt IAM-Lösung' (EDA replaces Microsoft Identity Manager from 2027): procurement notice. Drop."
+  - "KillSec takedown re-reports (SwissCybersecurity.net 2026-10-05, zataz, dcod): already covered by 2026-10-02/operation-killswitch-killsec-takedown-fedpol-oag; no delta."
+  - "Beyond Gravity, SRG/SRF staff-data theft (2026-09-28, ~340 current and former SRF staff, 2020-era contact data): outside the window; not in the store. Mentioned for the audit, not returned."
+  - "Swiss Transparenzregister go-live (BJ 2026-10-01): folded into item 1 as context rather than a standalone item (outside the window, no new in-window development)."
+
+candidate_sources:
+  - id: llv-li-government-presseportal
+    publisher: "Regierung des Fürstentums Liechtenstein (presseportal.ch newsroom)"
+    url: "https://www.presseportal.ch/de/nr/100000148"
+    category: gov
+    why: >-
+      Primary authority for the Liechtenstein VwbP incident thread (releases of 2026-08-02, 08-03, 08-04, 08-19, 08-31). The newsroom
+      page reads with `extract` (dated, trafilatura-direct) and each /de/pm/100000148/<id> release extracts cleanly; it
+      carried the 2026-08-19 root-cause release that no fire had recorded, and a Swiss-neighbour government is a home-region
+      authority. The government's own reply to the Landtag inquiry of 2026-10-06 was not on it.
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Recipe confirmed working: RSS `feed https://www.inside-it.ch/rss.xml 25` (20 items, dated) and `extract <article URL>` returned full bodies this fire (trafilatura-direct), no 429 and no reader credit. Note: the extracted body is prefixed by the page's 'top story' teaser block (a different article's lead), so quote only the passage under the article's own lead."
+  - source_id: enisa
+    reason: "`extract https://www.enisa.europa.eu/news` returns an undated featured/all-news list; item dates need one `extract` per item (verified: CRA Single Reporting Platform 2026-09-11, Cybersecurity Month @ work 2026-09-30, Threat Landscape 2026 2026-09-22, NIS360 2026-05-28). Nothing dated inside the window. ENISA Threat Landscape 2026 (published 2026-09-22) is not in the store (S3/audit lead: annual report)."
+  - source_id: ncsc-ch-incidents
+    reason: "Quiet, not broken: `extract` and `url` both return the same six undated cards (page date 2026-08-18); nothing new in the window."
+  - source_id: bacs-press
+    reason: "`url https://www.bacs.admin.ch/de/medienmitteilungen` returns dated cards (160); newest 2026-10-01 (Cyber Security Month); no in-window release."
+  - source_id: ncsc-ch-focus
+    reason: "`url https://www.bacs.admin.ch/de/im-fokus` returns dated cards; in-window item is the weekly review 26w40 (2026-10-06), consumer awareness. The 2026-09-28 'Pilotprojekt zur Stärkung der Cybersicherheit in Störfallbetrieben' and 2026-09-29 OSZE Zug conference releases are older than the window and not in the store."
+  - source_id: cyberattaque-org
+    reason: "The feed falls back to the jina reader (method: jina in the result, spends reader credit) and the items carry no publication date, so in-window filtering is not possible from the feed; none of the 10 items touched the constituency. Needs a dated recipe or demotion."
+  - source_id: swissinfo-ger
+    reason: "`extract https://www.swissinfo.ch/ger/` returns the front page with no cyber content and no per-item dates; no listing recipe. The Beyond Gravity wire text is at https://www.swissinfo.ch/eng/space-research/space-company-beyond-gravity-was-the-target-of-a-cyberattack/92160616 (WebFetch, article date 2026-10-03)."
+  - source_id: sekoia
+    reason: "WebFetch of https://www.sekoia.com/blog returns 12 dated posts with hrefs under https://sekoia.io/blog/<slug>; newest 2026-10-06 (policy commentary), nothing in lookback worth returning."
+  - source_id: cisa-news
+    reason: "WebFetch of https://www.cisa.gov/news-events/news with the title/date/href prompt returned 10 dated items with hrefs; newest 2026-10-01; nothing in the 73 h lookback."
+  - source_id: ec-digital-strategy-newsroom
+    reason: "`extract https://digital-strategy.ec.europa.eu/en/news` returns the highlight block without per-item dates; no cyber-regulation item identifiable in lookback (a Eurobarometer item on suspicious e-mails at work is undated)."
+  - source_id: parlament-ch-curia-vista
+    reason: "Recipe note for the policy watch: the https://www.parlament.ch/de/ratsbetrieb/suche-curia-vista/geschaeft?AffairId=<id> page is a client-rendered template (empty to `extract`); `python3 tools/fetch_source.py url \"https://ws.parlament.ch/odata.svc/Business(ID=<id>,Language='DE')?\\$format=json\"` and `.../BusinessStates?\\$format=json` return the full record and status history (dates are /Date(ms)/). It gives status for a known business id but no listing of new cyber-related motions."
+  - source_id: reuters
+    reason: "reuters.com article pages return a CAPTCHA stub through the reader fallback; Reuters-originated stories (ShinyHunters Jordan detention) can only be cited through relays."
+  - source_id: beyondgravity-com
+    reason: "A guessed URL (https://beyondgravity.com/en/press) was fetched once by mistake and 404'd via the reader fallback (a reader-credit spend); the real press archive is https://www.beyondgravity.com/en/news-overview (extract works; newest item 2026-09-23). No cyber release listed."
+
+mddr_note_for_main_agent: >-
+  Microsoft Digital Defense Report 2026 is an annual report published 2026-10-01/02 that is absent from the store; S3 may
+  or may not return it. If both do, merge: S3 for the global findings, this item's Swiss and public-sector table readings
+  (Switzerland 13th/39th, Russian top-ten placement 10th at 2%, ransomware table 29 to 59, Government agencies and services
+  57 to 133).
+
+source_ledger:
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed (warnings + current)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest warning 2026-09-27, newest current 2026-09-08" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract (listing + 4 per-item dates)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "listing undated; newest dated item 2026-09-30" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed + extract", horizon_hours: 26, in_horizon_items: 7, returned: 0, note: "Qilin extradition, BSI McEliece dropped; Android patchday and Exchange are S1" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed + extract", horizon_hours: 26, in_horizon_items: 7, returned: 1, note: "Liechtenstein update-of; Aussendepartement IAM, key projects dropped" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "bridge:url + extract", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "weekly review 26w40 is consumer awareness" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "extract + bridge:url", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "undated page unchanged (page date 2026-08-18)" }
+  - { id: bacs-press, tier: essential, attempted: true, transport: "bridge:url", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-01" }
+  - { id: swissinfo-ger, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "front page has no cyber content; used swissinfo EN article for the Beyond Gravity re-gate" }
+  - { id: ccn-cert-es, tier: standard, attempted: true, transport: "feed (atom)", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest CCN item 2026-09-30 (PILAR), newest alert AL 09/26 on 2026-09-28" }
+  - { id: cyberattaque-org, tier: standard, attempted: true, transport: "feed (jina fallback)", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "items undated; none constituency-relevant (French commercial leaks)" }
+  - { id: netzwoche, tier: standard, attempted: true, transport: "WebFetch listing + extract", horizon_hours: 98, in_horizon_items: 6, returned: 0, note: "supplied sources to items 2, 4 and 6 and to the Beyond Gravity re-gate" }
+  - { id: sekoia, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 98, in_horizon_items: 1, returned: 0, note: "2026-10-06 policy commentary only" }
+  - { id: swisscybersecurity-net, tier: standard, attempted: true, transport: "WebFetch listing + extract", horizon_hours: 98, in_horizon_items: 6, returned: 3, note: "sources for items 2, 4, 6; also Beyond Gravity re-gate, KillSec (covered), SRG (old)" }
+  - { id: zataz, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 2, returned: 0, note: "KillSec already covered; CJIS Online leak claim is US" }
+  - { id: bfv-verfassungsschutz-de, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 3, returned: 0, note: "symposium and PKGr hearing, no cyber advisory" }
+  - { id: news-admin-ch, tier: standard, attempted: true, transport: "bridge:url --direct (date-filtered listing)", horizon_hours: 98, in_horizon_items: 12, returned: 0, note: "only security-adjacent item is the digital key-projects release (dropped)" }
+  - { id: cisa-news, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 73, in_horizon_items: 0, returned: 0, note: "newest 2026-10-01" }
+  - { id: compass-security, tier: standard, attempted: true, transport: "feed", horizon_hours: 73, in_horizon_items: 0, returned: 0, note: "newest 2026-10-02 10:00Z, outside lookback" }
+  - { id: dcod-ch, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 73, in_horizon_items: 11, returned: 2, note: "items 2 (relay) and 3 (lead); rest are daily roundups of covered stories" }
+  - { id: ec-digital-strategy-newsroom, tier: standard, attempted: true, transport: "extract", horizon_hours: 73, in_horizon_items: 0, returned: 0, note: "undated highlight block; nothing cyber-regulatory identifiable" }
+  - { id: google-tag, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 73, in_horizon_items: 1, returned: 1, note: "Chrome ccTLD hijack response (borderline)" }

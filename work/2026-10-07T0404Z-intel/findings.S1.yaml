@@ -1,0 +1,456 @@
+# work/2026-10-07T0404Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-10-07T0404Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-07T04:06:42Z
+ended_at: 2026-10-07T04:38:05Z
+duration_seconds: 1883
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 9
+  bridge_fetches: 140
+items:
+
+  # ---------------------------------------------------------------------------
+  - title: "CVE-2026-21589, Atlassian Data Center: watchTowr publishes the root cause, a working request shape and a detection script, and shows the file read reaching Crowd service credentials"
+    sources:
+      - { url: "https://labs.watchtowr.com/you-wont-hear-about-these-even-in-myths-atlassian-jira-confluence-and-more-pre-auth-arbitrary-file-read-cve-2026-21589/", publisher: "watchTowr Labs", date: "2026-10-06", role: "primary" }
+      - { url: "https://github.com/watchtowrlabs/watchTowr-vs-Atlassian-CVE-2026-21589", publisher: "watchTowr Labs (GitHub)", date: "2026-10-06", role: "primary" }
+      - { url: "https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html", publisher: "Atlassian", date: "2026-10-05", role: "corroborating" }
+    discovery_trace: "first seen at: watchtowr, RSS https://labs.watchtowr.com/rss/ (fetched via tools/fetch_source.py feed) -> primary (no pivot needed): https://labs.watchtowr.com/you-wont-hear-about-these-even-in-myths-atlassian-jira-confluence-and-more-pre-auth-arbitrary-file-read-cve-2026-21589/ -> pivot: https://github.com/watchtowrlabs/watchTowr-vs-Atlassian-CVE-2026-21589 -> re-read vendor advisory https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html (no revision; still no exploitation statement)"
+    summary: |
+      Delta on the covered entry (it was written from Atlassian's advisory alone, which says the attacker must already know a file's exact name and path and that Atlassian found no evidence of exploitation). Facts from the vendor, unchanged on re-read: advisory of 2026-10-05, CVSS 4.0 9.3, all versions of eight Data Center products affected, fixed versions as already carried, and Atlassian says it "cannot confirm if your instances have been affected". New in-window facts from watchTowr Labs, which diffed vulnerable and fixed builds: the flaw sits in the shared web-resource library (atlassian-plugins-webresource, 6.0.7 vulnerable versus 6.0.8 different); its router converts a double-colon sequence into a path separator on resource-serving routes, and a deprecated relative-resource helper then concatenates the user-controlled resource name, so a traversal written with the double-colon form (the one the Atlassian WAF regex already lists) reaches files below the Tomcat context. watchTowr states it cannot traverse out of the Tomcat context but can read any file inside the application server's web root, and that the route differs per product (verified on Jira, Confluence and Bitbucket). Because WEB-INF files have fixed, well-known names, Atlassian's "must know the exact file name" limit does little work in practice (analyst inference from the published request shape, not a vendor statement). watchTowr then demonstrates impact: in a Jira that is integrated with Crowd, WEB-INF/classes/crowd.properties holds the application name and its password in plaintext; those credentials authenticate to Crowd's REST API as the Jira application, where an attacker can list users, create an account and add it to the jira-administrators group, which watchTowr calls "basically game over" (it notes a Crowd IP allowlist would make this harder). watchTowr published a detection-artefact script for Jira, Confluence and Bitbucket on GitHub and says it also built the whole chain as one Python PoC (the public repository is the detection script, not that chain). watchTowr's own claim, from a FOFA title search, is just under 700,000 internet-facing Confluence instances. No source reports exploitation: the advisory and CISA's ADP SSVC record (exploitation none, 2026-10-06) say none, the CVE is not in CISA KEV (catalog 2026.10.04), FIRST EPSS is 0.0074. The defender consequence is that the flaw moved from "vendor advisory, no details" to "public technical details plus a public check script within one day of disclosure", which is the usual precursor to scanning.
+    region_nexus: "global; self-managed Atlassian Data Center is common in public-sector estates (no source states a Swiss number)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-21589]
+    techniques: [T1190, T1005, T1552.001, T1136.001]
+    affected_products: ["Atlassian Bitbucket Data Center", "Atlassian Confluence Data Center", "Atlassian Jira Service Management Data Center", "Atlassian Jira Software Data Center", "Atlassian Bamboo Data Center", "Atlassian Crowd Data Center", "Atlassian Crucible", "Atlassian Fisheye"]
+    entity_keys: ["product:atlassian-bitbucket-data-center", "product:atlassian-confluence-data-center", "product:atlassian-jira-service-management-data-center", "product:atlassian-jira-software-data-center", "product:atlassian-bamboo-data-center", "product:atlassian-crowd-data-center"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-06/cve-2026-21589-atlassian-data-center-arbitrary-file-access"
+    evidence:
+      - quote: "it is possible to read any file within the application server itself"
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/you-wont-hear-about-these-even-in-myths-atlassian-jira-confluence-and-more-pre-auth-arbitrary-file-read-cve-2026-21589/"
+      - quote: "When you access Atlassian Crowd directly with the leaked credentials, it is basically game over."
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/you-wont-hear-about-these-even-in-myths-atlassian-jira-confluence-and-more-pre-auth-arbitrary-file-read-cve-2026-21589/"
+      - quote: "Detection Artifact Generator attempts to check if the target is vulnerable to CVE-2026-21589."
+        attribution: "watchTowr Labs (GitHub)"
+        source_url: "https://github.com/watchtowrlabs/watchTowr-vs-Atlassian-CVE-2026-21589"
+      - quote: "Atlassian cannot confirm if your instances have been affected by this vulnerability."
+        attribution: "Atlassian"
+        source_url: "https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html"
+    extended_notes: |
+      Suggested handling: `update` record on the covered entry (it is a reader-facing delta: public technical details, a public check script and a credential-theft chain). The entry's "Atlassian found no evidence of exploitation" sentence stays true but needs the "public technical details and a public check script since 2026-10-06" qualifier, and its Exposure/Detection lines can now name the mechanism.
+      Detection concept (telemetry class first): web/reverse-proxy access logs on every Data Center node, URL-decoded up to two passes (Atlassian's own guidance), searching for dot-dot sequences adjacent to a slash, backslash or double colon on plugin web-resource download routes; Atlassian publishes the regex and the Tomcat RewriteValve/urlrewrite rule. Post-patch / post-exposure check that follows mechanically from the stated chain (not a vendor statement): Crowd audit/access logs for REST calls authenticating as the Jira/Confluence/Bitbucket application account from unexpected sources, newly created Crowd users, and membership changes of administrator groups; rotate the Crowd application passwords stored in crowd.properties because the file was readable. Hardening levers: patch to the fixed versions, WAF/Tomcat rule as interim, remove internet exposure, restrict Crowd to an IP allowlist (watchTowr notes this raises the bar).
+      Affected/fixed versions are unchanged from the entry (all versions below the fixed lines named in Atlassian's advisory). The vendor-versus-ticket discrepancy on Crowd 7.1.6/7.1.7 already noted in the entry is untouched.
+      Admiralty suggestion: A1 (vendor advisory + independent discoverer write-up).
+
+  # ---------------------------------------------------------------------------
+  - title: "Stored XSS in the Ninja Forms and WPC Product Bundles WordPress plugins is exploited to plant a hidden administrator and four persistence routes"
+    sources:
+      - { url: "https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/", publisher: "Patchstack", date: "2026-10-06", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/ninja-forms-plugin-flaw-exploited-to-hack-wordpress-sites/", publisher: "BleepingComputer", date: "2026-10-06", role: "corroborating" }
+      - { url: "https://wordpress.org/plugins/ninja-forms/", publisher: "WordPress.org (Ninja Forms changelog)", date: "2026-09-28", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer feed https://www.bleepingcomputer.com/feed/ (tools/fetch_source.py feed) -> article https://www.bleepingcomputer.com/news/security/ninja-forms-plugin-flaw-exploited-to-hack-wordpress-sites/ -> primary: Patchstack https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/ (also in Patchstack feed https://patchstack.com/feed/) -> fixed-version corroboration: https://wordpress.org/plugins/ninja-forms/ changelog; CVE records read via https://cveawg.mitre.org/api/cve/CVE-2026-94504 and CVE-2026-93836 (Wordfence CNA, 2026-09-22)"
+    summary: |
+      Patchstack, from its own telemetry, reports that since 2026-10-04 one actor has been exploiting two unrelated stored cross-site-scripting flaws in WordPress plugins, both publicly disclosed on 2026-09-22 (CNA Wordfence, CVSS 3.1 7.2 each): CVE-2026-93836 in WPC Product Bundles for WooCommerce up to 8.6.6 (about 30,000 installs; an unauthenticated quantity parameter keeps attacker markup that is stored in order metadata and rendered unsafely) and CVE-2026-94504 in Ninja Forms up to 3.15.3 (more than 500,000 installs; an anonymous form submission is stored and rendered without safe encoding in the legacy submission editor). The attacker submits the script through the normal public form or cart endpoint and waits. When a logged-in administrator opens the order or the form submission, the script runs in the wp-admin origin and rides that administrator's session (it never reads the cookie, so HttpOnly gives no protection): it scrapes the CSRF nonces, installs a malicious plugin through the normal upload installer, creates an administrator account and calls a persistence installer. Patchstack describes four independent ways back in: a visible administrator account; a second administrator hidden from the Users screen by a dropped must-use plugin (hooks on the user query, the users list arguments and the role counts); a magic-login URL bound to the site's oldest existing administrator, backed by a second must-use plugin; and an unauthenticated file manager in the uploaded plugin that only runs on a direct request (it has no command primitive, but upload and save write attacker bytes to any writable path). The must-use plugins are obfuscated with a per-site key and backdated to the oldest file time in the WordPress root, so searches for recently changed files miss them; removing the vulnerable plugin or even the malicious plugin closes none of the last three routes. Patchstack states exploitation volume is limited in its telemetry and that two is what it has confirmed, not a ceiling, because the second stage is plugin-agnostic. Fixed versions: Ninja Forms 3.15.4 (changelog dated 2026-09-21, "strengthen output escaping in admin submission edit screen"; 3.15.5 followed on 2026-09-28) and WPC Product Bundles 8.6.7 (per the upstream changelog as read by Patchstack), so the exploited window opened about two weeks after the Ninja Forms fix shipped. BleepingComputer restates Patchstack and adds nothing independent. Not in CISA KEV; CISA ADP SSVC for both records shows exploitation none as of 2026-09-22 (before the campaign).
+    region_nexus: "global; no Switzerland-specific reporting. WordPress with Ninja Forms or WooCommerce is common on municipal and agency websites (no source states a Swiss number)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-93836, CVE-2026-94504]
+    techniques: [T1190, T1059.007, T1136.001, T1505.003, T1070.006, T1564.002]
+    affected_products: ["Ninja Forms", "WPC Product Bundles for WooCommerce", "WordPress"]
+    entity_keys: ["product:wordpress"]
+    new_entities:
+      - { key: "product:ninja-forms", type: product, name: "Ninja Forms", aliases: ["Ninja Forms - The Contact Form Builder That Grows With You"], summary: "WordPress form-builder plugin with more than 500,000 installs; CVE-2026-94504 (stored XSS, up to 3.15.3, fixed 3.15.4) is exploited in an October 2026 campaign (Patchstack, 2026-10-06)." }
+      - { key: "product:wpc-product-bundles-for-woocommerce", type: product, name: "WPC Product Bundles for WooCommerce", aliases: ["woo-product-bundle"], summary: "WooCommerce plugin by WPClever with about 30,000 installs; CVE-2026-93836 (unauthenticated stored XSS via the quantity parameter, up to 8.6.6, fixed 8.6.7) is exploited in an October 2026 campaign (Patchstack, 2026-10-06)." }
+      - { key: "campaign:wordpress-stored-xss-hidden-admin-implant-2026", type: campaign, name: "WordPress stored-XSS hidden-administrator campaign (October 2026)", aliases: [], summary: "Patchstack-observed campaign (first seen 2026-10-04) using stored XSS in Ninja Forms and WPC Product Bundles to run a browser-side implant in an administrator's session that installs a plugin, creates visible and hidden administrators, and plants must-use-plugin persistence; no actor is named." }
+    relation_suggestions:
+      - { subject: "campaign:wordpress-stored-xss-hidden-admin-implant-2026", object: "product:ninja-forms", basis: "Patchstack: the campaign's payload was delivered through CVE-2026-94504 in Ninja Forms on 2026-10-05 (Patchstack, 2026-10-06)" }
+      - { subject: "campaign:wordpress-stored-xss-hidden-admin-implant-2026", object: "product:wpc-product-bundles-for-woocommerce", basis: "Patchstack: the first observed exploitation on 2026-10-04 targeted CVE-2026-93836 in WPC Product Bundles (Patchstack, 2026-10-06)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Two unrelated WordPress plugins, two separate stored Cross-Site Scripting vulnerabilities, one payload."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/"
+      - quote: "exploitation volume remains limited in our telemetry"
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/"
+      - quote: "It is a fully privileged administrator the site owner cannot see."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/"
+      - quote: "Removing the vulnerable plugin, or even the malicious one, closes none of the last three."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/"
+      - quote: "strengthen output escaping in admin submission edit screen"
+        attribution: "WordPress.org (Ninja Forms changelog)"
+        source_url: "https://wordpress.org/plugins/ninja-forms/"
+    extended_notes: |
+      Contradiction to carry: BleepingComputer says both flaws "require an authenticated session to exploit"; Patchstack and the Wordfence CNA records call both unauthenticated stored XSS (the authenticated session is the administrator's, which the script rides, not the attacker's), so the composer should follow Patchstack/CNA.
+      Sourcing: the exploitation claim rests on Patchstack's own telemetry (Admiralty B, credibility 2: not independently confirmed, logical, consistent); BleepingComputer is a re-report. The fix versions are independently corroborated by the Ninja Forms changelog on WordPress.org; the WPC 8.6.7 fix version is Patchstack's reading of the upstream changelog and BleepingComputer repeats it.
+      Triage-ready behaviour (no IOCs; domains, hashes and source addresses are deliberately omitted, Patchstack's post carries them): (1) public POSTs to the plugin's AJAX submit endpoint or to a WooCommerce product URL whose form/quantity fields contain script or image-onerror markup that loads a remote script; (2) later, from an administrator's own session and IP, a plugin-upload install event (plugin-install upload tab), a user-creation event and a call to the persistence installer within seconds of the administrator opening a Ninja Forms submission or WooCommerce order; (3) new PHP files in wp-content/mu-plugins that the Plugins screen never lists, with modification times older than the WordPress install; (4) an administrator row in the users/usermeta tables that wp-admin does not show; (5) requests to wp-login.php carrying a login-token query parameter, and direct requests to files inside the uploaded plugin. Benign lookalikes: a legitimate administrator installing a plugin from a ZIP produces the same install events; the discriminators are the sequence (install plus user creation plus a self-triggered persistence call inside one page-view), the source being a stored-content view rather than the plugins screen, and the hidden-versus-listed administrator mismatch. Post-patch check: patching stops new injections but does not evict an implant, so enumerate administrators in the database against the wp-admin list, inspect mu-plugins by content not by date, rotate privileged credentials and WordPress salts, and treat the site's oldest administrator account as compromised if a login-token URL existed.
+      Hardening: update Ninja Forms to 3.15.4 or later (3.15.5 is current) and WPC Product Bundles to 8.6.7; the second stage is plugin-agnostic, so any stored XSS that reaches an administrator is a candidate vector (Patchstack's conclusion).
+      Suggested handling: new `vulnerability`/`threat` entry; priority is a call for the main agent (confirmed in-the-wild exploitation but limited volume per the discoverer; popular plugin; persistence survives patching). Admiralty suggestion: B2.
+
+  # ---------------------------------------------------------------------------
+  - title: "LibreOffice 26.2.5 / 26.8.0 close a document-opens-Java-code flaw (CVE-2026-63277) with a public PoC; Apache OpenOffice up to 4.1.16 has no fix yet"
+    sources:
+      - { url: "https://www.libreoffice.org/about-us/security/advisories/cve-2026-63277", publisher: "The Document Foundation (LibreOffice security advisories)", date: "2026-10-05", role: "primary" }
+      - { url: "https://www.openwall.com/lists/oss-security/2026/10/02/2", publisher: "Apache OpenOffice via oss-security", date: "2026-10-02", role: "primary" }
+      - { url: "https://github.com/v12-security/pocs/blob/main/office_jdbc_bugs/libreoffice/README.md", publisher: "V12 security (PoC repository)", date: "2026-10-05", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/10/libreoffice-and-openoffice-flaws-let.html", publisher: "The Hacker News", date: "2026-10-06", role: "corroborating" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3738", publisher: "BSI CERT-Bund WID", date: "2026-10-06", role: "corroborating" }
+    discovery_trace: "first seen at: thehackernews.com feed https://feeds.feedburner.com/TheHackersNews (tools/fetch_source.py feed) -> article https://thehackernews.com/2026/10/libreoffice-and-openoffice-flaws-let.html -> primary: https://www.libreoffice.org/about-us/security/advisories/cve-2026-63277 (advisory list for 26.2.5/26.8.0) and https://www.openwall.com/lists/oss-security/2026/10/02/2 (Apache OpenOffice CVE-2026-59265) -> PoC: https://github.com/v12-security/pocs/tree/main/office_jdbc_bugs -> BSI WID-SEC-2026-3738 via tools/fetch_source.py bsi-csaf (also seen in BSI RSS)"
+    summary: |
+      The Document Foundation announced on 2026-10-05 a LibreOffice 26.2.5 / 26.8.0 security batch of six advisories, led by CVE-2026-63277 (CNA CVSS 4.0 8.5, vector local with user interaction): a Calc spreadsheet can carry a saved database range that auto-refreshes from a remote ODB document whose JDBC settings name a driver class and a remote JAR, so "opening the document could run Java code from that location", with no macro-style warning or active-content prompt. The same batch fixes five document-triggered data-access flaws in the same linked-data-source feature family: arbitrary file write through an embedded Firebird database (CVE-2026-63266), local-file read and GET-request forgery through the csv provider (CVE-2026-63267) and the sql provider (CVE-2026-63268), the same classes through GStreamer and HLS playlists (CVE-2026-63269) and environment/ini-file leaks (CVE-2026-63270). Apache OpenOffice has the matching flaw as CVE-2026-59265 (Apache severity critical, CWE-426): every release up to 4.1.16 is affected, the project says the fix "is expected" in 4.1.17 (release-candidate phase) and advises disabling Java runtime integration or not opening untrusted files; the OpenOffice fix is not released. Two teams reported it independently (Rick de Jager of V12; Thomas Rinsma and Edoardo Geraci of Codean Labs) and V12 published proofs of concept for both programs, with the precondition that "Java and JDBC support must be installed and enabled". No source reports exploitation (The Hacker News: only a proof of concept; CISA ADP SSVC exploitation none; FIRST EPSS 0.0015 / 0.0022). BSI CERT-Bund rates the LibreOffice batch hoch and models the attacker as local. Gap: the LibreOffice advisory names fixed builds 26.2.5 and 26.8.0 only; it states nothing for older branches such as 25.8, so their status is unconfirmed.
+    region_nexus: "global; LibreOffice is widely deployed across European public administrations (no source quantifies a Swiss or DACH estate)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, cross-sector"
+    cves: [CVE-2026-63277, CVE-2026-59265, CVE-2026-63266, CVE-2026-63267, CVE-2026-63268, CVE-2026-63269, CVE-2026-63270]
+    techniques: [T1204.002, T1203, T1105]
+    affected_products: ["LibreOffice", "Apache OpenOffice"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:libreoffice", type: product, name: "LibreOffice", aliases: ["LibreOffice Calc", "The Document Foundation LibreOffice"], summary: "Open-source office suite by The Document Foundation; 26.2.5 / 26.8.0 (2026-10-05) fix a document-opens-Java-code flaw (CVE-2026-63277) and five data-access flaws in the same linked-data-source feature." }
+      - { key: "product:apache-openoffice", type: product, name: "Apache OpenOffice", aliases: ["OpenOffice", "OpenOffice Calc"], summary: "Open-source office suite by the Apache Software Foundation; versions up to 4.1.16 are affected by CVE-2026-59265 (malicious document executes Java code), fix expected in 4.1.17 (Apache, 2026-10-02)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A document could name a Java database driver for such a link to be loaded from a remote location, so opening the document could run Java code from that location."
+        attribution: "The Document Foundation"
+        source_url: "https://www.libreoffice.org/about-us/security/advisories/cve-2026-63277"
+      - quote: "This issue is expected to be fixed in version 4.1.17, which is in the release candidate phase."
+        attribution: "Apache OpenOffice"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/10/02/2"
+      - quote: "LibreOffice loads and instantiates the driver without a macro-style safety warning or active-content prompt."
+        attribution: "V12 security"
+        source_url: "https://github.com/v12-security/pocs/blob/main/office_jdbc_bugs/libreoffice/README.md"
+      - quote: "So far, it has only been shown as a proof of concept, and there are no reports of its use in real attacks."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/10/libreoffice-and-openoffice-flaws-let.html"
+    extended_notes: |
+      Why it clears the bar: public PoC for a document-borne code-execution path that skips the macro-trust prompt, in software that is standard on public-sector desktops, with a vendor fix already available for LibreOffice; the weaker legs are the Java precondition, the required user interaction and the absence of exploitation reports. Suggested priority: notable (not high) unless the constituency runs OpenOffice or LibreOffice with Java enabled at scale.
+      Behavioural description for the Detection/Triage lines (from the PoC README, no IOCs): on opening a spreadsheet, the office process makes outbound HTTP requests for a database document and then a JAR, after which the Java driver loads inside the office process and may spawn child processes; the document itself is an ODS with a persisted database range set to refresh on load. Telemetry classes: process-creation events with the office process as parent, egress/proxy logs for the office process fetching .odb/.jar resources, and JVM start from the office process. Benign lookalike: legitimate Calc documents with linked external data (csv/html/xml data providers) also fetch remote content on load; the discriminators are a JDBC driver class path pointing at a remote JAR, a JVM start with no business JDBC use, and the file arriving from email or the web.
+      Hardening levers: update LibreOffice to 26.2.5 / 26.8.0; for OpenOffice disable Java runtime integration in Preferences (vendor advice) until 4.1.17; the LibreOffice fix restricts Java class-path entries to file URLs and restores only the csv, html and xml data providers on load; mail-gateway handling of ODS attachments is an analyst-level compensating control, not a vendor statement.
+      Admiralty suggestion: A1 (vendor advisories from both projects plus independent discoverers).
+
+  # ---------------------------------------------------------------------------
+  - title: "Zammad 7.2.1 (2026-10-06) ships 27 security advisories including two critical flaws; the fix status of the exploited root-escalation flaw CVE-2026-102490 is still not stated"
+    sources:
+      - { url: "https://zammad.com/en/product/releases/7-2-1", publisher: "Zammad", date: "2026-10-06", role: "primary" }
+      - { url: "https://github.com/zammad/zammad/security/advisories/GHSA-79wh-8g2f-xj2c", publisher: "Zammad (GitHub security advisory)", date: "2026-10-06", role: "primary" }
+      - { url: "https://github.com/zammad/zammad/security/advisories/GHSA-f3qr-94c2-7mx2", publisher: "Zammad (GitHub security advisory)", date: "2026-10-06", role: "primary" }
+      - { url: "https://zammad.com/en/advisories/cve-2026-102489-cve-2026-102490", publisher: "Zammad", date: "2026-10-05", role: "corroborating" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3753", publisher: "BSI CERT-Bund WID", date: "2026-10-06", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, RSS https://wid.cert-bund.de/content/public/securityAdvisory/rss (tools/fetch_source.py bsi-rss) item WID-SEC-2026-3753 'Zammad: Mehrere Schwachstellen' -> tools/fetch_source.py bsi-csaf WID-SEC-2026-3753 (references: zammad.com/en/product/releases/7-2-1 and 27 GHSA ids) -> primary: https://zammad.com/en/product/releases/7-2-1 -> advisories listing https://github.com/zammad/zammad/security/advisories and per-advisory pages above -> structured severities/ranges via https://api.github.com/repos/zammad/zammad/security-advisories?per_page=40 -> re-read https://zammad.com/en/advisories/cve-2026-102489-cve-2026-102490 (unchanged: still 'working on a solution')"
+    summary: |
+      Delta on the covered entry (CVE-2026-102489 / CVE-2026-102490, exploited and in CISA KEV; the entry says Zammad is still working on a root-escalation fix and recommends 7.2.0 as the current stable release). Zammad published release 7.2.1 on 2026-10-06, titled "Critical Security Update", together with 27 GitHub security advisories published 2026-10-06 05:58-05:59 UTC; per the GitHub advisory records, every one affects versions up to and including 7.2.0 and is fixed in 7.2.1, and none carries a CVE identifier yet. Zammad's own severity ratings are 2 critical, 12 high, 10 medium and 3 low. The two critical advisories: (1) the public sign-up form accepted account fields it should have ignored, so "an attacker without any account" can register on an email address they do not own, have it treated as already confirmed and add it to any organization, then read and reply to other customers' tickets in that organization (a second flaw lets any customer change fields, including the owner, of another customer's ticket in the same organization); (2) the email verification flow established a fully authenticated session without the second factor, for accounts that never completed email verification (the default for accounts created by an administrator, the API, a directory import or an incoming email) and that have MFA configured; the attacker needs possession of that account's verification email, no password, and the session carries the account's full permissions up to administrator and can mint a personal access token that outlives it. Notable high-rated advisories: remote code execution through a template-sanitizer bypass in automation configuration (needs permission to configure automations, held only by full administrators on a default install, so mainly a privilege escalation for delegated roles and AI-agent setups), a session identifier readable by page scripts that enables off-host session takeover after any XSS, second-order SQL injection in ticket overview sorting, inactive sessions that stay authorized over the real-time GraphQL channel, arbitrary configuration disclosure via the recent-view endpoint, stored XSS in ticket zoom and desktop fields, and several cross-group and cross-organization ticket-content disclosures. Zammad's advisory page for the two exploited CVEs, re-read today, is unchanged from 2026-10-05: it still says the root-escalation flaw (CVE-2026-102490) "is related to a confirmed vulnerability in packager.io" and that the team is working on a solution; none of the 27 advisories is identified as that flaw or as DIVD's code-execution flaw, so whether 7.2.1 removes the exploited root escalation is unstated. No source reports exploitation of the 27 new flaws. Practical effect: 7.2.0, which Zammad recommended on 2026-10-01, is now itself vulnerable; the 6.5-and-older and unfixed-root points in the entry stand.
+    region_nexus: "NL/DACH public-sector helpdesk deployments (DIVD, a Dutch CSIRT, was a victim of the exploited flaws); global product"
+    primary_sector_nexus: "direct (public-sector helpdesk and ticketing)"
+    sector: "public-sector, technology"
+    cves: []
+    techniques: [T1190, T1078]
+    affected_products: ["Zammad"]
+    entity_keys: ["product:zammad"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-02/zammad-cve-2026-102489-102490-exploited-divd-breach"
+    evidence:
+      - quote: "Zammad 7.2.1 is an important security update that addresses critical vulnerabilities."
+        attribution: "Zammad"
+        source_url: "https://zammad.com/en/product/releases/7-2-1"
+      - quote: "An attacker without any account could use this to register on an email address they did not own, have that account treated as already email-confirmed, and add it to any organization in the system."
+        attribution: "Zammad (GHSA-79wh-8g2f-xj2c)"
+        source_url: "https://github.com/zammad/zammad/security/advisories/GHSA-79wh-8g2f-xj2c"
+      - quote: "Multi-factor authentication was enforced during a normal sign-in, but not on this path."
+        attribution: "Zammad (GHSA-f3qr-94c2-7mx2)"
+        source_url: "https://github.com/zammad/zammad/security/advisories/GHSA-f3qr-94c2-7mx2"
+      - quote: "This issue is related to a confirmed vulnerability in packager.io, and our team is working on a solution."
+        attribution: "Zammad"
+        source_url: "https://zammad.com/en/advisories/cve-2026-102489-cve-2026-102490"
+    extended_notes: |
+      Suggested handling: `update` record on the covered entry (reader-facing: a new fixed release exists, and the entry's "update to 7.2.0" guidance is superseded by 7.2.1; the 27 advisories are mostly awareness, the two critical ones are the decision items).
+      Exposure check (vendor-described conditions): public sign-up enabled on the customer portal (critical 1); accounts with MFA configured that never completed email verification (critical 2); delegated roles with automation-configuration permission and AI-agent configurations (RCE); version via the Zammad admin UI/about information.
+      Detection concepts (follow mechanically from the stated mechanisms, not vendor rules): application/web logs for sign-ups that carry unexpected account attributes such as organization membership or a pre-set verified state; authentication logs showing a session established through the email-verification link without a second-factor step, followed by personal-access-token creation; administrator-role sessions that appear off-host after an XSS event. Post-patch check: review organization membership changes and personal access tokens created since the release dates of the exposed versions.
+      Counts are from the GitHub security-advisories API read today (severity field, version ranges, null CVE ids); the advisory pages themselves carry the prose. Admiralty suggestion: A1.
+
+  # ---------------------------------------------------------------------------
+  - title: "FBI says a contractor's missed patch on a third-party platform caused the ShinyHunters job-portal breach; Reuters sources name Oracle PeopleSoft at Accenture"
+    sources:
+      - { url: "https://www.securityweek.com/fbi-blames-contractors-missed-patch-for-shinyhunters-breach/", publisher: "SecurityWeek", date: "2026-10-06", role: "primary" }
+      - { url: "https://thehackernews.com/2026/10/fbi-removes-accenture-contractor-after.html", publisher: "The Hacker News", date: "2026-10-06", role: "corroborating" }
+    discovery_trace: "first seen at: SecurityWeek feed https://www.securityweek.com/feed/ (tools/fetch_source.py feed) -> article https://www.securityweek.com/fbi-blames-contractors-missed-patch-for-shinyhunters-breach/ -> THN https://thehackernews.com/2026/10/fbi-removes-accenture-contractor-after.html; the originating Reuters report (https://www.reuters.com/technology/accenture-contractor-removed-fbi-following-damaging-data-breach-sources-say-2026-10-06/) answered with a CAPTCHA on every transport, so it was not read"
+    summary: |
+      Cross-domain pointer (S4's lane; included because CVE-2026-35273 and the PeopleSoft exploitation chain are S1 material). Per Reuters as relayed by SecurityWeek and The Hacker News, FBI cyber division assistant director Brett Leatherman said the FBI's review "to date" found the incident was the result of a security failure of a platform managed by a third-party organization after a contractor failed to implement a security patch explicitly issued for the platform, and the FBI has removed the contractor. The FBI named neither; Reuters, citing two unnamed sources, says the system is Oracle's PeopleSoft HR platform and the outside organization is Accenture; Accenture's statement to Reuters did not address the patching claim. That moves the covered entry (which records ShinyHunters' claim that it breached the FBI job portal through PeopleSoft, and that the FBI says the point of breach is undetermined) from "undetermined" to "FBI attributes the root cause to an unapplied vendor patch on a contractor-run platform". Claims versus facts: the FBI statement is first-hand but generic; the PeopleSoft and Accenture identification is an anonymous-source claim by Reuters. Context already in the store: Mandiant assesses ShinyHunters is exploiting a URL-encoding WAF bypass of CVE-2026-35273 in PeopleSoft's Environment Management Hub endpoint; CISA's KEV flags that CVE as used in ransomware campaigns. SecurityWeek adds that ShinyHunters' site is still live, its payment-pressure post has been removed and its most recent victim post is dated 2026-09-22; an alleged leader (Rey) was arrested in Jordan and reportedly cooperates.
+    region_nexus: "US federal agency victim; transferable lesson for any public body that outsources hosting of an internet-facing enterprise application"
+    primary_sector_nexus: "direct lesson (government third-party risk)"
+    sector: "public-sector"
+    cves: [CVE-2026-35273]
+    techniques: [T1190]
+    affected_products: ["Oracle PeopleSoft"]
+    entity_keys: ["actor:shinyhunters", "product:oracle-peoplesoft"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-09-24/shinyhunters-fbi-peoplesoft-breach-claim"
+    evidence:
+      - quote: "the incident occurred as the result of a security failure of a platform managed by a third-party organization"
+        attribution: "SecurityWeek (quoting FBI's Brett Leatherman via Reuters)"
+        source_url: "https://www.securityweek.com/fbi-blames-contractors-missed-patch-for-shinyhunters-breach/"
+      - quote: "According to Reuters’ sources, the system in question is Oracle’s PeopleSoft human resources platform, and the outside organization is Accenture."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/fbi-blames-contractors-missed-patch-for-shinyhunters-breach/"
+    extended_notes: |
+      Both fetched sources trace to one Reuters report (not independently corroborated; the FBI statement is the victim's own first-hand words). If S4 returns the same item, fold; the same delta may also belong on the campaign entry 2026-06-11/shinyhunters-oracle-peoplesoft-campaign-gadget-chain-access. Admiralty suggestion: B2.
+
+  # ---------------------------------------------------------------------------
+  - title: "CISA's KEV catalog flags CVE-2019-18935 (Progress Telerik UI for ASP.NET AJAX) as used in known ransomware campaigns; the covering entry never mentions ransomware"
+    borderline: true
+    borderline_reason: "Tiny delta: the flag is on a 2021-listed CVE, may have been set long ago (the catalog has no flip date) and names no group; included only because the task requires reporting covered CVEs whose KEV ransomware flag is Known while the entry is silent."
+    sources:
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA KEV catalog (version 2026.10.04)", date: "2026-10-04", role: "primary" }
+    discovery_trace: "first seen at: cisa-kev, tools/fetch_source.py cisa-kev (https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json), cross-checked against every CVE of the 14-day prior_coverage records and the store's entry frontmatter -> primary (no pivot needed)"
+    summary: |
+      CISA KEV catalog version 2026.10.04 lists CVE-2019-18935 (dateAdded 2021-11-03) with knownRansomwareCampaignUse "Known"; the covering entry (2026-09-28, AhnLab-sourced: Godzilla in-memory web shell and a Rust scanner on unpatched IIS) never mentions ransomware. The catalog record names no group and no date for the flag. FIRST EPSS is 0.997 (percentile 0.9995, 2026-10-06). Practical effect for the entry: an unpatched Telerik RadAsyncUpload host should be assessed for ransomware staging as well as web-shell access.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: [CVE-2019-18935]
+    techniques: [T1190, T1486]
+    affected_products: ["Progress Telerik UI for ASP.NET AJAX"]
+    entity_keys: ["product:progress-telerik-ui-for-asp-net-ajax"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: "update-of:2026-09-28/cve-2019-18935-telerik-godzilla-webshell-virtualpathprovider"
+    evidence:
+      - quote: '"knownRansomwareCampaignUse": "Known"'
+        attribution: "CISA KEV catalog"
+        source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+    extended_notes: |
+      Other store entries that carry a KEV-"Known" CVE without the word ransomware (older than the 14-day window; for the audit): CVE-2026-63077 (entry 2026-09-06/jetbrains-cadence-teamcity-cve-2026-63077-breach; the 2026-07-29 TeamCity entry does mention it), CVE-2026-45659 (2026-07-14 Microsoft Patch Tuesday entry), CVE-2026-12569 (2026-08-22 PTC Windchill), CVE-2026-35273 (2026-06-28 NAIC PeopleSoft entry), CVE-2026-0257 (2026-05-30/cve-2026-0257-pan-os-globalprotect-pre-auth-vpn-authenticati, a second entry file for the CVE besides the covered one that was updated on 2026-10-06, and 2026-09-12 Japan Digital Agency GSS VPN breach), CVE-2026-41940 (2026-05-10 cPanel/WHM), CVE-2025-8088 (three 2026-06 WinRAR/Gamaredon/Turla entries), CVE-2022-26134 and CVE-2022-29464 (2026-08-16 evooo1bot), CVE-2020-0688 and CVE-2019-0708 (2026-09-21 NightEagle). Admiralty suggestion: A1 (CISA is the originator).
+
+  # ---------------------------------------------------------------------------
+  - title: "Hitachi Energy RTU500 (end-of-life CMU firmware 11.x and earlier): CISA republishes an unauthenticated firmware-upload bypass and file-write flaw, both CVSS 9.1, found by Dragos"
+    borderline: true
+    borderline_reason: "Swiss-headquartered vendor and unauthenticated 9.1 flaws in a telecontrol RTU, but no exploitation (SSVC E:N), OT/energy rather than the public-administration core, fixed releases exist and the vendor advisory dates from 2026-09-29."
+    sources:
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-279-06", publisher: "CISA ICS advisory ICSA-26-279-06 (republishing Hitachi Energy PSIRT 8DBD000251)", date: "2026-10-06", role: "primary" }
+    discovery_trace: "first seen at: cisa-advisories, tools/fetch_source.py cisa csaf-recent (CSAF index of 2026-10-06 ICS releases icsa-26-279-01..06) -> tools/fetch_source.py cisa csaf icsa-26-279-06 -> human page https://www.cisa.gov/news-events/ics-advisories/icsa-26-279-06 read with WebFetch"
+    summary: |
+      CISA's 2026-10-06 ICS release republishes Hitachi Energy's advisory (vendor ID 8DBD000251, initial 2026-09-29) responding to Dragos findings on end-of-life RTU500 CMU firmware: CVE-2026-8065 (authentication bypass on the firmware-update endpoint lets an unauthenticated attacker upload arbitrary firmware by a crafted POST, CVSS 9.1) and CVE-2026-8066 (directory traversal in file upload lets an unauthenticated attacker write or overwrite arbitrary files, 9.1), plus an authenticated reboot flaw (CVE-2026-8067, 6.5) and legacy items (VxWorks WDB debug service CVE-2010-2965 9.8, a missing-authentication network service CVE-2014-9195 8.1, code download without integrity check CVE-2023-46143 7.5). Hitachi Energy says the findings do not affect supported CMU firmware, that end-of-life versions 11.x and prior are likely affected and receive no security updates, and recommends upgrading to 12.7.8 or 13.9.1 or later. CISA's SSVC shows no exploitation and no public exploitation is reported to CISA.
+    region_nexus: "global; vendor headquartered in Switzerland (CISA record); energy-sector telecontrol"
+    primary_sector_nexus: "indirect (communal utilities)"
+    sector: "energy"
+    cves: [CVE-2026-8065, CVE-2026-8066, CVE-2026-8067, CVE-2010-2965, CVE-2014-9195, CVE-2023-46143]
+    techniques: [T1190]
+    affected_products: ["Hitachi Energy RTU500 CMU firmware"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:hitachi-energy-rtu500", type: product, name: "Hitachi Energy RTU500", aliases: ["RTU500 series"], summary: "Hitachi Energy telecontrol remote terminal unit; CISA ICSA-26-279-06 (2026-10-06) lists unauthenticated firmware-upload and file-write flaws on end-of-life CMU firmware 11.x and earlier, fixed in 12.7.8 / 13.9.1." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An authentication bypass vulnerability in the firmware update endpoint of Hitachi Energy RTU500 allows an unauthenticated attacker to upload arbitrary firmware through a crafted POST request."
+        attribution: "CISA (republishing Hitachi Energy)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-279-06"
+      - quote: "Hitachi Energy is publishing this cybersecurity advisory in response to the security findings reported by Dragos affecting end-of-life RTU500 CMU firmware version 9.x."
+        attribution: "CISA (republishing Hitachi Energy)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-279-06"
+    extended_notes: |
+      Note the advisory's own inconsistency to carry if used: the summary text says "firmware version 9.x" while the affected-range sentence says "end-of-life versions 11.x and prior" and CISA's HTML page lists "CMU Firmware versions 11.x and prior"; read the version scope as 11.x and earlier. The same release carries three other Hitachi Energy advisories (Asset Suite, SOI/ActiveMQ CVE-2026-34197, REB500), none exploited. Dropped from the same batch: Johnson Controls EasyIO FG (CVE-2026-27872/27873, 7.7, high complexity, not remotely exploitable) and Savannah lwIP SMTP client (CVE-2026-15340, 9.8, but only affects embedded devices that act as SMTP clients; SSVC E:P). Admiralty suggestion: A2.
+
+  # ---------------------------------------------------------------------------
+  - title: "ASUSTOR ADM 4.1.0 to 5.1.4: unauthenticated arbitrary file read through an HTTP header injection in start-page-loader.cgi (CVE-2026-105324, CVSS 4.0 9.2)"
+    borderline: true
+    borderline_reason: "Published about three hours before this run, no exploitation or public PoC reported (EPSS 0.0), ASUSTOR's own advisory page did not render on any transport so only the ENISA EUVD record was read; NAS devices are a recurring ransomware target but no constituency exposure is established."
+    sources:
+      - { url: "https://euvd.enisa.europa.eu/enisa/EUVD-2026-94153", publisher: "ENISA EU Vulnerability Database", date: "2026-10-07", role: "primary" }
+    discovery_trace: "first seen at: enisa-euvd, tools/fetch_source.py enisa-euvd recent criticals -> tools/fetch_source.py enisa-euvd advisory EUVD-2026-94153 (references the vendor advisory https://www.asustor.com/security/security_advisory_detail?id=71, which extract returned as a generic site shell, not the advisory)"
+    summary: |
+      ENISA's EUVD record (published 2026-10-07 01:12 UTC, assigner ASUSTOR) says an HTTP header injection in ADM's start-page-loader.cgi lets an unauthenticated remote attacker read arbitrary files on the host: a crafted request that injects headers through the state parameter makes the web server's X-Sendfile mechanism return sensitive files without authentication. Affected: ASUSTOR Data Master (ADM) 4.1.0 through 4.3.3.RWC1 and 5.0.0 through 5.1.4.RL21; CVSS 4.0 9.2 (AV:N/AC:L/PR:N, high confidentiality impact). The EUVD record names no fixed version and flags no exploitation; the vendor advisory could not be read, so the fixed build is unconfirmed.
+    region_nexus: "global; consumer/SMB NAS, no constituency exposure established"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: [CVE-2026-105324]
+    techniques: [T1190, T1005]
+    affected_products: ["ASUSTOR Data Master (ADM)"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:asustor-adm", type: product, name: "ASUSTOR Data Master (ADM)", aliases: ["ADM"], summary: "Operating system of ASUSTOR NAS devices; CVE-2026-105324 (unauthenticated arbitrary file read, ADM 4.1.0 to 5.1.4.RL21) published 2026-10-07 (ENISA EUVD)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "An HTTP header injection vulnerability in start-page-loader.cgi of ADM allows an unauthenticated remote attacker to read arbitrary files on the host system."
+        attribution: "ENISA EUVD (record EUVD-2026-94153)"
+        source_url: "https://euvd.enisa.europa.eu/enisa/EUVD-2026-94153"
+    extended_notes: |
+      Re-gate next run on: a readable ASUSTOR advisory with fixed versions, a PoC, scanning evidence or a KEV listing. Admiralty suggestion: A3 (record from ENISA, vendor page unread).
+
+  # ---------------------------------------------------------------------------
+  - title: "@subql/common 5.8.3 npm compromise: attacker tampered with the publish workflow and shipped an infostealer through Trusted Publisher OIDC; the malicious version lived about 50 minutes"
+    borderline: true
+    borderline_reason: "Well-documented primary, but a Web3-indexer package with a roughly 50-minute exposure window and no stated public-sector footprint; the transferable lesson (CI workflow tampering published through an OIDC Trusted Publisher) is the only reason to keep it. Also S3's lane, so a duplicate is likely."
+    sources:
+      - { url: "https://flatt.tech/research/posts/subql-common-npm-supply-chain-attack/", publisher: "GMO Flatt Security Research", date: "2026-10-06", role: "primary" }
+    discovery_trace: "first seen at: flatt-security, feed https://flatt.tech/research/index.xml (tools/fetch_source.py feed, reader fallback, undated items) -> primary (no pivot needed): https://flatt.tech/research/posts/subql-common-npm-supply-chain-attack/ (dated 2026-10-06 by the post)"
+    summary: |
+      GMO Flatt Security, from analysis on its Takumi Guard infrastructure, reports that on 2026-10-05 an attacker with push access to the subquery/subql GitHub repository committed an unsigned change to the publish workflow that downloads a prebuilt tarball from an external server and swaps it into packages/common before the publish step, then bumped the version; the workflow published @subql/common 5.8.3 to npm at 11:56 UTC as a Trusted Publisher (GitHub Actions OIDC) release, so provenance looked legitimate, and the version was removed from npm at about 12:46 UTC (a 5.8.3-onf-rt1 test release without a postinstall hook preceded it). The package adds a postinstall hook that runs an obfuscated loader which daemonizes itself, skips Russian-locale systems, steals credentials (AWS including Parameter Store and Secrets Manager across regions, GitHub tokens, Kubernetes, Vault, SSH keys, .env, .npmrc and Docker config) and offers a reverse shell; requiring the package at runtime also launches it. Flatt says some descriptions may contain inaccuracies because it prioritised speed. Anyone who installed 5.8.3 should rotate AWS, GitHub and secret-store credentials and check for a lingering background node process and lock file; the last known safe version is 5.8.2.
+    region_nexus: "global; no public-sector nexus stated"
+    primary_sector_nexus: "none stated"
+    sector: "technology"
+    cves: []
+    techniques: [T1195.002, T1552.001, T1059.007]
+    affected_products: ["@subql/common (npm)"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:subql-common-npm-compromise-2026-10", type: incident, name: "@subql/common 5.8.3 npm package compromise (October 2026)", aliases: ["SubQuery @subql/common supply-chain attack"], summary: "On 2026-10-05 an attacker with push access to the subquery/subql repository tampered with its publish workflow and released an infostealer as @subql/common 5.8.3 via GitHub Actions OIDC Trusted Publishing; removed from npm about 50 minutes later (Flatt Security, 2026-10-06)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The attacker who injected this malicious code tampered with the CI/CD workflow of the subql GitHub repository, and published the malicious version via GitHub Actions OIDC (Trusted Publisher), making it difficult to distinguish from a legitimate release."
+        attribution: "GMO Flatt Security Research"
+        source_url: "https://flatt.tech/research/posts/subql-common-npm-supply-chain-attack/"
+    extended_notes: |
+      Neither Socket's nor Aikido's blog listing (fetched this run) carried a post on it. Admiralty suggestion: B2.
+
+# ---------------------------------------------------------------------------
+cve_table:
+  - { cve: CVE-2026-21589, product: "Atlassian Bitbucket / Confluence / Jira Service Management / Jira Software / Bamboo / Crowd Data Center, Crucible, Fisheye", cvss: "9.3 (CVSS 4.0, Atlassian)", epss: 0.00738, kev: false, exploited: "no exploitation reported; public technical details and a public check script since 2026-10-06", affected: "all versions below the fixed lines", fixed: "Bitbucket 9.4.26 / 10.2.8 / 10.5.1; Confluence 9.2.26 / 10.2.19; JSM 5.12.40 / 10.3.26 / 11.3.12; Jira Software 9.12.40 / 10.3.26 / 11.3.12; Bamboo 10.2.24 / 12.1.12; Crowd 6.3.7 / 7.0.3 / 7.1.7 / 7.2.4; Crucible 4.9.15; Fisheye 4.9.15 (EOL versions unfixed)", type: "path traversal / arbitrary file read", vector: network, auth: none, source: "https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html" }
+  - { cve: CVE-2026-94504, product: "Ninja Forms (WordPress plugin)", cvss: "7.2 (CVSS 3.1, Wordfence CNA)", epss: 0.00412, kev: false, exploited: "yes, limited, observed from 2026-10-05 (Patchstack telemetry)", affected: "<= 3.15.3", fixed: "3.15.4 (2026-09-21); 3.15.5 current", type: "stored XSS", vector: network, auth: none, source: "https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/" }
+  - { cve: CVE-2026-93836, product: "WPC Product Bundles for WooCommerce (WordPress plugin)", cvss: "7.2 (CVSS 3.1, Wordfence CNA)", epss: 0.00399, kev: false, exploited: "yes, limited, observed from 2026-10-04 (Patchstack telemetry)", affected: "<= 8.6.6", fixed: "8.6.7", type: "stored XSS via quantity parameter", vector: network, auth: none, source: "https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/" }
+  - { cve: CVE-2026-63277, product: "LibreOffice Calc", cvss: "8.5 (CVSS 4.0, The Document Foundation)", epss: 0.00145, kev: false, exploited: "no; public PoC (V12) since 2026-10-05", affected: "before 26.2.5 (26.2 series per the CVE record; advisory states nothing for older branches)", fixed: "26.2.5 / 26.8.0", type: "code execution via remote JDBC driver on document open (CWE-829)", vector: "local, user interaction (opens a document)", auth: none, source: "https://www.libreoffice.org/about-us/security/advisories/cve-2026-63277" }
+  - { cve: CVE-2026-59265, product: "Apache OpenOffice", cvss: "8.8 (CVSS 3.1, ADP record; Apache severity: critical)", epss: 0.00224, kev: false, exploited: "no; public PoC (V12)", affected: "through 4.1.16", fixed: "none released; 4.1.17 expected (release-candidate phase)", type: "code execution via Java integration on document open (CWE-426)", vector: "network delivery, user interaction", auth: none, source: "https://www.openwall.com/lists/oss-security/2026/10/02/2" }
+  - { cve: CVE-2026-8065, product: "Hitachi Energy RTU500 CMU firmware (EOL)", cvss: "9.1", epss: null, kev: false, exploited: "no (SSVC E:N)", affected: "end-of-life CMU firmware 11.x and prior", fixed: "12.7.8 / 13.9.1 or latest", type: "authentication bypass on firmware-update endpoint", vector: network, auth: none, source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-279-06" }
+  - { cve: CVE-2026-8066, product: "Hitachi Energy RTU500 CMU firmware (EOL)", cvss: "9.1", epss: null, kev: false, exploited: "no (SSVC E:N)", affected: "end-of-life CMU firmware 11.x and prior", fixed: "12.7.8 / 13.9.1 or latest", type: "directory traversal in file upload (arbitrary file write)", vector: network, auth: none, source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-279-06" }
+  - { cve: CVE-2026-105324, product: "ASUSTOR Data Master (ADM)", cvss: "9.2 (CVSS 4.0, ASUSTOR)", epss: 0.0, kev: false, exploited: "no report", affected: "ADM 4.1.0 through 4.3.3.RWC1; 5.0.0 through 5.1.4.RL21", fixed: "not stated in the readable record", type: "HTTP header injection to arbitrary file read (X-Sendfile)", vector: network, auth: none, source: "https://euvd.enisa.europa.eu/enisa/EUVD-2026-94153" }
+  - { cve: CVE-2019-18935, product: "Progress Telerik UI for ASP.NET AJAX", cvss: null, epss: 0.99737, kev: true, exploited: "yes (KEV since 2021-11-03); ransomware flag Known in catalog 2026.10.04", affected: "RadAsyncUpload before 2020.1.114", fixed: "2020.1.114 and later", type: "deserialization of untrusted data (CWE-502)", vector: network, auth: none, source: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json" }
+
+# ---------------------------------------------------------------------------
+kev_sweep:
+  catalog_version: "2026.10.04"
+  additions_in_window: 0
+  note: "Last addition 2026-10-04 (Citrix CVE-2026-88779, covered). Ransomware-flag cross-check of the store: one 14-day-window covered CVE has flag Known and an entry that never says ransomware (CVE-2019-18935, returned as an update-of item); thirteen older entries listed in that item's extended_notes. CVE-2026-0257, CVE-2026-20316, CVE-2026-35273 and CVE-2026-63077 are Known and their current covering entries already mention ransomware."
+
+# ---------------------------------------------------------------------------
+multi_product_release_dispositions:
+  - { release: "Microsoft October 2026 early update (MSRC CVRF 2026-Oct, 2026-10-02, revised 2026-10-05)", cves: 1, disposition: "CVE-2026-96940 Exchange Server EoP (8.8, authenticated, publicly disclosed No, exploited No, Exploitation More Likely): dropped, as on 2026-10-03, 2026-10-04 and 2026-10-06; Patch Tuesday is 2026-10-13, nothing exploited or pre-auth in the table" }
+  - { release: "Android Security Bulletin October 2026 (2026-10-05)", cves: "25+", disposition: "most severe is a critical System EoP; the bulletin names no limited-targeted exploitation; not returned" }
+  - { release: "LibreOffice 26.2.5 / 26.8.0 security batch (2026-10-05)", cves: 6, disposition: "returned as an item (CVE-2026-63277 with public PoC)" }
+  - { release: "WordPress 7.1.3 (2026-10-06)", cves: 7, disposition: "dropped: Patchstack says 'this isn't a drop-everything emergency'; two flaws start unauthenticated (comment-feed disclosure of private-post comments, comments XSS needing a moderator click), none exploited, none RCE; backported to at least 6.6" }
+  - { release: "Zammad 7.2.1 (2026-10-06)", cves: "27 GHSAs, no CVE ids yet", disposition: "returned as update-of on the exploited-Zammad entry" }
+  - { release: "Cisco PSIRT bundle announced for 2026-10-07 (advance notice cisco-sa-notice-fBn58E)", cves: "n/a", disposition: "NOT YET PUBLISHED at 04:30 UTC: APIC, Finesse, License On-Prem, Meraki and NX-OS (MDS 9000, Nexus 3000/7000/9000, UCS Fabric Interconnects) security hardening releases per the notice; next fire must read it" }
+  - { release: "OpenSSL 2026-09-29 (14 CVEs; High CVE-2026-84782 DTLS retransmission over-read, CVSS 8.2)", cves: 14, disposition: "outside the window, no exploitation or PoC; dropped" }
+  - { release: "Dell DSA-2026-324 System Update (published 2026-10-01; BleepingComputer 2026-10-05)", cves: 5, disposition: "CVE-2026-86360 unauthenticated path traversal to root code execution (critical per Dell) plus four high; outside the window, no exploitation reported; borderline-drop" }
+  - { release: "CISA ICS release 2026-10-06 (icsa-26-279-01..06)", cves: "n/a", disposition: "RTU500 returned as borderline; Johnson Controls EasyIO FG, lwIP SMTP client and the other Hitachi Energy advisories dropped (not exploited, narrow preconditions)" }
+  - { release: "Microsoft/others scheduled for 2026-10-13 (Patch Tuesday, SAP, Adobe, Fortinet, Ivanti) and Oracle CPU 2026-10-20", cves: "n/a", disposition: "not yet released" }
+
+# ---------------------------------------------------------------------------
+backlog_regate:
+  - row: "IBM MQ CVE-2026-10747 (CVSS 10.0) and Langflow OSS CVE-2026-79724 / 81204 / 85025 (+ IBM bulletin 2026-10-02, CVE-2026-104334)"
+    status: "HOLD, condition unchanged (exploitation report, public PoC or CISA KEV listing); expiry 2026-10-11 stands"
+    changed_since_last_note: "None of the CVEs is in CISA KEV (catalog 2026.10.04, fetched this run); ENISA's exploited list for 2026-10-04..07 holds only Citrix CVE-2026-88779; no exploitation report or PoC found by search or in the BSI/EUVD data. New metadata only: ENISA EUVD indexed the same IBM bulletin's Langflow CVE-2026-93674 (EUVD-2026-94119, CVSS 9.8, 'Langflow OSS 1.0.0 through 1.12.2') and CVE-2026-104334 (EUVD-2026-94131) on 2026-10-06/07; IBM's bulletin node 7290694 (2026-10-02, no workaround, fix 1.12.3) re-read in full; BSI revised WID-SEC-2026-3616 and -3311 on 2026-10-05 to add upstream Langflow CVE-2026-105697 and CVE-2026-105740 (authenticated MCP stdio command injection, CVSS 9.9, fixed 1.10.3 / 1.9.0), authenticated only. GitHub's advisory database (api.github.com/advisories, read this run) also published upstream Langflow advisories on 2026-10-05/06: CVE-2026-8505 (unauthenticated flow execution through a webhook authentication bypass when WEBHOOK_AUTH_ENABLE is False, the default; versions 1.7.0 to 1.9.0, fixed 1.9.1, CVSS 9.8, attacker must know a flow UUID), CVE-2026-9205 (weak Fernet key, 9.1) and CVE-2026-10561 (authenticated Python REPL RCE, 9.9); none is reported exploited."
+  - row: "MikroTik RouterOS CVE-2026-84411 (CVSS 9.8, pre-auth web-management integer underflow)"
+    status: "HOLD, condition unchanged (MikroTik names fixed builds, or PoC / exploitation / KEV); expiry 2026-10-14 stands"
+    changed_since_last_note: "CISA ICSA-26-272-06 has no revision after Update A of 2026-09-30 and still says no known exploitation (SSVC E:N A:Y); not in KEV. MikroTik's upgrade server lists stable 7.24.5 (built 2026-09-29), testing 7.25rc1 and long-term 7.23.7 (2026-09-16), so the CISA-named fix line (7.24 or later) exists in the stable channel while the long-term channel carries no 7.24 build; MikroTik's own changelog page is JS-loaded and did not show the CVE, so MikroTik has not named it in anything read."
+  - row: "IBM Guardium Data Protection CVE-2026-85542 (CVSS 8.8, exploited per Italy's ACN)"
+    status: "HOLD, condition unchanged (KEV listing, IBM confirmation or a constituency deployment); expiry 2026-10-14 stands"
+    changed_since_last_note: "Not in KEV; no IBM statement of exploitation found; ACN alert AL04/260928/CSIRT-ITA re-read, unchanged (exploitation 'Presente', fixed in the vendor release). New: IBM's bulletin node 7288035 (2026-09-17, Guardium Data Protection 12.2, no workaround, fix pack not named) carries CVE-2026-85542 together with an unauthenticated CVE-2026-84275 (CVSS 9.8, path traversal in GIM file-upload writes arbitrary files to the Collector) and about twenty other flaws, so the product's exposed-surface picture is worse than the row assumed, but nothing reports exploitation of the unauthenticated one."
+
+# ---------------------------------------------------------------------------
+dropped_leads:
+  - "Microsoft Exchange CVE-2026-96940 (NCSC-NL 0401, CERT-FR 1258, SOC Prime, THN): authenticated cross-mailbox read, not exploited or disclosed; dropped by three earlier runs."
+  - "Microsoft Outlook CVE-2026-100208 (CERT-FR AVI-1266, 2026-10-06 relay of a 2026-09-25 bulletin; CVSS 7.5, high attack complexity, user interaction; CISA ADP SSVC exploitation none): dropped."
+  - "HPE iLO 7 CVE-2026-79820 (hpesbhf05163, BSI 3756; CVSS 9.0, AC:H, S:C, firmware 1.25.00; SSVC exploitation none; HPE page is a JS shell): dropped, re-gate on PoC/exploitation."
+  - "Rejetto HFS CVE-2026-61500 (BleepingComputer 2026-10-05): VulnCheck canary saw small-scale probing from one address after Horizon3's 2026-09-30 PoC; previous run already dropped it as borderline; entry 2026-07-13/rejetto-hfs-session-forgery-prng-rce-cve-2026-61500 still says 'no exploitation reported yet', so a future in-the-wild confirmation is an update-of."
+  - "Camunda 7 CVE-2026-77226 (CodeAnt AI 2026-09-24, BSI 3750 relay): CVSS 4.0 9.2 but four preconditions, not the default state; dropped."
+  - "Keycloak CVE-2026-105305 (authenticated, unpatched per BSI 3749), Checkmk (XSS/info), Sitefinity Next.js SDK CVE-2026-92931, Zabbix 6.0.48/7.0.29/7.4.13 bundle, GitLab AI Gateway CVE-2026-90970, Dell System Update: no exploitation, narrow or not constituency-central."
+  - "Socket 2026-10-02 'GlassWorm-linked VS Code themes' (S3 lane): extension supply-chain research, no public-sector nexus."
+  - "Aikido 2026-09-23 GitLab incoming-email token abuse: outside the 98 h lookback."
+  - "Pwn2Own Ireland 2026 (2026-10-06 day one, BleepingComputer): 32 zero-days shown against phones, printers, a smart hub and AI infrastructure; vendors have 90 days; nothing actionable yet."
+  - "Outside every window but never assessed by earlier runs and visible in CERT-FR's weekly bulletin ACT-042: GitLab CE/EE CVE-2026-89078 and CVE-2026-93577 (CVSS 9.9, patch release 19.0.9, 2026-09-23, exploitation 'no information'); HPE Aruba Instant On CVE-2026-76723/76724/76725 (9.6, adjacent network): left for the audit's G1 re-sweep."
+
+# ---------------------------------------------------------------------------
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Product watchlist is empty in this deployment; sweep is a no-op."
+
+candidate_sources:
+  - id: patchstack
+    publisher: "Patchstack (WordPress ecosystem vulnerability research)"
+    url: "https://patchstack.com/articles/"
+    rss_url: "https://patchstack.com/feed/"
+    category: research
+    reliability: B
+    why: "Own-telemetry WordPress exploitation reporting, first-party for the 2026-10-06 stored-XSS hidden-administrator campaign and the WordPress 7.1.x security releases; the feed https://patchstack.com/feed/ reads on the direct transport with dated items (the /articles/feed/ path 404s). Public-sector sites on WordPress are a standing exposure."
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "The /advisories/ listing and every per-advisory page return a Cloudflare-style CAPTCHA through extract (reader fallback) and an empty body through WebFetch; only the homepage reads, via the reader, and shows the three newest advisories undated (DCOM PsmServiceExtHost LPE on Windows 11 25H2, UNISOC T612 LPE, Linux bridge STP timer use-after-free). No dates, so nothing returned. Reader credit was spent on four calls."
+  - source_id: vulncheck
+    reason: "RECIPE CHANGE: `extract` and the bridge still return a stale 2022 snapshot, but WebFetch of https://www.vulncheck.com/blog now returns the current listing with dates and URLs (newest 2026-10-01, Cisco SD-WAN CVE-2026-76504 write-up, already covered; 2026-09-30 JCTables Joomla). Suggest fetch_method webfetch with that recipe."
+  - source_id: flatt-security
+    reason: "`feed https://flatt.tech/research/index.xml` only works through the reader and carries no dates; per-post pages read cleanly with extract and are dated (newest 2026-10-06). Use extract on the first listing link."
+  - source_id: tp-link-omada-psirt
+    reason: "`url` recipe works but the page is a React blob; bulletin dates sit in the embedded data (MM-DD-YYYY). One old advisory (CVE-2025-9289/9290) was re-dated 10-06-2026; nothing new in the lookback."
+  - source_id: chrome-releases
+    reason: "(not in this slice) `feed https://chromereleases.googleblog.com/feeds/posts/default` returned a non-JSON body during this run; no Chrome KEV addition exists in the window, so no impact."
+
+self_evolution:
+  - "GitHub's public REST API reads on the direct transport and is a better recipe than the HTML advisory pages for any project that publishes GHSA advisories: `python3 tools/fetch_source.py url --direct \"https://api.github.com/repos/<org>/<repo>/security-advisories?per_page=40\"` returns ghsa_id, cve_id, severity, vulnerable_version_range and patched_versions as JSON (used on zammad/zammad: 27 advisories in one call). Worth a note in the research definition's fetch tooling reference."
+  - "`tools/fetch_source.py url <URL>` silently falls back to the metered reader on any host that is not HTML-challenged (it did so for upgrade.mikrotik.com version-text endpoints and for non-HTML API replies): add `--direct` when the endpoint is a plain-text or JSON API."
+  - "A same-day delta check of every covered entry's vendor GitHub-advisory / release page would have caught Zammad 7.2.1 one fire earlier; the entry's own `sources[]` URLs are the natural recheck list (a cheap 'recheck covered primaries' step for S1)."
+  - "WebFetch returned an empty body on ssd-disclosure.com again (second consecutive documented wall); do not spend WebFetch calls on that host."
+
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 15 + ncsc-nl csaf NCSC-2026-0401", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "0402 Atlassian already covered; 0401 Exchange dropped" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:cert-fr avis-recent 25 + actu-recent 10 + extract", horizon_hours: 26, in_horizon_items: 3, returned: 0, note: "AVI-1264 Atlassian (covered), 1265 Android, 1266 Office/Outlook (dropped); ACT-042 weekly table fully covered; flat 00:00 timestamps as documented" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss + bsi-csaf", horizon_hours: 26, in_horizon_items: 15, returned: 2, note: "WID-SEC-2026-3753 (Zammad) and 3738 (LibreOffice) led to items; 3756 HPE iLO, 3750 Camunda, 3749 Keycloak, 3746 Checkmk, 3744 Sitefinity, 3616/3311 Langflow read and dispositioned" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest advisory 2026-014 dated 2026-09-27" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "GNU Aspell low-severity only" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + bridge:cisa csaf-recent / csaf + WebFetch ICS page", horizon_hours: 26, in_horizon_items: 6, returned: 1, note: "no alerts or AA-series dated 2026-10-05..07 (WebFetch listing); six ICS advisories of 2026-10-06, RTU500 returned as borderline" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 0, returned: 1, note: "catalog 2026.10.04, no additions in window; ransomware-flag cross-check returned the Telerik update-of" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:url --direct (search API exploited=true) + enisa-euvd recent lastvulnerabilities/criticals + advisory", horizon_hours: 26, in_horizon_items: 6, returned: 1, note: "exploited list holds only Citrix CVE-2026-88779 (covered); criticals gave ASUSTOR ADM (returned, borderline) and the IBM Langflow CVEs (backlog)" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 15", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "13032 Atlassian advisory already covered" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "only the ASOS customer-incident notice (S4 lane)" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed + extract", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "Atlassian CVE-2026-21589 write-up, returned as update-of" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed + extract of FG-IR-26-175", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-175 (2026-10-01, solution update 2026-10-05) is already carried by the FortiMail entry" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc releases + cvrf 2026-Oct + cve", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "the 2026-Oct early release is one Exchange CVE (not exploited); CVE-2026-65660 SharePoint last revised 2026-09-25 (covered)" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest CVE-2026-0250 dated 2026-10-02 (GlobalProtect App, medium)" }
+  - { id: socket-dev-blog, tier: standard, attempted: true, transport: "bridge:url (Next.js listing parsed by text)", horizon_hours: 122, in_horizon_items: 1, returned: 0, note: "GlassWorm theme cluster 2026-10-02 (S3 lane)" }
+  - { id: socprime, tier: standard, attempted: true, transport: "feed", horizon_hours: 122, in_horizon_items: 4, returned: 0, note: "all re-reports of covered CVEs; OpenSSL CVE-2026-84782 (2026-10-01) read, no exploitation" }
+  - { id: sonatype, tier: standard, attempted: true, transport: "feed", horizon_hours: 122, in_horizon_items: 3, returned: 0, note: "policy/marketing posts" }
+  - { id: trail-of-bits, tier: standard, attempted: true, transport: "extract", horizon_hours: 122, in_horizon_items: 1, returned: 0, note: "newest post 2026-10-02 is a hashing-construction release" }
+  - { id: trendmicro-research, tier: standard, attempted: true, transport: "feed", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-09-25" }
+  - { id: vulncheck, tier: standard, attempted: true, transport: "extract (stale 2022 snapshot) then WebFetch (works)", horizon_hours: 126, in_horizon_items: 1, returned: 0, note: "2026-10-01 Cisco SD-WAN write-up already cited by the covering entry; recipe change logged in coverage_gaps" }
+  - { id: tp-link-omada-psirt, tier: standard, attempted: true, transport: "bridge:url (embedded data parsed)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest new bulletins 2026-09-10/09-21; one old advisory re-dated 2026-10-06" }
+  - { id: zimbra-security-advisories, tier: standard, attempted: true, transport: "extract", horizon_hours: 126, in_horizon_items: 0, returned: 0, note: "newest fix list is 10.1.21, already covered" }
+  - { id: aikido-security, tier: standard, attempted: true, transport: "extract + bridge:url", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "GitLab incoming-email token post is dated 2026-09-23" }
+  - { id: calif-codex, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest 2026-09-11" }
+  - { id: censys-blog, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest 2026-09-24" }
+  - { id: cisco-psirt, tier: standard, attempted: true, transport: "feed", horizon_hours: 102, in_horizon_items: 1, returned: 0, note: "SD-WAN Manager advisory (revised 2026-10-02 23:18, covered); advance notice for the 2026-10-07 bundle logged in multi_product_release_dispositions" }
+  - { id: exodus-intelligence, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest 2026-07-27" }
+  - { id: flatt-security, tier: standard, attempted: true, transport: "extract + feed (reader, undated)", horizon_hours: 98, in_horizon_items: 1, returned: 1, note: "@subql/common npm compromise 2026-10-06, returned as borderline" }
+  - { id: ssd-disclosure, tier: standard, attempted: true, transport: "extract (reader fallback: listing and per-advisory CAPTCHA, homepage readable undated) + WebFetch (empty)", horizon_hours: 126, in_horizon_items: 0, returned: 0, note: "see coverage_gaps" }
