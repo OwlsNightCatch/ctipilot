@@ -1,0 +1,196 @@
+domain: FU1
+run_id: 2026-10-10T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-10T03:31:44Z
+ended_at: 2026-10-10T03:39:16Z
+duration_seconds: 452
+in_window_anchor: >-
+  2026-10-10 (window_hours 26 from about 2026-10-09T01:00Z; headline sweep slice 2026-10-09T12:00Z to now, container clock read
+  03:34Z at start of sweep; all four feeds' newest items are from 2026-10-09 evening, nothing after about 20:30Z)
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 12
+  bridge_fetches: 18
+items:
+  - title: >-
+      GhostAction returns: stolen maintainer credentials push a fake "Security Audit" workflow into the victims' own repositories,
+      now sweeping the full git history for cloud, AI and registry credentials
+    sources:
+      - { url: "https://www.stepsecurity.io/blog/ghostaction-returns", publisher: "StepSecurity", date: "2026-10-09", role: "primary" }
+      - { url: "https://socket.dev/blog/ghostaction-cloud-credentials", publisher: "Socket", date: "2026-10-09", role: "primary" }
+      - { url: "https://blog.gitguardian.com/ghostaction-github-actions-supply-chain-attack-returns/", publisher: "GitGuardian", date: "2026-10-07 (updated 2026-10-09)", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/10/credential-stealing-github-actions.html", publisher: "The Hacker News", date: "2026-10-10", role: "lead" }
+    discovery_trace: >-
+      first seen at: cross-domain lead from S3/S4/S1 (The Hacker News 2026-10-10 headline) → fetched via extract, URL
+      https://thehackernews.com/2026/10/credential-stealing-github-actions.html → pivot: StepSecurity, URL
+      https://www.stepsecurity.io/blog/ghostaction-returns (primary: run-log forensics, hunting queries) → pivot: Socket, URL
+      https://socket.dev/blog/ghostaction-cloud-credentials (independent analysis of the same 2026-10-08 burst; carries the 'tens of thousands' update line) →
+      pivot: GitGuardian, URL https://blog.gitguardian.com/ghostaction-github-actions-supply-chain-attack-returns/ (Aug 31 to Sep 30 wave statistics, approval-gate data)
+    summary: |
+      GhostAction, the CI/CD secret-theft campaign GitGuardian first documented in September 2025, was still running through 2026 and escalated on
+      2026-10-08. The operator holds a maintainer's GitHub credential (StepSecurity and GitGuardian assess most plausibly a personal access token
+      leaked through infostealer logs or credential dumps; Socket did not observe how it was obtained) and commits a workflow named "Security Audit"
+      (security-audit.yml) or "Github Actions Security" (github_actions_security.yml) directly to the default branch of every repository that account can
+      write to. The commit carries the victim's own identity, is unsigned and bypasses pull-request review, so the workflow runs in the victims' own
+      repositories and organisations, not in attacker-controlled ones; StepSecurity notes nothing in an audit log looks anomalous unless the workflow content is read.
+      The workflow triggers on workflow_dispatch and on any push to any branch or tag. The original payload POSTs the repository's named Actions secrets
+      (the names are templated in after the attacker scanned the repository's existing workflows for secrets references). The October variant checks out with
+      fetch-depth 0, then greps the working tree and the entire git history (git log -p --all) for 13 credential patterns (AWS key IDs, secret keys and session tokens,
+      with two lines of context so key pairs can be rebuilt; Anthropic, OpenAI and OpenRouter keys; GitHub and GitLab tokens; Google/Firebase, Slack and SendGrid keys)
+      and sends everything in one HTTP POST to a bare IP address over plain HTTP, so no DNS lookup occurs. StepSecurity read the Actions run log of an Uber-owned
+      repository and confirms the exfiltration request was acknowledged four seconds after the run started; the run's GITHUB_TOKEN was scoped contents: read, so
+      escalation depends on what is stolen. On 2026-10-08 the accounts of the author of the pyxel game engine (27 repositories; the payload named his PyPI and
+      crates.io publishing credentials and a PAT) and of the original author of Uber's athenadriver (318 repositories, 279 of them forks, plus an Uber organisation
+      repository he could still write to) were used; StepSecurity and Socket count 345 and 346 repositories. Neither saw a malicious package release published
+      from the stolen credentials so far. GitGuardian's own data covers the preceding wave: 772 public repositories of 373 users and organisations hit between
+      2026-08-31 and 2026-09-30, targeting 2,577 secrets (SSH keys, Azure, registry, database, AWS, FTP credentials and others), and in 92 cases the attacker re-pointed
+      workflows left over from earlier waves; GitHub held most of those runs for approval (499 of 3,669 collected runs executed, in 32 repositories).
+      Scale conflict, held rather than averaged: a one-line Socket update says more than 500 accounts committed the workflow to "tens of thousands of repositories" since
+      2026-10-07, with no method or list, while Socket's own body counts 346 repositories and StepSecurity's GitHub code search on 2026-10-09 finds 378 default-branch
+      repositories (forks excluded; its marker-based counts are approximate). Carry the tens-of-thousands figure only as Socket's unexplained claim, never as fact.
+      The remediation scope has also moved: because the payload reads history, rotating the current Actions secrets no longer covers the exposure.
+    region_nexus: "global; no Swiss, DACH or public-sector victim is named in any source; relevance rests on GitHub-hosted developer and CI/CD estates of public bodies and their suppliers"
+    primary_sector_nexus: "indirect (developer and CI/CD estates; open-source maintainers and enterprises; no public-sector victim reported)"
+    sector: "cross-sector; software development"
+    cves: []
+    techniques: [T1078.004, T1552.001, T1048.003]
+    affected_products: ["GitHub Actions"]
+    entity_keys: []
+    references_suggested:
+      - "2026-10-07/gentlemen-affiliate-azazel-ci-cd-secrets-mcp-attacks"
+      - "2026-05-23/megalodon-mass-poisons-5-561-github-repos-in-a-6-hour-window"
+    new_entities:
+      - { key: "campaign:ghostaction", type: campaign, name: "GhostAction", aliases: [],
+          summary: "GitHub Actions credential-theft campaign: stolen maintainer credentials commit a fake security workflow that exfiltrates Actions secrets (and, since October 2026, credentials found in the working tree and full git history); first documented by GitGuardian in September 2025, active again from 2026-08-31 (GitGuardian, StepSecurity, Socket, 2026-10-07 to 2026-10-09)." }
+    relation_suggestions:
+      - { subject: "campaign:ghostaction", object: "campaign:mini-shai-hulud",
+          basis: "GitGuardian: the injected-workflow technique GhostAction used 'was later reused during the Shai-Hulud campaigns and remains at the core of the Mini Shai-Hulud malware family' (a technique-reuse statement, not attribution; GitGuardian, 2026-10-07)",
+          suggested_type: related-to }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    classification_suggestion: "B1 for the mechanism and the hundreds-of-repositories scale (StepSecurity, Socket and GitGuardian analysed independently; run-log confirmation of exfiltration); the 'tens of thousands' scale claim is not carried as fact"
+    novelty: new
+    borderline: true
+    borderline_reason: >-
+      No Swiss or public-sector victim reported in any source; the case for inclusion is that it is an active, confirmed-successful credential-theft campaign that runs inside the
+      victim's own repositories, defeats Actions-secret-only rotation, and the do-now check (an organisation-scoped search for two workflow file names plus an audit-log query)
+      takes minutes for any public body or supplier with GitHub organisations. Recommendation from this sweep: include as a short awareness entry, priority below high; drop if the
+      composer judges GitHub-hosted estates out of the constituency's core.
+    evidence:
+      - quote: "henrywoo's level of access is what carried the attack into a Fortune-500 codebase: he is athenadriver's original author and retained write access to the Uber organization repository."
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/ghostaction-returns"
+      - quote: "confirms the exfiltration completed successfully: the attacker's server acknowledged receipt four seconds after the workflow started"
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/ghostaction-returns"
+      - quote: "Nothing in an audit log looks anomalous unless the workflow content itself is inspected"
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/ghostaction-returns"
+      - quote: "The approval gate is worth singling out: it is the single control observed stopping this campaign's exfiltration this week."
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/ghostaction-returns"
+      - quote: "Since publication, Socket has identified more than 500 GitHub accounts that committed the malicious workflow to tens of thousands of repositories since October 7, 2026"
+        attribution: "Socket"
+        source_url: "https://socket.dev/blog/ghostaction-cloud-credentials"
+      - quote: "Socket has observed no malicious package versions published to PyPI or crates.io as a result of this activity at the time of writing."
+        attribution: "Socket"
+        source_url: "https://socket.dev/blog/ghostaction-cloud-credentials"
+      - quote: "of the 3,669 runs we collected across 605 repositories, only 499 executed, in 32 repositories"
+        attribution: "GitGuardian"
+        source_url: "https://blog.gitguardian.com/ghostaction-github-actions-supply-chain-attack-returns/"
+      - quote: "Rotating the secrets exfiltrated by the malicious workflow is not enough. The GitHub credential that allowed the injection in the first place must be found and revoked too, or someone else will use it again."
+        attribution: "GitGuardian"
+        source_url: "https://blog.gitguardian.com/ghostaction-github-actions-supply-chain-attack-returns/"
+    exposure_notes: |
+      Exposed: any GitHub account (user or organisation member) whose personal access token or session credential was leaked, and every repository, fork and organisation repository that account
+      can write to. Telling: organisation-scoped GitHub code search for the two workflow file names under .github/workflows and for the payload's request-body marker (StepSecurity publishes the
+      queries); organisation audit log for default-branch pushes adding workflow files directly (no pull request) from a maintainer identity, unsigned rapid-fire commits across many repositories within
+      minutes, workflow_dispatch events on freshly created 'audit' workflows; commit messages 'Add security audit workflow', 'Update security audit workflow', 'Add Github Actions Security workflow'
+      (Socket, StepSecurity). StepSecurity's stated trigger for treating it as a breach: a workflow with either name appearing in any repository you maintain since 2026-08-31.
+    detection_notes: |
+      Telemetry classes: source-control audit log (direct pushes of workflow files to default branches, unsigned commits, bursts across many repositories); Actions run history (runs of the two workflow names,
+      including manual dispatch immediately after a file update, which StepSecurity saw on pyxel); runner egress logs (an HTTP POST to a bare IP address with no preceding DNS lookup, including from
+      self-hosted runner ranges). Post-removal compromise check: treat every completed run as successful exfiltration; scan full history (git log -p --all, branches and tags, including forks) and rotate
+      every credential found in all 13 pattern classes, not only configured Actions secrets; revoke (not rotate) the injecting PAT, its sessions, OAuth grants and SSH keys; review AWS CloudTrail for the
+      exposure window and for new IAM users, keys and regions; review package registry release history for unexpected versions; check forks of affected repositories before enabling Actions on them (Socket, StepSecurity, GitGuardian).
+    triage_notes: |
+      Benign lookalike: a legitimate security-scanning workflow added by a team. Discriminators the sources give: direct push to the default branch under a maintainer identity with no pull request and no signature,
+      the same file landing in tens or hundreds of repositories within minutes (including decade-dormant repositories and forks, consistent with automated enumeration), fetch-depth 0 plus a history-wide grep, and an HTTP
+      POST of the result to a bare IP. A single reviewed workflow with a known scanner action is not this pattern.
+    hardening_notes: |
+      Levers the sources name: require approval for workflow runs (StepSecurity: the single control observed stopping exfiltration; GitGuardian: GitHub held most September runs for approval); protect
+      .github/workflows/* with branch protection or rulesets so workflow changes need pull-request review; egress allowlist on runners; GitHub secret scanning with push protection; phishing-resistant MFA and
+      re-enrolment for the compromised account (Socket); enumerate every repository the account can write to, by permission rather than expectation.
+    proposed_action: >-
+      Run an organisation-scoped GitHub code search in every organisation your teams and suppliers administer for security-audit.yml and github_actions_security.yml under .github/workflows; any hit means
+      assume breach, revoke the committing credential and rotate every secret in the repository's full history. (Do-now bar: concrete, derived from this finding's mechanics; composer to judge.)
+    extended_notes: |
+      The store already carries two CI/CD credential-theft entries (the 2026-10-07 Gentlemen affiliate entry; the May Megalodon mass-poisoning); GhostAction is a different operator and mechanism (account takeover plus a templated workflow,
+      no malicious package release observed) and no CVE is involved, so check_run's CVE-overlap rule does not apply. GitGuardian also reports that stolen GitHub credentials are traded and reused: 13 GhostAction victim
+      repositories were also used for cryptomining by at least four unrelated campaigns (and one DevOpsGPT miner commit that GitGuardian does not attribute to the GhostAction operator), which is why revoking the injecting credential matters.
+      Source reliability note: StepSecurity, Socket and GitGuardian are vendors with commercial products in this space; the claims used here rest on run logs, commit metadata and counts they describe in detail, not on product statements.
+dropped_leads:
+  - lead: "Lead 2: P7 DarkSword iOS exploit kit variant (The Hacker News 2026-10-09; iVerify 2026-10-08; Censys 2026-10-07)"
+    reason: >-
+      Gate failure. Primaries read: iVerify (https://www.iverify.com/blog/darksword-variant-threat-research) found P7 in an August 2026 customer infection: reduced on-device footprint, on-device keychain and crypto-wallet
+      theft, two-way C2 (tasking poll every 15 seconds, shell-style command set, imToken wallet extraction). Censys (https://censys.com/blog/darksword-coruna-open-directory-finding-report/) maps the wider ecosystem to Chinese-speaking
+      exploitation-as-a-service operators whose purpose is wallet theft; observed victims in its open directories were Chinese-language iOS devices on 16.1 and 16.3.1 (Coruna range, iOS 13.0 to 17.2.1), and earlier DarkSword operators
+      (Saudi Arabia, Turkey, Malaysia, Ukraine, Star Blizzard lures, per THN/GTIG) are already in the store through the 2026-09-30 Star Blizzard RedFlick entry. Patch position: Censys states "The 18.x chains are patched in iOS 18.7.3 and 26.3,
+      so the operator needs a working iOS 26 chain to reach patched devices", and the iOS 26 chain (CVE-2026-31001) is in development, not fielded ("Do not report 26.x as a live capability"). No new patch decision: the store's
+      2026-09-30 Apple CVE-2026-86950 entry already carries the push to iOS 26.7.1 through device management, which supersedes these fixes. No Swiss or European public-sector targeting reported; no new CVE (CVE-2025-24201 fixed in
+      iOS 18.3.2 and CVE-2025-31200 fixed in iOS 18.4.1 per THN are old). Only residual lesson for a device-management team: devices still below iOS 18.7.3 / 26.3 or on iOS 17 and earlier remain exposed to the public kit, which is standing guidance.
+    sources_read: ["https://thehackernews.com/2026/10/p7-darksword-ios-exploit-kit-adds.html", "https://www.iverify.com/blog/darksword-variant-threat-research", "https://censys.com/blog/darksword-coruna-open-directory-finding-report/"]
+  - lead: "Lead 3: NVIDIA DCGM Exporter CVE-2026-47483 (Lava; NVIDIA bulletin 2026-07-28)"
+    reason: >-
+      Gate failure, confirmed against NVIDIA's own bulletin (https://nvidia.custhelp.com/app/answers/detail/a_id/5857, initial release 2026-07-28): /debug/pprof uncontrolled resource consumption through concurrent unauthenticated profiling
+      requests, CVSS 3.1 8.2 High (AV:N/AC:L/PR:N, C:L/I:N/A:H), impact denial of service and information disclosure. Fixed versions per the bulletin's table: DCGM 4.5.3 (affected 0.0 to 4.5.2); DCGM Exporter row reads
+      "0.0 to 4.8.2" affected with updated version 4.8.2 (self-contradictory as printed; TechNadu relayed fix 4.8.2, so the fixed build is 4.8.2 or later and an off-by-one in the table should be assumed until NVIDIA corrects it). No exploitation
+      reported; not in CISA KEV (catalogue 2026.10.08 re-read at 03:34Z). Internet reachability is a deployment mistake (Lava reports exposed exporters), not the default; a GPU telemetry exporter outage is not a public-sector decision this week.
+    sources_read: ["https://nvidia.custhelp.com/app/answers/detail/a_id/5857"]
+  - lead: "BleepingComputer 2026-10-09 / Push Security 'Adception': Google ads whose click URL is a Bing redirect lead to a fake Claude macOS installer (ClickFix)"
+    reason: >-
+      Gate failure. Push Security (vendor with a browser-security product) names a new redirect-and-cloak trick, but the final payload is unknown (BleepingComputer: "The final payload delivered by the attack remains unknown"), the delivery class
+      (ClickFix paste into Terminal) is already covered by the store (2026-10-04 Custom GPT ClickFix, 2026-09-29 Push Security ClickFix review, 2026-08-31 TerminalFix), no Swiss or public-sector nexus, and the only control named is the
+      vendor's own browser-session detection. Sources read: https://www.bleepingcomputer.com/news/security/hackers-abuse-google-ads-bing-redirects-to-push-claude-clickfix-attacks/ and https://pushsecurity.com/blog/adception-malvertising-another-search-engines-search-results.
+  - lead: "THN 2026-10-09 'Flax Typhoon Exploits Five Flaws as CISA Sets October 11 Deadline' and 'FBI Seizes 7 Domains' (also BleepingComputer, SecurityWeek 'US Disrupts Chinese State-Sponsored Hacking Tools')"
+    reason: "Already covered: the five CISA KEV additions (CVE-2015-3306, CVE-2015-5477, CVE-2016-3081, CVE-2021-3199, CVE-2023-22894) and the FBI domain seizure sit in 2026-10-09/aa26-281a-integrity-tech-microscan-exchange-mail-theft (prior_coverage, entry body mentions the seizure of MicroScan and FishHub domains). KEV re-read at 03:34Z: no addition after 2026-10-08."
+  - lead: "AhsayCBS exploitation (THN, BleepingComputer, SecurityWeek 2026-10-09); SonicWall SMA1000 exploited (BleepingComputer 2026-10-09); Citrix NetScaler SAML RCE (THN, BleepingComputer, SecurityWeek 2026-10-09); AnyDesk Linux public exploit (THN 2026-10-09)"
+    reason: "Already in S1's return (AhsayCBS, SonicWall update, AnyDesk) or in the store (Citrix 2026-10-09 entry)."
+  - lead: "FBI arrest of another ShinyHunters suspect (THN, BleepingComputer, The Record 2026-10-09); Germany/Japan Qilin arrest and extradition (BleepingComputer, The Record 2026-10-09); IDCF Cloud ransomware (BleepingComputer 2026-10-08)"
+    reason: "S4 dropped lists already judge these (law-enforcement progress without defender action; IDCF repeat-dropped)."
+  - lead: "BleepingComputer 'Max severity SonicWall SMA1000 flaw now exploited' and 'Cisco warns of critical flaws allowing Nexus switch takeover'"
+    reason: "In S1 returns (SonicWall update-of; Cisco 2026-10-07 bundle borderline)."
+  - lead: "The Record 2026-10-09: iRhythm breach (US biosensor firm), Belarusian Cyber Partisans claim on a 2023 Russian healthcare breach, money-mule network leader pleads guilty; The Record home listing: 'Leaked chats show Russian extortion gang sending agents into US law firms'"
+    reason: "No Swiss, DACH or European public-sector nexus and no new TTP for the constituency; the law-firm chat leak is the Silent Ransom Group item S4 routed to S3 and both already dropped."
+  - lead: "The Record / OpenAI 2026-10-09 report on Russian and Iranian influence operations that used ChatGPT"
+    reason: "Influence operations (Latin America, US-Iran article placement), no intrusion TTP, vulnerability or constituency nexus. Read: https://therecord.media/openai-disrupts-russian-iranian-operations-chatgpt."
+  - lead: "THN 2026-10-09: TP-Link sued by four more U.S. states; Anthropic free AI vulnerability scanner for open-source projects; GoBalance Tor key flaw; Pwn2Own Pixel 10 results"
+    reason: "Headline-judged, not fetched: litigation and vendor-programme news, a niche Tor tooling flaw (before the 12:00Z slice), conference results (S1 already dropped Pwn2Own pending patches). No constituency nexus."
+  - lead: "SecurityWeek 2026-10-09: OpenAI fires three safety researchers; 'In Other News' (ARTEX Korean bank breaches, poem-guided botnet, Empire admin sentenced); Google domains and ccTLD registry hijacks (11:43Z, just before the slice); BleepingComputer 2026-10-09 Microsoft end of updates for outdated Windows devices (10:12Z, before the slice)"
+    reason: "Headline-judged, not fetched. ARTEX and PoeLLM already decided by earlier fires (S3 dropped_leads); the ccTLD hijack (.gh, .sl, .as registries; no .ch or other Swiss/European ccTLD named in the headline) and the Windows lifecycle item predate the slice and carry no in-window delta."
+  - lead: "Web searches (DE/FR/EN) for new Swiss, DACH and European public-sector incidents dated 2026-10-09 or later"
+    reason: >-
+      Nothing in-window found. Two search leads were dated and killed: Kreisverwaltung Steinfurt / Localmind AI platform incident and Stadtwerke Wismar ransomware are October 2025 and October 2021 events, not 2026. WebSearch returns almost no fresh
+      regional press for date-specific queries (US-geolocated engine), so the sweep rests on the four feeds plus S2/S4's regional-press records.
+watchlist_sweep:
+  duty: none
+  note: "FU1 carries no watchlist duty; no watchlists configured in the profile."
+candidate_sources: []
+coverage_gaps:
+  - source_id: therecord
+    reason: "Recipe update, not a failure: `python3 tools/fetch_source.py feed https://therecord.media/feed` returns 5 dated items directly (no transport escalation needed); the record says fetch_method webfetch."
+  - source_id: bleepingcomputer
+    reason: "Recipe update: `feed https://www.bleepingcomputer.com/feed/` returns 15 dated items directly (method direct); `extract <article URL>` reads article bodies cleanly. Record says fetch_method webfetch."
+  - source_id: securityweek
+    reason: "Recipe update: `feed https://www.securityweek.com/feed/` returns 10 dated items directly; record says fetch_method webfetch."
+  - source_id: "NVIDIA bulletin (lead 3 primary; no slice record)"
+    reason: "`extract https://nvidia.custhelp.com/app/answers/detail/a_id/5857` fell through to the jina reader (stderr 'served via jina'; the direct transports did not return the page), so it spends reader credit; use it only when the bulletin is needed."
+recipe_notes:
+  - "`extract` refuses http:// URLs ('only https:// is allowed'): when a relayed link is http (BleepingComputer's Push Security link), retry with https."
+  - "WebSearch is poor for date-specific incident discovery (returned only 2021-2025 items for DE/FR/EN queries aimed at 2026-10-09); the feeds plus in-language authority and regional-press records are the working route."
+source_ledger:
+  - { id: "lead-1-ghostaction", tier: lead, attempted: true, transport: "extract (THN, StepSecurity, Socket, GitGuardian) + WebSearch", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "returned as a borderline item with recommendation to include" }
+  - { id: "lead-2-p7-darksword", tier: lead, attempted: true, transport: "extract (THN, iVerify, Censys) + WebSearch", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "gate failure: chains patched in iOS 18.7.3 / 26.3, no iOS 26 capability, crypto-theft EaaS, no constituency nexus, standing iOS push already in store" }
+  - { id: "lead-3-nvidia-dcgm-cve-2026-47483", tier: lead, attempted: true, transport: "extract (served via jina) + WebSearch", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "gate failure: DoS on GPU telemetry exporter, no exploitation, bulletin dated 2026-07-28" }
+  - { id: "lead-4-headline-sweep", tier: lead, attempted: true, transport: "feed (thehackernews, bleepingcomputer, securityweek, therecord) + cisa-kev + WebSearch x7", horizon_hours: 16, in_horizon_items: 21, returned: 0, note: "slice 2026-10-09T12:00Z to now; the only item clearing the gate is lead 1; all other headlines dropped or already covered (see dropped_leads)" }

@@ -1,0 +1,108 @@
+domain: S3
+run_id: 2026-10-10T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-10-10T02:58:04Z'
+ended_at: '2026-10-10T03:08:33Z'
+duration_seconds: 629
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 19
+  bridge_fetches: 85
+# In-window anchor: 2026-10-10 (verified by the spawn message). window_hours 26 (since about 2026-10-09T00:55Z);
+# rotational lookback 96-120 h per slice record.
+# Result: NO qualifying items. Every in-window or in-lookback research item the slice surfaced was either already
+# covered by a store entry, already borderline-dropped by an earlier fire's main agent (re-checked in the run records
+# of 2026-10-05..2026-10-09, no new development found), or fails the PD-11 gate (vendor pitch, no constituency nexus,
+# or no detection-grade substance). Details in dropped_leads.
+items: []
+candidate_sources:
+  - id: modat
+    publisher: "Modat (internet-exposure research, Modat Magnify)"
+    url: "https://www.modat.io/blog"
+    category: research
+    why: >-
+      Internet-exposure research publisher that co-authored 'To See the Wind and the Sun' (2026-10-06, 8,547 exposed wind and solar control systems in 35 countries) with
+      Bouke van Laethem of NCSC-NL. The blog mixes research with Magnify product updates (one research report in the last month), so low priority; promote only if it
+      publishes again with Swiss/EFTA country figures. Listing reads cleanly with `extract https://www.modat.io/blog` (dated 'D Mon YYYY' lines, slugs under /blog/).
+coverage_gaps:
+  - source_id: netcraft
+    reason: >-
+      Recipe drift, not a failure: `extract https://www.netcraft.com/blog/` and `extract https://www.netcraft.com/resources/blog` return navigation text only (Framer page,
+      post cards not in the trafilatura body). What works: `python3 tools/fetch_source.py url https://www.netcraft.com/resources/blog` returns the full HTML; strip tags and
+      read card blocks 'Topic / N min read / Title / Mon. D, YYYY | summary / author'; slugs appear as /blog/<slug> in the HTML; each post then extracts cleanly with
+      `extract https://www.netcraft.com/blog/<slug>`. Worked 2026-10-10.
+  - source_id: swarmcha-se
+    reason: >-
+      `extract https://swarmcha.se/` was served by the jina reader (spent reader credit) and returned only the four post links with dates. The record's own note prescribes
+      `url --direct https://swarmcha.se/`, which reads the page without credit; use that. Newest post still 2026-10-04.
+  - source_id: helpnetsecurity
+    reason: >-
+      `extract https://www.helpnetsecurity.com/` was served 'direct-raw' (107 KB of raw HTML, not markdown). Working parse: regex the <a href=".../2026/MM/DD/slug/"> anchors
+      with their link text; dates are in the URL path. Per-article `extract` returns clean markdown.
+  - source_id: kela-cyber
+    reason: >-
+      The blog listing extract carries no post titles or dates (only banner links and a column of newsroom dates). Reliable route: `extract https://www.kelacyber.com/resources/research/`
+      (titles, undated) then `extract` each report URL for its `date:` metadata (AI Cybercrime Report Q4 2026 = 2026-09-22; TeamPCP profile 2026-09-08).
+  - source_id: fortinet-fortiguard-blog
+    reason: >-
+      Recipe note refinement: in the raw `url` HTML each card reads 'Threat Research / Title / summary / By / Author / Month DD, YYYY' (the date follows the title and summary of
+      the SAME card, so a date-to-title pairing by position is correct once the 'By'/author lines are stripped). Newest card ClingSTUN, October 05, 2026.
+source_ledger:
+  - { id: sophos-xops, tier: standard, attempted: true, transport: "feed (9 items) + extract of 3 in-lookback posts", horizon_hours: 120, in_horizon_items: 3, returned: 0, note: "2026-10-05 Citrix CVE-2026-88779 post restates the Citrix bulletin and CISA KEV with no Sophos telemetry (no delta to the covered entry); 2026-10-06 asymmetric-routing post and 2026-10-07 'CISA's 17 AD techniques: a Sophos MDR perspective' are product-framed rehashes of a CISA guidance document" }
+  - { id: team-cymru, tier: standard, attempted: true, transport: "url listing + extract of 6 posts for dates", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-22 (LLM-gateway abuse); nothing in lookback" }
+  - { id: swarmcha-se, tier: standard, attempted: true, transport: "extract (fell to reader) + extract post", horizon_hours: 120, in_horizon_items: 1, returned: 0, note: "only post in reach is 2026-10-04 'We found a Chinese agent fleet' (preliminary, Tencent-hosted fleet pulling Amap pages via urlquery.net); dropped by the 2026-10-05 fire, no new post since" }
+  - { id: checkpoint-research, tier: standard, attempted: true, transport: "feed (15 items)", horizon_hours: 96, in_horizon_items: 0, returned: 0, note: "newest 2026-10-05 weekly Threat Intelligence Report (digest, outside lookback); last primary research 2026-09-17" }
+  - { id: dfirreport, tier: standard, attempted: true, transport: "feed (10 items)", horizon_hours: 96, in_horizon_items: 0, returned: 0, note: "newest 2026-08-24 (BengalSEO Part 1); publisher cadence, not a fetch failure" }
+  - { id: fortinet-fortiguard-blog, tier: standard, attempted: true, transport: "extract + url raw HTML for dates", horizon_hours: 96, in_horizon_items: 0, returned: 0, note: "newest card ClingSTUN 2026-10-05 (outside lookback; the 2026-10-06 fire already dropped it)" }
+  - { id: helpnetsecurity, tier: standard, attempted: true, transport: "extract (raw HTML) + regex + extract of 9 articles", horizon_hours: 96, in_horizon_items: 27, returned: 0, note: "read PoeLLM, MATCHBOIL, Lightwell, renewable-energy exposure, BPFDoor interview, NVIDIA DCGM; all already dropped by earlier fires, vendor announcements, or no constituency nexus (see dropped_leads)" }
+  - { id: kaspersky-securelist, tier: standard, attempted: true, transport: "feed https://securelist.com/feed/ (10 items) + extract listing", horizon_hours: 96, in_horizon_items: 0, returned: 0, note: "feed and listing agree: newest 2026-09-24 (MacSync); nothing since" }
+  - { id: kela-cyber, tier: standard, attempted: true, transport: "extract + url raw + extract of research pages", horizon_hours: 96, in_horizon_items: 0, returned: 0, note: "newest research 2026-09-22 (first edition KELA AI Cybercrime Report Q4 2026, a quarterly); 2026-10-07 hit is an updated prompt-injection how-to (product pitch)" }
+  - { id: mandiant-gtig, tier: standard, attempted: true, transport: "feed https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v (20 items) + extract and raw HTML listing", horizon_hours: 96, in_horizon_items: 0, returned: 0, note: "newest 2026-09-30 (vulnerability discovery and exploitation trends in the AI era); listing hero is the 2026-09-08 AI Threat Tracker; nothing in lookback" }
+  - { id: msft-ti, tier: standard, attempted: true, transport: "extract topic page + bridge msft-secblog recent 15", horizon_hours: 96, in_horizon_items: 3, returned: 0, note: "2026-10-06 CISO perspectives, 2026-10-07 FORGE Lab '3 lessons' (program metrics, 140 Windows CVEs May-Sep), 2026-10-08 post-quantum certificate testing: none is threat-intelligence research; last TI posts 2026-09-28 (NeedyMantis) and 2026-09-30 (Zimbra CVE-2026-73570), both outside lookback" }
+  - { id: netcraft, tier: standard, attempted: true, transport: "url raw HTML listing + extract post", horizon_hours: 96, in_horizon_items: 2, returned: 0, note: "2026-10-06 'Who looks like a real victim' (phishing cloaking essay, product pitch) and 2026-10-08 new-TLD launch watchlist (brand-protection advice); no technical delta" }
+  - { id: sygnia, tier: standard, attempted: true, transport: "extract listing (dates in D.MM.YYYY)", horizon_hours: 96, in_horizon_items: 0, returned: 0, note: "newest 2026-09-22 (Silent Ransom Group IT-impersonation readiness)" }
+  - { id: technadu, tier: standard, attempted: true, transport: "feed (10 items) + url homepage listing + extract of 8 articles", horizon_hours: 96, in_horizon_items: 10, returned: 0, note: "relay source; each security story traced to its primary and found already dropped or covered (ARTEX, UAT-11985, MATCHBOIL, Tensorlake, FBI Flax Typhoon seizures = AA26-281A entry); DCGM and wind/solar exposure items checked, see dropped_leads" }
+dropped_leads:
+  - lead: "Lumen Black Lotus Labs, PoeLLM / 'Canto Incognito' (published 2026-10-07; HNS 2026-10-08)"
+    reason: "Re-checked against the primary (https://www.lumen.com/blog/en-us/canto-incognito-tracking-the-poellm-malware): exposed LiteLLM (CVE-2026-42271 endpoint /mcp-rest/test/connection), Ollama, Gotenberg, Gitea and possibly Ivanti Sentry (CVE-2026-10520) servers mined and used as scanners; C2 IPv4 derived from four words of a poem in a GitHub file; 3,400+ victims, mostly US and Western Europe; Italian-speaking actor assessed. The 2026-10-08 fire already borderline-dropped it (single source, no public-sector context); no new development since and HNS adds nothing."
+  - lead: "CrowdStrike ARTEX (2026-10-07), Talos UAT-11985 (2026-10-08), Socket/Sonatype Tensorlake 0.5.144 (2026-10-08), ESET MATCHBOIL (2026-10-08), Rapid7 BPFDoor/AVERAT (2026-09-29; HNS interview 2026-10-09)"
+    reason: "All already considered and borderline-dropped or used as context by the 2026-10-05, -08 and -09 fires (see their run records). Re-read the primaries this run: ARTEX = Korean banks only, IOCs and prompt history, no detection-grade behaviour; UAT-11985 = Taiwan research bodies, Google-themed WebSocket-relayed AitM kit (technique class only); Tensorlake = one more package in the covered ChainDrop entry; MATCHBOIL = every observed victim in Ukraine (transport, manufacturing, energy); BPFDoor/AVERAT = telecom and CCTV/DVR edge implants against Korean/Taiwanese targets. No new development, no Swiss nexus."
+  - lead: "Modat + NCSC-NL, 'To See the Wind and the Sun' (2026-10-06; pv magazine 2026-10-07; HNS feature 2026-10-09)"
+    reason: "New to the store. 8,547 internet-facing control and management systems at wind and solar parks in 35 of 40 surveyed EU, EFTA and candidate countries (7,942 solar, 605 wind; Spain 2,766 solar, Germany 212 wind), about 181 sites potentially remotely controllable, affected operators notified through national CERTs, no operators or addresses named. Aggregated country figures reported only for the top countries; no Swiss figure in any outlet or in the HNS feature, and the report itself was not fetchable (modat.io page not read in full). OT exposure class with an NCSC-NL co-author but no stated Swiss or public-sector footprint, published 3-4 days before the window. Borderline-drop. Re-open if a Swiss/EFTA breakdown surfaces."
+  - lead: "Lava Security, CVE-2026-47483 NVIDIA DCGM Exporter (HNS and TechNadu 2026-10-09; NVIDIA bulletin 2026-07-28)"
+    reason: "Unauthenticated memory-exhaustion DoS (CVSS 8.2; fixed in DCGM Exporter 4.8.2 per TechNadu) via exposed Go /debug/pprof on about a quarter of 2,100 exposed exporters; no exploitation reported; the transferable lesson is plaintext unauthenticated Prometheus exporters (12,096 node_exporter hosts leaking mlx5 firmware, hostnames, kernel and BIOS details) on GPU/AI hosts, none shown in Swiss public-sector use. Handed to S1 as a cross-domain lead; borderline-drop from S3."
+  - lead: "Island, fake ChatGPT/Gemini/Claude 'ad tools' browser-in-the-browser phishing platform (2026-10-07; TechNadu relay)"
+    reason: "Operator-driven BitB and Socket.IO MFA-prompt relay aimed at advertising-account administrators and agency staff (Google, Meta, TikTok, Okta logins); account-monetisation motive, no public-sector or Swiss nexus; technique class already in the store through other relay-kit entries."
+  - lead: "Sophos X-Ops posts of 2026-10-05, -06 and -07"
+    reason: "CVE-2026-88779: restates Citrix's bulletin and CISA KEV, no Sophos telemetry, no delta to entries 2026-10-04 and 2026-10-09. 'CISA's 17 AD techniques: a Sophos MDR perspective' repackages a CISA guidance document with MDR marketing (one Interlock Kerberoasting reference to an existing Sophos post). Asymmetric-routing post is firewall-design advice. Dropped as product pitch and rehash."
+  - lead: "Microsoft Security Blog 2026-10-07 FORGE Lab '3 lessons from frontier AI vulnerability research' and 2026-10-08 post-quantum certificate testing"
+    reason: "Program metrics (140 Windows CVEs May-September 2026, 155 reports across 23 open-source projects, first Akrites-coordinated Linux kernel patch) and an operating-model essay; PQC item is readiness advice. No change to what a responder detects, hunts or hardens this week."
+  - lead: "Netcraft 2026-10-06 phishing cloaking essay and 2026-10-08 new-TLD watchlist; KELA 2026-09-22 AI Cybercrime Report Q4 2026 and 2026-09-08 TeamPCP profile; Team Cymru posts to 2026-09-22; IBM/Red Hat Lightwell '400+ Java library flaws' (HNS 2026-10-08)"
+    reason: "Brand-protection or product framing, outside the lookback, or (Lightwell) a program announcement naming no libraries, CVEs or severities."
+  - lead: "Periodic reports seen: Microsoft Digital Defense Report 2026 (2026-10-01; government = 27 percent of observed activity per Microsoft), ENISA Threat Landscape 2026 (2026-09-22), NCSC-CH Halbjahresbericht 2026/1 (page dated 2026-08-24), KELA AI Cybercrime Report Q4 2026 (2026-09-22), Check Point AI Threat Landscape Digest Jul-Aug (2026-09-17)"
+    reason: "None newly published in the 26 h window or the slice lookbacks, so no `ANNUAL REPORT` flag this fire. MDDR 2026 was borderline-dropped on 2026-10-06 and ENISA ETL 2026 on 2026-09-30; unchanged."
+cross_domain_leads:
+  - to: S1
+    lead: "CVE-2026-47483 NVIDIA DCGM Exporter (Lava Security 2026-10-08/09; NVIDIA bulletin https://nvidia.custhelp.com/app/answers/detail/a_id/5857, 2026-07-28; fixed 4.8.2 per TechNadu). Checked and dropped from S3; S1 may confirm exploitation status and its KEV/EUVD standing if it wants the CVE row."
+  - to: S2
+    lead: "Modat + NCSC-NL renewable-energy exposure report: operators are being told through national CERTs; if NCSC-CH relayed a notice to Swiss operators it would be the nexus that re-opens the item."
+notes:
+  - >-
+    Questions answered: (1) substantive primary research published in-window that changes how a defender reasons about a technique class: none in this slice (no slice source
+    published research after 2026-10-08; the 2026-10-07/08 lab posts, PoeLLM, ARTEX, UAT-11985, Tensorlake, MATCHBOIL, are all already decided by earlier fires). (2) malware-family
+    analyses with detection-relevant behaviour: none new. (3) new named clusters or attribution shifts: none new. (4) periodic or annual report newly published: none (see dropped_leads).
+    Empty is honest: GTIG's newest post is 2026-09-30, Securelist 2026-09-24, DFIR Report 2026-08-24, Sygnia and Team Cymru 2026-09-22, Check Point 2026-10-05 digest, FortiGuard 2026-10-05.
+  - >-
+    Dedup posture: the in-lookback leads were checked against prior_coverage.json and the run records of 2026-10-05 to 2026-10-09 (borderline-drop lines) before spending effort; the
+    deliberate decision was NOT to resurface items a prior fire's main agent already weighed unless a new development existed (none did).
+  - >-
+    Housekeeping disclosure: my first parallel feed command ran with an unset shell variable in backgrounded subshells and wrote six scratch files (cpr/dfir/gtig/securelist/technadu .json/.err)
+    to the filesystem root; I moved them into the session scratchpad (subdirectory s3/) and removed an empty 0-byte file /home/user/ctipilot/kev.err that appeared in the repo root at the same moment
+    (probably another sub-agent's redirect with the same unset-variable slip; it was untracked and empty). If S1 reports a missing kev.err, that is why. Nothing under work/ or entries/ was touched
+    other than my own S3 files.
+  - >-
+    Reusable recipe findings for the audit: (a) the shared session scratchpad is visible to all sub-agents, so use a per-domain subdirectory; (b) `extract` on a JS/Framer or card-grid listing
+    (netcraft, helpnetsecurity) can silently return nav text or raw HTML: use `url` and parse (see coverage_gaps); (c) lumen.com page `date:` metadata is wrong.
+  - >-
+    Not a slice record but worth the audit's attention: the Lumen Black Lotus Labs candidate (already proposed 2026-10-08) shows a wrong `date: 2026-03-16` in its extract metadata for the PoeLLM post, published 2026-10-07 (BleepingComputer, The Hacker News, The Register, HNS); confirm Lumen dates from the outlets, not the page metadata.

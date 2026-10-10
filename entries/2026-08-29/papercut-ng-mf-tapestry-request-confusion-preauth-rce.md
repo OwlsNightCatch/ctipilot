@@ -9,22 +9,18 @@ summary: >
   under active exploitation on 2026-08-27, before any CVE or patch existed. Fully tested maintenance releases 26.0.5,
   25.0.13 and 24.1.10 (10 September 2026) replace the emergency patches and are the vendor's recommended build;
   servers still on Emergency Patch Release 1 or 2 need to upgrade now. There is no fix for v23 and earlier, and Huntress estimates 47% of the PaperCut installs it tracks run v23 or older.
-  GreyNoise now documents an AI-agent-orchestrated mass-exploitation campaign against this same chain, compromising
-  440 instances across 395 organizations since 31 August 2026, reaching full domain admin in as little as five
-  minutes via legacy Active Directory escalation paths.
+  GreyNoise now documents an AI-agent-orchestrated mass-exploitation campaign against this same chain, compromising at least
+  440 instances across 395 identified organizations since 31 August 2026, reaching full domain admin in as little as five
+  minutes via legacy Active Directory escalation paths. watchTowr's write-up of 2026-10-09 shows the 28 August emergency build could
+  still be taken without authentication through the Setup Wizard forms, and names CVE-2026-82077, an administrator-only Scan-to-Fax
+  code-execution flaw that the vendor lists as fixed only in 26.0.5 and 25.0.13.
 discovered_at: "2026-08-29T04:09:36Z"
-updated_at: "2026-09-29T22:55:14Z"
+updated_at: "2026-10-10T03:46:27Z"
 event_date: "2026-08-27"
 run_id: 2026-08-29T0409Z-intel
-priority: critical
-immediate_action:
-  title: "Get every PaperCut NG/MF server onto a fixed build now, or take internet-facing servers offline"
-  action: >
-    PaperCut NG and MF are under active exploitation via an unauthenticated request-routing chain that reaches
-    remote code execution as the PaperCut server process; PaperCut now confirms a second, more sophisticated wave
-    of attacks against servers that remain unpatched and internet-facing. Any v24/25/26 Application Server, Site Server or secondary/print server that is unpatched or on Emergency Patch Release 1 or 2 goes to the security maintenance release for its line (26.0.5, 25.0.13 or 24.1.10) now; one already on Emergency Patch Release 3 is protected and moves to the maintenance release through normal change control. For v23 and earlier there is no fix at all: restrict the Application Server to trusted/internal IP addresses right now, and treat any
-    internet-facing instance as potentially compromised until proven otherwise.
-tags: [vulnerabilities, zero-day, actively-exploited, pre-auth, rce, cisa-kev, no-patch, patch-available]
+priority: high
+immediate_action: null
+tags: [vulnerabilities, zero-day, actively-exploited, pre-auth, rce, cisa-kev, no-patch, patch-available, poc-public]
 regions: [global]
 sectors: [public-sector, education, healthcare, finance, telco]
 entities: []
@@ -39,7 +35,7 @@ cves:
     auth: pre-auth
     status: [exploited, cisa-kev, patch-available]
     affected: "All versions of PaperCut NG and PaperCut MF"
-    fixed: "Security maintenance releases 26.0.5, 25.0.13 and 24.1.10 (10 September 2026), which replace the emergency patches; Emergency Patch Release 3 (v24.1.9, v25.0.12, v26.0.4) also protects; no fix for v23 and earlier — upgrade to a supported line (24, 25 or 26)"
+    fixed: "Security maintenance releases 26.0.5, 25.0.13 and 24.1.10 (10 September 2026), which replace the emergency patches; Emergency Patch Release 3 also protects; no fix for v23 and earlier; upgrade to a supported line (24, 25 or 26)"
   - id: CVE-2026-82078
     cvss: "9.4 (CVSS4.0)"
     epss: null
@@ -48,11 +44,20 @@ cves:
     auth: admin-required
     status: [exploited, cisa-kev, patch-available]
     affected: "All versions of PaperCut NG and PaperCut MF"
-    fixed: "Security maintenance releases 26.0.5, 25.0.13 and 24.1.10 (10 September 2026), which replace the emergency patches; Emergency Patch Release 3 (v24.1.9, v25.0.12, v26.0.4) also protects; no fix for v23 and earlier — upgrade to a supported line (24, 25 or 26)"
+    fixed: "Security maintenance releases 26.0.5, 25.0.13 and 24.1.10 (10 September 2026), which replace the emergency patches; Emergency Patch Release 3 also protects; no fix for v23 and earlier; upgrade to a supported line (24, 25 or 26)"
+  - id: CVE-2026-82077
+    cvss: "7.3 (CVSS 4.0)"
+    epss: null
+    type: rce
+    vector: zero-click
+    auth: admin-required
+    status: [patch-available, poc-public]
+    affected: "PaperCut NG and MF below 25.0.13, and from 26.0.0 below 26.0.5 (the CVE record); the vendor's bulletin names no fixed 24.x release"
+    fixed: "26.0.5 and 25.0.13 (vendor security bulletin of 2026-09-24); the bulletin names no emergency build as carrying the fix"
 sources:
   - url: "https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/"
     publisher: "PaperCut Software (vendor security bulletin)"
-    date: "2026-08-29"
+    date: "2026-09-10"
     role: primary
   - url: "https://www.huntress.com/blog/papercut-actively-exploited"
     publisher: "Huntress"
@@ -78,6 +83,14 @@ sources:
     publisher: "CISA KEV"
     date: "2026-08-31"
     role: corroborating
+  - url: "https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/"
+    publisher: "watchTowr Labs"
+    date: "2026-10-09"
+    role: corroborating
+  - url: "https://www.papercut.com/kb/Main/security-bulletin-sep-2026/"
+    publisher: "PaperCut Software (September security bulletin)"
+    date: "2026-09-24"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "PaperCut Software security response team is investigating active exploitation of a vulnerability affecting PaperCut NG and PaperCut MF."
@@ -100,14 +113,22 @@ evidence:
     publisher: "GreyNoise"
   - quote: "GreyNoise observed the adversary achieved domain admin against only 12 victim organizations."
     publisher: "GreyNoise"
+  - quote: "Patch contains a fix for: WT-2026-0143 (Authentication Bypass)"
+    publisher: "watchTowr Labs"
+    source_url: "https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/"
+  - quote: "Patch contains a fix for: WT-2026-0144/CVE-2026-82077 (Post-Auth RCE)"
+    publisher: "watchTowr Labs"
+    source_url: "https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/"
+  - quote: "Tying it all together (WT-2026-0143 + WT-2026-0144/CVE-2026-82077), we can finally pop a shell against PaperCut NG 26.0.4-PO build 76508."
+    publisher: "watchTowr Labs"
+    source_url: "https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/"
+  - quote: "If you have already upgraded to the latest release (26.0.5, 25.0.13) the issues are already addressed."
+    publisher: "PaperCut Software"
+    source_url: "https://www.papercut.com/kb/Main/security-bulletin-sep-2026/"
 verification: multi-source
 sourcing_note: >
-  PaperCut's own bulletin confirms the vulnerability's existence, active exploitation and the two-CVE structure, but
-  the deep technical narrative — the Apache Tapestry request-routing confusion mechanism, the specific HTTP request
-  chains, the JDBC/Derby/Nashorn exploitation path, and the Huntress incident-response artifacts — traces to Rapid7
-  and Huntress, both rated B (original vendor vuln/incident research) in sources.json rather than A. Reliability held
-  at B rather than A to reflect that dependency, the same standard applied elsewhere to vendor advisories that lean
-  on third-party incident-response research.
+  PaperCut's own bulletin confirms the vulnerability, the active exploitation and the two-CVE structure; the request-routing mechanism, the request chains and the
+  exploitation artifacts trace to Rapid7 and Huntress, and the later bypass analysis to watchTowr.
 confidence: high
 references: []
 deep_dive: true
@@ -118,9 +139,9 @@ classification:
   credibility: 1
 watchlist_hit: false
 actions:
-  - "Upgrade every PaperCut NG/MF Application Server, Site Server and secondary/print server to the security maintenance release for its line (26.0.5, 25.0.13 or 24.1.10), starting with any still on Emergency Patch Release 1 or 2; for v23 and earlier, immediately restrict the Application Server's web interface to trusted/internal IP addresses only — no patch exists for that line."
-  - "Before patching or restarting an internet-facing server, preserve the server/logs directory and process tree; check server.log for the two vendor-documented error strings and for an unexplained gap or truncation, check derby.log for a Derby boot line naming an in-memory database directory ending in \"pwn\", and hunt for a Windows service named \"Remote Access Service\" running SimpleService.exe (SimpleHelp) or an unexpected AnyDesk install — PaperCut's own published incident data names both as an observed post-compromise access method."
-  - "Given GreyNoise's confirmed domain-admin escalation paths, verify no PaperCut Application Server is domain-joined with a privileged service account or hosted on a domain controller, and confirm domain controllers reachable from any PaperCut host are patched against the 2021 noPac flaws (CVE-2021-42278/CVE-2021-42287) — the AI-orchestrated campaign reaches full domain admin via exactly these paths within minutes of initial compromise."
+  - "Upgrade every PaperCut NG/MF Application Server, Site Server and secondary/print server to the security maintenance release for its line (26.0.5, 25.0.13 or 24.1.10), starting with any still on Emergency Patch Release 1 or 2, and note that the emergency builds do not carry the fix for CVE-2026-82077, an administrator-only Scan-to-Fax code-execution flaw that the vendor's September bulletin lists as fixed in 26.0.5 and 25.0.13 and does not list for 24.1.10; for v23 and earlier, immediately restrict the Application Server's web interface to trusted/internal IP addresses only; no patch exists for that line."
+  - "Before patching or restarting an internet-facing server, preserve the server/logs directory and process tree; check server.log for the two vendor-documented error strings and for an unexplained gap or truncation, check derby.log for a Derby boot line naming an in-memory database directory ending in \"pwn\", and hunt for a Windows service named \"Remote Access Service\" running SimpleService.exe (SimpleHelp) or an unexpected AnyDesk install, as PaperCut's own published incident data names both as an observed post-compromise access method."
+  - "Given GreyNoise's confirmed domain-admin escalation paths, verify no PaperCut Application Server is domain-joined with a privileged service account or hosted on a domain controller, and confirm domain controllers reachable from any PaperCut host are patched against the 2021 noPac flaws (CVE-2021-42278/CVE-2021-42287); GreyNoise reports the AI-orchestrated campaign reaching full domain admin through these paths in as little as five minutes after initial access."
 updates:
   - at: "2026-09-03T05:05:00Z"
     run_id: 2026-09-03T0410Z-intel
@@ -154,18 +175,16 @@ updates:
       in early September while unpatched, exposed servers are still targeted. CISA added both CVEs to
       its KEV catalog on 2026-08-31, which the status fields now record.
     fields: [summary, immediate_action, cves, actions, evidence, headline, tags, sources, body]
+  - at: "2026-10-10T03:46:27Z"
+    run_id: 2026-10-10T0255Z-intel
+    type: update
+    summary: >
+      watchTowr published on 2026-10-09 how the emergency patches were bypassed in turn: the 28 August emergency build could still be taken without authentication through the Setup Wizard forms, and a new administrator-only Scan-to-Fax code-execution flaw, CVE-2026-82077, is fixed only in 26.0.5 and 25.0.13, not in the emergency builds. No source names exploitation of either, though PaperCut says Emergency Patch Release 3 closes off further attack vectors it has seen exploited. Earlier statements the cited sources do not support were corrected where they stood: the 2023 precedent, the university-customer statement, the emergency-patch chronology and the detection wording.
+    fields: [priority, summary, immediate_action, tags, cves, actions, sources, evidence, sourcing_note, body]
 migrated_from: null
 ---
 
-PaperCut has been hit before at this scale: in 2023, CVE-2023-27350 — an unrelated authentication-bypass flaw in the
-same PaperCut NG/MF Application Server — was mass-exploited in the wild by multiple ransomware operators before a
-patch existed, a precedent Rapid7's own incident-response team cites directly when framing why this new chain
-demands the same urgency ([Rapid7, 2026-08-28](https://www.rapid7.com/blog/post/etr-papercut-ng-mf-critical-zero-day-exploited-in-the-wild/)).
-Three years later, PaperCut disclosed on 27 August 2026 that it was investigating active exploitation of a new,
-unrelated flaw in the same product line — again before any CVE, patch, or public technical detail existed, and
-again reconstructed from a real victim's own incident-response evidence: a university customer's security and DFIR
-team supplied the reproduction data that let PaperCut confirm and patch the bug
-([PaperCut Software, 2026-08-29](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
+PaperCut has been targeted before: Rapid7 notes that in 2023 CVE-2023-27350 was broadly exploited in the wild by multiple threat-actor groups, including ransomware operators, which raises the urgency of this new zero-day ([Rapid7, 2026-08-28](https://www.rapid7.com/blog/post/etr-papercut-ng-mf-critical-zero-day-exploited-in-the-wild/)). PaperCut disclosed on 27 August 2026 that it was investigating active exploitation of a new flaw in the same product line, before any CVE, patch or public technical detail existed ([watchTowr, 2026-10-09](https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/)); Rapid7 relays PaperCut's statement that information supplied by a university customer's security team and its digital forensics and incident response team enabled PaperCut to reproduce the vulnerability ([Rapid7, 2026-08-28](https://www.rapid7.com/blog/post/etr-papercut-ng-mf-critical-zero-day-exploited-in-the-wild/)).
 
 PaperCut's Application Server runs on the Apache Tapestry web framework, whose "complex direct" request format lets
 a single HTTP request name one page to render and a different page's component to actually execute. PaperCut's own
@@ -187,46 +206,35 @@ forged `UserList` search runs the malicious lookup
 This is a two-CVE chain: CVE-2026-81578 (CWE-306, missing authentication) is the pre-auth entry that gains write
 access to the server configuration; CVE-2026-82078 (CWE-470, unsafe dynamic class loading) is the flaw that turns a
 reconfigured database connection into arbitrary Java bytecode execution once that write access is held
-([PaperCut Software, 2026-08-29](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
+([PaperCut Software, 2026-09-10](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
 
 PaperCut treats **all versions** of NG and MF as potentially affected. Huntress observed two live customer
 exploitations: one on 26 August lasting under two minutes against version 25.0.10.75465, and a second on 27 August
 against version 24.1.5.71847 — before Emergency Patch Release 2 extended coverage to the v24 line
 ([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)). In both cases the attacker ran
 base64-encoded discovery commands (`whoami & ver`, and separately `whoami & ver & tasklist`) via a dropped,
-OS-agnostic Java `.class` file that wrote its output to a temporary file and then deleted both that file and the
+OS-agnostic Java `.class` file; in the first incident it wrote its output to a temporary file and then deleted both that file and the
 server's own `server.log`
 ([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)). Huntress's own proof-of-concept
 reproduced the full chain against a stock PaperCut NG install and observed the code execution surface as an
 observable `charmap.exe` process running as SYSTEM, spawned under the PaperCut Application Server's own `pc-app.exe`
 process
-([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)). PaperCut released an initial
-emergency patch for v25/v26 on 28 August, which a Home-page variant of the same request bypassed
-([Rapid7, 2026-08-28](https://www.rapid7.com/blog/post/etr-papercut-ng-mf-critical-zero-day-exploited-in-the-wild/)).
-Emergency Patch Release 2, published later the same day with hardening developed alongside Huntress and watchTowr,
-closed that bypass and extended coverage to v24, and was itself superseded on 1 September 2026 by Emergency Patch
-Release 3; all three emergency patches were replaced on 10 September by fully tested maintenance releases (see the
-updates below)
-([PaperCut Software, 2026-08-29](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
-There is no fix for v23 and earlier — PaperCut's guidance for that line is to upgrade to a supported version — and
+([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)). PaperCut released an initial emergency patch for v25 and v26 on 28 August and patches for v24 later the same day, and Rapid7 says the first patch could be bypassed by using the Home page for display while the newest version of the vendor patch remediates that bypass ([Rapid7, 2026-08-28](https://www.rapid7.com/blog/post/etr-papercut-ng-mf-critical-zero-day-exploited-in-the-wild/)). PaperCut then superseded the earlier emergency patches with Emergency Patch Release 3 on 1 September 2026 and replaced all three emergency patches on 10 September with fully tested maintenance releases (see the updates below) ([PaperCut Software, 2026-09-10](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
+There is no fix for v23 and earlier; PaperCut's guidance for that line is to upgrade to a supported version ([PaperCut Software, 2026-09-10](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)), and
 Huntress estimates 47% of the roughly 2,500 PaperCut installations it tracks still run v23 or older
 ([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)).
 
 Detection, telemetry class first: alert on any child process spawned from `pc-app.exe` or the PaperCut Application
-Server's Java process — PaperCut never legitimately spawns a shell, `cmd.exe`, or a system-discovery utility such as
-`charmap.exe`, `whoami`, or `tasklist` from that lineage. Web-access logs for the PaperCut Application Server should
+Server's Java process, the lineage under which the observed exploitation ran its discovery commands. Web-access logs for the PaperCut Application Server should
 be checked for POST requests to `/app?service=direct/*/{Error,Exception,Home}/ConfigEditor/*` or
 `.../UserList/$QuickFind.$Form` from unauthenticated or external sources — this URL shape is not a pattern ordinary
 PaperCut administration produces. Two log artifacts are near-unique indicators: a `server.log` line reading
 `DB URL: jdbc:derby:memory:pwn`, and a corresponding `derby.log` entry recording Derby booting an in-memory database
 directory whose name ends in the literal string `pwn`
-([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)). Both PaperCut and Huntress
-stress that these artifacts' *absence* does not clear a system, since the observed payloads delete their own
-`server.log` evidence after running
-([PaperCut Software, 2026-08-29](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
-**Triage:** an unexpectedly truncated, gapped, or missing `server.log` on a PaperCut Application Server is not
-normal application behavior — legitimate log rotation does not delete mid-file — and is itself a high-confidence
-signal worth investigating even where no other artifact survives. **Defender takeaway:** any PaperCut NG/MF
+([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)). PaperCut stresses that the absence of its file artifacts does not rule out compromise because the attacker may clean them up ([PaperCut Software, 2026-09-10](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)), and Huntress observed the payload deleting the server's own `server.log` ([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)).
+The later authentication bypass that watchTowr documents reaches the Setup Wizard pages through the `Home` page, so requests whose `service` parameter routes through `Home` to a setup page such as `SetupAdmin` on a server whose setup is long complete are the matching pattern ([watchTowr, 2026-10-09](https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/)).
+**Triage:** an unexpectedly truncated, gapped, or missing `server.log` on a PaperCut Application Server is worth
+investigating even where no other artifact survives, since Huntress saw the payload delete that log. **Defender takeaway:** any PaperCut NG/MF
 Application Server that has ever been reachable from the public internet should be assumed targeted; upgrade it to
 the maintenance release for its line immediately, and where v23 or earlier cannot yet be replaced, remove public exposure
 entirely rather than relying on detection alone.
@@ -285,3 +293,9 @@ second independent source had not corroborated it as of this update.
 PaperCut published security maintenance releases 26.0.5, 25.0.13 and 24.1.10 for NG and MF on 10 September 2026. Unlike the emergency patches, they went through the vendor's full release testing, carry new version numbers and release notes, and address all the CVEs in the advisory with the same protection as the emergency patches plus additional hardening. PaperCut's instruction is plain: "These releases replace the emergency patches. If you are running an emergency patch build, move to a maintenance release. If you have not yet patched, upgrade now." A server already on Emergency Patch Release 3 is protected against both CVEs and can schedule the upgrade through normal change control, while one still on Release 1 or 2 should move now. Site Servers and secondary/print servers should be updated to a patched version, not just the primary Application Server ([PaperCut Software, 2026-09-10](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
 
 Nothing changes for v23 and earlier: there is no emergency patch or maintenance release for that line, and the only route to a fixed build is an upgrade to a supported line (24, 25 or 26), with web access to the Application Server restricted to trusted addresses until then. PaperCut also reports that new compromises have slowed considerably and that most customers now have the Application Server behind a firewall or on a patched build, but that publicly reachable, unpatched servers are still being targeted ([PaperCut Software, 2026-09-10](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)). For an estate that patched in the first week, the task is to move each server from its emergency build to the maintenance release and confirm the version on every Site Server and secondary server, not only on the primary. CISA added both CVEs to its Known Exploited Vulnerabilities catalog on 2026-08-31 ([CISA KEV](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)).
+
+## Update — 2026-10-10T03:46:27Z
+
+watchTowr Labs published a write-up on 2026-10-09 that follows the emergency patches build by build ([watchTowr, 2026-10-09](https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/)). Its timeline: the patch released on 28 August (26.0.4-PO build 76508) fixed two bypasses watchTowr had reported; watchTowr then bypassed the fix for the authentication bypass again (tracked internally as WT-2026-0143, no CVE assigned) and found a new post-authentication code-execution flaw in Scan-to-Fax (WT-2026-0144, now CVE-2026-82077), which together gave a full unauthenticated chain against build 76508; the patch released on 1 September (build 76530) fixes WT-2026-0143, and 26.0.5, released on 10 September, fixes CVE-2026-82077 ([watchTowr, 2026-10-09](https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/)). The authentication bypass abuses the Setup Wizard forms, which the earlier patches had ignored: every stage can be reached through the `Home` page even after setup is complete, and watchTowr shows it modifies the administrator password ([watchTowr, 2026-10-09](https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/)). watchTowr also publishes a Detection Artefact Generator that tests a server's exposure to the authentication bypasses but does not run the full chain ([watchTowr, 2026-10-09](https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/)).
+
+PaperCut's September security bulletin lists CVE-2026-82077 as a code-execution flaw in the Scan-to-Fax component that needs an authenticated administrator, rated CVSS 4.0 7.3, fixed in 26.0.5 and 25.0.13, and says servers already on the latest release are covered ([PaperCut Software, 2026-09-24](https://www.papercut.com/kb/Main/security-bulletin-sep-2026/)); it names no 24.x release and no emergency build. The unauthenticated chain watchTowr describes is closed by the 1 September patch, but an administrator-level foothold still reaches code execution through Scan-to-Fax until the maintenance release is installed. No source names exploitation of CVE-2026-82077 or of the Setup Wizard bypass. PaperCut says Emergency Patch Release 3 closes off additional attack vectors it has observed being exploited in the wild, without naming them ([PaperCut Software, 2026-09-10](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
