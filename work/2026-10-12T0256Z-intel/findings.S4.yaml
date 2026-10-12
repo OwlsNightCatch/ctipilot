@@ -1,0 +1,262 @@
+# work/2026-10-12T0256Z-intel/findings.S4.yaml
+domain: S4
+run_id: 2026-10-12T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-12T02:58:06Z
+ended_at: 2026-10-12T03:14:05Z
+duration_seconds: 959
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 32
+  bridge_fetches: 70   # approximate: 8 feeds, ~35 extract calls, ~25 ransomware.live v2 API calls, ICO sitemap, EDGAR, ncsc-csh
+window: { window_hours: 26, developing_window_hours: 72, now: "2026-10-12T02:57Z" }
+
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "Ricardo (SMG Swiss Marketplace Group): a server vulnerability exposed names, postal addresses and phone numbers of about 890,000 accounts of Switzerland's largest online marketplace"
+    sources:
+      - { url: "https://swissmarketplace.group/media-release/ricardo-fixes-security-vulnerability/", publisher: "SMG Swiss Marketplace Group (victim's own media release)", date: "2026-10-09", role: "primary" }
+      - { url: "https://www.srf.ch/news/schweiz/online-marktplatz-gehackt-ricardo-meldet-datenleck-bei-890-000-konten", publisher: "SRF (relays SMG release plus SMG spokesperson answers to AWP and SRF)", date: "2026-10-09", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/cybervorfall-bei-online-auktionshaus-ricardo-20261009", publisher: "Inside IT", date: "2026-10-09", role: "corroborating" }
+      - { url: "https://www.netzwoche.ch/news/2026-10-09/ricardo-meldet-datenabfluss-bei-890000-userkonten", publisher: "Netzwoche", date: "2026-10-09", role: "corroborating" }
+      - { url: "https://www.cash.ch/news/smg-ricardo-daten-von-890000-nutzern-durch-sicherheitslucke-offengelegt-975463", publisher: "cash.ch (AWP wire)", date: "2026-10-09", role: "corroborating" }
+      - { url: "https://borncity.com/blog/2026/10/11/cybervorfall-bei-schweizer-auktionsplattform-ricardo/", publisher: "Borns IT- und Windows-Blog (discovery lead, post dated 2026-10-10 22:40Z)", date: "2026-10-10", role: "discovery" }
+    discovery_trace: "first seen at: borncity (slice record, lookback 74 h), feed https://borncity.com/blog/feed/ -> post https://borncity.com/blog/2026/10/11/cybervorfall-bei-schweizer-auktionsplattform-ricardo/ (it links the release) -> primary: SMG media release https://swissmarketplace.group/media-release/ricardo-fixes-security-vulnerability/ -> corroboration: SRF https://www.srf.ch/news/schweiz/online-marktplatz-gehackt-ricardo-meldet-datenleck-bei-890-000-konten (reached via WebSearch (\"Ricardo Cybervorfall Auktionsplattform Oktober 2026\")), Inside IT https://www.inside-it.ch/cybervorfall-bei-online-auktionshaus-ricardo-20261009 (via feed https://www.inside-it.ch/rss.xml), Netzwoche and cash.ch (via WebSearch (\"Ricardo Datenleck 890000 Konten Phishing Warnung BACS EDÖB Hackergruppe\"))"
+    summary: |
+      FACTS (SMG Swiss Marketplace Group, Ricardo's parent, in its own release of 2026-10-09): Ricardo detected suspicious
+      activity on its servers on 2026-10-07, closed the security vulnerability that allowed the access, and its investigation
+      established that personal data relating to about 890,000 user accounts was exposed, limited to names, postal addresses and
+      telephone numbers (company names for business users); email addresses and passwords were not affected. Ricardo says it
+      informs the affected users directly, has notified the Swiss Federal Data Protection and Information Commissioner (FDPIC /
+      EDÖB), will file a criminal complaint and will report the incident to the National Cyber Security Centre (BACS). An SMG
+      spokesperson told SRF there has so far been no extortion and no ransom demand, that the data was never freely accessible,
+      and advised caution toward unexpected post, calls, SMS or WhatsApp asking for credit-card, bank or Twint credentials.
+      CONTRADICTION left open by the sources: the release's lead sentence says Ricardo "has identified unauthorised access to
+      personal data linked to orders on its platform" (Netzwoche and cash.ch repeat it), whereas SRF quotes the spokesperson
+      saying no unauthorised access to personal data linked to orders was found; no source resolves which describes the
+      accessed tables. NOT STATED by any source: the vulnerability class or component, the attacker or any claim of
+      responsibility (no leak-site listing found: ransomware.live searchvictims returned no match), the dwell time before
+      2026-10-07, or whether the data has been published or sold. The incident-floor reading is therefore: a home-region
+      disclosure with impact but no access vector, actor or behaviour beyond the impact.
+    region_nexus: "Switzerland (home region): largest Swiss online marketplace; FDPIC notified, BACS report announced"
+    primary_sector_nexus: "indirect: about 890,000 Swiss accounts (names, postal addresses, phone numbers) are phishing, smishing and vishing fuel against Swiss residents, public-sector staff among them; no source breaks the accounts down by employer"
+    sector: "retail / e-commerce platform (consumer marketplace)"
+    cves: []
+    techniques: [T1190]   # inferred only from "the security vulnerability that allowed this access"; no source names the vector, so treat as the weakest-supported mapping
+    affected_products: ["Ricardo (ricardo.ch online marketplace)"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:ricardo-smg-data-exposure-2026-10", type: incident, name: "Ricardo / SMG data exposure (October 2026)", aliases: ["Ricardo Datenabfluss 890'000 Konten"],
+          summary: "SMG Swiss Marketplace Group disclosed on 2026-10-09 that a server vulnerability exposed names, postal addresses and phone numbers of about 890,000 Ricardo accounts, detected 2026-10-07 (SMG release, 2026-10-09)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER   # the victim's own disclosure (A-grade for its own incident), relayed by four Swiss outlets; no independent observation of the intrusion exists
+    confidence: MEDIUM
+    classification_suggestion: { reliability: A, credibility: 2 }
+    novelty: new
+    lookback: true     # primary disclosure is 2026-10-09 (outside the 26 h window); first surfaced by borncity's 74 h lookback (post of 2026-10-10 22:40Z)
+    borderline: true
+    borderline_reason: "Clears PD-11 only on home-region nexus; it falls under the incident floor (no vector, actor or behaviour beyond the impact), so at most a routine entry of two sentences plus its transfer ground (accurate name + address + phone for 890k Swiss accounts raises targeted-phishing pretext quality). The vulnerability class is unstated, so techniques[] is the weakest-supported mapping."
+    evidence:
+      - quote: "The exposed data was limited to names, postal addresses and telephone numbers and, for business users, company names."
+        attribution: "SMG Swiss Marketplace Group (media release)"
+        source_url: "https://swissmarketplace.group/media-release/ricardo-fixes-security-vulnerability/"
+      - quote: "Ricardo detected suspicious activity on its servers on 7 October 2026 and initiated immediate technical measures to secure its systems."
+        attribution: "SMG Swiss Marketplace Group (media release)"
+        source_url: "https://swissmarketplace.group/media-release/ricardo-fixes-security-vulnerability/"
+      - quote: "Auch habe der Cyberangriff bislang weder eine Erpressung noch Lösegeldforderungen zur Folge gehabt, so die Sprecherin."
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/news/schweiz/online-marktplatz-gehackt-ricardo-meldet-datenleck-bei-890-000-konten"
+      - quote: "Ricardo, part of SMG Swiss Marketplace Group, has identified unauthorised access to personal data linked to orders on its platform."
+        attribution: "SMG Swiss Marketplace Group (media release; lead sentence, in tension with the SRF spokesperson quote)"
+        source_url: "https://swissmarketplace.group/media-release/ricardo-fixes-security-vulnerability/"
+      - quote: "Und es sei kein unbefugter Zugriff auf personenbezogene Daten festgestellt worden, die mit Bestellungen auf der Plattform verknüpft gewesen seien."
+        attribution: "SRF (SMG spokesperson to AWP, as relayed)"
+        source_url: "https://www.srf.ch/news/schweiz/online-marktplatz-gehackt-ricardo-meldet-datenleck-bei-890-000-konten"
+    extended_notes: |
+      Triage-ready lines the sources support: Exposure: private and business Ricardo account holders; Ricardo is notifying
+      them directly, so a recipient of that notice (or an organisation whose staff use Ricardo) can scope exposure; the exposed
+      fields are limited to name, postal address, phone number and, for business accounts, company name. Detection: no
+      technical indicator is public; the defender-side consequence is on the inbound-contact telemetry class (mail, SMS and
+      telephony reports) where pretexts quoting a real name, address and phone number, or Ricardo-themed messages, arrive;
+      BACS and cybercrimepolice.ch separately warned (before this incident) about Ricardo-themed Twint/bank-login phishing, a
+      separate campaign no source links to the breach. Takeaway: brief staff that unexpected post, calls, SMS or WhatsApp
+      messages using accurate personal details are plausible pretexts. Registry: SMG is not a registered entity; proposing the
+      incident key only.
+      Wire-timing note: SMG release 2026-10-09 (afternoon, AWP flash 14:15), SRF the same day; the 72 h-old disclosure reached
+      this fire only through borncity's lookback. No Oct 10-12 development found (no actor claim, no BACS statement).
+
+  # ------------------------------------------------------------------ 2
+  - title: "ShinyHunters / FBI jobs portal: the FBI arrests a Canadian ransomware-negotiation executive in the case; the group says it will not release the stolen FBI data"
+    sources:
+      - { url: "https://krebsonsecurity.com/2026/10/fbi-arrests-founder-of-ransomware-negotiation-firm/", publisher: "KrebsOnSecurity", date: "2026-10-09", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/cyber-exec-arrested-in-case-allegedly-tied-to-shinyhunters-hackers/", publisher: "BleepingComputer", date: "2026-10-10", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/fbi-arrests-another-suspected-shinyhunters-hacker-after-agency-breach/", publisher: "BleepingComputer (FBI Director statement as relayed)", date: "2026-10-09", role: "corroborating" }
+      - { url: "https://therecord.media/shinyhunters-arrest-fbi-data-breach-investigation", publisher: "The Record", date: "2026-10-09", role: "corroborating" }
+      - { url: "https://databreaches.net/2026/10/10/fbi-announces-yet-another-arrest-allegedly-connected-to-the-fbi-jobs-hack/", publisher: "DataBreaches.net (discovery; quotes Krebs)", date: "2026-10-10", role: "discovery" }
+    discovery_trace: "first seen at: databreaches-net (slice record), feed https://databreaches.net/feed/ -> post https://databreaches.net/2026/10/10/fbi-announces-yet-another-arrest-allegedly-connected-to-the-fbi-jobs-hack/ (quotes Krebs) -> primary: KrebsOnSecurity https://krebsonsecurity.com/2026/10/fbi-arrests-founder-of-ransomware-negotiation-firm/ (court docket links CourtListener) -> corroboration: BleepingComputer feed https://www.bleepingcomputer.com/feed/ -> https://www.bleepingcomputer.com/news/security/cyber-exec-arrested-in-case-allegedly-tied-to-shinyhunters-hackers/ and https://www.bleepingcomputer.com/news/security/fbi-arrests-another-suspected-shinyhunters-hacker-after-agency-breach/; The Record feed https://therecord.media/feed -> https://therecord.media/shinyhunters-arrest-fbi-data-breach-investigation"
+    summary: |
+      Development inside the 72 h developing window on a covered entry (FBI jobs portal / ShinyHunters). FACTS: on Friday
+      2026-10-09 FBI Director Kash Patel announced that agents "arrested another suspected co-conspirator of the ShinyHunters
+      group" (BleepingComputer, The Record); the New York Times reports the suspect is a Canadian national arrested in
+      Pennsylvania (relayed by BleepingComputer and The Record). KrebsOnSecurity, citing multiple sources and federal court records, links the arrest to
+      Edward Dubrovsky (associated with CyberSteward, which Politico, as relayed by BleepingComputer, calls a trade name of the Canadian
+      firm Cypfer, both helping organisations negotiate and send extortion payments, while Krebs describes CyberSteward as
+      another Canadian firm; Cypfer's spokesperson told Krebs he was a managing
+      director, not a founder, until November 2025). Federal court records show an Edward "Dobrovsky" arrested on 2026-10-08 in Pennsylvania on cyber-extortion and conspiracy charges, the case moved
+      on 2026-10-09 to the Eastern District of Texas, the core complaint is sealed, and the docket lists conspiracy to threaten to
+      impair the confidentiality of information with intent to extort and Hobbs Act extortion. CLAIMS / OPEN: the FBI has not
+      confirmed the identity or that he is the co-conspirator Patel meant (BleepingComputer); Krebs's sources say charges against
+      principals at other ransomware-negotiation companies may be forthcoming; charges are allegations. ShinyHunters, per
+      The Record, told several outlets it would not release the stolen FBI information and did not want to escalate the feud with
+      the FBI, and posted that it would not remain active on Telegram much longer because members were reportedly arrested (a
+      criminal group's statement, not a guarantee the data stays unpublished). The Record adds the FBI has taken down much of
+      the group's infrastructure over two weeks. ASSESSMENT BOUNDARY: no source ties the arrest to any Swiss victim; the
+      defender-side consequence is limited to incident-response vendor due diligence and extortion-handling playbooks.
+    region_nexus: "global / US; no Swiss link in the sources (ShinyHunters has listed Swiss companies on leak sites, covered elsewhere)"
+    primary_sector_nexus: "indirect: shared ShinyHunters threat (SaaS data-theft extortion) and the trust position of third-party negotiators in public-sector incident response"
+    sector: "public-sector (US federal law enforcement as victim); incident-response / negotiation services"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: ["actor:shinyhunters", "incident:shinyhunters-fbi-peoplesoft-breach-claim-2026-09", "campaign:shinyhunters-peoplesoft-2026"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: "update-of:2026-09-24/shinyhunters-fbi-peoplesoft-breach-claim"
+    borderline: true
+    borderline_reason: "Genuinely new development on a covered entry (the entry records the Dutch and Jordan detentions and the contractor patch failure, not this arrest or the group's no-release statement), but it adds no detection or hardening; worth a short changelog record at most, as law-enforcement posture and IR-vendor scrutiny."
+    evidence:
+      - quote: "arrested another suspected co-conspirator of the ShinyHunters group"
+        attribution: "FBI Director Kash Patel (statement as relayed by BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/fbi-arrests-another-suspected-shinyhunters-hacker-after-agency-breach/"
+      - quote: "Federal court records show that on October 8, an Edward Dobrovsky (note the slight misspelling of the last name) was arrested in Pennsylvania on cyber extortion and conspiracy charges."
+        attribution: "KrebsOnSecurity"
+        source_url: "https://krebsonsecurity.com/2026/10/fbi-arrests-founder-of-ransomware-negotiation-firm/"
+      - quote: "While the FBI has not publicly confirmed that Dubrovsky is the suspected ShinyHunters co-conspirator, KrebsOnSecurity reports that multiple sources linked Dubrovsky's arrest to the ShinyHunters investigation."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/cyber-exec-arrested-in-case-allegedly-tied-to-shinyhunters-hackers/"
+      - quote: "ShinyHunters told several news outlets in messages that it would not release the stolen information and did not want to escalate the feud with the FBI"
+        attribution: "The Record"
+        source_url: "https://therecord.media/shinyhunters-arrest-fbi-data-breach-investigation"
+      - quote: "charges against principals at other companies that specialize in ransomware negotiation may be forthcoming"
+        attribution: "KrebsOnSecurity (anonymous sources)"
+        source_url: "https://krebsonsecurity.com/2026/10/fbi-arrests-founder-of-ransomware-negotiation-firm/"
+    extended_notes: |
+      Fact / claim / inference split for the composer: facts = the FBI statement, the court-docket entries (Krebs and
+      BleepingComputer read CourtListener), the NYT-relayed Canadian-national-in-Pennsylvania detail; claims = ShinyHunters'
+      no-release and Telegram statements, Krebs's anonymous-source link of the negotiator to the case and the "may be
+      forthcoming" charges; inference = none carried. Do not name the arrested man as a ShinyHunters member: only the FBI
+      director's co-conspirator phrasing and unconfirmed source reports tie the two. Detection/hardening content: none new.
+      The group's own posture note (Telegram exit) relates to the entry's existing extortion-posture reading.
+
+  # ------------------------------------------------------------------ 3
+  - title: "IDC Frontier / IDCF Cloud: fourth report (2026-10-09) sets out the response organisation, with SoftBank's corporate division as the customer channel"
+    sources:
+      - { url: "https://www.idcf.jp/news/topics/20261009001", publisher: "IDC Frontier (fourth report, Japanese)", date: "2026-10-09", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"IDCフロンティア ランサムウェア 第4報 東日本リージョン1 復旧状況\") (the search itself found only reports 1-3) -> IDC Frontier news listing https://www.idcf.jp/news/ (extract showed the fourth-report headline; WebFetch of the same page returned the hrefs) -> primary: https://www.idcf.jp/news/topics/20261009001"
+    summary: |
+      IDC Frontier's fourth report (2026-10-09) lists the response set-up for the IDCF Cloud incident: an emergency task force set up at 09:00 on 2026-10-07 together with parent SoftBank; SoftBank's corporate division is the customer contact, offering backup-procedure guidance and proposals for a migration environment, and starting or stopping customers' virtual servers on request; IDC Frontier's engineers work on the investigation and recovery plan with an external security specialist firm; reports and consultations with the supervising ministries and police are under way; IDCF Cloud TypeS (formerly White Cloud ASPIRE) and IDCF Private Cloud are outside the incident (already in the entry). The report states no new technical fact: no intrusion route, no actor, no restoration date. The covered entry's takeaway (customer-held backups are the only recovery path, per the third report) stands unchanged.
+    region_nexus: "Japan (APAC); entry already covers local-government customers"
+    primary_sector_nexus: "indirect: supplier-concentration lesson for public-sector hosting, already the entry's takeaway"
+    sector: "technology / cloud hosting; public-sector customers"
+    cves: []
+    techniques: []
+    affected_products: ["IDC Frontier IDCF Cloud"]
+    entity_keys: ["incident:idc-frontier-idcf-cloud-ransomware-2026-10"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER   # victim's own notice
+    confidence: HIGH
+    classification_suggestion: { reliability: A, credibility: 2 }
+    novelty: "update-of:2026-10-11/idc-frontier-idcf-cloud-ransomware-495-customers-backups"
+    borderline: true
+    borderline_reason: "Response-organisation notice only: no technical, scope or recovery fact beyond the entry. Suggest dropping unless the composer wants the SoftBank-channel and 'proxy VM start/stop' detail as a one-line improvement."
+    evidence:
+      - quote: "2026年10月7日午前9時に緊急対策本部を設置して、親会社であるソフトバンク株式会社との緊密な連携の下、以下の対応を進めています。"
+        attribution: "IDC Frontier"
+        source_url: "https://www.idcf.jp/news/topics/20261009001"
+      - quote: "外部のセキュリティ専門企業と連携して、詳細の調査を実施"
+        attribution: "IDC Frontier"
+        source_url: "https://www.idcf.jp/news/topics/20261009001"
+
+# ---------------------------------------------------------------------------
+# Backlog rows re-gated on today's facts (task brief, rows 1 and 2) — conditions NOT met
+backlog_regate:
+  - row: "SafePay listing of ARA-Region Lyss-Limpachtal (canton Bern wastewater association, 2026-09-15)"
+    condition: "victim statement or press confirmation"
+    condition_met: false
+    evidence_checked: "ransomware.live v2 searchvictims/ara-lyss (2026-10-12): group safepay, discovered 2026-09-15T19:29Z, press field null; countrycyberattacks/CH (79 press-confirmed records) has no ara-lyss entry; German/French/Italian WebSearch found only leak-tracker relays (DeXpose, BreachSense: claim-only) and no Swiss press (Bieler Tagblatt, SRF, Netzwoche) report; the victim's site https://www.ara-lyss.ch/ (extract + WebFetch) carries no notice or Aktuelles item about an incident."
+    recommendation: "Hold to expiry 2026-10-14, then strike (condition unmet). Nothing in this fire's sweep changes the PD-6 reading: a claim by the criminals, no victim or high-reliability confirmation."
+  - row: "Payload ransomware listing of Netech / Neeser Technik AG (Seuzach ZH, 2026-09-28)"
+    condition: "victim statement or press confirmation"
+    condition_met: false
+    evidence_checked: "ransomware.live v2 searchvictims/netech and /neeser (2026-10-12): group payload, discovered 2026-09-28T16:59Z, press field null, domain empty; WebSearch (German) found only leak-tracker relays (Hendry Adrian, BreachSense) and no Swiss press or Landbote report; https://www.netech.ch/ (extract + WebFetch) shows no incident notice (its 'News' link is a bare news.php entry; the page lists no items)."
+    recommendation: "Hold to expiry 2026-10-14, then strike (condition unmet)."
+  - row: "Beyond Gravity (unassigned to S4 but re-checked: federal-owned space supplier, targeted attack detected 2026-08-12, BACS and Mandiant)"
+    condition: "BACS, Beyond Gravity or reporting names a vector, an actor or the data affected"
+    condition_met: false
+    evidence_checked: "Netzwoche 2026-10-06 (https://www.netzwoche.ch/news/2026-10-06/beyond-gravity-wird-opfer-eines-cyberangriffs, read in full) and a French-language WebSearch: still no vector, actor, data or claim; ICTjournal's 2026-10-09 weekly 'En bref' line only repeats the disclosure; ransomware.live has no match."
+    recommendation: "Unchanged; row expiry 2026-10-20 stands."
+
+# ---------------------------------------------------------------------------
+# Covered-story developments checked for the 72 h developing window — nothing material beyond items above
+covered_story_checks:
+  - { story: "Denmark CPR register", result: "no development after the 2026-10-11 update (Pays ApS, 123456, 21 days 17 hours); searched Danish and English" }
+  - { story: "IDC Frontier / IDCF Cloud", result: "fourth report 2026-10-09 returned as a borderline update-of; no fifth report on the news listing; no restoration notice" }
+  - { story: "PK Softech / Publica", result: "newest reporting 2026-10-08/09 (Publica release; BPK, BLVK, Pensionskasse Post, Migros; Bundesanwaltschaft investigation per Netzwoche); already in the 2026-10-10 update; no Oct 10-12 development found" }
+  - { story: "Ixa Systems", result: "no statement from Ixa, Vaud police or prison authorities found; ransomware.live still lists the thegentlemen entry (2026-08-30) with press null" }
+  - { story: "FTAPI", result: "no new development; ransomware.live lists thegentlemen entry (2026-09-26, press source heise)" }
+  - { story: "Manno TI", result: "no development" }
+  - { story: "Stadt Wien", result: "newest coverage is the 2026-09-30 disclosure; nothing newer found" }
+  - { story: "Belnet", result: "no official update beyond the 2026-10-02 notice already in the entry" }
+  - { story: "France SDIS", result: "no new SDIS item on FrenchBreaches (listing 2026-10-10 to 2026-10-12)" }
+  - { story: "Zammad / DIVD breach", result: "DIVD case page last modified 2026-10-09 20:01 CEST (https://csirt.divd.nl/cases/DIVD-2026-00014/) is already fully carried in the 2026-10-02 Zammad entry (AI-agent attack, MTTD 19 min, MTTR 19 h, MTTC 9 h cited there from the DIVD pages); no delta returned" }
+
+dropped_leads:
+  - { lead: "Silent Ransom Group 'Luna Moth Files' leak (DataBreaches.net 2026-10-11: exposed MongoDB/Rocket.Chat backup of the extortion group, secured about 2026-09-29)", reason: "no Swiss or public-sector nexus and no new defender-facing behaviour in the cited posts (opsec failure of a criminal group); belongs to S3-style research if anywhere" }
+  - { lead: "Nippon Columbia malware incident (BleepingComputer 2026-10-11, 8.6 million karaoke fan records)", reason: "Japan consumer entertainment, no nexus under PD-11 (a)-(d)" }
+  - { lead: "Egide (French defence/aerospace components, cyberattack 2026-10-06 via an external IT provider, FrenchBreaches 2026-10-11, relaying a company statement of 2026-10-09)", reason: "no Swiss nexus; transferable lesson (IT-provider foothold into an industrial site) too thin without vector or actor" }
+  - { lead: "French forum-sale/leak claims on FrenchBreaches (Infogreffe, Grand Delta Habitat, Alloextra, Kiassure, Callibri, VD2E, ecole 42 and others, 2026-10-10 to 2026-10-12)", reason: "claim-only or forum posts without victim confirmation, no Swiss nexus; Infogreffe and ecole 42 were already borderline-dropped by the 2026-10-11 fire" }
+  - { lead: "Swiss leak-site listings since the last fire: Camandona SA (Majinahanashi, 2026-10-10 20:43Z), hoteldelfinolugano.ch (SafePay, 2026-10-09), Boullard Musique (Payload, 2026-10-08)", reason: "private firms, claim-only (ransomware.live press null), already borderline-dropped by the 2026-10-11 fire; no Swiss federal, cantonal, communal or emergency-service victim in countryvictims/CH since 2026-09-28 (Manno)" }
+  - { lead: "SRG/SRF staff-data theft (disclosed 2026-09-27/28, about 340 SRF employees' 2020 contact data)", reason: "outside the developing window and no new development found; not in the store (single out-of-window incident of a public broadcaster, floor-level)" }
+
+# ---------------------------------------------------------------------------
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No supplier watchlist is configured, so the sweep is a no-op by definition. Ad hoc supplier read for Swiss-public-sector customers: PK Softech (covered, no new development), FTAPI (covered), IDC Frontier (covered), Ixa Systems (covered), Zammad/DIVD (covered); the only new supplier-relevant item is Egide's IT-provider foothold (French industrial, no Swiss customer link in the sources), dropped."
+
+candidate_sources:
+  - id: cash-ch-awp
+    publisher: "cash.ch (AWP wire copy of Swiss corporate disclosures)"
+    url: "https://www.cash.ch/news"
+    category: news
+    why: "Carried the AWP flash for both the Publica/PK Softech disclosure and the SMG/Ricardo release within hours of the company statement (Ricardo flash 2026-10-09 14:15), ahead of the trade press; Swiss-language wire copy of victim statements is primary-adjacent (reliability B). RSS not verified: a feed or sitemap check is the first step."
+
+coverage_gaps:
+  - { source_id: cyberinsider, reason: "no RSS in the record; the WebFetch listing returns 15 items with dates but only teaser text, newest item 2026-10-09, nothing in the 26 h horizon; recipe unchanged (listing then drill) and working" }
+  - { source_id: ransomware-live, reason: "recipe refinement (works, not a failure): `url --direct https://api.ransomware.live/v2/countryvictims/CH` returns 253 records with keys group_name / post_title / discovered / website; `searchvictims/<term>` returns different keys (group / victim / attackdate / press / claim_url), 404 = no match; `recentvictims` returns only the newest 100 records globally; `countrycyberattacks/CH` returns 79 press-confirmed records keyed on added / date / domain / title" }
+  - { source_id: ico-uk, reason: "recipe confirmed (works): the 5 MB sitemap via `url --direct`, filtered on /news-and-blogs/2026/ and /enforcement/2026/; note that on 2026-10-09 the sitemap lastmod values are dominated by FOI regulatory-action pages (/action-weve-taken/foi-regulatory-action/...), so filter those out; no in-horizon breach item" }
+  - { source_id: cnil-fr, reason: "recipe confirmed (works): `extract https://www.cnil.fr/fr/actualites` returns dated items; newest 2026-10-09; no in-horizon breach item" }
+  - { source_id: frenchbreaches, reason: "recipe confirmed (works): WebFetch listing (18 dated entries, /alertes/<slug> hrefs) then `extract https://frenchbreaches.com/alertes/<slug>` reads each page cleanly" }
+  - { source_id: sec-disclosures-edgar, reason: "`sec-edgar 8k 2026-09-28 2026-10-12 1.05` returned total 0; empty 14-day window is a normal quiet result, not a failure" }
+
+# ---------------------------------------------------------------------------
+source_ledger:
+  - { id: borncity, tier: standard, attempted: true, transport: "feed (20 items) + extract", horizon_hours: 74, in_horizon_items: 14, returned: 1, note: "Ricardo (Swiss marketplace) via lookback; others German consumer/Windows news" }
+  - { id: divd-csirt, tier: standard, attempted: true, transport: "feed (20 items) + extract", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest feed item is dated 2026-10-09 00:00Z, 57 minutes outside the horizon; its case page (last modified 2026-10-09 20:01 CEST) is already fully carried in the Zammad entry" }
+  - { id: frenchbreaches, tier: standard, attempted: true, transport: "webfetch listing + extract", horizon_hours: 74, in_horizon_items: 18, returned: 0, note: "forum claims, no Swiss nexus; Egide, Infogreffe, Grand Delta Habitat read in full and dropped" }
+  - { id: cnil-fr, tier: standard, attempted: true, transport: "extract (/fr/actualites)", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest 2026-10-09 (event replay) and 2026-10-08 (France Travail injunction closure)" }
+  - { id: ico-uk, tier: standard, attempted: true, transport: "url --direct sitemap", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "no news/enforcement page after 2026-10-09T12:16Z; FOI regulatory-action pages only" }
+  - { id: kommunaler-notbetrieb-de, tier: standard, attempted: true, transport: "webfetch listing", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest entry 2026-09-30 (ZIDKOR)" }
+  - { id: next-ink, tier: standard, attempted: true, transport: "feed (30 items)", horizon_hours: 50, in_horizon_items: 1, returned: 0, note: "one in-horizon item, not security" }
+  - { id: bleepingcomputer, tier: standard, attempted: true, transport: "feed (15 items) + extract", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "in-horizon item is Nippon Columbia (no nexus); the two ShinyHunters-arrest articles (2026-10-09/10) are outside 26 h but inside the 72 h developing window and feed the update-of item" }
+  - { id: cyberinsider, tier: standard, attempted: true, transport: "webfetch listing", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest listed item 2026-10-09" }
+  - { id: databreaches-net, tier: standard, attempted: true, transport: "feed (10 items) + extract", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "in-horizon item (Luna Moth Files) dropped; the 2026-10-10 FBI-arrest post is the discovery lead for the ShinyHunters update-of item" }
+  - { id: ransomware-live, tier: standard, attempted: true, transport: "api: url --direct (countryvictims/CH, countrycyberattacks/CH, recentvictims, searchvictims, countryvictims/AT|DE|FR|IT)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "no Swiss victim listed since 2026-10-10T20:43Z (Camandona SA, previously dropped); no Swiss public-sector listing since Manno (2026-09-28)" }
+  - { id: sec-disclosures-edgar, tier: standard, attempted: true, transport: "bridge: sec-edgar 8k 2026-09-28 2026-10-12 1.05", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "total 0 hits in the 14-day range" }

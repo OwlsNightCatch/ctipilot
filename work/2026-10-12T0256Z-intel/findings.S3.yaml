@@ -1,0 +1,164 @@
+# work/2026-10-12T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-12T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-12T02:58:01Z
+ended_at: 2026-10-12T03:13:59Z
+duration_seconds: 958
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 10
+  bridge_fetches: 95   # approximate count of feed / extract / url calls read off the tool-use trace
+items:
+  - title: "Expired third-party script domains re-registered by one operator: a dead analytics tag still embedded in online stores serves a cloaked redirector that sells visitors to scam brokers and, in one chain, to an iOS DarkSword exploit and spyware implant (Report URI; P7 DarkSword match)"
+    sources:
+      - { url: "https://blog.report-uri.com/abandoned-analytics-domain-funnels-store-visitors-to-darksword-iphone-exploits/", publisher: "Report URI (Scott Helme)", date: "2026-10-09", role: "primary" }
+      - { url: "https://www.iverify.com/blog/darksword-variant-threat-research", publisher: "iVerify", date: "2026-10-08", role: "corroborating" }
+      - { url: "https://censys.com/blog/darksword-coruna-open-directory-finding-report/", publisher: "Censys", date: "2026-10-07", role: "corroborating" }
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain", publisher: "Google Threat Intelligence Group", date: "2026-03-18", role: "background" }
+      - { url: "https://thehackernews.com/2026/10/p7-darksword-ios-exploit-kit-adds.html", publisher: "The Hacker News (relay of iVerify, Report URI and Censys)", date: "2026-10-11", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/03/ta446-deploys-leaked-darksword-ios.html", publisher: "The Hacker News (relays Proofpoint attribution)", date: "2026-03-28", role: "background" }
+    discovery_trace: "first seen at: the wider news-feed sweep, The Hacker News feed, URL https://feeds.feedburner.com/TheHackersNews (item 2026-10-11 04:24Z 'P7 DarkSword iOS Exploit Kit Adds Crypto Wallet Data Theft and Remote Commands') -> https://thehackernews.com/2026/10/p7-darksword-ios-exploit-kit-adds.html -> pivot: iVerify, URL https://www.iverify.com/blog/darksword-variant-threat-research -> pivot: Report URI feed https://blog.report-uri.com/rss/ -> primary: https://blog.report-uri.com/abandoned-analytics-domain-funnels-store-visitors-to-darksword-iphone-exploits/ (carries the 2026-10-09 update matching the implant to iVerify's P7 samples) -> Censys URL https://censys.com/blog/darksword-coruna-open-directory-finding-report/ -> GTIG URL https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain (patch scope); WebSearch ('ecomtrack.io expired domain re-registered tag hijack redirect DarkSword chainmate.top') found no independent report of the ecomtrack.io hijack itself."
+    summary: |
+      FACTS (Report URI, first-hand): ecomtrack.io, the domain of a defunct Czech e-commerce analytics product, was re-registered on 15 September 2026 after it expired, and the vendor's
+      async script tag, still sitting in the themes of stores that had stopped thinking about it, started serving a roughly 2 KB redirector. The script cloaks itself from a long list of
+      crawlers and headless browsers, fingerprints the device, POSTs the details back, and the server answers only some visitors: in Report URI's testing datacentre and VPN addresses
+      consistently received empty responses, and some residential clients received a payload on the first request and nothing on later ones. A returned URL is followed through a
+      no-referrer meta refresh to a traffic broker on another re-registered dead domain (scanners are sent to a random YouTube video or google.com), which sells the visitor to one of at least
+      three buyers: a German-language investment-scam page, an online casino, and a fake 'AI crypto trading' site. The last loads a hidden page that checks for Safari on iOS 18.4.0 to
+      18.7.2 and, on a match, loads an exploit chain with no further interaction. Report URI identifies the chain as DarkSword from Google's published hunting rule, matching source-path
+      artefacts and a helper function; it did not test the recovered chain against real iPhones and found no infrastructure overlap with the campaigns in Google's report. The same kit also
+      runs from a second dead lead-generation SDK domain re-registered in August and from a domain injected into hacked WordPress sites, which Report URI reads as an operator collecting dead
+      domains and turning them into traffic. Report URI's 2026-10-09 update says the implant matches P7 DarkSword, the variant iVerify documented on 2026-10-08, with two embedded modules
+      byte-for-byte identical to iVerify's samples.
+      CLAIMS AND ASSESSMENTS (owners named): iVerify (device-side first-hand, from an August customer infection and Validin hunting) assesses that P7 reduces on-device footprint, adds on-device
+      keychain and crypto-wallet theft and two-way C2 polling, and that its authors invested real effort rather than producing an LLM-assisted copy. Report URI assesses a financial motive from the
+      crypto lure and wallet targeting, without attributing an operator. Censys (open-directory capture) assesses a separate Chinese-speaking exploitation-as-a-service operation and says the
+      operator is developing an iOS 26 chain around a JavaScriptCore type confusion (CVE-2026-31001) that is unfinished and not deployed, so 26.x must not be reported as a live capability.
+      PATCH SCOPE: GTIG states DarkSword supports iOS 18.4 through 18.7 and that all its vulnerabilities were patched with iOS 26.3 (most earlier); Censys states the 18.x chains are patched in
+      iOS 18.7.3 and 26.3; Report URI notes the loader's targeting range (to 18.7.2) is not a confirmed exploitable range and that Google reports two later-stage vulnerabilities patched in 18.7.2.
+      Background (Proofpoint via THN, March 2026): the Russian state-linked Star Blizzard (TA446) used leaked DarkSword against iOS targets in a spear-phishing campaign; that is separate from this
+      criminal delivery path.
+      WHY IT MAY MATTER HERE: the transferable lesson is the web-hygiene class, not the iOS chain. Any public-sector site, municipal portal or shop-style service that still embeds a vendor tag
+      whose vendor has closed can be turned into a drive-by delivery point when the domain lapses, and the visitors are the constituency's own citizens and staff. The iOS exposure for a managed
+      fleet is small if devices are on iOS 18.7.3 or 26.3 and later.
+    region_nexus: "global; online stores worldwide (Czech origin of the dead product, German-language scam buyer). No Swiss site named by any source."
+    primary_sector_nexus: "indirect (web-property hygiene for government sites; iOS fleet version compliance)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1583.001, T1189, T1608.004]
+    affected_products: ["Apple iOS (18.4 through 18.7.2 targeted by the loader)", "Apple Safari"]
+    entity_keys: ["product:apple-ios", "actor:star-blizzard"]
+    new_entities:
+      - { key: "malware:darksword", type: malware, name: "DarkSword", aliases: ["DarkSword iOS exploit chain", "P7 DarkSword", "DS-Fusion (DarkSword Fusion bundle)"],
+          summary: "iOS full-chain WebKit exploit kit (iOS 18.4 to 18.7, six vulnerabilities) that GTIG documented on 2026-03-18 as adopted by several commercial surveillance vendors and suspected state actors since November 2025 and that later leaked; criminal wallet-theft variants including P7 (iVerify, 2026-10-08) are now in circulation." }
+    relation_suggestions:
+      - { subject: "actor:star-blizzard", object: "malware:darksword", basis: "Proofpoint attributes with high confidence the March 2026 spear-phishing delivery of leaked DarkSword to TA446 / Star Blizzard / COLDRIVER (as relayed by The Hacker News, 2026-03-28; the THN 2026-10-11 article repeats the use)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "The iOS exploit chain itself is an already weighed and borderline-dropped lead (2026-10-10 fire: patched in iOS 18.7.3 and 26.3, Chinese-language wallet-theft operations); what is new is Report URI's 2026-10-09 expired-domain delivery path, a single-researcher finding (the ecomtrack.io hijack has no independent report; THN is a relay). Worth an entry only for the public-sector web-hygiene lesson (dead third-party script tags on government sites). Report URI sells a JavaScript-integrity product, so its remediation text is partly marketing."
+    evidence:
+      - quote: "On 15 September 2026 the domain was re-registered by someone else after it expired, and that tag started serving something very different."
+        attribution: "Report URI"
+        source_url: "https://blog.report-uri.com/abandoned-analytics-domain-funnels-store-visitors-to-darksword-iphone-exploits/"
+      - quote: "This isn't one opportunistic domain grab, this operator is collecting dead domains and turning them into traffic."
+        attribution: "Report URI"
+        source_url: "https://blog.report-uri.com/abandoned-analytics-domain-funnels-store-visitors-to-darksword-iphone-exploits/"
+      - quote: "In our testing, datacentre and VPN IPs consistently received empty responses."
+        attribution: "Report URI"
+        source_url: "https://blog.report-uri.com/abandoned-analytics-domain-funnels-store-visitors-to-darksword-iphone-exploits/"
+      - quote: "The 18.x chains are patched in iOS 18.7.3 and 26.3, so the operator needs a working iOS 26 chain to reach patched devices."
+        attribution: "Censys"
+        source_url: "https://censys.com/blog/darksword-coruna-open-directory-finding-report/"
+      - quote: "all vulnerabilities were patched with the release of iOS 26.3 (although most were patched prior)"
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain"
+    extended_notes: |
+      Exposure (what a source states or follows mechanically): any site whose templates, CMS themes or tag manager still reference a third-party script host for a vendor that no longer exists
+      (Report URI: 'the tag sitting on your site didn't' go away with the product); for devices, Safari on iOS 18.4.0 to 18.7.2 per the loader's check, with the fixed builds named by Censys
+      (18.7.3 and 26.3) and by GTIG (26.3). Detection concept: (1) web-property telemetry: an inventory of every script src host across public pages, joined with registration-age and
+      registrant-change data for each host, flags a lapsed-and-reregistered vendor domain; Content Security Policy report-only violations for script-src show a new or changed host in the browser
+      before any user complaint; (2) egress and proxy telemetry from managed browsers: a page load that pulls a script from a long-dead vendor host and then follows a no-referrer meta-refresh
+      chain through newly registered domains to an unrelated page is the discriminating sequence; (3) mobile: MDM inventory of iOS versions below 18.7.3/26.3, and iVerify's on-device
+      artefacts for P7 (keychain-dump staging files and a debug log in the system tmp directory, localStorage markers set by the exploit loader to stop re-exploitation). Cloaking means
+      server-side scanners from datacentre ranges see nothing; only residential or device-like clients get a payload, so a clean crawl proves nothing (Report URI). Hardening: remove script tags
+      for products no longer used (Report URI's own recommendation); strict script-src allowlist; tag-manager governance with an owner per tag; Lockdown Mode where a device cannot update
+      (GTIG). Not stated by any source: Swiss or public-sector sites carrying the tag, the number of stores still embedding it, or exploitation observed against government devices.
+      Open question for the main agent: whether to fold this into a new web-hygiene entry or drop it; there is no existing store entry on third-party-script domain lapses. IOC-class
+      material (domains, hashes, C2) exists in the sources and is deliberately not carried.
+dropped_leads:
+  - lead: "AnyDesk for Linux 'AnyPwn' (V12 exploit published 2026-10-08; THN 2026-10-09; CSA Labs note 2026-10-11)"
+    reason: "Re-checked against the V12 PoC README (https://github.com/v12-security/pocs/tree/main/anydesk) and the AnyDesk Linux changelog (8.0.3 of 2026-06-23 reads only 'Fixed a bug that could lead to a crash'; 8.0.4 of 2026-06-30 and 8.1.0 of 2026-09-23 are listed). Already returned by S1 on 2026-10-10 and borderline-dropped by that fire (run record line: Linux-only, probabilistic, tuned to one build, no exploitation). The CSA note of 2026-10-11 re-reports THN and states it did not review the exploit repository. No new development."
+  - lead: "Edward Dubrovsky (former Cypfer executive) arrest in the ShinyHunters / FBI-jobs-portal investigation (Krebs 2026-10-09, BleepingComputer and CyberScoop 2026-10-10, CourtListener docket 2:26-mj-01973)"
+    reason: "Already returned by S4 on 2026-10-11 as update-of 2026-09-24/shinyhunters-fbi-peoplesoft-breach-claim and borderline-dropped by that fire. Nothing new since: the complaint is sealed, the case moved to the Eastern District of Texas, BleepingComputer says it remains unclear whether the case connects to the FBI breach, and the FBI has not confirmed the link. CyberScoop's 'appears to align' is its inference."
+  - lead: "CyberScoop 2026-10-08, MonsterCloud owner Zohar Pinhasi indicted (wire fraud, claimed proprietary decryption while paying ransoms, $19M charged, $8M ransom paid, 2018-2023)"
+    reason: "US DOJ case (EDNY) against a ransomware-recovery vendor; relevant only as procurement-risk colour next to the Dubrovsky case; no Swiss or public-sector nexus, no technique. Dropped."
+  - lead: "CloudSEK NEBULA: seven fake 'NebulaAI' SDK packages on npm (api-nebula and llm-nebula still installable per CloudSEK; MAL-2026-17531 on 2026-10-05) install a modified KNTRAT Windows RAT with direct-syscall evasion, HVNC, Kernel Streaming camera/microphone access and Winlogon Shell persistence (2026-10-08)"
+    reason: "Typosquat/fake-SDK npm class already in the store through ChainDrop, GhostAction and earlier npm entries; single vendor source and the full report is gated ('Click Here To Read Full Report', only the executive summary is public); no Swiss or public-sector nexus, no exploitation of a covered product. Detection-relevant facts (preinstall.cjs dropper writing a masqueraded conhost.exe under the user's LocalAppData, empty-IAT syscall implant) are only in the summary. Borderline-drop."
+  - lead: "Booz Allen Hamilton OT lab study, 'Super Intelligence Reached OT Systems and Moved Equipment' (vendor page 2026-10-08; The Register 2026-10-11)"
+    reason: "Read the vendor page (https://www.boozallen.com/insights/cyber/frontier-si-reaches-ot-systems.html) and The Register's reading: frontier models, unnamed, achieved all eight lab objectives (perimeter to ICS network in just over 16 minutes; robotic arm moved; SCADA project Jython edit; 14 pre-authenticated device sessions through a SCADA gateway) with a human approving every exploit. Controlled lab, no in-the-wild observation, whitepaper gated, recommendations generic OT hardening (segmentation, dual-homed systems, monitor controller-mode changes and program writes). Not carried; the AI-agent-tempo theme is already in the store (ReliaQuest, Talos CAIRN, Gambit)."
+  - lead: "Zenity Labs 'AgentCorruption', AWS Bedrock AgentCore (SecTor 2026 session 2026-10-07; Dark Reading 2026-10-08; The Register 2026-10-09)"
+    reason: "Instance-metadata access from the AgentCore Firecracker microVM and an over-privileged default role; AWS moved new agents to IMDSv2 in February and trimmed the default role, no exploitation seen, and AWS disputes the framing ('expected and documented behavior'). Patched cloud-vendor design issue; no constituency nexus."
+  - lead: "ASOS breach (Dark Reading 2026-10-09: 'Xuanye Group' impersonated an employee's trusted contact, took the login and reached third-party marketing and mobile push-notification platforms, claimed a Snowflake instance; BBC and Telegraph reporting)"
+    reason: "S4 lane (incident) and a UK consumer retailer. The transferable point (a marketing or notification SaaS where one account can message the whole customer base, with no second approval) is a real exposure class for any citizen-notification service, but Check Point's and Arctic Wolf's remarks are opinion and the intrusion path is unconfirmed (the Simon AI detail is unverified per Dark Reading). Handed to the main agent as a cross-domain lead."
+  - lead: "DNSSEC root KSK rollover of 2026-10-11 (Akamai 2026-10-08; ICANN reminder page; Cloudflare, Verisign pre-rollover posts)"
+    reason: "Rollover date has now passed. The 2026-10-09 fire borderline-dropped it as an operational deadline (ICANN: more than 95 percent of reporting resolvers ready; no Swiss authority notice). Two WebSearch passes (English and German) this run found no post-rollover failure reports and no NCSC, BSI or SWITCH notice; absence in a US-geolocated search is weak evidence. If a resolver-outage report surfaces in the next fire, it becomes a real item (affected population: validating resolvers without KSK-2024, key tag 38696; stopgap per ICANN/IT-Connect is a root negative trust anchor, RFC 7646)."
+  - lead: "OpenAI 'Disrupting AI-enabled false front operations' (2026-10-08; CyberScoop 2026-10-08): Russia-linked 'Dark Clark' (fake Latin-American think tank) and an Iranian operation with seven fake journalist personas, almost 100 articles"
+    reason: "Influence operations aimed at Latin America and Middle East coverage; outside the 26 h window; no Swiss or constituency nexus and no defender technique. Not an annual report."
+  - lead: "Talos UAT-11985 (2026-10-08), ESET MATCHBOIL (2026-10-08), CrowdStrike ARTEX (2026-10-07), Unit 42 'Evolution of Web3 in Cloud Supply Chain Attacks' (2026-10-07), Gambit retail-agent report (page date 2026-10-08)"
+    reason: "All already weighed by the 2026-10-09, -10 and -11 fires and borderline-dropped or covered. The Gambit post's date field now reads 2026-10-08 while the store carries the same campaign as 2026-09-23/gambit-ai-agent-retail-skimmer-campaign-strix-cairn-hermes (the post was updated or republished; not a new report)."
+  - lead: "Silent Ransom Group leak follow-up (DataBreaches 2026-10-11: the 'Luna Moth Files' came from a passwordless MongoDB backup holding Rocket.Chat records exposed from at least August to 29 September 2026) and the $207M law-firm claim (Security Affairs 2026-10-10)"
+    reason: "The leak itself was handled by the 2026-10-08 S4 return; the origin finding is a researcher-source story about the criminals' own opsec, with no defender action for the constituency."
+  - lead: "CSA Labs research notes of 2026-10-08 to 2026-10-11 (15 notes read from the listing)"
+    reason: "Rating C source; every threat-related note (GhostAction, ARTEX, Tensorlake, ccTLD hijacks, FortiBleed, Wikimedia agent, FBI Jobs/Denmark CPR synthesis) re-reports an item already in the store or already dropped; AnyPwn handled above."
+periodic_reports: []
+candidate_sources:
+  - id: report-uri-blog
+    publisher: "Report URI blog (Scott Helme)"
+    url: "https://blog.report-uri.com/"
+    rss_url: "https://blog.report-uri.com/rss/"
+    category: research
+    why: "Client-side and third-party-script research from first-hand CSP-report telemetry (2026-09-14 krpano XSS redirect campaign caught in CSP reports; 2026-09-23 ClickFix chase to a macOS stealer; 2026-10-09 abandoned-domain DarkSword delivery). Feed verified this run: 8 dated items via `feed https://blog.report-uri.com/rss/ 8`; `extract` of a post returned raw HTML, so use the feed link with `url` or WebFetch. Vendor of a JS-integrity product, so read remediation text as partly promotional; reliability B."
+  - id: iverify-blog
+    publisher: "iVerify (mobile threat research)"
+    url: "https://www.iverify.com/blog"
+    rss_url: null
+    category: research
+    why: "Primary for the P7 DarkSword variant and the Coruna/DarkSword proliferation series; first-hand device forensics and hunting. No feed (rss.xml, /blog/rss.xml and /blog/feed all 404); `extract https://www.iverify.com/blog` returns a dated card list (newest 2026-10-08), then `extract <post>` returns a clean full body with a reliable date field. Reliability B."
+coverage_gaps:
+  - source_id: cloudsek-triad
+    reason: "RSS works (15 dated items) but individual posts publish only an executive summary; the full report is behind 'Click Here To Read Full Report'. `extract` and raw `url` return the same summary. Treat CloudSEK posts as summary-level sources unless the gated report is obtainable."
+  - source_id: gambit-security
+    reason: "Recipe confirmed (`url https://gambit.security/blog` lists /blog-posts/<slug> links, then `extract` each post). New caution: the post's date field can show an update or republish date (the retail-agent report reads 2026-10-08 although the store carries it from 2026-09-23); check prior_coverage by title before treating a recent date as new."
+  - source_id: darkreading
+    reason: "RSS feed recipe unchanged and working (20 items, newest 2026-10-09 20:58Z). `extract` on article URLs was served by the jina reader (credit-spending) both times; WebFetch on the article would avoid the credit if the pool is short."
+  - source_id: sentinellabs
+    reason: "Working recipe re-confirmed: `url https://www.sentinelone.com/labs/` carries embedded JSON; the regex '\"url\":\"(/labs/[^\"]+)\",\"title\":\"([^\"]+)\".*?\"published_date\":(\\d+)' yields slug, title and epoch-millisecond date for 12 posts (newest 2026-09-18)."
+  - source_id: proofpoint
+    reason: "Recipe confirmed: `url https://www.proofpoint.com/us/blog/threat-insight` yields <time datetime> tags but the post hrefs sit outside the matched context; newest dated entry 2026-09-22."
+  - source_id: akamai-sirt
+    reason: "Feed link slugs (/blog/security/2026/oct/<slug>) resolve, but `extract` returned only a 1.7 KB fragment of the KSK-rollover post (body mostly dropped); use WebFetch for full Akamai post bodies."
+source_ledger:
+  - { id: cloudsek-triad, tier: standard, attempted: true, transport: "feed https://www.cloudsek.com/blog/rss.xml (15 items) + extract + raw url", horizon_hours: 124, in_horizon_items: 1, returned: 0, note: "NEBULA 2026-10-08 read (executive summary only, full report gated), borderline-dropped; 'Caught in 4K: The Gentlemen Files' 2026-10-05 is already an entry" }
+  - { id: trellix, tier: standard, attempted: true, transport: "extract https://www.trellix.com/blogs/ (dated listing)", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-24 (Dark Web Roast); nothing in lookback" }
+  - { id: unit42, tier: standard, attempted: true, transport: "feed https://unit42.paloaltonetworks.com/feed/ (15 items)", horizon_hours: 120, in_horizon_items: 1, returned: 0, note: "2026-10-07 Web3 cloud supply-chain synthesis already dropped by earlier fires; Blinder Tunnel (2026-10-06) is an existing entry" }
+  - { id: acronis-tru, tier: standard, attempted: true, transport: "feed https://www.acronis.com/en-us/tru/feed.xml (20 items)", horizon_hours: 96, in_horizon_items: 0, returned: 0, note: "newest 2026-10-06 (AI agents at work, endpoint-usage statistics), outside lookback" }
+  - { id: akamai-sirt, tier: standard, attempted: true, transport: "feed https://feeds.feedburner.com/akamai/blog (20 items) + extract of KSK post", horizon_hours: 96, in_horizon_items: 2, returned: 0, note: "2026-10-08 root KSK rollover guidance (operational, already weighed 2026-10-09) and an open-enrollment marketing post; Atlassian CVE-2026-21589 post 2026-10-07 is outside lookback and the CVE is an existing entry" }
+  - { id: crowdstrike, tier: standard, attempted: true, transport: "WebFetch listing (displayed dates)", horizon_hours: 96, in_horizon_items: 0, returned: 0, note: "newest 2026-10-07 ARTEX, already decided; before it 2026-09-29 ClickFix explainer" }
+  - { id: csa-labs, tier: standard, attempted: true, transport: "WebFetch listing (15 notes with dates) + extract of AnyPwn note", horizon_hours: 96, in_horizon_items: 15, returned: 0, note: "re-reports of items already in the store or dropped; AnyPwn note traced to THN and the V12 repository (see dropped_leads)" }
+  - { id: cyberscoop, tier: standard, attempted: true, transport: "feed https://cyberscoop.com/feed/ (10 items) + extract of 4 articles", horizon_hours: 96, in_horizon_items: 7, returned: 0, note: "Dubrovsky arrest (already decided), MonsterCloud indictment, OpenAI false-front operations, Flax Typhoon seizures (= AA26-281A entry); see dropped_leads" }
+  - { id: darkreading, tier: standard, attempted: true, transport: "feed https://www.darkreading.com/rss.xml (20 items) + extract of 4 articles", horizon_hours: 96, in_horizon_items: 9, returned: 0, note: "AgentCorruption, ASOS breach, FBI/ShinyHunters video, MatchBoil read or traced; none carried, see dropped_leads" }
+  - { id: elastic-seclabs, tier: standard, attempted: true, transport: "WebFetch listing (12 posts with dates)", horizon_hours: 96, in_horizon_items: 1, returned: 0, note: "newest 2026-10-08 AlertZero product post; research posts older (2026-08-27 Log4j 2 allowlist bypass)" }
+  - { id: elttam-blog, tier: standard, attempted: true, transport: "feed https://www.elttam.com/blog/rss.xml (20 items)", horizon_hours: 96, in_horizon_items: 0, returned: 0, note: "newest 2026-09-23 (TACACS+ pre-auth RCE); bursty cadence as the record notes" }
+  - { id: expel, tier: standard, attempted: true, transport: "feed https://expel.com/blog/rss.xml (10 items)", horizon_hours: 96, in_horizon_items: 0, returned: 0, note: "newest 2026-10-06 awareness-month marketing post; no incident research since 2026-08" }
+  - { id: gambit-security, tier: standard, attempted: true, transport: "url https://gambit.security/blog (15 post links) + extract of 15 posts (date field)", horizon_hours: 96, in_horizon_items: 1, returned: 0, note: "the retail-agent report reads 2026-10-08 but is the campaign already in the store from 2026-09-23; remaining posts dated 2026-10-05 and earlier are resilience marketing" }
+  - { id: group-ib, tier: standard, attempted: true, transport: "feed https://www.group-ib.com/blog/rss.xml (20 items)", horizon_hours: 96, in_horizon_items: 1, returned: 0, note: "2026-10-09 agentic-AI marketing post; newest threat research 2026-10-02 (BraZetsu, Spanish edition of an August post)" }
+  - { id: majors-spot-sweep, tier: standard, attempted: true, transport: "msft-secblog recent 20 + msft-ti topic page (WebFetch) + feeds: gtig feedburner, talos, checkpoint, eset, securelist, trend feedburner, google-tag + extract GTIG landing + raw url sentinellabs and proofpoint listings + feeds huntress, sophos, volexity, dfirreport, cloudflare cf1, theregister, krebs, bleepingcomputer, securityweek, thehackernews, therecord, helpnetsecurity, securityaffairs, sans isc, databreaches, malwarebytes, rapid7, sekoia", horizon_hours: 26, in_horizon_items: 0, returned: 1, note: "No research post by Microsoft (newest TI 2026-09-30), GTIG (2026-09-30), Talos (2026-10-08), Unit 42 (2026-10-07), Check Point (2026-10-05 digest), ESET (2026-10-08 MATCHBOIL), Securelist (2026-09-24), SentinelLabs (2026-09-18), Proofpoint (2026-09-22) or Trend (2026-09-25) is dated inside the 26 h window; the weekend produced no lab research. The one item came from the wider feed sweep (THN 2026-10-11 relay of iVerify/Report URI/Censys DarkSword work)." }
+notes:
+  - "Questions answered: (1) substantive primary research in the window that changes how a defender reasons about a technique class: one candidate (expired third-party script domains re-registered and monetised through cloaked redirectors, Report URI), borderline. (2) malware-family analyses with detection-relevant behaviour: P7 DarkSword variant (iVerify, 2026-10-08) already weighed by the 2026-10-10 fire; no other. (3) new named clusters or attribution shifts: none; Censys describes a Chinese-speaking exploitation-as-a-service operator for the DarkSword kit without a name. (4) periodic or annual report newly published: none (ENISA Threat Landscape 2026 was released 2026-09-22 and the BACS first-half report on 2026-08-25, both outside the window; MDDR 2026 was handled on 2026-10-04)."
+  - "Dedup posture: every lookback lead was checked against prior_coverage.json and the findings and run records of 2026-10-09 to 2026-10-11 before work was spent; leads those fires already weighed are listed in dropped_leads with the reason they stayed dropped, so the main agent can see nothing was silently lost."
+  - "Registry: no malware:darksword or malware:coruna entity exists; darksword is proposed in the item (coruna appears in Censys and iVerify, not proposed because the item does not rest on it). actor:star-blizzard and product:apple-ios exist."
+  - "Housekeeping: scratch files were written under the session scratchpad subdirectory s3/ only; nothing outside work/2026-10-12T0256Z-intel/ was modified."

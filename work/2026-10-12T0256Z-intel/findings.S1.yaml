@@ -1,0 +1,235 @@
+# work/2026-10-12T0256Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-10-12T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-12T02:57:51Z
+ended_at: 2026-10-12T03:16:55Z
+duration_seconds: 1144
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 20
+  bridge_fetches: 95   # approximate count of tools/fetch_source.py invocations (feed/extract/url/pdf/structured)
+
+window_note: >
+  Monday 2026-10-12 after a quiet weekend. Window 26 h = 2026-10-11T00:57Z onward. No authority, vendor PSIRT or
+  KEV source published a new exploited or imminent-exploitation item inside it: newest NCSC-CH CSH post 2026-10-09T09:21Z,
+  newest NCSC-NL advisory NCSC-2026-0412 2026-10-09T08:15Z, newest BSI WID item 2026-10-09T12:14Z, newest CERT-FR avis
+  CERTFR-2026-AVI-1291 (2026-10-09), newest CERT-EU 2026-015 (2026-10-07), CISA KEV catalogue 2026.10.08 (newest
+  dateAdded 2026-10-08, matching work/.../kev-window.txt), newest CISA advisory AA26-281A (2026-10-08). The next scheduled
+  multi-product releases (Microsoft Patch Tuesday, SAP, Adobe, Fortinet/Ivanti monthly cycles; Oracle CPU is 2026-10-20)
+  fall AFTER the window (2026-10-13), so the scheduled-release completeness duty has nothing to enumerate this fire. All three
+  items below are LOOKBACK items from rotational records, each borderline.
+
+items:
+  - title: "CVE-2026-85097, Bricksforge for WordPress: an unauthenticated upload-to-PHP flaw in the Pro Forms module is exploited since 7 October; fixed in 3.1.8.10 and 4.0.1"
+    sources:
+      - { url: "https://patchstack.com/articles/critical-unauthenticated-arbitrary-file-upload-vulnerability-exploited-in-bricksforge-plugin/", publisher: "Patchstack", date: "2026-10-08", role: "primary" }
+      - { url: "https://bricksforge.io/version-changelog/", publisher: "Bricksforge (vendor changelog, 4.0.1 of 2026-10-08)", date: "2026-10-08", role: "corroborating" }
+      - { url: "https://www.drweb.de/bricksforge-sicherheitsluecke-upload-aktiv-ausgenutzt/", publisher: "Dr. Web (drweb.de)", date: "2026-10-09", role: "corroborating" }
+    discovery_trace: >
+      first seen at: patchstack, feed https://patchstack.com/feed/ (item 'Critical Unauthenticated Arbitrary File Upload Vulnerability Exploited in Bricksforge Plugin', 2026-10-08T11:28Z, inside the record's 124 h lookback)
+      -> primary: Patchstack article https://patchstack.com/articles/critical-unauthenticated-arbitrary-file-upload-vulnerability-exploited-in-bricksforge-plugin/ (fetched with extract)
+      -> WebSearch ("Bricksforge CVE-2026-85097 exploited unauthenticated file upload WordPress") -> corroborating: Dr. Web https://www.drweb.de/bricksforge-sicherheitsluecke-upload-aktiv-ausgenutzt/
+      -> vendor: https://bricksforge.io/version-changelog/ (4.0.1). CVE record checked on the CVE Program API (state PUBLISHED, CNA Wordfence, published 2026-10-08T06:42Z, CVSS 3.1 9.8, affected <= 3.1.8.9).
+      The 2026-10-11 S1 had flagged this item as outside its slice and absent from the store.
+    summary: |
+      Patchstack reports that Bricksforge, a paid WordPress add-on for the Bricks page builder that is sold outside the wordpress.org directory, has an unauthenticated arbitrary file upload in its Pro Forms module (CVE-2026-85097, versions up to and including 3.1.8.9). The form-submission handler checks a file's MIME type at first upload but later trusts the client-supplied temporaryFileUploads metadata, in particular its url field: an attacker obtains a nonce from the plugin's unauthenticated bricksforge_regenerate_nonce AJAX endpoint, uploads a GIF/PHP polyglot that passes the type check, then submits a form whose file path names that image and whose url ends in a PHP extension, and the plugin writes the image's content to the PHP path, where one request executes it. Patchstack states its telemetry first recorded exploitation attempts on 2026-10-07 at 21:47 UTC, from 63 distinct source addresses; all but one request used the REST route /wp-json/bricksforge/v1/form_submit and one used the admin-ajax bricksforge_form_submit action; 95 percent of captured requests named a .gif or .png server-side path; one cluster of 44 addresses sent identical payloads within seconds and three addresses tried 25 spellings of the PHP extension; some payloads aimed at files named login_admin_*.php in the regular uploads directory. Patchstack does not attribute the activity and calls it automated. The vendor's changelog of 2026-10-08 lists 4.0.1 with a Pro Forms upload fix that affects every site with Pro Forms active, even if no form has an upload field; Patchstack names 3.1.8.10 as the fixed build of the 3.x line, which the vendor changelog does not list (Dr. Web points out that updates depend on an active annual licence). CVSS is 10.0 per Patchstack and 9.8 on the Wordfence CNA record; EPSS 0.0031 on 2026-10-11 (FIRST). Patchstack counts about 6,000 active installations; it is the third serious Bricksforge flaw in five weeks (Dr. Web, citing Patchstack's history); the flaw is not in CISA's KEV catalogue (catalogue 2026.10.08 read in this run). Exploitation rests on Patchstack's telemetry alone; no second sensor owner, CERT or the vendor reports it.
+    region_nexus: "global; vendor based in Saarbruecken (Germany), Dr. Web is a German-language outlet; no Swiss public-sector deployment shown"
+    primary_sector_nexus: "indirect (WordPress sites of agencies, communes or institutions built with Bricks would be exposed; no source names any)"
+    sector: "technology"
+    cves: [CVE-2026-85097]
+    techniques: [T1190, T1505.003]
+    affected_products: ["Bricksforge (WordPress plugin)"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:bricksforge", type: product, name: "Bricksforge", aliases: [], summary: "Paid WordPress add-on for the Bricks page builder (forms, animations, email designer); developed in Saarbruecken, about 6,000 active installations per Patchstack; CVE-2026-85097 (Pro Forms upload) exploited from 2026-10-07 (Patchstack, 2026-10-08)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER   # exploitation: Patchstack telemetry only (Dr. Web restates it); the fix, affected range and CVE record are independently confirmed by the vendor changelog and the CVE record
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "exploited pre-auth RCE with CVSS 9.8 to 10.0, but a small paid-plugin footprint (about 6,000 sites), exploitation known from one telemetry owner, and no Swiss public-sector deployment shown; the 2026-10-11 S1 raised the same item against the FunnelKit precedent (a 40,000-store skimmer) and it was not published"
+    evidence:
+      - { quote: "This vulnerability is currently being targeted in the wild.", attribution: "Patchstack", source_url: "https://patchstack.com/articles/critical-unauthenticated-arbitrary-file-upload-vulnerability-exploited-in-bricksforge-plugin/" }
+      - { quote: "Our telemetry shows active exploitation attempts targeting Bricksforge installations", attribution: "Patchstack", source_url: "https://patchstack.com/articles/critical-unauthenticated-arbitrary-file-upload-vulnerability-exploited-in-bricksforge-plugin/" }
+      - { quote: "It affects every site with Pro Forms active, including sites whose forms use no upload fields, so updating is strongly recommended.", attribution: "Bricksforge (vendor changelog)", source_url: "https://bricksforge.io/version-changelog/" }
+      - { quote: "Patchstack beobachtet seit dem 7. Oktober automatisierte Angriffe von 63 verschiedenen IP-Adressen.", attribution: "Dr. Web", source_url: "https://www.drweb.de/bricksforge-sicherheitsluecke-upload-aktiv-ausgenutzt/" }
+    extended_notes: |
+      Exposure: WordPress sites with Bricksforge up to and including 3.1.8.9 and the Pro Forms module active; the REST route and the admin-ajax action must be reachable from the internet (they are on any public site). Bricksforge is not in the wordpress.org directory, so no public version statistics exist and updates depend on the licence (Dr. Web).
+      Detection (telemetry class first): web-server and WordPress access logs for POST requests to the form-submit REST route or the bricksforge_form_submit admin-ajax action whose temporaryFileUploads value pairs a server path ending .gif or .png with a url ending in a PHP-family extension (php, php5, php7, php8, phtml, pht, phtm, phps; mixed case; URL-encoded and double-encoded forms), dated since 2026-10-07; file-integrity or endpoint telemetry for new PHP files under wp-content/uploads, in particular the bricksforge/tmp folder and names starting login_admin; unknown administrator accounts (Dr. Web points to hidden-admin tradecraft seen in the Ninja Forms campaign). Post-patch: updating does not remove an uploaded file; if PHP files or unknown admins are found, restore from a backup older than 2026-10-07 and rotate passwords (Dr. Web).
+      Triage: a legitimate form upload keeps path and url on the same image extension; Patchstack's stated signature is the mismatch between an image server-side path and a PHP destination url.
+      Hardening: disable Pro Forms or the plugin until updated; deny PHP execution in wp-content/uploads (Dr. Web); Patchstack ships a mitigation rule for its customers. Patchstack's article also lists source addresses; omitted here (no IOCs).
+      Dedup: CVE-2026-85097 is absent from the store CVE index; no entry mentions Bricksforge.
+
+  - title: "Chrome 155 stable (2026-10-06): 247 security fixes including four Critical use-after-free flaws, none flagged as exploited"
+    sources:
+      - { url: "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_086471744.html", publisher: "Google Chrome Releases", date: "2026-10-06", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1268/", publisher: "CERT-FR (CERTFR-2026-AVI-1268)", date: "2026-10-07", role: "corroborating" }
+    discovery_trace: >
+      first seen at: chrome-releases, working recipe found this run: `fetch_source.py feed https://feeds.feedburner.com/GoogleChromeReleases 25` (the blogspot feed answers HTTP 302 to http://feeds.feedburner.com/GoogleChromeReleases), item 'Stable Channel Update for Desktop' 2026-10-06T10:17-07:00
+      -> primary: https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_086471744.html (extract over https; the http:// link in the feed fails every transport)
+      -> corroborating: CERT-FR https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1268/ (listed in the cert-fr avis-recent feed).
+    summary: |
+      Google's Stable channel update of 2026-10-06 moves desktop Chrome to 155.0.8059.39/.40 on Windows and Mac and 155.0.8059.39 on Linux and states that it includes 247 security fixes; counting the post's severity labels gives 4 Critical, 53 High, 122 Medium and 68 Low. The Critical entries are use-after-free flaws in Chromecast (CVE-2026-106382), the Browser process (CVE-2026-106197), Navigation (CVE-2026-106358) and Track (CVE-2026-106347); two of those reports credit Xinyang Ge (Anthropic) 'assisted by Claude'. The post carries no statement that any of the flaws is exploited in the wild, and Google says bug details may stay restricted until most users have updated. CERT-FR listed the release the next day with the risk 'not specified by the editor' and the fixed builds. FIRST EPSS is about 0.004 for CVE-2026-106197 and CVE-2026-106358 (2026-10-11). The previous fires dropped Chrome 155 for the missing exploitation signal (2026-10-10 run record); it is returned here only because the Chrome Releases record is a rotational lookback source and 247 fixes with four Critical is an unusually large batch.
+    region_nexus: "global; every managed Chromium-family endpoint, including Edge, which follows the same upstream fixes"
+    primary_sector_nexus: "direct (browser on every administration workstation)"
+    sector: "public-sector"
+    cves: [CVE-2026-106382, CVE-2026-106197, CVE-2026-106358, CVE-2026-106347]
+    techniques: [T1189]
+    affected_products: ["Google Chrome"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER   # vendor release notes are the primary for its own product; CERT-FR relays the fix list
+    confidence: HIGH
+    classification_suggestion: { reliability: A, credibility: 2 }
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "no exploitation or imminent-exploitation signal; routine browser patch cycle that the 2026-10-10 fire already dropped; kept visible only for the unusually large batch with four Critical memory-safety flaws"
+    evidence:
+      - { quote: "The Stable channel has been updated to 155.0.8059.39/.40 for Windows and Mac and 155.0.8059.39 to Linux which will roll out over the coming days/weeks.", attribution: "Google Chrome Releases", source_url: "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_086471744.html" }
+      - { quote: "Critical CVE-2026-106358: Use after free in Navigation. Reported by Xinyang Ge (Anthropic), assisted by Claude on 2026-09-28", attribution: "Google Chrome Releases", source_url: "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_086471744.html" }
+      - { quote: "Chrome versions antérieures à 155.0.8059.39 pour Windows et Linux", attribution: "CERT-FR", source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1268/" }
+    extended_notes: |
+      Exposure: Chrome on Windows/Mac/Linux older than 155.0.8059.39/.40 (chrome://settings/help shows the build). Android and ChromeOS posts of 2026-10-07 and 2026-10-09 are separate; the ChromeOS stable post of 2026-10-09 (Browser 154.0.8037.151) lists no Chrome fix table and only two third-party fixes. Edge follows upstream; BSI and CERT-FR list both.
+      Detection: none specific (no exploitation reported); patch-compliance telemetry from endpoint management is the control.
+      Counts come from this run's tally of the post's severity labels; the 247 figure is the post's own sentence (the page text splits the digits across markup, so no verbatim quote of it is offered).
+      Defender takeaway if the main agent publishes it: update to 155 on the normal accelerated browser cycle; no emergency action, no exploitation signal.
+
+  - title: "Public 'PoC available' flags on the NetScaler SAML overflow CVE-2026-107406 and the MikroTik RouterOS flaw CVE-2026-84411 rest on README-only exploit-sale repositories, not working exploit code"
+    sources:
+      - { url: "https://previdian.com/CVE-2026-107406", publisher: "Previdian", date: "2026-10-08", role: "primary" }
+      - { url: "https://previdian.com/CVE-2026-84411", publisher: "Previdian", date: "2026-10-02", role: "corroborating" }
+      - { url: "https://support.citrix.com/external/article/CTX697191/citrix-netscaler-adc-and-citrix-netscale.html", publisher: "Citrix (CTX697191)", date: "2026-10-08", role: "corroborating" }
+      - { url: "https://mikrotik.com/supportsec/cve-2026-84411", publisher: "MikroTik", date: "2026-10-06", role: "corroborating" }
+    discovery_trace: >
+      first seen at: Previdian per-CVE page https://previdian.com/CVE-2026-107406 (fetched with extract while re-checking the covered entries' exploitation status; the page reads 'Previdian records an exploitation-related signal (poc available)')
+      -> own artefact check: GitHub REST API search for each identifier via `fetch_source.py url --direct "https://api.github.com/search/repositories?q=<CVE>"` (4 repositories for CVE-2026-107406, 2 for CVE-2026-84411) and the contents API plus raw README of the candidate repositories; no code was downloaded or run
+      -> vendor statements: https://support.citrix.com/external/article/CTX697191/... and https://mikrotik.com/supportsec/cve-2026-84411.
+    summary: |
+      Previdian's pages for CVE-2026-107406 (NetScaler SAML overflow, Citrix bulletin CTX697191 of 2026-10-08, CVSS 4.0 9.5) and CVE-2026-84411 (RouterOS web-management integer underflow, MikroTik page of 2026-10-06) tag both as 'PoC available' while recording no exploitation observation, and neither CVE is in CISA's KEV catalogue (catalogue 2026.10.08). Citrix's own blog of 2026-10-08 says it is 'not aware of any unmitigated exploits' of CVE-2026-107406. The repositories that GitHub search returns for the two identifiers were created between 2026-10-09 and 2026-10-11 and have no stars: for CVE-2026-107406 two of them hold one README of about 2 KB each, with near-identical text, that describes a SAML heap overflow and an exploit script and ends with a 'Contact / Purchase' block (a different e-mail address in each, plus a shortened-link 'Download'), a third has an unrelated description (not inspected further) and a fourth is described as a read-only checker for the earlier CTX697096 flaws (18 stars, not inspected); for CVE-2026-84411 the one repository holds a 4.8 KB README documenting a Python script the repository does not contain. The pattern is exploit-sale or malware-lure pages, which commonly follow a disclosure within hours, not a published proof of concept. Defenders and vulnerability-management tooling that escalate on 'PoC available' should treat both flags as unverified, nobody should fetch or run those repositories, and prioritisation should stay on the patch state and on exposure (NetScaler appliances configured as SAML SP or IdP; RouterOS web interface reachable from untrusted networks).
+    region_nexus: "global; NetScaler and RouterOS are both internet-facing edge products in Swiss public-sector networks"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-107406, CVE-2026-84411]
+    techniques: [T1190]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway", "MikroTik RouterOS"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER   # the lure characterisation is this agent's own inspection of the repositories; Previdian's tag and the vendor statements are cited
+    confidence: LOW
+    classification_suggestion: { reliability: C, credibility: 3 }
+    novelty: "update-of:2026-10-09/cve-2026-107406-citrix-netscaler-saml-idp-overflow"   # the MikroTik half belongs to 2026-10-10/cve-2026-84411-mikrotik-routeros-web-management-preauth-rce
+    borderline: true
+    borderline_reason: "own observation of third-party repositories, no named publisher states it, and naming the lure repositories would put attacker-adjacent URLs in an entry; the main agent may fold one sentence into the two covered entries as an improvement (no float) or drop it"
+    evidence:
+      - { quote: "Previdian records an exploitation-related signal (poc available). This CVE has not been added as a known exploited vulnerability.", attribution: "Previdian", source_url: "https://previdian.com/CVE-2026-107406" }
+      - { quote: "Previdian records an exploitation-related signal (poc available). This CVE has not been added as a known exploited vulnerability.", attribution: "Previdian", source_url: "https://previdian.com/CVE-2026-84411" }
+    extended_notes: |
+      Own-observation record for the main agent's re-check only; do NOT publish the repository names (attacker-adjacent): CVE-2026-107406 candidates ApexBreach/CVE-2026-107406-Poc (created 2026-10-09), ctroy999/CVE-2026-107406 (2026-10-11), techupdate24/citrix-netscaler-rce-cve-2026-107406 (2026-10-09, unrelated description); CVE-2026-84411 candidate maxprog-svg/CVE-2026-84411 (2026-10-10, contents API lists README.md only). A fourth hit, ThomasPoppelgaard/netscaler-ctx697096-checker, is described as a read-only checker for the earlier CTX697096 CVEs (18 stars); it was not inspected and is not claimed to be benign or malicious. A search for CVE-2026-102255 (SonicWall) and CVE-2026-85542 (Guardium) returned no repositories; CVE-2026-85097 (Bricksforge) returned one repository with a 33 KB poc.py created 2026-10-10 (not inspected; a working public exploit is therefore plausible for that CVE and is not claimed here). EPSS (FIRST, 2026-10-11): CVE-2026-107406 0.0047, CVE-2026-84411 0.0095.
+      The two covered entries do not claim a public PoC, so nothing in them is wrong; this is context for readers who meet the 'PoC available' tag elsewhere.
+
+cve_table:
+  - { cve: CVE-2026-85097, product: "Bricksforge (WordPress plugin, Pro Forms module)", cvss: "10.0 (Patchstack); 9.8 (Wordfence CNA, CVSS 3.1)", epss: 0.00312, kev: false, exploited: "Patchstack telemetry, first attempts 2026-10-07T21:47Z; no second source", affected: "<= 3.1.8.9", fixed: "3.1.8.10 (3.x line, per Patchstack) and 4.0.1 (vendor changelog, 2026-10-08)", type: "unauthenticated arbitrary file upload to PHP code execution (CWE-434 class)", vector: "network", auth: "none", source: "https://patchstack.com/articles/critical-unauthenticated-arbitrary-file-upload-vulnerability-exploited-in-bricksforge-plugin/" }
+  - { cve: CVE-2026-106197, product: "Google Chrome (Browser)", cvss: null, epss: 0.00454, kev: false, exploited: "no statement", affected: "< 155.0.8059.39/.40", fixed: "155.0.8059.39/.40 (Windows, Mac), 155.0.8059.39 (Linux)", type: "use-after-free (Critical)", vector: "network", auth: "none", source: "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_086471744.html" }
+  - { cve: CVE-2026-106358, product: "Google Chrome (Navigation)", cvss: null, epss: 0.00438, kev: false, exploited: "no statement", affected: "< 155.0.8059.39/.40", fixed: "155.0.8059.39/.40 (Windows, Mac), 155.0.8059.39 (Linux)", type: "use-after-free (Critical)", vector: "network", auth: "none", source: "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_086471744.html" }
+
+# Re-gate of the held backlog row (state/coverage_backlog.md), on today's facts
+backlog_regate:
+  - row: "IBM Guardium Data Protection CVE-2026-85542 (+ CVE-2026-84275, CVE-2026-75875, CVE-2026-80381, CVE-2026-84272)"
+    result: "HELD, no condition met; expiry 2026-10-14 stands"
+    facts:
+      - "KEV: catalogue 2026.10.08 (1739 entries, newest dateAdded 2026-10-08) contains none of the five CVEs; no addition since 2026-10-08."
+      - "IBM: the Guardium bulletin of 2026-10-08 (https://www.ibm.com/support/pages/node/7288040, read in full) lists the flaws with no exploitation statement; a search found no IBM statement of exploitation for CVE-2026-85542."
+      - "ACN alert AL04/260928/CSIRT-ITA (https://www.acn.gov.it/portale/w/ibm-rilevato-sfruttamento-in-rete-della-cve-2026-85542) re-read: unchanged, still the only exploitation claim (an Italian CSIRT statement, the table's POC and EXPLOITATION columns carry no further detail); no second CSIRT or outlet repeats it."
+      - "Constituency deployment of Guardium Data Protection: none found."
+
+# Completeness duty: advisories revised after publication that an in-window or recent entry cites (each read from the vendor page this run)
+update_of_checks:
+  - { entry: "2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev", source: "CTX697096", result: "no change: bulletin changelog still ends 2026-09-27 (initial publication; link to the NetScaler blog added), 'Exploits of CVE-2026-88771 and CVE-2026-88772 on unmitigated NetScaler deployments have been observed'" }
+  - { entry: "2026-10-04/cve-2026-88779-citrix-netscaler-saml-overflow-exploited", source: "CTX697174", result: "no change: page dated 2026-10-03, no later revision" }
+  - { entry: "2026-10-09/cve-2026-107406-citrix-netscaler-saml-idp-overflow", source: "CTX697191 and the Citrix blog (last updated 2026-10-08 5 PM PDT)", result: "no change: still 'not aware of any unmitigated exploits'; fixed builds 14.1-73.46, 13.1-64.29 and the FIPS/NDcPP builds as in the entry; Previdian lists no exploitation observation and no KEV entry (see item 3 for the PoC-flag note)" }
+  - { entry: "2026-10-02/cve-2026-104286-fortimail-path-traversal-zero-day-kev", source: "FG-IR-26-175", result: "no change: timeline ends 2026-10-07 'FortiMail Cloud fix clarification', which the entry already carries" }
+  - { entry: "2026-10-08/cve-2026-102255-sonicwall-sma1000-workplace-ssrf", source: "SNWLID-2026-0017 and CCCS AV26-1017", result: "no change: SonicWall still says 'no evidence' of exploitation; CCCS Update 1 (2026-10-09) cites open-source reporting of exploitation and is already a cited source; Previdian last observed 2026-10-10" }
+  - { entry: "2026-10-06/cve-2026-21589-atlassian-data-center-arbitrary-file-access", source: "Atlassian advisory, Previdian", result: "no change: advisory dated 2026-10-05 (Cloud 'no evidence of exploitation'); Previdian shows first observed 2026-10-06, last observed 2026-10-11, not in KEV; no new reporting found" }
+  - { entry: "2026-10-02/zammad-cve-2026-102489-102490-exploited-divd-breach", source: "Zammad advisory page, GitHub advisories API", result: "no change: newest GitHub advisory is GHSA-p97w-927q-8vxq (7.2.2, 2026-10-08) already cited; zammad.com advisory page still dated 2026-10-05" }
+  - { entry: "2026-08-29/papercut-ng-mf-tapestry-request-confusion-preauth-rce", source: "PaperCut bulletin, watchTowr", result: "no change: PaperCut's bulletin is last updated 2026-09-10; watchTowr's 2026-10-09 write-up is already the entry's latest update; CVE-2026-82077 (administrator-only, per the entry) is not in KEV, CVE-2026-82078 and CVE-2026-81578 are" }
+  - { entry: "2026-10-10/cve-2026-84411-mikrotik-routeros-web-management-preauth-rce", source: "mikrotik.com/supportsec/cve-2026-84411", result: "no change: page of 2026-10-06 still reads 'v7 long-term - release pending, v6 long-term - release pending' and 'This article will be updated'; not in KEV; EPSS 0.0095" }
+  - { entry: "2026-10-10/ahsaycbs-cve-2026-105133-105134-exploited-webshells-xmrig", source: "Huntress, Ahsay release notes", result: "no change: Huntress's update of 2026-10-08 (10.3.4 also affected) stands; no newer Ahsay release or advisory found (release-notes listing and two searches); not in KEV" }
+  - { entry: "2026-09-23/cve-2026-93616-check-point-security-mgmt-path-traversal", source: "sk1000171", result: "no change: Last Modified 2026-09-22; CVE-2026-93616 is in KEV" }
+
+# Scheduled multi-product releases: dispositions
+scheduled_release_dispositions:
+  - release: "Microsoft 'October 2026 Early Security Updates' (CVRF 2026-Oct, initial 2026-10-02, current revision 2026-10-11T01:04Z, 8 Microsoft CVEs; the rest of the CVRF's 312 records are third-party Linux/Apache/CUPS/NTFS-3G entries)"
+    disposition: "none exploited or publicly disclosed ('Exploited:No', 'Publicly Disclosed:No' per the CVRF threat field). Cloud-service CVEs need no customer action: Azure SRE Agent CVE-2026-69435 (9.6), Azure App Service CVE-2026-77900 (9.8), Dataverse CVE-2026-88131 (9.8), Bookings CVE-2026-94510 (9.9, Exploitation Less Likely), Partner Center CVE-2026-96207 (10.0, Exploitation Less Likely), Azure API Center CVE-2026-83943 (8.7), Event Grid CVE-2026-83947 (7.7). Exchange Server CVE-2026-96940 (8.8, authenticated, Exploitation More Likely, 2026-10-02) was dropped by the 2026-10-06 and 2026-10-09 fires as not exploited. The actual October Patch Tuesday is 2026-10-13, after the window."
+  - release: "Cisco 2026-10-07 batch, HPE ClearPass/AOS-S (HPESBNW05156, -05158), IBM Verify Identity Access, Splunk SVD-2026-1001/1002, Veeam B&R 12.3.2 P4, Apache Struts S2-075 to S2-078 (2026-10-02)"
+    disposition: "all outside the window and already held below the gate by earlier fires (unexploited, management-plane or authenticated); re-read this run: CCB Belgium warnings of 2026-10-07/08 for ClearPass and AOS-S (six unauthenticated CVSS 9.8 flaws between them) carry no exploitation; NCSC-CH CSH 13043/13044 of 2026-10-09 say 'Current exploitation status: UNKNOWN'; Struts S2-076 to S2-078 (CVE-2026-104712 to -104714) are DoS or data-disclosure at Moderate to Important, no RCE; no change in any."
+
+# Considered and dropped (for the run record)
+dropped:
+  - "SmarterMail 'prior to Build 9777' (CCCS AV26-1026, 2026-10-09; aggregators attach CVE-2026-104082, an RCE that needs a SysAdmin-scoped token, no KEV, one aggregator source): authenticated, no exploitation signal."
+  - "Zimbra 10.1.21 fix list (CVE-2026-66912/66911, unauthenticated password-recovery code prediction, OnlyOffice integration RCE): assessed and dropped by the 2026-10-02 and 2026-10-06 fires; no exploitation signal."
+  - "Kiteworks NCSC-NL 2026-0408 bundle (61 CVE ids, mostly administrator-authenticated): improvement-only, as noted on 2026-10-09."
+  - "Android Security Bulletin October 2026 (read through the reader): no exploited issue flagged. Apple: newest security release 2026-09-28 (iOS 26.7.1/27.0.1), nothing new."
+  - "EUVD 2026-10-11/12 batch (19 records at 8.0 or higher: BotSharp, Agnai, TOZED X300, Spug, Wukong HRM, Blinko, a modem OTA stack, ten WPScan plugin records): long tail with no exploitation reports or constituency nexus. EUVD's exploited list holds only four of the 2026-10-08 KEV additions already covered by AA26-281A."
+  - "P7 DarkSword iOS exploit kit variant (iVerify report of 2026-10-08, The Hacker News 2026-10-11): research on a kit documented since March (iOS 18.4 to 18.7, patched flaws), an S3 lead rather than an S1 vulnerability item."
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured in the org profile; the sweep is a no-op, general coverage rules applied"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: chrome-releases
+    reason: "RECIPE FIX (works): `python3 tools/fetch_source.py feed https://feeds.feedburner.com/GoogleChromeReleases 25` (direct, dated, 25 items). The blogspot feed https://chromereleases.googleblog.com/feeds/posts/default answers HTTP 302 to http://feeds.feedburner.com/GoogleChromeReleases, which the tool refuses to follow. The feed's per-post links are http:// and fail every transport; rewrite to https:// and `extract` reads them (trafilatura-direct). Suggest rss_url = https://feeds.feedburner.com/GoogleChromeReleases and fetch_method rss."
+  - source_id: fortinet-psirt
+    reason: "RECIPE NOTE: `feed https://filestore.fortinet.com/fortiguard/rss/ir.xml 15` read direct this run (method direct, 15 items with dates), not through the reader as the 2026-10-11 note said; the item list carries advisory-creation dates only, so revisions still need the advisory page's Timeline block (`extract https://fortiguard.fortinet.com/psirt/FG-IR-26-NNN` read it directly)."
+  - source_id: ccb-belgium
+    reason: "RECIPE FIX (works): `python3 tools/fetch_source.py url https://ccb.belgium.be/advisories` returns the server-rendered listing with hrefs /advisories/<slug> and dd/mm/yyyy dates, and `extract <advisory URL>` reads each warning (title, 'Last update', affected versions, CVSS, vendor link) directly. WebFetch returns 403. The 2026-09-10 'no advisory list surfaced' note is obsolete."
+  - source_id: cisa-advisories
+    reason: "RECIPE CONFIRMED: WebFetch of https://www.cisa.gov/news-events/cybersecurity-advisories returns 10 items per page with title, date, type and href when the prompt asks for them; `cisa csaf-recent` returned 25 ICS items (newest 2026-10-08)."
+  - source_id: msrc-update-guide
+    reason: "RECIPE CONFIRMED: `msrc cvrf 2026-Oct` returns the whole release; each Vulnerability's Threats entry of Type 1 carries 'Publicly Disclosed:..;Exploited:..;Latest Software Release:..', which is the structured exploitation field (the CVRF also lists third-party CVEs Microsoft redistributes, so filter on that field and the 8-CVE release notes table)."
+  - source_id: advisories-ncsc-nl
+    reason: "no gap; the newest advisory is NCSC-2026-0412 (2026-10-09T08:15Z), nothing over the weekend."
+  - source_id: extract-reader (cost note, no single record)
+    reason: "COST NOTE: `extract` fell through to the jina reader (credit, one key rotated on HTTP 402) on community.citrix.com, psirt.global.sonicwall.com and source.android.com; every other page read with trafilatura-direct. Not a failure; avoid re-fetching those three hosts when the earlier read suffices."
+  - source_id: github-api (technique, not a source record)
+    reason: "SELF-EVOLUTION SUGGESTION: `python3 tools/fetch_source.py url --direct 'https://api.github.com/search/repositories?q=<CVE>&sort=updated'` works unauthenticated and, with the repo contents API (`/repos/<owner>/<repo>/contents`) and the raw README, separates a real public exploit (code files) from exploit-sale or lure repositories (README only, 'Contact / Purchase', shortened-link download). It is a cheap gate for any 'PoC available' claim before it raises an item's priority; Previdian's 'PoC available' tag does not distinguish them."
+
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl.recent 30", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest NCSC-2026-0412 2026-10-09T08:15Z; weekend gap" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:cert-fr.avis-recent 40 + extract of CERTFR-2026-AVI-1268 and -1290", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest CERTFR-2026-AVI-1291 (2026-10-09); flat 00:00 timestamps, true publish time unknown but no avis dated 2026-10-10 to 2026-10-12" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "250 items, newest 2026-10-09T12:14Z" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu.recent 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-015 (Atlassian) 2026-10-07" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-08 (Ollama CVE-2026-103663), dropped by earlier fires" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + bridge:cisa.csaf-recent", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest AA26-281A 2026-10-08; KEV alert 2026-10-04; ICS CSAF newest 2026-10-08" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev (twice)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "catalogue 2026.10.08, 1739 entries, newest dateAdded 2026-10-08; no addition in window, agrees with the mechanical sweep; none of the tracked CVEs (Guardium five, NetScaler 107406, MikroTik 84411, Atlassian 21589, SonicWall 102255, Ahsay pair, Bricksforge 85097) is listed" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd recent {exploited,criticals,lastvulnerabilities} + url --direct search API (fromDate 2026-10-11, score 9-10; 2026-10-12, score 8-10; exploited=true)", horizon_hours: 26, in_horizon_items: 19, returned: 0, note: "WordPress plugin long tail, BotSharp, Agnai, TOZED X300, Spug, Wukong HRM, Blinko; nothing relevant" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh.recent 30", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 13044 (2026-10-09T09:21Z); 13043 Veeam and 13044 Cisco carry exploitation status UNKNOWN" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-08 (China-linked actors, AA26-281A)" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed https://labs.watchtowr.com/rss/ 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-09T17:31Z 'Death By A Thousand PaperCuts', already the PaperCut entry's latest update" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed (direct) + extract of FG-IR-26-175", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-175 (2026-10-01), timeline last 2026-10-07; the next FortiGuard monthly cycle is expected 2026-10-13 (not verified)" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc recent/releases/cvrf 2026-Oct", horizon_hours: 26, in_horizon_items: 8, returned: 0, note: "8 early-release Microsoft CVEs, none exploited or disclosed; see scheduled_release_dispositions" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed https://security.paloaltonetworks.com/rss.xml 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest CVE-2026-0250 GlobalProtect App 2026-10-02 (Medium)" }
+  - { id: chrome-releases, tier: standard, attempted: true, transport: "feed https://feeds.feedburner.com/GoogleChromeReleases 25 + extract (https) of the 2026-10-01 and 2026-10-06 stable posts and the 2026-10-09 ChromeOS post", horizon_hours: 144, in_horizon_items: 4, returned: 1, note: "Chrome 155 batch returned as borderline lookback; Android 2026-10-07 and ChromeOS 2026-10-09 posts carry no security table of interest; recipe fix in coverage_gaps" }
+  - { id: ssd-disclosure, tier: standard, attempted: true, transport: "url --direct wp-json/wp/v2/posts?per_page=12", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-10 (DCOM PsmServiceExtHost LPE); recipe from 2026-10-11 confirmed" }
+  - { id: patchstack, tier: standard, attempted: true, transport: "feed https://patchstack.com/feed/ 12 + extract", horizon_hours: 124, in_horizon_items: 1, returned: 1, note: "Bricksforge CVE-2026-85097 (2026-10-08); WordPress 7.1.3 (2026-10-06T19:34Z) and the hidden-admin campaign post (2026-10-06, already an entry) fall outside the 124 h horizon" }
+  - { id: tp-link-omada-psirt, tier: standard, attempted: true, transport: "bridge:url (server-rendered listing, regex hrefs and MM-DD-YYYY dates)", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest bulletin 2026-09-21 (CVE-2026-81531)" }
+  - { id: trail-of-bits, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-02 (SequenceHash)" }
+  - { id: trendmicro-research, tier: standard, attempted: true, transport: "feed https://feeds.feedburner.com/TrendMicroResearch 12", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest 2026-09-25" }
+  - { id: vulncheck, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest 2026-10-01 (Cisco SD-WAN CVE-2026-76504, already an entry)" }
+  - { id: zimbra-security-advisories, tier: standard, attempted: true, transport: "extract https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest release in the table is 10.1.21, already assessed by earlier fires; the table carries no dates" }
+  - { id: 0patch-blog, tier: standard, attempted: true, transport: "feed https://blog.0patch.com/feeds/posts/default 12", horizon_hours: 96, in_horizon_items: 0, returned: 0, note: "newest 2026-10-01 (WalletService CVE-2026-49176)" }
+  - { id: bishopfox-blog, tier: standard, attempted: true, transport: "feed https://bishopfox.com/feeds/blog.rss 12", horizon_hours: 96, in_horizon_items: 1, returned: 0, note: "2026-10-06 'Why the AI Attack Surface Extends Your Stack' is not a vulnerability item; the Check Point weaponisation post of 2026-10-01 is outside the horizon and already cited" }
+  - { id: ccb-belgium, tier: standard, attempted: true, transport: "bridge:url listing + extract of the two HPE warnings", horizon_hours: 96, in_horizon_items: 6, returned: 0, note: "warnings of 2026-10-05 to 2026-10-08 (HPE ClearPass, AOS-S, SonicWall, Atlassian, NetScaler) all covered or held; recipe fix in coverage_gaps" }
+  - { id: cccs-alerts, tier: standard, attempted: true, transport: "feed https://www.cyber.gc.ca/api/cccs/atom/v1/get?feed=alerts_advisories&lang=en 15 + extract", horizon_hours: 100, in_horizon_items: 12, returned: 0, note: "AV26-1017 Update 1, AL26-024 and AV26-1023 are already covered NetScaler/SonicWall items; AV26-1026 SmarterMail dropped (post-auth); the rest unexploited vendor bundles" }
