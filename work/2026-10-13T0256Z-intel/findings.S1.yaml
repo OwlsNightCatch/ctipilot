@@ -1,0 +1,367 @@
+# work/2026-10-13T0256Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-10-13T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-13T02:57:47Z
+ended_at: 2026-10-13T03:21:38Z
+duration_seconds: 1431
+window: "window_hours 26 -> items published since 2026-10-12T00:56Z; essential records swept to that horizon, rotational records to their own lookback_hours"
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 13
+  bridge_fetches: 135   # approximate count of tools/fetch_source.py calls (feed/extract/url/csaf/msrc/ncsc-*/cert-*/bsi-*/enisa-euvd)
+
+items:
+
+  # ---------------------------------------------------------------------------
+  - title: "GitLab CE/EE CVE-2026-97229: CVSS 10.0 unauthenticated code execution through a crafted CI/CD regular expression, fixed in 19.4.2, 19.3.5 and 19.2.8; the 19.4.1 fix of 23 September does not close it"
+    sources:
+      - { url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-2-released/", publisher: "GitLab (Critical Patch Release 19.4.2, 19.3.5, 19.2.8)", date: "2026-10-12", role: "primary" }
+      - { url: "https://cert.europa.eu/publications/security-advisories/2026-016/", publisher: "CERT-EU", date: "2026-10-12", role: "corroborating" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13051", publisher: "NCSC Switzerland (Cyber Security Hub post 13051)", date: "2026-10-12", role: "corroborating" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1294/", publisher: "CERT-FR", date: "2026-10-12", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/gitlab-warns-of-max-severity-rce-flaw-in-regex-compiler-engine/", publisher: "BleepingComputer", date: "2026-10-12", role: "corroborating" }
+      - { url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/", publisher: "GitLab (Critical Patch Release 19.4.1, 19.3.3, 19.2.7)", date: "2026-09-23", role: "context" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/13051 (ncsc-csh recent 25; post created 2026-10-12T13:38Z) and cert-eu, URL https://cert.europa.eu/publications/security-advisories/2026-016/ (cert-eu recent 15) -> primary: GitLab patch release page, URL https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-2-released/ (extract) -> corroboration: CERT-FR AVI-1294 (anssi-fr avis-recent), BleepingComputer URL https://www.bleepingcomputer.com/news/security/gitlab-warns-of-max-severity-rce-flaw-in-regex-compiler-engine/ (BleepingComputer feed), CVE record and ENISA EUVD-2026-98214 read through euvdservices.enisa.europa.eu search API and cveawg.mitre.org (identifier check, not cited) -> context: GitLab 19.4.1 page https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/ for the earlier authenticated regex flaws"
+    summary: |
+      GitLab released 19.4.2, 19.3.5 and 19.2.8 on 2026-10-12 (24 fixes). The lead flaw, CVE-2026-97229 (CVSS 3.1 10.0, vector AV:N/AC:L/PR:N/UI:N/S:C),
+      is an integer overflow (CWE-190) in the CI/CD regular-expression compiler: GitLab says that "under certain conditions" an unauthenticated user could
+      execute arbitrary code on the GitLab server through a specially crafted regular expression in a CI/CD configuration. Affected are self-managed CE and
+      EE from 19.2 before 19.2.8, 19.3 before 19.3.5 and 19.4 before 19.4.2; GitLab.com already runs the fix and Dedicated customers need no action. The
+      vendor page lists no workaround and no exploitation statement, NCSC Switzerland records the exploitation status as unknown, the flaw is not in CISA
+      KEV (catalog 2026.10.08) and no public proof of concept was found; GitLab publishes issue detail 90 days after release. The same reporter (joaxcar)
+      and the same component produced CVE-2026-93577 (integer overflow when compiling a regular expression) and CVE-2026-89078 (double free in the regex parser)
+      in the 19.4.1 release of 2026-09-23, both CVSS 9.9 but requiring an authenticated user (PR:L); CVE-2026-97229 appears to remove that requirement, and its
+      CVE record was reserved on 2026-09-24, so a 19.4.1, 19.3.3 or 19.2.7 instance is still vulnerable. Ambiguity to carry: the vendor and the CVSS vector say
+      PR:N, NCSC Switzerland states the prerequisite as network access plus "delivery of a crafted regular expression through CI/CD configuration", and the CVE record tags its two HackerOne
+      references "permissions-required"; no source states which feature lets an unauthenticated visitor get a configuration evaluated. Version discrepancy: CERT-EU, CERT-FR and BleepingComputer cite 19.3.4 as the 19.3 fix
+      but the vendor page now lists 19.3.5 and says 19.3.4 carried a merge-request page bug, so 19.3.4 is treated as unfixed.
+    region_nexus: "global; self-managed GitLab is common in public-sector software delivery (no Swiss deployment figure sourced); NCSC Switzerland and CERT-EU both issued advisories within hours"
+    primary_sector_nexus: "indirect: software-delivery and CI/CD infrastructure of public bodies and their suppliers"
+    sector: "public-sector"
+    cves: [CVE-2026-97229]
+    techniques: [T1190]
+    affected_products: ["GitLab Community Edition", "GitLab Enterprise Edition"]
+    entity_keys: ["product:gitlab", "product:gitlab-ce", "product:gitlab-ee", "product:gitlab-ci"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GitLab has remediated an issue that, under certain conditions, could have allowed an unauthenticated user to execute arbitrary code on the GitLab server via a specially crafted regular expression in a CI/CD configuration, due to insufficient regular expression validation."
+        attribution: "GitLab (Critical Patch Release 19.4.2, 19.3.5, 19.2.8)"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-2-released/"
+      - quote: "all versions from 19.2 before 19.2.8, 19.3 before 19.3.5, and 19.4 before 19.4.2"
+        attribution: "GitLab (Critical Patch Release 19.4.2, 19.3.5, 19.2.8)"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-2-released/"
+      - quote: "19.3.4 had a bug that affected merge request pages when the Ona integration was enabled. This is fixed in 19.3.5."
+        attribution: "GitLab (Critical Patch Release 19.4.2, 19.3.5, 19.2.8)"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-2-released/"
+      - quote: "could have allowed an authenticated user to execute arbitrary code on the GitLab server due to an integer overflow issue when compiling a specially crafted regular expression in a CI/CD configuration"
+        attribution: "GitLab (Critical Patch Release 19.4.1, 19.3.3, 19.2.7)"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/"
+      - quote: "CERT-EU strongly recommends upgrading self-managed GitLab CE/EE instances to a fixed version as soon as possible, starting with internet-facing instances."
+        attribution: "CERT-EU"
+        source_url: "https://cert.europa.eu/publications/security-advisories/2026-016/"
+      - quote: "Network access to an affected self-managed instance and delivery of a crafted regular expression through CI/CD configuration"
+        attribution: "NCSC Switzerland (Cyber Security Hub post 13051)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13051"
+      - quote: "GitLab warned users today to immediately patch a maximum-severity vulnerability in the CI/CD Regular Expression Compiler that could let remote attackers run arbitrary code on targeted instances."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/gitlab-warns-of-max-severity-rce-flaw-in-regex-compiler-engine/"
+    extended_notes: |
+      Suggested classification A2 (GitLab is the first-hand authority and national CERTs relay it, but exploitation is unreported and the unauthenticated precondition is
+      the vendor's own claim). Same release also fixes CVE-2026-92883 (8.7, stored XSS via syntax highlighting, authenticated), CVE-2026-16301 (8.5, Developer role runs
+      downstream pipelines on protected branches), CVE-2026-14814 (8.2, repository raw-file cache poisoning can expose protected CI/CD variables), CVE-2026-81839 (7.7,
+      EE scheduled-pipeline-policy privilege leak after project transfer) and CVE-2026-96893 (7.3, EE Duo Agent Platform prompt injection); upgrading closes all of them.
+      Exposure: self-managed CE/EE on 19.2.x, 19.3.x or 19.4.x below the fixed builds; the vendor's Impacted Versions start at 19.2, so earlier branches are not listed
+      (absence in a vendor table, not a statement about older branches). Instances reachable from the internet, or by any untrusted internal network, come first (CERT-EU).
+      Detection (inference from the mechanism, no source gives indicators): process-creation telemetry for shells, interpreters or network tools whose parent is the
+      GitLab Rails/Puma/Sidekiq worker tree; crashes or restarts of those workers around pipeline creation; pipeline-creation and CI-lint requests from accounts or
+      sources that have not used the instance before. Post-patch compromise check: as the attack needs a crafted CI configuration evaluated by the server, review
+      recently created pipelines and CI configuration changes before the upgrade, and rotate runner registration tokens, CI/CD variables and deploy keys if any host
+      showed the process pattern above. Hardening lever: upgrade; GitLab names no workaround. Triage: ordinary CI jobs legitimately run shells under runners, so only
+      shells spawned by the GitLab application server processes themselves match this flaw, not runner-side job processes.
+      Prior store coverage of GitLab: 2026-09-12 CVE-2026-85706 (KEV) and the 2026-09-24 fire's borderline-drop of CVE-2026-89078/93577 as authenticated; this CVE is a distinct finding
+      (no CVE overlap) but the entry should reference the 19.4.1 relationship.
+    priority_suggestion: high
+
+  # ---------------------------------------------------------------------------
+  - title: "MikroTik CVE-2026-84411 update: the v7 and v6 long-term releases that the advisory lists as pending are out (7.23.8 on 2026-10-08, 6.49.23 on 2026-10-07)"
+    sources:
+      - { url: "https://download.mikrotik.com/routeros/7.23.8/CHANGELOG", publisher: "MikroTik (RouterOS 7.23.8 changelog)", date: "2026-10-08", role: "primary" }
+      - { url: "https://forum.mikrotik.com/t/6-49-23-long-term-is-released/273688", publisher: "MikroTik community forum (6.49.23 [long-term] release thread)", date: "2026-10-09", role: "primary" }
+      - { url: "https://upgrade.mikrotik.com/routeros/NEWESTa7.long-term", publisher: "MikroTik upgrade server (v7 long-term channel pointer)", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://mikrotik.com/supportsec/cve-2026-84411", publisher: "MikroTik (security notice, still lists both long-term releases as pending)", date: "2026-10-06", role: "context" }
+    discovery_trace: "first seen at: audit of prior_coverage vulnerability entries against their vendor advisories; mikrotik.com/supportsec/cve-2026-84411 (extract, URL https://mikrotik.com/supportsec/cve-2026-84411) still showed 'release pending' -> WebSearch (\"MikroTik RouterOS 7.23.8 long-term released CVE-2026-84411 fix\") -> pivot: forum thread URL https://forum.mikrotik.com/t/6-49-23-long-term-is-released/273688 (extract) -> pivot: MikroTik download-site changelog, URL https://download.mikrotik.com/routeros/7.23.8/CHANGELOG (url --direct; path pattern is MikroTik's per-version changelog location, confirmed by the returned text) -> primary: upgrade server channel pointers https://upgrade.mikrotik.com/routeros/NEWESTa7.long-term and https://upgrade.mikrotik.com/routeros/NEWEST6.long-term (url --direct; the pointer form is the one the source record upgrade.mikrotik.com/routeros/NEWESTa7.stable uses)"
+    summary: |
+      The store entry for CVE-2026-84411 (2026-10-10) reports MikroTik's notice of 2026-10-06, which lists the v7 long-term and v6 long-term releases as "release pending"
+      and tells long-term and v6 owners to restrict the web service instead of upgrading. MikroTik's own changelogs show both builds already shipped: RouterOS 7.23.8
+      (changelog dated 2026-10-08) and 6.49.23 (forum thread; changelog dated 2026-10-07) each list "system - improve stability (includes CVE-2026-84411);". MikroTik's
+      upgrade server, which devices poll, returns 7.23.8 as the current v7 long-term build (timestamp 2026-10-08T09:46Z), 6.49.23 as the current v6 long-term build
+      (2026-10-07T16:05Z) and 7.24.5 as the current v7 stable build (2026-09-29). The vendor advisory page was fetched again today and has not been updated: it still reads
+      "v7 long-term - release pending" and "This article will be updated with more information in due time.", so the vendor's advisory lags its own changelogs. No source reports exploitation, the
+      flaw is not in CISA KEV (catalog 2026.10.08), and FIRST EPSS is 0.0095 (2026-10-12).
+    region_nexus: "global; MikroTik RouterOS is common on Swiss communal, school and ISP edge routers (no figure sourced); the stale guidance concerns long-term-channel owners"
+    primary_sector_nexus: "indirect: communal and regional network edge devices"
+    sector: "public-sector"
+    cves: [CVE-2026-84411]
+    techniques: [T1190]
+    affected_products: ["MikroTik RouterOS"]
+    entity_keys: ["product:mikrotik-routeros"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-10/cve-2026-84411-mikrotik-routeros-web-management-preauth-rce"
+    evidence:
+      - quote: "system - improve stability (includes CVE-2026-84411);"
+        attribution: "MikroTik (RouterOS 7.23.8 changelog)"
+        source_url: "https://download.mikrotik.com/routeros/7.23.8/CHANGELOG"
+      - quote: "What's new in 6.49.23 (2026-10-07):"
+        attribution: "MikroTik community forum (6.49.23 [long-term] release thread)"
+        source_url: "https://forum.mikrotik.com/t/6-49-23-long-term-is-released/273688"
+      - quote: "system - improve stability (includes CVE-2026-84411);"
+        attribution: "MikroTik community forum (6.49.23 [long-term] release thread)"
+        source_url: "https://forum.mikrotik.com/t/6-49-23-long-term-is-released/273688"
+      - quote: "v7 long-term - release pending"
+        attribution: "MikroTik (security notice, still lists both long-term releases as pending)"
+        source_url: "https://mikrotik.com/supportsec/cve-2026-84411"
+      - quote: "This article will be updated with more information in due time."
+        attribution: "MikroTik (security notice, still lists both long-term releases as pending)"
+        source_url: "https://mikrotik.com/supportsec/cve-2026-84411"
+    extended_notes: |
+      What changes in the entry: headline, title, fixed field and the Defender takeaway currently say the long-term releases are pending and steer long-term and v6 owners to
+      restrict www and www-ssl only; they should now say 7.23.8 (v7 long-term) and 6.49.23 (v6 long-term) carry the fix, v7 stable owners go to 7.24 or later (7.24.5 is current), and
+      the service restriction remains the interim control for devices that cannot upgrade yet. The upgrade-server pointers are timestamps of the latest build in each channel, not release
+      notes; the fix claim rests on the two changelogs. The original timing is outside the 26 h window (builds shipped 2026-10-07/08, forum thread dated 2026-10-09); this is returned
+      because the existing entry states the opposite and nothing in the store corrects it. Suggested classification A1 (three first-party MikroTik artifacts agree; the advisory page lag is itself documented).
+      Working recipe for the candidate source mikrotik-routeros-changelog: `url --direct https://download.mikrotik.com/routeros/<version>/CHANGELOG` returns plain text; mikrotik.com/download/changelogs pages load the text through Livewire and `extract` shows only 'Loading'.
+
+  # ---------------------------------------------------------------------------
+  - title: "SonicWall SMA1000 CVE-2026-102255 update: second honeypot operator reports attempts from 2026-10-08, Previdian counts 135 attempts from two US addresses, and NCSC Switzerland now records the flaw as actively exploited while SonicWall's advisory still reports no evidence"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13034", publisher: "NCSC Switzerland (Cyber Security Hub post 13034, edited 2026-10-12)", date: "2026-10-12", role: "primary" }
+      - { url: "https://www.securityweek.com/critical-sonicwall-vulnerability-exploited-days-after-disclosure/", publisher: "SecurityWeek", date: "2026-10-12", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/10/critical-sonicwall-sma-1000-flaw.html", publisher: "The Hacker News", date: "2026-10-12", role: "corroborating" }
+      - { url: "https://previdian.com/CVE-2026-102255", publisher: "Previdian (exploitation intelligence)", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0017", publisher: "SonicWall PSIRT (SNWLID-2026-0017)", date: "2026-10-06", role: "context" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/13034 (ncsc-csh recent 25; lastModified 2026-10-12T12:56Z, edit reason 'updated with Active exploitation claims') -> pivot: SecurityWeek, URL https://www.securityweek.com/critical-sonicwall-vulnerability-exploited-days-after-disclosure/ (securityweek feed) and The Hacker News, URL https://thehackernews.com/2026/10/critical-sonicwall-sma-1000-flaw.html (THN feed) -> pivot: Previdian per-CVE page https://previdian.com/CVE-2026-102255 (extract) -> primary: SonicWall PSIRT https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0017 (extract, via reader fallback; text still says no evidence of exploitation)"
+    summary: |
+      The store entry (updated 2026-10-10) carries Previdian's report of exploitation attempts from 2026-10-09 and SonicWall's statement that it sees no evidence of exploitation.
+      New since then: NCSC Switzerland edited its advisory on 2026-10-12 to record the status as "Actively exploited", citing Defused (honeypot attempts since 2026-10-08)
+      and Previdian; SecurityWeek and The Hacker News report that Defused saw the first attempts against its SMA decoys on 2026-10-08, two days after disclosure, which makes
+      two independent honeypot operators; Previdian's page shows 135 attempts from two unique source addresses in one country (the United States), first observed 2026-10-09 08:49 UTC and last observed 2026-10-10,
+      and states it is not in CISA KEV. SonicWall's advisory, fetched 2026-10-13, still says "There is currently no evidence any of the vulnerabilities addressed in this release are being exploited in the wild",
+      and The Hacker News notes SonicWall had not updated it. Neither honeypot operator reports a compromise, so the evidence remains attempts against decoys. Discrepancy: The Hacker News dates the first signs
+      from both firms to 2026-10-08 while Previdian's own page gives 2026-10-09 for its first observation. Not in CISA KEV (catalog 2026.10.08); FIRST EPSS 0.0048 (2026-10-12).
+    region_nexus: "global; NCSC Switzerland (home-region authority) now classifies the flaw as actively exploited"
+    primary_sector_nexus: "indirect: remote-access gateways of public bodies"
+    sector: "public-sector"
+    cves: [CVE-2026-102255]
+    techniques: [T1190]
+    affected_products: ["SonicWall SMA1000"]
+    entity_keys: ["product:sonicwall-sma-1000"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-08/cve-2026-102255-sonicwall-sma1000-workplace-ssrf"
+    borderline: true
+    borderline_reason: "the entry already reports exploitation attempts; the delta is the home-region authority's status change to actively exploited, a second honeypot operator (Defused, via X posts relayed by SecurityWeek/THN) and Previdian's counts"
+    evidence:
+      - quote: "Cybersercurity firm Defused observed exploitation attempts against their honeypots since oct. 8th 2026"
+        attribution: "NCSC Switzerland (Cyber Security Hub post 13034, edited 2026-10-12)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13034"
+      - quote: "said that the first exploitation attempts reached its SMA decoys on October 8, only two days after public disclosure."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/critical-sonicwall-vulnerability-exploited-days-after-disclosure/"
+      - quote: "have been observed to date from two unique IP addresses located in the U.S."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/10/critical-sonicwall-sma-1000-flaw.html"
+      - quote: "There is currently no evidence any of the vulnerabilities addressed in this release are being exploited in the wild."
+        attribution: "SonicWall PSIRT (SNWLID-2026-0017)"
+        source_url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0017"
+    extended_notes: |
+      The SonicWall PSIRT fetch went through the reader fallback (psirt.global.sonicwall.com), page unchanged since 2026-10-06. Suggested classification stays with the entry's current rating; credibility 2 (attempts, not compromises).
+
+  # ---------------------------------------------------------------------------
+  - title: "((OTRS)) Community Edition 6 and forks: unauthenticated login as any agent or customer through a spoofed Remote-User header when HTTP Basic Authentication is the backend (CVE-2026-93582, CVSS 9.4); no fix for the end-of-life 6.x line, Znuny listed a matching advisory on 2026-09-16"
+    sources:
+      - { url: "https://otrs.com/release-notes/otrs-security-advisory-2026-18/", publisher: "OTRS AG (OSA-2026-18)", date: "2026-10-12", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3872", publisher: "BSI CERT-Bund (WID-SEC-2026-3872)", date: "2026-10-12", role: "corroborating" }
+      - { url: "https://www.znuny.org/en/advisories", publisher: "Znuny (advisory list)", date: "2026-10-13", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, URL https://wid.cert-bund.de/content/public/securityAdvisory/rss ([NEU] [hoch] 'OTRS: Mehrere Schwachstellen', WID-SEC-2026-3872, 2026-10-12 11:54 GMT; bsi-rss) and enisa-euvd critical search (euvdservices.enisa.europa.eu/api/search, EUVD-2026-97258, same record) -> primary: OTRS advisory, URL https://otrs.com/release-notes/otrs-security-advisory-2026-18/ (extract; the URL was the reference in the EUVD record) -> pivot: BSI CSAF WID-SEC-2026-3872 (bsi-csaf) -> pivot: Znuny advisory list, URL https://www.znuny.org/en/advisories (url --direct; found by searching the fork's name, page returned a table of ZSA ids)"
+    summary: |
+      OTRS AG's advisory OSA-2026-18 (2026-10-12) describes CVE-2026-93582 (CVSS 3.1 9.4, CVSS 4.0 9.2): the HTTP Basic Authentication modules in ((OTRS)) Community Edition 6 and earlier take the
+      authenticated username from REMOTE_USER or HTTP_REMOTE_USER, so in CGI and mod_perl deployments an unauthenticated remote attacker who sends a crafted Remote-User request header is treated as that
+      user and can authenticate through the Generic Interface as an existing agent or customer without the password; the resulting access depends on the impersonated account. Exploitation requires
+      HTTP Basic Authentication to be configured as an authentication backend and a web-server setup that exposes request headers as HTTP_* environment variables. OTRS 7 and later are not affected and the unused
+      HTTP_REMOTE_USER fallback was removed there; for the 6.x line the vendor offers no patch and says 6.x and earlier are vulnerable and that products based on the Community Edition are very likely affected. Znuny, the maintained
+      fork of the Community Edition, lists ZSA-2026-14 "Unauthenticated Login via HTTP Basic Auth Modules" (severity high, 2026-09-16, CVE requested), which matches by title; the advisory body was not fetched, so treat the match as probable.
+      The advisory is one of a batch (OSA-2026-11 to 2026-18) that BSI flags as high. No exploitation or public proof of concept was found; FIRST EPSS is 0.0039 (2026-10-12).
+    region_nexus: "DACH: OTRS and Znuny are common help-desk systems in German-speaking administrations (no Swiss deployment figure sourced); BSI rated the batch high"
+    primary_sector_nexus: "indirect: help-desk and ticketing systems of public bodies on legacy OTRS 6 or Znuny"
+    sector: "public-sector"
+    cves: [CVE-2026-93582]
+    techniques: [T1190]
+    affected_products: ["((OTRS)) Community Edition 6", "Znuny"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:otrs", type: product, name: "OTRS", aliases: ["((OTRS)) Community Edition", "OTRS AG"], summary: "Open-source help-desk and ticketing system; the Community Edition 6 line is end of life and OTRS AG (OTRS GmbH) now ships OTRS 7 and later (OTRS AG advisory OSA-2026-18, 2026-10-12)." }
+      - { key: "product:znuny", type: product, name: "Znuny", aliases: ["Znuny LTS"], summary: "Maintained fork of the ((OTRS)) Community Edition with long-term support (znuny.org advisory list)." }
+    relation_suggestions:
+      - { subject: "product:znuny", object: "product:otrs", basis: "Znuny describes itself as 'The ((OTRS)) Community Edition Fork with long-term Support (LTS)' (znuny.org, 2026-10-13)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "CVSS 9.4 and unauthenticated, but configuration-gated (HTTP Basic backend plus header-to-environment mapping), end-of-life 6.x, no exploitation, and Znuny listed the matching fix on 2026-09-16; Swiss deployment unestablished"
+    evidence:
+      - quote: "Please note that ((OTRS)) Community Edition 6.x and before are vulnerable."
+        attribution: "OTRS AG (OSA-2026-18)"
+        source_url: "https://otrs.com/release-notes/otrs-security-advisory-2026-18/"
+      - quote: "Exploitation requires HTTP Basic Authentication to be configured as an authentication backend"
+        attribution: "OTRS AG (OSA-2026-18)"
+        source_url: "https://otrs.com/release-notes/otrs-security-advisory-2026-18/"
+      - quote: "Products based on the ((OTRS)) Community Edition also very likely to be affected"
+        attribution: "OTRS AG (OSA-2026-18)"
+        source_url: "https://otrs.com/release-notes/otrs-security-advisory-2026-18/"
+      - quote: "Update to latest version of OTRS (2026.7.1. or later)."
+        attribution: "OTRS AG (OSA-2026-18)"
+        source_url: "https://otrs.com/release-notes/otrs-security-advisory-2026-18/"
+      - quote: "Unauthenticated Login via HTTP Basic Auth Modules"
+        attribution: "Znuny (advisory list)"
+        source_url: "https://www.znuny.org/en/advisories"
+    extended_notes: |
+      Exposure: an OTRS CE 6.x or Znuny system whose authentication backend is Apache or mod_perl HTTP Basic (SSO-style setups), reachable from the attacker; OTRS 7+ and the
+      current OTRS releases are unaffected. Detection concept: web-server access logs for requests to the Generic Interface (and agent/customer entry points) that carry a Remote-User
+      or Remote_User header from clients, and ticket-system audit entries for logins by a user whose password was not presented; a legitimate SSO front end sets that value server-side, so
+      client-sent headers at the origin are the discriminator. Hardening: strip or reject client-supplied Remote-User headers at the reverse proxy, restrict the Generic Interface, migrate off 6.x.
+      Possibly not worth an entry on its own (hence borderline); would fold into a DACH help-desk note if the store ever carries one.
+
+# ---------------------------------------------------------------------------
+cve_table:
+  - { cve: CVE-2026-97229, product: "GitLab CE/EE", cvss: "10.0 (3.1: AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H)", epss: null, kev: false, exploited: "no report; GitLab states none, NCSC-CH 'UNKNOWN'", affected: "19.2 before 19.2.8; 19.3 before 19.3.5; 19.4 before 19.4.2 (earlier branches not listed)", fixed: "19.2.8; 19.3.5; 19.4.2 (CERT-EU/CERT-FR/BleepingComputer cite 19.3.4, superseded by the vendor page)", type: "rce (integer overflow, CWE-190)", vector: "network", auth: "pre-auth per vendor/CVSS PR:N; delivery through CI/CD configuration; CVE references tagged permissions-required", source: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-2-released/" }
+  - { cve: CVE-2026-84411, product: "MikroTik RouterOS web management service", cvss: "critical per MikroTik; 9.8 per CISA as carried in the store entry", epss: 0.00945, kev: false, exploited: "no report", affected: "RouterOS before 7.24, v6 included, where www/www-ssl is reachable", fixed: "7.24 (v7 stable; current 7.24.5); 7.23.8 (v7 long-term, 2026-10-08); 6.49.23 (v6 long-term, 2026-10-07)", type: "integer underflow, rce/dos", vector: "network", auth: "pre-auth", source: "https://download.mikrotik.com/routeros/7.23.8/CHANGELOG" }
+  - { cve: CVE-2026-102255, product: "SonicWall SMA1000 Work Place interface", cvss: "10.0 (3.0)", epss: 0.00477, kev: false, exploited: "attempts reported by Previdian (135 attempts, 2 source IPs) and Defused from 2026-10-08/09; NCSC-CH: actively exploited; SonicWall: no evidence; no compromise established", affected: "SMA1000 6210/7210/8200v: 12.4.3-03526 and older; 12.5.0-02952 and older (platform-hotfix builds)", fixed: "12.4.3-03670; 12.5.0-03082", type: "ssrf", vector: "network", auth: "pre-auth", source: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0017" }
+  - { cve: CVE-2026-93582, product: "((OTRS)) Community Edition 6 (and forks)", cvss: "9.4 (3.1); 9.2 (4.0)", epss: 0.00392, kev: false, exploited: "no report", affected: "((OTRS)) Community Edition 6.x and earlier; forks very likely", fixed: "none for 6.x; OTRS 7 and later unaffected; Znuny ZSA-2026-14 (2026-09-16) by title", type: "auth-bypass (spoofed Remote-User header)", vector: "network", auth: "pre-auth; requires HTTP Basic backend", source: "https://otrs.com/release-notes/otrs-security-advisory-2026-18/" }
+
+# ---------------------------------------------------------------------------
+# Completeness duty (1): scheduled multi-product releases and what is actually published at 2026-10-13T03:2xZ
+release_dispositions:
+  - release: "SAP Security Patch Day 2026-10-13"
+    state: "CVE records published by SAP as CNA 2026-10-13T00:22Z-00:27Z (20 records, read via euvdservices.enisa.europa.eu and cveawg.mitre.org); SAP's own security-notes-news page for October still returned 404 at 03:2xZ (support.sap.com/en/my-support/knowledge-base/security-notes-news/october-2026.html), GitHub advisory GHSA-4mv3-jxxm-9cx2 404"
+    rows:
+      - { cve: CVE-2026-89111, note: "SAP Cloud SDK for Python (sap-cloud-sdk < 0.45.2) OAuth2 SSRF, CVSS 3.1 10.0 PR:N; an attacker controlling the tenant_subdomain parameter of a multi-tenant BTP application redirects token requests and exfiltrates client credentials", disposition: "dropped: library-level, needs an application that passes attacker-controlled tenant_subdomain; not exploited; no Swiss deployment sourced" }
+      - { cve: CVE-2026-89110, note: "NetWeaver Visual Composer (VC70RUNTIME 7.50) missing authorization, 9.9, PR:L; low-privileged user invokes internal operations on a preconfigured remote system (SAP Note 3797111)", disposition: "dropped: low-privilege authenticated, not exploited" }
+      - { cve: CVE-2026-89107, note: "S/4HANA (S4CORE 105-109) Manage Substitution/Validation Rules ABAP code injection, 9.9, PR:L (SAP Note 3805589)", disposition: "dropped: authenticated, not exploited" }
+      - { cve: CVE-2026-89108, note: "SAP MII (XMII 15.4, 15.5) Configuration Service missing authorization, 9.1, PR:H (SAP Note 3798788)", disposition: "dropped: administrator-privileged" }
+      - { cve: CVE-2026-58249, note: "NetWeaver and Web Dispatcher ICM unauthenticated crash, 7.5 availability only (SAP Note 3765424)", disposition: "dropped: below 9.0, DoS" }
+    outcome: "no pre-auth code execution, no exploited and no publicly disclosed flaw in the SAP table at this time; re-read the SAP page and Onapsis/Pathlock write-ups on the next fire"
+  - release: "Microsoft Patch Tuesday 2026-10-13"
+    state: "not yet published: `msrc release 2026-Oct` (first 400 of 465 records) carries only third-party and out-of-band records dated 2026-10-03 to 2026-10-11 (Exchange OOB CVE-2026-96940, Go/MongoDB/OpenSSL CBL items); no record dated 2026-10-13; Microsoft publishes about 17:00 UTC"
+    outcome: "pending: next fire must read `msrc cvrf 2026-Oct`"
+  - release: "Adobe Patch Tuesday 2026-10-13"
+    state: "not yet published: chimera-api listing's newest bulletins are dated 2026-09-22 (APSB26-145 to -157)"
+    outcome: "pending"
+  - release: "Fortinet monthly PSIRT release 2026-10-13"
+    state: "not yet published: newest FG-IR-26-175 (2026-10-01, revised 2026-10-07, already in the FortiMail entry)"
+    outcome: "pending"
+  - release: "Ivanti, Siemens/Schneider ICS Tuesday sets, CISA ICS advisories"
+    state: "not yet published at check time: `cisa csaf-recent` newest 2026-10-08 06:00Z (icsa-26-281-01..03, icsma-26-223-02); Ivanti not in this slice, WebSearch found nothing for October 2026"
+    outcome: "pending"
+  - release: "HPE Networking (Aruba) bulletins HPESBNW05156 (AOS-S) and HPESBNW05158 (ClearPass Policy Manager), published 2026-10-06"
+    state: "read in full from csaf.arubanetworking.hpe.com. AOS-S <= 16.11.0031: CVE-2026-76742 and -76743 management-interface authentication bypass (9.8), CVE-2026-76744 unauthenticated buffer-overflow RCE (9.8), CVE-2026-76745/-76746/-76747 (9.6/9.3/9.1, adjacent or remote), fixed 16.11.0032. ClearPass CPPM <= 6.14.0 and <= 6.11.15: unauthenticated deserialization RCE CVE-2026-76750, authentication bypass CVE-2026-76752 and -79796, format string CVE-2026-76753, unauthenticated SQLi to RCE CVE-2026-76754 (all 9.8), OnGuard agent integrity flaws -76751/-79801 (9.8), authenticated SQLi 9.9/9.1; fixed 6.14.1 and 6.11.16. HPE: not aware of public discussion or exploit code. NCSC-NL restated AOS-S as NCSC-2026-0413 on 2026-10-12 11:47Z (in window)"
+    outcome: "not returned as an item: the 2026-10-09 fire assessed and borderline-dropped both bulletins (management-plane flaws, no exploit code, regular cycle) and NCSC-NL's advisory is a restatement with no new fact; stated here so the audit can see the reasoning. Reopen if exploitation or exploit code appears."
+
+# Candidates judged and dropped (audit trail; none returned as an item)
+dispositions:
+  - "PaperCut NG/MF (NCSC-CH post 12882 edited 2026-10-12, watchTowr analysis): already in entry 2026-08-29/papercut-ng-mf-tapestry-request-confusion-preauth-rce, whose 2026-10-10 update carries the watchTowr bypass chain; no delta."
+  - "Atlassian CVE-2026-21589 (NCSC-CH post 13032 edited 2026-10-12, Previdian attempts): entry 2026-10-06/cve-2026-21589-atlassian-data-center-arbitrary-file-access already reports exploitation attempts; Atlassian advisory unchanged (no exploitation statement); no delta."
+  - "FortiMail CVE-2026-104286: Fortinet's 2026-10-07 'FortiMail Cloud fix clarification' revision is already in the entry's body."
+  - "AnyDesk CVE-2026-109390 (EUVD 2026-10-12, CVSS 9.8): Linux client 8.0.2 heap overflow in the mode-5 stream handler, pre-approval root code execution, public PoC (v12-security) and a fix in 8.0.3 on 2026-06-23 (changelog says only 'Fixed a bug that could lead to a crash'); the CVE record is new, the exposure is four months old and narrow (Linux, TCP/7070 or relay)."
+  - "ZITADEL CVE-2026-109372/-109373 (Login V2 unsigned session cookie, 9.2/9.3): GitHub advisory dated 2026-09-28, CVE ids assigned 2026-10-12; 3.x is end of life and unfixed. Outside the window; timing-dependent session-id guessing."
+  - "MikroTik WinBox CVE-2026-103903 (8.7, read-to-full privilege escalation, fixed 7.24.5): BR2SEC write-up dated 2026-09-22, CVE record 2026-10-12; authenticated."
+  - "IBM 2026-10-12/13 batch (IBM i CVE-2026-96119 9.9, DataStage 9.6 x3, Db2 Mirror for i 9.9): authenticated; Maximo AI Service CVE-2026-90920 9.8 bulletin read is the third-party-dependency bulletin of 2026-10-05, specific bulletin not isolated; no exploitation."
+  - "Progress MarkLogic October bulletin (CVE-2026-85947/-85948/-85955 9.9, -85956, -9191): authenticated or privileged; no exploitation."
+  - "HAProxy Data Plane API CVE-2026-109575 (9.8, fixed 3.4.4): authentication dropped on shared handler when tls_ca and tls_port are set; management API, configuration-gated; no exploitation."
+  - "phpMyFAQ CVE-2026-109573 (9.2, fixed 4.1.9): unauthenticated SQLi only with MySQL/MariaDB NO_BACKSLASH_ESCAPES; no exploitation."
+  - "SmarterMail build 9777 (WID-SEC-2026-3869; CVE-2026-104082 7.2 SYSTEM RCE needs SysAdmin token, CVE-2026-104084 8.8 stale-role JWT replay): authenticated; no exploitation."
+  - "Metasploit Framework msf-ws CVE-2026-87689 (9.8, fixed 6.5.5): unauthenticated credential-store read/delete on the default 0.0.0.0:8080 web service; red-team tooling exposure, no exploitation."
+  - "Cisco 2026-10-07/08 bundle (Nexus NGOAM/MPLS OAM unauthenticated root RCE 9.8, License On-Prem 10.0; NCSC-CH post 13044 of 2026-10-09): assessed and dropped by two earlier fires (feature-gated or management plane, no exploitation)."
+  - "Veeam CVE-2025-64393 (NCSC-CH 13043, 2026-10-09), ILIAS multiple RCE flaws (NCSC-CH 13035, 2026-10-07; ILIAS is the e-learning platform of many Swiss universities; RCE flaws need authenticated users, file disclosure needs the public area): outside the window, no exploitation, not in the store."
+  - "WatchGuard Fireware 2026.3.2 builds (2026-09-29) and Endpoint Security CVE-2026-13043 (2026-10-01): outside the 120 h lookback; WatchGuard states no known exploitation; pre-auth items need a VPN peer or adjacency per the 2026-10-09 fire."
+  - "Microsoft Exchange CVE-2026-96940 (2026-10-02, 8.8, needs a click, 'Exploited: No')."
+
+# ---------------------------------------------------------------------------
+backlog_regate:
+  - item: "IBM Guardium Data Protection CVE-2026-85542 (ACN alert AL04/260928/CSIRT-ITA) and the unauthenticated CVSS 9.8 siblings CVE-2026-84275, -75875, -80381, -84272"
+    checked_at: "2026-10-13T03:2xZ"
+    kev: "none of the five is in CISA KEV (catalog 2026.10.08, 1739 entries)"
+    ibm_confirmation: "no. IBM's bulletin (security-bulletin-ibm-guardium-data-protection-affected-multiple-vulnerabilities-17, dated 2026-10-08, 38 CVE blocks, fetched as https://www.ibm.com/support/pages/node/7288035) lists CVE-2026-85542 as an authenticated GIM-bundle command injection (CVSS 8.8) with no exploitation statement; ENISA EUVD carries no exploitedSince for any Guardium record (84 records since 2026-09-01)"
+    acn: "alert re-read via extract: unchanged, version 1.0 of 2026-09-28, CVE table 'POC: -', 'EXPLOITATION: Presente'; affects Guardium Data Protection 12.2 without fix pack SqlGuard_12.0p233"
+    public_poc: "none found: GitHub repository search for the CVE ids and for 'Guardium GIM tar injection poc' returned 0 repositories"
+    constituency_deployment: "none surfaced in this slice (not searched beyond the sources above)"
+    recommendation: "all three re-gate conditions remain unmet; the row's stated expiry is 2026-10-14, strike at expiry unless a fire before then finds a KEV listing, an IBM confirmation or a Swiss deployment"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured in config/org-profile.yaml; sweep is a no-op"
+
+candidate_sources:
+  - id: znuny-advisories
+    publisher: "Znuny (maintained fork of the ((OTRS)) Community Edition), advisory list"
+    url: "https://www.znuny.org/en/advisories"
+    category: vendor-psirt
+    why: "First-party ZSA advisory table (id, CVE, severity, date) for the help-desk system that runs on many German-speaking administrations; the ZSA-2026-14 entry predates the OTRS AG advisory by four weeks. `url --direct` returns the full table; no RSS seen. Pair with otrs.com/release-notes (OSA series, extract reads it)."
+
+coverage_gaps:
+  - source_id: chrome-releases
+    reason: "not in this slice, probed because it was named rotation-priority: `feed https://chromereleases.googleblog.com/feeds/posts/default` returns upstream HTTP 302 (reader fallback returns no items); `feed https://feeds.feedburner.com/GoogleChromeReleases 8` reads direct (newest Stable-channel desktop item 'Early Stable Update for Desktop' 2026-10-07, ChromeOS stable 2026-10-09); nothing in window. Working recipe: the feedburner URL."
+  - source_id: msrc-blog
+    reason: "https://msrc.microsoft.com/blog now 301-redirects to https://www.microsoft.com/en-us/msrc/blog; the WebFetch of the new URL showed one post (July 2026 researcher recognition), no in-window post. Recipe change: use the www.microsoft.com URL."
+  - source_id: checkpoint-support
+    reason: "`extract https://support.checkpoint.com/results/sk/sk185222` served the raw Next.js page (direct-raw, no 504 this time); the advisory text sits in the page's __NEXT_DATA__ JSON (props.pageProps.data: title, symptoms, solution, dateCreated, lastModified) and parses cleanly. sk185222 is CVE-2026-18574, created 2026-08-01, already covered; nothing new in window. The record's URL is a fixed SK page, not a listing, so it cannot show new advisories by itself; new Check Point SKs need the sk ids from CERT feeds."
+  - source_id: splunk-advisories
+    reason: "listing read via extract (317 SVD rows); newest SVD-2026-1001 to -1005 dated 2026-10-07, outside the 100 h lookback."
+  - source_id: sap-security-notes
+    reason: "not in this slice; SAP's October page not published yet (404 at 03:2xZ; `extract` fell back to the reader and spent credit on the 404). CVE records for the October Patch Day were already public via the SAP CNA (read through euvdservices.enisa.europa.eu/api/search and cveawg.mitre.org/api/cve/<id>, both direct, no reader)."
+  - source_id: tooling-note
+    reason: "`extract` silently falls back to the metered jina reader on a 404 or 403 (spent on the SAP October page, a not-yet-public GitHub advisory, anydesk.com changelog and fortiguard.fortinet.com/psirt/FG-IR-26-175, which the Fortinet note says reads direct); for URLs that may not exist yet use `url --direct` first."
+  - source_id: cisa-advisories
+    reason: "recipe confirmed: WebFetch of https://www.cisa.gov/news-events/cybersecurity-advisories lists 10 items (newest AA26-281A, 2026-10-08), `cisa csaf-recent 15` newest 2026-10-08; nothing in window. WebFetch returns only 10 items per page."
+
+# ---------------------------------------------------------------------------
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "ncsc-nl recent 25 + ncsc-nl csaf NCSC-2026-0413/0408", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "NCSC-2026-0413 HPE AOS-Switch (2026-10-12 11:47Z) restates an assessed bulletin; see release_dispositions" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "cert-fr avis-recent 40 + actu-recent 15 + extract per avis", horizon_hours: 26, in_horizon_items: 3, returned: 0, note: "AVI-1292 PostgreSQL JDBC, -1293 MongoDB drivers, -1294 GitLab (corroboration of item 1); flat 00:00 timestamps; ACT-043 weekly bulletin dated 2026-10-12 listed" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bsi-rss (250 items back to 2026-10-09 11:34Z) + bsi-csaf", horizon_hours: 26, in_horizon_items: 21, returned: 1, note: "21 [NEU] advisories since 2026-10-12 00:00; WID-SEC-2026-3872 OTRS returned borderline; GitLab WID-SEC-2026-3858 corroborates item 1; none after 2026-10-12 11:54 GMT" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "cert-eu recent 15 + extract", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "2026-016 GitLab used as corroboration" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-08 (Ollama CVE-2026-103663)" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + cisa csaf-recent 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest AA26-281A 2026-10-08; ICS CSAF newest 2026-10-08" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev + tools/kev_window_diff.py cross-check", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "catalog 2026.10.08 (1739 entries); last additions 2026-10-08 (five old CVEs, covered by AA26-281A entry); no ransomware-flag flip among the CVEs of the 14-day prior_coverage set (KEV flags checked for the 27 CVEs of the 14-day prior_coverage set that are in KEV)" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "enisa-euvd recent exploited/criticals/lastvulnerabilities + search API (fromDate=2026-10-11 score 9-10, 71 records; fromDate=2026-10-12 all scores, 738 records; fromDate=2026-10-13, 55 records)", horizon_hours: 26, in_horizon_items: 71, returned: 1, note: "exploited list newest 2026-10-08; GitLab EUVD-2026-98214 identifier check; remaining 9.0+ records dispositioned above" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "ncsc-csh recent 25 + ncsc-csh post <id>", horizon_hours: 26, in_horizon_items: 4, returned: 2, note: "13051 GitLab new (item 1); 13034 SonicWall and 13032 Atlassian edited 2026-10-12, 12882 PaperCut edited 2026-10-12 (SonicWall returned as update-of, other two no delta)" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml 20", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "2026-10-12 blog 'Help the NCSC understand how organisations approach external attack surface risk' is a survey request; newest advisory-type item 2026-10-08 China-linked actors (AA26-281A partner release)" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed https://filestore.fortinet.com/fortiguard/rss/ir.xml 20 + extract FG-IR-26-175", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-01; FG-IR-26-175 Timeline 2026-10-07 already in entry; October cycle pending (Tuesday release)" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "msrc recent 15 + msrc release 2026-Oct 400 + msrc cve CVE-2026-96940", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "no Patch Tuesday records yet (see release_dispositions)" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed https://security.paloaltonetworks.com/rss.xml 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest CVE-2026-0250 GlobalProtect App 2026-10-02" }
+  - { id: checkpoint-support, tier: standard, attempted: true, transport: "extract (direct-raw) + __NEXT_DATA__ parse", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "recipe note in coverage_gaps" }
+  - { id: cisa-directives, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "lists ED 25-03, ED 26-03, BOD 26-04 (+guidance), BOD 26-02; none new (BOD 26-04 already covered by 2026-06-12 entry)" }
+  - { id: jpcert, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest items JVN Movable Type / Keyence 2026-10-07, before the lookback" }
+  - { id: msrc-blog, tier: standard, attempted: true, transport: "WebFetch (follow 301)", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "URL moved, see coverage_gaps" }
+  - { id: joomla-security-centre, tier: standard/candidate, attempted: true, transport: "feed https://developer.joomla.org/security-centre.feed?type=rss 20", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest 2026-09-25" }
+  - { id: watchguard-psirt, tier: standard/candidate, attempted: true, transport: "extract listing (127 rows) + extract CVE-2026-13043, CVE-2026-18145", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest releases 2026-09-29 and 2026-10-01; WatchGuard states no known exploitation" }
+  - { id: adobe-psirt, tier: standard, attempted: true, transport: "bridge:url chimera-api (109 cards) + extract APSB26-142", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest 2026-09-22; APSB26-142 'Last updated on Sep 22, 2026' matches the entry; October cycle pending" }
+  - { id: apple-security, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest releases 2026-09-28 with no published CVE entries" }
+  - { id: fbi-cyber-alerts, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 100, in_horizon_items: 0, returned: 0, note: "newest PSA 2026-09-17" }
+  - { id: splunk-advisories, tier: standard/candidate, attempted: true, transport: "extract listing", horizon_hours: 100, in_horizon_items: 0, returned: 0, note: "newest SVD-2026-1001..1005 on 2026-10-07" }
+  - { id: hpe-networking-psirt, tier: standard/candidate, attempted: true, transport: "url --direct on hpesbnw05156 and hpesbnw05158 (URLs taken from the CERT-FR AVI-1277 documentation section)", horizon_hours: 100, in_horizon_items: 0, returned: 0, note: "both bulletins dated 2026-10-06, outside lookback; read in full, see release_dispositions; the listing URL was still not located" }
+  - { id: github-advisory, tier: standard, attempted: true, transport: "bridge:url api.github.com/advisories critical reviewed (100 records)", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest critical reviewed advisory published 2026-10-09T20:56Z (TinaCMS); none since" }
+  - { id: keycloak, tier: standard, attempted: true, transport: "feed https://www.keycloak.org/rss.xml 15", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest 26.8.0 on 2026-10-01" }

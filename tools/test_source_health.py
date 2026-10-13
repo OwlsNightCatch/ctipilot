@@ -157,6 +157,14 @@ def test_blocked_record_is_probed_without_the_reader():
     assert calls == [["url", "https://ssd-disclosure.com/advisories/", "--direct"]], calls
 
 
+def test_probe_timeout_raises_the_bridge_budget_only_when_set():
+    sh = _load_module()
+    assert sh._bridge_timeout({}, 12.0) == 45.0
+    assert sh._bridge_timeout({"probe_timeout": 120}, 12.0) == 120.0
+    assert sh._bridge_timeout({"probe_timeout": 10}, 12.0) == 45.0
+    assert sh._bridge_timeout({"probe_timeout": "bad"}, 12.0) == 45.0
+
+
 def main() -> int:
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0

@@ -1,0 +1,256 @@
+# work/2026-10-13T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-13T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-13T02:57:57Z
+ended_at: 2026-10-13T03:12:14Z
+duration_seconds: 857
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 9
+  bridge_fetches: 125
+items:
+  # ---------------------------------------------------------------------------
+  - title: "P7 DarkSword: a financially motivated iOS 18.4-18.7 exploit-kit variant adds on-device keychain and crypto-wallet theft with two-way C2, reached through an expired analytics domain that online shops still load"
+    sources:
+      - { url: "https://www.iverify.com/blog/darksword-variant-threat-research", publisher: "iVerify", date: "2026-10-08", role: "primary" }
+      - { url: "https://blog.report-uri.com/abandoned-analytics-domain-funnels-store-visitors-to-darksword-iphone-exploits/", publisher: "Report URI", date: "2026-10-09", role: "primary" }
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain", publisher: "Google Threat Intelligence Group", date: "2026-03-18", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/10/p7-darksword-ios-exploit-kit-adds.html", publisher: "The Hacker News", date: "2026-10-11", role: "corroborating" }
+      - { url: "https://support.apple.com/126793", publisher: "Apple", date: "2026-04-01", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/apple-expands-ios-18-updates-to-more-iphones-to-block-darksword-attacks/", publisher: "BleepingComputer", date: "2026-04-01", role: "corroborating" }
+      - { url: "https://www.iverify.com/blog/proliferation-of-coruna-and-darksword", publisher: "iVerify", date: "2026-09-15", role: "corroborating" }
+    discovery_trace: "first seen at: report-uri-blog, URL https://blog.report-uri.com/rss/ (feed, 2026-10-09 item) → pivot: Report URI article, URL https://blog.report-uri.com/abandoned-analytics-domain-funnels-store-visitors-to-darksword-iphone-exploits/ (its 9 Oct update links the iVerify post) → primary: iVerify, URL https://www.iverify.com/blog/darksword-variant-threat-research (also listed on iverify-blog, URL https://www.iverify.com/blog) → background primary: Google GTIG, URL https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain → corroboration: The Hacker News URL https://thehackernews.com/2026/10/p7-darksword-ios-exploit-kit-adds.html (found via WebSearch 'DarkSword iOS exploit P7 variant iVerify crypto wallet October 2026'); patch-availability context: Apple URL https://support.apple.com/126793 and BleepingComputer URL https://www.bleepingcomputer.com/news/security/apple-expands-ios-18-updates-to-more-iphones-to-block-darksword-attacks/ (found via WebSearch 'Apple iOS 18.7.7 security update DarkSword CVE-2026-20700 backport older iPhones')"
+    summary: |
+      iVerify reports a previously unseen DarkSword variant it calls P7 DarkSword (named for the actor's "p7_" variable prefix), found in August 2026 while investigating an alert on a customer's device and then hunted for in the wild on the Validin platform. DarkSword is the iOS 18.4-18.7 full-chain exploit kit that Google GTIG disclosed in March 2026: a Safari JavaScriptCore remote code execution, a sandbox escape through the GPU process into the mediaplaybackd service, a kernel exploit, and an implant injected into SpringBoard. GTIG lists six vulnerabilities and says all were patched with iOS 26.3 (most earlier); Apple's iOS 18.7.7 note says the DarkSword fixes "first shipped in 2025" and was made available to more iOS 18 devices on 1 April 2026. GTIG's March report tied the chain to commercial surveillance vendors and a suspected Russian espionage cluster; the kit later leaked publicly (BleepingComputer, TechCrunch cited therein).
+
+      iVerify's assessment is that P7 is a deliberate, competent rework: it removes debug logging over HTTP and syslog, reduces process injections, uses browser localStorage to avoid re-exploiting the same device, extracts the keychain data on the phone into JSON before exfiltration (earlier variants copied and shipped the keychain database for processing on the attacker's infrastructure), and adds two-way C2. The implant polls a tasking endpoint every 15 seconds (interval changeable by the operator) and supports file listing and download, photo and Apple Notes exfiltration, installed-app inventory, wallet scanning with a dedicated imToken routine, a recursive disk scan, and arbitrary JavaScript execution inside the implant runtime. All C2 requests are HTTP/1.0 POSTs carrying one hardcoded Safari-on-iOS-18.5 User-Agent over HTTPS without strict certificate validation, and the implant stages files such as keychain dumps and Notes database copies under /private/var/tmp.
+
+      Separately, Report URI recovered a DarkSword chain served from a re-registered expired domain of a defunct Czech e-commerce analytics startup (re-registered 15 September 2026): shops that never removed the tag now load a ~2 KB cloaking redirector (data-centre and VPN addresses get empty responses) that sells visitors to traffic brokers; one buyer is a fake "AI crypto quant trading" site whose hidden page loads the exploit chain for Safari on iOS 18.4.0 to 18.7.2 with no further interaction. Report URI's own caveat: that is the loader's targeting range, not a tested exploitable range. On 9 October it updated the post after matching the implant to P7 (two embedded modules byte-for-byte identical to iVerify's samples), noting its recovered build looks newer, reports to different infrastructure and targets more crypto wallets. Both vendors judge the motive financial; neither names an operator. iVerify also told The Hacker News it has seen DarkSword and Coruna bundled together on rare occasions ("DarkCoruna"), and its September proliferation post reports, in its Coruna section, that live and historic attacks against devices on vulnerable iOS versions affect 5% of devices in its telemetry (up from 1.5% in August); that figure is vendor telemetry about Coruna, not about P7.
+    region_nexus: "global; no Switzerland-specific victimisation reported. Relevant wherever iPhones on iOS 18 are in use as work devices"
+    primary_sector_nexus: "indirect: mobile endpoints of public-sector staff; the exposure is a managed-fleet OS-version question, not a Swiss-targeted campaign"
+    sector: "cross-sector (consumer-facing e-commerce visitors in the Report URI case; a customer device in iVerify's case; Ukraine, Saudi Arabia, Turkey and Malaysia in GTIG's March reporting)"
+    cves: []
+    techniques: [T1189, T1203, T1068, T1555.001, T1005, T1071.001, T1041, T1584.001]
+    affected_products: ["Apple iOS 18.4 through 18.7.x (Safari / WebKit)", "Apple iPadOS 18"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:darksword", type: tool, name: "DarkSword", aliases: ["DarkSword iOS exploit kit", "DarkSword exploit chain"],
+          summary: "iOS 18.4-18.7 full-chain exploit kit (Safari JavaScriptCore RCE, GPU-process and mediaplaybackd sandbox escapes, XNU kernel exploit, implant injected into SpringBoard) disclosed by Google GTIG, Lookout and iVerify on 2026-03-18; used by commercial surveillance vendors, a suspected Russian espionage cluster and later financially motivated operators after a public leak (Google GTIG, 2026-03-18; BleepingComputer, 2026-04-01)." }
+      - { key: "malware:p7-darksword", type: malware, name: "P7 DarkSword", aliases: ["P7 DarkSword variant"],
+          summary: "DarkSword implant variant documented by iVerify on 2026-10-08 (named for the 'p7_' variable prefix): lower on-device footprint, localStorage re-exploitation guard, on-device keychain-to-JSON decryption, imToken wallet extraction and a 15-second two-way C2 tasking loop in SpringBoard; matched by Report URI on 2026-10-09 to an implant served via a re-registered expired analytics domain." }
+      - { key: "actor:pars-defense", type: actor, name: "PARS Defense", aliases: [],
+          summary: "Turkish commercial surveillance vendor that Google GTIG observed using DarkSword in Turkey from late November 2025 (iOS 18.4-18.7 support, GHOSTSABER backdoor) (Google GTIG, 2026-03-18)." }
+      - { key: "actor:unc6353", type: actor, name: "UNC6353", aliases: [],
+          summary: "Suspected Russian espionage cluster that GTIG tracked since summer 2025 delivering the Coruna kit through Ukrainian watering holes and that added DarkSword (GHOSTBLADE payload, iOS 18.4-18.6) from at least December 2025; GTIG notified and worked with CERT-UA (Google GTIG, 2026-03-18)." }
+      - { key: "actor:unc6748", type: actor, name: "UNC6748", aliases: [],
+          summary: "GTIG cluster that used a Snapchat-themed site in November 2025 to deliver DarkSword and the GHOSTKNIFE backdoor to Saudi Arabian users (Google GTIG, 2026-03-18)." }
+    relation_suggestions:
+      - { subject: "malware:p7-darksword", object: "tool:darksword", basis: "iVerify: P7 DarkSword is a previously unseen variant of DarkSword (iVerify, 2026-10-08)" }
+      - { subject: "actor:pars-defense", object: "tool:darksword", basis: "GTIG: activity associated with PARS Defense used DarkSword in Turkey (Google GTIG, 2026-03-18)" }
+      - { subject: "actor:unc6353", object: "tool:darksword", basis: "GTIG: UNC6353 leveraged DarkSword in a watering-hole campaign against Ukrainian users (Google GTIG, 2026-03-18)" }
+      - { subject: "actor:unc6748", object: "tool:darksword", basis: "GTIG: UNC6748 used a Snapchat-themed site to deliver DarkSword in November 2025 (Google GTIG, 2026-03-18)" }
+      - { subject: "actor:star-blizzard", object: "tool:darksword", basis: "The Hacker News reports Star Blizzard (COLDRIVER) used DarkSword with fake invitation lures; the store's 2026-09-30 Star Blizzard entry already carries Microsoft's report of a March campaign linking to the DarkSword backdoor installation" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "Compared with the variants we usually observe, P7 reduces its on-device footprint, adds on-device keychain and crypto-wallet theft, and adds two way C2 communication with the attacker's infrastructure."
+        attribution: "iVerify"
+        source_url: "https://www.iverify.com/blog/darksword-variant-threat-research"
+      - quote: "Unlike the many AI-assisted variants we observe, the P7 authors understood the code they were modifying: their changes reduced the implant's footprint while extending its theft capabilities."
+        attribution: "iVerify"
+        source_url: "https://www.iverify.com/blog/darksword-variant-threat-research"
+      - quote: "On 15 September 2026 the domain was re-registered by someone else after it expired, and that tag started serving something very different."
+        attribution: "Report URI"
+        source_url: "https://blog.report-uri.com/abandoned-analytics-domain-funnels-store-visitors-to-darksword-iphone-exploits/"
+      - quote: "Two of its embedded modules are byte-for-byte identical to iVerify's samples."
+        attribution: "Report URI"
+        source_url: "https://blog.report-uri.com/abandoned-analytics-domain-funnels-store-visitors-to-darksword-iphone-exploits/"
+      - quote: "GTIG reported the vulnerabilities used in DarkSword to Apple in late 2025, and all vulnerabilities were patched with the release of iOS 26.3 (although most were patched prior)."
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain"
+      - quote: "The fixes associated with the DarkSword exploit first shipped in 2025."
+        attribution: "Apple"
+        source_url: "https://support.apple.com/126793"
+    extended_notes: |
+      Suggested handling: kind threat (not a new vulnerability; no CVE is new); suggested priority notable, not critical: the vulnerabilities are patched and exposure is confined to iOS 18.x devices that were not updated. Suggested Admiralty B2 (iVerify, device forensics first-hand; independent Report URI recovery of the same implant; Google GTIG primary for the base kit).
+      Exposure / how to tell: read the iOS/iPadOS version from MDM or mobile EDR inventory; the loader's targeting range per Report URI is Safari on iOS 18.4.0 to 18.7.2 and the exploit modules per iVerify cover iOS 18.4-18.7. Google's remedy is the latest iOS and, where an update is not possible, Lockdown Mode. BleepingComputer lists the devices eligible for iOS 18.7.7 (iPhone XR, XS, XS Max, 11 through 16, 16e, SE 2nd and 3rd gen and many iPads). Source conflict: Apple's iOS 18.7.7 security-content list does not name CVE-2026-20700 (the dyld pointer-authentication bypass GTIG says was fixed in iOS 26.3); I could not resolve from fetched pages whether that fix reached the iOS 18 branch, so moving managed devices to iOS 26.x is the unambiguous path.
+      Detection concepts (behaviour only): (1) MDM / mobile-EDR compliance drift on iOS version; (2) managed-device proxy or NDR traffic showing a periodic (15 s) HTTP/1.0 POST tasking poll carrying a fixed Safari-on-iOS-18.5 User-Agent that does not match the device's real OS version, to a host the user never visited; (3) mobile forensics / sysdiagnose / encrypted-backup review for the SpringBoard-injected implant's staging artefacts under /private/var/tmp (keychain-dump JSON, Apple Notes database copies, debug logs); (4) iVerify credits an investigation of a partial, heuristic detection for the discovery, so partial mobile-EDR hits on iOS 18 warrant full forensic follow-up. Cloaking note: Report URI saw data-centre and VPN addresses get empty responses, so detonation from sandboxes will often miss the chain.
+      Web-owner angle (Report URI): audit third-party script tags for vendors that no longer exist; an expired vendor domain that is re-registered turns every site still loading the tag into a delivery channel, and fingerprinting scripts or restricting script sources via Content-Security-Policy limits that blast radius.
+      Not carried: all indicators (domains, IPs, hashes, file names) deliberately omitted per the no-IOC rule; both vendor posts contain them for anyone who needs the lists.
+  # ---------------------------------------------------------------------------
+  - title: "Ghostscript CVE-2026-39919: a crafted PDF with a JPEG 2000 image gives unauthenticated remote code execution wherever an uploaded PDF is rendered to a thumbnail; fixed upstream in 10.08.0, distribution backports still landing (CVSS 9.8)"
+    sources:
+      - { url: "https://www.wordfence.com/blog/2026/10/wordfence-argus-discovers-critical-vulnerability-in-ghostscript-the-program-that-turns-uploaded-pdfs-into-thumbnails-on-your-server/", publisher: "Wordfence", date: "2026-10-12", role: "primary" }
+      - { url: "https://ubuntu.com/security/CVE-2026-39919", publisher: "Ubuntu Security", date: "2026-09-23", role: "corroborating" }
+      - { url: "https://security-tracker.debian.org/tracker/DSA-6516-1", publisher: "Debian Security Tracker", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://security-tracker.debian.org/tracker/CVE-2026-39919", publisher: "Debian Security Tracker", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://security-tracker.debian.org/tracker/source-package/ghostscript", publisher: "Debian Security Tracker", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/tag/gs10080", publisher: "Artifex Software", date: "2026-09-08", role: "corroborating" }
+    discovery_trace: "first seen at: gap sweep of research-category RSS feeds, URL https://www.wordfence.com/feed/ (item 2026-10-12T18:10Z) → primary: Wordfence article, URL https://www.wordfence.com/blog/2026/10/wordfence-argus-discovers-critical-vulnerability-in-ghostscript-the-program-that-turns-uploaded-pdfs-into-thumbnails-on-your-server/ → pivot (References): Ubuntu URL https://ubuntu.com/security/CVE-2026-39919 and Debian URL https://security-tracker.debian.org/tracker/CVE-2026-39919 → DSA URL https://security-tracker.debian.org/tracker/DSA-6516-1 → Debian source-package tracker URL https://security-tracker.debian.org/tracker/source-package/ghostscript → upstream release URL https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/tag/gs10080. KEV status checked on the cisa-kev bridge (catalogVersion 2026.10.08, CVE absent); EPSS read from api.first.org 2026-10-12."
+    summary: |
+      Wordfence (its Argus AI-assisted testing system, during a WordPress 7.1 assessment) published on 12 October a technical account of CVE-2026-39919, a heap buffer overflow in the JPEG 2000 output adapter of Artifex Ghostscript (base/sjpx_openjpeg.c). A PDF containing a JPEG 2000 image with sub-byte sample precision and mismatched component subsampling makes the non-same-scale output path allocate a packed row buffer but write a full byte per output column, overflowing the allocation and corrupting chunk-allocator metadata. Affected upstream: 9.21 through 10.07.1 where the OpenJPEG decoder path is present; fixed in Ghostscript 10.08.0 (released 2026-09-08; the 10.08.0 release candidate reports the same version string and is not fixed). CVSS 3.1 9.8 and CVSS 4.0 9.3; the CVE was published 15 September. The overflow occurs even under -dSAFER, which Wordfence says is no mitigation.
+
+      Wordfence demonstrated unauthenticated code execution on a purpose-built WordPress test site via the chain upload, then WordPress core Imagick PDF preview, then ImageMagick, then Ghostscript, running as the web-server account. Its two proof-of-concept exploits were build-specific: across ten other Linux package environments they failed in 10,240 attempts, yet a matching exploit kept working on four setups sharing the exact Ghostscript executable. Wordfence says it found no public evidence of exploitation today; the CVE is not in CISA KEV (catalogue 2026.10.08) and FIRST EPSS reads 0.0078 (2026-10-12). A 1,029-byte minimal test file that triggers the overflow is described as public. This is not WordPress-specific: any path that hands untrusted PDFs to an affected Ghostscript (document management systems, print services, invoice processors, preview generators, mail gateways, conversion APIs) is exposed, and the dependency is usually hidden behind ImageMagick, so grepping for "Ghostscript" can miss it.
+
+      Patch state is uneven: Ubuntu fixed 22.04 (9.55.0~dfsg1-0ubuntu5.14), 24.04 (10.02.1~dfsg1-0ubuntu7.9) and 26.04 (10.06.0~dfsg-3ubuntu1.1) with USN-8791-1, while 20.04 and older are "needs evaluation" on Ubuntu's page; Debian trixie is fixed (DSA-6516-1 lists 10.05.1~dfsg-1+deb13u2; the trixie security repository currently carries +deb13u3), forky and sid are fixed and bookworm (10.0.0~dfsg-11+deb12u8) is listed vulnerable on Debian's tracker; Wordfence reports AlmaLinux 10 fixed on 2 October, and, as of 9 October, Fedora 44 and Alpine 3.22/3.23 still on older revisions. The official WordPress Docker image snapshot Wordfence tested (Ghostscript 10.05.1, Imagick present) was vulnerable. Because distributions backport, gs --version can still show the old number after the fix, so the package revision is what to check.
+    region_nexus: "global; relevant to any Swiss public-sector web portal, case-management or document-processing system, mail gateway or hosting provider that renders uploaded or received PDFs"
+    primary_sector_nexus: "direct-class exposure: public bodies routinely accept citizen PDF uploads (forms, tenders, applications) and run document-conversion pipelines; no exploitation reported"
+    sector: "cross-sector; WordPress and CMS hosting, document management, mail security gateways"
+    cves: [CVE-2026-39919]
+    techniques: [T1190]
+    affected_products: ["Artifex Ghostscript 9.21 through 10.07.1", "ImageMagick (as a Ghostscript front end)", "WordPress sites using the PHP Imagick extension for PDF previews"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:artifex-ghostscript", type: product, name: "Artifex Ghostscript", aliases: ["Ghostscript", "GhostPDL"],
+          summary: "PDF/PostScript interpreter commonly invoked server-side by ImageMagick, WordPress Imagick previews, print and conversion services; CVE-2026-39919 heap overflow in its JPEG 2000 output adapter fixed in 10.08.0 (Wordfence, 2026-10-12)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A crafted PDF containing a JPEG 2000 image can make Ghostscript write attacker-influenced bytes past the end of a memory buffer."
+        attribution: "Wordfence"
+        source_url: "https://www.wordfence.com/blog/2026/10/wordfence-argus-discovers-critical-vulnerability-in-ghostscript-the-program-that-turns-uploaded-pdfs-into-thumbnails-on-your-server/"
+      - quote: "we have found no public evidence that it is being exploited today."
+        attribution: "Wordfence"
+        source_url: "https://www.wordfence.com/blog/2026/10/wordfence-argus-discovers-critical-vulnerability-in-ghostscript-the-program-that-turns-uploaded-pdfs-into-thumbnails-on-your-server/"
+      - quote: "Source history places the affected code in Ghostscript 9.21 through 10.07.1 when the OpenJPEG decoder path is present."
+        attribution: "Wordfence"
+        source_url: "https://www.wordfence.com/blog/2026/10/wordfence-argus-discovers-critical-vulnerability-in-ghostscript-the-program-that-turns-uploaded-pdfs-into-thumbnails-on-your-server/"
+      - quote: "allows attackers to cause memory corruption by supplying a crafted PDF containing a JPEG 2000 image with mismatched component subsampling factors."
+        attribution: "Ubuntu Security"
+        source_url: "https://ubuntu.com/security/CVE-2026-39919"
+      - quote: "ghostscript - security update"
+        attribution: "Debian Security Tracker"
+        source_url: "https://security-tracker.debian.org/tracker/DSA-6516-1"
+    extended_notes: |
+      cve_table-style record (S3 supplies it because the source is research, not a vendor bulletin): CVE-2026-39919 · product Artifex Ghostscript · CVSS 3.1 9.8 / 4.0 9.3 (Ubuntu, Wordfence) · EPSS 0.00784 (percentile 0.548, FIRST, 2026-10-12) · KEV no (catalogue 2026.10.08) · exploited: no public evidence (Wordfence) · affected 9.21-10.07.1 (OpenJPEG path) · fixed 10.08.0 upstream; distro fixes per the summary · type heap overflow, JPEG 2000 sub-byte output · vector file upload to server-side PDF rendering · auth none.
+      Exposure: all four must hold: a visitor or low-privilege user can upload a PDF; something requests a preview/thumbnail; Imagick/ImageMagick or another Ghostscript caller exists; Ghostscript unfixed. WordPress Site Health Media Handling can show whether Imagick recognises PDF but does not show the Ghostscript patch level; check `dpkg -s ghostscript` / `rpm -q ghostscript` against the distro advisory, rebuild containers from an updated base image rather than restarting.
+      Detection concepts: crashes of Ghostscript child processes (segfault entries in system logs, abnormal exits of gs spawned by php-fpm/apache via ImageMagick convert/magick) correlated with PDF upload requests; Wordfence measured one gs process for a harmless PDF and two for a crashing PDF (WordPress core retries with a different setting), and in its form test failed attempts still returned an upload-success response, so the web log alone looks clean and the process/crash telemetry is the signal. Repeated PDF uploads from one source are the attacker's retry pattern against build-specific exploits. Post-patch check: code execution would run as the account processing the PDF (not automatically root), so after patching review that account's web root for new files and scheduled tasks if a PDF upload path was exposed while unpatched. This last sentence is a derived hygiene step, the source states only the privilege level.
+      Hardening if patching lags (all Wordfence): stop accepting PDFs from visitors and low-privilege users; disable PDF reads in ImageMagick's security policy (also disables PDF previews); limit files per submission and rate-limit upload forms (reduces attempts, does not fix); run conversion in a separate locked-down service without access to site secrets. -dSAFER is not a fix.
+      Context: Wordfence links this to its own libheif finding (September) and to Hacktron's HEIF Heist research as evidence that build-specific heap overflows in upload-reachable native libraries are being turned into working exploits with AI assistance; that framing is Wordfence's assessment, not an observed exploitation timeline. Suggested priority notable (high if the main agent weighs the CVSS 9.8 plus unauthenticated upload exposure of public portals); Admiralty B1 (Wordfence first-hand; Ubuntu/Debian/Artifex confirm the CVE, fix and patch state).
+  # ---------------------------------------------------------------------------
+  - title: "Magecart fake Stripe card form now loaded via an Ethereum Sepolia smart-contract dead drop on dozens of WooCommerce, PrestaShop and Magento shops; the same on-chain loader pattern is also resolving ClickFix lures on compromised sites"
+    sources:
+      - { url: "https://blog.report-uri.com/the-fake-stripe-card-form-skimming-online-shops/", publisher: "Report URI", date: "2026-10-12", role: "primary" }
+      - { url: "https://blog.confiant.com/p/skimming-on-the-blockchain-a-magecart", publisher: "Confiant", date: "2026-08-28", role: "corroborating" }
+      - { url: "https://www.levelblue.com/blogs/spiderlabs-blog/inside-phantompolia-remus-stealer-delivery-via-donut-shellcode-in-clickfix-campaign", publisher: "LevelBlue SpiderLabs", date: "2026-10-07", role: "corroborating" }
+    discovery_trace: "first seen at: report-uri-blog, URL https://blog.report-uri.com/rss/ (2026-10-12 item) → primary: Report URI article, URL https://blog.report-uri.com/the-fake-stripe-card-form-skimming-online-shops/ → pivot: Confiant, URL https://blog.confiant.com/p/skimming-on-the-blockchain-a-magecart (cited as the Magecart precedent in LevelBlue's post) → corroboration: LevelBlue, URL https://www.levelblue.com/blogs/spiderlabs-blog/inside-phantompolia-remus-stealer-delivery-via-donut-shellcode-in-clickfix-campaign (first seen at trustwave-spiderlabs listing, URL https://www.levelblue.com/blogs/spiderlabs-blog)"
+    summary: |
+      Report URI, from its CSP-report threat-intelligence feed, describes a Magecart skimming kit that replaces a shop's chosen payment option with a fake form copied from Stripe's Card Element (placeholder text, CVC icon and card-brand images loaded from Stripe's own host), live on dozens of WooCommerce, PrestaShop and Magento shops and served from 55 attacker hosts detected so far (Report URI, 2026-10-12). The loader sits in the page head wrapped in Google Tag Manager comments with a made-up container ID; it does not contain the skimmer's hostname but asks an Ethereum Sepolia smart contract, through public JSON-RPC relays, where the next stage lives, so changing the contract moves every infected shop to a new host. Each shop gets its own script and a per-shop configuration naming the payment option to attack, the element to replace and the place-order button; on order placement card data and billing details are POSTed to a PHP endpoint on the same host or a WebSocket, the genuine checkout proceeds, the fake form is removed and a flag stops the shopper being shown it again.
+
+      Report URI lists three possible entry routes (admin accounts without a second factor, abandoned or vulnerable plugins and modules, stolen hosting or FTP credentials) and, finding no single component common to the victim shops, leans towards stolen access, one shop at a time; that is its inference. Confiant documented an earlier on-chain Magecart cluster on 2026-08-28 (40+ storefronts, one owner wallet, 144 Sepolia contracts) and Report URI does not say its kit is the same cluster. LevelBlue (2026-10-07) shows the same Sepolia dead-drop technique, with Ethers.js loaded from public CDNs and eth_call reads, resolving the C2 for a ClickFix lure (PhantomPolia) on compromised websites that ends in Remus Stealer. The store already covers EtherHiding-style C2 resolution in ClickFix delivery; the delta here is its application to payment-page skimming and the shared detection hook.
+    region_nexus: "global; Switzerland not named. Relevant to any public body that runs a WordPress/PrestaShop/Magento payment or fee-collection page, or whose WordPress sites could be compromised to host ClickFix lures"
+    primary_sector_nexus: "indirect"
+    sector: "e-commerce and any web payment page; compromised WordPress sites generally"
+    cves: []
+    techniques: [T1059.007, T1102.001, T1041, T1659]
+    affected_products: ["WooCommerce", "PrestaShop", "Magento 2", "WordPress"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:phantompolia", type: campaign, name: "PhantomPolia", aliases: [],
+          summary: "LevelBlue's name for a ClickFix operation whose JavaScript loader on compromised websites reads an encrypted configuration from an Ethereum Sepolia smart contract, decrypts the C2 domain locally and delivers Remus Stealer (LevelBlue SpiderLabs, 2026-10-07)." }
+      - { key: "campaign:hexmage", type: campaign, name: "HexMage", aliases: [],
+          summary: "Confiant's name for a Magecart cluster of 40+ compromised storefronts that hides a Sepolia contract-based loader in a Google Tag Manager block and keeps only a hostname on-chain (Confiant, 2026-08-28)." }
+    relation_suggestions:
+      - { subject: "campaign:phantompolia", object: "campaign:hexmage", basis: "LevelBlue says a similar dead-drop technique has been observed in the Confiant-documented Magecart campaign; technique overlap only (LevelBlue SpiderLabs, 2026-10-07)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Swiss public-sector nexus is indirect and EtherHiding C2 resolution is already covered in the store; the new angle is Magecart-on-chain plus a concrete egress hunt hook (browser or host JSON-RPC eth_call traffic to public Sepolia relays). Report URI is a JS-integrity vendor, so its scale claims are first-hand telemetry but self-interested."
+    evidence:
+      - quote: "As of today this kit is already live on dozens of shops across WooCommerce, PrestaShop and Magento, served from 55 attacker hosts that we've detected so far."
+        attribution: "Report URI"
+        source_url: "https://blog.report-uri.com/the-fake-stripe-card-form-skimming-online-shops/"
+      - quote: "Change the contract, and every infected shop moves to a new host without the attacker touching any of them again."
+        attribution: "Report URI"
+        source_url: "https://blog.report-uri.com/the-fake-stripe-card-form-skimming-online-shops/"
+      - quote: "Rather than embedding the downstream C2 domain directly in the compromised page, the loader retrieves an encrypted configuration from the blockchain and decodes it at runtime."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/inside-phantompolia-remus-stealer-delivery-via-donut-shellcode-in-clickfix-campaign"
+    extended_notes: |
+      Detection concepts: (1) egress/proxy/DNS telemetry for JSON-RPC eth_call requests to public Sepolia testnet relays from browsers or servers that have no business with a blockchain, which Report URI calls "a strong signal on a checkout page" (host-side for compromised-site ClickFix lures, page-side for skimmers); (2) CSP in report-only mode on payment pages (Magento ships CSP enabled by default since 2.3.5 per Report URI's earlier post) and script-integrity monitoring for unexpected third-party loads such as Ethers.js from a public CDN on a shop page; (3) review of theme "header scripts" settings and header.php/module templates for Google-Tag-Manager-styled blocks carrying base64 strings. Hardening: second factor on CMS admin accounts, removal of abandoned plugins, rotation of hosting/FTP credentials after infostealer exposure.
+      Not carried: attacker host lists, contract addresses, wallet addresses (IOC rule). If the main agent drops this item, the one-line takeaway worth keeping in a related entry is the Sepolia-relay egress hunt.
+  # ---------------------------------------------------------------------------
+  - title: "ClickFix kit on compromised WordPress sites delivers a trojanised Fileside Electron file manager whose C2 domain rotates weekly by DGA"
+    sources:
+      - { url: "https://blog.report-uri.com/a-fake-captcha-a-trojanised-file-manager-and-a-year-of-ioc-c2-domains/", publisher: "Report URI", date: "2026-10-08", role: "primary" }
+    discovery_trace: "first seen at: report-uri-blog, URL https://blog.report-uri.com/rss/ (2026-10-08 item) → primary (no pivot needed): Report URI article, URL https://blog.report-uri.com/a-fake-captcha-a-trojanised-file-manager-and-a-year-of-ioc-c2-domains/ (extract returned raw HTML for this host; text read from the page's gh-content section)"
+    summary: |
+      Report URI's threat-intelligence pipeline flagged on 7 October a script injected into compromised WordPress sites that fingerprints the visitor (screen size, timezone, automation), suppresses the lure for bots and repeat visitors, and injects a full-screen fake Cloudflare "verify you are human" page. The page copies a PowerShell command to the clipboard and tells the visitor to paste it into the Run dialog; the command hides its window, downloads a 111 MB zip to %TEMP%, unpacks it and runs Fileside.exe. The zip holds Fileside 1.9.6, a legitimate Electron file manager in which every binary is the genuine build and only resources/app.asar has been rebuilt, so the victim sees a working application. About 313 KB of obfuscated JavaScript is prepended to the app's main.js: it registers the app to start at every login, stores a random victim ID in %APPDATA%\daemons.log, reads an affiliate tag from a readme.txt beside the executable (Report URI infers several partners distribute the dropper), POSTs victim ID, computer name, username and affiliate tag to the C2 every three minutes with TLS certificate checks disabled, and runs whatever returns: JavaScript with full Node.js access or a bundle of files, with the executable launched. Report URI assesses it is a foothold for later payloads, not a stealer itself. The C2 hostname comes from a DGA seeded by the current Unix-epoch week and changes at 00:00 UTC each Thursday; Report URI says it ran the obfuscated function to enumerate the domains from October 2025 to April 2027, found 13 registered (one per week since mid-July 2026, five registrars, behind Cloudflare, bought on the day they go live) and none of the future ones yet.
+    region_nexus: "global; Switzerland not named. Delivery rides compromised WordPress sites, which any site owner can be"
+    primary_sector_nexus: "indirect: end-user ClickFix exposure; transferable as a detection pattern"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1189, T1204.004, T1059.001, T1059.007, T1036, T1547, T1568.002, T1071.001]
+    affected_products: ["Fileside (legitimate Electron file manager, trojanised copy)", "WordPress (compromised sites hosting the lure)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "Single vendor source (Report URI, first-hand but a JS-integrity vendor), ClickFix is heavily covered in the store, and Swiss nexus is only generic. Kept as borderline for two transferable behaviours: a legitimate signed Electron app with a rebuilt app.asar as the implant carrier, and a weekly DGA the vendor enumerated in advance."
+    evidence:
+      - quote: "The zip contains Fileside 1.9.6, a legitimate Electron file manager."
+        attribution: "Report URI"
+        source_url: "https://blog.report-uri.com/a-fake-captcha-a-trojanised-file-manager-and-a-year-of-ioc-c2-domains/"
+      - quote: "The C2 hostname comes from a domain generation algorithm (DGA) seeded by the current week."
+        attribution: "Report URI"
+        source_url: "https://blog.report-uri.com/a-fake-captcha-a-trojanised-file-manager-and-a-year-of-ioc-c2-domains/"
+      - quote: "This code doesn't steal anything by itself, it appears to just be a foothold for additional payloads that come later, and the operator decides what to deliver through it."
+        attribution: "Report URI"
+        source_url: "https://blog.report-uri.com/a-fake-captcha-a-trojanised-file-manager-and-a-year-of-ioc-c2-domains/"
+    extended_notes: |
+      Detection concepts: process-creation telemetry for powershell.exe with a hidden window launched from the Run dialog path (explorer parent) that downloads a large archive to %TEMP% and starts an unfamiliar Electron application from there; an Electron application started from %TEMP% or an extraction directory, with a user-profile persistence entry created at first run, whose main process makes periodic outbound HTTPS POSTs (about every three minutes) to a newly registered .com domain that changes every Thursday 00:00 UTC; Node.js-capable child processes from a file-manager binary are anomalous. Benign lookalike discriminator that follows from the stated mechanism: a legitimately installed Fileside would not run from %TEMP% and would not beacon with the victim ID and affiliate tag. Hardening: Windows Run-dialog/PowerShell paste-and-execute restrictions, application control on unsigned or relocated Electron apps, and treating any host that ran the chain as compromised (Report URI: the operator can run arbitrary code with the application's privileges).
+      Not carried: the lure, C2 and future-DGA domain lists and file hashes (IOC rule).
+# Items considered and dropped (reason in source_ledger / coverage_gaps):
+#  - SOCRadar ICMacOS macOS MaaS stealer (2026-10-12, reliability C, forum-ad driven; macOS stealers + ClickFix already common coverage): dropped
+#  - GreyNoise Hikvision DVR scanning in Ukraine (2026-10-08): thin telemetry, old CVE, Ukraine-only: dropped
+#  - watchTowr PaperCut chain (2026-10-09, outside 26 h; PaperCut already covered by 2026-08-29 entry): dropped
+#  - mySites.guru Gridbox 2.20.4.0 (CVE-2026-102784 CSRF needs a tricked Super User, not exploited): dropped
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: iverify-blog
+    reason: "RECIPE NOTE (working): `extract https://www.iverify.com/blog` gives dated cards but no hrefs; post slugs are in the raw HTML as relative links of the form ./blog/<slug>, so `python3 tools/fetch_source.py url --direct https://www.iverify.com/blog` then grep for 'blog/' yields the list; `extract https://www.iverify.com/blog/<slug>` returns the full body with a correct date. Verified 2026-10-13 (P7 DarkSword post)."
+  - source_id: report-uri-blog
+    reason: "RECIPE NOTE (working): `feed https://blog.report-uri.com/rss/ 10` returns dated items; `extract` works on some posts (DarkSword and fake-Stripe posts returned clean markdown) but returns raw HTML on others (the ClickFix/Fileside post); for raw HTML read the <section class=gh-content> block. Verified 2026-10-13."
+  - source_id: hadrian-labs
+    reason: "extract of https://hadrian.io/blog returns only nav/marketing text; raw HTML (url --direct) lists posts at /blog/<slug> but all newest are marketing/product pieces; no research in the lookback."
+  - source_id: depthfirst
+    reason: "extract on /research falls through to the reader (credit) as already noted; `url --direct https://depthfirst.com/research/<slug>` works and article:published_time is a meta tag. Newest post (dfbench-v1) is 2026-08-19, so nothing in lookback."
+  - source_id: esentire
+    reason: "extract of /security-advisories returns nav text; `url --direct` HTML lists advisory hrefs under /security-advisories/<slug> but dates are only on the card list; newest dated card is Oct 02 (outside lookback). Blog posts carry dates via extract."
+  - source_id: socradar
+    reason: "Per-article extract works and carries true dates (ICMacOS 2026-10-12); the listing's own date meta (2026-06-03) is stale, as the record's note already says. No recipe change."
+  - source_id: msft-ti
+    reason: "extract of the topic page returns a stale mixed listing; msft-secblog recent 12 was the working check (newest item 2026-10-08). No in-window Microsoft Threat Intelligence post found."
+  - source_id: proofpoint
+    reason: "extract returns raw HTML; blog listing hrefs parse out but the freshest dated card is Sep 22. No in-window post."
+source_ledger:
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-09T17:31Z (PaperCut chain, already covered by the 2026-08-29 entry); Atlassian CVE-2026-21589 post 2026-10-06 covered" }
+  - { id: report-uri-blog, tier: standard/candidate, attempted: true, transport: "feed+extract", horizon_hours: 168, in_horizon_items: 4, returned: 3, note: "DarkSword/expired-domain post (merged into item 1), fake-Stripe skimmer (item 3), ClickFix/Fileside (item 4); September newsletter skipped. Contributing run for candidate promotion" }
+  - { id: iverify-blog, tier: standard/candidate, attempted: true, transport: "extract+url --direct", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "P7 DarkSword (item 1). WeWorm post 2026-09-29 is outside lookback and already covered by the Calif WeWorm entry. Contributing run for candidate promotion" }
+  - { id: depthfirst, tier: standard, attempted: true, transport: "extract(jina fallback)+url --direct", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest research post 2026-08-19" }
+  - { id: esentire, tier: standard, attempted: true, transport: "url --direct+extract", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest advisory card Oct 02; TRU Citrix cluster blog 2026-10-06 outside lookback and Citrix covered" }
+  - { id: greynoise, tier: standard, attempted: true, transport: "extract+url --direct", horizon_hours: 120, in_horizon_items: 1, returned: 0, note: "Hikvision DVR exploitation attempts in Ukraine (2026-10-08) judged marginal: Ukraine-only scan telemetry on a 2021 CVE, no Swiss or transferable detection content" }
+  - { id: hadrian-labs, tier: standard, attempted: true, transport: "extract+url --direct", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "marketing/product posts only" }
+  - { id: horizon3-ai, tier: standard, attempted: true, transport: "extract", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest 2026-10-07 Zammad CVE-2026-102489 (covered by 2026-10-02 entry; outside lookback)" }
+  - { id: morphisec, tier: standard, attempted: true, transport: "extract+url --direct", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "VulcanRAT207.A post published 2026-10-07T20:10Z (modified 10-12): outside lookback, Chinese-security-product targeting, low nexus" }
+  - { id: mysites-guru, tier: standard, attempted: true, transport: "feed+extract", horizon_hours: 120, in_horizon_items: 3, returned: 0, note: "Gridbox 2.20.4.0 (CVE-2026-102784 CSRF needing a tricked Super User, CVE-2026-102783 path check; no exploitation) dropped; Joomla 6.2 / 5.4 lifecycle posts are not threat research" }
+  - { id: novee-security, tier: standard/candidate, attempted: true, transport: "extract+url --direct", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest 2026-10-07 product announcement" }
+  - { id: push-security, tier: standard, attempted: true, transport: "extract+url --direct", horizon_hours: 120, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-29 (partnership); ClickFix H2 review already covered 2026-09-29" }
+  - { id: sans-isc, tier: standard, attempted: true, transport: "feed+extract", horizon_hours: 124, in_horizon_items: 2, returned: 0, note: "2026-10-08 AI-agent forensic scripts (tooling) and 2026-10-10 TLP-vs-classification opinion diary: not threat intelligence; Stormcast items skipped" }
+  - { id: seqrite-labs, tier: standard, attempted: true, transport: "feed", horizon_hours: 120, in_horizon_items: 1, returned: 0, note: "only a ZTNA marketing post in lookback; CVE-2026-3854 git push-options post is 2026-10-06" }
+  - { id: socradar, tier: standard, attempted: true, transport: "extract", horizon_hours: 120, in_horizon_items: 4, returned: 0, note: "ICMacOS (2026-10-12) considered and dropped as marginal (reliability C, forum-advert-driven macOS MaaS stealer, ClickFix delivery already well covered); Cisco NX-OS critical flaws (2026-10-09) belongs to S1; Bricksforge and SonicWall SMA already covered" }
+  - { id: sysdig, tier: standard, attempted: true, transport: "feed", horizon_hours: 120, in_horizon_items: 1, returned: 0, note: "2026-10-08 runtime-AI-defense marketing; Zammad DIVD breach post 2026-10-06 covered" }
+  - { id: trustwave-spiderlabs, tier: standard, attempted: true, transport: "extract", horizon_hours: 124, in_horizon_items: 0, returned: 0, note: "PhantomPolia published 2026-10-07T15:47Z (outside lookback) used as corroboration in item 3; BigDiskBuster and Citrix posts already covered; TIKTOUK 2026-10-01 older" }
+  - { id: majors-spot-sweep, tier: spot, attempted: true, transport: "feed+extract+msft-secblog", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "No in-window primary research from Microsoft (newest 2026-10-08 on the security blog feed), Google GTIG (09-30), Cisco Talos (10-08), Unit 42 (10-07), Check Point Research (10-12 weekly digest, lead only), ESET (10-08 MATCHBOIL), Kaspersky Securelist (09-24), SentinelOne (09-16), Proofpoint (09-22), Trend Micro (09-25). Additional gap sweep of 29 research feeds since 10-11 found only Wordfence Ghostscript (item 2); leads CrowdStrike ARTEX (10-08) and Barracuda (10-07) from the CPR digest were outside the window" }

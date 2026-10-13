@@ -316,6 +316,19 @@ def _jina_reachable(url: str, *, timeout: float) -> bool:
     return proc.returncode == 0 and len((proc.stdout or "").strip()) >= BRIDGE_MIN_BYTES
 
 
+def _bridge_timeout(s: dict[str, Any], base: float) -> float:
+    """Per-subprocess budget for a bridge probe: the 45 s floor, or a source's
+    own `probe_timeout` when its recipe downloads something heavy. ico-uk's
+    sitemap recipe pulls a 5 MB file; a cold fetch can pass 45 s, so the sweep
+    timed out twice and floated a false `needs-demote` (2026-10-13) while the
+    same recipe returned in 3 s once the file was cached."""
+    try:
+        extra = float(s.get("probe_timeout") or 0)
+    except (TypeError, ValueError):
+        extra = 0.0
+    return max(base, 45.0, extra)
+
+
 def _bridge_check(source_id: str, url: str, *, timeout: float,
                   fetch_method: str = "bridge") -> tuple[str, str]:
     """Invoke the documented bridge recipe for an `api` / `bridge` / `jina`
@@ -1015,7 +1028,7 @@ def main() -> int:
         # fetches cleanly. `url` stays the human-facing landing page.
         probe_target = s.get("probe_url") or url
         if fetch_method in ("api", "bridge", "jina"):
-            cls, detail = _bridge_check(sid, probe_target, timeout=max(args.timeout, 45.0),
+            cls, detail = _bridge_check(sid, probe_target, timeout=_bridge_timeout(s, args.timeout),
                                         fetch_method=fetch_method)
             status = None
             latency_ms = 0
