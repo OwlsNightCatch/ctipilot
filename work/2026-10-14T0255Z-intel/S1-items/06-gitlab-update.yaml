@@ -1,0 +1,42 @@
+  - title: "GitLab CVE-2026-97229: Rapid7 reproduces the code execution against 19.4.1 and publishes a proof of concept; the demonstrated path needs only push access to a public project, then an unauthenticated CI lint request"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/etr-cve-2026-97229-critical-unauthenticated-remote-code-execution-in-gitlab", publisher: "Rapid7", date: "2026-10-13", role: "primary" }
+      - { url: "https://github.com/jburgess-r7/CVE-2026-97229-PoC", publisher: "Rapid7 researcher repository (proof of concept README)", date: "2026-10-13", role: "primary" }
+      - { url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-2-released/", publisher: "GitLab", date: "2026-10-12", role: "corroborating" }
+    discovery_trace: "first seen at: rapid7-research feed https://www.rapid7.com/rss.xml (item https://www.rapid7.com/blog/post/etr-cve-2026-97229-critical-unauthenticated-remote-code-execution-in-gitlab, 2026-10-13 11:29 UTC) → pivot: Rapid7 article's link to https://github.com/jburgess-r7/CVE-2026-97229-PoC → vendor advisory re-check at https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-2-released/ (unchanged; fixed 19.4.2, 19.3.5, 19.2.8)"
+    summary: |
+      Rapid7 states on 2026-10-13 that it independently reproduced arbitrary code execution for CVE-2026-97229 on an unpatched official GitLab CE 19.4.1 image
+      with ASLR enabled, saw the same input fail on the 19.4.2 image, and found no confirmed exploitation in the wild. The prerequisites are narrower than "unauthenticated":
+      Rapid7 says an attacker must first commit a malicious .gitlab-ci.yml and a repository path containing UTF-8 characters to a branch in a public project, which an
+      ordinary account can do by creating a public project where that is permitted; a crafted expression passes GitLab's validation as US-ASCII, then Ruby's Onigmo engine recompiles it
+      for the UTF-8 path after the checks, an integer overflow in the program-size calculation yields invalid instructions, and an OS command runs as the git user.
+      A proof-of-concept repository went up the same day, whose README says the delivery step is a credential-less request to the public CI lint API of the project after the push, that the included
+      offsets were only tested against the 19.4.1 CE amd64 image (other builds need adjusted offsets) and that the generated payload is slightly larger than 2 GiB, needing about 9 GiB of available memory on the test host.
+      Rapid7's interim mitigation: restrict anonymous access to public projects and stop untrusted users creating or writing to public projects; this only closes the demonstrated delivery path.
+      GitLab's advisory is unchanged: fixed in 19.4.2, 19.3.5 and 19.2.8.
+    region_nexus: "global; self-managed GitLab instances of Swiss administrations and suppliers"
+    primary_sector_nexus: "indirect: GitLab is common in public-sector development teams; self-registration and public projects decide exposure"
+    sector: "public-sector"
+    cves: [CVE-2026-97229]
+    techniques: [T1190]
+    affected_products: ["GitLab Community Edition", "GitLab Enterprise Edition"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-13/cve-2026-97229-gitlab-ci-regex-compiler-unauthenticated-rce"
+    evidence:
+      - quote: "As of this writing, there is no confirmed in-the-wild exploitation of CVE-2026-97229."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-cve-2026-97229-critical-unauthenticated-remote-code-execution-in-gitlab"
+      - quote: "Rapid7's testing found that an attacker must first be able to commit a malicious CI/CD configuration file .gitlab-ci.yml, and a repository path containing UTF-8 characters to a branch in a public project."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-cve-2026-97229-critical-unauthenticated-remote-code-execution-in-gitlab"
+      - quote: "An attacker with permission to push to a public project supplies a CI regular expression and a specially named path."
+        attribution: "Rapid7 researcher repository"
+        source_url: "https://github.com/jburgess-r7/CVE-2026-97229-PoC"
+    extended_notes: |
+      DELTA vs the published entry (2026-10-13, no updates yet): the entry says NCSC lists exploitation status unknown and does not mention the reproduction, the public proof of concept or the push-to-public-project precondition. A changelog update should move the status from patch-available to public-PoC and refine the "unauthenticated" label: the final trigger is unauthenticated, the setup needs a write-capable account on a public project (open self-registration or any user allowed to create public projects makes that trivial).
+      DETECTION (class, from the PoC README and Rapid7's mechanism): GitLab application and API logs for GET /api/v4/projects/:id/ci/lint without credentials against a project that has a recent push of a .gitlab-ci.yml whose regular expressions are unusually large or whose repository path contains non-ASCII characters; memory spikes and crashes in the GitLab application worker around CI lint (the README says the payload needs several GiB); child processes spawned by the GitLab Ruby worker as the git user. Also audit new public projects created by recently registered accounts.
+      TRIAGE: benign CI lint calls are routine; the discriminating features are an anonymous lint request against a freshly created public project plus a UTF-8 repository path and an oversized regular expression.
+      HARDENING: upgrade to 19.4.2, 19.3.5 or 19.2.8 (19.4.1 is not enough); until then disable open sign-up and the right of untrusted users to create public projects, and restrict anonymous access to public projects.

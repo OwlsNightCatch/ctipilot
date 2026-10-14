@@ -1,24 +1,22 @@
 ---
 schema: 1
 kind: incident
-title: "Danfoss AK-SM and AK-SC refrigeration controllers compromised, with forced defrost reported at hundreds of French supermarkets; CERT-FR advises disconnecting or filtering access"
-headline: "CERT-FR reports numerous compromised Danfoss refrigeration controllers while French supermarkets lose stock"
+title: "Danfoss AK-SM and AK-SC, Copeland xweb and Dixell xweb refrigeration controllers compromised, with forced defrost reported at hundreds of French supermarkets; CERT-FR and NCSC Switzerland say to remove internet exposure"
+headline: "CERT-FR adds Copeland and Dixell xweb to the hijacked refrigeration controllers; NCSC.ch rates the attacks exploited"
 summary: >
-  Coopérative U, Intermarché and E. Leclerc confirmed to AFP a cyberattack on their refrigeration systems overnight on 11 to 12 October 2026, which BFMTV reports as a remotely forced defrost at hundreds of stores, and
-  CERT-FR's alert of 2026-10-12 reports numerous compromises of Danfoss AK-SM and AK-SC series devices and advises disconnecting or filtering access. Danfoss says most affected units are legacy products that no longer receive
-  security updates; no source names an actor, the flaw or how the attackers got in, and the Paris prosecutor is investigating.
+  Coopérative U, Intermarché and E. Leclerc confirmed to AFP a cyberattack on their refrigeration systems overnight on 11 to 12 October 2026, which BFMTV reports as a remotely forced defrost at hundreds of stores. CERT-FR's alert, revised on 2026-10-13, reports numerous compromises of Danfoss AK-SM and AK-SC controllers and now also of Copeland xweb and Dixell xweb, says campaigns are probably still running and that a factory reset alone does not protect an unpatched end-of-life unit, and NCSC Switzerland rates the activity actively exploited. Danfoss says most affected units are legacy products or current AK-SM800A units on outdated firmware; no source names an actor, the flaw or how the attackers got in, and the Paris prosecutor is investigating.
 discovered_at: "2026-10-13T03:41:00Z"
-updated_at: null
+updated_at: "2026-10-14T03:44:00Z"
 event_date: "2026-10-12"
 run_id: 2026-10-13T0256Z-intel
 priority: high
 immediate_action: null
 tags: [ot-ics, actively-exploited]
-regions: [europe]
+regions: [europe, switzerland]
 sectors: [retail]
-entities: ["incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10", "product:danfoss-ak-sm-800", "product:danfoss-ak-sc-355"]
+entities: ["incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10", "product:danfoss-ak-sm-800", "product:danfoss-ak-sc-355", "product:danfoss-ak-sm-800a", "product:copeland-xweb", "product:dixell-xweb"]
 techniques: [T1190]
-affected_products: ["Danfoss AK-SM 800", "Danfoss AK-SC 355"]
+affected_products: ["Danfoss AK-SM 800", "Danfoss AK-SC 355", "Danfoss AK-SM 800A", "Copeland xweb", "Dixell xweb"]
 cves: []
 sources:
   - url: "https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/"
@@ -41,14 +39,34 @@ sources:
     publisher: "BleepingComputer"
     date: "2026-10-12"
     role: corroborating
+  - url: "https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/"
+    publisher: "CERT-FR (alert CERTFR-2026-ALE-012, revised version)"
+    date: "2026-10-13"
+    role: primary
+  - url: "https://security-hub.ncsc.admin.ch/#/posts/13054"
+    publisher: "NCSC Switzerland (Security Hub advisory 13054)"
+    date: "2026-10-13"
+    role: corroborating
+  - url: "https://www.coolingpost.com/world-news/danfoss-moves-to-mitigate-cyberattack/"
+    publisher: "Cooling Post"
+    date: "2026-10-12"
+    role: corroborating
+  - url: "https://www.blick.ch/fr/suisse/cyberattaque-les-frigos-de-migros-et-coop-sont-ils-proteges/79vpc6q"
+    publisher: "Blick"
+    date: "2026-10-13"
+    role: corroborating
 closed_sources: []
 evidence:
-  - quote: "CERT-FR is aware of numerous compromises of Danfoss AK-SM and AK-SC series devices. (translated from French)"
-    original: "Le CERT-FR a connaissance de nombreuses compromissions de Danfoss série AK-SM et AK-SC."
+  - quote: "CERT-FR is aware of numerous compromises of the remote refrigeration-installation controllers Danfoss AK-SM and AK-SC series as well as Copeland xweb and Dixell xweb. (translated from French)"
+    original: "Le CERT-FR a connaissance de nombreuses compromissions des controleurs à distance d'installation de réfrigération Danfoss série AK-SM, AK-SC ainsi que Copeland xweb et Dixell xweb."
     publisher: "CERT-FR (alert CERTFR-2026-ALE-012)"
     source_url: "https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/"
-  - quote: "Disconnect or filter access to AK-SM and AK-SC instances. (translated from French)"
-    original: "Déconnecter ou filtrer les accès aux instances AK-SM et AK-SC."
+  - quote: "In an emergency, simply filtering the source IPs of the refrigeration contractors on a firewall is possible, but this solution must not be considered lasting. (translated from French)"
+    original: "Dans l'urgence, un simple filtrage des IP sources des prestataires frigoristes sur un pare-feu est possible, mais cette solution ne doit pas être considérée comme pérenne."
+    publisher: "CERT-FR (alert CERTFR-2026-ALE-012)"
+    source_url: "https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/"
+  - quote: "the persistence of a compromised instance will be removed but the equipment will remain vulnerable and will certainly be compromised again. (translated from French)"
+    original: "les persistances d'une instance compromise seront supprimées mais l'équipement restera vulnérable et sera certainement de nouveau compromis."
     publisher: "CERT-FR (alert CERTFR-2026-ALE-012)"
     source_url: "https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/"
   - quote: "most of the affected equipment was \"legacy\" products which \"no longer receive software or security updates\""
@@ -61,14 +79,18 @@ evidence:
   - quote: "Affected stores include those operating vulnerable Danfoss consoles with remote-control capabilities that lacked an adequately secured communication channel."
     publisher: "Infosecurity Magazine"
     source_url: "https://www.infosecurity-magazine.com/news/french-supermarket-chains/"
+  - quote: "the majority of units affected were legacy products or current products running outdated firmware"
+    publisher: "Cooling Post"
+    source_url: "https://www.coolingpost.com/world-news/danfoss-moves-to-mitigate-cyberattack/"
 verification: multi-source
 sourcing_note: >
-  CERT-FR's alert is the national authority's own statement; the retailers' confirmations, Danfoss's statement and the Paris prosecutor's investigation come through AFP.
-  The forced 50-degree defrost and the "older than version 4" scope are BFMTV's reporting and no other source reports them independently. Store counts moved during the day: AFP and BFMTV give 300 Intermarché or Netto shops, twice the first estimate of 150 that Infosecurity quotes,
+  CERT-FR's alert, in its revision of 2026-10-13, is the national authority's own statement, while NCSC Switzerland's advisory adds the exploitation rating and relays an older, different CERT-FR remediation sequence, which the update section sets out; the retailers' confirmations, Danfoss's statement and the Paris prosecutor's investigation come through AFP.
+  The forced 50-degree defrost and the "older than version 4" scope are BFMTV's reporting and no other source reports them independently. Store counts moved during the day: AFP and BFMTV give 300 Intermarché or Netto shops, which BFMTV says is twice the first estimates, while Infosecurity quotes 150 Intermarché and 30 Netto stores,
   and AFP gives more than 100 Coopérative U outlets where Coopérative U told BFMTV fewer than 100. No source read names the flaw or states how the attackers got in.
 confidence: high
 references:
   - 2026-08-28/claroty-danfoss-ak-sm-800a-code-of-the-day-rce
+  - 2026-08-28/claroty-copeland-xweb-pro-refrigeration-unauth-root-rce
 deep_dive: false
 deep_dive_category: null
 org_triage: null
@@ -77,17 +99,27 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Find every Danfoss AK-SM and AK-SC refrigeration controller in facilities you own or that a contractor manages for you and take its management interface off the internet or filter it to the contractor's addresses now."
-updates: []
+  - "Find every Danfoss AK-SM and AK-SC, Copeland xweb and Dixell xweb refrigeration controller in facilities you own or that a contractor manages for you and take its management interface off the internet now, restoring access only through a secure VPN or protected network (filtering to the contractor's source addresses is an emergency stop-gap); an end-of-life unit that gets no fixes needs replacing, because a factory reset leaves it vulnerable and probably compromised again."
+updates:
+  - at: "2026-10-14T03:44:00Z"
+    run_id: 2026-10-14T0255Z-intel
+    type: update
+    summary: >
+      CERT-FR revised its alert on 2026-10-13 to add Copeland xweb and Dixell xweb to the compromised controllers, says campaigns are probably still running, and says a factory reset alone is insufficient on an unpatched end-of-life unit. NCSC Switzerland published an advisory rating the activity actively exploited and naming the current AK-SM 800A on outdated firmware, and Danfoss says that is the case for the affected current units. Blick reports that Migros uses the same Danfoss systems in a limited number of Swiss stores and sees no sign they were targeted.
+    fields: [title, headline, summary, regions, entities, affected_products, sources, evidence, sourcing_note, references, actions, body]
 migrated_from: null
 ---
 
-Coopérative U, Intermarché and E. Leclerc confirmed to AFP a cyberattack on their refrigeration systems overnight on 11 to 12 October 2026; AFP reports from the retailers' statements at least 300 Intermarché or Netto shops and more than 100 Coopérative U outlets, and the Paris prosecutor opened an investigation ([AFP, 2026-10-12](https://www.afp.com/en/french-supermarket-chains-say-cyberattack-forced-refrigerator-shutdown)). BFMTV puts the Intermarché and Netto count at 300, twice the first estimate of 150 that Infosecurity quotes, and Coopérative U below 100 stores ([BFMTV, 2026-10-12](https://www.bfmtv.com/economie/consommation/la-temperature-est-montee-jusqu-a-50-degres-une-cyberattaque-contre-les-systemes-frigorifiques-provoque-la-destruction-de-produits-frais-dans-des-centaines-d-intermarche-et-de-super-u_AN-202610120327.html); [Infosecurity Magazine, 2026-10-12](https://www.infosecurity-magazine.com/news/french-supermarket-chains/)). BFMTV, writing in the conditional, reports that the attackers are said to have imposed a forced, continuous defrost with the setpoint at 50 degrees, on software older than version 4, heating the equipment for hours (translated from French) ([BFMTV, 2026-10-12](https://www.bfmtv.com/economie/consommation/la-temperature-est-montee-jusqu-a-50-degres-une-cyberattaque-contre-les-systemes-frigorifiques-provoque-la-destruction-de-produits-frais-dans-des-centaines-d-intermarche-et-de-super-u_AN-202610120327.html)). CERT-FR's alert says it knows of numerous compromises of Danfoss AK-SM and AK-SC series devices and that exposing a management interface to the internet is contrary to good practice ([CERT-FR, 2026-10-12](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). Danfoss told AFP that most affected units are legacy products that no longer receive software or security updates, naming the AK-SM800 and AK-SC355 regulators, and a person close to the Prime Minister said ANSSI had identified a vulnerability in software from a Danish company and that other countries may be affected ([AFP, 2026-10-12](https://www.afp.com/en/french-supermarket-chains-say-cyberattack-forced-refrigerator-shutdown)). Intermarché told BleepingComputer that the attack reportedly affected a service provider that manages refrigeration systems in stores ([BleepingComputer, 2026-10-12](https://www.bleepingcomputer.com/news/security/cyberattack-shuts-down-refrigerators-at-french-supermarkets/)), and E. Leclerc told AFP that a cyberattack affected one of its refrigeration equipment suppliers ([AFP, 2026-10-12](https://www.afp.com/en/french-supermarket-chains-say-cyberattack-forced-refrigerator-shutdown)). Infosecurity says the affected stores include those running vulnerable consoles with remote control and no adequately secured communication channel ([Infosecurity Magazine, 2026-10-12](https://www.infosecurity-magazine.com/news/french-supermarket-chains/)). No source names an actor or the flaw or states how the attackers got in, and none ties the attack to the 2025 AK-SM 8xxA vulnerabilities that Claroty found ([BleepingComputer, 2026-10-12](https://www.bleepingcomputer.com/news/security/cyberattack-shuts-down-refrigerators-at-french-supermarkets/)).
+Coopérative U, Intermarché and E. Leclerc confirmed to AFP a cyberattack on their refrigeration systems overnight on 11 to 12 October 2026; AFP reports from the retailers' statements at least 300 Intermarché or Netto shops and more than 100 Coopérative U outlets, and the Paris prosecutor opened an investigation ([AFP, 2026-10-12](https://www.afp.com/en/french-supermarket-chains-say-cyberattack-forced-refrigerator-shutdown)). BFMTV puts the Intermarché and Netto count at 300, which it says is twice the first estimates of 150 points of sale, and Coopérative U below 100 stores, while Infosecurity quotes 150 Intermarché and 30 Netto stores ([BFMTV, 2026-10-12](https://www.bfmtv.com/economie/consommation/la-temperature-est-montee-jusqu-a-50-degres-une-cyberattaque-contre-les-systemes-frigorifiques-provoque-la-destruction-de-produits-frais-dans-des-centaines-d-intermarche-et-de-super-u_AN-202610120327.html); [Infosecurity Magazine, 2026-10-12](https://www.infosecurity-magazine.com/news/french-supermarket-chains/)). BFMTV, writing in the conditional, reports that the attackers are said to have imposed a forced, continuous defrost with the setpoint at 50 degrees, on software older than version 4, heating the equipment for hours (translated from French) ([BFMTV, 2026-10-12](https://www.bfmtv.com/economie/consommation/la-temperature-est-montee-jusqu-a-50-degres-une-cyberattaque-contre-les-systemes-frigorifiques-provoque-la-destruction-de-produits-frais-dans-des-centaines-d-intermarche-et-de-super-u_AN-202610120327.html)). CERT-FR's alert, in its revision of 2026-10-13, says it knows of numerous compromises of the remote refrigeration controllers Danfoss AK-SM and AK-SC series as well as Copeland xweb and Dixell xweb, and that exposing a management interface to the internet is contrary to good practice ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). Danfoss told AFP that most affected units are legacy products that no longer receive software or security updates, naming the AK-SM800 and AK-SC355 regulators, and a person close to the Prime Minister said ANSSI had identified a vulnerability in software from a Danish company and that other countries may be affected ([AFP, 2026-10-12](https://www.afp.com/en/french-supermarket-chains-say-cyberattack-forced-refrigerator-shutdown)). Intermarché told BleepingComputer that the attack reportedly affected a service provider that manages refrigeration systems in stores ([BleepingComputer, 2026-10-12](https://www.bleepingcomputer.com/news/security/cyberattack-shuts-down-refrigerators-at-french-supermarkets/)), and E. Leclerc told AFP that a cyberattack affected one of its refrigeration equipment suppliers ([AFP, 2026-10-12](https://www.afp.com/en/french-supermarket-chains-say-cyberattack-forced-refrigerator-shutdown)). Infosecurity says the affected stores include those running vulnerable consoles with remote control and no adequately secured communication channel ([Infosecurity Magazine, 2026-10-12](https://www.infosecurity-magazine.com/news/french-supermarket-chains/)). No source names an actor or the flaw or states how the attackers got in, and none confirms a tie to the 2025 AK-SM 8xxA vulnerabilities that Claroty found: BleepingComputer reports no tie ([BleepingComputer, 2026-10-12](https://www.bleepingcomputer.com/news/security/cyberattack-shuts-down-refrigerators-at-french-supermarkets/)) and NCSC Switzerland lists three of them only as alleged to be potentially related ([NCSC Switzerland, 2026-10-13](https://security-hub.ncsc.admin.ch/#/posts/13054)).
 
-**Exposure:** a Danfoss AK-SM or AK-SC refrigeration controller whose management interface is reachable from the internet, above all legacy units. Infosecurity reports, without naming them, that supermarkets in Belgium and the Netherlands were also reportedly affected ([Infosecurity Magazine, 2026-10-12](https://www.infosecurity-magazine.com/news/french-supermarket-chains/)); no source names a Swiss deployment, so ask whoever manages your refrigeration and building services whether a controller sits in your estate.
+**Exposure:** a Danfoss AK-SM or AK-SC refrigeration controller, or a Copeland or Dixell xweb unit, whose management interface is reachable from the internet, above all legacy units; Danfoss says the current AK-SM800A units that were affected ran outdated firmware ([Cooling Post, 2026-10-12](https://www.coolingpost.com/world-news/danfoss-moves-to-mitigate-cyberattack/)), and CERT-FR names no models, flaw or entry vector for the Copeland and Dixell units ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). Infosecurity reports, without naming them, that supermarkets in Belgium and the Netherlands were also reportedly affected ([Infosecurity Magazine, 2026-10-12](https://www.infosecurity-magazine.com/news/french-supermarket-chains/)); Blick reports that Migros confirms using, in a limited number of its Swiss stores, the same Danfoss refrigeration systems that were targeted and says nothing indicates an attack on them, while Aldi and Lidl say they are not concerned and Coop says it was not affected and declines to say whether it uses Danfoss ([Blick, 2026-10-13](https://www.blick.ch/fr/suisse/cyberattaque-les-frigos-de-migros-et-coop-sont-ils-proteges/79vpc6q)); no source reports a Swiss victim, so ask whoever manages your refrigeration and building services whether a controller sits in your estate.
 
-**Detection:** on the controller, defrost, setpoint and account changes outside a maintenance window; in firewall, provider VPN or ISP logs, inbound connections to the management interface from addresses other than the refrigeration contractor's, the only access CERT-FR leaves open ([CERT-FR, 2026-10-12](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). For a controller that may have been taken over, CERT-FR lists a factory reset, all available security fixes, rotation of secrets, a review of accounts and a reconfiguration ([CERT-FR, 2026-10-12](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)).
+**Detection:** on the controller, defrost, setpoint and account changes outside a maintenance window; in firewall, provider VPN or ISP logs, inbound connections to the management interface from addresses other than the refrigeration contractor's; CERT-FR accepts filtering to the contractors' source addresses only as an emergency measure and wants access restored through a secure VPN or protected network ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). For a controller that may have been taken over, CERT-FR's sequence is to remove the internet exposure, factory-reset the unit, restore access only through a secure VPN or protected network, reconfigure it and apply the maker's practices, which for Danfoss means updating the firmware, setting the security level to Strict and confirming the default passwords were changed ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)).
 
 **Triage:** a defrost cycle is normal; BFMTV quotes sector professionals saying installations can be programmed for two hours of defrost per 24 hours, whereas the reported attack is said to be a continuous forced defrost at a 50-degree setpoint held for hours (translated from French) ([BFMTV, 2026-10-12](https://www.bfmtv.com/economie/consommation/la-temperature-est-montee-jusqu-a-50-degres-une-cyberattaque-contre-les-systemes-frigorifiques-provoque-la-destruction-de-produits-frais-dans-des-centaines-d-intermarche-et-de-super-u_AN-202610120327.html)).
 
-**Defender takeaway:** take any Danfoss AK-SM or AK-SC management interface off the internet or filter it to the contractor's addresses now, as CERT-FR advises, and ask the contractor whether its own remote access was affected; for the AK-SM800 and AK-SC355, isolation or replacement is the lever, since Danfoss says it had long advised supermarkets to move off those models ([AFP, 2026-10-12](https://www.afp.com/en/french-supermarket-chains-say-cyberattack-forced-refrigerator-shutdown)), and a controller that may have been taken over needs CERT-FR's reset-and-rotate sequence, not only a patch.
+**Defender takeaway:** take any Danfoss AK-SM or AK-SC, Copeland xweb or Dixell xweb management interface off the internet now and restore access only through a secure VPN or protected network, as CERT-FR advises ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)), and ask the contractor whether its own remote access was affected; for the AK-SM800 and AK-SC355, replacement is the lever, since Danfoss says it had long advised supermarkets to move off those models ([AFP, 2026-10-12](https://www.afp.com/en/french-supermarket-chains-say-cyberattack-forced-refrigerator-shutdown)), no fix exists for them according to NCSC Switzerland ([NCSC Switzerland, 2026-10-13](https://security-hub.ncsc.admin.ch/#/posts/13054)), and CERT-FR says a factory reset on an unpatched end-of-life unit removes the implant but leaves the device vulnerable and almost certainly compromised again ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)).
+
+## Update — 2026-10-14T03:44:00Z
+
+CERT-FR revised its alert on 2026-10-13: the list of compromised remote controllers now includes Copeland xweb and Dixell xweb besides Danfoss AK-SM and AK-SC, campaigns against these devices are probably still ongoing, and an unpatched end-of-life unit kept on the internet is very likely to be compromised, so a factory reset alone is insufficient ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). NCSC Switzerland published advisory 13054 on 2026-10-13 with the exploitation status Actively Exploited. It lists the Danfoss AK-SM 800 (end of life, no longer patched), the AK-SC 355 (phased out, no longer patched) and the current AK-SM 800A series when it runs outdated firmware, says no fixes exist for the two older models and that Danfoss urges replacing them, and says the attack could affect other sectors, such as healthcare for specialized cooling equipment, so organisations should check whether affected devices are in use ([NCSC Switzerland, 2026-10-13](https://security-hub.ncsc.admin.ch/#/posts/13054)). Danfoss told Cooling Post that the AK-SM800 was declared end of life in 2021, that the AK-SC355 was phased out in 2016, and that the affected AK-SM800A systems ran outdated firmware ([Cooling Post, 2026-10-12](https://www.coolingpost.com/world-news/danfoss-moves-to-mitigate-cyberattack/)). Blick reports that Migros uses the same Danfoss refrigeration systems in a limited number of Swiss stores and sees no sign they were targeted, and that Aldi, Lidl and Coop say they are not affected ([Blick, 2026-10-13](https://www.blick.ch/fr/suisse/cyberattaque-les-frigos-de-migros-et-coop-sont-ils-proteges/79vpc6q)); no source reports a Swiss victim. The advisory relays a six-step CERT-FR sequence (limit access to trusted addresses, factory reset, apply all fixes, rotate passwords and secrets, review accounts, reconfigure) and lists filtering to trusted addresses as a temporary measure ([NCSC Switzerland, 2026-10-13](https://security-hub.ncsc.admin.ch/#/posts/13054)), whereas the revised CERT-FR page puts removal of internet exposure first, accepts source-address filtering only as an emergency stop-gap and lists no secret rotation or account review ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)).

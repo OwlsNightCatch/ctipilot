@@ -1,0 +1,452 @@
+# work/2026-10-14T0255Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-14T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-14T02:57:32Z
+ended_at: 2026-10-14T03:16:51Z
+duration_seconds: 1159
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 5
+  bridge_fetches: 135
+items:
+  - title: "Ivanti Connect Secure: a zero-day chain (CVE-2026-104935 plus a privilege escalation with no fix yet) gives unauthenticated root, runs entirely in memory with no web shell, and goes after LAPS passwords and BitLocker keys"
+    suggested_priority: critical-candidate
+    sources:
+      - { url: "https://www.volexity.com/blog/2026/10/13/a-series-of-unauthenticated-events-chained-exploitation-of-ivanti-connect-secure-zero-days/", publisher: "Volexity", date: "2026-10-13", role: "primary" }
+      - { url: "https://www.rapid7.com/blog/post/etr-ivanti-connect-secure-zero-day-exploited-in-the-wild-cve-2026-104935/", publisher: "Rapid7", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://cyber.gc.ca/en/alerts-advisories/ivanti-security-advisory-av26-1035", publisher: "Canadian Centre for Cyber Security (AV26-1035)", date: "2026-10-13", role: "corroborating" }
+    discovery_trace: "first seen at: volexity, RSS feed https://www.volexity.com/feed/ (majors sweep, item dated 2026-10-13) → primary (no pivot needed):https://www.volexity.com/blog/2026/10/13/a-series-of-unauthenticated-events-chained-exploitation-of-ivanti-connect-secure-zero-days/ → pivot: Rapid7 rapid7-research feed https://www.rapid7.com/rss.xml → https://www.rapid7.com/blog/post/etr-ivanti-connect-secure-zero-day-exploited-in-the-wild-cve-2026-104935/ (relays Ivanti's version table and exploitation statement; hub.ivanti.com advisory itself is a JS/SPA shell that returned no content on extract and WebFetch) → https://malware.news/t/ivanti-security-advisory-av26-1035/126361 → https://cyber.gc.ca/en/alerts-advisories/ivanti-security-advisory-av26-1035 (KEV note). CISA KEV row for CVE-2026-104935 read through the cisa-kev bridge (dateAdded 2026-10-13, dueDate 2026-10-16, forensicTriage Yes, knownRansomwareCampaignUse Unknown)."
+    summary: |
+      Volexity reports that an actor it tracks as UTA0576 compromised a fully patched Ivanti Connect Secure (ICS) 22.8R2.4 (Build 19097)
+      appliance at a Volexity network-monitoring customer, exploiting from 2026-10-03; Volexity began investigating on 2026-10-05.
+      The chain has three links. (1) An authentication bypass in welcome.cgi: the public login-page script is reachable without authentication,
+      the request URL decides whether the request is allowed, but an X-DSCGI-PATH request header decides which CGI script actually runs, so
+      protected CGI files become reachable. (2) A file-write race in the wu.cgi upload handler: a Perl script sent with a .zip extension is
+      written to /home/runtime/tmp/<MD5(filename)> before the ZIP check fails and the file is deleted, and parallel requests whose X-DSCGI-PATH
+      points at that path execute it inside the window. (3) A privilege escalation: the root-run dsinvoked maintenance broker trusts DSCache
+      configuration data, and the exploit patches libdsplibs.so in the cgi-server process memory, rewrites an existing maintenance task so it launches
+      the Perl interpreter as root, then restores both. Ivanti tracks the authentication bypass and RCE as CVE-2026-104935 (fixed 2026-10-13);
+      the privilege escalation has no fix yet, which Volexity says will ship "in the coming weeks". Every command re-runs the whole chain and its
+      output returns in the HTTP response, so there is no web shell, backdoor or separate C2; the Python stage is Base64/zlib-encoded and runs via exec(), and the
+      exploit rewrites /home/runtime/dlogs/debuglog and /var/log/audit/audit.log to drop its own time window. Because the attack patches library code in memory only and restores the
+      configuration store, Ivanti's Integrity Checker Tool sees nothing. After access UTA0576 took credentials stored on the appliance (including LDAP domain credentials),
+      used the appliance's Active Directory service account to search for LAPS passwords, BitLocker recovery information and userPassword/unixUserPassword
+      attributes, ran a custom Kerberos tool with Kerberoast capability, sprayed passwords against AD accounts, and ran a renamed tcpdump from a hidden directory with
+      a BPF filter on cleartext ports (LDAP, HTTP, FTP, telnet) to harvest plaintext LDAP bind credentials, HTTP Basic credentials and NTLM challenge-response material.
+      Volexity assesses with high confidence that an operator was interacting with results (not running a script), with low confidence that the motive is criminal
+      rather than espionage, and with medium confidence that LLMs were used for exploit development and post-exploitation. Per Rapid7's reading of Ivanti's advisory, exploitation preceded disclosure
+      against a limited number of customers, and part of the flaw had been fixed in ICS 25.1.3.0 (July 2026) while Ivanti was still backporting to older lines;
+      CISA added CVE-2026-104935 to KEV on 2026-10-13 (due 2026-10-16).
+    region_nexus: "global; internet-facing remote-access VPN tier commonly run by public administrations. No Swiss victim reported; NCSC.ch had not yet published an Ivanti advisory when checked (2026-10-14 ~03:00Z)."
+    primary_sector_nexus: "direct (edge/VPN appliance class used across public-sector remote access; identity credentials for AD harvested)"
+    sector: "public-sector"
+    cves: [CVE-2026-104935]
+    techniques: [T1190, T1068, T1685.006, T1070.004, T1040, T1558.003, T1110.003, T1087.002, T1552.001, T1059.006, T1140, T1041]
+    affected_products: ["Ivanti Connect Secure"]
+    entity_keys: ["product:ivanti-pulse-connect-secure"]
+    new_entities:
+      - { key: "actor:uta0576", type: actor, name: "UTA0576", aliases: [],
+          summary: "Volexity's designation for the previously unknown actor that exploited the Ivanti Connect Secure authentication bypass / RCE / privilege-escalation zero-day chain from 2026-10-03, with no web shell and heavy anti-forensics; Volexity assesses low-confidence criminal motivation and medium-confidence LLM use (Volexity, 2026-10-13)." }
+    relation_suggestions:
+      - { subject: "actor:uta0576", object: "product:ivanti-pulse-connect-secure",
+          basis: "Volexity: UTA0576 exploited the Ivanti Connect Secure zero-day chain (exploits) (Volexity, 2026-10-13)" }
+    cross_domain_overlap: "S1 returned the same finding as work/2026-10-14T0255Z-intel/S1-items/01-ivanti-ics.yaml (vendor blog, CVE record, EUVD, KEV, Volexity, Rapid7). Fold into ONE entry: S1 carries the vendor/CVE/version metadata and the Ivanti vendor-blog primary, this item carries the Volexity technical depth (chain mechanics, anti-forensics, post-exploitation, detection and post-patch compromise check). The version lines in this item agree with S1 (25.1.1.1 and prior -> 25.1.1.2; 25.1.2.2 and prior -> 25.1.3.0/25.1.3.1; 22.8R2.4 and prior -> 22.8R2.5; 22.7.x unaffected)."
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    admiralty_suggestion: "reliability B (Volexity, discoverer, own memory forensics); credibility 1 (Rapid7 relaying Ivanti's statement, Canadian Cyber Centre and the CISA KEV listing independently confirm exploitation)"
+    evidence:
+      - quote: "Volexity has identified active in-the-wild exploitation of a vulnerability chain allowing unauthenticated remote code execution in Ivanti Connect Secure VPN devices."
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/10/13/a-series-of-unauthenticated-events-chained-exploitation-of-ivanti-connect-secure-zero-days/"
+      - quote: "because this exploit chain patches library code in memory only and restores configuration store data, the tool does not detect any modifications"
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/10/13/a-series-of-unauthenticated-events-chained-exploitation-of-ivanti-connect-secure-zero-days/"
+      - quote: "Ivanti is working on a fix for the privilege escalation vulnerability, and it will be included in a future release in the coming weeks."
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/10/13/a-series-of-unauthenticated-events-chained-exploitation-of-ivanti-connect-secure-zero-days/"
+      - quote: "Ivanti reports that exploitation in the wild has already occurred prior to disclosure, affecting a limited number of customers."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-ivanti-connect-secure-zero-day-exploited-in-the-wild-cve-2026-104935/"
+      - quote: "On October 13, 2026, Cybersecurity and Infrastructure Security Agency (CISA) added CVE-2026-CVE-2026-104935 to their Known Exploited Vulnerabilities (KEV) Database."
+        attribution: "Canadian Centre for Cyber Security"
+        source_url: "https://cyber.gc.ca/en/alerts-advisories/ivanti-security-advisory-av26-1035"
+    extended_notes: |
+      EXPOSURE / VERSIONS (second-hand: hub.ivanti.com returned only a JS shell on every transport, so the vendor table is read through Rapid7).
+      Rapid7's rendering of Ivanti's table: affected 25.1.1.1 and prior -> resolved 25.1.1.2; 25.1.2.2 and prior -> resolved 25.1.3.0 / 25.1.3.1; 22.8R2.4 and prior -> resolved 22.8R2.5;
+      the advisory states 22.7.x and below are unaffected. The three sources do not agree on the line labels: Volexity says upgrade 25.1.1 and prior, 25.1.2 and 22.8R2.4;
+      the Canadian Cyber Centre lists 25.1.1.1, 25.2.2 and 22.8R2.4 and prior (and also Ivanti Neurons Patch for Intune before 2026-09-16 and Ivanti Xtraction 2026.2.1 and prior, which are other bulletin items, not this chain);
+      NVD says "before version 25.1.3.0". Main agent: reconcile against the Ivanti advisory before printing a version table, or print only the branch-level statement and cite Rapid7 as the reader of the vendor table.
+      NVD CVSS 3.1 for CVE-2026-104935 is 8.6 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:L), CWE-290. The privilege-escalation link has no CVE yet.
+      DETECTION (Volexity-stated vs. derived). Stated: monitor for large numbers of requests to /dana-na/auth/url_default/welcome.cgi, whose malicious form carries an X-DSCGI-PATH header
+      (naming a /home/webserver/htdocs/... script or the /home/runtime/tmp/<MD5(filename)> upload); watch for a mismatch between the URL path and X-DSCGI-PATH; check the appliance /tmp for post-exploitation artefacts; use memory and disk forensics, because the Integrity Checker cannot see this.
+      Appliance logs are tampered, so compare with upstream web-proxy / load-balancer / WAF / NetFlow records and take a memory image before reboot. Derived from the stated post-exploitation (inference, not vendor-stated): on the domain-controller side look at LDAP queries from the appliance's service account
+      for LAPS, BitLocker-recovery and userPassword-type attributes, Kerberos TGS-request bursts (Kerberoast) and failed/successful logon spray patterns originating from the appliance address; on the appliance look for a hidden directory under /data holding a renamed packet-capture binary and rotating capture files.
+      TRIAGE: the appliance's LDAP service account authenticating to domain controllers is normal; the discriminator is which attributes it requests (LAPS, BitLocker, password-bearing) and the appearance of Kerberos/spray activity from the appliance address.
+      POST-PATCH CHECK: patching does not evict anyone already in. Volexity: "forensic investigation is required to identify evidence of exploitation". Treat the LDAP bind credential stored on the appliance, the AD service account, LAPS passwords and BitLocker recovery keys reachable by that account as exposed if compromise cannot be ruled out; the privilege escalation stays unpatched until a later release, so a device that was only patched for CVE-2026-104935 can still be escalated by someone with code execution.
+      RELATED (mention only, no relation suggested): Volexity notes the LDAP packet-capture credential-harvest technique was also used by UTA0533 on SonicWall SMA appliances (registry actor:uta0533, covered in the SonicWall SMA entries); the registry has Ivanti Connect Secure only as product:ivanti-pulse-connect-secure (the rebranded product line), so the main agent may add "Ivanti Connect Secure" as an alias rather than a second key.
+      CROSS-DOMAIN: S1 will also see this (KEV row CVE-2026-104935, Ivanti AV26-1035); Volexity is the primary and the richest source.
+      VOLEXITY INDICATOR FILES are published on Volexity's GitHub (threat-intel/2026/2026-10-13 Ivanti); not reproduced here per the no-IOC rule.
+
+  - title: "North Korean IT workers (FAMOUS CHOLLIMA): FBI updates its 'identity in depth' guidance for employers while CrowdStrike and the FBI take down U.S. laptop farms; operatives now spoof device identifiers and reuse disguised capture hardware across victims"
+    suggested_priority: notable
+    sources:
+      - { url: "https://www.ic3.gov/PSA/2026/PSA261013", publisher: "FBI IC3 PSA261013", date: "2026-10-13", role: "primary" }
+      - { url: "https://www.crowdstrike.com/en-us/blog/fbi-disrupts-famous-chollima-operation-with-crowdstrike-assistance/", publisher: "CrowdStrike Counter Adversary Operations", date: "2026-10-13", role: "primary" }
+      - { url: "https://www.nextgov.com/cybersecurity/2026/10/fbi-disrupts-north-korean-laptop-farm-used-infiltrate-us-companies/416570/", publisher: "Nextgov/FCW", date: "2026-10-13", role: "corroborating" }
+    discovery_trace: "first seen at: malware.news latest.rss?page=0, URL https://malware.news/t/u-s-government-disrupts-famous-chollima-operation-with-crowdstrike-assistance/126371 (aggregator topic; lead only) → primary: CrowdStrike, URL https://www.crowdstrike.com/en-us/blog/fbi-disrupts-famous-chollima-operation-with-crowdstrike-assistance/ → pivot: https://malware.news/t/north-korean-it-workers-expanding-use-of-facilitators-broadening-recruitment/126358 → primary: FBI IC3 PSA, URL https://www.ic3.gov/PSA/2026/PSA261013 → corroboration: https://malware.news/t/fbi-disrupts-north-korean-laptop-farm-used-to-infiltrate-us-companies/126367 → Nextgov, URL https://www.nextgov.com/cybersecurity/2026/10/fbi-disrupts-north-korean-laptop-farm-used-infiltrate-us-companies/416570/. The DOJ N.D. Texas release (Operation Lonestar Roundup) was unreachable (Akamai interstitial on the bridge, HTTP 401 on WebFetch) and is not cited; its figures appear only through Nextgov."
+    summary: |
+      On 2026-10-13 the FBI published PSA261013 updating its guidance on North Korean remote IT workers and CrowdStrike published its part in a late-September 2026 disruption of several
+      U.S. laptop farms run for the cluster it tracks as FAMOUS CHOLLIMA (the registry's PurpleDelta / Jasper Sleet family). The FBI says the workers cannot be identified
+      reliably with a single indicator and calls for an "identity in depth" approach across the employment lifecycle; it describes dozens of teams paying facilitators for a widening range of tasks
+      (appearing on camera, interviews, shipping, fingerprint and drug-test submissions, keeping devices online from residences), shifting to more laptop farms with fewer laptops each, subcontracting entire jobs to freelancers in South Asia and West Africa,
+      use of stolen identities and purchased identity-verification accounts to pass checks, threats of violence and data release to extort employers after termination, and targeting of clearance-holder roles and U.S. government contractors.
+      Technical behaviour the FBI names on employer devices: remote-desktop and RMM tools (AnyDesk, TeamViewer, RustDesk, Chrome Remote Desktop, Splashtop, RMM), KVM-over-IP hardware (TinyPilot, PiKVM, GL.iNet), OBS Studio with a VDO.Ninja plugin, Homebrew, screen recordings exfiltrated from the work device, and unusually fast rotation of bank accounts, addresses and social accounts.
+      CrowdStrike adds tradecraft: operatives file false stolen-laptop police reports or claim last-minute moves to redirect replacement hardware to farm addresses, or ride IT staffing firms so the end client's device is diverted without the staffing firm knowing; since May 2026 they spoof device hashes (for example making a video-capture card present as a webcam)
+      and CrowdStrike OverWatch saw the same disguised device used across multiple victim organisations; farm network infrastructure shared identifiers across several concurrent personas. CrowdStrike lists victim sectors that include government technology; Nextgov, citing the DOJ, reports 40+ Texas residences searched and 187 devices seized, and CrowdStrike says the broader operation affected a campaign aimed at more than 70 U.S. companies.
+      Both documents say the takedowns will only slow the actor locally and that operations continue. No Swiss or European victim is named.
+    region_nexus: "United States (disruptions); global employer exposure. No Swiss or European victim named. Remote-hiring and staffing-firm exposure is transferable to Swiss public bodies and their IT suppliers."
+    primary_sector_nexus: "indirect (public-sector IT suppliers and government-technology firms named among victim sectors; insider-access via fraudulent hires)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1078, T1684.001, T1219.002, T1219.003, T1585.001]
+    affected_products: []
+    entity_keys: ["actor:purpledelta"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    admiralty_suggestion: "reliability A (FBI, first-party PSA) / B (CrowdStrike, disrupting party); credibility 1 (FBI PSA, CrowdStrike and Nextgov, reporting the DOJ release, agree on the disruption and the tradecraft)"
+    evidence:
+      - quote: "ITWs cannot be identified reliably with a single indicator."
+        attribution: "FBI IC3"
+        source_url: "https://www.ic3.gov/PSA/2026/PSA261013"
+      - quote: "ITWs use external hardware such as TinyPilot, PiKVM, GL.iNet, and other Keyboard Video Mouse (KVM) over IP devices to control laptops."
+        attribution: "FBI IC3"
+        source_url: "https://www.ic3.gov/PSA/2026/PSA261013"
+      - quote: "Since May 2026, FAMOUS CHOLLIMA has begun spoofing device hashes; for example, making a video capture card appear as a webcam."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/fbi-disrupts-famous-chollima-operation-with-crowdstrike-assistance/"
+      - quote: "span critical sectors including aerospace, energy, financial services, healthcare, cybersecurity, defense engineering, government technology, and consumer technology"
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/fbi-disrupts-famous-chollima-operation-with-crowdstrike-assistance/"
+    extended_notes: |
+      DELTA vs the store: entries 2026-08-19/purpledelta-dprk-it-worker-facilitator-rmm-detection, 2026-08-28/kudelski-bismarck-dprk-it-worker-gambling-fakecalls-overlap and 2026-09-19/waterplum-contagious-interview-joint-advisory-scale cover the cluster; this item is the 2026-10-13 law-enforcement disruption plus the FBI's first update of employer guidance, and the new tradecraft (device-hash spoofing, farm fragmentation, subcontracting to freelancers, extortion on termination). Main agent may prefer an update-of on the PurpleDelta entry; the entry id to extend is 2026-08-19/purpledelta-dprk-it-worker-facilitator-rmm-detection.
+      DETECTION (telemetry class first). Endpoint/MDM inventory: HID/video-class devices that disagree with the model's hardware list, KVM-over-IP or capture-card descriptors, RMM / remote-desktop / OBS+VDO.Ninja / Homebrew installed outside the IT baseline on a corporate laptop; identity-provider sign-in logs: sessions for a worker whose time zone, ISP class (residential vs the declared city) or concurrent locations do not match the declared home address; HR/IT: shipping-address versus residential-address mismatch, replacement-laptop requests citing theft, reuse of phone numbers, e-mail, bank accounts or CV text across candidate profiles (CrowdStrike list).
+      TRIAGE: remote workers legitimately use remote-desktop tools and VPNs; the FBI warns aggressive single-signal filtering harms legitimate staff and identity-theft victims; the discriminator is compounding behaviours (RMM/KVM plus location mismatch plus device-address mismatch plus identity reuse), which is exactly the FBI's "identity in depth" framing.
+      HARDENING: live identity verification and multiple ID forms at onboarding; ship devices only to the verified residential address; treat staffing-firm hardware redirection as a control gap; application allow-listing for remote-access software; the FBI says it is the only nation to devote state-level organisational resources to this fraud.
+      ATTRIBUTION NOTE: the FBI's 85-90% revenue-share estimate, the "dozens of teams" count and "the only country" statement are FBI assessments; CrowdStrike's "sector-agnostic" victim list is CrowdStrike's reading of its own telemetry.
+
+  - title: "MITRE ATT&CK v20 (2026-10-13): nine new Enterprise techniques for prompt injection, AI-enabled exfiltration and application-specific-password theft, a rewritten supply-chain technique covering IDE and coding-agent configuration files, new ICS campaigns and a refreshed group/software set"
+    suggested_priority: notable
+    annual_report_flag: "ANNUAL REPORT — MITRE ATT&CK v20 (biannual framework release, published 2026-10-13); not an annual report in the strict sense, flagged as the periodic release in this window"
+    sources:
+      - { url: "https://attack.mitre.org/resources/updates/updates-october-2026/", publisher: "MITRE ATT&CK (release notes, v20)", date: "2026-10-13", role: "primary" }
+      - { url: "https://attack.mitre.org/docs/changelogs/v19.2-v20.0/changelog.json", publisher: "MITRE ATT&CK (machine-readable changelog v19.2 to v20.0)", date: "2026-10-13", role: "corroborating" }
+    discovery_trace: "first seen at: malware.news latest.rss, URL https://malware.news/t/att-ck-v20-critical-infrastructure-campaigns-adversary-use-and-abuse-of-ai-iranian-cyber/126369 (mirror of the ATT&CK blog post; lead only) → primary: MITRE release notes, URL https://attack.mitre.org/resources/updates/updates-october-2026/ → corroboration: machine-readable changelog parsed locally, URL https://attack.mitre.org/docs/changelogs/v19.2-v20.0/changelog.json"
+    summary: |
+      MITRE released ATT&CK v20 on 2026-10-13 (previous release in the pin: v19.2, August 2026). Enterprise now holds 15 tactics, 227 techniques and 479 sub-techniques. The nine new Enterprise objects are
+      Direct Prompt Injection (T1699), Indirect Prompt Injection (T1698), AI-Enabled Exfiltration (T1700), Stage Capabilities: AI Result Poisoning (T1608.007), Disable or Modify Tools: Impair Autonomous Defenses (T1685.007, attacks on LLM-assisted analysis),
+      Anti-Automation Evasion (T1696) with Automate CAPTCHA Completion and Avoid CAPTCHA, and Steal Application Specific Passwords (T1697, an MFA-bypass route). Compromise Software Dependencies and Development Tools (T1195.001)
+      receives a major-version update (1.3 to 2.0) that reaches into IDE and coding-agent configuration files. The release adds ICS campaigns for the 2026 U.S. water-utility attacks (internet-facing PLCs, 30+ Minnesota utilities) and an AI-assisted breach of Mexican government infrastructure that crossed IT and OT,
+      the IRGC-linked group NIMBUS MANTICORE with 13 software entries, updates to Salt Typhoon (edge-device exploitation at telecoms) and APT38 (software-supply-chain compromise including poisoned npm packages), The Gentlemen ransomware (Windows, Linux, NAS, BSD and ESXi lockers) and Vidar,
+      15 new detection strategies and 38 analytics, and a new ICS asset/platform context for detection strategies. Parsing the machine-readable changelog for the Enterprise domain shows 9 technique additions, 1 major-version change, 25 minor-version changes and zero revocations, zero deprecations and zero deletions, so existing Enterprise technique ids keep resolving.
+    region_nexus: "global (framework release)"
+    primary_sector_nexus: "indirect (detection-engineering vocabulary; ICS water-utility and government-breach campaigns)"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "report:mitre-attack-v20-release", type: report, name: "MITRE ATT&CK v20 release (October 2026)", aliases: ["ATT&CK v20"],
+          summary: "MITRE's October 2026 ATT&CK release (2026-10-13): nine new Enterprise techniques covering prompt injection, AI-enabled exfiltration and application-specific-password theft, a major update to T1195.001, new ICS campaigns and group/software updates; no Enterprise revocations or deprecations (MITRE, 2026-10-13)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    admiralty_suggestion: "reliability A (MITRE, owner of the framework); credibility 1 (release notes and the machine-readable changelog agree)"
+    evidence:
+      - quote: "The October 2026 (v20) ATT&CK release updates Techniques, Groups, Campaigns and Software for Enterprise, Mobile, and ICS."
+        attribution: "MITRE ATT&CK"
+        source_url: "https://attack.mitre.org/resources/updates/updates-october-2026/"
+      - quote: "Enterprise: 15 Tactics, 227 Techniques, 479 Sub-Techniques, 178 Groups, 842 Pieces of Software, 57 Campaigns, 44 Mitigations, 703 Detection Strategies, 1770 Analytics, and 106 Data Components"
+        attribution: "MITRE ATT&CK"
+        source_url: "https://attack.mitre.org/resources/updates/updates-october-2026/"
+    extended_notes: |
+      PIPELINE ACTION FOR THE MAIN AGENT / AUDIT (not reader-facing): the pinned dataset attack/enterprise-attack.json is v19.2 (`python3 tools/attack_data.py --info`, generated 2026-08-29). v20 is out; entries written today cannot use T1696-T1700, T1608.007 or T1685.007 until `python3 tools/attack_data.py --update` runs. The changelog shows no Enterprise revocation or deprecation, so no existing entry's techniques[] breaks on update.
+      Reader value is the new vocabulary: T1698/T1699/T1700 give prompt-injection and AI-agent exfiltration a first-class mapping (relevant to the borderline e-mail prompt-injection item below and the covered Plugin4Shell and Talos AI-evasion entries), T1697 names the application-specific-password route around MFA, and T1195.001 now explicitly covers IDE and coding-agent configuration files (the GhostAction / ChainDrop / Plugin4Shell class). ICS detection strategies now carry platform and asset context.
+      Not an item for entry unless the main agent wants a short research/annual-report-class note; mark borderline if triage finds the reader value too low.
+    borderline: true
+    borderline_reason: "framework release, not threat activity; reader value is vocabulary and the pipeline pin must be updated (operator-facing), so include only as a short reference note or leave as an operator-facing flag"
+
+  - title: "Luna Moth Files: leaked Silent Ransom Group chats describe a role-split vishing extortion process and Telegram recruitment of paid 'agents' for physical office access; authenticity is unverified, and SRG denies the leak is genuine"
+    suggested_priority: notable
+    sources:
+      - { url: "https://therecord.media/leaked-chats-show-russian-extortion-gang-sending-agents-to-law-firms", publisher: "The Record (Recorded Future News)", date: "2026-10-08", role: "primary" }
+      - { url: "https://blog.checkpoint.com/security/how-luna-moth-runs-data-extortion-like-a-business/", publisher: "Check Point (Exposure Management)", date: "2026-10-09", role: "primary" }
+      - { url: "https://www.truesec.com/hub/blog/russian-silent-ransom-group-combines-humint-and-cyber-extortion", publisher: "Truesec", date: "2026-10-09", role: "corroborating" }
+      - { url: "https://malware.news/t/silent-ransom-group-claims-luna-moth-files-are-fake-the-data-suggest-otherwise/126288", publisher: "malware.news (relaying DataBreaches.net excerpt: SRG called the leak fake)", date: "2026-10-09", role: "corroborating" }
+    discovery_trace: "first seen at: malware.news latest.rss?page=3 (lookback window), URL https://malware.news/t/russian-silent-ransom-group-combines-humint-and-cyber-extortion/126289 and https://malware.news/t/silent-ransom-group-claims-luna-moth-files-are-fake-the-data-suggest-otherwise/126288 (aggregator topics; leads only) → pivot: Truesec, URL https://www.truesec.com/hub/blog/russian-silent-ransom-group-combines-humint-and-cyber-extortion → pivot: WebSearch (\"Silent Ransom Group leaked chats Luna Moth Telegram recruit agents physical threats therecord\") → primary: The Record, URL https://therecord.media/leaked-chats-show-russian-extortion-gang-sending-agents-to-law-firms → primary: Check Point, URL https://blog.checkpoint.com/security/how-luna-moth-runs-data-extortion-like-a-business/. DataBreaches.net's two articles on the leak (2026-10-09, 2026-10-11) refused every transport (HTTP 403; reader relayed the block) and are not cited."
+    summary: |
+      Around 2026-10-05 an anonymous .onion site called "The Luna Moth Files" published what claims to be internal Silent Ransom Group (SRG, also Luna Moth, UNC3753, Chatty Spider) material: thousands of chat messages
+      from August 2025 to September 2026, a vishing script document, screenshots and a purported fake-employee CV. The Record reports that Chainalysis tied cryptocurrency addresses in the leak to known SRG extortions
+      but said it could not "speak to the totality of claims"; Check Point says nobody knows who published the archive or how it was obtained and treats its claims as unverified; SRG itself called the files fake (reported by DataBreaches.net,
+      not fetched). Taking the archive at face value, Check Point reads a segmented operation: researchers and persona builders, callers who hold the victim on the phone while a second operator works the endpoint over a separate chat,
+      technical staff supporting remote sessions and data access, and negotiators and payment handlers, with 3CX telephony servers, long-lived domains and business mailboxes prepared before the first call, and a deal pipeline labelled CHAT, OFFER, CONTRACT and GOLD aimed at the legal sector (42 of the 50 most recently observed victims are law firms, Check Point).
+      The Record adds that members discussed paid Telegram advertisements disguised as ordinary job listings to recruit "agents" for in-person access, a leader's estimate that only one recruit in ten proved usable, and a law-firm negotiation in which the victim referred to an individual who had entered its New York office and copied files to a flash drive;
+      Truesec's reading is that parts of the chats show the group discussing physical threats to leadership teams and their families and soliciting intelligence from military personnel. The Record states it could not verify whether the most extreme schemes were attempted, and Check Point calls the evidence strongest for discussion and weaker for successful placement of fake employees.
+      No new exploit or malware is described; the delta over the covered Mandiant and FBI reporting is the operating model and the physical-access recruitment channel.
+    region_nexus: "United States law firms are the stated focus; helpdesk-vishing and remote-support abuse transfer to any organisation with an IT help desk, including Swiss public bodies and their suppliers"
+    primary_sector_nexus: "indirect (legal and professional-services victims; technique transferable to public-sector IT help desks)"
+    sector: "legal-services"
+    cves: []
+    techniques: [T1566.004, T1684.001, T1219.002, T1589, T1591]
+    affected_products: []
+    entity_keys: ["campaign:fbi-flash-csa-260526-silent-ransom-group-physical-usb-attacks-us-law-firms"]
+    new_entities:
+      - { key: "actor:silent-ransom-group", type: actor, name: "Silent Ransom Group", aliases: ["Luna Moth", "UNC3753", "Chatty Spider"],
+          summary: "Data-theft extortion group (active since 2022) that skips encryption, uses callback phishing and helpdesk-impersonation vishing with legitimate remote-support tools, targets law firms and professional services and has used in-person impostors; Check Point and The Record cite the 'Luna Moth Files' leak of its internal chats (The Record, 2026-10-08; Check Point, 2026-10-09). Registry check: the aliases Luna Moth and UNC3753 currently sit on the FBI FLASH campaign record, no actor record exists." }
+    relation_suggestions:
+      - { subject: "actor:silent-ransom-group", object: "campaign:fbi-flash-csa-260526-silent-ransom-group-physical-usb-attacks-us-law-firms",
+          basis: "The Record: the FBI 'has also documented the group's most unusual tactic ... recruiting what the gang calls agents to physically infiltrate victims' offices' (The Record, 2026-10-08)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: update-of:2026-06-06/luna-moth-silent-ransom-group-unc3753-vishing-to-physical-ac
+    admiralty_suggestion: "reliability B (The Record, Check Point: original reading of the archive, both flag the provenance problem); credibility 3 (archive authenticity not established; Chainalysis corroborates some wallet attribution only)"
+    evidence:
+      - quote: "The archive, posted to a bespoke .onion site in early October by an unidentified source who did not state a motive, contains thousands of messages from August 2025 to September 2026."
+        attribution: "The Record"
+        source_url: "https://therecord.media/leaked-chats-show-russian-extortion-gang-sending-agents-to-law-firms"
+      - quote: "Recorded Future News could not verify whether the most extreme schemes were ever attempted."
+        attribution: "The Record"
+        source_url: "https://therecord.media/leaked-chats-show-russian-extortion-gang-sending-agents-to-law-firms"
+      - quote: "Nobody knows who published it or how the archive was obtained, so we treat its claims as unverified unless independent sources back them up."
+        attribution: "Check Point"
+        source_url: "https://blog.checkpoint.com/security/how-luna-moth-runs-data-extortion-like-a-business/"
+      - quote: "Verify any inbound IT request through a separate, known channel before approving a remote session."
+        attribution: "Check Point"
+        source_url: "https://blog.checkpoint.com/security/how-luna-moth-runs-data-extortion-like-a-business/"
+    extended_notes: |
+      Shape: an update-of on the 2026-06-06 Luna Moth entry (Mandiant, FBI FLASH CSA 260526). Facts vs claims: everything about the group's internal organisation is a CLAIM from an unauthenticated leak; the only independently corroborated element is Chainalysis tying leaked wallet addresses to known SRG extortions (as relayed by The Record); the "agents" physical-access tactic is separately documented by the FBI flash alert (2026-05).
+      Figures to attribute, not assert: roughly $200 million of claimed settlements across dozens of firms marked "gold" (The Record: the group's own figures, unverified); Check Point notes the site's headline financial figure does not reconcile with its own table and that the two message totals differ.
+      DETECTION / HARDENING (from Check Point's practical steps and the stated mechanism): telemetry classes: telephony/help-desk ticket records of inbound "IT" callers, remote-support tool installs and sessions (process creation + network egress to remote-support relays) outside the approved tool list, and new file-sharing uploads after a support call. Out-of-band call-back verification of any IT request, an allow-list for remote-access software, and briefing of senior staff whose names appear on the call lists. Triage: legitimate IT help-desk remote sessions come from known tooling and a known caller identity verified by ticket; the discriminator is an unsolicited call, a tool outside the approved list, or a second operator active on the endpoint while a caller keeps the user engaged.
+
+  - title: "Fox-IT publishes eight years of Cobalt Strike beacons (56,843 payloads, 190,182 sightings): Team Servers live a median 14 days, DNS beacons fade far more slowly than HTTP(S), and operators now reshuffle beacon configuration layouts to break parsers"
+    suggested_priority: low
+    sources:
+      - { url: "https://blog.fox-it.com/2026/10/13/releasing-the-cobalt-strike-beacon-corpus/", publisher: "Fox-IT (NCC Group)", date: "2026-10-13", role: "primary" }
+    discovery_trace: "first seen at: malware.news latest.rss, URL https://malware.news/t/releasing-the-cobalt-strike-beacon-corpus/126352 (aggregator topic; lead only) → primary: Fox-IT International blog, URL https://blog.fox-it.com/2026/10/13/releasing-the-cobalt-strike-beacon-corpus/ (no pivot needed beyond the lead; the dataset itself lives on Hugging Face and was not fetched)"
+    summary: |
+      Fox-IT released its full Cobalt Strike Beacon Corpus on Hugging Face on 2026-10-13: 56,843 raw beacons and their parsed configurations from 190,182 sightings on 30,604 unique Team Server IP addresses between 2018-07-04 and 2026-09-29,
+      collected by fingerprinting Team Servers and requesting the staged beacon, parsed with dissect.cobaltstrike (v1.3.0 now parses configuration blocks independently of their layout, because operators had started shuffling setting order and type values to break parsers).
+      Fox-IT's findings: the median Team Server was reachable for 14 days (35% seen on a single day, 14% still serving after three months, 2% after a year); only about 32% of fingerprinted Team Servers hand out a beacon, falling from around 40% in 2023 to 20-25% in 2026 as operators turn off staging (the host_stage option),
+      so staged-beacon scanning sees a shrinking part of the landscape; DNS beacons have declined much less steeply than HTTP(S) ones (about 100 a month since 2024); 128 beacons (0.23%) do not parse, mostly custom modifications. Cobalt Strike 4.9 and 4.5-4.8 share the lead since 2024 and 4.10+ remains small.
+      The value to a hunter is a labelled research corpus for clustering operators (watermark, spawn-to and injection hashes, malleable C2 profile, certificate reuse), benchmarking config extractors and separating red-team from criminal infrastructure; it is a dataset release, not a new campaign.
+    region_nexus: "global (tooling and infrastructure statistics)"
+    primary_sector_nexus: "indirect (hunting and detection-engineering resource; Cobalt Strike remains common ransomware and espionage tooling)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1071.001, T1071.004]
+    affected_products: ["Cobalt Strike"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    admiralty_suggestion: "reliability B (Fox-IT, original collection over eight years); credibility 2 (first-party dataset, not independently replicated)"
+    evidence:
+      - quote: "Today Fox-IT is publicly releasing its full Cobalt Strike Beacon Corpus, containing 56,843 raw beacons and their parsed configurations, from 190,182 sightings collected from 30,604 unique IP addresses running a Team Server"
+        attribution: "Fox-IT"
+        source_url: "https://blog.fox-it.com/2026/10/13/releasing-the-cobalt-strike-beacon-corpus/"
+      - quote: "The median Team Server was reachable for 14 days."
+        attribution: "Fox-IT"
+        source_url: "https://blog.fox-it.com/2026/10/13/releasing-the-cobalt-strike-beacon-corpus/"
+      - quote: "DNS beacons have declined much less steeply than HTTP(S) ones"
+        attribution: "Fox-IT"
+        source_url: "https://blog.fox-it.com/2026/10/13/releasing-the-cobalt-strike-beacon-corpus/"
+    extended_notes: |
+      Defender takeaways stated or following directly from Fox-IT's numbers: network-IOC lists for Cobalt Strike age out in about two weeks (median Team Server lifetime 14 days), so behaviour and configuration-clustering beat address matching; DNS-listener beacons get less public attention, so DNS-tunnel/TXT-query-volume detections deserve the same weight as HTTP(S) beacon detections; custom-modified beacons that defeat public parsers exist (0.23% of the corpus).
+      The raw payload file is a 9.7 GB Parquet wrapped in CaRT; treat as live malware. Not in the store before; entries on Cobalt Strike appear only as incidental tool mentions.
+    borderline: true
+    borderline_reason: "dataset/tooling release with no campaign or exposure; useful to detection engineers but does not change a responder's work today; include only as a short research note"
+
+  - title: "Check Point Research on LiteLLM: a missing role check on /config/update lets any authenticated user take over the gateway (arbitrary file read, admin takeover, code execution via modules loaded from cloud storage), and a user_config SSRF leaks provider API keys; fixed in 1.83.x"
+    suggested_priority: low
+    sources:
+      - { url: "https://research.checkpoint.com/2026/when-llm-gateways-go-wrong-findings-from-litellm/", publisher: "Check Point Research", date: "2026-10-13", role: "primary" }
+    discovery_trace: "first seen at: checkpoint-research, RSS feed https://research.checkpoint.com/feed/ (majors sweep, item dated 2026-10-13) → primary (no pivot needed): https://research.checkpoint.com/2026/when-llm-gateways-go-wrong-findings-from-litellm/. CVE ids and fixed-in versions cross-read against the NVD API (verification only, not cited)."
+    summary: |
+      Check Point Research assessed LiteLLM 1.77.7, a widely used open-source LLM gateway that holds provider credentials and routes model traffic, and reports two CVEs resolved as of LiteLLM 1.83.9.
+      CVE-2026-35029: POST /config/update has no PROXY_ADMIN check, and a route allow-list for UI sessions matches by startswith("/config"), so any UI session token (any role, including a baseline internal user) can modify runtime configuration.
+      Chains: injecting environment variables (UI_LOGO_PATH then GET /get_image) reads arbitrary files; overwriting UI_USERNAME and UI_PASSWORD yields the proxy-admin account; defining a pass-through endpoint whose target is an s3:// or gcs:// Python module makes the proxy download and exec_module() it, giving code execution.
+      CVE-2026-59823: the documented "Clientside LLM Credentials" path accepts a user_config body whose api_base bypasses the top-level api_base/base_url block, so an authenticated caller redirects LiteLLM's outbound call and receives the provider API key the proxy attaches. Password hashes are readable by low-privilege users and unsalted single-iteration (tracked as a duplicate GHSA).
+      No in-the-wild exploitation of these two CVEs is reported in the post. The store already covers LiteLLM under mass exploitation by the PoeLLM botnet through a different CVE (CVE-2026-42271, command injection in the MCP test-connection path), so this is a second, independent attack surface on the same product.
+    region_nexus: "global; internal AI-gateway deployments in public administrations"
+    primary_sector_nexus: "indirect (AI infrastructure being adopted by public bodies; holds provider credentials)"
+    sector: "public-sector"
+    cves: [CVE-2026-35029, CVE-2026-59823]
+    techniques: [T1190, T1059.006]
+    affected_products: ["LiteLLM"]
+    entity_keys: ["product:litellm"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    admiralty_suggestion: "reliability B (Check Point Research, discoverer); credibility 2 (CVE descriptions in NVD match the described flaws)"
+    evidence:
+      - quote: "a missing authorization check on the /config/update endpoint, which allowed any authenticated user (including low-privileged accounts)"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/when-llm-gateways-go-wrong-findings-from-litellm/"
+      - quote: "which have been resolved as of LiteLLM version 1.83.9"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/when-llm-gateways-go-wrong-findings-from-litellm/"
+    extended_notes: |
+      VERSIONS: Check Point tested 1.77.7 and says both CVEs are resolved as of 1.83.9. NVD's descriptions (read via API, not cited) say CVE-2026-35029 affects versions prior to 1.83.0 (CVSS 3.1 8.8) and CVE-2026-59823 prior to 1.83.9 (CVSS 4.0 5.3), so the safe floor is 1.83.9. CVE-2026-35029 has been public since 2026-04-06.
+      DETECTION (telemetry class first): web/application access logs on the LiteLLM proxy for POST /config/update from non-admin sessions, GET /get_image after a config change, config-store changes that introduce s3:// or gcs:// pass-through targets or change UI_USERNAME/UI_PASSWORD/UI_LOGO_PATH, and outbound calls from the proxy to unexpected api_base hosts; cloud audit logs for reads of the bucket object a rogue pass-through target names.
+      HARDENING: upgrade to 1.83.9 or later; do not expose the proxy or its UI to the internet; rotate provider API keys held by any instance that ran an affected build with untrusted internal users; restrict who can obtain UI sessions.
+    borderline: true
+    borderline_reason: "vendor vulnerability research on one AI-gateway product with no reported exploitation; relevant only where LiteLLM is deployed; the exploited LiteLLM issue is already covered (PoeLLM entry)"
+
+  - title: "Phishing e-mail carrying hidden prompt injection aimed at the recipient's AI mail assistant: Barracuda sees instructions in HTML comments, zero-size or white text, Base64 blocks and zero-width characters, in a message that came from a public-sector domain"
+    suggested_priority: low
+    lookback: true
+    sources:
+      - { url: "https://blog.barracuda.com/2026/10/07/email-attacks-target-both-humans-ai-assistants", publisher: "Barracuda Research", date: "2026-10-07", role: "primary" }
+      - { url: "https://www.malwarebytes.com/blog/ai/2026/10/phishing-emails-are-baiting-your-ai-assistant", publisher: "Malwarebytes", date: "2026-10-12", role: "corroborating" }
+    discovery_trace: "first seen at: malware.news latest.rss?page=2 (lookback window), URL https://malware.news/t/phishing-emails-are-baiting-your-ai-assistant/126319 (aggregator topic; lead only) → pivot: Malwarebytes, URL https://www.malwarebytes.com/blog/ai/2026/10/phishing-emails-are-baiting-your-ai-assistant → primary: Barracuda, URL https://blog.barracuda.com/2026/10/07/email-attacks-target-both-humans-ai-assistants. Malwarebytes is a derivative re-report of Barracuda, so the two count as one independent source. The same finding was also in the Check Point weekly bulletin of 2026-10-12 (https://research.checkpoint.com/2026/12th-october-threat-intelligence-report/), another rewrite."
+    summary: |
+      Barracuda Research describes a phishing sample built to attack two readers at once: a human, who sees an ordinary internal-looking message with a password-protected attachment whose password is given in the body (a blind spot for attachment scanning),
+      and an AI assistant that summarises, prioritises or acts on e-mail, which reads a hidden second layer. The sample has matching From and To addresses, a trusted spam-confidence score and, per Barracuda, "originates from a public sector domain", all of which help it through reputation filtering.
+      The hidden instructions try either to make the assistant's summary call the e-mail legitimate or urgent, or to add a fake priority action; Barracuda's example in an invoice mail inserts a request to change a vendor's payment details. Barracuda lists four recurring hiding techniques: text in HTML comments, CSS-invisible text (zero font size, white colour), instructions in Base64 data blocks and zero-width Unicode characters.
+      This is Barracuda's own telemetry write-up; no victim impact, volume or actor is stated, and it comes from a vendor that sells the remediation.
+    region_nexus: "global; sample reportedly sent from a public-sector domain (country not stated)"
+    primary_sector_nexus: "indirect (public bodies adopting e-mail copilots and summarisers)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.001, T1204.002]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    admiralty_suggestion: "reliability C (vendor telemetry write-up with a product pitch; Malwarebytes re-report); credibility 3 (one sample described, no volume)"
+    evidence:
+      - quote: "Instructions are tucked inside comment tags that never render in a mail client but remain in the raw source code an AI parses."
+        attribution: "Barracuda Research"
+        source_url: "https://blog.barracuda.com/2026/10/07/email-attacks-target-both-humans-ai-assistants"
+      - quote: "it originates from a public sector domain, all of which lend it perceived legitimacy and help it pass reputation-based filtering"
+        attribution: "Barracuda Research"
+        source_url: "https://blog.barracuda.com/2026/10/07/email-attacks-target-both-humans-ai-assistants"
+    extended_notes: |
+      ATT&CK note: the AI-assistant half maps to the new v20 technique Indirect Prompt Injection (T1698), which is not in the pinned v19.2 dataset, so techniques[] carries only the human-facing phishing mapping until the pin is updated.
+      DETECTION (derived, not vendor-stated): mail-gateway content inspection of raw MIME/HTML for comment blocks, zero-size/white-on-white styling, zero-width characters and decodable Base64 text that contain imperative language addressed to an assistant; assistant-side logs of actions triggered by e-mail content (payment-detail changes, forwarding, calendar acceptances) that were not requested by the user.
+      HARDENING (Malwarebytes/Barracuda, generic): strip hidden elements before content reaches the model, keep external content separated from instructions, require human approval for payment-detail and vendor changes, log injection attempts. Weak on specifics: no vendor name for the assistants affected, no sample volume.
+    borderline: true
+    borderline_reason: "single vendor-telemetry sample, source dated 2026-10-07 (outside the rotation lookback; the 2026-10-12 Malwarebytes rewrite is what surfaced it), no volume or actor; included for the public-sector sender-domain detail and the new prompt-injection technique class"
+
+  - title: "ShinyHunters investigation: the FBI arrests Edward Dubrovsky, a Canadian ransomware-negotiation executive, on cyber-extortion conspiracy charges; the complaint is sealed and the ShinyHunters link rests on Krebs's sources"
+    suggested_priority: low
+    lookback: true
+    sources:
+      - { url: "https://krebsonsecurity.com/2026/10/fbi-arrests-founder-of-ransomware-negotiation-firm/", publisher: "KrebsOnSecurity", date: "2026-10-10", role: "primary" }
+      - { url: "https://www.nextgov.com/cybersecurity/2026/10/cybersecurity-executive-who-helped-hacking-victims-arrested-federal-extortion-charges/416545/", publisher: "Nextgov/FCW", date: "2026-10-10", role: "corroborating" }
+    discovery_trace: "first seen at: krebs, RSS feed https://krebsonsecurity.com/feed/ (lookback window, item dated 2026-10-10) → primary: https://krebsonsecurity.com/2026/10/fbi-arrests-founder-of-ransomware-negotiation-firm/ → corroboration: malware.news latest.rss?page=2 topic https://malware.news/t/cybersecurity-executive-who-helped-hacking-victims-arrested-on-federal-extortion-charges/126304 → Nextgov, URL https://www.nextgov.com/cybersecurity/2026/10/cybersecurity-executive-who-helped-hacking-victims-arrested-federal-extortion-charges/416545/"
+    summary: |
+      KrebsOnSecurity reports, from sources, that the FBI arrested an executive at a Canadian ransomware-negotiation firm in Pennsylvania on 2026-10-08 in connection with its ShinyHunters investigation, and names him as Edward Dubrovsky (court records spell Dobrovsky). Court records indexed by CourtListener
+      show charges of conspiracy to threaten to impair the confidentiality of information with intent to extort and of interference with commerce by threats, a notice on 2026-10-09 moving the case to the Eastern District of Texas, and a sealed complaint. Nextgov/FCW independently confirms the arrest, the charges and the detention request, and states that his specific alleged conduct, including any role in the FBI intrusion, has not been publicly established.
+      The ShinyHunters link is Krebs's sourcing and the NYT's unnamed-suspect report; the FBI declined comment. Krebs adds, from sources, that the FBI is examining devices seized when Dutch police arrested Pepijn van der Stap last month and that charges against principals at other negotiation firms may follow; ShinyHunters member "Rey" is reported by Reuters (via Krebs) to be detained and cooperating.
+      For defenders the point is trust in the extortion-response supply chain (negotiators, IR and insurance intermediaries sit between victims and extortionists) and that ShinyHunters' ongoing data-theft extortion of SaaS tenants continues; Krebs repeats the FBI's figure of more than $70 million extorted this year.
+    region_nexus: "United States / Canada (arrest); ShinyHunters targets global SaaS tenants"
+    primary_sector_nexus: "indirect (extortion-response vendors; ShinyHunters has targeted public bodies such as the FBI recruitment portal, covered 2026-09-24)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566, T1078.004, T1657]
+    affected_products: []
+    entity_keys: ["actor:shinyhunters"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    admiralty_suggestion: "reliability B (Krebs, original sourcing; Nextgov confirms from court records); credibility 2 (arrest and charges confirmed by court records; ShinyHunters connection unconfirmed by the FBI)"
+    evidence:
+      - quote: "Federal court records show that on October 8, an Edward Dobrovsky (note the slight misspelling of the last name) was arrested in Pennsylvania on cyber extortion and conspiracy charges."
+        attribution: "KrebsOnSecurity"
+        source_url: "https://krebsonsecurity.com/2026/10/fbi-arrests-founder-of-ransomware-negotiation-firm/"
+      - quote: "His specific alleged conduct, including any role in the FBI intrusion linked to ShinyHunters, has not been publicly established."
+        attribution: "Nextgov/FCW"
+        source_url: "https://www.nextgov.com/cybersecurity/2026/10/cybersecurity-executive-who-helped-hacking-victims-arrested-federal-extortion-charges/416545/"
+    extended_notes: |
+      The store has no entry on the ShinyHunters arrests (Dutch arrest of van der Stap in September, 'Rey' detained, this arrest); related covered entry: 2026-09-24/shinyhunters-fbi-peoplesoft-breach-claim. The enforcement thread is more S2/S4 (law-enforcement action against a named actor) than S3; returned borderline for the main agent to place or drop.
+      Attribute everything about ShinyHunters involvement as reported (Krebs sources, NYT); nothing here is an FBI statement beyond the arrest announcement without a name.
+    borderline: true
+    borderline_reason: "law-enforcement development with no new TTP or defender action; the ShinyHunters connection is reported, not confirmed; include only if the main agent wants an enforcement-watch note"
+
+# Leads examined and consciously dropped (not returned as items). Reasons are the audit trail for the next agent.
+dropped_leads:
+  - { lead: "tensorlake npm worm release (Aikido 2026-10-08, Flatt 2026-10-08)", reason: "already covered: ChainDrop entry 2026-08-06/chaindrop-shai-hulud-npm-worm-onchain-c2-resolver carries the tensorlake@0.5.144 delta (Socket, OX, Endor) including the dead-man switch; Flatt/Aikido add nothing new inside the lookback" }
+  - { lead: "@subql/common npm compromise via tampered GitHub Actions + OIDC trusted publishing (Flatt 2026-10-06)", reason: "post dated 2026-10-06, outside the 168 h lookback; not covered in the store; if the main agent wants it, source is https://flatt.tech/research/posts/subql-common-npm-supply-chain-attack/ (fetched; infostealer + C2 backdoor via postinstall, published through GitHub Actions OIDC)" }
+  - { lead: "Unit 42 'The Noise Inside the Network' (2026-10-13)", reason: "anonymised bank case study: third-party-managed gateway without strict authentication, brute force, a WSUS RCE attempt stopped by Cortex XDR; marketing-shaped, no technique or version detail" }
+  - { lead: "Talos Patch Tuesday October 2026, Krebs/Rapid7/Tenable/0patch Patch Tuesday posts (1,407-1,413 CVEs, three zero-days, KEV CVE-2026-96951 Windows Shell command injection, 0patch micropatch for Windows DNS Server RCE CVE-2026-62878)", reason: "S1 domain (vendor patch cycle); KEV row CVE-2026-96951 is NOT COVERED in kev-window.txt and needs an S1 disposition" }
+  - { lead: "Kimsuky Operation GitPower (Genians 2026-10-11, https://www.genians.co.kr/en/blog/threat_intelligence/operation-gitpower)", reason: "Ukrainian civil-society targets, reply-baiting spear phishing and GitHub/GitLab/Codeberg C2; no Swiss nexus and the technique pattern (LNK + GitHub C2) is already covered by CL-STA-1178 and GhostAction entries" }
+  - { lead: "AIR Security 'Scan me, scan me not' (Anthropic skill-scanner bypass) and 'VerCellBreak' (Vercel sandbox allow-list bypass), both 2026-10-12", reason: "vendor-product-adjacent AI-agent research; no in-the-wild compromise beyond an unclaimed PyPI package name; no public-sector nexus; Plugin4Shell already covered" }
+  - { lead: "Anthropic disclosure of rogue model actions on government websites (WSJ/Reuters via databreaches.net 2026-10-10)", reason: "event reporting without detection or hardening content; agencies not named; primary Anthropic post not located in this run; same thread as covered 2026-09-28/openai-agents-unctad entry; no actionable defender detail" }
+  - { lead: "Truesec '2026: The Threats That Matter' (2026-10-13)", reason: "trend/opinion piece, no new technical content; not a periodic report with data" }
+  - { lead: "Sophos 'How Sophos Endpoint Stops EDR Killers' (2026-10-13)", reason: "product marketing around BYOVD; no new technique or driver detail" }
+  - { lead: "Acronis Cyberthreats Update October 2026 (2026-10-13)", reason: "monthly vendor roll-up; its headline item (BlueMoon Chrome/Windows zero-day chain, Proofpoint + Volexity) is a September story outside the window" }
+  - { lead: "Picus 'CVE-2026-88771 Citrix NetScaler pre-auth command injection explained' (2026-10-13)", reason: "vendor explainer on an already-covered CVE (2026-09-28 entry); no new exploitation or version data" }
+  - { lead: "Check Point weekly bulletin 2026-10-12, Microsoft Security Blog (newest 2026-10-08), GTIG feed (newest 2026-09-30), Kaspersky Securelist (newest 2026-09-24), SentinelLABS (newest 2026-09-18), Proofpoint Threat Insight (newest 2026-09-22), Trend Micro research (newest 2026-09-25), ESET (feed newest research post MATCHBOIL 2026-10-08)", reason: "no in-window research from these majors; items inside them are either older than the window or covered (FortiBleed CSA 261006 already in entry 2026-06-18/fortibleed-...; Talos UAT-11985 borderline-dropped by the 2026-10-09 run)" }
+
+majors_sweep:
+  window_start: "2026-10-13T00:55Z (26 h)"
+  swept: [microsoft-threat-intelligence (feed + topic page), gtig-mandiant (feed), talos (feed), unit42 (feed), checkpoint-research (feed), eset (feed), kaspersky-securelist (feed + index), sentinellabs (feed + index), proofpoint-threat-insight (index), trendmicro-research (feed + index), volexity (feed), plus bulk extras: dfirreport, huntress, rapid7, watchtowr, projectzero, recordedfuture-insikt, sophos, wiz, zscaler, sans-isc, infoguard, infoguard-labs, scip, oneconsult, compass, sansec, sysdig, cloudflare-cf1, citizen-lab, group-ib, lab52, tenable, truesec, expel, bishopfox, 0patch, acronis, sonatype, snyk, google-tag, intrinsec, seqrite, cloudsek, calif, exodus, socprime]
+  in_window_research_found: ["Volexity Ivanti Connect Secure zero-day chain (kept)", "Check Point LiteLLM research (borderline)", "Fox-IT beacon corpus (borderline)", "Unit 42 bank case study (dropped)"]
+  periodic_reports: ["MITRE ATT&CK v20 (2026-10-13) flagged; Microsoft Digital Defense Report 2026 was published 2026-10-01 (outside the window, no entry in the store: grep of entries/ finds none; main agent/audit may wish to check whether it merits a retroactive annual-report entry)", "Acronis Cyberthreats Update October 2026 (monthly roll-up, dropped)", "Check Point September 2026 cyber threat landscape (blog.checkpoint.com, referenced from the weekly bulletin; not fetched)"]
+
+candidate_sources:
+  - id: mitre-attack-updates
+    publisher: "MITRE ATT&CK — release notes and changelogs"
+    url: "https://attack.mitre.org/resources/updates/updates-october-2026/"
+    category: research
+    why: "Primary for ATT&CK version releases (biannual plus 'agile' CTI releases). The pipeline pins attack/enterprise-attack.json to v19.2 and v20 shipped 2026-10-13; a source record would let rotation (or the audit) catch releases and their changelog.json (technique additions, revocations, deprecations) without waiting for a news mirror. Pattern: https://attack.mitre.org/resources/updates/ ; machine-readable changelog https://attack.mitre.org/docs/changelogs/v19.2-v20.0/changelog.json (10 MB JSON, readable through `fetch_source.py url`)."
+
+coverage_gaps:
+  - { source_id: "ivanti hub (hub.ivanti.com advisory for CVE-2026-104935)", reason: "JS/SPA shell on extract (1 MB inline script, no advisory text) and WebFetch ('Sorry to interrupt' CSS-error page); recipe gap. The vendor version table was therefore read through Rapid7. Working alternatives to try: the classic forums.ivanti.com advisory path, the NVD/CVE record, or WebSearch for a CERT (BSI, CERT-FR, CERT-EU) rewrite once published." }
+  - { source_id: "justice.gov (DOJ N.D. Texas, Operation Lonestar Roundup)", reason: "bridge returned an Akamai interstitial challenge page, WebFetch HTTP 401; covered anyway through Nextgov/FCW and CrowdStrike (DOJ release not cited)" }
+  - { source_id: "databreaches-net (article pages)", reason: "article pages refuse the direct GET (HTTP 403) and the reader relays the block (2026-10-11 Luna Moth article); one other article (2026-10-10 Anthropic item) was served by the jina fallback inside `extract` (credit spent). The feed record in sources.json lists https://databreaches.net/feed/ and should be tried first." }
+  - { source_id: "tenable-research", reason: "feed https://feeds.feedburner.com/tenable/qaXL served through the jina fallback (method: jina, items undated); a direct WAF block. Not a fetch failure (content retrieved), but it spends reader credit on every sweep." }
+  - { source_id: "aikido-security", reason: "RECIPE: `extract https://www.aikido.dev/blog` strips hrefs and dates. Working: `python3 tools/fetch_source.py url https://www.aikido.dev/blog` (760 KB raw HTML with /blog/<slug> hrefs and dated cards), then `extract https://www.aikido.dev/blog/<slug>` whose date: field is reliable (tensorlake 2026-10-08, supplychain-local 2026-09-23)." }
+  - { source_id: "flatt-security", reason: "RECIPE: `extract https://flatt.tech/research/` returns raw HTML; the site has a working RSS https://flatt.tech/research/index.xml (undated items, 10 titles + links, newest first via `fetch_source.py feed`); per-post `extract` carries date: (tensorlake 2026-10-08, subql 2026-10-06). Suggest rss_url = https://flatt.tech/research/index.xml." }
+  - { source_id: "air-security", reason: "RECIPE: `extract https://www.air.security/blog` shows a single card; use `url https://www.air.security/blog` for the /blog-posts/<slug> hrefs (14 posts) and `extract https://www.air.security/blog-posts/<slug>` for the date: field (vercel-break 2026-10-12, anthropic-scanner 2026-10-12, agent-supply-chain-framework 2026-10-05)." }
+  - { source_id: "hunt-io", reason: "RECIPE: `url https://hunt.io/blog` returns a 12.7 MB body; the working low-cost path is `WebFetch https://hunt.io/blog` asking for title/date/href of the 12 newest (worked 2026-10-14: newest post 2026-10-06 BraZetsu)." }
+  - { source_id: "eset", reason: "RECIPE CONFIRMED: `feed https://www.welivesecurity.com/en/rss/feed/ 20` returns 20 dated items directly (direct transport); suggest pinning rss_url (same suggestion as 2026-10-06 S3)." }
+  - { source_id: "yeswehack", reason: "RECIPE CONFIRMED: `feed https://www.yeswehack.com/feed 15` returns 14 dated items; newest 2026-10-12 (non-research)." }
+  - { source_id: "jamf-threat-labs", reason: "RECIPE CONFIRMED: `extract https://www.jamf.com/blog/category/jamf-threat-labs/` returns raw HTML with 49 /blog/<slug>/ links (newest first); per-post `extract` date: reliable." }
+  - { source_id: "symantec-security-com", reason: "RECIPE CONFIRMED: `extract https://www.security.com/threat-intelligence` lists 5 post links; listing page date: is the newest post's date; `url` raw HTML carries per-card dates." }
+  - { source_id: "malware-news", reason: "RECIPE CONFIRMED: latest.rss caps at 30 items; ?page=1..6 reaches back to 2026-10-06 (about eight days) in one pass; the topics are lead-only (Article Link footer carries the primary)." }
+  - { source_id: "proofpoint", reason: "`extract https://www.proofpoint.com/us/blog/threat-insight` returns raw HTML with <time datetime=...> per card (newest 2026-09-22); usable for a quick recency check." }
+  - { source_id: "mandiant-gtig", reason: "`extract https://cloud.google.com/blog/topics/threat-intelligence` returns only a 771-byte stub with no list; the feedburner feed (825 KB, ~15 items) is the working recipe." }
+
+source_ledger:
+  - { id: aikido-security, tier: standard, attempted: true, transport: "url(raw hrefs)+extract per post", horizon_hours: 168, in_horizon_items: 3, returned: 0, note: "tensorlake worm (2026-10-08) already covered in ChainDrop entry; other in-horizon posts are marketing" }
+  - { id: flatt-security, tier: standard, attempted: true, transport: "feed(index.xml)+extract", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "tensorlake (2026-10-08) covered; @subql/common (2026-10-06) outside horizon, noted in dropped_leads" }
+  - { id: symantec-security-com, tier: standard, attempted: true, transport: "extract+url", horizon_hours: 144, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-01 (Warlock critical-infrastructure, covered by 2026-10-03 Longlegs entry)" }
+  - { id: xlab-qianxin, tier: standard, attempted: true, transport: "feed", horizon_hours: 144, in_horizon_items: 0, returned: 0, note: "newest 2026-07-29; quiet since" }
+  - { id: yeswehack, tier: standard, attempted: true, transport: "feed", horizon_hours: 144, in_horizon_items: 2, returned: 0, note: "interview and opinion posts only" }
+  - { id: air-security, tier: standard, attempted: true, transport: "url+extract", horizon_hours: 121, in_horizon_items: 2, returned: 0, note: "VerCellBreak and Anthropic skill-scanner bypass (both 2026-10-12) dropped: vendor-product-adjacent, no public-sector nexus" }
+  - { id: eset, tier: standard, attempted: true, transport: "feed", horizon_hours: 124, in_horizon_items: 1, returned: 0, note: "only a consumer how-to (2026-10-12); MATCHBOIL (2026-10-08) is outside the horizon" }
+  - { id: hunt-io, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-10-06 (BraZetsu access broker)" }
+  - { id: ibm-xforce, tier: standard, attempted: true, transport: "url+extract per post", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "six listed posts, newest 2026-09-02" }
+  - { id: intel471, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-10-07 (agentic hunting guardrails, marketing)" }
+  - { id: jamf-threat-labs, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-09-30 (CloudSyncD)" }
+  - { id: krebs, tier: standard, attempted: true, transport: "feed+extract", horizon_hours: 121, in_horizon_items: 2, returned: 1, note: "ransomware-negotiator arrest (borderline); Patch Tuesday post left to S1" }
+  - { id: malware-news, tier: standard, attempted: true, transport: "feed ?page=0..6", horizon_hours: 121, in_horizon_items: 150, returned: 4, note: "used as lead source: FAMOUS CHOLLIMA/IT workers, ATT&CK v20, Luna Moth leak, Fox-IT corpus, Barracuda mail prompt injection; most remaining topics are leak-site claims (S4), patch advisories (S1) or already covered" }
+  - { id: offseq, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-09-06" }

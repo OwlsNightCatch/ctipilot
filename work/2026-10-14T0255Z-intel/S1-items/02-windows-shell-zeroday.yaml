@@ -1,0 +1,49 @@
+  - title: "CVE-2026-96951, Windows Shell: Mark of the Web bypass exploited as a zero-day, fixed in the 2026-10-13 cumulative updates and on CISA KEV with a 2026-10-16 due date (CVSS 8.8)"
+    sources:
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-96951", publisher: "Microsoft MSRC Security Update Guide", date: "2026-10-13", role: "primary" }
+      - { url: "https://api.msrc.microsoft.com/cvrf/v3.0/cvrf/2026-Oct", publisher: "Microsoft MSRC CVRF 2026-Oct (fixed builds and KB numbers)", date: "2026-10-13", role: "primary" }
+      - { url: "https://www.rapid7.com/blog/post/em-patch-tuesday-october-2026", publisher: "Rapid7", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://www.ivanti.com/blog/october-2026-patch-tuesday", publisher: "Ivanti (Patch Tuesday roundup)", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA KEV catalogue (entry added 2026-10-13, due 2026-10-16)", date: "2026-10-13", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev; CVE-2026-96951 listed 2026-10-13) → pivot: msrc-update-guide bridge (python3 tools/fetch_source.py msrc cve CVE-2026-96951 and msrc cvrf 2026-Oct, https://api.msrc.microsoft.com/cvrf/v3.0/cvrf/2026-Oct) → corroboration: https://www.rapid7.com/blog/post/em-patch-tuesday-october-2026 (rapid7-research feed https://www.rapid7.com/rss.xml) and https://www.ivanti.com/blog/october-2026-patch-tuesday (WebSearch (\"Ivanti October 2026 security update Connect Secure Xtraction Neurons Patch Intune\", allowed_domains ivanti.com))"
+    summary: |
+      Microsoft's 2026-10-13 release fixes CVE-2026-96951, a Windows Shell security feature bypass (CWE-77 command injection per CISA's KEV name; CVSS 3.1
+      8.8, AV:N/AC:L/PR:N/UI:R) that Microsoft marks Exploited: Yes, Publicly Disclosed: No, Exploitation Detected. Microsoft's FAQ says a successful attacker
+      "could evade Mark of the Web (MOTW) defenses" after convincing a user to click a link or open a crafted attachment sent by email or instant message,
+      so the file or content opens without the SmartScreen and warning dialogs the MOTW tag normally triggers. Rapid7 notes this is the second exploited Windows Shell zero-day this year and
+      that Windows Server 2012 receives no patch while Server 2012 R2 does; the flaw also affected Outlook.com, which MSRC's CVRF lists as fixed in a service build dated 2026-09-25. No
+      source names the exploiting actor, the delivered payload or the victims; CISA lists the ransomware-campaign use as Unknown and sets a three-day remediation
+      due date. Fixed builds per MSRC: Windows 11 24H2/25H2/26H2 KB5127648 (10.0.26100.9711 / 26200.9711 / 26300.9711), Windows 11 26H1 KB5127646, Windows 11 23H2
+      KB5126653, Windows 10 21H2/22H2 KB5126657 (10.0.19044.7807), Windows 10 1809 and Server 2019 KB5126651, Windows 10 1607 and Server 2016 KB5126868, Server 2022
+      KB5126655, Server 2025 KB5126646, Server 2012 R2 KB5126836.
+    region_nexus: "global; Windows endpoints and servers across all Swiss administrations"
+    primary_sector_nexus: "direct: Windows estate of federal, cantonal and communal administrations; mail and instant-message attachment and download delivery is the stated vector"
+    sector: "public-sector"
+    cves: [CVE-2026-96951]
+    techniques: [T1553.005, T1204.002, T1566.001]
+    affected_products: ["Microsoft Windows", "Microsoft Windows Server"]
+    entity_keys: ["product:microsoft-windows", "product:microsoft-windows-server"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Publicly Disclosed:No;Exploited:Yes;Latest Software Release:Exploitation Detected"
+        attribution: "Microsoft MSRC"
+        source_url: "https://api.msrc.microsoft.com/cvrf/v3.0/cvrf/2026-Oct"
+      - quote: "An attacker who successfully exploited the vulnerability could evade Mark of the Web (MOTW) defenses."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-96951"
+      - quote: "Once again, the immediate prize for an attacker is a Mark of the Web (MOTW) bypass."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/em-patch-tuesday-october-2026"
+      - quote: "Microsoft Windows Shell contains a command injection vulnerability that allows an unauthorized attacker to bypass a security feature over a network."
+        attribution: "CISA KEV"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+    extended_notes: |
+      MSRC title is "Windows Shell Security Feature Bypass Vulnerability"; CISA's KEV name is "Microsoft Windows Command Injection Vulnerability" (CWE-77); the three-day KEV due date and "forensicTriage: Yes" flag come from the KEV record. CVSS vector CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C (temporal 8.2). The MSRC advisory lists reporters from multiple organisations, none from Microsoft (Rapid7).
+      EXPOSURE: any supported Windows client or server where a user opens files or links from mail, chat or the web; patched build is the October 2026 cumulative update for the release in use (builds above).
+      DETECTION (class): the bypass removes the MOTW-driven prompt, so there is no user-visible warning to rely on. Hunt for execution of freshly delivered content (archives, shortcuts, documents) from mail and download paths where the usual SmartScreen/Protected View evaluation events are missing, process-creation lineage from explorer.exe into scripting and LOLBin children shortly after a mail or browser download event, and download-to-execute timing; mail gateway and EDR file-origin telemetry are the control points. Treat this as a hunt hypothesis: no source publishes the exploit's behaviour.
+      TRIAGE: benign lookalike is normal user opening of local or trusted-zone files, which also lacks MOTW; the discriminator is origin (mail or web download, internet-zone) together with absent MOTW evidence on the opened item.
+      HARDENING: deploy the cumulative update; attachment blocking and mail-gateway detonation compensate for a MOTW bypass because the tag is the control that failed.
+      Gap: no source describes the exploitation campaign; revisit when Microsoft, CISA or a lab publishes it.

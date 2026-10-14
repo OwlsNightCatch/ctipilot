@@ -1,0 +1,44 @@
+  - title: "Cisco 2026-10-07 bundle: unauthenticated root code execution on Nexus 3000 and 9000 switches through NGOAM and MPLS OAM (CVSS 9.8) and unauthenticated CVSS 9.1 flaws in License On-Prem, none exploited; no entry in the store yet"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ngoam-rce-LWKQ4BU", publisher: "Cisco PSIRT (cisco-sa-ngoam-rce-LWKQ4BU)", date: "2026-10-07", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-moam-rce-uBTzYV7", publisher: "Cisco PSIRT (cisco-sa-moam-rce-uBTzYV7)", date: "2026-10-07", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ssm-access-nttb2dhE", publisher: "Cisco PSIRT (cisco-sa-ssm-access-nttb2dhE, License On-Prem)", date: "2026-10-07", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13044", publisher: "NCSC Switzerland (security hub advisory, ncsc-csh post 13044)", date: "2026-10-09", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-csh bridge (python3 tools/fetch_source.py ncsc-csh recent 25; post 13044 '[Advisory] Cisco Nexus Switches and License On-Prem: Multiple Critical RCE Vulnerabilities', created 2026-10-09T09:21Z, not covered by prior_coverage.json) → pivot: Cisco PSIRT feed https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml (bundle of 2026-10-07) → primary: the three Cisco advisories above (extract)"
+    summary: |
+      Cisco published a bundle on 2026-10-07 (NCSC Switzerland's advisory followed on 2026-10-09) whose critical items are not yet in the store. Cisco Nexus 3000 and 9000 Series
+      switches in standalone NX-OS mode are affected by unauthenticated, remote code execution with root privileges and denial of service through the Next Generation OAM (NGOAM)
+      feature (CVE-2026-76485 needs only NGOAM enabled; CVE-2026-76486 additionally SRv6 or NV Overlay with an EVPN VNI and a learned VTEP peer; CVE-2026-76501 needs NGOAM and SRv6; CVSS 9.8) and, separately, through the MPLS OAM feature
+      (CVE-2026-76465, CVSS 9.8), all triggered by crafted IP packets sent to an interface of the switch. Cisco says there is no workaround, but disabling the feature removes the attack vector (no feature ngoam; no feature mpls oam) and Live Protect
+      shields exist for these CVEs on 10.6(3). Separately, Cisco License On-Prem (formerly Smart Software Manager On-Prem), regardless of configuration, has an unauthenticated arbitrary account password reset
+      in the web management interface (CVE-2026-20328, 9.1) and an unauthenticated Smart Licensing Utility API flaw that writes arbitrary files or causes denial of service (CVE-2026-76454, 9.1); no workaround.
+      Cisco's PSIRT says it is not aware of public announcements or malicious use of the NX-OS vulnerabilities, which were found in internal testing. NCSC's post lists a different License On-Prem CVE set (including a 10.0 score) than the Cisco advisory
+      that was read here, so the Cisco advisory identifiers are used.
+    region_nexus: "global; Nexus 3000/9000 data-centre and campus fabrics and Cisco licensing servers of Swiss administrations"
+    primary_sector_nexus: "direct if NGOAM or MPLS OAM is enabled on Nexus switches; indirect otherwise"
+    sector: "public-sector"
+    cves: [CVE-2026-76485, CVE-2026-76486, CVE-2026-76501, CVE-2026-76465, CVE-2026-20328, CVE-2026-76454]
+    techniques: [T1190]
+    affected_products: ["Cisco Nexus 3000 Series Switches", "Cisco Nexus 9000 Series Switches", "Cisco NX-OS Software", "Cisco License On-Prem (Smart Software Manager On-Prem)"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "outside the 26 h window (Cisco 2026-10-07, NCSC 2026-10-09) but the store has no coverage of an unauthenticated root RCE on core switches or of the License On-Prem flaws, and NCSC.ch published an advisory for it; the main agent decides whether to catch it up or let it pass"
+    evidence:
+      - quote: "The Cisco Product Security Incident Response Team (PSIRT) is not aware of any public announcements or malicious use of the vulnerabilities that are described in this advisory."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ngoam-rce-LWKQ4BU"
+      - quote: "There are no workarounds that address these vulnerabilities. If the NGOAM feature is not required, disabling it removes the attack vector and is a mitigation for all three vulnerabilities."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ngoam-rce-LWKQ4BU"
+      - quote: "These vulnerabilities affect Cisco License On-Prem, regardless of the software configuration."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ssm-access-nttb2dhE"
+    extended_notes: |
+      EXPOSURE: on a switch, show feature | include ngoam (and mpls oam) tells whether the feature is enabled; for CVE-2026-76486 also show nve vni and show nve peers (Cisco's own checks). Fixed releases come from Cisco's Software Checker (first fixed release per advisory); Cisco Nexus 9000 in ACI mode is not listed as affected by the NGOAM advisory (standalone NX-OS mode only).
+      DETECTION (class): unexpected process crashes and reloads of NX-OS OAM processes and unsolicited OAM/ping traffic to management or data-plane interfaces from untrusted networks; Cisco publishes no exploit behaviour. For License On-Prem: web access logs of password-reset requests for administrative accounts and API writes by unauthenticated clients.
+      HARDENING: disable NGOAM and MPLS OAM where unused, apply Live Protect shields or upgrade, keep License On-Prem off untrusted networks.

@@ -1,0 +1,43 @@
+  - title: "OTRS CE 6 and Znuny help desks: forged Remote-User header logs an attacker in as any agent or customer when HTTP Basic Authentication is the backend (CVE-2026-93582, CVSS 9.4); Znuny fixed it on 2026-09-16, OTRS CE 6 has no fix"
+    sources:
+      - { url: "https://otrs.com/release-notes/otrs-security-advisory-2026-18/", publisher: "OTRS GmbH (OSA-2026-18)", date: "2026-10-12", role: "primary" }
+      - { url: "https://www.znuny.org/en/advisories/zsa-2026-14", publisher: "Znuny (ZSA-2026-14)", date: "2026-09-16", role: "primary" }
+      - { url: "https://www.znuny.org/en/advisories/zsa-2026-13", publisher: "Znuny (ZSA-2026-13, SQL injection in agent login)", date: "2026-09-16", role: "corroborating" }
+    discovery_trace: "first seen at: znuny-advisories (candidate source, lookback 168 h) https://www.znuny.org/en/advisories (table of ZSA-2026-13/14/15 dated 2026-09-16) → pivot: enisa-euvd bridge https://euvdservices.enisa.europa.eu/api/search?fromDate=2026-10-12&toDate=2026-10-14&fromScore=9&toScore=10&page=1&size=100 (EUVD-2026-97258, CVE-2026-93582, 9.4, published 2026-10-12, reference to OSA-2026-18) → primary: https://otrs.com/release-notes/otrs-security-advisory-2026-18/ and https://www.znuny.org/en/advisories/zsa-2026-14"
+    summary: |
+      The OTRS Community Edition's HTTP Basic Authentication modules, for agents and customers, take the username not only from REMOTE_USER (set by the web server after a successful login) but also from HTTP_REMOTE_USER, which
+      in CGI and mod_perl deployments is filled from an attacker-controllable Remote-User request header. Where HTTPBasicAuth is the configured authentication backend, an unauthenticated remote attacker can therefore authenticate as any existing agent or customer user, through
+      the Generic Interface among others, without a password and with the impersonated user's privileges (OTRS GmbH advisory OSA-2026-18, 2026-10-12, CVE-2026-93582, CVSS 3.1 9.4, CVSS 4.0 9.2).
+      OTRS 7 and later are not affected (Mojolicious/Hypnotoad does not expose arbitrary headers through the environment) and the advisory's solution is OTRS 2026.7.1 or later; ((OTRS)) Community Edition 6.x and earlier are affected and the advisory says products based on that code base are
+      "also very likely to be affected". Znuny, the maintained fork, published the same flaw as ZSA-2026-14 on 2026-09-16 (high severity, CVE then still requested) with fixes in Znuny LTS 6.5.25 and Znuny 7.3.7; the same releases fix ZSA-2026-13 (SQL injection in the agent login,
+      Kernel::System::Auth::DB, CVE-2026-48188, high) and ZSA-2026-15 (SQL injection through the ContentSearch ticket-search parameter). No exploitation is reported. The reporter is the same for the OTRS and Znuny advisories (Ghent University coordinated disclosure programme).
+    region_nexus: "German-speaking Europe; Znuny and OTRS are widespread help-desk systems in German-speaking administrations (use in Swiss bodies not confirmed from sources)"
+    primary_sector_nexus: "indirect: ticketing systems of public administrations; exposure requires the HTTP Basic Authentication backend"
+    sector: "public-sector"
+    cves: [CVE-2026-93582, CVE-2026-48188]
+    techniques: [T1190, T1078]
+    affected_products: ["OTRS Community Edition 6", "Znuny"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:znuny", type: product, name: "Znuny", aliases: ["Znuny LTS", "Znuny help desk"], summary: "Maintained open-source fork of the ((OTRS)) Community Edition; ZSA-2026-14 (2026-09-16) fixes an HTTP Basic Auth Remote-User header login bypass in Znuny LTS 6.5.25 and Znuny 7.3.7." }
+      - { key: "product:otrs", type: product, name: "OTRS", aliases: ["((OTRS)) Community Edition", "OTRS Community Edition"], summary: "OTRS GmbH ticket system and its end-of-life ((OTRS)) Community Edition 6; OSA-2026-18 (2026-10-12) documents a Remote-User header authentication bypass (CVE-2026-93582) in CE 6 and earlier." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "outside the 26 h window: OTRS advisory 2026-10-12 (CVE publication), Znuny advisory 2026-09-16; relevant only if the constituency still runs OTRS CE 6 or an unpatched Znuny with the HTTP Basic Authentication backend"
+    evidence:
+      - quote: "An attacker may therefore authenticate through the Generic Interface as an existing agent or customer user without knowing the corresponding credentials."
+        attribution: "OTRS GmbH (OSA-2026-18)"
+        source_url: "https://otrs.com/release-notes/otrs-security-advisory-2026-18/"
+      - quote: "Please note that ((OTRS)) Community Edition 6.x and before are vulnerable."
+        attribution: "OTRS GmbH (OSA-2026-18)"
+        source_url: "https://otrs.com/release-notes/otrs-security-advisory-2026-18/"
+      - quote: "Fixed in: Znuny LTS 6.5.25 and Znuny 7.3.7"
+        attribution: "Znuny (ZSA-2026-14)"
+        source_url: "https://www.znuny.org/en/advisories/zsa-2026-14"
+    extended_notes: |
+      EXPOSURE: check whether the agent and customer authentication settings use the Kernel::System::Auth::HTTPBasicAuth / Kernel::System::CustomerAuth::HTTPBasicAuth modules named in ZSA-2026-14, and the web server mode (CGI or mod_perl exposes HTTP_* request headers as environment variables); installations authenticating through the database, LDAP or SSO modules without HTTP Basic are not in scope of this specific flaw. Znuny version from the admin interface (fixed: LTS 6.5.25, 7.3.7).
+      DETECTION (class): web server access logs for requests carrying a Remote-User header from clients (a reverse proxy normally strips or overwrites it), successful agent or customer logins whose session has no Authorization header, and logins for privileged users from unusual addresses; Generic Interface (webservice) calls authenticating without credentials.
+      HARDENING: upgrade Znuny to LTS 6.5.25 or 7.3.7, migrate OTRS CE 6 to OTRS 2026.7.1 or Znuny, strip the Remote-User and HTTP_REMOTE_USER headers at the reverse proxy until patched; the related OTRS flaw CVE-2026-78357 (JWT stays valid after a password change, up to about 16 hours, OSA-2026-14) is a smaller issue.

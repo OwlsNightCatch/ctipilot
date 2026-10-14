@@ -1,0 +1,42 @@
+  - title: "Fortinet October 2026 bundle: unauthenticated path traversal to code execution in FortiSIEM 7.5.0 over TCP 27918 (CVE-2026-106173, CVSS 9.4) and an unauthenticated FortiSandbox GUI authentication bypass, nothing exploited"
+    sources:
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-180", publisher: "Fortinet PSIRT (FG-IR-26-180, FortiSIEM)", date: "2026-10-13", role: "primary" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-185", publisher: "Fortinet PSIRT (FG-IR-26-185, FortiSandbox GUI)", date: "2026-10-13", role: "primary" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-179", publisher: "Fortinet PSIRT (FG-IR-26-179, FortiSandbox API hard-coded key)", date: "2026-10-13", role: "primary" }
+    discovery_trace: "first seen at: fortinet-psirt feed https://filestore.fortinet.com/fortiguard/rss/ir.xml (11 advisories dated 2026-10-13: FG-IR-26-176 to -185 and FG-IR-20-005) → pivot: enisa-euvd bridge https://euvdservices.enisa.europa.eu/api/search?vendor=Fortinet&fromDate=2026-10-12&toDate=2026-10-14 (CVE ids and CVSS: FortiSIEM CVE-2026-106173 9.4) → primary: each advisory page read with extract (version tables, workaround, timeline)"
+    summary: |
+      Fortinet's 2026-10-13 advisories contain one network-reachable, unauthenticated flaw at CVSS 9.0 or more: FG-IR-26-180 (CVE-2026-106173, CVSS 3.1 9.4 per ENISA EUVD), a path traversal in the
+      FortiSIEM phQueryMaster gRPC service that an unauthenticated attacker can use with crafted packets to execute code or commands. Only FortiSIEM 7.5.0 is affected (fixed in 7.5.1; 7.6 not
+      affected, FortiSIEM Cloud not affected) and Fortinet's workaround is restricting access to TCP port 27918. A second class is FortiSandbox: FG-IR-26-185 is a remote unauthenticated
+      GUI authentication bypass through an alternate path or channel (CWE-288; 5.0.0 to 5.0.6 fixed in 5.0.7, 4.4.0 to 4.4.9 fixed in 4.4.10, 5.2 not affected), and FG-IR-26-179, reported by watchTowr, is a hard-coded cryptographic
+      key in the FortiSandbox and FortiSandbox Cloud API that lets an unauthenticated attacker reach some endpoints (CVE-2026-106172, 4.9; fixed in 5.0.7 and an upcoming 5.2.2). Other items need privileges or a cluster-node certificate:
+      FortiManager fgfmsd command injection requires the cluster node's certificate and key (FG-IR-26-177, CVE-2026-106171, 5.3, fixed in 7.6.7 and 8.0.1), FortiAnalyzer/FortiManager SQL injection by a low-privileged user (FG-IR-26-178), FortiMail webmail SQL
+      injection by an authenticated user (FG-IR-26-184), a FortiOS GUI denial of service (FG-IR-26-181, 7.6.4 to 7.6.6 and 8.0.0) and a FortiSIEM broken-authorization flaw needing authentication (FG-IR-26-183). No advisory states exploitation. The FortiMail zero-day (FG-IR-26-175) was last revised on 2026-10-07, so there is no new development on it.
+    region_nexus: "global; FortiSIEM and FortiSandbox used in SOCs and security stacks of Swiss administrations (deployment not confirmed from sources)"
+    primary_sector_nexus: "indirect: security-operations tooling; exposure limited to FortiSIEM 7.5.0 and FortiSandbox 4.4/5.0"
+    sector: "public-sector"
+    cves: [CVE-2026-106173, CVE-2026-106172, CVE-2026-106171]
+    techniques: [T1190]
+    affected_products: ["Fortinet FortiSIEM", "Fortinet FortiSandbox", "Fortinet FortiSandbox Cloud", "Fortinet FortiManager", "Fortinet FortiAnalyzer"]
+    entity_keys: ["product:fortinet-fortisandbox", "product:fortinet-fortisandbox-cloud", "product:fortinet-fortimanager"]
+    new_entities:
+      - { key: "product:fortinet-fortisiem", type: product, name: "Fortinet FortiSIEM", aliases: ["FortiSIEM"], summary: "Fortinet's SIEM and security analytics product; FG-IR-26-180 (2026-10-13) is an unauthenticated path traversal to code execution in 7.5.0." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "vendor primary only (plus EUVD for the CVE id); nothing exploited; affected population is narrow (FortiSIEM 7.5.0 only; FortiSandbox 4.4/5.0), so likely a drop unless the constituency runs those builds"
+    evidence:
+      - quote: "Restricting access on tcp port 27918 prevents the issue."
+        attribution: "Fortinet PSIRT (FG-IR-26-180)"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-180"
+      - quote: "FortiSIEM Cloud is NOT affected by this vulnerability."
+        attribution: "Fortinet PSIRT (FG-IR-26-180)"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-180"
+      - quote: "may allow a remote unauthenticated attacker to bypass authentication via crafted HTTP requests."
+        attribution: "Fortinet PSIRT (FG-IR-26-185)"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-185"
+    extended_notes: |
+      EXPOSURE: FortiSIEM version from the appliance UI; reachable TCP 27918 from untrusted networks is the exposure condition for CVE-2026-106173. FortiSandbox: GUI version against the table above.
+      DETECTION (class): network flow logs for connections to TCP 27918 from outside the collector/supervisor trust zone; unexpected file writes by the FortiSIEM query-master process; web access logs for the FortiSandbox GUI reaching authenticated paths without a session.
+      Fortinet's page extracts omit the CVE id and CVSS for several advisories; CVE ids above come from ENISA EUVD (record per CVE lists the advisory URL).

@@ -1,0 +1,69 @@
+  - title: "Ivanti Connect Secure authentication bypass to unauthenticated code execution exploited as a zero-day chain with an unpatched root escalation (CVE-2026-104935, UTA0576)"
+    sources:
+      - { url: "https://www.volexity.com/blog/2026/10/13/a-series-of-unauthenticated-events-chained-exploitation-of-ivanti-connect-secure-zero-days/", publisher: "Volexity", date: "2026-10-13", role: "primary" }
+      - { url: "https://www.ivanti.com/blog/october-2026-security-update", publisher: "Ivanti (vendor blog)", date: "2026-10-13", role: "primary" }
+      - { url: "https://www.ivanti.com/blog/october-2026-patch-tuesday", publisher: "Ivanti (vendor blog, Patch Tuesday roundup)", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://www.rapid7.com/blog/post/etr-ivanti-connect-secure-zero-day-exploited-in-the-wild-cve-2026-104935", publisher: "Rapid7", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/10/13/cisa-urges-patching-newly-exploited-vulnerability-ivanti-connect-secure", publisher: "CISA alert", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA KEV catalogue (entry added 2026-10-13, due 2026-10-16)", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://hub.ivanti.com/s/article/Security-Advisory-Ivanti-Connect-Secure-CVE-2026-104935", publisher: "Ivanti Security Advisory (JS-only hub page; text NOT readable in this run on any transport, cited by Volexity, Rapid7, the CVE record and CISA KEV)", date: "2026-10-13", role: "primary" }
+    discovery_trace: "first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev; CVE-2026-104935 listed 2026-10-13, notes URL forums.ivanti.com redirects 301 to hub.ivanti.com, JS shell on WebFetch, extract and jina) → pivot: enisa-euvd bridge https://euvdservices.enisa.europa.eu/api/search?vendor=Ivanti&fromDate=2026-10-11&toDate=2026-10-14 (EUVD-2026-98816, exploitedSince 2026-10-13) → pivot: CVE Program record via https://cveawg.mitre.org/api/cve/CVE-2026-104935 (Ivanti CNA text, fixed builds, CISA ADP SSVC exploitation active) → pivot: WebSearch (\"Ivanti October 2026 security update Connect Secure Xtraction Neurons Patch Intune\", allowed_domains ivanti.com) → Ivanti blog https://www.ivanti.com/blog/october-2026-patch-tuesday → https://www.ivanti.com/blog/october-2026-security-update → pivot: rapid7-research feed https://www.rapid7.com/rss.xml item https://www.rapid7.com/blog/post/etr-ivanti-connect-secure-zero-day-exploited-in-the-wild-cve-2026-104935 → primary: Volexity https://www.volexity.com/blog/2026/10/13/a-series-of-unauthenticated-events-chained-exploitation-of-ivanti-connect-secure-zero-days/"
+    summary: |
+      Ivanti disclosed CVE-2026-104935 on 2026-10-13, an authentication bypass by spoofing (CWE-290) in Ivanti Connect Secure that allows a remote
+      unauthenticated attacker to execute arbitrary commands (CVSS 3.1 8.6, AV:N/AC:L/PR:N/UI:N), and states it is aware of limited exploitation in the
+      wild; CISA added it to KEV the same day with a 2026-10-16 due date. Volexity, which found the activity on 2026-10-05, attributes it to a previously
+      unknown cluster it tracks as UTA0576 (low confidence criminal motivation, medium confidence LLM-assisted tooling) and reports exploitation from
+      2026-10-03 against a fully patched 22.8R2.4 appliance. Volexity describes a three-stage chain: a routing flaw where a request to the public login
+      CGI (/dana-na/auth/url_default/welcome.cgi) carries an X-DSCGI-PATH header naming a protected CGI, so the URL passes the authentication check while the header decides the destination;
+      a file-write and race in the wu.cgi upload handler, which writes the upload to disk before validating it as a ZIP, so a Perl script can run in the
+      window before deletion; and a root escalation through the dsinvoked broker's trust in DSCache configuration, which Ivanti has not yet patched
+      (fix "in the coming weeks"). Volexity found no web shell or backdoor: every command re-runs the whole chain over HTTPS, the library patch is made only in
+      memory and DSCache is restored, and debug and audit logs are trimmed, so Ivanti's Integrity Checker Tool sees no file change. Post-exploitation targeted
+      the Active Directory service account stored on the appliance: LDAP queries for LAPS passwords and BitLocker recovery keys, a Kerberos test tool with
+      Kerberoast capability, password spraying, and packet capture of plaintext LDAP, HTTP Basic and NTLM traffic through a renamed tcpdump. Per Rapid7 reading
+      Ivanti's advisory, affected are 25.1.1.1 and prior (fixed 25.1.1.2), 25.1.2.2 and prior (fixed 25.1.3.0 and 25.1.3.1) and 22.8R2.4 and prior (fixed
+      22.8R2.5); 22.7.x and below are not affected, and Ivanti says the 22.x code lines reach end of life on 2027-01-31.
+    region_nexus: "global; internet-facing SSL VPN gateways of public administrations worldwide, no Swiss victim reported"
+    primary_sector_nexus: "direct: remote-access VPN appliance class used by public-sector entities; product-line exposure is not confirmed for Swiss bodies"
+    sector: "public-sector"
+    cves: [CVE-2026-104935]
+    techniques: [T1190, T1068, T1558.003, T1110.003, T1040, T1070, T1059.006, T1620]
+    affected_products: ["Ivanti Connect Secure"]
+    entity_keys: ["product:ivanti-pulse-connect-secure"]
+    new_entities:
+      - { key: "actor:uta0576", type: actor, name: "UTA0576", aliases: [], summary: "Volexity designation for a previously unknown cluster that exploited Ivanti Connect Secure CVE-2026-104935 plus an unpatched root escalation as zero-days from 2026-10-03; Volexity assesses with low confidence a criminal rather than espionage motive and with medium confidence LLM use for exploit development and post-exploitation (Volexity, 2026-10-13)." }
+    relation_suggestions:
+      - { subject: "actor:uta0576", object: "product:ivanti-pulse-connect-secure", basis: "Volexity: UTA0576 abused a zero-day exploit chain (authentication bypass, RCE, privilege escalation) against Ivanti Connect Secure; the first two are tracked as CVE-2026-104935 (Volexity, 2026-10-13)" }
+      - { subject: "actor:uta0576", object: "actor:uta0533", basis: "Volexity notes UTA0576 used packet capture of LDAP traffic, a technique it says another cluster it tracks as UTA0533 recently used on SonicWall SMA zero-days; a technique similarity noted by Volexity, not an attribution or link between the actors" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "At the time of disclosure, Ivanti is aware of limited exploitation in the wild."
+        attribution: "Ivanti (vendor blog)"
+        source_url: "https://www.ivanti.com/blog/october-2026-security-update"
+      - quote: "Customers should review the security advisory, upgrade to the fixed version as soon as possible, and run the Integrity Checker Tool regularly."
+        attribution: "Ivanti (vendor blog)"
+        source_url: "https://www.ivanti.com/blog/october-2026-security-update"
+      - quote: "In the first week of October 2026, Volexity discovered an unknown threat actor, UTA0576, abusing a zero-day exploit chain to compromise a fully patched (at the time, version 22.8R2.4) Ivanti Connect Secure (ICS) VPN appliance."
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/10/13/a-series-of-unauthenticated-events-chained-exploitation-of-ivanti-connect-secure-zero-days/"
+      - quote: "However, because this exploit chain patches library code in memory only and restores configuration store data, the tool does not detect any modifications."
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/10/13/a-series-of-unauthenticated-events-chained-exploitation-of-ivanti-connect-secure-zero-days/"
+      - quote: "Ivanti is working on a fix for the privilege escalation vulnerability, and it will be included in a future release in the coming weeks."
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/10/13/a-series-of-unauthenticated-events-chained-exploitation-of-ivanti-connect-secure-zero-days/"
+      - quote: "CISA is aware of cyber threat actors exploiting this zero-day authentication bypass vulnerability"
+        attribution: "CISA alert"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/10/13/cisa-urges-patching-newly-exploited-vulnerability-ivanti-connect-secure"
+      - quote: "Note that the vendor advisory confirms that versions 22.7.x and below are unaffected."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-ivanti-connect-secure-zero-day-exploited-in-the-wild-cve-2026-104935"
+    extended_notes: |
+      CISA's alert of 2026-10-13 (read through WebFetch, so its wording is a summariser's) confirms threat actors are exploiting the flaw for credential theft and data exfiltration, repeats the affected lines 25.1.1.1 and earlier, 25.1.2.2 and earlier and 22.8R2.4 and earlier, states that determining compromise needs network and memory forensics because the Integrity Checker Tool may miss in-memory activity, and gives the recovery sequence for a suspected compromise: back up the configuration, factory-reset and upgrade (rebuild cloud and virtual appliances), restore the configuration, then reset all domain, administrator and local account passwords, revoke and reissue stored certificates and reset stored API keys and licence-server credentials. CISA says version 22.8 reaches end of life on 2027-01-31; the KEV entry carries a 2026-10-16 due date and the forensic-triage flag.
+      EXPOSURE: compare the running Connect Secure build with these lines; affected are 25.1.1.1 and prior, 25.1.2.2 and prior, 22.8R2.4 and prior (Rapid7 table from Ivanti's advisory). The CVE record (Ivanti CNA, fetched via cveawg) lists 25.1.3.0, 25.1.3.1, 22.8R2.5 and 22.7R2.14 as unaffected and says "This does not impact ICS version 22.7R2.14 or prior"; Ivanti's roundup blog adds 25.1.1.2 as a fixed build. Rapid7 says a portion of the flaw was found through Ivanti's own program and patched in 25.1.3.0 in July 2026 and that exploitation occurred while the fix was backported.
+      DETECTION (Volexity, behavioural): web/reverse-proxy or appliance request logs for high volumes of requests to the welcome.cgi login CGI whose X-DSCGI-PATH header names a different script (mismatch between URL path and header target; the header path under /home/webserver/htdocs/dana/fb/smb/wu.cgi or /home/runtime/tmp/<hash> in observed cases); appliance egress/lateral traffic originating from the VPN device toward domain controllers (LDAP service-account binds querying LAPS and BitLocker attributes, Kerberos credential-testing and Kerberoast-capable activity, password-spray bursts); a hidden .icscap capture directory and a renamed capture binary; unexpected /tmp scripts. Because the chain is memory-resident, a clean Integrity Checker Tool result is NOT evidence of no compromise; Volexity advises network and memory forensics (Ivanti publishes recovery steps for 22.8x and 25x). Volexity states debug and audit logs on the device were trimmed, so absence of log entries is not reassuring.
+      TRIAGE: the legitimate welcome.cgi login traffic is ordinary; the discriminator is a request to it carrying an X-DSCGI-PATH header at all, or one whose value differs from the URL path.
+      HARDENING/ACTION: upgrade to a fixed build now, then rotate the AD service account the appliance uses for LDAP, the LAPS/BitLocker-exposed secrets reachable from it, and any credentials in the appliance configuration; restrict the management plane; plan the move off 22.x (end of life per Ivanti 2027-01-31). Ivanti's privilege escalation component remains unpatched, so a patched build still has an unfixed local root path for an actor with code execution.
+      Registry: Ivanti Connect Secure is the renamed Pulse Connect Secure; the registry key product:ivanti-pulse-connect-secure exists (first_seen 2026-10-09, no aliases): suggest adding aliases "Ivanti Connect Secure", "ICS".
