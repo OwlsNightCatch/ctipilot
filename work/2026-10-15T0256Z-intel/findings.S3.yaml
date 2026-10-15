@@ -1,0 +1,461 @@
+# work/2026-10-15T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-15T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-15T02:58:25Z
+ended_at: 2026-10-15T03:16:53Z
+duration_seconds: 1108
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 19
+  bridge_fetches: 80
+
+items:
+
+  # ------------------------------------------------------------------
+  # 1. Microsoft DCU / Resecurity: Storm-2990 phishing kits + Storm-3119 YAM Store
+  # ------------------------------------------------------------------
+  - title: "Storm-2990 / Storm-3119 (YAM Store): a Chinese-language phishing-kit ecosystem built on hijacked Microsoft 365 and Google tenants, disrupted by Microsoft DCU after over one billion messages"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/", publisher: "Microsoft Threat Intelligence / Digital Crimes Unit", date: "2026-10-14", role: "primary" }
+      - { url: "https://www.resecurity.com/blog/article/iron-man-yamstore-powering-a-global-phishing-as-a-service-ecosystem", publisher: "Resecurity", date: "2026-10-14", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Microsoft Threat Intelligence blog October 2026 new campaign\") surfaced the 2026-10-14 post → confirmed via bridge msft-secblog recent 12 (feed https://www.microsoft.com/en-us/security/blog/feed/) → primary: Microsoft post, URL https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/ → pivot to the partner named in it: Resecurity, URL https://www.resecurity.com/blog/article/iron-man-yamstore-powering-a-global-phishing-as-a-service-ecosystem (first-hand: bought a licence and ran the kit in a lab). Not in the S3 slice (Microsoft blog is another domain's record); returned because it is in-window and new to the store."
+    summary: |
+      Microsoft Threat Intelligence and its Digital Crimes Unit describe a Chinese-language phishing supply chain and say the DCU, with law enforcement and partners, facilitated a disruption of its main developers and infrastructure. Three commercially licensed phishing-as-a-service kits, CoGUI (aka NX or FA), Haozi (aka Phoenix) and Iron Man System, are tracked as Storm-2990; Microsoft says they were developed by Chinese-speaking actors and have facilitated over one billion phishing emails and SMS messages to over 75,000 organisations worldwide since January 2026. The kits are sold through YAM Store (Storm-3119), which Microsoft calls an initial access broker: it hijacks Microsoft 365 and Azure for Education tenants, and Google environments, and resells the stolen accounts, licences and storage. Microsoft's five-stage pipeline: automated tenant reconnaissance (Flask tooling, via Tor); takeover through app-only admin panels that use a stolen application client secret to reset passwords silently (no forced change at next sign-in), assign education licences and grant privileged attributes; sign-in to a compromised Global Administrator account and self-provisioning of the PnP Management Shell service principal with broad Microsoft Graph permissions (including AppCatalog.ReadWrite.All) and full SharePoint API control, so SharePoint/OneDrive can be used as bulk hosting; a Cloudflare-fronted DNS platform for phishing domains; and a storefront paid via Alipay, WeChat Pay and USDT. Storm-3119 also automates the discovery of expired organisation names to reuse their legitimate customer information, and separately creates fraudulent organisations with supporting websites, likely using AI-generated content. Microsoft says Iron Man System ships over 2,335 templates for over 139 countries (Resecurity counts 2,360 templates across 130 countries) impersonating local government (traffic and parking fines), police, healthcare, finance, transport and retail brands, with geofencing, fake CAPTCHA gates, IP block lists, Telegram-bot alerts and a WebSocket channel that lets the operator steer the victim live. Downstream buyers used credential phishing, device-code phishing and card fraud. Microsoft names healthcare, finance, wholesale distribution and IT in Japan, the US, Australia and India as the observed victim set and says the activity "could affect any organization"; no Swiss victim or Swiss-specific lure is stated by either source. Resecurity, which bought a licence and ran the kit in an isolated lab, reports 911 published build versions and a lab instance impersonating a European parking-fine operator, and its page text cites a template added on 1 October 2026 (the page metadata says 2026-09-11, so it was evidently updated at or after the 2026-10-14 coordinated release).
+    region_nexus: "global; kit templates cover 130-139 countries including local-government fine/parking and police lures; no Swiss-specific statement in either source"
+    primary_sector_nexus: "indirect (generic mail and SMS lures against public authorities; compromised .edu/.org tenants as sending infrastructure; M365 Global Administrator takeover pattern)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.002, T1078.004, T1098.003, T1136.003, T1528, T1583.001]
+    affected_products: ["Microsoft 365", "Microsoft Entra ID", "Microsoft Graph", "SharePoint Online", "Google Workspace"]
+    entity_keys: ["product:microsoft-365", "product:microsoft-entra-id"]
+    new_entities:
+      - { key: "actor:storm-2990", type: actor, name: "Storm-2990", aliases: [],
+          summary: "Microsoft Threat Intelligence designation for the developers of three Chinese-language phishing-as-a-service kits (CoGUI/NX/FA, Haozi/Phoenix, Iron Man System) credited with over one billion phishing emails and SMS messages to over 75,000 organisations since January 2026; disrupted with DCU and law-enforcement partners (Microsoft, 2026-10-14)." }
+      - { key: "actor:storm-3119", type: actor, name: "Storm-3119", aliases: ["YAM Store"],
+          summary: "Microsoft designation for the operator of YAM Store, an underground marketplace and initial access broker that hijacks or fraudulently creates Microsoft 365 / Azure for Education and Google tenants and resells accounts, licences and storage to phishing operators including Storm-2990 (Microsoft, 2026-10-14)." }
+      - { key: "tool:iron-man-system-phishing-kit", type: tool, name: "Iron Man System phishing kit", aliases: ["Iron Man"],
+          summary: "Go (GoFrame) backend phishing-as-a-service kit sold via YAM Store from June 2026 with 2,335+ lure templates for 139+ countries, geofencing, fake CAPTCHA gates and live operator interaction over WebSocket; sibling kits are CoGUI (NX/FA) and Haozi (Phoenix) (Microsoft and Resecurity, 2026-10-14)." }
+    relation_suggestions:
+      - { subject: "actor:storm-3119", object: "actor:storm-2990",
+          basis: "Microsoft: YAM Store (Storm-3119) sells infrastructure and the phishing kits tracked as Storm-2990 to downstream actors (Microsoft, 2026-10-14)" }
+      - { subject: "actor:storm-2990", object: "tool:iron-man-system-phishing-kit",
+          basis: "Microsoft tracks the developers of the Iron Man System, CoGUI and Haozi kits together as Storm-2990 (Microsoft, 2026-10-14)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Since January 2026, the threat actors behind these kits have been responsible for facilitating the sending of over one billion phishing emails and SMS messages to over 75 thousand organizations worldwide."
+        attribution: "Microsoft Threat Intelligence / Digital Crimes Unit"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/"
+      - quote: "YAM Store functions as an access broker, an intermediary that hijacks Microsoft 365 and Azure for Education tenants and resells the stolen accounts, licenses, and storage as a service to downstream operations"
+        attribution: "Microsoft Threat Intelligence / Digital Crimes Unit"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/"
+      - quote: "self-provisions the PnP Management Shell service principal"
+        attribution: "Microsoft Threat Intelligence / Digital Crimes Unit"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/"
+      - quote: "Resecurity purchased a license, deployed the kit in an isolated lab"
+        attribution: "Resecurity"
+        source_url: "https://www.resecurity.com/blog/article/iron-man-yamstore-powering-a-global-phishing-as-a-service-ecosystem"
+    extended_notes: |
+      Triage-relevant mechanics a composer can use (all from the Microsoft post unless stated):
+      - Exposure: any Microsoft 365 / Entra tenant. The identity-side hunt is for the tenant-takeover behaviours Storm-3119 uses (app-only authentication with a stolen client secret, silent password resets, a self-provisioned PnP Management Shell service principal holding broad Graph and SharePoint permissions, unexpected education licence assignment). Microsoft's own recommended hardening: lock down Global Administrator roles (least privilege), phishing-resistant MFA and passkeys via Conditional Access for privileged accounts, restrict MFA/passkey registration to trusted locations and devices, Safe Links applied to internal recipients.
+      - Device-code phishing is named as a downstream technique; Microsoft notes the Entra sign-in prompt that names the application being authorised (since 2021) is often missing from phishing sign-ins. A control that blocks or restricts the device-code flow is the hardening lever for tenants that do not need it (not stated by Microsoft in these words; composer should not attribute it).
+      - Benign-lookalike discriminator is limited: the lures are ordinary urgency-style fine/toll/parking/police themes; the kit-side tells are geofenced or CAPTCHA-gated pages that do not load for scanners, and live operator-in-the-loop credential entry (Telegram real-time alerts). No Swiss-specific lure or victim is stated by either source.
+      - Both sources are vendor/partner telemetry; the DCU disruption details sit behind aka.ms/YamCOGUIIronMan and a Microsoft On the Issues post (not fetched). Treat the disruption as Microsoft's claim; neither source says the infrastructure is gone for good (Resecurity says builds were published within the week of its report).
+      - Count discrepancy to preserve: Microsoft 2,335+ templates / 139+ countries vs Resecurity 2,360 templates / 130 countries.
+    borderline: true
+    borderline_reason: "Not Swiss-specific and the named victim sectors are healthcare, finance, wholesale and IT in JP/US/AU/IN; included because the tenant-takeover pipeline (PnP Management Shell service principal, app-only password resets) and the local-government/police lure templates are concrete for a Microsoft-365-heavy public sector. Main agent to weigh against PD-11. Another sub-agent (S2 law-enforcement / S4) may surface the same Microsoft post; fold on the entity keys."
+    classification_hint: "B2 (Microsoft first-party telemetry plus Resecurity's independent first-hand lab work)"
+
+  # ------------------------------------------------------------------
+  # 2. Huntress: fake WatchGuard VPN download site harvests SSL VPN credentials, then serves the real signed installer
+  # ------------------------------------------------------------------
+  - title: "Fake VPN-client download sites now harvest the SSL VPN server, login and password in the browser and then hand over the genuine signed installer, leaving endpoint tools nothing to flag (Huntress)"
+    sources:
+      - { url: "https://www.huntress.com/blog/fake-watchguard-vpn-credential-phishing", publisher: "Huntress", date: "2026-10-13", role: "primary" }
+      - { url: "https://www.watchguard.com/wgrd-security-hub/secplicity-blog/ongoing-widespread-credential-harvesting-campaign-targets-vpn", publisher: "WatchGuard Secplicity", date: "2026-01-13", role: "background" }
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/03/12/storm-2561-uses-seo-poisoning-to-distribute-fake-vpn-clients-for-credential-theft/", publisher: "Microsoft Threat Intelligence", date: "2026-03-12", role: "background" }
+    discovery_trace: "first seen at: huntress, feed https://www.huntress.com/blog/rss.xml (item dated 2026-10-13T21:00Z) → primary (no pivot needed): https://www.huntress.com/blog/fake-watchguard-vpn-credential-phishing (extract) → pivots from its Background paragraph: WatchGuard Secplicity https://www.watchguard.com/wgrd-security-hub/secplicity-blog/ongoing-widespread-credential-harvesting-campaign-targets-vpn and Microsoft https://www.microsoft.com/en-us/security/blog/2026/03/12/storm-2561-uses-seo-poisoning-to-distribute-fake-vpn-clients-for-credential-theft/ (both fetched with extract)."
+    summary: |
+      Huntress's SOC investigated an incident on 2026-10-07 in which an administrator at a managed service provider searched Bing for a misspelled "watchguard vpn download" and clicked through the standard bing.com/ck/a result redirect to a lookalike site titled "WatchGuard Firebox VPN Client" (Huntress classes it as SEO poisoning rather than malvertising). Choosing any download option opens a modal that asks for Server, Login and Password, which is plausible because the genuine Mobile VPN with SSL client asks for the same three values at connect time. The capture logic is one unobfuscated JavaScript file of about 150 lines that posts the JSON to a separate collector domain; the first submission is always rejected with an "incorrect data" message so the victim re-types or tries a second credential set, and only after the second submission does the page fetch the real, validly Authenticode-signed WatchGuard installer from WatchGuard's own CDN. Because nothing malicious is delivered, endpoint controls have no file to detect, and few reputation engines flagged either domain (Huntress: seven VirusTotal vendors on the lure, two on the collector, as of 2026-10-08). Huntress Managed Defender flagged the session 21 seconds after the lookalike domain loaded and, in this case, browser history showed no download, so the user probably did not finish both rounds, but may have typed credentials in the first. The lure domain was re-registered on 2026-08-22 and the collector on 2026-09-14; the lure domain was already listed in WatchGuard's January 2026 research, which found lookalike infrastructure for 15 products, mostly VPN and remote-access clients (WatchGuard, F5 BIG-IP, FortiClient, SonicWall NetExtender, Sophos Connect with live credential theft, plus Cisco AnyConnect, Palo Alto GlobalProtect, Check Point, Citrix, Ivanti, OpenConnect and others staged) and assessed it as a likely ransomware-affiliate access source; Microsoft attributed a wider iteration to Storm-2561 in March 2026. Huntress says the available evidence does not establish that the 2026 re-registration is run by the same operators and does not itself attribute the October activity to Storm-2561.
+    region_nexus: "global; vendor-agnostic across SSL VPN products used by public-sector networks (Fortinet FortiClient, Cisco AnyConnect, GlobalProtect, Check Point, Citrix, Ivanti, SonicWall, F5)"
+    primary_sector_nexus: "direct-relevant technique class (administrators and staff of public bodies and their MSPs fetch VPN clients by search engine); no Swiss victim stated"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1608.006, T1583.001]
+    affected_products: ["WatchGuard Mobile VPN with SSL", "WatchGuard Firebox SSL VPN", "FortiClient VPN", "SonicWall NetExtender", "Sophos Connect", "F5 BIG-IP Edge Client"]
+    entity_keys: ["product:watchguard-firebox", "product:fortinet-forticlient"]
+    new_entities:
+      - { key: "actor:storm-2561", type: actor, name: "Storm-2561", aliases: [],
+          summary: "Microsoft designation for a financially motivated cluster active since May 2025 that uses SEO poisoning and vendor impersonation to distribute trojanised VPN clients that steal credentials (Microsoft, 2026-03-12); Huntress does not attribute its 2026-10 WatchGuard lookalike incident to this cluster." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Rather than downloading a fake client, the domain instead downloads a genuine, validly signed WatchGuard installer."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/fake-watchguard-vpn-credential-phishing"
+      - quote: "The phishing logic lives in a single file, `popup.js`, about 150 lines of plain, unobfuscated JavaScript."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/fake-watchguard-vpn-credential-phishing"
+      - quote: "Monitor for SSL VPN logins from hosting providers, unfamiliar ASNs, or countries where the account has never connected from."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/fake-watchguard-vpn-credential-phishing"
+      - quote: "Based on the aforementioned reporting, it’s likely this is a ransomware affiliate using these credentials to gain a foothold in networks with the intent to deploy ransomware, such as Akira."
+        attribution: "WatchGuard Secplicity"
+        source_url: "https://www.watchguard.com/wgrd-security-hub/secplicity-blog/ongoing-widespread-credential-harvesting-campaign-targets-vpn"
+    extended_notes: |
+      - Exposure: any organisation whose administrators or MSP staff download VPN or remote-access clients from a search engine; the January WatchGuard research lists lookalike infrastructure for 15 products and live credential theft for five (WatchGuard, F5 BIG-IP, FortiClient, SonicWall NetExtender, Sophos Connect).
+      - Detection (telemetry classes): web proxy / DNS logs for visits to recently registered lookalike domains of VPN vendors reached through a search-engine redirect (bing.com/ck/a click-through); a browser POST of server/login/password JSON to an unrelated domain from a "download" page; VPN gateway authentication logs for logins from hosting-provider ASNs or never-seen countries after such a visit (Huntress). Post-incident (Huntress): reset the password for every account the user may have typed into the page and treat the VPN endpoint named in the "Server" field as known to the attacker; the first submission is forced to fail, so assume two credential sets may have been captured.
+      - Triage discriminator (follows from the described mechanism): the genuine client asks for server/login/password when it connects; a web page that asks for them BEFORE serving a download is the tell. The final installer is the genuine signed one, so a hash or signature check on the downloaded file does not clear the session.
+      - Hardening named by Huntress: enforce MFA on the VPN; publish and bookmark official VPN-client download links (for WatchGuard, software.watchguard.com) in client documentation; block the lookalike domains.
+      - ATT&CK note: ATT&CK has no exact technique for a search-delivered credential-harvest form that is not an email lure; only the infrastructure and SEO-poisoning techniques are mapped. Do not map T1078/T1133 (follow-on VPN login is not observed in this incident).
+    borderline: false
+    classification_hint: "B2 (Huntress first-hand SOC incident; the campaign class is corroborated by WatchGuard and Microsoft, the specific 2026-10 iteration by Huntress alone)"
+
+  # ------------------------------------------------------------------
+  # 3. ARTEX agentic pentest framework abused against South Korean financial firms
+  # ------------------------------------------------------------------
+  - title: "ARTEX: a Chinese-speaking, financially motivated operator drives an open-source agentic pentest framework against South Korean financial firms' peripheral web apps and exfiltrates PII of about 67,000 people (Zscaler, CrowdStrike)"
+    sources:
+      - { url: "https://www.zscaler.com/blogs/security-research/threat-actor-abuses-agentic-ai-pentesting-framework-target-south-korean", publisher: "Zscaler ThreatLabz", date: "2026-10-14", role: "primary" }
+      - { url: "https://www.crowdstrike.com/en-us/blog/unknown-threat-actor-uses-artex-to-target-south-korean-finance/", publisher: "CrowdStrike Intelligence", date: "2026-10-07", role: "primary" }
+      - { url: "https://www.sans.org/newsletters/newsbites/xxviii-76", publisher: "SANS NewsBites (practitioner commentary)", date: "2026-10-13", role: "corroborating" }
+    discovery_trace: "first seen at: zscaler-threatlabz, feed https://www.zscaler.com/blogs/feeds/security-research (item dated 2026-10-14T23:20Z) → primary (no pivot needed): https://www.zscaler.com/blogs/security-research/threat-actor-abuses-agentic-ai-pentesting-framework-target-south-korean (extract) → pivot: Check Point weekly bulletin https://research.checkpoint.com/2026/12th-october-threat-intelligence-report/ (fetched, lead only) linked CrowdStrike → corroborating primary: https://www.crowdstrike.com/en-us/blog/unknown-threat-actor-uses-artex-to-target-south-korean-finance/ (extract; page date metadata 2026-10-13 is the modified date, the raw page says published October 07, 2026) → SANS NewsBites https://www.sans.org/newsletters/newsbites/xxviii-76 (fetched via WebSearch-discovered issue URL)."
+    summary: |
+      Two telemetry-holding labs independently describe a campaign that ran from late September to early October 2026 against several South Korean financial institutions, with ARTEX, a recently released open-source agentic penetration-testing framework developed in China, driving the intrusions. CrowdStrike found actor-controlled open directories holding Claude Code session histories, ARTEX configuration and memory files, and Zscaler describes the harness (planner, worker agents, reporting) and the outcome: exploitation of peripheral internet-facing web applications outside core banking, namely customer-facing inquiry portals and employee-facing mobile-application back ends, through SQL injection and authentication bypass, and exfiltration of full names, phone numbers, annual income and loan limits for approximately 67,000 individuals (Zscaler; the number of affected organisations is unconfirmed, CrowdStrike). Both labs report the same backends: DeepSeek v4.1-flash as primary LLM, with GLM-5.3 (Zhipu) and Grok 4.6 as supplementary reasoning models; CrowdStrike adds a two-server architecture and likely access to DeepSeek through an API reseller, and that the operator used Claude Code sessions to ask where Korean breach data is sold. Zscaler notes ARTEX's default scope blocklist excludes government and education domains but not financial institutions, and that the developer closed the source after the abuse became public (forks and earlier downloads remain). Attribution is hedged by both: CrowdStrike says the actor is unnamed and "likely a Chinese speaker and financially motivated" (moderate confidence); Zscaler assesses a financially motivated Chinese-speaking actor with moderate confidence. CrowdStrike also recovered personal details of a possible operator from a prompt but says they cannot be definitively tied to the actor. The technique class matters more than the geography: LLM-driven tooling is lowering the cost of finding and chaining ordinary web flaws (injection, missing server-side authorisation) on the least-hardened internet-facing portals of an organisation.
+    region_nexus: "South Korea (financial sector); technique class applies to any organisation's peripheral web applications"
+    primary_sector_nexus: "indirect (same weak points as citizen and partner portals, inquiry forms and mobile-app back ends of public bodies); no Swiss victim"
+    sector: "financial-services"
+    cves: []
+    techniques: [T1190, T1595.002, T1588.007]
+    affected_products: ["ARTEX (open-source agentic pentest framework)", "customer-facing inquiry portals and employee mobile-app back ends (unnamed)"]
+    entity_keys: ["product:anthropic-claude-code"]
+    new_entities:
+      - { key: "tool:artex", type: tool, name: "ARTEX", aliases: [],
+          summary: "Open-source agentic penetration-testing framework developed in China (GitHub developer 'Autumn-27' per Zscaler) that orchestrates multiple LLM backends to automate reconnaissance, exploitation and reporting; abused against South Korean financial institutions in late September to early October 2026, after which the developer closed the source (Zscaler, 2026-10-14; CrowdStrike, 2026-10-07)." }
+    relation_suggestions: []
+    related_entries:
+      - "2026-10-09/reliaquest-llm-agents-spring-batch-tomcat-nashorn-system"
+      - "2026-09-28/openai-agents-unctad-double-encoding-proxy-chain-scan"
+      - "2026-08-29/papercut-ng-mf-tapestry-request-confusion-preauth-rce"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "ARTEX is an open source agentic penetration testing framework developed in China that uses large language models (LLMs) to automate reconnaissance and exploitation tasks."
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/threat-actor-abuses-agentic-ai-pentesting-framework-target-south-korean"
+      - quote: "The threat actor exploited peripheral internet-facing web applications, including customer-facing inquiry portals and employee-facing mobile application backends."
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/threat-actor-abuses-agentic-ai-pentesting-framework-target-south-korean"
+      - quote: "While this activity has not been attributed to a named adversary, the threat actor is likely a Chinese speaker and financially motivated."
+        attribution: "CrowdStrike Intelligence"
+        source_url: "https://www.crowdstrike.com/en-us/blog/unknown-threat-actor-uses-artex-to-target-south-korean-finance/"
+    extended_notes: |
+      - Defender levers stated by Zscaler: alert on sequential lookups and unusually high numbers of records accessed per session on partner and employee portals, rate-limit affected endpoints, enforce server-side authorisation and return only the fields an operation needs; repeat authorisation testing as applications change; treat open-source pentest harnesses as hostile code if you use one (isolate from production, no production credentials, enforce scope in configuration and code rather than prompts, review forks before execution).
+      - Zscaler's behavioural-indicator table (flagged by Zscaler as leads to investigate alongside other evidence, not detections on their own): high-frequency automated requests with sequential enumeration against login and search endpoints; bulk outbound transfers of structured personal and financial data over HTTPS; unexpected .aspx or .jsp files in odd web paths (web-shell check); egress from servers to LLM provider APIs (anthropic, deepseek, bigmodel, x.ai). The last one is a post-compromise-tooling hunt only if the server has no business reason to call an LLM API.
+      - SANS NewsBites 2026-10-13 carries the CrowdStrike item, with an editor noting "at least 68,000 people" were affected; treat as press arithmetic, not a primary figure (Zscaler says approximately 67,000).
+      - The CrowdStrike post is dated 2026-10-07 (outside the 26 h window); Zscaler's 2026-10-14 post is the in-window delta and adds the 67,000 figure, the guardrail-scope detail, the developer's closure of the source and the portal-hardening guidance.
+    borderline: false
+    classification_hint: "B1 (two independent labs, consistent on backends, timing and attribution hedging)"
+
+  # ------------------------------------------------------------------
+  # 4. SlugFest: npm Trusted Publishing slug takeover
+  # ------------------------------------------------------------------
+  - title: "SlugFest: npm Trusted Publishing bound packages to a GitHub repository name, so anyone claiming an abandoned name could publish to 1,500+ packages (Bloom Security; fix shipped 2026-10-02)"
+    sources:
+      - { url: "https://bloom.security/blog/slugfest-millions-of-ai-agents-download-exposed-npm-packages", publisher: "Bloom Security", date: "2026-10-13", role: "primary" }
+      - { url: "https://github.blog/changelog/2026-10-02-unvalidated-npm-trusted-publishing-configurations-now-expire/", publisher: "GitHub Changelog", date: "2026-10-02", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/10/13/slugfest-npm-trusted-publishing-flaw/", publisher: "Help Net Security", date: "2026-10-13", role: "corroborating" }
+    discovery_trace: "first seen at: helpnetsecurity, front page https://www.helpnetsecurity.com/ (extract; dated anchor .../2026/10/13/slugfest-npm-trusted-publishing-flaw/) → article https://www.helpnetsecurity.com/2026/10/13/slugfest-npm-trusted-publishing-flaw/ (extract; links the GitHub changelog, no Bloom link) → pivot: GitHub changelog https://github.blog/changelog/2026-10-02-unvalidated-npm-trusted-publishing-configurations-now-expire/ (extract) → WebSearch (\"bloom.security npm trusted publishing slug claimable repository package takeover provenance attestation\", extended) → primary: Bloom write-up https://bloom.security/blog/slugfest-millions-of-ai-agents-download-exposed-npm-packages (extract)."
+    summary: |
+      Bloom Security reports that npm's Trusted Publishing, generally available since July 2025 and meant to replace long-lived publish tokens, identified the permitted GitHub repository only by its owner/repo name (the "slug") and the workflow file name, and recorded GitHub's permanent numeric repository and owner IDs only after a binding's first successful publish. If the bound repository was renamed, transferred or deleted, or its owner account was renamed or deleted before that first publish, the slug became claimable: an attacker creates a repository at the freed name, adds a workflow file with the matching name, requests a GitHub OIDC token and exchanges it at npm for a short-lived publish credential, with no maintainer credential or account touched. A release published this way carries a valid Sigstore provenance attestation naming the attacker's repository. Bloom says it demonstrated the attack end to end on an npm scope and repositories it controls, scanned the registry and counted more than 1,500 exposed packages with over 10 million total downloads (and more than a million a month), and that npm's GitLab trusted-publishing integration has the same weakness; it does not publish the package list. Bloom reported through GitHub's HackerOne programme on 2026-06-06 (validated 2026-06-09, last reply 2026-07-08, then silence) and found a fix in place when it re-tested before publishing. GitHub's changelog of 2026-10-02 says unvalidated trusted-publishing configurations now expire 48 hours after creation and can no longer authorise publishing, that a configuration is validated and exempt from expiry after its first successful publish, and that npm now also rejects trusted-publishing tokens from GitHub Actions issue_comment events. Help Net Security reports that GitHub's statement does not say whether configurations created before the change were bound retroactively, and that Bloom's researcher says it is unknown whether anyone exploited the flaw in the wild. GitHub already retires repository names with more than 100 clones in the week before an owner rename or deletion, which protects some packages. Bloom frames the finding around AI coding agents, estimating from customer telemetry about 70 agent-installed packages a month per endpoint and close to 350 on developer machines; that figure is a vendor claim from a vendor that sells agent-install controls.
+    region_nexus: "global (npm ecosystem); applies to any Swiss body or supplier that publishes or consumes npm packages"
+    primary_sector_nexus: "indirect (software supply chain of suppliers and in-house development teams)"
+    sector: "technology"
+    cves: []
+    techniques: [T1195.002]
+    affected_products: ["npm Trusted Publishing (GitHub Actions OIDC)", "npm trusted publishing with GitLab CI/CD"]
+    entity_keys: ["product:npm", "product:github-actions"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "It records the repository’s address, such as bloom/repository, instead of the permanent ID GitHub assigns it, at least until a version is first published from that repository."
+        attribution: "Bloom Security"
+        source_url: "https://bloom.security/blog/slugfest-millions-of-ai-agents-download-exposed-npm-packages"
+      - quote: "Unvalidated npm trusted publishing configurations now expire 48 hours after creation and can no longer authorize publishing."
+        attribution: "GitHub Changelog"
+        source_url: "https://github.blog/changelog/2026-10-02-unvalidated-npm-trusted-publishing-configurations-now-expire/"
+      - quote: "Myers said it is unknown whether anyone exploited the flaw in the wild."
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/10/13/slugfest-npm-trusted-publishing-flaw/"
+    extended_notes: |
+      - Maintainer hardening (Bloom, Help Net Security): run npm trust list for each package and confirm every listed repository still resolves to one you control; delete and re-create any binding that points at a renamed or transferred repository; remove the binding before deleting a repository.
+      - Consumer-side check (Help Net Security): verify that a package's provenance attestation names the repository the project is supposed to come from; a valid attestation alone is not proof (the attacker's release also carries one).
+      - Open question to preserve: whether bindings created before 2026-10-02 are covered retroactively is not stated by GitHub; Bloom says the same weakness exists in npm's GitLab integration. No in-the-wild exploitation is known.
+      - Precondition detail: the attack needs a binding whose repository never published (once a publish occurs the immutable ID is recorded), so the exposed set is configurations created but unused.
+    borderline: true
+    borderline_reason: "No in-the-wild exploitation known and a fix is in place; relevance to the constituency is only via suppliers and in-house teams that publish npm packages. Concrete hardening step exists (npm trust list), so returned for the main agent to weigh against PD-11."
+    classification_hint: "B2 (primary researcher write-up plus GitHub's own changelog and a trade-press report quoting GitHub; the 1,500-package count is Bloom's alone)"
+
+  # ------------------------------------------------------------------
+  # 5. XWorm Reborn (Netskope) -- borderline
+  # ------------------------------------------------------------------
+  - title: "XWorm after the builder leak: four concurrent versions, 46 plugins and surveillance modules, including live hidden-browser control that makes MFA irrelevant (Netskope)"
+    sources:
+      - { url: "https://threatlabs.netskope.com/blog/2026/09/xworm-reborn", publisher: "Netskope Threat Labs", date: "2026-10-12", role: "primary" }
+      - { url: "https://securityaffairs.com/200910/malware/how-a-leaked-builder-of-xworm-turned-a-remote-access-trojan-into-a-surveillance-kit.html", publisher: "Security Affairs", date: "2026-10-14", role: "corroborating" }
+    discovery_trace: "first seen at: securityaffairs, front page https://securityaffairs.com/ (WebFetch; headline dated 2026-10-14) → article https://securityaffairs.com/200910/malware/how-a-leaked-builder-of-xworm-turned-a-remote-access-trojan-into-a-surveillance-kit.html (extract; links Netskope) → primary: https://threatlabs.netskope.com/blog/2026/09/xworm-reborn (extract; raw page datePublished 2026-10-12T12:00Z, URL slug says 2026/09 and the IOC repo folder is dated 2026-09-24)."
+    summary: |
+      Netskope Threat Labs reports that the XWorm RAT, whose builder was cracked and leaked in June 2025 (modified version 6.4 source followed in August), now runs as four concurrent versions in the wild (V6.4, V6.5 "XWorm Reborn", V7.2, V7.4) with the confirmed plugin count up from 35 to 46. Netskope records 1,236 detections across more than 100 customer organisations in Q3 2026, four times Q3 2025, with September alone at 601; about 35% of affected customers are financial services and activity concentrates in India, Brazil, Italy, Panama and the United States. The detection-relevant additions are surveillance modules. HBrowser (since version 6) gives the operator a live view of the victim's running browser and relays mouse, keyboard and paste actions into it over the normal AES-encrypted C2, so every authenticated tab is usable without stealing a password or passing MFA. The Maps plugin writes "Allow" to the user's CapabilityAccessManager location ConsentStore registry value before calling the Windows location API, so no consent prompt is shown and the setting persists; it falls back to IP geolocation when no GPS is present. The Microphone plugin streams audio from a chosen device in half-second compressed chunks with no prompt. V7.4 adds an XBinder dropper, NTDLL unhooking from a copy under %AppData% and a LocaltoNet C2 channel; V7.2 adds native-code obfuscation and a six-technique anti-VM battery. Netskope's takeaway is that MFA cannot protect an account whose logged-in browser session the operator is driving.
+    region_nexus: "global; Italy is one of five named concentration countries (Netskope customer telemetry only)"
+    primary_sector_nexus: "indirect (commodity RAT against enterprise endpoints; no Swiss or public-sector statement)"
+    sector: "financial-services"
+    cves: []
+    techniques: [T1185, T1113, T1123, T1112]
+    affected_products: ["Windows endpoints (commodity RAT)"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:xworm", type: malware, name: "XWorm", aliases: ["XWorm Reborn"],
+          summary: "Commodity .NET remote-access trojan whose builder leaked publicly in June 2025; Netskope tracks four concurrent versions (6.4, 6.5 'Reborn', 7.2, 7.4) and 46 plugins including HBrowser live-browser control, a Maps plugin that silently enables Windows location consent and a Microphone streamer (Netskope Threat Labs, 2026-10-12)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "HBrowser gives operators interactive control of authenticated browser sessions without touching credentials, bypassing MFA entirely."
+        attribution: "Netskope Threat Labs"
+        source_url: "https://threatlabs.netskope.com/blog/2026/09/xworm-reborn"
+      - quote: "The Maps plugin skips it by writing `Allow` to the `CapabilityAccessManager` registry key."
+        attribution: "Netskope Threat Labs"
+        source_url: "https://threatlabs.netskope.com/blog/2026/09/xworm-reborn"
+      - quote: "The financial services sector accounts for approximately 35% of affected customers, with activity concentrated in India, Brazil, Italy, Panama, and the United States."
+        attribution: "Netskope Threat Labs"
+        source_url: "https://threatlabs.netskope.com/blog/2026/09/xworm-reborn"
+    extended_notes: |
+      - Hunt hooks from the Netskope write-up: a registry write by a non-system process to HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location (value "Allow") immediately before a location API call (Sysmon registry-value-set or EDR registry telemetry); a user process opening a browser instance it did not start and driving input into it (screen-capture plus synthetic input); audio capture by an unexpected process. Netskope gives the exact registry value path in a script excerpt; the "consent suppression" behaviour is real Windows behaviour but legitimate apps and IT tooling also set these values, so process lineage and signing state are the discriminators (inference from the mechanism, not stated by Netskope).
+      - Date caution: the page's machine-readable date is 2026-10-12T12:00Z; the URL path carries 2026/09 and the IOC folder is dated 2026-09-24, so the first publication may precede 2026-10-12 and the post may have been republished or updated. Security Affairs rewrote it on 2026-10-14.
+    borderline: true
+    borderline_reason: "Commodity RAT with no Swiss or public-sector nexus; single research source (Security Affairs only rewrites it). Returned for the concrete endpoint hunt hooks and the 'MFA does not help against live browser-session control' lesson; main agent likely to drop under PD-11 unless a Swiss link appears."
+    classification_hint: "B2 for Netskope as an original telemetry-holding lab; Security Affairs adds no independent evidence"
+
+  # ------------------------------------------------------------------
+  # 6. UAT-6275 / TAG-193 / Silent Lynx (Talos + Insikt) -- borderline
+  # ------------------------------------------------------------------
+  - title: "UAT-6275 / TAG-193 (Silent Lynx): Kazakhstan-nexus espionage against CIS governments, with a WinRAR CVE-2025-8088 Startup-folder chain and a FortiWeb exploit staged (Cisco Talos with Recorded Future Insikt)"
+    sources:
+      - { url: "https://blog.talosintelligence.com/break-the-silence-kazakhstan-nexus-uat-6275-targets-cis-government-organizations/", publisher: "Cisco Talos", date: "2026-10-14", role: "primary" }
+      - { url: "https://www.recordedfuture.com/blog/tag193-regional-espionage-operations", publisher: "Recorded Future Insikt Group", date: "2026-10-14", role: "primary" }
+      - { url: "https://www.virusbulletin.com/uploads/pdf/conference/vb2026/papers/Break-the-silence-tracking-Silent-Lynx-through-exposed-infrastructure.pdf", publisher: "Virus Bulletin 2026 conference paper (Shen and Vögele)", date: "2026-10-14", role: "primary" }
+    discovery_trace: "first seen at: talos, feed https://blog.talosintelligence.com/rss/ (item dated 2026-10-14T14:00Z) → primary (no pivot needed): https://blog.talosintelligence.com/break-the-silence-kazakhstan-nexus-uat-6275-targets-cis-government-organizations/ (extract) → joint partner post: https://www.recordedfuture.com/blog/tag193-regional-espionage-operations (listed in recordedfuture-insikt feed https://www.recordedfuture.com/feed, extract) → full technical paper: https://www.virusbulletin.com/uploads/pdf/conference/vb2026/papers/Break-the-silence-tracking-Silent-Lynx-through-exposed-infrastructure.pdf (bridge pdf, 107-stream text PDF, decoded)."
+    summary: |
+      Cisco Talos and Recorded Future's Insikt Group publish joint research (also a Virus Bulletin 2026 paper) on a cluster Talos tracks as UAT-6275 and Recorded Future as TAG-193, overlapping with Silent Lynx (Seqrite) and sitting in a wider set of campaigns around YoroTrooper; Talos assesses with medium confidence a Kazakhstan nexus from infrastructure access, language artefacts, malware-testing submissions from Kazakhstan, UTC+5 working hours and regional targeting, while Insikt says organisational affiliation and state sponsorship remain unresolved. Victims and lures span nine CIS countries across government, diplomacy, agriculture, environment and energy; the group frequently spear-phishes from compromised government mailboxes and stages payloads on GitHub. Talos groups the June 2025 to August 2026 samples into four infection chains: macro-enabled Word documents (A, June 2025), PS2EXE-packaged PowerShell downloaders that create scheduled tasks (B, July 2025), a shortcut that runs PowerShell to fetch a GitHub-hosted script, later also dropping the PickleShell reverse shell into the Startup folder (C, October 2025), and from April 2026 a RAR archive exploiting WinRAR CVE-2025-8088 to place PickleShell in the Startup folder, which runs at the next sign-in and was the first vulnerability exploit seen in this actor's delivery. The payloads are lightweight custom reverse shells (Chvost, Laplas, PickleShell). Exposed open directories and a GitHub repository's commit history also revealed Linux tooling and a public proof-of-concept for FortiWeb CVE-2025-25257, which Talos reads as interest in Linux hosts and internet-facing appliances; Insikt states that the research did not confirm the group exploited the FortiWeb flaw in the wild. Talos's defender guidance is to monitor unexpected PowerShell activity and payload downloads from public services such as GitHub, scheduled tasks and Startup-folder changes, and to keep archive utilities patched.
+    region_nexus: "Central Asia and CIS (nine countries named: Kazakhstan, Kyrgyzstan, Tajikistan, Turkmenistan, Uzbekistan, Armenia, Azerbaijan, Russia, Belarus); no Swiss or EU victim stated"
+    primary_sector_nexus: "indirect (foreign-ministry and government targeting by spear-phishing from compromised government accounts; same WinRAR flaw is widely exploited by other actors)"
+    sector: "public-sector"
+    cves: [CVE-2025-8088, CVE-2025-25257]
+    techniques: [T1566.001, T1204.002, T1059.001, T1053.005, T1547.001, T1102, T1105, T1203]
+    affected_products: ["WinRAR", "Fortinet FortiWeb"]
+    entity_keys: ["product:fortinet-fortiweb"]
+    new_entities:
+      - { key: "actor:uat-6275", type: actor, name: "UAT-6275", aliases: ["TAG-193", "Silent Lynx"],
+          summary: "Cisco Talos designation (Recorded Future: TAG-193; Seqrite: Silent Lynx) for a cluster assessed with medium confidence as Kazakhstan-nexus that spear-phishes CIS government, diplomatic and resource-management bodies, stages payloads on GitHub and uses custom reverse shells (Chvost, Laplas, PickleShell); first reported by Seqrite in January 2025, profiled by Talos and Insikt on 2026-10-14." }
+      - { key: "actor:yorotrooper", type: actor, name: "YoroTrooper", aliases: [],
+          summary: "Cisco Talos 2023 designation for a Kazakhstan-associated espionage cluster against CIS governments and energy bodies; Talos assesses UAT-6275 and YoroTrooper likely belong to the same broader activity cluster but tracks them separately because no direct indicator or toolset overlap was seen (Talos, 2026-10-14)." }
+    relation_suggestions:
+      - { subject: "actor:uat-6275", object: "actor:yorotrooper",
+          basis: "Talos: UAT-6275 and YoroTrooper 'likely belong to the same broader activity cluster' but are tracked separately for lack of direct indicator or toolset overlap (Talos, 2026-10-14)" }
+    related_entries:
+      - "2026-06-10/year-old-winrar-flaw-cve-2025-8088-still-fuels-ukraine-intru"
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Talos assesses with medium confidence that UAT-6275 has a Kazakhstan nexus"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/break-the-silence-kazakhstan-nexus-uat-6275-targets-cis-government-organizations/"
+      - quote: "a crafted WinRAR archive exploiting CVE-2025-8088"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/break-the-silence-kazakhstan-nexus-uat-6275-targets-cis-government-organizations/"
+      - quote: "However, the research did not confirm that the group exploited the FortiWeb vulnerability in the wild."
+        attribution: "Recorded Future Insikt Group"
+        source_url: "https://www.recordedfuture.com/blog/tag193-regional-espionage-operations"
+    extended_notes: |
+      - Behavioural telemetry to hunt, per the sources: a spawned powershell.exe retrieving a script from a GitHub raw URL after a shortcut or document is opened; scheduled-task creation by a PS2EXE-style executable; new executables in the user Startup folder written by an archive extractor process (WinRAR) right after opening an archive, running at next sign-in; reverse shells that spawn cmd.exe or powershell.exe over TLS to a domain styled as a Microsoft Exchange licensing host (VB paper: C2 domain impersonating Exchange). The VB paper also lists a stable .NET assembly GUID as a hunting anchor for PickleShell builds (that is an indicator-class detail; not carried).
+      - WinRAR CVE-2025-8088 is exploited by many actors; the entry should reference the existing store entry on it rather than restate it. The FortiWeb CVE-2025-25257 point is an assessed interest only (PoC found on actor infrastructure, no exploitation observed).
+    borderline: true
+    borderline_reason: "Regional espionage against CIS governments with no Swiss or EU victim and no Swiss-relevant exposure stated; the delivery chains are generic. Returned because the cluster is named by two telemetry-holding labs and the WinRAR / Startup-folder hunt is concrete, but the main agent will probably drop it under PD-11."
+    classification_hint: "B2 (two labs with first-hand exposed-infrastructure access; joint research so not independent for credibility)"
+
+  # ------------------------------------------------------------------
+  # 7. CyberXero (SOCRadar) -- borderline, lookback via Security Affairs
+  # ------------------------------------------------------------------
+  - title: "CyberXero: a Russian-speaking initial access broker runs up to 51 Claude Code agents and a PentAGI-driven Cobalt Strike server, with mass WordPress exploitation and curated Ukrainian energy targeting (SOCRadar)"
+    sources:
+      - { url: "https://socradar.io/blog/cyberxero-ai-iab-ukraine-critical-infrastructure/", publisher: "SOCRadar Threat Research Unit", date: "2026-10-06", role: "primary" }
+      - { url: "https://securityaffairs.com/200803/cyber-crime/cyberxero-used-51-ai-agents-to-steal-628000-ukrainian-records.html", publisher: "Security Affairs", date: "2026-10-12", role: "corroborating" }
+    discovery_trace: "first seen at: securityaffairs, front page https://securityaffairs.com/ (WebFetch headline dated 2026-10-12) → article https://securityaffairs.com/200803/cyber-crime/cyberxero-used-51-ai-agents-to-steal-628000-ukrainian-records.html (extract; links SOCRadar) → primary: https://socradar.io/blog/cyberxero-ai-iab-ukraine-critical-infrastructure/ (extract; page date 2026-10-06). Also listed in Check Point's weekly bulletin https://research.checkpoint.com/2026/12th-october-threat-intelligence-report/."
+    summary: |
+      SOCRadar's Threat Research Unit documents CyberXero, a Russian-speaking, financially motivated initial access broker (Moscow time zone, first infrastructure observed July 2026) discovered because an open directory on its primary workstation exposed more than 90,000 files: engagement folders, exploitation toolkits, AI agent configurations, session logs and victim data. It runs two pipelines on one operator. The opportunistic pipeline uses wp2shell, an internally developed Python package that abuses the WordPress REST API batch endpoint to inject SQL, create a rogue administrator named wp2_ plus eight hexadecimal characters and drop a WSO-family webshell as an active plugin; one run scanned 4,708 targets, confirmed 429 admin panels and deployed 32 shells in 61 seconds, over a target set of more than 56,000 URLs, and the actor also weaponised a Support Board SQL injection within 30 days of disclosure, ran Redis rogue-replication against exposed hosts and chained blind SQLi, a reset-token extraction and PHP deserialisation against an e-commerce portal. The directed pipeline manually targeted seven Ukrainian energy and utility entities (one target list enumerated 95 subdomains) with confirmed exfiltration from four Ukrainian organisations, including 564,073 subscriber records from a Kharkiv district-heating provider reached with a credential hard-coded in the actor's own script; SOCRadar finds no direct evidence of a sale. The AI layer is up to 51 role-specialised Claude Code agents on the workstation plus an open-source PentAGI deployment wired to a Cobalt Strike team server through an AI provider API; the session logs show a rehearsed "authorised pentest on my own infrastructure" framing and a workaround of opening a fresh session when the model refused. Poland is the second most active victim country, and SOCRadar lists WordPress exploitation attempts against Polish state administration entities among 284 scanned domains. SOCRadar's hunt guidance covers wp2shell artefacts and exposed Redis; its treat-agent-logs-as-credentials advice is aimed at organisations deploying agents.
+    region_nexus: "Ukraine (energy, utilities), Poland (state-administration WordPress scans), global mass WordPress/e-commerce exploitation"
+    primary_sector_nexus: "indirect (WordPress-hosted municipal and cantonal sites are the same technology class; Polish state administration scanned)"
+    sector: "energy"
+    cves: []
+    techniques: [T1190, T1505.003, T1136.001, T1588.007]
+    affected_products: ["WordPress core REST API batch endpoint", "Magento", "PrestaShop", "Support Board", "Redis (exposed)"]
+    entity_keys: ["product:wordpress"]
+    new_entities:
+      - { key: "actor:cyberxero", type: actor, name: "CyberXero", aliases: [],
+          summary: "Underground-forum alias (Dread, HackForums, Exploit.in) of a Russian-speaking, financially motivated initial access broker documented by SOCRadar on 2026-10-06; runs up to 51 Claude Code agents and a PentAGI-driven Cobalt Strike server, mass-exploits WordPress and e-commerce sites with the wp2shell tool and curated-targets Ukrainian energy and utilities (SOCRadar)." }
+      - { key: "tool:pentagi", type: tool, name: "PentAGI", aliases: [],
+          summary: "Open-source AI-augmented penetration-testing framework that SOCRadar reports CyberXero integrated with a Cobalt Strike team server through an AI provider API (SOCRadar, 2026-10-06)." }
+    relation_suggestions:
+      - { subject: "actor:cyberxero", object: "tool:pentagi",
+          basis: "SOCRadar: the actor's team server integrates PentAGI with Cobalt Strike through an AI provider API (SOCRadar, 2026-10-06)" }
+    related_entries:
+      - "2026-07-18/wordpress-core-wp2shell-preauth-rce-chain-cve-2026-63030"
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "up to 51 specialized Claude Code agents on the primary workstation"
+        attribution: "SOCRadar Threat Research Unit"
+        source_url: "https://socradar.io/blog/cyberxero-ai-iab-ukraine-critical-infrastructure/"
+      - quote: "a single automated execution scanned 4,708 targets, confirmed access to 429 WordPress administration panels, and deployed 32 shells in a 61-second window"
+        attribution: "SOCRadar Threat Research Unit"
+        source_url: "https://socradar.io/blog/cyberxero-ai-iab-ukraine-critical-infrastructure/"
+      - quote: "No direct evidence of a sale was recovered during the analysis."
+        attribution: "SOCRadar Threat Research Unit"
+        source_url: "https://socradar.io/blog/cyberxero-ai-iab-ukraine-critical-infrastructure/"
+    extended_notes: |
+      - The wp2shell flaw (WordPress core pre-auth chain) is already covered in the store (2026-07-18 entry, CVE-2026-63030); the new content is the AI-orchestration layer and the Ukrainian energy targeting, not the WordPress bug.
+      - Hunt anchors from SOCRadar that are behaviour rather than IOCs: WordPress administrator usernames matching wp2_ plus eight hex characters; plugin directories matching wp-content/plugins/wp2shell_ plus eight hex characters; unexpected authorized_keys entries on internet-exposed Redis (SLAVEOF rogue-replication class).
+      - Primary date is 2026-10-06, outside the 26 h window; returned as a lookback item because the Security Affairs record (146 h lookback) first surfaced it on 2026-10-12 and the store has no entry. Single research source (Security Affairs and Check Point only relay it); SOCRadar's attribution rests on an exposed account file, a forum post and billing traces, which SOCRadar says it withheld in detail.
+    borderline: true
+    borderline_reason: "Primary is 9 days old, single research source, Ukraine/Poland focus, and the WordPress flaw is already covered. Returned because it adds a documented AI-agent operator workflow (session-reset to defeat model refusals, exposed agent logs) to the store's AI-agent threads; main agent to drop unless it wants that thread."
+    classification_hint: "C3 (SOCRadar is a vendor with attribution claims from one exposed server; Security Affairs only relays)"
+
+  # ------------------------------------------------------------------
+  # 8. LiteLLM (Check Point Research) -- borderline
+  # ------------------------------------------------------------------
+  - title: "Check Point Research: a low-privilege LiteLLM user can reach root-equivalent RCE through /config/update (UI-token route-prefix check plus env-var injection) and steal provider keys via user_config SSRF; both fixed by 1.83.9"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/when-llm-gateways-go-wrong-findings-from-litellm/", publisher: "Check Point Research", date: "2026-10-13", role: "primary" }
+      - { url: "https://github.com/BerriAI/litellm/security/advisories/GHSA-hx8v-g79f-8w5f", publisher: "BerriAI LiteLLM GitHub Security Advisory", date: "2026-08-26", role: "corroborating" }
+      - { url: "https://sec-consult.com/vulnerability-lab/advisory/broken-access-control-in-config-endpoint-in-litellm/", publisher: "SEC Consult", date: "2026-02-24", role: "corroborating" }
+    discovery_trace: "first seen at: checkpoint-research, feed https://research.checkpoint.com/feed/ (item dated 2026-10-13T14:30Z) → primary (no pivot needed): https://research.checkpoint.com/2026/when-llm-gateways-go-wrong-findings-from-litellm/ (extract) → WebSearch (\"LiteLLM CVE-2026-35029 /config/update missing authorization advisory fixed 1.83.9\") → earlier disclosure: SEC Consult https://sec-consult.com/vulnerability-lab/advisory/broken-access-control-in-config-endpoint-in-litellm/ → WebSearch (\"CVE-2026-59823 LiteLLM user_config SSRF api_base\") → vendor advisory https://github.com/BerriAI/litellm/security/advisories/GHSA-hx8v-g79f-8w5f (extract)."
+    summary: |
+      Check Point Research's assessment of the LiteLLM gateway (tested on 1.77.7) explains how a missing role check chains into full compromise for any authenticated user, including the baseline Internal User role. The POST /config/update handler depends only on the generic key-authentication dependency and never checks for the PROXY_ADMIN role, and UI session tokens, which carry the special litellm-dashboard team, are routed to a permissive UI-route allowlist that uses startswith matching on "/config", so /config/update is reachable. Through that one endpoint Check Point shows three paths: arbitrary file read by injecting UI_LOGO_PATH into the process environment and calling /get_image; administrator takeover by overwriting UI_USERNAME and UI_PASSWORD; and remote code execution by registering a pass-through endpoint whose target starts with s3:// or gcs://, which makes get_instance_fn download a Python file and run it with exec_module. A separate SSRF (CVE-2026-59823) lets an authenticated caller put an api_base inside the user_config request parameter, which the is_request_body_safe guard did not inspect, redirecting the proxy's provider call to a host of the caller's choosing and leaking the provider API key. Check Point also notes password hashes exposed to low-privilege users and stored as a single unsalted hash. The missing-authorisation flaw is CVE-2026-35029, which SEC Consult had published on 2026-02-24 for 1.81.12 (with a file-read and environment-exfiltration route through pass-through endpoints), so Check Point's new detail is the RCE and admin-takeover paths and the root cause; the SSRF's vendor advisory (GHSA-hx8v-g79f-8w5f) lists affected versions up to 1.83.8, patched in 1.83.9, released 2026-04-17, and states that exploitation requires a valid virtual key. Check Point says all findings are resolved as of 1.83.9; no source here reports in-the-wild exploitation of these two CVEs.
+    region_nexus: "global (self-hosted AI gateway)"
+    primary_sector_nexus: "indirect (organisations self-hosting an LLM gateway; no Swiss deployment stated)"
+    sector: "technology"
+    cves: [CVE-2026-35029, CVE-2026-59823]
+    techniques: [T1190, T1059.006, T1552.001]
+    affected_products: ["LiteLLM Proxy (BerriAI)"]
+    entity_keys: ["product:litellm"]
+    new_entities: []
+    relation_suggestions: []
+    related_entries:
+      - "2026-06-16/obsidian-security-a-three-cve-chain-turns-any-litellm-user-i"
+      - "2026-06-09/cve-2026-42271-berriai-litellm-low-privilege-command-injecti"
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The most significant issues stemmed from a missing authorization check on the /config/update endpoint"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/when-llm-gateways-go-wrong-findings-from-litellm/"
+      - quote: "Upgrade to 1.83.9 or later (released 2026-04-17)."
+        attribution: "BerriAI LiteLLM GitHub Security Advisory"
+        source_url: "https://github.com/BerriAI/litellm/security/advisories/GHSA-hx8v-g79f-8w5f"
+      - quote: "low-privileged users can access this endpoint without restriction"
+        attribution: "SEC Consult"
+        source_url: "https://sec-consult.com/vulnerability-lab/advisory/broken-access-control-in-config-endpoint-in-litellm/"
+    extended_notes: |
+      - Patch state discrepancy to resolve before composing: SEC Consult lists CVE-2026-35029 as fixed in v1.83.0-nightly / affecting up to 1.83.0; the GHSA for CVE-2026-59823 lists <= 1.83.8 affected and 1.83.9 patched. Upgrade to 1.83.9 or later covers both; Check Point states 1.83.9.
+      - Exposure check: the management plane (UI and /config/update) reachable by any authenticated LiteLLM user; self-hosted LiteLLM versions below 1.83.9. Post-patch compromise check: look for changes to the proxy's stored configuration (environment variables such as UI_USERNAME, UI_PASSWORD, UI_LOGO_PATH; pass-through endpoints with s3:// or gcs:// targets) and outbound fetches from the proxy host to object storage it should not use; rotate provider API keys held by the proxy if any non-admin account was untrusted.
+      - The store already carries several LiteLLM entries (pre-auth SQL injection, low-privilege command injection, Obsidian three-CVE chain, callback-hook forgery, a botnet scanning for LiteLLM); this is a fourth distinct low-privilege-to-RCE route on the same product, but Check Point's disclosure is a write-up of flaws fixed in April.
+    borderline: true
+    borderline_reason: "Write-up of flaws fixed in April (1.83.9 released 2026-04-17; CVE-2026-35029 first disclosed by SEC Consult 2026-02-24), authenticated-user prerequisite, no exploitation reported, and the store already has five LiteLLM entries. Returned only because the RCE/admin-takeover chain and route-prefix root cause are new detail; main agent likely to drop."
+    classification_hint: "B2 (original research with a vendor advisory confirming the fix)"
+
+# ----------------------------------------------------------------------
+watchlist_sweep: null   # watchlist_duty: none
+
+candidate_sources:
+  - id: bloom-security-research
+    publisher: "Bloom Security (security research blog)"
+    url: "https://bloom.security/blog/slugfest-millions-of-ai-agents-download-exposed-npm-packages"
+    category: research
+    why: "Primary researcher write-up for the npm Trusted Publishing SlugFest flaw; AI-agent supply-chain telemetry. Single strong post so far, low cadence; watch rather than promote."
+  - id: resecurity-blog
+    publisher: "Resecurity (threat research blog)"
+    url: "https://www.resecurity.com/blog/article/iron-man-yamstore-powering-a-global-phishing-as-a-service-ecosystem"
+    category: research
+    why: "First-hand infiltration of a phishing-as-a-service ecosystem (bought a licence, ran the kit in a lab) coordinated with Microsoft DCU; a primary for kit-level details Microsoft's post omits."
+  - id: socradar-research
+    publisher: "SOCRadar Threat Research Unit blog"
+    url: "https://socradar.io/blog/cyberxero-ai-iab-ukraine-critical-infrastructure/"
+    category: research
+    why: "Original exposed-infrastructure investigations (CyberXero AI-augmented IAB); also publishes wp2shell mechanics. Admiralty B/C; claims need corroboration."
+  - id: netskope-threat-labs
+    publisher: "Netskope Threat Labs"
+    url: "https://threatlabs.netskope.com/blog/2026/09/xworm-reborn"
+    category: research
+    why: "Malware-family telemetry research (XWorm lineage since 2024) with concrete behaviour-level detail; page carries raw datePublished metadata for date checks."
+
+coverage_gaps:
+  - source_id: redcanary
+    reason: "RECIPE CHANGE: Red Canary's blog has been absorbed by Zscaler. https://redcanary.com/blog/ and per-article URLs now answer HTTP 301 to https://www.zscaler.com/blogs/... (for example https://redcanary.com/blog/threat-intelligence/intelligence-insights-august-2026/ -> https://www.zscaler.com/blogs/cybersecurity-best-practices/intelligence-insights-august-2026). https://redcanary.com/feed/ still answers 200 (Last-Modified 2026-10-06) but its newest item is 2026-08-20, so it looks frozen. Working recipe: python3 tools/fetch_source.py feed https://www.zscaler.com/blogs/feeds/cybersecurity-best-practices 15 returns dated Red Canary-origin posts (newest 2026-10-08 'Collaboration and Support Platforms are the New Attack Surface'; Intelligence Insights editions to 2026-08-20; no September edition seen). Recommend repointing rss_url (or merging this record into zscaler-threatlabz as a second feed) and retaining the record as active. No in-window item found (newest posts 2026-10-08 and 2026-10-01 are outside the 146 h lookback)."
+  - source_id: sans-newsbites
+    reason: "Recipe correction: the issue URL pattern is https://www.sans.org/newsletters/newsbites/xxviii-76 (hyphen), found via WebSearch; .../xxviii/76 returns 404 and extract falls back to a useless reader snapshot. extract of the hyphenated URL returns the full issue (trafilatura-direct) with expert annotations. The listing https://www.sans.org/newsletters/newsbites/ via extract returns issue numbers and dates (Vol XXVIII issues 66-76), so enumerate issue numbers from it then drill the hyphenated URL."
+  - source_id: schneier
+    reason: "Working: python3 tools/fetch_source.py url https://www.schneier.com/feed/ returned RSS XML through the reader fallback (fetch_source says 'fetched via jina reader fallback'); 10 items, newest 2026-10-14; nothing in window beyond a relay of the already-covered French refrigeration incident. Feed parse is manual (fetch_source feed does not parse that output)."
+  - source_id: kaspersky-securelist
+    reason: "No in-window item. RSS (https://securelist.com/feed/) and the all-posts listing (https://securelist.com/all/ via url) both show the newest post as 2026-09-24 (MacSync); nothing since."
+  - source_id: fortinet-fortiguard-blog
+    reason: "Listing via bridge url works and, unlike the note of 2026-10-06, the listing text itself carries a date under each title (title, summary, author, then date); the newest entry is ClingSTUN 2026-10-05, outside the 122 h lookback, so nothing returned. Per-article extract returns clean markdown with a date field (one article, 'Someone Else Is Using Your AI', had no date field in extract but 'Published Time: 2026-09-03' in the reader snapshot)."
+  - source_id: reliaquest
+    reason: "Sitemap-filtered /blog/ approach works (620 blog URLs). Only three posts carried 2026-10-13/14 lastmod: the 2026-10-07 post already covered in the store, a 2026-08-28 post and a 2025-05-20 post (the sitemap re-stamps old posts in bulk around 2026-10-13T02:15-02:45Z, so lastmod is not a publication date); confirm every candidate with the page date field."
+  - source_id: huntress
+    reason: "Feed fine; marketing and SEO posts dominate (11 of 20 items in the last 14 days are glossary, trend or compliance pages). Only 2026-10-13 WatchGuard post kept; ClickFix-to-BEC post is a fictional scenario demonstration (dropped); passkeys post is a synthesis of other labs' work (dropped)."
+
+dropped_leads:
+  - { lead: "Recorded Future 'September 2026 CVE Landscape' (monthly, 2026-10-13)", reason: "Periodic digest. Every named exploited CVE and cluster that I checked is already in the store (NetScaler CVE-2026-88771/88772, PeopleSoft CVE-2026-35273, Cisco FMC CVE-2026-20079/20316 with UAT-12197/11823/11988, Red Heron and Gitea CVE-2026-60004, F5 APM CVE-2026-94127, N-able N-central, PaperCut 440 instances/395 organisations). No ANNUAL REPORT flag: it is monthly.", url: "https://www.recordedfuture.com/blog/september-2026-cve-landscape" }
+  - { lead: "Check Point 12th October Threat Intelligence Report (weekly digest)", reason: "Discovery only; its items are covered or were chased to primaries (ARTEX via CrowdStrike, CyberXero via SOCRadar, FortiBleed FBI/USSS advisory already in the store's FortiBleed entry). Not independently citable beyond leads.", url: "https://research.checkpoint.com/2026/12th-october-threat-intelligence-report/" }
+  - { lead: "Huntress 'ClickFix to BEC in 24 Hours: Tragic Quadrant' (2026-10-13)", reason: "Fictional scenario for a marketing report; the underlying Custom GPT ClickFix campaign is already covered (2026-10-04 entry)." }
+  - { lead: "Huntress 'Passkeys Raise the Bar' (2026-10-14)", reason: "Synthesis of other labs' work (EvilTokens, Microsoft passkey-themed social engineering of 2026-09-09, SpecterOps pass-the-passkey); no new first-hand finding." }
+  - { lead: "Talos UAT-11985 AI-assisted event lures with real-time Google AitM (2026-10-08)", reason: "Published 2026-10-08T10:00Z, before the Talos lookback start (about 2026-10-09T00:56Z); Taiwanese research-organisation targeting, no Swiss relevance. Not covered in the store; flagging in case the main agent wants it." }
+  - { lead: "Security Affairs: Volexity Ivanti three zero-days (2026-10-14)", reason: "Fully covered by the 2026-10-14 CVE-2026-104935 entry, which already cites Volexity." }
+  - { lead: "Security Affairs: Anthropic small AI models replicating across IoT (2026-10-13)", reason: "Lab demonstration, no in-the-wild activity or Swiss relevance." }
+  - { lead: "Help Net Security 2026-10-12 Ledger wallets compromised via hardware implant; 2026-10-14 TFG London cyberattack", reason: "Consumer/retail items outside the constituency and the research remit." }
+  - { lead: "SANS NewsBites 2026-10-13 item: Ahold Delhaize takes IT systems offline after a cybersecurity incident (2026-10-12)", reason: "Incident lead for S4 (Dutch/Belgian food retailer, neighbouring region); not research. Not in the prior coverage index; flagging for the S4 owner.", url: "https://www.sans.org/newsletters/newsbites/xxviii-76" }
+  - { lead: "Microsoft CaptiveCrunch update (2026-10-05) and Star Blizzard RedFlick (2026-09-29)", reason: "Seen only as WebSearch snippets from Microsoft's blog; outside the window; Midnight Blizzard CaptiveCrunch was covered by Zscaler in August. Not fetched." }
+
+# One row per record of the slice, in slice order.
+source_ledger:
+  - { id: recordedfuture-insikt, tier: standard, attempted: true, transport: "feed (https://www.recordedfuture.com/feed) + extract", horizon_hours: 146, in_horizon_items: 4, returned: 1, note: "TAG-193 joint post kept (merged with Talos item); 'September 2026 CVE Landscape' monthly digest dropped (all leads covered); 2 product-launch posts skipped" }
+  - { id: redcanary, tier: standard, attempted: true, transport: "feed + url + curl redirect check + zscaler cybersecurity-best-practices feed", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "blog 301-redirects to zscaler.com; feed frozen at 2026-08-20; repointed recipe logged in coverage_gaps" }
+  - { id: reliaquest, tier: standard, attempted: true, transport: "bridge url sitemap + extract", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "three recent lastmod URLs were old posts; the 2026-10-07 agent post is already covered" }
+  - { id: sans-newsbites, tier: standard, attempted: true, transport: "extract listing + extract of hyphenated issue URL (xxviii-76, xxviii-75)", horizon_hours: 146, in_horizon_items: 2, returned: 0, note: "issues 75 (2026-10-09) and 76 (2026-10-13) are digests; leads either covered or for other domains; used as corroborating commentary on the ARTEX item" }
+  - { id: schneier, tier: standard, attempted: true, transport: "bridge url feed (jina reader fallback)", horizon_hours: 146, in_horizon_items: 5, returned: 0, note: "commentary; fridge item already covered; others (AI cryptanalysis, Apple reboot, dictators) off-remit" }
+  - { id: securityaffairs, tier: standard, attempted: true, transport: "WebFetch front page + extract per article", horizon_hours: 146, in_horizon_items: 20, returned: 2, note: "XWorm Reborn (Netskope) and CyberXero (SOCRadar) returned as borderline lookback items after pivoting to primaries; Volexity Ivanti covered; rest are KEV/patch news or off-remit" }
+  - { id: talos, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 148, in_horizon_items: 2, returned: 1, note: "UAT-6275 kept (borderline); Oct Patch Tuesday post is S1 domain; UAT-11985 (2026-10-08) outside lookback" }
+  - { id: zscaler-threatlabz, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 148, in_horizon_items: 1, returned: 1, note: "ARTEX post returned; TraderTraitor trojanised Terraform (2026-10-08) outside lookback and already covered" }
+  - { id: checkpoint-research, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 122, in_horizon_items: 2, returned: 1, note: "LiteLLM write-up returned (borderline); weekly threat-intelligence bulletin used as discovery only" }
+  - { id: dfirreport, tier: standard, attempted: true, transport: "feed + url home page", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-08-24; publisher cadence, not a fetch failure" }
+  - { id: fortinet-fortiguard-blog, tier: standard, attempted: true, transport: "bridge url listing + extract per article", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-10-05 (ClingSTUN) outside lookback" }
+  - { id: helpnetsecurity, tier: standard, attempted: true, transport: "extract front page (raw HTML, dated anchors) + extract per article", horizon_hours: 122, in_horizon_items: 3, returned: 1, note: "npm SlugFest returned; others covered or off-remit" }
+  - { id: huntress, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 124, in_horizon_items: 3, returned: 1, note: "fake WatchGuard VPN returned; BEC scenario and passkeys synthesis dropped; marketing/SEO posts skipped; AhsayCBS (2026-10-08) already covered and outside lookback" }
+  - { id: kaspersky-securelist, tier: standard, attempted: true, transport: "feed + extract home + url /all/", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-24 on feed and all-posts listing" }
+
+fetch_failures: []
