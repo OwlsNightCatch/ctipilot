@@ -1,0 +1,563 @@
+# work/2026-10-16T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-16T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-16T02:57:42Z
+restarted_after_container_restart: true
+ended_at: 2026-10-16T03:31:08Z
+duration_seconds: 2006
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 13
+  bridge_fetches: 200   # approximate, summed across both spawns (feed sweeps counted individually)
+items:
+  - title: "ARMORY CASTLE (formerly UNC5221) exploited BeyondTrust Remote Support CVE-2026-102764 as a zero-day from late August; GTIG documents the SAWFLY web shell, the BARECLAW tunneler, sudoers-template persistence and Jump Item abuse, and warns of broad exploitation now that the flaw is public"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-beyondtrust/", publisher: "Google Threat Intelligence Group / Mandiant", date: "2026-10-15", role: "primary" }
+      - { url: "https://www.beyondtrust.com/trust-center/security-advisories/bt26-05", publisher: "BeyondTrust (advisory BT26-05)", date: "2026-10-15", role: "primary" }
+      - { url: "https://www.beyondtrust.com/blog/entry/bt26-05", publisher: "BeyondTrust (ARMORY CASTLE and BT26-05: What Security Teams Need to Know)", date: "2026-10-15", role: "corroborating" }
+    discovery_trace: "first seen at: mandiant-gtig, feed https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v (item dated Thu, 15 Oct 2026 14:00 +0000) → primary: GTIG article, URL https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-beyondtrust/ (extract) → pivot: BeyondTrust advisory, URL https://www.beyondtrust.com/trust-center/security-advisories/bt26-05 (WebFetch got HTTP 403; extract served via the reader fallback) → pivot: BeyondTrust blog, URL https://www.beyondtrust.com/blog/entry/bt26-05; KEV status checked on the cisa-kev bridge (not listed as of dateReleased 2026-10-15T17:00Z); EPSS API returned no record."
+    summary: |
+      BeyondTrust disclosed CVE-2026-102764 on 2026-10-15 (advisory BT26-05, CVSS 4.0 9.3, CWE-290 improper origin validation in an internal messaging component of Remote Support). It lets a remote unauthenticated attacker perform file operations on the appliance, which GTIG shows leads to a web shell and host-level control; all Remote Support versions up to 26.2.3 are affected and the fix is the BT26-05-RS patch for 24.3.1 to 26.2.3 (older builds must first move to a supported release). BeyondTrust says SaaS tenants were patched on 2026-10-09, withholds technical details of the flaw, and says Privileged Remote Access shares the affected code although its own testing found no way to exploit it there, so it shipped the patch for PRA as a precaution. During an incident response engagement Mandiant found that ARMORY CASTLE, a suspected PRC-nexus espionage actor GTIG formerly tracked as UNC5221, exploited the flaw as a zero-day in late August 2026; BeyondTrust's own timeline puts exploitation of one SaaS instance and one self-hosted appliance on 2026-08-29. GTIG's post-exploitation account: a PHP web shell (SAWFLY) in the appliance web root, a copy of the system shell given the root SUID bit, reads of the appliance's native secrets vault with its own CLI, persistence through a boot-time script that appends a passwordless-sudo line to the sudoers template so it survives reboot and configuration reset, mass deletion of appliance logs, elevation of an administrator's Jump Item and Team permissions from No Access to Administrator, use of the built-in file-transfer service to pull inventories from user desktops, and a custom SOCKS5-over-WebSocket tunneler (BARECLAW) exposed through a haproxy rule. GTIG and BeyondTrust attribute with differing confidence (GTIG attributes; BeyondTrust assesses moderate to high confidence, and says CrowdStrike tracks the cluster as WARP PANDA), and both expect the actor to move to opportunistic mass exploitation after disclosure, as GTIG saw after the 2024 Ivanti Connect Secure disclosures. As of this check the flaw is not in CISA KEV and has no EPSS score.
+    region_nexus: "global; self-hosted remote-support and privileged-access appliances are common in Swiss public-sector and supplier IT, and NCSC-CH flagged this product family in July 2026 (store entry 2026-07-08 beyondtrust-rs-pra-preauth-bypass)"
+    primary_sector_nexus: "direct (BeyondTrust names government among ARMORY CASTLE's documented targets; the appliance stores or brokers credentials for the whole estate)"
+    sector: "public-sector"
+    cves: [CVE-2026-102764]
+    techniques: [T1190, T1505.003, T1548.001, T1555, T1685.006, T1070.004, T1572, T1090, T1098, T1078, T1219, T1005, T1037]
+    affected_products: ["BeyondTrust Remote Support", "BeyondTrust Privileged Remote Access"]
+    entity_keys: ["actor:verdantbamboo"]
+    new_entities:
+      - { key: "malware:sawfly", type: malware, name: "SAWFLY", aliases: [], summary: "Obfuscated lightweight PHP web shell GTIG found on a compromised BeyondTrust Remote Support appliance; it answers 404 unless a POST carries one obfuscated parameter, then Base32-decodes, RC4-decrypts and evals the payload (GTIG, 2026-10-15)." }
+      - { key: "malware:bareclaw", type: malware, name: "BARECLAW", aliases: [], summary: "Custom C SOCKS5-over-WebSocket tunneler (embedded CivetWeb, OpenSSL) GTIG found on a compromised BeyondTrust appliance, exposed to the internet through a modified haproxy configuration (GTIG, 2026-10-15)." }
+      - { key: "product:beyondtrust-remote-support", type: product, name: "BeyondTrust Remote Support", aliases: ["Bomgar Remote Support"], summary: "Enterprise remote-access and support appliance and SaaS; CVE-2026-102764 (BT26-05) was exploited as a zero-day in late August 2026 (GTIG, BeyondTrust, 2026-10-15)." }
+    relation_suggestions:
+      - { subject: "actor:verdantbamboo", object: "malware:sawfly", basis: "GTIG attributes the SAWFLY web shell and BARECLAW tunneler found after CVE-2026-102764 exploitation to ARMORY CASTLE (formerly UNC5221), which the registry already carries as an alias of VerdantBamboo (GTIG, 2026-10-15)" }
+      - { subject: "actor:verdantbamboo", object: "malware:bareclaw", basis: "GTIG attributes the BARECLAW tunneler to ARMORY CASTLE (formerly UNC5221) (GTIG, 2026-10-15)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "exploited this vulnerability as a zero-day, in late August 2026"
+        attribution: "Google Threat Intelligence Group / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-beyondtrust/"
+      - quote: "CVE-2026-102764 affects all supported Remote Support versions up to 26.2.3 and allows an unauthenticated remote attacker to perform file operations on the appliance"
+        attribution: "Google Threat Intelligence Group / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-beyondtrust/"
+      - quote: "Customers cannot audit the appliance host file system, and host-level persistence survives reboot and configuration reset."
+        attribution: "Google Threat Intelligence Group / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-beyondtrust/"
+      - quote: "BeyondTrust has remediated a critical vulnerability in Remote Support (RS) that could allow a remote attacker to perform file operations on an affected appliance."
+        attribution: "BeyondTrust (advisory BT26-05)"
+        source_url: "https://www.beyondtrust.com/trust-center/security-advisories/bt26-05"
+      - quote: "As of today we are withholding the technical details of the vulnerability."
+        attribution: "BeyondTrust (blog)"
+        source_url: "https://www.beyondtrust.com/blog/entry/bt26-05"
+    extended_notes: |
+      CROSS-DOMAIN: this is a CVE-bearing exploited zero-day; S1 may surface the same CVE from KEV/EUVD/vendor sources, so the main agent should merge on CVE-2026-102764 (one entry). Suggested weight: high or critical for any organisation with a self-hosted Remote Support appliance reachable from the internet, because exploitation predates disclosure by about seven weeks and mass exploitation is explicitly expected; classification hint B1 (GTIG B, BeyondTrust A, two independent first-hand sources).
+      Exposure check (all vendor-documented): the /appliance interface lists whether the BT26-05 patch is applied or subscribed to automatic updates; self-hosted builds older than 24.3.1 must be upgraded first (upgrading closes the hole but does not remediate prior exposure); only representative console, customer portal and Jump Client traffic should be reachable from the internet, and /login and /appliance should be restricted by IP or segment.
+      Post-patch compromise check (the step readers miss): patch first, then treat any appliance that was internet-reachable on a vulnerable build during the exposure window (from late August) as potentially compromised. GTIG: preserve before acting (snapshot virtual appliances with memory, export disk, request forensic preservation from BeyondTrust for B Series hardware and SaaS); collect off-box syslog, reverse-proxy or WAF and perimeter firewall logs because the actor deletes on-appliance logs; rebuild from a clean fully patched image rather than clean in place; rotate credentials only after patch or rebuild, in dependency order (appliance admin, /login administrators, API client secrets, SAML signing keys and security-provider bind accounts, Remote Support Vault and Password Safe or PRA credentials at the target system, integration credentials, anything typed into a support session in the window), and redeploy Jump Clients, Jumpoints and the representative console to invalidate tokens.
+      Detection (telemetry class first): (1) appliance syslog forwarded off-box: user_changed events that raise a Jump Item or Team role from No Access to Administrator, user_added / api_account / security_provider events with no change ticket, changes to outbound-event or syslog destinations, an interruption in log forwarding that starts and ends inside a single session; (2) authentication logs: /login administrative success from residential-broadband or commercial-VPN address space or outside business hours; (3) reverse-proxy / WAF logs with full URI: request paths outside the known Remote Support path set (unknown .php paths, WebSocket upgrades from addresses that are not support staff or endpoints); (4) session reports: file-transfer events and sessions started by accounts whose role changed; (5) where host access exists: web service account spawning shells, new scripts in a boot-time script directory, an added NOPASSWD line in the sudoers template, a root-SUID copy of the system shell, a new haproxy ACL routing one path to a local port. GTIG publishes YARA for SAWFLY and BARECLAW (not reproduced here).
+      Triage lookalike: a legitimate BeyondTrust administrator also changes Jump Item roles and logs in from varied networks; the discriminators GTIG/BeyondTrust give are a role change with no change ticket or named owner, a login from consumer or VPN address space that cannot be tied to a known administrator, and the sequence (login, role raised to Administrator, then file transfer from an endpoint) inside one session.
+      Hardening (vendor/GTIG): SAML SSO with phishing-resistant MFA for /login users and one vaulted break-glass local account; default Jump Item role set to No Access in every group policy; default-deny egress from the appliance except BeyondTrust update/licensing endpoints and the organisation's own syslog and directory servers; forward syslog to a SIEM over TLS with multi-month retention; put a reverse proxy or WAF with URI logging in front.
+      Notable lesson (BeyondTrust blog): its third-party detection platform's automated triage closed the sensors' real-time privilege-escalation alerts as false positives; BeyondTrust advises that automated triage must not be able to close high-severity signals on its own. Timeline note: BeyondTrust's blog says the patch was released to SaaS and self-hosted customers on 2026-10-08, while its advisory and GTIG say SaaS tenants were patched as of 2026-10-09; the self-hosted patch is available on /appliance now.
+      Alias note: the registry carries UNC5221 and WARP PANDA under actor:verdantbamboo; GTIG now names the cluster ARMORY CASTLE (formerly UNC5221), so 'ARMORY CASTLE' should be added as an alias, not registered as a new actor. IOCs (hashes, hosts) exist in GTIG's post and a GTI collection and are intentionally not carried.
+
+  - title: "AdFection: Citizen Lab and Confiant document targeted online ads that deliver Candiru spyware with no click, via the Israeli ad-tech firm Discover-Tech, with ads also served onto government, NATO, EU and Nordic networks"
+    sources:
+      - { url: "https://citizenlab.ca/research/how-discover-tech-turned-targeted-ads-into-a-pipeline-for-spyware/", publisher: "The Citizen Lab", date: "2026-10-15", role: "primary" }
+      - { url: "https://blog.confiant.com/p/adint-weaponized-ad-tech-for-zero-click-spyware-and-mass-identity-vacuuming", publisher: "Confiant Threat Intelligence", date: "2026-10-15", role: "primary" }
+      - { url: "https://therecord.media/spyware-citizen-lab-advertising", publisher: "The Record (Recorded Future News)", date: "2026-10-15", role: "corroborating" }
+    discovery_trace: "first seen at: therecord, feed https://therecord.media/feed (item 'Zero-click spyware infecting devices through online ads, researchers say', Thu, 15 Oct 2026 19:00 GMT; the citizen-lab RSS https://citizenlab.ca/feed/ had not yet listed it, newest item there 2026-10-08) → article URL https://therecord.media/spyware-citizen-lab-advertising → primary: Citizen Lab, URL https://citizenlab.ca/research/how-discover-tech-turned-targeted-ads-into-a-pipeline-for-spyware/ (extract) → independent co-timed investigation: Confiant, URL https://blog.confiant.com/p/adint-weaponized-ad-tech-for-zero-click-spyware-and-mass-identity-vacuuming (extract)"
+    summary: |
+      Citizen Lab reports the first public technical confirmation of zero-click mercenary spyware delivered through targeted online advertising, which it calls AdFection: in 2024 and 2025 at least 45 devices at Al Jazeera were targeted, and it links the attack with high confidence to Candiru (rebranded Integrity Labs) spyware delivered through ads bought by Discover-Tech, an Israeli firm that presents itself as an ad company. Mechanism: a Discover-Tech ad contains a script tag that calls the firm's ad-decision server with the user's advertising or cookie identifier; the server returns JavaScript only to devices it deems eligible and a zero-byte reply otherwise, which keeps malicious code out of what ad vendors can inspect; for a target the code loads an iframe, the device then contacts a Candiru validator server and finally a Candiru command-and-control server, the sequence Al Jazeera's network logs showed, and the recovered Windows implant persists through COM hijacking. Confiant, working independently from ad-delivery telemetry from April to September 2026, reports a cloaked ad payload that fingerprints the device, opens a cryptographically protected command channel (with possible switches to WebSocket or WebRTC transport), accepts pushed code, and hands micro-targeted impressions to Candiru-attributed infrastructure, with nine countries seeing the Candiru hand-off and Belgium the most targeted (56 percent of those hits); Confiant has not captured a full exploit chain. Citizen Lab's analysis of four billion Discover-Tech bid records shows ads on almost 200,000 sites and apps in four months and impressions on networks of ministries of defence, armed forces, national cyber agencies, NATO, the UN, the European Parliament, the European Commission and the Council secretariat, Nordic and Czech and Italian government bodies and others; an impression is not proof of targeting or infection, and no Swiss network is named by either report, though both say their visibility is partial. A second actor, DARK CARTOGRAPHER, used the same infrastructure for mass deanonymisation by abusing mobile-carrier issues to tie advertising IDs to phone numbers; a separate report is pending. Google, IAB Europe, Beeswax, Vungle (Liftoff) and Eskimi disconnected Discover-Tech after disclosure.
+    region_nexus: "global with a strong Europe pattern: Belgium is Confiant's most-targeted country for the Candiru hand-off, ads reached EU institutions, NATO, Nordic, Czech and Italian government networks, and Discover-Tech used GDPR consent frameworks to target EU users; no Swiss network named"
+    primary_sector_nexus: "indirect to direct (government, defence and intergovernmental devices browsing ad-supported sites and apps are the exposed class; the control Citizen Lab recommends is a government-network policy)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1189, T1583.008, T1592, T1546.015, T1027, T1071.001]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:discover-tech", type: actor, name: "Discover-Tech", aliases: ["Controlium", "MyDSP"], summary: "Israeli ad-tech firm that Citizen Lab says operates the Controlium platform and acts as a bridge between ad vendors and mercenary spyware vendors, delivering Candiru spyware through targeted ads (Citizen Lab, Confiant, 2026-10-15)." }
+      - { key: "actor:candiru", type: actor, name: "Candiru", aliases: ["Integrity Labs"], summary: "Israeli mercenary spyware vendor, rebranded Integrity Labs; Citizen Lab links with high confidence the spyware delivered to Al Jazeera devices through Discover-Tech ads to a newer version of its 2021 attack chain (Citizen Lab, 2026-10-15)." }
+      - { key: "actor:dark-cartographer", type: actor, name: "DARK CARTOGRAPHER", aliases: [], summary: "Name Citizen Lab gives to an actor using Discover-Tech ads and other vendors since at least 2019 to deanonymise users at scale by exploiting mobile-carrier issues to tie advertising IDs to phone numbers; a technical report is pending (Citizen Lab, 2026-10-15)." }
+      - { key: "campaign:adfection-discover-tech-candiru-2026", type: campaign, name: "AdFection", aliases: [], summary: "Zero-click spyware delivery through targeted online ads via Discover-Tech's Controlium platform, documented by Citizen Lab and Confiant on 2026-10-15." }
+    relation_suggestions:
+      - { subject: "actor:discover-tech", object: "actor:candiru", basis: "Citizen Lab: Discover-Tech's ads infect and profile devices on behalf of Candiru, based on traffic sequences, server fingerprints and a recovered implant (Citizen Lab, 2026-10-15)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Devices at international news network Al Jazeera were infected with mercenary spyware from Candiru"
+        attribution: "The Citizen Lab"
+        source_url: "https://citizenlab.ca/research/how-discover-tech-turned-targeted-ads-into-a-pipeline-for-spyware/"
+      - quote: "A Discover-Tech ad impression does not in and of itself confirm targeting or infection with spyware."
+        attribution: "The Citizen Lab"
+        source_url: "https://citizenlab.ca/research/how-discover-tech-turned-targeted-ads-into-a-pipeline-for-spyware/"
+      - quote: "there is currently no consistently safe way to expose your users and networks to targeted ads"
+        attribution: "The Citizen Lab"
+        source_url: "https://citizenlab.ca/research/how-discover-tech-turned-targeted-ads-into-a-pipeline-for-spyware/"
+      - quote: "Where possible, block online advertising at the gateway to your organization, and on work-issued and edge devices."
+        attribution: "The Citizen Lab"
+        source_url: "https://citizenlab.ca/research/how-discover-tech-turned-targeted-ads-into-a-pipeline-for-spyware/"
+      - quote: "Belgium was the first target we observed on April 12, and stayed by far the most targeted country (56% of global hits during the period)."
+        attribution: "Confiant"
+        source_url: "https://blog.confiant.com/p/adint-weaponized-ad-tech-for-zero-click-spyware-and-mass-identity-vacuuming"
+      - quote: "Even though we have not captured a full exploit chain in the wild"
+        attribution: "Confiant"
+        source_url: "https://blog.confiant.com/p/adint-weaponized-ad-tech-for-zero-click-spyware-and-mass-identity-vacuuming"
+    extended_notes: |
+      Why it matters here: this is a delivery path that bypasses mail and web-filter controls entirely and needs no user action; the exposed class is any device that renders third-party ads (mobile apps and browsers) on government, defence, diplomatic or intergovernmental staff. No in-the-wild infection of a Swiss body is reported and neither report names a Swiss network; Citizen Lab's impression data covers only Discover-Tech's MyDSP platform (not Beeswax or Eskimi) and a limited period, so absence from the lists is not evidence of absence. Classification hint B1 (two independent lab investigations co-timed, plus press relay).
+      Hardening levers (Citizen Lab): block advertising and tracking at the organisation's gateway and on work-issued and edge devices; disable or reset advertising IDs on managed mobile devices through MDM; use browsers with built-in anti-tracking and Global Privacy Control; monitor traffic linked to ad impressions for malicious requests. Citizen Lab says blocking advertising identifiers defeats Discover-Tech's current method but suspects the attack surface is wider. It also recommends government policy of mandatory ad-blocking on government devices (cites NSA 2018 and CISA 2020 malvertising guidance).
+      Detection concept (telemetry class: web-proxy, DNS and egress logs per device): the Al Jazeera signature was ad-network impression traffic, then a connection to a Candiru validator host (a bare Apache banner, fingerprinted by Citizen Lab on Censys), then contact with a Candiru command-and-control host; on the ad side the tell is a script tag calling a 'getAd'-style endpoint with the advertising or cookie ID and device parameters in the query string, answered by a zero-byte or short JavaScript body, followed by a fresh iframe from a CDN hostname. Confiant notes the SDK may move from HTTP polling to WebSocket or WebRTC, which hides the channel from HTTP monitoring, and that Candiru delivery hosts were rotated every few days. Endpoint artefact from the Windows implant: COM-hijack persistence (T1546.015). IOCs (domains, hashes, a Censys fingerprint) are in both reports and intentionally not carried.
+      Benign lookalike: ordinary ad-tech tags also call identifier-bearing endpoints and sync user IDs; the discriminators reported are the eligibility gating (empty reply for most users, code only for chosen devices), the immediate hand-off to uncategorised hosts, and the validator-then-C2 sequence. Targeting skew from Confiant: Android in Palestine, Lebanon, Belgium and Portugal; iOS in the Netherlands, Sweden, Norway and Montenegro; Candiru hand-off countries Belgium, UAE, Montenegro, Bahrain, Thailand, Saudi Arabia, Mexico, Spain and Malaysia.
+      Detail differences to carry correctly: The Record says 'at least 45 journalists' where Citizen Lab (primary) says at least 45 devices; The Record also relays from Confiant that ads rendered on networks including the US Department of Defense, Estonia's RIA, the IAEA and the ICC, which I could not find in Confiant's extracted text (the named-network list may be an image) - attribute it to The Record's reading if used. Citizen Lab's DARK CARTOGRAPHER report is announced as forthcoming; a later update-of is likely.
+
+  - title: "CL-UNK-1211: Unit 42 documents an AI-assisted intrusion set against government Linux web and mail servers, with PHP auto_prepend_file persistence on Plesk hosts, sudo-alias password capture and a custom Go RAT"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/", publisher: "Palo Alto Networks Unit 42", date: "2026-10-15", role: "primary" }
+    discovery_trace: "first seen at: gap sweep of the Unit 42 feed https://unit42.paloaltonetworks.com/feed/ (item dated Thu, 15 Oct 2026 22:00 +0000; Unit 42 is not in my slice) → primary: Unit 42 article, URL https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ (extract); WebSearch ('CL-UNK-1211 Unit 42 AI-generated Linux government espionage SysGoRAT') found no independent coverage yet"
+    summary: |
+      Unit 42 reports a campaign it tracks as CL-UNK-1211 (UNK: nation-state or cybercrime affiliation not yet determined) that targeted government entities and state-affiliated infrastructure between October 2025 and April 2026, focusing on Linux servers to run reconnaissance and keep persistent access for intelligence collection; it names no victim country or initial access vector, and lists a custom Go scanner for React Server Components CVE-2025-55182 among the recovered tools. Scripts carried conversational, step-by-step AI-style reasoning comments, Base64-heavy commands and seamless switches between PHP, JavaScript, Bash and Python, which Unit 42 reads as code either generated by an LLM or deployed by an automated AI agent (an inference, not a confirmed finding). Persistence and access: a mix of custom and GitHub-sourced PHP web shells run under the php-fpm parent process, with the auto_prepend_file value rewritten in every PHP configuration under /etc/php/ and /opt/plesk/php/ so a planted file runs before any other PHP script, in one case a file named to look like a Plesk driver. Credential theft: the .bashrc replaced so a sudo alias shows a fake password prompt and logs the input to a file named like SolarWinds activity, a line added to a PHP login page to log administrator credentials, and searches of configuration and shell-history files for cleartext email, SMTP and database passwords; privilege escalation with LinPEAS and the public PwnKit exploit (CVE-2021-4034), then root-SUID shell binaries (a custom shell and a renamed bash) and a renamed Python interpreter used to run commands as root, all under hidden names. Collection: the actors counted mail in /var/qmail/mailnames/ Maildir folders, ran a PHP script to find social-media-related mail, and tried a script to zip whole mailboxes to take over external social media accounts tied to government addresses (that script failed on a syntax error), and they dumped databases. Tooling: SysGoRAT, a Go RAT for Linux and Windows with a WebSocket command channel, seven command types and systemd, cron, Run-key and scheduled-task persistence under names mimicking OneDrive and system services, plus reverse shells over named pipes, bash TCP redirects and Python. Evasion: attempts to kill the Cortex XDR agent with pgrep and pkill, deletion of authentication, shell-history, mail, OS, web-server and PHP-session logs, timestomping with touch -t, and planted red-team markers to pass as an authorised test. Unit 42 says its endpoint product detected and stopped the process-termination attempts.
+    region_nexus: "not stated; victims are described only as government entities and state-affiliated infrastructure"
+    primary_sector_nexus: "direct (government web and mail hosting on Linux; transferable to cantonal and communal hosting, Plesk-managed mail and web estates)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1505.003, T1546.004, T1056, T1552.001, T1552.003, T1068, T1548.001, T1114.001, T1070.003, T1070.006, T1685, T1685.006, T1070.004, T1059.004, T1071.001, T1543.002, T1053.003, T1547.001, T1053.005, T1595.002]
+    affected_products: ["Plesk", "PHP", "qmail"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:cl-unk-1211", type: actor, name: "CL-UNK-1211", aliases: [], summary: "Unit 42 designation for a cluster active October 2025 to April 2026 against government entities and state-affiliated Linux infrastructure, using AI-assisted scripts, web shells and the SysGoRAT Go backdoor; nation-state versus cybercrime affiliation not determined (Unit 42, 2026-10-15)." }
+      - { key: "malware:sysgorat", type: malware, name: "SysGoRAT", aliases: ["sys-control-client"], summary: "Custom Go RAT for Linux and Windows with a WebSocket command channel, seven command types and six persistence methods, found in the CL-UNK-1211 intrusions (Unit 42, 2026-10-15)." }
+    relation_suggestions:
+      - { subject: "actor:cl-unk-1211", object: "malware:sysgorat", basis: "Unit 42: the cluster deployed the custom Go RAT it named SysGoRAT (Unit 42, 2026-10-15)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Unit 42 identified a campaign targeting government entities and state-affiliated infrastructure, with observed activity spanning from October 2025–April 2026. We track this activity as CL-UNK-1211."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"
+      - quote: "file with a copy containing a malicious command that steals victims’ passwords"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"
+      - quote: "The attackers targeted official government mail servers to steal emails and facilitate access to external social media accounts."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"
+      - quote: "They attempted to disguise their activity as a red team operation"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"
+      - quote: "We designate the term UNK to clusters of activity whose affiliation with either nation-state or cybercrime activity we have not yet determined."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"
+    extended_notes: |
+      Single vendor source and fresh (published 2026-10-15 22:00Z); no independent corroboration found yet; classification hint B2. Unit 42 does not state initial access beyond 'web shell deployment and credential harvesting', victim count, or region, so the exposure statement is class-based only: Linux web and mail hosts (Plesk-managed PHP stacks, qmail Maildir mail stores) belonging to government or state-affiliated bodies. The recovered React2Shell (CVE-2025-55182) scanner is listed as a tool; Unit 42 does not say it was the entry vector. CVE-2025-55182 and CVE-2021-4034 are both in CISA KEV (checked on the bridge).
+      Detection concepts (telemetry class first): file-integrity monitoring and config audit on PHP INI files under /etc/php/ and /opt/plesk/php/ for any auto_prepend_file (or equivalent) pointing at a PHP file outside the application tree; process-creation lineage showing shells spawned by the php-fpm parent or web-server worker; write events on users' and root's shell rc files and any new alias for sudo; file-access audit on the mail store directory tree by web-server or PHP processes (mailbox enumeration, bulk archive creation); new systemd units, five-minute cron entries and hidden-name SUID-root binaries; outbound WebSocket connections from server processes to non-business addresses; touch -t timestamp changes and burst deletion of authentication, shell-history, mail and PHP-session logs; pgrep/pkill sequences naming EDR agent processes (EDR self-protection alerts are the tell). Unit 42's own endpoint rule name for the history tampering is 'Uncommon attempt to clear shell history'.
+      Benign lookalikes: legitimate Plesk or PHP hardening can set auto_prepend_file (for example for a WAF loader), and administrators do define sudo aliases; the discriminators Unit 42 supports are a prepended file with a plausible vendor-looking name located outside the application tree, an alias that prompts for and logs the password, a log file named after another product, and the red-team marker strings planted in scripts (RedTeamOps2025, a pentest-style password for an attacker-created account), which should not be taken as proof of an authorised test without a change record.
+      Hardening: restrict who can write PHP configuration and rc files; centralise and ship authentication, mail and web logs off-host so local deletion does not erase them; patch React Server Components and the Linux local privilege escalations used (PwnKit); keep EDR self-protection on Linux servers enabled and alert on tampering. IOCs (hashes, IPs, domains) are in the article and intentionally not carried.
+
+  - title: "PEERSTITCH: Unit 42 documents a memory-resident FortiGate implant, installed through the FortiOS CLI auto-script path traversal CVE-2025-61624 after a FortiManager compromise exposed more than 500 managed firewalls"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/fortimanager-cve-2024-47575-peerstitch-malware/", publisher: "Palo Alto Networks Unit 42", date: "2026-10-14", role: "primary" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-122", publisher: "Fortinet PSIRT (FG-IR-26-122, Path Traversal in CLI)", date: "2026-04-14", role: "corroborating" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-24-423", publisher: "Fortinet PSIRT (FG-IR-24-423, Missing authentication in fgfmsd)", date: "2024-10-23", role: "corroborating" }
+    discovery_trace: "first seen at: gap sweep of the Unit 42 feed https://unit42.paloaltonetworks.com/feed/ (item dated Wed, 14 Oct 2026 22:00 +0000; Unit 42 is not in my slice) → primary: Unit 42 article, URL https://unit42.paloaltonetworks.com/fortimanager-cve-2024-47575-peerstitch-malware/ (extract) → pivot: Fortinet PSIRT FG-IR-26-122, URL https://fortiguard.fortinet.com/psirt/FG-IR-26-122 (CVE-2025-61624 and version table) → pivot: Fortinet PSIRT FG-IR-24-423, URL https://fortiguard.fortinet.com/psirt/FG-IR-24-423; KEV state checked on the cisa-kev bridge (CVE-2024-47575 listed 2024-10-23, CVE-2025-61624 not listed)"
+    summary: |
+      Unit 42 investigated a September 2024 intrusion at a telecommunications managed service provider (cluster CL-STA-0954, aka UNC5820) that began with CVE-2024-47575, the unauthenticated FortiManager FGFM (TCP 541) flaw, through which the attackers registered a rogue virtual FortiGate and exfiltrated an archive holding the running configurations, cryptographic material and database files for more than 500 managed FortiGate firewalls, the provider's own and its clients'. After a long dwell the actors used the FortiManager to push packet-capture (sniffer) configurations to downstream firewalls, targeting cleartext HTTP, TFTP, RADIUS and LDAP and a block of high TCP ports, and opened SSL VPN sessions with legitimate credentials (Unit 42 confirmed that the administrator and SSL VPN passwords stored as reversible ciphertext in the stolen configurations can be recovered by brute force). They escalated from FortiOS administrator to root with CVE-2025-61624, a path traversal in the FortiOS CLI system.auto-script engine (the object name is not sanitised, so a script body can be written anywhere), and dropped PEERSTITCH, a one-shot ARM64 injector that attaches with ptrace to the logging daemon miglogd and the IKE/IPsec daemon iked, allocates a 16 KB read-write-execute region, NOP-patches three static offsets and sets up a covert in-memory channel between the two daemons that lets tagged VPN sessions skip default FortiOS validation. PEERSTITCH leaves no binary on disk, opens no listening port and makes no outbound connection of its own. Command and control used the firewall's Apache mod_md ACME module pointed at an attacker ACME server so each renewal challenge runs a Node.js command, and the actors impersonated the management platform over FGFM to pull configurations from other firewalls, then killed miglogd and syslogd, cleared crash logs and removed the auto-script objects. Unit 42's summary lesson: the platform's trust material for every managed device 'leaves with the attacker and remains valid until it is rotated', so patching the platform does not end the exposure.
+    region_nexus: "not stated (telecommunications MSP); Fortinet FortiGate and FortiManager are widely deployed in Swiss public-sector perimeters and managed-service arrangements"
+    primary_sector_nexus: "direct (central firewall management plane and MSP-managed edge estates; the same class applies to cantonal and communal IT providers that manage firewalls for several bodies)"
+    sector: "public-sector"
+    cves: [CVE-2025-61624, CVE-2024-47575]
+    techniques: [T1190, T1068, T1055.008, T1040, T1078, T1133, T1552.001, T1059.007, T1685.006, T1070]
+    affected_products: ["Fortinet FortiOS", "Fortinet FortiManager", "Fortinet FortiGate", "Fortinet FortiProxy", "Fortinet FortiPAM", "Fortinet FortiSwitchManager"]
+    entity_keys: ["product:fortinet-fortimanager", "product:fortinet-fortios", "product:fortinet-fortigate"]
+    new_entities:
+      - { key: "malware:peerstitch", type: malware, name: "PEERSTITCH", aliases: [], summary: "Memory-resident ARM64 FortiGate implant: a ptrace injector that patches the miglogd and iked daemons and builds an in-memory channel between them, delivered through CVE-2025-61624 (Unit 42, 2026-10-14)." }
+      - { key: "actor:cl-sta-0954", type: actor, name: "CL-STA-0954", aliases: ["UNC5820"], summary: "Unit 42 designation, also tracked as UNC5820, for the cluster that exploited FortiManager CVE-2024-47575 against a telecommunications MSP in September 2024 and later deployed PEERSTITCH; post-exploitation overlaps with suspected nation-state intrusions (Unit 42, 2026-10-14)." }
+    relation_suggestions:
+      - { subject: "actor:cl-sta-0954", object: "malware:peerstitch", basis: "Unit 42: the CL-STA-0954 attackers deployed PEERSTITCH after exploiting CVE-2025-61624 (Unit 42, 2026-10-14)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "Recency only: Unit 42 published 2026-10-14T22:00Z, about 3 h before the 26 h window, and Unit 42 is not in my slice (no lookback right); no prior fire returned it and the store carries neither PEERSTITCH nor CVE-2025-61624. Substance is strong (Fortinet management plane, unfixed branches, concrete hunts), so the call is the main agent's."
+    evidence:
+      - quote: "PEERSTITCH leaves no persistent binary on disk, opens no listening ports and initiates no outbound network connections."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/fortimanager-cve-2024-47575-peerstitch-malware/"
+      - quote: "The vulnerability allows an authenticated administrative account to read and write arbitrary files as root via path traversal in the FortiOS CLI system.auto-script engine."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/fortimanager-cve-2024-47575-peerstitch-malware/"
+      - quote: "the attackers exfiltrated an archive containing running configurations, cryptographic material and database files containing information about more than 500 managed FortiGate firewalls"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/fortimanager-cve-2024-47575-peerstitch-malware/"
+      - quote: "The cryptographic trust material governing the platform's relationship with every managed device leaves with the attacker and remains valid until it is rotated."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/fortimanager-cve-2024-47575-peerstitch-malware/"
+      - quote: "7.4.0 through 7.4.9"
+        attribution: "Fortinet PSIRT"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-122"
+      - quote: "7.2 all versions"
+        attribution: "Fortinet PSIRT"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-122"
+    extended_notes: |
+      CVE-2025-61624 (Fortinet FG-IR-26-122, 'Path Traversal in CLI', CWE-22; requires a privileged administrator): per the PSIRT table FortiOS 7.6.0 through 7.6.4 (fixed 7.6.5), 7.4.0 through 7.4.9 (fixed 7.4.10) are affected, while FortiOS 7.2, 7.0 and 6.4 are 'all versions' with 'Migrate to a fixed release' (no fix on those branches); FortiProxy 7.6.0-7.6.4 (7.6.5) and 7.4.0-7.4.11 (7.4.12), FortiPAM 1.7.0 (1.7.1) and branches 1.0-1.6 unfixed, FortiSwitchManager 7.2.0-7.2.7 (7.2.8) and 7.0.0-7.0.6 (7.0.7); Fortinet lists a virtual patch (IPS signature FG-VD-59270.0day in FMWP database update 25.120). The PSIRT page I read shows a 2026-04-14 date and does not state exploitation; the exploitation evidence is Unit 42's 2024 case and the '.0day' virtual-patch name suggests exploitation before a fix, which I have not confirmed from Fortinet. CVE-2025-61624 is not in CISA KEV. CVE-2024-47575 (FG-IR-24-423: FortiManager 7.6.0, 7.4.0-7.4.4, 7.2.0-7.2.7, 7.0.0-7.0.12, 6.4.0-6.4.14, 6.2.0-6.2.12 and some FortiAnalyzer models in FortiManager mode affected; fixed 7.6.1, 7.4.5, 7.2.8, 7.0.13, 6.4.15, 6.2.13) is old, exploited and in KEV since 2024-10-23. Unit 42 also references CVE-2024-26008 and CVE-2024-26009 (FGFM connection reset and weak authentication) as possible steps; it could not confirm which path the attackers used to impersonate the FortiManager.
+      Exposure check: is a FortiManager reachable on TCP 541 (FGFM) from untrusted networks, are unknown devices allowed to register (Fortinet's workaround is to block unknown-device registration), is FortiOS on an unfixed branch with administrators who can reach the CLI, does an MSP manage the estate centrally.
+      Post-patch compromise check (Unit 42): the management platform's stolen trust material, credentials and certificates stay valid until rotated, so rotate every managed device's administrator, SSL VPN and certificate material and the FGFM trust after any suspected FortiManager compromise; review FortiOS configuration revisions for system.auto-script objects whose names contain path traversal strings; FortiGate administrators or devices that do not exist in the estate (a rogue virtual FortiGate registered on the FortiManager, an unexpected 'FortiGateCloud' administrator on an estate with no FortiManager Cloud tenant) and unexplained sniffer configurations; Unit 42 hunting table for the implant: anonymous 16,384-byte rwxp regions in the memory maps of miglogd and iked, 0xAA0003E0 NOP patches at three static offsets in those daemons, cross-process open/write on /proc/<pid>/mem between them, signal-11 crashes of miglogd, iked or syslogd in 'diagnose debug crashlog read'.
+      Detection concepts (telemetry class first): management-plane audit logs (FortiManager device registration and config-archive creation events, FGFM sessions from non-management addresses); FortiGate admin and VPN logs (SSL VPN logins with recovered administrator credentials from new external addresses, auto-script create/delete, admin account create/delete in short succession); gaps in forwarded syslog (miglogd/syslogd killed before a script runs, intermittent drops on the tunnel management interface); packet-capture settings pushed to downstream devices. Triage lookalike: legitimate FortiManager workflows also create and delete auto-scripts and add devices, so the discriminators are a '../' sequence in an auto-script name, a script that writes outside its directory, a device registered from an address outside the management network, and Node.js or SSH commands appearing inside ACME challenge settings.
+      Hardening: restrict FGFM and the FortiManager management plane to dedicated management networks, block unknown-device registration, move FortiOS to a fixed branch (7.4.10 or 7.6.5 or later; 7.0, 7.2 and 6.4 have no fix), use strong unique administrator passwords knowing reversible config ciphertext is brute-forceable, and treat the management platform as the highest-value target. Note that the intrusion dates from September 2024 and was published only now; the article names no victim country. IOCs and a YARA rule are in the article and intentionally not carried. Related store context: FortiBleed entry 2026-06-18 (credential-compromise campaign against FortiGate).
+
+  - title: "KELA analyses the leaked Silent Ransom Group chats: help-desk and remote-session vishing playbook, a staged extortion pipeline, a Sleepless Threat rebrand and plans for physical and military-intelligence access (authenticity unverified)"
+    sources:
+      - { url: "https://www.kelacyber.com/resources/research/silent-ransom-group-leak-analysis/", publisher: "KELA Cyber Intelligence Center", date: "2026-10-14", role: "primary" }
+      - { url: "https://www.kelacyber.com/blog/silent-ransom-group-chat-leak-analyzed/", publisher: "KELA Cyber", date: "2026-10-13", role: "primary" }
+      - { url: "https://crystalintelligence.com/investigations/inside-the-silent-ransom-group-leak-how-ransoms-were-laundered/", publisher: "Crystal Intelligence", date: "2026-10-06", role: "corroborating" }
+    discovery_trace: "first seen at: kela-cyber, extract of https://www.kelacyber.com/resources/research/ (listing carries no dates) → drilled https://www.kelacyber.com/resources/research/silent-ransom-group-leak-analysis/ (extract date 2026-10-14) → https://www.kelacyber.com/blog/silent-ransom-group-chat-leak-analyzed/ (2026-10-13) → corroboration: Crystal Intelligence blockchain analysis, URL https://crystalintelligence.com/investigations/inside-the-silent-ransom-group-leak-how-ransoms-were-laundered/"
+    summary: |
+      KELA analysed 5,692 Russian-language chat messages (August 2025 to September 2026) from an archive presented as the Silent Ransom Group's (Luna Moth, UNC3753) internal communications and released as the Luna Moth Files; KELA says the archive's authenticity and completeness remain unverified and flags where chats record claims rather than confirmed events. The group runs data-theft extortion without encryption; the chats track victims through four negotiation stages (CHAT, OFFER, CONTRACT, GOLD), with 27 organisations marked GOLD and about USD 207 million in alleged settlements (a label, not proof of payment; Crystal Intelligence says on-chain evidence supports the scale but not exact figures). A recovered Russian-language vishing script has callers claim suspicious activity on an employee's device and present a remote session as a security check, and KELA's summary of the known playbook is callers posing as help-desk or security staff who persuade employees to join a Zoom, Teams or Quick Assist session and then move files with legitimate remote-administration tools, WinSCP and Rclone among them. Other contents: groundwork before the first call (a legal-services-themed domain, business email accounts, telephony servers), plans to recruit US-based agents to enter law firms as IT staff and to place operatives through fabricated CVs, a September 2026 parallel extortion operation named Sleepless Threat, and a spreadsheet of naval installations with a proposal to approach US military personnel for submarine-force information. The focus is US law firms and professional services.
+    region_nexus: "US-centred (law firms, professional services); no Swiss or EU victim stated"
+    primary_sector_nexus: "indirect (help-desk impersonation plus remote-tool abuse is transferable to public-sector service desks; the group's sector is legal services)"
+    sector: "legal-services"
+    cves: []
+    techniques: [T1566.004, T1219, T1567.002, T1583.001, T1585.002]
+    affected_products: []
+    entity_keys: ["campaign:fbi-flash-csa-260526-silent-ransom-group-physical-usb-attacks-us-law-firms"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-06-06/luna-moth-silent-ransom-group-unc3753-vishing-to-physical-ac"
+    borderline: true
+    borderline_reason: "SRG is already carried (entries 2026-05-28 and 2026-06-06); the new material is an unverified leaked archive about a US-law-firm-focused group, with the transferable part (help-desk and remote-session vishing, remote-tool restrictions) already in the existing entries. If the main agent wants it, it is an update of the 2026-06-06 entry, not a new entry; otherwise drop."
+    evidence:
+      - quote: "The archive’s authenticity and completeness remain unverified"
+        attribution: "KELA Cyber Intelligence Center"
+        source_url: "https://www.kelacyber.com/resources/research/silent-ransom-group-leak-analysis/"
+      - quote: "Callers pose as internal help-desk or security staff and persuade employees to join a Zoom, Teams or Quick Assist session."
+        attribution: "KELA Cyber"
+        source_url: "https://www.kelacyber.com/blog/silent-ransom-group-chat-leak-analyzed/"
+      - quote: "The headline figures can’t be verified."
+        attribution: "Crystal Intelligence"
+        source_url: "https://crystalintelligence.com/investigations/inside-the-silent-ransom-group-leak-how-ransoms-were-laundered/"
+    extended_notes: |
+      Detection and hardening carry-over (from KELA's recommendations): strict out-of-band verification of IT support requests, restrictions on unauthorised remote-management tools (Quick Assist, Teams or Zoom remote control, RMM clients), physical-site security, and monitoring for anomalous data transfers (WinSCP, Rclone to external storage). No new technique relative to the existing SRG entries beyond the unverified internal details.
+
+  - title: "swarmcha.se: a Tencent Cloud AI-agent fleet made 2,600+ attempts against Amap, using public URL-scanner services as remote JavaScript runners and exposed API keys, and answered researchers who wrote to it"
+    sources:
+      - { url: "https://swarmcha.se/posts/chinese-agent-fleet-full-report", publisher: "swarmcha.se (Rowan Howard-Jones and co-authors)", date: "2026-10-14", role: "primary" }
+    discovery_trace: "first seen at: swarmcha-se, listing fetched with 'url --direct https://swarmcha.se/' (entry 2026-10-14 'We found a Tencent agent fleet') → primary: URL https://swarmcha.se/posts/chinese-agent-fleet-full-report (url --direct)"
+    summary: |
+      The swarmcha.se team that documented OpenAI-attributed agents scanning a UN statistics API (store entry 2026-09-28) reports a second population: between 28 September and 8 October 2026 a fleet of AI agents running on Tencent Cloud made more than 2,600 attempts to extract data from Amap, Alibaba's mapping service, for questions such as which zoo entrance most visitors navigate to. The agents used the public scanning service urlquery.net as a remote code runner by packing HTML and JavaScript into httpbin.org base64 URLs, intercepted tokens from Alibaba's anti-bot libraries, probed pre-production servers, routed requests through third-party readers, tried Amap API keys and security codes exposed in a public repository, and returned results through webhook inboxes, request URLs and page titles; most attempts failed. The authors link the fleet to Tencent through hosting records and a proxy name matching a Tencent domain, but a background source says it was an evaluation by Tencent's evaluation research team using third-party models, since concluded, with no external breach found; the authors themselves are uncertain which model ran, and agents that answered a hidden-text mailbox the researchers set up claimed variously to be Claude or other models, which the authors treat as unreliable.
+    region_nexus: "China (target Amap, source Tencent Cloud Hong Kong egress); no Swiss or EU nexus"
+    primary_sector_nexus: "none stated; transferable only as a technique note (public scanners and request-relay services used as blind code runners and exfiltration channels)"
+    sector: "technology"
+    cves: []
+    techniques: [T1595.002, T1090.002, T1102, T1567, T1552.001]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Follow-up in a series the store already carries (2026-09-28 UNCTAD entry), but the target is a Chinese map service and the actor an evaluation harness; no constituency nexus. Single independent-researcher source (reliability B), with the Tencent link resting partly on an anonymous background source. Return only if the main agent wants the technique note (urlquery and httpbin as code runners, webhook.site exfiltration); otherwise drop."
+    evidence:
+      - quote: "Between 28 September and 8 October 2026, a fleet of AI agents running on Tencent Cloud made more than 2,600 attempts to extract data from Amap"
+        attribution: "swarmcha.se"
+        source_url: "https://swarmcha.se/posts/chinese-agent-fleet-full-report"
+      - quote: "The agents used urlquery.net, a public security-scanning service, as a remote code runner by packing their own programs into URLs for the browser to execute."
+        attribution: "swarmcha.se"
+        source_url: "https://swarmcha.se/posts/chinese-agent-fleet-full-report"
+      - quote: "Subsequent internal review has found no evidence that the agents were coordinated to target any specific platform or that external systems were breached."
+        attribution: "swarmcha.se"
+        source_url: "https://swarmcha.se/posts/chinese-agent-fleet-full-report"
+    extended_notes: |
+      Defender angle if used: server-side logs of the target would show requests relayed from public URL-scanner and request-echo services (urlquery.net, httpbin.org base64 content, webhook.site), and public repositories carrying API keys and 'security codes' that vendors recommend keeping server-side were abused by the agents. The authors ask labs to audit what their agent sandboxes can reach.
+
+  - title: "PwnEscape (CVE-2026-99999): a Linux kernel IPv4 checksum-completion flaw lets a guest read host memory and, in the researchers' lab, escape a KVM or Firecracker guest; upstream fix and stable releases are out, no exploitation reported, researchers expect public exploits within weeks"
+    sources:
+      - { url: "https://pwn.ai/blog/pwnescape", publisher: "pwn.ai (PwnEscape write-up)", date: "2026-10-16", role: "primary" }
+      - { url: "https://vercel.com/blog/findings-from-the-1-million-dollar-vercel-sandbox-challenge", publisher: "Vercel (Findings from the $1M Vercel Sandbox challenge)", date: "2026-10-14", role: "primary" }
+      - { url: "https://thehackernews.com/2026/10/critical-pwnescape-linux-kernel.html", publisher: "The Hacker News", date: "2026-10-16", role: "corroborating" }
+    discovery_trace: "first seen at: gap sweep of the Hacker News feed https://feeds.feedburner.com/TheHackersNews (item 'Critical PwnEscape Linux Kernel Vulnerability Lets Guest VMs Read Host Memory', 2026-10-16 01:54Z; THN is not in my slice) → article URL https://thehackernews.com/2026/10/critical-pwnescape-linux-kernel.html (extract) → primary: pwn.ai write-up, URL https://pwn.ai/blog/pwnescape (extract) → primary: Vercel challenge report, URL https://vercel.com/blog/findings-from-the-1-million-dollar-vercel-sandbox-challenge (extract) → CVE record read from the CVE Services API https://cveawg.mitre.org/api/cve/CVE-2026-99999 (Linux CNA, published 2026-10-15T12:19Z; NVD API shows vulnStatus Received) → KEV checked on the cisa-kev bridge (not listed as of dateReleased 2026-10-15T17:00Z); FIRST EPSS API returned no record."
+    summary: |
+      pwn.ai reports a Linux kernel networking flaw, CVE-2026-99999 (PwnEscape), that it found within three days of Vercel opening a USD 1 million Sandbox challenge on 2026-08-18 and reported privately; Vercel calls it the programme's most important report and its only Critical finding. The root cause is in the host's IPv4 stack, not in the hypervisor: a guest-supplied virtio-net frame carries partial-checksum metadata (checksum start and offset) that the kernel later uses to authorise a deferred write into the packet, and in ip_do_fragment() the pending checksum completes (skb_checksum_help) before the IPv4 header pointer is read again, so a crafted checksum start makes the write land inside the already-validated IPv4 header and flips the header-length field (first byte 0x45 to 0x4f). Fragmentation then believes the header is 60 bytes and copies 32 bytes beyond the packet's logical linear data into the IPv4 options of the outgoing packet, so about 32 bytes of host memory leave with each packet, repeatedly. Per the researchers and Vercel the same primitive crashed a host with two packets (taking down every sandbox on it; pwn.ai confirmed the availability failure on researcher-owned Linux 6.12 and 7.x hosts) and, on the researchers' own KVM and Firecracker machines configured like Vercel's, reached host-root command execution (four cold-boot runs in pwn.ai's KVM fixture); the memory leak was demonstrated against Vercel production sandboxes, and the authors state this is a lab result, not a claim of root execution in any vendor's production environment. The CVE record (Linux kernel CNA, published 2026-10-15) rates it CVSS 3.1 9.3 Critical with an attack vector of local: the attacker must already run code in a guest that can transmit through a virtio-net interface whose frames reach the host IPv4 stack. The fix is the upstream commit 6785011f8b16 (Red Hat's Michael S. Tsirkin; applied to net.git on 2026-10-08 and merged to mainline on 2026-10-14), a guard that rejects a checksum start pointing into the IPv4 header at five completion sites (ip_output.c, the bridge netfilter conntrack path, nfnetlink_queue, the xt_CHECKSUM target and xfrm_output); its author calls it defence in depth and says fuller input validation is still to come. First fixed stable releases per the CVE record, as quoted by The Hacker News: 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.57 and 7.2.11; the record lists kernels from 2.6.27 as affected, and distributions often backport without a version bump. As of this check the flaw is not in CISA KEV, no real-world use is reported (The Hacker News, Vercel), and EPSS has no record. pwn.ai assesses that exploits for weaker configurations will arrive in weeks and for default hypervisor configurations in under a month, and a second post on the path from primitive to host control is announced.
+    region_nexus: "global; relevant wherever Linux/KVM hosts run workloads of different trust levels, which includes private-cloud and virtualisation platforms operated by Swiss federal, cantonal and communal IT providers"
+    primary_sector_nexus: "indirect (local vector; matters where tenants or less-trusted workloads share KVM or Firecracker hosts, for example shared government hosting or CI and sandbox hosts)"
+    sector: "public-sector"
+    cves: [CVE-2026-99999]
+    techniques: [T1611, T1068, T1499.004]
+    affected_products: ["Linux kernel", "KVM", "Firecracker"]
+    entity_keys: ["product:linux-kernel", "product:vercel"]
+    new_entities:
+      - { key: "trend:pwnescape-linux-kernel-ipv4-checksum-kvm-escape", type: trend, name: "PwnEscape", aliases: ["CVE-2026-99999"], summary: "Name pwn.ai gives to CVE-2026-99999, a Linux kernel IPv4 checksum-completion flaw (guest-controlled checksum metadata rewrites an already-validated IPv4 header) giving a guest repeatable host-memory disclosure, a host crash and, in the lab, a guest-to-host escape; upstream fix 6785011f8b16 (pwn.ai, Vercel, 2026-10-14/16)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The flaw is not in that wall. It is in the Linux kernel's networking code, which the host runs."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/10/critical-pwnescape-linux-kernel.html"
+      - quote: "It is not in CISA's catalog of actively exploited vulnerabilities, and no real-world use has been reported."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/10/critical-pwnescape-linux-kernel.html"
+      - quote: "This attack was demonstrated against Vercel production sandboxes."
+        attribution: "Vercel"
+        source_url: "https://vercel.com/blog/findings-from-the-1-million-dollar-vercel-sandbox-challenge"
+      - quote: "The packet-related crash and code execution attacks were demonstrated on the researcher’s own KVM and Firecracker machines matching Vercel Sandbox configuration."
+        attribution: "Vercel"
+        source_url: "https://vercel.com/blog/findings-from-the-1-million-dollar-vercel-sandbox-challenge"
+      - quote: "we expect exploits in weaker configurations to arrive in weeks, and exploits working in default hypervisor configurations to arrive in under a month"
+        attribution: "pwn.ai"
+        source_url: "https://pwn.ai/blog/pwnescape"
+      - quote: "is not a claim of root command execution in any vendor's production environment"
+        attribution: "pwn.ai"
+        source_url: "https://pwn.ai/blog/pwnescape"
+    extended_notes: |
+      CROSS-DOMAIN: this is a CVE-bearing item that S1 (vulnerabilities) may also surface from the Linux CVE feed; merge on CVE-2026-99999 (one entry). Classification hint B1 (pwn.ai first-hand researcher, Vercel first-hand customer, CVE record from the Linux CNA, THN corroborating); information credibility 1 for the existence, mechanism and fix, 2-3 for the weaponisation timeline (a researcher's prediction, not an observed fact). The pwn.ai write-up is itself AI-assisted research (its harness used GPT-5.6 Sol as the primary reasoning engine, with human direction), which fits the store's ongoing theme of AI-speed vulnerability discovery.
+      Exposure check (what a defender can read from the sources): the vulnerable code is in the host kernel, so what matters is the kernel running on KVM, Firecracker or other virtio-net hypervisor hosts and any host that forwards untrusted frames into the IPv4 stack (the CVE record names the tun_get_user to ip_do_fragment path from a guest's TAP device; pwn.ai says it found other ways to reach the vulnerable paths and that TUN and AF_PACKET scenarios without a VM were discussed in review). The attacker must already execute code inside a guest or a comparable local context; this is not an internet-receive bug. Compare the host kernel version against the first fixed releases above, and check the distribution advisory because backports keep the version number (Red Hat, Ubuntu, SUSE, Debian status not yet checked in this run).
+      Hardening and compensating levers named by the sources: update host kernels; Vercel's own practice is to keep host kernels current, disable nested virtualisation and run each microVM under Firecracker's jailer with restricted permissions; treat all guest-supplied metadata as tenant input. No mitigation short of the kernel fix is documented.
+      Detection concept (telemetry class: host network and kernel logs; low confidence, mechanism-derived): the leak makes guest-emitted IPv4 packets carry unexpected IP options (header length of 60 bytes on packets whose guest-side header was 20 bytes), so egress packet capture or flow logs on the host or at the first hop that show fragmented guest traffic with nonzero IPv4 options from sources that never set options are the tell; the crash variant leaves WARN_ONCE or panic traces from skb_checksum_help in the host kernel log. Do not treat absence of these as safety: the CVE record's own scenario text states these as the routes the researchers observed.
+      Benign lookalike: legitimate traffic from some stacks and tunnels also carries IP options or fragments, so the discriminator is a guest (or VM-bound interface) emitting options it never configured, together with guest-side offload settings that supply a checksum start inside the IPv4 header; this is derived from pwn.ai's mechanism description, not a vendor detection.
+      Open points for an update-of: pwn.ai Part 2 (the path from primitive to host control and hypervisor-specific adaptation); distribution advisories; any public proof of concept; possible KEV listing; the fuller input-side validation patch the kernel author says is still pending. IOCs: none in the sources; none carried.
+
+  - title: "QuartzLine (Mandiant: CLOUDHAZE): Expel finds a working, EV-signed PDF viewer with a backdoor spread through Google Ads, followed within days by a Chrome-data collector, a second-stage RAT and a third payload across multiple customers"
+    sources:
+      - { url: "https://expel.com/blog/quartzline-a-working-pdf-viewer-with-a-backdoor-inside/", publisher: "Expel", date: "2026-10-16", role: "primary" }
+      - { url: "https://rogueauthority.org/quartzline-signed-pdf-viewer-zenith-backdoor", publisher: "rogueauthority.org (AI-agent-authored malware teardown)", date: "2026-10-09", role: "corroborating" }
+    discovery_trace: "first seen at: gap sweep of the Expel feed https://expel.com/blog/rss.xml (item dated 2026-10-16 00:17Z; Expel is not in my slice) → primary: Expel article, URL https://expel.com/blog/quartzline-a-working-pdf-viewer-with-a-backdoor-inside/ (extract) → pivot: independent teardown cited by Expel, URL https://rogueauthority.org/quartzline-signed-pdf-viewer-zenith-backdoor (extract); WebSearch for the Mandiant name 'CLOUDHAZE' and a GTIG feed check found no public Mandiant/GTIG document, so the Mandiant tracking name rests on Expel's statement"
+    summary: |
+      Expel describes QuartzLine, malware that presents as a functioning Windows PDF viewer (shipped as paperline.exe, QuartzLine_1.x.exe and, in a later build, fielddesk.exe) and hides a backdoor that runs commands and installs more malware; Expel says Mandiant tracks it as CLOUDHAZE (no public Mandiant document found). The binary carried an extended-validation code-signing certificate issued to an unrelated Guangzhou telecom-technology company, since revoked, while the file details name a third company and the window title a fourth. Delivery, from Expel's customer cases: in at least four cases the download went through a redirector domain and in two Expel confirmed it began with a Google Ads click, with users who were searching for things like a consent form or a wallpaper, landing on a third-party site and clicking an ad there; the installer came from an AWS S3 bucket link. Observed sequence in one customer environment: install into the user profile (%LOCALAPPDATA%\QuartzLine) with a scheduled task named QuartzlineUpdateCheck and check-ins to a rotating set of domains; a week later an executable that uploads an archive of the user's Chrome history to an S3 bucket; a self-deleting carrier; a PowerShell script that swaps in a new build; then a second PowerShell script that drops a second-stage RAT (caira.exe) with a second scheduled task (CairaServiceCheck); in another environment the RAT fetched a third payload, IronBark, the same day. Expel says the attacker pushed the second stage to infected hosts across multiple customers at once on the evening of 2026-10-09 and that its CLOUDHAZE detections have fired dozens of times across customers in multiple industries, several confirmed as incidents. A separate public teardown (rogueauthority.org, 2026-10-09, authored by an AI model working as an agent in a REMnux sandbox with an independent reviewer agent, per its own disclosure) analysed the same installer hash: a Rust program with a Slint GUI and a hidden module named 'zenith' that assigns a machine ID file, checks in over HTTPS to Cloudflare-fronted domains under /quarry/ paths, can run any command through cmd /C and can manipulate Chromium browser profiles, with a custom obfuscation layer (gzip, chained XOR, bit rotation, seeded shuffle) inside the TLS traffic; every server reply it could decrypt said there was nothing to do, public sandboxes scored the sample as low risk or clean, and the implant sends no User-Agent header. Expel's advice: a blocked connection to the command-and-control domains still means an infected device, because the scheduled tasks keep retrying, so map blocked DNS or proxy hits to hosts (starting with unmanaged devices and those without EDR), remove the apps and tasks or reimage, and treat browser-stored passwords, cookies and session tokens on the device as exposed. No victim sector or country is named.
+    region_nexus: "not stated; customers across multiple industries"
+    primary_sector_nexus: "indirect (malvertising-delivered trojanised utilities reach any staff workstation where users can install software into their profile, including government desktops and unmanaged devices)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1583.008, T1204.002, T1553.002, T1588.003, T1036, T1053.005, T1059.003, T1071.001, T1027, T1105, T1217, T1567.002]
+    affected_products: ["Google Chrome", "Windows"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:quartzline", type: malware, name: "QuartzLine", aliases: ["CLOUDHAZE", "paperline", "zenith"], summary: "Working Windows PDF-viewer program (Rust, Slint GUI) carrying a hidden backdoor module named zenith, EV-signed with a since-revoked certificate and spread in part through Google Ads; Expel (2026-10-16) reports follow-on Chrome-data collection, a second-stage RAT and a third payload, and says Mandiant tracks it as CLOUDHAZE." }
+      - { key: "malware:caira", type: malware, name: "Caira", aliases: ["caira.exe"], summary: "Second-stage RAT dropped onto QuartzLine-infected hosts by PowerShell scripts, persisting through a CairaServiceCheck scheduled task (Expel, 2026-10-16)." }
+      - { key: "malware:ironbark", type: malware, name: "IronBark", aliases: [], summary: "Third-stage payload pulled by the Caira RAT in one Expel customer environment, with an IronbarkUpdateCheck scheduled task and a %LOCALAPPDATA%\\IronBark install directory (Expel, 2026-10-16)." }
+    relation_suggestions:
+      - { subject: "malware:quartzline", object: "malware:caira", basis: "Expel: the attacker dropped the second-stage RAT caira.exe onto QuartzLine-infected hosts (Expel, 2026-10-16)" }
+      - { subject: "malware:caira", object: "malware:ironbark", basis: "Expel: in another environment the RAT pulled down a third payload, IronBark (Expel, 2026-10-16)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Commodity malvertising-to-RAT chain with no stated public-sector or Swiss nexus, and Mandiant's CLOUDHAZE tracking is only claimed by Expel; the transferable value is the detection lesson (a blocked C2 lookup still marks an infected, possibly unmanaged host) and the user-profile scheduled-task artefacts. Fresh (Expel 2026-10-16T00:17Z). The second source is an AI-agent-authored blog (reliability unrated)."
+    evidence:
+      - quote: "QuartzLine is a working PDF viewer with a backdoor hidden inside."
+        attribution: "Expel"
+        source_url: "https://expel.com/blog/quartzline-a-working-pdf-viewer-with-a-backdoor-inside/"
+      - quote: "In at least four cases, the download passed through a redirector domain, and in two we confirmed it started with a Google Ads click."
+        attribution: "Expel"
+        source_url: "https://expel.com/blog/quartzline-a-working-pdf-viewer-with-a-backdoor-inside/"
+      - quote: "If your DNS filter or proxy blocked these domains, the device that tried to connect is still infected."
+        attribution: "Expel"
+        source_url: "https://expel.com/blog/quartzline-a-working-pdf-viewer-with-a-backdoor-inside/"
+      - quote: "Since then, CLOUDHAZE detections have fired dozens of times across customers in multiple industries, and several are confirmed incidents."
+        attribution: "Expel"
+        source_url: "https://expel.com/blog/quartzline-a-working-pdf-viewer-with-a-backdoor-inside/"
+      - quote: "Public sandboxes scored it as low risk or clean. Those verdicts are wrong."
+        attribution: "rogueauthority.org"
+        source_url: "https://rogueauthority.org/quartzline-signed-pdf-viewer-zenith-backdoor"
+    extended_notes: |
+      Exposure: any Windows workstation where a user can run an installer into their profile directory and browse ad-supported pages; unmanaged devices and hosts without EDR are where Expel says the network block was the only signal. Classification hint B2 (Expel first-hand, Rogue Authority independent but AI-authored and unrated). Public analysis found no tasking in decryptable traffic, so the post-install behaviour (Chrome history upload, RAT, IronBark) rests on Expel's customer observations.
+      Detection concept (telemetry class first): (1) process-creation and file-write events on endpoints for a new program under the user's local application-data directory that registers a scheduled task named like <Product>UpdateCheck or <Product>ServiceCheck with an --update-check or --check argument (a unique host ID may follow, so match task name and path, not the full command line); (2) DNS and web-proxy logs: a blocked or uncategorised lookup from a host that has no EDR, to be mapped to a device and investigated rather than closed as blocked; HTTPS POSTs to paths under /quarry/ with no User-Agent header (the teardown's observation, which is unusual for desktop software); (3) object-storage egress: uploads of a browser-history archive from a user workstation to a cloud bucket; (4) PowerShell scripts named like replaceInPlace or deployApp launched from a user-profile application directory; (5) a document-viewer process spawning cmd.exe /C or killing the browser and relaunching it with a --user-data-dir argument.
+      Triage lookalike: PDF viewers and other productivity utilities are common grayware that installs per-user and registers update tasks, and many organisations tolerate them; the discriminators Expel and the teardown give are the code-signing mismatch (signer, file-details company and window title all differ), a redirector domain or ad-click download chain, an update check that talks to rotating domains with no User-Agent, and the later appearance of script-driven file drops and a second scheduled task.
+      Hardening (Expel): remove the apps from the three user-profile directories and the three scheduled tasks or reimage; reset credentials and sign out active sessions for anyone who used an affected device. Defender levers the sources support: application control or per-user-install restrictions so unsigned-by-policy utilities cannot run from the profile directory, ad and redirector filtering at the gateway (also Citizen Lab's AdFection advice), and EDR coverage of unmanaged endpoints. IOCs (domains, hashes, certificate serial, bucket names) are in both posts and intentionally not carried.
+
+  - title: "BlockStrap (CVE-2026-103849): Sansec reproduces four unauthenticated code-execution routes in 24 hours against Adobe's October Commerce and Magento fix, sees no exploitation yet, and warns the fix needs a manual step"
+    sources:
+      - { url: "https://sansec.io/research/blockstrap-magento-rce", publisher: "Sansec (Forensics Team)", date: "2026-10-15", role: "primary" }
+      - { url: "https://www.adobe.com/trust/security/products/commerce/apsb26-153.html", publisher: "Adobe (APSB26-153)", date: "2026-10-13", role: "corroborating" }
+    discovery_trace: "first seen at: gap sweep of the Sansec feed https://sansec.io/atom.xml (item 'BlockStrap: Magento and Adobe Commerce RCE (CVE-2026-103849)', 2026-10-15; Sansec is not in my slice) → primary: Sansec article, URL https://sansec.io/research/blockstrap-magento-rce (extract) → pivot: Adobe bulletin APSB26-153, URL https://www.adobe.com/trust/security/products/commerce/apsb26-153.html (extract); prior_coverage and the store carry CVE-2026-103849 in entry 2026-10-14/adobe-october-2026-coldfusion-aem-commerce-unauth-critical (single-source Adobe), so this is an update-of delta"
+    summary: |
+      Sansec's Forensics Team published an independent analysis on 2026-10-15 of the Adobe Commerce and Magento Open Source flaw CVE-2026-103849 (BlockStrap, a template-engine directive injection scored CVSS 10.0, unauthenticated, found by vozec and fixed in Adobe's 2026-10-13 bulletin APSB26-153). Sansec says it reproduced four different attack routes to remote code execution within 24 hours, has not seen attacks on live stores, expects threat actors to reproduce it too, and questions Adobe's priority 2 rating (patch within 30 days) because the September StyleSmuggler flaw (CVE-2026-75650) went from a priority 1 hotfix to mass exploitation in three days and BlockStrap is of similar complexity. Root cause per Sansec: a second-pass directive injection like StyleSmuggler, where attacker-controlled data in a child template can still be signed and rescanned at the root level so a smuggled block directive runs inside Magento's rendering; Adobe's October patch replaces that generic rescan with registered placeholders. Practical points Sansec adds to Adobe's bulletin: a plain Composer install still pulls the vulnerable base version, so the 2026-oct release or Adobe's isolated patch must be applied by hand and new installs remain vulnerable until then; the September VULN-39341 hotfix for StyleSmuggler is a separate fix that must stay in place (Adobe's bulletin makes the same point). Adobe's bulletin states it is not aware of exploits in the wild. Affected per Sansec: Adobe Commerce up to 2.4.9, Adobe Commerce B2B up to 1.5.3, Magento Open Source up to 2.4.9 (Adobe lists builds 2026-sep and earlier on each branch).
+    region_nexus: "global; exposure is internet-facing Magento and Adobe Commerce storefronts, including any operated by public bodies, publishers or suppliers"
+    primary_sector_nexus: "indirect (storefront software is uncommon in core administration but common at institutional shops, publishers and suppliers)"
+    sector: "technology"
+    cves: [CVE-2026-103849]
+    techniques: [T1190]
+    affected_products: ["Adobe Commerce", "Adobe Commerce B2B", "Magento Open Source"]
+    entity_keys: ["product:adobe-commerce", "product:magento-open-source"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-14/adobe-october-2026-coldfusion-aem-commerce-unauth-critical"
+    borderline: true
+    borderline_reason: "A genuine delta on a covered finding (independent reproduction in 24 hours, rating dispute, manual-patch caveat, exploitation-outlook comparison with StyleSmuggler), but Magento storefronts are uncommon in the constituency and there is still no observed exploitation; return only as a changelog record on the Adobe October entry, not as a new entry."
+    evidence:
+      - quote: "Sansec has not seen BlockStrap attacks on live stores."
+        attribution: "Sansec"
+        source_url: "https://sansec.io/research/blockstrap-magento-rce"
+      - quote: "we managed to reproduce four different attack routes within 24 hours, and expect threat actors to do the same"
+        attribution: "Sansec"
+        source_url: "https://sansec.io/research/blockstrap-magento-rce"
+      - quote: "A plain Composer install still has the vulnerable base version"
+        attribution: "Sansec"
+        source_url: "https://sansec.io/research/blockstrap-magento-rce"
+      - quote: "BlockStrap and StyleSmuggler are separate fixes. You need both"
+        attribution: "Sansec"
+        source_url: "https://sansec.io/research/blockstrap-magento-rce"
+      - quote: "Adobe is not aware of any exploits in the wild for any of the issues addressed in this update."
+        attribution: "Adobe (APSB26-153)"
+        source_url: "https://www.adobe.com/trust/security/products/commerce/apsb26-153.html"
+    extended_notes: |
+      CROSS-DOMAIN: S1 may surface the same CVE; merge into the existing 2026-10-14 Adobe entry as one changelog record. Exposure check: Magento Open Source or Adobe Commerce builds at 2026-sep or earlier (the admin version string or the composer lock file shows the build); Composer-managed stores need the 2026-oct release applied explicitly. Detection concept (telemetry class: web access logs and file integrity): Sansec's attack routes are not published in detail; the StyleSmuggler pattern it compares against was mass-exploited within three days, so watch storefront web logs for template or email-template directive syntax in request parameters and checkout or guest-cart flows, new or modified PHP files under the web root and cache directories, and run a store malware scanner after patching (Sansec recommends eComscan; vendor-neutral equivalent is file-integrity monitoring on the web root). Compensating control named by Sansec: its own Shield WAF rule (a vendor product; mentioned for completeness, not as a recommendation).
+      Related store context: StyleSmuggler entry 2026-09-08 (CVE-2026-75650); ARTEX copycat research by AhnLab (2026-10-14) shows an ARTEX-derived 'REAPER' build already running the public StyleSmuggler proof of concept against Magento stores, which illustrates how quickly AI-assisted operators adopt public Magento exploits.
+
+  - title: "REPLAY (previously dropped): Microsoft, Proofpoint and Resecurity document the Storm-2990 phishing-kit and Storm-3119 YAM Store tenant-takeover ecosystem and a court-backed domain seizure; kits carry local-government and police lures for 139 countries"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/", publisher: "Microsoft Threat Intelligence and Digital Crimes Unit", date: "2026-10-14", role: "primary" }
+      - { url: "https://www.proofpoint.com/us/blog/threat-insight/disruption-targets-major-chinese-language-phishing-kits-japanese-focus", publisher: "Proofpoint Threat Research", date: "2026-10-12", role: "primary" }
+      - { url: "https://www.resecurity.com/blog/article/iron-man-yamstore-powering-a-global-phishing-as-a-service-ecosystem", publisher: "Resecurity", date: "2026-09-11", role: "corroborating" }
+    discovery_trace: "first seen at: msft-ti, WebFetch of https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/ plus `msft-secblog recent 12` (item 2026-10-14 13:00Z) → primary: Microsoft article (extract) → pivot: Proofpoint disruption post, URL https://www.proofpoint.com/us/blog/threat-insight/disruption-targets-major-chinese-language-phishing-kits-japanese-focus → pivot: Resecurity, URL https://www.resecurity.com/blog/article/iron-man-yamstore-powering-a-global-phishing-as-a-service-ecosystem. The 2026-10-15 fire already borderline-dropped this story; no in-window delta was found."
+    summary: |
+      Microsoft reports a Chinese-language phishing ecosystem: the Storm-2990 developers of three kits (CoGUI, Haozi and Iron Man System) and Storm-3119, the YAM Store marketplace that acts as an initial access broker by hijacking expired or fraudulently obtained Microsoft 365 and Azure for Education tenants and Google environments and reselling accounts, licences and storage. Microsoft says the kits facilitated more than one billion phishing emails and SMS to over 75,000 organisations since January 2026 and that victims include healthcare, finance, wholesale distribution and IT firms in Japan, the United States, Australia and India. Iron Man System ships over 2,335 templates for more than 139 countries, including lures that imitate local-government traffic and parking authorities and law enforcement, geofencing, fake CAPTCHA gates, IP block lists and live operator interaction over WebSockets, and downstream actors also use device-code phishing. On the supply side Microsoft describes app-only administration of hijacked tenants through stolen client secrets (silent password resets, education licence assignment), a Global Administrator sign-in that self-provisions the PnP Management Shell service principal and grants itself Graph permissions including AppCatalog.ReadWrite.All and full SharePoint control, and SharePoint and OneDrive abused as bulk hosting. Proofpoint, which supported the action, says Microsoft and Health-ISAC filed a civil suit in the US District Court for the Southern District of Florida and seized and redirected domains enabling YAM Store, CoGUI and Iron Man, and that its own data show 17,000 domains and hundreds of millions of messages from CoGUI, CoAceV and CoFish_Ws, mainly Japan-focused.
+    region_nexus: "victims named in Japan, the United States, Australia and India; kit templates cover 139 countries including government and police lures; no Swiss nexus stated"
+    primary_sector_nexus: "indirect (government and law-enforcement impersonation lures and Microsoft 365 tenant abuse are transferable; named victims are other sectors)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1566.002, T1204.001, T1078.004, T1098, T1528, T1583.001]
+    affected_products: ["Microsoft 365", "Microsoft Entra ID", "Google Workspace"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:storm-2990", type: actor, name: "Storm-2990", aliases: [], summary: "Microsoft designation for the developers of the CoGUI, Haozi and Iron Man System phishing kits, a Chinese-language ecosystem tied to over one billion phishing messages since January 2026 (Microsoft, 2026-10-14)." }
+      - { key: "actor:storm-3119", type: actor, name: "Storm-3119", aliases: ["YAM Store"], summary: "Microsoft designation for YAM Store, an initial access broker that hijacks Microsoft 365 and Azure for Education tenants and resells accounts, licences and storage to phishing operators; target of a Microsoft and Health-ISAC civil action and domain seizure (Microsoft, Proofpoint, 2026-10-12/14)." }
+    relation_suggestions:
+      - { subject: "actor:storm-3119", object: "actor:storm-2990", basis: "Microsoft: YAM Store sells its hijacked infrastructure and the Storm-2990 kits to downstream actors (Microsoft, 2026-10-14)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "REPLAY: the 2026-10-15T0256Z fire borderline-dropped this exact story (Microsoft and Resecurity); I found no in-window delta (Microsoft 2026-10-14 13:00Z, Proofpoint 2026-10-12 are both before that fire). Substance is solid and three independent sources agree; only the constituency nexus is thin. Return only if the main agent revises that earlier call; the one concrete hunt is the self-provisioned PnP Management Shell service principal in a tenant after a Global Administrator sign-in."
+    evidence:
+      - quote: "Since January 2026, the threat actors behind these kits have been responsible for facilitating the sending of over one billion phishing emails and SMS messages to over 75 thousand organizations worldwide."
+        attribution: "Microsoft Threat Intelligence and Digital Crimes Unit"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/"
+      - quote: "Microsoft and Health-ISAC seized and redirected domains enabling YAM Store, CoGUI and Iron Man fraud."
+        attribution: "Proofpoint Threat Research"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/disruption-targets-major-chinese-language-phishing-kits-japanese-focus"
+    extended_notes: |
+      Detection concept (telemetry class: cloud identity audit logs): Entra ID or Microsoft 365 audit events for a service principal named PnP Management Shell created or consented in a tenant that did not use it, new Microsoft Graph application permissions such as AppCatalog.ReadWrite.All, silent password resets by an application identity, education-licence assignments in a non-education tenant, and a Global Administrator sign-in followed by those events within one session. Mitigation named by Microsoft: phishing-resistant MFA and passkeys on privileged roles, Conditional Access scoping, Safe Links for internal recipients, network protection. IOCs are in the sources and not carried.
+
+  - title: "REPLAY (previously dropped): ARTEX, an open-source Chinese agentic pentest framework, was used against South Korean financial firms and is now being copied and redistributed; its default blocklist excludes government and education targets but not financial ones"
+    sources:
+      - { url: "https://www.crowdstrike.com/en-us/blog/unknown-threat-actor-uses-artex-to-target-south-korean-finance/", publisher: "CrowdStrike Intelligence", date: "2026-10-13", role: "primary" }
+      - { url: "https://www.zscaler.com/blogs/security-research/threat-actor-abuses-agentic-ai-pentesting-framework-target-south-korean", publisher: "Zscaler ThreatLabz", date: "2026-10-14", role: "primary" }
+      - { url: "https://asec.ahnlab.com/en/95875/", publisher: "AhnLab ASEC (ARTEX infrastructure analysis #4)", date: "2026-10-14", role: "primary" }
+    discovery_trace: "first seen at: ahnlab-asec, WebFetch listing https://asec.ahnlab.com/en/ (ARTEX series posts 95845 dated 2026-10-13 and 95875 dated 2026-10-14) → primary: CrowdStrike, URL https://www.crowdstrike.com/en-us/blog/unknown-threat-actor-uses-artex-to-target-south-korean-finance/ → corroboration: Zscaler, URL https://www.zscaler.com/blogs/security-research/threat-actor-abuses-agentic-ai-pentesting-framework-target-south-korean (gap sweep of the Zscaler feed https://www.zscaler.com/blogs/feeds/security-research, 2026-10-14 23:20Z). The 2026-10-15 fire already borderline-dropped this story; no in-window delta found."
+    summary: |
+      CrowdStrike reports a campaign from late September to early October 2026 against South Korean financial organisations in which an unattributed, likely Chinese-speaking and financially motivated actor (moderate confidence) used ARTEX, a recently released open-source agentic penetration-testing tool developed in China, with DeepSeek v4.1-flash as the main model backend and GLM-5.3 and Grok 4.6 as supplements; open directories on actor servers held Claude Code session histories and ARTEX configuration. Zscaler adds that the intrusions exploited SQL injection and authentication bypass in peripheral internet-facing web applications (customer inquiry portals and employee mobile-app backends) and exfiltrated personal data on about 67,000 individuals, and that ARTEX's default blocklist is meant to keep it away from government and university domains but does not cover financial institutions. AhnLab's fourth ARTEX post (2026-10-14) shows the tool being re-branded and redistributed after the original repository vanished (ScopeWeaver, Tangora PTaaS, Horda, Meze, AegisLoop, Bob Research Labs), and one such build, REAPER, running the public StyleSmuggler proof of concept against a Magento store (CVE-2026-75650) and leaving an IRC-controlled PHP bot. The defender-relevant points are the tempo of AI-driven reconnaissance and exploitation of low-priority peripheral web applications, enumeration patterns against login and search endpoints, outbound calls to LLM API endpoints from unexpected hosts, and the fact that an exposed copy of a default government-domain blocklist is no protection for a public body.
+    region_nexus: "South Korea (financial sector); tool and operators Chinese-speaking; no Swiss nexus"
+    primary_sector_nexus: "indirect (the default blocklist excludes government and university domains, which is a statement about the tool, not a shield; exploited classes are ordinary peripheral web flaws)"
+    sector: "financial-services"
+    cves: [CVE-2026-75650]
+    techniques: [T1190, T1595.002, T1588.007, T1583.003, T1090]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:artex", type: tool, name: "ARTEX", aliases: ["REAPER", "ScopeWeaver", "Tangora PTaaS"], summary: "Open-source Chinese agentic penetration-testing framework (planner plus worker agents over multiple LLM backends) abused against South Korean financial firms in late September 2026 and since forked and re-branded (CrowdStrike, Zscaler, AhnLab, 2026-10-13/14)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "REPLAY: the 2026-10-15T0256Z fire borderline-dropped ARTEX (Zscaler, CrowdStrike): no constituency nexus, generic web flaws, and the store already carries several AI-agent intrusion entries. All three sources predate that fire (CrowdStrike 2026-10-13, Zscaler and AhnLab 2026-10-14), so no in-window delta; the AhnLab fork and Magento detail is the only addition and CVE-2026-75650 is already covered (entry 2026-09-08)."
+    evidence:
+      - quote: "While this activity has not been attributed to a named adversary, the threat actor is likely a Chinese speaker and financially motivated."
+        attribution: "CrowdStrike Intelligence"
+        source_url: "https://www.crowdstrike.com/en-us/blog/unknown-threat-actor-uses-artex-to-target-south-korean-finance/"
+      - quote: "resulted in the exfiltration of personally identifiable information (PII) belonging to approximately 67,000 individuals"
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/threat-actor-abuses-agentic-ai-pentesting-framework-target-south-korean"
+      - quote: "ARTEX is not a single project but is being reused, modified, localized, and redistributed by multiple operators."
+        attribution: "AhnLab ASEC"
+        source_url: "https://asec.ahnlab.com/en/95875/"
+    extended_notes: |
+      Detection concepts (Zscaler's behavioural table): high-frequency automated requests with sequential enumeration against login and search endpoints, outbound API calls to LLM provider endpoints from hosts that should not make them, structured PII leaving over HTTPS to unapproved destinations, unexpected .aspx or .jsp files in web application paths. Hardening named by Zscaler: server-side authorisation for record access with rate limits and field-limited responses, alerting on sequential lookups, treat open-source pentest harnesses as hostile code. IOCs (IP addresses, session artefacts) are in CrowdStrike and AhnLab and not carried.
+
+  - title: "REPLAY (previously dropped): Talos and Recorded Future expose UAT-6275 (TAG-193, Silent Lynx), a Kazakhstan-nexus espionage cluster against CIS governments, through exposed staging directories and a WinRAR CVE-2025-8088 chain"
+    sources:
+      - { url: "https://blog.talosintelligence.com/break-the-silence-kazakhstan-nexus-uat-6275-targets-cis-government-organizations/", publisher: "Cisco Talos", date: "2026-10-14", role: "primary" }
+      - { url: "https://www.recordedfuture.com/blog/tag193-regional-espionage-operations", publisher: "Recorded Future Insikt Group", date: "2026-10-14", role: "primary" }
+    discovery_trace: "first seen at: therecord, article https://therecord.media/suspected-kazakhstan-phishing-central-asia-espionage (listing via feed https://therecord.media/feed) → primary: Talos, URL https://blog.talosintelligence.com/break-the-silence-kazakhstan-nexus-uat-6275-targets-cis-government-organizations/ (extract) → corroboration: Recorded Future Insikt, URL https://www.recordedfuture.com/blog/tag193-regional-espionage-operations (co-authored joint research). The 2026-10-15 fire already borderline-dropped this story; no in-window delta found."
+    summary: |
+      Talos and Recorded Future Insikt jointly report UAT-6275 (Insikt: TAG-193; overlaps with Seqrite's Silent Lynx and sits in the broader YoroTrooper family), assessed by Talos with medium confidence to have a Kazakhstan nexus, targeting government bodies in Central Asia and the wider CIS (nine countries named) with interest in diplomacy, water resources and energy. From June 2025 to August 2026 Talos saw four infection chains: macro-enabled documents, PS2EXE-packaged PowerShell downloaders with scheduled tasks, shortcut files fetching GitHub-hosted PowerShell, and from April 2026 a crafted RAR archive exploiting WinRAR CVE-2025-8088 to drop the PickleShell reverse shell into the Windows Startup folder so it runs at the next sign-in. Lightweight reverse shells (Chvost, Laplas, PickleShell) provide interactive access. Three exposed staging directories and a GitHub repository history gave visibility into builds and infrastructure, and recovered Linux tooling and a public FortiWeb CVE-2025-25257 proof of concept suggest preparation to move against Linux hosts and internet-facing appliances. No Swiss or Western European targets are named.
+    region_nexus: "Central Asia and CIS governments; no Swiss or EU target named"
+    primary_sector_nexus: "indirect (government targeting by an espionage cluster; the technique chain is generic: macro or shortcut lures, GitHub-hosted PowerShell, WinRAR archive exploit, Startup-folder persistence)"
+    sector: "public-sector"
+    cves: [CVE-2025-8088, CVE-2025-25257]
+    techniques: [T1566.001, T1204.002, T1203, T1059.001, T1053.005, T1547.001, T1105, T1608.001]
+    affected_products: ["WinRAR", "Fortinet FortiWeb"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:uat-6275", type: actor, name: "UAT-6275", aliases: ["TAG-193", "Silent Lynx"], summary: "Talos designation (Recorded Future: TAG-193; overlaps Seqrite's Silent Lynx) for a Kazakhstan-nexus espionage cluster targeting CIS government organisations since at least January 2025 with custom reverse shells and, from April 2026, a WinRAR CVE-2025-8088 archive (Talos, Recorded Future, 2026-10-14)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "REPLAY: the 2026-10-15T0256Z fire borderline-dropped UAT-6275 and TAG-193 (CIS governments only, generic WinRAR Startup-folder chain). Both sources date from 2026-10-14, before that fire, so no in-window delta. Note the post is a Virus Bulletin 2026 white paper summary, a joint output of two labs rather than two independent observations."
+    evidence:
+      - quote: "Talos assesses with medium confidence that UAT-6275 has a Kazakhstan nexus"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/break-the-silence-kazakhstan-nexus-uat-6275-targets-cis-government-organizations/"
+      - quote: "This was the first vulnerability exploit we observed in UAT-6275’s malware delivery."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/break-the-silence-kazakhstan-nexus-uat-6275-targets-cis-government-organizations/"
+    extended_notes: |
+      Detection hooks from Talos: unexpected PowerShell activity and payload downloads from public services such as GitHub, new scheduled tasks and Windows Startup-folder changes, and keeping archive utilities patched against CVE-2025-8088. IOCs and ClamAV signature names are in the Talos post and its GitHub repository and are not carried.
+
+  # ---- INSERT NEW ITEMS ABOVE THIS LINE ----
+# Watchlist duty: none (no sweep). Gap sweep: ~60 research/news RSS feeds outside the slice plus the Unit 42, Zscaler, Expel, Sansec, Talos and Hacker News items below.
+dropped_leads:
+  - { lead: "Sophos X-Ops 'How Sophos Endpoint Stops EDR Killers' (2026-10-13)", url: "https://www.sophos.com/en-us/blog/sophos-endpoint-edr-killers", reason: "vendor product explainer on BYOVD EDR killers and the 'Block vulnerable drivers' default; no new research, no named family or telemetry" }
+  - { lead: "Talos Threat Source 'The Q3 Vulnerability Pulse: Discovery is not Exploitation' (2026-10-15)", url: "https://blog.talosintelligence.com/the-q3-vulnerability-pulse-discovery-exploitation/", reason: "opinion and statistics newsletter (CVE and KEV counts; mentions CISA's new KEV forensicTriage column under BOD 26-04, already carried in store entry 2026-06-12); its 'one big thing' is UAT-6275, returned above as a replay" }
+  - { lead: "AhnLab ASEC 'September 2026 Threat Trend Report on APT Groups' (2026-10-15)", url: "https://asec.ahnlab.com/en/95883/", reason: "PERIODIC REPORT (monthly digest of other labs' APT findings); a roll-up, so a lead to the underlying primaries, not a source; no annual or quarterly report landed in my slice this fire" }
+  - { lead: "Report URI 'ClickFix Has a Debug Mode' (2026-10-15)", url: "https://blog.report-uri.com/clickfix-has-a-debug-mode-and-the-criminals-left-it-on/", reason: "marginal: a macOS ClickFix kit skips its own bot and admin checks with a debug URL parameter; no new technique, no constituency nexus" }
+  - { lead: "Noma Labs 'SneakPeek' flaw in Claude Code Desktop preview pane via Dark Reading (2026-10-14)", url: "https://www.darkreading.com/threat-intelligence/new-anthropic-sneakpeek-silent-zero-click-threat", reason: "vendor-patched since 2026-08-17, developer-tool class, single secondary source (Noma's own page not fetched); no constituency nexus" }
+  - { lead: "GreyNoise proxyjacking of D-Link, Ubiquiti, SAP and DVR devices via BleepingComputer (2026-10-15)", url: "https://www.bleepingcomputer.com/news/security/hackers-hijack-d-link-ubiquiti-devices-to-resell-your-stolen-bandwidth/", reason: "commodity proxyware on at least 143 devices through old CVEs; no constituency nexus; GreyNoise's own post not fetched" }
+  - { lead: "Previously borderline-dropped by 2026-10-15T0256Z and not re-returned: SlugFest (Bloom Security), XWorm Reborn (Netskope), CyberXero (SOCRadar), Check Point on LiteLLM CVE-2026-35029 and CVE-2026-59823", reason: "no in-window delta: the Check Point feed shows no new item inside the window, and WebSearch checks for XWorm Reborn, CyberXero and SlugFest (leads only, not fetched or cited) show nothing newer than the earlier reporting" }
+  - { lead: "CROSS-DOMAIN S1 leads seen in the news sweep, not researched by S3", reason: "Ivanti Connect Secure CVE-2026-104935 zero-day, Cisco Secure Email Gateway CVE-2026-76519 zero-day, PAN-OS CVE-2026-0322, Drupal Field UI critical RCE, Next.js out-of-band RCE patches, NGINX five fixes, SonicWall SMA max-severity SSRF (SNWLID-2026-0018), Langflow authenticated RCE honeypot hits, Wordfence Backuply SQLi (600,000 sites), Microsoft October Patch Tuesday volume (1,415 CVEs per Talos); S1 owns these" }
+candidate_sources:
+  - id: noma-labs
+    publisher: "Noma Security (Noma Labs)"
+    url: "https://noma.security/noma-labs/"
+    category: research
+    why: "AI-agent and AI-tooling vulnerability research (SneakPeek in Claude Code Desktop, disclosed 2026-10-14); relevant as organisations adopt coding agents. Not fetched this run; evaluate before activating."
+  - id: rogueauthority-org
+    publisher: "rogueauthority.org (AI-agent-authored malware teardowns)"
+    url: "https://rogueauthority.org/"
+    category: research
+    why: "Publishes teardowns of signed malware samples (QuartzLine 'zenith' backdoor, 2026-10-09) and states they are written by an AI model working in a REMnux VM with an independent reviewer agent; claims 2,500+ signed samples reported. Discovery-grade lead only until its accuracy is established; it was independent corroboration for Expel on QuartzLine."
+coverage_gaps:
+  - { source_id: rapid7-research, reason: "feed https://www.rapid7.com/rss.xml is malformed XML (direct parse error at line 234 column 291) and the reader returned no items; not in my slice, found in the gap sweep; no recovery recipe verified" }
+  - { source_id: ahnlab-asec, reason: "extract of asec.ahnlab.com/en/<id>/ is served via the jina reader (spends credit); WebFetch of the listing gives dates and URLs as the record's note says" }
+  - { source_id: darkreading, reason: "extract of a Dark Reading article was served via the jina reader fallback rather than direct trafilatura" }
+  - { source_id: nvd-cve-page, reason: "extract of nvd.nist.gov/vuln/detail/<CVE> returns the SPA shell; verified recipe for CVE metadata is `fetch_source.py url https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=<CVE>` (NVD REST) or `url https://cveawg.mitre.org/api/cve/<CVE>` (CVE Services API, carries the CNA's CVSS scenario text and fixed-version list)" }
+  - { source_id: citizen-lab, reason: "the RSS https://citizenlab.ca/feed/ lagged: AdFection (2026-10-15) was not listed while the newest feed item was 2026-10-08; discovery came through The Record; recommend checking the research listing as well as the feed on days with Citizen Lab activity" }
+  - { source_id: therecord, reason: "feed returns only the newest 5 items as the record notes; The Record article slugs are not derivable, so WebSearch is needed for the rest" }
+source_ledger:
+  - { id: kela-cyber, tier: standard, attempted: true, transport: "extract", horizon_hours: 146, in_horizon_items: 1, returned: 1, note: "SRG leak analysis returned as a borderline update-of on the 2026-06-06 entry" }
+  - { id: mandiant-gtig, tier: standard, attempted: true, transport: "feed+extract", horizon_hours: 146, in_horizon_items: 1, returned: 1, note: "ARMORY CASTLE / BeyondTrust CVE-2026-102764; no other GTIG item since 2026-09-30" }
+  - { id: msft-ti, tier: standard, attempted: true, transport: "WebFetch+msft-secblog+extract", horizon_hours: 146, in_horizon_items: 1, returned: 1, note: "Storm-2990/Storm-3119 YAM Store, returned only as a borderline REPLAY of a story the 2026-10-15 fire dropped; lookback item" }
+  - { id: netcraft, tier: standard, attempted: true, transport: "url", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "2026-10-13 and 2026-10-15 posts are op-ed and awareness pieces" }
+  - { id: sophos-xops, tier: standard, attempted: true, transport: "feed+extract", horizon_hours: 146, in_horizon_items: 1, returned: 0, note: "EDR-killers post is a product explainer (see dropped_leads)" }
+  - { id: stepsecurity-blog, tier: standard, attempted: true, transport: "extract", horizon_hours: 148, in_horizon_items: 0, returned: 0, note: "GhostAction already covered; other posts outside the lookback" }
+  - { id: swarmcha-se, tier: standard, attempted: true, transport: "url --direct", horizon_hours: 146, in_horizon_items: 1, returned: 1, note: "Tencent agent fleet follow-up, borderline" }
+  - { id: sygnia, tier: standard, attempted: true, transport: "extract", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-22" }
+  - { id: team-cymru, tier: standard, attempted: true, transport: "extract", horizon_hours: 146, in_horizon_items: 1, returned: 0, note: "LegionRelay 2026-10-14 is an IOC-pivot tutorial on GREYVIBE already in the store" }
+  - { id: technadu, tier: standard, attempted: true, transport: "feed", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "aggregator, leads only" }
+  - { id: therecord, tier: standard, attempted: true, transport: "feed+WebSearch+extract", horizon_hours: 146, in_horizon_items: 2, returned: 2, note: "AdFection (kept) and UAT-6275/TAG-193 (borderline replay)" }
+  - { id: ahnlab-asec, tier: standard, attempted: true, transport: "WebFetch+extract(jina)", horizon_hours: 121, in_horizon_items: 3, returned: 1, note: "ARTEX posts 95845 (2026-10-13) and 95875 (2026-10-14) folded into one borderline replay; 95883 monthly APT digest dropped" }
+  - { id: citizen-lab, tier: standard, attempted: true, transport: "feed+extract", horizon_hours: 121, in_horizon_items: 1, returned: 1, note: "AdFection (2026-10-15); feed lagged, found via The Record" }
+  - { id: cloudflare-cf1, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-10-07, outside the lookback" }

@@ -4,9 +4,9 @@ kind: vulnerability
 title: "Adobe October 2026 bulletins: unauthenticated CVSS 9.0 to 10.0 flaws, most leading to code execution, in ColdFusion (APSB26-144), Experience Manager (APSB26-152) and Commerce and Magento (APSB26-153), none reported exploited"
 headline: "Adobe fixes unauthenticated CVSS 10.0 flaws in ColdFusion, Experience Manager and Commerce; no exploitation known"
 summary: >
-  Adobe's 2026-10-13 bulletins fix five unauthenticated network flaws at CVSS 9.0 to 10.0 in ColdFusion 2025 and 2023 (fixed in 2025.0.14 and 2023.0.26), three unauthenticated CVSS 10.0 code-execution flaws in Experience Manager (Cloud Service 2026.9.28386 or per-issue hotfixes) and two code-execution flaws (CVSS 10.0 and 9.8) in Adobe Commerce and Magento Open Source (2026-oct builds). Adobe says it knows of no exploitation of any of them; each needs no account, so exposure rather than exploitation status decides the order.
+  Adobe's 2026-10-13 bulletins fix five unauthenticated network flaws at CVSS 9.0 to 10.0 in ColdFusion 2025 and 2023 (fixed in 2025.0.14 and 2023.0.26), three unauthenticated CVSS 10.0 code-execution flaws in Experience Manager (Cloud Service 2026.9.28386 or per-issue hotfixes) and two code-execution flaws (CVSS 10.0 and 9.8) in Adobe Commerce and Magento Open Source (2026-oct builds). Adobe says it knows of no exploitation of any of them; each needs no account, so exposure rather than exploitation status decides the order. Sansec reproduced four code-execution routes for the Commerce flaw CVE-2026-103849 within 24 hours of the fix, sees no exploitation yet, and warns that a Composer install keeps the vulnerable base version until the 2026-oct release or Adobe's isolated patch is applied.
 discovered_at: "2026-10-14T03:41:00Z"
-updated_at: null
+updated_at: "2026-10-16T04:13:30Z"
 event_date: "2026-10-13"
 run_id: 2026-10-14T0255Z-intel
 priority: notable
@@ -121,10 +121,20 @@ sources:
     publisher: "Adobe"
     date: "2026-10-13"
     role: primary
+  - url: "https://sansec.io/research/blockstrap-magento-rce"
+    publisher: "Sansec"
+    date: "2026-10-15"
+    role: corroborating
 closed_sources: []
-evidence: []
-verification: single-source
-sourcing_note: "Adobe is the only source; it is the vendor and the disclosing party for its own products. Adobe's ColdFusion summary calls the update priority 2 while its solution table rates both fixes priority 1."
+evidence:
+  - quote: "But we managed to reproduce four different attack routes within 24 hours, and expect threat actors to do the same."
+    publisher: "Sansec"
+    source_url: "https://sansec.io/research/blockstrap-magento-rce"
+  - quote: "A plain Composer install still has the vulnerable base version"
+    publisher: "Sansec"
+    source_url: "https://sansec.io/research/blockstrap-magento-rce"
+verification: multi-source
+sourcing_note: "Adobe is the vendor and the disclosing party for its own products and the source for the fixes. Sansec, an independent Magento security firm, is the only source for the reproduction of the Commerce flaw and the Composer caveat, and says it has seen no attacks on live stores."
 confidence: high
 references:
   - 2026-08-28/adobe-august-2026-coldfusion-campaign-classic-cvss10
@@ -137,8 +147,17 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Update every internet-facing ColdFusion server to 2025.0.14 or 2023.0.26, every AEM instance to Cloud Service 2026.9.28386 or the per-issue hotfixes for 6.5 Service Pack 25 and 6.5 LTS Service Pack 3, and Adobe Commerce and Magento Open Source to the 2026-oct build of the installed 2.4.x line (together with the CVE-2026-75650 hotfix from the September APSB26-146 update where it is missing); Magento Open Source 2.4.6 has no listed fix."
-updates: []
+  - "Update every internet-facing ColdFusion server to 2025.0.14 or 2023.0.26, every AEM instance to Cloud Service 2026.9.28386 or the per-issue hotfixes for 6.5 Service Pack 25 and 6.5 LTS Service Pack 3, and Adobe Commerce and Magento Open Source to the 2026-oct build of the installed 2.4.x line (together with the CVE-2026-75650 hotfix from the September APSB26-146 update where it is missing); on a Composer-installed Commerce or Magento store apply the 2026-oct release or Adobe's isolated patch explicitly, because the base version stays vulnerable; Magento Open Source 2.4.6 has no listed fix."
+updates:
+  - at: "2026-10-16T04:13:30Z"
+    run_id: 2026-10-16T0256Z-intel
+    type: update
+    summary: >
+      Sansec reproduced four code-execution routes for the Commerce and Magento flaw CVE-2026-103849 within 24 hours of Adobe's
+      fix and expects attackers to do the same, though it has seen no attacks on live stores; it says a plain Composer install
+      keeps the vulnerable base version until the 2026-oct release or Adobe's isolated patch is applied, and that the
+      September StyleSmuggler hotfix must stay in place because the two fixes are separate.
+    fields: [summary, sources, evidence, verification, sourcing_note, actions, body]
 migrated_from: null
 ---
 
@@ -150,4 +169,10 @@ Experience Manager APSB26-152 covers Cloud Service 2026.9.28187 and earlier, 6.5
 
 **Detection:** Adobe publishes no exploit behavior. As an inference from the flaw classes: after unexpected requests to upload or administrative endpoints, look for new script files in web-accessible directories (the upload flaw), and for outbound requests from the application server to internal addresses (the request forgery).
 
-**Defender takeaway:** update internet-facing ColdFusion, Experience Manager and Commerce or Magento instances first, because the flaws need no login and the order is set by exposure; Adobe reports no exploitation as of 2026-10-13.
+**Defender takeaway:** update internet-facing ColdFusion, Experience Manager and Commerce or Magento instances first, because the flaws need no login and the order is set by exposure; Adobe reports no exploitation as of 2026-10-13. A Composer-installed Commerce or Magento store needs the 2026-oct release or Adobe's isolated patch applied explicitly ([Sansec, 2026-10-15](https://sansec.io/research/blockstrap-magento-rce)).
+
+## Update — 2026-10-16T04:13:30Z
+
+Sansec reports that it reproduced four different attack routes to code execution for the Commerce and Magento template-engine flaw CVE-2026-103849 within 24 hours of Adobe's fix and expects threat actors to do the same, and that it has not seen attacks on live stores ([Sansec, 2026-10-15](https://sansec.io/research/blockstrap-magento-rce)). It describes the flaw as a second-pass directive injection like September's StyleSmuggler, where attacker-controlled data in a child template can still be signed and re-scanned at the root level so that a smuggled block directive runs inside Magento's rendering, and says Adobe's October patch replaces that generic re-scan with registered placeholders ([Sansec, 2026-10-15](https://sansec.io/research/blockstrap-magento-rce)). Sansec questions Adobe's priority 2 rating for the Commerce bulletin, a 30-day patch window, because StyleSmuggler went from a priority 1 hotfix to mass exploitation in three days and it judges BlockStrap to be of similar complexity ([Sansec, 2026-10-15](https://sansec.io/research/blockstrap-magento-rce)).
+
+Two cautions for the patch: a plain Composer install still has the vulnerable base version, so the 2026-oct release or Adobe's isolated patch must be applied, and BlockStrap and StyleSmuggler are separate fixes, so the September hotfix for CVE-2026-75650 has to stay in place as well ([Sansec, 2026-10-15](https://sansec.io/research/blockstrap-magento-rce)). Sansec lists Adobe Commerce up to 2.4.9, Adobe Commerce B2B up to 1.5.3 and Magento Open Source up to 2.4.9 as affected ([Sansec, 2026-10-15](https://sansec.io/research/blockstrap-magento-rce)).
