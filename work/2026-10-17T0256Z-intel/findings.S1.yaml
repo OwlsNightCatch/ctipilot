@@ -1,0 +1,174 @@
+# work/2026-10-17T0256Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-10-17T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-17T02:57:30Z
+ended_at: 2026-10-17T03:25:17Z
+duration_seconds: 1667
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 17
+  bridge_fetches: ~140   # feed / extract / url --direct / csaf / cvrf / euvd / msrc / ncsc-csh / bsi / cert-eu / cisa-csaf calls, approximate
+window_note: >
+  window_hours 26 (2026-10-16T00:56Z to 2026-10-17T02:56Z); rotation lookbacks 97 h and 122 h honoured. The window is thin:
+  both KEV additions (CVE-2026-102764, CVE-2025-61624) and every vendor/CERT critical in-window are already in the store.
+  Two covered-finding deltas surfaced; no new standalone entry candidate cleared the bar.
+items:
+  - title: "CVE-2026-21589 (Atlassian Data Center): the CVE record was REJECTED by Atlassian on 2026-10-16 while Atlassian's advisory, the Jira tickets and CISA's KEV listing still use the ID"
+    sources:
+      - { url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-92807", publisher: "ENISA EUVD", date: "2026-10-16", role: "primary" }
+      - { url: "https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html", publisher: "Atlassian", date: "2026-10-05", role: "corroborating" }
+      - { url: "https://community.atlassian.com/forums/discussion/3310306/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-data-center-products", publisher: "Atlassian Community", date: "2026-10-05", role: "corroborating" }
+      - { url: "https://jira.atlassian.com/browse/CONFSERVER-104488", publisher: "Atlassian Jira (public security ticket)", date: "2026-10-02", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd bridge, `enisa-euvd recent exploited` (also `url --direct` on the euvdservices search API with exploited=true), EUVD-2026-92807 whose description reads as a rejection, URL https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-92807 → pivot: CVE Services record for the ID read with `url --direct https://cveawg.mitre.org/api/cve/CVE-2026-21589` (state REJECTED, dateRejected 2026-10-16T20:39:09Z, assigner atlassian; read-only, not citable) → pivot: NVD REST record `url --direct https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-21589` (vulnStatus Rejected, lastModified 2026-10-16T21:17:24Z, still carries cisaExploitAdd 2026-10-15; read-only) → pivot: NVD sourceIdentifier=security@atlassian.com sweep lastMod 2026-10-14 to 2026-10-17 (only this one record, so no replacement ID published yet) → vendor pages re-fetched 2026-10-17 with `extract`: Atlassian advisory, Jira ticket CONFSERVER-104488 and Community post, all still name CVE-2026-21589 → primary for the rejection itself is the CNA's own CVE Services action, mirrored by ENISA EUVD"
+    summary: |
+      The CVE record for CVE-2026-21589, the unauthenticated arbitrary file access flaw in eight Atlassian Data Center products that CISA listed in KEV on 2026-10-15, was marked REJECTED by its CNA (Atlassian) at 2026-10-16T20:39:09Z. The CVE Services record, the NVD record (status Rejected since 2026-10-16T21:17Z) and the ENISA EUVD entry EUVD-2026-92807 (updated 2026-10-16 20:39 UTC, still carrying exploitedSince 2026-10-15) all carry only the generic reason "This CVE's publication may have been a false positive or a mistake. As a result, we have rejected this record." and the descriptive text, CVSS 4.0 vector and product list were stripped from the CVE record. Nothing else changed: Atlassian's security advisory (fetched 2026-10-17), its public Jira tickets (CONFSERVER-104488) and its Community post still use CVE-2026-21589, still list the same fixed builds (Confluence 9.2.26 and 10.2.19, Jira 9.12.40/10.3.26/11.3.12, Bitbucket 9.4.26/10.2.8/10.5.1, Bamboo 10.2.24/12.1.12, Crowd 6.3.7/7.0.3/7.1.7/7.2.4, Crucible and Fisheye 4.9.15) and the same WAF and Tomcat RewriteValve mitigations; the advisory is still version 1 with no rejection note. The KEV JSON read at 2026-10-17T02:57Z (catalogVersion 2026.10.16, released 2026-10-16T17:15Z, before the rejection) still lists CVE-2026-21589, and the GitHub advisory GHSA-gr66-x5pq-8g2g is not withdrawn. An NVD sweep of Atlassian-CNA records modified since 2026-10-14 shows no replacement ID. No source gives a reason or says whether a new ID will follow; that is unknown. Consequence for a defender: tooling keyed on the CVE ID or on the NVD feed (vulnerability scanner plugins, SIEM enrichment, asset-inventory matching, ticket auto-closure on rejected IDs) can silently drop a flaw that is exploited, so track it by advisory, fixed build and KEV listing until Atlassian says more.
+    region_nexus: "global; NCSC Switzerland hub post 13032 already advises the Swiss constituency on this flaw (actively exploited since 2026-10-12); Atlassian Data Center is widely run by public administrations"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-21589]
+    techniques: [T1190]
+    affected_products: ["Atlassian Bitbucket Data Center", "Atlassian Confluence Data Center", "Atlassian Jira Service Management Data Center", "Atlassian Jira Software Data Center", "Atlassian Bamboo Data Center", "Atlassian Crowd Data Center", "Atlassian Crucible", "Atlassian Fisheye"]
+    entity_keys: ["product:atlassian-confluence-data-center"]
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: update-of:2026-10-06/cve-2026-21589-atlassian-data-center-arbitrary-file-access
+    suggested_update_type: update
+    evidence:
+      - quote: "This CVE's publication may have been a false positive or a mistake. As a result, we have rejected this record."
+        attribution: "ENISA EUVD (record EUVD-2026-92807, read from the EUVD API; the human page is an Angular app, so the quote is verifiable only through the API record, which the NVD and CVE Services records repeat)"
+        source_url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-92807"
+      - quote: "All Data Center products listed below are at risk and require immediate attention."
+        attribution: "Atlassian"
+        source_url: "https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html"
+      - quote: "Atlassian has discovered a critical vulnerability (CVE-2026-21589) impacting most Data Center products, listed below."
+        attribution: "Atlassian Community"
+        source_url: "https://community.atlassian.com/forums/discussion/3310306/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-data-center-products"
+    extended_notes: |
+      Verification detail for the composer. The NVD per-CVE page and the CVE Services record cannot be cited (check_run BLOCKED_SOURCE_PATTERNS); they are the read-only verification for the rejection and are why EUVD is the citable source. The rejection text is boilerplate that the CVE programme uses for any rejection, so it is not evidence that the flaw is not real: the vendor advisory, the fixed builds, watchTowr's root cause and runnable checker, the honeypot observations and CISA's KEV listing are all unchanged. Possible reasons (duplicate ID, wrong ID block, planned reissue) are speculation and no source states one. Suggested handling: one `update` record on the existing entry (headline and summary gain the rejection and the tooling consequence; tags stay), no new CVE row, and `check_run` entry-CVE overlap logic should be told that CVE-2026-21589 is a rejected-but-exploited ID so a later replacement ID is linked to this entry rather than becoming a second entry.
+  - title: "CVE-2026-111357: MITRE assigns an ID to the unpatched root-escalation step of the Ivanti Connect Secure zero-day chain; Volexity and CISA's record disagree with the ID text on exploitation"
+    sources:
+      - { url: "https://github.com/advisories/GHSA-fhw5-mpvj-x89m", publisher: "GitHub Advisory Database (NVD-sourced record)", date: "2026-10-15", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3989", publisher: "BSI / CERT-Bund (WID-SEC-2026-3989)", date: "2026-10-16", role: "corroborating" }
+      - { url: "https://www.volexity.com/blog/2026/10/13/a-series-of-unauthenticated-events-chained-exploitation-of-ivanti-connect-secure-zero-days/", publisher: "Volexity", date: "2026-10-13", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de RSS https://wid.cert-bund.de/content/public/securityAdvisory/rss, item WID-SEC-2026-3989 '[NEU] [mittel] Ivanti Connect Secure: Schwachstelle ermöglicht Privilegieneskalation' (pubDate 2026-10-16 10:35 GMT, initial release 2026-10-15T22:00Z) → pivot: `bsi-csaf WID-SEC-2026-3989` (CVE-2026-111357, known_affected Ivanti Connect Secure 22.8R2.4, references GHSA-fhw5-mpvj-x89m and the Volexity post; CSAF file https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-3989.json) → pivot: GitHub advisory https://github.com/advisories/GHSA-fhw5-mpvj-x89m (text of the CVE) → pivot: CVE Services record `url --direct https://cveawg.mitre.org/api/cve/CVE-2026-111357` and NVD REST record (read-only: assigner mitre via the CVE request form, reserved 2026-10-15T20:56:57Z, CVSS 3.1 7.0 AV:L/AC:H/PR:L, CWE-829, CISA ADP SSVC 'Exploitation: none, Automatable: no, Technical Impact: total' stamped 2026-10-16T03:57Z) → pivot: Volexity post re-read in full (still says the root fix will come 'in the coming weeks') → Ivanti advisory https://hub.ivanti.com/s/article/Security-Advisory-Ivanti-Connect-Secure-CVE-2026-104935 is a JavaScript shell on WebFetch and could not be read; WebSearch for the ID and for a root-escalation fix found nothing else"
+    summary: |
+      The root-privilege-escalation step that Volexity chained with the Ivanti Connect Secure authentication bypass and code execution (CVE-2026-104935) now has its own identifier, CVE-2026-111357, published 2026-10-15 and relayed by BSI as WID-SEC-2026-3989 (rated medium, local attacker, product tree lists only Ivanti Connect Secure 22.8R2.4 as affected, no fixed version). The record was assigned by MITRE through the CVE request form on 2026-10-15, not by Ivanti, and reads: Connect Secure 22.8R2.4 mishandles how the dsinvoked broker trusts DSCache configuration data, leading to privilege escalation to root, as exploited in the wild in October 2026. It scores 7.0 (CVSS 3.1, AV:L/AC:H/PR:L) and maps to CWE-829. This matches Volexity's description of the step (the in-memory patched libdsplibs.so lets the cgi-server process rewrite a DSCache maintenance task so that dsinvoked launches the Perl interpreter as root) and Volexity's statement that Ivanti 'is working on a fix for the privilege escalation vulnerability' for a release 'in the coming weeks'. Two things to hold apart: (1) the CVE text says exploited in the wild while CISA's ADP SSVC entry on the same CVE record says Exploitation none (stamped 2026-10-16; CISA's KEV entry covers only CVE-2026-104935), so the exploitation claim rests on Volexity's incident and the CNA wording, not on a CISA record for this ID; (2) the record names 22.8R2.4 only while CERT-FR's alert and Ivanti's fixed builds (22.8R2.5, 25.1.1.2, 25.1.3.1) address the first two steps, so whether 22.8R2.5 or the 25.1 builds contain a root-step fix is unstated by any source read; Ivanti's own advisory could not be read. A defender can now track the unfixed step by ID in scanners, SIEM and ticketing and should keep treating a patched appliance as needing a compromise check.
+    region_nexus: "global; SSL-VPN edge appliance common in public administrations; NCSC Switzerland hub post 13055 and CERT-FR ALE-013 already advise the constituency on the CVE-2026-104935 chain"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-111357]
+    techniques: [T1068]
+    affected_products: ["Ivanti Connect Secure"]
+    entity_keys: ["actor:uta0576", "product:ivanti-pulse-connect-secure"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: update-of:2026-10-14/cve-2026-104935-ivanti-connect-secure-zero-day-chain-kev
+    suggested_update_type: improvement
+    evidence:
+      - quote: "Ivanti Connect Secure 22.8R2.4 mishandles the manner in which the dsinvoked broker trusts DSCache configuration data, leading to privilege escalation to root, as exploited in the wild in October 2026."
+        attribution: "GitHub Advisory Database (text of the NVD/MITRE CVE-2026-111357 record)"
+        source_url: "https://github.com/advisories/GHSA-fhw5-mpvj-x89m"
+      - quote: "Ivanti is working on a fix for the privilege escalation vulnerability, and it will be included in a future release in the coming weeks."
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/10/13/a-series-of-unauthenticated-events-chained-exploitation-of-ivanti-connect-secure-zero-days/"
+      - quote: "Ein lokaler Angreifer kann eine Schwachstelle in Ivanti Connect Secure ausnutzen, um seine Privilegien zu erhöhen."
+        attribution: "BSI WID-SEC-2026-3989 (CSAF summary, German: a local attacker can exploit a flaw in Ivanti Connect Secure to raise privileges)"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-3989"
+    extended_notes: |
+      Suggested handling: `improvement` (it changes what defenders can track, not what they must do now; the entry already says the root step is unfixed and an exposed appliance needs a compromise check), add CVE-2026-111357 to cves[] as status [exploited-claimed] if the vocabulary allows, otherwise `[patch-unavailable]`, and state the SSVC conflict. The CNA text 'as exploited in the wild in October 2026' and CISA's SSVC 'Exploitation none' are both read from the CVE record JSON (not citable); the citable carrier of the CNA text is the GitHub advisory page. EPSS (FIRST, 2026-10-16) 0.00247 for this ID versus 0.25982 for CVE-2026-104935.
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist is configured in the org profile; the sweep is a no-op"
+cve_table:
+  - { cve: CVE-2026-21589, product: "Atlassian Bitbucket, Confluence, Jira Service Management, Jira Software, Bamboo, Crowd Data Center; Crucible; Fisheye", cvss: "9.3 (CVSS 4.0, Atlassian; vector stripped from the now-rejected record)", epss: 0.12711, kev: true, exploited: true, affected: "all versions below the fixed builds; end-of-life versions may also be affected", fixed: "Bitbucket DC 9.4.26, 10.2.8, 10.5.1; Confluence DC 9.2.26, 10.2.19; JSM DC 5.12.40, 10.3.26, 11.3.12; Jira Software DC 9.12.40, 10.3.26, 11.3.12; Bamboo DC 10.2.24, 12.1.12; Crowd DC 6.3.7, 7.0.3, 7.1.7, 7.2.4; Crucible 4.9.15; Fisheye 4.9.15 (Atlassian advisory fetched 2026-10-17)", type: "path-traversal / arbitrary file access", vector: network, auth: pre-auth, source: "Atlassian advisory 2026-10-05; CVE record state REJECTED 2026-10-16T20:39Z (ENISA EUVD-2026-92807, NVD, CVE Services)" }
+  - { cve: CVE-2026-111357, product: "Ivanti Connect Secure", cvss: "7.0 (CVSS 3.1 AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H, MITRE CNA-LR)", epss: 0.00247, kev: false, exploited: "claimed (CVE record text and Volexity incident); CISA ADP SSVC 'Exploitation: none' on 2026-10-16", affected: "22.8R2.4 per the CVE record and BSI; Volexity: versions up to 22.8R2.4 (Build 19097)", fixed: "none published; Volexity: fix in a future release 'in the coming weeks'", type: "privilege-escalation (CWE-829, untrusted control sphere in dsinvoked/DSCache)", vector: local, auth: "low privilege (post-RCE as cgi-server)", source: "GHSA-fhw5-mpvj-x89m; BSI WID-SEC-2026-3989; Volexity 2026-10-13" }
+scheduled_releases:
+  # Disposition of every scheduled multi-product release seen for the window, read from vendors' structured data.
+  - release: "Microsoft October 2026 (CVRF 2026-Oct, 2091 records, 47 MB, read from `msrc cvrf 2026-Oct`; revision 772 of 2026-10-16)"
+    exploited: "CVE-2026-96951 Windows Shell MOTW bypass (Exploited:Yes, Exploitation Detected) - already entry 2026-10-14/cve-2026-96951-windows-shell-motw-bypass-zero-day-kev"
+    publicly_disclosed: "CVE-2026-108398 .NET Framework WDAC bypass (8.8, local foothold, Exploitation Less Likely) and CVE-2026-92707 MessagePack-CSharp DoS (5.3) - dropped (same call as the 2026-10-14 fire)"
+    pre_auth_cvss_ge_9: "66 first-party network/PR:N records at CVSS >= 9.0: 55 Exploitation Less Likely, 8 Unlikely, 2 N/A (Azure App Service CVE-2026-77900 and Dataverse CVE-2026-88131, service-side), 1 More Likely (Exchange CVE-2026-70279, in entry 2026-10-14/exchange-oct-2026-su-cve-2026-70571-last-2016-2019-update); none exploited, none disclosed. Families: Message Queuing CVE-2026-100202, DNS Server CVE-2026-83869 and CVE-2026-96113, DHCP Server CVE-2026-96320 and CVE-2026-96934, RRAS CVE-2026-85792 and CVE-2026-85809, NPS CVE-2026-100222 and CVE-2026-85806, LSASS CVE-2026-96219, IIS CVE-2026-70024, RPC Runtime CVE-2026-83910, QUIC CVE-2026-100219 and CVE-2026-105016, iSCSI CVE-2026-69634/69705/69883, Failover Cluster CVE-2026-88102 and CVE-2026-96864, OpenSSH for Windows CVE-2026-97816, PowerShell CVE-2026-83578, Outlook preview-pane CVE-2026-70242/97749/97016/88156/70291, AD FS CVE-2026-96252 (9.1 spoofing), Schannel CVE-2026-105008 (rev 1.1 2026-10-16, CWE added only) and CVE-2026-85818. Disposition: dropped as a rollup, regular cycle (same as 2026-10-14)."
+    post_release_revisions: "157 'Information published', 92 Office-for-Mac availability notes, 30 'addressed by updates released in October' catch-ups, 23 acknowledgement changes, 18+9+9+2 KB-link additions, 5 CWE additions; no exploitation flag changed after 2026-10-13."
+  - release: "Microsoft Office out-of-band documentation batch 2026-10-15 (SecurityWeek 'two dozen RCE flaws in Office'; CVE-2026-108426 to -108455 and others)"
+    disposition: "dropped: 23 Word and Excel/PowerPoint/Office RCEs at 8.8 with user interaction (Preview Pane not a vector), SharePoint CVE-2026-108452 needs a Site Owner (authorised, Exploitation Unlikely), Outlook CVE-2026-108448 7.5 AC:H; all Exploited:No, Publicly Disclosed:No."
+  - release: "Oracle Critical Patch Update"
+    disposition: "next CPU is dated 2026-10-20 (pre-release announcement was due 2026-10-15); nothing in window; next fire reads it."
+  - release: "F5 / NGINX 2026-10-14 (K000162416 and siblings, K000163408: 11 NGINX defects)"
+    disposition: "already dropped by the 2026-10-15 fire (CVE-2026-15176, -93479, -97205 need high complexity or ASLR bypass; no exploitation); no F5 BIG-IP quarterly notice found for October."
+  - release: "Juniper Junos October bundle (17 advisories, 150+ defects)"
+    disposition: "already dropped 2026-10-15 and 2026-10-16; SecurityWeek 2026-10-16 states neither vendor mentions exploitation."
+  - release: "SonicWall NSM SNWLID-2026-0018 (CVE-2026-100232, CVE-2026-96540), SNWLID-2026-0017 (ZDI-26-770 unzip traversal)"
+    disposition: "dropped: all authenticated (CNA text: post-authentication, remote authenticated attacker; ZDI: authentication required)."
+  - release: "IBM Guardium Data Protection Sniffer bundle (IBM bulletin 2026-10-08; NCSC-NL NCSC-2026-0433 on 2026-10-16): CVE-2026-75875 path traversal RCE and CVE-2026-80381 SQL injection, both 9.8 unauthenticated network; HPE/Brocade Fabric OS NCSC-NL 0432: CVE-2026-87659 (CNA CVSS 4.0 7.1, peer-switch precondition, NCSC-NL lists 9.8)"
+    disposition: "dropped: no exploitation or public PoC found; Guardium bulletin is nine days old (relay is the in-window item); Brocade needs a compromised fabric peer."
+  - release: "Veeam Backup & Replication KB4934 (build 12.3.2.4934, 2026-10-06; NCSC.ch 13043 on 2026-10-09)"
+    disposition: "dropped: CVE-2025-64393 needs a Backup Viewer or authenticated Cloud Connect tenant, no PoC or exploitation found (SOC Prime, Singapore CSA 2026-10-09); the 2026-10-14 note asked the audit to read the vendor page, KB4934 itself was not readable here."
+dispositions:
+  # One-line reasons for plausibly relevant items NOT returned (all outside the 26 h horizon, authenticated, internal-only, or unexploited).
+  - "OpenNMS Horizon/Meridian CVE-2026-111235 (9.1, unauthenticated REST filter-chain bypass via lowercase HTTP method; read, create, modify, delete incl. injecting or suppressing alarms; fixed Horizon 36.0.5, Meridian 2024.3.14/2025.0.11/2026.0.1; CISA SSVC Exploitation none, Automatable yes, Technical impact total; vendor says internal network only): CVE published 2026-10-15T18:45Z, 6 h before the horizon; borderline for the SOC angle (alarm suppression), left to the main agent."
+  - "BMC Helix Network Management on-prem before 26.3.01 CVE-2026-111283 (9.5 CVSS 4.0; any password logs in as local administrator when SAML SSO is configured; VulnCheck CNA): published 2026-10-15, before the horizon, no exploitation, niche."
+  - "MariaDB Server CVE-2026-85746, -85748, -92262, -97380 (9.9/8.8, low-privileged database account to memory corruption, file access or password reset; fixed 10.6.28, 10.11.19, 11.4.13, 11.8.9, 12.3.3, 13.0.2): published 2026-10-16 but needs an authenticated DB account, no exploitation."
+  - "JetBrains TeamCity CVE-2026-111094 (8.1 AC:H RCE via build-messages whitelist bypass; fixed 2026.2, 2026.1.4, 2025.11.8) and Sonatype Nexus 3.97.0 (CVE-2026-97665/97666, authenticated or information-only): published 2026-10-15 15:29Z and 15:34Z, before the horizon; no exploitation."
+  - "pfSense CE 2.7.0 to 2.9.0 (about ten authenticated OS command injections at 8.6, BSI marks WID-SEC-2026-3983 unpatched), OPNsense CVE-2026-57155 (9.9, needs Firewall Alias Edit privilege, fixed 26.1.11), Devolutions Server DEVO-2026-0036 (authenticated), Mattermost, Moxa AIG-302 hard-coded key, TP-Link Omada CVE-2026-107795 and CVE-2026-102298 (authenticated, 7.5), NordVPN CVE-2026-106030 (local), LG webOS sync-demo (SSD, TV firmware), Xorbits Xoscar cloudpickle RCE and SPIP odt2spip (VulnCheck 2026-10-16, niche or authenticated), FreeRTOS-Plus-TCP IPv6 RA CVE-2026-102551, WordPress plugins (Backuply is authenticated second-order SQL injection; My Calendar, Theme My Login, MailOptin, Fluent CRM, 10Web Booster, Link Whisper not reported exploited): dropped."
+  - "Chrome 155.0.8059.84 (2026-10-15T20:50Z, 10 fixes, one Critical Prerender use-after-free CVE-2026-110922): no exploitation statement, published before the horizon; Dev/Beta posts only inside it."
+  - "PwnEscape CVE-2026-99999 and BlockStrap CVE-2026-103849: already dispositioned by the 2026-10-16 fire (borderline-drop) and entry 2026-10-14/adobe-october-2026-coldfusion-aem-commerce-unauth-critical respectively; no new fact in window."
+  - "Public GitHub repos named '<CVE>-Proof-of-concept' for CVE-2026-102764, CVE-2026-76519 and CVE-2026-104935 (created 2026-10-13 to 2026-10-16 by unknown accounts): unverified, a known malware-lure pattern; not used. Credible published tooling already in entries (Horizon3 AhsayCBS and Zammad, Rapid7 GitLab, watchTowr Atlassian)."
+kev_window:
+  additions_in_window: ["CVE-2026-102764 (BeyondTrust Remote Support)", "CVE-2025-61624 (Fortinet FortiOS CLI path traversal)"]
+  both_covered: true
+  ransomware_flag_flips_on_covered_cves: 0
+  pd13_not_exploited_to_exploited_moves: 0
+  note: "catalogVersion 2026.10.16 (released 2026-10-16T17:15Z, 1748 entries); EUVD exploited list (10 since 2026-10-01) is fully covered; CVE-2026-21589 is the only covered CVE whose record state changed."
+candidate_sources: []
+coverage_gaps:
+  - source_id: ivanti-security-advisories
+    reason: "hub.ivanti.com advisory pages (Security-Advisory-Ivanti-Connect-Secure-CVE-2026-104935) render only a 'Loading' shell on WebFetch; no transport in this run read the advisory text, so whether Ivanti lists CVE-2026-111357 or a root-step fix is unknown. Not a slice record."
+  - source_id: beyondtrust.com / wordfence.com (extract transport)
+    reason: "`extract` fell through to the metered jina reader for https://www.beyondtrust.com/trust-center/security-advisories/bt26-05 and https://www.wordfence.com/blog/2026/10/600000-wordpress-sites-affected-by-sql-injection-vulnerability-in-backuply-wordpress-plugin/ (stderr '# extract: served via jina'); two reader credits spent. The BeyondTrust advisory is unchanged since 2026-10-15 (Issue and Updated dates both 10/15/2026)."
+  - source_id: chrome-releases
+    reason: "RECIPE CONFIRMED (rotation_priority gap closed): `python3 tools/fetch_source.py feed https://feeds.feedburner.com/GoogleChromeReleases 20` reads direct (method: direct, 20 items back to 2026-10-07 with PDT timestamps); the item links are http:// and 302, so rewrite to https:// and run `extract https://chromereleases.googleblog.com/2026/10/<slug>.html` (served by trafilatura-direct, full body with CVE list). Tested 2026-10-17 on stable-channel-update-for-desktop_01886704284. No transport problem remains."
+  - source_id: trail-of-bits
+    reason: "recipe addition: `python3 tools/fetch_source.py feed https://blog.trailofbits.com/feed/ 10` reads direct with dates (newest 2026-10-14); record has fetch_method webfetch and no rss_url."
+  - source_id: tp-link-omada-psirt
+    reason: "recipe addition: the bridge `url` listing is server-rendered with hrefs /en/bulletin/<id>/ and dates; `extract https://support.omadanetworks.com/en/bulletin/<id>/` reads each advisory direct (trafilatura-direct), no cookie-banner problem on the item pages (136187 and 136188 read 2026-10-17)."
+  - source_id: zimbra-security-advisories
+    reason: "`extract` reads the wiki directly (trafilatura-direct, 78 KB table); the page's own date metadata is 2015 (ignore). Newest table rows are release 10.1.21 (CVE-2026-66911 and -66912 plus unlabelled TBD rows including an unauthenticated password-recovery code prediction), matching NCSC.ch post 13022 of 2026-10-01; no row newer than that."
+  - source_id: depthfirst
+    reason: "listing recipe: `url --direct https://depthfirst.com/research` yields slugs; per-article `article:published_time` meta is the date (newest dated post 2026-09-25; the 'dfbench' slug is an undated benchmark page)."
+  - source_id: enisa-euvd
+    reason: "recipe confirmed: `url --direct 'https://euvdservices.enisa.europa.eu/api/search?fromDate=2026-10-15&toDate=2026-10-18&fromScore=8.5&toScore=10&page=0&size=100'` returned total 226 (two pages of 100); `exploited=true` variant returned all 10 exploited since 2026-10-01. `recent <list>` returns only 4 items."
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "feed (26 items) + ncsc-nl csaf for NCSC-2026-0431/0432/0433/0434", horizon_hours: 26, in_horizon_items: 8, returned: 0, note: "NCSC-2026-0430 to 0437 (Juniper, DataPower, Guardium, Brocade, FortiSIEM, Adobe x2, BeyondTrust); all covered or dropped (see scheduled_releases)" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "cert-fr avis-recent 40 + actu-recent 20 + alerte feed + extract of AVI-1317, AVI-1320 and ALE-013", horizon_hours: 26, in_horizon_items: 10, returned: 0, note: "10 avis dated 2026-10-16 (AVI-1327 to 1336); newest alert is ALE-013 (Ivanti, 2026-10-14)" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bsi-rss (250 items) + bsi-csaf per id", horizon_hours: 26, in_horizon_items: 21, returned: 1, note: "21 [NEU] items since 2026-10-16 00:56Z; WID-SEC-2026-3989 is the Ivanti CVE-2026-111357 lead; BeyondTrust 4001 covered; TeamCity, Nexus, Nutanix, Camel, Jetty read and dropped; revision histories of 3757 (SonicWall, ZDI refs only) and 3916 (Office, CVE list extended) read" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-017 Cisco SEG dated 2026-10-15 11:38 CEST, covered" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml + extract", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "NordVPN CVE-2026-106030, local attacker, dropped" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch of the filtered listing (10 dated items) + cisa csaf-recent 15", horizon_hours: 26, in_horizon_items: 4, returned: 0, note: "2026-10-16: BeyondTrust alert, KEV-additions alert, two resource items; ICS advisories newest 2026-10-15 06:00Z (icsa-26-288-01/02, icsma-26-288-01/02), before the horizon" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev (1748 entries)", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "both additions covered; no ransomware-flag flip on any covered CVE; KEV still lists the rejected CVE-2026-21589 (catalogVersion 2026.10.16)" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd recent x3 + url --direct search API (226 records >= 8.5) + exploited=true list + advisory lookups", horizon_hours: 26, in_horizon_items: 199, returned: 1, note: "the exploited list surfaced the REJECTED CVE-2026-21589 record (EUVD-2026-92807); the rest read and dispositioned" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 15/40 + post 13043", horizon_hours: 26, in_horizon_items: 4, returned: 0, note: "13065 Cisco SEG, 13066 PAN-OS, 13067 BeyondTrust, 13068 Drupal, all covered; no lastModified edits in window" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed (15 items)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest items 2026-10-15 (TLS guidance), nothing advisory-type in window" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed https://labs.watchtowr.com/rss/ 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-09 (PaperCut), outside the window" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "url --direct on the XML feed (50 items) + advisory pages FG-IR-26-175 and FG-IR-26-122", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-176 to 185 dated 2026-10-13 (dropped twice); FG-IR-26-175 timeline last updated 2026-10-07; FG-IR-26-122 unchanged since 2026-04-14" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "msrc recent 100 + msrc cvrf 2026-Oct (47 MB to disk) + msrc cve for 6 ids", horizon_hours: 26, in_horizon_items: 2091, returned: 0, note: "only CVE-2026-96951 exploited (covered); full enumeration in scheduled_releases" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed https://security.paloaltonetworks.com/rss.xml 15 + extract CVE-2026-0322", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "CVE-2026-0307 GlobalProtect App local privilege escalation (medium, 2026-10-17T00:55Z) dropped; CVE-2026-0322 page unchanged and covered" }
+  - { id: chrome-releases, tier: standard, attempted: true, transport: "feed (direct, 20 items) + extract with https rewrite", horizon_hours: 26, in_horizon_items: 3, returned: 0, note: "in-window posts are Dev and Beta channels only; Stable 155.0.8059.84 (10 fixes) is 2026-10-15T20:50Z, no exploitation statement; recipe confirmed, see coverage_gaps" }
+  - { id: ssd-disclosure, tier: standard, attempted: true, transport: "url --direct wp-json posts + extract", horizon_hours: 122, in_horizon_items: 1, returned: 0, note: "LG webOS sync-demo preauth RCE (2026-10-12), consumer TV firmware, dropped" }
+  - { id: trail-of-bits, tier: standard, attempted: true, transport: "feed https://blog.trailofbits.com/feed/ 10", horizon_hours: 122, in_horizon_items: 1, returned: 0, note: "2026-10-14 'Package managers have an integrity problem' is an essay, no vulnerability" }
+  - { id: trendmicro-research, tier: standard, attempted: true, transport: "feed (12 items)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-09-25" }
+  - { id: vulncheck, tier: standard, attempted: true, transport: "WebFetch /blog", horizon_hours: 122, in_horizon_items: 3, returned: 0, note: "2026-10-16 SPIP odt2spip (authenticated) and Xorbits Xoscar (unauthenticated cloudpickle RCE, niche), 2026-10-13 Flax Typhoon follow-up on AA26-281A (covered entry); summaries are teaser-level, posts not read in full" }
+  - { id: tp-link-omada-psirt, tier: standard, attempted: true, transport: "url (listing) + extract per bulletin", horizon_hours: 122, in_horizon_items: 2, returned: 0, note: "CVE-2026-107795 and CVE-2026-102298, both authenticated, CVSS 4.0 7.5, fixed in Omada Controller for Windows 6.3.0.45; dropped" }
+  - { id: zimbra-security-advisories, tier: standard, attempted: true, transport: "extract of the wiki page", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest rows are 10.1.21 (about 2026-10-01); no new row" }
+  - { id: patchstack, tier: standard, attempted: true, transport: "feed (12 items)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-10-08 (Bricksforge, covered); outside the 122 h horizon" }
+  - { id: apple-security, tier: standard, attempted: true, transport: "WebFetch of the releases table", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "newest release 2026-09-28 (iOS/macOS 27.0.1 and 26.7.1 series), no exploitation wording" }
+  - { id: checkpoint-support, tier: standard, attempted: true, transport: "url --direct (page __NEXT_DATA__)", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "sk185222 is CVE-2026-18574 (created 2026-08-01, modified 2026-08-03), a fixed page; no new Check Point SK id surfaced from CERT feeds in window" }
+  - { id: cisa-directives, tier: standard, attempted: true, transport: "WebFetch of the directives page", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "six directives listed (ED 25-03, ED 26-03, BOD 26-02, BOD 26-04 and guidance), none dated in window" }
+  - { id: depthfirst, tier: standard, attempted: true, transport: "url --direct listing + per-article published_time", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "newest dated post 2026-09-25" }
+  - { id: esentire, tier: standard, attempted: true, transport: "WebFetch of the advisories page", horizon_hours: 97, in_horizon_items: 1, returned: 0, note: "2026-10-14 Ivanti Connect Secure zero-day advisory, covered" }

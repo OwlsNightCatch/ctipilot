@@ -1,0 +1,1467 @@
+domain: S3
+run_id: 2026-10-17T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-10-17T02:57:38Z'
+ended_at: '2026-10-17T03:25:16Z'
+duration_seconds: 1658
+self_telemetry:
+  webfetch_calls: 1
+  websearch_calls: 8
+  bridge_fetches: 150
+findings_note: 'Items 1-8 are the recommended set; items with borderline: true are for the main agent''s call. `lookback: true` marks items first published before the 26 h window but inside the source record''s lookback horizon. `suggested_classification` is advisory.'
+items:
+- title: AOMEI Backupper update channel tampered for five to ten minutes at a time to push the SHINYROAD backdoor; GTIG names Switzerland among the affected countries
+  sources:
+  - url: https://cloud.google.com/blog/topics/threat-intelligence/investigating-ephemeral-supply-chain-tampering
+    publisher: Google Threat Intelligence Group / Mandiant
+    date: '2026-10-16'
+    role: primary
+  - url: https://www.manageengine.com/threat-analysis-lab/aomei-backupper-supply-chain-compromise.html
+    publisher: ManageEngine Threat Analysis Lab (METAL)
+    date: '2026-10-16'
+    role: primary
+  - url: https://thehackernews.com/2026/10/attackers-tampered-with-aomei.html
+    publisher: The Hacker News
+    date: '2026-10-16'
+    role: corroborating
+  - url: https://www.ubackup.com/changelog.html
+    publisher: AOMEI Technology (Backupper changelog, vendor)
+    date: '2026-10-09'
+    role: context
+  discovery_trace: 'first seen at: hackernews, URL https://feeds.feedburner.com/TheHackersNews (item ''Attackers Tampered with AOMEI Backupper''s Update Servers for Minutes to Deliver a Backdoor'') -> pivot: The Hacker News article, URL https://thehackernews.com/2026/10/attackers-tampered-with-aomei.html -> primary: GTIG/Mandiant blog, URL https://cloud.google.com/blog/topics/threat-intelligence/investigating-ephemeral-supply-chain-tampering -> primary (independent telemetry): ManageEngine METAL, URL https://www.manageengine.com/threat-analysis-lab/aomei-backupper-supply-chain-compromise.html -> vendor context: AOMEI changelog https://www.ubackup.com/changelog.html read directly this run'
+  summary: 'Google Threat Intelligence Group (GTIG) and Mandiant, working with the ManageEngine Threat Analysis Lab (METAL, whose EDR first saw the activity on 2026-05-28), disclosed on 2026-10-16 that a cluster GTIG tracks as UNC7017 repeatedly altered two remote configuration files on AOMEI Technology''s update servers between April and July 2026. Each alteration stayed live for only five to ten minutes before the files reverted to genuine content; GTIG confirmed windows on 28 May (10 min), 16 July (6 min) and 20 July (5 min) and says more probably went unseen. No software flaw is involved: the client (METAL examined Backupper 8.3.0; GTIG says the AnyViewer remote-desktop tool uses the same flow) fetches down_html.ini, which names a ZIP and carries its own MD5, and Notifycfg.ini, which tells the notification process what to run; neither file is cryptographically authenticated, so a copy that polled during a window downloaded an attacker-chosen package and ran the unsigned CROSSROAD dropper from its own html directory with the privileges of the AOMEI process. CROSSROAD unpacks a bundle containing a genuine signed Radmin binary, registers a scheduled task that runs it every three hours, then deletes itself and restores the local update file; the Radmin binary side-loads an attacker DLL that loads the SHINYROAD implant (encrypted PocketPy bytecode, remote shell, in-memory extension). It stops if the host geolocates to China, and METAL adds that it stops when specific security agents are present. On some hosts GTIG later saw Adaptix C2 pushed, disguised as Nitro PDF tooling. The 20 July window also pointed the notification popup at a remote WebDAV path through an invisible 1x1 window, which can make Windows send the logged-in user''s NetNTLMv2 response without any program running. GTIG''s telemetry shows IT-services, telecom and higher-education victims in 11 countries including Switzerland, gives no totals and calls victimology opportunistic and likely broader; GTIG names no country or known actor. Vendor status: Mandiant notified AOMEI on 2026-07-17 and AOMEI replied on 07-29 that it had secured its servers; METAL says it has not independently verified containment, and AOMEI''s public Backupper changelog through 8.5.0 (2026-10-09), read in this run, lists no change to update verification. Server-side repair does not clean endpoints that already ran the dropper.'
+  region_nexus: Switzerland named by GTIG among 11 affected countries (Australia, Brazil, India, Pakistan, Portugal, Singapore, South Africa, Spain, Switzerland, Turkiye, US); opportunistic, global
+  primary_sector_nexus: 'indirect: IT services, telecom and higher education named; backup/cloning software of this class is common on administrator and SMB-managed Windows endpoints, so exposure inside public-sector fleets is plausible but not stated by any source'
+  sector: it-services, telecommunications, education
+  cves: []
+  techniques:
+  - T1195.002
+  - T1053.005
+  - T1574.001
+  - T1559.001
+  - T1059.006
+  - T1518.001
+  - T1036.005
+  - T1480
+  - T1497.001
+  - T1070.004
+  - T1027
+  - T1105
+  - T1219
+  - T1571
+  - T1187
+  affected_products:
+  - AOMEI Backupper
+  - AOMEI AnyViewer
+  entity_keys: []
+  new_entities:
+  - key: actor:unc7017
+    type: actor
+    name: UNC7017
+    aliases: []
+    summary: GTIG's designation for the cluster behind the April-July 2026 ephemeral tampering of AOMEI Technology's update servers; no country or known actor named (GTIG, 2026-10-16).
+  - key: malware:crossroad
+    type: malware
+    name: CROSSROAD
+    aliases: []
+    summary: GTIG's name for the C downloader (upgrade-now.exe) that validates the environment, stages a Radmin-based bundle, registers a scheduled task and self-deletes (GTIG, 2026-10-16).
+  - key: malware:shinyroad
+    type: malware
+    name: SHINYROAD
+    aliases: []
+    summary: GTIG's name for a modular backdoor run as encrypted PocketPy bytecode inside a COM server loaded by a side-loaded DLL beside a signed Radmin binary (GTIG; METAL).
+  - key: incident:aomei-backupper-ephemeral-update-tampering-2026
+    type: incident
+    name: AOMEI Backupper ephemeral update-server tampering (2026)
+    aliases: []
+    summary: April-July 2026 short-burst tampering of AOMEI's update and notification configuration files to deliver CROSSROAD and SHINYROAD, disclosed by GTIG and METAL on 2026-10-16.
+  - key: product:aomei-backupper
+    type: product
+    name: AOMEI Backupper
+    aliases:
+    - AOMEI AnyViewer (same update flow)
+    summary: Windows backup, cloning and disaster-recovery software from AOMEI Technology (Hong Kong); its update and notification flow was abused in the 2026 UNC7017 campaign.
+  relation_suggestions:
+  - subject: actor:unc7017
+    object: malware:crossroad
+    basis: 'GTIG: UNC7017 delivered the CROSSROAD downloader through the tampered AOMEI update flow (GTIG, 2026-10-16)'
+  - subject: actor:unc7017
+    object: malware:shinyroad
+    basis: 'GTIG: CROSSROAD stages the SHINYROAD backdoor delivered by UNC7017 (GTIG, 2026-10-16)'
+  - subject: incident:aomei-backupper-ephemeral-update-tampering-2026
+    object: actor:unc7017
+    basis: GTIG attributes the activity to the cluster it tracks as UNC7017 (GTIG, 2026-10-16)
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  suggested_classification:
+    reliability: B
+    credibility: 1
+    why: two independent first-hand telemetry sources (GTIG, METAL); vendor changelog read directly by this agent confirms the absence of a client-side verification fix
+  evidence:
+  - quote: Each tampering window remained active for only five to ten minutes before reverting to authentic versions.
+    attribution: Google Threat Intelligence Group / Mandiant
+    source_url: https://cloud.google.com/blog/topics/threat-intelligence/investigating-ephemeral-supply-chain-tampering
+  - quote: impacted organizations spanned diverse sectors, including IT services, telecommunications, higher education and related entities in Australia, Brazil, India, Pakistan, Portugal, Singapore, South Africa, Spain, Switzerland, Türkiye, and the United States.
+    attribution: Google Threat Intelligence Group / Mandiant
+    source_url: https://cloud.google.com/blog/topics/threat-intelligence/investigating-ephemeral-supply-chain-tampering
+  - quote: Organizations running AOMEI software cannot assume they are protected solely because the vendor took corrective server-side action.
+    attribution: Google Threat Intelligence Group / Mandiant
+    source_url: https://cloud.google.com/blog/topics/threat-intelligence/investigating-ephemeral-supply-chain-tampering
+  - quote: Nothing in this attack exploited a software defect. There was no CVE, no memory corruption, and no unpatched component.
+    attribution: ManageEngine Threat Analysis Lab (METAL)
+    source_url: https://www.manageengine.com/threat-analysis-lab/aomei-backupper-supply-chain-compromise.html
+  - quote: As of publication, we have not independently verified that the compromise has been contained.
+    attribution: ManageEngine Threat Analysis Lab (METAL)
+    source_url: https://www.manageengine.com/threat-analysis-lab/aomei-backupper-supply-chain-compromise.html
+  extended_notes: |-
+    Exposure: any Windows host running AOMEI Backupper or AnyViewer whose update/notification polling reached AOMEI during an unseen window between April and July 2026; the hunt period both reports ask for is the whole April-to-July span, and a fixed vendor server does not tell you whether a given host was hit. No source lists affected Backupper versions; METAL reproduced on 8.3.0 and AOMEI's changelog through 8.5.0 (2026-10-09) shows no verification change, so treat every installed version as having the unauthenticated-config design until the vendor says otherwise.
+    Detection concepts (behavioural, per METAL and GTIG): an executable written by the backup program's update process into its staging folder and then launched by the notification process from the rendering folder (a genuine promotional bundle contains no executables); an unsigned child of a signed AOMEI process presenting AOMEI publisher metadata; a genuine signed Radmin binary loading an unexpected DLL; dllhost.exe hosting a COM server registered from a non-standard path; scheduled tasks named RadminComponentRuntime or NitroRuntime; a Radmin installation with no configured server address; outbound connections to a hard-coded address with no preceding DNS lookup; egress SMB (445) and WebDAV to external addresses. Collection targets: the program's cached update files under its install tree (Tmphtml folder) and proxy or firewall records from the second an alert fired.
+    Triage trap (GTIG and METAL): do not validate an alert by fetching the vendor URL now, because the files revert within minutes and the live page serves genuine content, which has led analysts to dismiss real detections.
+    Hardening levers named by the sources: block outbound SMB and WebDAV to the internet (kills the NetNTLMv2 coercion even when the payload is blocked); restrict who may install unmanaged remote-administration tools; treat vendor promotional/notification channels as code-execution paths in third-party software reviews.
+    Host artifact names above are behavioural anchors, not network IOCs; the sources also publish hashes, domains and addresses which are deliberately omitted here.
+- title: 'PaperCut NG/MF: Hunt.io''s recovery of an attacker''s open directories documents a second XML-RPC code-execution path, a cron-kept reverse SOCKS tunnel and live pivots into 45 victims, one of them Swiss'
+  sources:
+  - url: https://hunt.io/blog/papercut-attacker-ai-toolkit-exploit-code-second-rce
+    publisher: Hunt.io
+    date: '2026-10-15'
+    role: primary
+  - url: https://www.papercut.com/help/manuals/ng-mf/common/tools-web-services-tips/
+    publisher: PaperCut (product documentation)
+    date: '2026-10-17'
+    role: vendor-doc
+  - url: https://news.risky.biz/risky-bulletin-russia-arrests-datasuckers-hacking-group/
+    publisher: Risky Bulletin
+    date: '2026-10-16'
+    role: discovery
+  discovery_trace: 'first seen at: risky-biz-news, URL https://news.risky.biz/risky-bulletin-russia-arrests-datasuckers-hacking-group/ (item ''PaperCut campaign: Open directories have exposed yet another hacking operation'') -> primary: Hunt.io, URL https://hunt.io/blog/papercut-attacker-ai-toolkit-exploit-code-second-rce -> vendor documentation for the hardening levers: https://www.papercut.com/help/manuals/ng-mf/common/tools-web-services-tips/'
+  summary: 'Hunt.io (2026-10-15) found three open directories on the single attacker host that GreyNoise and Blackpoint Cyber had already tied to the AI-orchestrated mass exploitation of CVE-2026-81578 and CVE-2026-82078, and reconstructs the operator''s toolkit from the files. New facts against what the entry already carries: (1) the operator''s own notes record a second route that does not use the Tapestry bypass: PaperCut''s XML-RPC endpoint accepts api.setConfigValue when the web-services allowlist is too permissive or no explicit API token is configured, because the handler then falls back to the built-in admin password as the token; the same user-lookup settings are rewritten and the same Derby export trick is run. The actor logged it as proven only when API network and token controls are weak, and a probe results file lists nine hosts where the API answered; Hunt does not report it used against victims. (2) A Linux persistence kit keeps a chisel reverse SOCKS5 client alive through cron (periodic and @reboot entries plus a pgrep watchdog) from a hidden directory under /var/tmp. (3) The post-exploitation playbook exports the SECURITY and SYSTEM hives to recover LSA secrets and the machine-account hash offline, harvests service, LDAP, database and keystore credentials, and runs Metasploit automation over per-target reverse SOCKS pivots; folders are labelled by outcome including domain-admin access. (4) Scale from the actor''s own files: a 1,005-host reconnaissance pool in at least 45 countries (800 confirmed vulnerable, 205 version-based), 2,165 logged attempts, 46 distinct Active Directory domains in packaged kits (education by far the largest naming-based sector, 39 percent) and 45 targets with a live reverse SOCKS5 pivot at capture time, Switzerland among the listed countries. Hunt says it gave the victim data to the national CERTs concerned. The operating instructions (AGENTS.md, Codex harness with a DeepSeek model, up to 25 concurrent subagents) match GreyNoise''s earlier description.'
+  region_nexus: 'Switzerland: Hunt lists it among the countries of the 45 targets with a live internal pivot (one target, sector not stated); global campaign, UK/US/France/Belgium heaviest'
+  primary_sector_nexus: 'direct: PaperCut NG/MF is the print-management platform of schools, universities and administrations; education is the largest sector in the compromised AD domains Hunt could classify by name'
+  sector: education, public-sector, healthcare
+  cves:
+  - CVE-2026-81578
+  - CVE-2026-82078
+  techniques:
+  - T1190
+  - T1059.004
+  - T1059.003
+  - T1053.003
+  - T1003.004
+  - T1552
+  - T1087.002
+  - T1018
+  - T1136.001
+  - T1090.001
+  - T1572
+  - T1571
+  - T1105
+  - T1005
+  - T1070
+  affected_products:
+  - PaperCut NG
+  - PaperCut MF
+  entity_keys:
+  - product:papercut-ng
+  - product:papercut-mf
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: update-of:2026-08-29/papercut-ng-mf-tapestry-request-confusion-preauth-rce
+  lookback: true
+  suggested_classification:
+    reliability: B
+    credibility: 2
+    why: Hunt.io read the actor's own exposed files (first-hand) and says its country breakdown matches GreyNoise's defender telemetry; the second-RCE claim and the Swiss target rest on Hunt alone
+  evidence:
+  - quote: The exposed tooling revealed a second PaperCut RCE path through XML-RPC, using api.setConfigValue and api.lookUpUserNameByCardNo when API access controls were weak.
+    attribution: Hunt.io
+    source_url: https://hunt.io/blog/papercut-attacker-ai-toolkit-exploit-code-second-rce
+  - quote: The remaining targets were spread across South Africa, Spain, Sweden, Saudi Arabia, Puerto Rico, Malaysia, Ireland, Chile, Switzerland, and Canada.
+    attribution: Hunt.io
+    source_url: https://hunt.io/blog/papercut-attacker-ai-toolkit-exploit-code-second-rce
+  - quote: ready-with-proxy.txt lists 45 targets with a live, working reverse SOCKS5 pivot at the time of capture.
+    attribution: Hunt.io
+    source_url: https://hunt.io/blog/papercut-attacker-ai-toolkit-exploit-code-second-rce
+  - quote: A PaperCut instance that has already been hardened against the Tapestry bypass is not necessarily protected against this one if its XML-RPC API is exposed with weak access controls.
+    attribution: Hunt.io
+    source_url: https://hunt.io/blog/papercut-attacker-ai-toolkit-exploit-code-second-rce
+  - quote: The authentication token (required on each method call) should be defined in the advanced config key `auth.webservices.auth-token`.
+    attribution: PaperCut (product documentation)
+    source_url: https://www.papercut.com/help/manuals/ng-mf/common/tools-web-services-tips/
+  extended_notes: |-
+    Hardening levers (vendor documentation): define auth.webservices.auth-token as a long random secret so the handler never falls back to the admin password, and restrict the allowlist key auth.webservices.allowed-addresses (set in the admin interface or via server-command); PaperCut's page says using the admin password as the token is a risk and recommends TLS for the API. Disable or do not expose /rpc/api/xmlrpc where it is not needed; Hunt also recommends egress filtering for PaperCut servers and treating the service account's reach into AD as the blast radius.
+    Detection concepts from Hunt: changes to user-lookup.* settings; new .class files under the PaperCut install tree; short-lived output files under server/custom/web/ served at /custom/ that delete themselves after about 30 seconds; chisel-style command lines, SOCKS listeners and long-lived TLS to non-standard ports from the print server; cron entries referencing a watchdog under /var/tmp; account creation, privilege changes and DCSync-style activity originating from the PaperCut service account or host.
+    Caveats: the Swiss mention is one target among 45 and names no sector or organisation; Hunt says it notified national CERTs. IP-level indicators are shared too widely to rely on (Hunt's own caution), so prefer behavioural hunts. Existing entry already carries the GreyNoise 440-instance figures and the patch lineage (26.0.5, 25.0.13, 24.1.10); this item adds only the second path, the persistence and credential playbook, and the scale/country evidence.
+- title: 'PwnEscape (CVE-2026-99999): crafted virtio checksum metadata from a guest corrupts host IPv4 header handling, leaking host memory and crashing the Linux host, and in a lab taking it over'
+  sources:
+  - url: https://pwn.ai/blog/pwnescape
+    publisher: pwn.ai
+    date: '2026-10-16'
+    role: primary
+  - url: https://vercel.com/blog/findings-from-the-1-million-dollar-vercel-sandbox-challenge
+    publisher: Vercel
+    date: '2026-10-14'
+    role: corroborating
+  - url: https://cveawg.mitre.org/api/cve/CVE-2026-99999
+    publisher: Linux kernel CNA (CVE record, JSON API)
+    date: '2026-10-15'
+    role: primary-record
+  - url: https://security-tracker.debian.org/tracker/CVE-2026-99999
+    publisher: Debian Security Tracker
+    date: '2026-10-17'
+    role: vendor-status
+  - url: https://access.redhat.com/security/cve/cve-2026-99999
+    publisher: Red Hat
+    date: '2026-10-15'
+    role: vendor-status
+  - url: https://ubuntu.com/security/CVE-2026-99999
+    publisher: Ubuntu Security
+    date: '2026-10-17'
+    role: vendor-status
+  - url: https://thehackernews.com/2026/10/critical-pwnescape-linux-kernel.html
+    publisher: The Hacker News
+    date: '2026-10-16'
+    role: discovery
+  discovery_trace: 'first seen at: hackernews, URL https://feeds.feedburner.com/TheHackersNews (item ''Critical PwnEscape Linux Kernel Vulnerability Lets Guest VMs Read Host Memory'') -> pivot: https://thehackernews.com/2026/10/critical-pwnescape-linux-kernel.html -> primary: pwn.ai write-up https://pwn.ai/blog/pwnescape -> corroboration: Vercel https://vercel.com/blog/findings-from-the-1-million-dollar-vercel-sandbox-challenge -> CVE record https://cveawg.mitre.org/api/cve/CVE-2026-99999 -> distro status https://security-tracker.debian.org/tracker/CVE-2026-99999 and https://access.redhat.com/security/cve/cve-2026-99999'
+  summary: 'The Linux kernel CNA published CVE-2026-99999 on 2026-10-15 (CVSS 3.1 9.3, AV:L/PR:N/S:C) for a defect in the IPv4 stack that a guest virtual machine can trigger through virtio-net: a guest-supplied checksum start and offset (CHECKSUM_PARTIAL) are honoured by skb_checksum_help() on the host after routing and validation, so the deferred write lands inside an already-parsed IPv4 header and changes its header length; ip_do_fragment() then trusts the new length and copies beyond the linear head into transmitted IP options. pwn.ai (found in three days during Vercel''s $1M Sandbox challenge with an LLM-assisted harness) and Vercel report three outcomes: a continuous host-memory leak (about 32 bytes per guest packet, demonstrated on Vercel production sandboxes), a host crash from two packets, and host command execution as root, the last two shown only on the researcher''s own KVM and Firecracker machines configured like Vercel''s; pwn.ai says explicitly it is not a claim of root execution in any vendor''s production environment, and Vercel reports no customer data accessed. The fix is mainline commit 6785011f8b16 (Red Hat''s Michael Tsirkin), merged 2026-10-14 and described by its author as defence in depth with fuller ingress validation still to come; per the CVE record the flaw dates to 2.6.27 and the first fixed stable releases are 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.57 and 7.2.11. Distribution state when fetched: Debian trixie (security) 6.12.113-1 fixed via DSA-6568-1, bookworm 6.1.187-1 and forky 7.2.9-1 still listed vulnerable; Red Hat lists no mitigation; Ubuntu lists every release as needing evaluation. pwn.ai assesses that exploits for weaker configurations will arrive within weeks and for default hypervisor configurations in under a month (a finder''s assessment, not an observation). No in-the-wild use is reported, the CVE is not in CISA KEV (checked against the catalogue released 2026-10-16) and EPSS is about 0.002.'
+  region_nexus: global; any Linux host that carries guest workloads through virtio-net (KVM/QEMU, Firecracker and similar), including private-cloud and virtualization estates of public bodies
+  primary_sector_nexus: 'indirect: host kernels under shared virtualization and VM-hosting platforms; severity is highest where untrusted or compromised tenants share a host'
+  sector: cloud-and-hosting, public-sector
+  cves:
+  - CVE-2026-99999
+  techniques:
+  - T1611
+  - T1068
+  - T1499.004
+  affected_products:
+  - Linux kernel
+  - Linux Kernel (KVM/x86)
+  entity_keys:
+  - product:linux-kernel
+  - product:linux-kernel-kvm-x86
+  - product:vercel
+  new_entities:
+  - key: trend:pwnescape-linux-kernel-ipv4-checksum-kvm-escape
+    type: trend
+    name: PwnEscape (CVE-2026-99999)
+    aliases:
+    - PwnEscape
+    summary: pwn.ai's name for the Linux kernel IPv4 checksum-metadata flaw that lets a guest leak host memory, crash the host and, in a lab, escape KVM/Firecracker; fixed upstream 2026-10-14.
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  suggested_classification:
+    reliability: B
+    credibility: 1
+    why: finder, affected operator (Vercel) and the kernel CNA record agree on mechanism, versions and scope of demonstrated impact
+  evidence:
+  - quote: This is the story of CVE-2026-99999, a Critical rated Linux kernel vulnerability leading to KVM escape.
+    attribution: pwn.ai
+    source_url: https://pwn.ai/blog/pwnescape
+  - quote: The patch was applied to net.git on October 8, 2026, and subsequently merged into the mainline Linus's tree Oct 14th, 2026.
+    attribution: pwn.ai
+    source_url: https://pwn.ai/blog/pwnescape
+  - quote: we expect exploits in weaker configurations to arrive in weeks, and exploits working in default hypervisor configurations to arrive in under a month.
+    attribution: pwn.ai
+    source_url: https://pwn.ai/blog/pwnescape
+  - quote: Almost every major cloud provider isolates customer workloads on this same layer of the Linux kernel, so any defect is shared-infrastructure risk.
+    attribution: Vercel
+    source_url: https://vercel.com/blog/findings-from-the-1-million-dollar-vercel-sandbox-challenge
+  - quote: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria
+    attribution: Red Hat
+    source_url: https://access.redhat.com/security/cve/cve-2026-99999
+  extended_notes: |-
+    Exposure: a Linux host kernel earlier than the fixed stable releases above (or a distribution kernel without the backport) that forwards guest egress through a TAP device into the host IPv4 stack, the path the CVE record describes (tun_get_user -> IPv4 stack -> ip_do_fragment -> skb_checksum_help). Updating only a guest kernel does not help; the host must be patched and rebooted. Read the running host kernel with uname -r and compare against the distribution advisory rather than the bare version number, since vendors backport.
+    Detection (what the sources support): host kernel WARN_ONCE or panic traces in the checksum-completion path and unexplained host crashes taking down every guest on it (the CVE text names these paths); guests emitting IPv4 fragments whose header length field disagrees with the packet geometry. No exploitation indicators exist yet.
+    Hardening named by Vercel: keep host kernels current, disable nested virtualization and run each microVM under Firecracker's jailer; these narrow impact but do not fix the flaw. The kernel fix is explicitly partial, so watch for the broader ingress-validation follow-up.
+    Companion item: Tencent Zhuque Lab's Vghost (CVE-2026-74580), another Linux virtualization-host flaw published 2026-10-12, is returned separately.
+    Date note: pwn.ai's page metadata shows 2026-10-17 but The Hacker News linked the write-up by 2026-10-16T01:54Z and the CVE record was published 2026-10-15, so the source date is given as 2026-10-16 at the latest.
+- title: 'Vghost (CVE-2026-74580): a stale vhost ring-metadata cache gives local users deterministic kernel read/write on Linux 4.11 to 7.2-rc4 and lets an untrusted guest write into the host''s QEMU process'
+  sources:
+  - url: https://matrix.tencent.com/en/2026/10/12/vghost-cve-2026-74580
+    publisher: Tencent Zhuque Lab
+    date: '2026-10-12'
+    role: primary
+  - url: https://cveawg.mitre.org/api/cve/CVE-2026-74580
+    publisher: Linux kernel CNA (CVE record, JSON API)
+    date: '2026-08-21'
+    role: primary-record
+  - url: https://thehackernews.com/2026/10/ai-found-linux-kernel-flaw-gives-local.html
+    publisher: The Hacker News
+    date: '2026-10-14'
+    role: corroborating
+  discovery_trace: 'first seen at: hackernews, URL https://feeds.feedburner.com/TheHackersNews (item ''AI-Found Linux Kernel Flaw Gives Local Users Root, and Can Break a Guest Out to the Host'') -> pivot: https://thehackernews.com/2026/10/ai-found-linux-kernel-flaw-gives-local.html -> primary: Tencent Zhuque Lab https://matrix.tencent.com/en/2026/10/12/vghost-cve-2026-74580 -> CVE record https://cveawg.mitre.org/api/cve/CVE-2026-74580'
+  summary: 'Tencent Zhuque Lab published its write-up of Vghost on 2026-10-12, ten weeks after the upstream fix (3 August, per The Hacker News) and seven weeks after the CVE record (21 August): vhost keeps a per-ring metadata cache whose hit is taken as proof that the region was already validated, but VHOST_SET_VRING_ADDR and VHOST_SET_VRING_NUM do not clear it while the ring is live with a device IOTLB attached, so later accesses translate new addresses through a stale mapping and vhost copies to or from an unchecked pointer. The result on the host is a deterministic, race-free arbitrary kernel read of 8 bytes at a time and a repeatable arbitrary write of an 8-byte used-ring element (two attacker-chosen bytes followed by six zero bytes), with KASLR bypass, for anyone who can open /dev/vhost-net or /dev/vhost-vsock; Tencent reproduced the local-user-to-root chain on Ubuntu 26.04, RHEL 9.8, Amazon Linux 2023, Azure Linux 3.0 and Oracle Linux 10.2, with the device nodes mode 0666 by default on four of them and restricted to the kvm group on Ubuntu. The second path needs a virtual IOMMU with the virtio device behind it and vhost in device-IOTLB mode: an untrusted guest can then trigger the same condition and make the host kernel write out of bounds into the host''s QEMU process heap (The Hacker News reports working demos of both attacks, including overwriting a QEMU function pointer). The kernel.org CNA rates it CVSS 3.1 8.8 (scope changed); Red Hat, Amazon and Oracle rate it 7.3 to 7.8. Affected range 4.11 up to 7.2-rc4; first fixed stable releases per The Hacker News are 5.10.265, 5.15.216, 6.1.183, 6.6.152, 6.12.104, 6.18.45, 7.1.9 and 7.2. No exploitation is reported, the CVE is not in CISA KEV and EPSS is about 0.001. Tencent says its Corvus AI system found the flaw in two hours.'
+  region_nexus: global; Linux KVM and container hosts that expose vhost device nodes
+  primary_sector_nexus: 'indirect: shared Linux virtualization and container hosts; the local-root path matters wherever unprivileged users or service accounts exist on a host that exposes the device nodes'
+  sector: cloud-and-hosting, public-sector
+  cves:
+  - CVE-2026-74580
+  techniques:
+  - T1068
+  - T1611
+  affected_products:
+  - Linux kernel
+  - Linux Kernel (KVM/x86)
+  - QEMU
+  entity_keys:
+  - product:linux-kernel
+  - product:linux-kernel-kvm-x86
+  new_entities:
+  - key: trend:vghost-linux-vhost-stale-cache-lpe-vm-escape
+    type: trend
+    name: Vghost (CVE-2026-74580)
+    aliases:
+    - Vghost
+    summary: Tencent Zhuque Lab's name for the Linux vhost ring-metadata cache flaw that gives local root and, with a virtual IOMMU, a guest write into host QEMU; fixed upstream 2026-08-03, write-up 2026-10-12.
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  lookback: true
+  suggested_classification:
+    reliability: B
+    credibility: 1
+    why: finder write-up and the kernel CNA record agree on mechanism and range; vendor ratings read from the press report only
+  evidence:
+  - quote: 'No privilege is required beyond opening a device node: several distributions ship `/dev/vhost-vsock` and `/dev/vhost-net` mode `0666` (the systemd default udev rules), while others use `0660 root:kvm`.'
+    attribution: Tencent Zhuque Lab
+    source_url: https://matrix.tencent.com/en/2026/10/12/vghost-cve-2026-74580
+  - quote: The kernel.org CNA rates it 8.8 High
+    attribution: Tencent Zhuque Lab
+    source_url: https://matrix.tencent.com/en/2026/10/12/vghost-cve-2026-74580
+  - quote: Until a fixed kernel is in place, restrict access to the vhost device nodes.
+    attribution: The Hacker News
+    source_url: https://thehackernews.com/2026/10/ai-found-linux-kernel-flaw-gives-local.html
+  - quote: There is no interim workaround for the guest-to-host escape; for that path, the patched kernel is the only remedy.
+    attribution: The Hacker News
+    source_url: https://thehackernews.com/2026/10/ai-found-linux-kernel-flaw-gives-local.html
+  extended_notes: |-
+    Exposure check: ls -l /dev/vhost-net /dev/vhost-vsock on each host (mode 0666 means any local user reaches the bug); virtual-IOMMU guests (iommu_platform on the virtio device) with vhost in device-IOTLB mode are the guest-escape population. Patch the host kernel and reboot; vendors may backport without changing the version number. Interim for the local path only: remove world access to the nodes and limit the owning group to trusted virtualization services, treating membership as a privilege (The Hacker News).
+    Detection (stated by the sources): none beyond the pre-fix state of the nodes; the primitives leave no dedicated telemetry. Vendor patch status per The Hacker News as of 2026-10-13: Red Hat, Amazon Linux and Oracle Linux shipped fixes, Ubuntu fixed 22.04 and still listed 24.04 and 26.04 in progress; not re-verified here.
+    Companion to PwnEscape (CVE-2026-99999) returned in this same file; both are AI-assisted finds in the Linux virtualization host path within one week.
+- title: Microsoft, Health-ISAC, Japan's police and partners disrupt YAM Store, CoGUI and Iron Man; MSTIC maps how a broker resells hijacked Microsoft 365 and Azure education tenants to phishing-kit operators who sent over a billion messages
+  sources:
+  - url: https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/
+    publisher: Microsoft Threat Intelligence / Digital Crimes Unit
+    date: '2026-10-14'
+    role: primary
+  - url: https://blogs.microsoft.com/on-the-issues/2026/10/14/disrupting-the-service-economy-behind-transnational-cybercrime-operations/
+    publisher: Microsoft On the Issues
+    date: '2026-10-14'
+    role: primary
+  - url: https://www.proofpoint.com/us/blog/threat-insight/disruption-targets-major-chinese-language-phishing-kits-japanese-focus
+    publisher: Proofpoint Threat Research
+    date: '2026-10-14'
+    role: corroborating
+  - url: https://thehackernews.com/2026/10/microsoft-disrupts-3-phishing-kits.html
+    publisher: The Hacker News
+    date: '2026-10-14'
+    role: corroborating
+  - url: https://www.infosecurity-magazine.com/news/microsoft-yam-store-one-billion/
+    publisher: Infosecurity Magazine
+    date: '2026-10-15'
+    role: corroborating
+  discovery_trace: 'first seen at: proofpoint, URL https://www.proofpoint.com/us/blog/threat-insight (listing, top item 2026-10-14) and hackernews, URL https://feeds.feedburner.com/TheHackersNews (''Microsoft Disrupts 3 Phishing Kits Linked to Over 1 Billion Scam Messages'') -> primary: Proofpoint post https://www.proofpoint.com/us/blog/threat-insight/disruption-targets-major-chinese-language-phishing-kits-japanese-focus -> primary: Microsoft MSTIC https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/ -> primary: Microsoft On the Issues https://blogs.microsoft.com/on-the-issues/2026/10/14/disrupting-the-service-economy-behind-transnational-cybercrime-operations/'
+  summary: 'On 2026-10-14 Microsoft and Health-ISAC, under an order from the US District Court for the Southern District of Florida, seized and redirected domains behind YAM Store, CoGUI and Iron Man, after an investigation that began when Japan''s National Police Agency flagged scam campaigns in late 2025 and later drew in JC3, Resecurity, Cloudflare, Oracle, Proofpoint and TRM Labs. Microsoft says the three services enabled more than one billion malicious emails and SMS messages to over 75,000 organizations in 150+ countries since January 2026 (more than 750 million aimed at Microsoft customers), has disabled over 20,000 YAM Store accounts and is blocking more than 100,000 impersonation domains. MSTIC''s technical account: YAM Store (tracked Storm-3119) is an access broker that takes over or fraudulently creates Microsoft 365 and Azure tenants, especially education and non-profit ones, partly by acquiring expired domains of real organizations and rebuilding their websites; its panels use a compromised tenant''s client secret with application-only authentication to reset passwords silently, assign education licences and grant privileged attributes, self-provision the PnP Management Shell service principal in a compromised Global Administrator account to obtain broad Microsoft Graph rights (including AppCatalog.ReadWrite.All) and full SharePoint API control, and then sell the tenant''s SharePoint and OneDrive storage as bulk hosting. Storm-2990 (CoGUI, Haozi, Iron Man System) supplies the kits: Iron Man ships 2,335+ templates for 139+ countries, including local government, police, traffic and parking authorities, with geofencing, fake CAPTCHA gates, researcher IP blocklists and Telegram-driven real-time operator interaction over WebSockets; downstream actors were observed using credential phishing, device-code phishing and card fraud. Proofpoint separately counts CoGUI, CoAceV and CoFish_Ws campaigns (over 100 million blocked messages a month, overwhelmingly Japan; government among the five most affected sectors) and assesses with high confidence that the three kits share roots and affiliates. Microsoft states that a template impersonating an organization does not mean it was compromised, and assesses the ecosystem is not limited to Microsoft and Google services.'
+  region_nexus: global; Japan, US, Australia and India most targeted; no source names Switzerland, but Iron Man templates cover 139-150+ countries including government-impersonation lures
+  primary_sector_nexus: 'direct for tenant defenders: education and public-sector Microsoft 365 tenants are the resale product; government and law-enforcement impersonation lures target citizens and staff'
+  sector: education, public-sector, healthcare, finance
+  cves: []
+  techniques:
+  - T1566.002
+  - T1078.004
+  - T1098
+  - T1528
+  - T1584
+  - T1583.001
+  - T1608.005
+  affected_products:
+  - Microsoft 365
+  - Microsoft Entra ID
+  - Microsoft SharePoint Online
+  - Google Workspace
+  entity_keys:
+  - product:microsoft-365
+  - product:microsoft-entra-id
+  new_entities:
+  - key: actor:storm-3119
+    type: actor
+    name: Storm-3119 (YAM Store)
+    aliases:
+    - YAM Store
+    summary: Microsoft's designation for the initial access broker behind the YAM Store marketplace, which hijacks or fraudulently creates Microsoft 365 and Azure education/non-profit tenants and resells their accounts, licences and storage (MSTIC, 2026-10-14).
+  - key: actor:storm-2990
+    type: actor
+    name: Storm-2990
+    aliases:
+    - CoGUI developers
+    - Iron Man System developers
+    summary: Microsoft's designation for the developers of the CoGUI (NX/FA), Haozi (Phoenix) and Iron Man System phishing kits sold via YAM Store (MSTIC, 2026-10-14).
+  - key: tool:cogui-phish-kit
+    type: tool
+    name: CoGUI phishing kit
+    aliases:
+    - CoGUI
+    - NX
+    - FA
+    summary: Chinese-language phishing kit that impersonates Japanese and international brands; disrupted 2026-10-14; Proofpoint tracks related kits CoAceV and CoFish_Ws.
+  - key: tool:iron-man-system-phish-kit
+    type: tool
+    name: Iron Man System phishing kit
+    aliases:
+    - Iron Man
+    summary: Phishing-as-a-service kit launched June 2026 with 2,335+ templates for 139+ countries, replacing CoGUI in the ecosystem (MSTIC, 2026-10-14).
+  - key: incident:yam-store-cogui-iron-man-disruption-2026-10
+    type: incident
+    name: YAM Store / CoGUI / Iron Man disruption (October 2026)
+    aliases: []
+    summary: Microsoft and Health-ISAC civil action and domain seizure of 2026-10-14 against a Chinese-language phishing ecosystem, supported by Japan's NPA, JC3, Proofpoint and others.
+  relation_suggestions:
+  - subject: actor:storm-3119
+    object: actor:storm-2990
+    basis: 'MSTIC: YAM Store (Storm-3119) sells infrastructure and the Storm-2990 phishing kits to downstream actors (Microsoft, 2026-10-14)'
+  - subject: actor:storm-2990
+    object: tool:cogui-phish-kit
+    basis: 'MSTIC: Storm-2990 tracks the developers of CoGUI, Haozi and Iron Man System (Microsoft, 2026-10-14)'
+  - subject: actor:storm-2990
+    object: tool:iron-man-system-phish-kit
+    basis: 'MSTIC: Storm-2990 tracks the developers of CoGUI, Haozi and Iron Man System (Microsoft, 2026-10-14)'
+  - subject: incident:yam-store-cogui-iron-man-disruption-2026-10
+    object: actor:storm-3119
+    basis: 'Microsoft: the 2026-10-14 action targets YAM Store, tracked as Storm-3119 (Microsoft, 2026-10-14)'
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  lookback: true
+  suggested_classification:
+    reliability: B
+    credibility: 1
+    why: Microsoft (actor of the disruption) and Proofpoint (independent email telemetry) agree on the kits, scale and structure; figures are Microsoft's and Proofpoint's own counts
+  evidence:
+  - quote: Since January 2026, the threat actors behind these kits have been responsible for facilitating the sending of over one billion phishing emails and SMS messages to over 75 thousand organizations worldwide.
+    attribution: Microsoft Threat Intelligence / Digital Crimes Unit
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/
+  - quote: Since Storm-3119 operators have been observed obtaining Global Administrator access, implementing these principles can help lock down Global Administrator roles and who has access to specific resources.
+    attribution: Microsoft Threat Intelligence / Digital Crimes Unit
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/
+  - quote: In some cases, operators acquired internet domains that legitimate organizations had allowed to expire, often targeting certain sectors, such as non-profits and education, with specialized product offerings.
+    attribution: Microsoft On the Issues
+    source_url: https://blogs.microsoft.com/on-the-issues/2026/10/14/disrupting-the-service-economy-behind-transnational-cybercrime-operations/
+  - quote: Proofpoint assesses with high confidence that all these phishing kits have common roots and are used by overlapping affiliates.
+    attribution: Proofpoint Threat Research
+    source_url: https://www.proofpoint.com/us/blog/threat-insight/disruption-targets-major-chinese-language-phishing-kits-japanese-focus
+  extended_notes: |-
+    Behavioural hunts for tenant owners (from MSTIC's described pipeline, not rule code): service principals named PnP Management Shell created in-tenant by a Global Administrator you do not recognise, with Graph application permissions such as AppCatalog.ReadWrite.All or full SharePoint API control; application-only sign-ins using an existing client secret followed by silent password resets without forced change at next sign-in; unexpected education licence assignment; bulk SharePoint/OneDrive uploads of web content; Global Administrator sign-ins from residential or hosting addresses. For downstream phishing: device-code authentication prompts the user did not start, and users reporting government-fine, parking, toll or parcel lures.
+    Hardening levers named by Microsoft: least-privilege and tightly scoped Global Administrator roles, phishing-resistant MFA and Conditional Access for privileged accounts, passkey/MFA registration only from trusted locations and devices, Safe Links applied to internal recipients, and the Azure sign-in confirmation prompt that phishing sign-ins often lack. Not stated by Microsoft but implied by the expired-domain tactic: keep every domain verified in your tenant registered, and review tenants of dormant units before their domains lapse (inference, mark as such).
+    Caveat: Microsoft and Proofpoint quantify Microsoft-centred volume; no source reports Swiss victims.
+- title: 'Qurium: sanctioned bulletproof host Aeza keeps growing through successor networks, with a legacy IPv4 estate held by a Buchs ZH, Switzerland company among its largest address sources'
+  sources:
+  - url: https://www.qurium.org/press-releases/aeza-infrastructure-thrives-despite-sanctions/
+    publisher: Qurium Media Foundation
+    date: '2026-10-14'
+    role: primary
+  - url: https://www.qurium.org/doppelganger/sanctioned-still-connected-how-aezas-infrastructure-supply-chain-survived/
+    publisher: Qurium Media Foundation (full report)
+    date: '2026-10-14'
+    role: primary
+  - url: https://stat.ripe.net/data/whois/data.json?resource=138.124.0.0/17
+    publisher: RIPE NCC (RIPEstat whois API, registry data)
+    date: '2026-10-17'
+    role: corroborating
+  - url: https://news.risky.biz/risky-bulletin-russia-arrests-datasuckers-hacking-group/
+    publisher: Risky Bulletin
+    date: '2026-10-16'
+    role: discovery
+  discovery_trace: 'first seen at: risky-biz-news, URL https://news.risky.biz/risky-bulletin-russia-arrests-datasuckers-hacking-group/ (item ''Aeza still alive'') -> primary: Qurium press release https://www.qurium.org/press-releases/aeza-infrastructure-thrives-despite-sanctions/ -> primary: Qurium full report https://www.qurium.org/doppelganger/sanctioned-still-connected-how-aezas-infrastructure-supply-chain-survived/ -> registry check: RIPEstat whois for 138.124.0.0/17 and 138.124.13.0/24 (https://stat.ripe.net/data/whois/data.json?resource=138.124.0.0/17)'
+  summary: 'Qurium Media Foundation (2026-10-14) reconstructs how the address space of the Russian hosting provider Aeza, designated by US Treasury on 2025-07-01 and linked by Qurium to Doppelganger, malware, infostealer, traffic-distribution and BlackSprut hosting, survived exposure and sanctions by moving to successor entities: as of 2026-09-22 Aeza and NetCrafters together originated 536 IPv4 /24 networks (137,216 addresses, over twenty times the roughly 6,400 Aeza announced at the end of 2022), and eleven local internet registries account for more than two thirds of it. One of the largest single sources, Qurium reports, is a legacy IPv4 block registered to Plant Holding GmbH of Buchs ZH, Switzerland (about 11,264 addresses, 8.21 percent), of which 44 /24 networks were in use by Aeza or NetCrafters in Qurium''s September 2026 snapshot; Qurium names the owner and says he also directs a UK IPv4 broker. The RIPE database, queried in this run, independently shows the parent /17 registered with country CH, netname WW-VAN-STRIJ-DE-REGT and organisation handle ORG-PA18-RIPE (the identifiers Qurium lists for Plant Holding), and a sub-allocation labelled Aeza-Network with route objects originating from two Aeza AS numbers. Qurium documents the allocation chain and states no knowledge or intent on the part of the Swiss holder, and the report does not say whether the holder responded; sanctions and licensing consequences are not assessed by any source read. Qurium''s broader finding is that sanctions on legal entities did not remove capacity because routing, prefixes and upstream providers persisted.'
+  region_nexus: 'Switzerland: a Swiss-registered legacy address block (country CH in the RIPE database) is used by the sanctioned Russian host; Estonia, Germany and Finland carry the upstreams'
+  primary_sector_nexus: 'indirect: defenders who allow or deprioritise traffic by IP geolocation or registry country could treat these prefixes as Swiss (analyst inference, not stated by Qurium)'
+  sector: internet-infrastructure
+  cves: []
+  techniques:
+  - T1583.003
+  - T1584
+  - T1090
+  affected_products: []
+  entity_keys: []
+  new_entities:
+  - key: actor:aeza-group
+    type: actor
+    name: Aeza Group
+    aliases:
+    - Aeza International
+    - NetCrafters OU (successor network)
+    - AS210644
+    summary: Russian bulletproof hosting provider designated by US OFAC on 2025-07-01; Qurium (2026-10-14) shows its address space surviving through successor entities such as NetCrafters.
+  - key: incident:qurium-aeza-sanctions-survival-investigation-2026-10
+    type: incident
+    name: 'Qurium: Aeza infrastructure survives sanctions (2026-10)'
+    aliases: []
+    summary: Qurium Media Foundation's 2026-10-14 investigation of the allocation chain keeping Aeza's address space operating under new legal entities, including a Swiss legacy IPv4 holder.
+  relation_suggestions:
+  - subject: incident:qurium-aeza-sanctions-survival-investigation-2026-10
+    object: actor:aeza-group
+    basis: 'Qurium: the investigation follows Aeza''s address space into successor entities including NetCrafters (Qurium, 2026-10-14)'
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  lookback: true
+  suggested_classification:
+    reliability: B
+    credibility: 2
+    why: original investigative NGO with a track record on this infrastructure; the Swiss registry facts are corroborated by RIPE database records fetched in this run, the commercial-control and Aeza-use claims rest on Qurium's routing study
+  evidence:
+  - quote: As of 22 September 2026, AEZA and NetCrafters together originated 536 IPv4 /24 networks, representing 137,216 addresses.
+    attribution: Qurium Media Foundation
+    source_url: https://www.qurium.org/doppelganger/sanctioned-still-connected-how-aezas-infrastructure-supply-chain-survived/
+  - quote: In our September 2026 snapshot, 44 /24 networks from the Plant legacy estate are currently used by Aeza or NetCrafters.
+    attribution: Qurium Media Foundation
+    source_url: https://www.qurium.org/doppelganger/sanctioned-still-connected-how-aezas-infrastructure-supply-chain-survived/
+  - quote: Instead, much of the underlying network capacity has survived by transferring Internet resources to new legal entities controlled by the same people or closely connected partners.
+    attribution: Qurium Media Foundation
+    source_url: https://www.qurium.org/press-releases/aeza-infrastructure-thrives-despite-sanctions/
+  extended_notes: |-
+    Registry corroboration (RIPE database via RIPEstat, 2026-10-17): the /17 carries netname WW-VAN-STRIJ-DE-REGT, country CH, status LEGACY, organisation ORG-PA18-RIPE; a sampled /24 inside it carries netname Aeza-Network, country RU, maintainers including aeza-mnt, with route objects originating from AS210644 (created 2025-04) and AS216246 (created 2025-10). Specific prefixes and AS numbers are infrastructure indicators and are omitted from the summary; they are in Qurium's report.
+    Use for defenders (analyst inference): egress and reputation controls built on country-of-registry or geolocation can misclassify such space; blocking or monitoring by origin AS and by Qurium's published prefix list is the stable handle. This is awareness-level: Qurium links the address space to malware, infostealer, traffic-distribution and fraud hosting, but the entry should not imply that every host in those prefixes is malicious.
+    Scope: Qurium's ownership and control claims about individuals are its own findings; the Swiss company's role (broker, lessor, unwitting holder) is not established by any source read.
+- title: 'NGINX 1.30.6 and 1.31.7 fix five configuration-dependent flaws: three memory-corruption bugs that may allow code execution, a TLS session-ticket forgery that may skip client-certificate checks, and an HTTP/3 request-body injection'
+  sources:
+  - url: https://nginx.org/en/security_advisories.html
+    publisher: nginx.org security advisories (vendor)
+    date: '2026-10-14'
+    role: primary
+  - url: https://thehackernews.com/2026/10/nginx-fixes-5-flaws-including-possible.html
+    publisher: The Hacker News
+    date: '2026-10-15'
+    role: corroborating
+  discovery_trace: 'first seen at: hackernews, URL https://feeds.feedburner.com/TheHackersNews (item ''NGINX Fixes 5 Flaws, Including Possible RCE and a TLS Bug That May Skip Client-Cert Checks'') -> pivot: https://thehackernews.com/2026/10/nginx-fixes-5-flaws-including-possible.html -> primary: nginx.org security advisories https://nginx.org/en/security_advisories.html'
+  summary: 'NGINX released 1.30.6 (stable) and 1.31.7 (mainline) on 2026-10-14 for five vulnerabilities, all of which nginx.org lists as not vulnerable from those versions and rates medium, while F5 (as reported by The Hacker News) scores the three memory bugs 9.2 on CVSS v4.0, the TLS flaw 8.3 and the HTTP/3 flaw 6.9. Each needs a specific configuration: CVE-2026-15176, a heap overflow when an alias location combines with a rewrite that changes the URI and a read of $request_filename (affected 0.1.29 to 1.31.6); CVE-2026-93479, a heap overflow in script evaluation when regex-map captures feed root or log_format before the map''s output variable (1.30.0 to 1.30.5 and 1.31.2 to 1.31.6, a regression path from July''s CVE-2026-42533 fix per the press report); CVE-2026-97205, a use-after-free with aio enabled and SSI include virtual pages (0.8.11 to 1.31.6); CVE-2026-95101, request-body injection past client_max_body_size over HTTP/3 with proxy_request_buffering on, which is the default (1.25.0 to 1.31.6); and CVE-2026-97629, where a shared ssl_session_cache without ssl_session_ticket_key turns on automatic ticket-key rotation that leaves one of three key slots uninitialised, so a forged session ticket may be accepted and may bypass client-certificate verification in a non-deterministic way F5 says the attacker cannot control (1.23.2 to 1.31.6). No attacks are reported for these five and none is in CISA KEV (catalogue released 2026-10-16 checked); the same product''s May rewrite-module overflow CVE-2026-42945 was reported exploited within days of disclosure (VulnCheck, per The Hacker News). NGINX publishes fixes for the two current branches only, so older branches stay in the affected ranges and a distribution package is fixed only if backported; F5 products built on NGINX need their own advisories.'
+  region_nexus: global; NGINX terminates TLS or proxies for a large share of public web services including government portals
+  primary_sector_nexus: 'indirect: ubiquitous reverse proxy and web server in administration web stacks; mutual-TLS deployments depend on the client-certificate path'
+  sector: all
+  cves:
+  - CVE-2026-15176
+  - CVE-2026-93479
+  - CVE-2026-95101
+  - CVE-2026-97205
+  - CVE-2026-97629
+  techniques:
+  - T1190
+  - T1203
+  - T1078
+  affected_products:
+  - F5 NGINX Open Source
+  - F5 NGINX Plus
+  entity_keys:
+  - product:f5-nginx-open-source
+  - product:f5-nginx-plus
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  lookback: true
+  suggested_classification:
+    reliability: A
+    credibility: 1
+    why: vendor project advisory for its own product; CVSS v4.0 figures are F5's as read from the press report only
+  evidence:
+  - quote: NGINX released versions 1.30.6 and 1.31.7 on October 14 to fix five vulnerabilities, one of them present in every release since May 2005.
+    attribution: The Hacker News
+    source_url: https://thehackernews.com/2026/10/nginx-fixes-5-flaws-including-possible.html
+  - quote: 'Every one of the five needs a directive you added: an alias with a rewrite, a regex map, AIO with SSI, a shared TLS session cache, or HTTP/3.'
+    attribution: The Hacker News
+    source_url: https://thehackernews.com/2026/10/nginx-fixes-5-flaws-including-possible.html
+  - quote: 'Not vulnerable: 1.31.7+, 1.30.6+'
+    attribution: nginx.org security advisories (vendor)
+    source_url: https://nginx.org/en/security_advisories.html
+  extended_notes: |-
+    How to tell exposure: nginx -V for the version, nginx -T for the running configuration, then look for alias beside a rewrite, a regex map used by root or log_format, aio with ssi, listen lines with quic or http3, and ssl_session_cache shared: without ssl_session_ticket_key (The Hacker News's recipe). Workarounds are per flaw (do not use alias in the location or $request_filename; named captures only inside the matching block, which the press report notes was questioned in July; turn aio off or stop serving SSI pages; proxy_request_buffering off for the HTTP/3 case; remove the shared cache or load ticket keys from a file, and servers with ssl_session_tickets off are unaffected). Upgrade remains the complete fix.
+    Detection: worker process crashes or restarts in the error log following requests to the exposed paths; client-certificate-authenticated locations accepting sessions without a valid certificate in the access log's SSL variables. The sources describe no exploitation indicators.
+- title: Next.js out-of-band update fixes two unauthenticated remote-code-execution flaws (React Server Components typed arrays, SVG image optimization via sharp/librsvg) and a Server Actions denial of service
+  sources:
+  - url: https://nextjs.org/blog/nextjs-security-update-october-14-2026
+    publisher: Next.js (Vercel, vendor)
+    date: '2026-10-14'
+    role: primary
+  - url: https://thehackernews.com/2026/10/nextjs-ships-out-of-band-patch-for-two.html
+    publisher: The Hacker News
+    date: '2026-10-15'
+    role: corroborating
+  discovery_trace: 'first seen at: hackernews, URL https://feeds.feedburner.com/TheHackersNews (item ''Next.js Ships Out-of-Band Patch for Two Critical RCE Flaws in Caching and SVG Processing'') -> pivot: https://thehackernews.com/2026/10/nextjs-ships-out-of-band-patch-for-two.html -> primary: Next.js advisory https://nextjs.org/blog/nextjs-security-update-october-14-2026'
+  summary: Vercel shipped an out-of-band Next.js security update on 2026-10-14, versions 16.4.1 (Active LTS) and 15.5.28 (Maintenance LTS), carrying two fixes postponed from September because of upstream dependency delays. (1) Unauthenticated remote code execution in App Router applications with Cache Components when a use cache function returns multiple typed arrays (GHSA-673q-mjm6-r5xr; related React advisory GHSA-xqc2-xf4c-x3h3 for react-server-dom-webpack, -parcel and -turbopack 19.0.0 to 19.3.0); Next.js 16.0.0 to 16.4.0 is affected, there is no workaround and Vercel says to upgrade even without such a function. (2) Unauthenticated RCE through the image optimization API when SVGs are processed on glibc-based Linux, via a memory flaw in librsvg reached through sharp (CVE-2026-96889 / GHSA-2464-fhr4-w9xw; Next.js 10.0.0 to 15.5.27 and 16.0.0 to 16.4.0); workaround is sharp 0.35.5 or later, and SVG optimization is off by default, requiring the dangerouslyAllowSVG setting (The Hacker News adds that next/og on the Node.js runtime also renders through the same library). (3) A high-severity denial of service in App Router applications with at least one Server Action (GHSA-p3m5-59mp-jv5r; 13.0.0 to 15.5.27 and 16.0.0 to 16.4.0). Vercel rates both RCE flaws CVSS 9.5; Red Hat rates the underlying librsvg bug 7.8 with user interaction. The Hacker News reports no public attack reports as of 2026-10-15, that the use-cache and Server Actions advisories had no CVE and were absent from the npm advisory feed at that time (dependency scanners may stay silent), and that on version 15 the upgrade can leave an affected sharp 0.34.x in place, so npm ls sharp must be checked. Not in CISA KEV; EPSS for CVE-2026-96889 about 0.0015.
+  region_nexus: global; Next.js is common in citizen-portal and public-website front ends built by contractors
+  primary_sector_nexus: 'indirect: web front ends of public bodies built on React/Next.js; exposure depends on App Router, Cache Components, Server Actions and SVG settings'
+  sector: all
+  cves:
+  - CVE-2026-96889
+  techniques:
+  - T1190
+  - T1499.004
+  affected_products:
+  - Next.js
+  - React Server Components
+  entity_keys: []
+  new_entities:
+  - key: product:nextjs
+    type: product
+    name: Next.js
+    aliases:
+    - Next.js (Vercel)
+    summary: Vercel's React framework; its 2026-10-14 out-of-band release 16.4.1/15.5.28 fixes two unauthenticated RCE flaws and a Server Actions DoS.
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  lookback: true
+  suggested_classification:
+    reliability: A
+    credibility: 1
+    why: vendor advisory for its own product; the press report adds scanner-gap and sharp-version caveats read directly from the advisory table
+  evidence:
+  - quote: There is no known workaround for affected applications. You should upgrade immediately even if your application does not have similar functions.
+    attribution: Next.js (Vercel, vendor)
+    source_url: https://nextjs.org/blog/nextjs-security-update-october-14-2026
+  - quote: Updates are now available in v16.4.1 (Active LTS) and v15.5.28 (Maintenance LTS) to address these issues.
+    attribution: Next.js (Vercel, vendor)
+    source_url: https://nextjs.org/blog/nextjs-security-update-october-14-2026
+  - quote: As of October 15, there are no public reports that any of the three flaws fixed on October 14 has been used in attacks.
+    attribution: The Hacker News
+    source_url: https://thehackernews.com/2026/10/nextjs-ships-out-of-band-patch-for-two.html
+  extended_notes: |-
+    Exposure: npm ls next and npm ls sharp on every build; App Router with Cache Components (use cache) is the trigger for the typed-array flaw; image optimizer with dangerouslyAllowSVG or next/og on Node.js is the SVG path; any App Router app with a Server Action is in the DoS population. Hosting platforms differ: Netlify says its platform does not run the optimizer path.
+    Detection: unexplained process-level CPU saturation on Next.js servers (Server Actions DoS); child processes spawned by the Node.js server after SVG upload or image optimization requests; rebuild and redeploy is required, a dependency bump alone is not enough. Interim for the image flaw: block the SVG loader in sharp (VipsForeignLoadSvg) per sharp's advisory.
+- title: 'GreyNoise: a proxyjacking campaign enrols 143 edge devices in a residential-proxy network, and a live demo showed why geolocation-based sign-in rules fail against residential proxies'
+  sources:
+  - url: https://www.greynoise.io/blog/proxyjacking-edge-devices-residential-proxies
+    publisher: GreyNoise
+    date: '2026-10-15'
+    role: primary
+  - url: https://news.risky.biz/risky-bulletin-russia-arrests-datasuckers-hacking-group/
+    publisher: Risky Bulletin
+    date: '2026-10-16'
+    role: discovery
+  discovery_trace: 'first seen at: risky-biz-news, URL https://news.risky.biz/risky-bulletin-russia-arrests-datasuckers-hacking-group/ (item ''A proxyjacking campaign is underway'') -> primary: GreyNoise https://www.greynoise.io/blog/proxyjacking-edge-devices-residential-proxies'
+  summary: 'GreyNoise (2026-10-15) tracks an actor it calls skynox7 that compromised at least 143 internet-facing devices in 34 countries to install the Pawns.app proxyware, which enrols the device''s bandwidth in a commercial residential-proxy network on the attacker''s account. GreyNoise''s table lists the exploited technologies as D-Link ShareCenter NAS (CVE-2024-3272 and CVE-2024-3273), Ubiquiti UniFi Video NVR (CVE-2021-44228) and SAP NetWeaver Visual Composer (CVE-2025-31324), and says Hikvision and Dahua recorders also appeared targeted; in some cases the actor added its own SSH key as a fallback. The detection lesson comes from a separate product demonstration: an organisation saw GreyNoise-labelled addresses in its Entra ID sign-in logs that looked residential and in-country, then found several users authenticating from the same residential address and confirmed a serious intrusion; GreyNoise will not publish that investigation. GreyNoise''s point is that residential proxies defeat rules based on VPS or out-of-country addresses, so it recommends flagging residential-proxy addresses in authentication logs, scrutinising several enterprise users sharing one such address, and comparing device, session and user-agent attributes instead of geolocation alone.'
+  region_nexus: global; no Swiss victims reported
+  primary_sector_nexus: 'indirect: identity-log detection lesson for Microsoft 365/Entra environments; exploited device classes (NAS, NVR, SAP Visual Composer) are old, known flaws'
+  sector: all
+  cves:
+  - CVE-2024-3272
+  - CVE-2024-3273
+  - CVE-2021-44228
+  - CVE-2025-31324
+  techniques:
+  - T1190
+  - T1584.008
+  - T1090.003
+  - T1078
+  affected_products:
+  - D-Link ShareCenter NAS
+  - Ubiquiti UniFi Video
+  - SAP NetWeaver Visual Composer
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  lookback: true
+  borderline: true
+  borderline_reason: one lab's telemetry on old-CVE edge compromise; the transferable value is the residential-proxy sign-in detection advice, which sits close to the relevance floor for a Swiss public-sector SOC
+  suggested_classification:
+    reliability: B
+    credibility: 2
+    why: original honeypot telemetry from the discovering lab, uncorroborated; the intrusion in the demo is not published
+  evidence:
+  - quote: 'The actor successfully compromised at least 143 devices in 34 countries using exploits for the following vulnerabilities:'
+    attribution: GreyNoise
+    source_url: https://www.greynoise.io/blog/proxyjacking-edge-devices-residential-proxies
+  - quote: Detect residential proxy IP addresses in authentication logs, and especially scrutinize scenarios where multiple enterprise users are authenticating from the same residential proxy IP
+    attribution: GreyNoise
+    source_url: https://www.greynoise.io/blog/proxyjacking-edge-devices-residential-proxies
+  extended_notes: 'Triage lookalike: a legitimate user''s home address can also be a proxyware node, so a residential-proxy label alone does not prove malicious logins; several different accounts authenticating from one residential address is the discriminator GreyNoise''s customer used.'
+- title: 'Symantec: the Aoki infostealer now steals credential and session files of AI coding assistants (Claude, Codex, Cursor, Copilot, Gemini and others) alongside browser and wallet data'
+  sources:
+  - url: https://www.security.com/threat-intelligence/aoki-infostealer-ai-targeting
+    publisher: Symantec / Carbon Black Threat Hunter Team
+    date: '2026-10-15'
+    role: primary
+  - url: https://www.infosecurity-magazine.com/news/aoki-infostealer-ai-coding/
+    publisher: Infosecurity Magazine
+    date: '2026-10-15'
+    role: corroborating
+  discovery_trace: 'first seen at: infosec-magazine, URL https://www.infosecurity-magazine.com/rss/news/ (item ''New Aoki Infostealer Targets AI Coding Assistant Credentials'') -> pivot: https://www.infosecurity-magazine.com/news/aoki-infostealer-ai-coding/ -> primary: Symantec https://www.security.com/threat-intelligence/aoki-infostealer-ai-targeting'
+  summary: 'Symantec''s Threat Hunter Team (2026-10-15) reports that recent builds of the little-documented Aoki (Aokigahara) Windows infostealer, first seen earlier in 2026, added theft of credential and session files for AI coding assistants: the newest sample targeted .claude.json and Claude desktop and ChatGPT cookies, the Codex config.toml and .env files, and tokens for GitHub Copilot, Cursor, Gemini, JetBrains AI Assistant and Kiro plus AWS credentials; older samples did not look for AI files. It has no backdoor command list, collects what is available and posts it to its command server over a /gate endpoint, and it also takes browser data from dozens of browsers, wallets, password managers, messaging, FTP and VPN clients and records installed security products. Symantec''s assessment is that stolen AI keys can be cashed in like card data (resale or LLMjacking) and, unlike card data, can expose connected repositories, cloud services and CI/CD pipelines; it knows no actor, sees no link to an existing family and infers a financial motive from the crypto focus (Symantec''s inference). Cursor''s local state database, which can cache chat context and code snippets, is the one place source code could leak.'
+  region_nexus: global; no region stated
+  primary_sector_nexus: 'indirect: developer and administrator workstations that hold AI-assistant tokens with repository, cloud and CI/CD reach'
+  sector: all
+  cves: []
+  techniques:
+  - T1555.003
+  - T1552.001
+  - T1539
+  - T1528
+  - T1005
+  - T1041
+  - T1518.001
+  affected_products:
+  - Claude Code and Claude desktop
+  - OpenAI Codex CLI
+  - Cursor
+  - GitHub Copilot
+  - Google Gemini CLI
+  entity_keys: []
+  new_entities:
+  - key: malware:aoki-infostealer
+    type: malware
+    name: Aoki (Aokigahara) infostealer
+    aliases:
+    - Aokigahara
+    summary: Windows infostealer first seen in 2026 that recently added theft of AI coding assistant credential and session files (Symantec, 2026-10-15).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  borderline: true
+  borderline_reason: single-vendor sample analysis of a sparsely documented commodity stealer with no named victims or region; relevant only to organisations whose developers use these assistants on Windows
+  suggested_classification:
+    reliability: B
+    credibility: 2
+    why: first-hand malware analysis by the discovering vendor; press coverage is a rewrite
+  evidence:
+  - quote: The Aoki (aka Aokigahara) infostealer is now stealing credential and session files used by AI coding assistants, including Claude, OpenAI's Codex, Cursor, Codeium and Gemini.
+    attribution: Symantec / Carbon Black Threat Hunter Team
+    source_url: https://www.security.com/threat-intelligence/aoki-infostealer-ai-targeting
+  - quote: The malware has no backdoor command list. It collects whatever data is available and sends it to its command-and-control (C&C) server.
+    attribution: Symantec / Carbon Black Threat Hunter Team
+    source_url: https://www.security.com/threat-intelligence/aoki-infostealer-ai-targeting
+  extended_notes: 'Behavioural hunt: processes that are not the assistant itself reading assistant credential files (.claude.json, config.toml, .env, browser cookie stores for AI services) followed by an outbound POST; token revocation and rotation for any developer whose endpoint hit an infostealer detection.'
+- title: 'Forescout: the server behind the ChatGPT Custom GPT ClickFix chain is one of six running ROMULUS, a reusable multi-payload ClickFix delivery panel that also delivers LegionLoader'
+  sources:
+  - url: https://www.forescout.com/blog/romulus-analysis-of-a-new-multi-payload-clickfix-delivery-platform/
+    publisher: Forescout Research - Vedere Labs
+    date: '2026-10-15'
+    role: primary
+  - url: https://www.infosecurity-magazine.com/news/romulus-malware-clickfix-deliver/
+    publisher: Infosecurity Magazine
+    date: '2026-10-14'
+    role: corroborating
+  discovery_trace: 'first seen at: infosec-magazine, URL https://www.infosecurity-magazine.com/rss/news/ (item ''ROMULUS Malware Server Leverages ClickFix to Deliver Multiple Payloads'') -> pivot: https://www.infosecurity-magazine.com/news/romulus-malware-clickfix-deliver/ -> WebSearch (''forescout.com blog ROMULUS ClickFix panel shared delivery platform Vedere Labs October 2026'') -> primary: Forescout https://www.forescout.com/blog/romulus-analysis-of-a-new-multi-payload-clickfix-delivery-platform/'
+  summary: 'Forescout''s Vedere Labs (2026-10-15; Infosecurity dates the post 2026-10-14) found, while investigating an incident, a server hosting a login-protected panel named ROMULUS and, by pivoting on its login page, six servers running it. One of them is the server Huntress reported as hosting the ClickFix script in the ChatGPT Custom GPT campaign, and another served the same Stardock DeElevation sideloading package, so that campaign is one route of a shared platform. Two token-based routes are documented: /s/<token> serves an obfuscated PowerShell staging script (self-deleting, fetches over a decimal-notation IP with a Chrome user agent, then runs msiexec quietly from the temp folder) and /app/<token> serves a trojanized MSI; a second route downloads a nested encrypted archive containing an artificially inflated executable that Forescout identifies as LegionLoader (also called CurlyGate, RobotDropper and Satacom), the inflation being a likely evasion of scanner file-size limits. A statistics page shows installs, runs and a country breakdown per campaign. Forescout does not know the operator and says ROMULUS may be a private panel, a commercial delivery service, an affiliate framework or copied software, and has no evidence linking it to the RomulusLoader Proofpoint reported for Silver Fox. Its hunting guidance is long PowerShell run from the temp folder or against decimal IP addresses, silent MSI installs from temp, PowerShell started with -NoProfile, -ep bypass or -w hidden with a URL, and POST requests whose form body is a single base64 blob.'
+  region_nexus: global; no region stated
+  primary_sector_nexus: 'indirect: ClickFix is a staple initial-access technique against ordinary staff; the entry''s value is the shared-infrastructure link and the hunting concepts'
+  sector: all
+  cves: []
+  techniques:
+  - T1204.004
+  - T1059.001
+  - T1218.007
+  - T1574.001
+  - T1105
+  - T1027
+  - T1070.004
+  affected_products:
+  - Microsoft Windows
+  entity_keys:
+  - campaign:chatgpt-custom-gpt-clickfix-rat-2026-09
+  new_entities:
+  - key: tool:romulus-clickfix-delivery-platform
+    type: tool
+    name: ROMULUS ClickFix delivery platform
+    aliases:
+    - ROMULUS
+    summary: Multi-payload ClickFix delivery panel found by Forescout Vedere Labs on six servers, serving trojanized MSIs and a LegionLoader route; operator unknown (Forescout, 2026-10-15).
+  relation_suggestions:
+  - subject: campaign:chatgpt-custom-gpt-clickfix-rat-2026-09
+    object: tool:romulus-clickfix-delivery-platform
+    basis: 'Forescout: the server Huntress reported in the Custom GPT campaign is one of six running the ROMULUS panel (Forescout, 2026-10-15)'
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: update-of:2026-10-04/chatgpt-custom-gpt-clickfix-sideloaded-in-memory-rat
+  lookback: true
+  borderline: true
+  borderline_reason: adds infrastructure context (shared delivery platform) to an existing notable entry rather than a new defender action; Infosecurity/Forescout dates differ by one day
+  suggested_classification:
+    reliability: B
+    credibility: 2
+    why: first-hand pivoting by the discovering lab; the Huntress server link is Forescout's own comparison
+  evidence:
+  - quote: ROMULUS may be a privately operated panel, a commercial cybercriminal delivery service, an affiliate framework, or software that has been copied between operators.
+    attribution: Forescout Research - Vedere Labs
+    source_url: https://www.forescout.com/blog/romulus-analysis-of-a-new-multi-payload-clickfix-delivery-platform/
+  - quote: Long PowerShell scripts executed from `%TEMP%` or using decimal IP notation
+    attribution: Forescout Research - Vedere Labs
+    source_url: https://www.forescout.com/blog/romulus-analysis-of-a-new-multi-payload-clickfix-delivery-platform/
+  extended_notes: Server addresses, tokens and file hashes are omitted (IOCs); Forescout publishes them. Detection concept ties to the existing entry's advice that name-based detections (Canon, Stardock) miss the next package swap.
+- title: 'Check Point Research: LiteLLM gateway missing authorization check on /config/update lets any authenticated user take over the gateway (CVE-2026-35029), plus an SSRF that leaks provider keys (CVE-2026-59823); fixed in 1.83.9'
+  sources:
+  - url: https://research.checkpoint.com/2026/when-llm-gateways-go-wrong-findings-from-litellm/
+    publisher: Check Point Research
+    date: '2026-10-13'
+    role: primary
+  - url: https://www.infosecurity-magazine.com/news/high-risk-vulnerabilities-llm-tool/
+    publisher: Infosecurity Magazine
+    date: '2026-10-15'
+    role: corroborating
+  discovery_trace: 'first seen at: infosec-magazine, URL https://www.infosecurity-magazine.com/rss/news/ (item ''Warning Over High-Risk Vulnerabilities in Widely Used LLM Gateway Tool'') -> pivot: https://www.infosecurity-magazine.com/news/high-risk-vulnerabilities-llm-tool/ -> primary: Check Point Research https://research.checkpoint.com/2026/when-llm-gateways-go-wrong-findings-from-litellm/'
+  summary: 'Check Point Research (2026-10-13) assessed LiteLLM v1.77.7 and reports two issues resolved in 1.83.9: CVE-2026-35029, where POST /config/update relies on the generic API-key dependency without the PROXY_ADMIN role check the sibling administrative endpoints perform, combined with an overly permissive route allowlist for UI-session tokens, so any authenticated user including a low-privileged account can modify the proxy''s runtime configuration, read files, take over the administrator account and obtain remote code execution through malicious Python modules loaded from cloud storage; and CVE-2026-59823, an SSRF in the ''Clientside LLM Credentials'' feature that lets an attacker redirect gateway API calls and exfiltrate provider keys. The gateway stores the API keys for every model provider an organisation uses, which is why Check Point recommends reviewing who holds accounts, rotating provider keys if unauthorised access is suspected, verifying that limited roles are actually limited, and including LLM gateways in penetration tests. No exploitation is reported; EPSS for CVE-2026-35029 is about 0.04 (90th percentile), the highest of the CVEs in this return, and it is not in CISA KEV.'
+  region_nexus: global
+  primary_sector_nexus: 'indirect: AI gateway deployments in administrations that centralise model-provider keys'
+  sector: all
+  cves:
+  - CVE-2026-35029
+  - CVE-2026-59823
+  techniques:
+  - T1190
+  - T1078
+  - T1059.006
+  - T1552.001
+  - T1528
+  affected_products:
+  - LiteLLM
+  entity_keys:
+  - product:litellm
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  lookback: true
+  borderline: true
+  borderline_reason: authenticated-user prerequisite, no exploitation, and the store already carries several LiteLLM entries; include only if the SOC runs LiteLLM
+  suggested_classification:
+    reliability: B
+    credibility: 2
+    why: finder write-up; vendor fix version stated by the finder, vendor advisory not read
+  evidence:
+  - quote: which allowed any authenticated user (including low-privileged accounts) to modify
+    attribution: Check Point Research
+    source_url: https://research.checkpoint.com/2026/when-llm-gateways-go-wrong-findings-from-litellm/
+  - quote: Review who has access to your gateway
+    attribution: Infosecurity Magazine
+    source_url: https://www.infosecurity-magazine.com/news/high-risk-vulnerabilities-llm-tool/
+  extended_notes: Check Point tested v1.77.7; the fix is in 1.83.9 and later per both sources. The prior store entries on LiteLLM (June, August) cover different CVEs.
+- title: 'Fox-IT releases an eight-year Cobalt Strike Beacon corpus: 56,843 raw beacons from 30,604 Team Servers, with data on staging decline, DNS beacons and Team Server lifetimes'
+  sources:
+  - url: https://blog.fox-it.com/2026/10/13/releasing-the-cobalt-strike-beacon-corpus/
+    publisher: Fox-IT (NCC Group)
+    date: '2026-10-13'
+    role: primary
+  discovery_trace: 'first seen at: fox-it-blog, URL https://blog.fox-it.com/feed/ (feed listing, newest item dated 2026-10-13 in its URL) -> primary (no pivot needed): https://blog.fox-it.com/2026/10/13/releasing-the-cobalt-strike-beacon-corpus/'
+  summary: 'Fox-IT published on 2026-10-13 the dataset behind its Cobalt Strike scanning: 190,182 beacon sightings and 56,843 unique raw beacons with parsed configurations, collected from 30,604 Team Server addresses between 2018-07-04 and 2026-09-29, on Hugging Face (a 52 MB parsed table and a 9.7 GB CaRT-wrapped payload table), plus dissect.cobaltstrike 1.3.0 with layout-independent configuration scanning. Findings Fox-IT highlights: old versions persist (4.9 and 4.5-4.8 share the lead since 2024, 4.10+ small); beacon collection fell to about 200 a month as operators disable staging (host_stage), and only about 32 percent of fingerprinted Team Servers handed out a beacon on average, down from about 40 percent in 2023 to 20-25 percent in 2026, so public scanning sees a shrinking part of the landscape; the median Team Server was reachable for 14 days, 35 percent seen on a single day, 14 percent still serving after three months and 2 percent after a year; DNS beacons declined far less than HTTP(S) ones, which Fox-IT attributes to less attention in public research and OPSEC advice; 128 beacons (0.23 percent) could not be parsed, mostly customised builds, and some early payloads are Metasploit Meterpreter. Fox-IT keeps its scanning fingerprints private.'
+  region_nexus: global; Dutch research unit
+  primary_sector_nexus: 'indirect: detection-engineering and hunting reference material rather than an incident'
+  sector: all
+  cves: []
+  techniques:
+  - T1071.001
+  - T1071.004
+  - T1573
+  - T1090.002
+  affected_products:
+  - Cobalt Strike
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: HIGH
+  novelty: new
+  lookback: true
+  borderline: true
+  borderline_reason: research-asset release with no defender action for a Swiss public-sector SOC; useful as detection-engineering context (DNS beacon blind spot, short infrastructure lifetime) and as an awareness item at most
+  suggested_classification:
+    reliability: B
+    credibility: 1
+    why: dataset owner's own first-hand statistics; the figures are descriptive of Fox-IT's collection, not of the whole threat landscape (Fox-IT says so)
+  evidence:
+  - quote: On average, the Team Servers that handed out a beacon were only about 32% of those we fingerprinted
+    attribution: Fox-IT (NCC Group)
+    source_url: https://blog.fox-it.com/2026/10/13/releasing-the-cobalt-strike-beacon-corpus/
+  - quote: The median Team Server was reachable for 14 days.
+    attribution: Fox-IT (NCC Group)
+    source_url: https://blog.fox-it.com/2026/10/13/releasing-the-cobalt-strike-beacon-corpus/
+  extended_notes: 'Detection reading (analyst inference from Fox-IT''s figures): HTTP-centric beacon hunts and IP-reputation feeds age fast because Team Servers live about two weeks, and DNS beacons remain a comparatively under-watched channel.'
+- title: XBOW builds a three-bug Chrome full chain (V8, animated WebP, Crashpad) to Windows code execution in six days with a public AI model, for Google's first $250,000 full-chain reward; all bugs fixed in Chrome 152
+  sources:
+  - url: https://xbow.com/blog/xbow-built-a-chrome-full-chain-exploit
+    publisher: XBOW
+    date: '2026-10-13'
+    role: primary
+  - url: https://thehackernews.com/2026/10/researchers-used-public-openai-model-to.html
+    publisher: The Hacker News
+    date: '2026-10-14'
+    role: corroborating
+  discovery_trace: 'first seen at: hackernews, URL https://feeds.feedburner.com/TheHackersNews (item ''Researchers Used a Public OpenAI Model to Build a $250,000 Chrome Full-Chain Exploit in Six Days'') -> pivot: https://thehackernews.com/2026/10/researchers-used-public-openai-model-to.html -> WebSearch (''XBOW Chrome full chain exploit $250,000 reward six days GPT-5.6 Sol Brendan Dolan-Gavitt blog'') -> primary: XBOW https://xbow.com/blog/xbow-built-a-chrome-full-chain-exploit'
+  summary: XBOW (2026-10-13) says four of its researchers working with OpenAI's publicly available GPT-5.6 Sol built, between 2026-08-02 and 08-07, a full Chrome chain that gives code execution on Windows from a page load, for roughly $40,000 of compute, and that Google paid its top $250,000 reward, the first under its 2026 rules; an earlier chain had to be rebuilt because Google already knew one of its bugs. The Hacker News reports the three stages as a V8 bug (CVE-2026-85045, fixed in 152.0.7977.82 on 2026-09-03), an animated-WebP decoder bug used to escape the V8 sandbox and make one precise write (no public identifier confirmed; the press report notes an identifier clash in XBOW's announcement), and a Crashpad bug (CVE-2026-78952, fixed in 152.0.7977.65 on 2026-08-25) that turns the write into code execution. XBOW says the bugs were never used against Chrome users. The comparison with a four-person team needing 6-9 months, and the one-billion-user exposure, are XBOW's own claims; XBOW says the AI searched source, built proofs of concept and drafted exploits while humans chose targets and checked results, i.e. this is not an autonomous attack.
+  region_nexus: global
+  primary_sector_nexus: 'indirect: browser patching cadence and exploit-development economics'
+  sector: all
+  cves:
+  - CVE-2026-85045
+  - CVE-2026-78952
+  techniques:
+  - T1189
+  - T1203
+  - T1068
+  affected_products:
+  - Google Chrome
+  entity_keys:
+  - product:google-chrome
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  lookback: true
+  borderline: true
+  borderline_reason: already patched, no exploitation; the transferable point is cost/time compression of full-chain exploit development, which is a trend statement by the vendor that sold it
+  suggested_classification:
+    reliability: B
+    credibility: 2
+    why: finder's own account plus press reading of Google's release notes; cost and time claims are unverifiable
+  evidence:
+  - quote: The compute we used over six days for the awarded chain cost $40,000, a fraction of the bounty.
+    attribution: XBOW
+    source_url: https://xbow.com/blog/xbow-built-a-chrome-full-chain-exploit
+  - quote: All three bugs are now fixed, and XBOW says they were never used against Chrome users.
+    attribution: The Hacker News
+    source_url: https://thehackernews.com/2026/10/researchers-used-public-openai-model-to.html
+  extended_notes: 'Defender takeaway (analyst inference, not a source statement beyond XBOW''s own ''defend accordingly''): browser restart-to-apply and shorter patch SLAs matter more as full-chain development cost falls.'
+- title: 'OX Security: Apache Airflow SSH and SFTP providers disable host-key verification by default (CVE-2026-94134, CVE-2026-94135); fixed in providers 7.0.0'
+  sources:
+  - url: https://www.ox.security/blog/by-default-insecure-apache-airflow-disables-ssh-host-key-verification/
+    publisher: OX Security
+    date: '2026-10-16'
+    role: primary
+  - url: https://cveawg.mitre.org/api/cve/CVE-2026-94134
+    publisher: Apache Software Foundation CNA (CVE record, JSON API)
+    date: '2026-10-15'
+    role: primary-record
+  discovery_trace: 'first seen at: ox-security, URL https://www.ox.security/blog/ (listing, newest post 2026-10-16) -> primary (no pivot needed): https://www.ox.security/blog/by-default-insecure-apache-airflow-disables-ssh-host-key-verification/ -> CVE record https://cveawg.mitre.org/api/cve/CVE-2026-94134'
+  summary: 'OX Security (2026-10-16) reports that apache-airflow-providers-ssh and apache-airflow-providers-sftp, through version 6.0.1, accept any server key by default: SSHHook hard-codes no_host_key_check to true and uses Paramiko''s AutoAddPolicy, the SFTP hook treats a missing setting as no verification, and the asynchronous asyncssh path passes known_hosts=None. A party that can sit on the network path between an Airflow worker and the target (ARP spoofing on a shared subnet, a compromised network device, cloud routing manipulation or BGP hijack) can present its own key, read the service-account credentials Airflow stores, alter command output and modify transferred files. CVSS 3.1 8.1 with attack complexity High (the man-in-the-middle position is the barrier). Fixes are in the providers'' 7.0.0 releases; the Apache CNA published both CVE records on 2026-10-15. Interim mitigation is to set no_host_key_check=false with an explicit host_key on every connection (without a key, connections fail, which is the secure behaviour), and OX suggests searching task logs for the warning string that marks connections running unverified. No exploitation is reported; a proof-of-concept repository is linked.'
+  region_nexus: global
+  primary_sector_nexus: 'indirect: data-engineering pipelines in administrations that move files and run commands over SSH/SFTP'
+  sector: all
+  cves:
+  - CVE-2026-94134
+  - CVE-2026-94135
+  techniques:
+  - T1557
+  - T1552.001
+  - T1078
+  - T1565.001
+  affected_products:
+  - Apache Airflow SSH provider
+  - Apache Airflow SFTP provider
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  borderline: true
+  borderline_reason: needs an on-path attacker (AC:H), no exploitation, fix available; it is a secure-by-default finding most relevant to teams already running Airflow with SSH/SFTP operators
+  suggested_classification:
+    reliability: B
+    credibility: 2
+    why: finder write-up with the CNA record confirming existence and publication date; vendor patch notes not read
+  evidence:
+  - quote: can present their own key and have the connection accepted without error
+    attribution: OX Security
+    source_url: https://www.ox.security/blog/by-default-insecure-apache-airflow-disables-ssh-host-key-verification/
+  - quote: 'Upgrade to the fixed versions:'
+    attribution: OX Security
+    source_url: https://www.ox.security/blog/by-default-insecure-apache-airflow-disables-ssh-host-key-verification/
+  extended_notes: 'Post-compromise per OX: rotate credentials in affected connections, audit target-server access logs for unexpected sessions and review SFTP-transferred files for modification.'
+- title: 'SAP Cloud SDK for Python CVE-2026-89111 (CVSS 10.0): an attacker-controlled tenant subdomain redirects OAuth2 token requests and exfiltrates a multi-tenant BTP application''s client credentials; The Hacker News finds later releases that skip the fix'
+  sources:
+  - url: https://github.com/SAP/cloud-sdk-python/security/advisories/GHSA-4mv3-jxxm-9cx2
+    publisher: SAP (GitHub security advisory, vendor)
+    date: '2026-10-13'
+    role: primary
+  - url: https://cveawg.mitre.org/api/cve/CVE-2026-89111
+    publisher: SAP CNA (CVE record, JSON API)
+    date: '2026-10-13'
+    role: primary-record
+  - url: https://thehackernews.com/2026/10/sap-discloses-critical-cvss-10-flaw-in.html
+    publisher: The Hacker News
+    date: '2026-10-13'
+    role: corroborating
+  discovery_trace: 'first seen at: hackernews, URL https://thehackernews.com/2026/10/ (monthly archive page, scanned because the feed''s 50-item cap hid 2026-10-11 to 2026-10-13 11:30) -> pivot: https://thehackernews.com/2026/10/sap-discloses-critical-cvss-10-flaw-in.html -> primary: SAP advisory https://github.com/SAP/cloud-sdk-python/security/advisories/GHSA-4mv3-jxxm-9cx2 -> CVE record https://cveawg.mitre.org/api/cve/CVE-2026-89111'
+  summary: SAP's advisory of 2026-10-13 (CVE-2026-89111, SAP CVSS 3.1 10.0, AV:N/PR:N/S:C, CWE-918) says the SAP Cloud SDK for Python lets an attacker who controls the tenant_subdomain value a multi-tenant SAP BTP application passes to the SDK redirect OAuth2 token requests to an attacker-controlled server, so the application's client ID and secret are exfiltrated. The advisory names 0.45.2 (released 2026-08-21, RFC 1123 DNS-label validation) as the fix and an allowlist of registered tenant subdomains as the workaround; the affected range is below 0.45.2. The Hacker News reports, from running SAP's own tests against each release, that versions 0.53.0 to 0.55.0 (2026-09-10 to 09-18) skip the check for Destination-service calls (and in 0.55.0 for Document Management calls) after a refactor onto shared token code that SAP's 0.55.1 notes confirm and fix, and that the older 0.36.1 and 0.36.2 releases also lack it; the advisory does not list any version above 0.45.2 as affected and does not say whether the six releases fall under the CVE or whether credentials should be rotated (The Hacker News's testing and reading, not SAP's statement). Only applications that pass a user-influenced tenant subdomain to the SDK are exposed; no exploitation is reported, it is not in CISA KEV and EPSS is about 0.003.
+  region_nexus: global; SAP BTP is used by public bodies that extend SAP landscapes with custom multi-tenant applications
+  primary_sector_nexus: 'indirect: only custom multi-tenant Python applications on SAP BTP, a narrow population'
+  sector: all
+  cves:
+  - CVE-2026-89111
+  techniques:
+  - T1190
+  affected_products:
+  - SAP Cloud SDK for Python
+  - SAP Business Technology Platform
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  lookback: true
+  borderline: true
+  borderline_reason: CVSS 10 on paper but a narrow exposed population (custom multi-tenant BTP apps passing user-influenced subdomains) and no exploitation; the checkable fixed-version discrepancy is the useful part
+  suggested_classification:
+    reliability: A
+    credibility: 2
+    why: vendor advisory and CNA record for its own product; the later-release gap is The Hacker News's test result and is not confirmed by SAP
+  evidence:
+  - quote: An attacker who controls the `tenant_subdomain` parameter can redirect OAuth2 token requests to an attacker-controlled server, causing client credentials to be exfiltrated.
+    attribution: SAP (GitHub security advisory, vendor)
+    source_url: https://github.com/SAP/cloud-sdk-python/security/advisories/GHSA-4mv3-jxxm-9cx2
+  - quote: Neither it nor the release notes say whether the six releases fall under CVE-2026-89111.
+    attribution: The Hacker News
+    source_url: https://thehackernews.com/2026/10/sap-discloses-critical-cvss-10-flaw-in.html
+  extended_notes: 'Check: pip show sap-cloud-sdk on each BTP application image, and whether any code path forwards a request-derived tenant subdomain to Destination, Agent Gateway or Document Management calls. Until the vendor clarifies the 0.53.0-0.55.0 releases, treat them as unpatched and move to 0.55.1 or later (0.58.4 was newest on PyPI on 2026-10-13 per The Hacker News); credential rotation is the cautious step for an application that ran a release without the check, but the advisory does not require it.'
+cve_table:
+- cve: CVE-2026-99999
+  product: Linux kernel (IPv4 stack, virtio-net/TAP path)
+  cvss: 9.3 (kernel CNA, CVSS 3.1 AV:L/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H); Red Hat 8.8
+  epss: 0.00211
+  kev: false
+  exploited: no (lab host crash/takeover and production memory leak demonstrated by finder; no in-the-wild use reported)
+  affected: since 2.6.27 per CVE record; distribution kernels without the backport
+  fixed: 'stable first-fixed: 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.57, 7.2.11 (mainline 7.3-rc7); Debian trixie 6.12.113-1 (DSA-6568-1); bookworm 6.1.187-1 and forky 7.2.9-1 listed vulnerable at fetch'
+  type: OOB write / header corruption leading to info leak, DoS, host RCE
+  vector: local (guest) via crafted virtio checksum metadata
+  auth: none beyond guest code execution
+  source: https://pwn.ai/blog/pwnescape
+- cve: CVE-2026-74580
+  product: Linux kernel vhost (vhost-net, vhost-vsock)
+  cvss: 8.8 (kernel CNA); Red Hat 7.3, Amazon 7.8, Oracle 7.3
+  epss: 0.00126
+  kev: false
+  exploited: 'no'
+  affected: 4.11 through 7.2-rc4
+  fixed: 5.10.265, 5.15.216, 6.1.183, 6.6.152, 6.12.104, 6.18.45, 7.1.9, 7.2 (per The Hacker News; vendors backport)
+  type: stale-cache OOB read/write (local root, guest-to-host write into QEMU)
+  vector: local; /dev/vhost-net, /dev/vhost-vsock; guest path needs vIOMMU + device-IOTLB
+  auth: local user with device-node access
+  source: https://matrix.tencent.com/en/2026/10/12/vghost-cve-2026-74580
+- cve: CVE-2026-15176
+  product: NGINX (alias + rewrite + $request_filename)
+  cvss: F5 CVSS v4.0 9.2 per The Hacker News; nginx.org severity medium
+  epss: 0.00516
+  kev: false
+  exploited: 'no'
+  affected: 0.1.29 to 1.31.6
+  fixed: 1.30.6 / 1.31.7
+  type: heap overflow
+  vector: network, configuration-dependent
+  auth: none
+  source: https://nginx.org/en/security_advisories.html
+- cve: CVE-2026-93479
+  product: NGINX (regex map captures in root/log_format)
+  cvss: F5 CVSS v4.0 9.2 per The Hacker News; nginx.org severity medium
+  epss: 0.00554
+  kev: false
+  exploited: 'no'
+  affected: 1.30.0-1.30.5 and 1.31.2-1.31.6
+  fixed: 1.30.6 / 1.31.7
+  type: heap overflow in script evaluation
+  vector: network, configuration-dependent
+  auth: none
+  source: https://nginx.org/en/security_advisories.html
+- cve: CVE-2026-97205
+  product: NGINX (aio + SSI include virtual)
+  cvss: F5 CVSS v4.0 9.2 per The Hacker News; nginx.org severity medium
+  epss: 0.00441
+  kev: false
+  exploited: 'no'
+  affected: 0.8.11 to 1.31.6
+  fixed: 1.30.6 / 1.31.7
+  type: use-after-free (8-bit pending-operation counter wrap)
+  vector: network, configuration-dependent
+  auth: none
+  source: https://nginx.org/en/security_advisories.html
+- cve: CVE-2026-95101
+  product: NGINX HTTP/3 (proxy_request_buffering on, default)
+  cvss: F5 CVSS v4.0 6.9 per The Hacker News; nginx.org severity medium
+  epss: 0.00247
+  kev: false
+  exploited: 'no'
+  affected: 1.25.0 to 1.31.6
+  fixed: 1.30.6 / 1.31.7
+  type: request body injection past client_max_body_size
+  vector: network (HTTP/3)
+  auth: none
+  source: https://nginx.org/en/security_advisories.html
+- cve: CVE-2026-97629
+  product: NGINX (shared ssl_session_cache without ssl_session_ticket_key)
+  cvss: F5 CVSS v4.0 8.3 per The Hacker News; nginx.org severity medium
+  epss: 0.00175
+  kev: false
+  exploited: 'no'
+  affected: 1.23.2 to 1.31.6
+  fixed: 1.30.6 / 1.31.7
+  type: TLS session-ticket forgery (uninitialised key slot), possible client-certificate check bypass
+  vector: network (TLS)
+  auth: none
+  source: https://nginx.org/en/security_advisories.html
+- cve: CVE-2026-96889
+  product: Next.js image optimization (sharp/librsvg) on glibc Linux
+  cvss: Vercel 9.5; Red Hat 7.8 for librsvg
+  epss: 0.00151
+  kev: false
+  exploited: no (none reported as of 2026-10-15)
+  affected: Next.js 10.0.0-15.5.27 and 16.0.0-16.4.0 (SVG optimization must be enabled)
+  fixed: 16.4.1; 15.5.28 with sharp >= 0.35.5
+  type: memory corruption leading to RCE
+  vector: network
+  auth: none
+  source: https://nextjs.org/blog/nextjs-security-update-october-14-2026
+- cve: CVE-2026-35029
+  product: LiteLLM proxy (/config/update)
+  cvss: not stated in sources read
+  epss: 0.03982
+  kev: false
+  exploited: 'no'
+  affected: versions older than 1.83.9 (Check Point tested 1.77.7)
+  fixed: 1.83.9
+  type: missing authorization (low-privilege to admin, RCE via Python module load)
+  vector: network
+  auth: any authenticated user
+  source: https://research.checkpoint.com/2026/when-llm-gateways-go-wrong-findings-from-litellm/
+- cve: CVE-2026-59823
+  product: LiteLLM (Clientside LLM Credentials)
+  cvss: not stated in sources read
+  epss: 0.00439
+  kev: false
+  exploited: 'no'
+  affected: versions older than 1.83.9
+  fixed: 1.83.9
+  type: SSRF leaking provider API keys
+  vector: network
+  auth: authenticated
+  source: https://research.checkpoint.com/2026/when-llm-gateways-go-wrong-findings-from-litellm/
+- cve: CVE-2026-94134
+  product: apache-airflow-providers-ssh / -sftp (SSHHook/SFTPHook)
+  cvss: 8.1 (CVSS 3.1 AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N, OX)
+  epss: 0.00175
+  kev: false
+  exploited: 'no'
+  affected: through 6.0.1
+  fixed: 7.0.0
+  type: missing host-key verification (CWE-322)
+  vector: network, on-path
+  auth: none
+  source: https://www.ox.security/blog/by-default-insecure-apache-airflow-disables-ssh-host-key-verification/
+- cve: CVE-2026-94135
+  product: apache-airflow-providers-sftp (async SFTP path)
+  cvss: 8.1 (OX)
+  epss: 0.00175
+  kev: false
+  exploited: 'no'
+  affected: through 6.0.1
+  fixed: 7.0.0
+  type: missing host-key verification (CWE-322)
+  vector: network, on-path
+  auth: none
+  source: https://www.ox.security/blog/by-default-insecure-apache-airflow-disables-ssh-host-key-verification/
+- cve: CVE-2026-89111
+  product: SAP Cloud SDK for Python
+  cvss: 10.0 (SAP, CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N)
+  epss: 0.00274
+  kev: false
+  exploited: 'no'
+  affected: below 0.45.2 per advisory; The Hacker News finds 0.53.0-0.55.0 and 0.36.1/0.36.2 lack the check (not SAP-confirmed)
+  fixed: 0.45.2 per advisory; 0.55.1 or later per SAP release notes for the later regression
+  type: SSRF / OAuth2 client-credential exfiltration
+  vector: network
+  auth: none; attacker must control the tenant subdomain value
+  source: https://github.com/SAP/cloud-sdk-python/security/advisories/GHSA-4mv3-jxxm-9cx2
+- cve: CVE-2026-85045
+  product: Google Chrome V8 (stage 1 of XBOW chain)
+  cvss: high (press); not stated
+  epss: 0.0021
+  kev: false
+  exploited: no (XBOW says never used against users)
+  affected: Chrome before 152.0.7977.82
+  fixed: 152.0.7977.82 (2026-09-03)
+  type: V8 memory-safety bug
+  vector: network, user loads page
+  auth: none
+  source: https://xbow.com/blog/xbow-built-a-chrome-full-chain-exploit
+- cve: CVE-2026-78952
+  product: Google Chrome Crashpad (stage 3 of XBOW chain)
+  cvss: high (press); not stated
+  epss: 0.00404
+  kev: false
+  exploited: no (XBOW says never used against users)
+  affected: Chrome before 152.0.7977.65
+  fixed: 152.0.7977.65 (2026-08-25)
+  type: memory-safety bug in crash handler
+  vector: chained after sandbox escape
+  auth: none
+  source: https://thehackernews.com/2026/10/researchers-used-public-openai-model-to.html
+dropped_leads:
+- lead: Cisco Talos UAT-11985 (Taiwan research affiliates, AI-assisted lures, real-time Google AitM kit)
+  reason: primary published 2026-10-08, outside the 145 h horizon; THN rewrite of 2026-10-16 adds nothing; no Swiss or public-sector-Europe nexus
+  urls:
+  - https://thehackernews.com/2026/10/uat-11985-uses-fake-event-invites-to.html
+  - https://blog.talosintelligence.com/uat-11985/
+- lead: Silent Lynx / UAT-6275 / TAG-193 (CIS governments, WinRAR CVE-2025-8088)
+  reason: regional targeting (Central Asia/CIS), known 2025 WinRAR flaw, no Swiss nexus; Talos primary dated 2026-10-14 belongs to another slice
+  urls:
+  - https://thehackernews.com/2026/10/silent-lynx-exploits-winrar-flaw-to.html
+- lead: Luna Moth / Silent Ransom Group leak ('The Luna Moth Files'; Check Point 2026-10-09, Infosecurity 2026-10-12)
+  reason: authenticity unverified (Check Point says so), law-firm focus (42 of 50 recent victims), primary outside the horizon; value would be a changelog note on entry 2026-06-06/luna-moth-silent-ransom-group-unc3753-vishing-to-physical-ac only if the operator wants help-desk vishing playbook detail (two-operator call model, remote-access tool coaching)
+  urls:
+  - https://blog.checkpoint.com/security/how-luna-moth-runs-data-extortion-like-a-business/
+  - https://www.infosecurity-magazine.com/news/luna-moth-leaks-ransomware-playbook/
+- lead: Calif OpenBSD 7.9 local root chain (shmat counter wrap + kernel UAF)
+  reason: both flaws patched in September, no CVE, OpenBSD footprint in the constituency negligible
+  urls:
+  - https://thehackernews.com/2026/10/researchers-demonstrate-openbsd-root.html
+- lead: Anthropic warning on self-propagating AI IoT botnets
+  reason: forward-looking research with no in-the-wild activity; The Register disputes the framing
+  urls:
+  - https://thehackernews.com/2026/10/anthropic-warns-small-ai-models-could.html
+- lead: 'Akamai: CodeAudit AI VS Code extension monitors developer activity and uploads pasted code over HTTP'
+  reason: single obscure extension, no reach evidence; the theme is covered better by the Aoki item above
+  urls:
+  - https://www.akamai.com/blog/ai/2026/oct/vibe-coding-vs-code-extension-monitors-developer-activity
+- lead: Acronis Cyberthreats Update October 2026 (monthly telemetry report)
+  reason: periodic vendor telemetry (4.3 percent of clients hit by malware in September; focus countries exclude Switzerland) plus a rehash of the BlueMoon chain already covered on 2026-09-10; no flag as annual report
+  urls:
+  - https://www.acronis.com/en/tru/posts/acronis-cyberthreats-update-october-2026/
+- lead: Semperis 2026 Ransomware Risk Report (survey of 1,200 professionals; 2026-10-14)
+  reason: vendor survey statistics; flagged here as a periodic report landing in the window, dropped as vanity metrics
+  urls:
+  - https://www.infosecurity-magazine.com/news/ransomware-threats-physical/
+- lead: 'Sublime Security: invisible Unicode tag characters in phishing mail (2026-10-14)'
+  reason: vendor attack-spotlight on a known evasion with one fraud sample; incremental to the Infosecurity 2026-10-07 prompt-injection item already in the feed
+  urls:
+  - https://sublime.security/blog/hiding-attacks-in-plain-sight-with-invisible-unicode-tag-characters/
+- lead: 'NetAskari: Divine Seagull iOS 26 exploitation framework (2026-10-14)'
+  reason: independent hobbyist-grade analysis of leaked source, no victims or patch delta; iVerify post it builds on is dated 2026-09-15
+  urls:
+  - https://netaskari.substack.com/p/divine-seagull-coruna-darksword-expansion
+- lead: ThreatFabric Hirudo Android banking trojan
+  reason: targets Indonesian banking apps; no European nexus
+  urls:
+  - https://thehackernews.com/2026/10/hirudo-android-trojan-uses-patched.html
+- lead: Doyensec SmartScreen enclave (SFAPE.dll) code execution, CVE-2026-83498
+  reason: local PoC, patched 2026-09-08, not exploited
+  urls:
+  - https://thehackernews.com/2026/10/four-byte-write-and-timing-bug-let.html
+- lead: curl 8.23.0 High CVE-2026-92392 (HTTP/2 upload use-after-free)
+  reason: malicious-server precondition with exact-build knowledge, curl itself expects a crash; routine patch-cycle item for S1
+  urls:
+  - https://thehackernews.com/2026/10/curl-patches-http2-upload-flaw-after.html
+- lead: Docker Hub GhostPat CVE-2026-105445
+  reason: fixed server-side by Docker on 2026-09-30 with no exploitation found; no customer action
+  urls:
+  - https://thehackernews.com/2026/10/docker-fixes-critical-two-year-old-hub.html
+- lead: Danfoss/Dixell refrigeration attack follow-ups (Infosecurity 2026-10-14 and 2026-10-15, Risky 2026-10-14/16, The Register 2026-10-15)
+  reason: already carried by entry 2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack including the Censys exposure report; no new fact found
+  urls:
+  - https://www.infosecurity-magazine.com/news/france-expose-danfoss-controllers/
+  - https://www.infosecurity-magazine.com/news/french-supermarket-hack-more/
+- lead: Citizen Lab / Confiant AdFection (Candiru via ads), PEERSTITCH, BeyondTrust, Cisco ESA, PAN-OS, Drupal, Ivanti, AhsayCBS, Collabora CODE, GhostAction, Tangerhuette
+  reason: all already in prior_coverage.json
+  urls: []
+- lead: BAE Systems-run US Bankruptcy Noticing Center outage (2026-10-15/16); Fehmarn Belt construction consortium cyber incident; Ahold Delhaize outage; Legal Aid Agency record-theft disclosure; Italian MoFA attack
+  reason: incident disclosures for S4/S2; no technical root cause published and no Swiss nexus in the sources read
+  urls:
+  - https://www.infosecurity-magazine.com/news/cyber-incident-bae-us-bankruptcy/
+  - https://news.risky.biz/risky-bulletin-russia-arrests-datasuckers-hacking-group/
+- lead: Norwegian armed forces found Chinese-made rental cars recorded footage of exercises (Risky 2026-10-14, citing Militarnyi and DN)
+  reason: possible Armed Forces-relevant connected-vehicle lead; primary (DN) not reached, Militarnyi listing returned no article; left for S2 or the operator
+  urls:
+  - https://news.risky.biz/risky-bulletin-spyware-chip-found-in-ledger-crypto-wallets/
+- lead: CyberXero AI-augmented initial access broker (SOCRadar 2026-10-06; THN rewrite 2026-10-12)
+  reason: primary dated 2026-10-06, outside the horizon; Ukrainian critical-infrastructure and WordPress/e-commerce focus (Poland, China, Netherlands victims named), no Swiss nexus
+  urls:
+  - https://thehackernews.com/2026/10/cyberxero-uses-claude-code-in-campaign.html
+  - https://socradar.io/blog/cyberxero-ai-iab-ukraine-critical-infrastructure/
+- lead: AnyDesk Linux pre-auth RCE exploit (AnyPwn, published 2026-10-08; THN 2026-10-09)
+  reason: outside the horizon; fixed in 8.0.3 in June without advisory; S1 may want it as a no-CVE silent-fix example
+  urls:
+  - https://thehackernews.com/2026/10/researchers-publish-working-exploit-for.html
+- lead: 'The Register: US Air Force pilots used malware-laden USB drives (2026-10-15)'
+  reason: anecdotal column relying on one CISO's recollection of the early 2000s and the 2008 Agent.BTZ precedent; no new technical fact
+  urls:
+  - https://www.theregister.com/security/2026/10/15/us-air-force-pilots-used-malware-laden-usb-drives-to-plan-afghanistan-missions/5303156
+- lead: 'The Register: Legal Aid Agency hackers took records back to 1978 (2026-10-15)'
+  reason: UK government breach disclosure for S4; article body not read
+  urls:
+  - https://www.theregister.com/security/2026/10/15/legal-aid-agency-hackers-made-off-with-records-dating-back-to-1978/5303243
+- lead: GitHub npm trusted-publishing hardening after Bloom Security's 'Slugfest' finding (THN 2026-10-13)
+  reason: platform-side fix by GitHub on 2026-10-02 with no customer action beyond validating own trusted-publisher configurations; low constituency fit
+  urls:
+  - https://thehackernews.com/2026/10/github-tightens-npm-publishing-after.html
+- lead: P7 DarkSword iOS exploit kit variant (iVerify via THN) and GoBalance .onion key recovery (Searchlight)
+  reason: iVerify report dated 2026-10-08 (outside horizon); GoBalance is dark-web-operator tooling with no constituency fit
+  urls:
+  - https://thehackernews.com/2026/10/p7-darksword-ios-exploit-kit-adds.html
+  - https://thehackernews.com/2026/10/gobalance-flaw-lets-attackers-hijack.html
+- lead: 'Risky Bulletin 2026-10-16 mentions without a primary read: Island MicrosoftSystem64 (88 GitHub repos), Team Cymru LegionRelay, KELA on Silent Ransom Group leaks, BitSight AI cybercrime forums, Pradeo Shizuku abuse, NLnet Labs NSD advisories, Fehmarn Belt consortium incident'
+  reason: lower constituency fit or primary not chased; Island post fetched but not developed (GitHub-repo RAT lure aimed at AI/trading topics); NSD advisories are an S1 vendor-PSIRT lead worth a check
+  urls:
+  - https://www.island.io/blog/how-attackers-built-software-an-ai-would-recommend
+watchlist_sweep:
+  duty: none
+  note: no watchlist duty assigned for S3
+candidate_sources:
+- id: qurium
+  publisher: Qurium Media Foundation (investigations)
+  url: https://www.qurium.org/
+  category: research
+  why: Original infrastructure and routing investigations (Doppelganger, Aeza, VexTrio-adjacent); primary for the Aeza/Swiss-IPv4-holder item of this run; B-grade investigative NGO.
+- id: tencent-zhuque-lab
+  publisher: Tencent Zhuque Lab (matrix.tencent.com)
+  url: https://matrix.tencent.com/en/
+  category: research
+  why: AI-assisted Linux kernel vulnerability research with full technical write-ups and cross-distribution validation; primary for Vghost (CVE-2026-74580) and the earlier SCTPhantom container escape.
+- id: manageengine-metal
+  publisher: ManageEngine Threat Analysis Lab (METAL)
+  url: https://www.manageengine.com/threat-analysis-lab/
+  category: research
+  why: EDR-telemetry-driven supply-chain research; co-primary for the AOMEI Backupper compromise with behavioural detection guidance.
+- id: forescout-vedere-labs
+  publisher: Forescout Research - Vedere Labs
+  url: https://www.forescout.com/research-labs/
+  category: research
+  why: Threat-hunting write-ups on ClickFix delivery infrastructure (ROMULUS) and OT/IoT exposure; primary for the ROMULUS item.
+coverage_gaps:
+- source_id: hackernews
+  reason: 'RECIPE CHANGE: the feedburner feed and the Blogger feed are both capped at 50 items (about 3.5 days at current volume), shorter than the 148 h lookback. Working supplement: `python3 tools/fetch_source.py url https://thehackernews.com/2026/10/` returns a monthly archive page whose post hrefs can be scanned (it listed 28 posts, not strictly newest-first); then `extract <article>` per lead. Items from 2026-10-11 to 2026-10-13 11:30 were reviewed only through that archive page, so the sweep of that sub-window is partial.'
+- source_id: lumen-black-lotus-labs
+  reason: 'RECIPE FOUND (no gap): `python3 tools/fetch_source.py url --direct https://www.lumen.com/blog/query-index.json` returns the full dated JSON index (path, title, tags, blogPublishedDate, lastModified); filter tags containing ''lotus'' for Black Lotus Labs posts, then `extract https://www.lumen.com/blog<path>` per post. Verified 2026-10-17; replaces the note that no dated listing exists.'
+- source_id: akamai-sirt
+  reason: 'RECIPE UPDATE: `extract` returned a full 10 KB body for https://www.akamai.com/blog/ai/2026/oct/vibe-coding-vs-code-extension-monitors-developer-activity (the 2026-10-12 note says only a 1.7 KB fragment); try extract first, WebFetch second.'
+- source_id: fox-it-blog
+  reason: 'RECIPE NOTE: `feed https://blog.fox-it.com/feed/ 10` now lists the 2026-10-13 corpus post (the 2026-10-11 note said newest was 2026-05-22); the direct feed transport was served by the jina fallback and returns empty published fields, so date items from the URL path.'
+- source_id: theregister-security-feed
+  reason: article bodies not read this run; feed titles used for discovery only. Per-article URLs must be copied from the feed output verbatim (two guessed URLs returned error pages).
+- source_id: zimperium-zlabs
+  reason: listing mixes zLabs research with press-mention summaries; no dated research item inside the lookback, so quiet window rather than a failure.
+- source_id: tools
+  reason: 'USEFUL RECIPES (verified 2026-10-17): CVE record JSON via `url --direct https://cveawg.mitre.org/api/cve/<CVE>`; EPSS via `url --direct ''https://api.first.org/data/v1/epss?cve=A,B,C''`; registry data via `url --direct ''https://stat.ripe.net/data/whois/data.json?resource=<prefix>''`. The CISA KEV JSON now carries a forensicTriage column per entry.'
+source_ledger:
+- id: fox-it-blog
+  tier: standard
+  attempted: true
+  transport: feed (jina fallback served it)
+  horizon_hours: 145
+  in_horizon_items: 1
+  returned: 1
+  note: feed items carry no dates; the 2026-10-13 corpus post is dated by its URL and page metadata
+- id: hackernews
+  tier: standard
+  attempted: true
+  transport: feed (50-item cap) + monthly archive url + extract per article
+  horizon_hours: 148
+  in_horizon_items: 70
+  returned: 9
+  note: feed cap of 50 items hid 2026-10-10 23:00 to 2026-10-13 11:30; covered through the archive page https://thehackernews.com/2026/10/ and per-article reads; entry point for 9 returned items
+- id: infosec-magazine
+  tier: standard
+  attempted: true
+  transport: feed N=40 + extract
+  horizon_hours: 145
+  in_horizon_items: 27
+  returned: 2
+  note: entry point for Aoki and ROMULUS and LiteLLM (borderline); Danfoss and BAE items already covered or out of scope
+- id: malwarebytes
+  tier: standard
+  attempted: true
+  transport: extract (blog listing)
+  horizon_hours: 145
+  in_horizon_items: 10
+  returned: 0
+  note: newest posts 2026-10-14 to 10-16 are consumer/AI-privacy items; no threat-research post in lookback
+- id: ox-security
+  tier: standard
+  attempted: true
+  transport: url (raw listing) + extract
+  horizon_hours: 145
+  in_horizon_items: 1
+  returned: 1
+  note: Airflow SSH host-key post 2026-10-16 (borderline); 2026-10-08 Tensorlake and 10-06 Harbor posts fall outside the horizon
+- id: project-discovery
+  tier: standard
+  attempted: true
+  transport: url https://projectdiscovery.io/blog/stories/1
+  horizon_hours: 145
+  in_horizon_items: 0
+  returned: 0
+  note: newest card 2026-08-16
+- id: proofpoint
+  tier: standard
+  attempted: true
+  transport: url (raw listing, time datetime tags) + extract
+  horizon_hours: 145
+  in_horizon_items: 1
+  returned: 1
+  note: 2026-10-14 disruption post folded into the YAM Store / CoGUI / Iron Man item
+- id: risky-biz-news
+  tier: standard
+  attempted: true
+  transport: feed + extract (link targets preserved)
+  horizon_hours: 145
+  in_horizon_items: 4
+  returned: 3
+  note: entry point for the PaperCut/Hunt update, Qurium/Aeza and GreyNoise items; bulletins of 2026-10-12, 14, 16 read in full
+- id: sentinellabs
+  tier: standard
+  attempted: true
+  transport: url (embedded JSON published_date epochs)
+  horizon_hours: 145
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-09-18 (TraderTraitor, already covered)
+- id: zimperium-zlabs
+  tier: standard
+  attempted: true
+  transport: extract (blog listing)
+  horizon_hours: 145
+  in_horizon_items: 0
+  returned: 0
+  note: listing entries since 2026-10-11 are press mentions (2026-10-15/16); last zLabs research post 2026-09-16 (RatHat)
+- id: theregister-security-feed
+  tier: standard
+  attempted: true
+  transport: atom feed N=40
+  horizon_hours: 145
+  in_horizon_items: 33
+  returned: 0
+  note: 'discovery only: Danfoss follow-up already covered; BAE bankruptcy noticing and Legal Aid Agency items belong to S4; no article bodies read (extract returns navigation only per the 2026-10-11 note)'
+- id: lumen-black-lotus-labs
+  tier: standard
+  attempted: true
+  transport: url --direct https://www.lumen.com/blog/query-index.json (dated JSON index)
+  horizon_hours: 148
+  in_horizon_items: 0
+  returned: 0
+  note: newest Black Lotus Labs post 2026-10-07 (PoeLLM, already covered); recipe below
+- id: acronis-tru
+  tier: standard
+  attempted: true
+  transport: rss feed
+  horizon_hours: 122
+  in_horizon_items: 2
+  returned: 0
+  note: Cyberthreats Update October 2026 (periodic telemetry report, dropped) and an AI Copilot adoption post (marketing)
+- id: akamai-sirt
+  tier: standard
+  attempted: true
+  transport: rss feed + extract
+  horizon_hours: 122
+  in_horizon_items: 3
+  returned: 0
+  note: 2026-10-13 CodeAudit AI VS Code extension post read in full and dropped; extract returned the full 10 KB body this run

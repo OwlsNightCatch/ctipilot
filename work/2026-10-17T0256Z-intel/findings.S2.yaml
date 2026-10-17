@@ -1,0 +1,484 @@
+# work/2026-10-17T0256Z-intel/findings.S2.yaml  (assembled from partA + partB + partC)
+domain: S2
+run_id: 2026-10-17T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-17T02:57:34Z
+ended_at: 2026-10-17T03:17:59Z
+duration_seconds: 1225
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 24
+  bridge_fetches: 120
+window_note: >
+  window_hours 26 (anchor 2026-10-16T00:56Z); essential records swept at 26 h, rotation records at their own lookback_hours
+  (122 h / 97 h). Items marked lookback: true sit outside 26 h but inside their record's own horizon.
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "PK Softech supplier incident: the Pensionskasse Stadt Zürich now says its insured persons' and pensioners' data, supplied for migration tests, was stolen; Pensionskasse Post says personal data did leave"
+    sources:
+      - { url: "https://www.pkzh.ch/de/aktuelles/cyberangriff-softech.html", publisher: "Pensionskasse Stadt Zürich (PKZH)", date: "2026-10-15", role: "primary" }
+      - { url: "https://www.pkpost.ch/news/263-cyberangriff-bei-softwarelieferant-versichertendaten-moeglicherweise-betroffen", publisher: "Pensionskasse Post", date: "2026-10-15", role: "primary" }
+      - { url: "https://www.inside-it.ch/pensionskasse-stadt-zuerich-untersucht-datenabfluss-20261016", publisher: "Inside IT", date: "2026-10-16", role: "corroborating" }
+      - { url: "https://www.srf.ch/news/schweiz/pensionskasse-des-bundes-wie-konnten-heikle-daten-bei-externer-softwarefirma-landen", publisher: "SRF", date: "2026-10-10", role: "context (expert reading of the test-data pattern, published before the PKZH finding)" }
+    discovery_trace: >
+      first seen at: inside-it-ch, URL https://www.inside-it.ch/rss.xml (item "Pensionskasse Stadt Zürich untersucht Datenabfluss", 2026-10-16T12:10Z)
+      -> drill: extract https://www.inside-it.ch/pensionskasse-stadt-zuerich-untersucht-datenabfluss-20261016
+      -> pivot: PKZH news page https://www.pkzh.ch/de/aktuelles/news.html (navigation link /de/aktuelles/cyberangriff-softech.html)
+      -> primary: https://www.pkzh.ch/de/aktuelles/cyberangriff-softech.html (page date 2026-10-15; replaces the 2026-10-13 text at https://www.pkzh.ch/de/aktuelles/news/cyberangriff-PK-softech.html)
+      -> primary: https://www.pkpost.ch/news (listing) -> https://www.pkpost.ch/news/263-cyberangriff-bei-softwarelieferant-versichertendaten-moeglicherweise-betroffen (2026-10-15)
+      -> context: https://www.srf.ch/news/schweiz/pensionskasse-des-bundes-wie-konnten-heikle-daten-bei-externer-softwarefirma-landen (fetched by extract)
+    summary: |
+      Delta on the covered PK Softech entry. The Pensionskasse Stadt Zürich (PKZH, the City of Zurich's pension fund) said on 2026-10-13 only that it was checking whether migration-test data was in the affected
+      environment; its notice of 2026-10-15 now states that its enquiries indicate personal data of PKZH insured persons was stolen in the attack, and its FAQ adds that the stolen data from PK Softech's system
+      includes data of insured persons and of pensioners. The data was handed to PK Softech as test data for the planned switch to PK Softech's administration system in early 2027 (the fund still runs another
+      provider's system, which is not affected); the fund says it was told on 2026-10-13, that the suspicion was confirmed, that it filed a criminal complaint and reported to the data-protection office, and that
+      which data was taken is still being clarified. "In the worst case" the fields are first name, name, date of birth, AHV number, address, private and business e-mail and telephone, insured salary and
+      retirement assets, civil status, partner details and IBAN. The FAQ also says a payout needs a signed written request plus identity check (plus spouse consent for married members) and that bank-account changes
+      are checked additionally, and that whether PK Softech met its contractual duty to protect the transferred data is under investigation. Pensionskasse Post's notice of 2026-10-15 now says the investigation has
+      shown personal data did leave, while still saying it is unclear whether Post insureds are among them; the fetched 2026-10-15 text no longer repeats the 2026-10-09 statement that Post's data at PK Softech
+      is anonymised, and lists name, address, date of birth, AHV number, contact details, e-mail and pension data as possibly affected. Still not public in any source read: access vector, actor, ransom demand,
+      per-fund scope. The transferable lesson, which SRF's 2026-10-10 expert interview had named as one of two possible routes into the supplier's environment, is production-derived test and migration data placed at
+      a supplier before the system goes live.
+    region_nexus: "Switzerland (City of Zurich municipal pension fund; Swiss Post pension fund)"
+    primary_sector_nexus: "direct (communal-level public institution; same supplier as the federal fund Publica)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1199]
+    affected_products: []
+    entity_keys: ["incident:pk-softech-publica-cyberattack-2026-09"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-09/publica-pk-softech-supplier-malware-intrusion-data-outflow"
+    classification_suggestion: "A1 for the PKZH confirmation (victim's own notice, repeated by Inside IT); the per-fund scope stays unconfirmed"
+    evidence:
+      - quote: "Die bisherigen Abklärungen deuten darauf hin, dass beim Cyberangriff auch Personendaten von Versicherten der PKZH entwendet wurden. Diese Daten wurden im Rahmen von Tests für den geplanten Systemwechsel verwendet."
+        attribution: "Pensionskasse Stadt Zürich (PKZH)"
+        source_url: "https://www.pkzh.ch/de/aktuelles/cyberangriff-softech.html"
+      - quote: "Dabei sind Daten aus dem System der PK Softech AG entwendet worden. Darunter sind auch Personendaten von Versicherten sowie Rentnerinnen und Rentnern der PKZH."
+        attribution: "Pensionskasse Stadt Zürich (PKZH)"
+        source_url: "https://www.pkzh.ch/de/aktuelles/cyberangriff-softech.html"
+      - quote: "Welche Daten entwendet wurden, wird zurzeit abgeklärt."
+        attribution: "Pensionskasse Stadt Zürich (PKZH)"
+        source_url: "https://www.pkzh.ch/de/aktuelles/cyberangriff-softech.html"
+      - quote: "Ob PK Softech ihre vertraglichen Pflichten zum Schutz der Daten eingehalten hat, wird untersucht."
+        attribution: "Pensionskasse Stadt Zürich (PKZH)"
+        source_url: "https://www.pkzh.ch/de/aktuelles/cyberangriff-softech.html"
+      - quote: "Für eine Auszahlung braucht es ein schriftliches, unterschriebenes Gesuch und eine Prüfung Ihrer Identität."
+        attribution: "Pensionskasse Stadt Zürich (PKZH)"
+        source_url: "https://www.pkzh.ch/de/aktuelles/cyberangriff-softech.html"
+      - quote: "Die aktuellen Untersuchungen haben ergeben, dass dabei tatsächlich Personendaten abgeflossen sind."
+        attribution: "Pensionskasse Post"
+        source_url: "https://www.pkpost.ch/news/263-cyberangriff-bei-softwarelieferant-versichertendaten-moeglicherweise-betroffen"
+      - quote: "Ob Daten von Versicherten der Pensionskasse Post betroffen sind, bleibt weiterhin unklar."
+        attribution: "Pensionskasse Post"
+        source_url: "https://www.pkpost.ch/news/263-cyberangriff-bei-softwarelieferant-versichertendaten-moeglicherweise-betroffen"
+      - quote: "Die PKZH setzt aktuell noch auf einen anderen Softwareanbieter, will aber 2027 auf das System von PK Softech wechseln."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/pensionskasse-stadt-zuerich-untersucht-datenabfluss-20261016"
+      - quote: "Daten zu anonymisieren und zu pseudonymisieren, ist sehr aufwändig und auch fehleranfällig"
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/news/schweiz/pensionskasse-des-bundes-wie-konnten-heikle-daten-bei-externer-softwarefirma-landen"
+    extended_notes: |
+      Where the 2026-10-15 notices sit against the covered entry: (1) its 2026-10-15 update said PKZH "is still clarifying whether" migration-test data was affected; that is now answered yes by PKZH itself
+      (the page quoted above, dated 2026-10-15; Inside IT reports it on 2026-10-16). (2) The 2026-10-10 update recorded Pensionskasse Post saying its data at PK Softech is anonymised; the 2026-10-15
+      Post notice does not repeat that and says personal data did leave (whether Post insureds are among it is still open). (3) The entry's takeaway about quoting AHV number / IBAN as proof of identity is
+      reinforced by PKZH's own FAQ: it says name, AHV number or IBAN alone cannot trigger a payout there and that a change of bank details is checked additionally, but that criminals can use the data to appear credible;
+      AHV number and date of birth cannot be changed, so PKZH tells members to stay cautious long-term.
+      Suggested action tweak (only if the composer keeps actions[]): organisations that hand a supplier "realistic" data for a migration test or evaluation should ask in writing whether that data sat in the
+      affected PK Softech environment (PKZH shows this is how a fund that is not yet a production customer was hit).
+      Verification note: the entry may stay `notable`; this is a scope widening (PKZH confirms an outflow of its own insured persons' and pensioners' data, Pensionskasse Post confirms that personal data left without yet saying whose; BPK still says it has no indication and BLVK is still checking), not a new incident.
+  # ------------------------------------------------------------------ 2
+  - title: "Safepay leaks the data of DD-Automation (Aesch BL), a sub-supplier of the contractor that runs the conveyor technology of the Swiss Army's logistics base; the Army says no interfaces exist and the data does not affect site security"
+    sources:
+      - { url: "https://www.inside-it.ch/ransomware-angriff-trifft-sublieferanten-der-armee-20261016", publisher: "Inside IT", date: "2026-10-16", role: "primary (carries the Army media office's own statement; full text only in the raw HTML, see extended_notes)" }
+      - { url: "https://www.ransomware.live/group/safepay", publisher: "Ransomware.live (tracker)", date: "2026-10-16", role: "corroborating (leak-site listing of dd-automation.ch, discovery date 2026-10-05, attack estimate 2026-09-25)" }
+    discovery_trace: >
+      first seen at: inside-it-ch, URL https://www.inside-it.ch/rss.xml (item "Ransomware-Angriff trifft Sublieferanten der Armee", 2026-10-16T13:28Z)
+      -> drill: extract https://www.inside-it.ch/ransomware-angriff-trifft-sublieferanten-der-armee-20261016 returned only the lead and the first paragraph ("Abo" paywall)
+      -> bridge: python3 tools/fetch_source.py url <same URL> returned the full article text inside the page's embedded JSON (rawState.blocks[].text)
+      -> corroboration (claim only): https://www.ransomware.live/group/safepay (fetched with the bridge `url`; row "dd-automation.ch Safepay Discovered: 2026-10-05 ... Attack est.: 2026-09-25")
+      -> WebSearch ("DD-Automation Ransomware Safepay Armee Logistik Aesch") found no second outlet; DD-Automation told Inside IT it may not give media information
+    summary: |
+      Inside IT reports that the ransomware group Safepay claimed an attack on DD-Automation of Aesch (BL), a maker of controls used mainly in logistics, at the start of October and a few days later put a data package
+      on its leak site; Inside IT's look at the directory shows folders attributable to DD-Automation's customers, among them one titled "Armasuisse" with sub-folders for logistics centres of the Swiss Army.
+      The Army's media office told Inside IT that DD-Automation is a sub-supplier of Gilgen Logistics, an Army contractor that operates the conveyor technology of the narrow-aisle warehouses of the Army Logistics Base,
+      that Gilgen informed the Army of the incident, that no interfaces exist between the Army and DD-Automation (remote access is the example it gives), that DD-Automation does hold address data and contacts
+      at the Logistics Base, that the affected people were contacted and told not to open suspicious mails, attachments or links, that messages with changed payment or invoice details need particular caution (verify
+      only through known contacts), and that the stolen data and documents have no effect on the security of the logistics sites. DD-Automation declined to comment to Inside IT. The tracker Ransomware.live independently
+      lists dd-automation.ch under Safepay with discovery 2026-10-05 and an attack estimate of 2026-09-25; that is the criminals' claim as recorded by a tracker, not a victim statement. Inside IT adds that Safepay has
+      hit other Swiss victims in recent weeks (the supplement maker Bio-Strath, which confirmed an attack, and a hotel in Lugano, which confirmed one and cited the criminal investigation); the registry already tracks
+      the Manno (TI) commune listing by the same group. No access vector, no encryption detail and no ransom information is public.
+    region_nexus: "Switzerland (Swiss Armed Forces logistics supply chain, tier-3 supplier)"
+    primary_sector_nexus: "direct (Swiss Armed Forces / armasuisse contractor chain), no federal or Army system is stated as affected"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1657]
+    technique_note: "T1657 only (extortion by leak-site publication is what the sources describe). The sources call it a 'Ransomware-Angriff' but do not describe encryption or an entry method, so T1486 and any access technique would be inference."
+    affected_products: []
+    entity_keys: ["actor:safepay"]
+    new_entities:
+      - { key: "incident:dd-automation-safepay-army-subsupplier-2026-10", type: incident, name: "DD-Automation (Aesch BL) Safepay leak with Swiss Army logistics folders, October 2026", aliases: ["DD-Automation ransomware"],
+          summary: "Safepay claimed an attack on the Baselland controls maker DD-Automation at the start of October 2026 and published a data package whose folders include one titled Armasuisse; the Army says DD-Automation is a sub-supplier of its contractor Gilgen Logistics, has no interface to the Army, and holds only address data and contacts at the Logistics Base (Inside IT, 2026-10-16)." }
+    relation_suggestions:
+      - { subject: "incident:dd-automation-safepay-army-subsupplier-2026-10", object: "actor:safepay", basis: "Inside IT and Ransomware.live: Safepay claimed the attack and published the data on its leak site; DD-Automation has not confirmed it (a claim, not an attribution)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Swiss Armed Forces nexus (core constituency) but a tier-3 supplier; one outlet; no vector or encryption detail; the Army itself says there is no effect on site security. Near the incident floor; kept because the Army's on-record statement (no interfaces, address data and contacts only, invoice-fraud warning) is the decision-relevant content."
+    classification_suggestion: "C2 (Inside IT reliability C; the Army statement and the outlet's own view of the leak directory are first-hand, the tracker row corroborates only the claim)"
+    evidence:
+      - quote: "Anfang Oktober bekannte sich die Ransomware-Bande Safepay zu einem Angriff auf DD-Automation mit Sitz in Aesch (BL)."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/ransomware-angriff-trifft-sublieferanten-der-armee-20261016"
+      - quote: "Laut Armee enthält dieser aber keine kritischen Daten."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/ransomware-angriff-trifft-sublieferanten-der-armee-20261016"
+      - quote: "Die Firma DD-Automation ist ein Sublieferant der Gilgen Logistics, welche ein Vertragsnehmer der Armee ist. Die Armee wurde von Gilgen Logistics über den Sicherheitsvorfall informiert."
+        attribution: "Swiss Armed Forces media office, as quoted by Inside IT"
+        source_url: "https://www.inside-it.ch/ransomware-angriff-trifft-sublieferanten-der-armee-20261016"
+      - quote: "Die Medienstelle betont, es würden keine Schnittstellen zum betroffenen Sublieferanten DD-Automation bestehen, wie zum Beispiel Fernzugänge."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/ransomware-angriff-trifft-sublieferanten-der-armee-20261016"
+      - quote: "Die Firma DD-Automation hat jedoch Adressdaten und Kontakte in der Logistikbasis der Armee."
+        attribution: "Swiss Armed Forces media office, as quoted by Inside IT"
+        source_url: "https://www.inside-it.ch/ransomware-angriff-trifft-sublieferanten-der-armee-20261016"
+      - quote: "Wenige Tage nach dem Bekenntnis zum Angriff stellte Safepay ein Datenpaket ins Darknet."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/ransomware-angriff-trifft-sublieferanten-der-armee-20261016"
+    extended_notes: |
+      Transport note for the verifier: the Inside IT page is a client-side paywall. `extract` returns the lead plus the first paragraph only (that is why two of the quotes above are the lead and the first sentence);
+      every other quote is in the full text that `python3 tools/fetch_source.py url <URL>` returns inside the page's embedded JSON (`rawState.blocks[].text`). Quote 3 to 5 sit in that JSON and are verbatim after JSON decoding.
+      Exposure framing: the Army says there are no remote-access or other interfaces to DD-Automation, so the defender-relevant surface is people and processes: logistics-base contacts whose addresses are now public
+      are the likely target of invoice or payment-change fraud, which is what the Army warns about. Public-sector buyers that rely on conveyor/warehouse-automation contractors should know which sub-suppliers hold their
+      contacts or site plans (the leak folders are named after customers).
+      Related Swiss pattern in the store: actor:safepay / Manno commune (entry 2026-09-30/manno-ti-commune-ransomware-safepay-claim).
+  # ------------------------------------------------------------------ 3
+  - title: "Republik, the Zurich online magazine, discloses that unknown attackers used a flaw in its Metabase analytics tool from August until 2026-10-14: the data of all users left, the flaw had been known since 6 August"
+    sources:
+      - { url: "https://www.inside-it.ch/republik-gesteht-datenleck-20261016", publisher: "Inside IT (relaying Republik's own statement)", date: "2026-10-16", role: "primary (no Republik-hosted statement was reachable)" }
+    discovery_trace: >
+      first seen at: inside-it-ch, URL https://www.inside-it.ch/rss.xml (item "Republik gesteht Datenleck", 2026-10-16T09:33Z)
+      -> drill: extract https://www.inside-it.ch/republik-gesteht-datenleck-20261016 (full text readable)
+      -> WebSearch ("Republik Datenleck Metabase Sicherheitslücke Nutzerdaten republik.ch Hackerangriff", "republik.ch Datenleck Metabase 14. Oktober Eidgenössischer Datenschutzbeauftragter gemeldet") found no Republik-hosted or second-outlet copy
+      -> existing coverage: entries/2026-08-09/metabase-unauth-sqli-zeroday-exploited-framework-tally (CVE-2026-72898, CISA KEV 2026-08-11)
+    summary: |
+      Delta on the covered Metabase CVE-2026-72898 entry, from a Swiss victim. Inside IT reports Republik's own account: one of its analytics tools stopped working on the morning of Wednesday 2026-10-14, which was the end of an
+      unauthorised access that had run since August; Republik writes that the vulnerability "had been known since 6 August" but that it failed to take the necessary countermeasures in time. The tool is Metabase; Inside IT does not
+      name a CVE, and the 6 August date matches Metabase's own disclosure date for the flaw the entry tracks, so the identification with CVE-2026-72898 is an inference to be confirmed. Republik does not know who is behind it and
+      says much points to a broad, automated wave that first looked for what every Metabase installation holds, such as credentials and keys for AI services that can be resold. The data of all users was retrieved (active members
+      and subscribers, newsletter subscribers and former users): e-mail address, name and, where stored, telephone number, year of birth and gender; no credit-card data. Metabase was shut down on 14 October, which also ended
+      the attackers' access, and Republik reported the incident to the Federal Data Protection and Information Commissioner (FDPIC) on 2026-10-15 after its first damage assessment. Relevance for the Swiss public sector is the
+      pattern, not the victim: a self-run Metabase reachable from outside stayed exposed for about ten weeks after a KEV-listed pre-auth flaw with a public fix.
+    region_nexus: "Switzerland (private-sector media victim; the product is common in public-administration BI use)"
+    primary_sector_nexus: "indirect (private-sector victim, shared exposure of a self-hosted analytics tool)"
+    sector: "media (private); transferable to public-sector"
+    cves: ["CVE-2026-72898"]
+    cve_note: "Inside IT does not name the CVE; the link is the Metabase product plus the 6 August date. Mark as 'presumed' if the composer carries it."
+    techniques: [T1190]
+    affected_products: ["Metabase"]
+    entity_keys: ["incident:metabase-sqli-zeroday-2026-08", "product:metabase"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-09/metabase-unauth-sqli-zeroday-exploited-framework-tally"
+    borderline: true
+    borderline_reason: "Swiss, victim-confirmed, but a private-sector magazine, one trade-press relay of the victim's statement, CVE not named by the source; useful as the first Swiss victim of the covered Metabase exploitation and as a patch-lag illustration (6 August to 14 October). Drop if the composer judges it adds nothing to the covered entry's decisions."
+    classification_suggestion: "C2 (Inside IT relays the victim's own statement; no independent confirmation)"
+    evidence:
+      - quote: "Unbekannte haben eine Sicherheitslücke in einem Analyse-Werkzeug ausgenutzt."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/republik-gesteht-datenleck-20261016"
+      - quote: "Die Sicherheitslücke war seit dem 6. August bekannt, aber wir haben es versäumt, rechtzeitig die nötigen Gegenmassnahmen zu treffen"
+        attribution: "Republik, as quoted by Inside IT"
+        source_url: "https://www.inside-it.ch/republik-gesteht-datenleck-20261016"
+      - quote: "Die Angreifer hätten zuerst nach dem gesucht, was in jeder Metabase-Installation – dem Tool mit der Sicherheitslücke – stecke, etwa Zugangsdaten und Schlüssel für KI-Dienste, die sich weiterverkaufen liessen."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/republik-gesteht-datenleck-20261016"
+      - quote: "Vieles spreche für eine breite, automatisierte Angriffswelle."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/republik-gesteht-datenleck-20261016"
+    extended_notes: |
+      Exposure/Detection angle the covered entry already carries (Metabase's published indicator: a POST to /api/session/reset_password answered 400 followed by a successful GET /api/user/current; block public access to that
+      path; revoke sessions, rotate every connected database credential). The Republik account adds that the attackers harvested what a Metabase instance stores (connection credentials, keys) first, which is why
+      credential rotation for every connected data source, not only for Metabase users, is the post-patch step for any self-hosted instance that ran an unpatched build after 2026-08-03.
+
+  # ------------------------------------------------------------------ 4
+  - title: "Eichstätt (Bavaria): ransomware suspected at the city administration, a large part of its data probably copied, servers off, no ransom demand yet; Cham district office hit by a DDoS flood on 2026-10-08 as a contrast"
+    sources:
+      - { url: "https://www.br.de/nachrichten/bayern/hackerangriff-auf-eichstaett-grosse-datenmengen-abgeflossen,VXw0FDz", publisher: "BR24 (Bayerischer Rundfunk)", date: "2026-10-13", role: "primary (relays the city's own statement of 2026-10-13)" }
+      - { url: "https://www.br.de/nachrichten/bayern/cyberangriff-auf-eichstaett-rathaus-vorerst-geschlossen,VXr1rj4", publisher: "BR24 (Bayerischer Rundfunk)", date: "2026-10-12", role: "corroborating" }
+      - { url: "https://kommunaler-notbetrieb.de/2026/10/12/stadtverwaltung-eichstaett/", publisher: "kommunaler-notbetrieb.de (curated municipal-incident register, candidate source)", date: "2026-10-12", role: "corroborating (aggregator; links the city's own page via web.archive.org)" }
+      - { url: "https://www.br.de/nachrichten/bayern/cham-nach-cyberangriff-auf-behoerden-it-systeme-laufen-wieder,VY1ICnA", publisher: "BR24 (Bayerischer Rundfunk)", date: "2026-10-14", role: "context (Cham DDoS)" }
+    discovery_trace: >
+      first seen at: kommunaler-notbetrieb-de, URL https://kommunaler-notbetrieb.de/ (cards "Stadtverwaltung Eichstätt" 12.10.2026 and "Kreisverwaltung Cham" 13.10.2026, 97 h lookback)
+      -> drill: extract https://kommunaler-notbetrieb.de/2026/10/12/stadtverwaltung-eichstaett/
+      -> primary-adjacent: BR24 https://www.br.de/nachrichten/bayern/cyberangriff-auf-eichstaett-rathaus-vorerst-geschlossen,VXr1rj4 and https://www.br.de/nachrichten/bayern/hackerangriff-auf-eichstaett-grosse-datenmengen-abgeflossen,VXw0FDz
+      -> the city's own pages (https://www.eichstaett.de/aktuelles/cyber-attacke_stadtverwaltung-2841/ and .../cyber-attacke_krisenstab_faehr-2843/) answered with a 404 page on 2026-10-17, so BR24's relay of the city statement is the reachable record
+      -> WebSearch ("Stadtverwaltung Eichstätt Cyberangriff Rathaus geschlossen Datenabfluss Ransomware Oktober 2026") added no later development
+    summary: |
+      The city administration of Eichstätt (Upper Bavaria) became aware of a cyberattack on Monday 2026-10-12 (BR24: the attack probably happened over the weekend), when staff reported IT problems; the IT department
+      noticed the attack from outside and took the local servers off the network. Town hall and branch offices were closed and e-mail was down. According to BR24's report of the city's statement of Tuesday evening, "a large
+      part of the administration's data" was probably copied; the backup worked, so the data can be restored; investigators (the Bavarian cybercrime unit ZCB and the state criminal police office LKA, which took over) assume
+      ransomware, and no ransom demand has reached the city yet. Origin, method and the data concerned are unknown, and the city warned about forged invoices in its name. The utilities (Stadtwerke) were not affected. For contrast, the
+      Cham district office and several of its 39 connected municipalities were hit on 2026-10-08 by a DDoS flood from compromised systems in about 50 countries; e-mail, telephony and internet services dropped out for part of
+      the day, no data was taken or altered, and normal operation resumed the same afternoon.
+    region_nexus: "Germany (Bavaria) municipal level; DACH peer to the Swiss communal level"
+    primary_sector_nexus: "indirect (German municipal administration; transferable lesson for Swiss communes)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1486]
+    technique_note: "T1486 rests only on the investigators' ransomware assumption in BR24's text; no vector, no actor, no exfiltration channel is named, so no further ids are supportable. The Cham DDoS would be T1498 (network denial of service) if the composer kept it."
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:eichstaett-city-administration-ransomware-2026-10", type: incident, name: "Eichstätt city administration cyberattack, October 2026", aliases: ["Eichstätt Rathaus Cyberangriff"],
+          summary: "Cyberattack discovered on 2026-10-12 at the Bavarian city administration of Eichstätt; investigators assume ransomware, the city says a large part of its administration data probably left, backups worked and no ransom demand had been received (BR24 relaying the city statement, 2026-10-13)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "German municipal ransomware with data theft, a DACH peer of the Swiss communal level, but no vector, no actor, no named behaviour, and the city pages are unreachable; sits at the incident floor. The Cham DDoS is a one-line contrast only. Drop if the composer applies the check-5b floor strictly."
+    classification_suggestion: "B2 (BR24 relaying the municipality's statement; the kommunaler-notbetrieb card is an aggregator over the same statements)"
+    evidence:
+      - quote: 'ist wohl "ein Großteil der Daten der Stadtverwaltung" abgeflossen'
+        attribution: "BR24, quoting the city of Eichstätt"
+        source_url: "https://www.br.de/nachrichten/bayern/hackerangriff-auf-eichstaett-grosse-datenmengen-abgeflossen,VXw0FDz"
+      - quote: "Die Ermittler gehen derzeit von einem sogenannten Ransomware-Angriff aus."
+        attribution: "BR24"
+        source_url: "https://www.br.de/nachrichten/bayern/hackerangriff-auf-eichstaett-grosse-datenmengen-abgeflossen,VXw0FDz"
+      - quote: "Die Datensicherung der Stadtverwaltung habe funktioniert, teilte die Stadt am Dienstagabend mit: Nach aktuellem Informationsstand könnten die Daten deshalb wiederhergestellt werden."
+        attribution: "BR24"
+        source_url: "https://www.br.de/nachrichten/bayern/hackerangriff-auf-eichstaett-grosse-datenmengen-abgeflossen,VXw0FDz"
+      - quote: "Derartige Forderungen liegen der Stadtverwaltung Eichstätt allerdings bislang nicht vor."
+        attribution: "BR24"
+        source_url: "https://www.br.de/nachrichten/bayern/hackerangriff-auf-eichstaett-grosse-datenmengen-abgeflossen,VXw0FDz"
+      - quote: "Nach bisherigen Erkenntnissen soll die Cyber-Attacke aus einem weltweiten Netz kompromittierter Systeme erfolgt sein – und zwar aus rund 50 Ländern"
+        attribution: "BR24 (Cham DDoS)"
+        source_url: "https://www.br.de/nachrichten/bayern/cham-nach-cyberangriff-auf-behoerden-it-systeme-laufen-wieder,VY1ICnA"
+    extended_notes: |
+      Detection/triage angle only if the composer keeps the item: the observable sequence BR24 records is an externally noticed intrusion at the weekend, IT problems reported by staff on Monday morning, a precautionary
+      shutdown of the local servers, and a city warning about forged invoices in the city's name (a typical follow-on for stolen accounting data). The working backup is the decision-relevant fact for a Swiss commune comparing itself.
+      Related store entries on German municipalities: Tangerhütte (2026-10-14), Berlin Landesnetz (2026-08-30).
+
+  # ------------------------------------------------------------------ 5
+  - title: "Berlin state administration: the Senate Chancellery says the acute response to the Rhysida intrusion is over, no attack on the investigated parts of the Landesnetz since 13 August, and the attacker did not manage to infiltrate the network lastingly"
+    sources:
+      - { url: "https://www.heise.de/news/Nach-Hackerangriff-Akute-Gefaehrdung-fuer-Berlins-Verwaltung-gebannt-11490231.html", publisher: "heise online (dpa, citing Tagesspiegel)", date: "2026-10-16", role: "primary (relays the Senate Chancellery statement)" }
+    discovery_trace: >
+      first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (item "Nach Hackerangriff: Akute Gefährdung für Berlins Verwaltung gebannt", 2026-10-16T06:42Z)
+      -> drill: extract https://www.heise.de/news/Nach-Hackerangriff-Akute-Gefaehrdung-fuer-Berlins-Verwaltung-gebannt-11490231.html (full text, incl. the dated timeline)
+      -> the Tagesspiegel original and the Senatskanzlei statement itself were not reached
+    summary: |
+      Closure statement on the covered Berlin Landesnetz entry. heise (with dpa, saying the Tagesspiegel reported first) writes that, according to the Senate Chancellery, the acute threat-response phase after the hack of the Berlin
+      administration and the data theft has ended; there have been no attacks on the investigated areas of the Berlin state network since 13 August, and the attacker did not manage to infiltrate the network lastingly. The Chancellery says the
+      stolen data will keep being analysed, IT-protection measures will keep being implemented and strengthened, and prosecution continues. heise's recap timeline (7-12 August exfiltration from two Senate departments, 14 August
+      isolation, Rhysida's 30-bitcoin demand and the 4 September publication of about 1.44 million files, 1 September confirmation that passwords had left and 12,000 systems were being scanned) restates what the entry already
+      carries and adds nothing new. The claim of no lasting infiltration is the Chancellery's own assessment, relayed by one outlet.
+    region_nexus: "Germany (Berlin state administration); DACH peer to Swiss cantonal level"
+    primary_sector_nexus: "indirect (German state-level public administration)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566, T1657, T1567.002]
+    technique_note: "Mapping unchanged from the covered entry; the closure statement adds no behaviour."
+    affected_products: []
+    entity_keys: ["incident:berlin-landesnetz-compromise-2026-08", "actor:rhysida"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-30/berlin-landesnetz-rhysida-extortion-phishing-vector"
+    borderline: true
+    borderline_reason: "A closure statement with no defender decision attached; relevant only as the end-state of a covered incident (it could be a one-paragraph update stating the Chancellery's own assessment that no lasting infiltration was achieved). Drop if the composer wants no update without a new fact."
+    classification_suggestion: "B3 (heise/dpa relaying a government statement; the statement itself is first-hand but not read)"
+    evidence:
+      - quote: "Nach dem Hackerangriff auf die Berliner Verwaltung und dem damit verbundenen Datendiebstahl ist die akute Gefahrenabwehr laut der Senatskanzlei beendet."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Nach-Hackerangriff-Akute-Gefaehrdung-fuer-Berlins-Verwaltung-gebannt-11490231.html"
+      - quote: "Seit dem 13. August habe es keine Angriffe mehr auf die untersuchten Bereiche des Berliner Landesnetzes gegeben, hieß es aus der Senatskanzlei."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Nach-Hackerangriff-Akute-Gefaehrdung-fuer-Berlins-Verwaltung-gebannt-11490231.html"
+      - quote: "Dem Angreifer sei es nicht gelungen, das Netz nachhaltig zu infiltrieren."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Nach-Hackerangriff-Akute-Gefaehrdung-fuer-Berlins-Verwaltung-gebannt-11490231.html"
+      - quote: "Obwohl die akute Gefahr gebannt sei, werde man weiter die abgefischten Daten auswerten, hieß es von der Senatskanzlei."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Nach-Hackerangriff-Akute-Gefaehrdung-fuer-Berlins-Verwaltung-gebannt-11490231.html"
+  # ------------------------------------------------------------------ 6
+  - title: "Microsoft Exchange Team: the October Windows Server cumulative updates can make Exchange servers unstable (OWA MapiExceptionMdbOffline, growing mail queues, DAG quorum loss); the vendor says do not uninstall them and gives a registry workaround"
+    sources:
+      - { url: "https://techcommunity.microsoft.com/blog/exchange/exchange-servers-may-become-unstable-after-installation-of-october-2026-windows-/4565382", publisher: "Microsoft Exchange Team blog", date: "2026-10-17", role: "primary" }
+      - { url: "https://techcommunity.microsoft.com/blog/exchange/released-october-2026-exchange-server-security-updates/4563014", publisher: "Microsoft Exchange Team blog", date: "2026-10-16", role: "primary (carries the 2026-10-16 update note pointing to the post above)" }
+      - { url: "https://www.heise.de/news/Oktober-Updates-legen-Exchange-Server-lahm-11490529.html", publisher: "heise online", date: "2026-10-16", role: "corroborating" }
+    discovery_trace: >
+      first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (item "Microsoft untersucht Exchange-Probleme nach Updates", 2026-10-16T10:24Z)
+      -> drill: extract https://www.heise.de/news/Oktober-Updates-legen-Exchange-Server-lahm-11490529.html (names the four KBs and links the Exchange team's October 2026 SU post)
+      -> primary: https://techcommunity.microsoft.com/blog/exchange/released-october-2026-exchange-server-security-updates/4563014 (fetched with extract; its 2026-10-16 update note links the new post)
+      -> primary: https://techcommunity.microsoft.com/blog/exchange/exchange-servers-may-become-unstable-after-installation-of-october-2026-windows-/4565382 (fetched with the bridge `url`; JSON-LD datePublished 10/17/2026 1:00:38 AM, modified 2026-10-16T18:02-07:00)
+    summary: |
+      Operational regression on the Exchange side of the October 2026 patch cycle, relevant to Swiss public-sector Exchange operators. The Exchange team says that since 13 October it has seen reports of Exchange servers becoming
+      unstable after a set of October Windows Server updates: OWA failing with "MapiExceptionMdbOffline: Unable to make connection to the server" (hr=0x80004005, ec=1142) and event 1006 in the Application log, mail queues growing during
+      the day, DAG members unable to reach quorum, a reboot helping only temporarily; Exchange 2016, 2019 and Subscription Edition can all be hit. It states the problem is not caused by the October Exchange security updates
+      (so it is not a "known issue" of those) but by Windows updates KB5126646 (Windows Server 2025), KB5126655 (2022), KB5126651 (2019) and KB5126868 (2016); impact depends on load and some servers may never see it. Recommendation: do not
+      uninstall the October 2026 Windows Server updates; on the Exchange server set the registry value EpmapSavedContextCap (REG_DWORD) under HKLM\SOFTWARE\Microsoft\Rpc to 65536, reboot, monitor, and raise the limit if it recurs,
+      which the vendor says solved the cases it has assisted. heise adds that Microsoft had updated its warning on 2026-10-15 and that a Microsoft staff member said in the comments that day that no workaround existed yet, so the
+      registry workaround is new on 2026-10-16/17.
+    region_nexus: "global; any on-premises Exchange estate, including Swiss federal, cantonal and communal administrations"
+    primary_sector_nexus: "indirect (product class widely used in public administration)"
+    sector: "public-sector (generic)"
+    cves: []
+    techniques: []
+    technique_note: "No attacker behaviour: this is a patch-induced availability regression, so no ATT&CK mapping applies. The covered Exchange entry carries the exploitation mapping."
+    affected_products: ["Microsoft Exchange Server", "Microsoft Windows Server"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-14/exchange-oct-2026-su-cve-2026-70571-last-2016-2019-update"
+    borderline: true
+    borderline_reason: "Availability regression, not a threat; S1 may also return it. Kept because it changes a patch decision (the Exchange team says not to uninstall, and the same October cycle carries fixes the store tracks as exploited) and gives a vendor workaround. Whether KB5126646/-55/-51/-868 contain the fix for the exploited Windows Shell flaw (entry 2026-10-14/cve-2026-96951-windows-shell-motw-bypass-zero-day-kev) is NOT stated by either source and must be checked against MSRC before the composer links them."
+    classification_suggestion: "A1 (vendor's own post; heise corroborates the symptoms)"
+    evidence:
+      - quote: "Do not uninstall October 2026 Windows Server updates."
+        attribution: "Microsoft Exchange Team"
+        source_url: "https://techcommunity.microsoft.com/blog/exchange/exchange-servers-may-become-unstable-after-installation-of-october-2026-windows-/4565382"
+      - quote: "Issues reported are not related to installation of October 2026 security updates for Exchange Server."
+        attribution: "Microsoft Exchange Team"
+        source_url: "https://techcommunity.microsoft.com/blog/exchange/exchange-servers-may-become-unstable-after-installation-of-october-2026-windows-/4565382"
+      - quote: "Various issues related to DAG members not being able to reach quorum have been reported too."
+        attribution: "Microsoft Exchange Team"
+        source_url: "https://techcommunity.microsoft.com/blog/exchange/exchange-servers-may-become-unstable-after-installation-of-october-2026-windows-/4565382"
+      - quote: "/v EpmapSavedContextCap /t REG_DWORD /d 65536 /f"
+        attribution: "Microsoft Exchange Team"
+        source_url: "https://techcommunity.microsoft.com/blog/exchange/exchange-servers-may-become-unstable-after-installation-of-october-2026-windows-/4565382"
+    extended_notes: |
+      Detection/triage hook (vendor-described symptoms only): Exchange Application log event 1006 together with OWA MapiExceptionMdbOffline errors, growing transport queues and DAG quorum alerts after an October Windows
+      Server update. Benign-lookalike discriminator for an SOC that sees mail-flow stalls on Exchange this week: this pattern is a patch regression, not an intrusion; a genuine exploitation lead for the October Exchange SU
+      flaw would look different (entry 2026-10-14/exchange-oct-2026-su-cve-2026-70571-last-2016-2019-update).
+      The primary page's text is in the page JSON-LD/HTML that `url` returns; `extract` returns the full raw HTML for this host (served via direct-raw), so quote checks should use the `url` body.
+
+  # ------------------------------------------------------------------ 7
+  - title: "Beyond Gravity (Confederation-owned space supplier): no new fact since SRF's 2026-10-15 report; China assumed by involved persons, oversight committees told of a data outflow, vector and data class still not public"
+    sources:
+      - { url: "https://www.srf.ch/news/schweiz/beyond-gravity-china-im-verdacht-nach-cyberattacke-auf-schweizer-weltraumkonzern", publisher: "SRF (Dominik Meier, Bundeshauskorrespondent)", date: "2026-10-15", role: "primary" }
+      - { url: "https://www.inside-it.ch/china-steckt-moeglicherweise-hinter-cyberattacke-auf-beyond-gravity-20261015", publisher: "Inside IT", date: "2026-10-15", role: "corroborating (relay of SRF; adds the 12 August first-indication date and the Bern criminal complaint)" }
+      - { url: "https://www.ictjournal.ch/news/2026-10-16/la-chine-serait-elle-a-lorigine-de-la-cyberattaque-contre-beyond-gravity", publisher: "ICTjournal", date: "2026-10-16", role: "corroborating (relay of SRF; no new fact)" }
+      - { url: "https://www.netzwoche.ch/news/2026-10-06/beyond-gravity-wird-opfer-eines-cyberangriffs", publisher: "Netzwoche", date: "2026-10-15", role: "corroborating (relay of SRF, update note of 2026-10-15)" }
+    discovery_trace: >
+      backlog re-gate (state/coverage_backlog.md row 2026-10-06, hold until 2026-10-20) -> inside-it-ch RSS https://www.inside-it.ch/rss.xml (2026-10-15 item) -> primary: https://www.srf.ch/news/schweiz/beyond-gravity-china-im-verdacht-nach-cyberattacke-auf-schweizer-weltraumkonzern
+      -> relays checked for any additional fact: ICTjournal, Netzwoche (fetched with extract); SwissCybersecurity.net's 2026-10-15 update page returned only an ad-tracker page; BACS Im Fokus / Aktuelle Vorfälle / press pages and news.admin.ch listing show no Beyond Gravity item; WebSearch ("Beyond Gravity Cyberangriff China Datenabfluss Geschäftsprüfungskommission", "Beyond Gravity media release ... beyondgravity.com") found nothing newer and no company-hosted release
+    summary: |
+      Re-gate result: nothing new since the SRF report of 2026-10-15 that the 2026-10-16 backlog note already records. SRF writes that, according to several involved persons, Beyond Gravity and the Confederation assume China is the
+      attacker, that neither the company nor the Defence Department (VBS, which investigates with the BACS) confirms it officially, that the origin remains "subject of ongoing clarification" per the company, and that it is unclear which
+      information the attackers reached though data apparently left; the chair of the Council of States' oversight committee said both oversight committees "have taken note of the data outflow" and hold a report on the incident. Inside IT adds that the
+      company's first indications of malicious activity date from 12 August 2026, that it filed a criminal complaint with the Bern public prosecutor against unknown persons and that the Federal Prosecutor's Office has not acted so far.
+      The ICTjournal (2026-10-16) and Netzwoche (2026-10-15) pieces relay SRF without new facts. The hold condition (BACS, Beyond Gravity or reporting names a vector, an actor or the data affected) is met only in the loosest reading
+      (a suspected state actor from anonymous sources, confirmed by neither the company nor VBS); no vector, behaviour or data class is public, so an incident entry would have no evidence-bound technique.
+    region_nexus: "Switzerland (Confederation-owned supplier; BACS and VBS investigating; parliamentary oversight informed)"
+    primary_sector_nexus: "direct (federally owned defence/space supplier)"
+    sector: "public-sector (state-owned company)"
+    cves: []
+    techniques: []
+    technique_note: "No behaviour is public, so no mapping is supportable (the gate would FAIL an incident entry with an empty list; this is why the backlog row holds)."
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:beyond-gravity-cyberattack-2026-08", type: incident, name: "Beyond Gravity cyberattack (first indications 2026-08-12, disclosed 2026-10-02)", aliases: ["Beyond Gravity Cyberangriff"],
+          summary: "Targeted cyberattack on the Confederation-owned space supplier Beyond Gravity, first indications on 2026-08-12, disclosed by the company on 2026-10-02 as the work of a highly professional actor and investigated with the BACS and Mandiant; SRF reported on 2026-10-15 that involved persons assume China, which neither the company nor VBS confirms (Beyond Gravity via Keystone-SDA/AWP; SRF)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Backlog hold (expires 2026-10-20) still unmet on the strict reading: attribution rests on one outlet's anonymous sources, vector and data class are unknown, so no evidence-bound technique exists. Returned so the main agent can decide at expiry without re-researching; recommendation: keep the hold until 2026-10-20 unless BACS, VBS or the company confirms an actor or names the data."
+    classification_suggestion: "B2 for the incident itself (company disclosure plus SRF); the China attribution is C3 (anonymous sources, unconfirmed officially)"
+    evidence:
+      - quote: "Recherchen bestätigen dies nun: Beyond Gravity und der Bund gehen von China als Angreifer aus, wie mehrere involvierte Personen gegenüber SRF erklären."
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/news/schweiz/beyond-gravity-china-im-verdacht-nach-cyberattacke-auf-schweizer-weltraumkonzern"
+      - quote: "Offiziell bestätigen wollen den China-Verdacht weder das Unternehmen selbst noch das Verteidigungsdepartement VBS, das mit dem Bundesamt für Cybersicherheit den Angriff untersucht."
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/news/schweiz/beyond-gravity-china-im-verdacht-nach-cyberattacke-auf-schweizer-weltraumkonzern"
+      - quote: "Die Geschäftsprüfungskommissionen von National- und Ständerat haben vom Datenabfluss Kenntnis erhalten"
+        attribution: "Maya Graf (chair of the Council of States' oversight committee), as quoted by SRF"
+        source_url: "https://www.srf.ch/news/schweiz/beyond-gravity-china-im-verdacht-nach-cyberattacke-auf-schweizer-weltraumkonzern"
+      - quote: "An welche Informationen die Angreifer bei Beyond Gravity gekommen sind, ist unklar."
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/news/schweiz/beyond-gravity-china-im-verdacht-nach-cyberattacke-auf-schweizer-weltraumkonzern"
+      - quote: "Erste Hinweise auf schädliche Aktivitäten in der IT-Umgebung waren laut Beyond Gravity bereits am 12. August 2026 aufgetreten."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/china-steckt-moeglicherweise-hinter-cyberattacke-auf-beyond-gravity-20261015"
+
+backlog_recheck:
+  - row: "Beyond Gravity (state/coverage_backlog.md, row 2026-10-06, expires 2026-10-20)"
+    checked_at: 2026-10-17T03:17:36Z
+    result: "no new development since 2026-10-15; hold condition still unmet on the strict reading"
+    detail: >
+      Sources checked: SRF (2026-10-15), Inside IT (2026-10-15), ICTjournal (2026-10-16), Netzwoche update (2026-10-15), BACS Im Fokus / Aktuelle Vorfälle / press pages (nothing about Beyond Gravity), news.admin.ch listing
+      (2026-10-15/16 items, none), Netzwoche/ICTjournal/SwissCybersecurity.net/Blick/SRF feeds (no newer item), WebSearch in German (nothing newer). No vector, behaviour or data class is public; the China assumption is anonymous-source
+      reporting that neither the company nor VBS confirms. Full item 7 above is provided so the decision at expiry needs no re-research.
+
+policy_watch:
+  - { item: "NCSC.ch / BACS announcements", checked: "Im Fokus (newest 2026-10-16 Cyber Security Month week 3 'KI im Berufsalltag', 2026-10-15 director at Singapore Cyber Week), Aktuelle Vorfälle (newest card 2026-08-18), press releases (newest 2026-10-12), security hub via ncsc-csh (four advisories of 2026-10-16: Cisco SEG, BeyondTrust, PAN-OS, Drupal, all already covered by entries)", result: "nothing in window that changes an obligation; awareness content only", url: "https://www.bacs.admin.ch/de/csm26-s3-de" }
+  - { item: "Swiss Information Security Act (ISG), federal and cantonal", checked: "WebSearch plus Zug page", result: "no federal step in window (Federal Council mandate of 2026-05-06 for an ISG revision and the 2026-09-25 CSG mandate are already in the store). Not covered and out of window: canton Zug's ISG and ISV draft was opened for consultation on 2026-07-15 and closes 2026-11-09 (communes invited to respond); candidate for a policy entry if the main agent wants cantonal consultations with a deadline", url: "https://zg.ch/de/vernehmlassungen/2026/Einladungen-zu-Vernehmlassungen/Juli/Informationssicherheitsgesetz" }
+  - { item: "EU NIS2 / CRA developments touching public administration", checked: "ENISA news (CRA Single Reporting Platform launch is dated 2026-09-11), EC digital-strategy newsroom, Le Monde Informatique", result: "nothing in the EU's own channels in window; Le Monde Informatique (2026-10-13) reports that the French bill on digital resilience transposing NIS2, planned for the Assemblée nationale from 2026-10-07, was removed from the agenda for congestion of the parliamentary calendar. No Swiss obligation changes (France is not the constituency's jurisdiction).", url: "https://www.lemondeinformatique.fr/actualites/lire-la-cnaf-signale-une-fuite-de-donnees-sur-sa-plateforme-vacaf-100851.html" }
+  - { item: "Swiss e-government / digital public services security (e-ID, citizen portals, cantonal digitalisation)", checked: "Inside IT, Netzwoche, ICTjournal, SwissCybersecurity.net, news.admin.ch", result: "nothing security-relevant in window (EFK audit on federal data governance, 2026-10-15, is a governance finding, not a security one)", url: "https://www.inside-it.ch/efk-bemaengelt-datenmanagement-beim-bund-20261015" }
+  - { item: "Council of Europe cybercrime convention items", checked: "WebSearch only (no Council of Europe feed in the slice)", result: "nothing found in window", url: null }
+  - { item: "Sanctions and law-enforcement actions against publicly known threat infrastructure", checked: "Europol newsroom feed, Nextgov, WebSearch", result: "no new action in window; the KillSec takedown (2026-09-30, entry 2026-10-02/operation-killswitch-killsec-takedown-fedpol-oag) and the FBI seizure of six Integrity Technology Group domains (2026-10-08, entry 2026-10-09/aa26-281a-integrity-tech-microscan-exchange-mail-theft) are covered", url: "https://www.europol.europa.eu/rss.xml" }
+  - { item: "Data-protection regulators (FDPIC, EDPB, CNIL, ICO)", checked: "FDPIC press page (newest 2026-09-16), EDPB news (newest 2026-10-16: Norwegian DPA fine on Xandr), CNIL actualités (newest 2026-10-16: professional e-mail address reconstitution, finance study), ICO enforcement list (newest 2026/09 paths)", result: "nothing that changes obligations for a Swiss public body; the Republik incident was reported to the FDPIC on 2026-10-15 (Inside IT)", url: null }
+
+dropped_leads:
+  - "Fehmarnbelt tunnel (Femern Link Contractors, heise 2026-10-16): cyberattack stops access cards and vessel-positioning equipment on a Danish-German state-backed megaproject; no vector or actor, contractor consortium, no Swiss nexus (incident floor)."
+  - "Bürgerrechtler/Bitkom paper on vulnerability management in the German intelligence-law reform (heise 2026-10-16): German legislative advocacy, no obligation on the constituency."
+  - "Cnaf / Vacaf platform leak (Le Monde Informatique 2026-10-13; FrenchBreaches claim of about 1.2 million records unconfirmed): French social-security body, supplier-hosted platform, no vector, no Swiss nexus; only its NIS2 remark is used above."
+  - "Offerz (Inside IT/Netzwoche 2026-10-15/16, 115,000 customers' order data via a test environment) and Ricardo-class consumer breaches: private-sector, no public-sector nexus (incident floor, as the 2026-10-10/11/12/13 fires decided)."
+  - "Albert Heijn cyberattack (NL Times 2026-10-12 to 2026-10-16): private retailer, S4 territory, no public-sector nexus."
+  - "German municipal DDoS at the Cham district office is folded into item 4 as a contrast; ZIDKOR (Rhineland-Palatinate) NetScaler shutdown and faulty-update outage of 2026-09-27/30 predate the window and follow the covered NetScaler entries."
+  - "NCSC.ch security-hub advisories of 2026-10-16 (Drupal, Cisco SEG, BeyondTrust, PAN-OS): all four already have entries; adding the NCSC advisory as a source is an S1 call."
+  - "Kaspersky survey on Swiss executives' ransom fears, BACS 'Swiss-washing' online-shop warning (week 41), Kapo Zürich PostFinance phishing warning: consumer/awareness content."
+  - "Next.ink: EU Commission inquiries into AI-agent hacking (2026-10-15) and ECB/BoE/Fed AI-resilience demands on banks (2026-10-14): neither changes an obligation for the Swiss public sector."
+
+candidate_sources:
+  - { id: br24-bayern, publisher: "BR24 Bayern (Bayerischer Rundfunk)", url: "https://www.br.de/nachrichten/bayern", category: "ch-eu / news", why: "Public broadcaster with fast regional reporting that relays municipal and district statements and names the investigating authorities (Eichstätt, Cham this window); reliability B; article bodies read cleanly with extract; no feed probed." }
+
+promotion_notes:
+  - "kommunaler-notbetrieb-de (candidate, reliability D): in this run's 97 h horizon its listing carried two German municipal incidents (Eichstätt, Cham) with dated cards and links to the municipality's own page or the broadcaster's article; extract of the root page returns a clean structured listing. It performed as a discovery aggregator; keep it a candidate, but its recipe can move from webfetch to extract."
+
+coverage_gaps:
+  - { source_id: inside-it-ch, reason: "recipe finding: article pages with the 'Abo' paywall return only the lead and first paragraph through extract (the Ransomware/Armee article, the PKZH article), but the full text is embedded in the raw HTML as JSON (rawState.blocks[].text); `python3 tools/fetch_source.py url <article URL>` returns it and a short Python JSON parse recovers the paragraphs. The 2026-10-16 note that extract reads articles cleanly holds for non-paywalled articles (Republik, Beyond Gravity)." }
+  - { source_id: enisa, reason: "recipe confirmed: `extract https://www.enisa.europa.eu/news` returns the listing (undated) via trafilatura-direct; per-item dates need `extract https://www.enisa.europa.eu/news/<slug>` (frontmatter date). fetch_method could be recorded as bridge/extract rather than webfetch." }
+  - { source_id: cnil-fr, reason: "recovered: the 2026-10-15 maintenance 503 is gone; `extract https://www.cnil.fr/fr/actualites` returned dated items (newest 2026-10-16)." }
+  - { source_id: edpb, reason: "recipe: `extract` of the news listing returns only the page header, while `url https://www.edpb.europa.eu/news/news_en` returns the dated items (parse the title, date and /news/<slug>_en href pattern)." }
+  - { source_id: ncc-research, reason: "recipe: `url https://www.nccgroup.com/research-blog/` lists /research/<slug>/ hrefs without dates; per-item `extract https://www.nccgroup.com/research/<slug>/` carries the date in its frontmatter (items dated 2026-10-06, 10-09, 10-12)." }
+  - { source_id: ico-uk, reason: "recipe: `ico-uk enforcement 10` returned ten enforcement URLs with no titles or dates; the date is only inferable from the /YYYY/MM/ path (newest 2026/09 on 2026-10-17)." }
+  - { source_id: le-monde-info, reason: "recipe: `url .../securite-informatique-3.html` is ISO-8859-1 (mojibake unless decoded as latin-1) and each date precedes its item ('le 13 Octobre 2026 / <category> <title>'), so a regex must pair a date with the following item, not the preceding one." }
+  - { source_id: swisscybersecurity-net, reason: "not in my slice, noted for the owner: `extract` of the home page returns a dated headline list, but `extract` of an article URL (e.g. .../news/2026-10-15/update-china-koennte-hinter-dem-cyberangriff-auf-beyond-gravity-stehen) returned an ad-tracker page (match.adsrvr.org) instead of the article." }
+  - { source_id: heise-sec, reason: "no gap; note that the feed's 20-item window reaches back only to 2026-10-13, so a 26 h sweep is complete." }
+
+source_ledger:
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed (warnings + current)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest warning 2026-10-15 (Cisco SEG, covered), newest current item 2026-09-08" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract listing + extract per item", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "newest item 2026-10-16 is the ECSC results; CRA Single Reporting Platform launch is 2026-09-11" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed + extract", horizon_hours: 26, in_horizon_items: 7, returned: 3, note: "Berlin closure, Exchange OWA regression (borderline); Fehmarnbelt and the German vulnerability-management paper dropped" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed + extract + url (raw JSON for the paywalled article)", horizon_hours: 26, in_horizon_items: 8, returned: 3, note: "PKZH/Post update, DD-Automation/Army, Republik/Metabase; Offerz dropped" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "bridge:url + card parse", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "2026-10-16 Cyber Security Month week 3 awareness piece only" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "bridge:url + card parse", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "six cards, newest 2026-08-18" }
+  - { id: bacs-press, tier: essential, attempted: true, transport: "bridge:url + card parse", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-12" }
+  - { id: intrinsec, tier: standard, attempted: true, transport: "feed", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-10-01" }
+  - { id: kudelski-security, tier: standard, attempted: true, transport: "extract", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest visible post 2026-09-07" }
+  - { id: lab52, tier: standard, attempted: true, transport: "feed", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-10-05" }
+  - { id: le-monde-info, tier: standard, attempted: true, transport: "bridge:url + regex", horizon_hours: 122, in_horizon_items: 3, returned: 0, note: "Cnaf/Vacaf leak, ANSSI Metabase (2026-10-05, outside horizon), Danfoss (covered); Cnaf dropped, NIS2 remark used in policy_watch" }
+  - { id: next-ink, tier: standard, attempted: true, transport: "feed", horizon_hours: 122, in_horizon_items: 40, returned: 0, note: "general-news feed; two regulatory items read and dropped (EU AI-agent inquiries, ECB/BoE/Fed demands on banks)" }
+  - { id: nextgov-fcw, tier: standard, attempted: true, transport: "extract", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "FBI seizure of six Integrity Tech domains is dated 2026-10-08 and covered" }
+  - { id: cnil-fr, tier: standard, attempted: true, transport: "extract", horizon_hours: 97, in_horizon_items: 3, returned: 0, note: "no security or public-sector item; maintenance outage of 2026-10-15 is over" }
+  - { id: edpb, tier: standard, attempted: true, transport: "bridge:url", horizon_hours: 97, in_horizon_items: 8, returned: 0, note: "fines on private companies, smart-glasses statement" }
+  - { id: ico-uk, tier: standard, attempted: true, transport: "bridge:ico-uk enforcement", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "newest enforcement path 2026/09" }
+  - { id: kommunaler-notbetrieb-de, tier: standard, attempted: true, transport: "extract", horizon_hours: 97, in_horizon_items: 2, returned: 1, note: "Eichstätt (returned, lookback), Cham (folded in as contrast)" }
+  - { id: ncc-research, tier: standard, attempted: true, transport: "bridge:url + extract per item", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "newest 2026-10-12" }
+  - { id: nl-times, tier: standard, attempted: true, transport: "extract of tag pages", horizon_hours: 97, in_horizon_items: 5, returned: 0, note: "Albert Heijn retail incident only" }
