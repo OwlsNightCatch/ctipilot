@@ -1,0 +1,302 @@
+# work/2026-10-18T0256Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-10-18T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-18T02:57:42Z
+ended_at: 2026-10-18T03:14:29Z
+duration_seconds: 1007
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 17
+  bridge_fetches: 95
+window_note: >
+  Window 26 h (2026-10-17T01:00Z to 2026-10-18T03:00Z, a Saturday-Sunday). The in-window signal in the S1
+  domain is genuinely thin: the CISA KEV catalogue is at version 2026.10.16 (released 2026-10-16T17:15Z, before
+  the window) with no addition since, the ENISA EUVD exploited list holds only four records, all already covered,
+  and no essential vendor PSIRT or research feed published anything new in the window. Every covered entry named
+  in the spawn message was re-read at its primary for revisions; none changed state in the window (see covered_entry_checks).
+  Three items are returned, all borderline: two from the standard records' rotational lookback (Keycloak, Horizon3)
+  and one from a coverage hole found while chasing a prior-run lead (Zimbra).
+items:
+  - title: "Keycloak 26.8.1: 19 CVEs fixed including a 2FA setup enforcement bypass, Kerberos KDC spoofing and a standard-token-exchange mTLS bypass, plus a SAML HTTP-Redirect signature parser differential tracked as a weakness without a CVE"
+    sources:
+      - { url: "https://www.keycloak.org/2026/10/keycloak-2681-released", publisher: "Keycloak Project", date: "2026-10-13", role: "primary" }
+      - { url: "https://github.com/keycloak/keycloak/releases/tag/26.8.1", publisher: "Keycloak Project (GitHub release notes)", date: "2026-10-13", role: "primary" }
+      - { url: "https://github.com/keycloak/keycloak/issues/53354", publisher: "Keycloak Project (GitHub issue 53354)", date: "2026-09-30", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-rm49-qjx7-5qm5", publisher: "GitHub Advisory Database (CVE-2026-94218)", date: "2026-09-21", role: "corroborating" }
+      - { url: "https://github.com/advisories/GHSA-35j3-ccrv-pgvj", publisher: "GitHub Advisory Database (CVE-2026-95503)", date: "2026-09-22", role: "corroborating" }
+      - { url: "https://github.com/advisories/GHSA-3g7j-6fqv-v2q4", publisher: "GitHub Advisory Database (CVE-2026-94000)", date: "2026-09-19", role: "corroborating" }
+      - { url: "https://github.com/advisories/GHSA-f7cv-8449-mr73", publisher: "GitHub Advisory Database (CVE-2026-97846)", date: "2026-09-25", role: "corroborating" }
+    discovery_trace: "first seen at: keycloak, URL https://www.keycloak.org/rss.xml (feed, newest item 'Keycloak 26.8.1 released', 2026-10-13) → primary: https://www.keycloak.org/2026/10/keycloak-2681-released → pivot: https://github.com/keycloak/keycloak/releases/tag/26.8.1 (links each CVE to its GHSA) → pivot: GHSA pages above and https://github.com/keycloak/keycloak/issues/53354 for the weakness"
+    summary: |
+      Keycloak 26.8.1, released 2026-10-13, lists 19 individually named CVEs under "Security fixes" plus two multi-CVE
+      dependency bumps (jackson-databind, simple-git). The authentication-relevant ones: CVE-2026-94218 (a user can skip a
+      mandated 2FA setup by manually visiting the login-actions restart link, which clears the markers that track required
+      steps; the GitHub advisory rates it Low), CVE-2026-96445 (Conditional OTP honours skip headers that arrive over
+      untrusted proxy paths), CVE-2026-95503 (Kerberos password authentication without SPNEGO does not verify the KDC
+      identity, so an attacker on the same network can spoof the KDC), CVE-2026-97846 (Standard Token Exchange issues an
+      unrestricted bearer token when the required mTLS certificate binding is not presented), CVE-2026-94000 / CVE-2026-94001 /
+      CVE-2026-97177 (delegated-admin paths to realm-admin or around a denied reset-password permission), CVE-2026-94215
+      (a limited admin reads or modifies master-realm client configuration through a realm they control), CVE-2026-103884
+      (X.509 CRL distribution-point path traversal that reads local files or exhausts memory) and CVE-2026-82968 (persistent
+      wrong-account linking through a social identity provider). The GitHub advisory pages read rate these Low or Moderate;
+      FIRST.org EPSS (scores dated 2026-10-16) for the 18 Keycloak CVEs checked is at or below 0.0044, none is in CISA KEV,
+      and no source reports exploitation. Separately, the release lists under "Weaknesses" (no CVE) issue 53354: the SAML
+      broker HTTP-Redirect endpoint verifies the signature over a different query-parameter set than the one it processes
+      because the two parsers disagree on the semicolon separator, which the issue title describes as unauthenticated login
+      as an arbitrary user; the issue states it needs an IdP configured with signature validation on and "want assertions
+      signed" off, lists the version as 26.7.3 and earlier, and names two mitigations (enable Want Assertions Signed, or
+      disable semicolon query-parameter delimiters in Quarkus). The Keycloak post gives the fix version only and states no
+      per-CVE affected range. The store has no Keycloak entry after 2026-08-19; releases 26.7.3, 26.7.4, 26.7.5 and 26.8.0
+      (2026-08-31 to 2026-10-01) were neither covered nor examined in this return.
+    region_nexus: "global; Keycloak is a common open-source SSO/IAM component in European public-sector deployments (source-list note); Swiss deployment footprint not established by the sources"
+    primary_sector_nexus: "indirect: identity infrastructure behind e-government portals where deployed"
+    sector: "public-sector"
+    cves: [CVE-2026-94218, CVE-2026-96445, CVE-2026-95503, CVE-2026-97846, CVE-2026-94000, CVE-2026-94001, CVE-2026-97177, CVE-2026-94215, CVE-2026-103884, CVE-2026-82968, CVE-2026-96446, CVE-2026-15943, CVE-2026-18569, CVE-2026-94213, CVE-2026-94217, CVE-2026-97311, CVE-2026-101333, CVE-2026-107121, CVE-2026-91777]
+    techniques: [T1190, T1556.006, T1557, T1606.002, T1098]
+    affected_products: ["Keycloak"]
+    entity_keys: ["product:keycloak"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "2FA setup enforcement bypass via /realms/{realm}/login-actions/restart"
+        attribution: "Keycloak Project"
+        source_url: "https://www.keycloak.org/2026/10/keycloak-2681-released"
+      - quote: "SAML broker HTTP-Redirect binding: query-string signature is verified over a different SAMLResponse than the one processed"
+        attribution: "Keycloak Project (GitHub issue 53354)"
+        source_url: "https://github.com/keycloak/keycloak/issues/53354"
+      - quote: "Quarkus 4 disables semicolon query parameter delimiters by default"
+        attribution: "Keycloak Project (GitHub issue 53354)"
+        source_url: "https://github.com/keycloak/keycloak/issues/53354"
+      - quote: "This allows an attacker on the same network to spoof the KDC and bypass the authentication process, potentially gaining unauthorized access to user accounts."
+        attribution: "GitHub Advisory Database (CVE-2026-95503)"
+        source_url: "https://github.com/advisories/GHSA-35j3-ccrv-pgvj"
+    extended_notes: |
+      Exposure: Keycloak servers on releases before 26.8.1 (read the running version from the admin console server-info
+      page or the container image tag); the SAML weakness applies only to realms with a SAML identity-provider broker
+      configured for signature validation without signed assertions; the 2FA, Conditional OTP and KDC items need the
+      corresponding authenticator or federation provider in use. Detection (concept derived from the stated mechanisms, not
+      vendor-published rules): web/reverse-proxy access logs for GET requests to the broker endpoint
+      /realms/{realm}/broker/{alias}/endpoint whose query string contains a semicolon; Keycloak login events where a
+      session reaches a successful LOGIN after a request to login-actions/restart without the configure-2FA required action
+      completing; admin events for group-membership and role-mapping changes made by delegated admins holding only manage-users.
+      Hardening named by the project: set wantAssertionsSigned on SAML IdP brokers; the Quarkus semicolon delimiter option.
+      Suggested handling: the batch is all Low/Moderate with EPSS under 0.5 percent and no exploitation, so on the
+      sound-throughout bar it is a hold-or-drop unless the main agent wants an identity-infrastructure awareness line;
+      the SAML weakness has no CVE and may receive one later (watch for an update).
+    borderline: true
+    borderline_reason: "in lookback (2026-10-13, outside the 26 h window); no exploitation, no KEV, EPSS under 0.5 percent, Low/Moderate ratings; kept because Keycloak is identity infrastructure with prior store coverage (CVE-2026-16443 batch, rated high) and the SAML parser differential is described by the project as unauthenticated login as an arbitrary user under a non-default-but-plausible configuration"
+
+  - title: "AhsayCBS CVE-2026-105133 / CVE-2026-105134: Horizon3.ai source-level analysis adds the root cause of both flaws, a public proof of concept and server-side hunt artifacts"
+    sources:
+      - { url: "https://horizon3.ai/attack-research/attack-blogs/ahsaycbs-cve-2026-105133-cve-2026-105134-technical-analysis/", publisher: "Horizon3.ai", date: "2026-10-14", role: "primary" }
+    discovery_trace: "first seen at: horizon3-ai, URL https://horizon3.ai/attack-research/ (listing, 'AhsayCBS Deep-Dive: Auth Bypass to RCE', October 14, 2026) → primary: https://horizon3.ai/attack-research/attack-blogs/ahsaycbs-cve-2026-105133-cve-2026-105134-technical-analysis/ (no pivot needed; the post cites the Huntress report already carried by the covered entry)"
+    summary: |
+      Horizon3.ai published a source-level analysis of the two AhsayCBS flaws on 2026-10-14, the covered
+      2026-10-10 entry's CVE-2026-105133 and CVE-2026-105134. Its findings, stated by Horizon3 from reading the Linux
+      installer: the JSON API base class skips the system-administrator password check when an attacker-controlled
+      "FromServlet" flag in the request body is set, so the whole /rps and /obs JSON API is reachable without credentials,
+      and the AddSysUser action creates an administrator without consulting the caller; the second flaw sits in the
+      Replication Receiver upload service, where two attacker-supplied headers are concatenated onto the receiver's write
+      root with only the percent and colon characters escaped, and the system-folder denylist that is applied when a receiver
+      is created is not applied to the computed upload path, so a file lands in a served web application and a JSP then runs
+      as LocalSystem on Windows or root on Linux. Horizon3 says its proof of concept is on its GitHub and lists server-side
+      hunt artifacts: command interpreters, curl, certutil or miners spawned from the CBS service process or JVM, new .jsp
+      files under webapps/rps or webapps/cbs (especially ones that answer 404 unless a parameter is supplied), new replication
+      receivers whose SystemHome sits under the install directory created outside a change window ("Created new receiver" in
+      the system log), unexpected system administrator accounts, API logon entries for accounts nobody provisioned, and
+      requests to the JSON .do endpoints or the receiver upload path carrying a FromServlet field or X-RSW-Request headers
+      from untrusted sources. The covered entry already tags poc-public and carries the Huntress webshell artifacts; the
+      delta is the root cause plus the account, receiver and request-field checks, which matter for the compromise check
+      after the partner-only hotfix. FIRST.org EPSS (2026-10-16): CVE-2026-105134 0.0478 (percentile 0.918), CVE-2026-105133 0.0085.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-105133, CVE-2026-105134]
+    techniques: [T1190, T1505.003, T1136]
+    affected_products: ["Ahsay AhsayCBS"]
+    entity_keys: ["product:ahsay-ahsaycbs"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-10/ahsaycbs-cve-2026-105133-105134-exploited-webshells-xmrig"
+    lookback: true
+    evidence:
+      - quote: "Even though we had not heard of this specific backup solution before, given the in-the-wild exploitation reports, we dug in."
+        attribution: "Horizon3.ai"
+        source_url: "https://horizon3.ai/attack-research/attack-blogs/ahsaycbs-cve-2026-105133-cve-2026-105134-technical-analysis/"
+      - quote: "and the credential check is never reached"
+        attribution: "Horizon3.ai"
+        source_url: "https://horizon3.ai/attack-research/attack-blogs/ahsaycbs-cve-2026-105133-cve-2026-105134-technical-analysis/"
+      - quote: "On Linux it runs as root."
+        attribution: "Horizon3.ai"
+        source_url: "https://horizon3.ai/attack-research/attack-blogs/ahsaycbs-cve-2026-105133-cve-2026-105134-technical-analysis/"
+    extended_notes: |
+      Suggested record type: improvement (no change to exploitation, patch or KEV status). Single source because the
+      analysis is Horizon3's own reverse engineering; the exploitation facts remain Huntress, Bitdefender and CISA as
+      the covered entry cites them. Horizon3's post also says Ahsay released its hotfixes on 12 October 2026.
+    borderline: true
+    borderline_reason: "update-of delta published 2026-10-14 (outside the 26 h window, inside the 121 h lookback of horizon3-ai); no status change, but it adds the post-patch compromise checks (new replication receivers, unexpected admin accounts) the covered entry lacks"
+
+  - title: "Zimbra Collaboration 10.1.21: unauthenticated password-recovery code prediction, WebDAV pre-MFA token acceptance and OnlyOffice file-write code execution fixed, most without a CVE"
+    sources:
+      - { url: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories", publisher: "Zimbra (Security Advisories wiki)", date: "2026-10-01", role: "primary" }
+      - { url: "https://wiki.zimbra.com/wiki/Zimbra_Releases/10.1.21", publisher: "Zimbra (10.1.21 release notes)", date: "2026-10-01", role: "primary" }
+      - { url: "https://www.heise.de/news/Groupware-Zimbra-Update-schliesst-zahlreiche-Sicherheitsluecken-11468996.html", publisher: "heise online (Dirk Knop)", date: "2026-09-29", role: "corroborating" }
+      - { url: "https://www.rapid7.com/blog/post/ve-breaking-zimbra-identity-boundaries-part-1", publisher: "Rapid7 (Jonah Burgess)", date: "2026-10-13", role: "context" }
+    discovery_trace: "first seen at: the 2026-10-14 run record's borderline-drop line naming NCSC.ch hub advisory 13022 (Zimbra, read on hub text only) → pivot: NCSC.ch security hub advisory 13022 via the bridge (`ncsc-csh post 13022`, API JSON, no page URL fetched), whose references name the vendor wiki and heise → primary: https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories and https://wiki.zimbra.com/wiki/Zimbra_Releases/10.1.21 → corroborating: https://www.heise.de/news/Groupware-Zimbra-Update-schliesst-zahlreiche-Sicherheitsluecken-11468996.html → context: WebSearch (\"Zimbra CVE-2026-66911 CVE-2026-66912 unauthenticated account takeover exploited\") → https://www.rapid7.com/blog/post/ve-breaking-zimbra-identity-boundaries-part-1"
+    summary: |
+      Zimbra's 10.1.21 release (heise, 2026-09-29, says it had been available since the end of the previous week; the NCSC.ch
+      hub advisory is dated 2026-10-01) lists, in the vendor's own advisory table, a fix for "a security vulnerability in the self-service
+      password recovery mechanism that could allow an unauthenticated attacker to predict recovery codes and reset a user's
+      password", WebDAV authentication that now rejects pre-MFA tokens, an OnlyOffice integration flaw that "could allow
+      unauthorized file writes and remote code execution under specific conditions" (reported by Rapid7), a server-side
+      JavaScript injection in the OnlyOffice integration reachable by an authenticated user, and eight stored XSS fixes in the
+      Classic and Modern web clients; only two stored-XSS items carry CVE ids (CVE-2026-66911 and CVE-2026-66912), the CVE and
+      CVSS columns for the password-recovery, WebDAV and OnlyOffice rows read TBD, the ENISA EUVD search returns no record
+      for the two CVE ids, and no source read states any exploitation. The vendor gives no mechanism, preconditions or severity for the password-recovery
+      flaw, so exposure cannot be narrowed beyond ZCS 10.1.x before 10.1.21. Rapid7 published the first part of a staged
+      series on 2026-10-13 saying it reported more than 80 Zimbra vulnerabilities, with a GitHub tracker holding write-ups and
+      proof-of-concept code and further parts promised on stored XSS, document-service SSRF to code execution and
+      zimbra-to-root chains; its part 1 covers five other, mostly authenticated issues fixed in 10.1.17 and 10.1.20 or still
+      without a public fix. heise adds that Zimbra flaws are often targeted because the software commonly runs in
+      government and research institutions; the store already covers the exploited SNMP command injection CVE-2026-73570 (fixed in 10.1.20).
+    region_nexus: "europe; heise states Zimbra commonly runs in government and research institutions; Swiss deployment footprint not established by the sources"
+    primary_sector_nexus: "indirect: groupware used by public administrations"
+    sector: "public-sector"
+    cves: [CVE-2026-66911, CVE-2026-66912]
+    techniques: [T1190, T1556.006, T1059.007, T1078]
+    affected_products: ["Zimbra Collaboration"]
+    entity_keys: ["product:zimbra-collaboration", "product:onlyoffice-docs"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Fixed a security vulnerability in the self-service password recovery mechanism that could allow an unauthenticated attacker to predict recovery codes and reset a user's password."
+        attribution: "Zimbra (Security Advisories wiki)"
+        source_url: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories"
+      - quote: "Fixed a security issue in the OnlyOffice document editing integration that could allow unauthorized file writes and remote code execution under specific conditions."
+        attribution: "Zimbra (Security Advisories wiki)"
+        source_url: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories"
+      - quote: "Pre-MFA tokens are now rejected with an HTTP status, requiring users to fully complete Multi-Factor Authentication before accessing WebDAV resources."
+        attribution: "Zimbra (Security Advisories wiki)"
+        source_url: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories"
+      - quote: "Rapid7 reported more than 80 vulnerabilities spanning authentication, mailbox authorization, calendar processing, web clients, document services, and the host operating system."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ve-breaking-zimbra-identity-boundaries-part-1"
+    extended_notes: |
+      Why it is returned despite the age: it is an unauthenticated account-takeover class flaw on an internet-facing
+      groupware the 2026-10-14 fire dropped on the NCSC.ch hub text alone ("vendor pages not read this fire") and that no
+      later run read; this return is the first read of the vendor's own advisory table. The hub advisory pairs the two CVE
+      ids with the account-takeover text, but the vendor table assigns CVE-2026-66911 and CVE-2026-66912 to two stored-XSS
+      rows and leaves the password-recovery row at TBD, so an entry must not attach those CVEs to the takeover flaw.
+      Exposure: ZCS 10.1.x before 10.1.21 (the vendor table lists only 10.1.21 as the fix release; read the version with
+      zmcontrol -v on the server); password recovery is a public web endpoint, so it is internet-exposed wherever self-service
+      password reset is enabled (not stated by the vendor). Detection concept (derived from the stated mechanism): web access
+      logs for bursts of password-recovery code submissions against one account, followed by a password change and a login
+      from a new source; mailbox audit for new forwarding or Sieve rules after such a sequence. Suggested priority: notable
+      to high only if the main agent applies the critical/high completeness duty; otherwise a hold until Rapid7 part 2 or a CVE
+      with severity lands (an update is likely within days).
+    borderline: true
+    borderline_reason: "freshest vendor source 2026-10-01 and heise 2026-09-29 are outside the window, and no exploitation is reported; returned as a coverage-hole flag on an unauthenticated account-takeover class flaw in groupware common in government, with Rapid7's 2026-10-13 staged disclosure series (PoC tracker) as a fresh hook"
+
+covered_entry_checks:
+  - { entry: "2026-10-15/cve-2026-76519-cisco-secure-email-gateway-file-write-root", result: "Cisco advisory still version 1.0 Final 2026-OCT-14, no revision; NCSC.ch hub post 13065 edited 2026-10-16 06:56 (before window)" }
+  - { entry: "2026-10-16/drupal-sa-core-2026-014-cve-2026-108097-field-ui-rce", result: "drupal.org SA unchanged (no exploit stated); delta not in entry: Pantheon/Tag1 Drupal 7 LTS release 7.107 (2026-10-14) backports the fix, the entry names Drupal 8 and 9 as unfixed but not Drupal 7; outside window, low value" }
+  - { entry: "2026-10-15/cve-2026-0322-pan-os-management-interface-code-injection", result: "advisory page unchanged since 2026-10-14/15 ('Very limited exploitation')" }
+  - { entry: "2026-10-14/cve-2026-104935-ivanti-connect-secure-zero-day-chain-kev", result: "EUVD record for CVE-2026-111357 updated 2026-10-16 18:41 (already folded into the 2026-10-17 improvement); Ivanti October post unchanged; no fixed build for the root step found" }
+  - { entry: "2026-10-06/cve-2026-21589-atlassian-data-center-arbitrary-file-access", result: "KEV addition 2026-10-15 and EUVD exploitedSince 2026-10-15 confirmed; no change since the 2026-10-17 record" }
+  - { entry: "2026-10-09/cve-2026-107406-citrix-netscaler-saml-idp-overflow", result: "CTX697191 revision table shows only 2026-10-08 entries; no exploitation statement added" }
+  - { entry: "2026-08-29/papercut-ng-mf-tapestry-request-confusion-preauth-rce", result: "PaperCut 27 Aug bulletin last updated 2026-09-10; nothing newer" }
+  - { entry: "2026-10-08/cve-2026-102255-sonicwall-sma1000-workplace-ssrf", result: "SNWLID-2026-0017 still says no evidence of exploitation; no change" }
+  - { entry: "2026-10-13/cve-2026-97229-gitlab-ci-regex-compiler-unauthenticated-rce", result: "search found no confirmed exploitation through 2026-10-15; no change" }
+  - { entry: "2026-10-16/cve-2026-102764-beyondtrust-remote-support-zero-day", result: "KEV 2026-10-16 and EUVD exploitedSince 2026-10-16 confirmed; covered" }
+  - { entry: "2026-10-14/exchange-oct-2026-su-cve-2026-70571-last-2016-2019-update", result: "MSRC 2026-Oct CVRF: CVE-2026-70571 Exploited:No, unchanged" }
+  - { entry: "2026-10-10/ahsaycbs-cve-2026-105133-105134-exploited-webshells-xmrig", result: "no status change; Horizon3 deep-dive returned as update-of item above" }
+  - { entry: "2026-10-16/peerstitch-fortigate-implant-cve-2025-61624-fortimanager", result: "KEV 2026-10-16 (CVE-2025-61624) and EUVD exploited confirmed; covered" }
+
+drop_log:
+  - "Fortinet 2026-10-13 PSIRT batch FG-IR-26-176 to -185 (10 advisories read from the raw advisory pages; Known Exploited No on all): FortiSIEM 7.5.0 CVE-2026-106173 (Critical, 9.4, unauthenticated, workaround restricts TCP 27918, fixed 7.5.1), FortiSandbox GUI authentication bypass CVE-2026-107656 (Critical, 9.6, fixed 5.0.7 / 4.4.10), FortiManager/FortiAnalyzer SQL injection (High 7.9, authenticated), FortiMail webmail SQL injection CVE-2025-57739 (High, authenticated). Dropped by the 2026-10-14 and 2026-10-15 fires on the same facts; searches found no exploitation or public PoC in the window. Unchanged call."
+  - "Palo Alto Networks 2026-10-14/15/17 advisories: only CVE-2026-0322 (covered) is exploited; the rest are Medium or Low (newest CVE-2026-0307 GlobalProtect app local privilege escalation, 2026-10-17T00:55Z, five minutes before the window)."
+  - "Microsoft October 2026 (CVRF read in full): Exploited:Yes only CVE-2026-96951 (covered); publicly disclosed CVE-2026-108398 (.NET) and CVE-2026-92707 (MessagePack-CSharp), neither exploited; every other first-party Critical network flaw (DHCP Server CVE-2026-96934, QUIC CVE-2026-100219 and CVE-2026-105016, Message Queuing CVE-2026-100202, Text Shaping CVE-2026-97814, five Outlook preview-pane RCEs and others at 9.8) stays at the 2026-10-14 and 2026-10-15 drop. The CVRF's only revisions since 2026-10-14 are informational (Office for Mac availability, CVEs 'inadvertently omitted' from the release, Visual Studio KB links, CWE additions) and the 2026-10-17 batch is third-party Azure Linux package CVEs."
+  - "Adobe 2026-10-13 bulletins: APSB26-144, -152 and -153 are covered (the ColdFusion and AEM pages were last updated 2026-10-14 with 'Adobe is not aware of any exploits in the wild' unchanged); Dimension, FrameMaker, Photoshop, Bridge, Substance 3D and Content Credentials SDK bulletins are desktop-application priority-3 items, not triaged."
+  - "Splunk SVD-2026-1006 (2026-10-14, modified 2026-10-16): advance notice that advisories for Splunk Enterprise and Universal Forwarder 10.4.4, 10.2.8, 10.0.11 and 9.4.16 and SOAR 8.7.0 publish on 2026-10-21; informational only, no CVE content yet. The next S1 turn on 2026-10-21 or 2026-10-22 should rotate splunk-advisories in."
+  - "phpMyFAQ 4.1.9 batch (EUVD 2026-10-17, up to CVSS 9.3, VulnCheck CNA): the unauthenticated WebAuthn credential-injection account takeover (CVE-2026-111911) needs the non-default WebAuthn option enabled per the project's GHSA-g6cq-6rqg-6c9p; Swiss public-sector footprint not established; no exploitation. LearnPress CVE-2026-104736 (PHP object injection, Wordfence 9.8) and LatePoint CVE-2026-110653: WordPress plugins, no exploitation or KEV signal."
+  - "Juniper JSA112186, Junos on SRX Secure Vector Routing heap overflow CVE-2026-101950 (EUVD-2026-101471, CVSS 4.0 9.3, EPSS 0.47): part of the 2026-10-14 Juniper quarterly bundle the 2026-10-15 and 2026-10-16 fires dropped; no exploitation; vendor portal unreadable, so only the ENISA record was read."
+  - "Chrome 155 stable (2026-10-15, 10 fixes, one Critical use-after-free in Prerender): no in-the-wild statement. HPE ClearPass HPESBNW05158 (2026-10-06, Critical, 37 CVEs, no known exploitation): outside every lookback and not in the store, so mentioned only. GreyNoise proxyjacking post (2026-10-15): already dropped by the 2026-10-17 fire. Rapid7 Zimbra part 1 (2026-10-13): S3 research, folded into the Zimbra item as context."
+  - "NCSC.ch hub catch-up leads still unread from the 2026-10-14 drop line: Veeam Backup and Replication CVE-2025-64393 (advisory 13043, low-privileged to SYSTEM) was not re-read here; the Zimbra lead (13022) is returned above."
+
+cve_table:
+  - { cve: CVE-2026-94218, product: "Keycloak", cvss: null, epss: 0.00314, kev: false, exploited: false, affected: "before 26.8.1 (project post states the fix version only; GitHub advisory rates Low)", fixed: "26.8.1", type: "mfa-bypass", vector: "network", auth: "password-only session; second factor not completed", source: "https://www.keycloak.org/2026/10/keycloak-2681-released" }
+  - { cve: CVE-2026-96445, product: "Keycloak", cvss: null, epss: 0.00242, kev: false, exploited: false, affected: "before 26.8.1", fixed: "26.8.1", type: "mfa-bypass", vector: "network", auth: "attacker already holds the user's password; Conditional OTP authenticator", source: "https://github.com/keycloak/keycloak/releases/tag/26.8.1" }
+  - { cve: CVE-2026-95503, product: "Keycloak", cvss: null, epss: 0.00192, kev: false, exploited: false, affected: "before 26.8.1 (GitHub advisory rates Moderate)", fixed: "26.8.1", type: "auth-bypass", vector: "adjacent-network", auth: "Kerberos password authentication without SPNEGO", source: "https://github.com/advisories/GHSA-35j3-ccrv-pgvj" }
+  - { cve: CVE-2026-97846, product: "Keycloak", cvss: null, epss: 0.00135, kev: false, exploited: false, affected: "before 26.8.1 (GitHub advisory rates Moderate)", fixed: "26.8.1", type: "auth-bypass", vector: "network", auth: "stolen client credentials; Standard Token Exchange V2 with mTLS binding", source: "https://github.com/advisories/GHSA-f7cv-8449-mr73" }
+  - { cve: CVE-2026-94000, product: "Keycloak", cvss: null, epss: 0.00401, kev: false, exploited: false, affected: "before 26.8.1 (GitHub advisory rates Moderate)", fixed: "26.8.1", type: "priv-esc", vector: "network", auth: "delegated admin with manage-users", source: "https://github.com/advisories/GHSA-3g7j-6fqv-v2q4" }
+  - { cve: CVE-2026-94001, product: "Keycloak", cvss: null, epss: 0.00443, kev: false, exploited: false, affected: "before 26.8.1", fixed: "26.8.1", type: "authz-bypass", vector: "network", auth: "delegated admin; fine-grained permissions", source: "https://github.com/keycloak/keycloak/releases/tag/26.8.1" }
+  - { cve: CVE-2026-97177, product: "Keycloak", cvss: null, epss: 0.00237, kev: false, exploited: false, affected: "before 26.8.1", fixed: "26.8.1", type: "authz-bypass", vector: "network", auth: "delegated admin; fine-grained permissions", source: "https://github.com/keycloak/keycloak/releases/tag/26.8.1" }
+  - { cve: CVE-2026-94215, product: "Keycloak", cvss: null, epss: 0.00302, kev: false, exploited: false, affected: "before 26.8.1 (GitHub advisory rates Moderate)", fixed: "26.8.1", type: "authz-bypass", vector: "network", auth: "limited-privilege admin", source: "https://github.com/keycloak/keycloak/releases/tag/26.8.1" }
+  - { cve: CVE-2026-103884, product: "Keycloak", cvss: null, epss: 0.00213, kev: false, exploited: false, affected: "before 26.8.1 (GitHub advisory rates Moderate)", fixed: "26.8.1", type: "path-traversal", vector: "network", auth: "crafted client certificate; X.509 authenticator with CRL Distribution Point checking enabled", source: "https://github.com/keycloak/keycloak/releases/tag/26.8.1" }
+  - { cve: CVE-2026-82968, product: "Keycloak", cvss: null, epss: 0.00277, kev: false, exploited: false, affected: "before 26.8.1 (GitHub advisory rates Moderate)", fixed: "26.8.1", type: "account-takeover", vector: "network", auth: "attacker with a different account on the same social identity provider", source: "https://github.com/keycloak/keycloak/releases/tag/26.8.1" }
+  - { cve: CVE-2026-105133, product: "Ahsay AhsayCBS", cvss: null, epss: 0.00854, kev: true, exploited: true, affected: "see covered entry", fixed: "hotfixes 10.3.4.45 and 9.15.2.70 (partner-only) per covered entry", type: "auth-bypass", vector: "network", auth: "pre-auth", source: "https://horizon3.ai/attack-research/attack-blogs/ahsaycbs-cve-2026-105133-cve-2026-105134-technical-analysis/" }
+  - { cve: CVE-2026-105134, product: "Ahsay AhsayCBS", cvss: null, epss: 0.04782, kev: true, exploited: true, affected: "see covered entry", fixed: "hotfixes 10.3.4.45 and 9.15.2.70 (partner-only) per covered entry", type: "path-traversal-rce", vector: "network", auth: "pre-auth when chained with CVE-2026-105133", source: "https://horizon3.ai/attack-research/attack-blogs/ahsaycbs-cve-2026-105133-cve-2026-105134-technical-analysis/" }
+  - { cve: CVE-2026-66911, product: "Zimbra Collaboration", cvss: null, epss: null, kev: false, exploited: false, affected: "ZCS 10.1.x before 10.1.21 (vendor table lists the fix release only)", fixed: "10.1.21", type: "stored-xss", vector: "network", auth: "victim interaction (clicking an attachment)", source: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories" }
+  - { cve: CVE-2026-66912, product: "Zimbra Collaboration", cvss: null, epss: null, kev: false, exploited: false, affected: "ZCS 10.1.x before 10.1.21 (vendor table lists the fix release only)", fixed: "10.1.21", type: "stored-xss", vector: "network", auth: "victim interaction (replying or forwarding)", source: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured; the sweep is a no-op and general rules applied"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ivanti-psirt
+    reason: "Not a failure this run (rotation-priority record): `feed https://www.ivanti.com/blog/topics/security-advisory/rss 10` read direct (10 dated items, newest 2026-10-13) and `extract https://www.ivanti.com/blog/october-2026-security-update` read direct; the post's advisory links do not surface in the extract and hub.ivanti.com advisory pages stay JavaScript-only per the recipe note, so the affected/fixed table still comes through other publishers. The old id ivanti-advisory-hub is covered by this recipe."
+  - source_id: greynoise
+    reason: "Recipe fix: `extract https://www.greynoise.io/blog` returns the body of one article (the proxyjacking post), not the listing; `url --direct https://www.greynoise.io/blog` returns the raw HTML, where each /blog/<slug> href is followed by its dated card (parse the next 'Mon DD, YYYY' string)."
+  - source_id: hadrian-labs
+    reason: "Recipe fix: `extract https://hadrian.io/blog` returns only navigation text; `url --direct https://hadrian.io/blog` returns raw HTML with /blog/<slug> links and partial dates (newest 2026-09-29, marketing posts, no research in the lookback)."
+  - source_id: morphisec
+    reason: "Recipe fix: `extract https://www.morphisec.com/blog/` returns author and date lines without titles; `url --direct` returns raw HTML with /blog/<slug> links; https://www.morphisec.com/rss-feeds/ does not parse as feed XML through `feed`. No in-lookback research found (14 Oct item authored by the marketing author; titles not recoverable from the capture)."
+  - source_id: aikido-security
+    reason: "Recipe confirmed: `url https://www.aikido.dev/blog` returns raw HTML with /blog/<slug> links and dates only for some cards; `extract` of each post carries a reliable date (newest research item 2026-10-08, newest card 2026-10-12 a compliance post)."
+  - source_id: watchguard-psirt
+    reason: "Recipe note: `extract https://psirt.watchguard.com/` returns the full CVE table without dates; read the newest advisory page (CVE-2026-13043, dated 2026-10-01) to date the top of the list. No release since 2026-10-01."
+  - source_id: horizon3-ai
+    reason: "Recipe confirmed: `extract https://horizon3.ai/attack-research/` resolves to the category listing with dated entries (page metadata date 2026-01-28 is stale; ignore it); no WebFetch needed."
+  - source_id: hpe-networking-psirt
+    reason: "Only the single advisory URL is readable (`url --direct`, HPESBNW05158, 2026-10-06, outside lookback); the listing/index of HPE Networking CSAF advisories was not located, so newer advisories cannot be enumerated from this record."
+  - source_id: fortinet-psirt
+    reason: "Recipe confirmed: the RSS read direct this run (20 items, newest 2026-10-13); `extract` of an advisory page drops the CVE id, severity and Known Exploited fields, while `url --direct` plus tag stripping returns them (IR Number, Severity, Attack Type, Known Exploited, CVSSv3 Score, CVE ID)."
+  - source_id: msrc-update-guide
+    reason: "Recipe confirmed: `msrc cvrf 2026-Oct` (47.6 MB, saved to disk, parsed in Python) returns Threats type 1 exploitation strings, type 3 severity, CVSSScoreSets and per-CVE RevisionHistory; the document revision on 2026-10-17T01:49 touches only third-party packages."
+
+source_ledger:
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "catalogue 2026.10.16 released 2026-10-16T17:15Z; the two newest additions (CVE-2026-102764, CVE-2025-61624) predate the window and are covered" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:url --direct search API + bridge:enisa-euvd recent exploited|criticals", horizon_hours: 26, in_horizon_items: 12, returned: 0, note: "12 records at 8.5+ since 2026-10-17 (phpMyFAQ, Fleet, Coder, WordPress plugins, Tektronix), none exploited; the exploited list holds four records, all covered" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-09 (PaperCut, covered)" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed (direct) + url --direct per advisory", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest batch 2026-10-13 read in full and dropped as before" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc releases/recent/cvrf", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "October CVRF parsed for exploited, disclosed and revised CVEs" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed (direct) + extract", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "CVE-2026-0307 GlobalProtect app LPE (Medium) published 2026-10-17T00:55Z; CVE-2026-0322 page unchanged" }
+  - { id: ivanti-psirt, tier: standard, attempted: true, transport: "feed (direct) + extract", horizon_hours: 100, in_horizon_items: 1, returned: 0, note: "October security update post (2026-10-13) is the covered Connect Secure disclosure" }
+  - { id: greynoise, tier: standard, attempted: true, transport: "url --direct (raw HTML)", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "proxyjacking post 2026-10-15, dropped by the 2026-10-17 fire" }
+  - { id: hadrian-labs, tier: standard, attempted: true, transport: "url --direct (raw HTML)", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-09-29, marketing" }
+  - { id: horizon3-ai, tier: standard, attempted: true, transport: "extract (listing) + extract (article)", horizon_hours: 121, in_horizon_items: 1, returned: 1, note: "AhsayCBS deep-dive 2026-10-14 returned as update-of" }
+  - { id: hpe-networking-psirt, tier: standard, attempted: true, transport: "url --direct (single advisory)", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "HPESBNW05158 dated 2026-10-06; listing not located" }
+  - { id: joomla-security-centre, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest advisories 2026-09-25" }
+  - { id: keycloak, tier: standard, attempted: true, transport: "feed (direct) + extract + GitHub advisory pages", horizon_hours: 121, in_horizon_items: 1, returned: 1, note: "26.8.1 (2026-10-13) returned as borderline" }
+  - { id: morphisec, tier: standard, attempted: true, transport: "extract + url --direct", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "marketing-dominated; titles not recoverable from the listing capture" }
+  - { id: msrc-blog, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "latest post 'Using risk cohorts to prioritize security updates' is a process post, not an advisory" }
+  - { id: mysites-guru, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "2026-10-13 to 2026-10-16 posts are how-to, award and scam-awareness posts; last extension security post 2026-10-08" }
+  - { id: splunk-advisories, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "SVD-2026-1006 advance notice for 2026-10-21, informational (drop_log)" }
+  - { id: trustwave-spiderlabs, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-07" }
+  - { id: watchguard-psirt, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest advisory 2026-10-01" }
+  - { id: adobe-psirt, tier: standard, attempted: true, transport: "url --direct (chimera API + bulletin pages)", horizon_hours: 100, in_horizon_items: 11, returned: 0, note: "all 2026-10-13 bulletins; three covered, the rest desktop applications" }
+  - { id: aikido-security, tier: standard, attempted: true, transport: "url (raw listing) + extract per post", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest research post 2026-10-08, newest card 2026-10-12 (compliance)" }

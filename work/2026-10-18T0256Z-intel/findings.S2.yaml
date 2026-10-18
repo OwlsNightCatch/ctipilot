@@ -1,0 +1,416 @@
+domain: S2
+run_id: 2026-10-18T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-10-18T02:57:47Z'
+ended_at: '2026-10-18T03:23:46Z'
+duration_seconds: 1559
+self_telemetry:
+  webfetch_calls: 10
+  websearch_calls: 47
+  bridge_fetches: 95
+  note: 'counts are approximate, read off the tool-use trace by hand; jina reader fallbacks: about 5 (europol article on a truncated URL I built by mistake, usine-digitale, three guessed feed URLs for swisscybersecurity.net / netzwoche.ch / ictjournal.ch that returned no items)'
+items:
+- title: 'CERT-FR revised its refrigeration-controller alert on 2026-10-16 and links Dixell France''s XWEB hardening guide: firmware 1.12.1 or earlier must be updated, factory Admin/Admin account, VPN-only remote access'
+  sources:
+  - url: https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/
+    publisher: CERT-FR (alert CERTFR-2026-ALE-012)
+    date: '2026-10-16'
+    role: primary
+  - url: https://dixell.fr/wp-content/uploads/2026/10/Recommandations-pour-une-utilisation-securisee-des-superviseurs-XWEB-v1.0.pdf
+    publisher: Dixell France (Copeland)
+    date: '2026-10-16'
+    role: primary
+    date_basis: 'UPPER BOUND, not a stated date: the PDF is undated (URL path 2026/10) and is listed under Documentation on the CERT-FR page whose latest revision is 2026-10-16; use the date with a sourcing note or the month only'
+  discovery_trace: 'first seen at: anssi-fr slice record, CERT-FR alert feed https://www.cert.ssi.gouv.fr/alerte/feed/ (ALE-012 listed 2026-10-12; the feed shows no revision date) -> pivot: live alert page https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/ re-read with extract and with url --direct (the version table ''Gestion détaillée du document'' lists a third version dated 16 octobre 2026, ''Mise à jour des recommandations''; extract drops the table) -> Documentation link -> primary: Dixell France PDF https://dixell.fr/wp-content/uploads/2026/10/Recommandations-pour-une-utilisation-securisee-des-superviseurs-XWEB-v1.0.pdf (fetch_source.py pdf, 4 pages, per-font ToUnicode decode). Prompted by the open-story check of the covered Danfoss entry (spawn message) and WebSearch ("Danfoss AK-SM AK-SC attaque supermarchés réfrigération CERT-FR mise à jour"); Danfoss''s advisory listing https://danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories
+    fetched 2026-10-18 shows no advisory for the attacks (newest 2026 entry DSA-2026-08-01, iC7 debug interfaces, 2026-09-18) - a listing, not citable.'
+  summary: 'CERT-FR''s alert CERTFR-2026-ALE-012 now has three versions: the initial one of 2026-10-12, 2026-10-13 (more targeted equipment added) and 2026-10-16, listed on the page as an update of the recommendations. The page does not show which sentences the 2026-10-16 revision changed. The current text splits the guidance by state. For every unit it asks to remove the internet exposure of the affected units and of any unit on a public IP address, and to check the insurance contract conditions before cutting the data uplink to the refrigeration contractor. For a unit not known to be compromised it then asks to verify the whole configuration, notably the defrost ranges; for a compromised Danfoss unit it says to restart the device or otherwise restore it (factory reset) and then reconfigure it. In both branches it asks to restore access only through a secure VPN or protected network (filtering to the contractors'' source addresses is an emergency measure and not durable) and to apply the
+    maker''s practices, which for Danfoss means updating the firmware, setting the security level to Strict and confirming that default passwords were changed. It still says attack campaigns are probably ongoing and that a factory reset alone on an unpatched end-of-life unit leaves it vulnerable. It still names no flaw or entry vector, and its risk field reads ''not specified by the vendor''. The page''s Documentation section links Dixell France''s ''Recommandations pour une utilisation sécurisée des superviseurs XWEB'' v1.0, an operator guide for the Copeland and Dixell XWEB supervisors that CERT-FR had named without models or flaws. The guide repeats Copeland''s March 2024 bulletin (never expose the XWEB to the public internet; restrict administration protocols such as SSH at the firewall; restrict inbound and outbound communication; change default account passwords; enable HTTPS but do not expose the web interface) and adds three operational recommendations. (1) Any XWEB PRO on firmware
+    1.12.1 or earlier must be updated without delay; the guide cites CISA''s February 2026 advisory ICSA-26-057-10 on several critical XWEB PRO vulnerabilities up to that version and says Copeland has published a fix; back up the configuration first. (2) Both XWEB PRO and EVO ship with the factory account Admin with password Admin (the unit demands a new password at first login), so any unit whose password was never changed or is simple must be corrected; one named account per contractor, an expiry date on external-contractor accounts, passwords changed after any outside intervention that used a privileged account; the configurable password policy exists on the PRO only. (3) Remote access only through an encrypted VPN tunnel (a dedicated 4G VPN router, a VPN server on a dedicated ISP box, or a dedicated VPN server run by the client''s network team); a port forward restricted to one trusted source IP and the HTTPS port only is a temporary, degraded stop-gap; no DMZ and no port forward open
+    to all addresses; no remote-control software such as AnyDesk or TeamViewer installed on a site PC that stays switched on. Neither document says how the attackers got in, and neither ties the French attacks to the XWEB PRO flaws that Claroty Team82 disclosed (covered in 2026-08-28/claroty-copeland-xweb-pro-refrigeration-unauth-root-rce, affected XWEB300D/500D/500B PRO firmware 1.12.1 and earlier); the matching firmware boundary is the only link and is the guide''s, not an attribution.'
+  region_nexus: Europe-wide controller exposure; the French ISP-box examples in the Dixell guide (Free, Free Pro, Orange Pro) do not apply to Swiss operators, but the controller families do; NCSC.ch advisory 13054 already covers the Danfoss units; no Swiss victim reported in any fetched source
+  primary_sector_nexus: 'indirect: building and cold-chain controllers in hospital kitchens and pharmacies, school and municipal canteens, cantonal facilities and the contractors that run them'
+  sector: retail; public-sector (as asset owner)
+  cves: []
+  techniques:
+  - T1190
+  affected_products:
+  - Copeland xweb
+  - Dixell xweb
+  - Copeland XWEB300D PRO
+  - Copeland XWEB500D PRO
+  - Copeland XWEB500B PRO
+  - Danfoss AK-SM
+  - Danfoss AK-SC
+  entity_keys:
+  - incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10
+  - product:copeland-xweb
+  - product:dixell-xweb
+  - product:copeland-xweb300d-pro
+  - product:copeland-xweb500d-pro
+  - product:copeland-xweb500b-pro
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack
+  evidence:
+  - quote: Vérifier les conditions contractuelles d’assurance avant de couper la remontée des données Internet vers le prestataire frigoriste.
+    attribution: CERT-FR (alert CERTFR-2026-ALE-012)
+    source_url: https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/
+  - quote: Vérifier l’intégralité de la configuration, notamment les plages de dégivrage.
+    attribution: CERT-FR (alert CERTFR-2026-ALE-012)
+    source_url: https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/
+  - quote: Redémarrer l'équipement Danfoss, sinon restaurer l'équipement (Reset Factory).
+    attribution: CERT-FR (alert CERTFR-2026-ALE-012)
+    source_url: https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/
+  - quote: Mise à jour des recommandations
+    attribution: CERT-FR (alert CERTFR-2026-ALE-012)
+    source_url: https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/
+    note: version-table cell, present in the raw HTML (url --direct) next to '16 octobre 2026'; absent from the extract view
+  - quote: Tout XWEB PRO dont le firmware est en version 1.12.1 ou antérieure doit être mis à jour sans délai.
+    attribution: Dixell France (Copeland)
+    source_url: https://dixell.fr/wp-content/uploads/2026/10/Recommandations-pour-une-utilisation-securisee-des-superviseurs-XWEB-v1.0.pdf
+    note: PDF text extraction breaks lines inside this sentence; matches after whitespace normalisation
+  - quote: identifiant « Admin », mot de passe « Admin »
+    attribution: Dixell France (Copeland)
+    source_url: https://dixell.fr/wp-content/uploads/2026/10/Recommandations-pour-une-utilisation-securisee-des-superviseurs-XWEB-v1.0.pdf
+  - quote: l'accès doit passer par un tunnel VPN chiffré
+    attribution: Dixell France (Copeland)
+    source_url: https://dixell.fr/wp-content/uploads/2026/10/Recommandations-pour-une-utilisation-securisee-des-superviseurs-XWEB-v1.0.pdf
+  extended_notes: 'Exposure check for an asset owner (as the two documents give it): the XWEB PRO firmware version against 1.12.1 (SYSTEM, Updates; the guide names the menu); the System, Users list for the factory Admin account still on its default, shared accounts and contractor accounts without an expiry date; the building router or ISP box for a DMZ or a port forward to the XWEB that is open to all source addresses; a site PC left on with AnyDesk, TeamViewer or similar. Detection concept grounded in CERT-FR''s wording: on the controller, defrost ranges, setpoints and account changes outside a maintenance window; in router, firewall or VPN logs, inbound connections to the management interface from anywhere other than the contractor''s source address. Both are already in the covered entry''s Detection line; the new material is the configuration-state checks. Absences worth carrying: no source names the entry vector; the Dixell guide does not say any attack used the factory account or the
+    PRO flaws; Danfoss''s own advisory listing carried no advisory for the attacks on 2026-10-18. Whether the insurance-conditions caution and the defrost-range check are new in the 2026-10-16 revision cannot be shown from the page; the covered entry cites the 2026-10-13 text and already carries the Strict-level and default-password guidance. Suggested record type: update (an authority revision plus a vendor primary on the Copeland and Dixell units). The jina reader was NOT needed for this item; the usine-digitale article that came up in search fell to the reader and returned only a 430-character shell, so it is not cited.'
+- title: 'FBI PSA of 2026-10-13: North Korean IT workers broaden recruitment of facilitators and lay out an ''identity in depth'' detection list (remote-desktop and KVM-over-IP hardware, job-unrelated apps)'
+  sources:
+  - url: https://www.ic3.gov/PSA/2026/PSA261013
+    publisher: FBI (IC3, PSA I-101326-PSA)
+    date: '2026-10-13'
+    role: primary
+  discovery_trace: 'first seen at: fbi-cyber-alerts slice record, WebFetch of https://www.ic3.gov/PSA (dated PSA list; lookback 121 h reaches 2026-10-13) -> primary (no pivot needed): https://www.ic3.gov/PSA/2026/PSA261013 read with WebFetch and re-read with url --direct to check the quotes against the page text.'
+  summary: 'The FBI says North Korean IT workers are increasingly using paid facilitators, who host company laptops, lend their identities or take interviews, to get and keep remote jobs at Western firms. The workers use stolen personal data, purchased identity-verification accounts and forged documents to clear background checks and then control the issued laptop from elsewhere through remote-desktop software (the PSA names AnyDesk, TeamViewer, RustDesk, Chrome Remote Desktop and Splashtop Streamer), KVM-over-IP hardware (TinyPilot, PiKVM, GL.iNet) or a second machine. The PSA adds that ''laptop farms'' are spreading across more residences with fewer devices each, that workers escalated to data-theft extortion and threats against former managers after termination, and that they seek identities with clearances for government-contractor roles. Its detection advice is layered across hiring and employment (''identity in depth'') because no single indicator is reliable: flag remote-access or
+    remote-management software and KVM-over-IP devices or a second laptop on company devices, job-unrelated applications such as OBS Studio with the VDO.Ninja plugin or Homebrew, screen recordings or data flows to devices outside company control, and unusually frequent changes of bank accounts, addresses and social-media identifiers, and aggregate weak signals across IT, HR and security. The PSA names no Swiss or European victim and is written for US employers.'
+  region_nexus: US-written; no Swiss or European victim named
+  primary_sector_nexus: 'indirect: remote developers at suppliers to federal, cantonal and communal bodies'
+  sector: technology; government contractors
+  cves: []
+  techniques:
+  - T1219.002
+  - T1078
+  - T1657
+  affected_products:
+  - AnyDesk
+  - TeamViewer
+  - RustDesk
+  - Chrome Remote Desktop
+  - Splashtop Streamer
+  - TinyPilot
+  - PiKVM
+  - GL.iNet
+  - OBS Studio
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: update-of:2026-08-19/purpledelta-dprk-it-worker-facilitator-rmm-detection
+  borderline: true
+  borderline_reason: A first-party US authority primary that extends the covered Huntress/PurpleDelta detection material (the covered entry already carries the PiKVM and RMM hunt), but it is US-oriented with no Swiss nexus and no new decision beyond the covered one; I judge it a marginal improvement record at best and a drop at worst. The FBI is not on the national-CERT carve-out list, so it is single-source other.
+  evidence:
+  - quote: North Korean ITWs cannot be identified reliably with a single indicator or detection
+    attribution: FBI (IC3, PSA I-101326-PSA)
+    source_url: https://www.ic3.gov/PSA/2026/PSA261013
+  - quote: detection requires an "identity in depth" approach
+    attribution: FBI (IC3, PSA I-101326-PSA)
+    source_url: https://www.ic3.gov/PSA/2026/PSA261013
+  - quote: Following termination, ITWs have made death threats against former managers and their families
+    attribution: FBI (IC3, PSA I-101326-PSA)
+    source_url: https://www.ic3.gov/PSA/2026/PSA261013
+  extended_notes: Quotes were checked against the raw page text (url --direct) after WebFetch, with the typographic apostrophe in 'North Korea's' normalised in the PSA text. The covered entries already map the scheme (purpledelta 2026-08-19, kudelski-bismarck 2026-08-28, waterplum 2026-09-19).
+backlog_recheck:
+- row: Beyond Gravity (Confederation-owned space supplier) cyberattack disclosed 2026-10-02
+  result: no change
+  detail: Re-gated on today's facts. Nothing newer than 2026-10-16 exists. The newest primary-grade items are SRF's report of 2026-10-15 (company and Confederation assume China, from several persons; neither company nor VBS confirms; Maya Graf, chair of the Council of States oversight committee, says both oversight committees learned of the data outflow and hold a report on the incident) and the same-day watson and swissinfo relays; Inside IT (2026-10-15), ICTjournal (2026-10-16) and Netzwoche (updated 2026-10-15) re-report it. No vector, behaviour, data class or confirmed actor is public, the attribution still rests on anonymous sources in one outlet's reporting, the company says the origin remains under investigation, and the Bern prosecutor holds a complaint against unknown persons while the Federal Prosecutor's Office had not acted at the time of SRF's report. Hold condition unmet; row expires 2026-10-20.
+  sources_read:
+  - https://www.srf.ch/news/schweiz/beyond-gravity-china-im-verdacht-nach-cyberattacke-auf-schweizer-weltraumkonzern
+covered_story_checks:
+- story: PK Softech / Publica
+  result: no material change since the entry's 2026-10-17T03:35Z update
+  detail: Re-read the PK Softech statement (2026-10-08), PKZH page (2026-10-15), Publica page (2026-10-14) and finews (2026-10-16); the Migros-Pensionskasse notice of 2026-10-08 says it is still checking and no action is needed. Searches for a leak-site claim, a darknet publication, a new affected fund or a Federal Prosecutor statement found nothing after 2026-10-16.
+- story: Danfoss / refrigeration controllers
+  result: 'material: returned as the update-of item above'
+- story: Ixa Systems
+  result: no change
+  detail: Nothing newer than the 2026-10-07 and 2026-10-08 reports (Le Temps, ICTjournal, AWP); no canton statement or victim notice found.
+- story: SonicWall SMA1000 CVE-2026-102255 (NCSC.ch rating)
+  result: no change
+  detail: NCSC.ch hub post 13034 was last modified 2026-10-12T12:56Z (no later edit in the 80 most recent hub posts, none edited since 2026-10-16T06:56Z); SonicWall's PSIRT page is an Angular shell on WebFetch, so its exploitation wording could not be re-read; search coverage of 2026-10-12 and 2026-10-13 still says SonicWall had not updated its advisory.
+- story: Tangerhütte / Innocon digitales Rathaus
+  result: no change
+  detail: Only secondary coverage of MDR's 2026-10-13 report; no CVE, version or fix named.
+dropped_leads:
+- lead: FBI and CISA PSA of 2026-10-16, cyber actors targeting election and campaign officials (https://www.ic3.gov/PSA/2026/PSA261016)
+  reason: US-midterm focus, names no actor, generic phishing and smishing guidance (phishing-resistant MFA, SPF and DKIM, external-sender banners); no Swiss nexus and no decision beyond covered ground.
+- lead: 'heise, 2026-10-17: CDU Heilbronn mailbox compromised and used to phish about 6,500 contacts including ministries and the Chancellor'
+  reason: 'incident floor: no vector, actor or access method published (police assume a phishing attempt), German party association, no Swiss nexus.'
+- lead: Europol report on Europe's digital forensic capabilities (2026-10-16, datePublished in page JSON)
+  reason: policy-adjacent report, no obligation change or defender decision; the KillSec release in the same feed is the covered 2026-10-01 item (entry 2026-10-02/operation-killswitch-killsec-takedown-fedpol-oag) and the quantum item is 2026-10-07.
+- lead: Truesec 2026-10-16 (impostors using the ShinyHunters name) and 2026-10-13 (annual-style threat commentary)
+  reason: commentary without new telemetry; the first only advises verifying extortion claims.
+- lead: Arkadia SpeeCAN RAIDEN, NET119 and 119RAIDEN (Japanese municipal alerting and fire-service emergency-call registration)
+  reason: 're-checked: still no vector or vulnerability published, disclosed by the vendor 2026-10-13 with later updates; the earlier fires dropped it on the same ground.'
+- lead: Swiss policy watch (ISG and cantonal implementation, e-ID, Council of Europe convention, NIS2 and CRA, sanctions)
+  reason: nothing published in the window; the Bern ICSG entry (2026-09-11), the Swiss cybersecurity-act mandate (2026-09-26), Austria's NISG (2026-09-23) and the e-ID trust-infrastructure entry (2026-09-02) are already in the store; the German BMI/BMDS/BSI post-quantum migration guideline and the UK NCSC TLS post-quantum guidance are dated 2026-10-15 (outside the 26 h window; the German one targets federal, state and municipal administrations and could be a lookback candidate for the next fire); search found no new EU cyber-sanctions listing after 13 July 2026 (search summary, not fetched).
+watchlist_sweep:
+  duty: sector-lens
+  note: no watchlists configured; weighted the sweep to the Swiss public sector, with BACS, the security hub, news.admin.ch, cantonal and communal queries in German, French and Italian
+candidate_sources: []
+coverage_gaps:
+- source_id: anssi-fr
+  reason: 'RECIPE: the CERT-FR alert feed and `extract` both hide an alert''s revision history. ALE-012''s 2026-10-16 revision is visible only in the version table (''Gestion détaillée du document'') of the raw page: `python3 tools/fetch_source.py url --direct https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/` and read the table after ''Documentation''. Re-read the version table of every covered ALE page on each fire.'
+- source_id: safeonweb-be
+  reason: WebFetch returns HTTP 403 on https://safeonweb.be/en; the recipe `url https://safeonweb.be/en` works (34 KB, news hrefs under /en/news/, no dates on the home page). Items are citizen-facing scams; nothing in the lookback.
+- source_id: prodaft
+  reason: no dated listing on any transport (as the 2026-10-13 note says); WebSearch for an October 2026 report found nothing.
+- source_id: apa-ots
+  reason: no listing or feed route; WebSearch for October 2026 Austrian public-body releases found nothing.
+- source_id: europol-newsroom
+  reason: 'RECIPE: take dates only from `url --direct <full article URL>` and grep datePublished; never truncate the feed link (my truncated link returned a 404 shell and `extract` fell to the reader). The feed items carry no dates and keep old items such as the 2026-10-01 KillSec release.'
+- source_id: netzwoche / ictjournal-ch / swisscybersecurity-net
+  reason: out of slice, but guessed feed paths /rss failed (connection reset, reader returned no items); the working paths are https://www.netzwoche.ch/rss.xml and https://www.ictjournal.ch/rss.xml (both read directly, 20 items to 2026-10-16); swisscybersecurity.net has no feed record.
+- source_id: usine-digitale.fr
+  reason: article falls through extract to the reader and returns a 430-character shell (paywall or wall); not usable.
+- source_id: ncsc-ch-focus
+  reason: 'quiet, not a gap: newest item 2026-10-16 (KI im Berufsalltag, awareness); the weekly review for week 42 is due Tuesday 2026-10-20.'
+source_ledger:
+- id: advisories-ncsc-nl
+  tier: essential
+  attempted: true
+  transport: bridge:ncsc-nl recent 20 + feeds.ncsc.nl/nieuws.rss
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest advisory NCSC-2026-0437 at 2026-10-16T08:59Z; all vendor bulletins already covered or S1's; NCSC-NL news feed newest 2026-10-16
+- id: anssi-fr
+  tier: essential
+  attempted: true
+  transport: bridge:cert-fr avis-recent + alerte feed + actu-recent; url --direct on ALE-012
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 1
+  note: 'no new avis in the 26 h window (newest 2026-10-16); returned 1 update-of: ALE-012 revised 2026-10-16 (72 h developing window)'
+- id: bsi-de
+  tier: essential
+  attempted: true
+  transport: bridge:bsi-rss + url --direct press listing
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: WID feed newest 2026-10-16T11:45Z, 250 items; press listing newest 2026-10-16 (InfoSec Impact Award call), nothing else since 2026-10-01
+- id: cert-at
+  tier: essential
+  attempted: true
+  transport: feed warnings + current
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest warning 2026-10-15 (Cisco SEG, covered); current feed newest 2026-09-08
+- id: cert-eu
+  tier: essential
+  attempted: true
+  transport: bridge:cert-eu recent 12
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest 2026-017 (Cisco SEG, 2026-10-15, covered)
+- id: cert-pl
+  tier: essential
+  attempted: true
+  transport: feed cert.pl/en/rss.xml
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest 2026-10-16 (NordVPN CVE-2026-106030), outside the window
+- id: cisa-advisories
+  tier: essential
+  attempted: true
+  transport: WebFetch listing (advisory_type 93) + bridge:cisa csaf-recent
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest items 2026-10-16 (BeyondTrust alert, two KEV additions, election-officials resource); ICS advisories newest 2026-10-15; all covered or dropped
+- id: enisa
+  tier: essential
+  attempted: true
+  transport: extract listing + url --direct on 4 items for dates
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: no item dated in the window (CRA Single Reporting Platform launch is 2026-09-11; ECSC result page is dated 2026-10-18 but is a competition result)
+- id: heise-sec
+  tier: essential
+  attempted: true
+  transport: feed 30
+  horizon_hours: 26
+  in_horizon_items: 1
+  returned: 0
+  note: one in-window item (CDU Heilbronn mailbox phishing, 2026-10-17T16:00Z) dropped under the incident floor; every other item 2026-10-14 to 2026-10-16
+- id: inside-it-ch
+  tier: essential
+  attempted: true
+  transport: feed 25
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest item 2026-10-16T14:09Z (Tomyra AI); the Army sub-supplier ransomware piece (2026-10-16T13:28Z) was dropped by the previous fire
+- id: ncsc-ch-focus
+  tier: essential
+  attempted: true
+  transport: bridge:url + card parse
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest card 2026-10-16 (KI im Berufsalltag, awareness); weekly review 26w42 due 2026-10-20
+- id: ncsc-ch-incidents
+  tier: essential
+  attempted: true
+  transport: bridge:url + card parse
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: 6 cards, newest 2026-08-18
+- id: ncsc-ch-security-hub
+  tier: essential
+  attempted: true
+  transport: bridge:ncsc-csh recent 80 + lastModified scan
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 13068 (Drupal) 2026-10-16T08:02Z; no post edited after 2026-10-16T06:56Z (13054 Danfoss last edited 2026-10-13, 13034 SonicWall 2026-10-12)
+- id: ncsc-uk
+  tier: essential
+  attempted: true
+  transport: feed all-rss-feed
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest 2026-10-15 (TLS guidance, post-quantum blog)
+- id: bacs-press
+  tier: essential
+  attempted: true
+  transport: bridge:url + card parse
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest release 2026-10-12 (Director at EU Cyber Week and Singapore Cyber Week); no cybersecurity-act, ISG or half-year-report step
+- id: cash-ch-awp
+  tier: standard
+  attempted: true
+  transport: bridge:url sitemap-news.xml
+  horizon_hours: 121
+  in_horizon_items: 1
+  returned: 0
+  note: one security item in the horizon (2026-10-16 pension funds Post and Zurich), already covered by the PK Softech entry
+- id: cert-lv
+  tier: standard
+  attempted: true
+  transport: bridge:url /lv/zinas
+  horizon_hours: 121
+  in_horizon_items: 0
+  returned: 0
+  note: newest news item 2026-09-29
+- id: fbi-cyber-alerts
+  tier: standard
+  attempted: true
+  transport: WebFetch /PSA + PSA pages, url --direct to check quotes
+  horizon_hours: 121
+  in_horizon_items: 3
+  returned: 1
+  note: PSA261013 returned as a borderline update-of; PSA261016 and the three 2026-10-15 election PSAs dropped (US midterms)
+- id: it-connect
+  tier: standard
+  attempted: true
+  transport: feed 15
+  horizon_hours: 121
+  in_horizon_items: 15
+  returned: 0
+  note: all items 2026-10-14 to 2026-10-16, vulnerability news already covered or S1's; its Denmark CPR piece is the covered entry
+- id: jpcert
+  tier: standard
+  attempted: true
+  transport: WebFetch listing
+  horizon_hours: 121
+  in_horizon_items: 0
+  returned: 0
+  note: newest alerts 2026-10-14 and 2026-10-15 (Microsoft October updates, JVN notes for Japanese apps)
+- id: news-admin-ch
+  tier: standard
+  attempted: true
+  transport: bridge:url --direct date-filtered listing (2026-10-14 to 2026-10-18)
+  horizon_hours: 121
+  in_horizon_items: 0
+  returned: 0
+  note: 11 federal releases to 2026-10-17, none on cybersecurity, ISG or sanctions of cyber actors (a UN ISIL and Al-Qaida sanctions list change is not cyber)
+- id: openssf-policy
+  tier: standard
+  attempted: true
+  transport: WebFetch listing
+  horizon_hours: 121
+  in_horizon_items: 0
+  returned: 0
+  note: newest 2026-09-29
+- id: prodaft
+  tier: standard
+  attempted: true
+  transport: WebSearch only (no dated listing on any transport)
+  horizon_hours: 121
+  in_horizon_items: 0
+  returned: 0
+  note: no October 2026 report found
+- id: safeonweb-be
+  tier: standard
+  attempted: true
+  transport: bridge:url (WebFetch 403)
+  horizon_hours: 121
+  in_horizon_items: 0
+  returned: 0
+  note: citizen-facing scam notices, undated on the home page; nothing relevant
+- id: synacktiv
+  tier: standard
+  attempted: true
+  transport: WebFetch listing
+  horizon_hours: 121
+  in_horizon_items: 1
+  returned: 0
+  note: one post in the horizon (2026-10-13, an IDA and Binary Ninja agent tooling comparison), no vulnerability or threat content
+- id: truesec
+  tier: standard
+  attempted: true
+  transport: feed 15 + extract on 2 posts
+  horizon_hours: 121
+  in_horizon_items: 3
+  returned: 0
+  note: 2026-10-16 impostors of ShinyHunters, 2026-10-13 threat commentary, 2026-10-13 Ukrainian strikes on Russian data centres; commentary only
+- id: apa-ots
+  tier: standard
+  attempted: true
+  transport: WebSearch only (no listing route)
+  horizon_hours: 98
+  in_horizon_items: 0
+  returned: 0
+  note: no October 2026 Austrian public-body release found
+- id: csirt-acn-it
+  tier: standard
+  attempted: true
+  transport: feed 30
+  horizon_hours: 98
+  in_horizon_items: 22
+  returned: 0
+  note: all 2026-10-14 to 2026-10-16 alerts are vulnerability bulletins already covered or S1's (Cisco SEG, PAN-OS, BeyondTrust, Collabora CODE, Ivanti, Adobe, Microsoft)
+- id: europol-newsroom
+  tier: standard
+  attempted: true
+  transport: feed 20 + url --direct for dates
+  horizon_hours: 98
+  in_horizon_items: 1
+  returned: 0
+  note: e-evidence and digital-forensics report 2026-10-16 judged no defender decision; the KillSec item is the covered 2026-10-01 release

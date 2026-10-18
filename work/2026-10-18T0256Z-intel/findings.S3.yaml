@@ -1,0 +1,361 @@
+# work/2026-10-18T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-18T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-18T02:57:52Z
+ended_at: 2026-10-18T03:20:17Z
+duration_seconds: 1345
+self_telemetry:
+  webfetch_calls: 10
+  websearch_calls: 9
+  bridge_fetches: 107   # approximate: ~58 feed, ~42 extract, ~7 url
+findings_note: |
+  Window: window_hours=26 (floor 2026-10-17T01:00Z); slice records swept to their own lookback_hours (121 to 146 h) and the
+  majors' research blogs swept to the 26 h window. Quiet research day: the majors (Talos, Unit 42, Check Point, ESET,
+  Kaspersky, GTIG, Microsoft TI, Trend, Sophos, SentinelOne, Proofpoint, Huntress) published nothing new and
+  relevant inside the window except the Huntress SkyKick post (2026-10-16T23:00Z, updated twice on 2026-10-17). The strongest signals
+  came from the gap sweep of fast feeds (THN, BleepingComputer, Wordfence, Zscaler, The Register) and were pivoted to primaries.
+  No ANNUAL/periodic report landed inside the window: Unit 42 monthly "Top 5 initial access vectors" (2026-10-16, ranking only,
+  dropped), Talos quarterly vulnerability pulse (2026-10-15, dropped by the 2026-10-16 run), ENISA Threat Landscape 2026 (2026-09-22)
+  and the BACS H1 2026 report (2026-08-25) are all outside the window.
+  Four items returned: one new incident (ConnectWise/SkyKick), one new supply-chain item (Rank Math PRO, borderline),
+  one update-of delta (Zscaler on the NetScaler entry, borderline) and one vendor hardening-default change (NTLMv1 enforce, borderline).
+items:
+  - title: "ConnectWise Cloud Backup (formerly SkyKick): a vendor-held Microsoft 365 application credential is used to sign in to customer tenants as the app itself, a second ConnectWise app grants itself Global Administrator in at least one tenant, and the vendor has suspended the service"
+    sources:
+      - { url: "https://www.connectwise.com/company/trust/advisories", publisher: "ConnectWise Trust Center (advisory, last updated 2026-10-18 01:00 UTC)", date: "2026-10-18", role: "primary" }
+      - { url: "https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access", publisher: "Huntress", date: "2026-10-17", role: "primary" }
+      - { url: "https://www.todyl.com/blog/investigation-unauthorized-access-through-the-connectwise-cloud-backup-microsoft-365-app", publisher: "Todyl", date: "2026-10-16", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hackers-breach-microsoft-365-tenants-via-connectwise-supply-chain-attack/", publisher: "BleepingComputer", date: "2026-10-17", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/10/hackers-use-compromised-connectwise.html", publisher: "The Hacker News", date: "2026-10-17", role: "corroborating" }
+      - { url: "https://specterops.io/blog/2026/10/17/connectwise-skykick-breach-microsoft-365/", publisher: "SpecterOps", date: "2026-10-17", role: "corroborating" }
+    discovery_trace: "first seen at: huntress feed https://www.huntress.com/blog/rss.xml (item 2026-10-16T23:00Z, majors sweep) → primary: Huntress article, URL https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access (extract; carries 2026-10-17 10:30 ET and 17:15 ET updates) → pivot: ConnectWise Trust Center advisory, URL https://www.connectwise.com/company/trust/advisories (extract via jina; updates 2026-10-16 17:47 UTC, 10-17 05:01, 10-17 17:00, 10-18 01:00) → pivot: Todyl, URL https://www.todyl.com/blog/investigation-unauthorized-access-through-the-connectwise-cloud-backup-microsoft-365-app → corroboration: THN feed https://feeds.feedburner.com/TheHackersNews item https://thehackernews.com/2026/10/hackers-use-compromised-connectwise.html, BleepingComputer feed https://www.bleepingcomputer.com/feed/ item https://www.bleepingcomputer.com/news/security/hackers-breach-microsoft-365-tenants-via-connectwise-supply-chain-attack/, WebSearch (extended) 'ConnectWise SkyKick breach Microsoft 365 tenants Huntress' → SpecterOps https://specterops.io/blog/2026/10/17/connectwise-skykick-breach-microsoft-365/. Microsoft Threat Intelligence's own statement is an X post relayed by BleepingComputer; the X post was not fetched and is not cited."
+    summary: |
+      ConnectWise says it identified unauthorized access to application identities in its Cloud Backup (formerly SkyKick) environment on
+      2026-10-14, suspended Cloud Backup on 2026-10-17 by revoking the certificates behind the affected app connections, disabled seven
+      ConnectWise application identities in Microsoft Entra at 07:00 UTC the same day (Cloud Backup plus six Cloud Management apps; older
+      tenants show SkyKick names), and has since taken SaaS Security and Cloud Management offline as a precaution, with no restoration time given
+      as of 2026-10-18 01:00 UTC. Huntress and Todyl, each from their own monitored tenants, describe the mechanism: an attacker holding the
+      multi-tenant Cloud Backup app's credential authenticated as the application (app-only OAuth client credentials, Huntress saw a client assertion)
+      and received Microsoft Graph tokens from a single hosting-provider IPv4 address on 2026-10-15 (06:13 to 08:34 UTC per Huntress, 07:11 to 08:47 UTC
+      per Todyl), moving through tenants in ascending tenant-GUID order a few seconds apart, which both read as a script working a target list.
+      No user, device or MFA prompt is involved, so user-focused controls did not apply, and the app's existing consent covered mail, files, Teams and
+      (per Microsoft as relayed by BleepingComputer) Directory.ReadWrite.All. Huntress reports confirmed unauthorized sign-ins in 162 tenants as of
+      2026-10-16 19:00 UTC (The Hacker News reports Huntress at 173) and, in a later update, sign-in activity from the same address in almost 1,000 Entra
+      tenants of which over 300 succeeded; many failed only because the app was not present. Beyond token issuance Huntress saw, in about 50 tenants, ConnectWise
+      Cloud Management service principals assign themselves directory roles (mostly Exchange Administrator) from 2026-10-15 01:58 UTC, and in one tenant the Cloud
+      Management Teams app add itself to Global Administrator and add new client secrets to an MSP management application and to Huntress's own application
+      within about five minutes; a separate, unsuccessful second wave on 2026-10-15 targeted 16 Huntress-protected tenants in the policy, national security,
+      trade and critical-mineral sectors. Todyl, in the tenants it examined, found token issuance only and no directory changes, so post-access behaviour differs by tenant.
+      Not known: how the credential was obtained, whether a product vulnerability contributed (ConnectWise: not established), what data was read (Huntress notes Microsoft
+      logs no directory reads or Graph reads by an application in the audit log; Todyl notes it cannot separate attacker reads from vendor backup reads in tenants with an
+      active subscription because both use the same application identity), and who the actor is: no source attributes the activity.
+    region_nexus: "global; MSP-managed Microsoft 365 tenants. No Swiss victim or Swiss tenant is named in any source; Huntress's targeted second wave hit policy / national-security / trade / critical-mineral tenants (countries not stated)"
+    primary_sector_nexus: "indirect: public-sector Microsoft 365 tenants managed by MSPs or IT providers that consented to SkyKick / ConnectWise Cloud Backup or Cloud Management would be exposed; no source names a public-sector victim"
+    sector: "managed-service-providers; public-sector (indirect)"
+    cves: []
+    techniques: [T1199, T1078.004, T1550.001, T1098.001, T1098.003, T1110.003]
+    affected_products: ["ConnectWise Cloud Backup (formerly SkyKick)", "ConnectWise Cloud Management", "Microsoft Entra ID", "Microsoft 365"]
+    entity_keys: ["product:microsoft-365", "product:microsoft-entra-id", "product:microsoft-graph"]
+    new_entities:
+      - { key: "incident:connectwise-cloud-backup-skykick-m365-app-credential-abuse-2026-10", type: incident, name: "ConnectWise Cloud Backup (SkyKick) vendor application credential abuse", aliases: ["SkyKick breach", "CW SkyKick breach", "ConnectWise SkyKick incident"], summary: "Unauthorized use, from 2026-10-13 to 2026-10-15, of a ConnectWise Cloud Backup (formerly SkyKick) multi-tenant Microsoft 365 application credential to obtain Graph tokens in customer tenants; ConnectWise suspended Cloud Backup on 2026-10-17 (ConnectWise, Huntress, Todyl, 2026-10-16/18)." }
+      - { key: "product:connectwise-cloud-backup", type: product, name: "ConnectWise Cloud Backup", aliases: ["SkyKick Cloud Backup", "SkyKick Backup"], summary: "MSP-oriented cloud backup service for Microsoft 365 and Google Workspace (formerly SkyKick), granted broad application permissions in every consenting tenant (ConnectWise, Huntress, 2026-10-17)." }
+      - { key: "product:connectwise-cloud-management", type: product, name: "ConnectWise Cloud Management", aliases: ["SkyKick Cloud Manager"], summary: "ConnectWise multi-tenant Microsoft 365 management applications (Teams, Exchange Online, Graph, Partner Center, SharePoint variants) disabled by ConnectWise on 2026-10-17 (ConnectWise advisory)." }
+    relation_suggestions:
+      - { subject: "incident:connectwise-cloud-backup-skykick-m365-app-credential-abuse-2026-10", object: "product:connectwise-cloud-backup", basis: "ConnectWise: unauthorized access to application identities within the ConnectWise Cloud Backup environment (ConnectWise advisory 2026-10-18)" }
+      - { subject: "incident:connectwise-cloud-backup-skykick-m365-app-credential-abuse-2026-10", object: "product:microsoft-entra-id", basis: "Huntress and Todyl: the abused credential authenticated to Entra as the app and obtained Graph tokens in customer tenants (2026-10-16/17)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "We recently identified unauthorized access to application identities within the ConnectWise Cloud Backup environment."
+        attribution: "ConnectWise Trust Center (advisory)"
+        source_url: "https://www.connectwise.com/company/trust/advisories"
+      - quote: "Disabling the affected connections prevents new authentication through those connections; it does not reverse changes previously made inside a tenant."
+        attribution: "ConnectWise Trust Center (advisory)"
+        source_url: "https://www.connectwise.com/company/trust/advisories"
+      - quote: "Whether a product vulnerability contributed has not been established."
+        attribution: "ConnectWise Trust Center (advisory)"
+        source_url: "https://www.connectwise.com/company/trust/advisories"
+      - quote: "As of 19:00 UTC on October 16, Huntress has confirmed unauthorized sign-ins in 162 tenants."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access"
+      - quote: "These tenants are in the policy, national security, trade, and critical mineral sectors."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access"
+      - quote: "Revoking user sessions does not end this access."
+        attribution: "Todyl"
+        source_url: "https://www.todyl.com/blog/investigation-unauthorized-access-through-the-connectwise-cloud-backup-microsoft-365-app"
+      - quote: "At the time of publishing the victim count and the extent of data theft remains unclear, as well as the method the attacker used to obtain vendor credentials."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/hackers-breach-microsoft-365-tenants-via-connectwise-supply-chain-attack/"
+    extended_notes: |
+      Composer hints. Suggested kind: incident (third-party / supply-chain compromise of a multi-tenant Microsoft 365 application); suggested priority: high
+      (active, no patch, mitigation is a tenant-side disable plus a credential review; exposure is any tenant that consented to the app, including dormant SkyKick connections).
+      Suggested classification: reliability A (vendor advisory plus first-hand telemetry from two labs), credibility 1.
+      Exposure: Entra admin center, Enterprise applications, search by application ID or by "SkyKick" / "ConnectWise". ConnectWise-published application client IDs
+      (product identifiers, not attacker IOCs): Cloud Backup 506e08f9-6e9a-4da4-942b-a099a03644ae; Cloud Management 2399d300-6fca-4e6a-a686-399fefe75b83; Teams
+      24205314-2b89-4e07-a2a4-579e898a5640; Exchange Online b78f6a77-d4e5-46fb-87e5-d1648bd02519; Graph 0de14c77-b9b0-4137-9360-34878a929827; Partner Center
+      412dcf96-176d-4b3a-a1b0-4981ad66971e; SharePoint Online b2b55f5b-7758-4719-8d8f-88ae172e6bdb. Todyl and SpecterOps give the publisher tenant 3f9cd7a0-127a-4ed4-bf06-2f830d5616b7
+      ("ConnectWise S-K LLC") for finding every SkyKick-published app, including inherited ones. The attacker's source IP and user agents are published by ConnectWise; keep them out of the entry (no IOCs).
+      Detection (telemetry class first): Entra service-principal sign-in logs (the Service principal sign-ins tab, not user sign-ins) filtered by application ID - expected egress is Azure
+      private IPv6 with the .NET SDK user agent kiota-dotnet; hunt any non-Microsoft source address and scripted user agents; Entra audit log - ApplicationManagement events
+      ("Update application - Certificates and secrets management", "Add service principal credentials", owner and app-role-assignment adds), RoleManagement events where the
+      initiating principal is one of the vendor apps (self-adding to Global Administrator or Exchange Administrator), Conditional Access policy and named-location changes; enable
+      MicrosoftGraphActivityLogs (Entra P1/P2, not retroactive) so per-request source IPs exist; Purview audit for mailbox forwarding, inbox/transport rules and delegation changes
+      (New-InboxRule, Set-Mailbox, Add-MailboxPermission, New-TransportRule) and MailItemsAccessed where licensed. Entra keeps audit and sign-in records 7 days on Free and 30 days on P1/P2, so export now.
+      Post-disable compromise check (the step readers miss): disabling the vendor apps stops new tokens but does not remove attacker-added client secrets, certificates, federated credentials,
+      directory roles, owners or consent grants on other applications (Huntress and ConnectWise both say so); review credentials on every enterprise application and app registration, especially MSP management and
+      security tools, added since 2026-10-13 (extend to 2026-10-01); tokens already issued stay valid for up to about 90 minutes after disabling (Todyl).
+      Triage discriminators: the vendor's own traffic comes from Azure private IPv6 with kiota-dotnet and recurring backup-job timing; the abuse came from a single commercial VPS IPv4 with Python user agents, one token
+      per tenant, tenants with no active backup subscription (Todyl: nine such tenants), and an ascending tenant-GUID sequence. Python and curl user agents are also used by administrators (ConnectWise), so combine actor,
+      operation and user agent. Where a tenant does run an active subscription, attacker and vendor reads share one application identity and the M365 audit shows Microsoft addresses (Todyl).
+      Hardening levers: remove unused multi-tenant application consents (Conditional Access for workload identities covers supported single-tenant service principals, not third-party multi-tenant apps, per ConnectWise and Todyl);
+      least-privilege consent review; enable Graph activity logs; for publishers, Huntress enabled App Instance Property Lock on its own applications. Operational: backups paused, no restore ETA, check the last recovery point.
+      Count discrepancy to surface: Huntress page text says 162 (as of 2026-10-16 19:00 UTC); THN reports Huntress at 173. The Register nav shows an unrelated 2025 SharePoint headline; ignore.
+      Watch: ConnectWise says it will keep updating the Trust Center page (no per-advisory permalink exists; the advisories page itself carries the text), Huntress and Todyl run living posts.
+  - title: "Rank Math SEO PRO 3.0.123: plugin packages served by the vendor for about eleven hours carry a hidden backdoor, rogue administrators and cron persistence that survive the update to 3.0.124"
+    sources:
+      - { url: "https://rankmath.com/kb/pro-3-0-123-security-incident/", publisher: "Rank Math", date: "2026-10-16", role: "primary" }
+      - { url: "https://www.wordfence.com/blog/2026/10/rank-math-seo-pro-3-0-123-malware/", publisher: "Wordfence", date: "2026-10-17", role: "corroborating" }
+      - { url: "https://www.wordfence.com/threat-intel/vulnerabilities/id/81cd7a2c-ad0c-4dbc-b5dc-07ec866d5c1f", publisher: "Wordfence Intelligence", date: "2026-10-17", role: "corroborating" }
+    discovery_trace: "first seen at: wordfence feed https://www.wordfence.com/feed/ (item 2026-10-17T03:41Z, gap sweep) → pivot: Wordfence PSA, URL https://www.wordfence.com/blog/2026/10/rank-math-seo-pro-3-0-123-malware/ → primary: Rank Math security notice, URL https://rankmath.com/kb/pro-3-0-123-security-incident/ → Wordfence Intelligence record, URL https://www.wordfence.com/threat-intel/vulnerabilities/id/81cd7a2c-ad0c-4dbc-b5dc-07ec866d5c1f. WebSearch ('Rank Math SEO PRO 3.0.123 malware supply chain compromise rank1cdn', standard mode) returned nothing on the incident, so no independent third-party analysis was found."
+    summary: |
+      Rank Math says some copies of its paid WordPress plugin Rank Math SEO PRO 3.0.123, downloaded or updated between 2026-10-15 20:02 UTC and 2026-10-16 07:12 UTC, contained malware that compromises a
+      site once the plugin is activated; it removed the files and released 3.0.124, calls the affected population "a limited number of users" and says it holds records of who downloaded an affected copy. Wordfence,
+      the CNA for the record, relays the vendor's facts: the malware may establish persistent access, contact a remote host, recreate hidden backdoors on page visits and expose WordPress, database and API credentials
+      reachable by the web server. Per the vendor, signs of compromise are three malicious wp_options entries, hidden PHP backdoors in mu-plugins and other plugin or theme folders (base64 plus XOR loops, proc_open, PHP-FPM
+      socket code), unknown administrator accounts with a wpsupport_ prefix, a fake core file under wp-includes, .htaccess rules that let .cache files execute as PHP, PHP files in uploads and a web-user cron entry carrying a marker
+      comment. Wordfence states that updating to 3.0.124 is not enough: files, administrator accounts or scheduled tasks created by the malware remain. The remediation order matters because the backdoor is rebuilt on page visits: delete the
+      whole plugin folder and the three options and block the vendor-named host first, then clean the rest, restore from a pre-2026-10-15-20:02 backup where possible and rotate every credential the site could reach. How the vendor's distribution
+      was compromised is not disclosed and no actor is named; the vendor says it will not email login or download links.
+    region_nexus: "global; WordPress sites running the paid Rank Math SEO PRO plugin. No Swiss victim named"
+    primary_sector_nexus: "indirect: municipal, cantonal and agency WordPress sites (and their web agencies) that run Rank Math SEO PRO; no public-sector victim named"
+    sector: "public-sector (indirect); web hosting and agencies"
+    cves: [CVE-2026-111862]
+    techniques: [T1195.002, T1505.003, T1136.001, T1053.003, T1552.001]
+    affected_products: ["Rank Math SEO PRO", "WordPress"]
+    entity_keys: ["product:wordpress"]
+    new_entities:
+      - { key: "incident:rank-math-seo-pro-3-0-123-supply-chain-2026-10", type: incident, name: "Rank Math SEO PRO 3.0.123 malware incident", aliases: ["Rank Math PRO 3.0.123 security incident"], summary: "Malware shipped inside some Rank Math SEO PRO 3.0.123 packages downloaded or updated between 2026-10-15 20:02 UTC and 2026-10-16 07:12 UTC; fixed in 3.0.124 (Rank Math, Wordfence, 2026-10-16/17)." }
+      - { key: "product:rank-math-seo-pro", type: product, name: "Rank Math SEO PRO", aliases: ["Rank Math PRO", "seo-by-rank-math-pro"], summary: "Paid WordPress SEO plugin; version 3.0.123 packages in a roughly eleven-hour window contained malware (Rank Math, Wordfence, 2026-10-16/17)." }
+    relation_suggestions:
+      - { subject: "incident:rank-math-seo-pro-3-0-123-supply-chain-2026-10", object: "product:rank-math-seo-pro", basis: "Rank Math: some downloads of Rank Math PRO v3.0.123 contained malware (Rank Math notice 2026-10-16)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "We recently identified a security issue affecting a limited number of users who downloaded Rank Math PRO v3.0.123 between October 15, 2026, at 20:02 UTC and October 16, 2026, at 07:12 UTC."
+        attribution: "Rank Math"
+        source_url: "https://rankmath.com/kb/pro-3-0-123-security-incident/"
+      - quote: "The affected plugin files contained malware that could compromise your website if the plugin was activated."
+        attribution: "Rank Math"
+        source_url: "https://rankmath.com/kb/pro-3-0-123-security-incident/"
+      - quote: "Simply updating the plugin is not enough because the malware may have placed additional files, administrator accounts, or scheduled tasks elsewhere on the server."
+        attribution: "Wordfence"
+        source_url: "https://www.wordfence.com/blog/2026/10/rank-math-seo-pro-3-0-123-malware/"
+    borderline: true
+    borderline_reason: "narrow paid-plugin population and a vendor-bounded eleven-hour window, but a confirmed vendor-side supply-chain backdoor with full-site compromise and persistence that survives the update; two earlier WordPress plugin supply-chain entries exist in the store (ShapedPlugin build pipeline, Awesome Motive CDN), so the pattern is a repeat class"
+    extended_notes: |
+      Verification note: the vendor is the only first-hand source; Wordfence relays it and is the CNA for CVE-2026-111862 (CVSS 9.8, "Embedded Malicious Code"). NVD returned 0 results for
+      CVE-2026-111862 and the MITRE CVE API returned 404 when fetched at 2026-10-18T03:14Z, so the id rests on the Wordfence Intelligence record alone. Wordfence Intelligence's references list a
+      urlscan result and a Verisign RDAP lookup for the vendor-named host (attacker infrastructure, not carried here).
+      Composer hints. Suggested kind: threat or incident (supply-chain compromise of a paid plugin); suggested priority: notable; reliability A (vendor first-party), credibility 2.
+      Exposure: a site is in scope only if it downloaded or updated to 3.0.123 inside the window; check plugin version and install time, and any notice from Rank Math (it says it has per-download records). 3.0.123 outside
+      the window is not evidence of compromise (vendor). A never-activated copy: delete and reinstall 3.0.124 (vendor).
+      Detection (telemetry class first): web-server-user crontab and WordPress cron events; file-integrity of core (wp core verify-checksums; premium plugin checksums are not available, compare with a clean vendor copy);
+      WordPress user creation events and a list of administrator accounts; web-server access logs for requests to .cache files and for new PHP in uploads, mu-plugins and other plugin or theme folders; egress or DNS from the
+      web server to the vendor-named host; database options table entries; SSH authorized_keys and other users' crontabs (vendor names these as places the attacker may have written). Post-patch compromise check: this is the
+      whole story - the update replaces the plugin only.
+      Related store context: entries 'shapedplugin-build-pipeline-compromised-three-pro-wordpress' (campaign:shapedplugin-supply-chain-2026), the Awesome Motive CDN entry (incident:awesome-motive-cdn-supply-chain-2026) and
+      'brevo-cloudflare-worker-clickfix-supply-chain' (incident:brevo-cloudflare-worker-clickfix-supply-chain-2026-09). Not saying the same actor; no source links them.
+  - title: "Zscaler ThreatLabz on CVE-2026-88771 exploitation: an access-log payload staged in the User-Agent across four login paths, web-shell and CGI enablement, and a FreeBSD x64 implant fetched from infrastructure also seen in StyleSmuggler (Magento) exploitation"
+    sources:
+      - { url: "https://www.zscaler.com/blogs/security-research/cve-2026-88771-inside-exploitation-critical-netscaler-rce-vulnerability", publisher: "Zscaler ThreatLabz", date: "2026-10-16", role: "primary" }
+    discovery_trace: "first seen at: zscaler-threatlabz feed https://www.zscaler.com/blogs/security-research (feed https://www.zscaler.com/blogs/feeds/security-research, item 2026-10-16T21:28Z, gap sweep) → primary (no pivot needed): Zscaler article, URL https://www.zscaler.com/blogs/security-research/cve-2026-88771-inside-exploitation-critical-netscaler-rce-vulnerability (extract). Checked against the existing entry 2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev, which does not cite Zscaler."
+    summary: |
+      Zscaler ThreatLabz reports first-party telemetry of CVE-2026-88771 exploitation on NetScaler ADC and Gateway: GET requests to four default logon and VPN paths carry a User-Agent beginning with an INDEX marker followed by a Base64
+      command string, so the payload sits in the HTTP access log without executing; POST requests to the authentication endpoints then send a login value that imitates a Pitboss PPE failure record ("PPE missed too many heartbeats" or
+      "PPE unexpectedly died") with shell syntax that greps the access logs for the marker, decodes and executes it when the vendor's crash-log Perl script later selects the forged record (ThreatLabz follows public analysis for the trigger and notes
+      CERT-EU's observation that the script takes the last matching record, which may explain repeated submissions). The staged payload fingerprints the appliance (id, uname, hostname, release), writes PHP and Perl CGI web shells into six web-served
+      directories, switches php_engine on in /etc/httpd.conf, adds a .pl CGI handler and signals the web server to reload. A shorter inline variant uses ${IFS} for spaces; a second inline variant makes the appliance fetch and run a Rust-built 64-bit FreeBSD binary.
+      ThreatLabz saw at least 26 source addresses send the forged-record-plus-downloader sequence within about six to seven minutes, and says the download server also appeared in its earlier StyleSmuggler (CVE-2026-75650, Adobe Commerce and Magento) exploitation data.
+      ThreatLabz itself says this overlap is an investigative lead and does not establish attribution; shared hosting, a malware-distribution service or payload reuse could explain it. What is new against the existing entry: the FreeBSD implant delivery,
+      the cross-platform infrastructure overlap, the burst pattern and the web-server-configuration change set; the log-poisoning chain itself is already carried from watchTowr and Unit 42.
+    region_nexus: "global; NetScaler Gateway and ADC are widely deployed in European public-sector remote-access estates (existing entry carries the sector statements)"
+    primary_sector_nexus: "direct for operators of internet-facing NetScaler ADC/Gateway; no new sector statement in this source"
+    sector: "public-sector (existing entry); cross-sector"
+    cves: [CVE-2026-88771, CVE-2026-75650]
+    techniques: [T1190, T1059.004, T1505.003, T1105]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway", "Adobe Commerce", "Magento Open Source"]
+    entity_keys: ["product:citrix-netscaler", "trend:stylesmuggler-magento-adobe-commerce-2026-09"]
+    new_entities: []
+    relation_suggestions:
+      - { subject: "trend:stylesmuggler-magento-adobe-commerce-2026-09", object: "product:citrix-netscaler", basis: "Zscaler ThreatLabz: the same payload download server appeared in StyleSmuggler (CVE-2026-75650) and CVE-2026-88771 exploitation, an investigative lead, not attribution (Zscaler, 2026-10-16)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev"
+    evidence:
+      - quote: "Zscaler ThreatLabz observed a staged exploitation chain involving access-log poisoning, remote command execution before authentication, appliance fingerprinting, and attempts to deploy multiple web shells."
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/cve-2026-88771-inside-exploitation-critical-netscaler-rce-vulnerability"
+      - quote: "ThreatLabz identified the same download server in activity associated with exploitation of CVE-2026-75650, tracked as StyleSmuggler."
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/cve-2026-88771-inside-exploitation-critical-netscaler-rce-vulnerability"
+      - quote: "This overlap provides an investigative lead but does not establish threat actor attribution."
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/cve-2026-88771-inside-exploitation-critical-netscaler-rce-vulnerability"
+      - quote: "ThreatLabz also observed a burst of exploitation attempts from at least 26 source IP addresses over approximately six to seven minutes."
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/cve-2026-88771-inside-exploitation-critical-netscaler-rce-vulnerability"
+    borderline: true
+    borderline_reason: "modest delta on a covered deep-dive: the chain is already carried; new facts are the FreeBSD implant delivery, the StyleSmuggler infrastructure overlap (explicitly not attribution) and the burst pattern. Also published 2026-10-16T21:28Z, about 3.5 h before the window floor, and no earlier entry update cites it, so it is returned for the main agent's call"
+    extended_notes: |
+      Composer hints: improvement or update on the existing entry (changelog record), not a new entry. Detection concept (telemetry class first): appliance HTTP access logs with a User-Agent beginning "INDEX:" followed by Base64 on
+      /logon/LogonPoint/tmindex.html, /logon/LogonPoint/index.html, /vpn/index.html or /logon/tmindex.html; ns.log or auth-log entries containing forged "pitboss PPE" text with shell metacharacters and ${IFS}; new PHP or Perl files and a
+      php_engine / cgi-script change in /etc/httpd.conf; appliance-initiated outbound downloads (the FreeBSD fetch utility) to unfamiliar addresses; an unexpected executable written under /var. ThreatLabz's hunting commands are borrowed from a
+      third-party blog (Sh3llc0de) that cites watchTowr; the delivery IP and file names are IOCs and are left out here. Registry key for StyleSmuggler is trend:stylesmuggler-magento-adobe-commerce-2026-09.
+  - title: "October 2026 Windows security updates switch the NTLMv1-derived single sign-on block to Enforce by default on Windows 11 24H2/25H2/26H2 and Windows Server 2025 without Credential Guard, which breaks MS-CHAPv2 sign-on for Wi-Fi, Ethernet and VPN"
+    sources:
+      - { url: "https://support.microsoft.com/en-gb/servicing/os/windows/docs/2025/08/upcoming-changes-to-ntlmv1-in-windows-11-version-24h2-and-windows-server-2025", publisher: "Microsoft Support (KB5066470)", date: "2026-10-14", role: "primary" }
+      - { url: "https://www.theregister.com/security/2026/10/16/networking-problems-after-the-october-2026-windows-update-ntlm-might-be-to-blame/5303503", publisher: "The Register", date: "2026-10-16", role: "corroborating" }
+    discovery_trace: "first seen at: theregister-security-feed atom https://www.theregister.com/security/headlines.atom (item 2026-10-16, gap sweep; extract returns navigation only, read through WebFetch) → primary: Microsoft Support article KB5066470, URL https://support.microsoft.com/en-gb/servicing/os/windows/docs/2025/08/upcoming-changes-to-ntlmv1-in-windows-11-version-24h2-and-windows-server-2025 (extract; page history shows edits on 2026-10-14). The Register spells the registry value BlockNtlmSSO; Microsoft's page spells it BlockNtlmv1SSO."
+    summary: |
+      Microsoft's KB5066470 states that, beginning with the security update released 2026-10-13, Windows 11 24H2, 25H2 and 26H2 and Windows Server 2025 use Enforce mode (1) instead of Audit mode (0) for the BlockNtlmv1SSO registry value when
+      it is not set, on devices where Credential Guard is disabled; requests to use NTLMv1-derived credentials for single sign-on are then blocked, the update does not create the value, and manually entered credentials still work. Microsoft says the change might
+      affect Wi-Fi, Ethernet and VPN connections that use MS-CHAPv2-based authentication (PEAP-MSCHAPv2, EAP-MSCHAPv2) in domain-joined environments, because NTLMv1 as a protocol is already removed while its cryptography remains in those flows. Audit mode logs event 4024
+      (warning) and Enforce mode logs event 4025 (error) in the Microsoft-Windows-NTLM/Operational log, with the target server, supplied user, client process and its identity. Setting the value to 0 is described as a scoped, temporary security exception that lowers protection;
+      Microsoft recommends enabling Credential Guard, which provides complete protection against NTLMv1 legacy cryptography. The Register (2026-10-16) reports connectivity failures after the update and quotes Microsoft saying the disruption is by design.
+    region_nexus: "global; any Windows 11 24H2 or later and Server 2025 fleet using 802.1X PEAP-MSCHAPv2 or MS-CHAPv2 VPN single sign-on"
+    primary_sector_nexus: "indirect: public-sector Windows estates (wireless and VPN single sign-on) are in scope; no source names a public-sector impact"
+    sector: "cross-sector"
+    cves: []
+    techniques: []
+    affected_products: ["Microsoft Windows 11", "Microsoft Windows Server 2025"]
+    entity_keys: ["product:microsoft-windows", "product:microsoft-windows-server"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This article details changes in Windows 11, versions 26H2, 25H2, and 24H2 and Windows Server 2025, focusing on the auditing and enforcement of blocking NTLMv1-derived cryptography."
+        attribution: "Microsoft Support (KB5066470)"
+        source_url: "https://support.microsoft.com/en-gb/servicing/os/windows/docs/2025/08/upcoming-changes-to-ntlmv1-in-windows-11-version-24h2-and-windows-server-2025"
+      - quote: "Note that the default behavior change does not create or modify the registry value, which itself remains absent."
+        attribution: "Microsoft Support (KB5066470)"
+        source_url: "https://support.microsoft.com/en-gb/servicing/os/windows/docs/2025/08/upcoming-changes-to-ntlmv1-in-windows-11-version-24h2-and-windows-server-2025"
+      - quote: "NTLMv1-derived credentials are used by certain higher-level protocols for Single Sign-On purposes; examples include Wi-Fi, Ethernet, and VPN deployments using MS-CHAPv2 based authentication, including PEAP-MSCHAPv2 and EAP-MSCHAPv2."
+        attribution: "Microsoft Support (KB5066470)"
+        source_url: "https://support.microsoft.com/en-gb/servicing/os/windows/docs/2025/08/upcoming-changes-to-ntlmv1-in-windows-11-version-24h2-and-windows-server-2025"
+      - quote: "After the update, requests to use NTLMv1-derived credentials are blocked."
+        attribution: "The Register"
+        source_url: "https://www.theregister.com/security/2026/10/16/networking-problems-after-the-october-2026-windows-update-ntlm-might-be-to-blame/5303503"
+    borderline: true
+    borderline_reason: "vendor hardening default with outage potential rather than a threat, no attacker behaviour to map; first-party text last edited 2026-10-14 and The Register item is 2026-10-16 15:30Z (about 9.5 h before the window floor), but no earlier run or entry carries it. Possibly also an S1 Patch Tuesday companion; high practical value for AD / 802.1X estates"
+    extended_notes: |
+      Composer hints. Suggested kind: research or guidance (hardening change), not threat; techniques left empty because no source describes attacker behaviour here (if the composer wants a mapping, NTLM capture and cracking would be T1557 / T1110.002,
+      but Microsoft's page does not state it). Suggested priority: routine to notable; reliability A (Microsoft first-party), credibility 1.
+      Exposure: Windows 11 24H2, 25H2, 26H2 and Windows Server 2025 devices with Credential Guard disabled and no BlockNtlmv1SSO value set that were updated with the 2026-10-13 cumulative update (Windows 11 KB5127648, Server 2025 KB5126646 per the page's links).
+      Detection (telemetry class first): Microsoft-Windows-NTLM/Operational warning 4024 (earlier Audit-mode installs show who still depends on NTLMv1-derived SSO) and error 4025 after the change, joined to wireless or VPN authentication failures; RADIUS / NPS logs for MS-CHAPv2 sessions.
+      Hardening levers: enable Credential Guard where hardware requirements are met; migrate 802.1X and VPN profiles away from MS-CHAPv2-based methods; use the temporary value 0 only scoped and time-boxed. Microsoft page history: edited 2026-10-14 to reflect the enforcement.
+dropped_leads:
+  - { lead: "CrowdStrike: FBI disrupts FAMOUS CHOLLIMA laptop farms with CrowdStrike assistance (2026-10-13)", reason: "already returned by the 2026-10-14 run and not published; no new fact found in the listing; outside the 26 h window", urls: ["https://www.crowdstrike.com/en-us/blog/fbi-disrupts-famous-chollima-operation-with-crowdstrike-assistance/"] }
+  - { lead: "Elastic Security Labs: Apex Accelerator (REF8801), malicious npm packages posing as a Web3 accelerator with fabricated audits, LLM-traffic interception and CloudSyncD / Windows stealers (2026-10-12)", reason: "targets cryptocurrency start-ups and founders, no Swiss or European public-sector nexus, no new technique class beyond covered fake-AI-tool and npm lures", urls: ["https://www.elastic.co/security-labs/threat-command/apex-accelerator-malicious-npm-packages"] }
+  - { lead: "Group-IB: KGB RAT, commodity Windows RAT-as-a-service (2026-10-14)", reason: "commodity MaaS RAT with HVNC and a crypter; no constituency nexus, no new behaviour, portal-gated detail", urls: ["https://www.group-ib.com/blog/kgb-rat-windows-fud-trojan/"] }
+  - { lead: "Report URI: fake children's charity hosts a WooCommerce card skimmer (2026-10-16); ClickFix kit debug flag (2026-10-15)", reason: "single-kit Magecart and macOS ClickFix write-ups, vendor product promotion, no public-sector payment-page nexus", urls: ["https://blog.report-uri.com/criminals-built-a-fake-childrens-charity-to-hide-a-card-skimmer/", "https://blog.report-uri.com/clickfix-has-a-debug-mode-and-the-criminals-left-it-on/"] }
+  - { lead: "Noma Security 'SneakPeek' in Claude Code Desktop (Dark Reading 2026-10-14)", reason: "fixed 2026-08-17, no exploitation, developer-tool niche", urls: ["https://www.darkreading.com/threat-intelligence/new-anthropic-sneakpeek-silent-zero-click-threat"] }
+  - { lead: "Any.Run: fake Claude and ChatGPT lures, 1,258 analyses over six months (Dark Reading 2026-10-16)", reason: "vendor telemetry statistics on known ClickFix and InstallFix lures, no new behaviour", urls: ["https://www.darkreading.com/application-security/fake-claude-chatgpt-attacks-developers-risk"] }
+  - { lead: "CISA, NSA and CAISSI guidance on sandbox security for frontier-AI testing (CyberScoop 2026-10-17)", reason: "addressed to frontier-AI developers, no constituency decision", urls: ["https://cyberscoop.com/federal-ai-agent-sandbox-security-guidance/"] }
+  - { lead: "Volexity 'Mind the (Patch) Gap' Part 3 (2026-10-16)", reason: "product walk-through of Volcano and its MCP server on the BlueMoon chain already covered on 2026-09-10; no new finding", urls: ["https://www.volexity.com/blog/2026/10/16/mind-the-patch-gap-part-3-analysis-with-volexity-volcano-threat-intel-and-mcp/"] }
+  - { lead: "Unit 42 'Top 5 Initial Access Threat Vectors Observed in September 2026' (2026-10-16)", reason: "monthly ranking with no technique detail or telemetry figures; periodic but not annual; published 7 h before the window floor", urls: ["https://unit42.paloaltonetworks.com/top-5-initial-access-vectors-september-2026/"] }
+  - { lead: "Heilbronn CDU mailbox hijacked to send about 6,500 phishing mails, including to the German chancellor and ministries (heise 2026-10-17)", reason: "police assessment only, no vector or actor, no technical detail; German political-party mailbox rather than public-administration infrastructure; left to S2 / S4 if more emerges", urls: ["https://www.heise.de/news/Phishing-Angriff-auf-Merz-und-viele-andere-CDU-Mailkonto-in-Heilbronn-gehackt-11491677.html"] }
+  - { lead: "MALFEX npm package imgdecode hides a shellcode loader in a Windows native addon (THN 2026-10-17, SafeDep)", reason: "generic npm campaign aimed at Windows developer machines, 979 downloads, no constituency nexus", urls: ["https://thehackernews.com/2026/10/malfex-npm-package-imgdecode-hides.html"] }
+  - { lead: "iVerify Packet Protector recap on Coruna and DarkSword (2026-10-13)", reason: "podcast recap; the 5 percent device figure comes from iVerify's 2026-09-15 proliferation post; nothing new", urls: ["https://www.iverify.com/blog/coruna-darksword-packet-protector-takeaways"] }
+  - { lead: "Rapid7 'Breaking Zimbra's identity boundaries' Part 1 (2026-10-13)", reason: "already in the 2026-10-16 S1 findings", urls: ["https://www.rapid7.com/blog/post/ve-breaking-zimbra-identity-boundaries-part-1/"] }
+  - { lead: "The Register on building-automation attacks, Armis Labs BAS statistics (2026-10-17)", reason: "feature and vendor percentages (91 percent insecure protocols, 73 percent with known exploited flaws) on top of the covered French refrigeration entry; no new technique or advisory", urls: ["https://www.theregister.com/security/2026/10/17/cybercrims-go-beyond-stealing-data-to-attack-physical-building-systems/5303677", "https://www.armis.com/research/building-automation-systems-security/"] }
+  - { lead: "Expel QuartzLine (2026-10-16), Microsoft Storm-2990 / Storm-3119 disruption (2026-10-14), Talos Q3 vulnerability pulse (2026-10-15)", reason: "each already considered and dropped by the 2026-10-16 or 2026-10-17 run; no new development found", urls: ["https://expel.com/blog/quartzline-a-working-pdf-viewer-with-a-backdoor-inside/"] }
+  - { lead: "CSA Lab Space research notes 2026-10-15 to 10-17 (15 notes)", reason: "re-reports of covered or lower-tier items (AOMEI, Ivanti, Cisco ESG, Next.js, CyberXero, XBOW); used only as a discovery pointer to the ConnectWise item", urls: ["https://labs.cloudsecurityalliance.org/research/"] }
+watchlist_sweep:
+  duty: none
+  note: "no watchlist duty assigned and none configured"
+candidate_sources:
+  - id: specterops
+    publisher: "SpecterOps (identity attack-path and tradecraft research)"
+    url: "https://specterops.io/blog/"
+    rss_url: "https://specterops.io/feed/"
+    category: research
+    why: "First-hand Entra ID / Azure and Active Directory attack-path tradecraft (BloodHound, AzureHound); published a same-day tenant-check write-up with detection queries for the ConnectWise SkyKick incident. Feed verified: `feed https://specterops.io/feed/ 4` returns 4 dated items on the direct transport (https://specterops.io/blog/feed/ falls through to jina and returns 0). Fits a Tier 2/3 identity-protocol-abuse audience; vendor tool promotion appears in some posts."
+coverage_gaps:
+  - { source_id: rapid7-research, reason: "FEED BROKEN: `feed https://www.rapid7.com/rss.xml 10` fails (not well-formed, invalid token at line 367 column 291) and the jina fallback returns no items. Working recipe: `python3 tools/fetch_source.py extract https://www.rapid7.com/blog/` returns the raw Next.js page with /blog/post/<slug>/ links but no dates; then `extract https://www.rapid7.com/blog/post/<slug>/` returns a clean body with a reliable date field (verified on four posts 2026-10-18)." }
+  - { source_id: darkreading, reason: "`extract` on both article URLs was served by the jina reader (credit spent), as the 2026-10-12 note already says; the RSS feed itself works. Use WebFetch on the article to avoid credit." }
+  - { source_id: connectwise-trust, reason: "NEW HOST NOTE (not in sources.json): https://www.connectwise.com/company/trust/advisories stacks every advisory on one page with no per-advisory permalink; `extract` was served via jina. The page text carries the dated update blocks and is the citable primary for the SkyKick incident." }
+  - { source_id: wordfence, reason: "`extract` of wordfence.com/blog and wordfence.com/threat-intel pages was served via jina (credit); the feed https://www.wordfence.com/feed/ worked directly and surfaced the Rank Math PSA 2026-10-17T03:41Z within hours." }
+  - { source_id: theregister-security-feed, reason: "`extract` on article URLs returns navigation chrome only (confirms the 2026-10-17 note); WebFetch reads the body and its Outbound-links output gave the Armis, Dragos and Sharedhealth links." }
+  - { source_id: push-security, reason: "listing 2026-10-09 to 10-15 is buyer's guides and product listicles (shadow IT, BYOD, DLP, browser rankings) plus two short threat posts on 2026-10-09; no research post inside the 121 h lookback. Consider demoting its rotation priority." }
+  - { source_id: novee-security, reason: "listing is marketing and buyer's guides only (2026-10-14, 10-13, 10-07); the Black Hat write-up remains the only research item seen. Candidate has not contributed in this sweep; consider holding at candidate or dropping." }
+  - { source_id: trellix, reason: "`extract https://www.trellix.com/blogs/` returns a dated listing (verified): newest research post 2026-09-24, newest post of any kind 2026-10-13 (Trellix Wise product post), so quiet rather than broken." }
+  - { source_id: gambit-security, reason: "`url https://gambit.security/blog` returns /blog-posts/<slug> links (no dates) and `extract` of each post returns the date; nothing newer than the retail-agent report (2026-10-08, already covered); the other posts are 2026-06 to 2026-09." }
+  - { source_id: iverify-blog, reason: "`url --direct https://www.iverify.com/blog` returns cards whose dates sit next to each ./blog/<slug> link (regex on 'Mon D, YYYY' within 1500 characters of the href worked); newest posts 2026-10-13 (podcast recap) and 2026-10-15 (myths listicle), no research." }
+  - { source_id: previdian, reason: "`extract https://previdian.com/CVE-2026-21589` works (trafilatura-direct); the page carries first observed 06 Oct and last observed 17 Oct 2026 for the Atlassian flaw, matching the covered entry; no new delta." }
+  - { source_id: tools, reason: "RECIPES: WebSearch `extended` mode surfaced same-day primaries (Huntress, THN, SpecterOps for the SkyKick incident) where `standard` mode returned unrelated background three times in a row; use extended for breaking-event pivots. `python3 tools/fetch_source.py url --direct 'https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=<CVE>'` works (returns totalResults 0 for CVEs NVD has not yet ingested); the MITRE CVE API returns 404 for records not yet published there." }
+  - { source_id: microsoft-sec-x, reason: "Microsoft Threat Intelligence's statement on the SkyKick incident appears only as an X post (relayed by BleepingComputer); no Microsoft Security blog or MSRC post existed at 2026-10-18T03:30Z (checked `msft-secblog recent 6` and the blog feed). Re-check next run for a blog post." }
+source_ledger:
+  - { id: cloudsek-triad, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-08, outside the horizon" }
+  - { id: crowdstrike, tier: standard, attempted: true, transport: "WebFetch (listing with inline dates)", horizon_hours: 146, in_horizon_items: 1, returned: 0, note: "FAMOUS CHOLLIMA 2026-10-13 already returned by the 2026-10-14 run, not published" }
+  - { id: csa-labs, tier: standard, attempted: true, transport: "WebFetch (listing)", horizon_hours: 146, in_horizon_items: 15, returned: 0, note: "15 notes 2026-10-15 to 10-17, all re-reports of covered or tier-C items; used as a pointer to the ConnectWise item" }
+  - { id: cyberscoop, tier: standard, attempted: true, transport: "feed (direct) + extract", horizon_hours: 146, in_horizon_items: 10, returned: 0, note: "10 items 2026-10-14 to 10-17; AI-sandbox guidance read and dropped; others covered (AdFection, BeyondTrust, Patch Tuesday)" }
+  - { id: darkreading, tier: standard, attempted: true, transport: "feed (direct) + extract (jina served)", horizon_hours: 146, in_horizon_items: 20, returned: 0, note: "SneakPeek and fake-AI-tool articles read and dropped; the rest covered or marginal" }
+  - { id: elastic-seclabs, tier: standard, attempted: true, transport: "WebFetch (listing) + extract", horizon_hours: 146, in_horizon_items: 1, returned: 0, note: "Apex Accelerator 2026-10-12 read in full and dropped (crypto start-ups)" }
+  - { id: elttam-blog, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-23 (TACACS+); bursty cadence" }
+  - { id: expel, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 146, in_horizon_items: 2, returned: 0, note: "QuartzLine 2026-10-16 already considered and dropped by the 2026-10-16 run; Patch Tuesday post is a digest" }
+  - { id: gambit-security, tier: standard, attempted: true, transport: "url (slug list) + extract per post", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest in-store post 2026-10-08 (already covered)" }
+  - { id: group-ib, tier: standard, attempted: true, transport: "feed (direct) + extract", horizon_hours: 146, in_horizon_items: 1, returned: 0, note: "KGB RAT 2026-10-14 read in full and dropped" }
+  - { id: trellix, tier: standard, attempted: true, transport: "extract (dated listing)", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "no research post newer than 2026-09-24" }
+  - { id: iverify-blog, tier: standard, attempted: true, transport: "url --direct (listing) + extract", horizon_hours: 121, in_horizon_items: 2, returned: 0, note: "2026-10-13 podcast recap and 2026-10-15 myths post, no research" }
+  - { id: novee-security, tier: standard, attempted: true, transport: "WebFetch (listing)", horizon_hours: 121, in_horizon_items: 2, returned: 0, note: "marketing only" }
+  - { id: previdian, tier: standard, attempted: true, transport: "extract", horizon_hours: 124, in_horizon_items: 1, returned: 0, note: "live per-CVE page for CVE-2026-21589; sensor last observed 2026-10-17, no delta over the covered entry" }
+  - { id: push-security, tier: standard, attempted: true, transport: "WebFetch (listing)", horizon_hours: 121, in_horizon_items: 8, returned: 0, note: "buyer's guides and listicles, no research post" }
+  - { id: report-uri-blog, tier: standard, attempted: true, transport: "feed (direct) + extract", horizon_hours: 121, in_horizon_items: 2, returned: 0, note: "charity-skimmer and ClickFix debug-flag posts read and dropped" }
+  - { id: huntress, tier: standard, attempted: true, transport: "feed (direct) + extract", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "majors sweep: SkyKick post 2026-10-16T23:00Z with two 2026-10-17 updates; entry point for item 1" }
+  - { id: wordfence, tier: standard, attempted: true, transport: "feed (direct) + extract (jina served)", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "gap sweep: Rank Math PRO PSA 2026-10-17T03:41Z" }
+  - { id: zscaler-threatlabz, tier: standard, attempted: true, transport: "feed (direct) + extract", horizon_hours: 26, in_horizon_items: 0, returned: 1, note: "two posts 2026-10-16 21:28Z and 22:48Z, 2 to 3.5 h before the window floor; NetScaler exploitation analysis returned as update-of (borderline); the ransomware-speed GenAI post is analysis without new telemetry" }
+  - { id: theregister-security-feed, tier: standard, attempted: true, transport: "atom feed N=25 + WebFetch", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "NTLM article 2026-10-16 (just outside) led to the Microsoft KB; building-systems feature dropped" }
+  - { id: hackernews, tier: standard, attempted: true, transport: "feed N=25 (covers back to 2026-10-15 12:13 IST)", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "ConnectWise and MALFEX items; ConnectWise used as corroboration" }
+  - { id: bleepingcomputer, tier: standard, attempted: true, transport: "feed (direct) + extract", horizon_hours: 26, in_horizon_items: 3, returned: 0, note: "ConnectWise article used as corroboration; Drupal and BlockStrap items already covered" }
+  - { id: heise-sec, tier: standard, attempted: true, transport: "feed (direct) + extract", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "CDU Heilbronn mailbox phishing dropped" }
+  - { id: talos, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-15 18:00Z (Q3 vulnerability pulse, dropped by the 2026-10-16 run)" }
+  - { id: unit42, tier: standard, attempted: true, transport: "feed (direct) + extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16 17:47Z, monthly initial-access ranking, dropped" }
+  - { id: checkpoint-research, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-13 (LiteLLM, dropped by the 2026-10-17 run); weekly threat report next due 2026-10-19" }
+  - { id: eset, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest research MATCHBOIL 2026-10-08; recent posts are consumer content" }
+  - { id: mandiant-gtig, tier: standard, attempted: true, transport: "feed (feedburner)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-15 (BeyondTrust and AOMEI, both covered)" }
+  - { id: google-tag, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-14 Android scam protections" }
+  - { id: sophos-xops, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-15 product posts" }
+  - { id: trendmicro-research, tier: standard, attempted: true, transport: "feed (feedburner) + WebFetch listing", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-09-25 on both feed and listing" }
+  - { id: kaspersky-securelist, tier: standard, attempted: true, transport: "feed (direct) + WebFetch listing", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-09-24 (MacSync)" }
+  - { id: msft-ti, tier: standard, attempted: true, transport: "WebFetch (topic page) + msft-secblog recent + blog feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-14 (Storm-2990 / Storm-3119 ecosystem, dropped earlier)" }
+  - { id: proofpoint, tier: standard, attempted: true, transport: "url (raw listing, time datetime tags)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-14 (phishing-kit disruption, folded earlier)" }
+  - { id: sentinellabs, tier: standard, attempted: true, transport: "url (embedded JSON epochs)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-09-18 (TraderTraitor, covered)" }
+  - { id: volexity, tier: standard, attempted: true, transport: "feed (direct) + extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "Part 3 2026-10-16 18:27Z product walk-through, dropped" }
+  - { id: krebs, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-14" }
+  - { id: recordedfuture-insikt, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16 (TAG-217 ARTEX, South Korea)" }
+  - { id: citizen-lab, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16 Canadian lawful-access policy piece; AdFection covered" }
+  - { id: risky-biz-news, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16 02:01Z" }
+  - { id: infosec-magazine, tier: standard, attempted: true, transport: "feed N=25", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16 13:00Z" }
+  - { id: securityweek, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "AdFection / Candiru item covered" }
+  - { id: therecord, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16 14:45Z" }
+  - { id: sekoia, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-14" }
+  - { id: socket-dev-blog, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16 16:49Z (Deno post)" }
+  - { id: stepsecurity-blog, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-09 (GhostAction, covered)" }
+  - { id: helpnetsecurity, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16 12:45Z" }
+  - { id: sans-isc, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest diary 2026-10-16" }
+  - { id: sansec-research, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "BlockStrap 2026-10-15 covered under the Adobe entry" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-09 (PaperCut, covered)" }
+  - { id: projectzero, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-06" }
+  - { id: tenable-research, tier: standard, attempted: true, transport: "feed (feedburner)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-13" }
+  - { id: patchstack, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-08" }
+  - { id: sysdig, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-13" }
+  - { id: bishopfox-blog, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-15 marketing / AI scoping" }
+  - { id: dcod-ch, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16 06:00Z daily lists" }
+  - { id: rapid7-research, tier: standard, attempted: true, transport: "feed FAILED, then extract listing + extract per post", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "feed malformed; Zimbra Part 1 (2026-10-13) already in the 2026-10-16 S1 findings" }
