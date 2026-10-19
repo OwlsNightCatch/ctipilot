@@ -529,9 +529,11 @@ is not), then `python3 tools/fold_entries.py --run <run-id> --into <survivor>
 `references[]` in other entries (each gets an internal record, or its existing
 record for the fire gains `references`) and registry `relations[].source`,
 and deletes the duplicate files. `check_run.py` `silent-edit` FAILs any other
-deleted entry file. The quality audit owns consolidation (Phase 3 item 13) and
-the legacy re-verification queue (`state/legacy_review.json`,
-`tools/legacy_review.py`, Phase 0 step 6b).
+deleted entry file. The quality audit owns consolidation (Phase 3 item 13,
+for pairs touching its window) and the legacy re-verification queue
+(`state/legacy_review.json`, `tools/legacy_review.py`); the queue and the
+store-wide duplicate scan run only in operator-directed partial audits
+(`prompts/quality-audit.md` § Secondary work, v4.21).
 - **Run records**: `entries_updated` counts the entries a fire appended a
   record to and `updated_entry_ids[]` names them (§ Run records); the run's
   detail page and the ops dashboard list them beside its new entries.

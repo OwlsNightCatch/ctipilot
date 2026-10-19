@@ -4,6 +4,28 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.21 — 2026-10-19 (audits stay inside the session limit: one at a time, the trailing week, a bounded fan-out)
+
+### Why
+
+The audit fires of 2026-10-04, 10-11 and 10-19 ran at the same time, each in its own session, and together exhausted the operator's account-wide session limit; the 10-11 fire stood paused for eight days. Nothing stopped a second audit while one was in flight, because an audit publishes nothing until it ends and the duplicate-audit guard only sees published records. The 10-11 fire alone spawned 55 sub-agents: 17 for truth passes, re-sweeps, the legacy batch and the store-wide duplicate scan, and 38 verifier slices of about 0.6 M tokens each. The verifier ledger listed every claim of all 117 entries the fire touched, about 1,900 claims, because a record that names `body` put the whole analysis in scope; each pass found new low-confidence nits in legacy text the fire had not written, and the loop ran to its cap. The operator directive of 2026-10-19: audits focus on auditing the previous week, other work waits until that is published, and audits must not overrun the session limit again.
+
+### What changed
+
+- `prompts/quality-audit.md` § Session budget (new): one audit at a time; at most 20 sub-agent spawns per fire (six truth passes, the three re-sweeps one spawn each, ten verifier spawns across the loop, one follow-up research spawn), logged in `work/<run-id>/budget.tsv`; verifier slices of about 300 claims, at most three for iteration 1 and a confirmation pass and one for a post-fix pass; a spent budget is a forced cut that publishes fail-open with `verification.budget_cut`.
+- Phase 0 step 2: each fire writes `work/<run-id>/audit.claim` and pushes it before the first spawn. An open claim under 48 h old makes a later fire stand down as `concurrent-audit`. A paused fire that resumes after a later audit has claimed stands down as `superseded`: it reverts its unpublished entry changes and publishes its report as a carry-forward.
+- Phase 0 step 1: the audit's depth is the trailing week. A gap longer than about eight days leaves its older part as a recorded unaudited span for an operator-directed partial audit (formerly up to about 21 days).
+- Phase 0 writes `work/<run-id>/base.sha`; `tools/claim_ledger.py` gains `--base REF` (read from `base.sha` by default) and lists, on updated entries, only the claims that differ from the entry at that commit. On this fire's own data the ledger drops from 1,982 to 1,187 claims, and a fire of targeted corrections drops further.
+- The closing loop's scope reads the claims this fire changed. A defect the verifier notices in unchanged text is a `(pre-existing)` advisory carried forward to the next audit's truth pass, and only a pre-existing fact no source supports (F4) is fixed in the fire.
+- The legacy re-verification batch (former Phase 0 step 6b) and the store-wide duplicate scan move to § Secondary work: they run only when the operator directs a partial audit for them, after the weekly audit is published. Phase 3 item 13 keeps the CVE-sharing pairs that touch the window. The quality gate and the Output block now check the budget.
+- `docs/pipeline.md`, `docs/routines.md` and the memory note `operator-directive-2026-10-19-audit-budget.md` record the change. `prompts/cti-run.md` moves to v4.21 in lockstep, with no other change.
+
+### What stays
+
+- The Phase 5.7 machinery in `cti-run.md` is unchanged: the claim ledger, iteration 1 and every confirmation pass covering every in-scope claim, the double-CLEAN gate, the 8-iteration cap and the fail-open rules. Intel fires write no `base.sha`, so their ledger is unchanged.
+- The truth passes still re-verify every window entry whole against fetched primaries, and the re-sweeps still re-research the window from scratch.
+- Every hard invariant: the run record and the report always ship, every entry change goes through one changelog record, and there is no silent edit.
+
 ## 4.20 — 2026-10-11 (the audit window anchors on the last full audit, and two gate false positives go)
 
 ### Why

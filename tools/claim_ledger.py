@@ -27,6 +27,11 @@ every claim has a row.
 
 Scope: the run's NEW entries (whole entry) and, on entries the run UPDATED,
 the sections this run wrote plus every frontmatter field its records declare.
+With a base ref (`--base REF`, or `work/<run-id>/base.sha`, which only the
+quality audit writes, v4.21) an updated entry contributes only the claims that
+differ from the entry at that ref: an audit that corrects one sentence of a
+long legacy entry answers for that sentence, not for the whole analysis its
+truth pass already checked.
 Claim ids are content hashes, so an unchanged claim keeps its id across
 iterations and a remediated one gets a new id: `--iteration` lists exactly the
 claims a post-fix pass must re-check.
@@ -40,6 +45,7 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -133,7 +139,25 @@ def _field_claims(e: dict, fields: set[str] | None) -> list[dict]:
     return out
 
 
-def build(run_id: str) -> list[dict]:
+def _base_keys(e: dict, base: str) -> set[tuple] | None:
+    """Claim keys of entry `e` as it stood at git ref `base` — None when the
+    file did not exist there. A key is (claim_id, urls): a clause whose text
+    stayed but whose citation was re-pointed still counts as changed."""
+    try:
+        text = subprocess.run(["git", "show", f"{base}:{e['path']}"], cwd=ROOT, capture_output=True,
+                              text=True, check=True).stdout
+        fm_text, body = cm.split_frontmatter(text)
+        old = {**cm.parse_yaml_subset(fm_text), "id": e["id"]}
+    except (subprocess.CalledProcessError, cm.YamlSubsetError, TypeError):
+        return None
+    main, sections = cm.split_update_sections(body)
+    claims = _field_claims(old, None) + _prose_claims(e["id"], "body", main)
+    for sec in sections:
+        claims += _prose_claims(e["id"], f"section {sec.get('at')}", sec.get("body") or "")
+    return {(c["claim_id"], tuple(c["urls"])) for c in claims}
+
+
+def build(run_id: str, base: str | None = None) -> list[dict]:
     claims: list[dict] = []
     for e in cm.collect_entries():
         is_new = str(e.get("run_id") or "") == run_id
@@ -149,9 +173,16 @@ def build(run_id: str) -> list[dict]:
                 claims += _prose_claims(e["id"], f"section {sec.get('at')}", sec.get("body") or "")
             continue
         fields = {str(f) for r in recs for f in (r.get("fields") or [])}
-        claims += _field_claims(e, fields)
+        mine = _field_claims(e, fields)
         if "body" in fields:
-            claims += _prose_claims(e["id"], "body", main)
+            mine += _prose_claims(e["id"], "body", main)
+        old = _base_keys(e, base) if base else None
+        if old is not None:
+            # Audit scope (v4.21): only what this fire changed. The text the
+            # entry already carried at the fire's base commit was the truth
+            # passes' job, not the closing verifier loop's.
+            mine = [c for c in mine if (c["claim_id"], tuple(c["urls"])) not in old]
+        claims += mine
         own = {str(r.get("at")) for r in recs}
         for sec in sections:
             if str(sec.get("at")) in own:
@@ -200,9 +231,15 @@ def main(argv=None) -> int:
     ap.add_argument("--iteration", type=int, help="snapshot the ledger for verifier iteration N")
     ap.add_argument("--coverage", type=int, metavar="N",
                     help="report how many ledger claims verification.iterN.claims.yaml answered")
+    ap.add_argument("--base", metavar="REF",
+                    help="on updated entries keep only claims changed since git REF "
+                         "(default: work/<run-id>/base.sha when present — the audit writes it)")
     args = ap.parse_args(argv)
     work = ROOT / "work" / args.run_id
     work.mkdir(parents=True, exist_ok=True)
+    base = args.base
+    if base is None and (work / "base.sha").is_file():
+        base = (work / "base.sha").read_text(encoding="utf-8").strip() or None
 
     if args.coverage:
         ledger = _load_ids(work / f"claims.iter{args.coverage}.yaml") or _load_ids(work / "claims.yaml")
@@ -214,12 +251,14 @@ def main(argv=None) -> int:
             print(f"  missing {cid}")
         return 0 if not missing else 1
 
-    claims = build(args.run_id)
+    claims = build(args.run_id, base)
     by_kind: dict[str, int] = {}
     for c in claims:
         by_kind[c["kind"]] = by_kind.get(c["kind"], 0) + 1
     header = {"run_id": args.run_id, "claims": len(claims),
               "by_kind": json.dumps(by_kind, sort_keys=True)}
+    if base:
+        header["base"] = base
     (work / "claims.yaml").write_text(_dump(claims, header), encoding="utf-8")
     msg = f"claim ledger: {len(claims)} claims {by_kind} -> work/{args.run_id}/claims.yaml"
     if args.iteration:

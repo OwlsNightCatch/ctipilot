@@ -50,8 +50,9 @@ monthly review recommended by the 07-11 audit). Output: an audit report
 recovered entries where coverage gaps still clear PD-11, `correction` / `improvement` changelog
 records appended to the published entries it found wrong or thin (never a second entry, never a
 silent edit — `docs/pipeline.md` § Entry lifecycle), and fixes shipped under the versioning rule. A
-72-h `duplicate-audit` guard makes double fires safe; a clean audit is a healthy outcome and is
-reported as such.
+72-h `duplicate-audit` guard makes double fires safe, and a claim file on `main` keeps a second
+audit from running while one is in flight; each audit spawns at most 20 sub-agents (v4.21, § Session
+budget of the prompt). A clean audit is a healthy outcome and is reported as such.
 
 > **Retired routine (2026-08-27).** A weekly strategic run (`Read prompts/weekly-summary.md and
 > execute it.`) and its backup routine used to be the third and fourth entries here. Both were
