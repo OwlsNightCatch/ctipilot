@@ -20,7 +20,7 @@ tags: [data-breach, organized-crime]
 regions: [europe]
 sectors: [public-sector]
 entities: ["campaign:france-sdis-data-leaks-2026", "actor:chimeraz", "actor:cybernox", "actor:aplagroup", "incident:sdis-66-data-theft-2026-09"]
-techniques: [T1078, T1213]
+techniques: [T1213]
 affected_products: []
 cves: []
 sources:
@@ -42,15 +42,15 @@ sources:
     role: primary
 closed_sources: []
 evidence:
-  - quote: "SDIS du Gard was indeed the victim of a cyberattack and data theft. Contacted this Sunday 30 August by Objectif Gard, Alexandre Pissas, chairman of SDIS 30's board, confirms the computer attack and the theft of personal data concerning personnel."
+  - quote: "SDIS du Gard was indeed the victim of a cyberattack and data theft. Contacted this Sunday 30 August by Objectif Gard, Alexandre Pissas, chairman of SDIS 30's board, confirms the computer attack and the theft of personal data concerning personnel. (translated from French)"
     original: "Le SDIS du Gard a bien été victime d'une cyberattaque et d'un vol de données. Contacté ce dimanche 30 août par Objectif Gard, Alexandre Pissas, président du conseil d'administration du SDIS 30, confirme l'attaque informatique ainsi que le vol de données personnelles concernant les personnels."
     publisher: "Objectif Gard"
     source_url: "https://www.objectifsud.fr/faits-divers/gard-cyberattaque-chez-les-pompiers-des-donnees-personnelles-sensibles-derobees-168493.php"
-  - quote: "Among the stolen information are said to be particularly sensitive data, notably copies of identity documents and bank details."
+  - quote: "Among the stolen information are said to be particularly sensitive data, notably copies of identity documents and bank details. (translated from French)"
     original: "Parmi les informations dérobées figureraient des données particulièrement sensibles, notamment des copies de pièces d'identité et des coordonnées bancaires."
     publisher: "Objectif Gard"
     source_url: "https://www.objectifsud.fr/faits-divers/gard-cyberattaque-chez-les-pompiers-des-donnees-personnelles-sensibles-derobees-168493.php"
-  - quote: "this data can help map personnel, roles, technical structures, hierarchical relationships and digital infrastructure of the French rescue services"
+  - quote: "this data can help map personnel, roles, technical structures, hierarchical relationships and digital infrastructure of the French rescue services (translated from French)"
     original: "ces données peuvent contribuer à cartographier personnels, fonctions, structures techniques, relations hiérarchiques et infrastructures numériques des secours français"
     publisher: "ZATAZ.COM"
     source_url: "https://www.zataz.com/un-pirate-cible-a-nouveau-les-sdis-francais/"
@@ -85,6 +85,13 @@ updates:
       no source links the two or names an actor. The earlier text now says the identity-document and bank-detail theft
       at SDIS du Gard is reported as said to be among the stolen data.
     fields: [title, headline, summary, entities, sources, evidence, sourcing_note, body]
+  - at: "2026-10-11T13:56:53Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    internal: true
+    summary: >
+      Removes the valid-accounts technique: no source describes the actor using valid accounts, only a forum post exposing a claimed credential whose validity ZATAZ says cannot be inferred. Marks three evidence quotes as translations from French.
+    fields: [techniques, evidence]
 migrated_from: null
 ---
 

@@ -49,12 +49,19 @@ updates:
       two variants, so the entry now says so, marks the ranking as analyst judgement and moves from
       high to notable priority. The citation follows the page to its new address on bacs.admin.ch.
     fields: [sources, techniques, classification, title, headline, summary, priority, sectors, body]
+  - at: "2026-10-11T14:02:54Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    internal: true
+    summary: >
+      Relabels the closing line as the Defender takeaway, the label the rest of the store uses; its text is unchanged.
+    fields: [body]
 migrated_from: briefs/2026-06-04.md
 ---
 
 NCSC Switzerland's Week 22 report notes an uptick in fraudulent WhatsApp messages about hotel bookings, in two variants ([NCSC-CH, 2026-06-02](https://www.bacs.admin.ch/en/26w22-en)). Variant 1 draws on real booking data (dates of stay, hotel names, guest names) from the April 2026 Booking.com data leak and sends a fake refund lure on WhatsApp that leads to a phishing page imitating TWINT and then to a second one posing as a bank, where the victim enters card data. Variant 2, which NCSC calls long-known, uses hotel booking-system credentials stolen by phishing or malware to message guests through the platform's official messaging, or by email or WhatsApp, demanding urgent card verification or an advance payment. In analyst judgement the second is the harder one to spot, since the message carries the trust of the real platform and defeats the usual "is this sender legitimate?" check. NCSC speaks of victims generally and names no sector. Staff who book travel through these platforms fall in the same exposed population (analyst inference).
 
-**Why it matters to us:** the account-takeover variant breaks user-awareness controls because the lure originates from a trusted booking system, not a spoofed sender, so detection has to move to anomalous outbound messaging from booking-platform accounts and to card-data entry on TWINT/bank look-alike domains.
+**Defender takeaway:** the account-takeover variant breaks user-awareness controls because the lure originates from a trusted booking system, not a spoofed sender, so detection has to move to anomalous outbound messaging from booking-platform accounts and to card-data entry on TWINT/bank look-alike domains.
 
 ## Correction — 2026-09-30T06:43:01Z
 

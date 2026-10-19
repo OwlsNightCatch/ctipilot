@@ -51,7 +51,7 @@ deep_dive_category: null
 org_triage: null
 classification:
   reliability: A
-  credibility: 2
+  credibility: 3
 watchlist_hit: false
 actions: []
 updates:
@@ -77,6 +77,13 @@ updates:
       notification rather than a global first, and the speed-not-new-threats framing now cites
       AEPD's own post.
     fields: [priority, body, verification, title]
+  - at: "2026-10-11T14:02:26Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    internal: true
+    summary: >
+      Credibility moves from 2 to 3: AEPD states the incident account comes solely from the notifying organisation, is unverified and describes the AI agent's role in the conditional.
+    fields: [classification]
 migrated_from: null
 ---
 

@@ -1,0 +1,1406 @@
+- entry: entries/2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: title | headline | summary | body ¶1-2 (main analysis) vs section 2026-05-13T05:00:13Z
+    claim: >-
+      first-wave fixed builds now scheduled for 2026-05-13; until then interim mitigation remains the only option ... no patched build is yet shipped
+    ground_truth: >-
+      Superseded by the entry's own 2026-05-13 section and by the live advisory: every supported branch now has a fixed build (PAN-OS 12.1: 12.1.4-h5, 12.1.7; 11.2: 11.2.4-h17, 11.2.7-h13, 11.2.10-h6, 11.2.12; 11.1: 11.1.4-h33, 11.1.6-h32, 11.1.7-h6, 11.1.10-h25, 11.1.13-h5, 11.1.15; 10.2: 10.2.7-h34, 10.2.10-h36, 10.2.13-h21, 10.2.16-h7, 10.2.18-h6); the PSIRT timeline shows revisions on 05-13, 05-14, 05-16 and 05-28. Title, headline, summary and body ¶1-2 still assert "no patched build is yet shipped" (4c(h) supersession; the entry contradicts itself).
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: >-
+      Rewrite title/headline/summary/main analysis to the current state (fixed builds per branch, mitigation still valid for unpatched devices); keep the 05-13 section as history.
+  - code: F8
+    where: body (missing Exposure discriminator)
+    claim: >-
+      unauthenticated root RCE in the User-ID Authentication Portal / Captive Portal service ... PA-Series and VM-Series operators with User-ID Authentication Portal or Captive Portal exposed
+    ground_truth: >-
+      PSIRT "Required Configuration for Exposure": customers are impacted only if BOTH (1) User-ID Authentication Portal is configured (Device > User Identification > Authentication Portal Settings > Enable Authentication Portal) AND (2) an interface management profile with response pages enabled is attached to an L3 interface in a zone where untrusted/internet traffic can ingress. Severity: CVSS-B/BT 9.3 (CVSS 4.0) when reachable from untrusted networks; 8.7 when restricted to trusted internal IPs. Prisma Access, Cloud NGFW and Panorama are not affected.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: >-
+      Add an **Exposure:** line with the two-condition test and the 9.3 vs 8.7 distinction; label the score as CVSS 4.0.
+  - code: F8
+    where: body (missing Detection from Unit 42)
+    claim: no Detection line
+    ground_truth: >-
+      Unit 42 describes observable behavior: unsuccessful exploitation attempts from 2026-04-09, RCE a week later with shellcode injected into an nginx worker process, log/crash-record/core-dump deletion, tunnelling tools (EarthWorm, ReverseSocks5) deployed with root privileges, AD enumeration with the firewall service account credentials, ptrace-injection evidence and a SUID binary deleted, and on 2026-04-29 a SAML flood that promoted the HA peer which was then also compromised.
+    ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+    fix: >-
+      Carry a Detection line (telemetry class first: nginx worker crashes/crash-record gaps, outbound tunnelling from the firewall, firewall service-account AD queries, HA failover correlated with SAML floods) and note the post-patch compromise check (patching does not evict).
+  - code: F4
+    where: body ¶1
+    claim: the ~2026-04-09 first-observed-exploitation date come from Unit 42
+    ground_truth: >-
+      Unit 42: "Starting April 9, 2026, there were unsuccessful exploitation attempts against a PAN-OS device. A week later, the attackers successfully achieved RCE". April 9 is the first (failed) attempt, not first successful exploitation.
+    ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+    fix: '"first (unsuccessful) exploitation attempts from ~2026-04-09; first successful RCE a week later".'
+  - code: F14
+    where: summary
+    claim: the unauthenticated root RCE that exploitation clusters have been actively abusing
+    ground_truth: >-
+      PSIRT: "Limited exploitation has been observed"; Unit 42: "only limited exploitation" and a single cluster (CL-STA-1132). No source reports multiple clusters.
+    ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+    fix: '"that Unit 42 ties to one likely state-sponsored cluster (CL-STA-1132); exploitation is limited".'
+  - code: F11
+    where: body ¶2 and section 2026-05-13
+    claim: >-
+      per PD-13 does not drive Swiss/EU action framing on its own ... per the audience-applicability rule in the daily prompt
+    ground_truth: >-
+      Workflow-internal language (PD number, "daily prompt") in reader-facing text; also uses the KEV deadline as framing.
+    ground_truth_url: >-
+      https://www.cisa.gov/known-exploited-vulnerabilities-catalog (catalogVersion 2026.10.08, read via tools/fetch_source.py cisa-kev)
+    fix: Delete both clauses; state only that CISA KEV lists the CVE (added 2026-05-06, due 2026-05-09).
+  - code: F11
+    where: evidence[] / sourcing_note / techniques / affected_products
+    claim: >-
+      publisher: ctipilot v2 brief (migrated); sourcing_note: migration: evidence backfilled ...; techniques: []; affected_products: []
+    ground_truth: >-
+      Evidence quotes are the pipeline quoting itself, not the cited pages; vulnerability entry with empty techniques[] and affected_products[]. Unit 42 supports T1190, T1055 (shellcode injected into an nginx worker), T1090/T1572 (EarthWorm, ReverseSocks5), T1070 (log and artefact deletion). Affected product: PAN-OS on PA-Series and VM-Series.
+    ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+    fix: >-
+      Replace evidence with verbatim PSIRT/Unit 42 passages, drop migration jargon, populate techniques[] (active ids only) and affected_products[].
+  - code: F17
+    where: classification
+    claim: 'classification: null'
+    ground_truth: >-
+      Every entry must carry classification {reliability, credibility}. Sourcing: vendor PSIRT (owning party) + Unit 42 + independent CISA KEV listing.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: >-
+      classification: {reliability: A, credibility: 1} (vendor advisory with independent CISA KEV corroboration of exploitation).
+  - code: F18
+    where: actions[0]
+    claim: >-
+      Apply PAN-OS 12.1.4-h5 / 12.1.7 / 11.2 / 11.1 / 10.2 hot-fix branches on every PA-Series and VM-Series instance running User-ID Captive Portal.
+    ground_truth: >-
+      Not executable without re-reading: no fixed versions for 11.2/11.1/10.2 are named. The advisory table gives them per branch (see current state). The action also says "released 2026-05-13" while 12.1.7, 11.1.15, 11.1.7-h6, 11.2.4-h17, 11.2.12 carried ETA 05/28.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: >-
+      Name the fixed build per branch (or the minimum per train) and scope to devices where both exposure conditions hold; keep Threat ID 510019 (content 9097-10022, needs PAN-OS 11.1+) as the interim control.
+  group: D1-a
+  role: survivor
+- entry: entries/2026-05-14/cve-2026-0300-pan-os-captive-portal-patch-wave-2-delayed-to.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: title | headline | summary | body ¶1
+    claim: >-
+      patch wave 2 delayed to 2026-05-28 ... PSIRT updated its CVE-2026-0300 advisory on 2026-05-13 to reflect first-wave patch availability but to also disclose a second patch wave with an ETA of 2026-05-28
+    ground_truth: >-
+      Arctic Wolf's write-up dated 2026-05-07 (six days before the 05-13 revision) already shows the same eight builds with "ETA: 05/28" (12.1.7, 11.2.4-h17, 11.2.12, 11.1.7-h6, 11.1.15, 10.2.7-h34, 10.2.13-h21, 10.2.16-h7) alongside the "ETA: 05/13" builds; the PSIRT timeline entry for 05-13 says only "Updated the release timeline and Solution table". No source says the 05/28 date was a delay or a newly disclosed second wave.
+    ground_truth_url: https://arcticwolf.com/resources/blog/cve-2026-0300/
+    fix: >-
+      Describe it as "eight builds were scheduled for 2026-05-28 from the start; the 05/13 builds shipped on schedule" and drop "delayed".
+  - code: F4
+    where: body ¶1
+    claim: CL-STA-1132 in-the-wild exploitation continues
+    ground_truth: >-
+      Unit 42 (published 2026-05-07, updated 2026-05-08) documents activity from 2026-04-09 to 2026-04-29 only; no cited source reports continued exploitation after the advisory.
+    ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+    fix: 'Use past tense: exploitation observed April 2026; no later activity reported.'
+  - code: F3
+    where: sources[1] publisher / body ¶1
+    claim: Unit 42 — Captive Portal Zero-Day, 2026-05-06
+    ground_truth: >-
+      The Unit 42 bulletin's own date is 2026-05-07 (updated 2026-05-08 09:20 PT for product protections); 2026-05-06 is the date of the PSIRT advisory per the bulletin text.
+    ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+    fix: Cite as 2026-05-07.
+  - code: F11
+    where: body ¶2 / evidence / sourcing_note / techniques
+    claim: >-
+      Per PD-13 the KEV deadline is not the operational driver in CH/EU ... not independently corroborated by HIGH-reliability third-party reporting; evidence publisher "ctipilot v2 brief (migrated)"; techniques absent
+    ground_truth: >-
+      Workflow-internal vocabulary (PD-13, reliability tiers) and self-quoted evidence; verification says single-source although two sources are listed.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: Remove; this entry should be folded, so only its verified facts move to the survivor.
+  - code: F17
+    where: classification
+    claim: (key absent)
+    ground_truth: No classification block.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: Fold into survivor; no separate rating needed.
+  group: D1-a
+  role: duplicate
+  duplicate_of: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+  unique_material:
+  - fact: >-
+      Eight fixed builds carried ETA 05/28 in the original advisory: 12.1.7, 11.2.4-h17, 11.2.12, 11.1.7-h6, 11.1.15, 10.2.7-h34, 10.2.13-h21, 10.2.16-h7; the remaining builds (12.1.4-h5, 11.2.7-h13, 11.2.10-h6, 11.1.4-h33, 11.1.6-h32, 11.1.10-h25, 11.1.13-h5, 10.2.10-h36, 10.2.18-h6) carried ETA 05/13.
+    url: https://arcticwolf.com/resources/blog/cve-2026-0300/
+  - fact: >-
+      CISA KEV entry for CVE-2026-0300 was extended with "5/13/2026: Palo Alto has released a variety of patches. If these are relevant to your environment, please apply the designated patch." (KEV added 2026-05-06, due 2026-05-09, ransomware use Unknown, CWE-787 out-of-bounds write).
+    url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+  - fact: >-
+      Unit 42 tradecraft: EarthWorm and ReverseSocks5 tunnelling tools, AD enumeration with the firewall service account, deliberate log destruction.
+    url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+- entry: entries/2026-05-18/cve-2026-0300-pan-os-captive-portal-revised-fix-release-time.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: actions[0] and body ¶2
+    claim: >-
+      if any device runs `10.2.13-h21` or `10.2.16-h7`, confirm Captive Portal / User-ID Authentication Portal mitigation remains active ... PA-Series and VM-Series devices on those two specific builds remain mitigation-only
+    ground_truth: >-
+      Inverted mechanism. In the PSIRT table 10.2.13-h21 and 10.2.16-h7 are FIXED builds ("Unaffected >= 10.2.13-h21 >= 10.2.16-h7"; Solution: "10.2.11 through 10.2.13-h*: Upgrade to 10.2.13-h21 or 10.2.18-h6 or later"). A device already running them is patched. The timeline notes (2026-05-14: "Updated the Fix release timeline for 10.2.16-h7"; 2026-05-16: "...for 10.2.13-h21") change when those fix builds became available, not which builds are vulnerable.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: >-
+      Reword: devices on 10.2.11-10.2.13 and 10.2.14-10.2.16 had no fixed build until these were released; they are fixed once on 10.2.13-h21 / 10.2.16-h7 or 10.2.18-h6.
+  - code: F4
+    where: body ¶2
+    claim: unauthenticated heap overflow in the User-ID Authentication Portal
+    ground_truth: 'PSIRT: "buffer overflow vulnerability"; CISA KEV: "out-of-bounds write". Neither says heap.'
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: '"buffer overflow (CWE-787 out-of-bounds write per CISA KEV)".'
+  - code: F4
+    where: body ¶1
+    claim: Both are commonly deployed LTS branches in large enterprise and government estates
+    ground_truth: No cited source characterises these builds or branches as LTS or by deployment base.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: Delete.
+  - code: F11
+    where: body / sourcing_note / evidence / techniques / classification
+    claim: >-
+      migration: ... (originally covered 2026-05-07 deep dive); evidence publisher "ctipilot v2 brief (migrated)"; techniques absent; no classification
+    ground_truth: Self-quoted evidence, migration jargon, missing techniques and classification.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: Fold into survivor; none of this carries over.
+  group: D1-a
+  role: duplicate
+  duplicate_of: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+  unique_material:
+  - fact: >-
+      PSIRT timeline revisions: 2026-05-14 "Updated the Fix release timeline for 10.2.16-h7"; 2026-05-16 "...for 10.2.13-h21"; 2026-05-28 "Updated the Fix release timeline for 11.1.15, 11.1.7-h6, 11.2.4-h17 and 11.2.12"; 2026-05-13 "Updated the release timeline and Solution table"; 2026-05-07 acknowledgments; 2026-05-06 Threat Prevention ID and Required Configuration clarified. The 05-28 revision is in no entry.
+    url: https://security.paloaltonetworks.com/CVE-2026-0300
+- entry: entries/2026-05-08/cve-2026-0300-pan-os-captive-portal-unauthenticated-root-rce.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: body
+    claim: >-
+      disable the Captive Portal / Authentication Portal feature on internet-facing GlobalProtect gateway interfaces, or restrict access exclusively to trusted internal management IP ranges
+    ground_truth: >-
+      PSIRT workaround: restrict User-ID Authentication Portal access to trusted zones AND disable Response Pages in the Interface Management Profile attached to every L3 interface where untrusted/internet traffic can ingress, or disable the User-ID Authentication Portal if not required. GlobalProtect gateways and "management IP ranges" are not mentioned; the portal is not a management interface.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: Use the PSIRT wording.
+  - code: F11
+    where: title | headline | summary | body
+    claim: CISA KEV deadline is today (2026-05-09) ... treat this as a P0 action today before business opens
+    ground_truth: >-
+      The KEV deadline is the headline driver of a Swiss-constituency entry (style rule: no KEV deadline as the reason to act) and "P0" is workflow vocabulary; the finding itself (exploited pre-auth root RCE, no fix yet) is what matters.
+    ground_truth_url: >-
+      https://www.cisa.gov/known-exploited-vulnerabilities-catalog (catalogVersion 2026.10.08, read via tools/fetch_source.py cisa-kev)
+    fix: Fold into the survivor; do not carry the KEV-deadline framing.
+  - code: F11
+    where: cves / evidence / techniques / classification
+    claim: 'cves: []; evidence: []; sourcing_note "CVE fields incomplete"; no techniques; no classification'
+    ground_truth: Vulnerability entry with empty cves[]/evidence[]/techniques[] and no classification.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: Fold into survivor.
+  group: D1-a
+  role: duplicate
+  duplicate_of: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+  unique_material:
+  - fact: >-
+      CISA KEV added CVE-2026-0300 on 2026-05-06 with due date 2026-05-09; required action cites the same workaround (restrict User-ID Authentication Portal to trusted zones; disable it if not required).
+    url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+- entry: entries/2026-05-09/cve-2026-0300-palo-alto-pan-os-captive-portal-kev-deadline-t.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: body ¶1
+    claim: >-
+      the earliest expected maintenance release containing a code fix is **PAN-OS 10.1.14 / 10.2.12 / 11.0.5 / 11.1.4**, expected 2026-05-13
+    ground_truth: >-
+      The PSIRT product-status/solution tables list fixes only as 12.1.4-h5, 12.1.7; 11.2.4-h17, 11.2.7-h13, 11.2.10-h6, 11.2.12; 11.1.4-h33, 11.1.6-h32, 11.1.7-h6, 11.1.10-h25, 11.1.13-h5, 11.1.15; 10.2.7-h34, 10.2.10-h36, 10.2.13-h21, 10.2.16-h7, 10.2.18-h6. There is no 10.1.14, 10.2.12, 11.0.5 or plain 11.1.4 fix, and 10.1/11.0 are only "older unsupported PAN-OS versions: upgrade to a supported fixed version".
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: Delete the version list.
+  - code: F4
+    where: body ¶2
+    claim: >-
+      Threat Prevention signatures 95817/95818/95820 block the known exploitation chain. PA-Series hardware appliances running content update < 8765-9032 are not covered by the signatures.
+    ground_truth: >-
+      Both the PSIRT and Unit 42 name a single signature: Threat ID 510019 (Applications and Threats content 9097-10022; Unit 42 product-protection note says content version 9098), with decoder support requiring PAN-OS 11.1 or later. No 95817/95818/95820, no "8765-9032" content gate, no hardware-appliance carve-out appears.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: '"Threat ID 510019 from Applications and Threats content 9097-10022; needs PAN-OS 11.1 or later".'
+  - code: F4
+    where: body ¶2
+    claim: >-
+      disable Captive Portal (`Device > User Identification > Captive Portal Settings > uncheck Enable Captive Portal`) or disable GlobalProtect and Captive Portal
+    ground_truth: >-
+      PSIRT menu path: Device > User Identification > Authentication Portal Settings -> Enable Authentication Portal; no instruction to disable GlobalProtect.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: Use "Authentication Portal Settings" and drop GlobalProtect.
+  - code: F4
+    where: body ¶3
+    claim: >-
+      creating rogue admin accounts via the GlobalProtect daemon (bypassing normal `admin-role` RBAC), exporting full running configurations including pre-shared keys, installing Python-based tunnelling implants under `/tmp/.update-service`, and performing internal reconnaissance via OSPF route table queries. The cluster's dwell time before detection was 4–17 days ... `svc-health-check-[6-digit-numeric]`
+    ground_truth: >-
+      None of this is in the Unit 42 bulletin. Unit 42 reports: shellcode injected into an nginx worker process; deletion of crash records/core dumps; EarthWorm and ReverseSocks5 tunnelling tools; AD enumeration using the firewall service account; ptrace-injection evidence and SUID binary deleted; SAML flood on 2026-04-29 promoting the second HA device. No rogue admin account naming pattern, OSPF queries, /tmp/.update-service, pre-shared-key export or "4-17 days" dwell time.
+    ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+    fix: Delete the paragraph; the verified tradecraft is in the survivor.
+  - code: F3
+    where: body ¶3 / sources[0] publisher
+    claim: >-
+      Palo Alto Unit 42 published a threat bulletin on 2026-05-08; publisher "Palo Alto Security Advisory — CVE-2026-0300 update, 2026-05-08"
+    ground_truth: >-
+      The bulletin is dated 2026-05-07 (updated 2026-05-08 for product protections only); the PSIRT timeline has no 2026-05-08 revision (05-07 acknowledgments, 05-13 table).
+    ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+    fix: Drop the 05-08 dating.
+  - code: F2
+    where: sources[1]
+    claim: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+    ground_truth: >-
+      KEV catalog landing page, a hard-blocked generic URL; the per-CVE KEV facts (added 2026-05-06, due 2026-05-09) are in the catalog JSON.
+    ground_truth_url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+    fix: Cite the PSIRT advisory (already primary) instead.
+  - code: F11
+    where: summary / cves / evidence / classification
+    claim: 'summary: "UPDATE (originally covered 2026-05-07):"; cves: []; evidence: []; verification multi-source'
+    ground_truth: Empty summary, empty cves[]/evidence[], no classification, no techniques.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: Fold; nothing carries over except the KEV dates.
+  group: D1-a
+  role: duplicate
+  duplicate_of: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+  unique_material: []
+- entry: entries/2026-05-16/cve-2026-42897-microsoft-exchange-server-2016-2019-se-stored.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: title | headline | summary | immediate_action | actions[0..1] | tags no-patch | priority
+    claim: >-
+      actively exploited, no permanent patch ... only EEMS auto-mitigation ... Exchange 2016/2019 permanent fix gated behind Period 2 ESU enrolment
+    ground_truth: >-
+      Superseded: Microsoft released the fix in the June 2026 Exchange SUs on 2026-06-09 (MSRC revision 2.0 of 2026-06-09: "Added links to June 2026 Exchange Server security updates. Microsoft recommends installing this updates as soon as possible."; June SU blog: "The June 2026 SUs address ... CVE-2026-42897"; Learn EEMS table: M2 highest applicable version "June 2026 SU"). On 2026-07-14 MSRC recommends the July 2026 SU "to be protected from this vulnerability and related CVE-2026-55008" and Microsoft says mitigations can then be removed. Exploitation, KEV and the ESU constraint remain true.
+    ground_truth_url: >-
+      https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491 ; https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146
+    fix: Fold into the survivor; do not keep "no permanent patch" anywhere.
+  - code: F4
+    where: body ¶1
+    claim: disclosed by Microsoft on 2026-05-14 alongside the May 2026 Patch Tuesday cycle
+    ground_truth: >-
+      May 2026 Patch Tuesday was 2026-05-12 (e.g. CVE-2026-41089 released 2026-05-12). CVE-2026-42897 was published 2026-05-14 (MSRC "Released: May 14, 2026"; THN: "Thursday advisory"), outside the Patch Tuesday release.
+    ground_truth_url: >-
+      https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897 (read as per-CVE JSON via tools/fetch_source.py msrc cve CVE-2026-42897 and the rendered page)
+    fix: '"disclosed on 2026-05-14, two days after May Patch Tuesday, with only an EEMS mitigation".'
+  - code: F4
+    where: title | body ¶1
+    claim: stored XSS in OWA ... stored / reflected cross-site scripting flaw
+    ground_truth: >-
+      MSRC, NCSC-CH, NCSC-NL and Microsoft's blog describe an XSS (CWE-79) triggered by opening a crafted email in OWA; none classifies it as stored or reflected. cves[].type is null.
+    ground_truth_url: >-
+      https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897 (read as per-CVE JSON via tools/fetch_source.py msrc cve CVE-2026-42897 and the rendered page)
+    fix: Say "cross-site scripting (CWE-79) in OWA triggered by a crafted email"; set type to xss.
+  - code: F4
+    where: body ¶1
+    claim: enabled by default on Exchange 2016 SP1 and later
+    ground_truth: >-
+      Microsoft Learn: the EM service is installed automatically when the September 2021 CU (or later) is installed on Exchange 2016/2019, on servers with the Mailbox role, not on Edge Transport; the May blog adds that EM service cannot fetch new mitigations on builds older than March 2023.
+    ground_truth_url: >-
+      https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: >-
+      "installed by the September 2021 CU or later on Mailbox servers; builds older than March 2023 cannot fetch new mitigations".
+  - code: F4
+    where: body ¶1 (detection)
+    claim: >-
+      Exchange Application Event Log EID 4 (`MSExchange Management`) for EEMS mitigation-state changes; `Get-ExchangeDiagnosticInfo -Server <name> -Process MSExchangeHMWorker -Component EemsMitigation -SettingName MitigationsApplied`
+    ground_truth: >-
+      Microsoft Learn: EM service events are 1005/1006 (applied) and 1008 (errors such as OCS unreachable) with source "MSExchange Mitigation Service"; the documented check is Get-ExchangeServer | Format-List Name,MitigationsApplied (or Get-Mitigations.ps1 / Health Checker). No cited source documents the Get-ExchangeDiagnosticInfo form (low confidence that the cmdlet form is invalid; it is unsupported).
+    ground_truth_url: >-
+      https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: Use the documented checks and event IDs.
+  - code: F14
+    where: body ¶1
+    claim: Microsoft has confirmed `Exploitation Detected` (the highest of its three exploitation-status tiers)
+    ground_truth: >-
+      MSRC assessments seen on the May 2026 CVEs include "Exploitation Detected", "More Likely", "Less Likely" and "Unlikely" (CVE-2026-42897, -41103, -41089, -41096), i.e. at least four values; no source says three tiers.
+    ground_truth_url: https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-41089 (MSRC per-CVE JSON)
+    fix: Delete the parenthetical.
+  - code: F4
+    where: actions[0]
+    claim: Then look back to 2026-05-09 in IIS access logs on the front-end Exchange role
+    ground_truth: >-
+      No source gives 2026-05-09 as an exploitation start; Proofpoint later reports infrastructure created in March 2026 and a campaign from 2026-07-22. The look-back date is invented.
+    ground_truth_url: >-
+      https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+    fix: Drop the date or state "to the start of the retained logs".
+  - code: F11
+    where: body / actions / techniques / classification
+    claim: techniques absent; classification absent; actions[] two long items restating the body
+    ground_truth: >-
+      Vulnerability entry with no techniques[], no classification; actions restate detection text (F18 b, c) and "this week" hedging.
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146
+    fix: Fold into survivor; none carries over.
+  group: D1-b
+  role: duplicate
+  duplicate_of: 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+  unique_material:
+  - fact: >-
+      EEMS prerequisites: the EM service is installed automatically with the September 2021 CU or later on Exchange 2016/2019 Mailbox role servers (not on Edge Transport), polls the Office Config Service hourly, and needs outbound HTTPS 443 to officeclient.microsoft.com; with MitigationsEnabled $false (Set-OrganizationConfig / Set-ExchangeServer) it checks but does not apply. Documented verification: Get-ExchangeServer | Format-List Name,MitigationsApplied, Get-Mitigations.ps1, or the Exchange Health Checker EEMS check. Events 1005/1006 (source "MSExchange Mitigation Service") on apply, 1008 on errors such as the OCS being unreachable.
+    url: >-
+      https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+  - fact: >-
+      The M2 mitigation is an IIS URL Rewrite OUTBOUND rule ("EEMS M2.1 OWA CSP - outbound", precondition "EEMS M2.1 OWA SPA HTML shell") on the OWA vdir, i.e. a Content Security Policy rewrite; it therefore does not protect clients using Internet Explorer or Edge in IE mode (MSRC FAQ, blog 2026-05-18 note). Mitigation ID shown in EEMS is M2.1.x; EOMT (aka.ms/UnifiedEOMT) applies it on disconnected servers.
+    url: >-
+      https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+  - fact: >-
+      Known issues once mitigated: OWA Print Calendar, inline images in the reading pane, OWA light, OWACalendar.Proxy healthset unhealthy (monitoring alerts), published calendars returning error 500; "Mitigation invalid for this exchange version" description is cosmetic if status is Applied.
+    url: >-
+      https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+  - fact: >-
+      MSRC credits an anonymous researcher; CISA KEV added 2026-05-15 (due 2026-05-29), ransomware use Unknown; MSRC severity Critical, Exploitation Detected.
+    url: https://thehackernews.com/2026/05/on-prem-microsoft-exchange-server-cve.html
+- entry: entries/2026-05-16/microsoft-exchange-cve-2026-42897-active-exploitation-withou.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: title | summary | body "Permanent-patch availability" | "Hardening"
+    claim: >-
+      Active Exploitation Without a Patch ... organisations that are not enrolled face a structural constraint where EEMS Mitigation M2 is the permanent operational mitigation
+    ground_truth: >-
+      Superseded by the June 2026 SU (2026-06-09) and July 2026 SU (2026-07-14); see MSRC revisions and Exchange Team blogs. Non-ESU Exchange 2016/2019 organisations still cannot get the SU (Period 2 ESU only), which is the part that stays true.
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+    fix: Rewrite via the survivor.
+  - code: F4
+    where: body "EEMS — what it does"
+    claim: >-
+      Mitigation M2, which rewrites the specific request format the in-the-wild exploit uses to deliver the XSS payload
+    ground_truth: >-
+      Microsoft Learn: M2 is an IIS URL Rewrite outbound rule ("EEMS M2.1 OWA CSP - outbound") with an "OWA SPA HTML shell" precondition; the MSRC FAQ states Internet Explorer / Edge IE mode are not protected because they do not support Content Security Policy. It is a CSP response rewrite, not an inbound request-format filter.
+    ground_truth_url: >-
+      https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: Describe M2.1 as a CSP outbound-rule mitigation that does not cover IE / IE-mode clients.
+  - code: F4
+    where: body "EEMS — what it does" (a)-(d)
+    claim: >-
+      `Set-Server -MitigationsEnabled $false`, or via Group Policy ... (d) Exchange servers that have been hardened with custom IIS rewrite rules that conflict with the EEMS rule placement ... on Exchange 2016 SP1 ... Exchange Server 2013
+    ground_truth: >-
+      Learn: the parameters are Set-OrganizationConfig -MitigationsEnabled and Set-ExchangeServer -MitigationsEnabled (Set-Server is not a cmdlet); no Group Policy control, no custom-rewrite-conflict case and no Exchange 2013 mention appears; Learn gives the September 2021 CU as the EM service baseline.
+    ground_truth_url: >-
+      https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: Use the documented cmdlets; delete (c) Group Policy and (d).
+  - code: F4
+    where: body "EEMS verification" and "Hunt and detection"
+    claim: >-
+      `Get-ExchangeDiagnosticInfo ... -Component EemsMitigation`; `Get-Server <server> | Select-Object MitigationsEnabled`; Exchange Application Event Log EID 4 (`MSExchange Management`); look back to 2026-05-09
+    ground_truth: >-
+      Not documented by any cited source; Learn documents Get-ExchangeServer ... MitigationsApplied and events 1005/1006/1008 (source "MSExchange Mitigation Service"); the look-back date has no source.
+    ground_truth_url: >-
+      https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: Replace with the documented checks.
+  - code: F4
+    where: body "Attack chain" 1.
+    claim: '[T1566.001] Phishing: Spearphishing Attachment — attacker delivers a specifically crafted email'
+    ground_truth: >-
+      Mechanism is script in the HTML body of the message rendered by OWA; Proofpoint observed "no suspicious URLs or attachments present". Attachment is wrong (T1566 parent / T1203 fit); steps 2-5 are labelled "operationally credible" speculation, superseded by Proofpoint's observed chain (OWAReaper: autofill credential theft, add-in OAuth token theft, Default-alias Owner permission, GitHub/DNS C2).
+    ground_truth_url: >-
+      https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+    fix: Replace with the observed chain from the survivor; drop T1566.001.
+  - code: F4
+    where: body "Exploitation status and attribution"
+    claim: No named threat-actor attribution has been published
+    ground_truth: >-
+      Superseded: Proofpoint (2026-07-28/29) attributes a campaign from 2026-07-22 exploiting CVE-2026-42897 to TA488 (aka Void Blizzard / Laundry Bear), delivering the OWAReaper implant.
+    ground_truth_url: >-
+      https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+    fix: State the TA488 attribution via the survivor.
+  - code: F13
+    where: body "Vulnerability mechanics"
+    claim: >-
+      consistent with `Exploitation Detected` status, the team is withholding payload format pending the permanent SU — but the MSRC FAQ confirms the chain shape: crafted email → OWA render → script execution → spoofing actions taken under the victim's authenticated OWA context
+    ground_truth: >-
+      MSRC FAQ says only that opening the email in OWA with certain interaction conditions lets arbitrary JavaScript execute in the browser context; it states no motive for withholding detail and no "spoofing actions under the victim's authenticated context" chain.
+    ground_truth_url: >-
+      https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897 (read as per-CVE JSON via tools/fetch_source.py msrc cve CVE-2026-42897 and the rendered page)
+    fix: Delete the motive and the chain sentence.
+  - code: F14
+    where: body "Background" / "Hardening"
+    claim: >-
+      CVE-2026-42897 is the first 2026 case where EEMS ... is the line of defence; repeated EEMS-only mitigations across the 2021–2026 Exchange CVE history
+    ground_truth: >-
+      The Learn mitigation table lists only M1 (CVE-2022-41040, 2022) and M2 (CVE-2026-42897); no source supports "first 2026 case" or "repeated EEMS-only mitigations across 2021-2026".
+    ground_truth_url: >-
+      https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: Delete both quantifiers.
+  - code: F11
+    where: summary | body
+    claim: >-
+      summary: "Background. On-premises Microsoft Exchange has been a sustained, high-value target..." ; per PD-13 in this brief series
+    ground_truth: >-
+      Summary is the first sentence of the background, not a summary; workflow-internal "PD-13 ... this brief series"; no techniques[] and no classification although T-ids appear in prose.
+    ground_truth_url: >-
+      https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897 (read as per-CVE JSON via tools/fetch_source.py msrc cve CVE-2026-42897 and the rendered page)
+    fix: Fold; nothing carries over.
+  group: D1-b
+  role: duplicate
+  duplicate_of: 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+  unique_material:
+  - fact: >-
+      EEMS prerequisites: the EM service is installed automatically with the September 2021 CU or later on Exchange 2016/2019 Mailbox role servers (not on Edge Transport), polls the Office Config Service hourly, and needs outbound HTTPS 443 to officeclient.microsoft.com; with MitigationsEnabled $false (Set-OrganizationConfig / Set-ExchangeServer) it checks but does not apply. Documented verification: Get-ExchangeServer | Format-List Name,MitigationsApplied, Get-Mitigations.ps1, or the Exchange Health Checker EEMS check. Events 1005/1006 (source "MSExchange Mitigation Service") on apply, 1008 on errors such as the OCS being unreachable.
+    url: >-
+      https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+  - fact: >-
+      The M2 mitigation is an IIS URL Rewrite OUTBOUND rule ("EEMS M2.1 OWA CSP - outbound", precondition "EEMS M2.1 OWA SPA HTML shell") on the OWA vdir, i.e. a Content Security Policy rewrite; it therefore does not protect clients using Internet Explorer or Edge in IE mode (MSRC FAQ, blog 2026-05-18 note). Mitigation ID shown in EEMS is M2.1.x; EOMT (aka.ms/UnifiedEOMT) applies it on disconnected servers.
+    url: >-
+      https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+  - fact: >-
+      Known issues once mitigated: OWA Print Calendar, inline images in the reading pane, OWA light, OWACalendar.Proxy healthset unhealthy (monitoring alerts), published calendars returning error 500; "Mitigation invalid for this exchange version" description is cosmetic if status is Applied.
+    url: >-
+      https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+  - fact: >-
+      MSRC credits an anonymous researcher; CISA KEV added 2026-05-15 (due 2026-05-29), ransomware use Unknown; MSRC severity Critical, Exploitation Detected.
+    url: https://thehackernews.com/2026/05/on-prem-microsoft-exchange-server-cve.html
+  - fact: >-
+      May 2026 EEMS-era background that is well supported: Exchange Online is not affected; Exchange SE gets a publicly available SU, Exchange 2016/2019 SUs only for Period 2 ESU customers (Period 1-only customers excluded as that program ended April 2026).
+    url: >-
+      https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+- entry: entries/2026-05-17/exchange-cve-2026-42897-pwn2own-devcore-three-bug-system-rce.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: body ¶1 (quotation)
+    claim: >-
+      ZDI verbatim: *"Orange Tsai (DEVCORE Research Team) earned $200,000 after chaining three bugs to gain remote code execution with SYSTEM privileges on Microsoft Exchange."*
+    ground_truth: >-
+      ZDI Day Two page reads: "Orange Tsai (@orange_8361) of DEVCORE Research Team chained 3 bugs to achieve Remote Code Execution as SYSTEM on Microsoft Exchange, earning $200,000 and 20 Master of Pwn points." The quoted sentence is a paraphrase close to BleepingComputer's wording, not ZDI's.
+    ground_truth_url: https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results
+    fix: Quote the ZDI sentence exactly or paraphrase without quotation marks.
+  - code: F4
+    where: title | summary | body | actions[0]
+    claim: >-
+      achieve unauthenticated remote code execution at SYSTEM privilege level ... a fresh unauthenticated SYSTEM RCE class ... a direct service-account SYSTEM RCE chain
+    ground_truth: >-
+      Neither ZDI nor BleepingComputer says "unauthenticated"; both say remote code execution with SYSTEM privileges. MSRC's August 2026 Exchange EoP CVE-2026-62911, credited to Orange Tsai working with ZDI, is scored PR:L (authorized attacker, "capture-replay") with exploited: No.
+    ground_truth_url: https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results
+    fix: Delete "unauthenticated" and "service-account".
+  - code: F4
+    where: cves[CVE-2026-42897] | tags | title
+    claim: >-
+      cves: CVE-2026-42897 type rce, status exploited/cisa-kev/mitigation-only; tags actively-exploited, cisa-kev, no-patch; title "Exchange CVE-2026-42897 — Pwn2Own DEVCORE three-bug SYSTEM RCE chain emerges alongside active OWA-XSS exploitation"
+    ground_truth: >-
+      The body itself says "This chain is separate from the actively-exploited CVE-2026-42897". The three Pwn2Own bugs were undisclosed with no CVE at the time; neither ZDI nor BleepingComputer links them to CVE-2026-42897 and nothing reports the chain exploited in the wild. The frontmatter types the XSS CVE as rce and applies exploited/KEV/no-patch tags to an unexploited research chain.
+    ground_truth_url: https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results
+    fix: >-
+      Remove CVE-2026-42897 from cves[] (declare it in references[] instead), drop actively-exploited/cisa-kev/no-patch tags, retitle without the CVE.
+  - code: F11
+    where: body ¶2
+    claim: >-
+      the Microsoft Exchange blog post `addressing-exchange-server-may-2026-vulnerability-cve-2026-42897` linked from the MSRC advisory returns 502 on direct fetch; Reference: § 4 UPDATE on Exchange
+    ground_truth: >-
+      Fetch-failure narration and an internal section pointer in reader-facing text; the blog reads normally (HTTP 200, last updated 2026-07-14).
+    ground_truth_url: >-
+      https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+    fix: Delete both.
+  - code: F18
+    where: actions[0]
+    claim: >-
+      Treat on-premises Microsoft Exchange as severely threatened through August Patch Tuesday 2026. Verify EEMS ... restrict ECP / EWS / OWA reachability from the internet ... accelerate any in-progress Exchange Online migration.
+    ground_truth: >-
+      Generic hardening that would be equally true without the Pwn2Own news; restates the EEMS check from the sibling entry; no task derived from this finding (the bugs are undisclosed).
+    ground_truth_url: https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results
+    fix: Drop the action (empty actions[] is fine).
+  - code: F17
+    where: classification | techniques
+    claim: (classification absent; techniques [])
+    ground_truth: >-
+      vulnerability entry with no classification and no techniques; sourcing is ZDI (vendor-neutral program, A) + BleepingComputer corroboration.
+    ground_truth_url: https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results
+    fix: >-
+      classification A/2 or B/2 per the audit's scale; techniques cannot be mapped from undisclosed bugs, so the entry may be better as a short note.
+  - code: F7
+    where: relevance / overlap
+    claim: entry as a whole
+    ground_truth: >-
+      The DEVCORE chain is already covered by 2026-05-17/pwn2own-berlin-2026-master-of-pwn-outcomes-the-new-ai-agents (same claims) and its patched component is the subject of 2026-08-29/exchange-mrsproxy-auth-bypass-cve-2026-62911-poc. MSRC CVRF 2026-Aug credits Orange Tsai working with ZDI for CVE-2026-62911 (Exchange EoP, CVSS 8.0, released 2026-08-11, exploited: No); that the other two chain bugs were patched is not established.
+    ground_truth_url: >-
+      https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-62911 (per-CVE JSON and 2026-Aug CVRF acknowledgments)
+    fix: Keep as a distinct, linked finding or fold into the CVE-2026-62911 entry; it must not carry CVE-2026-42897.
+  group: D1-b
+  role: distinct
+- entry: entries/2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: title | headline | summary | immediate_action | body ¶1 | actions[0]
+    claim: EM Service auto-mitigation depends on outbound connectivity to officemitigations.microsoft.com
+    ground_truth: >-
+      Microsoft Learn (EEMS page): required endpoint is "Office Config Service | officeclient.microsoft.com/* | 443". The host officemitigations.microsoft.com appears in no source read.
+    ground_truth_url: >-
+      https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: Replace with officeclient.microsoft.com (port 443) everywhere.
+  - code: F3
+    where: summary | body ¶1
+    claim: >-
+      Exchange Team Blog update confirms the EM Service auto-mitigation requires outbound HTTPS connectivity ... (Microsoft Exchange Team Blog, 2026-05-17)
+    ground_truth: >-
+      The Exchange Team blog's 5/17 revision note is "Added a known issue with OWACalendar.Proxy healthset showing unhelathy"; the blog never states a connectivity requirement or a hostname. The connectivity requirement is documented on the Microsoft Learn EEMS page.
+    ground_truth_url: >-
+      https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+    fix: >-
+      Cite the Learn page for the connectivity requirement; the 05-17 blog change was the OWACalendar.Proxy known issue.
+  - code: F4
+    where: actions[0]
+    claim: >-
+      Run `Get-ExchangeDiagnosticInfo -Server <server> -Process EdgeTransport -Component EmergencyMitigation` ... confirm `Status: Active` and rule M2.1.x is applied
+    ground_truth: >-
+      Learn: the EM service is not installed on Edge Transport servers and the documented check is Get-ExchangeServer | Format-List Name,MitigationsApplied (also Get-Mitigations.ps1 and the Health Checker EEMS check); no source documents the quoted cmdlet form or a "Status: Active" output.
+    ground_truth_url: >-
+      https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: Use the documented check.
+  - code: F4
+    where: cves[CVE-2026-42897].affected / fixed | section 2026-07-31 "Patching"
+    claim: >-
+      all update levels prior to the July 2026 Security Update ... The permanent fix is the July 2026 Security Update
+    ground_truth: >-
+      The fix first shipped in the June 2026 SU (released 2026-06-09): MSRC revision 2.0 (2026-06-09) "Added links to June 2026 Exchange Server security updates"; June SU blog "The June 2026 SUs address ... CVE-2026-42897" and FAQ "CVE-2026-42897 fix (June 2026 SU)"; Learn EEMS table lists M2 "Highest version applicable: June 2026 SU". Microsoft kept recommending the mitigation through June and from 2026-07-14 recommends the July SU "to be protected from this vulnerability and related CVE-2026-55008" and says mitigations can then be removed.
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+    fix: >-
+      affected: Exchange 2016/2019/SE below the June 2026 SU; fixed: June 2026 SU (SE RTM; 2019 CU14/CU15, 2016 CU23 via Period 2 ESU), July 2026 SU recommended and also covers CVE-2026-55008.
+  - code: F4
+    where: title | headline | summary | immediate_action | actions[0] | priority
+    claim: >-
+      no permanent patch is available yet ... No permanent patch yet; CISA KEV-listed and actively exploited ... priority critical / immediate_action "Verify Exchange Emergency Mitigation Service health ..."
+    ground_truth: >-
+      4c(h) supersession: the entry's own cves[].status carries patch-available, actions[1] says "Install the July 2026 Exchange Security Update", and the newest section says the mitigation "is no longer the remediation". The headline fields and actions[0] still describe the May no-patch state; the immediate action is the mitigation-era instruction.
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146
+    fix: >-
+      Rewrite title/headline/summary/immediate_action/actions to the patched-but-mitigation-teardown state; re-evaluate priority.
+  - code: F3
+    where: evidence[0] and evidence[1]
+    claim: >-
+      "The Exchange Emergency Mitigation Service will provide mitigation automatically, and is on by default. ..." (publisher Microsoft Exchange Team Blog); "We are working on developing and testing a more permanent fix which we will provide when it meets our quality standards."
+    ground_truth: >-
+      Neither sentence is on the current Exchange Team blog (it now reads "Microsoft is working on and will release and announce a security update ..."); the first is MSRC FAQ text ("The Exchange Emergency Mitigation Service will provide mitigation automatically, and is on by default.") and the second is not on the current MSRC page, which was revised 05-18 and 07-14. (low confidence on the second: it may have been on an earlier MSRC revision).
+    ground_truth_url: >-
+      https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+    fix: Attribute the first to MSRC; replace the second with a sentence present on the cited page.
+  - code: F5
+    where: section 2026-07-31T04:09:14Z ¶2 and update summary
+    claim: >-
+      a 16-nation joint advisory exposed on 2026-07-23 for its Zimbra campaign ... which this pipeline registers as LAUNDRY BEAR
+    ground_truth: >-
+      The cited Proofpoint page says the actor (TA488, "Void Blizzard, Laundry Bear") was the subject of a "joint release with the NSA" on 2026-07-23 (it links an NSA PDF uploaded under .../2026/Jul/22/); it does not say "16 nations" and the sentence carries no inline citation. "this pipeline registers" is workflow vocabulary (F11). (low confidence: the claim may be sourced in the referenced laundry-bear entry).
+    ground_truth_url: >-
+      https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+    fix: >-
+      Cite the advisory source inline or reduce to "a joint Proofpoint/NSA release"; remove "this pipeline registers".
+  - code: F11
+    where: body ¶1 | section 2026-07-31 ¶1 | evidence
+    claim: >-
+      UPDATE (originally covered 2026-05-15 / deep-dive 2026-05-16) ... The May entry tracked CVE-2026-42897 ... Today's deep dive
+    ground_truth: Legacy v2 framing and self-referential narration in reader-facing text.
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146
+    fix: Rewrite the main analysis as the current state; keep sections as history.
+  - code: F16
+    where: priority / immediate_action
+    claim: 'priority: critical'
+    ground_truth: >-
+      (low confidence) A fix has existed since 2026-06-09; Proofpoint documents exploitation of unpatched on-prem servers from 2026-07-22, so a high-priority decision remains (patch to June/July SU, tear down M2.1.0 mitigation, audit Default-alias Owner grants), but the stop-and-act framing of immediate_action is the May mitigation instruction.
+    ground_truth_url: >-
+      https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+    fix: >-
+      Keep critical only if the audit judges the July campaign against European government targets still warrants it; otherwise high.
+  group: D1-b
+  role: survivor
+- entry: entries/2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a.md
+  verdict: factual-error
+  defects:
+  - code: F13
+    where: body "Kill chain (UAT-8616 post-exploitation TTPs)" steps 6, 7, 9
+    claim: >-
+      Godzilla, Behinder, and XenShell webshells deployed for persistent access ... AdaptixC2, Sliver, and Nimplant C2 implants beaconing over HTTPS ... XMRig cryptocurrency miner deployed on compromised Controllers
+    ground_truth: >-
+      Talos (2026-05-14) separates the two activity sets: UAT-8616 exploited CVE-2026-20182 and "attempted to add SSH keys, modify NETCONF configurations, and escalate to root privileges", with infrastructure overlapping ORB networks. The Godzilla/Behinder/XenShell webshells, AdaptixC2, Sliver, Nimplant and XMRig belong to Clusters #1-#10, which are "distinct from UAT-8616" and exploit CVE-2026-20133, CVE-2026-20128 and CVE-2026-20122 (Manager) from March 2026. No source ties those tools to UAT-8616 or to CVE-2026-20182.
+    ground_truth_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+    fix: >-
+      Limit UAT-8616 behavior to SSH-key injection, NETCONF changes, root escalation (version downgrade/log clearing only as documented in the Feb 2026 post for CVE-2026-20127) and move the cluster tooling to a separate sentence about the February CVEs.
+  - code: F4
+    where: body ¶2 (mechanics)
+    claim: >-
+      checks whether the device type is `VBOND` (0) or `VEDGE` (1) before requiring certificate validation, but entirely omits the check for device type `VHUB` (2)
+    ground_truth: >-
+      Rapid7: device types are 1 vEdge, 2 vHub, 3 vSmart, 4 vBond, 5 vManage; vbond_proc_challenge_ack() verifies types 3 and 5 (certificate chain, serial/duplicate checks) and type 1 (hardware/virtual edge certificate), type 4 is handled elsewhere, and type 2 (vHub) has no verification code, so it falls through to peer->authenticated = true. There is no "VBOND (0)".
+    ground_truth_url: >-
+      https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/
+    fix: '"verifies vSmart, vManage and vEdge peers but has no branch for device type 2 (vHub)".'
+  - code: F4
+    where: body ¶1
+    claim: CVE-2026-20127 (pre-auth RCE in SD-WAN Manager)
+    ground_truth: >-
+      Talos (2026-02-25): CVE-2026-20127 is an authentication bypass in the Cisco Catalyst SD-WAN Controller (formerly vSmart) giving administrative privileges, not RCE in the Manager.
+    ground_truth_url: https://blog.talosintelligence.com/uat-8616-sd-wan/
+    fix: '"authentication bypass in SD-WAN Controller".'
+  - code: F4
+    where: body ¶1
+    claim: CVE-2026-20182 is that actor's sixth exploited Cisco SD-WAN vulnerability in the ongoing campaign
+    ground_truth: >-
+      SecurityWeek: "the sixth SD-WAN flaw whose exploitation came to light in 2026" (CVE-2026-20182, -20128, -20122, -20133, -20127; CVE-2022-20775 also flagged exploited this year). Not the actor's sixth: UAT-8616 exploited CVE-2026-20127 and CVE-2026-20182 (and CVE-2022-20775 post-compromise); the others are other clusters.
+    ground_truth_url: https://www.securityweek.com/cisco-patches-another-sd-wan-zero-day-the-sixth-exploited-in-2026/
+    fix: '"the sixth Cisco SD-WAN flaw reported exploited in 2026; UAT-8616 is tied to two of them".'
+  - code: F14
+    where: body ¶3
+    claim: The 10+ additional clusters (#1–#10 in Talos's taxonomy)
+    ground_truth: 'Talos lists Cluster #1 through #10; SecurityWeek: "described 10 activity clusters". "10+" is unsupported.'
+    ground_truth_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+    fix: '"ten clusters".'
+  - code: F4
+    where: body "Hunt and detection concepts"
+    claim: >-
+      `show sdwan control connections` ... SD-WAN Controller-to-Controller peering shows as VHUB-type — flag unexpected vHub entries ... look for newly created `.jsp` / `.jspx` / `.py` files in `${CATALINA_HOME}/webapps/`
+    ground_truth: >-
+      Cisco's IOC guidance names: auth.log (/var/log/auth.log) entries "Accepted publickey for vmanage-admin" from unknown IPs checked against System IPs; `show control connections detail` / `show control connections-history detail` showing state up with challenge-ack 0 (Validator: show orchestrator connections ...); manual validation of every peering event (peer-type vmanage especially). No source says controller-to-controller peering appears as VHUB or gives a webapps path (low confidence on the path: unsupported rather than disproved).
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+    fix: Replace with the Cisco-documented checks.
+  - code: F4
+    where: body "Hardening and mitigation"
+    claim: >-
+      Network-level mitigation: restrict access to UDP/12346 to known legitimate Controller and Edge IPs using ACLs or security groups
+    ground_truth: >-
+      (low confidence) Cisco: "There are no workarounds that address this vulnerability." The advisory's only mitigation-adjacent statement is that Controllers exposed to the internet are at risk; the ACL advice is in no cited source.
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+    fix: Drop or label as the entry's own suggestion; state that Cisco lists none.
+  - code: F11
+    where: body kill chain / techniques
+    claim: >-
+      [T1562.001 Impair Defenses: Disable or Modify Tools] ... [T1070.002 Indicator Removal: Clear Linux or Mac System Logs]; techniques: (absent)
+    ground_truth: >-
+      In the pinned ATT&CK v19.2 dataset T1562.001 is revoked (replaced by T1685) and T1070.002 is revoked (replaced by T1685.006; T1689 Downgrade Attack exists for the version downgrade). Nine ATT&CK ids are dumped in prose while techniques[] is absent.
+    ground_truth_url: attack/enterprise-attack.json (pinned v19.2)
+    fix: >-
+      Move ids to techniques[] using active ids only (T1190, T1098.004, T1021.004, T1068, T1685/T1685.006 or T1689 as the sources support).
+  - code: F6
+    where: sources[]
+    claim: 'primary: Cisco Talos 2026-05-14; no Cisco PSIRT URL'
+    ground_truth: >-
+      The vendor PSIRT advisory cisco-sa-sdwan-rpa2-v69WY2SW (CVSS 10.0, fixed-release table, IOC guidance, admin-tech instruction) is the primary and is absent; the entry takes fixed versions from nowhere cited.
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+    fix: Add the Cisco PSIRT as primary.
+  - code: F17
+    where: classification | priority
+    claim: 'classification: (absent); priority: notable'
+    ground_truth: >-
+      No classification; a CVSS 10.0, CISA KEV-listed, actively exploited flaw rated notable while the same-day twin is critical.
+    ground_truth_url: https://www.cisa.gov/news-events/directives/ed-26-03-mitigate-vulnerabilities-cisco-sd-wan-systems
+    fix: Fold into the critical survivor.
+  group: D1-c
+  role: duplicate
+  duplicate_of: 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+  unique_material:
+  - fact: >-
+      Mechanics (Rapid7): vdaemon DTLS control plane on UDP/12346; after a DTLS handshake that accepts any client certificate and a CHALLENGE, a CHALLENGE_ACK claiming device type 2 (vHub) is never verified, setting peer->authenticated; after a Hello the peer is UP; message type 14 (MSG_VMANAGE_TO_PEER) appends an attacker SSH public key to /home/vmanage-admin/.ssh/authorized_keys; the attacker then logs in to NETCONF on TCP/830 as vmanage-admin. Rapid7 notes it is a different flaw from CVE-2026-20127 in the same vdaemon stack and that any authenticated peer, whatever device type, can inject the key.
+    url: >-
+      https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/
+  - fact: >-
+      Talos attributes the in-the-wild exploitation of CVE-2026-20182 to UAT-8616 with high confidence (limited exploitation), with ORB-network infrastructure overlap; UAT-8616 attempted to add SSH keys, modify NETCONF configurations and escalate to root. UAT-8616's earlier CVE-2026-20127 activity (Feb 2026): activity back to at least 2023, likely root via software version downgrade exploiting CVE-2022-20775 then restoring the version; indicators include unaccounted vmanage-admin authorized_keys, root sessions, abnormally small or cleared logs (syslog, wtmp, lastlog, cli-history, bash_history), version downgrade/upgrade with reboot.
+    url: >-
+      https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/ ; https://blog.talosintelligence.com/uat-8616-sd-wan/
+  - fact: >-
+      Cisco IOC guidance: audit /var/log/auth.log for "Accepted publickey for vmanage-admin" from unknown IPs; `show control connections detail` / `show control connections-history detail` (Validator: `show orchestrator connections ...`) with state up and challenge-ack 0; run `request admin-tech` on every control component BEFORE upgrading; if compromised, upgrading alone does not remediate, open a TAC case (Severity 3, CVE id in the title).
+    url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+  - fact: >-
+      Talos Snort SIDs: 66482-66483 (CVE-2026-20182); 66468-66469 (CVE-2026-20133 and -20128); 66461-66462 (CVE-2026-20122).
+    url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+- entry: entries/2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: summary | sources[2].publisher
+    claim: CISA Emergency Directive ED-26-03 issued 2026-05-14 ... publisher "CISA ED-26-03, 2026-05-14"
+    ground_truth: >-
+      CISA ED 26-03 was originally issued 2026-02-25 (updated 2026-03-11) and covers CVE-2026-20127 and CVE-2022-20775 (its supplemental hunt-and-hardening direction is dated 2026-02-25). On 2026-05-14 CISA added CVE-2026-20182 to KEV (due 2026-05-17) with a required action that cites ED 26-03 and its supplement; no ED was issued on 2026-05-14.
+    ground_truth_url: https://www.cisa.gov/news-events/directives/ed-26-03-mitigate-vulnerabilities-cisco-sd-wan-systems
+    fix: >-
+      "CISA added CVE-2026-20182 to KEV on 2026-05-14 under its existing ED 26-03 Cisco SD-WAN directive (issued 2026-02-25)".
+  - code: F4
+    where: body ¶1
+    claim: persistent SSH access to the SD-WAN Manager on NETCONF port TCP/830
+    ground_truth: >-
+      Rapid7 demonstrates the chain against a Cisco Catalyst SD-WAN Controller (vSmart); Cisco: the attacker "log[s] in to an affected Cisco Catalyst SD-WAN Controller as an internal, high-privileged, non-root user account ... access NETCONF". The advisory covers Controller, Manager and Validator but the shown NETCONF/SSH-key path is on the Controller.
+    ground_truth_url: >-
+      https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/
+    fix: '"on the SD-WAN Controller".'
+  - code: F8
+    where: title | body (affected products, post-patch check, actor)
+    claim: 'CVE-2026-20182 — Cisco Catalyst SD-WAN Controller/Manager ... entities: []'
+    ground_truth: >-
+      Cisco: affects Controller, Manager and (v2.0, 2026-06-16) Validator, all deployment types incl. Cloud-Pro, Cisco-managed cloud (fixed in 20.15.506) and FedRAMP; run `request admin-tech` before upgrading, and "applying the software update alone will not resolve the vulnerability" if IOCs are found (TAC). Talos ties the exploitation to UAT-8616 (registry key actor:uat-8616 exists). None of these appear.
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+    fix: Add Validator and the admin-tech/post-patch compromise check; link actor:uat-8616 with the Talos citation.
+  - code: F4
+    where: body ¶1
+    claim: No workaround exists; network segmentation of the UDP/12346 interface is the only partial mitigation
+    ground_truth: '(low confidence) Cisco: no workarounds; the segmentation suggestion is in no cited source.'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+    fix: State that Cisco lists no workaround; drop the segmentation sentence or attribute it.
+  - code: F14
+    where: summary
+    claim: at least 10 additional opportunistic clusters are exploiting companion February 2026 CVEs
+    ground_truth: >-
+      Talos names exactly ten clusters (#1-#10), they exploit CVE-2026-20133/20128/20122 (a separate flaw set), and Talos calls them "several other threat clusters" separate from UAT-8616.
+    ground_truth_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+    fix: '"ten other clusters exploit the separate February flaws".'
+  - code: F11
+    where: cves[].type | techniques | evidence | classification
+    claim: 'type: rce; techniques absent; evidence publisher "ctipilot v2 brief (migrated)"; classification absent'
+    ground_truth: >-
+      Cisco/Rapid7/NCSC-CH classify it an authentication bypass (CWE-287) with NETCONF access; no techniques[] and no classification; self-quoted evidence.
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+    fix: >-
+      type auth-bypass; techniques T1190, T1098.004, T1021.004; classification A/1 (vendor PSIRT + CISA KEV + Talos/Rapid7).
+  group: D1-c
+  role: survivor
+- entry: entries/2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: title | headline | summary | body ¶1 | actions[0] | tags
+    claim: >-
+      actively-exploited command-injection to root (no patch) ... No fixed release is available ... Mitigate Cisco Catalyst SD-WAN Manager now — no patch exists
+    ground_truth: >-
+      Superseded by Cisco's advisory revisions: 26.1.1.2 (2026-06-10), 20.15.4.5 / 20.15.5.3 (06-11), 20.9.9.2 / 20.12.7.2 (06-12, advisory changed to Final), Live Protect shield (07-15), 20.18.3.1 for 20.18.2.2 and earlier (07-21). The entry's own cves[].status and tags say patch-available while title, summary, body and actions say no patch (4c(h)).
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+    fix: 'Rewrite to the patched state: fixed releases per train, Live Protect shield as partial interim control.'
+  - code: F4
+    where: cves[CVE-2026-20245] / [CVE-2026-20127] / [CVE-2026-20182]
+    claim: 'CVE-2026-20245: cvss n/a, type auth-bypass, vector zero-click, auth pre-auth'
+    ground_truth: >-
+      Cisco: CVSS 3.1 base 7.8 (AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H), "authenticated, local attacker ... netadmin privileges" (command injection to root via crafted file). The sibling record has priv-esc/local/post-auth. CVE-2026-20182 is CVSS 10.0 per Cisco, not "n/a".
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+    fix: 'CVE-2026-20245: cvss 7.8, type priv-esc, vector local, auth post-auth; CVE-2026-20182 cvss 10.0.'
+  - code: F4
+    where: section 2026-06-26T04:54:42Z | updates[0].summary | evidence[2] | section 2026-06-27
+    claim: >-
+      confirming the flaw was used as a **zero-day at a communications service provider from late 2025 through March 2026 — months before the patch** ... observed at a service-provider victim from late 2025 into 2026
+    ground_truth: >-
+      Mandiant: rogue peering connections from late 2025 to January 2026 and in March 2026 were the initial access; the CVE-2026-20245 exploitation (evil_tenant.csv via `request tenant-upload`) occurred "in April 2026" (Cisco's scripts.log example is dated Apr 15). Mandiant says "a service provider", not "communications". Cisco became aware of exploitation in June 2026 and published 2026-06-04.
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: >-
+      "exploited as a zero-day in April 2026 at a service provider, after rogue-peering initial access from late 2025/March 2026; advisory 2026-06-04".
+  - code: F13
+    where: section 2026-06-26T04:54:42Z ¶2 | section 2026-06-27 ¶2
+    claim: >-
+      a peering-authentication-bypass foothold (CVE-2026-20127 / CVE-2026-20182) into SSH as `vmanage-admin` ... The chain: authentication bypass via `CVE-2026-20182`/`CVE-2026-20127` (rogue peering connection), then privilege escalation via `CVE-2026-20245`
+    ground_truth: >-
+      Mandiant hedges: late-2025/Jan-2026 peerings "possible" exploitation of CVE-2026-20127 or -20182 (undisclosed and unpatched then); the March 2026 peerings occurred on a device not affected by 20127 and "Cisco confirmed that these connections did not leverage CVE-2026-20182 either, and could instead be using stolen certificate material from a previous compromise". The actor then used the admin account (password changed, then restored) before the CSV upload. Cisco's advisory says netadmin access "would require valid credentials or exploitation of CVE-2026-20182 or CVE-2026-20127".
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: >-
+      "initial access via rogue peering connections, possibly through CVE-2026-20127/-20182 or stolen certificate material (Mandiant)".
+  - code: F4
+    where: section 2026-06-26T04:54:42Z ¶2 (and sibling entry)
+    claim: anti-forensic clean-up (admin-password change-then-revert, history/syslog deletion)
+    ground_truth: >-
+      Mandiant: the actor "deleted all files they created, including evil_tenant.csv, and restored any system configurations they modified", changed the admin password back, and ran a validation script; it does not report command-history or syslog deletion.
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: Drop "history/syslog deletion".
+  - code: F14
+    where: section 2026-06-27T05:17:48Z
+    claim: published (2026-06-24) the first complete TTP chain for the Cisco Catalyst SD-WAN Manager zero-day activity
+    ground_truth: Mandiant's post does not claim to be first or complete; no cited source supports "first complete".
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: '"published a forensic reconstruction".'
+  - code: F8
+    where: title | affected_products | cves[].status | tags (missing KEV and scope)
+    claim: 'Cisco Catalyst SD-WAN Manager ... affected_products: [] ... status: exploited, patch-available'
+    ground_truth: >-
+      Cisco: affects Controller (vSmart), Manager (vManage) and Validator (vBond), all deployment types. CISA KEV added CVE-2026-20245 on 2026-06-09 (due 2026-06-23); neither the cves[] status nor the tags carry cisa-kev. Cisco's IOC check: /var/log/scripts.log entries for vconfd_script_upload_tenant_list.sh (legitimate and malicious runs look identical).
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+    fix: Add Controller/Validator, cisa-kev, and the scripts.log note.
+  - code: F11
+    where: body | updates[] summary | section 2026-06-27 | techniques | classification
+    claim: >-
+      covered in weekly W22 ... Today's deep dive (§5) ... Full mechanics, ATT&CK mapping and host-level detection are in §5; techniques: []; classification: null
+    ground_truth: >-
+      Internal references to a weekly and a non-existent §5 in reader-facing text and the record summary; two sections (06-26, 06-27) carry the same Mandiant delta; empty techniques[]; no classification.
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: >-
+      Consolidate the two Mandiant sections, drop internal pointers, populate techniques (T1068, T1136.001, T1070.003 active; T1059.004) and classification (A/1).
+  group: D1-c
+  role: survivor
+- entry: entries/2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: summary | body ¶1
+    claim: >-
+      compromised through CVE-2026-20245 as a zero-day — exploited at a communications service provider from late 2025 through March 2026, months before Cisco's advisory
+    ground_truth: >-
+      Mandiant: CVE-2026-20245 exploitation in April 2026; late 2025-March 2026 were rogue peering connections. "A service provider", not "communications".
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: Use April 2026 and "service provider".
+  - code: F13
+    where: body "Kill chain" Initial access
+    claim: >-
+      abusing peering-authentication-bypass flaws CVE-2026-20127 / CVE-2026-20182 to enrol unauthorised peering and obtain SSH as the `vmanage-admin` account, or alternatively by using certificate material stolen in a previous compromise
+    ground_truth: >-
+      Mandiant: "It is possible that these connections occurred due to the exploitation of CVE-2026-20127 or CVE-2026-20182"; Cisco confirmed the March connections did not leverage CVE-2026-20182 and "could instead be using stolen certificate material". The alternative is the source's hedged possibility, not an observed fact.
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: Hedge as in the source.
+  - code: F4
+    where: body "Kill chain" Defense evasion
+    claim: deleted command history, syslog entries, and the uploaded files after use
+    ground_truth: >-
+      Mandiant reports deleting created files (evil_tenant.csv, backups) and restoring modified configurations, plus a validation script; no command-history or syslog deletion is reported.
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: Drop history/syslog.
+  - code: F11
+    where: title | headline | summary
+    claim: Cisco Catalyst SD-WAN Manager CVE-2026-20245 ; summary truncated "…"
+    ground_truth: Title/headline state no finding; summary cut mid-sentence; no classification.
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: Fold; the survivor carries the finding.
+  group: D1-c
+  role: duplicate
+  duplicate_of: 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+  unique_material:
+  - fact: >-
+      Mandiant kill chain (verified): rogue peering from late 2025 to Jan 2026 and again March 2026; SSH as vmanage-admin; admin password changed then restored; admin web login and configuration export on 2026-03-07; in April 2026 SSH as admin and `request tenant-upload tenant-list /home/admin/evil_tenant.csv vpn 0` carrying shell commands that back up the tenant list, /etc/passwd and /etc/shadow and append a UID-0 `troot` account; su from admin to troot; deleted created files, restored configs, ran a validation script.
+    url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+  - fact: >-
+      Detection from Mandiant/Cisco: baseline /etc/passwd and /etc/shadow for new UID-0 accounts (e.g. troot), audit auth.log for su from admin to unauthorized accounts, show history for tenant-upload commands, /var/log/scripts.log entries for vconfd_script_upload_tenant_list.sh (Cisco notes legitimate runs look identical).
+    url: >-
+      https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager ; https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+  - fact: >-
+      Fixed trains (current, Cisco revision 1.10): 20.9.9.2, 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1 (for 20.18.2.2 and earlier and 20.18.3), 26.1.1.2; Mandiant's remediation list matches. Live Protect shield (v1.9, 2026-07-15) is temporary partial protection and blocks new SD-WAN Disaster Recovery operations and new/expanded Manager clusters.
+    url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+- entry: entries/2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: body ¶1 (timeline)
+    claim: >-
+      responsibly disclosed to F5/NGINX on 2026-04-18, with RCE PoC shared to F5/NGINX under NDA on 2026-04-28, and patches released on 2026-05-13
+    ground_truth: >-
+      depthfirst timeline: 4/18 its internal system reported 5 issues; 4/21 reported all 5 to NGINX via a GitHub security advisory; 4/24 NGINX confirmed 4; 4/28 informed NGINX that a working RCE PoC existed; 5/5 shared the RCE PoC and demo video; 5/13 F5 released the advisory. Security Affairs also gives April 21 for disclosure. "Under NDA" appears in no source.
+    ground_truth_url: https://depthfirst.com/research/nginx-rift-achieving-nginx-rce-via-an-18-year-old-vulnerability
+    fix: '"found 2026-04-18, reported 2026-04-21, RCE PoC shared with NGINX 2026-05-05, fixed 2026-05-13".'
+  - code: F9
+    where: body ¶1 / missing Contradiction line
+    claim: 'CVSS 4.0: 9.2 ... Critical; no severity discrepancy noted'
+    ground_truth: >-
+      The NGINX project's own advisory list rates the rewrite-module flaw (K000161019, CVE-2026-42945) "Severity: medium", while F5/NCSC-CH/depthfirst score it CVSS 4.0 9.2 critical; the discrepancy follows from the preconditions (specific rewrite pattern; RCE only with ASLR off).
+    ground_truth_url: https://nginx.org/en/security_advisories.html
+    fix: 'Add a Contradiction: line naming both ratings and why.'
+  - code: F8
+    where: body (Exposure / Detection)
+    claim: >-
+      Affected: NGINX Open Source 0.6.27–1.30.0; NGINX Plus R32–R36; NGINX Ingress Controller 3.5.0–5.4.1; NGINX Gateway Fabric 1.3.0–2.5.1 ...
+    ground_truth: >-
+      Security Affairs lists ranges with gaps: Ingress Controller 3.5.0-3.7.2, 4.0.0-4.0.1, 5.0.0-5.4.1; Gateway Fabric 1.3.0-1.6.2 and 2.0.0-2.5.1; Instance Manager 2.16.0-2.21.1; F5 WAF for NGINX 5.9.0-5.12.1; App Protect WAF 4.9.0-4.16.0 and 5.1.0-5.8.0; F5 DoS for NGINX 4.8.0; App Protect DoS 4.3.0-4.7.0; BIG-IP, F5OS and Distributed Cloud not affected. No Detection line exists (worker crash/restart events and requests whose URI contains characters that expand when escaped: +, %, &).
+    ground_truth_url: >-
+      https://securityaffairs.com/192132/hacking/nginx-rift-an-18-year-old-flaw-in-the-worlds-most-deployed-web-server-just-came-to-light.html
+    fix: >-
+      Use the gapped ranges; add Exposure (config test: rewrite with unnamed capture and "?" in the replacement followed by rewrite/if/set) and a worker-crash Detection line.
+  - code: F6
+    where: sources[]
+    claim: 'primary: depthfirst research; no vendor advisory URL'
+    ground_truth: >-
+      The nginx.org security advisory list (readable) names the flaw, vulnerable range 0.6.27-1.30.0 and fixed 1.30.1/1.31.0 and links the F5 advisory K000161019 (not readable by any fetch rung in this pass).
+    ground_truth_url: https://nginx.org/en/security_advisories.html
+    fix: Add nginx.org/en/security_advisories.html (or F5 K000161019) as a vendor primary.
+  - code: F11
+    where: techniques | classification | evidence | affected_products
+    claim: 'techniques: absent; classification: absent; evidence: []'
+    ground_truth: Vulnerability entry with no techniques[] (T1190 fits), no classification and no affected_products[].
+    ground_truth_url: https://nginx.org/en/security_advisories.html
+    fix: >-
+      techniques [T1190]; classification A/1 or A/2 per the audit scale (NCSC-CH national CERT + depthfirst discoverer + GitHub CNA text); affected_products from the Security Affairs list.
+  group: D1-d
+  role: survivor
+- entry: entries/2026-05-18/cve-2026-42945-nginx-rift-in-the-wild-exploitation-confirmed.md
+  verdict: imprecision
+  defects:
+  - code: F4
+    where: title | headline | summary | body ¶1
+    claim: >-
+      in-the-wild exploitation confirmed by VulnCheck honeypots ... confirmed active exploitation of CVE-2026-42945 on 2026-05-17 ... now actively probed
+    ground_truth: >-
+      The Hacker News (2026-05-17): VulnCheck reported "exploitation attempts detected against its honeypot networks. The nature of the attack activity and the end goals are presently unknown." The source gives no detection date and does not report successful compromise; the upstream is a VulnCheck LinkedIn post that was not read.
+    ground_truth_url: https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html
+    fix: >-
+      "VulnCheck reported exploitation attempts against its honeypots (reported 2026-05-17); purpose and impact unknown".
+  - code: F4
+    where: body ¶1
+    claim: >-
+      reachable by an unauthenticated remote attacker via a single crafted HTTP request to any NGINX instance running a rewrite-rule configuration that uses unnamed PCRE captures
+    ground_truth: >-
+      GHSA/NCSC-CH/Security Affairs: only a rewrite with an unnamed capture and a "?" in the replacement string followed by another rewrite, if or set directive in the same scope; Kevin Beaumont: "relies on a specific NGINX config ... for an attacker to know or discover the config"; RCE needs ASLR disabled.
+    ground_truth_url: https://github.com/advisories/GHSA-gcgv-v5gf-c543
+    fix: State the full precondition as in the survivor.
+  - code: F4
+    where: body ¶2 (detection)
+    claim: correlated with inbound HTTP requests carrying unusually long or deeply-nested rewrite-rule input strings
+    ground_truth: >-
+      No source describes such request shape; Security Affairs says the overflow bytes derive from the attacker's URI (characters like +, %, & expand by two bytes during escaping) and repeated requests cause worker crash loops.
+    ground_truth_url: >-
+      https://securityaffairs.com/192132/hacking/nginx-rift-an-18-year-old-flaw-in-the-worlds-most-deployed-web-server-just-came-to-light.html
+    fix: Describe the URI-character trigger and worker crash loops instead.
+  - code: F11
+    where: body | evidence | sourcing_note | classification | techniques
+    claim: UPDATE (originally covered 2026-W21 weekly) ... evidence publisher "ctipilot v2 brief (migrated)"
+    ground_truth: >-
+      Workflow vocabulary (weekly, W21), self-quoted evidence, no classification, no techniques; THN (a news outlet) is marked primary while F5 K000161019 (unreadable this pass) is corroborating.
+    ground_truth_url: https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html
+    fix: Fold into survivor as a changelog update.
+  group: D1-d
+  role: duplicate
+  duplicate_of: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  unique_material:
+  - fact: >-
+      VulnCheck reported exploitation attempts against its honeypot networks (via The Hacker News, 2026-05-17); activity nature and goals unknown. Beaumont: exploitation depends on a specific config being known/discovered and on ASLR being off for RCE; AlmaLinux: worker-crash DoS is exploitable on its own, treat as urgent.
+    url: https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html
+- entry: entries/2026-08-12/sap-august-2026-cve-2026-58231-commerce-cloud-data-hub-rce.md
+  verdict: imprecision
+  defects:
+  - code: F11
+    where: references[] / cves[CVE-2026-42945]
+    claim: 'references: [] ; cves: CVE-2026-42945 (CVSS 8.1) "SAP Commerce Cloud in public-cloud deployments with NGINX"'
+    ground_truth: >-
+      The entry carries CVE-2026-42945 because SAP Security Note 3773203 (patch day 2026-08-11, High, CVSS 8.1, "Potential buffer overflow vulnerability affects SAP Commerce Cloud in public-cloud deployments with NGINX", COM_CLOUD 2211, 2211-JDK21, DHUB_CLOUD 2211, 2211-JDK21) is SAP's downstream fix for the upstream NGINX Rift flaw. It is a distinct finding (SAP product remediation, rebuild and redeploy) but declares no reference to the NGINX entry that already carries the CVE.
+    ground_truth_url: https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html
+    fix: >-
+      Add 2026-05-15/cve-2026-42945-... to references[] and say in one clause that this is the SAP-side fix of the NGINX flaw.
+  - code: F3
+    where: body ¶ "Remediation for this one is not a patch install" (last sentence)
+    claim: >-
+      The same rebuild-and-redeploy requirement applies to CVE-2026-42945 (CVSS 8.1), a buffer overflow affecting Commerce Cloud public-cloud deployments fronted by NGINX, per SAP Security Note 3773203 ([SAP SE, 2026-08-11])
+    ground_truth: >-
+      The SAP patch-day page carries the note number, CVE, product, versions and CVSS 8.1 but not the rebuild-and-redeploy requirement; that comes from Onapsis ("The patch is present on all SAP Commerce Cloud in the Public Cloud systems and customers can consume the patch by building and deploying their SAP Commerce Cloud applications").
+    ground_truth_url: https://onapsis.com/blog/sap-security-patch-day-august-2026/
+    fix: Cite Onapsis for the rebuild-and-redeploy clause.
+  - code: F4
+    where: summary vs section 2026-08-16T04:35:00Z (outside the CVE-2026-42945 scope; sources not re-read)
+    claim: No exploitation is reported by any party
+    ground_truth: >-
+      (low confidence) The entry's own 2026-08-16 update says CVE-2026-58231 "is now being attacked" (Defused honeypot attempts 2026-08-14; NCSC-NL NCSC-2026-0302); tags also carry actively-exploited. The summary was not updated (4c(h)). Not independently verified in this pass.
+    ground_truth_url: entries/2026-08-12/sap-august-2026-cve-2026-58231-commerce-cloud-data-hub-rce.md (own section 2026-08-16)
+    fix: Update the summary to the newest state.
+  group: D1-d
+  role: distinct
+- entry: entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: immediate_action | updates[0].summary | section 2026-06-02T05:00:09Z
+    claim: >-
+      On 1 June, Belgium's Centre for Cybersecurity (CCB) and multiple outlets reported active in-the-wild exploitation ... CCB confirmed active exploitation on 1 June
+    ground_truth: >-
+      CCB updated its May Patch Tuesday advisory on 2026-05-29: "Updated on May 29, 2026 CVE-2026-41089 (Windows Netlogon) is now actively exploited in the wild"; BleepingComputer (2026-06-01) says CCB "warned on Friday" (2026-05-29). 1 June is BleepingComputer's and Help Net Security's publication date. The outlets all relay the single CCB statement.
+    ground_truth_url: >-
+      https://ccb.belgium.be/advisories/warning-microsoft-patch-tuesday-may-2026-patches-118-vulnerabilities-16-critical-102
+    fix: '"CCB warned on 2026-05-29 that CVE-2026-41089 is exploited; outlets reported it on 2026-06-01".'
+  - code: F9
+    where: immediate_action | section 2026-06-02 | cves[CVE-2026-41089].status
+    claim: 'now actively exploited / confirmed active exploitation ... status: exploited'
+    ground_truth: >-
+      BleepingComputer (updated 2026-06-02): CCB gave no details and told the outlet the information came from "trusted partners"; "A Microsoft spokesperson also told BleepingComputer that the company does not currently have any evidence to support the CBC's claims". MSRC still shows Exploited: No, "Exploitation Less Likely", last revised 2026-05-12; CVE-2026-41089 is not in CISA KEV (catalog 2026.10.08). The entry mentions only that Microsoft had not updated its advisory and calls the CCB claim "confirmed".
+    ground_truth_url: >-
+      https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/
+    fix: >-
+      Say "reported exploited by CCB (2026-05-29), unconfirmed by Microsoft, not in KEV" and add a Contradiction: line; status should not assert vendor-confirmed exploitation.
+  - code: F4
+    where: summary
+    claim: 16 of the CVEs were discovered by Microsoft's new MDASH AI scanning harness
+    ground_truth: >-
+      No cited source mentions MDASH or any AI-harness discovery count (Tenable, ZDI, Krebs, Help Net Security, BleepingComputer checked). "16" is the number of Critical-rated CVEs in Tenable/Krebs/CCB (118 total). BleepingComputer/Help Net Security say CVE-2026-41089 itself was found by Microsoft's Windows Attack Research & Protection (WARP) team.
+    ground_truth_url: https://www.tenable.com/blog/microsofts-may-2026-patch-tuesday-addresses-118-cves-cve-2026-41103
+    fix: Delete the sentence (or replace with "16 rated Critical").
+  - code: F4
+    where: body ¶1 (CVE-2026-41096)
+    claim: >-
+      heap overflow in `dnsapi.dll`: a crafted DNS response from a MitM or rogue resolver yields code execution as `NetworkService` on every Windows host
+    ground_truth: >-
+      ZDI: heap-based buffer overflow in the DNS Client triggered by a malicious DNS response, attacker positioned to influence responses (MitM, rogue server); MSRC: "Heap-based buffer overflow in Microsoft Windows DNS ... execute code over a network", assessment "Exploitation Unlikely". No source names dnsapi.dll or the NetworkService context.
+    ground_truth_url: https://www.thezdi.com/blog/2026/5/12/the-may-2026-security-update-review
+    fix: Remove dnsapi.dll and NetworkService; add "Exploitation Unlikely" per MSRC.
+  - code: F4
+    where: cves[CVE-2026-42898] and cves[CVE-2026-41103]
+    claim: 'CVE-2026-42898: auth: pre-auth ; CVE-2026-41103: type: rce'
+    ground_truth: >-
+      MSRC: CVE-2026-42898 "allows an authorized attacker to execute code over a network" (CVSS 3.1 9.9, PR:L, S:C); ZDI: "any authenticated user". CVE-2026-41103 is an Elevation of Privilege (identity forgery bypassing Entra ID, "Exploitation More Likely") per MSRC and Tenable, not RCE. The body states "authenticated" for 42898 correctly.
+    ground_truth_url: >-
+      https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-41089 (per-CVE JSON via tools/fetch_source.py msrc cve; May 2026 CVRF for fixed builds)
+    fix: '42898: auth post-auth; 41103: type priv-esc.'
+  - code: F4
+    where: body ¶1 "Detection concepts"
+    claim: >-
+      monitor Netlogon authentication-pattern anomalies (`4624 Logon Type 3` to DCs from unexpected internal sources, paired with `4769` ticket-request anomalies); alert on outbound DNS to non-corporate resolvers
+    ground_truth: >-
+      (low confidence) No cited source gives these detections. Help Net Security (Automox) lists: Netlogon service unexpectedly crashing or restarting, anomalous Netlogon traffic from non-DC source addresses, authentication failures or domain trust errors right after suspicious activity at a DC. EID 4769 (Kerberos service tickets) is unrelated to a Netlogon RPC overflow.
+    ground_truth_url: https://www.helpnetsecurity.com/2026/06/01/windows-netlogon-rce-exploited-cve-2026-41089/
+    fix: Use the Automox-sourced indicators.
+  - code: F8
+    where: body (fixed builds / Exposure)
+    claim: prioritise DCs first ... Roll out May 2026 Windows cumulative update
+    ground_truth: >-
+      MSRC (May 2026 CVRF) gives fixed builds for CVE-2026-41089: Server 2012 6.2.9200.26079 (KB5087470), 2012 R2 6.3.9600.23181 (KB5087471), 2016 10.0.14393.9140 (KB5087537), 2019 10.0.17763.8755 (KB5087538), 2022 10.0.20348.5074 (KB5087424), 2022 23H2 10.0.25398.2330 (KB5087541), 2025 10.0.26100.32772 (KB5087423); exposure is Windows Server acting as a domain controller. CERT-EU's table agrees for 2016-2025.
+    ground_truth_url: https://cert.europa.eu/publications/security-advisories/2026-007/
+    fix: Add the build table and the DC-only exposure statement.
+  - code: F11
+    where: techniques | body ATT&CK ids | actions | evidence
+    claim: >-
+      techniques: [] ; `T1210`, `T1071.004 Application Layer Protocol: DNS` (DNS Client), `T1078.004 Cloud Accounts`; actions[0] "... Disable Outlook Preview Pane fleet-wide ... See § 2"; actions[1] "(."
+    ground_truth: >-
+      Empty techniques[] with ids in prose (T1071.004 is C2 over DNS, not a malicious-response client exploit); actions[0] bundles five tasks, includes an unsourced Preview Pane instruction and an internal "§ 2" pointer; actions[1] ends in a truncated "(." and duplicates the DC-patching task (F18 d/e).
+    ground_truth_url: https://www.tenable.com/blog/microsofts-may-2026-patch-tuesday-addresses-118-cves-cve-2026-41103
+    fix: Populate techniques; collapse to one Netlogon DC action; delete the pointer and artifact.
+  - code: F17
+    where: classification
+    claim: 'classification: null'
+    ground_truth: >-
+      Every entry needs classification. Sources: Microsoft MSRC (owning vendor) + Tenable/ZDI/Krebs; exploitation single-sourced to CCB and disputed by Microsoft.
+    ground_truth_url: >-
+      https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-41089 (per-CVE JSON via tools/fetch_source.py msrc cve; May 2026 CVRF for fixed builds)
+    fix: classification A/3 for the roundup or A/2; exploitation claim is the weak part.
+  group: D1-e
+  role: survivor
+- entry: entries/2026-06-11/windows-netlogon-rce-cve-2026-41089-now-confirmed-exploited.md
+  verdict: factual-error
+  defects:
+  - code: F4
+    where: title | headline | summary
+    claim: >-
+      now confirmed exploited in the wild in the EU ... is now confirmed exploited in the wild in the EU by Belgium's CCB; CERT-EU issued advisory 2026-007
+    ground_truth: >-
+      CERT-EU 2026-007 (2026-06-10) says only "According to The Centre for Cybersecurity Belgium (CCB), this vulnerability is currently exploited by threat actors"; it does not confirm anything independently and no source says the exploitation is in the EU. Microsoft told BleepingComputer it had no evidence supporting CCB's claim and MSRC still marks Exploited: No / Exploitation Less Likely; not in CISA KEV (2026.10.08).
+    ground_truth_url: https://cert.europa.eu/publications/security-advisories/2026-007/
+    fix: '"reported exploited by Belgium''s CCB (CERT-EU relays it); Microsoft has not confirmed".'
+  - code: F4
+    where: body ¶1
+    claim: >-
+      an EU national authority has now attributed in-the-wild exploitation, roughly 20 days after the May 2026 Patch Tuesday fix
+    ground_truth: >-
+      CCB warned on 2026-05-29 (17 days after 2026-05-12); CERT-EU's advisory followed on 2026-06-10 (29 days after). Neither authority attributes the activity to an actor.
+    ground_truth_url: >-
+      https://ccb.belgium.be/advisories/warning-microsoft-patch-tuesday-may-2026-patches-118-vulnerabilities-16-critical-102
+    fix: '"CCB reported exploitation on 2026-05-29; CERT-EU relayed it on 2026-06-10".'
+  - code: F13
+    where: body ¶2
+    claim: >-
+      functionally a full Active Directory forest compromise, in the ZeroLogon lineage of Netlogon-channel attacks ([BleepingComputer, 2026-06-01])
+    ground_truth: >-
+      BleepingComputer does not mention ZeroLogon or forest compromise; it describes a crafted network request to a DC yielding code execution without prior access. The "forest-wide takeover" remark is Automox in Help Net Security, said about an already-compromised perimeter.
+    ground_truth_url: >-
+      https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/
+    fix: Cite as analyst inference or drop; do not attach it to BleepingComputer.
+  - code: F4
+    where: actions[0]
+    claim: >-
+      Where a DC cannot be patched immediately (legacy Server 2012/2012 R2 past ESU), isolate it behind a management VLAN with firewall rules blocking Netlogon from untrusted subnets
+    ground_truth: >-
+      MSRC ships fixes for Server 2012 (KB5087470) and 2012 R2 (KB5087471) and CERT-EU lists them as affected; "past ESU" is in no source. Help Net Security reports 0patch micropatches for Server 2008 R2, 2012 and 2012 R2. The isolation step is the entry's own suggestion.
+    ground_truth_url: https://www.helpnetsecurity.com/2026/06/01/windows-netlogon-rce-exploited-cve-2026-41089/
+    fix: Cite the KBs; attribute or drop the isolation advice.
+  - code: F11
+    where: body ¶1 | evidence | classification | techniques
+    claim: (originally covered 2026-W23 weekly) ; evidence publisher "ctipilot v2 brief (migrated)"
+    ground_truth: >-
+      Workflow vocabulary, self-quoted evidence, no classification, no techniques; the delta over the survivor is the CERT-EU advisory and its build table.
+    ground_truth_url: https://cert.europa.eu/publications/security-advisories/2026-007/
+    fix: Fold into 2026-05-13 as a changelog update; carry the CERT-EU table.
+  group: D1-e
+  role: duplicate
+  duplicate_of: 2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898
+  unique_material:
+  - fact: >-
+      CERT-EU advisory 2026-007 (2026-06-10, v1.0) relays CCB's report and gives affected builds: Server 2012/2012 R2; 2016 before 10.0.14393.9140; 2019 before 10.0.17763.8755; 2022 before 10.0.20348.5074; 2022 23H2 before 10.0.25398.2330; 2025 before 10.0.26100.32772 (matches MSRC's CVRF).
+    url: https://cert.europa.eu/publications/security-advisories/2026-007/
+  - fact: >-
+      Microsoft told BleepingComputer (update 2026-06-02) it has no evidence supporting CCB's claim; CCB's source was "trusted partners" and gave no details.
+    url: >-
+      https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/
+  - fact: >-
+      ACROS/0patch micropatches exist for CVE-2026-41089 on Windows Server 2008 R2, 2012 and 2012 R2; Automox guidance: patch all DCs in one window, restrict Netlogon at the network layer; indicators: Netlogon service crashes/restarts, Netlogon traffic from non-DC sources, auth failures or trust errors after suspicious activity.
+    url: https://www.helpnetsecurity.com/2026/06/01/windows-netlogon-rce-exploited-cve-2026-41089/
+- group: D1-a
+  decision: fold
+  survivor: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+  current_state:
+    cves:
+    - id: CVE-2026-0300
+      cvss: >-
+        9.3 (CVSS 4.0 CVSS-B/BT, AV:N; reduces to 8.7 with AV:A when the portal is restricted to trusted internal addresses)
+      cvss_source_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      affected: >-
+        PAN-OS on PA-Series and VM-Series firewalls with User-ID Authentication Portal (Captive Portal) enabled AND an interface management profile with response pages enabled on an L3 interface in a zone reachable from untrusted networks. Vulnerable: 12.1 < 12.1.4-h5 / < 12.1.7; 11.2 < 11.2.4-h17 / 11.2.7-h13 / 11.2.10-h6 / 11.2.12; 11.1 < 11.1.4-h33 / 11.1.6-h32 / 11.1.7-h6 / 11.1.10-h25 / 11.1.13-h5 / 11.1.15; 10.2 < 10.2.7-h34 / 10.2.10-h36 / 10.2.13-h21 / 10.2.16-h7 / 10.2.18-h6. Not affected: Cloud NGFW, Prisma Access, Panorama.
+      fixed: >-
+        Per-branch fixed builds: 12.1.4-h5, 12.1.7; 11.2.4-h17, 11.2.7-h13, 11.2.10-h6, 11.2.12; 11.1.4-h33, 11.1.6-h32, 11.1.7-h6, 11.1.10-h25, 11.1.13-h5, 11.1.15; 10.2.7-h34, 10.2.10-h36, 10.2.13-h21, 10.2.16-h7, 10.2.18-h6 (older unsupported versions: upgrade to a supported fixed version). Page timeline: 05-13 table/timeline update; 05-14 10.2.16-h7 and 05-16 10.2.13-h21 timeline updates; 05-28 timeline update for 11.1.15, 11.1.7-h6, 11.2.4-h17, 11.2.12. The Product Status table still tags 12.1.7 "(ETA: 05/28)" and the page does not show a later "released" marker; Palo Alto release notes were not readable, so shipment of the ETA-05/28 builds is inferred from the 05-28 revision, not read.
+      fixed_source_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      exploited: true
+      exploited_source_url: >-
+        https://security.paloaltonetworks.com/CVE-2026-0300 ("Limited exploitation has been observed") and https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+      kev: true
+    key_facts:
+    - fact: >-
+        CISA KEV: added 2026-05-06, due 2026-05-09, ransomware use Unknown, CWE-787 out-of-bounds write; 5/13/2026 note "Palo Alto has released a variety of patches".
+      url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+    - fact: >-
+        Unit 42 CL-STA-1132 (likely state-sponsored): failed attempts from 2026-04-09, RCE a week later via shellcode injected into an nginx worker, log destruction, EarthWorm/ReverseSocks5 tunnels, AD enumeration with the firewall service account, SAML flood on 2026-04-29 that failed the HA pair over to a second device which was then also exploited.
+      url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+    - fact: >-
+        Workaround: restrict User-ID Authentication Portal to trusted zones AND disable Response Pages in the Interface Management Profile on every L3 interface where untrusted traffic can ingress, or disable the portal; Threat ID 510019 (content 9097-10022) needs PAN-OS 11.1+.
+      url: https://security.paloaltonetworks.com/CVE-2026-0300
+    - fact: Original advisory already scheduled eight builds for 05/28 and nine for 05/13 (not a later delay).
+      url: https://arcticwolf.com/resources/blog/cve-2026-0300/
+  wrong_in_survivor:
+  - claim: >-
+      first-wave fixed builds now scheduled for 2026-05-13; until then interim mitigation remains the only option / no patched build is yet shipped
+    ground_truth: All branches now list fixed builds; first wave shipped 05-13, remaining builds 05-28 per timeline.
+    url: https://security.paloaltonetworks.com/CVE-2026-0300
+  - claim: Apply PAN-OS 12.1.4-h5 / 12.1.7 / 11.2 / 11.1 / 10.2 hot-fix branches
+    ground_truth: Name per-branch fixed builds from the advisory.
+    url: https://security.paloaltonetworks.com/CVE-2026-0300
+  - claim: the ~2026-04-09 first-observed-exploitation date
+    ground_truth: First (unsuccessful) attempts 2026-04-09; RCE a week later.
+    url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+  - claim: exploitation clusters have been actively abusing
+    ground_truth: One cluster (CL-STA-1132); exploitation described as limited.
+    url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+  notes: >-
+    All five entries report one finding (CVE-2026-0300 pre-auth RCE) and its patch-timeline developments; there is no distinct actor, victim or flaw. Survivor 2026-05-12 is the only member with a complete cves[] record, the vendor primary plus Unit 42, entities (campaign:cl-sta-1132), an actions[] item and a changelog record; the others are thinner and 05-09 is substantially fabricated (version list, signature IDs, Unit 42 details) while 05-18 inverts the meaning of the 10.2.13-h21/10.2.16-h7 fix builds. The survivor's text must be rewritten to the current state: fixed builds per branch from the PSIRT table, the 05-14/05-16/05-28 timeline revisions, the two-condition exposure test, and Unit 42 detection behavior. The original 2026-05-07 deep dive the legacy entries refer to is not in the store. A later pass should also add classification, techniques[] and affected_products[].
+- group: D1-b
+  decision: mixed
+  survivor: 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+  current_state:
+    cves:
+    - id: CVE-2026-42897
+      cvss: 8.1 (CVSS 3.1 base; temporal 7.5; AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N/E:F/RL:O/RC:C), MSRC severity Critical
+      cvss_source_url: >-
+        https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897 (read as per-CVE JSON via tools/fetch_source.py msrc cve CVE-2026-42897 and the rendered page)
+      affected: >-
+        Exchange Server 2016, 2019 and Subscription Edition, any update level below the June 2026 SU; Exchange Online not affected
+      fixed: >-
+        June 2026 SU (released 2026-06-09): Exchange SE RTM publicly; Exchange 2019 CU14/CU15 and 2016 CU23 only for Period 2 ESU customers. July 2026 SU (2026-07-14) is what MSRC now recommends ("to be protected from this vulnerability and related CVE-2026-55008"); after installing, mitigations M2.1.0 must be removed manually (block M2.1.0 from re-applying, remove the M2 IIS outbound rule; EOMT users run its rollback).
+      fixed_source_url: >-
+        https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491 ; https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146 ; https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897 (read as per-CVE JSON via tools/fetch_source.py msrc cve CVE-2026-42897 and the rendered page)
+      exploited: true
+      exploited_source_url: >-
+        https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897 (read as per-CVE JSON via tools/fetch_source.py msrc cve CVE-2026-42897 and the rendered page) (Exploited: Yes, "Exploitation Detected") and https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+      kev: true
+    key_facts:
+    - fact: 'CISA KEV: added 2026-05-15, due 2026-05-29, ransomware use Unknown.'
+      url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+    - fact: >-
+        MSRC revision history: v1 2026-05-14; v1.1 2026-05-18 FAQ (IE/IE-mode not protected by CSP-based mitigation); v2 2026-06-09 June SU links; v2.1 2026-07-14 FAQ (July SU recommended; related CVE-2026-55008).
+      url: >-
+        https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897 (read as per-CVE JSON via tools/fetch_source.py msrc cve CVE-2026-42897 and the rendered page)
+    - fact: 'CVE-2026-55008 (related, July 2026): Exchange Server spoofing, CVSS 9.6, MSRC exploited: No.'
+      url: https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-55008 (per-CVE JSON)
+    - fact: >-
+        Proofpoint: TA488 (Void Blizzard / Laundry Bear) campaign from 2026-07-22 against government, telecom, finance, hospitality and aerospace in the US and Europe; OWAReaper JavaScript implant with server-side persistence (Owner permission for the Default alias on all folders), GitHub-commit and email C2, HTTPS and DNS exfiltration; infrastructure dated March 2026 so zero-day use is "feasible" (Proofpoint's inference).
+      url: >-
+        https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+    - fact: >-
+        NCSC-CH Security Hub #12577 published 2026-05-15, appended the Proofpoint report 2026-07-30; status Actively Exploited.
+      url: https://security-hub.ncsc.admin.ch/#/posts/12577
+    - fact: >-
+        EEMS needs outbound 443 to officeclient.microsoft.com; hourly poll; installed with the September 2021 CU+ on Mailbox servers; builds older than March 2023 cannot fetch new mitigations; June 2026 SU also needed for EM service to use config files from July 2026 on.
+      url: >-
+        https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service ; https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+    - fact: >-
+        Pwn2Own Berlin 2026 Day 2: Orange Tsai (DEVCORE) chained 3 bugs for RCE as SYSTEM on Exchange ($200,000); a distinct, then-undisclosed chain. MSRC 2026-Aug credits Orange Tsai/ZDI for CVE-2026-62911 (Exchange EoP, CVSS 8.0, released 2026-08-11).
+      url: https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results
+  wrong_in_survivor:
+  - claim: officemitigations.microsoft.com
+    ground_truth: officeclient.microsoft.com (443)
+    url: >-
+      https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+  - claim: Exchange Team Blog update confirms the EM Service ... requires outbound HTTPS connectivity (2026-05-17)
+    ground_truth: 5/17 blog note is the OWACalendar.Proxy known issue; connectivity requirement is on the Learn page.
+    url: >-
+      https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+  - claim: The permanent fix is the July 2026 Security Update / affected ... prior to the July 2026 Security Update
+    ground_truth: First fixed in the June 2026 SU (2026-06-09); July SU recommended and covers CVE-2026-55008.
+    url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+  - claim: no permanent patch is available yet / No permanent patch yet (headline fields, actions[0])
+    ground_truth: Superseded by June/July SUs.
+    url: https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146
+  - claim: Get-ExchangeDiagnosticInfo -Process EdgeTransport -Component EmergencyMitigation
+    ground_truth: >-
+      Documented: Get-ExchangeServer | Format-List Name,MitigationsApplied; EM service is not installed on Edge Transport.
+    url: >-
+      https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+  notes: >-
+    Fold 2026-05-16 (brief item) and 2026-05-16 (deep dive) into 2026-05-18 (same flaw, same disclosure; the three are one finding at different dates). Survivor choice: 2026-05-18 is the only member with a changelog (the 07-31 TA488/OWAReaper update and the 08-30 improvement), classification (A/1), techniques, affected_products, per-CVE fixed/affected fields and registry links (actor:laundry-bear, tool:owareaper relations cite it), and the 05-16 twins carry no unique verified material except EEMS mechanics, the CSP/IE caveat, known issues and the KEV/credit details listed on each. Its headline/title/summary/immediate_action must be rewritten (wrong hostname, wrong attribution of the 5/17 blog note, no-patch framing, June vs July fix). 2026-05-17 (Pwn2Own DEVCORE chain) is a distinct finding (separate, then-undisclosed bugs found at Pwn2Own; no CVE in 2026-05) and should link via references[] rather than fold; it must drop CVE-2026-42897 from cves[], the exploited/KEV/no-patch tags, the "unauthenticated" claim and the non-verbatim ZDI quote. Note the 05-17 entry overlaps the store's Pwn2Own roundup (2026-05-17/pwn2own-berlin-2026-master-of-pwn-outcomes-the-new-ai-agents) and the 2026-08-29 CVE-2026-62911 entry, either of which could host it. BSI WID-SEC-2026-1536 (cited by the 05-16 twins) is a JavaScript portal no fetch rung could read, so it is unverified.
+- group: D1-c
+  decision: mixed
+  survivor: >-
+    2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre (CVE-2026-20182 finding) ; 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi (CVE-2026-20245 finding)
+  current_state:
+    cves:
+    - id: CVE-2026-20182
+      cvss: 10.0 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H), CWE-287
+      cvss_source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+      affected: >-
+        Cisco Catalyst SD-WAN Controller (vSmart), Manager (vManage) and, since advisory v2.0 on 2026-06-16, Validator (vBond), regardless of configuration, all deployment types (on-prem, Cloud-Pro, Cisco-managed cloud, FedRAMP). Earlier than 20.9: migrate.
+      fixed: >-
+        20.9 -> 20.9.9.1; 20.10 and 20.11 -> 20.12.7.1; 20.12 -> 20.12.5.4 / 20.12.6.2 / 20.12.7.1; 20.13 and 20.14 -> 20.15.5.2; 20.15 -> 20.15.4.4 / 20.15.5.2; 20.16 -> 20.18.2.2; 20.18 -> 20.18.2.2; 26.1 -> 26.1.1.1; Cisco-managed cloud already fixed (20.15.506). No workaround. Run `request admin-tech` before upgrading.
+      fixed_source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+      exploited: true
+      exploited_source_url: >-
+        https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW ("In May 2026, Cisco PSIRT became aware of limited exploitation") and https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/ (UAT-8616, high confidence)
+      kev: true
+    - id: CVE-2026-20245
+      cvss: 7.8 (CVSS 3.1 AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H)
+      cvss_source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+      affected: >-
+        Cisco Catalyst SD-WAN Controller, Manager and Validator, regardless of configuration, all deployment types; attacker needs netadmin privileges (valid credentials or exploitation of CVE-2026-20182 / CVE-2026-20127).
+      fixed: >-
+        First fixed: 20.9.9.2 (for 20.9.9.1 and earlier), 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1 (for 20.18.2.2 and earlier and 20.18.3), 26.1.1.2; no workaround; Live Protect shield (2026-07-15) is temporary partial protection only.
+      fixed_source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+      exploited: true
+      exploited_source_url: >-
+        https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx ("In June 2026, the Cisco PSIRT became aware of exploitation") and https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager (zero-day exploitation in April 2026)
+      kev: true
+    key_facts:
+    - fact: >-
+        CISA KEV: CVE-2026-20182 added 2026-05-14 (due 2026-05-17), required action cites ED 26-03 and its hunt-and-hardening supplement; CVE-2026-20245 added 2026-06-09 (due 2026-06-23). ED 26-03 itself was issued 2026-02-25 (updated 2026-03-11) and covers CVE-2026-20127 and CVE-2022-20775.
+      url: https://www.cisa.gov/news-events/directives/ed-26-03-mitigate-vulnerabilities-cisco-sd-wan-systems
+    - fact: >-
+        Talos: UAT-8616 (highly sophisticated, activity since at least 2023, ORB overlap) exploited CVE-2026-20182; ten separate clusters since March 2026 exploit CVE-2026-20133/20128/20122 (Manager) using the ZeroZenX PoC and XenShell and other webshells.
+      url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+    - fact: >-
+        Mandiant: CVE-2026-20245 exploited as a zero-day in April 2026 at a service provider after rogue-peering initial access; no actor named; Cisco credits Mandiant.
+      url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    - fact: >-
+        Cisco advisory dates: 20182 advisory published 2026-05-14 per Cisco's later advisory ("published on May 14, 2026"); its revision table lists v1.0 and v1.1 as 2026-05-27 and v2.0 (Validator added) 2026-06-16; 20245 advisory v1.0 2026-06-04 ... v1.10 2026-07-21.
+      url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+    - fact: >-
+        Distinct later finding: CVE-2026-76504 (Cisco Catalyst SD-WAN Manager unauthenticated login-path bypass, KEV added 2026-09-30) already references both survivors.
+      url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+  wrong_in_survivor:
+  - claim: '[20182 survivor] CISA Emergency Directive ED-26-03 issued 2026-05-14'
+    ground_truth: ED 26-03 issued 2026-02-25 (updated 2026-03-11); KEV addition of 20182 on 2026-05-14 cites it.
+    url: https://www.cisa.gov/news-events/directives/ed-26-03-mitigate-vulnerabilities-cisco-sd-wan-systems
+  - claim: '[20182 survivor] SSH access to the SD-WAN Manager on NETCONF TCP/830'
+    ground_truth: Controller (vSmart) per Rapid7/Cisco.
+    url: >-
+      https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/
+  - claim: '[20245 survivor] (no patch) in title/headline/summary/body/actions'
+    ground_truth: Fixed releases shipped 2026-06-10 to 06-12 (final) and 07-21; Live Protect shield 07-15.
+    url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+  - claim: '[20245 survivor] CVE-2026-20245 type auth-bypass, zero-click, pre-auth, cvss n/a'
+    ground_truth: CVSS 7.8, authenticated local netadmin priv-esc/command injection.
+    url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+  - claim: '[20245 survivor] zero-day at a communications service provider from late 2025 through March 2026'
+    ground_truth: 20245 exploited April 2026 at a service provider; late 2025-March 2026 were rogue peerings.
+    url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+  - claim: '[20245 survivor] foothold via CVE-2026-20127/20182 stated as fact'
+    ground_truth: 'Mandiant: possible only; March peerings did not use 20182 and may use stolen certificate material.'
+    url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+  notes: >-
+    Two findings, so two folds and one link. (1) CVE-2026-20182: the two 05-15 entries (brief item and deep dive) fold into the brief item 2026-05-15/cve-2026-20182-..., which has the Cisco PSIRT primary, the correct fixed-release list, priority critical and is already the target of references[] in the later 2026-10-02 CVE-2026-76504 entry; the deep dive adds the verified Rapid7 mechanics and Cisco/Talos hunt material but misattributes the other clusters' webshell/C2/miner tooling to UAT-8616 (F13), uses a wrong device-type numbering, and carries revoked ATT&CK ids. A third 05-15 entry (2026-05-15/uat-8616-exploits-cisco-catalyst-sd-wan-cve-2026-20182-10-cl, same CVE, same sources, "ED-26-03 issued" in its title) is outside this batch but belongs to the same fold; it should be checked by whoever owns it. (2) CVE-2026-20245: the 06-26 Mandiant deep dive duplicates the 06-06 survivor, which already absorbed two Mandiant-day entries via merged_from and has the changelog; fold 06-26 into 06-06. (3) The two survivors are distinct findings (a 10.0 peering authentication bypass vs a 7.8 authenticated command injection to root chained after netadmin access, exploited in different campaigns) and link through references[] in both directions (the 06-06 entry carries CVE-2026-20182/-20127 in cves[] with references: [] today, which the gate treats as an undeclared overlap). The later CVE-2026-76504 entry is a third, distinct flaw and already links both. Unverified: the Cisco advisory's revision table shows v1.0 for 20182 as 2026-05-27 while Cisco's own 20245 advisory, KEV (05-14), Rapid7 and Talos date publication 2026-05-14; the entries' 05-14 date is consistent with those.
+- group: D1-d
+  decision: mixed
+  survivor: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  current_state:
+    cves:
+    - id: CVE-2026-42945
+      cvss: >-
+        9.2 (CVSS 4.0, F5/NCSC-CH/depthfirst/Security Affairs); GHSA "Critical"; 8.1 (CVSS 3.x) is the figure SAP lists in Security Note 3773203; NGINX project advisory severity "medium"
+      cvss_source_url: >-
+        https://securityaffairs.com/192132/hacking/nginx-rift-an-18-year-old-flaw-in-the-worlds-most-deployed-web-server-just-came-to-light.html ; https://security-hub.ncsc.admin.ch/#/posts/12575 (read via tools/fetch_source.py ncsc-csh post 12575) ; https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html ; https://nginx.org/en/security_advisories.html
+      affected: >-
+        NGINX Open Source 0.6.27-1.30.0 (nginx.org); NGINX Plus R32-R36; Instance Manager 2.16.0-2.21.1; F5 WAF for NGINX 5.9.0-5.12.1; NGINX App Protect WAF 4.9.0-4.16.0 and 5.1.0-5.8.0; F5 DoS for NGINX 4.8.0; App Protect DoS 4.3.0-4.7.0; Gateway Fabric 1.3.0-1.6.2 and 2.0.0-2.5.1; Ingress Controller 3.5.0-3.7.2, 4.0.0-4.0.1, 5.0.0-5.4.1 (Security Affairs; F5 advisory unreadable); only configurations with a rewrite using an unnamed capture and "?" in the replacement followed by rewrite/if/set; RCE only with ASLR disabled, otherwise worker crash loop (DoS). SAP Commerce Cloud public-cloud with NGINX (COM_CLOUD / DHUB_CLOUD 2211, 2211-JDK21) per SAP Note 3773203.
+      fixed: >-
+        NGINX Open Source 1.30.1 / 1.31.0 (nginx.org: not vulnerable 1.31.0+, 1.30.1+); NGINX Plus R32 P6 / R36 P4 (Security Affairs); workaround: replace unnamed captures with named captures; SAP: fixed on all SAP Commerce Cloud public-cloud systems, consumed by rebuild and redeploy (Onapsis).
+      fixed_source_url: >-
+        https://nginx.org/en/security_advisories.html ; https://securityaffairs.com/192132/hacking/nginx-rift-an-18-year-old-flaw-in-the-worlds-most-deployed-web-server-just-came-to-light.html ; https://onapsis.com/blog/sap-security-patch-day-august-2026/
+      exploited: true
+      exploited_source_url: >-
+        https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html (VulnCheck honeypot exploitation attempts reported 2026-05-17; purpose and impact unknown)
+      kev: false
+    key_facts:
+    - fact: >-
+        Discovery/disclosure: depthfirst system found the bug 2026-04-18, reported 2026-04-21, NGINX confirmed 2026-04-24, RCE PoC shared 2026-05-05, F5 advisory and depthfirst post 2026-05-13; public PoC at depthfirstdisclosures/nginx-rift; vulnerable code in src/http/ngx_http_script.c since 0.6.27 (2008).
+      url: https://depthfirst.com/research/nginx-rift-achieving-nginx-rce-via-an-18-year-old-vulnerability
+    - fact: >-
+        NCSC-CH Security Hub #12575 published 2026-05-15 (status UNKNOWN, PoC Available; RCE needs ASLR disabled; temporary named-capture workaround).
+      url: https://security-hub.ncsc.admin.ch/#/posts/12575
+    - fact: >-
+        Not in CISA KEV (catalog 2026.10.08). Three further NGINX flaws patched in the same release (CVE-2026-42946, -40701, -42934) are separate.
+      url: >-
+        https://securityaffairs.com/192132/hacking/nginx-rift-an-18-year-old-flaw-in-the-worlds-most-deployed-web-server-just-came-to-light.html
+    - fact: 'SAP downstream: Security Note 3773203 (CVE-2026-42945, High 8.1) in SAP Security Patch Day 2026-08-11.'
+      url: https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html
+  wrong_in_survivor:
+  - claim: responsibly disclosed to F5/NGINX on 2026-04-18, with RCE PoC shared ... under NDA on 2026-04-28
+    ground_truth: reported 04-21; PoC shared 05-05; 04-28 only told NGINX a PoC existed; no NDA.
+    url: https://depthfirst.com/research/nginx-rift-achieving-nginx-rce-via-an-18-year-old-vulnerability
+  notes: >-
+    Fold 05-18 into 05-15: same flaw, and the 05-18 entry's only delta is VulnCheck's honeypot exploitation attempts (and it is itself framed as "UPDATE (originally covered ...)"); it should become a changelog update (type update) on 05-15 worded as attempts, not "confirmed exploitation". Survivor 05-15 has the depthfirst primary, NCSC-CH, the exact trigger pattern and the correct affected/fixed lists. The SAP August entry is a distinct finding (SAP Commerce Cloud public-cloud remediation via Note 3773203; it carries CVE-2026-42945 only because SAP lists the upstream NGINX CVE there, and its main subject is CVE-2026-58231) and should link both ways via references[] (it currently has references: []). F5 advisory K000161019 could not be read by any rung, so CVSS 3.1/CWE-122 in the survivor and the F5 version table remain unconfirmed against the vendor page.
+- group: D1-e
+  decision: fold
+  survivor: 2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898
+  current_state:
+    cves:
+    - id: CVE-2026-41089
+      cvss: 9.8 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H; temporal 8.5, E:U)
+      cvss_source_url: >-
+        https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-41089 (per-CVE JSON via tools/fetch_source.py msrc cve; May 2026 CVRF for fixed builds)
+      affected: >-
+        Windows Server 2012 through 2025 acting as a domain controller (stack-based buffer overflow in Windows Netlogon); unauthenticated, network-reachable; SYSTEM on the DC
+      fixed: >-
+        May 12 2026 updates: 2012 6.2.9200.26079 (KB5087470); 2012 R2 6.3.9600.23181 (KB5087471); 2016 10.0.14393.9140 (KB5087537); 2019 10.0.17763.8755 (KB5087538); 2022 10.0.20348.5074 (KB5087424); 2022 23H2 10.0.25398.2330 (KB5087541); 2025 10.0.26100.32772 (KB5087423)
+      fixed_source_url: >-
+        https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-41089 (per-CVE JSON via tools/fetch_source.py msrc cve; May 2026 CVRF for fixed builds) (May 2026 CVRF Remediations) ; https://cert.europa.eu/publications/security-advisories/2026-007/
+      exploited: true
+      exploited_source_url: >-
+        Reported, not vendor-confirmed: https://ccb.belgium.be/advisories/warning-microsoft-patch-tuesday-may-2026-patches-118-vulnerabilities-16-critical-102 (updated 2026-05-29) ; https://cert.europa.eu/publications/security-advisories/2026-007/ (relays CCB) ; contested: https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/ (Microsoft: no evidence). MSRC: Exploited: No, Exploitation Less Likely, last revised 2026-05-12
+      kev: false
+    - id: CVE-2026-41096
+      cvss: '9.8'
+      cvss_source_url: MSRC per-CVE JSON (tools/fetch_source.py msrc cve CVE-2026-41096)
+      affected: Windows DNS Client (heap-based buffer overflow, malicious DNS response)
+      fixed: May 2026 Windows updates
+      fixed_source_url: https://www.thezdi.com/blog/2026/5/12/the-may-2026-security-update-review
+      exploited: false
+      exploited_source_url: 'MSRC: Exploited: No, Exploitation Unlikely'
+      kev: false
+    - id: CVE-2026-41103
+      cvss: '9.1'
+      cvss_source_url: MSRC per-CVE JSON
+      affected: Microsoft SSO Plugin for Jira & Confluence (elevation of privilege via forged identity, bypassing Entra ID)
+      fixed: Plugin update per MSRC
+      fixed_source_url: https://www.tenable.com/blog/microsofts-may-2026-patch-tuesday-addresses-118-cves-cve-2026-41103
+      exploited: false
+      exploited_source_url: 'MSRC: Exploited: No, Exploitation More Likely'
+      kev: false
+    - id: CVE-2026-42898
+      cvss: 9.9 (PR:L, S:C)
+      cvss_source_url: MSRC per-CVE JSON
+      affected: Microsoft Dynamics 365 (on-premises); authenticated code injection
+      fixed: Per MSRC (fixed-version number updated 2026-05-13)
+      fixed_source_url: https://www.thezdi.com/blog/2026/5/12/the-may-2026-security-update-review
+      exploited: false
+      exploited_source_url: 'MSRC: Exploited: No, Exploitation Unlikely'
+      kev: false
+    key_facts:
+    - fact: >-
+        May 2026 Patch Tuesday: 118 CVEs per Tenable/CCB (16 Critical, 102 Important), 120 per BleepingComputer/Help Net Security, 138 per ZDI (30 Critical); no zero-days at release.
+      url: >-
+        https://www.tenable.com/blog/microsofts-may-2026-patch-tuesday-addresses-118-cves-cve-2026-41103 ; https://www.thezdi.com/blog/2026/5/12/the-may-2026-security-update-review
+    - fact: >-
+        CCB (Belgium) updated its advisory on 2026-05-29 to say CVE-2026-41089 is now actively exploited; BleepingComputer/Help Net Security reported 2026-06-01; CERT-EU advisory 2026-007 on 2026-06-10; Microsoft says it has no evidence.
+      url: >-
+        https://ccb.belgium.be/advisories/warning-microsoft-patch-tuesday-may-2026-patches-118-vulnerabilities-16-critical-102
+    - fact: CVE-2026-41089 is not in CISA KEV (catalog 2026.10.08); CVE-2026-41096/41103/42898 are not either.
+      url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+  wrong_in_survivor:
+  - claim: On 1 June, Belgium's CCB ... reported / CCB confirmed active exploitation on 1 June
+    ground_truth: CCB warned 2026-05-29; outlets 2026-06-01.
+    url: >-
+      https://ccb.belgium.be/advisories/warning-microsoft-patch-tuesday-may-2026-patches-118-vulnerabilities-16-critical-102
+  - claim: 16 of the CVEs were discovered by Microsoft's new MDASH AI scanning harness
+    ground_truth: No cited source; 16 is the Critical count.
+    url: https://www.tenable.com/blog/microsofts-may-2026-patch-tuesday-addresses-118-cves-cve-2026-41103
+  - claim: heap overflow in `dnsapi.dll` ... as `NetworkService`
+    ground_truth: Not in any source.
+    url: https://www.thezdi.com/blog/2026/5/12/the-may-2026-security-update-review
+  - claim: CVE-2026-42898 auth pre-auth; CVE-2026-41103 type rce
+    ground_truth: 42898 requires an authorized attacker; 41103 is EoP.
+    url: >-
+      https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-41089 (per-CVE JSON via tools/fetch_source.py msrc cve; May 2026 CVRF for fixed builds)
+  - claim: exploitation "confirmed" (no Contradiction line)
+    ground_truth: 'Microsoft says no evidence; MSRC Exploited: No; not in KEV.'
+    url: >-
+      https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/
+  notes: >-
+    Fold 2026-06-11 into 2026-05-13. Both are the CVE-2026-41089 exploitation-status story; the 06-11 entry adds only the CERT-EU advisory relay and its build table (the CCB exploitation report it describes is already the 06-02 update on the survivor), and it overstates ("confirmed ... in the EU") what CERT-EU says. The survivor is a four-CVE Patch Tuesday roundup, but it already hosts the lifecycle of this finding (immediate_action, priority critical, 06-02 exploitation update, registry/store references), so the 06-11 delta belongs there as a type update (CERT-EU relay) rather than as a second entry; the audit may alternatively split the Netlogon finding into its own entry, but must then keep exactly one of them. Survivor text must be corrected for the CCB date (05-29), the contested exploitation (Contradiction: line), the unsupported MDASH/dnsapi.dll/NetworkService claims, the per-CVE type/auth fields, and should carry the MSRC build table.

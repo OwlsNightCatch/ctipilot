@@ -77,7 +77,7 @@ evidence:
   - quote: "We can confirm that we are the company that has been subjected to an attack where our legal access to search for information in the CPR system has been abused"
     publisher: "The Copenhagen Post (Ritzau)"
     source_url: "https://cphpost.dk/2026-10-10/news/round-up/123456-password-used-in-massive-danish-cpr-data-breach/"
-verification: single-source-victim
+verification: multi-source
 sourcing_note: >
   The Danish ministry and the CPR administration, which runs the register, disclose the incident themselves; Datatilsynet relays
   the register's notification and DR's live blog reports the authorities' press briefing of 2026-10-06. The company's name is its
@@ -113,6 +113,13 @@ updates:
       former employee's password, a claim. Ritzau puts the access at 21 days and 17 hours from 10 September, where the minister
       had described about ten days.
     fields: [title, headline, summary, techniques, sources, evidence, sourcing_note, body]
+  - at: "2026-10-11T13:52:44Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    internal: true
+    summary: >
+      The verification value moves from single-source-victim to multi-source: the incident now rests on the authorities' own disclosure plus independent reporting by Datatilsynet and DR, and Politiken's and TV 2's reporting as relayed by Ritzau and TT, all cited in the entry.
+    fields: [verification]
 migrated_from: null
 ---
 

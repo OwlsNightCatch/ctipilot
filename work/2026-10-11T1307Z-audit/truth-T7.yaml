@@ -1,0 +1,421 @@
+# T7 retrospective truth pass, run 2026-10-11T1307Z-audit
+- entry: entries/2026-09-17/cve-2026-58704-google-pixel-modem-zero-click-eop.md
+  verdict: clean
+  style_advisory: one em dash only in the '## Correction — <at>' heading (permitted exception)
+  defects: []
+- entry: entries/2026-09-17/cve-2026-76460-cisco-ise-auth-bypass-root-rce.md
+  verdict: imprecision
+  style_advisory: em dashes in title, immediate_action, cves[CVE-2026-76423].fixed, defender-takeaway and Triage lines (site
+    strips them at render; style defect only)
+  defects:
+  - code: F4
+    where: body ¶1
+    claim: Cisco confirms the flaw was found while resolving a customer's TAC support case, not internal research
+    ground_truth: (low confidence) The advisory says only "This vulnerability was found during the resolution of a Cisco Technical
+      Assistance Center (TAC) support case." It does not say the case was a customer's or that the flaw was not found by internal
+      research (the sibling hardening advisory is the one that says its flaws were "found during internal testing"). "customer's"
+      and "not internal research" are inference.
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ISE-ABP-VNSW7Tn5
+    fix: Cisco states the flaw was found during the resolution of a Cisco TAC support case (drop "customer's" and ", not internal
+      research"; same for title/headline/summary "customer support case").
+  - code: F5
+    where: section 2026-09-18T05:06:00Z
+    claim: Cisco groups multiple underlying flaws sharing a CWE classification for a hardening release under one CVE ID, with
+      the CVSS score representing the highest-scoring underlying flaw in each bundle.
+    ground_truth: The clause carries no inline citation. The hardening advisory states it ("grouped these issues by their
+      underlying vulnerability class - Common Weakness Enumeration (CWE) - and assigned a single Common Vulnerabilities and
+      Exposures identifier"; "The CVSS score ... represents the maximum potential severity of the single most impactful underlying
+      vulnerability within that specific CWE category").
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-ise-XU5EwX5T
+    fix: Append the Cisco PSIRT hardening advisory citation (2026-09-16) to that clause.
+  - code: F4
+    where: cves[CVE-2026-20130]
+    claim: 'type: rce'
+    ground_truth: (low confidence) The hardening advisory describes CVE-2026-20130 only as CWE-74 "Improper neutralization
+      of special elements in output used by a downstream component (covers command injection, cross-site scripting, xml injection,
+      code injection, and resource injection)", a grouped class at CVSS 10.0; NCSC-NL calls it grouped input-neutralization
+      flaws. No source calls it a remote code execution vulnerability (Cisco's notice lists RCE separately under CVE-2026-20211/20176/20307).
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-ise-XU5EwX5T
+    fix: 'Use the injection class (e.g. type: injection / other per taxonomy) instead of rce.'
+  - code: F4
+    where: techniques
+    claim: 'techniques: [T1190, T1068]'
+    ground_truth: '(low confidence) T1190 is active and supported. No cited source describes a privilege escalation: Cisco
+      says successful exploitation of the unauthenticated bypass lets threat actors "obtain command execution with root privileges",
+      which is the service''s execution context, and the flaw is not a local/low-privilege escalation. T1068 (active in the
+      pin) is not source-supported.'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ISE-ABP-VNSW7Tn5
+    fix: Drop T1068 or keep only if the maintainers treat the unauthenticated-to-root outcome as privilege escalation; optionally
+      add T1070 only if the "evidence ... may be removed or hidden" statement is to be mapped.
+- entry: entries/2026-09-17/ddrop-dram-interposer-defeats-confidential-computing.md
+  verdict: clean
+  style_advisory: em dash only in the '## Correction — <at>' heading; sources[] heise record (https://www.heise.de/news/DDROP-Adapterstecker-hebelt-Confidential-Computing-aus-11454579.html)
+    is cited nowhere in the body (F11, gate entry-shape WARN class)
+  defects: []
+- entry: entries/2026-09-17/kairos-libercourt-commune-ransomware-confirmed.md
+  verdict: factual-error
+  style_advisory: em dash only in the '## Correction — <at>' heading (permitted exception)
+  defects:
+  - code: F14
+    where: body ¶2 (Defender takeaway)
+    claim: Kairos has now listed three small municipal administrations in France and Spain, the same victim class as Swiss
+      communes
+    ground_truth: 'Ransomware.live''s Kairos group page lists at least four municipal administrations, not three: Libercourt
+      (discovered 2026-09-02), Velilla de San Antonio (August), Commune De Camiers (France; "discovered on 2026-05-29 that
+      Commune De Camiers has been claimed by Kairos") and Ayuntamiento de Valdemoro ("discovered on 2026-05-11"; "a town in
+      the Madrid region"). The cited sources name only three of them, and none states a total or that they are "small" (Valdemoro
+      is described as a town; no source gives sizes).'
+    ground_truth_url: https://www.ransomware.live/group/kairos
+    fix: 'Drop the count and "small": "Kairos has also claimed the Madrid-region municipalities of Valdemoro and Velilla de
+      San Antonio, the same victim class as Swiss communes" (or "at least four municipal administrations in France and Spain"
+      with the ransomware.live group page cited).'
+  - code: F4
+    where: summary / body ¶1 / headline
+    claim: The Kairos ransomware group had listed the commune on its leak site on 2026-09-02
+    ground_truth: '(low confidence) The cited Ransomware.live record says only "Ransomware.live discovered on 2026-09-02 that
+      Ville de Libercourt has been claimed by Kairos ransomware group" (Discovered 2026-09-02 14:25 UTC, est. attack date
+      2026-09-02): 2026-09-02 is the tracker''s discovery date, so the leak-site listing is dated "on or before 2026-09-02",
+      not "on 2026-09-02". The "thirteen days before the commune''s own confirmation" and "two weeks earlier" derive from
+      that same date.'
+    ground_truth_url: https://www.ransomware.live/id/VmlsbGUgZGUgTGliZXJjb3VydEBrYWlyb3M=
+    fix: '"Ransomware.live recorded the leak-site claim on 2026-09-02" (and "about thirteen days before" -> "at least thirteen
+      days before").'
+  - code: F4
+    where: techniques
+    claim: 'techniques: [T1486]'
+    ground_truth: (low confidence) The commune's statement (relayed by FrenchBreaches) says "attaque par rançongiciel" and
+      that "le fonctionnement des services municipaux n'a pas été impacté"; no source states that any system was encrypted,
+      so T1486 (Data Encrypted for Impact, active) rests on the word "rançongiciel" alone. Ransomware.live describes Kairos
+      as a data-theft group with no encryption.
+    ground_truth_url: https://frenchbreaches.com/alertes/ville-de-libercourt-mu3s726lzo8j6uv1ta
+    fix: Keep T1486 only if the maintainers accept the label as sufficient; otherwise map the stated behavior (data exfiltration)
+      and note that no encryption is reported.
+- entry: entries/2026-09-17/mandiant-ai-risk-resilience-report-2026.md
+  verdict: factual-error
+  style_advisory: em dashes throughout the body prose (10 lines incl. title) plus the permitted Update/Correction heading
+    form; site strips them
+  defects:
+  - code: F4
+    where: summary + body ¶ Case study 7
+    claim: a customer-service RAG agent that leaked cross-tenant PII via indirect prompt injection in forum comments  /  an
+      attacker embedded hidden instructions inside a public forum post, which the model interpreted as system-level commands
+      once retrieved, hijacking its reasoning to exfiltrate other customers' PII from cross-tenant support tickets directly
+      into its response stream
+    ground_truth: 'Mandiant describes an assessment finding, not an observed leak: "While the customer had strong controls
+      around the vector database, they did not consider indirect prompt injection ... When the RAG agent retrieved these entries
+      to resolve legitimate user inquiries, the model could interpret the embedded instructions as system-level commands.
+      This could potentially hijack the model''s reasoning, causing it to exfiltrate sensitive data from other customers''
+      support tickets and expose PII ..." No source says an attacker did this or that PII leaked.'
+    ground_truth_url: https://cloud.google.com/security/resources/ai-risk-and-resilience-2026
+    fix: Restate as a vulnerability Mandiant identified in a customer's RAG agent (indirect prompt injection via forum comments
+      and support tickets could cause cross-tenant PII exposure), not an incident; fix the summary clause ("leaked" -> "was
+      assessed as exposed to leaking") and the Case study 7 heading/verb tense.
+  - code: F5
+    where: 'body: Case study 3, Case study 4, Case study 5, Case study 7, the cross-cutting recommendation paragraph and the
+      Defender takeaway'
+    claim: (paragraphs carry no inline citation, e.g. "**Case study 4 — just-in-time polymorphic malware.** Malware using
+      embedded, lightweight local AI inference fingerprints the active security tools on a host ...")
+    ground_truth: Every fact in these paragraphs comes from the Mandiant report, but no link follows any sentence in them
+      (only case studies 1, 2, 6 and 8 and the opening paragraph carry the Mandiant link).
+    ground_truth_url: https://cloud.google.com/security/resources/ai-risk-and-resilience-2026
+    fix: Add the "([Mandiant, 2026-09-15](https://cloud.google.com/security/resources/ai-risk-and-resilience-2026))" citation
+      to the factual sentence of each of those paragraphs.
+  - code: F4
+    where: body ¶ Case study 1 (and headline)
+    claim: 'An attacker compromised a SaaS provider by poisoning an external software package that a developer''s active AI
+      coding-assistant session then recommended installing  ...  the actor then re-poisoned the organization''s own package
+      namespace  /  headline: a poisoned dependency revived the Shai-Hulud worm'
+    ground_truth: 'The report says the threat actor "compromised a software-as-a-service (SaaS) provider and hijacked an active
+      AI coding assistant session on a developer''s workstation"; the assistant then "recommended the installation of an external
+      software package that had been poisoned by the attacker". The poisoned package is a step after the session hijack, not
+      how the provider was compromised; the entry omits the hijack. It also says the actor "poisoned a package inside the
+      organization''s official namespace" (not "re-poisoned"), and nothing says the worm was "revived" (heading: "Weaponizing
+      active developer AI sessions to deploy the ''Shai-Hulud worm''").'
+    ground_truth_url: https://cloud.google.com/security/resources/ai-risk-and-resilience-2026
+    fix: '"A threat actor compromised a SaaS provider and hijacked a developer''s active AI coding-assistant session; the
+      assistant, as a trusted interpreter, recommended a package the attacker had poisoned ... then poisoned a package in
+      the organization''s own namespace." Replace "revived" in headline/title with "deployed".'
+  - code: F4
+    where: body ¶ Case study 2 and Case study 6
+    claim: co-debugging a multi-worker credential-harvesting framework to cut its exfiltration cycle to three hours  /  locking
+      the production ledger database
+    ground_truth: 'Case study 2: the AI helped "construct a multi-worker data-harvesting framework ... to increase data exfiltration
+      frequency to a rapid three-hour cycle" (data-harvesting, not credential-harvesting; credentials are the outcome later
+      in the text). Case study 6: the agent had "direct read/write access to internal billing databases" and caused "severe
+      local database locking that halted active business transactions"; no source says a "production ledger database" was
+      locked.'
+    ground_truth_url: https://cloud.google.com/security/resources/ai-risk-and-resilience-2026
+    fix: '"multi-worker data-harvesting framework"; "causing severe local database locking that halted active business transactions".'
+  - code: F4
+    where: body ¶ cross-cutting recommendation
+    claim: replace static service-account identities with cryptographically bound, lifecycle-integrated agent identities (such
+      as SPIFFE-based Workload Identity Federation)
+    ground_truth: The report says "transitioning away from traditional service accounts toward dynamic, cryptographically
+      bound lifecycle-integrated identities (such as Agent Identity)"; Workload Identity Federation and SPIFFE appear only
+      in pillar 1 as controls for decoupling compute identity from data access.
+    ground_truth_url: https://cloud.google.com/security/resources/ai-risk-and-resilience-2026
+    fix: '"(such as Google''s Agent Identity)", with Workload Identity Federation and SPIFFE kept to the pillar-1 description.'
+  - code: F4
+    where: summary
+    claim: Mandiant's second annual AI Risk and Resilience report
+    ground_truth: (low confidence) The report refers only to "the previous AI risk and resilience report (2025 lookback)";
+      nothing says this is the second annual edition.
+    ground_truth_url: https://cloud.google.com/security/resources/ai-risk-and-resilience-2026
+    fix: '"Mandiant''s 2026 AI Risk and Resilience report, the follow-up to its 2025 edition".'
+  - code: F4
+    where: techniques
+    claim: T1554 (Case study 3, tampered CLI hooks)
+    ground_truth: (low confidence) T1554 is "Compromise Host Software Binary" (persistence). The report says an attacker "poisoned
+      an internal AI repository and tampered with the assistant's underlying CLI hooks ... achieved remote code execution
+      (RCE) natively through the AI platform's standard operational workflow"; no binary modification is described.
+    ground_truth_url: https://cloud.google.com/security/resources/ai-risk-and-resilience-2026
+    fix: Remove T1554 or map the hook/plugin tampering to a technique the source describes (supply-chain/dev-tool compromise
+      is already T1195.001).
+- entry: entries/2026-09-18/brevo-cloudflare-worker-clickfix-supply-chain.md
+  verdict: clean
+  style_advisory: no em dashes outside the permitted Correction headings
+  defects: []
+- entry: entries/2026-09-18/cve-2026-87886-acronis-backup-plugin-lpe-cpanel-kev.md
+  verdict: factual-error
+  style_advisory: em dash in title (site strips it at render; style defect only)
+  defects:
+  - code: F4
+    where: summary / affected_products / cves[CVE-2026-87886].affected+fixed / actions[0]
+    claim: 'fixed builds are available for both products  (affected_products: "Acronis Backup plugin for cPanel & WHM (Linux)",
+      "Acronis Backup extension for Plesk (Linux)"; affected: "... cPanel & WHM before build 1.9.3.1021; extension for Plesk
+      before build 1.8.11.638 (both Linux)")'
+    ground_truth: 'Acronis''s own advisory SEC-10986 (readable as JSON at its api/v1 endpoint; the HTML page is a client-side
+      app) lists THREE products: {"name":"Acronis Backup plugin for cPanel & WHM","patched":"1.9.3.1021"}, {"name":"Acronis
+      Backup extension for Plesk","patched":"1.8.11.638"} and {"name":"Acronis Backup plugin for DirectAdmin","patched":"1.2.3.238","platforms":["Linux"]};
+      severity high, CVSS 7.8 CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H; CWE-276; description "Exploitation of this vulnerability
+      has been detected in the wild in limited, targeted attacks against Acronis Backup plugin for cPanel & WHM deployments."'
+    ground_truth_url: https://security-advisory.acronis.com/api/v1/advisories/SEC-10986
+    fix: Add "Acronis Backup plugin for DirectAdmin (Linux)" to affected_products, add it (fixed in build 1.2.3.238) to cves[].affected/fixed,
+      the body fixed-version sentence and the action, and change "both products" to the three products.
+  - code: F6
+    where: sources / sourcing_note
+    claim: Acronis's own advisory page (security-advisory.acronis.com/advisories/SEC-10986) is a client-side-rendered application
+      returning no readable content on any transport tried
+    ground_truth: 'The advisory content is readable: https://security-advisory.acronis.com/api/v1/advisories/SEC-10986 returns
+      the advisory as JSON (id, CVE, CWE-276, CVSS 7.8 vector, three products with patched builds, exploitation sentence,
+      published 2026-09-17T13:30:00Z). The vendor advisory can therefore be the primary and the entry should cite it instead
+      of Help Net Security.'
+    ground_truth_url: https://security-advisory.acronis.com/api/v1/advisories/SEC-10986
+    fix: 'Cite https://security-advisory.acronis.com/advisories/SEC-10986 as role: primary (vendor PSIRT) and rewrite the
+      sourcing_note.'
+- entry: entries/2026-09-18/cve-2026-91843-check-point-security-mgmt-stack-overflow.md
+  verdict: clean
+  style_advisory: em dashes in title and sourcing_note (site strips them at render; style defect only)
+  defects: []
+- entry: entries/2026-09-18/gyazo-helpfeel-data-breach-image-upload-rce.md
+  verdict: clean
+  style_advisory: 'no em dashes outside permitted heading. Optional wording note (low confidence, not a defect): headline
+    says the ''unguessable link'' model ''collapsed''; Helpfeel says the leaked IDs ''could be used'' to view images and that
+    it ''cannot rule out'' private images were viewed. Helpfeel''s notice also carries later updates (service suspended 2026-09-24,
+    resumed 2026-09-27) that the entry does not mention.'
+  defects: []
+- entry: entries/2026-09-18/ntc-swiss-solar-inverter-cybersecurity-assessment.md
+  verdict: imprecision
+  style_advisory: one em dash only inside the verbatim NTC evidence quote (source text); none in prose
+  defects:
+  - code: F17
+    where: classification
+    claim: 'classification: reliability: A, credibility: 2'
+    ground_truth: (low confidence) The only primary is the NTC's own publication (en.ntc.swiss), and the NTC is not in sources/sources.json
+      at all, so it has no A-tier standing there; SRF and cash.ch only relay the NTC. The rest of the store rates vendor-neutral
+      research labs and report publishers B (e.g. the DDRop and Mandiant entries of the same batch). A reflects "completely
+      reliable" and rests on no recorded track record for this institute.
+    ground_truth_url: https://en.ntc.swiss/news/cybersecurity-of-photovoltaic-systems
+    fix: 'reliability: B (credibility 2 stays: one assessor, several publishers).'
+- entry: entries/2026-09-19/cisa-kev-linux-kernel-ktls-af-alg-ebtables-snat.md
+  verdict: factual-error
+  style_advisory: 'no em dashes outside permitted headings. Named lead decided below (F3 record): all three fixed-version
+    lists are correct; only the CVE-to-ChangeLog binding is not carried by the cited pages.'
+  defects:
+  - code: F4
+    where: cves[CVE-2026-53266].affected
+    claim: 'affected: "≤ 6.18.35; branch-dependent, see body"'
+    ground_truth: The kernel CNA's CVE record lists 7.0.13 as the first unaffected 7.0.x ({'version':'7.0.13','lessThanOrEqual':'7.0.*','status':'unaffected'})
+      and 7.1 as the mainline fix, so 7.0.0 through 7.0.12 are affected. "≤ 6.18.35" therefore excludes the 7.0 train that
+      the entry's own fixed list (7.0.13, added by the 2026-09-30 correction) names. The same record starts the affected range
+      at 5.10 (plus 5.4.73-5.4.x, 5.8.17, 5.9.2 test branches), and the body has no branch breakdown for "see body" to point
+      at.
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-53266
+    fix: 'affected: "from 5.10 up to the per-branch fix (5.10.259, 5.15.210, 6.1.176, 6.6.143, 6.12.94, 6.18.36, 7.0.13);
+      mainline fixed in 7.1; also requires ebtables SNAT ARP-rewrite rules on a bridge". Drop "see body".'
+  - code: F4
+    where: cves[CVE-2025-39682].affected
+    claim: 'affected: "≤ 6.16.3 on kernels using kernel TLS; branch-dependent, see body"'
+    ground_truth: (low confidence) The kernel CNA record gives the introducing commit as 84c61fe1a75b (first affected version
+      6.0) and marks everything below 6.0 unaffected ({'version':'0','lessThan':'6.0','status':'unaffected'}); fixed in 6.1.149,
+      6.6.103, 6.12.44, 6.16.4 and mainline 6.17. "≤ 6.16.3" with no lower bound makes 5.10/5.15 and RHEL 8/9-class kernels
+      look affected although only 6.0+ is.
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2025-39682
+    fix: 'affected: "6.0 up to the branch fix (6.1.149, 6.6.103, 6.12.44, 6.16.4; mainline fixed in 6.17), only where kernel
+      TLS is in use".'
+  - code: F3
+    where: body ¶1 (fixed stable kernels sentence) and cves[].fixed
+    claim: 'Fixed stable kernels, each confirmed in kernel.org''s release ChangeLog: CVE-2025-39682 in [6.1.149](.../v6.x/ChangeLog-6.1.149),
+      [6.6.103], [6.12.44] and [6.16.4]; CVE-2025-39964 in [5.10.245] ... [6.16.9]; CVE-2026-53266 in [5.10.259] ... [7.0.13]'
+    ground_truth: 'Named lead decided: the fixed-release claims are CORRECT, not mis-bound. Each ChangeLog carries the branch
+      fix commit that CISA''s KEV record (notes field) and the kernel CNA record list for that CVE, e.g. ChangeLog-6.1.149
+      has "commit 2902c3ebcca52ca845c03182000e8d71d3a5196f ... tls: fix handling of zero-length records on the rx_list ...
+      commit 62708b9452f8eb77513115b17c4f8d1a22ebf843 upstream" (CVE-2025-39682); ChangeLog-6.1.154/6.6.108/... carry "crypto:
+      af_alg - Disallow concurrent writes in af_alg_sendmsg" with the KEV SHAs (0f28c4adbc4a, e4c1ec11132e, 1f323a48e9b5,
+      7c4491b5644e, 9aee87da5572, 45bcf60fe49b, mainline 1b34cbbf4f01) for CVE-2025-39964; ChangeLog-5.10.259 ... 7.0.13 carry
+      "netfilter: bridge: make ebt_snat ARP rewrite writable" with the KEV SHAs (bf84ad7c7a9e, 76280b78cc9f, b7e91939ba9b,
+      afd64b59c3de, 153ea96c806a, b18675263db1, c9b5ff59feff, mainline 67ba971ae025) for CVE-2026-53266. All 17 release dates
+      equal the sources[] dates. The kernel CNA records list exactly these releases as the first unaffected per branch. The
+      ChangeLogs name commits, never CVE ids (0 of 17 pages contain a CVE id), so the page itself does not bind CVE to release;
+      the binding comes from the KEV notes / CVE records.'
+    ground_truth_url: https://cdn.kernel.org/pub/linux/kernel/v6.x/ChangeLog-6.1.149
+    fix: 'Keep the version lists. Make the binding citable: cite CISA''s KEV record (already a source; its notes list the
+      per-branch git.kernel.org/stable/c/<sha> fix commits) or the kernel CNA record (https://cveawg.mitre.org/api/cve/CVE-2025-39682
+      etc., fetched this pass) for "CVE X is fixed by these commits/releases", and reword to "each release''s ChangeLog contains
+      the fix commit" so the ChangeLogs vouch only for the commit, not the CVE id.'
+- entry: entries/2026-09-19/cve-2026-81642-cve-2026-82717-unbound-dnssec-rce.md
+  verdict: imprecision
+  style_advisory: one em dash in actions[0] ('...to 1.26.1 now — normal recursive resolution...'); site strips it at render
+  defects:
+  - code: F8
+    where: summary + actions[0] + body takeaway
+    claim: Any DNSSEC-validating resolver that can be made to resolve an attacker-registered zone must patch to 1.26.1 now.  /  Patch
+      every DNSSEC-validating Unbound resolver to 1.26.1 now
+    ground_truth: 'The DNSSEC-validation prerequisite (NCSC post 12957: "Prerequisites: Resolver must have DNSSEC validation
+      active, and query routing must allow the attacker''s malicious DNS zone to be parsed") belongs to CVE-2026-81642 only.
+      NLnet Labs lists CVE-2026-82717 (CNAME synthesis during an upstream response, "Unbound up to and including version 1.26.0",
+      severity High, impact "Denial of service and possible remote code execution") with no DNSSEC or validation precondition,
+      and the NCSC post itself says the secondary flaw CVE-2026-82717 "also allows remote code execution via heap corruption
+      during upstream response CNAME synthesis". A non-validating Unbound at <= 1.26.0 is therefore still affected by CVE-2026-82717,
+      but the summary and the action tell the reader to patch only validating resolvers.'
+    ground_truth_url: https://nlnetlabs.nl/projects/unbound/security-advisories/
+    fix: '"Patch every Unbound resolver at <= 1.26.0 to 1.26.1 now; CVE-2026-81642 additionally requires DNSSEC validation,
+      CVE-2026-82717 does not."'
+  - code: F4
+    where: cves[CVE-2026-82717].cvss / correction 2026-09-30
+    claim: 'No citable source publishes a CVSS score for CVE-2026-82717, so the 8.4 given for it earlier is withdrawn.  (cves:
+      cvss: null)'
+    ground_truth: '(low confidence) NLnet Labs'' own security-advisories page publishes a CVSS 4.0 vector for CVE-2026-82717:
+      Severity "High" linked to CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/E:U (and for CVE-2026-81642
+      "Critical", CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/E:U/U:Red). The page gives no numeric score,
+      so "no numeric score is published" is right, but "no citable source publishes a CVSS score" misses that the vendor publishes
+      the vector.'
+    ground_truth_url: https://nlnetlabs.nl/projects/unbound/security-advisories/
+    fix: Record the vendor's severity and vector for CVE-2026-82717 in cves[].cvss (e.g. "High (vendor CVSS 4.0 vector AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/E:U;
+      no numeric score published)") and cite the NLnet Labs advisory page.
+- entry: entries/2026-09-19/waterplum-contagious-interview-joint-advisory-scale.md
+  verdict: imprecision
+  style_advisory: one em dash in the Triage paragraph ('...clipboard — legitimate build tooling...'); sources[] The Record
+    and heise records are cited nowhere in the body (F11, entry-shape WARN class); lure via recruiters on social/job platforms
+    is described but T1566.003 (Spearphishing via Service, active) is not in techniques[] (F11 advisory, low confidence)
+  defects:
+  - code: F5
+    where: labelled line Triage
+    claim: BeaverTail/InvisibleFerret/OtterCookie-family execution shows up as a `node` or `python` process spawned from an
+      IDE or terminal session shortly after a new project folder is opened or an `npm install` completes, followed by outbound
+      connections to non-corporate destinations and API calls against browser credential stores or the clipboard
+    ground_truth: (low confidence) The Triage paragraph carries no inline citation. The advisory (all 9 pages read) describes
+      the malware families, the NPM/GitHub/Bitbucket delivery, the data targeted (browser authentication data, clipboard,
+      key-logs, screenshots, wallet data) and the VS Code ".vscode/tasks.json" auto-run on trusting the folder; it gives no
+      process lineage (node/python spawned from an IDE, npm install timing) or network pattern. The VS Code half is supported;
+      the rest is analyst inference presented as observed behavior.
+    ground_truth_url: https://www.ic3.gov/CSA/2026/260918.pdf
+    fix: Cite the advisory for the VS Code tasks.json mechanism and the data-targeting list, and mark the node/python process-lineage
+      description as a hunting inference ("expect ...") or drop it.
+- entry: entries/2026-09-20/oracle-september-2026-cspu-five-unauthenticated-cvss-10.md
+  verdict: clean
+  style_advisory: 'no em dashes outside permitted headings. Verification method (for the record): parsed all 673 rows of Oracle''s
+    risk matrices on https://www.oracle.com/security-alerts/cspusep2026.html (673 rows = the stated 673 patches); the rows
+    with CVSS >= 9.8, Attack Vector Network, Privs None, User Interaction None and Remote Exploit without Auth = Yes are exactly
+    50 (44 at 9.8, 6 at 10.0) and that set is identical to the entry''s 50 cves[] ids; every score, affected version string,
+    component and protocol in cves[].affected matches its matrix row (only the T3/IIOP separator formatting differs); product
+    counts per family (Access Manager 1+4, Forms 1+5, Internet Directory 1+5, Platform Security for Java 1+2, WebLogic 1+3,
+    other FMW 13, EBS 3, HFM 1+2, BIEE 1, BI Publisher 1, EM 2, Communications Unified Assurance 2, PLA 1) match the Update
+    section; the six CVSS 10.0 rows are Changed-scope with C/I/A High except HFM A None, as the body says; the 15 other >=9.8
+    rows are CVSS 9.9 PR:Low / not unauthenticated and are correctly excluded; none of the 50 is in the CISA KEV feed (catalog
+    2026.10.08); 153/78 FMW, 159/19 EBS, 50/8 Analytics, 31/23 Communications and the third-Tuesday schedule (20 Oct CPU,
+    17 Nov and 15 Dec CSPU, 19 Jan 2027 CPU) match the page; NCSC-NL NCSC-2026-0372 published 2026-09-16 with Kans high /
+    Schade high and the five FMW CVSS 10.0 ids; BleepingComputer 2026-08-17 says Cl0p began exploiting an Oracle EBS zero-day
+    in early August 2025. The four evidence quotes are verbatim on the Oracle page.'
+  defects: []
+- entry: entries/2026-09-21/afpa-third-party-accommodation-tool-data-extraction.md
+  verdict: imprecision
+  style_advisory: 'no em dashes outside permitted heading. Substance verified: all quotes (3 evidence, with originals), the
+    971,420 / 1,732,811 figures, ''a day apart'', AFPA''s hedged link to the vendor-hosted accommodation-management tool,
+    FrenchBreaches'' warning not to sum the figures and the extra fields (date of birth, internal id, partner information,
+    e-mail, nationality, 2006-2026) all match the three fetched pages. Minor translation drift in evidence[1]: original says
+    ''les services et systèmes d''information de l''Afpa'', the English adds ''own''.'
+  defects:
+  - code: F3
+    where: sources[] dates + inline citations "(Cyberattaque.org, 2026-09-19)" and "(FrenchBreaches, 2026-09-19)"
+    claim: '[Cyberattaque.org, 2026-09-19](https://www.cyberattaque.org/afpa-pres-dun-million-de-dossiers-revendiques-apres-une-cyberattaque/)
+      · [FrenchBreaches, 2026-09-19](https://frenchbreaches.com/alertes/afpa-mu4jbja3w3es4t7j0a8)'
+    ground_truth: (low confidence) Cyberattaque.org's JSON-LD and visible dateline give datePublished 2026-09-15T21:41:46+00:00
+      (dateModified 2026-09-19T12:46:37+00:00); FrenchBreaches' page date is 2026-09-16 with a banner "Mise à jour le samedi
+      19 septembre à 10h00". The entry dates both by their later update (2026-09-19), four days and three days after the dateline
+      a reader sees. Clubic (2026-09-20) matches its own date.
+    ground_truth_url: https://www.cyberattaque.org/afpa-pres-dun-million-de-dossiers-revendiques-apres-une-cyberattaque/
+    fix: Date the citations by the pages' publication dates (2026-09-15 and 2026-09-16) or keep the update date but say "updated"
+      in the source record; sources[].date and inline citation text must stay equal.
+  - code: F17
+    where: classification
+    claim: 'classification: reliability: B, credibility: 1'
+    ground_truth: '(low confidence) The entry''s own sourcing_note says Clubic relays an AFP wire story quoting AFPA''s deputy
+      director and that Cyberattaque.org and FrenchBreaches "paraphrase AFPA''s confirmation": every fact about AFPA''s confirmation,
+      the 1.7 million figure and the vendor-hosted tool traces to one origin (AFPA via AFP/franceinfo). The two breach trackers
+      add independent sample reviews of the claimed data fields only. By the same logic the store applied to the NTC entry
+      ("one assessor with several publishers, which rates 2"), credibility 2 fits; 1 means confirmed by independent sources.'
+    ground_truth_url: https://www.clubic.com/actualite-630454-cyberattaque-de-lafpa-jusqua-17-million-de-dossiers-potentiellement-compromis-apres-une-faille-dun-prestataire.html
+    fix: 'credibility: 2 (reliability B stays).'
+- entry: entries/2026-09-21/conference-phishing-rogue-root-ca-mitm-persistence.md
+  verdict: factual-error
+  style_advisory: 'no em dashes outside permitted headings. Verified against both Huntress posts: all three evidence quotes
+    verbatim, the 27-day interval, the three stolen certificates (Norwegian company, Discord Inc., Lenovo), the CA/hosts-file/firewall-rule
+    persistence, the per-host CA, private key on disk, VirusTotal as the only observed target, and the declared Windows-path
+    contradiction (2026-08-19 vs 2026-09-15) are accurate.'
+  defects:
+  - code: F4
+    where: body ¶1
+    claim: The manual download led to a disk image bundling its own Gatekeeper-bypass instructions and password prompt, which
+      delivered a confirmed AMOS-family stealer harvesting browser, crypto-wallet, Telegram, Apple Notes, cookie and login-keychain
+      data
+    ground_truth: 'Huntress does not confirm the family: the 2026-08-19 write-up says "Static analysis of the disk image reveals
+      characteristics highly consistent with Atomic macOS Stealer (AMOS)", and the 2026-09-15 recap says "The ultimate payload
+      appeared to be a variant of the AMOS stealer that attempted to collect the following". No execution result confirming
+      delivery of stolen data is described; the researcher did not run the payload.'
+    ground_truth_url: https://www.huntress.com/blog/defcon-phishing-google-doc-malware
+    fix: '"...which static analysis found highly consistent with the AMOS stealer (it targets browser passwords and cookies,
+      crypto wallets, keychain data, Telegram files and the Notes database)".'
+  - code: F5
+    where: body ¶1 (macOS sentence)
+    claim: On macOS, the pasted command launched a piped zsh chain that never delivered a payload in Huntress's testing, because
+      the fetched URL looped through redirects.
+    ground_truth: 'No citation ends this sentence (the Huntress link only follows the next sentence). The 2026-08-19 write-up
+      carries it: "in our testing it got caught in a redirect loop ... the browser made 108 requests, but gave up after receiving
+      repeated 301 Moved Permanently responses".'
+    ground_truth_url: https://www.huntress.com/blog/defcon-phishing-google-doc-malware
+    fix: Add the ([Huntress Labs, 2026-08-19](https://www.huntress.com/blog/defcon-phishing-google-doc-malware)) citation
+      to that sentence.
+  - code: F11
+    where: techniques
+    claim: 'techniques: [T1566.003, T1204.002, T1204.004, T1027.010, T1059.001, T1553.002, T1553.004, T1219, T1546.015, T1102.002,
+      T1071.001, T1518, T1557]'
+    ground_truth: 'Process hollowing is clearly described in the body and both sources ("hollows MsBuild.exe ... runs its
+      payload inside that trusted Microsoft binary") but T1055.012 (Process Hollowing, active in the pinned dataset) is not
+      mapped. Also (low confidence): T1546.015 is COM hijacking, while Huntress says NetSupport "registers its own COM object",
+      not that it hijacks one; the Winlogon modification and Windows service persistence (T1547.004 / T1543.003) and the Run
+      entry are described but unmapped.'
+    ground_truth_url: https://www.huntress.com/blog/defcon-phishing-google-doc-malware
+    fix: Add T1055.012; drop or justify T1546.015; optionally add T1547.004, T1543.003.
+  - code: F9
+    where: body ¶1 / title ("conference-targeted")
+    claim: 'A conference-targeted phishing chain ...  (takeaway: Any organization whose staff attend security conferences
+      should treat unsolicited ... Google Docs ... as a live reconnaissance vector)'
+    ground_truth: (low confidence) The 2026-08-19 write-up says "phishing campaigns that target attendees"; the 2026-09-15
+      recap says the account's outreach was a "volume play" "instead of specific targeting of DEFCON attendees", with posts
+      calling the account out "dating back to October 2025". The entry declares one Huntress-vs-Huntress contradiction (the
+      Windows paths) but not this one.
+    ground_truth_url: https://www.huntress.com/blog/google-doc-sidebar-malware-mac-windows
+    fix: 'Add a Contradiction sentence: Huntress''s write-up frames the outreach as aimed at conference attendees; its recap
+      calls it a volume play (boilerplate lure) rather than specific targeting; the account has been reported as a scammer
+      since October 2025.'

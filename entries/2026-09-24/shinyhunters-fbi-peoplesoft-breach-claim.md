@@ -155,6 +155,7 @@ sourcing_note: "Multi-source on the defacement and takedown, the FBI's statement
 confidence: medium
 references:
   - 2026-06-11/shinyhunters-oracle-peoplesoft-campaign-gadget-chain-access
+  - 2026-06-28/naic-breached-via-oracle-peoplesoft-zero-day-shinyhunters-pu
 deep_dive: false
 deep_dive_category: null
 org_triage: null
@@ -218,6 +219,12 @@ updates:
       replaces the 2026-09-23 position that the point of breach was undetermined. Nextgov/FCW also relays Reuters' report of a
       suspected member of the group detained in Jordan and helping investigators.
     fields: [title, headline, summary, classification, sources, evidence, sourcing_note, body]
+  - at: "2026-10-11T13:57:22Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    summary: >
+      Adds CyberScoop's citation to two sentences it carries (the DiMaggio and Kaiser warnings and DiMaggio's brand assessment) and attributes the FBI's non-confirmation to BleepingComputer's recap of the bureau's first response, which its later statements overtook. A reference to the earlier entry on the shared CVE is added; the two are distinct findings.
+    fields: [body, references]
 migrated_from: null
 ---
 
@@ -229,7 +236,7 @@ The extortion group ShinyHunters claims it breached the FBI's own recruitment in
 
 ## Update — 2026-09-27T04:36:00Z
 
-ShinyHunters has now given a partial answer of its own to the central open question, whether its claimed FBI-specific zero-day was real. Mandiant/GTIG's report on a separate, wider mass-exploitation wave against the already-known CVE-2026-35273 documents a URL-encoded WAF-bypass technique (requesting `/%50SEMHUB/` in place of `/PSEMHUB/`), and BleepingComputer reports: "ShinyHunters has confirmed to BleepingComputer that they used this WAF bypass against FBI Jobs, but continue to claim that they also exploited "NEW unknown vulnerability in the same PSEMHUB component."" ([BleepingComputer, 2026-09-26](https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/)). By the group's own account, at least part of the FBI Jobs intrusion used a known technique against a known CVE rather than the wholly undisclosed zero-day it first claimed, though ShinyHunters still claims an additional, still-unconfirmed vulnerability was also involved. The FBI has not confirmed that its systems were breached or that data was stolen ([BleepingComputer, 2026-09-26](https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/)), and no party has confirmed or denied either technical claim.
+ShinyHunters has now given a partial answer of its own to the central open question, whether its claimed FBI-specific zero-day was real. Mandiant/GTIG's report on a separate, wider mass-exploitation wave against the already-known CVE-2026-35273 documents a URL-encoded WAF-bypass technique (requesting `/%50SEMHUB/` in place of `/PSEMHUB/`), and BleepingComputer reports: "ShinyHunters has confirmed to BleepingComputer that they used this WAF bypass against FBI Jobs, but continue to claim that they also exploited "NEW unknown vulnerability in the same PSEMHUB component."" ([BleepingComputer, 2026-09-26](https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/)). By the group's own account, at least part of the FBI Jobs intrusion used a known technique against a known CVE rather than the wholly undisclosed zero-day it first claimed, though ShinyHunters still claims an additional, still-unconfirmed vulnerability was also involved. BleepingComputer's recap of the FBI's first response says the bureau confirmed it was investigating but did not confirm that its systems were breached or that data was stolen ([BleepingComputer, 2026-09-26](https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/)), and no party has confirmed or denied either technical claim.
 
 ## Update — 2026-09-29T04:45:00Z
 
@@ -251,7 +258,7 @@ information on agency personnel specialties, multiple sources said"
 ([CyberScoop, 2026-09-28](https://cyberscoop.com/fbi-data-breach-shinyhunters-agent-safety-risk/)). Security
 researchers Jon DiMaggio (Arkem Cyber) and Cynthia Kaiser (a former FBI official, now at Halcyon) warn the
 exposure creates counterintelligence and physical-safety risk for agents on sensitive cases, and that data
-already shared with journalists as proof samples is irretrievably disseminated regardless of any later takedown.
+already shared with journalists as proof samples is irretrievably disseminated regardless of any later takedown ([CyberScoop, 2026-09-28](https://cyberscoop.com/fbi-data-breach-shinyhunters-agent-safety-risk/)).
 ShinyHunters told Nextgov/FCW it will not publish the stolen data: "Since the very beginning we had made our
 decision that we would never publish this data. We have never intended to nor have we ever planned to"
 ([Nextgov/FCW, 2026-09-28](https://www.nextgov.com/cybersecurity/2026/09/shinyhunters-says-it-wont-publish-fbi-data/416280/)).
@@ -268,7 +275,7 @@ Multiple sources cited by Krebs describe a teenage cybercriminal known as "Rey,"
 and driven what they call "a major pivot away from the more measured tenor of the hacking gang's operations", toward high-risk targets including the FBI and Cl0p; sources say the FBI defacement reused artwork associated with the arrested suspect, possibly to pin the FBI intrusion on him rather than on the group's current operators. CyberScoop separately
 quotes DiMaggio's independent assessment that "ShinyHunters" today operates as a criminal brand used by a fluid
 network rather than a single fixed group, corroborating the brand-fragmentation picture without itself
-confirming the ScatteredLapsussHunters/Rey narrative.
+confirming the ScatteredLapsussHunters/Rey narrative ([CyberScoop, 2026-09-28](https://cyberscoop.com/fbi-data-breach-shinyhunters-agent-safety-risk/)).
 
 ## Correction — 2026-09-30T06:56:58Z
 
@@ -285,3 +292,7 @@ FBI cybersecurity chief Brett Leatherman gave Nextgov/FCW the bureau's clearest 
 This replaces the FBI's statement of 2026-09-23 that the point of breach, a third party or its own enterprise, was undetermined: the failure is now placed at a third-party-managed platform. The FBI's statement names neither the product, the contractor nor a CVE, and Nextgov/FCW notes it does not say why the patch was missed ([Nextgov/FCW, 2026-10-06](https://www.nextgov.com/cybersecurity/2026/10/fbi-removes-accenture-contractor-after-missed-security-patch-led-breach/416441/)). The link to CVE-2026-35273 stays ShinyHunters' account, given to BleepingComputer ([BleepingComputer, 2026-09-26](https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/)).
 
 Nextgov/FCW relays Reuters' report of 2026-10-03 that a suspected ShinyHunters member had been detained in Jordan and was helping investigators ([Nextgov/FCW, 2026-10-06](https://www.nextgov.com/cybersecurity/2026/10/fbi-removes-accenture-contractor-after-missed-security-patch-led-breach/416441/)). SecurityWeek says this is the member known as Rey ([SecurityWeek, 2026-10-06](https://www.securityweek.com/fbi-blames-contractors-missed-patch-for-shinyhunters-breach/)). An FBI spokesperson told The Register on 2026-10-05 that the bureau has "already worked with partners to arrest multiple subjects" while declining to comment on specific arrests ([The Register, 2026-10-05](https://www.theregister.com/security/2026/10/05/fbi-confirms-multiple-arrests-related-to-shinyhunters-hack/5301178)). SecurityWeek adds that a post urging organizations to pay has been removed from the group's site while its most recent victim post is dated 2026-09-22 ([SecurityWeek, 2026-10-06](https://www.securityweek.com/fbi-blames-contractors-missed-patch-for-shinyhunters-breach/)).
+
+## Correction — 2026-10-11T13:57:22Z
+
+BleepingComputer's 2026-09-26 recap describes the FBI's first response: the bureau confirmed it was investigating claims of unauthorized activity affecting FBIjobs.gov but did not confirm that its systems were breached or that data was stolen ([BleepingComputer, 2026-09-26](https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks/)); the FBI's later statements, recorded in the updates above, overtook that position.

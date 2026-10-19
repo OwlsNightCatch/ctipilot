@@ -19,7 +19,7 @@ tags: [nation-state, espionage, phishing, cloud, china-nexus]
 regions: [apac]
 sectors: [public-sector]
 entities: ["actor:uat-11587", "malware:antino", "actor:jewelbug"]
-techniques: [T1566.002, T1684.002, T1204.002, T1218.005, T1059.007, T1059.001, T1027, T1140, T1620, T1574.001, T1102.002, T1547.001, T1105, T1041, T1583.006]
+techniques: [T1566.002, T1684.002, T1204.002, T1218.005, T1059.007, T1059.001, T1027, T1140, T1620, T1574.001, T1102.002, T1547.001, T1105, T1041, T1583.006, T1059.003, T1082, T1083]
 affected_products: []
 cves: []
 sources:
@@ -55,7 +55,14 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-10-11T13:52:16Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Maps the backdoor's command-shell execution, host-information collection and directory listing, which Talos's command table describes and the body already states (T1059.003, T1082, T1083).
+    fields: [techniques]
 migrated_from: null
 ---
 

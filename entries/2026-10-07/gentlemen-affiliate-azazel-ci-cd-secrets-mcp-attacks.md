@@ -6,8 +6,8 @@ headline: "CloudSEK: a Gentlemen affiliate reached victims through stolen GitLab
 summary: >
   CloudSEK analysed two exposed servers of "Azazel", a Russian-speaking affiliate of the Gentlemen ransomware group who also
   ran his own leak site, and reports about 6 TB of stolen data from some two dozen organisations, among
-  them government-adjacent infrastructure. It says every confirmed victim was reached through stolen CI/CD secrets, mainly
-  GitLab variable stores and git history, that one deeper intrusion into an AI platform chained server-side request forgery, a
+  them government-adjacent infrastructure. It says every victim outside one AI-platform intrusion was reached through stolen CI/CD secrets, mainly
+  GitLab variable stores and git history, and that the deeper intrusion into an AI platform chained server-side request forgery, a
   recovered master key that decrypted the configuration and a token recovered from git history, and that Azazel drove attack commands through an MCP
   server on a local port. The report is a single source and names no victim.
 discovered_at: "2026-10-07T04:46:00Z"
@@ -45,7 +45,9 @@ sourcing_note: >
   victims it identified before publication, and the sector, country and volume figures are its own counts. Its text says more
   than two dozen victims in six countries, while the victim chart on the same page shows 22 victims across ten named countries
   and six unattributed. CloudSEK says it has not
-  identified earlier public reporting of MCP used as an attack execution channel in a live criminal campaign.
+  identified earlier public reporting of MCP used as an attack execution channel in a live criminal campaign. Its key
+  findings say every confirmed victim was reached through stolen CI/CD secrets, while its own account of the AI-platform
+  intrusion begins with server-side request forgery against an image API.
 confidence: medium
 references: []
 deep_dive: false
@@ -56,7 +58,13 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-10-11T13:53:27Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    summary: >
+      CloudSEK's key finding says every confirmed victim was reached through stolen CI/CD secrets, but its own account of the AI-platform intrusion starts with a server-side request forgery in an image API, and elsewhere it says every victim outside that engagement was reached through CI/CD secrets. The summary now carries the qualified form and the sourcing note states the inconsistency.
+    fields: [summary, sourcing_note]
 migrated_from: null
 ---
 
@@ -71,3 +79,7 @@ Every victim outside one deeper intrusion was reached the same way: GitLab CI/CD
 **Triage:** legitimate backup jobs also mirror object storage to remote destinations, so the discriminator is the destination and the source host, not the copy command itself ([CloudSEK, 2026-10-05](https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files)).
 
 **Defender takeaway:** treat CI/CD variable stores and git history as credential stores: keep secrets in a dedicated secrets manager, mask and protect every variable, rotate tokens and audit history for removed secrets, because the actor recovered credentials from commits that no longer appeared on the current branch; never bind an MCP server beyond loopback and treat its command-execution tool as privileged with an audit trail ([CloudSEK, 2026-10-05](https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files)).
+
+## Correction — 2026-10-11T13:53:27Z
+
+CloudSEK's key findings state that "Every confirmed victim was reached through stolen CI/CD secrets", but its account of the AI-platform intrusion says entry was through an AI medical imaging API that fetches user-supplied URLs server-side without validation, and its own wording elsewhere is that "Every victim outside the AI sector engagement was reached the same way" ([CloudSEK, 2026-10-05](https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files)). CI/CD secret theft is the entry path for every victim except that one.

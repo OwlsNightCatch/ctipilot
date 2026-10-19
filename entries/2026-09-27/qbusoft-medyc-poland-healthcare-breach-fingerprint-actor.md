@@ -34,7 +34,7 @@ sources:
     role: primary
   - url: "https://tvpworld.com/95581628/poland-hit-by-cyberattack-weeks-after-19-million-medical-records-breach"
     publisher: "TVP World"
-    date: "2026-09-26"
+    date: "2026-09-25"
     role: corroborating
   - url: "https://databreaches.net/2026/09/26/poland-reports-a-second-medical-data-cyberattack-in-recent-weeks/"
     publisher: "DataBreaches.net"
@@ -95,12 +95,19 @@ updates:
       million, with only the photo count unconfirmed, and the summary no longer describes the outlet
       as the one that broke the MyDr story, which none of the sources states.
     fields: [priority, sourcing_note, title, headline, summary, body]
+  - at: "2026-10-11T14:12:02Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    internal: true
+    summary: >
+      TVP World's article is dated 2026-09-25 (its own publication metadata); 2026-09-26 was the date of a repost. Source record and citation date corrected.
+    fields: [sources, body]
 migrated_from: null
 ---
 
 Qbusoft, maker of the Medyc practice-management application used by Polish clinics, was breached through SQL injection on 22-23 August 2026 and an encrypted database archive was taken. The company learned of it only in the night of 8-9 September, and the breach surfaced through a patient notice from the Inowrocław addiction and psychiatric treatment centre. Name, surname and PESEL were stored encrypted, but the vendor told the facility the encryption was easy to break ([Zaufana Trzecia Strona, 2026-09-24](https://zaufanatrzeciastrona.pl/post/sprawcy-wycieku-mydr-ponownie-atakuja-tym-razem-ofiara-aplikacja-medyc/)).
 
-Zaufana Trzecia Strona attributes the intrusion to "fingerprint", the pseudonym of the actor behind August's MyDr breach ([Zaufana Trzecia Strona, 2026-09-24](https://zaufanatrzeciastrona.pl/post/sprawcy-wycieku-mydr-ponownie-atakuja-tym-razem-ofiara-aplikacja-medyc/)), which exposed data on almost 19 million Poles ([TVP World, 2026-09-26](https://tvpworld.com/95581628/poland-hit-by-cyberattack-weeks-after-19-million-medical-records-breach)). DataBreaches.net notes that whether it is the same attacker has not been disclosed ([DataBreaches.net, 2026-09-26](https://databreaches.net/2026/09/26/poland-reports-a-second-medical-data-cyberattack-in-recent-weeks/)). The attackers claim data on five million patients, against ZTS's own estimate of at least a million, and 8 million photos, a count ZTS could not confirm. Poland's digital affairs minister said Qbusoft reported the intrusion to the Central Office for Combating Cybercrime but not to the healthcare-sector CSIRT CEZ or to CERT Polska ([Zaufana Trzecia Strona, 2026-09-25](https://zaufanatrzeciastrona.pl/post/sprawcy-ataku-na-system-medyc-twierdza-ze-ukradli-dane-5-milionow-pacjentow-i-8-milionow-zdjec/)).
+Zaufana Trzecia Strona attributes the intrusion to "fingerprint", the pseudonym of the actor behind August's MyDr breach ([Zaufana Trzecia Strona, 2026-09-24](https://zaufanatrzeciastrona.pl/post/sprawcy-wycieku-mydr-ponownie-atakuja-tym-razem-ofiara-aplikacja-medyc/)), which exposed data on almost 19 million Poles ([TVP World, 2026-09-25](https://tvpworld.com/95581628/poland-hit-by-cyberattack-weeks-after-19-million-medical-records-breach)). DataBreaches.net notes that whether it is the same attacker has not been disclosed ([DataBreaches.net, 2026-09-26](https://databreaches.net/2026/09/26/poland-reports-a-second-medical-data-cyberattack-in-recent-weeks/)). The attackers claim data on five million patients, against ZTS's own estimate of at least a million, and 8 million photos, a count ZTS could not confirm. Poland's digital affairs minister said Qbusoft reported the intrusion to the Central Office for Combating Cybercrime but not to the healthcare-sector CSIRT CEZ or to CERT Polska ([Zaufana Trzecia Strona, 2026-09-25](https://zaufanatrzeciastrona.pl/post/sprawcy-ataku-na-system-medyc-twierdza-ze-ukradli-dane-5-milionow-pacjentow-i-8-milionow-zdjec/)).
 
 **Defender takeaway:** a vendor's confirmed breach does not automatically reach the sector or national CERT, so vendor incident-response clauses should name the CERT a critical software vendor must notify on confirmation. Encrypted fields are not protected when the vendor itself calls the encryption easy to break ([Zaufana Trzecia Strona, 2026-09-24](https://zaufanatrzeciastrona.pl/post/sprawcy-wycieku-mydr-ponownie-atakuja-tym-razem-ofiara-aplikacja-medyc/)).
 

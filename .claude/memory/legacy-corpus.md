@@ -17,3 +17,7 @@ type: project
 - The audit works the queue: `python3 tools/legacy_review.py --next 20`, re-verify, correct or rewrite from sources, `--done <run-id> <ids>`.
 - Touching a legacy entry pulls it under current gates: it needs a classification and a non-empty `techniques[]` (kind permitting) in the same record.
 - Duplicates (legacy "UPDATE (originally covered ...)" entries, brief/deep-dive twins) are folded with `tools/fold_entries.py` after the survivor's record is written; `merged_from` may be a list; deletion is only legal that way. 24 unfolded UPDATE entries and about 19 same-finding twin groups remained after the Ivanti fold.
+
+**2026-10-11 audit:** 60 of 63 legacy and duplicate entries checked were wrong (20/20 L1, 40/43 consolidation); 27 duplicates folded into 21 survivors; queue 408 pending. The CVE-sharing scan is at 0 unlinked pairs, but actor/incident twins with no shared CVE escape it (RoguePlanet 06-19/07-09, the Pwn2Own roundup).
+- **Link from the compliant side.** Adding a `references[]` link is a record on the entry it lands on, and a record pulls a legacy entry under every current gate (rating, ATT&CK, reader-text, evidence-binding). When one side of a pair is already verified, put the reference there; touching the legacy side means re-verifying it whole.
+- A non-adversarial legacy item (DENIC DNSSEC outage) has no honest ATT&CK mapping: `incident`/`threat` FAIL empty, `research` WARNs, so it went to `policy` as a stopgap (operator recommendation 4 of that audit).

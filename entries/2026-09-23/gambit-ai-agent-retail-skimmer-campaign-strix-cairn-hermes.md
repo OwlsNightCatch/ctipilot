@@ -20,7 +20,7 @@ tags: [supply-chain, cryptocrime, ai-abuse]
 regions: [global, us]
 sectors: [retail]
 entities: ["tool:hermes-ai-agent", "tool:strix-ai-pentest", "tool:cairn-exploitation-engine", "product:magento", "product:wordpress"]
-techniques: [T1190, T1552.001, T1548.003, T1555.006, T1505.003, T1659, T1053.003, T1485, T1078]
+techniques: [T1190, T1552.001, T1548.003, T1555.006, T1505.003, T1659, T1053.003, T1485, T1078, T1070.006]
 affected_products: ["Magento", "WordPress"]
 cves: []
 sources:
@@ -102,6 +102,12 @@ updates:
       route and the hand-picked victims follow its wording, and the Unit 42 safety-control route is
       stated as its model choice. The headline keeps Gambit's "almost".
     fields: [priority, sourcing_note, body, summary, sources, headline]
+  - at: "2026-10-11T13:44:20Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    summary: >
+      The 2026-09-25 record said the operator rebuilt its infrastructure within hours; Computing UK reports only that the attacker repeatedly rebuilt it and continued. The technique mapping gains the timestamp restoration Gambit describes.
+    fields: [techniques]
 migrated_from: null
 ---
 
@@ -124,3 +130,7 @@ Anthropic identified and banned the account linked to the attacks. The attacker 
 ## Correction — 2026-09-30T06:56:13Z
 
 Gambit's $12,000 to $18,000 spend is its own extrapolation from a $7,005.71 OpenRouter balance recorded on 25 August, not a billing total, and its report gives two skimmer counts: installations on the websites of five companies in its summary and confirmed skimmers on 19 of 27 named victims in its body ([Gambit Security, 2026-09-22](https://gambit.security/blog-posts/autonomous-ai-agents-online-retailers-25-a-company)). For the Fortune 500 hospitality company, the US airline, the industrial-supplies distributor and the fashion retailer, Gambit reports some level of access to their assets, not compromise ranging from partial to full ([Gambit Security, 2026-09-22](https://gambit.security/blog-posts/autonomous-ai-agents-online-retailers-25-a-company)). Operators worked around model safety controls in three of the four Hermes intrusions, not all of them, and in the Unit 42 case the reported route is the choice of a permissive model ([Unit 42, 2026-07-30](https://unit42.paloaltonetworks.com/autonomous-ai-cyber-attack-campaign/); [Tenable, 2026-08-14](https://www.tenable.com/blog/the-agentic-ai-threat-cluster-seven-incidents-three-actors-and-what-they-mean)).
+
+## Correction — 2026-10-11T13:44:20Z
+
+No source gives a time for the operator's recovery after Anthropic banned the account and Cloudflare shut down its servers: "researchers said the attacker repeatedly rebuilt the infrastructure and continued the attacks" ([Computing UK, 2026-09-23](https://www.computing.co.uk/news/2026/security/ai-agents-used-to-steal-credit-card-records)). The 2026-09-25 note that it rebuilt within hours went beyond that.

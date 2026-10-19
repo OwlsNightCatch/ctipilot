@@ -19,7 +19,7 @@ tags: [data-breach]
 regions: [global]
 sectors: [public-sector]
 entities: ["incident:recreation-platform-webshell-municipal-tenants-2026-09"]
-techniques: [T1190, T1505.003, T1059.003, T1059.001, T1083, T1033, T1082, T1552.001, T1005, T1036.005, T1070.006, T1056.003]
+techniques: [T1190, T1505.003, T1059.003, T1059.001, T1083, T1033, T1082, T1552.001, T1005, T1036.005, T1070.006, T1056.003, T1110]
 affected_products: []
 cves: []
 sources:
@@ -53,7 +53,14 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-10-11T13:52:16Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Maps the failed login brute forcing Huntress lists among the attempted access techniques, which the body already describes (T1110).
+    fields: [techniques]
 migrated_from: null
 ---
 

@@ -2357,7 +2357,14 @@ def _page_skeletons(urls: list[str], run_id: str) -> dict[str, list[str]]:
                 # escaped JSON inside one (Check Point's support pages do).
                 # Decode those escapes first, then strip the tags they reveal.
                 text = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), text)
-                text = _html.unescape(re.sub(r"<[^>]+>", "", text))
+                # A JS-shell page (a Mastodon post, for one) carries its whole
+                # text only in the description meta tags, whose content the tag
+                # strip below would delete: keep it as text (2026-10-11 audit,
+                # two CERT-Bund quotes falsely flagged on social.bund.de).
+                metas = [m.group(2) for m in re.finditer(
+                    r"<meta\b(?=[^>]*\b(?:name|property)=[\"'](?:og:|twitter:)?description[\"'])"
+                    r"[^>]*\bcontent=([\"'])(.*?)\1", text, re.I | re.S)]
+                text = _html.unescape(re.sub(r"<[^>]+>", "", text) + "\n" + "\n".join(metas))
                 if mode == "extract":
                     # A markdown link's target sits inside the sentence it links
                     # from ("…exploited [flaws](https://…) in SMA1000…"), and its

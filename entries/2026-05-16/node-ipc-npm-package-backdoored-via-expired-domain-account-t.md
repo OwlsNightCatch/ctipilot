@@ -1,9 +1,9 @@
 ---
 schema: 1
 kind: incident
-title: "node-ipc npm package backdoored via expired-domain account takeover: three malicious versions steal developer and CI credentials, flagged about three minutes after publication"
-headline: "node-ipc npm package backdoored via expired-domain maintainer takeover: three malicious versions steal developer and CI credentials on require()"
-summary: "node-ipc npm package (widely-used Node.js IPC library) hijacked via expired-domain account takeover; three malicious versions (9.1.6, 9.2.3, 12.0.1) exfiltrate cloud, CI/CD, SSH and Keychain credentials over DNS TXT (StepSecurity also reports an HTTPS channel that Socket did not find); rotate every secret on any workstation or CI runner that loaded one of the three versions (Socket Security, 2026-05-14 · StepSecurity, 2026-05-14)."
+title: "node-ipc npm package backdoored, likely via an expired-domain account takeover: three malicious versions steal developer and CI credentials, flagged about three minutes after publication"
+headline: "node-ipc npm package backdoored, likely via an expired-domain maintainer takeover: three malicious versions steal developer and CI credentials on require()"
+summary: "node-ipc npm package (widely-used Node.js IPC library) hijacked, likely via an expired-domain account takeover; three malicious versions (9.1.6, 9.2.3, 12.0.1) exfiltrate cloud, CI/CD, SSH and Keychain credentials over DNS TXT (StepSecurity also reports an HTTPS channel that Socket did not find); rotate every secret on any workstation or CI runner that loaded one of the three versions (Socket Security, 2026-05-14 · StepSecurity, 2026-05-14)."
 discovered_at: "2026-05-16T05:00:02Z"
 event_date: 2026-05-14
 run_id: 2026-05-16-5bc123a0
@@ -32,7 +32,8 @@ sources:
     publisher: "The Hacker News, 2026-05-14"
     role: corroborating
   - url: "https://www.csoonline.com/article/4171926/expired-domain-leads-to-supply-chain-attack-on-node-ipc-npm-package.html"
-    publisher: "CSO Online, 2026-05-14"
+    publisher: "CSO Online"
+    date: "2026-05-15"
     role: corroborating
 closed_sources: []
 evidence: []
@@ -63,9 +64,15 @@ updates:
       suffix, the maintainer email domain and account name and inline ATT&CK ids are removed, the
       truncated headline is rewritten, and the entry gains an ATT&CK mapping.
     fields: [body, classification, techniques, headline, summary, title]
+  - at: "2026-10-11T14:00:38Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    summary: >
+      The expired-domain takeover is Socket's likely vector, not an established one, and StepSecurity offers a different explanation; the title, headline and summary now say likely. CSO Online's article is dated 2026-05-15, not 2026-05-14.
+    fields: [title, headline, summary, sources, body]
 ---
 
-On 2026-05-14, three malicious versions of the `node-ipc` npm package (9.1.6, 9.2.3 and 12.0.1) were published at the same time by a co-maintainer account with no prior publish history on the package ([StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)). The account's email domain had expired on 2025-01-10 and was re-registered on 2026-05-07, a week before the attack ([The Hacker News, 2026-05-14](https://thehackernews.com/2026/05/stealer-backdoor-found-in-3-node-ipc.html)). Socket assesses that the new domain owner could then trigger a standard npm password reset and gain publish rights without touching the maintainer's own infrastructure ([Socket Security, 2026-05-14](https://socket.dev/blog/node-ipc-package-compromised)). CSO counts almost 700K weekly downloads and 424 dependent projects, while StepSecurity reports over 10 million weekly downloads ([CSO Online, 2026-05-14](https://www.csoonline.com/article/4171926/expired-domain-leads-to-supply-chain-attack-on-node-ipc-npm-package.html) · [StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)). The 9.x releases are fabricated from the 12.x package structure, so projects on `^9`, `~9.1.x`, `~9.2.x`, `^12` or `~12.0` ranges received a malicious build on their next install or lockfile refresh ([StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)). When StepSecurity published, npm's `latest` tag pointed to 12.0.1, so an unpinned `npm install node-ipc` pulled the compromised tarball ([StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)).
+On 2026-05-14, three malicious versions of the `node-ipc` npm package (9.1.6, 9.2.3 and 12.0.1) were published at the same time by a co-maintainer account with no prior publish history on the package ([StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)). The account's email domain had expired on 2025-01-10 and was re-registered on 2026-05-07, a week before the attack ([The Hacker News, 2026-05-14](https://thehackernews.com/2026/05/stealer-backdoor-found-in-3-node-ipc.html)). Socket assesses that the new domain owner could then trigger a standard npm password reset and gain publish rights without touching the maintainer's own infrastructure ([Socket Security, 2026-05-14](https://socket.dev/blog/node-ipc-package-compromised)). CSO counts almost 700K weekly downloads and 424 dependent projects, while StepSecurity reports over 10 million weekly downloads ([CSO Online, 2026-05-15](https://www.csoonline.com/article/4171926/expired-domain-leads-to-supply-chain-attack-on-node-ipc-npm-package.html) · [StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)). The 9.x releases are fabricated from the 12.x package structure, so projects on `^9`, `~9.1.x`, `~9.2.x`, `^12` or `~12.0` ranges received a malicious build on their next install or lockfile refresh ([StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)). When StepSecurity published, npm's `latest` tag pointed to 12.0.1, so an unpinned `npm install node-ipc` pulled the compromised tarball ([StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)).
 
 The payload is an 80 KB obfuscated function appended to the CommonJS bundle `node-ipc.cjs`. It runs on every `require('node-ipc')` and uses no npm lifecycle hook, so tools that only scan `preinstall` and `postinstall` scripts miss it ([StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)). ESM-only consumers do not load the malicious file unless another dependency or a direct require loads `node-ipc.cjs` ([Socket Security, 2026-05-14](https://socket.dev/blog/node-ipc-package-compromised)). The payload forks a detached child Node process that collects cloud provider credentials, SSH keys, Kubernetes tokens, GitHub CLI configuration, Terraform state, CI workflow files, `.env` files, shell history and macOS Keychain databases, gzips them and exfiltrates them ([Socket Security, 2026-05-14](https://socket.dev/blog/node-ipc-package-compromised) · [StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)). Four stacked obfuscation layers (string-array shuffling, control-flow flattening, dead-code injection and a custom reversed-nibble base-16 encoding) resist static analysis ([StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)). Socket found no persistence and no second-stage download, and its scanner flagged the publish within roughly three minutes ([Socket Security, 2026-05-14](https://socket.dev/blog/node-ipc-package-compromised)).
 
@@ -80,3 +87,7 @@ The payload is an 80 KB obfuscated function appended to the CommonJS bundle `nod
 ## Correction — 2026-09-30T06:54:42Z
 
 No source says the malicious versions were removed from the registry: when StepSecurity published, npm's `latest` tag pointed to the malicious 12.0.1 ([StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)). The payload fires on `require()` and uses no install hook, so disabling install scripts in CI does not stop it. Socket's advice is to review dependencies by their entrypoints and to rotate every secret on an affected host ([Socket Security, 2026-05-14](https://socket.dev/blog/node-ipc-package-compromised)). Socket and StepSecurity disagree on the exfiltration channels, the pattern count and whether 12.0.1 is gated to one target ([Socket Security, 2026-05-14](https://socket.dev/blog/node-ipc-package-compromised) · [StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)), and all three versions should be treated as active. The entry previously named a domain registrar and Vue CLI and webpack tooling as dependents, which no cited source states.
+
+## Correction — 2026-10-11T14:00:38Z
+
+Socket calls the expired recovery-email domain the likely vector and frames the mechanism conditionally, assuming the maintainer's npm recovery address was hosted on that domain ([Socket Security, 2026-05-14](https://socket.dev/blog/node-ipc-package-compromised)); StepSecurity instead says the maintainer credentials were either freshly compromised or the account was added as a maintainer specifically for this publish ([StepSecurity, 2026-05-14](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack)). How the account was taken over is therefore not established.

@@ -20,7 +20,7 @@ tags: [nation-state, espionage, phishing, russia-nexus]
 regions: [global, us, uk]
 sectors: [public-sector, finance]
 entities: ["actor:star-blizzard", "campaign:star-blizzard-redflick-2026", "malware:cosmicpulse"]
-techniques: [T1566, T1566.001, T1584.004, T1204.002, T1036.008, T1202, T1059.001, T1059.003, T1059.006, T1053.005, T1036.004, T1218.002, T1105, T1140, T1112, T1027.003]
+techniques: [T1566, T1566.001, T1584.004, T1204.002, T1036.008, T1202, T1059.001, T1059.003, T1059.006, T1053.005, T1036.004, T1218.002, T1105, T1140, T1112, T1027.003, T1218.007]
 affected_products: ["Microsoft Windows"]
 cves: []
 sources:
@@ -60,7 +60,14 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-10-11T13:52:16Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Maps the remote MSI execution through msiexec that Microsoft describes and the body already states (T1218.007).
+    fields: [techniques]
 migrated_from: null
 ---
 

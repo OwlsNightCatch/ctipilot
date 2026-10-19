@@ -2285,8 +2285,21 @@ def _pdf_streams(data: bytes) -> list[bytes]:
         except zlib.error:
             pass
         # Uncompressed content stream — keep it if it looks like PDF operators.
+        # An image stream (DCT/JPX/CCITT/JBIG2 data) is binary and holds "BT"
+        # or "Tj" by chance in any few hundred KB, so it is skipped on its
+        # dictionary and, failing that, on its byte mix: operators are text.
+        # (ANSSI CERTFR-2026-CTI-006, an image-only PDF, came back as 467 KB
+        # of JPEG bytes "extracted" as prose, 2026-10-11 audit.)
+        head = data[max(0, m.start() - 600):m.start()]
+        head = head[head.rfind(b"<<"):] if b"<<" in head else head
+        if re.search(rb"/(?:DCTDecode|DCT|JPXDecode|CCITTFaxDecode|CCF|JBIG2Decode)\b|/Subtype\s*/Image\b",
+                     head):
+            continue
         if b"Tj" in raw or b"TJ" in raw or b"BT" in raw:
-            out.append(raw)
+            sample = raw[:65536]
+            printable = sum(1 for b in sample if 32 <= b < 127 or b in (9, 10, 13))
+            if printable >= 0.85 * len(sample):
+                out.append(raw)
     return out
 
 

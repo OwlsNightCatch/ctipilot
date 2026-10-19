@@ -16,7 +16,7 @@ tags: [data-breach, supply-chain, zero-day]
 regions: [europe]
 sectors: [public-sector, education]
 entities: []
-techniques: [T1114]
+techniques: [T1190, T1114]
 affected_products: []
 cves: []
 sources:
@@ -71,6 +71,13 @@ updates:
       FG-IR-26-175, says the Centre for Cybersecurity Belgium is assisting, and says transfers created in the affected
       period were disabled on 2026-09-29, so senders who still need to share the files must create new transfers.
     fields: [headline, summary, priority, sources, evidence, sourcing_note, references, body]
+  - at: "2026-10-11T13:52:16Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Maps the exploitation of a zero-day in the supplier's internet-facing technology, which Belnet's notice states as the cause (T1190).
+    fields: [techniques]
 migrated_from: null
 ---
 

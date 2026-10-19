@@ -70,7 +70,7 @@ deep_dive_category: null
 org_triage: null
 classification:
   reliability: B
-  credibility: 1
+  credibility: 2
 watchlist_hit: false
 actions: []
 updates:
@@ -86,6 +86,13 @@ updates:
       the unsourced 'worker' detail is removed, and the claim dates, on which the sources differ,
       are narrowed to a day apart in mid-September.
     fields: [priority, sourcing_note, body, title, headline, summary]
+  - at: "2026-10-11T14:07:05Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    internal: true
+    summary: >
+      Credibility lowered from 1 to 2: every fact about AFPA's confirmation, the 1.7 million figure and the vendor-hosted tool traces to one origin (AFPA via the AFP wire); the two breach trackers add independent sample reviews of the claimed data fields only.
+    fields: [classification]
 migrated_from: null
 ---
 

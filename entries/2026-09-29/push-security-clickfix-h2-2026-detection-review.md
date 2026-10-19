@@ -1,7 +1,7 @@
 ---
 schema: 1
 kind: research
-title: "ClickFix now drives 52-67% of monthly browser-based-attack detections, delivered overwhelmingly through search engines rather than email, and rotates across 20+ trusted binaries to outpace endpoint rules"
+title: "ClickFix made up 52% of Push Security's detections through Q2 2026 and 67% in August, delivered overwhelmingly through search engines rather than email, and rotates across 20+ trusted binaries to outpace endpoint rules"
 headline: "Push Security's detection data: ClickFix has become the default browser-borne attack, and most of it never touches an inbox"
 summary: >
   Push Security's H2 2026 detection-data review reports ClickFix and its derivatives averaging 52% of its
@@ -18,7 +18,7 @@ tags: [phishing, actively-exploited]
 regions: [global, switzerland, europe]
 sectors: [public-sector]
 entities: []
-techniques: [T1204.004, T1059.001, T1218, T1140, T1608]
+techniques: [T1204.004, T1059.001, T1218, T1140, T1608, T1189, T1027]
 affected_products: []
 cves: []
 sources:
@@ -63,6 +63,12 @@ updates:
       no decision this week. The takeaway adds NCSC Switzerland's advice to restrict outbound
       connections to blockchain RPC providers.
     fields: [priority, body]
+  - at: "2026-10-11T14:13:53Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    summary: >
+      The title read the 52% and 67% figures as a monthly range of browser-based-attack detections; Push reports a 52% average of its own detections through Q2 and 67% in August. The uncited LOLBin false-positive paragraph gains its citation, and the drive-by lure delivery and the obfuscation Push describes are mapped.
+    fields: [title, body, techniques]
 migrated_from: null
 ---
 
@@ -70,7 +76,7 @@ Push Security's H2 2026 detection-data review reports ClickFix and its derivativ
 
 NCSC Switzerland maintains a live public advisory describing the same technique's fake-CAPTCHA delivery mechanism, reporting an increase in compromised websites, predominantly WordPress, that serve the ClickFix lure to visitors ([NCSC Switzerland / BACS](https://www.bacs.admin.ch/en/clickfix-en)): direct confirmation that this is not a theoretical or foreign-only trend but one actively affecting Swiss infrastructure that users in Switzerland may encounter through ordinary browsing.
 
-Push notes that standard EDR guidance of baselining LOLBin activity and alerting on anomalies suffers a high false-positive rate for this technique class, because legitimate IT automation, MDM tooling and administrator scripts generate similar-looking process-execution telemetry to a ClickFix payload's own binary invocation.
+Push notes that standard EDR guidance of baselining LOLBin activity and alerting on anomalies suffers a high false-positive rate for this technique class, because legitimate IT automation, MDM tooling and administrator scripts generate similar-looking process-execution telemetry to a ClickFix payload's own binary invocation ([Push Security, 2026-09-23](https://pushsecurity.com/blog/the-state-of-clickfix-by-detection-data)).
 
 **Triage:** the discriminator is not which binary runs but its parent-process lineage and trigger context: a LOLBin (PowerShell, mshta, rundll32, certutil, or any of the 20+ Push documents) launched with a paste-derived command line from `explorer.exe` or a browser process, following a user interaction with a fake CAPTCHA or verification prompt on a webpage, is the ClickFix pattern; the same binary launched from a scheduled task, an MDM agent, or an IT-administration parent process in the course of routine automation is the benign lookalike. Sequence and parentage separate the two; the binary alone does not.
 
@@ -79,3 +85,7 @@ Push notes that standard EDR guidance of baselining LOLBin activity and alerting
 ## Improvement — 2026-09-30T06:56:17Z
 
 NCSC Switzerland advises organisations outside fintech to restrict outbound connections to blockchain RPC providers, which the payload-retrieval step uses ([NCSC Switzerland / BACS, 2026-08-07](https://www.bacs.admin.ch/en/clickfix-en)).
+
+## Correction — 2026-10-11T14:13:53Z
+
+Push reports that "Through Q2, ClickFix made up an average of 52% of Push's detections" and that in August "this figure reached 67%" ([Push Security, 2026-09-23](https://pushsecurity.com/blog/the-state-of-clickfix-by-detection-data)): a quarterly average and a single month, both of Push's own detection data, not a monthly range across the industry.

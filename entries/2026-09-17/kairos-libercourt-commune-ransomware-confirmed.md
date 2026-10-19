@@ -2,10 +2,10 @@
 schema: 1
 kind: incident
 title: "A small French commune confirms a ransomware attack and data theft, days after the extortion actor Kairos claimed it on its leak site"
-headline: "Ville de Libercourt confirms data exfiltration; Kairos claimed the commune on its leak site two weeks earlier"
+headline: "Ville de Libercourt confirms data exfiltration; Ransomware.live recorded a Kairos leak-site claim on the commune two weeks earlier"
 summary: >
   The Ville de Libercourt (Pas-de-Calais, France) confirmed on 2026-09-15 a ransomware attack in
-  late August 2026 with personal-data exfiltration. The Kairos ransomware group had listed the commune on its leak site on 2026-09-02, and no party has attributed the confirmed
+  late August 2026 with personal-data exfiltration. Ransomware.live recorded the Kairos ransomware group's leak-site claim on the commune on 2026-09-02, and no party has attributed the confirmed
   intrusion to Kairos beyond that leak-site claim and its timing. The commune names no access
   vector, ransomware group or data scope; CNIL and ANSSI have been notified.
 discovered_at: "2026-09-17T04:37:00Z"
@@ -65,13 +65,23 @@ updates:
       actor, the takeaway leads with the decision it supports, and the source reliability matches
       FrenchBreaches' standing as an aggregator.
     fields: [priority, body, classification, sources, sourcing_note, summary]
+  - at: "2026-10-11T13:46:19Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    summary: >
+      Ransomware.live dates its discovery of the Kairos claim to 2026-09-02, so the listing is dated on or before that day, not on it. The takeaway's count of three small municipal administrations is withdrawn: no cited source gives that count or their size.
+    fields: [headline, summary, body]
 migrated_from: null
 ---
 
-The Ville de Libercourt (Pas-de-Calais, France) announced on 2026-09-15 a ransomware attack in late August 2026 with confirmed exfiltration of personal data, naming no access vector, group or data scope; it notified CNIL and ANSSI and says its IT provider ran the technical checks ([FrenchBreaches, 2026-09-16](https://frenchbreaches.com/alertes/ville-de-libercourt-mu3s726lzo8j6uv1ta)). The extortion actor Kairos had listed the commune on its leak site on 2026-09-02 ([Ransomware.live, 2026-09-02](https://www.ransomware.live/id/VmlsbGUgZGUgTGliZXJjb3VydEBrYWlyb3M=)), after claiming the Madrid-region municipalities of Valdemoro in May and Velilla de San Antonio in August ([Escudo Digital, 2026-08-21](https://www.escudodigital.com/ciberseguridad/kairos-asegura-haber-robado-776-gb-de-datos-del-ayuntamiento-de-velilla-de-san-antonio.html)), but no source attributes the Libercourt intrusion to Kairos beyond that listing.
+The Ville de Libercourt (Pas-de-Calais, France) announced on 2026-09-15 a ransomware attack in late August 2026 with confirmed exfiltration of personal data, naming no access vector, group or data scope; it notified CNIL and ANSSI and says its IT provider ran the technical checks ([FrenchBreaches, 2026-09-16](https://frenchbreaches.com/alertes/ville-de-libercourt-mu3s726lzo8j6uv1ta)). Ransomware.live recorded the extortion actor Kairos's leak-site claim on the commune on 2026-09-02 ([Ransomware.live, 2026-09-02](https://www.ransomware.live/id/VmlsbGUgZGUgTGliZXJjb3VydEBrYWlyb3M=)), after claiming the Madrid-region municipalities of Valdemoro in May and Velilla de San Antonio in August ([Escudo Digital, 2026-08-21](https://www.escudodigital.com/ciberseguridad/kairos-asegura-haber-robado-776-gb-de-datos-del-ayuntamiento-de-velilla-de-san-antonio.html)), but no source attributes the Libercourt intrusion to Kairos beyond that listing.
 
-**Defender takeaway:** treat a leak-site listing that names your organization as an incident trigger: here the listing came thirteen days before the commune's own confirmation. Kairos has now listed three small municipal administrations in France and Spain, the same victim class as Swiss communes, and with no vector published there is nothing to hunt.
+**Defender takeaway:** treat a leak-site listing that names your organization as an incident trigger: here the listing was recorded at least thirteen days before the commune's own confirmation. Kairos has also claimed the Madrid-region municipalities of Valdemoro and Velilla de San Antonio, the same victim class as Swiss communes, and with no vector published there is nothing to hunt.
 
 ## Correction — 2026-09-30T06:56:03Z
 
 Neither municipal case identifies a gap in an IT provider's detection or notification: Libercourt says its provider ran the technical checks ([FrenchBreaches, 2026-09-16](https://frenchbreaches.com/alertes/ville-de-libercourt-mu3s726lzo8j6uv1ta)), and Velilla de San Antonio said it had activated its security protocols and was still establishing what happened ([Escudo Digital, 2026-08-21](https://www.escudodigital.com/ciberseguridad/kairos-asegura-haber-robado-776-gb-de-datos-del-ayuntamiento-de-velilla-de-san-antonio.html)). The earlier takeaway's claim that both cases share such a gap, and its reference to limited in-house IT staffing, had no source and are withdrawn.
+
+## Correction — 2026-10-11T13:46:19Z
+
+Ransomware.live states that it "discovered on 2026-09-02 that Ville de Libercourt has been claimed by Kairos ransomware group" ([Ransomware.live, 2026-09-02](https://www.ransomware.live/id/VmlsbGUgZGUgTGliZXJjb3VydEBrYWlyb3M=)), so the leak-site listing dates from that day or earlier. The takeaway's earlier count of three small municipal administrations claimed by Kairos is withdrawn: no cited source gives a total or the size of those municipalities.

@@ -1,0 +1,97 @@
+# Findings summary (machine-readable) - run 2026-10-11T1307Z-audit, iteration 6, slice s2
+- code: F3
+  category: claim-not-supported
+  entry: 2026-09-23/cve-2026-93616-check-point-security-mgmt-path-traversal
+  where: "body, Detection paragraph (claim 5c80850171); echoed in immediate_action and actions[2] ('the two log indicators miss the published exploit route')"
+  summary: "The cited sk1000171 no longer carries the indicator set the entry describes. Entry: \"Detection concept, per Check Point's own two independent indicators of compromise ([Check Point Support, sk1000171]) ... second, a resource-loading error referencing a file path containing parent-directory-reference sequences\". The live page (data.lastModified 2026-10-13, after this fire began) now lists Indicator 1 plus Indicators 2.a, 2.b and 2.c, none of which is a resource-loading error. Timing note: the page changed after the entry text was written, so this is staleness against the cited page rather than an original error."
+  ground_truth: "sk1000171 JSON (props.pageProps.data): 'The indicators represent two different stages of exploitation: Indicator 1 may indicate exploitation of the authentication bypass ... Indicators 2.a-2.c may indicate exploitation by a user who has already passed the authentication stage'; 2.a greps 'Invoking method .* in version: ...', 2.b greps 'Uploading file ... (../)+ ... CPupgrade-tools-', 2.c greps 'The path to the jars: .*CPupgrade-tools-...'. Bishop Fox (2026-10-01) describes the earlier second indicator as a grep for 'ERROR ... ReflectionUtils ... Failed to load allResourceFiles'."
+  ground_truth_url: "https://support.checkpoint.com/results/sk/sk1000171/"
+  fix: "State the two-indicator description as Check Point's original (2026-09-22) guidance, add an update record that Check Point has since replaced the second indicator with 2.a-2.c, and re-check the sentence that the log indicators miss Bishop Fox's route against the new patterns."
+- code: F3
+  category: claim-not-supported
+  entry: 2026-08-06/chaindrop-shai-hulud-npm-worm-onchain-c2-resolver
+  where: "body paragraph 1 (claim 96277ce9e1)"
+  summary: "(low confidence) Dune references and the similarities to earlier campaigns are now stated separately and correctly, but \"Elastic frames the wave explicitly as the return of Shai-Hulud rather than a new family\" still attributes an explicit contrast to Elastic. Elastic says 'identified the return of Shai-Hulud' and 'a new Shai-Hulud campaign'; it never says 'rather than a new family'."
+  ground_truth: "Elastic: 'Elastic Security Labs identified the return of Shai-Hulud.' and 'identified a new Shai-Hulud campaign targeting the maintainer of keyv'."
+  ground_truth_url: "https://www.elastic.co/security-labs/shai-hulud-chaindrop-npm-supply-chain"
+  fix: "Write 'Elastic frames the wave as the return of Shai-Hulud' and drop 'explicitly' and 'rather than a new family'."
+- code: F3
+  category: claim-not-supported
+  entry: 2026-09-17/cve-2026-76460-cisco-ise-auth-bypass-root-rce
+  where: "body, Triage paragraph (claim 1b129f95f5); immediate_action 'unexpected outbound uploads or downloads to unfamiliar IPs'"
+  summary: "(low confidence) \"Cisco's guidance is to corroborate against firewall and network logs external to the ISE node for unexpected outbound uploads or downloads to unfamiliar IP addresses\" paraphrases Cisco's instruction and changes its direction and qualifiers."
+  ground_truth: "Cisco: 'cross-check the network logs and the firewall logs outside of the impacted device to identify any potential suspicious activity, including but not limited to unexpected uploads that were initiated from the affected device to external IP addresses or downloads from malicious IP addresses.'"
+  ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ISE-ABP-VNSW7Tn5"
+  fix: "Use Cisco's wording: uploads initiated from the device to external IP addresses, or downloads from malicious IP addresses."
+- code: F3
+  category: claim-not-supported
+  entry: 2026-06-11/shinyhunters-oracle-peoplesoft-campaign-gadget-chain-access
+  where: "2026-10-11 Correction section (claim fb4ecca3a8)"
+  summary: "(low confidence) \"the script recovered from exposed servers spreads over SSH and drops ransom notes, with exfiltration a separate step ([BleepingComputer, 2026-06-10])\": BleepingComputer describes the script (hosts parsing, SSH, ransom note) and says nothing about exfiltration being a separate step; the exfiltration step (zstd, outbound SSH to the leak-site mirror) is in Mandiant's post, which is not cited on this clause."
+  ground_truth: "BleepingComputer 2026-06-10: script 'parses the /etc/hosts ... attempts to connect to them over SSH ... drops the ransom note'; no exfiltration passage. Mandiant 2026-06-11: 'Compressed exfiltrated directories ... using zstd'; 'outbound SSH connection from the staging host to ... the public mirror of the ShinyHunters Data Leak Site'."
+  ground_truth_url: "https://www.bleepingcomputer.com/news/security/oracle-peoplesoft-servers-hacked-in-shinyhunters-data-theft-attacks/"
+  fix: "Cite the exfiltration clause to Mandiant, or drop 'with exfiltration a separate step'."
+- code: F4
+  category: hallucinated-fact
+  entry: 2026-06-11/shinyhunters-oracle-peoplesoft-campaign-gadget-chain-access
+  where: "actions[0] (claim 9d91d9923b)"
+  summary: "(low confidence) The action tells readers to \"Treat any instance that was internet-reachable and unpatched at any point since 27 May 2026 as compromised until proven clean\". Mandiant's guidance is conditional on finding a web shell; Rapid7 says investigate for signs of compromise. No cited source states the blanket assume-compromise rule."
+  ground_truth: "Mandiant/GTIG 2026-09-25: 'Organizations that identify a web shell should treat the host as compromised, preserve evidence, and rotate all credentials accessible from the PeopleSoft tier'. Rapid7: 'Organizations should patch immediately and investigate for signs of compromise.'"
+  ground_truth_url: "https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-renewed-mass-exploitation-campaign-targeting-oracle-peoplesoft/"
+  fix: "Scope the compromise-assumption to hosts where a web shell or the named indicators are found, or mark the blanket rule as analyst judgement."
+- code: F4
+  category: hallucinated-fact
+  entry: 2026-06-11/shinyhunters-oracle-peoplesoft-campaign-gadget-chain-access
+  where: "body, 'Detection and hunting concepts' paragraph (claim c91116831a)"
+  summary: "(low confidence) \"review `authorized_keys` and `/etc/hosts` for unauthorised additions\" implies the actor adds entries to those files. BleepingComputer says the script only parses /etc/hosts and falls back to key-based SSH authentication; no cited source says either file is modified. The adjacent hardening sentence is marked 'in analyst judgement', this one is not."
+  ground_truth: "BleepingComputer: 'The script parses the /etc/hosts to identify PeopleSoft-related systems and attempts to connect to them over SSH ... If password authentication fails, the script attempts to use SSH key-based authentication as a fallback.'"
+  ground_truth_url: "https://www.bleepingcomputer.com/news/security/oracle-peoplesoft-servers-hacked-in-shinyhunters-data-theft-attacks/"
+  fix: "Mark the check as analyst judgement ('by inference') or drop the /etc/hosts and authorized_keys addition check."
+- code: F5
+  category: missing-citation
+  entry: 2026-06-11/shinyhunters-oracle-peoplesoft-campaign-gadget-chain-access
+  where: "2026-06-16 section, first sentence"
+  summary: "(low confidence) \"the 46-member Strasbourg human-rights body, of which Switzerland is a member\": the cited SecurityWeek page gives 46 member states and 27 EU countries and does not name Switzerland; the Swiss-membership fact has no citation."
+  ground_truth: "SecurityWeek 2026-06-15: 'includes 46 member states, including 27 European Union countries.'"
+  ground_truth_url: "https://www.securityweek.com/shinyhunters-claims-council-of-europe-hack/"
+  fix: "Cite a Council of Europe member-state page or drop the clause."
+- code: F9
+  category: surface-contradiction
+  entry: 2026-09-18/cve-2026-87886-acronis-backup-plugin-lpe-cpanel-kev
+  where: "sources[0].date and body citations '(Acronis, 2026-09-17)'; prior-iteration F9 decline"
+  summary: "(low confidence) The decline said earlier reporting quotes the advisory 'without dating it'. Help Net Security (2026-09-16) dates it: 'in the security advisory published on Tuesday' (2026-09-15), and BleepingComputer (2026-09-15) already quotes the advisory sentence. The advisory record's own published field is 2026-09-17T13:30:00Z. The conflict is not surfaced, so a reader sees the primary dated after the reporting that quotes it."
+  ground_truth: "Acronis record: \"published\":\"2026-09-17T13:30:00Z\"; HNS: 'said in the security advisory published on Tuesday'; BC (2026-09-15): 'the advisory warns' with the same sentence."
+  ground_truth_url: "https://security-advisory.acronis.com/api/v1/advisories/SEC-10986"
+  fix: "Add a one-line Contradiction note (record stamp 2026-09-17 vs press from 2026-09-15 and 2026-09-16) or cite the date as the record stamp explicitly."
+- code: F9
+  category: surface-contradiction
+  entry: 2026-08-04/liechtenstein-vwbp-beneficial-ownership-register-breach
+  where: "body paragraph 2 timeline vs The Record (cited elsewhere in the entry)"
+  summary: "(low confidence) The entry states the intrusion occurred \"overnight into 2026-07-30\" (government release and SRF). The Record, cited for the 31,000 figure and the wealth-management remark, says the attackers 'gained access to the Register of Beneficial Owners for two days beginning on July 29'. The differing timing is not noted."
+  ground_truth: "The Record 2026-08-03: 'The unknown attackers gained access to the Register of Beneficial Owners for two days beginning on July 29, the government announced over the weekend.' Government 2026-08-02: 'in der Nacht auf den 30. Juli 2026'."
+  ground_truth_url: "https://therecord.media/hackers-steal-records-liechtenstein-companies-foundations"
+  fix: "Add a short Contradiction line, or note that the government's own timeline is followed and The Record differs."
+- code: F11
+  category: editorial-advisory
+  entry: "multiple (2026-08-06/chaindrop..., 2026-09-17/mandiant-ai..., 2026-09-18/cve-2026-87886-acronis..., 2026-08-04/liechtenstein..., 2026-06-11/shinyhunters..., 2026-09-17/cve-2026-76460-cisco-ise...)"
+  where: "titles, summaries and bodies"
+  summary: "Advisory. Em dashes remain in reader-facing text this fire edited: ChainDrop title and summary, Mandiant title ('ANNUAL REPORT — ...') and 'Case study N —' headings, Acronis title, Liechtenstein summary and body, PeopleSoft body and update sections, Cisco ISE immediate_action and takeaway."
+  ground_truth: "style rule: no em dash in reader-facing entry text (the '## Type — at' heading is the one exception); entries on disk"
+  ground_truth_url: null
+  fix: "Replace em dashes with commas or colons in the text this fire touched. May be left."
+- code: F11
+  category: editorial-advisory
+  entry: 2026-08-06/chaindrop-shai-hulud-npm-worm-onchain-c2-resolver
+  where: "body, 'Containment sequencing' paragraph and 2026-10-11 Correction"
+  summary: "Advisory (prior F11 declined with a rationale about attribution, which does not address repetition). The paragraph states OX's dead man's switch, then Elastic's revoke guidance and its 'intimidate' reading, then repeats both in the bold '**Dead man's switch:**' sentence; the Correction section states the Elastic/OX contrast a third time."
+  ground_truth: "entry on disk; each statement is source-supported, the repetition is the defect"
+  ground_truth_url: null
+  fix: "Delete the bold 'Dead man's switch' sentence or fold the contrast into the first two sentences. May be left."
+- code: F11
+  category: editorial-advisory
+  entry: 2026-08-04/liechtenstein-vwbp-beneficial-ownership-register-breach
+  where: "2026-09-02 section, '**Defender takeaway (updated):**'"
+  summary: "Advisory (prior F11 declined). This fire rewrote the block's text but kept the label 'updated' beside the main takeaway; it addresses a different finding (the Swiss register) and replaces nothing, so 'updated' misleads (changelog check 4c(h))."
+  ground_truth: "entry on disk"
+  ground_truth_url: null
+  fix: "Relabel 'Defender takeaway' (no 'updated') or fold into the section prose. May be left."

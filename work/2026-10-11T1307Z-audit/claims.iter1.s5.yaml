@@ -1,0 +1,2182 @@
+# run_id: 2026-10-11T1307Z-audit
+# slice s5 of iteration 1: 23 entries, 322 claims
+claims:
+- claim_id: 7706e2c8e6
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: actions[0]
+  kind: frontmatter
+  text: 'Upgrade every self-hosted JFrog Artifactory instance to a build that closes both CVEs: 7.133.11 or later for CVE-2026-42016, which JFrog names as its only fixed build, and the CVE-2026-42018 fix
+    for the branch, where Wiz''s corrected builds (7.133.29, 7.146.38, 7.161.20) sit above JFrog''s table. Wiz''s 7.111.21, 7.117.28 and 7.125.20 are below 7.133.11, so instances on those branches remain
+    vulnerable to CVE-2026-42016 and must move to 7.133.11 or later.'
+- claim_id: 9e5d3a46dd
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: actions[1]
+  kind: frontmatter
+  text: On any Artifactory instance that was internet-reachable and unpatched since 15 August 2026, search access logs for an unauthenticated POST to /access/api/v1/aws/token/ followed within minutes by
+    a POST to /access/api/v1/tokens from the same client; on a hit with both answered HTTP 200, treat the instance as compromised and reset the Access token signing key and certificate before relying on
+    the upgrade.
+- claim_id: 996cdaf244
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: JFrog disclosed the two flaws separately and weeks apart, on 2026-07-27 and 2026-08-12, labelling each only "High" without a numeric score (
+  urls:
+  - https://docs.jfrog.com/releases/docs/jfrog-security-advisories#cve-2026-42016---incorrect-user-token-authorization-validation-allows-privilege-escalation
+- claim_id: c5d5e97856
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: 'CVE-2026-42016 (CWE-863 Incorrect Authorization), disclosed 27 July 2026, is a privilege-escalation bug in Artifactory''s token handling: the platform validates a token''s signature and issuer
+    but not the token''s *scope* ('
+  urls:
+  - https://docs.jfrog.com/releases/docs/jfrog-security-advisories#cve-2026-42016---incorrect-user-token-authorization-validation-allows-privilege-escalation
+- claim_id: 315cc88fde
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: 'Wiz describes the consequence: a low-privileged token can be escalated to admin scope ('
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: 272cc3e3a7
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: 'CVE-2026-42018 (CWE-287 Improper Authentication), disclosed 12–13 August 2026, is narrower but supplies the missing first step: Artifactory returns an internal anonymous-user token to a caller
+    who never authenticated, even when anonymous access is disabled ('
+  urls:
+  - https://docs.jfrog.com/releases/docs/jfrog-security-advisories#cve-2026-42018---anonymous-user-token-generation-exposure
+- claim_id: a0355eee59
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: 'Of the anonymous token from CVE-2026-42018 and the scope-validation gap in CVE-2026-42016, Wiz Research writes: "Together, the two can turn an unauthenticated request into an admin-scoped token
+    in two steps" ('
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: f9b37bd5ff
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: An unauthenticated `POST /access/api/v1/aws/token/` (with the trailing slash, since the bare path returns 401) returns HTTP 200 with a JWT scoped to Artifactory's internal anonymous identity, exploiting
+    CVE-2026-42018 (
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: d65bc14c14
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: The operator then exchanges that JWT for a new one via `POST /access/api/v1/tokens`, which returns HTTP 200 carrying admin authority despite the request originating from the anonymous identity,
+    exploiting CVE-2026-42016's missing scope check (**T1550.001**, forging elevated authority onto an application access token) (
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: 95354c0e12
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: The escalated token still shows `token:anonymous` as its actor in logs, and Wiz treats the internal anonymous identity, or any low-privilege identity, minting tokens, enumerating users or touching
+    plugins as the anomaly to hunt (
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: 99b4b7726b
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: Wiz observed actors reach a created administrator account in under five minutes from the first request in some cases (
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: 346bd462ea
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: CISA added both CVEs to its Known Exploited Vulnerabilities catalog on 2026-09-11 (
+  urls:
+  - https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+- claim_id: 1c940ee8d2
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: Operators create persistent administrator accounts via `PUT /api/security/users/<username>` or `/access/api/ui/users/<username>` (**T1136.001**); deploy malicious Groovy plugins through Artifactory's
+    own extensible plugin framework to gain arbitrary code execution (**T1505**, abusing a legitimate server extension mechanism for persistence); and run ad-hoc shell commands through the plugin-execution
+    endpoint (`GET`/`POST /api/plugins/execute/<plugin>`), used for reconnaissance and file enumeration (**T1059**) (
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: efd38902aa
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: Across multiple cases Wiz observed a custom Rust-based backdoor with command-and-control capability dropped to disk as a further persistence layer (
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: 8274d68f5a
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: The separately disclosed CVE-2026-82329 (an authentication bypass under default configuration, disclosed 28 August 2026) dropped from 67% to 49% within two weeks of its own disclosure (
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: b67f19792f
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: Wiz attributes that faster remediation to CVE-2026-82329's critical severity rating, which likely drove more urgent attention from security teams (
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: a7ce9eb0f1
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: '**Contradiction:** JFrog''s CVE-2026-42018 table names 7.111.20, 7.117.27, 7.125.19, 7.133.28 and 7.146.8 as the patched builds, while its affected ranges on the last four branches end at those
+    same builds (for example 7.117.0 to 7.117.27) ('
+  urls:
+  - https://docs.jfrog.com/releases/docs/jfrog-security-advisories#cve-2026-42018---anonymous-user-token-generation-exposure
+- claim_id: e55c474d31
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: Wiz corrected its fixed versions for this CVE on 2026-09-11 and lists 7.111.21, 7.117.28, 7.125.20, 7.133.29, 7.146.38 and 7.161.20 (
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: e73ef872ab
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: For CVE-2026-42016 JFrog names 7.133.11 as the only fixed build, so Wiz's 7.111.21, 7.117.28 and 7.125.20 remain inside JFrog's affected range for that flaw (
+  urls:
+  - https://docs.jfrog.com/releases/docs/jfrog-security-advisories#cve-2026-42016---incorrect-user-token-authorization-validation-allows-privilege-escalation
+- claim_id: 5a379acc02
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: The admin users and plugins survive restarts, and a stolen Access signing key lets an attacker forge valid tokens for any user and scope after patching, so an instance with malicious plugins needs
+    its token signing certificate reset, not only an upgrade (
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: c60ba1d289
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: In a 2026-09-17 addition, Wiz describes one plugin that injects a servlet filter living only in memory until the JVM restarts, and another that truncates the request logs the endpoint-based detections
+    depend on (
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: e5ff2d2e72
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: That is an operator confirming the vulnerable variant before relying on it, and a normal client does not produce it (
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: 26f7ab4eea
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: cited
+  text: '**Defender takeaway:** close both CVEs, since neither grants administrative control on its own but the pair does ('
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: a182650028
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: uncited
+  text: Neither flaw alone grants administrative control.
+- claim_id: bef5164828
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: uncited
+  text: 'Wiz''s own patching-velocity data is the second half of the defender-relevant finding: at first disclosure, 67% of organizations running Artifactory had at least one instance vulnerable to CVE-2026-42016,
+    and a similar 69% for CVE-2026-42018; six weeks after CVE-2026-42016''s disclosure, 59% remained vulnerable, and CVE-2026-42018 fell only from 69% to 62% over four weeks.'
+- claim_id: 4b1418c8ad
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: uncited
+  text: The two high-rated flaws in this chain stayed unpatched for longer, and the exploitation Wiz reports began inside that window.
+- claim_id: 6984c0375b
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: derived
+  text: '**Detection:** upgrading does not evict an attacker.'
+- claim_id: 3a049bb596
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: derived
+  text: '**Triage:** the highest-confidence signal is behavioral rather than a single request: a 401 on the bare token path (`/access/api/v1/aws/token` without the trailing slash) followed by a 200 on a
+    variant of it, such as the trailing-slash form, from the same client in a short window.'
+- claim_id: 7e6f185683
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: body
+  kind: derived
+  text: Correlate any resulting anonymous-identity token activity against later user-creation, plugin-execution or credential-enumeration calls.
+- claim_id: e8ea7cb423
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: section 2026-10-11T14:02:26Z
+  kind: cited
+  text: 'Wiz Research''s sentence reads: "Together, the two can turn an unauthenticated request into an admin-scoped token in two steps" ('
+  urls:
+  - https://www.wiz.io/blog/artifactory-under-attack-in-the-wild-exploitation-of-cve-2026-42016-cve-2026-4201
+- claim_id: 7ff63d0f37
+  entry: 2026-09-12/jfrog-artifactory-cve-2026-42016-42018-token-chain-takeover
+  surface: record 2026-10-11T14:02:26Z
+  kind: record-summary
+  text: A Wiz Research quotation was not verbatim (an ellipsis replaced part of the sentence); it now quotes Wiz's sentence as written. The compromise-check action is trimmed to the task itself.
+- claim_id: 41fa361105
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: actions[0]
+  kind: frontmatter
+  text: Upgrade Codex to 0.146.0 or later, Claude Code to 2.1.179 or later, Copilot CLI to 1.0.87 or later and the Copilot app to 1.1.23 or later.
+- claim_id: 41727b432b
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: All four implement plugin-marketplace SHA-pinning, locking each install to a reviewed 40-hex commit hash, but none verifies after checkout that the resolved working tree actually matches that hash
+    (
+  urls:
+  - https://www.air.security/blog-posts/plugin4shell
+- claim_id: 0d24af963d
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: An attacker who controls or takes over a trusted plugin's upstream repository creates a branch named identically to the pinned SHA and sets it as the repository's default branch; Claude Code, Codex
+    and Copilot run a plain `git clone` followed by a checkout of the pinned commit, and because git resolves an ambiguous ref-versus-object-id in favor of the ref, the checkout silently resolves to the
+    attacker's branch while the agent reports the pinned commit installed (
+  urls:
+  - https://www.air.security/blog-posts/plugin4shell
+- claim_id: cba5c9a957
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: 'Gemini CLI has a distinct but equally exploitable variant: it fetches the pinned commit into `FETCH_HEAD` then checks that out, which an attacker defeats by naming their malicious default branch
+    literally "FETCH_HEAD" ('
+  urls:
+  - https://www.air.security/blog-posts/plugin4shell
+- claim_id: 1438a40e39
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: 'Because background plugin auto-update is the default in Claude Code and Codex, an already-installed, already-reviewed plugin is silently swapped on the next update with no install step and no prompt:
+    full zero-click compromise of the agent and "full access to every asset and every piece of data the agent can reach" ('
+  urls:
+  - https://www.air.security/blog-posts/plugin4shell
+- claim_id: 524455c75b
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: AIR built a working test attack against all four agents in May 2026 and disclosed it to the vendors in June (
+  urls:
+  - https://thehackernews.com/2026/09/plugin4shell-lets-repository-owners.html
+- claim_id: c4e2e05fec
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: OpenAI's own public fix for the same bug shipped in Codex 0.146.0, and AIR says Anthropic fixed it in Claude Code 2.1.179, which Anthropic's release notes do not mention (
+  urls:
+  - https://thehackernews.com/2026/09/plugin4shell-lets-repository-owners.html
+- claim_id: 9e51226403
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: AIR wrote at disclosure that Microsoft had shipped no fix for Copilot (
+  urls:
+  - https://www.air.security/blog-posts/plugin4shell
+- claim_id: 0ed2fa51cc
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: By 2026-09-30 heise online had updated its article to report, citing GitHub support, that GitHub closed the flaw in Copilot CLI 1.0.87 and in the Copilot app 1.1.23, and that the fix checks whether
+    the checked-out code matches the pinned commit (translated from German) (
+  urls:
+  - https://www.heise.de/news/Kritische-Luecke-bei-Claude-Code-OpenAI-Codex-GitHub-Copilot-und-Gemini-CLI-11459862.html
+- claim_id: 6f2ba8ebff
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: Consumer Gemini CLI is being deprecated rather than patched, so every existing install "stays vulnerable for good" (
+  urls:
+  - https://www.air.security/blog-posts/plugin4shell
+- claim_id: 382ea2e741
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: On 2026-08-04 the researchers received Google's confirmation that consumer Gemini CLI is being discontinued and will get no fix (
+  urls:
+  - https://www.heise.de/news/Kritische-Luecke-bei-Claude-Code-OpenAI-Codex-GitHub-Copilot-und-Gemini-CLI-11459862.html
+- claim_id: 6c60f2ad81
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: Enterprise access via Gemini Code Assist or Google Cloud is not affected by the discontinuation, and Google's replacement, Antigravity CLI, currently has no comparable SHA-pinning mechanism to bypass
+    (translated from German) (
+  urls:
+  - https://www.heise.de/news/Kritische-Luecke-bei-Claude-Code-OpenAI-Codex-GitHub-Copilot-und-Gemini-CLI-11459862.html
+- claim_id: aac54c6818
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: Google says enterprise access to the Gemini CLI will continue with updates, and whether a fix for this flaw is among them is not clear (
+  urls:
+  - https://thehackernews.com/2026/09/plugin4shell-lets-repository-owners.html
+- claim_id: d7baf23915
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: 'The Hacker News independently checked the shipped plugin catalogs on 2026-09-18 and adds a material scope caveat: background auto-update is on by default only for each agent''s own built-in, GitHub-hosted
+    marketplace, and every plugin it checked in Anthropic''s community catalog and the default Claude Code/Copilot catalogs points to a GitHub repository, which rejects SHA-shaped branch names outright,
+    so the branch-hijack variant does not reach a user who installs only from an agent''s default marketplace ('
+  urls:
+  - https://thehackernews.com/2026/09/plugin4shell-lets-repository-owners.html
+- claim_id: 633788dee0
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: 'The risk concentrates on externally-hosted marketplaces: AIR and The Hacker News name Bitbucket and self-hosted git servers ('
+  urls:
+  - https://thehackernews.com/2026/09/plugin4shell-lets-repository-owners.html
+- claim_id: 0d5ee9c9e3
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: ), while heise online states that GitLab, like GitHub, rejects branch names in commit-hash format and is not exploitable this way (translated from German) (
+  urls:
+  - https://www.heise.de/news/Kritische-Luecke-bei-Claude-Code-OpenAI-Codex-GitHub-Copilot-und-Gemini-CLI-11459862.html
+- claim_id: 5ba48294e5
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: On those outside marketplaces auto-update is off or optional (
+  urls:
+  - https://thehackernews.com/2026/09/plugin4shell-lets-repository-owners.html
+- claim_id: 61e531f84a
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: Gemini CLI's `FETCH_HEAD`-named-branch variant is not clearly blocked by GitHub's hash-name restriction, so a GitHub-hosted Gemini plugin is not established as safe (
+  urls:
+  - https://thehackernews.com/2026/09/plugin4shell-lets-repository-owners.html
+- claim_id: 186be6b8c4
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: As of 2026-09-18, no CVE identifier had been assigned and no source reported exploitation in the wild (
+  urls:
+  - https://thehackernews.com/2026/09/plugin4shell-lets-repository-owners.html
+- claim_id: 58a46ed88b
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: AIR names this check of the resolved HEAD, rather than of the requested ref, as the assertion that closes both variants (
+  urls:
+  - https://www.air.security/blog-posts/plugin4shell
+- claim_id: a23100dda6
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: Consumer Gemini CLI will not be fixed (
+  urls:
+  - https://www.air.security/blog-posts/plugin4shell
+- claim_id: 32c02f0749
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: cited
+  text: ), and it is not established that installing its plugins only from GitHub avoids the flaw (
+  urls:
+  - https://thehackernews.com/2026/09/plugin4shell-lets-repository-owners.html
+- claim_id: 24b6164d6a
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: uncited
+  text: 'Security firm AIR disclosed Plugin4Shell on 2026-09-17: a remote-code-execution design flaw, zero-click by AIR''s account, present in four major AI coding agents: Claude Code, OpenAI Codex, GitHub
+    Copilot and Gemini CLI.'
+- claim_id: 163a162d0e
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: derived
+  text: '**Detection:** monitor the coding agent''s plugin-manager child processes (process-creation events for the git binary spawned by the agent), and after a plugin install or update compare the commit
+    actually checked out in the plugin directory (`git rev-parse HEAD`) with the marketplace-pinned SHA.'
+- claim_id: 2629fbaa18
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: derived
+  text: '**Triage:** routine background plugin auto-update produces the same git clone and checkout telemetry as the attack, so a single update event is not itself suspicious.'
+- claim_id: c327401509
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: derived
+  text: The discriminator is a resolved HEAD that differs from the pinned SHA, not the presence of an update.
+- claim_id: dcedf7244a
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: body
+  kind: derived
+  text: '**Defender takeaway:** update Codex, Claude Code and Copilot now, keeping in mind that the Claude Code fix rests on AIR''s account and the Copilot fix on GitHub support''s statement as reported
+    by heise online.'
+- claim_id: 81c3b606ca
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: section 2026-10-11T14:08:41Z
+  kind: cited
+  text: The Hacker News finds auto-update on by default only for each agent's own GitHub-hosted marketplace, where the branch-name trick does not work, and off or optional for outside marketplaces (
+  urls:
+  - https://thehackernews.com/2026/09/plugin4shell-lets-repository-owners.html
+- claim_id: e795fa0173
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: section 2026-10-11T14:08:41Z
+  kind: uncited
+  text: Zero-click is AIR's characterization of the background auto-update path.
+- claim_id: b6240424f6
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: section 2026-10-11T14:08:41Z
+  kind: uncited
+  text: Gemini CLI's exposure runs through a distinct `FETCH_HEAD` branch variant rather than the same mechanism as the other three agents.
+- claim_id: 6d6e516868
+  entry: 2026-09-22/plugin4shell-ai-coding-agent-sha-pinning-bypass
+  surface: record 2026-10-11T14:08:41Z
+  kind: record-summary
+  text: The title stated zero-click and identical exposure as fact; zero-click is AIR's characterization, and The Hacker News finds the default marketplaces unreachable by the branch variant while Gemini
+    CLI has a distinct one. The title now attributes zero-click to AIR and drops 'identically', two uncited sentences on external-marketplace auto-update and the Gemini variant gain their citation with
+    the source's 'off or optional' wording, and the action is cut to the upgrade task.
+- claim_id: b3ea20ba77
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: cited
+  text: That one is `login`" (
+  urls:
+  - https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce
+- claim_id: d787531d92
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: cited
+  text: 'VulnCheck states "verified on the lab: /tmp/x reads uid=0(root) gid=0(root) groups=0(root)" ('
+  urls:
+  - https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce
+- claim_id: 595965f288
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: cited
+  text: VulnCheck audited 3.2.9 patch 7 and, in a 2026-09-20 re-test from decoded source, found patch 8 vulnerable as well (
+  urls:
+  - https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce
+- claim_id: c5833d4d48
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: cited
+  text: Patch 7, the build audited above, and patch 8 are both still vulnerable" (
+  urls:
+  - https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce
+- claim_id: a61a532cc1
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: cited
+  text: 'Detection concept: VulnCheck''s exploit reaches the admin panel on ports 4084/4085 with `act=login` and `from_billing_module` set and a serialized `billing_data` field in the POST body ('
+  urls:
+  - https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce
+- claim_id: 0195f2e050
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: cited
+  text: The injected commands run in the admin panel's root php-fpm pool and relay their output through randomly named static files written into the webroot and then removed (
+  urls:
+  - https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce
+- claim_id: adfa341da2
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: cited
+  text: '**Triage:** in the fixed build the billing hook runs only after a validated API call, a valid API key or admin API credentials ('
+  urls:
+  - https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce
+- claim_id: 88da0749e8
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: VulnCheck's Initial Access Intelligence team discloses three unauthenticated vulnerabilities in Virtualizor, Softaculous' commercial VPS/hypervisor control panel (KVM/OpenVZ/LXC), all reached through
+    a single mis-scoped pre-authentication guard.
+- claim_id: 753abddf42
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: 'In `enduser/admin.php`, the admin panel (ports 4084/4085) redirects every request to the login page except one: "the redirect that guards the admin panel fires for every action except one.'
+- claim_id: 06ded8c14e
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: The `act=login` request that should only reach the login page instead falls through the guard and reaches an unauthenticated `from_billing_module` handler with no session, API key or slave credentials.
+- claim_id: b2a553046f
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: 'CVE-2026-43641 (CWE-78 OS command injection) is the flagship: the handler''s `uid` field, taken unvalidated from an unserialized attacker POST body, is concatenated into a shell command inside
+    `billing_unsuspend()` → `vexec()` → `proc_open()`, giving remote root command execution.'
+- claim_id: 1dcc329294
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: 'Exploitation requires an existing in-house-billing account on the target that is currently suspended and paid up, server state that exists on any install using that billing mode by design, and
+    no separate enumeration step is needed because the same request path is a non-destructive timing oracle: injecting a `sleep` payload via the `uid` field hangs the response only for a valid, eligible
+    uid.'
+- claim_id: 00b380470b
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: The bug additionally needs MySQL's default non-strict `sql_mode`, which VulnCheck confirmed is what Virtualizor's own bundled MySQL 5.5.62 stack ships uncorrected, so this is a default-production
+    condition, not a lab artifact.
+- claim_id: df8249fc42
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: 'The root-level impact is possible because Virtualizor''s EMPS stack splits PHP execution across separate php-fpm pools by port: the admin-panel `index.php` on ports 4084/4085 runs in a pool that
+    executes as root, while the client panel and every other `.php` file run in an unprivileged pool.'
+- claim_id: 4221714215
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: The exploit therefore never drops a PHP web shell (which would run unprivileged) and instead relays each command's output to a randomly named static file written into the webroot and served directly
+    by nginx.
+- claim_id: 30a0f6129f
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: CVE-2026-43642 (CWE-502 PHP object injection) reaches the same unauthenticated handler's native `unserialize()` call on attacker-controlled POST data with no `allowed_classes` restriction; VulnCheck
+    demonstrates no working gadget chain in the stock code, but the primitive is live for any add-on or plugin that introduces a class with a `__wakeup` or `__destruct` method.
+- claim_id: 14829f9130
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: CVE-2026-43643 (CWE-639 authorization bypass through a user-controlled key) lets an unauthenticated caller zero out or inflate any tenant's account balance through the same handler's `whmcs` branch,
+    via a parameterized but unauthenticated balance UPDATE with no ownership check.
+- claim_id: 74a5ae53a4
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: '"Softaculous patched all three in 3.2.9 patch 9 (2026-09-01), and the fix carries into 3.3.0 (2026-09-09), the current build.'
+- claim_id: 2d533b0fdb
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: The fix requires a validated API call (HMAC API key or admin credentials) before the billing hook is reachable at all, casts the `uid` value to an integer before it reaches the shell, restricts
+    the deserialization call with `allowed_classes => false`, and adds an ownership check to the balance-write branch.
+- claim_id: 7188cb6362
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: VulnCheck's post does not state whether it has observed in-the-wild exploitation; it also turned the command-injection flaw into a self-contained exploit module, built on VulnCheck's own open-source
+    "go-exploit" framework, that fingerprints the Virtualizor admin panel, finds an eligible suspended account on its own via the timing oracle, and returns a root shell with no credentials and no account
+    information supplied by the operator.
+- claim_id: 86d1817f54
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: VulnCheck's post demonstrates this module against its own lab instance and does not state that the CVE-specific module itself was released publicly, only that it is built on the publicly available
+    go-exploit framework.
+- claim_id: a8a612ca37
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: On any self-managed Virtualizor installation, look in admin-panel access logs for unauthenticated requests carrying that combination, since a login request has no use for billing-module parameters.
+- claim_id: efffed50c0
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: body
+  kind: derived
+  text: '**Defender takeaway:** patch to 3.2.9 patch 9 or 3.3.0 now; independent of patch level, VulnCheck''s own operational guidance is to keep Virtualizor''s admin-panel ports off the public internet
+    or behind an allowlist, since the underlying lesson — a shared tainted value trusted by a parameterized query is not automatically safe when the same value later reaches a shell command or file path
+    — is a defect class a patch fixes once but a code-review habit prevents going forward.'
+- claim_id: 71b8eaa7a7
+  entry: 2026-09-23/virtualizor-billing-hook-unauth-root-rce
+  surface: record 2026-10-11T14:10:01Z
+  kind: record-summary
+  text: 'VulnCheck says no working gadget chain is demonstrated in the stock code, not that none exists; the wording now follows the source. Priority lowers to routine: no exploitation, a vendor fix since
+    2026-09-01, a root path that needs an existing suspended billing account, and a product outside the typical public-administration estate.'
+- claim_id: 568b9dcc15
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: summary
+  kind: frontmatter
+  text: 'NGINX "NGINX Rift" CVE-2026-42945 (CVSS 9.2/4.0): 18-year-old heap overflow in ngx_http_rewrite_module now has a public PoC and VulnCheck saw exploitation attempts against honeypots; NCSC-CH advisory
+    published 2026-05-15; affects NGINX 0.6.27–1.30.0, Plus R32–R36, Kubernetes Ingress Controller, and multiple F5 products (NCSC-CH Security Hub #12575, 2026-05-15).'
+- claim_id: 9e91d9ddb3
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: cves[CVE-2026-42945]
+  kind: frontmatter
+  text: '{"id": "CVE-2026-42945", "cvss": "9.2", "status": ["poc-public", "patch-available"], "affected": null, "fixed": null, "auth": "pre-auth", "vector": "zero-click"}'
+- claim_id: f633416435
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: cited
+  text: 'CVE-2026-42945 (CVSS 4.0: 9.2 / CVSS 3.1: 8.1, CWE-122, codename "NGINX Rift") is a heap buffer overflow present in `src/http/ngx_http_script.c` since NGINX 0.6.27 (2008) ('
+  urls:
+  - https://depthfirst.com/research/nginx-rift-achieving-nginx-rce-via-an-18-year-old-vulnerability
+- claim_id: 15edad8841
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: cited
+  text: A working PoC is public at `github.com/depthfirstdisclosures/nginx-rift`. depthfirst's internal analysis system found the flaw on 2026-04-18; depthfirst reported it to NGINX on 2026-04-21, shared
+    its RCE proof of concept on 2026-05-05, and F5 released the advisory on 2026-05-13 (
+  urls:
+  - https://depthfirst.com/research/nginx-rift-achieving-nginx-rce-via-an-18-year-old-vulnerability
+- claim_id: 886089bb0b
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: cited
+  text: 'Affected: NGINX Open Source 0.6.27 to 1.30.0 ('
+  urls:
+  - https://nginx.org/en/security_advisories.html
+- claim_id: ff544da588
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: cited
+  text: ); NGINX Plus R32 to R36; Ingress Controller 3.5.0 to 3.7.2, 4.0.0 to 4.0.1 and 5.0.0 to 5.4.1; Gateway Fabric 1.3.0 to 1.6.2 and 2.0.0 to 2.5.1; Instance Manager 2.16.0 to 2.21.1; F5 WAF for NGINX
+    5.9.0 to 5.12.1; App Protect WAF 4.9.0 to 4.16.0 and 5.1.0 to 5.8.0; F5 DoS for NGINX 4.8.0; App Protect DoS 4.3.0 to 4.7.0 (
+  urls:
+  - https://securityaffairs.com/192132/hacking/nginx-rift-an-18-year-old-flaw-in-the-worlds-most-deployed-web-server-just-came-to-light.html
+- claim_id: 340c05afd7
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: cited
+  text: 'Fixed: NGINX Open Source 1.30.1 and 1.31.0 ('
+  urls:
+  - https://nginx.org/en/security_advisories.html
+- claim_id: 0aa0073c59
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: cited
+  text: ); NGINX Plus R32 P6 and R36 P4 (
+  urls:
+  - https://securityaffairs.com/192132/hacking/nginx-rift-an-18-year-old-flaw-in-the-worlds-most-deployed-web-server-just-came-to-light.html
+- claim_id: 29e3e746bf
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: cited
+  text: VulnCheck reported exploitation attempts against its honeypot networks; the nature of the activity and its goals are unknown (
+  urls:
+  - https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html
+- claim_id: dc0a50e73b
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: cited
+  text: '**Contradiction:** the NGINX project rates the flaw severity medium ('
+  urls:
+  - https://nginx.org/en/security_advisories.html
+- claim_id: 964f4332f4
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: cited
+  text: ), while F5, NCSC-CH and depthfirst give a CVSS 4.0 score of 9.2 (
+  urls:
+  - https://security-hub.ncsc.admin.ch/#/posts/12575
+- claim_id: c521ab3479
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: cited
+  text: '**Exposure:** a configuration with a `rewrite` that uses an unnamed capture and a `?` in the replacement, followed by another `rewrite`, `if` or `set` in the same scope; without that pattern the
+    flaw is not reachable ('
+  urls:
+  - https://security-hub.ncsc.admin.ch/#/posts/12575
+- claim_id: 2699e87db8
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: cited
+  text: '**Detection:** repeated NGINX worker crashes and automatic restarts, correlated with requests whose URI carries characters that expand when escaped (`+`, `%`, `&`), are the observable effect ('
+  urls:
+  - https://securityaffairs.com/192132/hacking/nginx-rift-an-18-year-old-flaw-in-the-worlds-most-deployed-web-server-just-came-to-light.html
+- claim_id: f95bc0a599
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: uncited
+  text: 'The root cause: when a `rewrite` directive combines an unnamed PCRE capture (`$1`, `$2`) with a replacement string containing `?`, followed by another `rewrite`, `if`, or `set` directive in the
+    same scope, `ngx_http_script_start_args_code()` sets a flag causing the write phase to URI-encode URI argument characters — expanding `+`, `%`, and `&` by two bytes each — while the length-calculation
+    phase computed a shorter buffer without this escaping.'
+- claim_id: 8c5b27f5a2
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: uncited
+  text: The result is a deterministic out-of-bounds write into the adjacent heap allocation.
+- claim_id: e044f28915
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: uncited
+  text: Reliable impact is crash of the NGINX worker process (DoS with automatic master restart); RCE requires ASLR to be disabled on the host.
+- claim_id: 9df1bf0519
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: body
+  kind: uncited
+  text: 'Exploitation status: no in-the-wild confirmed; NCSC-CH rates "UNKNOWN, PoC Available." Temporary workaround: replace all unnamed captures with named captures (e.g., `(?P<foo>...)` → `$foo`) in
+    `rewrite` directives — this eliminates the vulnerable code path without requiring upgrade.'
+- claim_id: b7bdcda214
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: section 2026-10-11T14:41:26Z
+  kind: cited
+  text: depthfirst reported the flaw to NGINX on 2026-04-21 and shared its code-execution proof of concept on 2026-05-05 (
+  urls:
+  - https://depthfirst.com/research/nginx-rift-achieving-nginx-rce-via-an-18-year-old-vulnerability
+- claim_id: c749c41980
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: section 2026-10-11T14:41:26Z
+  kind: cited
+  text: VulnCheck reported exploitation attempts against its honeypots, with their purpose unknown (
+  urls:
+  - https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html
+- claim_id: e70ba8b068
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: section 2026-10-11T14:41:26Z
+  kind: cited
+  text: The NGINX project rates the flaw medium (
+  urls:
+  - https://nginx.org/en/security_advisories.html
+- claim_id: 887d83f950
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: section 2026-10-11T14:41:26Z
+  kind: cited
+  text: ), against the CVSS 4.0 score of 9.2 used by F5 and NCSC-CH (
+  urls:
+  - https://security-hub.ncsc.admin.ch/#/posts/12575
+- claim_id: a33301f302
+  entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  surface: record 2026-10-11T14:41:26Z
+  kind: record-summary
+  text: depthfirst found the flaw on 2026-04-18, reported it on 2026-04-21 and shared its proof of concept on 2026-05-05; no source mentions an NDA or a 2026-04-28 PoC handover. The affected-version ranges
+    for the Kubernetes and F5 products had gaps the earlier text closed over, and the NGINX project's own medium severity rating was not set against the 9.2 score. The entry gains the nginx.org advisory,
+    Security Affairs and The Hacker News as sources, VulnCheck's honeypot exploitation attempts carried over from the duplicate entry of 2026-05-18, a contradiction line, exposure and detection lines, a
+    rating, an ATT&CK mapping, the affected products and a link to the SAP August patch-day entry.
+- claim_id: f153451cea
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: headline
+  kind: frontmatter
+  text: Microsoft shows how two Semantic Kernel flaws turned prompts into shells on the agent host; both were patched in February
+- claim_id: 2f58872f31
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: summary
+  kind: frontmatter
+  text: 'Microsoft''s research of 2026-05-07 details two Semantic Kernel flaws fixed in February: CVE-2026-26030, where a prompt-controlled value reaches eval() in the Python In-Memory Vector Store filter,
+    and CVE-2026-25592, where the .NET sessions plugin let a prompt write a script into the host''s Startup folder. Both score CVSS 9.9 and need a prompt-injection vector; no exploitation is reported.'
+- claim_id: dd53206d92
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: cves[CVE-2026-26030]
+  kind: frontmatter
+  text: '{"id": "CVE-2026-26030", "cvss": "9.9", "status": ["poc-public", "patch-available"], "affected": "Python semantic-kernel before 1.39.4", "fixed": "1.39.4", "auth": "post-auth", "vector": "zero-click"}'
+- claim_id: 4f77631305
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: cves[CVE-2026-25592]
+  kind: frontmatter
+  text: '{"id": "CVE-2026-25592", "cvss": "9.9", "status": ["patch-available"], "affected": ".NET Microsoft.SemanticKernel.Plugins.Core before 1.71.0; pip semantic-kernel before 1.39.3", "fixed": ".NET
+    1.71.0; pip 1.39.3", "auth": "post-auth", "vector": "zero-click"}'
+- claim_id: 4d759a4347
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: body
+  kind: cited
+  text: Microsoft's Defender research team published on 2026-05-07 how two Semantic Kernel flaws turn a prompt injection into code execution on the host running an AI agent (
+  urls:
+  - https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+- claim_id: 08048e0da9
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: body
+  kind: cited
+  text: 'Both were fixed months earlier: CVE-2026-25592 in February ('
+  urls:
+  - https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-2ww3-72rp-wpp4
+- claim_id: 59bdf3f41e
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: body
+  kind: cited
+  text: ) and CVE-2026-26030 later the same month (
+  urls:
+  - https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-xjw9-4gw8-4rqx
+- claim_id: d03c4d6986
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: body
+  kind: cited
+  text: '**CVE-2026-26030** (Python `semantic-kernel` before 1.39.4) sits in the In-Memory Vector Store filter behind the Search Plugin: in the default configuration the filter is a Python lambda executed
+    with `eval()`, and an AI-controlled value is interpolated into it ('
+  urls:
+  - https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+- claim_id: 1e268340e9
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: body
+  kind: cited
+  text: Microsoft's exploit prompt escaped the template string, traversed Python's class hierarchy to `BuiltinImporter`, loaded `os` and called `system()`, bypassing the AST-based blocklist; the fix adds
+    node-type and function-call allowlists and blocks class-hierarchy attributes (
+  urls:
+  - https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+- claim_id: 94f7da918a
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: body
+  kind: cited
+  text: The attack needs a prompt-injection vector and the Search Plugin backed by the In-Memory Vector Store in its default configuration (
+  urls:
+  - https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+- claim_id: aacd8771fa
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: body
+  kind: cited
+  text: ), and the advisory advises against using the In-Memory Vector Store in production (
+  urls:
+  - https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-xjw9-4gw8-4rqx
+- claim_id: 04a821449d
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: body
+  kind: cited
+  text: '**CVE-2026-25592** (.NET `Microsoft.SemanticKernel.Plugins.Core` before 1.71.0) exposed `DownloadFileAsync` to the model as a kernel function, so a prompt could have the agent write a script created
+    inside the Azure Container Apps sandbox into the host''s Windows Startup folder, where it runs at the next sign-in; `upload_file` in both SDKs similarly accepted any local path, allowing host files
+    to be read out ('
+  urls:
+  - https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+- claim_id: 990eb875fe
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: body
+  kind: cited
+  text: The advisory's workaround is a Function Invocation Filter that allow-lists `localFilePath` for the download and upload functions (
+  urls:
+  - https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-2ww3-72rp-wpp4
+- claim_id: 967d85a969
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: body
+  kind: cited
+  text: '**Exposure:** agents built on Python `semantic-kernel` before 1.39.4 using the In-Memory Vector Store filter, or on the .NET Core plugins before 1.71.0 using the sessions Python plugin ('
+  urls:
+  - https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+- claim_id: 199e077bb2
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: body
+  kind: cited
+  text: '**Detection:** in process telemetry, a Semantic Kernel host process (a Python interpreter or `dotnet.exe`) spawning a shell or download utility, and the agent process writing files into a Startup
+    folder, are the behaviours Microsoft''s hunting queries target ('
+  urls:
+  - https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+- claim_id: ef822ffa7e
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: body
+  kind: cited
+  text: '**Defender takeaway:** the model is not a security boundary; any agent tool that reaches `eval()` or the host file system needs the same input validation as an internet-facing endpoint, and these
+    two fixes have been available since February ('
+  urls:
+  - https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+- claim_id: 313b71786f
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: body
+  kind: uncited
+  text: No source reports exploitation.
+- claim_id: eae7a69b4e
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: section 2026-10-11T14:44:02Z
+  kind: cited
+  text: In CVE-2026-25592, `DownloadFileAsync` is what writes attacker content to the host, including the Startup folder, and `upload_file` is what reads host files out (
+  urls:
+  - https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+- claim_id: e812c1b1b1
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: section 2026-10-11T14:44:02Z
+  kind: cited
+  text: CVE-2026-26030 passes an interpolated lambda to `eval()` behind an AST-based blocklist, which Microsoft bypassed through `BuiltinImporter` (
+  urls:
+  - https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+- claim_id: 652aebb860
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: section 2026-10-11T14:44:02Z
+  kind: cited
+  text: The fixes were published in February (
+  urls:
+  - https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-xjw9-4gw8-4rqx
+  - https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-2ww3-72rp-wpp4
+- claim_id: e54412b318
+  entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  surface: record 2026-10-11T14:44:02Z
+  kind: record-summary
+  text: 'The CVE-2026-25592 mechanism was inverted: DownloadFileAsync is the host-side write that drops a script into the Startup folder, and upload_file is the read path. CVE-2026-26030 is an eval() of
+    a lambda with an AST-based blocklist bypassed through BuiltinImporter, not an f-string with a literal-text blocklist. The advisories date from February, not 2026-05-07; the product, EU-pilot and default-store
+    claims, the Python-side blast-radius claim and the EDR category names had no source; and the CVEs need a low-privileged attacker with no user interaction. The entry is rewritten from Microsoft''s post
+    and the two advisories with exposure, detection and takeaway lines, a rating and an ATT&CK mapping.'
+- claim_id: 93a2fc76a9
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: cited
+  text: Seven government agencies (Japan's National Police Agency and National Cybersecurity Office, the US FBI and DoD Cyber Crime Center, Australia's Signals Directorate/ACSC, and Germany's BND and BfV)
+    jointly published a Cybersecurity Advisory on 2026-09-18 on the North Korean "WaterPlum" cyber-actor group, publicly known as **Contagious Interview** (
+  urls:
+  - https://www.ic3.gov/CSA/2026/260918.pdf
+- claim_id: 5308056e4e
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: cited
+  text: 'The advisory puts figures on the campaign from around December 2025 through July 2026: at least 30,000 infected devices across more than 100 countries, funds or credentials exfiltrated from over
+    7,000 cryptocurrency wallets, and roughly 1.7 billion Japanese yen (about USD 10.7 million) moved to DPRK ('
+  urls:
+  - https://www.ic3.gov/CSA/2026/260918.pdf
+- claim_id: bfc2e6880a
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: cited
+  text: Germany's BfV confirms the campaign has targeted software developers "also in Germany" (translated from German) (
+  urls:
+  - https://www.verfassungsschutz.de/SharedDocs/kurzmeldungen/DE/2026/2026-09-18-joint-cybersecurity-advisory.html
+- claim_id: 0f3e6a099d
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: cited
+  text: 'Those files carry one of five malware families the advisory names: **BeaverTail** (JavaScript-based malware hidden inside NPM packages and downloadable from GitHub or Bitbucket), **InvisibleFerret**
+    (a Python backdoor), **OtterCookie** (a JavaScript RAT and infostealer), **OtterCandy** (combining OtterCookie and RATatouille features), and **StoatWaffle**, a modular Node.js loader, credential harvester
+    and RAT that hides inside blockchain-themed decoy VS Code project repositories and auto-executes through a malicious VS Code configuration file the moment the victim opens and trusts the folder ('
+  urls:
+  - https://www.ic3.gov/CSA/2026/260918.pdf
+- claim_id: dfe0118ffa
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: cited
+  text: 'The advisory ties the malware-delivery operation to North Korea''s remote-IT-worker placement scheme: "the NPA and the FBI assess both WaterPlum cyber actors and some North Korean IT workers operate
+    under the 313 General Bureau of the Munitions Industry Department subordinate to the Central Committee of the Workers Party of Korea" ('
+  urls:
+  - https://www.ic3.gov/CSA/2026/260918.pdf
+- claim_id: ade16de627
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: cited
+  text: It adds that some WaterPlum actors also operate as North Korean IT workers, and that both used the same IP addresses when accessing laptop farms, using crowdsourcing services and applying for positions
+    at a Japanese cryptocurrency exchange (
+  urls:
+  - https://www.ic3.gov/CSA/2026/260918.pdf
+- claim_id: a7f01808dd
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: cited
+  text: The advisory defines a laptop farm as a location, often an enabler's residence, where employment-related computers are set up and remotely controlled by North Korean IT workers (
+  urls:
+  - https://www.ic3.gov/CSA/2026/260918.pdf
+- claim_id: 48a40eda9c
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: cited
+  text: 'The advisory records two prior cases of IT-worker escalation beyond simple wage fraud: one worker extorted a company over payment and published its proprietary source code online, and another defaced
+    and disabled a hiring company''s website ('
+  urls:
+  - https://www.ic3.gov/CSA/2026/260918.pdf
+- claim_id: cb87aac6bc
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: cited
+  text: The advisory's interview flags for suspected North Korean IT workers are refusals or excuses regarding in-person meetings, requests to receive payment in cryptocurrency, frequent glances at another
+    monitor as if reading from the screen, occasional background voices, and repeated video or audio freezes (
+  urls:
+  - https://www.ic3.gov/CSA/2026/260918.pdf
+- claim_id: ee62484a55
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: cited
+  text: Developers should check any `tasks.json` for code that downloads or executes further files, avoid opening unknown projects from a path previously marked as trusted, run unknown code only in a sandbox
+    or virtual machine, and be especially cautious of commands or scripts containing strings such as curl, base64, -enc, mshta, Invoke-WebRequest or hidden (
+  urls:
+  - https://www.ic3.gov/CSA/2026/260918.pdf
+- claim_id: 66147e28fe
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: cited
+  text: '**Triage:** the advisory names what BeaverTail, InvisibleFerret and OtterCookie collect (browser authentication data, clipboard contents, keystrokes, screenshots and wallet data) and the StoatWaffle
+    delivery through a `.vscode/tasks.json` entry that runs when a freshly cloned repository''s folder is trusted ('
+  urls:
+  - https://www.ic3.gov/CSA/2026/260918.pdf
+- claim_id: 48d11fe731
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: uncited
+  text: Once backdoored, operators use the RATs for persistence and lateral pivoting while infostealers harvest browser-stored credentials, clipboard contents, keystrokes, screenshots and cryptocurrency-wallet
+    data to a command-and-control address; the same access lets operators pursue further espionage or intellectual-property theft inside the victim's employer.
+- claim_id: 0a9758f9c7
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: uncited
+  text: Separately, Japanese authorities "for the first time in Japan" identified and dismantled a "laptop farm" operated by an enabler in Japan, and obtained evidence that the actor group transferred "several
+    hundred million" yen in cryptocurrency abroad.
+- claim_id: 503ae9828d
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: derived
+  text: '**Defender takeaway:** this is a social-engineering-led initial-access vector, not an exploited vulnerability, so the controls are procedural rather than patch-based.'
+- claim_id: 0a3b15e4b9
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: derived
+  text: HR and recruiting workflows, including at cantonal or federal IT departments and their contracted suppliers that source developer talent through crowdsourcing or freelance platforms, should never
+    let a candidate run unreviewed take-home-assignment code with credentials or production access, should sandbox or review any coding-assignment repository before execution, and should verify a remote
+    contractor's identity documents against known facilitator/laptop-farm patterns before onboarding.
+- claim_id: 62e0746c6b
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: derived
+  text: For developers and their endpoints, the advisory's controls are to open unknown VS Code projects only in Restricted Mode, by answering "No" to the prompt asking whether to trust the authors of the
+    files in the folder, which stops `.vscode/tasks.json` from running on launch.
+- claim_id: 24fd9fe0fb
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: derived
+  text: It gives no process lineage, so as a hunting hypothesis expect a `node` or `python` process spawned from an IDE or terminal shortly after a new project folder is opened or `npm install` completes,
+    then reading browser credential stores or the clipboard; legitimate build tooling does neither.
+- claim_id: 944930c368
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: body
+  kind: derived
+  text: The distinguishing context is timing correlation with an active job-interview or coding-test process rather than `node`, `npm` or VS Code activity alone.
+- claim_id: 3fcd969c5c
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: section 2026-10-11T14:07:24Z
+  kind: cited
+  text: The joint advisory describes the data the malware families collect and the VS Code tasks file that runs code when a cloned folder is trusted, but it gives no process lineage or network pattern (
+  urls:
+  - https://www.ic3.gov/CSA/2026/260918.pdf
+- claim_id: 752895d015
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: section 2026-10-11T14:07:24Z
+  kind: uncited
+  text: The `node` or `python` process chain in the triage guidance is a hunting hypothesis, not behavior the agencies report.
+- claim_id: 0e4641993a
+  entry: 2026-09-19/waterplum-contagious-interview-joint-advisory-scale
+  surface: record 2026-10-11T14:07:24Z
+  kind: record-summary
+  text: The triage guidance presented a node or python process chain after an npm install as observed behavior, but the joint advisory gives no process lineage or network pattern. The guidance now cites
+    the advisory for what it does state (the data the malware families collect and the VS Code tasks-file auto-run) and marks the process chain as a hunting hypothesis.
+- claim_id: fec9c50ce1
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: headline
+  kind: frontmatter
+  text: Attackers went straight for LiteLLM's stored provider credentials 36 hours after the SQL injection advisory; patching does not undo an exposure
+- claim_id: 1104a1510e
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: summary
+  kind: frontmatter
+  text: CVE-2026-42208 (CVSS 4.0 9.3) is a SQL injection in LiteLLM Proxy's API-key verification, reachable without credentials from any LLM API route in versions 1.81.16 to 1.83.6 and fixed in 1.83.7.
+    Sysdig saw the first exploitation 36 hours after the advisory, with queries against the tables holding virtual keys, stored provider credentials and proxy configuration; CISA added it to its KEV catalog
+    on 2026-05-08.
+- claim_id: 0be8c9eaca
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: actions[0]
+  kind: frontmatter
+  text: On any LiteLLM Proxy that ran 1.81.16 to 1.83.6 reachable from untrusted networks, upgrade to 1.83.7 or later and rotate the upstream provider keys and virtual keys stored in its database.
+- claim_id: b9acbadb7a
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: cves[CVE-2026-42208]
+  kind: frontmatter
+  text: '{"id": "CVE-2026-42208", "cvss": "9.3 (CVSS 4.0)", "status": ["exploited", "cisa-kev", "patch-available"], "affected": "1.81.16 through 1.83.6", "fixed": "1.83.7", "auth": "pre-auth", "vector":
+    "zero-click"}'
+- claim_id: e6ddd005d7
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: body
+  kind: cited
+  text: 'LiteLLM''s advisory GHSA-r75f-5x8p-qvmc, published on 2026-04-20, describes a SQL injection in the proxy''s API-key verification: the caller-supplied value was not passed to the database as a separate
+    parameter, and the flaw is fixed in 1.83.7 ('
+  urls:
+  - https://github.com/BerriAI/litellm/security/advisories/GHSA-r75f-5x8p-qvmc
+- claim_id: e907591a52
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: body
+  kind: cited
+  text: 'Bishop Fox confirmed that versions 1.81.16 through 1.83.6 are exploitable without credentials from any LLM API route, through the `Authorization: Bearer` value reaching `PrismaClient.get_data()`;
+    the response is always the same HTTP 401, so exploitation runs over a time-based blind channel using PostgreSQL''s `pg_sleep()` ('
+  urls:
+  - https://bishopfox.com/blog/cve-2026-42208-pre-authentication-sql-injection-in-litellm-proxy
+- claim_id: 8eb93aff1f
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: body
+  kind: cited
+  text: On a stock Docker Compose deployment with the Postgres sidecar, the application database user is a superuser, which raises the impact beyond reading metadata (
+  urls:
+  - https://bishopfox.com/blog/cve-2026-42208-pre-authentication-sql-injection-in-litellm-proxy
+- claim_id: f0585b586b
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: body
+  kind: cited
+  text: Virtual keys are stored as SHA-256 hashes, but the provider credentials are stored for use (
+  urls:
+  - https://bishopfox.com/blog/cve-2026-42208-pre-authentication-sql-injection-in-litellm-proxy
+  - https://www.sysdig.com/blog/cve-2026-42208-targeted-sql-injection-against-litellms-authentication-path-discovered-36-hours-following-vulnerability-disclosure
+- claim_id: 62b9db0a9d
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: body
+  kind: cited
+  text: Sysdig observed the first exploitation attempt 36 hours and seven minutes after the advisory reached the global database, with queries against `LiteLLM_VerificationToken` (virtual keys, including
+    the master key), `litellm_credentials` (stored upstream provider credentials) and `litellm_config` (
+  urls:
+  - https://www.sysdig.com/blog/cve-2026-42208-targeted-sql-injection-against-litellms-authentication-path-discovered-36-hours-following-vulnerability-disclosure
+- claim_id: 2a97cc1b50
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: body
+  kind: cited
+  text: CISA added the flaw to its Known Exploited Vulnerabilities catalog on 2026-05-08 (
+  urls:
+  - https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+- claim_id: a65046e1ce
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: body
+  kind: cited
+  text: 'The published workaround, `general_settings.disable_error_logs: true`, closes only one of the two code paths that reach the vulnerable query ('
+  urls:
+  - https://bishopfox.com/blog/cve-2026-42208-pre-authentication-sql-injection-in-litellm-proxy
+- claim_id: af5d7e8f94
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: body
+  kind: cited
+  text: '**Exposure:** LiteLLM Proxy 1.81.16 through 1.83.6 with the default PostgreSQL backend, reachable by untrusted clients ('
+  urls:
+  - https://bishopfox.com/blog/cve-2026-42208-pre-authentication-sql-injection-in-litellm-proxy
+- claim_id: dbdf90e733
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: body
+  kind: cited
+  text: '**Detection:** in proxy access logs, HTTP 401 responses to LLM API routes that take several seconds instead of under 100 milliseconds, from bearer values that are not `sk-` virtual keys, and proxy
+    log errors stating that a virtual key was expected to start with `sk-` ('
+  urls:
+  - https://bishopfox.com/blog/cve-2026-42208-pre-authentication-sql-injection-in-litellm-proxy
+- claim_id: c0ccdd8a32
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: body
+  kind: cited
+  text: LiteLLM provides a helper to review PostgreSQL query history for the injection (
+  urls:
+  - https://docs.litellm.ai/blog/cve-2026-42208-litellm-proxy-sql-injection
+- claim_id: d776e6748e
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: body
+  kind: cited
+  text: '**Defender takeaway:** upgrading stops new extraction but not the use of keys already taken: any instance exposed during the window needs its stored provider credentials rotated ('
+  urls:
+  - https://www.sysdig.com/blog/cve-2026-42208-targeted-sql-injection-against-litellms-authentication-path-discovered-36-hours-following-vulnerability-disclosure
+- claim_id: 8cb4d72961
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: section 2026-10-11T14:25:20Z
+  kind: cited
+  text: Sysdig, not Bishop Fox or LiteLLM, reported the attackers' queries against `LiteLLM_VerificationToken`, `litellm_credentials` and `litellm_config`, and the first attempt came 36 hours and seven
+    minutes after the advisory (
+  urls:
+  - https://www.sysdig.com/blog/cve-2026-42208-targeted-sql-injection-against-litellms-authentication-path-discovered-36-hours-following-vulnerability-disclosure
+- claim_id: 03fb987ed4
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: section 2026-10-11T14:25:20Z
+  kind: cited
+  text: The flaw is a SQL injection in the key lookup (
+  urls:
+  - https://github.com/BerriAI/litellm/security/advisories/GHSA-r75f-5x8p-qvmc
+- claim_id: 03215e9027
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: section 2026-10-11T14:25:20Z
+  kind: cited
+  text: ), and Bishop Fox's analysis is dated 2026-05-06 (
+  urls:
+  - https://bishopfox.com/blog/cve-2026-42208-pre-authentication-sql-injection-in-litellm-proxy
+- claim_id: 40d43e2a6a
+  entry: 2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio
+  surface: record 2026-10-11T14:25:20Z
+  kind: record-summary
+  text: Bishop Fox's analysis is dated 2026-05-06, not 2026-04-30, and the three targeted tables come from Sysdig's exploitation observation, which was uncited. Exploitation began about 36 hours after the
+    advisory, not 26; the flaw is a SQL injection, not an authentication bypass; and the evidence record quoted the entry itself. The entry is rewritten with the LiteLLM advisory as primary source, Sysdig's
+    observation, the affected range and the partial workaround, labelled exposure and detection guidance, a rotation action, a rating and an ATT&CK mapping.
+- claim_id: a8c05523f6
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: headline
+  kind: frontmatter
+  text: Cisco Talos maps The Gentlemen's AD attack chain, including offline credential theft from a mounted VHDX backup image
+- claim_id: dc4b67f5d3
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: summary
+  kind: frontmatter
+  text: Cisco Talos reconstructed a six-phase Active Directory attack chain used by an operator associated with the ransomware-as-a-service brand The Gentlemen, recovered from an exposed open directory's
+    own command history. The chain tunnels through Chisel/Ligolo-ng, enumerates AD with NetExec (Talos says RustHound/BloodHound-related tools may also have been used), attempts to exploit a public-facing
+    GLPI SQL injection and attempts Zerologon/MS17-010 for lateral movement, then extracts ntds.dit and SAM offline from a CIFS-mounted VHDX backup image, and exfiltrates the VHDX backup images themselves
+    in 256MiB chunks to Wasabi cloud storage via rclone.
+- claim_id: b12f43dbd8
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: body
+  kind: cited
+  text: Cisco Talos recovered an exposed open directory believed to belong to an operator associated with the ransomware-as-a-service brand The Gentlemen, and reconstructed a six-phase attack chain from
+    the directory's own shell command history (
+  urls:
+  - https://blog.talosintelligence.com/ransomware-incidents-in-japan-in-the-first-half-of-2026/
+- claim_id: de137e3120
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: body
+  kind: cited
+  text: For initial footholds against public-facing applications, the actor tried to exploit CVE-2025-24799 with a PoC and sqlmap to pull user information from the database, an unauthenticated SQL injection
+    in GLPI's inventory endpoint fixed in GLPI 10.0.18 (
+  urls:
+  - https://github.com/glpi-project/glpi/security/advisories/GHSA-jv89-g7f7-jwfg
+- claim_id: 1b8c1bf425
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: body
+  kind: cited
+  text: 'The credential-theft step is the chain''s most distinctive detail: the operator mounted a backup share over CIFS, installed `libguestfs-tools`, `qemu-utils` and `nbd-client` to inspect the Windows
+    filesystem inside VHDX backup images, copied out `ntds.dit`, `SAM` and `SYSTEM`, and ran Impacket''s `secretsdump.py` offline against the extracted files ('
+  urls:
+  - https://blog.talosintelligence.com/ransomware-incidents-in-japan-in-the-first-half-of-2026/
+- claim_id: fb563ecf53
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: body
+  kind: cited
+  text: Talos notes that The Gentlemen is suspected to be led by individuals based in Russia, which it says further supports the connection to the group (
+  urls:
+  - https://blog.talosintelligence.com/ransomware-incidents-in-japan-in-the-first-half-of-2026/
+- claim_id: 238951d0b2
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: body
+  kind: uncited
+  text: The operator first built a pivot platform using VPN software, Chisel and Ligolo, then ran nmap and masscan against externally exposed hosts and internal services once inside, then used NetExec to
+    enumerate SMB shares, host information, LDAP and computer information in Active Directory; Talos assesses the operator may also have used RustHound/BloodHound-related tools (a Rust BloodHound collector)
+    to collect domain users, groups, computers, administrative privileges and trust relationships for attack-path analysis.
+- claim_id: 6aa1b2dda6
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: body
+  kind: uncited
+  text: Talos also observed traces suggesting exploitation of CVE-2020-1472 (Zerologon) and the MS17-010 vulnerabilities, alongside NTLM-relay tooling via Responder.
+- claim_id: a0080a053b
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: body
+  kind: uncited
+  text: Separately, for lateral movement once inside the network, the operator used NetExec and Impacket to attempt authentication against SMB, LDAP, RDP and WinRM across multiple hosts.
+- claim_id: 0c4a192607
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: body
+  kind: uncited
+  text: The VHDX backup files themselves, not just the small credential-dump output, were compressed with `zstd`, split into 256MiB chunks and uploaded concurrently (up to 16 files at a time) to Wasabi
+    cloud storage via `rclone`, with the operator visibly reconfiguring transfer settings mid-exfiltration to improve speed and reliability.
+- claim_id: f1f5f57b7b
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: body
+  kind: uncited
+  text: Command and control ran on the open-source AdaptixC2 post-exploitation framework, and Russian-language script comments plus Cyrillic-keymap mistyping in the operator's own bash history (`whoami`,
+    `ls`, `ip a`, `clear`, `exit` typed on a Russian keyboard layout) indicate to Talos the possibility that a Russian-speaking individual was involved.
+- claim_id: 6555f624df
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: body
+  kind: derived
+  text: '**Defender takeaway:** backup infrastructure is a credential-theft target in its own right, not only a ransomware-destruction target — any process that mounts, loop-attaches or NBD-attaches a VHDX/VHD
+    backup image and then reads `ntds.dit`, `SAM` or `SYSTEM` out of it is functionally equivalent to a live NTDS dump and should alert identically.'
+- claim_id: 55ac8f980b
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: body
+  kind: derived
+  text: Monitor for `libguestfs-tools`/`qemu-utils`/`nbd-client` installation and CIFS mounts of backup shares on hosts that are not the designated backup-management server, and treat `rclone` (or any bulk-upload
+    tool) process creation with a cloud-storage destination immediately following such a mount as a high-confidence exfiltration signal.
+- claim_id: 428a5cf1d3
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: body
+  kind: derived
+  text: GLPI deployments should confirm they are on 10.0.18 or later.
+- claim_id: 1e0969254a
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: body
+  kind: derived
+  text: '**Triage:** legitimate backup-verification and disaster-recovery testing also mount VHDX images and inspect their contents, so the mount event alone is not the signal, the discriminator is the
+    immediate follow-on: `secretsdump.py` or an equivalent credential-extraction tool run against files copied from that mount, on a host or account that has no operational reason to be doing backup verification.'
+- claim_id: 382f1a0309
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: section 2026-10-11T14:08:14Z
+  kind: cited
+  text: 'Talos does not say the operator avoided the live domain controller: it reports traces suggesting exploitation of Zerologon, a live-DC attack, alongside the offline extraction of `ntds.dit`, `SAM`
+    and `SYSTEM` from a CIFS-mounted VHDX backup ('
+  urls:
+  - https://blog.talosintelligence.com/ransomware-incidents-in-japan-in-the-first-half-of-2026/
+- claim_id: 372ce14c63
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: section 2026-10-11T14:08:14Z
+  kind: uncited
+  text: The backup path is an additional route to the domain's credentials, not a replacement for one.
+- claim_id: 74c6f1cd9c
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: section 2026-10-11T14:08:14Z
+  kind: uncited
+  text: In the first phase Talos names VPN software, Chisel and Ligolo as the pivot tooling; SSH appears only in the later lateral-movement phase.
+- claim_id: aac19b2664
+  entry: 2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft
+  surface: record 2026-10-11T14:08:14Z
+  kind: record-summary
+  text: Talos does not say the operator avoided the live domain controller; the contrast was framing, and Talos also reports traces suggesting Zerologon exploitation. Headline, summary and body now describe
+    the offline extraction from a mounted backup image without the contrast. Talos's 'traces suggesting exploitation' hedge replaces the firmer wording on Zerologon and MS17-010, and SSH moves out of the
+    first-phase pivot platform, where Talos names VPN software, Chisel and Ligolo.
+- claim_id: 22929a8ef2
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: cves[CVE-2026-86950]
+  kind: frontmatter
+  text: '{"id": "CVE-2026-86950", "cvss": "8.8", "status": ["exploited", "cisa-kev", "poc-public", "patch-available"], "affected": "iOS and iPadOS before 26.7.1; macOS Tahoe before 26.7.1; macOS Sequoia
+    before 15.8.1 (Apple describes the exploitation only for iOS before iOS 27)", "fixed": "iOS 26.7.1 and iPadOS 26.7.1; macOS Tahoe 26.7.1; macOS Sequoia 15.8.1", "auth": "pre-auth", "vector": "user-interaction"}'
+- claim_id: 3d8b7ae8a2
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: cited
+  text: CVE-2026-86950 is an out-of-bounds write in CoreGraphics, the graphics component shared by iOS, iPadOS and macOS, and processing a maliciously crafted file can lead to arbitrary code execution (
+  urls:
+  - https://support.apple.com/en-us/149226
+- claim_id: 9674e4bb00
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: cited
+  text: Apple states that it "is aware of a report that this issue may have been exploited in an extremely sophisticated attack against specific targeted individuals on versions of iOS before iOS 27" (
+  urls:
+  - https://support.apple.com/en-us/149226
+- claim_id: 4281d18939
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: cited
+  text: The fix, "improved bounds checking", ships in iOS and iPadOS 26.7.1 (
+  urls:
+  - https://support.apple.com/en-us/149226
+- claim_id: 30e6236b82
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: cited
+  text: ), macOS Tahoe 26.7.1 (
+  urls:
+  - https://support.apple.com/en-us/149228
+- claim_id: a57f47433e
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: cited
+  text: ) and macOS Sequoia 15.8.1 (
+  urls:
+  - https://support.apple.com/en-us/149229
+- claim_id: 8f7f088d73
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: cited
+  text: CISA added the flaw to its Known Exploited Vulnerabilities catalog on 2026-09-29 (
+  urls:
+  - https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+- claim_id: a5f6459126
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: cited
+  text: ENISA's vulnerability database scores it CVSS 3.1 8.8, network vector with user interaction required (
+  urls:
+  - https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-88445
+- claim_id: f1c9613a78
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: cited
+  text: 'Nothing about the attack itself is public: Apple gave no details on how many people were targeted, whether any attempt succeeded, or when exploitation began ('
+  urls:
+  - https://thehackernews.com/2026/09/apple-patches-coregraphics-flaw.html
+- claim_id: 4a505a3aec
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: cited
+  text: SecurityWeek reads the component's role in 2D graphics and PDF rendering as meaning a file could arrive through web pages, email attachments or messaging apps, where automatic previews could allow
+    zero-click exploitation; that is SecurityWeek's inference, and it also notes Meta would not say whether WhatsApp was involved (
+  urls:
+  - https://www.securityweek.com/apple-patches-meta-reported-zero-day-linked-to-extremely-sophisticated-attack/
+- claim_id: c2344589b5
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: uncited
+  text: The macOS advisories repeat Apple's iOS-scoped exploitation sentence, so Apple does not claim exploitation on macOS.
+- claim_id: 984fddb754
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: uncited
+  text: It also says iOS 27 and macOS Golden Gate 27 do not appear to be affected.
+- claim_id: 9297f23230
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: uncited
+  text: 'No indicators or behavioural detections have been published by Apple, Meta or CISA, so version compliance is the only measurable lever: device-management inventory of iPhones and iPads still on
+    the iOS 26 branch below 26.7.1, and of Macs on Tahoe or Sequoia below the fixed builds.'
+- claim_id: eee1e6eac5
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: derived
+  text: '**Defender takeaway:** Apple describes an attack on specific targeted individuals, so the staff an adversary would single out are the first whose devices need the update.'
+- claim_id: 293f670421
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: body
+  kind: derived
+  text: A device that ran a vulnerable build is not evidence of compromise, and no published signature exists to check for one.
+- claim_id: 7ef7417c3a
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: section 2026-10-11T13:46:04Z
+  kind: cited
+  text: CISA's catalog record for CVE-2026-86950 does not set the forensic-triage flag that it sets for some other recent listings; the 2026-09-29 listing carries only the catalog's standard required action
+    (
+  urls:
+  - https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+- claim_id: fcf83582ac
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: section 2026-10-11T13:46:04Z
+  kind: uncited
+  text: The analysis had said CISA attached its forensic-triage requirements to the listing.
+- claim_id: e830d7e706
+  entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  surface: record 2026-10-11T13:46:04Z
+  kind: record-summary
+  text: CISA's KEV record for CVE-2026-86950 does not set the forensic-triage flag, so the statement that CISA attached its forensic-triage requirements to the listing is withdrawn. The CVE's EPSS value
+    is corrected from 0.81 (a percentage figure read as a probability) to FIRST's 0.01242.
+- claim_id: 8cc541359f
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: headline
+  kind: frontmatter
+  text: Trojanised, validly signed DAEMON Tools installers ran a profiler on thousands of machines and a backdoor on about a dozen organizations
+- claim_id: 1e236735d6
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: summary
+  kind: frontmatter
+  text: DAEMON Tools Lite versions 12.5.0.2421 to 12.5.0.2434, distributed from the vendor's site from 2026-04-08 and signed with the developer's certificates, carried trojanised helper binaries. Kaspersky
+    saw several thousand infection attempts in more than 100 countries, mostly delivering an information collector; a backdoor reached about a dozen government, scientific, manufacturing and retail organizations
+    in Russia, Belarus and Thailand, and QUIC RAT one Russian educational institution. Version 12.6.0.2445 is clean.
+- claim_id: 9ac1b01c59
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: body
+  kind: cited
+  text: 'Kaspersky found that DAEMON Tools installers distributed from the product''s legitimate website and signed with the developer''s certificates had been trojanised from 2026-04-08: in versions 12.5.0.2421
+    to 12.5.0.2434 the helper binaries `DTHelper.exe`, `DiscSoftBusServiceLite.exe` and `DTShellHlp.exe`, signed by AVB Disc Soft, were compromised, and version 12.6.0.2445 no longer contains the malicious
+    behaviour ('
+  urls:
+  - https://securelist.com/tr/daemon-tools-backdoor/119654/
+- claim_id: f7f2ba76bd
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: body
+  kind: cited
+  text: At startup the trojanised binaries run `cmd.exe`, which runs PowerShell to download an executable into `C:\Windows\Temp` and execute it; the first payload, `envchk.exe`, is a .NET information collector
+    (
+  urls:
+  - https://securelist.com/tr/daemon-tools-backdoor/119654/
+- claim_id: b9954e022b
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: body
+  kind: cited
+  text: Kaspersky saw several thousand infection attempts in more than 100 countries, 10% of the affected systems belonging to organizations, and most received only the information collector (
+  urls:
+  - https://securelist.com/tr/daemon-tools-backdoor/119654/
+- claim_id: 4230d03b1c
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: body
+  kind: cited
+  text: A minimalistic backdoor reached about a dozen machines of government, scientific, manufacturing and retail organizations in Russia, Belarus and Thailand, and was used to deploy QUIC RAT against
+    one organization, an educational institution in Russia; QUIC RAT supports HTTP, UDP, TCP, WSS, QUIC, DNS and HTTP/3 for command and control and can inject payloads into `notepad.exe` and `conhost.exe`
+    (
+  urls:
+  - https://securelist.com/tr/daemon-tools-backdoor/119654/
+- claim_id: f732cda769
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: body
+  kind: cited
+  text: Chinese strings in the collector may imply a Chinese-speaking actor, but Kaspersky does not attribute the compromise, and whether the intent is espionage or big-game hunting is unclear (
+  urls:
+  - https://securelist.com/tr/daemon-tools-backdoor/119654/
+- claim_id: 25b06a1f26
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: body
+  kind: cited
+  text: The developer says only the free Lite edition was affected (
+  urls:
+  - https://therecord.media/hackers-compromise-daemon-tools-global-supply-chain-attack
+- claim_id: 9527312239
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: body
+  kind: cited
+  text: '**Exposure:** endpoints that installed or updated DAEMON Tools Lite to a version from 12.5.0.2421 to 12.5.0.2434 from 2026-04-08 onward ('
+  urls:
+  - https://securelist.com/tr/daemon-tools-backdoor/119654/
+- claim_id: 195fa4d8bc
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: body
+  kind: cited
+  text: '**Detection:** in process telemetry, a DAEMON Tools helper binary spawning `cmd.exe` and then PowerShell that downloads a file into `C:\Windows\Temp` and executes it is the earliest signal; `envchk.exe`
+    in that folder marks the information collector ('
+  urls:
+  - https://securelist.com/tr/daemon-tools-backdoor/119654/
+- claim_id: e70cc45330
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: body
+  kind: cited
+  text: Injection into `notepad.exe` or `conhost.exe` shortly after such a chain points to QUIC RAT (
+  urls:
+  - https://securelist.com/tr/daemon-tools-backdoor/119654/
+- claim_id: 6683e96db8
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: body
+  kind: cited
+  text: '**Defender takeaway:** a validly signed installer from the vendor''s own site was the delivery vehicle, so code-signing trust did not help; inventory DAEMON Tools Lite installations, upgrade or
+    remove them, and hunt the helper-to-PowerShell chain on any host that ran an affected version ('
+  urls:
+  - https://securelist.com/tr/daemon-tools-backdoor/119654/
+- claim_id: 265cc4dbc5
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: section 2026-10-11T14:29:53Z
+  kind: cited
+  text: 'Kaspersky reports no EU government victim: EU countries are among the more than 100 countries with infection attempts, which mostly delivered an information collector, while the backdoor reached
+    about a dozen organizations in Russia, Belarus and Thailand and QUIC RAT a single educational institution in Russia ('
+  urls:
+  - https://securelist.com/tr/daemon-tools-backdoor/119654/
+- claim_id: 9beacf7fa6
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: section 2026-10-11T14:29:53Z
+  kind: uncited
+  text: Its QUIC RAT description is limited to the C2 protocols and injection into `notepad.exe` and `conhost.exe`; the keylogging, SOCKS proxy and tunnelling capabilities given earlier had no source.
+- claim_id: afeaadb262
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: section 2026-10-11T14:29:53Z
+  kind: uncited
+  text: Kaspersky does not attribute the compromise and calls its intent unclear.
+- claim_id: 6679b15681
+  entry: 2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed
+  surface: record 2026-10-11T14:29:53Z
+  kind: record-summary
+  text: 'The headline victimology was wrong: no EU government victim is reported; EU countries appear only among infection attempts, the backdoor reached about a dozen organizations in Russia, Belarus and
+    Thailand, and QUIC RAT one educational institution in Russia. Kaspersky does not describe keylogging, SOCKS proxying or tunnelling for QUIC RAT, does not attribute the attack, and calls the intent unclear;
+    the Linux masquerade and asymmetric-cryptography mappings had no source. The Securelist report becomes the primary source, the detection line leads with the helper-to-PowerShell download chain, the
+    espionage and China-nexus tags are removed, and the entry gains a rating and a supported ATT&CK mapping. Priority moves from high to notable.'
+- claim_id: c3ff283cd1
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: headline
+  kind: frontmatter
+  text: An unauthenticated SSRF in Cisco Unified CM's WebDialer leads to root; Cisco and CISA confirm exploitation
+- claim_id: 3513d29313
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: summary
+  kind: frontmatter
+  text: CVE-2026-20230 (CVSS 8.6, Cisco SIR Critical) lets an unauthenticated attacker use the WebDialer service of Cisco Unified CM and Unified CM SME to write files and gain root. Defused saw scanning
+    exploitation in June, CISA added it to its KEV catalog on 2026-06-25 and Cisco confirmed active exploitation; fixed in 14SU6 and, for Release 15, a COP patch ahead of 15SU5.
+- claim_id: 7faa59acb4
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: actions[0]
+  kind: frontmatter
+  text: On every Unified CM and Unified CM SME node, check whether the Cisco WebDialer Web Service is Started; disable it where unused, and otherwise apply 14SU6 or the Release 15 COP.
+- claim_id: 4a5c3809e5
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: cves[CVE-2026-20230]
+  kind: frontmatter
+  text: '{"id": "CVE-2026-20230", "cvss": "8.6", "status": ["exploited", "cisa-kev", "poc-public", "patch-available"], "affected": "Unified CM and Unified CM SME with WebDialer enabled; Release 14 before
+    14SU6, Release 15 before 15SU5", "fixed": "14SU6; 15SU5 (Sep 2026) or version-specific COP", "auth": "pre-auth", "vector": "zero-click"}'
+- claim_id: 9dac78bdd9
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: body
+  kind: cited
+  text: CVE-2026-20230 (CVSS 8.6) is a server-side request forgery in Cisco Unified Communications Manager and Unified CM Session Management Edition that lets an unauthenticated remote attacker write files
+    and, Cisco says, elevate privileges to root, which is why it rates the advisory Critical (
+  urls:
+  - https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+- claim_id: d8ec007a5f
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: body
+  kind: cited
+  text: Only systems with the WebDialer service enabled are affected, and WebDialer is disabled by default; there is no workaround, but disabling WebDialer mitigates until a fix is applied (
+  urls:
+  - https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+- claim_id: 8a603f75c1
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: body
+  kind: cited
+  text: Fixed releases are 14SU6 and, for Release 15, 15SU5 (September 2026) or a version-specific COP patch (
+  urls:
+  - https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+- claim_id: 9fbef6e990
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: body
+  kind: cited
+  text: Defused reported exploitation over the weekend before 2026-06-23 from a single IP address, using `file://` payloads to create files on the device in what appears to be a check for vulnerable systems
+    (
+  urls:
+  - https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/
+- claim_id: 0dd6402e9c
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: body
+  kind: cited
+  text: CISA added the flaw to its Known Exploited Vulnerabilities catalog on 2026-06-25 (
+  urls:
+  - https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+- claim_id: 63740c1cb2
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: body
+  kind: cited
+  text: ), and Cisco updated its advisory on 2026-07-01 to say it became aware of active exploitation in June and that proof-of-concept code is available (
+  urls:
+  - https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+- claim_id: 0153b9c2e6
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: body
+  kind: cited
+  text: '**Exposure:** Unified CM or Unified CM SME with the Cisco WebDialer Web Service shown as Started under Control Center Feature Services, on Release 14 before 14SU6 or Release 15 without 15SU5 or
+    the COP ('
+  urls:
+  - https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+- claim_id: d4d28b038f
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: body
+  kind: cited
+  text: '**Defender takeaway:** where WebDialer is not needed, disable it now; where it is, apply 14SU6 or the Release 15 COP, and check the appliance for files written outside normal administration since
+    June ('
+  urls:
+  - https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+  - https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/
+- claim_id: 02f961ebf0
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: section 2026-10-11T14:48:28Z
+  kind: cited
+  text: CISA added CVE-2026-20230 to its KEV catalog on 2026-06-25 (
+  urls:
+  - https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+- claim_id: 536da22ef1
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: section 2026-10-11T14:48:28Z
+  kind: cited
+  text: ), and Cisco's advisory revision of 2026-07-01 confirms active exploitation in June and the availability of proof-of-concept code (
+  urls:
+  - https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+- claim_id: 358b041dab
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: section 2026-10-11T14:48:28Z
+  kind: cited
+  text: Defused's observation came over the weekend before BleepingComputer's report of 2026-06-23 (
+  urls:
+  - https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/
+- claim_id: 62986e0df8
+  entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  surface: record 2026-10-11T14:48:28Z
+  kind: record-summary
+  text: The entry said the flaw was not KEV-listed; CISA added it on 2026-06-25 and Cisco confirmed active exploitation on 2026-07-01. The weekend of Defused's observation preceded 2026-06-23, not 21 and
+    22 June; the claim that such scanning historically precedes a targeted wave and the Sysmon and auditd guidance for an appliance had no source; and a test file name served as an indicator. The entry
+    is rewritten with the disclosure-day facts from the same-day brief entry of 2026-06-04 (SIR Critical, WebDialer off by default, no workaround, fixed releases), the KEV and vendor confirmation, an exposure
+    check, an action, verbatim evidence, a rating and an ATT&CK mapping.
+- claim_id: aa48df3c31
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: Kiteworks, known as Accellion until a rebrand in late 2021 (
+  urls:
+  - https://techcrunch.com/2026/09/25/kiteworks-urges-customers-to-shut-down-their-servers-amid-imminent-threat-of-cyberattack/
+- claim_id: ff165ce867
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: ), sells secure file-transfer and confidential-communication products used by government organizations, financial institutions and enterprises (
+  urls:
+  - https://www.bleepingcomputer.com/news/security/kiteworks-urges-6-hour-server-shutdown-over-potential-zero-day-attacks/
+- claim_id: 9068ba75f3
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: On 2026-09-25 it emailed customers worldwide urging a precautionary shutdown of every Kiteworks system, staggered by time zone from AEST to PDT and given in the email as six hours (
+  urls:
+  - https://www.heise.de/en/news/Imminent-Zero-Day-Attack-KiteWorks-Urges-Customers-to-Shut-Down-Servers-11466375.html
+- claim_id: 4323af19cd
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: Kiteworks' own press release later gave nine hours (
+  urls:
+  - https://www.kiteworks.com/company/press-releases/kiteworks-precautionary-shutdown-advisory/
+- claim_id: df334af22a
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: The Central European window fell 04:00–10:00 CEST on Saturday 2026-09-26, a time zone Switzerland shares (
+  urls:
+  - https://www.heise.de/en/news/Imminent-Zero-Day-Attack-KiteWorks-Urges-Customers-to-Shut-Down-Servers-11466375.html
+- claim_id: cb90e5a7ef
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: In the customer email Heise obtained, CISO Frank Balonis wrote that the company "received credible threat intelligence from law enforcement indicating an attack on Kiteworks systems may be imminent
+    this weekend" (
+  urls:
+  - https://www.heise.de/en/news/Imminent-Zero-Day-Attack-KiteWorks-Urges-Customers-to-Shut-Down-Servers-11466375.html
+- claim_id: 39b5ff25f3
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: Kiteworks' statements to BleepingComputer and The Record and its own later releases instead name "federal intelligence authorities" as the source of the warning, while its statement to TechCrunch
+    again says law enforcement (
+  urls:
+  - https://www.bleepingcomputer.com/news/security/kiteworks-urges-6-hour-server-shutdown-over-potential-zero-day-attacks/
+  - https://therecord.media/kiteworks-urges-customers-to-stop-using-systems-incident
+  - https://www.kiteworks.com/company/press-releases/kiteworks-precautionary-shutdown-advisory/
+  - https://techcrunch.com/2026/09/25/kiteworks-urges-customers-to-shut-down-their-servers-amid-imminent-threat-of-cyberattack/
+- claim_id: c5a0b4cb52
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: Kiteworks states plainly it is "not aware of any compromise of Kiteworks systems" and that "all known vulnerabilities are addressed in our current release, 9.5.1" (
+  urls:
+  - https://www.bleepingcomputer.com/news/security/kiteworks-urges-6-hour-server-shutdown-over-potential-zero-day-attacks/
+- claim_id: 61e4a810fb
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: Researcher Kevin Beaumont pointed to a listing of at least a thousand internet-facing Kiteworks systems, though TechCrunch notes the count is likely an overcount of actually-affected customer systems
+    (
+  urls:
+  - https://techcrunch.com/2026/09/25/kiteworks-urges-customers-to-shut-down-their-servers-amid-imminent-threat-of-cyberattack/
+- claim_id: 593037926a
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: '), and watchTowr''s Jake Knott noted "There is no known CVE, patch, or additional technical details available" while calling the request itself unusual: "nobody requests that their entire customer
+    base unplug production systems over the weekend because of a hunch"; Kiteworks did not answer The Record''s question about a CVE ('
+  urls:
+  - https://therecord.media/kiteworks-urges-customers-to-stop-using-systems-incident
+- claim_id: 9f93c2c82f
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: 'The precedent class is exactly the one that matters for public-sector defenders: BleepingComputer notes that the Clop extortion gang "has a long history of targeting enterprise platforms in data-theft
+    attacks," naming Accellion FTA, GoAnywhere MFT, SolarWinds Serv-U FTP, Cleo, and MOVEit Transfer as past victims of that pattern ('
+  urls:
+  - https://www.bleepingcomputer.com/news/security/kiteworks-urges-6-hour-server-shutdown-over-potential-zero-day-attacks/
+- claim_id: ad2454ff6f
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: Kiteworks itself was formerly Accellion, whose FTA product was the subject of exactly this kind of zero-day mass exploitation in December 2020, when a Clop-linked group stole data from dozens of
+    high-profile organizations (
+  urls:
+  - https://therecord.media/kiteworks-urges-customers-to-stop-using-systems-incident
+- claim_id: ad419d8a31
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: Run 9.5.1 or later on every deployment (Email Protection Gateway at least 9.4.1 for CVE-2026-54154 (
+  urls:
+  - https://github.com/kiteworks/security-advisories/security/advisories/GHSA-5xhq-9wq3-rvj6
+- claim_id: da48958b36
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: cited
+  text: ')), and put the open question to Kiteworks Support in writing: the vendor has not said whether the critical flaw it found during the shutdown needs customer-side action beyond its notice to customers
+    with self-hosted Advanced Forms to contact Customer Support ('
+  urls:
+  - https://www.kiteworks.com/company/press-releases/kiteworks-precautionary-shutdown-advisory/
+- claim_id: 9070e700a0
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: body
+  kind: derived
+  text: '**Defender takeaway:** the shutdown ended without a claimed compromise, but Kiteworks has since published a maximum-severity unauthenticated code-execution chain to root in the Email Protection
+    Gateway and further critical fixes.'
+- claim_id: 94dce3e9f0
+  entry: 2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning
+  surface: record 2026-10-11T13:57:49Z
+  kind: record-summary
+  text: The takeaway's CVE-2026-54154 version clause gains its own citation to Kiteworks' advisory, so the press-release citation vouches only for the Customer Support notice; the BleepingComputer sentence
+    attributes the chain description to Kiteworks' explanation as BleepingComputer reports it, since the advisory page now carries a shorter text.
+- claim_id: a4eba09faf
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: actions[0]
+  kind: frontmatter
+  text: Audit every internet-facing FortiGate for administrator accounts and REST API keys nobody created, then terminate all administrator and VPN sessions and reset every administrator and VPN password.
+- claim_id: 61e240f2dd
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: body
+  kind: cited
+  text: A dataset branded "FortiBleed" was reported on 2026-06-18, containing 73,932 unique FortiGate management URLs, roughly 75,000 devices across 194 countries and 21,632 domains, paired with valid VPN
+    and administrative credentials (
+  urls:
+  - https://www.bleepingcomputer.com/news/security/fortibleed-leak-exposes-fortinet-vpn-credentials-for-73-000-devices/
+- claim_id: de002b43ef
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: body
+  kind: cited
+  text: 'Fortinet''s position is that this is **not a new Fortinet vulnerability**: it believes threat actors are reusing credentials from previous incidents and using brute force against devices with weak
+    password hygiene and no multi-factor authentication ('
+  urls:
+  - https://www.fortinet.com/blog/psirt-blogs/analysis-of-reported-credential-compromise-of-fortigate-devices
+- claim_id: d01d3d5c6c
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: body
+  kind: cited
+  text: BleepingComputer reports researcher Bob Diachenko's claim that a Russian-speaking multi-operator group harvested the credentials, cracked intercepted SSL VPN hashes on a 45-GPU cluster and moved
+    laterally into internal Active Directory environments, with several organisations fully compromised; Diachenko says he drew this from files the attackers left exposed on the same server (
+  urls:
+  - https://www.bleepingcomputer.com/news/security/fortibleed-leak-exposes-fortinet-vpn-credentials-for-73-000-devices/
+- claim_id: 4c15d7d88c
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: body
+  kind: cited
+  text: ); Arctic Wolf is separately tracking the FortiBleed campaign's reach across 194 countries (
+  urls:
+  - https://arcticwolf.com/resources/blog/active-fortibleed-campaign-impacting-fortinet-devices-across-194-countries/
+- claim_id: d75c3cf02f
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: body
+  kind: cited
+  text: '**Exposure:** any internet-exposed FortiGate: Fortinet says the campaign reuses credentials from previous incidents and tells customers to reset administrator and VPN passwords, especially on internet-facing
+    systems ('
+  urls:
+  - https://www.fortinet.com/blog/psirt-blogs/analysis-of-reported-credential-compromise-of-fortigate-devices
+- claim_id: e67cf75a9c
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: body
+  kind: cited
+  text: ), and BleepingComputer reports researcher Kevin Beaumont observing that many affected devices were running relatively recent FortiOS versions (
+  urls:
+  - https://www.bleepingcomputer.com/news/security/fortibleed-leak-exposes-fortinet-vpn-credentials-for-73-000-devices/
+- claim_id: c3db961474
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: body
+  kind: cited
+  text: '**Detection:** administrator-login and configuration audit events on the FortiGate, and domain controller authentication logs for logins from unexpected sources ('
+  urls:
+  - https://www.fortinet.com/blog/psirt-blogs/analysis-of-reported-credential-compromise-of-fortigate-devices
+- claim_id: 9d10da8b02
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: body
+  kind: cited
+  text: '**Defender takeaway:** force administrator and VPN password resets, enforce MFA on every administrator and VPN login, and restrict management access to trusted hosts, a local-in policy or no internet
+    administration ('
+  urls:
+  - https://www.fortinet.com/blog/psirt-blogs/analysis-of-reported-credential-compromise-of-fortigate-devices
+- claim_id: 5f5af0fc7e
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: body
+  kind: uncited
+  text: The technique class is valid-account abuse following credential access, not exploitation of a fresh CVE.
+- claim_id: c5e1805ff9
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: section 2026-10-11T13:55:29Z
+  kind: cited
+  text: The FBI and Secret Service advisory tells operators to review firewall, VPN, authentication and domain controller logs and to check users, configuration and REST API keys for entries nobody created
+    (
+  urls:
+  - https://www.ic3.gov/CSA/2026/261006.pdf
+- claim_id: fcb479cea5
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: section 2026-10-11T13:55:29Z
+  kind: uncited
+  text: The FBI and Secret Service advisory tells operators to review firewall, VPN, authentication and domain controller logs and to check users, configuration and REST API keys for entries nobody created
+    ([FBI and U.S.
+- claim_id: ed04dca493
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: section 2026-10-11T13:55:29Z
+  kind: uncited
+  text: Secret Service, 2026-10-06](https://www.ic3.gov/CSA/2026/261006.pdf)); it does not name specific Windows event ids or a domain-wide credential rotation, which earlier hunting guidance here attached
+    to the campaign.
+- claim_id: 72990cf5d6
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: section 2026-10-11T13:55:29Z
+  kind: uncited
+  text: The mapping of those checks to the FortiGate's own configuration and administrator audit log is a reading of the advisory, not part of it.
+- claim_id: bc44344334
+  entry: 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed
+  surface: record 2026-10-11T13:55:29Z
+  kind: record-summary
+  text: The June hunting paragraph named Windows event ids and a domain-wide rotation that no cited source gives; Fortinet's guidance is to treat directory accounts the device used as compromised and review
+    domain controller logs. The October paragraph had attributed a FortiGate audit-log mapping to the FBI and Secret Service advisory, which names only the logs to review. The action keeps the single do-now
+    task.
+- claim_id: ccde5e04d9
+  entry: 2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp
+  surface: headline
+  kind: frontmatter
+  text: 'CERT-FR: keep autonomous desktop AI assistants off production workstations and confine them to isolated sandboxes without sensitive data'
+- claim_id: 373d61a074
+  entry: 2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp
+  surface: summary
+  kind: frontmatter
+  text: CERT-FR's advisory of 2026-04-13 on autonomous personal assistants such as OpenClaw and Claude Cowork, which run commands, drive the browser, handle files and send mail on chat-message triggers,
+    says they must not be deployed on workstations or in production until stabilised and proven, and limits their use to isolated test sandboxes without sensitive data. It names plugins that run as trusted
+    code and prompt injection as the core risks.
+- claim_id: b788d6f8f8
+  entry: 2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp
+  surface: body
+  kind: cited
+  text: Unlike chat assistants, they execute commands, control the browser, read and write files, manage calendars and send mail, triggered by a text message through applications such as Slack, WhatsApp
+    or Discord (
+  urls:
+  - https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+- claim_id: fd4a512de8
+  entry: 2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp
+  surface: body
+  kind: cited
+  text: Plugins can be loaded dynamically and, depending on the integration model, run as trusted code with the application's privileges, which widens the software supply chain; prompt injection is an intrinsic
+    weakness of the underlying language models, and an agent that orchestrates operating-system-level tools raises the risk of unauthorized command execution and data exfiltration through prompt injection
+    or hijacked messages (
+  urls:
+  - https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+- claim_id: 2cab16e9e8
+  entry: 2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp
+  surface: body
+  kind: cited
+  text: CERT-FR's position is that such assistants must not be deployed on workstations and their use should be prohibited until the product is stabilised and proven from a security standpoint; they must
+    in no case be deployed in production, only in isolated test sandboxes holding no sensitive data, and the same applies to mobile deployments (
+  urls:
+  - https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+- claim_id: 245d29e5bd
+  entry: 2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp
+  surface: body
+  kind: cited
+  text: 'Where they are used, the main lever is configuration hardening: limit the tools and actions available to the strict minimum, require human validation for any system command or action with side
+    effects, run the agent in a sandbox, and allowlist the channels and interlocutors that may trigger it, for example only on an explicit mention of the agent ('
+  urls:
+  - https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+- claim_id: 42cbd88d70
+  entry: 2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp
+  surface: body
+  kind: cited
+  text: '**Exposure:** any workstation or phone where users have installed an autonomous assistant with access to mail, calendar, files or business applications, typically as unvalidated Shadow IT ('
+  urls:
+  - https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+- claim_id: 2fdf6bf690
+  entry: 2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp
+  surface: body
+  kind: cited
+  text: '**Defender takeaway:** treat autonomous desktop AI assistants as unapproved software on production workstations: block installations not validated by IT and security, and allow them only in isolated
+    sandboxes without production data, secrets or personal data ('
+  urls:
+  - https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+- claim_id: b5826be378
+  entry: 2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp
+  surface: body
+  kind: uncited
+  text: CERT-FR's advisory CERTFR-2026-ACT-016, published on 2026-04-13, addresses autonomous personal assistants such as OpenClaw, Claude Cowork and open-source equivalents, whose adoption has grown strongly
+    since early 2026.
+- claim_id: 489fcfc880
+  entry: 2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp
+  surface: section 2026-10-11T14:16:35Z
+  kind: cited
+  text: CERT-FR's advisory concerns autonomous personal assistants on workstations, not agentic orchestration platforms, and does not mention the Model Context Protocol; its supply-chain concern is plugins
+    that load dynamically and run as trusted code (
+  urls:
+  - https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+- claim_id: 6751c9c605
+  entry: 2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp
+  surface: section 2026-10-11T14:16:35Z
+  kind: uncited
+  text: Its recommendations are to keep these assistants off workstations and out of production, confine them to isolated sandboxes, restrict their tools, require human validation for system commands and
+    allowlist the channels that may trigger them.
+- claim_id: 77ce2af998
+  entry: 2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp
+  surface: section 2026-10-11T14:16:35Z
+  kind: uncited
+  text: The earlier text attributed guardrails, tool-call allowlisting and a rule to treat all agent output as untrusted to CERT-FR, and named products the advisory does not mention.
+- claim_id: dd7f65d2b7
+  entry: 2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp
+  surface: record 2026-10-11T14:16:35Z
+  kind: record-summary
+  text: 'The earlier text described a different document: CERT-FR''s advisory does not mention MCP servers, guardrails or tool-call allowlisting, and names OpenClaw and Claude Cowork rather than Copilot
+    Studio or AutoGen. The entry is rewritten from the advisory around its actual position, no deployment on workstations or in production and sandbox-only use, with its hardening levers, the advisory date,
+    the canonical report entity, a rating and an ATT&CK mapping.'
+- claim_id: b91537e5e3
+  entry: 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce
+  surface: body
+  kind: cited
+  text: TCP ports 43210 and 43211, used by the S1HAL (Silicon One Hardware Abstraction Layer) process, are reachable in the default Layer 3 VRF; an unauthenticated remote attacker who can reach either port
+    sends crafted input that executes as root, or crashes the S1HAL process, which could cause the device to reload (
+  urls:
+  - https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr
+- claim_id: 20eaa0f577
+  entry: 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce
+  surface: body
+  kind: cited
+  text: Cisco names ten specific product IDs, determinable via `show module`, and the advisory's own "Products Confirmed Not Vulnerable" section explicitly excludes the Nexus 3000 Series and every other
+    Nexus 9000 model, so inventory should key on the ten Silicon One product IDs rather than on the Nexus 9000 family name, as Cisco's own advisory title "Cisco Nexus 9000 Series Switches Silicon One Remote
+    Code Execution Vulnerability" might suggest (
+  urls:
+  - https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr
+- claim_id: f9303bbe7c
+  entry: 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce
+  surface: body
+  kind: cited
+  text: Cisco found the flaw while resolving a Technical Assistance Center (TAC) support case and states it is not aware of any public announcement or malicious use (
+  urls:
+  - https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr
+- claim_id: b90132b332
+  entry: 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce
+  surface: body
+  kind: cited
+  text: Cisco also offers a temporary NX-OS Live Protect shield for this CVE and treats every workaround as a bridge to the fixed release, not a substitute (
+  urls:
+  - https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr
+- claim_id: fb42cea5af
+  entry: 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce
+  surface: body
+  kind: cited
+  text: Cisco's workaround denies all such traffic, so connections from outside the device warrant a look (
+  urls:
+  - https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr
+- claim_id: 4162fdeeb6
+  entry: 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce
+  surface: body
+  kind: cited
+  text: An exploit gives root on the switch itself (
+  urls:
+  - https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr
+- claim_id: 01a42eb15b
+  entry: 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: Cisco published cisco-sa-n9k-s1-rce-EH8dEtr on 2026-09-02, disclosing CVE-2026-20212 (CVSS 9.8, CWE-1327 Binding to an Unrestricted IP Address) in the Silicon One ASIC integration on Nexus 9000
+    Series switches.
+- claim_id: eb5b36aba5
+  entry: 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: Only switches carrying a Silicon One ASIC are affected.
+- claim_id: c384f93f1c
+  entry: 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: Fixed NX-OS software is available via Cisco's Software Checker.
+- claim_id: 256169a85f
+  entry: 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce
+  surface: body
+  kind: uncited
+  text: Until upgraded, Cisco's workaround is infrastructure ACLs (iACLs) that allow only required management and control-plane traffic to the device, or that deny all TCP packets to a locally configured
+    address on ports 43210 or 43211.
+- claim_id: c1e1d5998c
+  entry: 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce
+  surface: body
+  kind: derived
+  text: '**Detection:** log and review inbound TCP connections to ports 43210 and 43211 on the addresses of the affected switches in the default Layer 3 VRF, where Cisco says the ports are reachable.'
+- claim_id: 9e9f3a02ec
+  entry: 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce
+  surface: body
+  kind: derived
+  text: '**Defender takeaway:** patch the ten Silicon One product IDs, or apply the iACL workaround, ahead of the normal maintenance window.'
+- claim_id: 3a491ab973
+  entry: 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce
+  surface: record 2026-10-11T14:02:26Z
+  kind: record-summary
+  text: Cisco says a crash of the S1HAL process could cause the device to reload; the text had said it forces a reload.
+- claim_id: 382633b226
+  entry: 2026-05-09/german-court-finds-bank-liable-for-sophisticated-phishing-lo
+  surface: headline
+  kind: frontmatter
+  text: A German court found a phishing victim not grossly negligent after a bank-branded letter, a cloned portal and a call led him to enrol the attackers' device
+- claim_id: 594b7c32ce
+  entry: 2026-05-09/german-court-finds-bank-liable-for-sophisticated-phishing-lo
+  surface: summary
+  kind: frontmatter
+  text: 'Landgericht Berlin II ruled on 2026-04-22 (38 O 293/25, not yet final) that Apobank must refund about EUR 218,000 because its customer was not grossly negligent: a bank-branded letter with a QR
+    code led to a cloned banking portal, a caller posing as the bank guided him, and photographing a QR code enrolled the attackers'' own device.'
+- claim_id: bb1bf892de
+  entry: 2026-05-09/german-court-finds-bank-liable-for-sophisticated-phishing-lo
+  surface: body
+  kind: cited
+  text: 'Landgericht Berlin II ruled on 2026-04-22 (38 O 293/25) that Apobank may not refuse to refund about EUR 218,000 on grounds of gross negligence: a bank-branded letter asked the customer to register
+    a new security procedure, its QR code led to a cloned banking portal, a caller posing as the bank guided him through the process, and photographing a QR code let the attackers enrol their own device;
+    the judgment is not yet final and the customer bears only the EUR 50 statutory share ('
+  urls:
+  - https://borncity.com/news/landgericht-berlin-ii-verurteilt-apobank-zu-218-000-euro-rueckzahlung/
+- claim_id: 1b25573366
+  entry: 2026-05-09/german-court-finds-bank-liable-for-sophisticated-phishing-lo
+  surface: body
+  kind: cited
+  text: Beyond the holding, the chamber remarked that the login and the attackers' new-device registration came from entirely different IP addresses and providers and that the bank did not block this discrepancy
+    automatically (
+  urls:
+  - https://www.heise.de/news/Urteil-gegen-die-Apobank-Finanzinstitut-haftet-fuer-Phishing-Schaden-11288231.html
+- claim_id: 40929aa067
+  entry: 2026-05-09/german-court-finds-bank-liable-for-sophisticated-phishing-lo
+  surface: body
+  kind: cited
+  text: '**Defender takeaway:** the attack''s decisive step was a device enrolment authorised by the victim, so the control point is the enrolment itself: a new authenticator registered from a network or
+    provider different from the session that requested it deserves a hold and an out-of-band confirmation ('
+  urls:
+  - https://www.heise.de/news/Urteil-gegen-die-Apobank-Finanzinstitut-haftet-fuer-Phishing-Schaden-11288231.html
+- claim_id: 6e3ebeb95d
+  entry: 2026-05-09/german-court-finds-bank-liable-for-sophisticated-phishing-lo
+  surface: section 2026-10-11T14:33:17Z
+  kind: cited
+  text: The court's holding is that the customer was not grossly negligent, so the bank must refund the loss (
+  urls:
+  - https://borncity.com/news/landgericht-berlin-ii-verurteilt-apobank-zu-218-000-euro-rueckzahlung/
+- claim_id: f7e911674a
+  entry: 2026-05-09/german-court-finds-bank-liable-for-sophisticated-phishing-lo
+  surface: section 2026-10-11T14:33:17Z
+  kind: cited
+  text: ); its comments on the IP and provider mismatch were remarks beyond the decision, which the claimant's lawyer called technically still amateurish (
+  urls:
+  - https://www.heise.de/news/Urteil-gegen-die-Apobank-Finanzinstitut-haftet-fuer-Phishing-Schaden-11288231.html
+- claim_id: 7ca451ea74
+  entry: 2026-05-09/german-court-finds-bank-liable-for-sophisticated-phishing-lo
+  surface: section 2026-10-11T14:33:17Z
+  kind: uncited
+  text: No cited source mentions PSD2 or a duty to trigger strong customer authentication, and the judgment is described as not yet final rather than under appeal.
+- claim_id: 835709ec19
+  entry: 2026-05-09/german-court-finds-bank-liable-for-sophisticated-phishing-lo
+  surface: record 2026-10-11T14:33:17Z
+  kind: record-summary
+  text: The court did not impose a PSD2 duty to run IP analytics or trigger strong authentication; it held the customer not grossly negligent and remarked, beyond the holding, that the bank could have blocked
+    the device registration given the IP and provider mismatch. No appeal is reported, only that the judgment is not yet final; the Swiss and public-sector generalisation and the law-enforcement tag had
+    no basis, and the unreadable law-firm source is replaced by Borncity. The QR-code device-enrolment step is added, with a rating, an ATT&CK mapping and priority routine.
+- claim_id: 204aee18d5
+  entry: 2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit
+  surface: body
+  kind: cited
+  text: Switzerland's National Cyber Security Centre received a higher-than-usual number of reports about a dual-path Microsoft 365 / OneDrive-for-Business phishing campaign, its Week 25 review says (
+  urls:
+  - https://www.bacs.admin.ch/en/26w25-en
+- claim_id: c4c1a9d5a0
+  entry: 2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit
+  surface: body
+  kind: uncited
+  text: In the malware-delivery variant the email carries a ZIP "audio" attachment, and running its contents installs malware, such as an infostealer, that can harvest login details, cookies or wallet information.
+- claim_id: 3b7b887ff6
+  entry: 2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit
+  surface: body
+  kind: uncited
+  text: In the credential-harvest variant a fake Microsoft login page with a simulated audio player ("Play voicemail as guest") captures the M365 username and password.
+- claim_id: d9e973938e
+  entry: 2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit
+  surface: body
+  kind: uncited
+  text: The link in the notification, or an HTML file attached to it, leads to that page.
+- claim_id: abdffd848e
+  entry: 2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit
+  surface: body
+  kind: uncited
+  text: NCSC-CH notes that a compromised mailbox is then often used to send phishing to all of the victim's contacts ("chain phishing"), that the attackers read business communications to prepare CEO fraud
+    and business email compromise from a real employee's address, and that data an infostealer harvests may also be resold and in some cases resurfaces weeks or months later.
+- claim_id: b5c7cb2cd4
+  entry: 2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit
+  surface: body
+  kind: derived
+  text: '**Defender takeaway:** The discriminator is mechanical: genuine voicemail notifications are usually audio files such as `.wav` or `.mp3`, not ZIP archives.'
+- claim_id: f689d57cd7
+  entry: 2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit
+  surface: body
+  kind: derived
+  text: In analyst judgement, phishing-resistant MFA (FIDO2 / certificate-based Conditional Access) blocks the fake-login path even when the lure succeeds, though not a session cookie an infostealer has
+    already taken.
+- claim_id: ee18743117
+  entry: 2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit
+  surface: body
+  kind: derived
+  text: By inference from the mailbox monitoring NCSC-CH describes, hunt M365 audit logs for mailbox access from a new country or ASN shortly after a sign-in, and for inbox or forwarding rules created in
+    that session.
+- claim_id: 13e08f4bd9
+  entry: 2026-06-25/ncsc-ch-active-microsoft-365-voicemail-phishing-wave-in-swit
+  surface: record 2026-10-11T14:02:54Z
+  kind: record-summary
+  text: Relabels the closing line as the Defender takeaway, the label the rest of the store uses; its text is unchanged.
+- claim_id: 6bd5d79e68
+  entry: 2026-09-27/pentagon-dmdc-military-personnel-data-breach-unencrypted-ssn
+  surface: headline
+  kind: frontmatter
+  text: Unauthorized users accessed unencrypted personal data on a Pentagon HR file-sharing server for nine months before discovery
+- claim_id: f15ea05f55
+  entry: 2026-09-27/pentagon-dmdc-military-personnel-data-breach-unencrypted-ssn
+  surface: section 2026-10-11T14:11:38Z
+  kind: cited
+  text: Military Times reports that unauthorized users reached files "on a server containing unencrypted personally identifiable information" through a vulnerability in a file-sharing system (
+  urls:
+  - https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/
+- claim_id: 2db10e11de
+  entry: 2026-09-27/pentagon-dmdc-military-personnel-data-breach-unencrypted-ssn
+  surface: section 2026-10-11T14:11:38Z
+  kind: uncited
+  text: The data was unencrypted; no report says whether the server was reachable from outside DMDC's network.
+- claim_id: a2a0e94036
+  entry: 2026-09-27/pentagon-dmdc-military-personnel-data-breach-unencrypted-ssn
+  surface: record 2026-10-11T14:11:38Z
+  kind: record-summary
+  text: The headline said the server was unencrypted and reachable; the reporting says unauthorized users accessed files holding unencrypted personal data through a vulnerability in a file-sharing system,
+    and no report says whether the server was reachable from outside DMDC's network.
+- claim_id: c0d61b8148
+  entry: 2026-06-02/sekoia-consolidates-gamaredon-tooling-under-gammaphish-gamma
+  surface: record 2026-10-11T14:56:35Z
+  kind: record-summary
+  text: Adds references to the WinRAR and Turla entries that share CVE-2025-8088 with this one; the three are distinct campaigns using the same flaw, so they are linked rather than merged.
+- claim_id: 39ed604712
+  entry: 2026-06-11/shinyhunters-oracle-peoplesoft-campaign-gadget-chain-access
+  surface: record 2026-10-11T14:56:35Z
+  kind: record-summary
+  text: Adds a reference to the NAIC breach entry, a victim of this campaign that shares CVE-2026-35273; the incident and the campaign are distinct findings, so they are linked rather than merged. An evidence
+    record attributed to a publisher missing from the sources is removed.
+- claim_id: d97aa9c102
+  entry: 2026-08-31/france-sdis-fire-rescue-data-leak-campaign
+  surface: record 2026-10-11T13:56:53Z
+  kind: record-summary
+  text: 'Removes the valid-accounts technique: no source describes the actor using valid accounts, only a forum post exposing a claimed credential whose validity ZATAZ says cannot be inferred. Marks three
+    evidence quotes as translations from French.'
+- claim_id: ae07c093dd
+  entry: 2026-09-27/wwahost-appx-webauthbroker-oauth-token-theft
+  surface: record 2026-10-11T13:52:16Z
+  kind: record-summary
+  text: Removes a production note from the sourcing note; the provenance statement is unchanged.
+- claim_id: 7887f7b2d1
+  entry: 2026-10-06/denmark-cpr-population-register-third-party-access-breach
+  surface: record 2026-10-11T13:52:44Z
+  kind: record-summary
+  text: 'The verification value moves from single-source-victim to multi-source: the incident now rests on the authorities'' own disclosure plus independent reporting by Datatilsynet, DR, Politiken and
+    TV 2 that the entry cites.'

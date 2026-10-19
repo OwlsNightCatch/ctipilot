@@ -67,7 +67,7 @@ deep_dive: false
 deep_dive_category: null
 org_triage: null
 classification:
-  reliability: A
+  reliability: B
   credibility: 2
 watchlist_hit: false
 actions: []
@@ -95,6 +95,13 @@ updates:
       installations. The findings rest on one assessor,
       NTC, reported by several publishers.
     fields: [priority, body, verification, summary]
+  - at: "2026-10-11T14:07:05Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    internal: true
+    summary: >
+      Source reliability lowered from A to B: the only primary is the testing institute's own publication, and the store has no track record for this publisher that would support A; research publishers of this kind are rated B elsewhere.
+    fields: [classification]
 migrated_from: null
 ---
 

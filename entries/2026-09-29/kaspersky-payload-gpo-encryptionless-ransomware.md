@@ -1,7 +1,7 @@
 ---
 schema: 1
 kind: threat
-title: "A malicious Group Policy Object named PAYLOAD delivered domain-wide ransomware impact on Windows with no encryption binary and no endpoint persistence, while a separate binary hit ESXi and Linux servers"
+title: "A malicious Group Policy Object named PAYLOAD delivered domain-wide ransomware impact on Windows with no encryption binary and no endpoint persistence, while a separate PAYLOAD sample was found on its ESXi/Linux servers"
 headline: "Kaspersky GERT: a Group Policy Object was the whole ransomware on Windows, in a channel most EDR tools do not inspect"
 summary: >
   Kaspersky's Global Emergency Response Team reconstructs an April 2026 incident at a Middle East
@@ -10,8 +10,8 @@ summary: >
   domain-wide across every Windows workstation, plus a second, independently deployed Group Policy Object
   that disabled Windows Firewall, using only native Group
   Policy client-side extensions: no ransomware binary, no file encryption and no endpoint persistence on
-  any Windows system. Separately, the same incident deployed an actual PAYLOAD ransomware binary against
-  the organization's ESXi/Linux servers, and data exfiltrated from file servers was later published on the
+  any Windows system. Separately, Kaspersky found a PAYLOAD ransomware sample targeting ESXi on the
+  organization's Linux servers, and data exfiltrated from file servers was later published on the
   dark web.
 discovered_at: "2026-09-29T05:00:00Z"
 updated_at: null
@@ -61,7 +61,7 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Audit domain-root and OU-linked GPOs for unexpected Files, Registry or Security Settings client-side-extension entries (ransom-note file drops, legal-notice banner rewrites, local Administrator account disablement, Windows Firewall disablement): the attack shows primarily in GPO content, GPO-creation events and SYSVOL, with the endpoint Group Policy log as a post-detonation signal."
+  - "Audit domain-root and OU-linked GPOs for unexpected Files, Registry or Security Settings client-side-extension entries (ransom-note file drops, legal-notice banner rewrites, local Administrator account disablement, Windows Firewall disablement)."
 updates:
   - at: "2026-09-30T07:03:25Z"
     run_id: 2026-09-30T0639Z-audit
@@ -77,12 +77,18 @@ updates:
       a transferable technique but no tie to Switzerland. The headline and action no longer say the
       attack is invisible to endpoint tooling.
     fields: [title, sourcing_note, priority, body, sources, headline, actions]
+  - at: "2026-10-11T13:41:23Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    summary: >
+      Kaspersky reports finding a PAYLOAD ransomware sample targeting ESXi on the organization's Linux servers; it does not say the sample ran or encrypted anything. The title, summary and analysis had said the binary was deployed against and hit those servers, and the detection sentence went beyond Kaspersky's wording.
+    fields: [title, summary, body, actions]
 migrated_from: null
 ---
 
 Kaspersky's Global Emergency Response Team (GERT) reconstructs an April 2026 incident at a Middle East manufacturing organization in which an attacker authenticated to a FortiGate SSL VPN using a compromised credential of unconfirmed provenance, obtained Group-Policy-write privileges via an unconfirmed escalation path, and authored a malicious Group Policy Object named "PAYLOAD" linked at the domain root ([Kaspersky Securelist, 2026-09-21](https://securelist.com/tr/payload-ransomware-via-group-policy/121335/)). On every Windows workstation, the GPO used only native client-side extensions (CSEs) to achieve the operation's whole visible impact, with no encryptor of any kind: the Files CSE dropped a read-only ransom note to the desktop and the C: and D: drive roots; the Registry CSE rewrote the Windows logon legal-notice banner to ransom text; the Personalization/Desktop policy set a SYSVOL-hosted ransom image as every machine's lock screen and wallpaper; and Security Settings CSE (`GptTmpl.inf`) disabled the local Administrator account fleet-wide, alongside a second GPO disabling Windows Firewall domain-wide.
 
-Because computer-configuration GPO settings apply only on reboot or a policy refresh cycle, the malicious policy sat cached and dormant for a full day between authoring (13 April) and mass visible impact (14 April); during that window, data exfiltration from file servers and several additional systems proceeded unnoticed. On the Windows domain-joined estate specifically, Kaspersky's forensic reconstruction found no files encrypted, no ransomware binary resident on disk, and no endpoint persistence mechanism of any kind: a detection program keyed on ransomware executables, encryption behavior, or process-level anomalies would have produced zero alerts until the ransom wallpaper appeared, post-reboot, on every affected desktop simultaneously. Kaspersky is explicit that this no-binary finding is scoped to that Windows activity: "The only ransomware we found in this incident was PAYLOAD sample targeting ESXi on Linux servers" ([Kaspersky Securelist, 2026-09-21](https://securelist.com/tr/payload-ransomware-via-group-policy/121335/)): a genuine ransomware binary was deployed, but against the organization's ESXi/Linux servers, a separate track from the GPO-only attack on Windows. The exfiltrated data was later published on the dark web, per Kaspersky's own account, confirming the extortion followed through beyond the operational-disruption phase. Kaspersky does not treat the absence of Windows-side encryption as settled: it assesses "with moderate confidence that the missing encryption reflects one of two scenarios: (1) a deliberate decision to stay below the irreversible data destruction threshold while preserving the option of a follow-on encryption phase, or (2) an operation interrupted before full execution" ([Kaspersky Securelist, 2026-09-21](https://securelist.com/tr/payload-ransomware-via-group-policy/121335/)).
+Because computer-configuration GPO settings apply only on reboot or a policy refresh cycle, the malicious policy sat cached and dormant for a full day between authoring (13 April) and mass visible impact (14 April); Kaspersky also observed data exfiltration from file servers and several additional systems. On the Windows domain-joined estate specifically, Kaspersky's forensic reconstruction found no files encrypted, no ransomware binary resident on disk, and no endpoint persistence mechanism of any kind: in Kaspersky's words, an organization relying on catching a ransomware executable would have seen nothing until the first endpoint rebooted and the ransom wallpaper appeared. Kaspersky is explicit that this no-binary finding is scoped to that Windows activity: "The only ransomware we found in this incident was PAYLOAD sample targeting ESXi on Linux servers" ([Kaspersky Securelist, 2026-09-21](https://securelist.com/tr/payload-ransomware-via-group-policy/121335/)). Kaspersky reports finding that sample on the Linux servers; it does not say the sample was executed or encrypted anything there. The exfiltrated data was later published on the dark web, per Kaspersky's own account, confirming the extortion followed through beyond the operational-disruption phase. Kaspersky does not treat the absence of Windows-side encryption as settled: it assesses "with moderate confidence that the missing encryption reflects one of two scenarios: (1) a deliberate decision to stay below the irreversible data destruction threshold while preserving the option of a follow-on encryption phase, or (2) an operation interrupted before full execution" ([Kaspersky Securelist, 2026-09-21](https://securelist.com/tr/payload-ransomware-via-group-policy/121335/)).
 
 Kaspersky refers to PAYLOAD operators but does not name them or the site where the data was published ([Kaspersky Securelist, 2026-09-21](https://securelist.com/tr/payload-ransomware-via-group-policy/121335/)). Ransomware.live profiles a ransomware group also called Payload that runs a leak site and, it says, uses Babuk-derived code against Windows and ESXi systems ([Ransomware.live](https://www.ransomware.live/group/payload)). No cited source establishes that this group is behind the incident Kaspersky describes.
 
@@ -97,3 +103,7 @@ Kaspersky refers to PAYLOAD operators but does not name them or the site where t
 A ransomware group also called Payload runs a leak site, and Ransomware.live describes it as using Babuk-derived code against Windows and ESXi systems ([Ransomware.live](https://www.ransomware.live/group/payload)). Kaspersky does not name the operators of the incident it describes or the site where the data was published ([Kaspersky Securelist, 2026-09-21](https://securelist.com/tr/payload-ransomware-via-group-policy/121335/)), so no cited source establishes that the two are the same operation.
 
 A GPO that disables the local Administrator account or Windows Firewall was described as having essentially no benign justification. Kaspersky documents those settings as part of this attack, not as a discriminator on their own, and names a domain-root `gPLink` change by a non-standard account as one of the most telling indicators ([Kaspersky Securelist, 2026-09-21](https://securelist.com/tr/payload-ransomware-via-group-policy/121335/)). Its detection guidance also includes SYSVOL file-integrity monitoring, so the attack is not invisible to file-integrity tooling ([Kaspersky Securelist, 2026-09-21](https://securelist.com/tr/payload-ransomware-via-group-policy/121335/)).
+
+## Correction — 2026-10-11T13:41:23Z
+
+Kaspersky reports that the only ransomware it found in this incident was a PAYLOAD sample targeting ESXi on the organization's Linux servers; it does not state that the sample was executed or encrypted anything ([Kaspersky Securelist, 2026-09-21](https://securelist.com/tr/payload-ransomware-via-group-policy/121335/)). Earlier wording here said the binary was deployed against and hit those servers, and that endpoint detection would have produced zero alerts across every desktop simultaneously; Kaspersky's own statement is that an organization relying on catching a ransomware executable would have seen nothing until the first endpoint rebooted and the ransom wallpaper appeared ([Kaspersky Securelist, 2026-09-21](https://securelist.com/tr/payload-ransomware-via-group-policy/121335/)).

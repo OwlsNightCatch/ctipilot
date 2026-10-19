@@ -141,6 +141,20 @@ def test_uncompressed_content_stream() -> None:
     assert "uncompressed advisory body" in text, repr(text)
 
 
+def test_uncompressed_image_stream_is_not_content() -> None:
+    """A JPEG image stream is not Flate and is binary; it may hold the bytes
+    "BT" or "Tj" by chance, which once turned an image-only ANSSI PDF into
+    467 KB of "extracted" bytes. Skipped by its filter, and by its byte mix
+    when the dictionary does not say."""
+    jpeg = bytes(range(256)) * 8 + b" BT Tj " + bytes(range(255, -1, -1)) * 8
+    for head in (b"<</Subtype/Image/Filter/DCTDecode/Length %d>>" % len(jpeg),
+                 b"<</Length %d>>" % len(jpeg)):
+        pdf = b"%PDF-1.4\n1 0 obj" + head + b"stream\n" + jpeg + b"\nendstream endobj\n%%EOF"
+        text, _, _, streams, content = _render(pdf)
+        assert streams == 0, (head, streams)
+        assert content == 0 and text == "", (head, repr(text[:80]))
+
+
 def test_prose_char_counter_discriminates() -> None:
     """The decode-selection signal counts recovered prose, so that a decode
     yielding only line breaks cannot score as clean."""

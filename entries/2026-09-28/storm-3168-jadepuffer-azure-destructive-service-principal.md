@@ -4,10 +4,10 @@ kind: threat
 title: "Storm-3168 (JADEPUFFER): compromised Azure service principals enumerate a tenant for hours, then an automated burst destroys storage, Key Vault and app resources in about seven minutes"
 headline: "Microsoft ties JADEPUFFER's cloud operations to two Azure service principals: one enumerated a tenant for 15+ hours, the other destroyed resources in minutes"
 summary: >
-  Microsoft Security Research documents Azure resource-destruction activity by JADEPUFFER (tracked by Microsoft as
-  Storm-3168), the actor Sysdig disclosed in July 2026 as the first documented agentic-ransomware operation. Two
-  compromised service principals from one tenant enumerated resources for over 15 hours before a roughly seven-minute
-  destructive burst attempted 100+ storage-account deletions (most succeeded, some blocked by resource locks),
+  Microsoft Security Research documents Azure resource-destruction activity it associates with JADEPUFFER (tracked by
+  Microsoft as Storm-3168), the actor Sysdig disclosed in July 2026 as the first documented agentic-ransomware operation. Of two
+  compromised service principals from one tenant, one enumerated resources for over 15 hours; the second ran a roughly
+  seven-minute destructive burst that attempted 100+ storage-account deletions (most succeeded, some blocked by resource locks),
   deleted a Key Vault, a Function App and an App Service plan, and attempted to delete Azure Site Recovery and
   Backup protection locks before harvesting storage-account keys. Timing evidence points to automated, scripted
   execution. Microsoft says it is unclear how the service principal was compromised. As possible initial access it
@@ -17,13 +17,13 @@ discovered_at: "2026-09-28T04:04:46Z"
 updated_at: null
 event_date: "2026-09-25"
 run_id: 2026-09-28T0404Z-intel
-priority: high
+priority: notable
 immediate_action: null
 tags: [ransomware, cloud, organized-crime]
 regions: [global]
-sectors: [public-sector, technology]
+sectors: []
 entities: [actor:jadepuffer]
-techniques: [T1190, T1078.004, T1526, T1485, T1490]
+techniques: [T1078.004, T1526, T1485, T1490]
 affected_products: ["Microsoft Azure"]
 cves: []
 sources:
@@ -71,6 +71,12 @@ updates:
       deletion attempts, and the main text said Microsoft attributes the activity to JADEPUFFER,
       which Microsoft describes as associated with it.
     fields: [title, summary, body, actions, headline]
+  - at: "2026-10-11T14:12:36Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    summary: >
+      Microsoft associates the activity with JADEPUFFER rather than attributing it, and of the two service principals only the first enumerated for about 15.5 hours; the second ran the destructive burst. The triage discriminator no longer rests on lock-removal attempts, which legitimate decommissioning of protected resources also requires; it leads with the sequence Microsoft's timeline supports. Priority lowers to notable: a single-tenant event from early June with no named sector or constituency link. Microsoft speaks of unique tokens, not OAuth tokens, and finds no App Service-to-ARM path for this tenant, so the exploit-public-facing-application mapping is dropped.
+    fields: [summary, body, priority, techniques, sectors]
 migrated_from: null
 ---
 
@@ -92,7 +98,7 @@ Backup protection locks, which Microsoft assesses as potentially intending to im
 successful Storage-Account ListKeys credential-collection calls, including against Site-Recovery-related accounts,
 for possible future exfiltration.
 
-Timing evidence drives Microsoft's automation assessment: five distinct OAuth tokens were issued for the destructive
+Timing evidence drives Microsoft's automation assessment: five unique tokens were issued for the destructive
 and collection work, with two active during the same 70-second window performing different resource-type deletions
 in parallel: "the timing between the different operations and the division of work using multiple service
 principals and overlapping token streams from the same service principal strongly indicates automated or scripted
@@ -116,17 +122,17 @@ this secret was used for the activity described here"
 **Detection and hunting.** In Azure Resource Manager audit-log telemetry, the signal is volume and sequencing rather
 than any single call: dozens to hundreds of deletion or ListKeys operations against storage accounts, Key Vaults and
 Function Apps within minutes, especially when preceded by hours of broad read-only enumeration from the same or a
-paired service principal, and when it includes attempts against Site Recovery or Backup protection locks specifically,
-a combination with essentially no legitimate operational counterpart. The `python-requests` user agent Microsoft
+paired service principal; attempts against Site Recovery or Backup protection locks corroborate the sequence. The `python-requests` user agent Microsoft
 observed on both compromised principals
 ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/))
 is a further, if weak, signal worth correlating with the rest of the sequence rather than alerting on alone.
 
 **Triage:** legitimate infrastructure-as-code teardown and disaster-recovery testing can also delete storage
-accounts and Key Vaults in bulk, so the discriminators are the attempt against recovery-protection locks specifically
-(a step with no purpose in routine teardown), the credential-harvesting ListKeys sweep that follows the destructive
-burst rather than preceding it, and multiple overlapping OAuth tokens performing different destructive operations in
-parallel from principals with no prior operational history of this pattern.
+accounts and Key Vaults in bulk, and decommissioning protected resources requires removing their locks first, so a
+lock-removal attempt corroborates rather than discriminates. The discriminator is the sequence Microsoft's timeline
+shows: hours of read-only enumeration by one principal, then a bulk deletion burst by a second principal with multiple
+overlapping tokens performing different destructive operations in parallel, then a credential-harvesting
+ListKeys sweep ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/)), from principals whose normal call pattern does not include it.
 
 **Defender takeaway:** treat any service-principal secret, storage key or connection string that has ever appeared in
 a public repository, issue, commit or gist as compromised the moment it is discovered, whatever its current
@@ -135,3 +141,7 @@ visibility; Microsoft's own conclusion is that an edit or redaction does not rev
 ## Correction — 2026-09-30T07:00:42Z
 
 Microsoft does not tie the campaign to the GitHub-exposed secret. It lists the secret under possible initial access, says it is unclear how the service principal was initially compromised, and states it could not confirm whether the secret was used ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/)). Resource locks and storage-account deletion protection blocked deletion for a few storage accounts, and the Azure SQL database deletions failed because the actor used an unsupported API version ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/)), so the locks were not the only control that stopped deletions. The headline said one service principal enumerated the tenant and then destroyed resources. Microsoft reports two: one performed reconnaissance and resource discovery, and the other performed discovery, destructive operations and credential collection ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/)). The summary said the actor attempted to disable the Azure Site Recovery and Backup protection locks, and the main text said Microsoft attributes the activity to JADEPUFFER. Microsoft reports multiple unsuccessful deletion attempts against those locks and describes the activity as associated with JADEPUFFER ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/)).
+
+## Correction — 2026-10-11T14:12:36Z
+
+Microsoft observed two compromised service principals in the same tenant: "One performed reconnaissance and resource discovery. The other performed discovery, destructive operations, and credential collection" ([Microsoft Security Blog, 2026-09-25](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/)). Only the first enumerated for about 15 hours and 30 minutes; the second enumerated two subscriptions in five seconds before its destructive burst. Microsoft describes the activity as associated with JADEPUFFER. Removing resource locks is also a step in legitimate decommissioning of protected resources, so the sequence across both principals, not the lock-removal attempt, is what separates this activity from an authorized teardown.

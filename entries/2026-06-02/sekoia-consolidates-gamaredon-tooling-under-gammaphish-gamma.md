@@ -11,7 +11,8 @@ summary: >
   Sekoia's Threat Detection & Research team published part one of a Gamaredon (UAC-0010 /
   ACTINIUM, attributed to Russia's FSB) series describing a January 2026 campaign against
   Ukrainian government and military targets, introducing unified naming for two capability
-  clusters: GammaPhish (the funnel from …
+  clusters: GammaPhish, the funnel from spearphishing through GammaLoad deployment, and GammaWorm,
+  the propagation layer.
 discovered_at: "2026-06-02T05:00:07Z"
 updated_at: "2026-06-03T05:00:08Z"
 event_date: 2026-06-01
@@ -66,7 +67,9 @@ evidence:
 verification: multi-source
 sourcing_note: null
 confidence: high
-references: []
+references:
+  - 2026-06-10/year-old-winrar-flaw-cve-2025-8088-still-fuels-ukraine-intru
+  - 2026-06-27/turla-s-stockstay-a-four-component-net-backdoor-for-diplomat
 deep_dive: false
 deep_dive_category: null
 org_triage: null
@@ -75,7 +78,7 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - '**Inventory WinRAR to ≥ 7.13 and hunt Startup-folder writes** to close the Gamaredon CVE-2025-8088 entry vector (§ 4); alert on archive utilities writing `.exe`/`.vbs` into `Programs\Startup`.'
+  - '**Inventory WinRAR to ≥ 7.13 and hunt Startup-folder writes** to close the Gamaredon CVE-2025-8088 entry vector; alert on archive utilities writing a hidden HTA file into `Programs\Startup`.'
 updates:
   - at: "2026-06-03T05:00:08Z"
     run_id: 2026-06-03-ee0eae61
@@ -115,6 +118,13 @@ updates:
       verbatim passages re-read from Sekoia's report covering the initial-access and persistence
       mechanics the body describes. No claim in the entry changed.
     fields: [actions, classification, techniques, evidence]
+  - at: "2026-10-11T14:56:35Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Adds references to the WinRAR and Turla entries that share CVE-2025-8088 with this one; the three are distinct campaigns using the same flaw, so they are linked rather than merged. The action now names the hidden HTA file the sources describe. The summary, cut off mid-sentence, now ends with both cluster names.
+    fields: [references, actions, summary]
 migrated_from: briefs/2026-06-02.md
 ---
 

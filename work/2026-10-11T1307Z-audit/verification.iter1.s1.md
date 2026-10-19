@@ -1,0 +1,535 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-10-11T15:20:16Z · ended_at=2026-10-11T15:44:55Z · duration_seconds=1479
+
+## Verification report — 2026-10-11T1307Z-audit (iteration 1, slice s1)
+
+Scope: 22 entries (21 existing, each with one record of this audit run, plus the new NeedyMantis entry). Claim ledger: 322 claims in scope, 322 answered (308 ok, 10 F3, 2 F4, 1 F5, 1 F14). Every cited page was fetched this iteration (cached bodies first, then extract / url / ncsc-csh / cisa-kev / pdf / vendor APIs); KEV membership read from the cisa-kev catalogue 2026.10.08. Full-scope pass (iteration 1: no post-fix sampling).
+
+### Citation does not support the claim
+
+**F3 #1** `entries/2026-05-09/cve-2026-43284-cve-2026-43500-linux-dirty-frag-deterministic.md`
+- Where: body para 2: 'Where a fix cannot be applied, unloading and blacklisting esp4, esp6 and rxrpc closes both paths but breaks IPsec and AFS ([NCSC-CH advisory 12547, 2026-05-08])'
+- Gap: The citation terminates a clause carrying two facts the cited page does not state: that the blacklist 'closes both paths' and that it 'breaks IPsec and AFS'.
+- Ground truth: NCSC-CH post 12547 says only: 'Temporary: Block or remove the vulnerable esp4, esp6, and rxrpc kernel modules. Once each distribution backports a patch, update accordingly.' The IPsec/AFS side effect is stated by the Ubuntu blog ('The mitigations will affect functionality if these are in use by either: IPsec deployments ... AFS') and Red Hat RHSB-2026-003 ('Blocking esp4/esp6 will break IPsec functionality'). (https://security-hub.ncsc.admin.ch/api/posts/12547/details)
+- Fix: Co-cite the Ubuntu blog (https://ubuntu.com/blog/dirty-frag-linux-vulnerability-fixes-available) and/or Red Hat RHSB-2026-003 for the IPsec/AFS side effect, or trim the clause to what NCSC-CH states.
+
+**F3 #2** `entries/2026-05-09/cve-2026-43284-cve-2026-43500-linux-dirty-frag-deterministic.md`
+- Where: (low confidence) body Detection para + Correction section: 'the page-cache write leaves the file on disk unchanged, so file-write watches do not fire ([V4bel write-up])'; 'Because the file on disk never changes, a write watch on /etc/passwd cannot detect the attack ([V4bel write-up])'
+- Gap: The write-up says the page cache is 'modified in RAM'; it does not say the on-disk file is unchanged or that file-write watches (auditd/inotify) stay silent. The inference is sound but the cited page does not carry it.
+- Ground truth: write-up: 'the page cache of files that an unprivileged user only has read access to (such as /etc/passwd or /usr/bin/su) is modified in RAM, and every subsequent read sees the modified copy.' Aikido (already a source on the entry, https://www.aikido.dev/blog/dirty-frag) states: 'The file on disk never changes, but the version in memory now says whatever the attacker made it say.' (https://github.com/V4bel/dirtyfrag/blob/master/assets/write-up.md)
+- Fix: Co-cite the Aikido post for the on-disk-unchanged clause.
+
+**F3 #3** `entries/2026-05-09/cve-2026-31431-copy-fail-cisa-kev-deadline-2026-05-15-approa.md`
+- Where: (low confidence) body **Exposure:** 'any Linux host where an attacker can run code as an unprivileged user, including through SSH accounts, web shells or containers sharing the host kernel, on a kernel without the fix ([Xint, 2026-04-29])'
+- Gap: Xint states local unprivileged user and container-boundary impact, but names neither SSH accounts nor web shells as access routes; those access paths appear in Microsoft's Dirty Frag post, which is not the citation on this clause.
+- Ground truth: Xint: 'It lets an unprivileged local user trigger a deterministic, controlled 4-byte write into the page cache of any readable file'; 'Cross-container impact. The page cache is shared across all processes on a system, including across container boundaries.' (https://xint.io/blog/copy-fail-linux-distributions)
+- Fix: Cite Microsoft for the SSH/web-shell routes or drop them from the Exposure clause.
+
+**F3 #4** `entries/2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen.md`
+- Where: (low confidence) body para 2: 'installing either does not remove the earlier mitigation, which administrators must roll back by hand ([Exchange Team Blog 2026-07-14]) ([MSRC 2026-07-14])'
+- Gap: The clause says installing either the June or the July update leaves the mitigation in place; the two cited pages carry the statement for the July update only (MSRC: mitigations 'can be removed after July 2026 update is installed').
+- Ground truth: June Exchange blog (https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491): 'Installing the June 2026 update does not automatically remove already applied CVE-2026-42897 mitigations.' (https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146)
+- Fix: Add the June blog as a co-citation on this clause.
+
+**F3 #5** `entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md`
+- Where: body para 1: 'other counts run to 120 and, in ZDI's tally, 138 ([Tenable] [ZDI] [Krebs])'
+- Gap: None of the three cited pages states a count of 120: Tenable and Krebs say 118 (Krebs 'at least 118'), ZDI says 138. The 120 figure is on Help Net Security's Patch Tuesday piece ('120+'), which is in sources[] but not cited on this clause.
+- Ground truth: HNS 2026-05-12: 'releasing fixes for 120+ CVE-numbered vulnerabilities' (https://www.helpnetsecurity.com/2026/05/12/microsoft-may-2026-patch-tuesday/)
+- Fix: Cite Help Net Security for the 120 figure.
+
+**F3 #6** `entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md`
+- Where: body para 1: 'CVE-2026-41096 (CVSS 9.8) is a heap-based buffer overflow ... which Microsoft rates "Exploitation Unlikely" ([ZDI, 2026-05-12])'
+- Gap: The ZDI page carries the overflow, the malicious-DNS-response trigger and CVSS 9.8 but not the quoted Microsoft rating (ZDI's table only has Public: No, Exploited: No).
+- Ground truth: MSRC CVE-2026-41096: 'Exploitability assessment Exploitation Unlikely'; Krebs: 'Microsoft assessing exploitation as less likely'. (https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41096)
+- Fix: Cite MSRC (or Krebs) for the exploitability rating.
+
+**F3 #7** `entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md`
+- Where: body **Exposure:** '...10.0.26100.32772 (2025), with the May 2026 updates for 2012 and 2012 R2 ([CERT-EU, 2026-06-10])'
+- Gap: CERT-EU lists Windows Server 2012 / 2012 R2 as affected with no fixed build and never says May 2026 updates exist for them; the merged duplicate said only 'with Server 2012/2012 R2 also affected', and Help Net Security reports 0patch micropatches for legacy 2008 R2, 2012 and 2012 R2.
+- Ground truth: CERT-EU: 'Windows Server 2012 / 2012 R2' (no build); HNS: 'Acros Security has released micropatches ... for legacy Windows Server versions: Windows Server 2008 R2, Windows Server 2012, and Windows Server 2012 R2.' (https://cert.europa.eu/publications/security-advisories/2026-007/)
+- Fix: Say 2012/2012 R2 are also affected and name no fixed build, or cite Microsoft's per-SKU KB for those releases; do not assert updates exist.
+
+**F3 #8** `entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md`
+- Where: body **Contradiction:** '...while Microsoft told BleepingComputer it had no evidence to support the claim; CISA has not listed it ([CCB, 2026-05-29]) ([BleepingComputer, 2026-06-01])'
+- Gap: Neither cited page says CISA has not listed the flaw; the statement is a time-bound negative that only the KEV catalogue carries (CVE-2026-41089 is absent from catalogue release 2026.10.08).
+- Ground truth: BleepingComputer: Microsoft 'does not currently have any evidence to support the CBC's claims'; no mention of KEV. (https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/)
+- Fix: Cite the KEV catalogue as of a date, or drop the clause.
+
+**F3 #9** `entries/2026-06-09/cve-2026-42271-berriai-litellm-low-privilege-command-injecti.md`
+- Where: (low confidence) body para 1: 'CISA added CVE-2026-42271 to its KEV catalog on 8 June 2026, confirming active exploitation ... ([GitHub Advisory GHSA-v4p8-mg3p-g94g])' (legacy text, not changed by this fire)
+- Gap: The GitHub advisory carries the endpoint/role-check/fix details but says nothing about CISA KEV or exploitation; the KEV fact (dateAdded 2026-06-08) is only on the KEV catalogue, which is cited as a source but not on this clause.
+- Ground truth: GHSA-v4p8-mg3p-g94g: 'Authenticated command execution via MCP stdio test endpoints ... Fixed in 1.83.7'; KEV catalogue: CVE-2026-42271 dateAdded 2026-06-08. (https://github.com/advisories/GHSA-v4p8-mg3p-g94g)
+- Fix: Cite the KEV catalogue for the listing date and exploitation.
+
+**F3 #10** `entries/2026-05-09/inditex-zara-shinyhunters-publishes-140-gb-197-400-eu-custom.md`
+- Where: (low confidence) body: 'Have I Been Pwned found 197,400 unique email addresses ... ([Have I Been Pwned])'; headline 'Have I Been Pwned loads 197,400 Zara customer emails'
+- Gap: The cited HIBP page states '197k unique email addresses' and the HIBP API gives PwnCount 197376; '197,400' is BleepingComputer's rounding of HIBP's figure.
+- Ground truth: HIBP page: 'The data contained 197k unique email addresses'; api.haveibeenpwned.com/api/v3/breach/Zara PwnCount 197376; BC: 'exposed the data of 197,400 people'. (https://haveibeenpwned.com/Breach/Zara)
+- Fix: Cite BleepingComputer for 197,400 or say 'about 197,000' / 197,376.
+
+### Unsupported / hallucinated facts
+
+**F4 #1** `entries/2026-05-09/cve-2026-43284-cve-2026-43500-linux-dirty-frag-deterministic.md`
+- Where: (low confidence) updates[2026-10-11T14:26:34Z].summary: 'Microsoft's observation may be Dirty Frag or Copy Fail, and nothing was exfiltrated'
+- Gap: No cited source states that nothing was exfiltrated; Microsoft describes session-file deletion and reading only and is silent on exfiltration. The reader-visible record summary asserts an absence the source does not.
+- Ground truth: Microsoft: 'The activity then shifts to accessing sensitive data and interacting with PHP session files - first deleting multiple session files and then forcefully wiping additional ones - before reading remaining session data.' (https://www.microsoft.com/en-us/security/blog/2026/05/08/active-attack-dirty-frag-linux-vulnerability-expands-post-compromise-risk/)
+- Fix: Drop 'and nothing was exfiltrated' or reword to 'Microsoft does not report exfiltration'.
+
+**F4 #2** `entries/2026-05-09/cve-2026-43284-cve-2026-43500-linux-dirty-frag-deterministic.md`
+- Where: (low confidence) actions[1]: 'disable unprivileged user namespaces (kernel.unprivileged_userns_clone=0 on Ubuntu/Debian, user.max_user_namespaces=0 on RHEL/CentOS)'
+- Gap: No linked source names kernel.unprivileged_userns_clone; the audit's own correction says the targeted sysctl is user.max_user_namespaces (Red Hat), and actions[] was left uncorrected. Ubuntu's blog offers only module blocking as the manual mitigation.
+- Ground truth: Red Hat RHSB-2026-003 Targeted Method: echo user.max_user_namespaces=0 > /etc/sysctl.d/dirtyfrag.conf; V4bel README: Ubuntu 'sometimes blocks unprivileged user namespace creation through AppArmor policy'. (https://access.redhat.com/security/vulnerabilities/RHSB-2026-003)
+- Fix: Drop the Ubuntu/Debian sysctl from actions[] or replace with the Red Hat sysctl; this action also restates the body's mitigation (F18).
+
+**F4 #3** `entries/2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen.md`
+- Where: (low confidence) title and summary and body para 1: 'Exchange OWA stored XSS' / 'an exploited stored XSS' / 'a stored cross-site scripting flaw'
+- Gap: No fetched source (MSRC CWE-79 'cross-site scripting' spoofing record, the May Exchange blog 'arbitrary JavaScript can be executed in the browser context', Proofpoint 'does not adequately sanitize HTML in the message body') calls the flaw 'stored' XSS; the qualifier is the entry's own classification stated as fact.
+- Ground truth: MSRC: 'Improper neutralization of input during web page generation ('cross-site scripting') in Microsoft Exchange Server allows an unauthorized attacker to perform spoofing over a network.' (https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897)
+- Fix: Say 'cross-site scripting' (or 'XSS triggered by opening a crafted message') without 'stored'.
+
+**F4 #4** `entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md`
+- Where: (low confidence) frontmatter cves[CVE-2026-41089].status [exploited, patch-available] and tags 'actively-exploited'
+- Gap: The body states the exploitation claim is disputed (CCB: 'trusted partners'; Microsoft: no evidence; MSRC: Exploited No; not in KEV). The machine-consumed status and tag assert exploitation without that qualifier, so the frontmatter overstates the body.
+- Ground truth: MSRC: 'Publicly disclosed No Exploited No'; BC: Microsoft 'does not currently have any evidence to support the CBC's claims'. (https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/)
+- Fix: Drop 'exploited' from status (keep the CCB claim in the body and Contradiction line) or document the reported-only state.
+
+**F4 #5** `entries/2026-09-25/switzerland-sovereign-digital-infrastructure-motion-24-3209.md`
+- Where: (low confidence) evidence[0].quote: '"BusinessStatusId": 209, "BusinessStatusName": "Überwiesen an den Bundesrat", "BusinessStatusDate": "/Date(1790187732000)/"'
+- Gap: Not a contiguous verbatim substring of the fetched JSON: the OData response is compact ('"BusinessStatusId":209,"BusinessStatusName":"\u00dcberwiesen an den Bundesrat","BusinessStatusDate":"\/Date(1790187732000)\/"') with unicode and slash escapes, so the quote is a re-formatted rendering.
+- Ground truth: OData: {"BusinessNumber":20243209,"BusinessStatusId":209,"BusinessStatusName":"\u00dcberwiesen an den Bundesrat","BusinessStatusDate":"\/Date(1790187732000)\/"...} (https://ws.parlament.ch/odata.svc/Business(ID=20243209,Language='DE')/BusinessStates?$format=json)
+- Fix: Quote the compact JSON literally or replace with the status name only; (date 1790187732000 = 2026-09-23T18:22:12Z is correct).
+
+**F4 #6** `entries/2026-10-11/needymantis-modular-post-compromise-framework-storm-3069.md`
+- Where: (low confidence) body **Triage:** 'the discriminator is the location, an application folder under ProgramData that the organization never deployed, and the companion archive file'
+- Gap: The Triage discriminator does not follow from the cited mechanism for the analysed case: Microsoft's sample is %ProgramFiles%\Poedit\WinSparkle.dll, the legitimate install folder, with the malicious DLL replacing the real WinSparkle update component; only the same-named extension-less archive (and the unsigned/replaced DLL) separates it from a benign install.
+- Ground truth: Microsoft: 'NeedyMantis spoofed and replaced the WinSparkle software update component of the Poedit translation software'; 'The malware's file archive is named the same as the loader DLL without the extension'. (https://www.microsoft.com/en-us/security/blog/2026/09/28/needymantis-unpacking-a-post-compromise-malware-family-used-in-targeted-operations/)
+- Fix: Name the companion archive (and a DLL that differs from the vendor's component) as the discriminator; keep location only for the ProgramData pairings.
+
+**F4 #7** `entries/2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen.md`
+- Where: ## Update 2026-07-31T04:09:14Z, **Defender takeaway:** '"we patched in May" is the wrong answer to this one -- May shipped a mitigation, July shipped the fix, and the mitigation has to be dismantled by hand afterwards.'
+- Gap: Supersession: the corrected main analysis (and this fire's correction record) state 'The fix shipped in the June 2026 Security Update' and Microsoft recommends July; the takeaway in the Update section still asserts that July shipped the fix, which the June blog disproves.
+- Ground truth: June 2026 Exchange SU blog (2026-06-09): 'The June 2026 SUs address vulnerabilities ... as well as CVE-2026-42897 that we announced'; entry body para 2: 'The fix shipped in the June 2026 Security Update'. (https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491)
+- Fix: Rewrite the clause to 'May shipped a mitigation, June shipped the fix and July is the recommended update'.
+
+### Quantifier without source
+
+**F14 #1** `entries/2026-10-11/needymantis-modular-post-compromise-framework-storm-3069.md`
+- Where: (low confidence) body para 2: 'its commands only load, unload and pass data to further modules, whose capabilities Microsoft has not confirmed'
+- Gap: Quantifier 'only' goes beyond the source: Microsoft says the main component 'only has a handful of commands' and lists, besides load/unload/dispatch, a 'Turn off active flags' command (1070) and sent commands for computer name, identifier and keep alive.
+- Ground truth: Microsoft: 'Commands received from the C2 include: 1020 Load module; 1030 Unload module; 1050 / 1150 Dispatch data to module; 1070 Turn off active flags.' (https://www.microsoft.com/en-us/security/blog/2026/09/28/needymantis-unpacking-a-post-compromise-malware-family-used-in-targeted-operations/)
+- Fix: Say 'a handful of commands, chiefly load, unload and dispatch to modules'.
+
+### Claims missing inline citation
+
+**F5 #1** `entries/2026-09-24/closedquorum-llm-orchestrated-c2-implant.md`
+- Where: (low confidence) body para 3: 'Talos's CAIRN toolkit is unrelated to a similarly-named autonomous exploitation engine used in separate, unrelated 2026 campaigns -- the shared name is coincidental.'
+- Gap: Name-collision disambiguation with no inline citation and an empty references[]; the other 'Cairn' is the Gambit Security-documented engine (one campaign, entry 2026-09-23). 'Campaigns' plural and 'coincidental' are not sourced.
+- Ground truth: Registry tool:cairn-talos summary: 'Distinct from the unrelated Gambit Security-documented autonomous exploitation engine also named Cairn (tool:cairn-exploitation-engine).' (n/a)
+- Fix: Cite the Gambit Security report (or add the 2026-09-23 Gambit entry to references[]) and say 'a campaign'.
+
+### Drop (low relevance / off-audience / duplicate)
+
+**F7 #1** `entries/2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic.md`
+- Where: (low confidence) whole entry: priority notable; frontmatter sectors [public-sector, technology, education]; body 'No source reports exploitation.'
+- Gap: Five authenticated-only (workflow-editor) flaws with no reported exploitation and no public PoC cited; the audit removed the only constituency nexus (the unsourced 'Swiss and EU adoption' claim), yet the entry keeps sectors: public-sector. Check 11: a patch-cycle CVE with no exploitation and no exposure-driven urgency does not qualify on CVSS alone.
+- Ground truth: Advisory text: 'An authenticated user with permission to create or modify workflows could ...'; THN (2026-05-18) lists them in a patch roundup, no exploitation. (https://github.com/n8n-io/n8n/security/advisories/GHSA-c8xv-5998-g76h)
+- Fix: Drop, or hold to two sentences at routine; if kept at notable, state the exposure nexus a Swiss public-sector SOC would act on and drop the unsupported public-sector/education sector tags.
+
+**F7 #2** `entries/2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c.md`
+- Where: (low confidence) whole entry: priority notable; frontmatter regions [.. switzerland], sectors [public-sector, education, finance, defense]
+- Gap: Two vendor-patched flaws with 'no public announcements or malicious use', one needing valid administrative credentials; the audit removed the unsourced prevalence claim but left the sector/region tags that only that claim supported, so nothing in the entry ties it to the constituency. Check 11: a routine patch-cycle CVE with no exploitation does not qualify on CVSS alone.
+- Ground truth: Cisco PSIRT: 'The Cisco PSIRT is not aware of any public announcements or malicious use of the vulnerabilities'. (https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv)
+- Fix: Drop, or keep at routine in two sentences and remove the unsupported sectors/regions tags.
+
+**F7 #3** `entries/2026-05-09/inditex-zara-shinyhunters-publishes-140-gb-197-400-eu-custom.md`
+- Where: (low confidence) whole entry: kind incident, sector retail, regions global, priority routine
+- Gap: Out-of-nexus retail breach with no Swiss or public-sector link; the only transferable element is a ShinyHunters claim (unconfirmed by Inditex) about analytics-provider tokens against BigQuery, and the entry does not state which of the four out-of-nexus grounds it relies on (check 5).
+- Ground truth: BC: Inditex 'has yet to attribute the breach to a specific threat actor and to share the name of the hacked provider'. (https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/)
+- Fix: Drop, or reduce to two sentences and say the transferable lesson (token scope for analytics providers) as the reason it is kept.
+
+### Editorial / less-is-more flags (advisory)
+
+**F11 #1** `entries/2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic.md`
+- Where: (low confidence) frontmatter deep_dive: true, deep_dive_category: other
+- Gap: The rewritten entry is a three-paragraph vulnerability summary (no kill chain, no Detection line); the legacy deep_dive flag no longer matches the body and deep-dive treatment is meant to stay rare.
+- Fix: Set deep_dive false (via the changelog record).
+
+**F11 #2** `entries/2026-05-25/ghost-cms-cve-2026-26980-clickfix-the-cms-compromise-to-endp.md`
+- Where: (low confidence) frontmatter deep_dive: true, deep_dive_category: other
+- Gap: docs/pipeline.md: 'deep_dive: true => this entry IS the deep-dive treatment'. The rewritten entry is a four-paragraph vulnerability-plus-campaign summary with no kill-chain ordering, so the legacy deep-dive flag no longer matches the body.
+- Fix: Set deep_dive false through the changelog record.
+
+**F11 #3** `entries/2026-06-09/cve-2026-42271-berriai-litellm-low-privilege-command-injecti.md`
+- Where: (low confidence) legacy text: title/headline/summary use em dashes ('CVE-2026-42271 — BerriAI LiteLLM'); body '#### CVE Summary Table' carries a CVE-2026-50751 Check Point row that is a different finding (separate entry 2026-06-09/cve-2026-50751-check-point-security-gateway-ikev1-vpn-authen)
+- Gap: Style rule: no em dash in reader-facing entry text; the unrelated Check Point row is migration residue that dilutes a one-CVE entry and asserts 'Qilin affiliate' exploitation with no sentence-level citation.
+- Fix: Remove the Check Point row and em dashes via the changelog (improvement) when next touched.
+
+**F11 #4** `entries/2026-09-24/closedquorum-llm-orchestrated-c2-implant.md`
+- Where: summary and body: em dashes in reader-facing text ('plurality vote among their responses — credential theft, process injection', 'four commercial LLM providers — DeepSeek, Qwen', 'effort displacement — an entire phase', 'not an active campaign — but its architecture')
+- Gap: Style rule: no em dash in reader-facing entry text (only the '## <Type> — <at>' heading is exempt). Also (low confidence) a routine-priority capability demonstration with an inert public build carries ~700 words of implant internals.
+- Fix: Replace em dashes with commas/colons; consider trimming implementation detail to what a detection engineer needs.
+
+**F11 #5** `entries/2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen.md`
+- Where: ## Improvement 2026-08-30T13:12:06Z body section: 'This entry now carries a source-reliability rating, which it predates: **A1** on the NATO Admiralty scale ...'; also seven em dashes in the 2026-07-31 Update section
+- Gap: A reader-facing section whose only content is record-keeping narration about metadata (Admiralty rating, 'this entry') should have been an internal record without a section; workflow vocabulary (Admiralty letter/digit, 'this entry') and em dashes are banned in reader-facing text (check 12, 4c(i)).
+- Fix: Remove the section from the body (convert to an internal record) and replace the em dashes in the Update section.
+
+**F11 #6** `entries/2026-05-09/cve-2026-43284-cve-2026-43500-linux-dirty-frag-deterministic.md`
+- Where: em dashes in reader-facing text: actions[0] ('(tracked in its own entry) -- Red Hat's applicability split ...') and the 2026-09-05 Update section ('Red Hat's own security bulletin groups all three CVEs ... -- noting ...'); 'tracked in its own entry' is also workflow-internal wording
+- Gap: Check 12: no em dash and no 'tracked in its own entry' style workflow language in reader-facing entry text.
+- Fix: Replace with commas/colons; refer to the Fragnesia entry via references[].
+
+**F11 #7** `entries/2026-09-24/microsoft-entra-id-sspr-enumeration-resetspy.md`
+- Where: summary and body: em dashes ('and -- because Microsoft enforces SSPR', 'Every other named view -- including', 'the telemetry class -- specifically', 'ranked ... --', takeaway '... -- since Microsoft cannot let admin accounts opt out')
+- Gap: Check 12: no em dash in reader-facing entry text.
+- Fix: Replace em dashes with commas/colons/periods.
+
+### Org-triage line missing / inconsistent (priority calibration)
+
+**F16 #1** `entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md`
+- Where: (low confidence) priority: critical with immediate_action (publish chain fires notification hooks)
+- Gap: Exploitation rests on a single national CERT claim from 'trusted partners' that Microsoft says it cannot corroborate, CISA has not listed it, and the disclosure is five months old (2026-05-12); the critical bar is stop-reading-and-act-now on newly disclosed/weaponised or confirmed active exploitation.
+- Ground truth: BC: Microsoft has no evidence; KEV absent; MSRC Exploited No. (https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/)
+- Fix: Consider high; keep the patch-DCs action.
+
+**F16 #2** `entries/2026-06-03/ncsc-switzerland-warns-of-cyber-operations-around-the-g7-via.md`
+- Where: priority: high; body Defender takeaway: 'should pre-stage DDoS mitigation playbooks now ... rotate administrative credentials before the event window ... hunt for anomalous authentication spikes from the summit region around 15-17 June'
+- Gap: The G7 Evian summit (15-17 June 2026) ended almost four months before this audit (2026-10-11); the entry is still a pre-event warning with 'now' / 'before the event window' advice and no post-event outcome, so it no longer clears the high bar (a decision within 7 days beyond the regular cycle; check 5b disqualifies events older than 30 days). The relabel record left the stale guidance in place.
+- Ground truth: NCSC Switzerland advisory (2026-06-01): 'G7 summit ... which will take place from 15 to 17 June 2026 in Evian'. (https://www.bacs.admin.ch/en/26-cyberresilienz-g7-en)
+- Fix: Lower to routine (or add a post-event correction stating the summit has passed and no outcome is reported) and drop the 'now' / 'before the event window' wording.
+
+### Action-item discipline
+
+**F18 #1** `entries/2026-05-09/cve-2026-43284-cve-2026-43500-linux-dirty-frag-deterministic.md`
+- Where: actions[1]: 'Where immediate patching isn't possible: blacklist the esp4/esp6/rxrpc kernel modules ... or disable unprivileged user namespaces ...'
+- Gap: Conditional ('Where immediate patching isn't possible') restatement of body mitigation guidance; the action is hedged and not a start-now task. Action 0 also carries a long Red Hat applicability aside.
+- Fix: Drop the conditional action (body already carries the mitigation) or reduce to one start-now task: apply the vendor kernel update and confirm CVE-2026-46300 fix.
+
+**F18 #2** `entries/2026-05-09/cve-2026-31431-copy-fail-cisa-kev-deadline-2026-05-15-approa.md`
+- Where: (low confidence) actions[0]: 'On Linux hosts that cannot take a fixed kernel yet, blacklist the algif_aead module ... or block AF_ALG socket creation with seccomp.'
+- Gap: Conditional fallback that restates the body's Defender takeaway mitigation (b); the entry is KEV-listed since 2026-05-01 and Ubuntu fixed kernels are published, so the start-now task is applying the fixed kernel, not the workaround.
+- Fix: Replace with the start-now task (deploy the fixed kernel on hosts reachable by untrusted local users) or leave actions empty.
+
+**F18 #3** `entries/2026-09-03/cve-2026-83548-83549-sonicwall-sma1000-ssrf-cmd-injection.md`
+- Where: (low confidence) actions[1]: 'Where indicators of compromise are found, follow SonicWall's own remediation position: re-image or re-deploy the appliance, rotate every user and administrator password, and reset TOTP seeds ...'
+- Gap: Conditional restatement of the body paragraph 'SonicWall's own remediation guidance where indicators of compromise are found ...' (check 10b b); actions[0] additionally carries a hedged 'if immediate patching is not possible ...' clause.
+- Fix: Drop actions[1] (body carries it) and keep the patch-to-12.4.3-03670/12.5.0-03082 task.
+
+**F18 #4** `entries/2026-06-09/cve-2026-42271-berriai-litellm-low-privilege-command-injecti.md`
+- Where: (low confidence) actions[0]: '**Upgrade LiteLLM to 1.83.7 (CVE-2026-42271)** — KEV-listed, actively exploited; ... Restrict the /mcp-rest/test/* endpoints at the network layer and audit API-key scoping in the interim.'
+- Gap: Markdown bold and an em dash inside an action string, plus an 'in the interim' hedge that restates the advisory workaround; the first clause is a valid do-now task.
+- Ground truth: GHSA workaround: 'block POST /mcp-rest/test/connection and POST /mcp-rest/test/tools/list at their reverse proxy' (https://github.com/advisories/GHSA-v4p8-mg3p-g94g)
+- Fix: Trim to the upgrade task; drop the interim clause (body/advisory carry it).
+
+### Notes (no finding)
+
+- Citrix CVE-2026-88771 entry: all 41 ledger claims, the 8-CVE table, KEV dates (2026-09-27 both flaws), the CCB 2026-10-06 update (PoC public, no exploitation) and the new-delta section verified clean; 22 evidence quotes found on their pages (markup-only differences).
+- n8n: the five CVSS 4.0 9.4 scores and the 2026-04-22 / 2026-05-13 dates verified through the vendor repo-advisory API (the rendered advisory page shows only a stale CVSS 3.1 vector; the GitHub global advisory for CVE-2026-42231 lists 10.0, which is not the vendor score).
+- Internal records (LiteLLM references, Gitea event_date, AEPD credibility, Star Blizzard T1218.007, NCSC G7 label, Gentlemen/others) checked against the diff and sources: changes are source-supported; the G7 relabel is a body label edit with identical text.
+- NeedyMantis (new entry): no earlier NeedyMantis / Storm-3069 coverage in entries or prior_coverage.json; references the DAEMON Tools entry; evidence quotes verbatim; ATT&CK ids active in the pinned v19 set (T1574.002 is revoked into T1574.001, so T1574.001 is correct).
+- Missed angles: none named from this slice; coverage of the Citrix, Netlogon, Exchange/TA488 and SonicWall stories looks complete against what the sources surfaced.
+
+### Verdict
+
+NEEDS_FIXES (truth: 18, editorial: 10, advisory: 7)
+
+### Findings summary (machine-readable)
+
+```yaml
+- code: F3
+  entry: entries/2026-05-09/cve-2026-43284-cve-2026-43500-linux-dirty-frag-deterministic.md
+  where: 'body para 2: ''Where a fix cannot be applied, unloading and blacklisting esp4, esp6 and rxrpc closes both paths but breaks IPsec and AFS ([NCSC-CH advisory 12547, 2026-05-08])'''
+  summary: 'The citation terminates a clause carrying two facts the cited page does not state: that the blacklist ''closes both paths'' and that it ''breaks IPsec and AFS''.'
+  ground_truth: 'NCSC-CH post 12547 says only: ''Temporary: Block or remove the vulnerable esp4, esp6, and rxrpc kernel modules. Once each distribution backports a patch, update accordingly.'' The IPsec/AFS
+    side effect is stated by the Ubuntu blog (''The mitigations will affect functionality if these are in use by either: IPsec deployments ... AFS'') and Red Hat RHSB-2026-003 (''Blocking esp4/esp6 will
+    break IPsec functionality'').'
+  ground_truth_url: https://security-hub.ncsc.admin.ch/api/posts/12547/details
+  fix: Co-cite the Ubuntu blog (https://ubuntu.com/blog/dirty-frag-linux-vulnerability-fixes-available) and/or Red Hat RHSB-2026-003 for the IPsec/AFS side effect, or trim the clause to what NCSC-CH states.
+- code: F3
+  entry: entries/2026-05-09/cve-2026-43284-cve-2026-43500-linux-dirty-frag-deterministic.md
+  where: '(low confidence) body Detection para + Correction section: ''the page-cache write leaves the file on disk unchanged, so file-write watches do not fire ([V4bel write-up])''; ''Because the file
+    on disk never changes, a write watch on /etc/passwd cannot detect the attack ([V4bel write-up])'''
+  summary: The write-up says the page cache is 'modified in RAM'; it does not say the on-disk file is unchanged or that file-write watches (auditd/inotify) stay silent. The inference is sound but the cited
+    page does not carry it.
+  ground_truth: 'write-up: ''the page cache of files that an unprivileged user only has read access to (such as /etc/passwd or /usr/bin/su) is modified in RAM, and every subsequent read sees the modified
+    copy.'' Aikido (already a source on the entry, https://www.aikido.dev/blog/dirty-frag) states: ''The file on disk never changes, but the version in memory now says whatever the attacker made it say.'''
+  ground_truth_url: https://github.com/V4bel/dirtyfrag/blob/master/assets/write-up.md
+  fix: Co-cite the Aikido post for the on-disk-unchanged clause.
+- code: F4
+  entry: entries/2026-05-09/cve-2026-43284-cve-2026-43500-linux-dirty-frag-deterministic.md
+  where: '(low confidence) updates[2026-10-11T14:26:34Z].summary: ''Microsoft''s observation may be Dirty Frag or Copy Fail, and nothing was exfiltrated'''
+  summary: No cited source states that nothing was exfiltrated; Microsoft describes session-file deletion and reading only and is silent on exfiltration. The reader-visible record summary asserts an absence
+    the source does not.
+  ground_truth: 'Microsoft: ''The activity then shifts to accessing sensitive data and interacting with PHP session files - first deleting multiple session files and then forcefully wiping additional ones
+    - before reading remaining session data.'''
+  ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/08/active-attack-dirty-frag-linux-vulnerability-expands-post-compromise-risk/
+  fix: Drop 'and nothing was exfiltrated' or reword to 'Microsoft does not report exfiltration'.
+- code: F4
+  entry: entries/2026-05-09/cve-2026-43284-cve-2026-43500-linux-dirty-frag-deterministic.md
+  where: '(low confidence) actions[1]: ''disable unprivileged user namespaces (kernel.unprivileged_userns_clone=0 on Ubuntu/Debian, user.max_user_namespaces=0 on RHEL/CentOS)'''
+  summary: No linked source names kernel.unprivileged_userns_clone; the audit's own correction says the targeted sysctl is user.max_user_namespaces (Red Hat), and actions[] was left uncorrected. Ubuntu's
+    blog offers only module blocking as the manual mitigation.
+  ground_truth: 'Red Hat RHSB-2026-003 Targeted Method: echo user.max_user_namespaces=0 > /etc/sysctl.d/dirtyfrag.conf; V4bel README: Ubuntu ''sometimes blocks unprivileged user namespace creation through
+    AppArmor policy''.'
+  ground_truth_url: https://access.redhat.com/security/vulnerabilities/RHSB-2026-003
+  fix: Drop the Ubuntu/Debian sysctl from actions[] or replace with the Red Hat sysctl; this action also restates the body's mitigation (F18).
+- code: F18
+  entry: entries/2026-05-09/cve-2026-43284-cve-2026-43500-linux-dirty-frag-deterministic.md
+  where: 'actions[1]: ''Where immediate patching isn''t possible: blacklist the esp4/esp6/rxrpc kernel modules ... or disable unprivileged user namespaces ...'''
+  summary: Conditional ('Where immediate patching isn't possible') restatement of body mitigation guidance; the action is hedged and not a start-now task. Action 0 also carries a long Red Hat applicability
+    aside.
+  ground_truth: ''
+  ground_truth_url: ''
+  fix: 'Drop the conditional action (body already carries the mitigation) or reduce to one start-now task: apply the vendor kernel update and confirm CVE-2026-46300 fix.'
+- code: F3
+  entry: entries/2026-05-09/cve-2026-31431-copy-fail-cisa-kev-deadline-2026-05-15-approa.md
+  where: (low confidence) body **Exposure:** 'any Linux host where an attacker can run code as an unprivileged user, including through SSH accounts, web shells or containers sharing the host kernel, on
+    a kernel without the fix ([Xint, 2026-04-29])'
+  summary: Xint states local unprivileged user and container-boundary impact, but names neither SSH accounts nor web shells as access routes; those access paths appear in Microsoft's Dirty Frag post, which
+    is not the citation on this clause.
+  ground_truth: 'Xint: ''It lets an unprivileged local user trigger a deterministic, controlled 4-byte write into the page cache of any readable file''; ''Cross-container impact. The page cache is shared
+    across all processes on a system, including across container boundaries.'''
+  ground_truth_url: https://xint.io/blog/copy-fail-linux-distributions
+  fix: Cite Microsoft for the SSH/web-shell routes or drop them from the Exposure clause.
+- code: F18
+  entry: entries/2026-05-09/cve-2026-31431-copy-fail-cisa-kev-deadline-2026-05-15-approa.md
+  where: '(low confidence) actions[0]: ''On Linux hosts that cannot take a fixed kernel yet, blacklist the algif_aead module ... or block AF_ALG socket creation with seccomp.'''
+  summary: Conditional fallback that restates the body's Defender takeaway mitigation (b); the entry is KEV-listed since 2026-05-01 and Ubuntu fixed kernels are published, so the start-now task is applying
+    the fixed kernel, not the workaround.
+  ground_truth: ''
+  ground_truth_url: ''
+  fix: Replace with the start-now task (deploy the fixed kernel on hosts reachable by untrusted local users) or leave actions empty.
+- code: F18
+  entry: entries/2026-09-03/cve-2026-83548-83549-sonicwall-sma1000-ssrf-cmd-injection.md
+  where: '(low confidence) actions[1]: ''Where indicators of compromise are found, follow SonicWall''s own remediation position: re-image or re-deploy the appliance, rotate every user and administrator
+    password, and reset TOTP seeds ...'''
+  summary: Conditional restatement of the body paragraph 'SonicWall's own remediation guidance where indicators of compromise are found ...' (check 10b b); actions[0] additionally carries a hedged 'if immediate
+    patching is not possible ...' clause.
+  ground_truth: ''
+  ground_truth_url: ''
+  fix: Drop actions[1] (body carries it) and keep the patch-to-12.4.3-03670/12.5.0-03082 task.
+- code: F7
+  entry: entries/2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic.md
+  where: '(low confidence) whole entry: priority notable; frontmatter sectors [public-sector, technology, education]; body ''No source reports exploitation.'''
+  summary: 'Five authenticated-only (workflow-editor) flaws with no reported exploitation and no public PoC cited; the audit removed the only constituency nexus (the unsourced ''Swiss and EU adoption''
+    claim), yet the entry keeps sectors: public-sector. Check 11: a patch-cycle CVE with no exploitation and no exposure-driven urgency does not qualify on CVSS alone.'
+  ground_truth: 'Advisory text: ''An authenticated user with permission to create or modify workflows could ...''; THN (2026-05-18) lists them in a patch roundup, no exploitation.'
+  ground_truth_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-c8xv-5998-g76h
+  fix: Drop, or hold to two sentences at routine; if kept at notable, state the exposure nexus a Swiss public-sector SOC would act on and drop the unsupported public-sector/education sector tags.
+- code: F11
+  entry: entries/2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic.md
+  where: '(low confidence) frontmatter deep_dive: true, deep_dive_category: other'
+  summary: The rewritten entry is a three-paragraph vulnerability summary (no kill chain, no Detection line); the legacy deep_dive flag no longer matches the body and deep-dive treatment is meant to stay
+    rare.
+  ground_truth: ''
+  ground_truth_url: ''
+  fix: Set deep_dive false (via the changelog record).
+- code: F3
+  entry: entries/2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen.md
+  where: '(low confidence) body para 2: ''installing either does not remove the earlier mitigation, which administrators must roll back by hand ([Exchange Team Blog 2026-07-14]) ([MSRC 2026-07-14])'''
+  summary: 'The clause says installing either the June or the July update leaves the mitigation in place; the two cited pages carry the statement for the July update only (MSRC: mitigations ''can be removed
+    after July 2026 update is installed'').'
+  ground_truth: 'June Exchange blog (https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491): ''Installing the June 2026 update does not automatically
+    remove already applied CVE-2026-42897 mitigations.'''
+  ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146
+  fix: Add the June blog as a co-citation on this clause.
+- code: F4
+  entry: entries/2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen.md
+  where: '(low confidence) title and summary and body para 1: ''Exchange OWA stored XSS'' / ''an exploited stored XSS'' / ''a stored cross-site scripting flaw'''
+  summary: No fetched source (MSRC CWE-79 'cross-site scripting' spoofing record, the May Exchange blog 'arbitrary JavaScript can be executed in the browser context', Proofpoint 'does not adequately sanitize
+    HTML in the message body') calls the flaw 'stored' XSS; the qualifier is the entry's own classification stated as fact.
+  ground_truth: 'MSRC: ''Improper neutralization of input during web page generation (''cross-site scripting'') in Microsoft Exchange Server allows an unauthorized attacker to perform spoofing over a network.'''
+  ground_truth_url: https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897
+  fix: Say 'cross-site scripting' (or 'XSS triggered by opening a crafted message') without 'stored'.
+- code: F3
+  entry: entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md
+  where: 'body para 1: ''other counts run to 120 and, in ZDI''s tally, 138 ([Tenable] [ZDI] [Krebs])'''
+  summary: 'None of the three cited pages states a count of 120: Tenable and Krebs say 118 (Krebs ''at least 118''), ZDI says 138. The 120 figure is on Help Net Security''s Patch Tuesday piece (''120+''),
+    which is in sources[] but not cited on this clause.'
+  ground_truth: 'HNS 2026-05-12: ''releasing fixes for 120+ CVE-numbered vulnerabilities'''
+  ground_truth_url: https://www.helpnetsecurity.com/2026/05/12/microsoft-may-2026-patch-tuesday/
+  fix: Cite Help Net Security for the 120 figure.
+- code: F3
+  entry: entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md
+  where: 'body para 1: ''CVE-2026-41096 (CVSS 9.8) is a heap-based buffer overflow ... which Microsoft rates "Exploitation Unlikely" ([ZDI, 2026-05-12])'''
+  summary: 'The ZDI page carries the overflow, the malicious-DNS-response trigger and CVSS 9.8 but not the quoted Microsoft rating (ZDI''s table only has Public: No, Exploited: No).'
+  ground_truth: 'MSRC CVE-2026-41096: ''Exploitability assessment Exploitation Unlikely''; Krebs: ''Microsoft assessing exploitation as less likely''.'
+  ground_truth_url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41096
+  fix: Cite MSRC (or Krebs) for the exploitability rating.
+- code: F3
+  entry: entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md
+  where: body **Exposure:** '...10.0.26100.32772 (2025), with the May 2026 updates for 2012 and 2012 R2 ([CERT-EU, 2026-06-10])'
+  summary: CERT-EU lists Windows Server 2012 / 2012 R2 as affected with no fixed build and never says May 2026 updates exist for them; the merged duplicate said only 'with Server 2012/2012 R2 also affected',
+    and Help Net Security reports 0patch micropatches for legacy 2008 R2, 2012 and 2012 R2.
+  ground_truth: 'CERT-EU: ''Windows Server 2012 / 2012 R2'' (no build); HNS: ''Acros Security has released micropatches ... for legacy Windows Server versions: Windows Server 2008 R2, Windows Server 2012,
+    and Windows Server 2012 R2.'''
+  ground_truth_url: https://cert.europa.eu/publications/security-advisories/2026-007/
+  fix: Say 2012/2012 R2 are also affected and name no fixed build, or cite Microsoft's per-SKU KB for those releases; do not assert updates exist.
+- code: F3
+  entry: entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md
+  where: body **Contradiction:** '...while Microsoft told BleepingComputer it had no evidence to support the claim; CISA has not listed it ([CCB, 2026-05-29]) ([BleepingComputer, 2026-06-01])'
+  summary: Neither cited page says CISA has not listed the flaw; the statement is a time-bound negative that only the KEV catalogue carries (CVE-2026-41089 is absent from catalogue release 2026.10.08).
+  ground_truth: 'BleepingComputer: Microsoft ''does not currently have any evidence to support the CBC''s claims''; no mention of KEV.'
+  ground_truth_url: https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/
+  fix: Cite the KEV catalogue as of a date, or drop the clause.
+- code: F4
+  entry: entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md
+  where: (low confidence) frontmatter cves[CVE-2026-41089].status [exploited, patch-available] and tags 'actively-exploited'
+  summary: 'The body states the exploitation claim is disputed (CCB: ''trusted partners''; Microsoft: no evidence; MSRC: Exploited No; not in KEV). The machine-consumed status and tag assert exploitation
+    without that qualifier, so the frontmatter overstates the body.'
+  ground_truth: 'MSRC: ''Publicly disclosed No Exploited No''; BC: Microsoft ''does not currently have any evidence to support the CBC''s claims''.'
+  ground_truth_url: https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/
+  fix: Drop 'exploited' from status (keep the CCB claim in the body and Contradiction line) or document the reported-only state.
+- code: F16
+  entry: entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md
+  where: '(low confidence) priority: critical with immediate_action (publish chain fires notification hooks)'
+  summary: Exploitation rests on a single national CERT claim from 'trusted partners' that Microsoft says it cannot corroborate, CISA has not listed it, and the disclosure is five months old (2026-05-12);
+    the critical bar is stop-reading-and-act-now on newly disclosed/weaponised or confirmed active exploitation.
+  ground_truth: 'BC: Microsoft has no evidence; KEV absent; MSRC Exploited No.'
+  ground_truth_url: https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/
+  fix: Consider high; keep the patch-DCs action.
+- code: F11
+  entry: entries/2026-05-25/ghost-cms-cve-2026-26980-clickfix-the-cms-compromise-to-endp.md
+  where: '(low confidence) frontmatter deep_dive: true, deep_dive_category: other'
+  summary: 'docs/pipeline.md: ''deep_dive: true => this entry IS the deep-dive treatment''. The rewritten entry is a four-paragraph vulnerability-plus-campaign summary with no kill-chain ordering, so the
+    legacy deep-dive flag no longer matches the body.'
+  ground_truth: ''
+  ground_truth_url: ''
+  fix: Set deep_dive false through the changelog record.
+- code: F3
+  entry: entries/2026-06-09/cve-2026-42271-berriai-litellm-low-privilege-command-injecti.md
+  where: '(low confidence) body para 1: ''CISA added CVE-2026-42271 to its KEV catalog on 8 June 2026, confirming active exploitation ... ([GitHub Advisory GHSA-v4p8-mg3p-g94g])'' (legacy text, not changed
+    by this fire)'
+  summary: The GitHub advisory carries the endpoint/role-check/fix details but says nothing about CISA KEV or exploitation; the KEV fact (dateAdded 2026-06-08) is only on the KEV catalogue, which is cited
+    as a source but not on this clause.
+  ground_truth: 'GHSA-v4p8-mg3p-g94g: ''Authenticated command execution via MCP stdio test endpoints ... Fixed in 1.83.7''; KEV catalogue: CVE-2026-42271 dateAdded 2026-06-08.'
+  ground_truth_url: https://github.com/advisories/GHSA-v4p8-mg3p-g94g
+  fix: Cite the KEV catalogue for the listing date and exploitation.
+- code: F11
+  entry: entries/2026-06-09/cve-2026-42271-berriai-litellm-low-privilege-command-injecti.md
+  where: '(low confidence) legacy text: title/headline/summary use em dashes (''CVE-2026-42271 — BerriAI LiteLLM''); body ''#### CVE Summary Table'' carries a CVE-2026-50751 Check Point row that is a different
+    finding (separate entry 2026-06-09/cve-2026-50751-check-point-security-gateway-ikev1-vpn-authen)'
+  summary: 'Style rule: no em dash in reader-facing entry text; the unrelated Check Point row is migration residue that dilutes a one-CVE entry and asserts ''Qilin affiliate'' exploitation with no sentence-level
+    citation.'
+  ground_truth: ''
+  ground_truth_url: ''
+  fix: Remove the Check Point row and em dashes via the changelog (improvement) when next touched.
+- code: F18
+  entry: entries/2026-06-09/cve-2026-42271-berriai-litellm-low-privilege-command-injecti.md
+  where: '(low confidence) actions[0]: ''**Upgrade LiteLLM to 1.83.7 (CVE-2026-42271)** — KEV-listed, actively exploited; ... Restrict the /mcp-rest/test/* endpoints at the network layer and audit API-key
+    scoping in the interim.'''
+  summary: Markdown bold and an em dash inside an action string, plus an 'in the interim' hedge that restates the advisory workaround; the first clause is a valid do-now task.
+  ground_truth: 'GHSA workaround: ''block POST /mcp-rest/test/connection and POST /mcp-rest/test/tools/list at their reverse proxy'''
+  ground_truth_url: https://github.com/advisories/GHSA-v4p8-mg3p-g94g
+  fix: Trim to the upgrade task; drop the interim clause (body/advisory carry it).
+- code: F7
+  entry: entries/2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c.md
+  where: '(low confidence) whole entry: priority notable; frontmatter regions [.. switzerland], sectors [public-sector, education, finance, defense]'
+  summary: 'Two vendor-patched flaws with ''no public announcements or malicious use'', one needing valid administrative credentials; the audit removed the unsourced prevalence claim but left the sector/region
+    tags that only that claim supported, so nothing in the entry ties it to the constituency. Check 11: a routine patch-cycle CVE with no exploitation does not qualify on CVSS alone.'
+  ground_truth: 'Cisco PSIRT: ''The Cisco PSIRT is not aware of any public announcements or malicious use of the vulnerabilities''.'
+  ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+  fix: Drop, or keep at routine in two sentences and remove the unsupported sectors/regions tags.
+- code: F5
+  entry: entries/2026-09-24/closedquorum-llm-orchestrated-c2-implant.md
+  where: '(low confidence) body para 3: ''Talos''s CAIRN toolkit is unrelated to a similarly-named autonomous exploitation engine used in separate, unrelated 2026 campaigns -- the shared name is coincidental.'''
+  summary: Name-collision disambiguation with no inline citation and an empty references[]; the other 'Cairn' is the Gambit Security-documented engine (one campaign, entry 2026-09-23). 'Campaigns' plural
+    and 'coincidental' are not sourced.
+  ground_truth: 'Registry tool:cairn-talos summary: ''Distinct from the unrelated Gambit Security-documented autonomous exploitation engine also named Cairn (tool:cairn-exploitation-engine).'''
+  ground_truth_url: ''
+  fix: Cite the Gambit Security report (or add the 2026-09-23 Gambit entry to references[]) and say 'a campaign'.
+- code: F11
+  entry: entries/2026-09-24/closedquorum-llm-orchestrated-c2-implant.md
+  where: 'summary and body: em dashes in reader-facing text (''plurality vote among their responses — credential theft, process injection'', ''four commercial LLM providers — DeepSeek, Qwen'', ''effort
+    displacement — an entire phase'', ''not an active campaign — but its architecture'')'
+  summary: 'Style rule: no em dash in reader-facing entry text (only the ''## <Type> — <at>'' heading is exempt). Also (low confidence) a routine-priority capability demonstration with an inert public build
+    carries ~700 words of implant internals.'
+  ground_truth: ''
+  ground_truth_url: ''
+  fix: Replace em dashes with commas/colons; consider trimming implementation detail to what a detection engineer needs.
+- code: F4
+  entry: entries/2026-09-25/switzerland-sovereign-digital-infrastructure-motion-24-3209.md
+  where: '(low confidence) evidence[0].quote: ''"BusinessStatusId": 209, "BusinessStatusName": "Überwiesen an den Bundesrat", "BusinessStatusDate": "/Date(1790187732000)/"'''
+  summary: 'Not a contiguous verbatim substring of the fetched JSON: the OData response is compact (''"BusinessStatusId":209,"BusinessStatusName":"\u00dcberwiesen an den Bundesrat","BusinessStatusDate":"\/Date(1790187732000)\/"'')
+    with unicode and slash escapes, so the quote is a re-formatted rendering.'
+  ground_truth: 'OData: {"BusinessNumber":20243209,"BusinessStatusId":209,"BusinessStatusName":"\u00dcberwiesen an den Bundesrat","BusinessStatusDate":"\/Date(1790187732000)\/"...}'
+  ground_truth_url: https://ws.parlament.ch/odata.svc/Business(ID=20243209,Language='DE')/BusinessStates?$format=json
+  fix: Quote the compact JSON literally or replace with the status name only; (date 1790187732000 = 2026-09-23T18:22:12Z is correct).
+- code: F16
+  entry: entries/2026-06-03/ncsc-switzerland-warns-of-cyber-operations-around-the-g7-via.md
+  where: 'priority: high; body Defender takeaway: ''should pre-stage DDoS mitigation playbooks now ... rotate administrative credentials before the event window ... hunt for anomalous authentication spikes
+    from the summit region around 15-17 June'''
+  summary: The G7 Evian summit (15-17 June 2026) ended almost four months before this audit (2026-10-11); the entry is still a pre-event warning with 'now' / 'before the event window' advice and no post-event
+    outcome, so it no longer clears the high bar (a decision within 7 days beyond the regular cycle; check 5b disqualifies events older than 30 days). The relabel record left the stale guidance in place.
+  ground_truth: 'NCSC Switzerland advisory (2026-06-01): ''G7 summit ... which will take place from 15 to 17 June 2026 in Evian''.'
+  ground_truth_url: https://www.bacs.admin.ch/en/26-cyberresilienz-g7-en
+  fix: Lower to routine (or add a post-event correction stating the summit has passed and no outcome is reported) and drop the 'now' / 'before the event window' wording.
+- code: F3
+  entry: entries/2026-05-09/inditex-zara-shinyhunters-publishes-140-gb-197-400-eu-custom.md
+  where: '(low confidence) body: ''Have I Been Pwned found 197,400 unique email addresses ... ([Have I Been Pwned])''; headline ''Have I Been Pwned loads 197,400 Zara customer emails'''
+  summary: The cited HIBP page states '197k unique email addresses' and the HIBP API gives PwnCount 197376; '197,400' is BleepingComputer's rounding of HIBP's figure.
+  ground_truth: 'HIBP page: ''The data contained 197k unique email addresses''; api.haveibeenpwned.com/api/v3/breach/Zara PwnCount 197376; BC: ''exposed the data of 197,400 people''.'
+  ground_truth_url: https://haveibeenpwned.com/Breach/Zara
+  fix: Cite BleepingComputer for 197,400 or say 'about 197,000' / 197,376.
+- code: F7
+  entry: entries/2026-05-09/inditex-zara-shinyhunters-publishes-140-gb-197-400-eu-custom.md
+  where: '(low confidence) whole entry: kind incident, sector retail, regions global, priority routine'
+  summary: Out-of-nexus retail breach with no Swiss or public-sector link; the only transferable element is a ShinyHunters claim (unconfirmed by Inditex) about analytics-provider tokens against BigQuery,
+    and the entry does not state which of the four out-of-nexus grounds it relies on (check 5).
+  ground_truth: 'BC: Inditex ''has yet to attribute the breach to a specific threat actor and to share the name of the hacked provider''.'
+  ground_truth_url: https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/
+  fix: Drop, or reduce to two sentences and say the transferable lesson (token scope for analytics providers) as the reason it is kept.
+- code: F14
+  entry: entries/2026-10-11/needymantis-modular-post-compromise-framework-storm-3069.md
+  where: '(low confidence) body para 2: ''its commands only load, unload and pass data to further modules, whose capabilities Microsoft has not confirmed'''
+  summary: 'Quantifier ''only'' goes beyond the source: Microsoft says the main component ''only has a handful of commands'' and lists, besides load/unload/dispatch, a ''Turn off active flags'' command
+    (1070) and sent commands for computer name, identifier and keep alive.'
+  ground_truth: 'Microsoft: ''Commands received from the C2 include: 1020 Load module; 1030 Unload module; 1050 / 1150 Dispatch data to module; 1070 Turn off active flags.'''
+  ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/09/28/needymantis-unpacking-a-post-compromise-malware-family-used-in-targeted-operations/
+  fix: Say 'a handful of commands, chiefly load, unload and dispatch to modules'.
+- code: F4
+  entry: entries/2026-10-11/needymantis-modular-post-compromise-framework-storm-3069.md
+  where: (low confidence) body **Triage:** 'the discriminator is the location, an application folder under ProgramData that the organization never deployed, and the companion archive file'
+  summary: 'The Triage discriminator does not follow from the cited mechanism for the analysed case: Microsoft''s sample is %ProgramFiles%\Poedit\WinSparkle.dll, the legitimate install folder, with the
+    malicious DLL replacing the real WinSparkle update component; only the same-named extension-less archive (and the unsigned/replaced DLL) separates it from a benign install.'
+  ground_truth: 'Microsoft: ''NeedyMantis spoofed and replaced the WinSparkle software update component of the Poedit translation software''; ''The malware''s file archive is named the same as the loader
+    DLL without the extension''.'
+  ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/09/28/needymantis-unpacking-a-post-compromise-malware-family-used-in-targeted-operations/
+  fix: Name the companion archive (and a DLL that differs from the vendor's component) as the discriminator; keep location only for the ProgramData pairings.
+- code: F4
+  entry: entries/2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen.md
+  where: '## Update 2026-07-31T04:09:14Z, **Defender takeaway:** ''"we patched in May" is the wrong answer to this one -- May shipped a mitigation, July shipped the fix, and the mitigation has to be dismantled
+    by hand afterwards.'''
+  summary: 'Supersession: the corrected main analysis (and this fire''s correction record) state ''The fix shipped in the June 2026 Security Update'' and Microsoft recommends July; the takeaway in the Update
+    section still asserts that July shipped the fix, which the June blog disproves.'
+  ground_truth: 'June 2026 Exchange SU blog (2026-06-09): ''The June 2026 SUs address vulnerabilities ... as well as CVE-2026-42897 that we announced''; entry body para 2: ''The fix shipped in the June
+    2026 Security Update''.'
+  ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+  fix: Rewrite the clause to 'May shipped a mitigation, June shipped the fix and July is the recommended update'.
+- code: F11
+  entry: entries/2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen.md
+  where: '## Improvement 2026-08-30T13:12:06Z body section: ''This entry now carries a source-reliability rating, which it predates: **A1** on the NATO Admiralty scale ...''; also seven em dashes in the
+    2026-07-31 Update section'
+  summary: A reader-facing section whose only content is record-keeping narration about metadata (Admiralty rating, 'this entry') should have been an internal record without a section; workflow vocabulary
+    (Admiralty letter/digit, 'this entry') and em dashes are banned in reader-facing text (check 12, 4c(i)).
+  ground_truth: ''
+  ground_truth_url: ''
+  fix: Remove the section from the body (convert to an internal record) and replace the em dashes in the Update section.
+- code: F11
+  entry: entries/2026-05-09/cve-2026-43284-cve-2026-43500-linux-dirty-frag-deterministic.md
+  where: 'em dashes in reader-facing text: actions[0] (''(tracked in its own entry) -- Red Hat''s applicability split ...'') and the 2026-09-05 Update section (''Red Hat''s own security bulletin groups
+    all three CVEs ... -- noting ...''); ''tracked in its own entry'' is also workflow-internal wording'
+  summary: 'Check 12: no em dash and no ''tracked in its own entry'' style workflow language in reader-facing entry text.'
+  ground_truth: ''
+  ground_truth_url: ''
+  fix: Replace with commas/colons; refer to the Fragnesia entry via references[].
+- code: F11
+  entry: entries/2026-09-24/microsoft-entra-id-sspr-enumeration-resetspy.md
+  where: 'summary and body: em dashes (''and -- because Microsoft enforces SSPR'', ''Every other named view -- including'', ''the telemetry class -- specifically'', ''ranked ... --'', takeaway ''... --
+    since Microsoft cannot let admin accounts opt out'')'
+  summary: 'Check 12: no em dash in reader-facing entry text.'
+  ground_truth: ''
+  ground_truth_url: ''
+  fix: Replace em dashes with commas/colons/periods.
+
+```

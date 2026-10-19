@@ -50,13 +50,20 @@ evidence:
   - quote: "No modern browser produces that string."
     publisher: "Huntress"
 verification: single-source
-sourcing_note: "Single technical source (Huntress original research, tested end to end by its author against a live Entra ID tenant with MFA enabled). No second party has published an independent assessment of this specific chain, and the researcher deliberately withholds the working manifest and the enumeration of other affected host binaries, so the surrounding claims about the wider host class are stated at the strength the author gives them. Recovered by the 2026-09-27 quality audit's research re-sweep after the week's fires did not surface it."
+sourcing_note: "Single technical source (Huntress original research, tested end to end by its author against a live Entra ID tenant with MFA enabled). No second party has published an independent assessment of this specific chain, and the researcher deliberately withholds the working manifest and the enumeration of other affected host binaries, so the surrounding claims about the wider host class are stated at the strength the author gives them."
 confidence: medium
 actions:
   - "Turn Developer Mode off fleet-wide by GPO and scope any enterprise sideloading policy away from AllowAllTrustedApps: that toggle is the single prerequisite the whole chain needs, and without it package registration fails closed."
 references: []
 migrated_from: null
-updates: []
+updates:
+  - at: "2026-10-11T13:52:16Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    internal: true
+    summary: >
+      Removes a production note from the sourcing note; the provenance statement is unchanged.
+    fields: [sourcing_note]
 ---
 
 Huntress researcher Andrew Schwartz went looking for a Microsoft-signed binary already present on every Windows machine that would fetch remote code and run it, and found the AppX web-host family ([Huntress, 2026-09-23](https://www.huntress.com/blog/stealing-oauth-tokens-through-microsofts-front-door)). `WWAHost.exe`, the Windows Web App Host, renders whatever web content an AppX package points it at. The manifest flag is what turns that into an attack: when a package's `ContentUriRules` entry carries `WindowsRuntimeAccess="all"`, the remote JavaScript loaded from that origin "doesn't just run, it inherits the full Windows Runtime API surface, including the API that drives OAuth sign-in" ([Huntress, 2026-09-23](https://www.huntress.com/blog/stealing-oauth-tokens-through-microsofts-front-door)). The API in question is the legacy `WebAuthenticationBroker`, which Microsoft has steered developers away from in favour of the Web Account Manager but which remains present and reachable from inside the AppX host.

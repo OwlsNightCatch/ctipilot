@@ -1,19 +1,24 @@
 ---
 schema: 1
 kind: incident
-title: "Inditex (Zara) — ShinyHunters publishes 140 GB; 197,400 EU customer records confirmed via third-party analytics compromise"
-headline: "Inditex (Zara) — ShinyHunters publishes 140 GB; 197,400 EU customer records confirmed via third-party analytics compromise"
-summary: "Have I Been Pwned confirmed on 2026-05-08 that 197,400 unique email addresses from Inditex (Zara's parent, headquartered in A Coruña, Spain) were exposed following a breach of a former third-party analytics provider."
+title: "Zara customer emails exposed through a former Inditex technology provider; ShinyHunters claims Anodot token abuse and leaks the data"
+headline: "Have I Been Pwned loads about 197,000 Zara customer emails after ShinyHunters leaked data it says came from Anodot tokens against BigQuery"
+summary: >
+  Inditex says databases hosted by a former technology provider were accessed, without customers' names,
+  phone numbers, addresses, credentials or payment data. Have I Been Pwned found about 197,000 unique email
+  addresses with order IDs, product SKUs and the support-ticket market. ShinyHunters claims it used Anodot
+  authentication tokens against BigQuery and leaked the data; Inditex has not named the provider or an actor.
 discovered_at: "2026-05-09T05:00:01Z"
 event_date: 2026-05-08
 run_id: 2026-05-09-migrated
-priority: notable
+priority: routine
 immediate_action: null
 tags:
   - data-breach
+  - supply-chain
   - organized-crime
 regions:
-  - europe
+  - global
 sectors:
   - retail
 entities:
@@ -22,10 +27,15 @@ entities:
 cves: []
 sources:
   - url: "https://securityaffairs.com/191859/cyber-crime/zara-data-breach-197000-customers-exposed-in-third-party-security-incident.html"
-    publisher: "SecurityAffairs, 2026-05-08"
+    publisher: "Security Affairs"
+    date: "2026-05-08"
     role: primary
   - url: "https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/"
-    publisher: "BleepingComputer, 2026-05-08"
+    publisher: "BleepingComputer"
+    date: "2026-05-08"
+    role: corroborating
+  - url: "https://haveibeenpwned.com/Breach/Zara"
+    publisher: "Have I Been Pwned"
     role: corroborating
 closed_sources: []
 evidence: []
@@ -39,9 +49,24 @@ deep_dive_category: null
 org_triage: null
 watchlist_hit: false
 actions: []
+techniques: [T1528, T1530]
+classification:
+  reliability: B
+  credibility: 3
 migrated_from: briefs/2026-05-09.md
+updates:
+  - at: "2026-10-11T14:33:17Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    summary: >
+      The headline presented ShinyHunters' analytics-compromise claim as confirmed and described the records as EU customers, which no source says; the data categories came from Have I Been Pwned, not Inditex; Inditex speaks of a former technology provider, not an analytics provider; the 140 GB and one-terabyte figures disagree; and the claim that Inditex declined to engage and the AEPD inference had no source. The entry is rewritten with each statement attributed, a rating, an ATT&CK mapping for the claimed token abuse and priority routine.
+    fields: [title, headline, summary, priority, tags, regions, techniques, sources, verification, classification, body]
 ---
 
-Have I Been Pwned confirmed on 2026-05-08 that 197,400 unique email addresses from Inditex (Zara's parent, headquartered in A Coruña, Spain) were exposed following a breach of a former third-party analytics provider. Inditex confirmed attackers accessed customer relationship data — email addresses, geographic locations, purchase history (order IDs and product SKUs), and support ticket content — across international markets ([SecurityAffairs, 2026-05-08](https://securityaffairs.com/191859/cyber-crime/zara-data-breach-197000-customers-exposed-in-third-party-security-incident.html) · [BleepingComputer, 2026-05-08](https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/)). Names, passwords, payment card data, addresses, and phone numbers were stated to be out of scope. ShinyHunters claimed responsibility, alleging access via compromised authentication tokens for the Anodot analytics platform against BigQuery instances; this claim has not been independently verified. Data publication (approximately 140 GB) followed after Inditex declined to engage. Inditex stated it had "started notifying the relevant authorities" but did not specify which supervisory authority or whether the GDPR Article 33 72-hour notification clock was met; as a Spanish company the lead supervisory authority is the AEPD.
+Inditex says databases hosted by a former technology provider, holding information about business relationships with customers in different markets, were accessed, and that customers' names, phone numbers, addresses, credentials and payment information were not; it has notified the relevant authorities but has not named the provider or attributed the breach ([BleepingComputer, 2026-05-08](https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/)). Have I Been Pwned found about 197,000 unique email addresses with product SKUs, order IDs and the market each support ticket originated in ([Have I Been Pwned](https://haveibeenpwned.com/Breach/Zara)). ShinyHunters claims it stole the data with Anodot authentication tokens used against BigQuery and leaked a 140 GB archive ([BleepingComputer, 2026-05-08](https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/)); Have I Been Pwned describes the group's publication as a terabyte allegedly including 95 million support-ticket records ([Have I Been Pwned](https://haveibeenpwned.com/Breach/Zara)).
 
-**Defender takeaway:** Third-party analytics and BI platforms with OAuth or service-account access to production data warehouses (BigQuery, Snowflake, Redshift) represent a persistent supply-chain data-exfiltration vector. Audit delegated access grants for analytics tooling; enforce token scoping and expiry; review whether analytics platform service accounts have read-all access to customer-facing databases.
+**Defender takeaway:** the claimed path is a third-party analytics platform's token reaching a cloud data warehouse, so the control is the scope and lifetime of tokens granted to analytics providers, including former ones, whose access should be revoked when the relationship ends ([BleepingComputer, 2026-05-08](https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/)).
+
+## Correction — 2026-10-11T14:33:17Z
+
+Inditex confirms only that a former technology provider's databases were accessed ([BleepingComputer, 2026-05-08](https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/)); the analytics-platform route is ShinyHunters' claim about Anodot tokens ([BleepingComputer, 2026-05-08](https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/)). The email, order and support-ticket fields come from Have I Been Pwned's analysis, and the records concern customers in different markets, and no source limits them to the EU ([Have I Been Pwned](https://haveibeenpwned.com/Breach/Zara)) ([BleepingComputer, 2026-05-08](https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/)). The size of the leak differs between sources, 140 GB ([BleepingComputer, 2026-05-08](https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/)) against about a terabyte ([Have I Been Pwned](https://haveibeenpwned.com/Breach/Zara)).

@@ -1,0 +1,1637 @@
+# truth-D2 — duplicate-consolidation batch D2, audit run 2026-10-11T1307Z-audit
+# Entry records first (grouped), group records at the end.
+
+# ===== D2-a Microsoft Semantic Kernel CVE-2026-26030 / CVE-2026-25592 =====
+- entry: entries/2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom.md
+  group: D2-a
+  role: survivor
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "body, CVE-2026-25592 section ¶1"
+      claim: "Combined, the LLM can therefore (a) call `UploadFileAsync` to write attacker-chosen bytes to an attacker-chosen path *on the host running the agent process*, escaping the Container Apps Python session entirely; and (b) call `DownloadFileAsync` symmetrically to read host-side files back into the agent context."
+      ground_truth: "Inverted. Microsoft: 'DownloadFileAsync was accidentally marked with a [KernelFunction] attribute ... the localFilePath parameter, which dictates exactly where File.WriteAllBytes() saves data on the host device, was now entirely AI controlled' (the arbitrary file WRITE is DownloadFileAsync: sandbox -> host). UploadFile is the read side: 'A similar vulnerability existed in reverse for the upload_file() function across both the Python and .NET SDKs. It accepted any local file path without validation, allowing prompt injections to exfiltrate sensitive host files, like SSH keys or credentials, directly into the sandbox'. GHSA-2ww3-72rp-wpp4 workaround covers both DownloadFileAsync and UploadFileAsync localFilePath."
+      ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+      fix: "DownloadFileAsync = arbitrary host file write (attack chain: ExecuteCode creates script in the Container Apps sandbox, DownloadFileAsync drops it in the host Windows Startup folder, runs at next user sign-in); UploadFile(Async)/upload_file = arbitrary host file read/exfiltration into the sandbox, in both Python and .NET SDKs."
+    - code: F4
+      where: "body, CVE-2026-26030 section ¶1-2 (and brief-item twin)"
+      claim: "composes its LINQ-like filter expression by f-string interpolation ... The SDK applies a string-blocklist validator to reject obvious dangerous tokens (e.g. `eval`, `exec`, `os.system`), but the validator is a denylist on the *literal text*, not a sandboxed evaluation ... walking `object`'s subclass list to reach an arbitrary class ... (typically `subprocess.Popen` or a `os` reference reached via reflection)"
+      ground_truth: "Microsoft: the default filter 'is implemented as a Python lambda expression executed using eval()'; kwargs[param.name] is AI-model-controlled and not sanitized (string interpolation into a lambda template). The validator 'parses the filter string into an Abstract Syntax Tree (AST)', allows only lambda expressions, scans every AST element for dangerous identifiers/attributes (eval, exec, open, __import__), then runs under eval with emptied __builtins__. The bypass 'traversed Python's class hierarchy to locate BuiltinImporter, and used it to dynamically load os and call system()' (payload started from tuple(); the blocklist missed __name__, load_module, system, BuiltinImporter; no ast.Subscript check). No f-string, no subprocess.Popen, no '__bases__[0].__subclasses__()' literal appears in the post. GHSA-xjw9: only 'RCE ... within the InMemoryVectorStore filter functionality'."
+      ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+      fix: "Describe: eval() sink on an AI-model-controlled value interpolated into a lambda filter; AST-based blocklist bypassed via class-hierarchy traversal to BuiltinImporter.load_module('os').system(), exploiting the unchecked names and missing ast.Subscript handling. Drop the f-string / literal-text-denylist / subprocess.Popen wording and the code block."
+    - code: F4
+      where: "body, Exploitation prerequisites"
+      claim: "use the in-memory vector store backing for a Search Plugin or analogous component (default for self-hosted Semantic Kernel agents until a customer wires in a different vector backend)"
+      ground_truth: "Microsoft: vulnerable only if the agent 'uses the In-Memory Vector Store and relies on its filter functionality (when acting as the backend for the Search Plugin using default configurations)' on Python semantic-kernel < 1.39.4. GHSA-xjw9-4gw8-4rqx workaround: 'Avoid using InMemoryVectorStore for production scenarios.' Neither says the in-memory store is the default for self-hosted agents."
+      ground_truth_url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-xjw9-4gw8-4rqx"
+      fix: "Drop the parenthetical; state the three conditions from the Microsoft post (Python package, < 1.39.4, In-Memory Vector Store filter behind the Search Plugin) and the GHSA workaround (do not use InMemoryVectorStore in production)."
+    - code: F3
+      where: "body, Hardening ¶2"
+      claim: "implement a Function Invocation Filter (the SDK-supported hook documented in the Microsoft research post) to allowlist the methods and parameters that may be called. This neutralises the unintended-`[KernelFunction]` exposure on the .NET side and reduces the Python-side blast radius even if the validator is bypassed."
+      ground_truth: "The Microsoft post never mentions a Function Invocation Filter. It appears only in GHSA-2ww3-72rp-wpp4 (.NET, CVE-2026-25592): 'create a Function Invocation Filter which checks the arguments being passed to any calls to DownloadFileAsync or UploadFileAsync and ensures the provided localFilePath is allow listed.' Nothing in any cited source applies it to the Python filter flaw."
+      ground_truth_url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-2ww3-72rp-wpp4"
+      fix: "Attribute the filter workaround to GHSA-2ww3 and scope it to localFilePath allow-listing for DownloadFileAsync/UploadFileAsync; delete the Python-side blast-radius claim; for CVE-2026-26030 cite the GHSA workaround (avoid InMemoryVectorStore in production). Also unsupported: 'The patched releases also include the upstream test additions covering the bypass patterns' (the post describes four layers of fix, no tests)."
+    - code: F4
+      where: "body, Why this matters ¶1"
+      claim: "Semantic Kernel is the open-source orchestration SDK behind Azure AI Foundry, Copilot Studio, and a growing fraction of self-hosted enterprise AI agents in EU government modernisation pilots."
+      ground_truth: "Microsoft post: 'Semantic Kernel is Microsoft's open-source framework for building AI agents and integrating AI models into applications. With over 27,000 stars on GitHub ...'. Azure AI Foundry, Copilot Studio and EU government pilots appear in none of the cited sources."
+      ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+      fix: "Remove the product and EU-government-pilot attributions (or cite them); keep 'Microsoft's open-source AI-agent framework'."
+    - code: F4
+      where: "body, 'Why this is a class' ¶2 and 'Detection concepts' bullet 2"
+      claim: "The same class of bug is highly likely to exist in **LangChain**, **CrewAI**, **AutoGen**, **Haystack**, **LlamaIndex** ... EDR vendors classify this under hunt-pack categories such as 'interpreter spawning shell' and 'agent framework lateral move'."
+      ground_truth: "Microsoft names only 'Semantic Kernel, LangChain, and CrewAI' as example frameworks and announces a follow-up post on 'similar vulnerabilities that we found in other widely used third-party agent frameworks' (unnamed). AutoGen, Haystack, LlamaIndex and the EDR hunt-pack category names are in no cited source. The post's own detection content is a pair of Defender advanced-hunting queries (DeviceProcessEvents: Semantic Kernel host processes spawning cmd/powershell/bash/certutil/curl/etc.; dotnet.exe hosting SK spawning shells) and the guidance 'anomalous behavior, such as an AI agent process suddenly spawning command lines or dropping scripts into Startup folders'."
+      ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+      fix: "Limit the framework list to what the post says (LangChain, CrewAI named; more to follow); drop the invented EDR category names; add the Startup-folder drop and the host-process-spawns-shell hunt from the post."
+    - code: F3
+      where: "sources[1..2].publisher / body citation labels"
+      claim: "GitHub Security Advisory GHSA-xjw9-4gw8-4rqx, 2026-05-07 / GitHub Security Advisory GHSA-2ww3-72rp-wpp4, 2026-05-07"
+      ground_truth: "GHSA-xjw9-4gw8-4rqx published Feb 19, 2026 (CVE-2026-26030 record published 2026-02-19T16:00Z); GHSA-2ww3-72rp-wpp4 published Feb 6, 2026 (CVE-2026-25592 record published 2026-02-06T20:38Z). The patches (python 1.39.4 / 1.39.3, .NET 1.71.0) therefore predate the 2026-05-07 Microsoft write-up by ~3 months; the entry presents them as a 2026-05-07 disclosure."
+      ground_truth_url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-2ww3-72rp-wpp4"
+      fix: "Label the advisories with their real dates (2026-02-19, 2026-02-06) and say the CVEs/fixes were public since February; the 2026-05-07 item is Microsoft's technical write-up (event_date should stay 2026-05-07 only as the write-up date)."
+    - code: F4
+      where: "cves[CVE-2026-26030, CVE-2026-25592]"
+      claim: "vector: user-interaction / auth: pre-auth"
+      ground_truth: "Both advisories and CVE records: CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H (9.9 on the GHSA page; the CVE.org CNA record lists baseScore 10 for the same vector). Privileges Required Low, User Interaction None - the attacker needs a prompt-injection vector into the agent, not 'pre-auth' by the vector and not user-interaction."
+      ground_truth_url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-xjw9-4gw8-4rqx"
+      fix: "auth: low-priv (PR:L), vector: network / prompt-injection; keep cvss 9.9 per the GHSA page."
+    - code: F8
+      where: "body, CVE-2026-25592 / Detection concepts"
+      claim: "Detection: File-creation events outside the expected sandbox path ..."
+      ground_truth: "Source-supported observables missing: the post's attack chain drops the payload into the host's Windows 'Start Menu\\Programs\\Startup' folder via DownloadFileAsync and it runs 'on the next user sign-in'; upload_file reads SSH keys/credentials from the host (both SDKs); GHSA-2ww3 lists Python 1.39.3 as the patched pip version for CVE-2026-25592 (upload_file side). The labelled lines Exposure / Detection / Triage / Defender takeaway are absent."
+      ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+      fix: "Add Exposure (Python semantic-kernel < 1.39.4 with In-Memory Vector Store filter; .NET Microsoft.SemanticKernel.Plugins.Core < 1.71.0 / pip < 1.39.3 for the file-I/O flaw), Detection (agent host process spawning shells; file write to Startup folder by the agent process) and Defender takeaway lines."
+    - code: F16
+      where: "priority (brief-item twin carries high; survivor carries notable)"
+      claim: "priority: high (brief item) / notable (deep dive)"
+      ground_truth: "No exploitation reported, the CVEs and fixes date from February 2026, the 'PoC' is Microsoft's educational CTF challenge. Fails the high bar (research with no in-the-wild use). notable (or routine) is correct; survivor must stay notable."
+      ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+      fix: "priority: notable"
+    - code: F17
+      where: "classification"
+      claim: "(no classification block in the entry)"
+      ground_truth: "Profile requires classification {reliability, credibility} on every entry; legacy migrated entry carries none. Primary is Microsoft's own research post plus the vendor GHSAs and CVE.org records - consistent, so a vendor-tier reliability with credibility 2 fits."
+      ground_truth_url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-2ww3-72rp-wpp4"
+      fix: "Add classification {reliability: per sources.json tier of Microsoft Security Blog, credibility: 2}."
+    - code: F11
+      where: "summary / techniques"
+      claim: "summary: \"Primary CVEs: CVE-2026-26030 (...) | Status: Patch available; ... no in-the-wild exploitation reported …\"; no techniques[] key; ATT&CK ids only in prose"
+      ground_truth: "Summary is a truncated labelled-line dump ending in an ellipsis; frontmatter has no techniques[] although T1059.006, T1190, T1611, T1005 are named in prose (all active in the pinned dataset v19.2). T1565.001 'Stored Data Manipulation' for the Startup-folder file drop is a weak fit (the post describes host code execution on next sign-in; persistence via Startup folder is the closer mapping, T1547.001)."
+      ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+      fix: "Rewrite summary as a sentence; move ATT&CK ids into techniques[] (T1190, T1059.006, T1611, T1005, T1547.001 if the Startup-folder chain is kept)."
+  unique_material: []
+
+- entry: entries/2026-05-10/cve-2026-26030-cve-2026-25592-microsoft-semantic-kernel-prom.md
+  group: D2-a
+  role: duplicate
+  duplicate_of: entries/2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom.md
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "body ¶1"
+      claim: "An f-string composes the LINQ-like filter expression directly from an LLM-controlled parameter ... the SDK applies a blocklist validator that an attacker bypasses with the well-known `__class__.__bases__[0].__subclasses__()` class-hierarchy traversal pattern ... yielding `os.system`-equivalent execution"
+      ground_truth: "Microsoft: eval() of a lambda built by string interpolation of an AI-controlled kwarg; AST-based identifier/attribute blocklist; payload traversed the class hierarchy to BuiltinImporter and called load_module('os').system(). No f-string and no '__bases__[0].__subclasses__()' in the post (see survivor record)."
+      ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+      fix: "Fold into survivor; do not carry this wording."
+    - code: F4
+      where: "body ¶1 / summary"
+      claim: "an unintended kernel_function attribute on SessionsPythonPlugin.DownloadFileAsync / UploadFileAsync yields arbitrary file write ... AI agent orchestration framework that backs Azure AI Foundry, Copilot Studio and many self-hosted agents"
+      ground_truth: "Write primitive is DownloadFileAsync (localFilePath -> File.WriteAllBytes on host); UploadFile is arbitrary read. Azure AI Foundry / Copilot Studio not in any cited source. 'Full breakdown in § 5' refers to a brief section that does not exist in the store. 'Microsoft characterises both flaws as ... \"trust LLM-controlled parameters without explicit validation\"' is not a verbatim phrase of the post (post: 'the framework and tools trust the parsed data'; 'Any tool parameter the model can influence must be treated as attacker-controlled input')."
+      ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+      fix: "Fold into survivor; do not carry the quoted phrase."
+    - code: F16
+      where: "priority"
+      claim: "priority: high"
+      ground_truth: "No exploitation, fix public since Feb 2026, PoC = CTF challenge: not high."
+      ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+      fix: "Survivor stays notable."
+  unique_material: []
+
+# ===== D2-b PHP SOAP CVE-2026-6722 (+7261, 7262) =====
+- entry: entries/2026-05-11/cve-2026-6722-php-soap-use-after-free-in-soap-global-ref-map.md
+  group: D2-b
+  role: survivor
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "cves[CVE-2026-7261], cves[CVE-2026-7262]"
+      claim: "type: rce / vector: zero-click / auth: pre-auth (both companion CVEs); body: 'CVE-2026-7262 reaches NULL deref rather than UAF'"
+      ground_truth: "GHSA-hmxp-6pc4-f3vv (CVE-2026-7262): NULL pointer dereference, 'the process will segfault ... DoS becomes trivial', reachable only 'when the SOAP server has a typemap configured'; CVSS 4.0 VA:L only. GHSA-m33r-qmcv-p97q (CVE-2026-7261): UAF only with SOAP_PERSISTENCE_SESSION when a header handler 'returned false or threw an exception'; 'it's unlikely that the attacker will be able to control the freed memory segment'; impact VC:L/VI:L/VA:L. Neither is an RCE."
+      ground_truth_url: "https://github.com/php/php-src/security/advisories/GHSA-hmxp-6pc4-f3vv"
+      fix: "CVE-2026-7262: type dos, precondition typemap configured. CVE-2026-7261: memory-corruption UAF, precondition SOAP_PERSISTENCE_SESSION + failing header handler, controlled overwrite 'unlikely'. Neither pre-auth-RCE."
+    - code: F4
+      where: "cves[CVE-2026-7262].cvss / body ¶2"
+      claim: "CVE-2026-7262 ... CVSS 4.0 6.3 Moderate"
+      ground_truth: "GHSA-hmxp page shows 'Moderate 6.3' for vector CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N; the CVE.org CNA record for CVE-2026-7262 carries the same vector with E:P and baseScore 2.9; Red Hat ADP scores it CVSS 3.1 7.5 (A:H). CVE-2026-7261: GHSA 6.3, CVE record 6.3. CVE-2026-6722: GHSA gives only the label 'High' (no numeric score); the CNA CVE record carries CVSS 4.0 9.5 (AV:N/AC:H/AT:P, all impacts High incl. subsequent system, U:Red) and Red Hat ADP CVSS 3.1 7.7."
+      ground_truth_url: "https://cveawg.mitre.org/api/cve/CVE-2026-7262"
+      fix: "State scores with their owner: 6722 = 9.5 (CVE-record CNA CVSS 4.0, AC:H); GHSA label High. 7262 = GHSA 6.3 / CVE record 2.9."
+    - code: F4
+      where: "body, Vulnerability class and primitive"
+      claim: "no additional reference (no `Z_TRY_ADDREF_P` / `zend_objects_store_add_ref`) ... the overwrite path frees the original PHP object via `zval_ptr_dtor` ... attacker-controlled overwrite of the freed object's vtable / properties"
+      ground_truth: "GHSA-85c2: 'Crucially, the reference count of the PHP object is not increased' in soap_add_xml_ref(); the Apache map overwrites an existing temporary-map entry with NULL for an <item> with an empty <value>, 'releasing the Stale object only strongly referenced by the temporary map'; 'The attacker has high control over this memory segment by subsequently allocating plain strings, leading to Remote Code Execution.' Fix: 'increase the reference count before adding objects to SOAP_GLOBAL(ref_map), and configure a ZVAL_PTR_DTOR deallocator'. The macro names and the vtable claim are not in the advisory."
+      ground_truth_url: "https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5"
+      fix: "Use the advisory's mechanism only: refcount not incremented in soap_add_xml_ref(); Apache-map duplicate-key overwrite (second item with empty value) frees the object while ref_map keeps a stale pointer; a later href='#id' reuses it; heap reuse via string allocation gives control."
+    - code: F4
+      where: "body, Vulnerability class ¶2 and Exploitation prerequisites ¶1"
+      claim: "suggesting the upstream review pass that produced GHSA-85c2-q967-79q5 covered the whole apache-map handling surface ... The PHP application's own code does not have to call `SoapServer` explicitly for the bug to trigger"
+      ground_truth: "CVE-2026-7261 is a SOAP_PERSISTENCE_SESSION header-fault UAF, not Apache-map handling; the changelog lists three separate GHSAs with separate commits. The advisory's trigger is a SoapServer (setClass + handle) processing the envelope; no cited source says the application need not instantiate SoapServer."
+      ground_truth_url: "https://github.com/php/php-src/security/advisories/GHSA-m33r-qmcv-p97q"
+      fix: "Delete both statements; keep 'a PHP application running SoapServer::handle() on attacker-reachable input'."
+    - code: F4
+      where: "body, Exploitation prerequisites / summary of twin"
+      claim: "(twin) No public proof-of-concept and no in-the-wild exploitation are reported ... No public proof-of-concept has been released"
+      ground_truth: "GHSA-85c2-q967-79q5 itself embeds a runnable PHP reproduction (Handler class, apache:Map envelope with duplicate 'somekey', SoapServer->handle, var_dump($result)) that demonstrates the stale pointer; GHSA-m33r and GHSA-hmxp likewise embed reproducers. A trigger exists in the public advisory (not a weaponised RCE exploit). No exploitation claim is made anywhere; KEV does not list the CVE."
+      ground_truth_url: "https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5"
+      fix: "Say: advisory includes a reproducer for the stale-pointer read; no weaponised exploit or in-the-wild use reported; not in CISA KEV (catalogue 2026.10.08)."
+    - code: F4
+      where: "body, MITRE ATT&CK / Hardening"
+      claim: "T1505.003 Web Shell — likely follow-on persistence path observed in prior PHP RCE incidents."
+      ground_truth: "No cited source mentions follow-on web shells or prior PHP RCE incidents. Affected-version text elsewhere in the twin says 'PHP 8.2.0 through 8.5.5'; the advisory/CVE record say affected is < 8.2.31 / < 8.3.31 / < 8.4.21 / < 8.5.6 (8.2.* - 8.5.* ranges); no source speaks to 8.0/8.1 (EOL)."
+      ground_truth_url: "https://cveawg.mitre.org/api/cve/CVE-2026-6722"
+      fix: "Remove the unsourced 'observed in prior PHP RCE incidents' claim; phrase affected versions as '< 8.2.31, < 8.3.31, < 8.4.21, < 8.5.6'."
+    - code: F8
+      where: "labelled lines / summary"
+      claim: "summary: \"#### Vulnerability class and primitive\" (a heading used as summary); event_date: null; no Exposure/Detection/Defender takeaway labelled lines; no techniques[] key"
+      ground_truth: "Sources support an Exposure line (ext-soap in PHP 8.2-8.5 < 8.2.31/8.3.31/8.4.21/8.5.6; only apps running SoapServer; 7262 needs typemap; 7261 needs SOAP_PERSISTENCE_SESSION) and event_date 2026-05-07 (GHSAs, releases)."
+      ground_truth_url: "https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5"
+      fix: "Set event_date 2026-05-07, write a real summary, add labelled lines and techniques[] (T1190 active; T1059.004 active)."
+    - code: F17
+      where: "classification"
+      claim: "(no classification block)"
+      ground_truth: "Required on every entry; legacy migrated entry carries none. PHP project GHSA primary (vendor/project tier) with release changelog corroboration."
+      ground_truth_url: "https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5"
+      fix: "Add classification {reliability per sources.json tier, credibility 2}."
+  unique_material: []
+
+- entry: entries/2026-05-11/cve-2026-6722-php-soap-extension-use-after-free-in-soap-glob.md
+  group: D2-b
+  role: duplicate
+  duplicate_of: entries/2026-05-11/cve-2026-6722-php-soap-use-after-free-in-soap-global-ref-map.md
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "cves[CVE-2026-7261/7262] and body"
+      claim: "type: rce; zero-click; pre-auth for both companions; 'No public proof-of-concept has been released'"
+      ground_truth: "Same as survivor record: 7262 is a typemap-dependent DoS, 7261 a persistence-session UAF with 'unlikely' controllable memory; all three GHSAs embed reproducers."
+      ground_truth_url: "https://github.com/php/php-src/security/advisories/GHSA-hmxp-6pc4-f3vv"
+      fix: "Fold into survivor."
+    - code: F3
+      where: "body ¶1"
+      claim: "NVD's CVSS 4.0 vector for CVE-2026-6722 scores 9.5, which the CVSS-4.0 rubric classifies as Critical ... the CVSS-4.0 score is 9.5 because a `SoapServer` exposed on a public endpoint is reachable without authentication ... and the impact is arbitrary code execution as the PHP worker"
+      ground_truth: "The 9.5 is the CNA score in the CVE.org record (vector CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H, Attack Complexity High) - NVD is not cited and not the owner; the rationale sentence is not in any source (AC:H/AT:P records that exploitation needs heap-layout conditions). Summary 'patched in all 8.x branches' overstates: advisory/CVE list only 8.2, 8.3, 8.4, 8.5."
+      ground_truth_url: "https://cveawg.mitre.org/api/cve/CVE-2026-6722"
+      fix: "Do not carry; survivor states the score with its owner."
+    - code: F11
+      where: "body ¶2"
+      claim: "Inclusion is discretionary under PD-11 ... ENISA EUVD API returned empty body across every bridge subcommand this run; ... § 5 covers detection / hardening."
+      ground_truth: "Workflow-internal language in reader-facing text (PD number, bridge, 'this run', section pointer)."
+      ground_truth_url: "https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5"
+      fix: "Drop on fold."
+    - code: F16
+      where: "priority"
+      claim: "priority: high"
+      ground_truth: "Own text: 'no in-the-wild exploitation', AC:H, requires an application exposing SoapServer; GHSA label High, not exploited, not KEV. Fails the high bar; notable fits (survivor already notable)."
+      ground_truth_url: "https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5"
+      fix: "Survivor stays notable."
+  unique_material:
+    - fact: "GHSA labels CVE-2026-6722 'High' while the CNA CVE record carries CVSS 4.0 9.5 (AC:H) and Red Hat ADP CVSS 3.1 7.7 - the split in severity labels the survivor lacks."
+      url: "https://cveawg.mitre.org/api/cve/CVE-2026-6722"
+    - fact: "php.watch 8.5.6 release page dated 2026-05-07 lists the three SOAP GHSAs/CVEs; 8.4.21, 8.3.31 and 8.2.31 releases are also dated 2026-05-07."
+      url: "https://php.watch/versions/8.5/releases/8.5.6"
+
+# ===== D2-c n8n CVE-2026-42231 / -42232 / -44789 / -44790 / -44791 =====
+- entry: entries/2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic.md
+  group: D2-c
+  role: survivor
+  verdict: factual-error
+  defects:
+    - code: F3
+      where: "body ¶1 and citation labels"
+      claim: "n8n disclosed five Critical CVEs at CVSS 9.4 each on 2026-05-18, split across two patch trains ... ([n8n GHSA-q5f4-99jv-pgg5, 2026-05-18]; [The Hacker News, 2026-05-18])"
+      ground_truth: "GHSA-q5f4-99jv-pgg5 (CVE-2026-42231) and GHSA-hqr4-h3xv-9m3r (CVE-2026-42232) were published Apr 22, 2026 (CVE.org records 2026-05-04); GHSA-c8xv-5998-g76h (44789), GHSA-57g9-58c2-xjg3 (44790) and GHSA-wrwr-h859-xh2r (44791) were published May 13, 2026 (CVE.org records 2026-06-23). 2026-05-18 is only the date of The Hacker News patch roundup."
+      ground_truth_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5"
+      fix: "Date the first pair 2026-04-22 and the second trio 2026-05-13; label the GHSA citation with its own publication date; 2026-05-18 is the THN roundup date (event_date should reflect the roundup only as the coverage date)."
+    - code: F4
+      where: "body, Exploitation prerequisites and Hardening"
+      claim: "Upgrade is the only remediation; no workaround. ... Apply the vendor patch (n8n `1.123.32` / `2.17.4` / `2.18.1`) — that is the only remediation."
+      ground_truth: "Every GHSA lists workarounds: 'Limit workflow creation and editing permissions to fully trusted users only'; XML node flaws (CVE-2026-42232, -44791): 'Disable the XML node by adding n8n-nodes-base.xml to the NODES_EXCLUDE environment variable'; CVE-2026-44789: disable the HTTP Request node via n8n-nodes-base.httpRequest; CVE-2026-44790: disable the Git node via n8n-nodes-base.git (each 'do not fully remediate the risk'). The Hardening paragraph also names only the first-train versions, contradicting the earlier 'apply the later train' statement (the full set needs 1.123.43 / 2.20.7 / 2.22.1; CVE.org lists 2.21.0 < 2.21.1 as affected for the 2.21 branch)."
+      ground_truth_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-hqr4-h3xv-9m3r"
+      fix: "Replace with the advisory workarounds (restrict workflow create/edit to trusted users; NODES_EXCLUDE for the XML, HTTP Request, Git nodes as short-term mitigation only) and state the later train (1.123.43 / 2.20.7 / 2.22.1; 2.21.1 on the 2.21 branch per the CVE record) as the single patch target."
+    - code: F4
+      where: "evidence[0], evidence[1]"
+      claim: "evidence[0]: 'n8n addresses five critical prototype pollution and injection flaws (CVE-2026-42231/42232/44791/44789/44790, all CVSS 9.4)' (The Hacker News); evidence[1]: '...achieve remote code execution on the n8n host. CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H = 9.4'"
+      ground_truth: "THN article text contains no such sentence ('Round off the list is a set of five critical vulnerabilities impacting n8n -', then five bullets each '(CVSS score: 9.4)'); the substring 'addresses five critical' does not occur in the page. evidence[1] splices the GHSA sentence ('...achieve remote code execution on the n8n host.') with the CVSS vector and an appended '= 9.4' that the GHSA page does not contain contiguously (the page shows the vector inside the CVSS panel and 'Critical 9.4' separately)."
+      ground_truth_url: "https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+      fix: "evidence[0]: quote 'Round off the list is a set of five critical vulnerabilities impacting n8n' or a CVE bullet verbatim. evidence[1]: end the quote at 'on the n8n host.'"
+    - code: F4
+      where: "cves[CVE-2026-44790], cves[all five].vector"
+      claim: "CVE-2026-44790 type: rce; all five vector: user-interaction"
+      ground_truth: "GHSA-57g9-58c2-xjg3 / CVE-2026-44790: 'inject CLI flags on the Git node's Push operation allowing an attacker to read arbitrary files from the n8n server potentially leading to full compromise' (CWE-88); THN: 'enabling an attacker to read arbitrary files'. Not an RCE. All five advisories: AV:N/AC:L/AT:N/PR:L/UI:N - no user interaction; auth is low-privilege workflow editor."
+      ground_truth_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-57g9-58c2-xjg3"
+      fix: "CVE-2026-44790 type file-read (info disclosure via CLI-flag injection), vector network; keep auth post-auth (workflow create/modify permission)."
+    - code: F4
+      where: "body, Vulnerability class ¶1"
+      claim: "CVE-2026-44791 ... is 'XML Node Prototype Pollution Patch Bypass' — a regression / bypass of the initial xml2js fix. ... By embedding `__proto__` / `constructor.prototype` payloads into the parsed XML ... the Git node's SSH invocation path consumes attacker-controlled values"
+      ground_truth: "GHSA-wrwr-h859-xh2r: 'could bypass the patch for GHSA-hqr4-h3xv-9m3r in the XML node' (CVE-2026-42232, XML Node); THN: 'A bypass for CVE-2026-42232'. It is not a bypass of the xml2js webhook-parser fix (CVE-2026-42231). The advisories say only 'chaining the pollution with the Git node's SSH operations'; the __proto__ / constructor.prototype tokens and 'SSH invocation path consumes attacker-controlled values' are not in any cited source."
+      ground_truth_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-wrwr-h859-xh2r"
+      fix: "CVE-2026-44791 = bypass of the CVE-2026-42232 XML Node fix. Keep the webhook xml2js + Git-node SSH chain as the advisory states it; drop the token and SSH-path specifics or mark them as inference."
+    - code: F4
+      where: "body, intro ¶1 and 'Why this matters' ¶"
+      claim: "increasingly deployed by Swiss/EU public-sector teams as a low-code integration bus, by federal data offices for pipeline orchestration, and by university research groups ... Expect downstream national-CERT advisories (ANSSI / BSI / NCSC-CH) to amplify the patch urgency in the coming days."
+      ground_truth: "Neither GHSA nor THN says anything about public-sector, federal or university deployment, or about CERT amplification. Constituency relevance is asserted, not sourced; regions/sectors frontmatter (public-sector, education, europe) inherits the same assertion."
+      ground_truth_url: "https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+      fix: "Remove the unsourced deployment and CERT-prediction claims; if relevance is kept, frame it as 'self-hosted n8n instances where workflow-editor accounts exist' without attributing adoption."
+    - code: F8
+      where: "labelled lines"
+      claim: "(no Exposure / Triage / Defender takeaway lines; Hunt and Hardening paragraphs unlabelled)"
+      ground_truth: "Sources support Exposure: n8n npm package < 1.123.32/2.17.4/2.18.1 (first pair) and < 1.123.43/2.20.7/2.22.1 (second trio); attacker needs an authenticated account with workflow create/modify permission; instance reachability = any authenticated editor. Workarounds listed in the GHSAs are absent."
+      ground_truth_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5"
+      fix: "Add Exposure / Detection / Defender takeaway labelled lines; techniques[] mapping (T1190, T1059.007 are active in the pinned dataset v19.2; T1611 and T1068 are not supported by any cited source)."
+    - code: F16
+      where: "priority"
+      claim: "priority: high (brief item) / notable (deep dive)"
+      ground_truth: "Authenticated-only (PR:L) RCE chain, no exploitation reported by either source, not in KEV (catalogue 2026.10.08 has none of the five). Fails the high bar; survivor stays notable."
+      ground_truth_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5"
+      fix: "priority: notable (survivor)."
+    - code: F17
+      where: "classification"
+      claim: "(no classification block)"
+      ground_truth: "Required on every entry; legacy migrated entry carries none. Vendor GHSAs (primary, per-CVE) plus one news roundup."
+      ground_truth_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5"
+      fix: "Add classification {reliability per sources.json tier of n8n advisories, credibility 2}."
+    - code: F11
+      where: "summary / headline"
+      claim: "summary ends '... by federal data offices for pipeline …'; headline cut mid-phrase 'stand up as'"
+      ground_truth: "Truncated frontmatter text."
+      ground_truth_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5"
+      fix: "Rewrite summary and headline as complete sentences."
+  unique_material: []
+
+- entry: entries/2026-05-19/cve-2026-42231-42232-44789-44790-44791-n8n-self-hosted-autom.md
+  group: D2-c
+  role: duplicate
+  duplicate_of: entries/2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic.md
+  verdict: factual-error
+  defects:
+    - code: F3
+      where: "body ¶1"
+      claim: "n8n published five Critical security advisories on 2026-05-18, two on 2026-05-18 (`-42231`, `-42232`) and a follow-on cluster of three (`-44789`, `-44790`, `-44791`) released against later branches"
+      ground_truth: "GHSA-q5f4 / GHSA-hqr4 published Apr 22, 2026; the three follow-on GHSAs May 13, 2026; THN roundup dated 2026-05-18."
+      ground_truth_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-c8xv-5998-g76h"
+      fix: "Fold into survivor with correct dates."
+    - code: F4
+      where: "cves[CVE-2026-44790], evidence[0]"
+      claim: "type: rce for CVE-2026-44790; evidence[0] 'n8n addresses five critical prototype pollution and injection flaws (...)'"
+      ground_truth: "44790 is an arbitrary file read (CWE-88 CLI flag injection); the quoted sentence is not in the THN page."
+      ground_truth_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-57g9-58c2-xjg3"
+      fix: "Do not carry."
+    - code: F11
+      where: "body ¶1 last sentence"
+      claim: "Inclusion gate: CVSS 9.4 ≥ 9.0 (PD §2 inclusion gate via the CVSS 9.0–10.0 ENISA EUVD threshold)."
+      ground_truth: "Workflow-internal language in reader-facing text."
+      ground_truth_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5"
+      fix: "Drop."
+    - code: F16
+      where: "priority"
+      claim: "priority: high"
+      ground_truth: "Authenticated, unexploited, not KEV: not high."
+      ground_truth_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5"
+      fix: "Survivor stays notable."
+  unique_material:
+    - fact: "Per-CVE authority advisories: CVE-2026-42232 = GHSA-hqr4-h3xv-9m3r (XML Node Prototype Pollution to RCE, published 2026-04-22); CVE-2026-44789 = GHSA-c8xv-5998-g76h (HTTP Request Node pagination prototype pollution, 2026-05-13); CVE-2026-44790 = GHSA-57g9-58c2-xjg3 (Git node Push CLI-flag injection, arbitrary file read, 2026-05-13); CVE-2026-44791 = GHSA-wrwr-h859-xh2r (bypass of the GHSA-hqr4 XML node patch, 2026-05-13). The survivor's sources[] list only GHSA-q5f4 and THN."
+      url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-hqr4-h3xv-9m3r"
+
+# ===== D2-d Ghost CMS CVE-2026-26980 =====
+- entry: entries/2026-05-25/ghost-cms-cve-2026-26980-clickfix-the-cms-compromise-to-endp.md
+  group: D2-d
+  role: survivor
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "body, Hardening / Ghost bullet"
+      claim: "until then block `slug:[` / `slug%3A%5B` at the WAF and restrict the public Content API to trusted origins."
+      ground_truth: "Ghost advisory: 'There is no application-level workaround. The Content API key is public by design, so restricting key access does not mitigate this vulnerability. As a temporary mitigation, a reverse proxy or WAF rule can be used to block Content API requests containing `slug%3A%5B` or `slug:[` in the query string filter parameter. Note that this may break legitimate slug filter functionality.'"
+      ground_truth_url: "https://github.com/TryGhost/Ghost/security/advisories/GHSA-w52v-v783-gw97"
+      fix: "Drop 'restrict the public Content API to trusted origins'; state that only the reverse-proxy/WAF block exists as interim mitigation (may break legitimate slug filters), upgrade to >= 6.19.1 is the fix."
+    - code: F4
+      where: "body, Kill chain / Initial access"
+      claim: "Unauthenticated boolean-based blind SQL injection through the Content API's `slug` filter parameter ... boolean-blind SQL artefacts (`AND`, `CASE`, time-delay primitives)"
+      ground_truth: "GHSA: 'SQL injection ... allowed unauthenticated attackers to read arbitrary data from the database' (CWE-89, CVSS 3.1 9.4 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:L, versions v3.24.0 to v6.19.0). SentinelOne's DB page: injection in the 'Content API slug filter ordering' where user slug values are concatenated into SQL CASE statements. None of GHSA, SentinelOne, BleepingComputer or XLab says 'boolean-based' or 'blind', or lists time-delay primitives."
+      ground_truth_url: "https://www.sentinelone.com/vulnerability-database/cve-2026-26980/"
+      fix: "Say 'unauthenticated SQL injection in the Content API slug-filter ordering (read primitive)'; drop boolean-blind/time-delay wording (or mark as inference)."
+    - code: F9
+      where: "body, Background ¶1"
+      claim: "CVE-2026-26980 was disclosed and patched in Ghost 6.19.1 on 19 February 2026"
+      ground_truth: "BleepingComputer: 'the fix for the issue was released on February 19 in Ghost CMS version 6.19.1' and XLab: 'publicly disclosed as early as February 19'. Primary sources: Ghost advisory GHSA-w52v-v783-gw97 published Feb 16, 2026 (GitHub Advisory DB Feb 18; NVD Feb 20); GitHub release v6.19.1 datetime 2026-02-16T16:54Z."
+      ground_truth_url: "https://github.com/TryGhost/Ghost/security/advisories/GHSA-w52v-v783-gw97"
+      fix: "Patched/disclosed 2026-02-16 (vendor advisory and release); note that BleepingComputer and XLab give February 19."
+    - code: F11
+      where: "body, Kill chain / Payload delivery"
+      claim: "an Electron-based sample named `UtilifySetup.exe`"
+      ground_truth: "File-name indicator (policy: no file-name IOCs). XLab: final payload is an Inno Setup package of an Electron app repackaged from an open-source app, persistence via the Electron setLoginItemSettings API, polls a C2 every 30 seconds to run arbitrary JavaScript or executables."
+      ground_truth_url: "https://blog.xlab.qianxin.com/ghost-cms-mass-compromised-via-cve-2026-26980-now-fueling-clickfix-attacks/"
+      fix: "Describe the behaviour (Electron app with login-item persistence and 30 s C2 polling) without the file name."
+    - code: F8
+      where: "Detection concepts"
+      claim: "'Sysmon Event ID 1 / Windows 4688 for cmd.exe or powershell.exe (especially with -EncodedCommand, clipboard-paste context, mshta, curl/certutil download cradles)' ... 'In the Ghost admin audit trail, alert on unexpected article or theme modifications'"
+      ground_truth: "XLab documents the actual observables: pasted command is `cmd /c` moving a downloaded archive from Downloads to %TEMP%, `tar -xf`, then `start /min` a batch file; the batch runs hidden `powershell -W 1` with `iwr` to fetch a DLL and `Start-Process rundll32 <dll>,Begin` hidden; later stage drops an Electron app with login-item persistence. Site-side: abnormal `PUT /ghost/api/admin/posts/:id/` requests (unfamiliar IPs/UAs, bulk edits), unexpected <script> in Code Injection settings and theme files, unknown or long-unused Admin API keys; keep >= 30 days of Admin API call logs. Remediation: rotate Admin API Key, Content API Key, administrator password and sessions. mshta/certutil/-EncodedCommand are not in the source chain."
+      ground_truth_url: "https://blog.xlab.qianxin.com/ghost-cms-mass-compromised-via-cve-2026-26980-now-fueling-clickfix-attacks/"
+      fix: "Replace the generic cradle list with the sourced chain (browser/explorer -> cmd /c move+tar+start batch -> hidden powershell iwr + rundll32 export) and add the Admin API PUT /posts anomaly and Code Injection checks; widen key rotation to all keys, password and sessions."
+    - code: F8
+      where: "body / affected versions / actors"
+      claim: "(survivor omits affected range and the two-actor competition)"
+      ground_truth: "Affected: Ghost v3.24.0 through v6.19.0 (GHSA); BleepingComputer and XLab: at least two distinct activity clusters re-infecting or cleaning each other's injected scripts, 700+ domains confirmed on 2026-05-17 (156 on 2026-05-10); victim mix mostly personal blogs/SaaS-tech blogs, 21 education, 19 media."
+      ground_truth_url: "https://blog.xlab.qianxin.com/ghost-cms-mass-compromised-via-cve-2026-26980-now-fueling-clickfix-attacks/"
+      fix: "Add the version range, CVSS 9.4 vector and the two-cluster observation (carry from the brief item and sources)."
+    - code: F11
+      where: "techniques / tags / regions / evidence"
+      claim: "T1204.002 'User Execution: Malicious File'; regions: europe; sectors: public-sector; evidence[0].quote: 'Background.'; summary starts 'Background.'"
+      ground_truth: "ATT&CK v19.2 (pinned) has T1204.004 'Malicious Copy and Paste' for ClickFix-style paste-and-run; T1204.002 is active but describes opening a malicious file. XLab victim list shows no public-sector category and the sources do not tie the campaign to Europe. Evidence quote 'Background.' is a one-word fragment, not a supporting quotation."
+      ground_truth_url: "https://blog.xlab.qianxin.com/ghost-cms-mass-compromised-via-cve-2026-26980-now-fueling-clickfix-attacks/"
+      fix: "Map T1204.004 (and T1059.001/.003, T1105, T1659, T1480, T1190 as in the body); drop europe/public-sector unless sourced; replace the evidence quote with a verbatim sentence from XLab/BC; rewrite summary."
+    - code: F5
+      where: "body, Background ¶1"
+      claim: "ClickFix / FakeCaptcha ... has been a tracked initial-access technique since 2024"
+      ground_truth: "No cited source dates ClickFix to 2024."
+      ground_truth_url: "https://blog.xlab.qianxin.com/ghost-cms-mass-compromised-via-cve-2026-26980-now-fueling-clickfix-attacks/"
+      fix: "Remove or cite."
+    - code: F17
+      where: "classification"
+      claim: "(no classification block)"
+      ground_truth: "Required on every entry; legacy migrated entry carries none. Vendor GHSA primary, XLab primary-researcher, BleepingComputer secondary: multi-source, credibility 2 (exploitation reported by researcher, not independently confirmed beyond XLab/SentinelOne via BC)."
+      ground_truth_url: "https://github.com/TryGhost/Ghost/security/advisories/GHSA-w52v-v783-gw97"
+      fix: "Add classification block."
+  unique_material: []
+
+- entry: entries/2026-05-25/cve-2026-26980-ghost-cms-content-api-unauthenticated-blind-s.md
+  group: D2-d
+  role: duplicate
+  duplicate_of: entries/2026-05-25/ghost-cms-cve-2026-26980-clickfix-the-cms-compromise-to-endp.md
+  verdict: factual-error
+  defects:
+    - code: F3
+      where: "body ¶2"
+      claim: "SentinelOne documented in-the-wild exploitation as early as 27 February, and XLab confirmed the present large-scale wave (700+ compromised domains) on 21 May ([XLab Qianxin, 2026-05-21])"
+      ground_truth: "The XLab post says nothing about SentinelOne (no occurrence); the 27 February SentinelOne statement is BleepingComputer's: 'SentinelOne published on February 27 details about CVE-2026-26980 being exploited in attacks'. The SentinelOne vulnerability-database page itself is dated 2026-02-20 and, as fetched, carries no explicit in-the-wild exploitation statement. XLab: 700+ domains confirmed on 2026-05-17 (post dated 2026-05-21)."
+      ground_truth_url: "https://www.bleepingcomputer.com/news/security/ghost-cms-sql-injection-flaw-exploited-in-large-scale-clickfix-campaign/"
+      fix: "Attribute the SentinelOne 27 February claim to BleepingComputer; XLab 700+ confirmed 2026-05-17, published 2026-05-21."
+    - code: F4
+      where: "body ¶1-2"
+      claim: "Ghost(Pro) cloud instances were patched server-side ... restrict or disable the public Content API to trusted origins; the vendor mitigation targets exactly that request pattern ... the fix shipped in **6.19.1 on 19 February 2026**"
+      ground_truth: "No cited source mentions Ghost(Pro) being patched server-side (BleepingComputer, XLab, GHSA silent). GHSA: no application-level workaround, restricting the public Content API key does not mitigate; only a WAF/proxy block of slug:[ . Fix date: advisory and v6.19.1 release 2026-02-16 (BC says Feb 19)."
+      ground_truth_url: "https://github.com/TryGhost/Ghost/security/advisories/GHSA-w52v-v783-gw97"
+      fix: "Fold; do not carry the three statements."
+    - code: F4
+      where: "evidence[0]"
+      claim: "'CVE-2026-26980 is an unauthenticated SQL injection (CWE-89) scored CVSS 9.4 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:L) in Ghost's Content API.' (publisher: ctipilot v2 brief (migrated))"
+      ground_truth: "The quote is the entry's own body sentence, not a passage of any cited page. Facts match the CVE record (CNA CVSS 3.1 9.4, same vector, CWE-89)."
+      ground_truth_url: "https://cveawg.mitre.org/api/cve/CVE-2026-26980"
+      fix: "Do not carry."
+    - code: F11
+      where: "body ¶2"
+      claim: "The CVE clears the § 2 bar on exploitation ... Full kill chain and detection in § 5."
+      ground_truth: "Workflow-internal language."
+      ground_truth_url: "https://www.bleepingcomputer.com/news/security/ghost-cms-sql-injection-flaw-exploited-in-large-scale-clickfix-campaign/"
+      fix: "Drop."
+  unique_material:
+    - fact: "Affected Ghost v3.24.0 through v6.19.0; fixed in v6.19.1; CVSS 3.1 9.4 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:L), CWE-89 per the CVE.org CNA record; vendor guidance: review staff users and rotate keys after upgrading."
+      url: "https://github.com/TryGhost/Ghost/security/advisories/GHSA-w52v-v783-gw97"
+    - fact: "XLab confirmed 700+ poisoned domains; BleepingComputer names Harvard University, Oxford University, Auburn University and DuckDuckGo (XLab itself names Harvard, Oxford, Auburn); KEV does not list CVE-2026-26980 (catalogue 2026.10.08)."
+      url: "https://www.bleepingcomputer.com/news/security/ghost-cms-sql-injection-flaw-exploited-in-large-scale-clickfix-campaign/"
+
+# ===== D2-e FortiClient EMS CVE-2026-35616 + EKZ Infostealer =====
+- entry: entries/2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain.md
+  group: D2-e
+  role: survivor
+  verdict: factual-error
+  defects:
+    - code: F13
+      where: "body, Background ¶1"
+      claim: "The vulnerability class — header-spoofing trust against a fronting reverse proxy — is the same shape as Microsoft's [`CVE-2026-45659`](https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45659) (separate product, same `X-Forwarded-*` trust pattern)"
+      ground_truth: "CVE-2026-45659 is a Microsoft SharePoint Server remote code execution vulnerability, CWE-502 Deserialization of Untrusted Data, CVSS 3.1 8.8 (AV:N/AC:L/PR:L), published 2026-05-22, affecting SharePoint Enterprise Server 2016 / Server 2019 / Subscription Edition. It has nothing to do with header trust or X-Forwarded-* headers; the MSRC page itself does not say so either."
+      ground_truth_url: "https://cveawg.mitre.org/api/cve/CVE-2026-45659"
+      fix: "Delete the sentence (and the MSRC link)."
+    - code: F4
+      where: "body, Vulnerable component"
+      claim: "The intended deployment model is that a fronting reverse proxy or load balancer performs the mutual-TLS handshake and stamps that header into the upstream request ... sends exactly that header with value `SUCCESS` as the entire exploit payload ... The server does not independently confirm that the negotiating peer presented a valid client certificate; it accepts the header as-is."
+      ground_truth: "Bishop Fox (root-cause analysis): 'The Django authentication middleware accepts client certificate information from both trusted WSGI environment variables (set by Apache mod_ssl) and user-controllable HTTP request headers, and Apache was never configured to strip the user-controllable variants' (EMS's own Apache mod_ssl + Django, not an external proxy). contains_certificate() checks SSL_CLIENT_VERIFY or HTTP_X_SSL_CLIENT_VERIFY == 'SUCCESS'; validate_cert_chain() reads a user-supplied X-SSL-CLIENT-CERT header first and 'performs only Distinguished Name string matching against embedded Fortinet root CAs with no X.509 cryptographic signature verification', so an attacker also forges a certificate chain. The Nuclei template is a non-intrusive check (POST /api/v1/fabric_device_auth/fortigate/init with and without the spoofed header, comparing 401 vs 500), not 'the entire exploit payload'."
+      ground_truth_url: "https://bishopfox.com/blog/api-authentication-bypass-in-forticlient-ems-7-4-5-7-4-6-cve-2026-35616"
+      fix: "State the mechanism per Bishop Fox: EMS Django middleware trusts client-supplied X-SSL-CLIENT-VERIFY / X-SSL-CLIENT-CERT headers that Apache does not strip, plus DN-string-only chain validation; cite Bishop Fox as a source. Remove the fronting-proxy deployment-model claim and the 'entire exploit payload' wording."
+    - code: F4
+      where: "body, Vulnerable component (CVSS)"
+      claim: "CVSS:3.1 base 9.1 (`AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N`). EPSS 43.2 % at the 97.6th percentile."
+      ground_truth: "Fortinet's CVE.org record carries CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C = 9.1; the base vector (A:H) scores 9.8 and 9.1 is the temporal-adjusted score (THN also quotes 9.1). The entry's A:N vector appears in no source. No cited source gives an EPSS figure (the Nuclei template metadata shows epss-score 0.09098 / percentile 0.95195 at its snapshot)."
+      ground_truth_url: "https://cveawg.mitre.org/api/cve/CVE-2026-35616"
+      fix: "CVSS 9.1 (temporal; vector AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C; base 9.8) per the Fortinet CNA record; drop the EPSS claim or cite FIRST EPSS with a date."
+    - code: F4
+      where: "body, Exploitation chain ¶ (delivery)"
+      claim: "attackers modify Remote Access Profile configurations through the now-privileged API endpoint to push an *Update task* to managed FortiClient endpoints — the malicious PowerShell payload is delivered through the EMS update channel under the trusted `fortitray.exe` parent process and is therefore signed in the operational sense ... [T1195.002] ... [T1218 System Binary Proxy Execution via the trusted FortiTray binary]"
+      ground_truth: "Arctic Wolf: the actor edited the Remote Access Profile and endpoint policy 'to insert a malicious script for execution on endpoint devices' using the XML on_connect / script directives, which run when an endpoint establishes an SSL/IPsec VPN tunnel. 'Within seconds of affected endpoints establishing an IPsec tunnel ... fortitray.exe was observed launching .cmd script files via cmd.exe' (GUID-named, in FortiClient logs\\Trace\\scripts); the .cmd launches a base64-encoded PowerShell script that downloads and runs the payload, sleeps 90 s, then POSTs output over HTTP. Lineage: fortitray.exe or ipsec.exe > cmd.exe > powershell.exe > FortiEndpoint_Patch.exe. No 'Update task', no 'signed' payload, and no proxy execution of a system binary appear in Arctic Wolf or The Hacker News."
+      ground_truth_url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+      fix: "Describe the on_connect script path and the fortitray.exe/ipsec.exe > cmd.exe > base64 PowerShell lineage; drop 'Update task' and 'signed'; map T1072 (Software Deployment Tools) / T1059.001 / T1059.003 rather than T1218; T1195.002 is not supported by the source (the compromise is of a management server, not a supply-chain build)."
+    - code: F4
+      where: "body, Exploitation chain and Detection concepts (browser-profile writes)"
+      claim: "EKZ copies itself into per-browser profile directories under each user's `AppData\\Local\\Google\\Chrome\\User Data\\<profile>` ... Sysmon EID 11 (`FileCreate`) targeting `AppData\\Local\\Google\\Chrome\\User Data\\<profile>` ... This is the EKZ self-copy primitive."
+      ground_truth: "Arctic Wolf: for Chromium-family browsers the stealer 'reads the Local State file for the os_crypt.app_bound_encrypted_key, copies itself into the browser's Application\\ directory, and relaunches from that path to pass Chromium Elevation Service path validation', then 'calls IElevator::DecryptData to obtain the Chromium v20 AES-256 master key'. For Firefox/Gecko-family (also LibreWolf, Waterfox, Pale Moon, Thunderbird) it 'locates nss3.dll, dynamically loads NSS' and reads key4.db, logins.json, cookies.sqlite. The self-copy target is the browser's Application directory, not the user-profile directory; Gecko browsers get no self-copy."
+      ground_truth_url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+      fix: "Detection: unexpected executable written into a browser's installation Application\\ directory and launched from there by a non-browser parent; IElevator/elevation-service use by a non-browser process; nss3.dll loaded by a non-browser process. Remove the User Data profile-directory rule."
+    - code: F4
+      where: "body, Detection concepts bullets 1, 3, 5"
+      claim: "Where the EMS server logs `X-SSL-CLIENT-VERIFY` along with peer-certificate fingerprint ... alert on Sysmon EID 1 where parent process is the FortiClient managed-service binary and child is an unsigned binary with `--silent` install flags ... `fortitray.exe` spawning PowerShell with `-EncodedCommand` / `-enc`"
+      ground_truth: "Arctic Wolf's documented signals: EMS log line 'Certificate not found in request header' followed within seconds by 'Certificate user: fortinet-ca2 FortiGate: Fabric device (SN=fortinet-ca2) successfully updated'; new or unexpected EMS accounts; logins from Tor exit nodes/VPS/unfamiliar ASNs within hours of exploitation; edits to remind_upgrade_after; Remote Access Profile gaining unapproved on_connect scripts; endpoint-policy updates immediately before fleet-wide script execution; cmd.exe running scripts from C:\\Program Files\\Fortinet\\FortiClient\\logs\\Trace\\scripts with fortitray.exe/ipsec.exe parent; hidden/base64 PowerShell launching a downloaded binary right after IPsec tunnel establishment; FortiEndpoint executables staged in C:\\ProgramData; log.txt creation in ProgramData, PowerShell reading it, HTTP POST, then deletion of txt and payload. No source mentions an EMS log of X-SSL-CLIENT-VERIFY with a fingerprint, '--silent' flags or a FortiClientSetup_* naming convention; fortitray.exe launches cmd.exe, not PowerShell directly."
+      ground_truth_url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+      fix: "Replace the invented signals with Arctic Wolf's sourced ones above."
+    - code: F14
+      where: "body, Background ¶1"
+      claim: "Arctic Wolf's 2026-05-27 publication being the first public exploitation-chain narrative tying the bypass to a downstream credential-theft payload"
+      ground_truth: "No cited source says 'first'. Arctic Wolf's 2026-04-06 post says Defused had 'observed exploitation prior to Fortinet's official disclosure' and Fortinet 'has observed this to be exploited in the wild'; AW's 2026-05-27 post says the stealer is 'previously unreported'. Quantifier unsupported."
+      ground_truth_url: "https://arcticwolf.com/resources/blog/cve-2026-35616/"
+      fix: "Say Arctic Wolf published the first technical write-up of the EKZ campaign it observed in May 2026, or drop the ordinal."
+    - code: F4
+      where: "evidence[0], evidence[1]"
+      claim: "'Arctic Wolf has observed threat actors actively exploiting CVE-2026-35616 in the FortiClient EMS management API to deliver a novel infostealer payload' / 'Threat actors leveraged this weakness to modify Remote Access Profile configurations and inject malicious PowerShell scripts into managed endpoints. The payload, designated EKZ Infostealer, was disguised as a legitimate Fortinet patch'"
+      ground_truth: "Neither string occurs on the cited Arctic Wolf post (extract and raw HTML searched for 'novel infostealer', 'leveraged this weakness', 'designated EKZ') nor on The Hacker News or Bishop Fox pages. Arctic Wolf's closest verbatim sentences: 'Arctic Wolf observed evidence of CVE-2026-35616 being exploited against FortiClient EMS deployments.' and 'Threat actors disguised the credential stealer payload as a Fortinet endpoint update, silently executing the malicious executable through PowerShell.'"
+      ground_truth_url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+      fix: "Replace both with the verbatim Arctic Wolf sentences above."
+    - code: F8
+      where: "body (omitted source-supported facts)"
+      claim: "(absent) EKZ exfil path, data scope, EMS exposure matrix, hotfix"
+      ground_truth: "Arctic Wolf/THN: the stealer 'lacks network-based exfiltration'; it writes log.txt to ProgramData and the PowerShell script POSTs it; it also takes cookies (session reuse can circumvent MFA), saved passwords and autofill (cards, addresses, phones); recommended: restrict EMS management port 8013 to trusted IPs. Fortinet PSIRT: FortiClientEMS 7.4.5 through 7.4.6 affected, 7.2 and 8.0 not affected, hotfix available for 7.4.5/7.4.6 ('sufficient to prevent it entirely'), 7.4.7 includes the fix, FortiClient Cloud and FortiSASE already remediated, Fortinet observed exploitation in the wild (advisory dated 2026-04-04; AW says exploitation was observed and reported to Fortinet 2026-03-31)."
+      ground_truth_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-099"
+      fix: "Add Exposure (7.4.5-7.4.6 only; hotfix or 7.4.7; port 8013 restriction), the cookie/MFA-bypass consequence and the exfil-via-PowerShell detail."
+    - code: F4
+      where: "regions / sectors / tags (also brief-item body 'Why it matters to us')"
+      claim: "regions: switzerland; sectors: public-sector, finance, energy, telco"
+      ground_truth: "None of Arctic Wolf, Fortinet PSIRT, Bishop Fox or THN names a region or sector; the victim population is not described. The brief-item claim 'FortiClient EMS is widely deployed across Swiss federal and cantonal network-security estates' is in no cited source."
+      ground_truth_url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+      fix: "Drop sector/region assertions or source them; relevance can rest on 'FortiClient EMS 7.4.5-7.4.6 is KEV-listed and exploited'."
+    - code: F3
+      where: "body, Background ¶1 citations"
+      claim: "[improper-access-control (CWE-284)](https://nvd.nist.gov/vuln/detail/CVE-2026-35616) ... added to the [CISA KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) on 2026-04-06"
+      ground_truth: "Both links are hard-blocked patterns (NVD per-CVE page; KEV catalogue landing). Fact verified on the CISA KEV catalogue (catalogVersion 2026.10.08): CVE-2026-35616 'Fortinet FortiClient EMS Improper Access Control Vulnerability', dateAdded 2026-04-06, knownRansomwareCampaignUse Unknown. CWE-284 is on the Fortinet PSIRT page."
+      ground_truth_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-099"
+      fix: "Cite FG-IR-26-099 for CWE-284 and the vendor-confirmed exploitation; state KEV listing without the landing-page link."
+    - code: F17
+      where: "classification"
+      claim: "(no classification block)"
+      ground_truth: "Required on every entry; legacy migrated entry carries none. Fortinet PSIRT (vendor) + Arctic Wolf Labs (primary researcher) + Bishop Fox root cause; exploitation vendor-confirmed."
+      ground_truth_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-099"
+      fix: "Add classification block (vendor-confirmed exploitation, multi-source: credibility 1-2)."
+    - code: F11
+      where: "body (file-name indicator) and techniques"
+      claim: "The PowerShell payload fetches `FortiEndpoint_Patch.exe`, presented to operators and AV as a legitimate Fortinet patch ... The fake `FortiEndpoint_Patch.exe` name from this campaign deviates from the genuine `FortiClientSetup_*.exe` naming convention."
+      ground_truth: "Malware file name used as an indicator (policy: no file-name IOCs; Arctic Wolf itself lists hashes/IPs/URLs in its IOC section, none of which the entry may reproduce). No techniques[] key; ATT&CK ids appear only in prose."
+      ground_truth_url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+      fix: "Describe 'a fake Fortinet endpoint update executable staged in ProgramData' without the file name; add techniques[] (T1190, T1072, T1059.001, T1059.003, T1555.003, T1041)."
+  unique_material: []
+
+- entry: entries/2026-05-29/forticlient-ems-cve-2026-35616-actively-exploited-to-push-ek.md
+  group: D2-e
+  role: duplicate
+  duplicate_of: entries/2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain.md
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "summary and body ¶1"
+      claim: "EKZ Infostealer to managed endpoints as a fake FortiEndpoint_Patch.exe signed under the legitimate fortitray.exe parent ... EKZ copies itself into Chromium/Gecko browser-profile directories (Chrome, Microsoft Edge, Firefox, LibreWolf, Waterfox, Pale Moon, Thunderbird) to clear elevation-validation checks ... managed endpoints need browser-profile-write hunts."
+      ground_truth: "Arctic Wolf: no 'signed' claim; fortitray.exe/ipsec.exe launch cmd.exe scripts from the VPN on_connect directive; Chromium-family: self-copy into the browser's Application\\ directory to pass Elevation Service validation; Gecko-family: nss3.dll loaded, no self-copy."
+      ground_truth_url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+      fix: "Fold; do not carry."
+    - code: F3
+      where: "body ¶1"
+      claim: "The vulnerable code path trusts the `X-SSL-CLIENT-VERIFY` HTTP header set by a fronting reverse proxy or load balancer instead of validating client-certificate state itself (no inline citation; PSIRT / AW / THN cited elsewhere in the paragraph)"
+      ground_truth: "None of the entry's three cited pages (Fortinet PSIRT, Arctic Wolf, THN) mentions the header; Bishop Fox: Django middleware trusts client-supplied X-SSL-CLIENT-VERIFY / X-SSL-CLIENT-CERT that Apache mod_ssl-fronted EMS does not strip; not a separate reverse proxy."
+      ground_truth_url: "https://bishopfox.com/blog/api-authentication-bypass-in-forticlient-ems-7-4-5-7-4-6-cve-2026-35616"
+      fix: "Fold; survivor cites Bishop Fox."
+    - code: F4
+      where: "body ¶2 / evidence[0]"
+      claim: "Why it matters to us: FortiClient EMS is widely deployed across Swiss federal and cantonal network-security estates and across EU public-sector networks. Deep-dive treatment in § 5 below. / evidence[0]: 'Arctic Wolf Labs published technical evidence on 2026-05-27 of an in-the-wild campaign ...' (publisher ctipilot v2 brief (migrated))"
+      ground_truth: "Deployment claim in no cited source; '§ 5' is workflow-internal; the evidence 'quote' is the entry's own body sentence, not a page passage. Facts that do hold: Arctic Wolf post dated 2026-05-27; KEV dateAdded 2026-04-06; PSIRT advisory dated 2026-04-04 lists 7.4.5 through 7.4.6."
+      ground_truth_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-099"
+      fix: "Do not carry."
+    - code: F16
+      where: "priority"
+      claim: "priority: high (brief item) vs notable (deep dive)"
+      ground_truth: "Exploited in the wild, vendor-confirmed, KEV-listed (2026-04-06), fleet-wide push to managed endpoints: a high is defensible for a product the constituency runs, but no cited source evidences Swiss/EU exposure; the audit should set the survivor's priority on stated exposure (hotfix/7.4.7 decision within 7 days if EMS 7.4.5/7.4.6 is run)."
+      ground_truth_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-099"
+      fix: "Survivor priority: high only if the profile's constituency exposure is asserted with a source; otherwise notable."
+  unique_material:
+    - fact: "Arctic Wolf published 2026-05-27; KEV listing 2026-04-06 (event_date used the KEV date); summary of campaign (Remote Access Profile edit, FortiEndpoint_Patch.exe, EKZ steals Chromium/Gecko browser credentials and cookies) - all already covered by the survivor."
+      url: "https://thehackernews.com/2026/05/threat-actors-exploit-critical.html"
+
+# ===== D2-f Cisco Unified CM CVE-2026-20230 =====
+- entry: entries/2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary.md
+  group: D2-f
+  role: survivor
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "body, 'Not KEV-listed as of this run.' / summary / status"
+      claim: "Not KEV-listed as of this run."
+      ground_truth: "CISA KEV (catalogVersion 2026.10.08) lists CVE-2026-20230 'Cisco Unified Communications Manager Server-Side Request Forgery (SSRF) Vulnerability', dateAdded 2026-06-25, CWE-918, knownRansomwareCampaignUse Unknown. Cisco advisory revision 1.1 (2026-JUL-01): 'In June 2026, the Cisco PSIRT became aware of active exploitation of this vulnerability' - vendor-confirmed, which the entry (Defused via BleepingComputer only) does not carry."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+      fix: "Via a changelog update: KEV-listed 2026-06-25; Cisco confirmed active exploitation (advisory rev 1.1, 2026-07-01). Remove 'Not KEV-listed' from the main text."
+    - code: F11
+      where: "body ¶1 (marker file)"
+      claim: "writing a marker file (`/tmp/cve-2026-20230-test.txt`)"
+      ground_truth: "File-path/name indicator (policy: no file-name IOCs). BleepingComputer: the PoC 'appears designed to identify vulnerable devices by attempting to write a text file named ...'."
+      ground_truth_url: "https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/"
+      fix: "Say 'a benign marker-file write (reconnaissance)' without the path."
+    - code: F4
+      where: "body ¶1"
+      claim: "Defused observed exploitation over the weekend of ~2026-06-21/22 from a single source IP ... a vulnerability-fingerprinting pattern that historically precedes a targeted exploitation wave."
+      ground_truth: "BleepingComputer (2026-06-23, a Tuesday): 'Over the weekend we observed exploitation ...' (Defused), 'originating from a single IP address', 'the current exploitation appears to be reconnaissance in nature, now that the flaw has been fully disclosed, we will likely see more threat actors target these servers'. The weekend is 2026-06-20/21; 'historically precedes a targeted exploitation wave' is in no cited source."
+      ground_truth_url: "https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/"
+      fix: "'weekend of 2026-06-20/21 (per Defused)'; replace the historical claim with BleepingComputer's expectation that more actors will follow now that SSD Secure published a write-up and PoC (2026-06-23)."
+    - code: F8
+      where: "labelled lines / Detection"
+      claim: "hunt WebDialer access logs for `file://` URIs and unexpected file-creation events (Sysmon EID 11 / `auditd`) outside normal WebDialer paths"
+      ground_truth: "Unified CM is a Cisco-hardened Linux appliance; Sysmon (Windows) does not apply. Sourced observables: Cisco: exploit needs WebDialer enabled (check: Unified CM Administration > Cisco Unified Serviceability > Tools > Control Center - Feature Services > CTI Services > Cisco WebDialer Web Service = Started); mitigation = disable it under Service Activation. SSD Secure (2026-06-23): unauthenticated /webdialer/Version.jws?wsdl discloses the true hostname, then GET /cmplatform/installClusterStatusExecute?action=clusterNodeInstallStatus with a path-escaped hostname parameter creates files; affected build named: 15.0.1.13901-2."
+      ground_truth_url: "https://ssd-disclosure.com/cisco-unified-communications-manager-arbitrary-file-write-to-rce/"
+      fix: "Add Exposure (WebDialer Started; releases 14 < 14SU6, 15 < 15SU5 or COP) and a Detection line on web-access logs for requests to the cmplatform installClusterStatusExecute and webdialer endpoints with path-like or file:// values; drop Sysmon."
+    - code: F18
+      where: "actions[0]"
+      claim: "**Remediate Cisco Unified CM CVE-2026-20230** if WebDialer is enabled on an internet-facing instance: apply 14SU6 (Release 14) or the Release-15 COP fix, or disable the Cisco WebDialer Web Service if unused; hunt WebDialer logs for `file://` URIs and stray file-creation events (§ 2)."
+      ground_truth: "Mixes a patch task with body hunting guidance (restatement) and carries a workflow section pointer '(§ 2)'; 'internet-facing' is not a Cisco condition (Cisco: WebDialer enabled). Cisco: 'no workarounds ... as a mitigation, administrators may disable the WebDialer service until a patch can be applied.'"
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+      fix: "One start-now task: 'Check Unified CM Control Center feature services for WebDialer Started; apply 14SU6 / the Release 15 COP or disable WebDialer until patched.' Drop the hunt clause and '(§ 2)'."
+    - code: F17
+      where: "classification"
+      claim: "(no classification block)"
+      ground_truth: "Required on every entry; legacy migrated entry carries none. Cisco PSIRT primary, vendor-confirmed exploitation, BleepingComputer/Defused/SSD corroboration."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+      fix: "Add classification block."
+  unique_material: []
+
+- entry: entries/2026-06-04/cve-2026-20230-cisco-unified-communications-manager-unauthen.md
+  group: D2-f
+  role: duplicate
+  duplicate_of: entries/2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary.md
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "summary"
+      claim: "Two critical advisories hit public-sector infrastructure defenders run themselves: an unauthenticated SSRF-to-root in Cisco Unified CM (CVE-2026-20230) and an OTP-bypass in MISP (CVE-2026-10611) — the threat-intel platform deployed across EU/CH national CERTs."
+      ground_truth: "The entry's body, cves[] and sources[] cover only Cisco CVE-2026-20230; MISP CVE-2026-10611 has its own entry (entries/2026-06-04/cve-2026-10611-misp-otp-bypass-when-ldap-mixed-auth-and-otp.md, priority notable), so the MISP half survives separately and nothing is lost by folding. No cited source says MISP is 'deployed across EU/CH national CERTs', and 'public-sector infrastructure defenders run themselves' is not supported by the Cisco advisory."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+      fix: "Fold into the survivor; do not carry the MISP sentence."
+    - code: F4
+      where: "body ¶1"
+      claim: "coerce the device into fetching an attacker URL and writing the response to arbitrary OS locations — a write primitive ... via a drop into cron/service directories"
+      ground_truth: "Cisco: SSRF through an affected device, 'write files to the underlying operating system that could be used later to elevate to root'; nothing about cron/service directories. BleepingComputer/SSD: unauthenticated attacker uses file:// URIs through the Webdialer/cmplatform path to write attacker-controlled content to a chosen path."
+      ground_truth_url: "https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/"
+      fix: "Do not carry the cron/service-directory and 'fetching an attacker URL' wording."
+    - code: F9
+      where: "body ¶1 / tags (poc-public)"
+      claim: "Cisco reports no confirmed in-the-wild exploitation at disclosure but states that proof-of-concept exploit code is publicly available"
+      ground_truth: "(low confidence) BleepingComputer 2026-06-23: SSD Secure 'did not share any technical details at the time' of the 2026-06-03 disclosure and published its technical write-up with a PoC only after the exploitation report; the SSD write-up is dated 2026-06-23. The Cisco advisory as it reads today (rev 1.1, 2026-07-01) says PoC code is available and active exploitation was seen in June 2026, but the revision history shows only the exploitation text was added in 1.1, so the date of the PoC sentence cannot be confirmed from the page."
+      ground_truth_url: "https://ssd-disclosure.com/cisco-unified-communications-manager-arbitrary-file-write-to-rce/"
+      fix: "Survivor dates the public PoC to the SSD write-up of 2026-06-23."
+    - code: F4
+      where: "regions / sectors"
+      claim: "regions: europe, switzerland; sectors: public-sector, healthcare, telco"
+      ground_truth: "The Cisco advisory names no region or sector."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+      fix: "Drop or source."
+    - code: F11
+      where: "verification / sourcing_note"
+      claim: "verification: single-source; sourcing_note: null"
+      ground_truth: "Single vendor PSIRT source with no sourcing_note; the folded survivor has a second source (BleepingComputer) plus SSD Secure write-up."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+      fix: "Moot after fold."
+  unique_material:
+    - fact: "Cisco rates the advisory Critical (SIR) rather than High because exploitation could elevate to root; CVSS 3.1 8.6 (AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:N); affected Unified CM and Unified CM SME with WebDialer enabled (disabled by default); fixed 14SU6 (Release 14) and 15SU5 (Sep 2026) or a COP for Release 15; no workaround, mitigation is disabling WebDialer; reporter an independent researcher working with SSD Secure Disclosure; advisory first published 2026-06-03."
+      url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+
+# ===== D2-g Everest Forms Pro CVE-2026-3300 =====
+- entry: entries/2026-06-08/cve-2026-3300-unauthenticated-eval-injection-in-a-commercial.md
+  group: D2-g
+  role: survivor
+  verdict: factual-error
+  defects:
+    - code: F3
+      where: "body ¶1 citation label"
+      claim: "[Wordfence, 2026-06-06](https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/)"
+      ground_truth: "The Wordfence post carries Published Time 2026-06-03T16:59:22Z; BleepingComputer is dated 2026-06-06 and The Hacker News 2026-06-05. The 'through at least 6 June' end date also appears in none of them."
+      ground_truth_url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+      fix: "Label the Wordfence citation 2026-06-03; state exploitation 'through early June' (THN, 2026-06-05, reports 16 attempts in the last 24 hours)."
+    - code: F4
+      where: "summary / body ¶1"
+      claim: "Wordfence has logged sustained mass exploitation from 13 April through at least 6 June, with a single-day peak of 17,900 blocked attempts on 16 May ... mass-exploitation campaign"
+      ground_truth: "Wordfence: attackers started 13 April; over 29,300 attempts blocked 'since the vulnerability was publicly disclosed'; 'mass exploitation occurring on May 16th, 2026' (over 17,900 in one day). The Hacker News (2026-06-05): '16 attack attempts ... in the last 24 hours'. 'Sustained mass exploitation ... through at least 6 June' is not supported; activity had tapered to low volume by early June."
+      ground_truth_url: "https://thehackernews.com/2026/06/hackers-exploit-critical-everest-forms.html"
+      fix: "Say: exploitation since 13 April, a spike of 17,900 blocked attempts on 16 May, 29,300+ blocked in total, 16 attempts in the 24 hours before 2026-06-05."
+    - code: F4
+      where: "body ¶1-2 (exposure and prerequisite)"
+      claim: "WordPress underpins a large share of cantonal, municipal and agency web estates, so any public-sector site still running Everest Forms Pro ≤ 1.9.12 is exposed ... The CVE prerequisite is narrow but common: the form must include the Calculation Addon."
+      ground_truth: "Wordfence/THN: Everest Forms Pro has 'an estimated 4,000 active installations' (a commercial add-on); the flaw is reachable 'by submitting a crafted value in any string-type form field (text, email, URL, select, radio) when a form uses the Complex Calculation feature' (BleepingComputer: 'Complex Calculation feature'). Not merely having the Calculation Addon installed. No source mentions public-sector or Swiss/EU WordPress estates."
+      ground_truth_url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+      fix: "Prerequisite: a form that uses the Complex Calculation feature; exposure: ~4,000 installs, <= 1.9.12; drop the public-sector sentence or source it."
+    - code: F4
+      where: "body, Observed exploitation chain"
+      claim: "from which attackers typically install webshells, SEO-spam injectors or redirect malware"
+      ground_truth: "Wordfence: 'uploading webshells, modifying themes or plugins, or installing further backdoors'; THN: 'deploy web shells, and open other ways to burrow deeper'; BC: 'planting backdoors and webshells'. SEO-spam injectors and redirect malware are in no cited source."
+      ground_truth_url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+      fix: "Use the sourced list (webshells, theme/plugin modification, backdoors)."
+    - code: F8
+      where: "Detection concepts"
+      claim: "alert on POSTs to the form-handling endpoints (`admin-ajax.php` and the plugin's AJAX actions) whose parameters contain PHP-syntax artefacts"
+      ground_truth: "Wordfence shows the observed request: POST /wp-admin/admin-ajax.php, action=everest_forms_ajax_form_submission, everest_forms[form_fields][<id>] value starting with a single quote then a PHP statement calling username_exists()/wp_insert_user() with role administrator, ending in a // comment; the payload echoes ADMINCREATED/ADMINEXISTS. Patch history: vendor fix 1.9.13 on 2026-03-18, Wordfence public disclosure 2026-03-30 (CVE.org record 2026-03-31, CWE-94, CVSS 3.1 9.8 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)."
+      ground_truth_url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+      fix: "Add the AJAX action name and the parameter shape to the request-layer detection; keep the admin-account-creation hunt (already present)."
+    - code: F11
+      where: "summary / evidence[0] / actions[0]"
+      claim: "summary: 'Why this is the deep dive now. ...'; evidence[0].quote: 'Why this is the deep dive now.'; actions[0]: '**Patch Everest Forms Pro to 1.9.13+ today if you run it** (. Unauthenticated, actively exploited at scale. ...'"
+      ground_truth: "Workflow-internal tagline ('the deep dive now') used as summary and as an evidence 'quote' (not a page passage); the action text contains a stray '(.' fragment."
+      ground_truth_url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+      fix: "Rewrite the summary; replace the evidence quote with a verbatim Wordfence sentence (e.g. 'The Wordfence Firewall has blocked over 29,300 exploit attempts since the vulnerability was publicly disclosed.')."
+    - code: F18
+      where: "actions[0]"
+      claim: "Patch Everest Forms Pro to 1.9.13+ today if you run it ... If you cannot patch immediately, disable the Calculation Addon and audit the WordPress admin-user list for rogue accounts created since mid-April before re-enabling."
+      ground_truth: "A concrete patch task, but it restates the body's hardening and hunt guidance in one item and carries rationale ('Unauthenticated, actively exploited at scale'). One start-now task fits: 'Update Everest Forms Pro to 1.9.13+ and review WordPress administrator accounts created since 2026-04-13.'"
+      ground_truth_url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+      fix: "Trim to one task; drop the rationale and the malformed fragment."
+    - code: F17
+      where: "classification"
+      claim: "(no classification block)"
+      ground_truth: "Required on every entry; legacy migrated entry carries none. Wordfence (researcher/CNA, primary) with BleepingComputer and THN corroboration; exploitation observed by Wordfence telemetry (not vendor-confirmed by the plugin author)."
+      ground_truth_url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+      fix: "Add classification block (credibility 2)."
+  unique_material: []
+
+- entry: entries/2026-06-08/cve-2026-3300-everest-forms-pro-wordpress-unauthenticated-ev.md
+  group: D2-g
+  role: duplicate
+  duplicate_of: entries/2026-06-08/cve-2026-3300-unauthenticated-eval-injection-in-a-commercial.md
+  verdict: factual-error
+  defects:
+    - code: F3
+      where: "summary and body ¶1"
+      claim: "Wordfence has blocked 29,300+ attempts since 13 April despite a fix shipping 18 March (Wordfence, 2026-06-06) ... still active as of 6 June ... vendor-confirmed in-the-wild exploitation at scale"
+      ground_truth: "Wordfence post dated 2026-06-03; 29,300+ blocked 'since the vulnerability was publicly disclosed' (disclosure 2026-03-30), attacks started 13 April; 'vendor' here is Wordfence (a security vendor), not the plugin vendor; no source says 'still active as of 6 June' (THN 2026-06-05: 16 attempts in 24 hours)."
+      ground_truth_url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+      fix: "Fold; do not carry."
+    - code: F11
+      where: "summary / body ¶1 / evidence[0]"
+      claim: "full technical analysis in § 5 ... Inclusion gate: vendor-confirmed in-the-wild exploitation at scale. **Full mechanics, detection and hardening in § 5.** ; evidence[0] is the entry's own sentence ending in '(Wordfence …'"
+      ground_truth: "Workflow-internal language; the evidence 'quote' is the entry's own truncated body sentence, not a page passage."
+      ground_truth_url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+      fix: "Do not carry."
+    - code: F16
+      where: "priority / sectors"
+      claim: "priority: high; sectors: public-sector"
+      ground_truth: "Commercial plugin with ~4,000 installs, exploitation peak 16 May, 16 attempts/24 h by 2026-06-05, fix 11+ weeks old; no source ties it to the public sector. Not high; survivor notable (or routine)."
+      ground_truth_url: "https://thehackernews.com/2026/06/hackers-exploit-critical-everest-forms.html"
+      fix: "Survivor priority: notable at most."
+  unique_material:
+    - fact: "Nothing the survivor lacks beyond the CVE summary sentence; BleepingComputer (2026-06-06) confirms 'Complex Calculation feature', credit to researcher h0xilo (submitted through Wordfence in February), patch 2026-03-18, active exploitation from 2026-04-13, 29,300+ attempts."
+      url: "https://www.bleepingcomputer.com/news/security/critical-everest-forms-pro-flaw-exploited-to-take-over-wordpress-sites/"
+
+# ===== D2-h SimpleHelp CVE-2026-48558 =====
+- entry: entries/2026-06-30/cve-2026-48558-simplehelp-rmm-oidc-sso-authentication-bypass.md
+  group: D2-h
+  role: survivor
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "body ¶1 (Observed follow-on) and immediate_action.action"
+      claim: "deployment of the new cross-platform Djinn infostealer via a \"TaskWeaver\" loader persisting through scheduled tasks (`schtasks.exe`) / launchd plists ([BleepingComputer, 2026-06-29])"
+      ground_truth: "Neither BleepingComputer nor Blackpoint's report mentions persistence via scheduled tasks or launchd (searched for plist, launch, schtask, cron, startup, registry, persist). Blackpoint: the operator used the RMM to drop a Node.js runtime and run `node.exe <path>\\jquery.js` fetched from a randomly generated trycloudflare.com address; TaskWeaver (obfuscated Node.js loader, rebuilds `require` at runtime, fingerprints the host, beacons over HTTPS POST encrypted with AES-256-GCM/RSA-OAEP to a lookalike of Microsoft Dev Tunnels, single 'deliver' command) then delivers Djinn Stealer, which collects cloud, developer, package-registry, AI-assistant (MCP) and crypto-wallet credentials on Windows, macOS and Linux."
+      ground_truth_url: "https://blackpointcyber.com/blog/a-djinn-in-the-machine-taskweavers-node-js-intrusion-chain"
+      fix: "Replace the persistence clause with the sourced chain (technician session -> RMM drops Node.js -> jquery.js from trycloudflare -> TaskWeaver -> Djinn Stealer) and cite Blackpoint."
+    - code: F4
+      where: "body ¶1 Hunt line"
+      claim: "Hunt: Technician logins not correlated with MFA/VPN events; `SimpleHelpServer.exe`/`SimpleHelp.exe` spawning `powershell.exe`/`cmd.exe`/`wscript.exe` (Sysmon EID 1, parent-image filter)."
+      ground_truth: "No cited source names these processes. Horizon3 IOCs: in the SimpleHelp admin UI (Administration > Technicians > gear icon > 'Show Group Authenticated Users') look for unfamiliar technician names/emails; in Administration > Server Logs (host: /opt/SimpleHelp/logs/server.log) look for 'Registering technician login for ...' and 'Configuration save requested (Forged Attacker - <email> [(Technicians)] [New Anon])'. Blackpoint: 'Alert when RMM software launches Node.js, PowerShell, Python, Deno, or Bun, particularly from temporary, download, remote-support, or user-writable directories'; block/monitor trycloudflare.com downloads."
+      ground_truth_url: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/"
+      fix: "Replace with Horizon3's admin-UI/server-log checks and Blackpoint's RMM-spawns-script-runtime hunt; drop the invented binary names and wscript."
+    - code: F3
+      where: "body ¶1 and immediate_action citation"
+      claim: "The OIDC callback handler accepts an identity token without verifying its cryptographic signature (CWE-347), so an attacker can forge an arbitrary token ... ([Horizon3.ai, 2026-06-12])"
+      ground_truth: "Horizon3 says the flaw is 'rooted in the way that SimpleHelp validates the IdP assertions' and 'we will not be releasing any more technical details'; it does not mention signatures, tokens or CWE-347. The signature-verification mechanism is stated in the CVE.org record (VulnCheck CNA, 2026-06-12: 'SimpleHelp Authentication Bypass via Missing OIDC JWT Signature Verification', CWE-347), CCB Belgium and Blackpoint."
+      ground_truth_url: "https://cveawg.mitre.org/api/cve/CVE-2026-48558"
+      fix: "Attribute the signature mechanism to the CVE record/CCB/Blackpoint; keep Horizon3 for the three configuration conditions, MFA self-registration and exposure counts."
+    - code: F4
+      where: "evidence[0], evidence[1]"
+      claim: "evidence[0]: 'Hackers exploit critical SimpleHelp flaw to deploy new Djinn infostealer and TaskWeaver malware' (BleepingComputer); evidence[1]: 'nearly 14,000 SimpleHelp servers exposed, with roughly 7.2% configured to use the vulnerable OIDC authentication method' (Horizon3.ai)"
+      ground_truth: "BleepingComputer's headline is 'Critical SimpleHelp flaw exploited to deploy new stealer malware' (the quoted string is the URL slug). Horizon3's text is two separate sentences: 'that number has increased to nearly 14,000.' and 'A random sampling of these servers indicated that roughly 7.2% of them were configured to use the vulnerable OIDC authentication method.' - the quote is a paraphrase splice."
+      ground_truth_url: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/"
+      fix: "evidence[0]: use a verbatim BC sentence ('Hackers are exploiting a recently disclosed critical vulnerability (CVE-2026-48558) in SimpleHelp to deploy Djinn Stealer, a previously undocumented cross-platform information stealer targeting Windows, macOS, and Linux.'); evidence[1]: 'A random sampling of these servers indicated that roughly 7.2% of them were configured to use the vulnerable OIDC authentication method.'"
+    - code: F4
+      where: "body ¶1 (exposure figures)"
+      claim: "Horizon3.ai measured ~14,000 internet-exposed servers, ~7.2% (~1,000) with a vulnerable OIDC configuration."
+      ground_truth: "(low confidence) Horizon3: 'nearly 14,000' exposed servers; 'a random sampling ... roughly 7.2% ... configured to use the vulnerable OIDC authentication method' (OIDC enabled, not the full three-condition vulnerable state). The '~1,000' figure is BleepingComputer's 'around 1,000 ... running a vulnerable configuration at the time of the disclosure' (extrapolation from the sample)."
+      ground_truth_url: "https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-simplehelp-flaw-deploy-new-djinn-infostealer-taskweaver-malware/"
+      fix: "Say: ~14,000 exposed; a random sample put ~7.2% on OIDC (BleepingComputer extrapolates ~1,000 vulnerable)."
+    - code: F8
+      where: "labelled lines"
+      claim: "(no Exposure / Defender takeaway lines; patch versions only as 'v5.5.16 / v6.0 RC2')"
+      ground_truth: "SimpleHelp notice: servers running 5.5.15 and earlier (and the 6.0 prerelease before RC2) are affected; 5.5.16 and 6.0 RC2 fix it; 'Not all servers can be exploited'. Horizon3: attacker creates a new Technician user (default privileges: remote into endpoints, execute scripts), MFA bypassed because technicians self-register MFA at first login; if patching is delayed, restrict Technician authentication by IP in Administration > Login Security. Blackpoint/BleepingComputer: invalidate unrecognised technician sessions, rotate credentials and API keys. CVSS: 3.1 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H) and 4.0 9.5 per the VulnCheck CNA record; CCB (updated 2026-06-30) states PoC available and active exploitation. KEV dateAdded 2026-06-29, knownRansomwareCampaignUse Unknown."
+      ground_truth_url: "https://simple-help.com/security/simplehelp-security-update-2026-05"
+      fix: "Add Exposure (<= 5.5.15 / 6.0 pre-RC2 with OIDC provider + TechnicianGroup + 'Allow group authenticated logins'), the IP-restriction interim mitigation, and the session/credential rotation step."
+    - code: F11
+      where: "summary / sectors"
+      claim: "summary ends 'See the Immediate Action callout below.'; sectors: technology, public-sector"
+      ground_truth: "Render pointer inside the summary text; no cited source names the public sector as targeted or affected."
+      ground_truth_url: "https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-simplehelp-flaw-deploy-new-djinn-infostealer-taskweaver-malware/"
+      fix: "Drop the pointer; drop public-sector or source it."
+    - code: F17
+      where: "classification"
+      claim: "(no classification block)"
+      ground_truth: "Required on every entry; legacy migrated entry carries none. Researcher (Horizon3) + CNA record + incident-response firm (Blackpoint) + national CERT (CCB) + KEV: well corroborated."
+      ground_truth_url: "https://ccb.belgium.be/advisories/warning-simplehelp-patched-cve-2026-48558-critical-authentication-bypass-vulnerability"
+      fix: "Add classification block (credibility 1-2)."
+  unique_material: []
+
+- entry: entries/2026-06-13/cve-2026-48558-simplehelp-rmm-unauthenticated-oidc-authentic.md
+  group: D2-h
+  role: duplicate
+  duplicate_of: entries/2026-06-30/cve-2026-48558-simplehelp-rmm-oidc-sso-authentication-bypass.md
+  verdict: factual-error
+  defects:
+    - code: F13
+      where: "entities / CVE Summary Table"
+      claim: "entities: actor:shinyhunters ; table row 'CVE-2026-35273 | Oracle PeopleSoft PeopleTools (PSEMHUB) | 9.8 | Yes (2026-06-12) | Yes (UNC6240, 27 May) | OOB patch 2026-06-10 (8.61/8.62)'"
+      ground_truth: "No cited source (Horizon3, SimpleHelp) links SimpleHelp CVE-2026-48558 to ShinyHunters or UNC6240; the PeopleSoft CVE-2026-35273 is a different finding with its own entries (KEV dateAdded 2026-06-12 is correct for that CVE). The entity key and table row attach another campaign's actor to this entry."
+      ground_truth_url: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/"
+      fix: "Do not carry the entity or the PeopleSoft row; survivor has entities: []."
+    - code: F4
+      where: "summary, body ¶1"
+      claim: "A forged unsigned OIDC token yields a full technician session and bypasses IdP MFA ... common in European MSP estates ... Horizon3 published detection IOCs for post-exploitation in MSP environments"
+      ground_truth: "Horizon3: MFA is bypassed because 'on first login, technicians can self-register their own MFA method' (SimpleHelp-enforced technician MFA, not IdP MFA); no 'unsigned token' language in Horizon3; nothing about European MSP prevalence or 'MSP environments' for the IOCs."
+      ground_truth_url: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/"
+      fix: "Fold; do not carry."
+    - code: F4
+      where: "tags (poc-public) / table ('No (research PoC)') / detection and hardening lines"
+      claim: "poc-public; 'Detection: ... preceded by malformed/no-signature OIDC token exchanges'; 'Hardening: ... disable OIDC and require SAML or local auth with MFA'"
+      ground_truth: "Horizon3 (2026-06-12): 'we will not be releasing any more technical details'; CCB later (2026-06-19, updated 2026-06-30) says a PoC is available. No source describes token-exchange log artefacts or recommends SAML; Horizon3's interim mitigation is IP restriction of Technician authentication (Administration > Login Security)."
+      ground_truth_url: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/"
+      fix: "Fold; do not carry."
+    - code: F4
+      where: "cves[CVE-2026-48558].cvss"
+      claim: "cvss: n/a ... neither the vendor notice nor the Horizon3 disclosure states a CVSS score at the time of writing"
+      ground_truth: "True of those two pages, but the CVE.org record (VulnCheck CNA) was published 2026-06-12 with CVSS 3.1 10.0 and CVSS 4.0 9.5, CWE-347; stale now."
+      ground_truth_url: "https://cveawg.mitre.org/api/cve/CVE-2026-48558"
+      fix: "Survivor carries 10.0 (3.1) / 9.5 (4.0)."
+    - code: F11
+      where: "body table note / actions[0]"
+      claim: "(CVE-2026-35273 carried as § 4 UPDATE; included here for the gate-clearing exploitation picture ... did not clear a § 2 inclusion gate — GitLab CVE-2026-6552 and the Check Point LangGraph chain — are noted in § 3 / § 7.) ; action ends '(.'"
+      ground_truth: "Workflow-internal language, other-brief-item residue, and a stray '(.' fragment."
+      ground_truth_url: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/"
+      fix: "Do not carry."
+    - code: F3
+      where: "body ¶1 citation label"
+      claim: "[SimpleHelp, 2026-06-12](https://simple-help.com/security/simplehelp-security-update-2026-05)"
+      ground_truth: "The SimpleHelp notice does not carry a 2026-06-12 date (2026-06-12 is the Horizon3 blog and the CVE publication date); its URL slug says 2026-05 and Horizon3's timeline says the patches were already out by 9 June 2026."
+      ground_truth_url: "https://simple-help.com/security/simplehelp-security-update-2026-05"
+      fix: "Drop the date or label it 'SimpleHelp Security Notice 2026-05'."
+  unique_material:
+    - fact: "Horizon3 disclosure timeline: discovered and validated 2026-05-21, reported to SimpleHelp 2026-05-22, patches released by SimpleHelp noticed 2026-06-09, blog 2026-06-12; discovery by Horizon3's autonomous vulnerability-research pipeline; earlier SimpleHelp KEV listings (May 2025 and April 2026)."
+      url: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/"
+    - fact: "Affected: SimpleHelp 5.5.15 and earlier and the 6.0 prerelease; fixed in 5.5.16 and 6.0 RC2; 'Not all servers can be exploited'; interim mitigation per Horizon3: restrict Technician authentication by IP (Administration > Login Security)."
+      url: "https://simple-help.com/security/simplehelp-security-update-2026-05"
+
+# ===== D2-i Splunk Enterprise CVE-2026-20253 =====
+- entry: entries/2026-06-14/cve-2026-20253-splunk-enterprise-unauthenticated-pre-auth-rc.md
+  group: D2-i
+  role: survivor
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "body, CVE Summary Table row CVE-2026-20253 vs section 2026-06-20T05:12:19Z (supersession, check 4c(h))"
+      claim: "| CVE-2026-20253 | Splunk Enterprise 10.0.x / 10.2.x | 9.8 | n/a | No | PoC/analysis public; no ITW reported | 10.4.0 / 10.2.4 / 10.0.7 |"
+      ground_truth: "Splunk advisory SVD-2026-0603 last updated 2026-06-18: 'In June 2026, the Splunk Product Security Incident Response Team (PSIRT) became aware of limited exploitation of this vulnerability.' CISA KEV: CVE-2026-20253 'Splunk Enterprise Missing Authentication for Critical Function Vulnerability', dateAdded 2026-06-18, dueDate 2026-06-21, knownRansomwareCampaignUse Unknown. The table (KEV No, no ITW reported) contradicts the newest section and the frontmatter (exploited, cisa-kev)."
+      ground_truth_url: "https://advisory.splunk.com/advisories/SVD-2026-0603"
+      fix: "Update the row to KEV Yes (2026-06-18) / exploited (limited, vendor-confirmed) or delete the stale table."
+    - code: F4
+      where: "section 2026-06-20T05:12:19Z; evidence[0]; record summary"
+      claim: "Splunk PSIRT and NCSC-NL have confirmed that CVE-2026-20253 (CVSS 9.8) ... is now under limited targeted exploitation in the wild ... fixed in Splunk Enterprise 10.4.0 / 10.2.4 / 10.0.7, available since 2026-06-14."
+      ground_truth: "Splunk: 'limited exploitation' (not 'targeted'). SecurityWeek (2026-06-19): 'Exploitation of the vulnerability was confirmed by Splunk on June 18 ... There does not appear to be any publicly available information about the attacks'; Splunk announced the patches on June 10 and the advisory carries Published 2026-06-10, so fixes were not 'available since 2026-06-14'. NCSC-NL is not named in either cited source (and a search for an NCSC-NL advisory returned none)."
+      ground_truth_url: "https://www.securityweek.com/splunk-enterprise-vulnerability-exploited-in-attacks-days-after-disclosure/"
+      fix: "'Splunk PSIRT confirmed limited exploitation on 2026-06-18 and CISA added it to KEV the same day; fixed releases have been available since 2026-06-10.' Drop NCSC-NL and 'targeted'; evidence[0] is the entry's own sentence (not on any cited page) and should be replaced by a verbatim Splunk sentence."
+    - code: F4
+      where: "section 2026-06-20T05:12:19Z last sentence and actions[1]"
+      claim: "Restrict search-job submission to authorised analyst accounts and verify indexer/search-head network segmentation while patching. ... restrict search-job submission to analyst accounts, verify search-head/indexer segmentation."
+      ground_truth: "No cited source offers this as a mitigation, and it would not stop the attack (the exposed endpoint is the PostgreSQL sidecar API proxied through the Splunk web tier at /en-US/splunkd/__raw/v1/postgres/, no search job involved). Splunk's documented workaround: disable the PostgreSQL sidecar via $SPLUNK_HOME/etc/system/local/server.conf '[postgres] disabled = true' and restart; do not apply it if you use Edge Processor, OpAmp or SPL2 data pipelines (disabling breaks them); core search, indexing, dashboards unaffected."
+      ground_truth_url: "https://advisory.splunk.com/advisories/SVD-2026-0603"
+      fix: "Replace with the Splunk workaround and its Edge Processor/OpAmp/SPL2 caveat."
+    - code: F4
+      where: "section 2026-06-20T05:12:19Z ¶2 / regions / sectors"
+      claim: "Splunk is a standard SIEM platform inside CH/EU public-sector SOC environments ; regions: europe; sectors: public-sector, finance"
+      ground_truth: "No cited source (Splunk, watchTowr, SecurityWeek) says anything about Swiss/EU public-sector or financial deployment."
+      ground_truth_url: "https://www.securityweek.com/splunk-enterprise-vulnerability-exploited-in-attacks-days-after-disclosure/"
+      fix: "Drop or source."
+    - code: F8
+      where: "main analysis (mechanism, exposure, detection live only in the twin)"
+      claim: "This brief's deep dive (§ 5) covers the sidecar-proxy chain, detection and patching in detail"
+      ground_truth: "The survivor carries no mechanism or exposure text. Verified material to carry (from watchTowr 2026-06-12 and THN 2026-06-13): the Splunk web tier proxies POST /en-US/splunkd/__raw/v1/postgres/recovery/backup and /restore to the loopback-only splunk-postgres Go API (127.0.0.1:5435) with any Basic-auth credentials (the username is forwarded to pg_dump/pg_restore -U); backupFile accepts path traversal; the `database` argument accepts a libpq connection string, so `hostaddr=` makes Splunk connect to an attacker database and dump it to an arbitrary file; /restore with `passfile=` pointing at Splunk's own .pgpass (user postgres_admin) and dbname=template1 replays attacker SQL (a function using lo_export) into the local PostgreSQL, giving an arbitrary file write as the splunk user; overwriting a Python script Splunk runs regularly (e.g. splunk_secure_gateway/bin/ssg_enable_modular_input.py) yields RCE. Exposure: Splunk Enterprise 10.0.0-10.0.6 and 10.2.0-10.2.3 (10.4 and 9.x not affected); Splunk Cloud not impacted; the sidecar is installed and enabled by default on Splunk Enterprise on AWS, but on Windows on-prem it is either not installed or not enabled by default (watchTowr). Detection signals: requests to the proxied postgres recovery paths with JSON bodies containing hostaddr= or passfile= or ../ in backupFile; outbound PostgreSQL (TCP/5432) connections from the Splunk host to external hosts; modification of Splunk app scripts; watchTowr's check distinguishes vulnerable (400) from patched (401) with any credentials."
+      ground_truth_url: "https://labs.watchtowr.com/why-use-app-level-auth-when-every-database-has-auth-splunk-enterprise-cve-2026-20253-pre-auth-rce/"
+      fix: "Carry the corrected mechanism/exposure/detection/hardening text from the twin plus the above."
+    - code: F18
+      where: "actions[0], actions[1]"
+      claim: "'**Upgrade Splunk Enterprise to 10.4.0 / 10.2.4 / 10.0.7, AWS-hosted instances first ...' and '**Treat Splunk CVE-2026-20253 (CVSS 9.8, now CISA KEV) as emergency, not routine** ...'"
+      ground_truth: "Two actions for one CVE: the second is generic urgency framing plus an unsupported mitigation (see above) and the first mixes the upgrade with network advice and a hunt restated from the body. One start-now task suffices: 'Upgrade Splunk Enterprise 10.0.x/10.2.x to 10.0.7 / 10.2.4 / 10.4.0, or set [postgres] disabled = true until upgraded (not if Edge Processor/OpAmp/SPL2 pipelines are in use).'"
+      ground_truth_url: "https://advisory.splunk.com/advisories/SVD-2026-0603"
+      fix: "Collapse to the single task above."
+    - code: F11
+      where: "body / updates[0].summary / table"
+      claim: "'This brief's deep dive (§ 5)'; '(CVE-2026-10520 is carried as the § 0 Immediate Action and § 4 UPDATE ... are noted in § 7.)'; update summary '... (§ 4).'; table rows for CVE-2026-10520 (Ivanti Sentry) and CVE-2026-10795 (UpdraftPlus) that are other findings; evidence[0] 'UPDATE (originally covered 2026-06-14): ...'"
+      ground_truth: "Workflow-internal section pointers, rows from unrelated brief items, and an evidence quote that is the entry's own update paragraph. Also techniques: [] and affected_products: [] on a vulnerability entry (T1190 Exploit Public-Facing Application and, for the post-write step, T1059.006 Python are supported by watchTowr)."
+      ground_truth_url: "https://labs.watchtowr.com/why-use-app-level-auth-when-every-database-has-auth-splunk-enterprise-cve-2026-20253-pre-auth-rce/"
+      fix: "Drop the pointers and unrelated rows; set techniques and affected_products (Splunk Enterprise)."
+    - code: F17
+      where: "classification"
+      claim: "classification: null"
+      ground_truth: "Profile requires classification on every entry; the field is null. Splunk PSIRT (vendor, primary) + watchTowr (researcher) + SecurityWeek + KEV: corroborated, exploitation vendor-confirmed."
+      ground_truth_url: "https://advisory.splunk.com/advisories/SVD-2026-0603"
+      fix: "Set classification (vendor-confirmed, multi-source: credibility 1-2)."
+  unique_material: []
+
+- entry: entries/2026-06-14/splunk-enterprise-cve-2026-20253-pre-auth-rce-in-the-siem-vi.md
+  group: D2-i
+  role: duplicate
+  duplicate_of: entries/2026-06-14/cve-2026-20253-splunk-enterprise-unauthenticated-pre-auth-rc.md
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "body, last paragraph; cves[].status"
+      claim: "There is no reported in-the-wild exploitation at the time of writing"
+      ground_truth: "Stale: Splunk PSIRT confirmed limited exploitation on 2026-06-18 (advisory changelog) and CISA added the CVE to KEV on 2026-06-18; status poc-public/patch-available lacks exploited/cisa-kev. True on 2026-06-14, false now."
+      ground_truth_url: "https://advisory.splunk.com/advisories/SVD-2026-0603"
+      fix: "Fold into the survivor, which already carries the exploited state; do not carry this sentence."
+    - code: F4
+      where: "body, The mechanism ¶ and Hunt ¶"
+      claim: "From there an attacker writes attacker-controlled files into the sidecar's runtime directory and injects SQL into a crafted backup/restore payload ... watch ... for new files appearing under the sidecar's `pkg-run` runtime path."
+      ground_truth: "watchTowr: backupFile accepts path traversal, so the file is created at an arbitrary location (e.g. ../../../../../../../../../tmp/backuptest), not only the sidecar runtime directory (pkg-run/pkg-postgres<N>/ is where relative names land); the SQL is not injected into the payload - the `database` field takes a libpq connection string (hostaddr=, passfile=), making Splunk dump an attacker-controlled database to a file and restore it into the local PostgreSQL using the .pgpass credentials of postgres_admin; the restored function (lo_export) writes a Python script Splunk runs, giving RCE as the splunk user."
+      ground_truth_url: "https://labs.watchtowr.com/why-use-app-level-auth-when-every-database-has-auth-splunk-enterprise-cve-2026-20253-pre-auth-rce/"
+      fix: "Use the sourced chain; anchor detection on hostaddr=/passfile=/../ in the proxied request bodies, external TCP/5432 egress from the Splunk host, and changes to Splunk app scripts."
+    - code: F8
+      where: "Hardening and remediation"
+      claim: "On on-premises installs that do not need the PostgreSQL sidecar, confirm it is disabled and stays disabled after the upgrade. Network-side, no Splunk management or web interface should be exposed to the internet"
+      ground_truth: "Splunk's own workaround is missing: set '[postgres] disabled = true' in $SPLUNK_HOME/etc/system/local/server.conf and restart, except where Edge Processor, OpAmp or SPL2 data pipelines are used (disabling breaks them). Splunk Cloud is not impacted (THN, citing Splunk); Splunk Enterprise 9.4 and earlier and 10.4 are not affected."
+      ground_truth_url: "https://advisory.splunk.com/advisories/SVD-2026-0603"
+      fix: "Carry the workaround and exposure facts into the survivor."
+    - code: F11
+      where: "summary / sectors"
+      claim: "summary: 'The uncomfortable angle on this one is that the vulnerable software is the tool many readers use to find intrusions.' ; sectors: public-sector, technology"
+      ground_truth: "Editorial tagline used as the summary; no source ties the flaw to the public sector."
+      ground_truth_url: "https://labs.watchtowr.com/why-use-app-level-auth-when-every-database-has-auth-splunk-enterprise-cve-2026-20253-pre-auth-rce/"
+      fix: "Do not carry."
+    - code: F4
+      where: "body ¶3 (analysis)"
+      claim: "Because Splunk frequently runs with high privilege and aggregates logs from across the estate, a compromised indexer or search head is both an execution foothold and a route ... an attacker who owns the SIEM can read what defenders see and potentially tamper with it."
+      ground_truth: "(low confidence) analysis not in the cited sources; watchTowr shows execution 'as the splunk user' (not stated as high privilege). Acceptable as analysis if marked as such."
+      ground_truth_url: "https://labs.watchtowr.com/why-use-app-level-auth-when-every-database-has-auth-splunk-enterprise-cve-2026-20253-pre-auth-rce/"
+      fix: "Mark as inference or cite."
+  unique_material:
+    - fact: "Mechanism chain per watchTowr Labs (2026-06-12) and The Hacker News (2026-06-13) - see survivor defect 'F8 main analysis' for the verified chain; Splunk Cloud not impacted; Splunk 10.4 and 9.x not affected; AWS default-enabled vs Windows on-prem not-default."
+      url: "https://thehackernews.com/2026/06/critical-splunk-enterprise-flaw-lets.html"
+    - fact: "Splunk workaround: disable the PostgreSQL sidecar with '[postgres] disabled = true' in server.conf (restart); do not use if Edge Processor, OpAmp or SPL2 data pipelines run on the instance."
+      url: "https://advisory.splunk.com/advisories/SVD-2026-0603"
+
+# ===== D2-j Cisco Catalyst SD-WAN Manager CVE-2026-20262 =====
+- entry: entries/2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a.md
+  group: D2-j
+  role: survivor
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "body, Exploitation chain (2) and Hunt / Hardening (Tomcat)"
+      claim: "abusing the upload endpoint to write a `.jsp`/`.war` artefact into the Tomcat deployment directory ... newly written files in the Tomcat webapps/deploy directories ... validate the integrity of the Tomcat deploy directory"
+      ground_truth: "Cisco's indicators: vmanage-server.log (/var/log/nms) 'SdraAnyConnectFileUploadHandler ... uploaded Remote Access Anyconnect profile file: ../../../../var/lib/wildfly/standalone/deployments/suspicious.war to vManage'; vmanage-appserver.log (/var/log/nms/) 'WFLYSRV0010: Deployed \"suspicious.war\"' (WildFly DeploymentScanner); serviceproxy-access.log (/var/log/nms/containers/service-proxy/) 'POST /suspicious/index.jsp'. The application server is WildFly, not Tomcat."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+      fix: "Replace Tomcat with the WildFly standalone/deployments directory; name the three log sources and the SdraAnyConnectFileUploadHandler / WFLYSRV0010 / POST /<name>/index.jsp patterns (without the sample file name)."
+    - code: F13
+      where: "entities[actor:uat-8616] and Exploitation chain last sentences"
+      claim: "entities: actor:uat-8616 ... Cisco Talos tracks a highly capable cluster it designates **UAT-8616** behind a 2026 wave of Cisco Catalyst SD-WAN exploitation (notably CVE-2026-20127, with software-downgrade post-compromise tradecraft)"
+      ground_truth: "Talos (2026-02-25) clusters the exploitation of CVE-2026-20127 (SD-WAN Controller, formerly vSmart, authentication bypass) and its post-compromise activity as UAT-8616 (software-version downgrade, then CVE-2022-20775 for root, then restore). None of the cited pages ties CVE-2026-20262 (SD-WAN Manager, June 2026) to UAT-8616; BleepingComputer: Cisco 'did not share any details on these attacks'. BleepingComputer lists other 2026 SD-WAN exploited flaws (CVE-2026-20133, -20128, -20122, -20182, -20245) without attributing them to UAT-8616, so 'a 2026 wave' attributed to the cluster overreaches. The entity link states an attribution the sources do not make."
+      ground_truth_url: "https://blog.talosintelligence.com/uat-8616-sd-wan/"
+      fix: "Remove actor:uat-8616 from entities[] and the 'wave' sentence; at most say Talos separately tracks UAT-8616 for CVE-2026-20127 and no source links it to this flaw."
+    - code: F4
+      where: "body, Exploitation chain (1)-(3) ('Reporting describes the practical path as')"
+      claim: "(1) Initial access with valid low-privilege SD-WAN Manager credentials — obtained through prior phishing, credential reuse, or chaining an earlier auth-affecting SD-WAN bug ... (3) ... because the SD-WAN Manager application services run with high privilege, the web shell yields root-equivalent control"
+      ground_truth: "No cited source describes how credentials were obtained, a 3-step chain, or the privilege of the application services. Cisco: 'This file could later be used to elevate to root'; BleepingComputer: 'the company did not share any details on these attacks'; The Register: valid credentials 'with at least a lower-privileged, single-task user account'; Cisco advisory rev 1.1 (2026-JUN-15): 'the attacker must have valid credentials with at least write access'. The chain is inference presented as reporting."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+      fix: "State the sourced facts (authenticated, at least write access; crafted HTTP request to an API endpoint creates/overwrites any file; file later usable to reach root; Cisco's IOC shows a .war dropped into the WildFly deployments directory via path traversal) and label the rest as inference or delete it."
+    - code: F3
+      where: "body, Vulnerable component and KEV sentence"
+      claim: "[NVD, CVSS 6.5](https://nvd.nist.gov/vuln/detail/CVE-2026-20262) ... CISA added CVE-2026-20262 to the Known Exploited Vulnerabilities catalog on 2026-06-15, confirming exploitation in the wild ([BleepingComputer, 2026-06-15])"
+      ground_truth: "NVD per-CVE page is a hard-blocked source pattern; the score is Cisco's base 6.5 (CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N; CWE-22 in the CVE.org record). BleepingComputer's text does not state that CISA added CVE-2026-20262 to KEV (it only says CISA tagged 91 Cisco flaws over the years); The Register (2026-06-15) does: 'CISA ... added CVE-2026-20262 to its Known Exploited Vulnerabilities catalog, citing evidence of active exploitation ... two-week deadline'. KEV catalogue (2026.10.08): dateAdded 2026-06-15, dueDate 2026-06-29, ransomware use Unknown."
+      ground_truth_url: "https://www.theregister.com/patches/2026/06/15/cisco-sd-wan-make-me-root-bug-under-attack/5255916"
+      fix: "Cite the Cisco advisory for the score and The Register for the KEV listing."
+    - code: F8
+      where: "labelled lines / detection"
+      claim: "review the SD-WAN Manager appserver and service-proxy logs for HTTP uploads referencing `index.jsp`, `*.jsp` or `*.war` filenames or path-traversal sequences"
+      ground_truth: "Cisco names a third and primary log, vmanage-server.log, with the SdraAnyConnectFileUploadHandler 'uploaded Remote Access Anyconnect profile file: ../../..' line as the initial-compromise indicator, notes these entries 'may occur during standard operations' and must be assessed against normal posture, and asks customers to run 'request admin-tech' on each control component before opening a TAC case. Cisco: exposure is greatest for systems exposed to the internet with ports exposed; no workarounds; finding was from internal security testing; PSIRT aware of limited exploitation in June 2026. Fixed: 20.9.9.2, 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1, 26.1.1.2 (fixed-in table: 20.9.9.1 and earlier, 20.12.7.1 and earlier, 20.15.4.4 and earlier, 20.15.5.2 and earlier, 20.18.3, 26.1.1.1 and earlier)."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+      fix: "Add the vmanage-server.log indicator, the false-positive caveat, admin-tech collection, and an Exposure line (affects On-Prem, Cloud-Pro, Cloud (Cisco-managed), FedRAMP; internet-exposed management ports)."
+    - code: F11
+      where: "summary / evidence[0] / techniques"
+      claim: "summary: 'Vulnerable component. The flaw lives in the web UI ...'; evidence[0].quote: 'Vulnerable component.'; [T1078.004 Valid Accounts: Cloud Accounts] for on-prem SD-WAN Manager accounts"
+      ground_truth: "Summary is a body paragraph lead-in; the evidence 'quote' is a heading word, not a page passage; T1078.004 (Cloud Accounts) does not fit management-plane accounts on an on-prem appliance (T1078 / T1190 / T1505.003 are the supported ones)."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+      fix: "Rewrite summary; replace the evidence quote with a verbatim Cisco sentence; fix the ATT&CK sub-technique."
+    - code: F17
+      where: "classification"
+      claim: "(no classification block)"
+      ground_truth: "Required on every entry; legacy migrated entry carries none. Cisco PSIRT (primary, vendor-confirmed exploitation), BleepingComputer, The Register, KEV."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+      fix: "Add classification block (credibility 1)."
+  unique_material: []
+
+- entry: entries/2026-06-16/cve-2026-20262-cisco-catalyst-sd-wan-manager-authenticated-a.md
+  group: D2-j
+  role: duplicate
+  duplicate_of: entries/2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a.md
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "body ¶1"
+      claim: "Writing a JSP/WAR into the Tomcat deploy path yields a web shell and root-level execution"
+      ground_truth: "Cisco's logs show a .war written to /var/lib/wildfly/standalone/deployments/ (WildFly), deployed by the WildFly DeploymentScanner and then requested as /<name>/index.jsp."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+      fix: "Fold; do not carry."
+    - code: F3
+      where: "body ¶1 (KEV citation, NVD link) and evidence[0]"
+      claim: "Cisco confirms active exploitation and CISA added it to the KEV catalog on 2026-06-15 ([BleepingComputer, 2026-06-15]) ; [NVD CVSS 6.5]"
+      ground_truth: "BleepingComputer does not report the KEV addition (The Register does; KEV dateAdded 2026-06-15 verified); Cisco says 'limited exploitation'; the evidence 'quote' is the entry's own body sentence citing NVD."
+      ground_truth_url: "https://www.theregister.com/patches/2026/06/15/cisco-sd-wan-make-me-root-bug-under-attack/5255916"
+      fix: "Do not carry."
+    - code: F18
+      where: "actions[0]"
+      claim: "**Patch Cisco Catalyst SD-WAN Manager now (CVE-2026-20262)** — actively exploited, CISA KEV. Move to a fixed train (...), take the management UI off the internet, enforce MFA, and review appserver upload/deploy logs and the Tomcat deploy directory for planted `.jsp`/`.war` web shells."
+      ground_truth: "Bundles patching, network exposure, MFA and a hunt (restating the body) into one item with the wrong web server (Tomcat); generic 'enforce MFA' is not derived from this flaw. One do-now task: 'Upgrade Catalyst SD-WAN Manager to the fixed release for your train and check vmanage-server.log for SdraAnyConnectFileUploadHandler uploads of .war files via path traversal.'"
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+      fix: "Collapse to one task or drop."
+    - code: F11
+      where: "summary"
+      claim: "Full deep dive in § 5."
+      ground_truth: "Workflow-internal section pointer."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+      fix: "Do not carry."
+  unique_material:
+    - fact: "Nothing the survivor lacks; the KEV listing date (2026-06-15) and Cisco fixed-train list are in both. The duplicate's priority (high) reflects KEV + Cisco-confirmed limited exploitation of an authenticated flaw."
+      url: "https://www.theregister.com/patches/2026/06/15/cisco-sd-wan-make-me-root-bug-under-attack/5255916"
+
+# ===== D2-k Cisco ISE CVE-2026-20181 / CVE-2026-20190 =====
+- entry: entries/2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c.md
+  group: D2-k
+  role: survivor
+  verdict: factual-error
+  defects:
+    - code: F13
+      where: "title, headline, body 'Why the chain matters more than either CVE', 'The two primitives'"
+      claim: "an unauthenticated credential-harvest primitive feeding authenticated root code execution ... CVE-2026-20190 removes that barrier: it hands an unauthenticated attacker the hashed admin credentials, which can then be cracked offline (T1110.002) or ... replayed (T1550). With administrator authentication in hand (T1078), the attacker pivots to CVE-2026-20181 ... a network-reachable, no-interactive-credential path from 'can talk to the ISE management plane' to 'root on the identity controller.'"
+      ground_truth: "Cisco advisory: 'The vulnerabilities are not dependent on one another. Exploitation of one of the vulnerabilities is not required to exploit the other vulnerability. In addition, a software release that is affected by one of the vulnerabilities may not be affected by the other vulnerability.' CVE-2026-20190: 'gain access to sensitive information, including hashed credentials that could be used in future attacks' (not 'administrator' credentials, nothing about cracking or replay); CVE-2026-20181 needs 'valid administrative credentials'. Neither Cisco, SecurityWeek nor CERT-Bund describes or reports a chain; the affected-release sets differ (20190: only ISE 3.4 and 3.5; 20181: 3.1 through 3.5 and earlier)."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+      fix: "Present two independent flaws; mark the credential-hash to admin-session pivot as the analyst's hypothesis (hash usability is unproven), and drop 'chain' from the title/headline. Do not call the hashes 'administrator' credentials."
+    - code: F4
+      where: "body 'The two primitives' and cves[]"
+      claim: "reads sensitive data — explicitly including hashed administrator credentials ; cves[CVE-2026-20181] auth: pre-auth ; cves[CVE-2026-20190] type: rce"
+      ground_truth: "Cisco: 'sensitive information, including hashed credentials' (no 'administrator'); CVE-2026-20181 is authenticated: CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H, 'the attacker must have valid administrative credentials'; CVE-2026-20190 is an information disclosure (CWE-285 Improper Authorization, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N = 7.5, SIR High), not an RCE. CVE-2026-20181 SIR Critical."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+      fix: "20181: auth admin (PR:H); 20190: type info-disclosure; remove 'explicitly ... administrator'."
+    - code: F4
+      where: "body 'Exposure and prerequisites' / 'Hardening'"
+      claim: "Affected trains are fixed in ISE 3.3 Patch 11 and 3.4 Patch 6 (both available now). ISE 3.5 is the gap: Patch 3 closes only the unauthenticated read (CVE-2026-20190), and the full fix (Patch 4) is not scheduled until August 2026 — so 3.5 operators carry the authenticated-RCE half for roughly two months"
+      ground_truth: "Cisco fixed-releases table (rev 1.2, 2026-07-06): CVE-2026-20181 first fixed: ISE 3.1 -> 3.1 Patch 12 (Sep 2026); 3.2 -> 3.2 Patch 11 (Sep 2026); 3.3 -> 3.3 Patch 11; 3.4 -> 3.4 Patch 6; 3.5 -> 3.5 Patch 4 (Aug 2026) or a hot patch for 3.5 Patch 3, 'available upon request' from TAC; earlier than 3.1: migrate. CVE-2026-20190: 3.4 Patch 6 and 3.5 Patch 3 only (3.1-3.3 not vulnerable). Rev 1.1 (2026-06-19) already 'Clarified hot patch availability'; SecurityWeek 2026-06-18: 'A hotfix for ISE version 3.5 is also available and will be included in version 3.5 Patch 4 in August.' So 3.5 operators were not left unpatched for the RCE half, and 3.1/3.2 are affected trains the entry omits."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+      fix: "State the per-train table above (3.5: request the Patch 3 hot patch via TAC; Patch 4 Aug 2026 - check whether released); add 3.1/3.2 (Patch 12 / Patch 11, Sep 2026) and 'earlier than 3.1: migrate'."
+    - code: F3
+      where: "body 'The two primitives' (CWE-22 attribution)"
+      claim: "CVE-2026-20181 (CVSS 9.1, path traversal / CWE-22) ... ([SecurityWeek, 2026-06-18])"
+      ground_truth: "SecurityWeek and the Cisco advisory say 'insufficient validation of user-supplied input'; 'path traversal'/CWE-22 appears only in the CVE.org CNA record (CWE-22), not on the cited page. 'ERS/API request patterns' and 'credential-adjacent API endpoints' in the hunt section are in no source."
+      ground_truth_url: "https://www.securityweek.com/critical-command-execution-vulnerability-patched-in-cisco-ise/"
+      fix: "Cite the CVE record for CWE-22 or say 'insufficient input validation'."
+    - code: F4
+      where: "body ¶1 and regions / sectors"
+      claim: "it is the policy brain of network access control in most large Swiss and European public-sector estates ... regions: europe, switzerland; sectors: public-sector, education, finance, defense"
+      ground_truth: "No cited source (Cisco, SecurityWeek, CERT-Bund WID-SEC-2026-1989) says anything about Swiss/European public-sector deployment share. CERT-Bund lists affected ISE < 3.3 Patch 11, < 3.4 Patch 6, < 3.5 Patch 4, < 3.5 Patch 3."
+      ground_truth_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1989"
+      fix: "Drop the prevalence claim or source it."
+    - code: F8
+      where: "Exposure / Detection"
+      claim: "(DoS consequence and acknowledgements missing)"
+      ground_truth: "Cisco: on single-node deployments successful exploitation of CVE-2026-20181 'could cause the affected ISE node to become unavailable ... endpoints that have not already authenticated would be unable to access the network until the node is restored'; affects ISE and ISE-PIC 'regardless of device configuration'; ISE-PIC is end-of-sale (3.4 is its last supported release); Cisco PSIRT 'not aware of any public announcements or malicious use'; not in CISA KEV (catalogue 2026.10.08); reporters: TrendAI Research / STAR Labs SG for 20181, TrendAI ZDI for 20190."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+      fix: "Add the single-node DoS consequence (policy-server outage for unauthenticated endpoints) and ISE-PIC scope to the Exposure line."
+    - code: F17
+      where: "classification"
+      claim: "(no classification block)"
+      ground_truth: "Required on every entry; legacy migrated entry carries none. Cisco PSIRT (primary) + SecurityWeek + BSI CERT-Bund (national CERT); no exploitation."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+      fix: "Add classification block."
+  unique_material: []
+
+- entry: entries/2026-06-19/cve-2026-20181-cve-2026-20190-cisco-identity-services-engine.md
+  group: D2-k
+  role: duplicate
+  duplicate_of: entries/2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c.md
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "summary"
+      claim: "A dense critical-patch cycle landed in widely-deployed CH/EU public-sector infrastructure within 36 h: Cisco ISE, pgAdmin 4, NGINX, and Drupal core ... No in-the-wild exploitation is reported for any of these four advisories."
+      ground_truth: "pgAdmin 4, NGINX and Drupal are not covered by this entry's body, cves[] or sources; the Cisco advisory says only that PSIRT is 'not aware of any public announcements or malicious use'; no source mentions CH/EU public-sector deployment."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+      fix: "Fold; do not carry."
+    - code: F13
+      where: "summary"
+      claim: "an unauthenticated attacker can read hashed administrator credentials (CVE-2026-20190), then reuse them to reach an authenticated path-traversal command-execution flaw that escalates to root (CVE-2026-20181, CVSS 9.1)"
+      ground_truth: "Cisco: 'The vulnerabilities are not dependent on one another'; hashed credentials (not 'administrator') 'could be used in future attacks'; no source states reuse or a chain."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+      fix: "Fold; do not carry."
+    - code: F4
+      where: "body ¶1 (patch status) and cves[]"
+      claim: "ISE 3.5 Patch 4 is scheduled for August 2026, with 3.5 Patch 3 closing only CVE-2026-20190 in the interim ; auth: pre-auth / type: rce on both CVEs"
+      ground_truth: "A hot patch for 3.5 Patch 3 that fixes CVE-2026-20181 is available on request (Cisco rev 1.1 2026-06-19; SecurityWeek 2026-06-18); 20181 needs administrative credentials; 20190 is an information disclosure."
+      ground_truth_url: "https://www.securityweek.com/critical-command-execution-vulnerability-patched-in-cisco-ise/"
+      fix: "Fold; do not carry."
+    - code: F18
+      where: "actions[0]"
+      claim: "**Patch Cisco ISE now and lock the management plane to admin subnets** (§ 2, § 5). Apply ISE 3.3 Patch 11 or 3.4 Patch 6; ... restrict the management/API interface to an out-of-band admin subnet, enforce MFA on admin logon, and alert on any off-subnet source reaching the ISE APIs."
+      ground_truth: "Bundles patching, network ACLs, MFA and monitoring in one item with workflow pointers '(§ 2, § 5)', omitting 3.1/3.2 and the 3.5 hot patch; the MFA/alerting clauses restate generic hardening."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+      fix: "At most one task: 'Upgrade ISE to the fixed patch for your train (3.3 P11 / 3.4 P6; 3.5 hot patch via TAC or Patch 4; 3.1/3.2 patches Sep 2026)'."
+    - code: F16
+      where: "priority"
+      claim: "priority: high"
+      ground_truth: "No exploitation or public exploit reported (Cisco, SecurityWeek); 20181 requires admin credentials; 20190 is a read-only disclosure. Does not clear the high bar; notable (survivor) is right."
+      ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+      fix: "Survivor stays notable."
+  unique_material: []
+
+# ===== D2-l Oracle E-Business Suite CVE-2026-46817 =====
+- entry: entries/2026-07-16/cve-2026-46817-oracle-ebs-payments-preauth-rce-kev-listed.md
+  group: D2-l
+  role: survivor
+  verdict: imprecision
+  defects:
+    - code: F13
+      where: "body ¶2 (last sentence)"
+      claim: "This is the same EBS product family already under sustained ShinyHunters/UNC6240 extortion pressure and the latest in a now-annual cadence of critical, remotely exploitable EBS flaws."
+      ground_truth: "None of the entry's cited sources (Oracle CSPU advisory, CISA alert, Help Net Security) mentions ShinyHunters or UNC6240. The ShinyHunters/UNC6240 (Mandiant/GTIG) campaign reported by SecurityAffairs concerns Oracle PeopleSoft CVE-2026-35273, a different product line. Help Net Security's EBS precedent is Cl0p (CVE-2025-61882 data-theft extortion) and CVE-2025-61884, i.e. 'repeated critical EBS vulnerabilities exploited by attackers in the last year', not 'now-annual'."
+      ground_truth_url: "https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/"
+      fix: "Delete the ShinyHunters/UNC6240 clause (or cite a source that ties it to EBS); write 'EBS has had repeated critical flaws exploited over the past year (Help Net Security)'."
+    - code: F4
+      where: "title, cves[].type, summary"
+      claim: "title: '... unauthenticated RCE now CISA KEV-listed'; cves[CVE-2026-46817].type: rce; summary '... pre-auth takeover'"
+      ground_truth: "No source calls it RCE. Oracle: 'allows unauthenticated attacker with network access via HTTP to compromise Oracle Payments. Successful attacks ... can result in takeover of Oracle Payments' (CVSS 3.1 9.8, AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H); KEV: 'improper privilege management ... takeover of Oracle Payments' (CWE-269, CWE-287, CWE-306); the only observed exploitation (Defused via Help Net Security) was an unauthenticated read of /etc/passwd through the ibytransmit endpoint."
+      ground_truth_url: "https://www.oracle.com/security-alerts/cspumay2026.html"
+      fix: "Title/type: 'unauthenticated takeover of Oracle Payments' (type auth-bypass or equivalent); keep 'RCE' out unless a source states code execution."
+    - code: F3
+      where: "sources[0].publisher/date, body ¶1, summary, cves[].fixed"
+      claim: "Oracle (Critical Patch Update Advisory, May 2026) dated 2026-05-28 ; 'patched quietly in its May 2026 Critical Patch Update' ; 'Oracle characterises it as improper privilege management, improper authentication and missing authentication for a critical function ... ([Oracle CPU, 2026-05-28])'"
+      ground_truth: "The cited page is Oracle's 'Critical Security Patch Update Advisory - May 2026' (a CSPU, which 'complements Oracle's existing quarterly cumulative Critical Patch Updates'), page Updated Date 2026-05-21; the CVE.org record for CVE-2026-46817 was published 2026-05-28. Oracle's risk matrix gives: Oracle Payments / File Transmission / HTTP / Remote Exploit without Auth: Yes / 9.8 / Oracle E-Business Suite 12.2.3-12.2.15; the CWE phrasing (improper privilege management, improper authentication, missing authentication for a critical function) comes from Help Net Security and the KEV entry (CWE-269/287/306), not the Oracle page. 'Quietly/without fanfare' is not in any source."
+      ground_truth_url: "https://www.oracle.com/security-alerts/cspumay2026.html"
+      fix: "Call it the May 2026 Critical Security Patch Update; give its date as 2026-05-21 (page) / CVE record 2026-05-28; attribute the CWE wording to KEV/Help Net Security; drop 'quietly'."
+    - code: F5
+      where: "Defender takeaway / sectors"
+      claim: "EBS is a common finance and public-sector back-office platform across Europe"
+      ground_truth: "No cited source states EBS prevalence in Europe or the public sector (Shadowserver, via BleepingComputer 2026-06-29: over 450 EBS instances exposed online, nearly 200 in the United States and Europe)."
+      ground_truth_url: "https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/"
+      fix: "Replace with the Shadowserver exposure figure, or drop."
+    - code: F8
+      where: "Exposure / KEV state"
+      claim: "(survivor omits the KEV forensic-triage flag, CWEs and exposure count)"
+      ground_truth: "CISA KEV (catalogVersion 2026.10.08): CVE-2026-46817 'Oracle E-Business Suite Improper Privilege Management Vulnerability', dateAdded 2026-07-15, forensicTriage: Yes, knownRansomwareCampaignUse: Unknown, CWEs 269/287/306; CISA alert dated 2026-07-15 (adds two KEV entries: CVE-2023-4346 and CVE-2026-46817). Shadowserver (BleepingComputer 2026-06-29): over 450 EBS instances exposed online, nearly 200 in the US and Europe, patch status unknown. Defused (X, via BleepingComputer/Security Affairs): 'no known previous exploitation and no public POC code exists'."
+      ground_truth_url: "https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+      fix: "Add the forensic-triage flag (it supports the 'treat as potentially compromised' guidance) and the exposure count."
+    - code: F18
+      where: "actions[1]"
+      claim: "Treat any internet-facing EBS instance left unpatched since 2026-05-28 as potentially compromised — review web-access logs for POST requests to /OA_HTML/ibytransmit and, on any hit, run a forensic review and rotate every credential/key stored on that host."
+      ground_truth: "Concrete and sourced (Help Net Security), but it restates the body's Defender takeaway verbatim in substance; with actions[0] the list covers one start-now task twice. Keep actions[0] and fold the log review into it or keep only this one."
+      ground_truth_url: "https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/"
+      fix: "Keep two tasks at most (patch; hunt /OA_HTML/ibytransmit POSTs) without restating rationale."
+  unique_material: []
+
+- entry: entries/2026-07-01/oracle-e-business-suite-cve-2026-46817-pre-auth-rce-in-the-p.md
+  group: D2-l
+  role: duplicate
+  duplicate_of: entries/2026-07-16/cve-2026-46817-oracle-ebs-payments-preauth-rce-kev-listed.md
+  verdict: factual-error
+  defects:
+    - code: F13
+      where: "entities[actor:shinyhunters], body 'Why this product line draws attacker interest'"
+      claim: "entities: actor:shinyhunters ; 'this flaw lands while the separate, still-active ShinyHunters Oracle PeopleSoft campaign (§ 4, CVE-2026-35273) continues to acquire named victims. Two distinct Oracle enterprise product lines under active exploitation in the same window ...'"
+      ground_truth: "Security Affairs (2026-06-30) mentions the Mandiant/GTIG ShinyHunters campaign against PeopleSoft CVE-2026-35273 (activity 27 May to 9 June, 68% universities) only as a separate item; it says of CVE-2026-46817 that Defused 'did not disclose technical details about the attacks ... or the motivation of the attackers'. No cited source attributes CVE-2026-46817 to ShinyHunters or says the PeopleSoft campaign 'continues to acquire named victims'. The entity key attaches an actor the entry itself says is not attributed."
+      ground_truth_url: "https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html"
+      fix: "Remove actor:shinyhunters and the paragraph."
+    - code: F4
+      where: "title, body ¶1-2 (mechanics) and detection"
+      claim: "pre-auth RCE in the Payments File Transmission servlet ... Defused did not publicly disclose the technical mechanics of the observed attacks ... review the Oracle Payments web tier's access logs for anomalous unauthenticated HTTP requests"
+      ground_truth: "Help Net Security (2026-06-30, citing Defused): the single source 'running an unauthenticated file-read against the Payments component: a targeted proof-of-concept, not broad scanning'; it targets the ibytransmit endpoint, 'calls an internal Oracle Java function directly, redirecting it to read a file (/etc/passwd)'; hunt: POST requests to /OA_HTML/ibytransmit. 'RCE' and 'servlet' are in no source (Oracle: takeover of Oracle Payments)."
+      ground_truth_url: "https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/"
+      fix: "Fold; do not carry."
+    - code: F5
+      where: "body 'Exposure surface'"
+      claim: "EBS Payments/financial modules are common in government, higher-education and large-enterprise finance back offices — high-value data behind an internet-reachable application tier."
+      ground_truth: "Not in the cited sources; the Shadowserver count (450+ exposed, ~200 US/Europe) is in BleepingComputer."
+      ground_truth_url: "https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/"
+      fix: "Do not carry."
+    - code: F11
+      where: "summary / evidence / body"
+      claim: "summary 'What it is. CVE-2026-46817 ...'; evidence[0].quote 'What it is.'; '(§ 4, CVE-2026-35273)'; priority notable vs high"
+      ground_truth: "Section-heading lead-in used as summary and as an evidence 'quote'; workflow-internal section pointer."
+      ground_truth_url: "https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html"
+      fix: "Do not carry."
+  unique_material:
+    - fact: "Shadowserver tracks over 450 Oracle EBS instances exposed online, nearly 200 in the United States and Europe; there is no information on how many are patched. Oracle has not itself flagged the CVE as exploited at that time; Oracle's standing statement that 'attackers have been successful because targeted customers had failed to apply available Oracle patches'. Precedent: Cl0p exploited CVE-2025-61882 in zero-day attacks from early August 2025 (BleepingComputer)."
+      url: "https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/"
+    - fact: "Defused (X post, 2026-06-29): 'CVE-2026-46817 (CVSS 9.8 unauth HTTP takeover in Oracle E-Business) is being exploited ... This vulnerability has no known previous exploitation and no public POC code exists'; Security Affairs: the flaw affects Oracle Payments 12.2.3 through 12.2.15; Defused disclosed no technical details or motivation in that post."
+      url: "https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html"
+
+- entry: entries/2026-07-01/cve-2026-46817-oracle-e-business-suite-oracle-payments-pre-a.md
+  group: D2-l
+  role: duplicate
+  duplicate_of: entries/2026-07-16/cve-2026-46817-oracle-ebs-payments-preauth-rce-kev-listed.md
+  verdict: factual-error
+  defects:
+    - code: F4
+      where: "title / summary / body ¶1-2"
+      claim: "pre-auth RCE ... Defused did not publicly disclose the technical mechanics ... exploitation is so far confirmed only against honeypots and is not attributed to a named cluster. Exposure and defender guidance in § 5. ; summary 'Details in § 5.'"
+      ground_truth: "No source says RCE (Oracle: takeover of Oracle Payments). Help Net Security (2026-06-30, after BleepingComputer's 2026-06-29 piece) reports Defused's detail: unauthenticated file read of /etc/passwd via the ibytransmit endpoint of the File Transmission component by a single source, a targeted PoC rather than scanning; the honeypot-only status was true on 2026-06-30 but is superseded by CISA KEV listing on 2026-07-15."
+      ground_truth_url: "https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/"
+      fix: "Fold; do not carry."
+    - code: F4
+      where: "evidence[0]"
+      claim: "'Critical (CVSS 9.8) unauthenticated RCE in the File Transmission component of Oracle Payments within Oracle E-Business Suite 12.2.3–12.2.15, allowing a remote attacker with HTTP network access to take over Oracle Payments via a low-complexity attack; patched in the May 2026 Critical Patch Update.' (publisher: ctipilot v2 brief (migrated))"
+      ground_truth: "The entry's own body sentence, not a passage of a cited page; 'RCE' is not in the sources; the patch vehicle is the May 2026 Critical Security Patch Update."
+      ground_truth_url: "https://www.oracle.com/security-alerts/cspumay2026.html"
+      fix: "Do not carry."
+    - code: F18
+      where: "actions[0]"
+      claim: "**Patch Oracle E-Business Suite now if the May 2026 CPU is not applied** — CVE-2026-46817 is under confirmed in-the-wild exploitation (§ 5). Remove Oracle Payments / EBS web interfaces from public internet reachability and review the Payments web tier's access logs for anomalous unauthenticated HTTP requests."
+      ground_truth: "Workflow pointer '(§ 5)', rationale restating the headline, and a generic 'anomalous unauthenticated requests' log review where Help Net Security supplies the specific /OA_HTML/ibytransmit POST check."
+      ground_truth_url: "https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/"
+      fix: "Survivor's actions supersede it."
+    - code: F16
+      where: "priority"
+      claim: "priority: high (this entry) vs notable (deep dive twin)"
+      ground_truth: "At 2026-07-01 exploitation was a single honeypot source; since 2026-07-15 the CVE is KEV-listed with forensicTriage Yes: high is right for the survivor, notable was too low for the twin at KEV time."
+      ground_truth_url: "https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+      fix: "Survivor priority high."
+  unique_material: []
+
+# ===================== GROUP RECORDS =====================
+- group: D2-a
+  decision: fold
+  survivor: entries/2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom.md
+  current_state:
+    cves:
+      - id: CVE-2026-26030
+        cvss: "9.9 (CVSS 3.1 AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H per GHSA page; the CNA CVE.org record lists baseScore 10 for the same vector)"
+        cvss_source_url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-xjw9-4gw8-4rqx"
+        affected: "Python semantic-kernel < 1.39.4 (InMemoryVectorStore filter behind the Search Plugin, default configuration)"
+        fixed: "python semantic-kernel 1.39.4"
+        fixed_source_url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-xjw9-4gw8-4rqx"
+        exploited: false
+        exploited_source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+        kev: false
+      - id: CVE-2026-25592
+        cvss: "9.9 (same vector; CNA record baseScore 10)"
+        cvss_source_url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-2ww3-72rp-wpp4"
+        affected: ".NET Microsoft.SemanticKernel.Plugins.Core < 1.71.0 (SessionsPythonPlugin); pip semantic-kernel < 1.39.3 (upload_file side)"
+        fixed: ".NET 1.71.0; pip 1.39.3 (1.39.4 also contains it)"
+        fixed_source_url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-2ww3-72rp-wpp4"
+        exploited: false
+        exploited_source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+        kev: false
+    key_facts:
+      - fact: "GHSA-2ww3 published 2026-02-06 (CVE record 2026-02-06) and GHSA-xjw9 published 2026-02-19 (CVE record 2026-02-19); Microsoft Defender research post dated 2026-05-07 is the technical write-up, three months after the fixes."
+        url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-2ww3-72rp-wpp4"
+      - fact: "CVE-2026-26030: the default filter is a Python lambda run through eval(); the AI-controlled kwarg is interpolated unsanitised; the AST-based blocklist (eval, exec, open, __import__ ...) was bypassed by traversing the class hierarchy to BuiltinImporter, load_module('os'), system(); fix = AST node-type allowlist, function-call allowlist, dangerous-attribute blocklist (__class__, __subclasses__), Name-node restriction. Prerequisites: a prompt-injection vector and the Search Plugin backed by the In-Memory Vector Store in default configuration. GHSA workaround: avoid InMemoryVectorStore in production."
+        url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+      - fact: "CVE-2026-25592: DownloadFileAsync was accidentally marked [KernelFunction]; its localFilePath (File.WriteAllBytes on the host) became model-controlled, so a sandbox-escape chain writes a script from the Azure Container Apps sandbox into the host Windows Startup folder, run on next sign-in. upload_file (Python and .NET) reads arbitrary host files into the sandbox (exfil). Fix removes the attribute and adds path validation. GHSA workaround: Function Invocation Filter allow-listing localFilePath for DownloadFileAsync/UploadFileAsync."
+        url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-2ww3-72rp-wpp4"
+      - fact: "Microsoft publishes Defender advanced-hunting KQL (DeviceProcessEvents: Semantic Kernel host processes spawning cmd/powershell/bash/certutil/curl and similar; dotnet.exe hosting SK spawning shells) and the PoC/CTF repository for CVE-2026-26030 (amiteliahu/AIAgentCTF); no exploitation reported; not in CISA KEV (2026.10.08)."
+        url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+  wrong_in_survivor:
+    - claim: ".NET: call UploadFileAsync to write attacker-chosen bytes to the host; DownloadFileAsync symmetrically reads host files"
+      ground_truth: "Inverted: DownloadFileAsync is the host-side write primitive; upload_file is the read/exfil primitive"
+      url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+    - claim: "f-string interpolation; string-blocklist validator on literal text; __bases__[0].__subclasses__() ... subprocess.Popen"
+      ground_truth: "eval() of a lambda built by string interpolation; AST-based blocklist; BuiltinImporter.load_module('os').system()"
+      url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+    - claim: "in-memory store is 'default for self-hosted Semantic Kernel agents'; behind Azure AI Foundry, Copilot Studio, EU government pilots; Function Invocation Filter 'documented in the Microsoft research post'; GHSA dated 2026-05-07"
+      ground_truth: "Not in any source; the filter is in GHSA-2ww3 only (for .NET localFilePath); GHSAs dated 2026-02-19 / 2026-02-06"
+      url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-2ww3-72rp-wpp4"
+    - claim: "cves[].auth pre-auth / vector user-interaction; priority high (brief twin)"
+      ground_truth: "CVSS PR:L / UI:N; no exploitation: notable"
+      url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-xjw9-4gw8-4rqx"
+  notes: "Same-day brief item and deep dive on one Microsoft Defender disclosure: fold. Survivor is the deep dive (per-CVE sections, detection concepts, hardening, ATT&CK mapping) but it needs the corrections above, especially the inverted Download/Upload mechanism and the pre-dated advisories (fixes public since February 2026). The brief item carries nothing the deep dive lacks. No exploitation, not KEV: priority notable (or routine)."
+
+- group: D2-b
+  decision: fold
+  survivor: entries/2026-05-11/cve-2026-6722-php-soap-use-after-free-in-soap-global-ref-map.md
+  current_state:
+    cves:
+      - id: CVE-2026-6722
+        cvss: "9.5 (CVSS 4.0, CNA CVE.org record: AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H); GHSA label High (no numeric score); Red Hat ADP CVSS 3.1 7.7"
+        cvss_source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-6722"
+        affected: "PHP ext-soap < 8.2.31, < 8.3.31, < 8.4.21, < 8.5.6"
+        fixed: "8.2.31 / 8.3.31 / 8.4.21 / 8.5.6 (released 2026-05-07)"
+        fixed_source_url: "https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5"
+        exploited: false
+        exploited_source_url: "https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5"
+        kev: false
+      - id: CVE-2026-7261
+        cvss: "6.3 (CVSS 4.0, GHSA and CVE record; AV:N/AC:L/AT:P, VC:L/VI:L/VA:L)"
+        cvss_source_url: "https://github.com/php/php-src/security/advisories/GHSA-m33r-qmcv-p97q"
+        affected: "same version ranges; only with SOAP_PERSISTENCE_SESSION and a header handler that returns false or throws"
+        fixed: "same releases"
+        fixed_source_url: "https://github.com/php/php-src/security/advisories/GHSA-m33r-qmcv-p97q"
+        exploited: false
+        exploited_source_url: "https://github.com/php/php-src/security/advisories/GHSA-m33r-qmcv-p97q"
+        kev: false
+      - id: CVE-2026-7262
+        cvss: "6.3 on the GHSA page (VA:L only); CVE.org CNA record 2.9 with E:P; Red Hat ADP CVSS 3.1 7.5"
+        cvss_source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-7262"
+        affected: "same version ranges; only when the SOAP server has a typemap configured"
+        fixed: "same releases"
+        fixed_source_url: "https://github.com/php/php-src/security/advisories/GHSA-hmxp-6pc4-f3vv"
+        exploited: false
+        exploited_source_url: "https://github.com/php/php-src/security/advisories/GHSA-hmxp-6pc4-f3vv"
+        kev: false
+    key_facts:
+      - fact: "CVE-2026-6722 mechanism: soap_add_xml_ref() stores PHP object pointers in SOAP_GLOBAL(ref_map) without incrementing the refcount; an apache:Map with a duplicate key and empty value overwrites a temporary-map entry, freeing the object while ref_map keeps a stale pointer that a later href='#id' reuses; string allocation gives heap control, 'leading to Remote Code Execution'. The advisory embeds a runnable PHP reproducer (trigger, not a weaponised exploit). Fix: increase the refcount before adding to ref_map and register a ZVAL_PTR_DTOR."
+        url: "https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5"
+      - fact: "CVE-2026-7261 = UAF after header parsing failure with SOAP_PERSISTENCE_SESSION (attacker control of freed memory 'unlikely'); CVE-2026-7262 = NULL dereference / DoS in the apache:Map value check (typemap set). All three published 2026-05-07, fixed in the same releases (php.watch dates for 8.5.6, 8.4.21, 8.3.31, 8.2.31 all 2026-05-07)."
+        url: "https://php.watch/versions/8.5/releases/8.5.6"
+      - fact: "Not in CISA KEV (catalogVersion 2026.10.08); no exploitation statement in advisory, php.watch or ChangeLog."
+        url: "https://www.php.net/ChangeLog-8.php"
+  wrong_in_survivor:
+    - claim: "CVE-2026-7261/7262 type rce, zero-click, pre-auth"
+      ground_truth: "7262 DoS (typemap precondition); 7261 UAF with unlikely controllable memory and persistence-session precondition"
+      url: "https://github.com/php/php-src/security/advisories/GHSA-hmxp-6pc4-f3vv"
+    - claim: "Z_TRY_ADDREF_P / zend_objects_store_add_ref; vtable overwrite; companion bugs 'cover the whole apache-map handling surface'; SoapServer need not be instantiated; T1505.003 'observed in prior PHP RCE incidents'; 'sidecar runtime directory'-style specifics"
+      ground_truth: "Not in the advisory; 7261 is not an Apache-map bug"
+      url: "https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5"
+    - claim: "(twin) no public proof-of-concept; NVD CVSS 9.5; all 8.x branches patched; 'PD-11', '§ 5'"
+      ground_truth: "Advisory embeds reproducers; the 9.5 is the CNA CVE record (AC:H); only 8.2-8.5 are listed; workflow language"
+      url: "https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5"
+  notes: "Same-day twins on one PHP release: fold. Survivor is the deep dive (mechanism, prerequisites, detection, hardening) with the corrections above; carry the severity-label split (GHSA High vs CNA 9.5, AC:H) and php.watch dates from the brief twin. Priority notable at most: unexploited, AC:H, needs an exposed SoapServer."
+
+- group: D2-c
+  decision: fold
+  survivor: entries/2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic.md
+  current_state:
+    cves:
+      - id: CVE-2026-42231
+        cvss: "9.4 (CVSS 4.0, AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H)"
+        cvss_source_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5"
+        affected: "n8n < 1.123.32, 2.17.x < 2.17.4, 2.18.x < 2.18.1 (xml2js webhook XML body parser prototype pollution; chain with Git node SSH operations)"
+        fixed: "1.123.32 / 2.17.4 / 2.18.1"
+        fixed_source_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5"
+        exploited: false
+        exploited_source_url: "https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+        kev: false
+      - id: CVE-2026-42232
+        cvss: "9.4 (CVSS 4.0, SA:L variant)"
+        cvss_source_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-hqr4-h3xv-9m3r"
+        affected: "n8n < 1.123.32 / 2.17.4 / 2.18.1 (XML Node prototype pollution to RCE when combined with other nodes)"
+        fixed: "1.123.32 / 2.17.4 / 2.18.1"
+        fixed_source_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-hqr4-h3xv-9m3r"
+        exploited: false
+        exploited_source_url: "https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+        kev: false
+      - id: CVE-2026-44789
+        cvss: "9.4 (CVSS 4.0)"
+        cvss_source_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-c8xv-5998-g76h"
+        affected: "n8n < 1.123.43, < 2.20.7, < 2.22.1 (HTTP Request node pagination parameter prototype pollution; CVE record: 2.21.x < 2.21.1)"
+        fixed: "1.123.43 / 2.20.7 / 2.22.1"
+        fixed_source_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-c8xv-5998-g76h"
+        exploited: false
+        exploited_source_url: "https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+        kev: false
+      - id: CVE-2026-44790
+        cvss: "9.4 (CVSS 4.0)"
+        cvss_source_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-57g9-58c2-xjg3"
+        affected: "same ranges as 44789 (Git node Push CLI-flag injection: arbitrary file read, CWE-88)"
+        fixed: "1.123.43 / 2.20.7 / 2.22.1"
+        fixed_source_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-57g9-58c2-xjg3"
+        exploited: false
+        exploited_source_url: "https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+        kev: false
+      - id: CVE-2026-44791
+        cvss: "9.4 (CVSS 4.0)"
+        cvss_source_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-wrwr-h859-xh2r"
+        affected: "same ranges as 44789 (bypass of the CVE-2026-42232 XML Node patch)"
+        fixed: "1.123.43 / 2.20.7 / 2.22.1"
+        fixed_source_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-wrwr-h859-xh2r"
+        exploited: false
+        exploited_source_url: "https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+        kev: false
+    key_facts:
+      - fact: "GHSA-q5f4 and GHSA-hqr4 published 2026-04-22 (CVE records 2026-05-04); GHSA-c8xv, -57g9, -wrwr published 2026-05-13 (CVE records 2026-06-23); The Hacker News roundup dated 2026-05-18."
+        url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-c8xv-5998-g76h"
+      - fact: "All five need an authenticated user with permission to create or modify workflows (PR:L). Advisory workarounds: restrict workflow create/edit to fully trusted users; disable the XML node (NODES_EXCLUDE n8n-nodes-base.xml), the HTTP Request node (n8n-nodes-base.httpRequest) or the Git node (n8n-nodes-base.git) as short-term mitigation only."
+        url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-57g9-58c2-xjg3"
+      - fact: "Not in CISA KEV (2026.10.08); no source reports exploitation; a search surfaced a public PoC repository for CVE-2026-42231 only via a third-party database (not verified)."
+        url: "https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+  wrong_in_survivor:
+    - claim: "disclosed five CVEs on 2026-05-18"
+      ground_truth: "pair published 2026-04-22; trio 2026-05-13; 2026-05-18 is the THN roundup"
+      url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5"
+    - claim: "Upgrade is the only remediation; no workaround; hardening names only 1.123.32 / 2.17.4 / 2.18.1"
+      ground_truth: "GHSAs list workarounds; full set needs the later train (and 2.21.1 on the 2.21 branch per CVE record)"
+      url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-hqr4-h3xv-9m3r"
+    - claim: "evidence[0] (THN) and evidence[1] (GHSA + vector + '= 9.4') as verbatim quotes; CVE-2026-44790 type rce; vector user-interaction; 44791 bypasses the xml2js fix; Swiss/EU public-sector adoption and CERT-amplification claims; __proto__ token specifics"
+      ground_truth: "Neither quote is contiguous on its page; 44790 is a file read; 44791 bypasses the XML Node fix (42232); no source on deployment or CERT advisories"
+      url: "https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+  notes: "Same-day brief item and deep dive on one n8n advisory set: fold. Survivor: deep dive (mechanism, detection, hardening), corrected; the brief twin supplies the per-CVE GHSA URLs (add them to sources[]). Authenticated-only, unexploited, not KEV: notable (the brief twin's high is not supported)."
+
+- group: D2-d
+  decision: fold
+  survivor: entries/2026-05-25/ghost-cms-cve-2026-26980-clickfix-the-cms-compromise-to-endp.md
+  current_state:
+    cves:
+      - id: CVE-2026-26980
+        cvss: "9.4 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:L; CWE-89)"
+        cvss_source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-26980"
+        affected: "Ghost v3.24.0 through v6.19.0 (Content API slug-filter ordering SQL injection)"
+        fixed: "Ghost 6.19.1 (GHSA published and release dated 2026-02-16; BleepingComputer/XLab say 2026-02-19)"
+        fixed_source_url: "https://github.com/TryGhost/Ghost/security/advisories/GHSA-w52v-v783-gw97"
+        exploited: true
+        exploited_source_url: "https://blog.xlab.qianxin.com/ghost-cms-mass-compromised-via-cve-2026-26980-now-fueling-clickfix-attacks/"
+        kev: false
+    key_facts:
+      - fact: "Ghost advisory: no application-level workaround (the Content API key is public by design, restricting it does not mitigate); temporary mitigation = reverse-proxy/WAF block of Content API requests containing slug%3A%5B / slug:[ in the filter parameter (may break slug filters); after upgrading review staff users and rotate keys."
+        url: "https://github.com/TryGhost/Ghost/security/advisories/GHSA-w52v-v783-gw97"
+      - fact: "XLab (2026-05-21): first poisoning seen 2026-05-07; 156 domains confirmed 2026-05-10, 700+ on 2026-05-17; two competing actor groups; Admin API Key read via the SQLi, then bulk edits via the Admin API (PUT /ghost/api/admin/posts/:id/) inject a JavaScript loader; Adspect-style cloaking; fake Cloudflare 'verify you are human' ClickFix page (WIN+R, paste); pasted command = cmd /c move + tar -xf + start /min batch file; batch runs hidden powershell iwr + rundll32 DLL export; later stage Electron app (login-item persistence, 30 s C2 polling) described as a stealer. Remediation: upgrade, rotate Admin/Content API keys, admin password, sessions, clean injected <script> at database level, keep 30 days of Admin API logs."
+        url: "https://blog.xlab.qianxin.com/ghost-cms-mass-compromised-via-cve-2026-26980-now-fueling-clickfix-attacks/"
+      - fact: "BleepingComputer (2026-05-24): 700+ domains incl. Harvard, Oxford, Auburn, DuckDuckGo; SentinelOne published exploitation details on Feb 27 (BC statement); not in CISA KEV (2026.10.08)."
+        url: "https://www.bleepingcomputer.com/news/security/ghost-cms-sql-injection-flaw-exploited-in-large-scale-clickfix-campaign/"
+  wrong_in_survivor:
+    - claim: "restrict the public Content API to trusted origins"
+      ground_truth: "Advisory: restricting key access does not mitigate; only the WAF block exists"
+      url: "https://github.com/TryGhost/Ghost/security/advisories/GHSA-w52v-v783-gw97"
+    - claim: "boolean-based blind SQLi; AND/CASE/time-delay artefacts; fixed 19 February; UtilifySetup.exe; ClickFix 'tracked since 2024'; europe/public-sector"
+      ground_truth: "Sources say SQLi in slug-filter ordering (CASE concatenation), read primitive; advisory/release 2026-02-16; no file name; no 2024 claim; no region/sector"
+      url: "https://www.sentinelone.com/vulnerability-database/cve-2026-26980/"
+    - claim: "(twin) Ghost(Pro) patched server-side; SentinelOne 27 Feb cited to XLab; evidence quote = own sentence; '§ 2 bar', '§ 5'"
+      ground_truth: "no source; SentinelOne claim is BC's; workflow language"
+      url: "https://www.bleepingcomputer.com/news/security/ghost-cms-sql-injection-flaw-exploited-in-large-scale-clickfix-campaign/"
+  notes: "One disclosure plus its campaign, same day: fold. Survivor is the kill-chain deep dive; it must absorb the CVE facts (affected range, CVSS, WAF mitigation) from the brief twin and the corrections above. Priority: ITW mass exploitation, but no source ties it to the constituency; notable acceptable."
+
+- group: D2-e
+  decision: fold
+  survivor: entries/2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain.md
+  current_state:
+    cves:
+      - id: CVE-2026-35616
+        cvss: "9.1 (CVSS 3.1 temporal: AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C; base 9.8) per the Fortinet CNA record; CWE-284"
+        cvss_source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-35616"
+        affected: "FortiClientEMS 7.4.5 through 7.4.6 (7.2 and 8.0 not affected); FortiClient Cloud and FortiSASE remediated by Fortinet"
+        fixed: "Hotfix for 7.4.5 / 7.4.6; FortiClientEMS 7.4.7 or above"
+        fixed_source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-099"
+        exploited: true
+        exploited_source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-099"
+        kev: true
+    key_facts:
+      - fact: "Fortinet advisory dated 2026-04-04: 'Fortinet has observed this to be exploited in the wild'; KEV dateAdded 2026-04-06 (knownRansomwareCampaignUse Unknown). Arctic Wolf (2026-04-06): Defused observed exploitation before disclosure; AW (2026-05-27): EKZ Infostealer campaign."
+        url: "https://arcticwolf.com/resources/blog/cve-2026-35616/"
+      - fact: "Mechanism (Bishop Fox, 2026-04-07): EMS Apache mod_ssl + Django; middleware accepts client-supplied X-SSL-CLIENT-VERIFY (and X-SSL-CLIENT-CERT) headers equivalent to mod_ssl variables because Apache does not strip them; chain validation checks only subject/issuer DN strings, no signature verification, so a forged chain passes."
+        url: "https://bishopfox.com/blog/api-authentication-bypass-in-forticlient-ems-7-4-5-7-4-6-cve-2026-35616"
+      - fact: "Campaign (Arctic Wolf 2026-05-27): EMS log 'Certificate not found in request header' then 'Certificate user: fortinet-ca2 FortiGate: Fabric device ... successfully updated'; Tor-exit logins; remind_upgrade_after edited; Remote Access Profile and endpoint policy edited to add on_connect scripts that run when VPN tunnels establish; fortitray.exe or ipsec.exe > cmd.exe (GUID-named .cmd in FortiClient logs\\Trace\\scripts) > base64 PowerShell (downloads, runs payload, sleeps 90 s, POSTs output) > fake FortiEndpoint patch executable = EKZ Infostealer (MinGW-compiled); Chromium: copies itself into the browser's Application\\ directory and uses IElevator::DecryptData; Gecko family: nss3.dll; stages log.txt in ProgramData; cookies, passwords, autofill stolen; session reuse can bypass MFA; restrict EMS port 8013."
+        url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+  wrong_in_survivor:
+    - claim: "same shape as Microsoft's CVE-2026-45659 (X-Forwarded-* trust)"
+      ground_truth: "CVE-2026-45659 is a SharePoint deserialization RCE (CWE-502, CVSS 8.8), unrelated"
+      url: "https://cveawg.mitre.org/api/cve/CVE-2026-45659"
+    - claim: "CVSS:3.1 base 9.1 (... A:N); EPSS 43.2%; fronting reverse proxy stamps the header; header = entire exploit payload"
+      ground_truth: "9.1 is the temporal score of an A:H vector; mechanism is Django/mod_ssl header trust plus DN-only chain validation"
+      url: "https://bishopfox.com/blog/api-authentication-bypass-in-forticlient-ems-7-4-5-7-4-6-cve-2026-35616"
+    - claim: "push of an 'Update task' signed under fortitray.exe; self-copy into browser profile directories; detection on User Data profile writes, fortitray spawning PowerShell, '--silent' installers"
+      ground_truth: "on_connect VPN scripts via fortitray/ipsec > cmd > PowerShell; self-copy into the browser Application directory; real signals listed above"
+      url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+    - claim: "evidence[0], evidence[1] verbatim from Arctic Wolf; 'first public exploitation-chain narrative'; switzerland/public-sector/finance/energy/telco"
+      ground_truth: "neither quote occurs on the page; no 'first' claim; no region/sector in sources"
+      url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+  notes: "Same-day brief item (threat) and deep dive (vulnerability) on one Arctic Wolf report: fold. The deep dive has the depth but the most errors; every claim in the 'wrong_in_survivor' list must be rewritten from Arctic Wolf and Bishop Fox. The brief twin adds nothing verified that the deep dive lacks. High is defensible for the survivor (KEV, vendor-confirmed exploitation, fleet-wide push) if exposure of the constituency is asserted with a source; no source does."
+
+- group: D2-f
+  decision: fold
+  survivor: entries/2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary.md
+  current_state:
+    cves:
+      - id: CVE-2026-20230
+        cvss: "8.6 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:N); Cisco SIR Critical; CWE-918"
+        cvss_source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+        affected: "Unified CM and Unified CM SME with the WebDialer service enabled (disabled by default); Release 14 before 14SU6, Release 15 before 15SU5 / COP"
+        fixed: "14SU6; 15SU5 (Sep 2026) or a version-specific COP for Release 15"
+        fixed_source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+        exploited: true
+        exploited_source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+        kev: true
+    key_facts:
+      - fact: "Cisco advisory first published 2026-06-03; revision 1.1 (2026-07-01) added active exploitation ('In June 2026, the Cisco PSIRT became aware of active exploitation'); PoC code known to PSIRT; no workaround, mitigation = disable WebDialer (Service Activation); check WebDialer via Control Center - Feature Services; reporter: independent researcher via SSD Secure Disclosure."
+        url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+      - fact: "KEV dateAdded 2026-06-25 (CWE-918, ransomware use Unknown). Defused observed reconnaissance-stage exploitation over the weekend before 2026-06-23 (single source IP, file:// payloads); SSD Secure published a technical write-up and PoC on 2026-06-23 (unauthenticated /cmplatform/installClusterStatusExecute chain, hostname from /webdialer/Version.jws?wsdl; tested on 15.0.1.13901-2)."
+        url: "https://ssd-disclosure.com/cisco-unified-communications-manager-arbitrary-file-write-to-rce/"
+      - fact: "The MISP half of the 06-04 summary (CVE-2026-10611) has its own entry entries/2026-06-04/cve-2026-10611-misp-otp-bypass-when-ldap-mixed-auth-and-otp.md; nothing to preserve."
+        url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+  wrong_in_survivor:
+    - claim: "Not KEV-listed as of this run"
+      ground_truth: "KEV 2026-06-25; Cisco confirmed exploitation 2026-07-01"
+      url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+    - claim: "marker file /tmp/cve-2026-20230-test.txt; weekend of 2026-06-21/22; 'historically precedes a targeted wave'; Sysmon EID 11 / auditd; action with '(§ 2)'"
+      ground_truth: "file-name indicator; weekend 2026-06-20/21; no such source; Sysmon not applicable to the CUCM appliance"
+      url: "https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/"
+  notes: "06-04 is the disclosure brief item, 06-24 the exploitation development of the same flaw: fold (the later development belongs on the one entry as an update). Survivor chosen on content: the 06-24 entry matches Cisco and BleepingComputer and carries the exploitation state; it should absorb the disclosure-day facts (SIR Critical, affected/fixed releases, WebDialer default-off, no workaround) and the later KEV and vendor-exploitation confirmation. If the audit prefers the earlier URL as survivor, move the same content onto it. The MISP half survives in its own entry."
+
+- group: D2-g
+  decision: fold
+  survivor: entries/2026-06-08/cve-2026-3300-unauthenticated-eval-injection-in-a-commercial.md
+  current_state:
+    cves:
+      - id: CVE-2026-3300
+        cvss: "9.8 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H; CWE-94; Wordfence CNA, published 2026-03-31)"
+        cvss_source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-3300"
+        affected: "Everest Forms Pro <= 1.9.12 (Complex Calculation feature of the Calculation Addon; ~4,000 installs)"
+        fixed: "1.9.13 (vendor release 2026-03-18; Wordfence disclosure 2026-03-30)"
+        fixed_source_url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+        exploited: true
+        exploited_source_url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+        kev: false
+    key_facts:
+      - fact: "Wordfence (published 2026-06-03): exploitation since 2026-04-13, 29,300+ blocked attempts since public disclosure, 17,900 on 2026-05-16; most common payload creates a rogue administrator via wp_insert_user through POST /wp-admin/admin-ajax.php action everest_forms_ajax_form_submission; reachable via any string-type field of a form using Complex Calculation. The Hacker News (2026-06-05): 16 attempts in the preceding 24 h."
+        url: "https://thehackernews.com/2026/06/hackers-exploit-critical-everest-forms.html"
+      - fact: "Researcher h0xilo submitted via Wordfence in February; patch 2026-03-18; BleepingComputer 2026-06-06."
+        url: "https://www.bleepingcomputer.com/news/security/critical-everest-forms-pro-flaw-exploited-to-take-over-wordpress-sites/"
+  wrong_in_survivor:
+    - claim: "[Wordfence, 2026-06-06]; sustained mass exploitation through at least 6 June; 'form must include the Calculation Addon'; public-sector exposure; SEO-spam injectors"
+      ground_truth: "post dated 2026-06-03; spike 05-16, 16 attempts/day by 06-05; Complex Calculation feature; ~4,000 installs; no public-sector source; webshells/backdoors per sources"
+      url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+    - claim: "summary/evidence 'Why this is the deep dive now.'; action text '(.'"
+      ground_truth: "workflow tagline / malformed fragment"
+      url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+  notes: "Same-day twins on one Wordfence report: fold; survivor = deep dive (mechanism, detection, hardening). Brief twin carries nothing new. Exposure is a ~4,000-install commercial plugin with a fix 11 weeks old at the time: notable at most."
+
+- group: D2-h
+  decision: fold
+  survivor: entries/2026-06-30/cve-2026-48558-simplehelp-rmm-oidc-sso-authentication-bypass.md
+  current_state:
+    cves:
+      - id: CVE-2026-48558
+        cvss: "10.0 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H) and 9.5 (CVSS 4.0), VulnCheck CNA record published 2026-06-12; CWE-347 (missing OIDC JWT signature verification); CCB Belgium also states CVSS 10"
+        cvss_source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-48558"
+        affected: "SimpleHelp 5.5.15 and earlier and the 6.0 prerelease before RC2, when an OIDC provider is configured with a TechnicianGroup and 'Allow group authenticated logins' enabled"
+        fixed: "SimpleHelp 5.5.16 and 6.0 RC2 (Security Notice 2026-05; released between 2026-05-22 and 2026-06-09 per Horizon3's timeline)"
+        fixed_source_url: "https://simple-help.com/security/simplehelp-security-update-2026-05"
+        exploited: true
+        exploited_source_url: "https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-simplehelp-flaw-deploy-new-djinn-infostealer-taskweaver-malware/"
+        kev: true
+    key_facts:
+      - fact: "KEV dateAdded 2026-06-29 (CWE-347, ransomware use Unknown; forensicTriage No)."
+        url: "https://ccb.belgium.be/advisories/warning-simplehelp-patched-cve-2026-48558-critical-authentication-bypass-vulnerability"
+      - fact: "Horizon3 (2026-06-12): discovered 2026-05-21, reported 2026-05-22; attacker creates a new Technician user (default: remote into endpoints, run scripts); MFA bypassed because technicians self-register MFA at first login; ~14,000 exposed servers, random sample ~7.2% on OIDC; IOCs = unfamiliar technicians under Administration > Technicians > Show Group Authenticated Users and server.log lines 'Registering technician login for ...' / 'Configuration save requested (Forged Attacker ...)'; interim mitigation = IP-restrict Technician authentication (Administration > Login Security)."
+        url: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/"
+      - fact: "Blackpoint (via BleepingComputer 2026-06-29): technician session via the bypass, RMM drops Node.js and runs jquery.js from a trycloudflare address, TaskWeaver loader (single 'deliver' command, encrypted beacon to a Dev Tunnels lookalike), Djinn Stealer (developer/cloud/AI-assistant/crypto credentials, Windows/macOS/Linux); recommendations: patch, invalidate unrecognised technician sessions, rotate credentials, alert on RMM software launching Node.js/PowerShell/Python."
+        url: "https://blackpointcyber.com/blog/a-djinn-in-the-machine-taskweavers-node-js-intrusion-chain"
+      - fact: "CCB Belgium (2026-06-19, updated 2026-06-30): PoC available; actively exploited."
+        url: "https://ccb.belgium.be/advisories/warning-simplehelp-patched-cve-2026-48558-critical-authentication-bypass-vulnerability"
+  wrong_in_survivor:
+    - claim: "TaskWeaver persists through scheduled tasks (schtasks.exe) / launchd plists"
+      ground_truth: "not in BleepingComputer or Blackpoint"
+      url: "https://blackpointcyber.com/blog/a-djinn-in-the-machine-taskweavers-node-js-intrusion-chain"
+    - claim: "signature-verification mechanism cited to Horizon3; hunt on SimpleHelpServer.exe/SimpleHelp.exe spawning powershell/cmd/wscript; Technician logins not correlated with MFA/VPN events; evidence[0] title and evidence[1] as quotes"
+      ground_truth: "Horizon3 gives no mechanism; hunts are Horizon3's admin-UI/log checks and Blackpoint's RMM-launches-runtime; quotes are not verbatim"
+      url: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/"
+    - claim: "(twin 06-13) actor:shinyhunters entity and the CVE-2026-35273 PeopleSoft table row; IdP MFA bypass; poc-public; 'common in European MSP estates'; SAML advice; cvss n/a"
+      ground_truth: "other campaign; MFA is SimpleHelp technician MFA self-registered at first login; H3 released no technical details; CVE record has 10.0"
+      url: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/"
+  notes: "06-13 is the Horizon3 disclosure brief item, 06-30 the exploitation (KEV, Blackpoint) development of the same flaw: fold. Survivor = 06-30 (current state, critical priority is justified: KEV + ITW + unauthenticated technician takeover of an RMM server), enriched with the disclosure-day facts (affected versions, Horizon3 timeline/IOC checks, IP-restriction mitigation). The 06-13 entry's ShinyHunters entity and PeopleSoft row belong to a different finding and must not be carried."
+
+- group: D2-i
+  decision: fold
+  survivor: entries/2026-06-14/cve-2026-20253-splunk-enterprise-unauthenticated-pre-auth-rc.md
+  current_state:
+    cves:
+      - id: CVE-2026-20253
+        cvss: "9.8 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H; CWE-306; SIR Critical)"
+        cvss_source_url: "https://advisory.splunk.com/advisories/SVD-2026-0603"
+        affected: "Splunk Enterprise 10.0.0-10.0.6 and 10.2.0-10.2.3 (10.4 and 9.x not affected; Splunk Cloud not impacted)"
+        fixed: "10.0.7 / 10.2.4 / 10.4.0 (advisory published 2026-06-10)"
+        fixed_source_url: "https://advisory.splunk.com/advisories/SVD-2026-0603"
+        exploited: true
+        exploited_source_url: "https://advisory.splunk.com/advisories/SVD-2026-0603"
+        kev: true
+    key_facts:
+      - fact: "Splunk changelog 2026-06-18: PSIRT 'became aware of limited exploitation'; KEV dateAdded 2026-06-18, due 2026-06-21 (first Splunk KEV entry per SecurityWeek); watchTowr published the full RCE chain on 2026-06-12 (PoC details); public PoC code reported by SecurityWeek."
+        url: "https://www.securityweek.com/splunk-enterprise-vulnerability-exploited-in-attacks-days-after-disclosure/"
+      - fact: "Splunk workaround: '[postgres] disabled = true' in server.conf and restart, not for instances using Edge Processor, OpAmp or SPL2 data pipelines (breaks them)."
+        url: "https://advisory.splunk.com/advisories/SVD-2026-0603"
+      - fact: "watchTowr chain: web tier proxies POST /en-US/splunkd/__raw/v1/postgres/recovery/{backup,restore} to the loopback splunk-postgres Go API (127.0.0.1:5435) with any Basic-auth credentials; backupFile path traversal; libpq connection string in `database` (hostaddr=, passfile=) makes Splunk dump an attacker DB to a file then restore it into the local PostgreSQL using .pgpass (postgres_admin); lo_export in the restored SQL writes a file as the splunk user; overwrite of a Python script Splunk runs (ssg_enable_modular_input.py) gives RCE. Default exposure: sidecar installed and enabled by default on Splunk Enterprise on AWS; on Windows on-prem not installed or not enabled by default."
+        url: "https://labs.watchtowr.com/why-use-app-level-auth-when-every-database-has-auth-splunk-enterprise-cve-2026-20253-pre-auth-rce/"
+  wrong_in_survivor:
+    - claim: "table: KEV No / no ITW reported (vs update section and frontmatter)"
+      ground_truth: "KEV 2026-06-18; Splunk-confirmed limited exploitation"
+      url: "https://advisory.splunk.com/advisories/SVD-2026-0603"
+    - claim: "Splunk PSIRT and NCSC-NL confirmed limited targeted exploitation; fixes available since 2026-06-14; restrict search-job submission; Splunk is a standard SIEM in CH/EU public-sector SOCs"
+      ground_truth: "Splunk said 'limited exploitation'; patches 2026-06-10; the real workaround is disabling the sidecar; no NCSC-NL or deployment source"
+      url: "https://www.securityweek.com/splunk-enterprise-vulnerability-exploited-in-attacks-days-after-disclosure/"
+    - claim: "(twin) 'no reported in-the-wild exploitation'; 'writes files into the sidecar's runtime directory and injects SQL'; hunt on pkg-run"
+      ground_truth: "stale; arbitrary-path write via traversal and connection-string injection; see mechanism"
+      url: "https://labs.watchtowr.com/why-use-app-level-auth-when-every-database-has-auth-splunk-enterprise-cve-2026-20253-pre-auth-rce/"
+  notes: "Same-day twins, one already carrying a changelog update (KEV and exploitation of 2026-06-18/20). Survivor = the entry with the changelog (current frontmatter: exploited, KEV) because the deep dive's text is stale on exploitation; but the survivor lacks the mechanism, exposure, detection and hardening depth, which must be moved over from the deep dive after correction (see survivor F8). classification is null and techniques is empty on the survivor."
+
+- group: D2-j
+  decision: fold
+  survivor: entries/2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a.md
+  current_state:
+    cves:
+      - id: CVE-2026-20262
+        cvss: "6.5 (CVSS 3.1 AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N; CWE-22)"
+        cvss_source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+        affected: "Catalyst SD-WAN Manager (all deployment types: on-prem, Cloud-Pro, Cloud Cisco-managed, FedRAMP): 20.9.9.1 and earlier, 20.12.7.1 and earlier, 20.15.4.4 and earlier, 20.15.5.2 and earlier, 20.18.3, 26.1.1.1 and earlier"
+        fixed: "20.9.9.2, 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1, 26.1.1.2"
+        fixed_source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+        exploited: true
+        exploited_source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+        kev: true
+    key_facts:
+      - fact: "Cisco: authenticated attacker with valid credentials 'with at least write access' (rev 1.1); crafted HTTP request to an API endpoint creates or overwrites any file; file can later be used to reach root; no workarounds; PSIRT aware of limited exploitation in June 2026; found in internal testing. KEV dateAdded 2026-06-15, due 2026-06-29."
+        url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+      - fact: "Cisco IOCs: vmanage-server.log (/var/log/nms) SdraAnyConnectFileUploadHandler upload with ../ path into the WildFly deployments directory; vmanage-appserver.log WFLYSRV0010 Deployed <name>.war; serviceproxy-access.log POST /<name>/index.jsp; entries may occur in normal operations; run 'request admin-tech' before opening a TAC case."
+        url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+      - fact: "UAT-8616 (Talos, 2026-02-25) is tied to CVE-2026-20127 (SD-WAN Controller), not to this CVE; BleepingComputer: Cisco shared no details of these attacks."
+        url: "https://blog.talosintelligence.com/uat-8616-sd-wan/"
+  wrong_in_survivor:
+    - claim: "Tomcat deployment directory / Tomcat webapps"
+      ground_truth: "WildFly standalone/deployments"
+      url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+    - claim: "entities actor:uat-8616; 2026 wave attributed to UAT-8616; 3-step chain 'reporting describes'; NVD CVSS cite; KEV cited to BleepingComputer; evidence 'Vulnerable component.'"
+      ground_truth: "no source links the CVE to UAT-8616; chain is inference; KEV is in The Register; evidence is a heading word"
+      url: "https://blog.talosintelligence.com/uat-8616-sd-wan/"
+  notes: "Same-day twins: fold; survivor = deep dive (more depth) after correcting the Tomcat/UAT-8616 errors and adding Cisco's three log indicators. The brief twin's `high` (KEV + vendor-confirmed exploitation, authenticated flaw) is defensible if the constituency runs SD-WAN Manager; no source says so."
+
+- group: D2-k
+  decision: fold
+  survivor: entries/2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c.md
+  current_state:
+    cves:
+      - id: CVE-2026-20181
+        cvss: "9.1 (CVSS 3.1 AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H; SIR Critical; CWE-22 per CVE record)"
+        cvss_source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+        affected: "Cisco ISE and ISE-PIC releases 3.1, 3.2, 3.3, 3.4, 3.5 (earlier than 3.1: migrate); requires valid administrative credentials; DoS on single-node deployments"
+        fixed: "3.1 Patch 12 (Sep 2026), 3.2 Patch 11 (Sep 2026), 3.3 Patch 11, 3.4 Patch 6, 3.5 Patch 4 (Aug 2026) or hot patch for 3.5 Patch 3 on request via TAC"
+        fixed_source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+        exploited: false
+        exploited_source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+        kev: false
+      - id: CVE-2026-20190
+        cvss: "7.5 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N; SIR High; CWE-285)"
+        cvss_source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+        affected: "ISE and ISE-PIC 3.4 and 3.5 only (3.1-3.3 not vulnerable); unauthenticated information disclosure including hashed credentials"
+        fixed: "3.4 Patch 6; 3.5 Patch 3"
+        fixed_source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+        exploited: false
+        exploited_source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+        kev: false
+    key_facts:
+      - fact: "Cisco advisory (rev 1.0 2026-06-17, 1.1 2026-06-19, 1.2 2026-07-06): 'The vulnerabilities are not dependent on one another'; no workarounds; 'PSIRT is not aware of any public announcements or malicious use'; ISE-PIC end-of-sale (3.4 last supported); credit TrendAI Research and STAR Labs SG (20181), TrendAI ZDI (20190). Neither CVE is in CISA KEV (2026.10.08)."
+        url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+      - fact: "SecurityWeek 2026-06-18: hotfix for ISE 3.5 available, included in 3.5 Patch 4 in August; BSI CERT-Bund WID-SEC-2026-1989 (2026-06-17) lists ISE < 3.3 P11, < 3.4 P6, < 3.5 P4, < 3.5 P3 as affected."
+        url: "https://www.securityweek.com/critical-command-execution-vulnerability-patched-in-cisco-ise/"
+  wrong_in_survivor:
+    - claim: "chain: 20190 hands admin hashes that feed 20181; 'explicitly including hashed administrator credentials'"
+      ground_truth: "independent flaws; 'hashed credentials'; no chain in any source"
+      url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+    - claim: "3.5 Patch 3 closes only 20190 and operators carry the RCE half for two months; only 3.3/3.4 trains listed; 20181 auth pre-auth; 20190 type rce; 'most Swiss and European public-sector estates'"
+      ground_truth: "hot patch available; 3.1/3.2 affected with Sep 2026 patches; admin-auth; info disclosure; no prevalence source"
+      url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv"
+  notes: "Same-day twins on one Cisco advisory: fold; survivor = deep dive, rewritten as two independent flaws. The brief twin's summary imports pgAdmin/NGINX/Drupal items that belong to other entries. Unexploited, not KEV: notable (the twin's high is unsupported). Check whether ISE 3.5 Patch 4 has shipped (not verified today)."
+
+- group: D2-l
+  decision: fold
+  survivor: entries/2026-07-16/cve-2026-46817-oracle-ebs-payments-preauth-rce-kev-listed.md
+  current_state:
+    cves:
+      - id: CVE-2026-46817
+        cvss: "9.8 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H) per Oracle risk matrix and CNA record; KEV CWEs 269/287/306"
+        cvss_source_url: "https://www.oracle.com/security-alerts/cspumay2026.html"
+        affected: "Oracle E-Business Suite 12.2.3-12.2.15 (Oracle Payments, File Transmission, HTTP, no authentication)"
+        fixed: "Oracle May 2026 Critical Security Patch Update (CSPU; advisory page updated 2026-05-21, CVE record 2026-05-28)"
+        fixed_source_url: "https://www.oracle.com/security-alerts/cspumay2026.html"
+        exploited: true
+        exploited_source_url: "https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+        kev: true
+    key_facts:
+      - fact: "KEV dateAdded 2026-07-15, forensicTriage Yes, knownRansomwareCampaignUse Unknown; CISA alert 2026-07-15 (also adds CVE-2023-4346)."
+        url: "https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+      - fact: "Defused: first ITW exploitation on 2026-06-27 against its EBS honeypots, a single source running an unauthenticated /etc/passwd file read via the ibytransmit endpoint (a targeted PoC, not scanning), before any public PoC; hunt POST requests to /OA_HTML/ibytransmit; treat unpatched internet-facing EBS past 2026-05-28 as potentially compromised; forensic review before credential rotation guidance."
+        url: "https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/"
+      - fact: "Shadowserver: 450+ EBS instances exposed online, ~200 in US/Europe (patch state unknown); no source attributes the exploitation to a named actor; Cl0p exploited earlier EBS flaw CVE-2025-61882 (BleepingComputer)."
+        url: "https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/"
+  wrong_in_survivor:
+    - claim: "title/type 'unauthenticated RCE'"
+      ground_truth: "Oracle and KEV say takeover of Oracle Payments; observed exploit is a file read"
+      url: "https://www.oracle.com/security-alerts/cspumay2026.html"
+    - claim: "same EBS family under sustained ShinyHunters/UNC6240 extortion pressure; 'now-annual cadence'"
+      ground_truth: "ShinyHunters/UNC6240 campaign is PeopleSoft CVE-2026-35273; EBS precedent is Cl0p 2025"
+      url: "https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html"
+    - claim: "Oracle 'Critical Patch Update' dated 2026-05-28; 'patched quietly'; CWE phrasing attributed to Oracle; 'EBS common in European public sector'"
+      ground_truth: "a Critical Security Patch Update, page dated 2026-05-21 (CVE record 2026-05-28); CWE wording from KEV/HNS; no prevalence source"
+      url: "https://www.oracle.com/security-alerts/cspumay2026.html"
+  notes: "Three entries on one finding (two same-day 07-01 entries, then the post-KEV 07-16 entry): fold all into one. Survivor = 07-16 (v4 format, classification A/1, techniques T1190 active, verbatim evidence, KEV state, Help Net Security detail). Note its discovered_at is 07-16 although the finding was first covered on 07-01; if the audit wants the earlier first-appearance date preserved it should instead keep a 07-01 entry as survivor and write the 07-16 content as update records. The 07-01 twins' ShinyHunters entity (deep dive) and 'RCE'/'servlet' wording must not be carried; their unique verified facts are the Shadowserver count and Defused's own wording."

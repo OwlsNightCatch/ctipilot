@@ -1,0 +1,1051 @@
+# work/2026-10-11T1307Z-audit/findings.G1b.yaml
+domain: G1b
+run_id: 2026-10-11T1307Z-audit
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-11T13:11:25Z
+ended_at: 2026-10-11T13:41:17Z
+duration_seconds: 1792
+window_note: "window_hours 271 (2026-09-30T06:39Z to 2026-10-11T13:07Z) extended by the coordinator's scope addendum back to 2026-09-27T13:08Z; slice records swept to that start (336 h); the five handed-over items carry explicit dispositions in addendum_dispositions"
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 17
+  bridge_fetches: 190
+  note: "counts approximate (read off the tool-use trace by hand); bridge_fetches counts fetch_source.py calls (feed, extract, url, msrc, ncsc-csh)"
+items:
+  - title: "Cisco October 7 2026 bundle: unauthenticated root RCE in NX-OS NX-API, MPLS OAM and NGOAM on Nexus 3000/9000, a CVSS 10.0 and a 9.8 flaw in License (Smart Software Manager) On-Prem, and 9.8 hardening-release CVEs for NX-OS and APIC; no exploitation reported, NCSC-CH relayed it on 2026-10-09"
+    source_record: cisco-psirt
+    published: "2026-10-07 (NX-API advisory revised 2026-10-08)"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-napi-rce-r2shwu2j", publisher: "Cisco PSIRT (cisco-sa-napi-rce-r2shwu2j)", date: "2026-10-08", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-moam-rce-uBTzYV7", publisher: "Cisco PSIRT (cisco-sa-moam-rce-uBTzYV7)", date: "2026-10-07", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ngoam-rce-LWKQ4BU", publisher: "Cisco PSIRT (cisco-sa-ngoam-rce-LWKQ4BU)", date: "2026-10-07", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ssm-access-nttb2dhE", publisher: "Cisco PSIRT (cisco-sa-ssm-access-nttb2dhE)", date: "2026-10-07", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-ssm-Ph77wdhf", publisher: "Cisco PSIRT (License On-Prem hardening release, October 2026)", date: "2026-10-07", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-nxosw1-cWzSbtR", publisher: "Cisco PSIRT (NX-OS hardening release, October 2026)", date: "2026-10-07", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-apic-UOXWtfh", publisher: "Cisco PSIRT (APIC hardening release, October 2026)", date: "2026-10-07", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13044", publisher: "NCSC Switzerland (Cyber Security Hub advisory 13044)", date: "2026-10-09", role: "corroborating" }
+    discovery_trace: "first seen at: cisco-psirt feed, URL https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml (14 advisories dated 2026-10-07/08) -> extract of each advisory page -> per-advisory CSAF (link read from the advisory HTML) for CVE ids, CVSS vectors and the Exploitation and Public Announcements note -> hardening-release advisories (cisco-sa-hardening-ssm, -nxosw1, -apic) read after NCSC-CH advisory 13044 (found via `ncsc-csh recent 60`, https://security-hub.ncsc.admin.ch/#/posts/13044) listed CVE-2026-76482 / 76480 / 76483 / 76484 that the main SSM advisory does not carry"
+    summary: |
+      Cisco's 2026-10-07 publication clears the pre-auth network CVSS 9.0+ bar on widely deployed enterprise gear in four places; Cisco states in each advisory that its PSIRT is not aware of malicious use, and NCSC Switzerland relayed the NX-OS and License On-Prem items on 2026-10-09 (advisory 13044, exploitation status listed as unknown). (1) NX-API RCE, CVE-2026-76471, CVSS 9.8: insufficient input validation in NX-API lets an unauthenticated remote attacker send a crafted HTTP request and execute code as root or crash the device; affected are Nexus 3000 and Nexus 9000 in standalone NX-OS mode with NX-API enabled (disabled by default; `show feature | include nxapi`) and UCS 6300 Fabric Interconnects, where exploitation needs low-privileged credentials on the UCS Manager XML API (enabled by default) and Cisco lowers the rating to High. Cisco revised the advisory on 2026-10-08 to update the fixed-release table; no workaround, but a Live Protect shield exists for NX-OS 10.6(3). (2) MPLS OAM RCE, CVE-2026-76465, 9.8: a crafted MPLS echo-request to an IP address of the switch gives unauthenticated root code execution when MPLS OAM is enabled (off by default; `show feature | include mpls_oam`; Nexus 9000 with a Silicon One ASIC not affected); `no feature mpls oam` is the mitigation. (3) NGOAM RCE, CVE-2026-76485 / 76486 / 76501, each 9.8: crafted IP packets to a switch with NGOAM enabled; CVE-2026-76485 needs only NGOAM, CVE-2026-76486 additionally SRv6 or NV Overlay with a learned VXLAN EVPN peer, CVE-2026-76501 NGOAM plus SRv6; `no feature ngoam` is the mitigation. (4) License (Smart Software Manager) On-Prem: CVE-2026-20328 (9.1, unauthenticated arbitrary account password reset including administrators) and CVE-2026-76454 (9.1, unauthenticated Smart Licensing Utility API, arbitrary file write or DoS) affect every release regardless of configuration (fixed in 10-202608); a companion hardening release groups internally found flaws by CWE: CVE-2026-76482 (CVSS 10.0, improper verification of cryptographic signature), CVE-2026-76480 (9.8, missing authentication for a critical function), CVE-2026-76483 (9.1, insufficiently protected credentials) and CVE-2026-76484 (8.8, code injection), first fixed in 10-202609, with 9-202601 and earlier requiring migration; Cisco says these were found with existing tests plus frontier AI models. The NX-OS hardening release adds CWE-grouped CVE-2026-76455 (9.8 improper access control), CVE-2026-76459 (9.8 out-of-bounds write) and four 8.6 to 8.8 items that apply regardless of device configuration, and the APIC hardening release adds CVE-2026-76498, 76499 and 76500 (each 9.8); the per-product fixed-release tables are dynamic elements extract did not return (Cisco Software Checker is the vendor's lookup). A Finesse SSRF (CVE-2026-20362, 7.2) in the same bundle has a public announcement but no malicious use; the rest is medium (ACI contract bypass, APIC authenticated flaws, Python sandbox escape, control-plane DoS).
+    region_nexus: "global; Nexus switching and Cisco license servers are common in Swiss federal and cantonal data centres; NCSC-CH relayed the advisory"
+    primary_sector_nexus: "direct (infrastructure class used by public administrations)"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-76471, CVE-2026-76465, CVE-2026-76485, CVE-2026-76486, CVE-2026-76501, CVE-2026-20328, CVE-2026-76454, CVE-2026-76482, CVE-2026-76480, CVE-2026-76483, CVE-2026-76484, CVE-2026-76455, CVE-2026-76459, CVE-2026-76498, CVE-2026-76499, CVE-2026-76500, CVE-2026-20362]
+    techniques: [T1190, T1078, T1098]
+    affected_products: ["Cisco NX-OS Software (Nexus 3000, Nexus 9000 standalone NX-OS mode)", "Cisco UCS 6300 Series Fabric Interconnects", "Cisco License (Smart Software Manager) On-Prem", "Cisco Application Policy Infrastructure Controller", "Cisco Finesse"]
+    entity_keys: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: false
+    evidence:
+      - quote: "The Cisco PSIRT is not aware of any public announcements or malicious use of the vulnerability that is described in this advisory."
+        attribution: "Cisco PSIRT (cisco-sa-napi-rce-r2shwu2j)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-napi-rce-r2shwu2j"
+      - quote: "The NX-API feature is disabled by default for Cisco Nexus 3000 and 9000 Series Switches."
+        attribution: "Cisco PSIRT (cisco-sa-napi-rce-r2shwu2j)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-napi-rce-r2shwu2j"
+      - quote: "CVE-2026-76485: To be affected by this vulnerability, the switch must have NGOAM enabled. That is the only requirement."
+        attribution: "Cisco PSIRT (cisco-sa-ngoam-rce-LWKQ4BU)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ngoam-rce-LWKQ4BU"
+      - quote: "CVE-2026-76482 10 CWE-347 Improper verification of cryptographic signature"
+        attribution: "Cisco PSIRT (License On-Prem hardening release)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-ssm-Ph77wdhf"
+      - quote: "Successful exploitation allows unauthenticated attackers to gain root access, execute arbitrary code, or bypass authentication mechanisms via network access."
+        attribution: "NCSC Switzerland (advisory 13044)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13044"
+    extended_notes: |
+      Exposure checks the advisories give: `show feature | include nxapi`, `show feature | include mpls_oam`, `show feature | include ngoam` (plus srv6 and nve for CVE-2026-76486 / 76501) on the NX-OS CLI. Attack surface per the advisories: a crafted HTTP request to the NX-API, a crafted MPLS echo-request to an IP address of the switch, crafted IP packets to a switch with NGOAM enabled; process crashes and device reloads are the DoS side effect. Researcher credit on the main SSM On-Prem advisory: Gabriele Paris of NATO Cyber Security Centre (CVE-2026-20328, -76437, -76452) and Trung Nguyen of CyStack (CVE-2026-76454). Press echoes (heise, SecurityWeek) are listed in NCSC-CH's advisory; not fetched. Also consider the pre-window 2026-09-04 store entry on Nexus 9000 Silicon One RCE (CVE-2026-20212) as related context.
+  - title: "HPE Networking ClearPass Policy Manager (HPESBNW05158): nine CVSS 9.8-9.9 flaws incl. unauthenticated deserialization RCE, authentication bypasses and unauthenticated SQL injection; fixed in CPPM 6.14.1 and 6.11.16"
+    source_record: hpe-networking-psirt
+    published: "2026-10-06"
+    sources:
+      - { url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt", publisher: "HPE Networking PSIRT (HPESBNW05158)", date: "2026-10-06", role: "primary" }
+    discovery_trace: "first seen at: hpe-networking-psirt record, listing URL https://csaf.arubanetworking.hpe.com/2026/ (nginx autoindex, entries by modification date; works with `url --direct`) -> primary: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt (signed advisory text read in full). WebSearch ('HPE Networking ClearPass Policy Manager HPESBNW05158 CVE-2026-76750 vulnérabilités') surfaced third-party echo pages only (securityonline, opencve), not cited."
+    summary: |
+      HPE Networking's advisory HPESBNW05158 of 2026-10-06 (revision 1, severity Critical, status FINAL) fixes 28 CVEs in ClearPass Policy Manager (CPPM), the network access control and RADIUS/TACACS+ policy server, and its OnGuard agent and client software. Nine are CVSS 9.8 or 9.9. Unauthenticated network-reachable at 9.8: CVE-2026-76750 (deserialization of untrusted data in the web interface, remote code execution), CVE-2026-76752 (authentication bypass in the web management and API interfaces giving administrative access), CVE-2026-79796 (a second authentication bypass), CVE-2026-76753 (format string, memory corruption, code execution), CVE-2026-76754 (unauthenticated SQL injection leading to RCE), CVE-2026-76751 and CVE-2026-79801 (missing integrity verification in the OnGuard agent and client, unauthenticated RCE on the endpoint with the agent's elevated privileges), and CVE-2026-79805 (path traversal rated 9.8 although titled authenticated). CVE-2026-79798 is an authenticated SQL injection at 9.9 (low-privileged account, scope changed). Further high items include authenticated path traversal to RCE (CVE-2026-79800), authenticated command injection in the API (CVE-2026-79803) and an unauthenticated path traversal leading to authorization bypass (CVE-2026-79809, 7.3). Affected: CPPM 6.14.0 and below and 6.11.15 and below; fixed in 6.14.1 and above and 6.11.16 and above (HPE downloads at the networking support portal); end-of-maintenance releases are presumed affected and not covered. HPE says the flaws were found by internal research, that it is not aware of public discussion or exploit code, and urges patching because of the complexity, breadth and impact. The vendor workaround is to restrict the CLI and web-based management interfaces to a dedicated layer 2 segment or VLAN and/or control them with layer 3+ firewall policy. No exploitation, KEV listing or actor is reported.
+    region_nexus: "global; ClearPass is the common NAC for campus and public-sector Aruba networks (Swiss federal/cantonal use plausible, not stated by the source)"
+    primary_sector_nexus: "direct-class (network access control for administrations)"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-76750, CVE-2026-76752, CVE-2026-79796, CVE-2026-76753, CVE-2026-76754, CVE-2026-76751, CVE-2026-79801, CVE-2026-79805, CVE-2026-79798, CVE-2026-79794, CVE-2026-79800, CVE-2026-79803, CVE-2026-79809]
+    techniques: [T1190, T1078, T1068]
+    affected_products: ["HPE Networking ClearPass Policy Manager (CPPM)", "ClearPass OnGuard agent and client software"]
+    entity_keys: []
+    verification: SINGLE-SOURCE-VENDOR-PSIRT
+    confidence: HIGH
+    novelty: new
+    borderline: false
+    evidence:
+      - quote: "exploitation could allow an unauthenticated remote attacker to execute"
+        attribution: "HPE Networking PSIRT (HPESBNW05158, CVE-2026-76750)"
+        source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt"
+      - quote: "aware of any public discussion or exploit code that targets"
+        attribution: "HPE Networking PSIRT (HPESBNW05158)"
+        source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt"
+      - quote: "  - CPPM 6.14.1 and above"
+        attribution: "HPE Networking PSIRT (HPESBNW05158)"
+        source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt"
+    extended_notes: |
+      The full CVE table (28 ids, CVSS 5.3 to 9.9; ten rated Critical, the tenth being the 9.1 authenticated SQL injection CVE-2026-79794) is in the advisory's Details section; the remaining ids are CVE-2026-79797/79799/79802 (8.8), 79806/79807/79808 (7.8), 79810/79811 (7.2), 79812-79818 (client and OnGuard local or XSS items). Companion HPE advisories of the same day cover AOS-S (HPESBNW05156) and the 2026-09-29 Instant On release (HPESBNW05150). The earlier ClearPass advisory relayed by the Canadian Centre for Cyber Security (AV26-909, 2026-09-10) covered 6.11.14 and 6.12.8; not fetched here.
+  - title: "HPE Networking AOS-Switch (AOS-S) HPESBNW05156: two authentication bypasses and unauthenticated buffer-overflow RCE (CVSS 9.8), fixed in AOS-S 16.11.0032"
+    source_record: hpe-networking-psirt
+    published: "2026-10-06"
+    sources:
+      - { url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05156.txt", publisher: "HPE Networking PSIRT (HPESBNW05156)", date: "2026-10-06", role: "primary" }
+    discovery_trace: "first seen at: hpe-networking-psirt record, listing URL https://csaf.arubanetworking.hpe.com/2026/ (autoindex, entries modified since 2026-09-25: hpesbnw05150, 05156, 05158) -> primary: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05156.txt"
+    summary: |
+      HPESBNW05156 (2026-10-06, revision 1, severity Critical) fixes eight CVEs in HPE Networking AOS-Switch (AOS-S, the former ProVision campus and access switch software). Three are CVSS 9.8 unauthenticated and network-reachable: CVE-2026-76742 (authentication bypass in the web management interface), CVE-2026-76743 (authentication bypass in the management interface) and CVE-2026-76744 (unauthenticated buffer overflows leading to remote code execution). Two further items are unauthenticated but adjacent-network: CVE-2026-76745 (CVSS 9.6, memory corruption leading to RCE) and CVE-2026-76746 (9.3, buffer overflow leading to information disclosure). Lower items: authenticated privilege escalation in the API (CVE-2026-76748, 8.8), authenticated buffer-overflow DoS (CVE-2026-76741, 6.5) and unauthenticated sensitive information disclosure (CVE-2026-76749, 6.5). Affected: AOS-S 16.11.0031 and below; fixed in 16.11.0032 and above; end-of-maintenance releases are presumed affected and not assessed. The vendor workaround is to restrict the web-based management interfaces to a dedicated layer 2 segment or VLAN and/or firewall them at layer 3 and above. HPE says the flaws came from internal research and that it knows of no public discussion or exploit code.
+    region_nexus: "global; AOS-S is a legacy Aruba campus switch line still deployed in public-sector estates"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-76742, CVE-2026-76743, CVE-2026-76744, CVE-2026-76745, CVE-2026-76746, CVE-2026-76748, CVE-2026-76741, CVE-2026-76749]
+    techniques: [T1190, T1078]
+    affected_products: ["HPE Networking AOS-Switch (AOS-S)"]
+    entity_keys: []
+    verification: SINGLE-SOURCE-VENDOR-PSIRT
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "pre-auth 9.8 on network switches with no exploitation reported; could be folded into the ClearPass item as one HPE Networking 2026-10-06 release"
+    evidence:
+      - quote: "  - AOS-S 16.11.0032 and above"
+        attribution: "HPE Networking PSIRT (HPESBNW05156)"
+        source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05156.txt"
+      - quote: "  - AOS-S 16.11.0031 and below"
+        attribution: "HPE Networking PSIRT (HPESBNW05156)"
+        source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05156.txt"
+  - title: "HPE Networking Instant ON access points (HPESBNW05150): two unauthenticated remote 9.8 flaws and three adjacent-network 9.6 RCE/auth-bypass flaws, fixed in Instant ON 3.4.2.0"
+    source_record: hpe-networking-psirt
+    published: "2026-09-29"
+    sources:
+      - { url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05150.txt", publisher: "HPE Networking PSIRT (HPESBNW05150)", date: "2026-09-29", role: "primary" }
+    discovery_trace: "first seen at: coordinator scope addendum (HPE Aruba Instant On CVE-2026-76723/76724/76725, CVSS 9.6, 2026-09-29) -> WebSearch ('HPE Aruba Instant On CVE-2026-76723 CVE-2026-76724 CVE-2026-76725 security advisory') named HPESBNW05150 via secondary coverage -> listing https://csaf.arubanetworking.hpe.com/2026/ -> primary: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05150.txt"
+    summary: |
+      HPESBNW05150 (2026-09-29, revision 1, Critical) fixes 18 CVEs (CVE-2026-76721 to CVE-2026-76738) in HPE Networking Instant ON access points, versions 3.4.1.0 and below; the fix is Instant ON 3.4.2.0 and above, which the Instant On cloud management portal applies to the APs automatically. The coordinator's three ids are adjacent-network, not internet-reachable: CVE-2026-76723 (unauthenticated adjacent buffer overflows to RCE, CVSS 9.6, vector AV:A/S:C), CVE-2026-76724 (unauthenticated adjacent command injection in the CLI reached over the PAPI protocol, 9.6) and CVE-2026-76725 (authentication bypass in a management protocol leading to RCE with elevated privileges, 9.6). Two further flaws are network-reachable and unauthenticated at 9.8: CVE-2026-76721 (buffer overflow leading to code execution as a privileged user) and CVE-2026-76722 (format-string flaws leading to RCE or DoS); CVE-2026-76726 (authentication bypass in the Instant On API endpoint, 8.1) is high. The vendor workaround is to restrict web-based management to a dedicated layer 2 segment or VLAN and/or firewall it. HPE says the findings are internal and that it knows of no public discussion or exploit code.
+    region_nexus: "global; Instant ON is the SMB/branch Wi-Fi line, relevant to small communal sites"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-76721, CVE-2026-76722, CVE-2026-76723, CVE-2026-76724, CVE-2026-76725, CVE-2026-76726]
+    techniques: [T1190, T1078]
+    affected_products: ["HPE Networking Instant ON access points"]
+    entity_keys: []
+    verification: SINGLE-SOURCE-VENDOR-PSIRT
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "5 critical CVEs on AP firmware auto-updated from the cloud; adjacent-network preconditions for the three coordinator ids; no exploitation"
+    evidence:
+      - quote: "    - Instant ON 3.4.1.0 and below"
+        attribution: "HPE Networking PSIRT (HPESBNW05150)"
+        source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05150.txt"
+      - quote: "    - Instant ON 3.4.2.0 and above."
+        attribution: "HPE Networking PSIRT (HPESBNW05150)"
+        source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05150.txt"
+  - title: "GitLab CE/EE critical patch release 19.4.1 / 19.3.3 / 19.2.7: two authenticated CI/CD regular-expression memory-corruption RCEs rated CVSS 9.9 (CVE-2026-89078, CVE-2026-93577); AI Gateway sandbox escape CVE-2026-90970 (9.9) on 2026-10-02"
+    source_record: gitlab-security
+    published: "2026-09-23 (AI Gateway release 2026-10-02)"
+    sources:
+      - { url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/", publisher: "GitLab (19.4.1 / 19.3.3 / 19.2.7 patch release)", date: "2026-09-23", role: "primary" }
+      - { url: "https://docs.gitlab.com/releases/patches/other-patches/patch-release-gitlab-ai-gateway-19-4-1-released/", publisher: "GitLab (AI Gateway 19.4.1 patch release)", date: "2026-10-02", role: "corroborating" }
+    discovery_trace: "first seen at: coordinator scope addendum (GitLab CVE-2026-89078 and CVE-2026-93577, CVSS 9.9, 2026-09-23); gitlab-security record feed URL https://about.gitlab.com/security-releases.xml listed the 2026-09-23 release -> primary: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/ -> WebSearch ('CVE-2026-89078 GitLab regular expression double free CI/CD') found only aggregator echoes (stack.watch, opencve) and Japanese trade-press relays, no exploitation reporting"
+    summary: |
+      GitLab's critical patch release of 2026-09-23 fixes CVE-2026-89078, a double free in the regular-expression parser, and CVE-2026-93577, an integer overflow in the regular-expression compiler. In both, an authenticated user who submits a specially crafted regular expression in a CI/CD configuration can execute arbitrary code on the GitLab server; GitLab rates both CVSS 9.9 (AV:N/AC:L/PR:L/UI:N/S:C, impact C:H/I:H with A:L for 89078 and A:H for 93577). Affected: GitLab CE/EE from 19.2 before 19.2.7, 19.3 before 19.3.3 and 19.4 before 19.4.1; earlier branches are not listed. Both were reported through HackerOne by the same researcher (joaxcar), who also reported CVE-2026-84739 (merge-request diff viewer stored XSS, 8.7). GitLab.com already runs the fix and Dedicated customers need no action; self-managed instances must upgrade. GitLab states no exploitation; the issue tracker details become public 90 days after release; a WebSearch of the CVE id found no PoC or KEV listing as of 2026-10-11 (search-engine summary, not a primary). Separately, GitLab AI Gateway critical patch 19.4.1 / 19.3.2 / 19.2.4 (2026-10-02) fixes CVE-2026-90970, an authenticated Duo Agent Platform user escaping the prompt-template sandbox through a crafted flow configuration to run commands on the AI Gateway (CVSS 9.9; affected 18.1.6 before 19.2.4, 19.3 before 19.3.2, 19.4 before 19.4.1).
+    region_nexus: "global; self-managed GitLab is common in public-administration software estates"
+    primary_sector_nexus: "indirect (developer platform)"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-89078, CVE-2026-93577, CVE-2026-90970, CVE-2026-84739]
+    techniques: [T1190, T1059]
+    affected_products: ["GitLab Community Edition", "GitLab Enterprise Edition", "GitLab AI Gateway"]
+    entity_keys: []
+    verification: SINGLE-SOURCE-VENDOR-PSIRT
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "CVSS 9.9 but authenticated (any user who can edit CI/CD configuration) with no exploitation, PoC or KEV reported; below the pre-auth/exploited bar of the G1b duties"
+    evidence:
+      - quote: "GitLab has remediated an issue that under certain conditions could have allowed an authenticated user to execute arbitrary code on the GitLab server due to a double free issue when parsing a specially crafted regular expression in a CI/CD configuration."
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/"
+      - quote: "GitLab CE/EE: all versions from 19.2 before 19.2.7, 19.3 before 19.3.3, and 19.4 before 19.4.1"
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/"
+  - title: "GitLab backports the CVE-2026-85706 / CVE-2026-87719 fixes to 19.0.9 and 18.11.12 on 2026-09-23 (entry's fixed list only names 19.1.8 / 19.2.6 / 19.3.2)"
+    source_record: gitlab-security
+    published: "2026-09-23"
+    sources:
+      - { url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-9-released/", publisher: "GitLab (19.0.9 / 18.11.12 patch release)", date: "2026-09-23", role: "primary" }
+    discovery_trace: "first seen at: gitlab-security record feed URL https://about.gitlab.com/security-releases.xml (two critical releases dated 2026-09-23) -> primary: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-9-released/ ; store check: entries/2026-09-12/cve-2026-85706-gitlab-unauth-path-traversal-file-read.md lists fixed 19.1.8 / 19.2.6 / 19.3.2 only"
+    summary: |
+      GitLab's 2026-09-23 critical releases 19.0.9 and 18.11.12 contain exactly the security fixes shipped on 2026-09-10 in 19.1.8, 19.2.6 and 19.3.2, backported for self-managed installations that cannot immediately move to 19.1 or later: CVE-2026-85706 (unauthenticated path traversal in the repository commits API, arbitrary file read, CVSS 10.0, in the CISA KEV catalog since 2026-09-11 per GitLab's post) and CVE-2026-87719 (GraphQL subscription deserialization, EE, CVSS 9.9). GitLab's impacted-versions line for CVE-2026-85706 now reads all versions from 18.7 before 18.11.12, 19.0 before 19.0.9, 19.1 before 19.1.8, 19.2 before 19.2.6 and 19.3 before 19.3.2, so operators on the 18.11 and 19.0 branches finally have a same-branch fixed build. GitLab also publishes three LFI detections for self-managed instances (reads of gitlab.yml, the metadata.path parameter, path enumeration). The covering entry's `fixed` fields name only 19.1.8 / 19.2.6 / 19.3.2.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-85706, CVE-2026-87719]
+    techniques: [T1190, T1552.001]
+    affected_products: ["GitLab Community Edition", "GitLab Enterprise Edition"]
+    entity_keys: []
+    verification: SINGLE-SOURCE-VENDOR-PSIRT
+    confidence: HIGH
+    novelty: "update-of:2026-09-12/cve-2026-85706-gitlab-unauth-path-traversal-file-read"
+    lookback: true
+    evidence:
+      - quote: "19.0.9 and 18.11.12 are backport releases for self-managed installations that cannot immediately move to a supported 19.1 or later version."
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-9-released/"
+      - quote: "GitLab CE/EE: all versions from 18.7 before 18.11.12, 19.0 before 19.0.9, 19.1 before 19.1.8, 19.2 before 19.2.6, and 19.3 before 19.3.2"
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-9-released/"
+  - title: "WatchGuard 2026-09-28 to 2026-10-01 advisory bundle: unauthenticated API session plus command injection on WatchGuard APs (CVSS 9.3), Firebox BOVPN-over-TLS client code injection (9.2) and pre-auth DoS in iked and login; no exploitation reported"
+    source_record: watchguard-psirt
+    published: "2026-09-28 to 2026-10-01"
+    sources:
+      - { url: "https://psirt.watchguard.com/CVE-2026-101891/", publisher: "WatchGuard PSIRT (CVE-2026-101891)", date: "2026-09-28", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-86102/", publisher: "WatchGuard PSIRT (CVE-2026-86102)", date: "2026-09-28", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-86131/", publisher: "WatchGuard PSIRT (CVE-2026-86131)", date: "2026-09-29", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-81433/", publisher: "WatchGuard PSIRT (CVE-2026-81433)", date: "2026-09-29", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-86134/", publisher: "WatchGuard PSIRT (CVE-2026-86134)", date: "2026-09-30", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-13043/", publisher: "WatchGuard PSIRT (CVE-2026-13043)", date: "2026-10-01", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13007", publisher: "NCSC Switzerland (Cyber Security Hub advisory 13007)", date: "2026-09-29", role: "corroborating" }
+    discovery_trace: "first seen at: coordinator scope addendum (WatchGuard advisory bundle 2026-09-28 to 2026-10-01, about 15 CVEs); watchguard-psirt record, listing URL https://psirt.watchguard.com/ (extract; listing carries severity, summary, affected and fixed ranges per CVE, no dates) -> per-CVE pages for the 19 entries above the 2026-08 Fireware 2026.3.1 batch (extract) read for date, summary, exploitation status and solution"
+    summary: |
+      WatchGuard published about 20 advisories between 2026-09-28 and 2026-10-01 (plus AuthPoint Gateway CVE-2026-95676 on 2026-09-23); each states that WatchGuard is not aware of exploitation in the wild. The highest-severity items: on WatchGuard Access Points, CVE-2026-101891 (CVSS 9.3) is an improper access control in an internal API service that lets an unauthenticated attacker with network access to the AP obtain a valid API session, and CVE-2026-86102 (9.3) is an OS command injection in the AP's internal API service that lets an attacker with network access run shell commands; chained they give unauthenticated command execution on the AP (WatchGuard does not state the chain; AP 3.4.8 fixes both, 1.0 to before 3.4.8 affected), and CVE-2026-87969 (8.6) is an authenticated command injection in the diagnostic CLI. On the Firebox (Fireware OS, fixed in 2026.3.2, 2026.2.3, 12.12.3 and T15/T35 12.5.21): CVE-2026-86131 (9.2) lets an attacker who controls the remote BOVPN-over-TLS server execute commands as root on the connecting Firebox; CVE-2026-81433 (8.7) is a stack overflow in the DHCP-fingerprinting daemon fingerd reachable by an unauthenticated attacker with adjacent network access (code execution or crash; fixed in 2026.3.2, 2026.2.3, 12.12.3, not T15/T35); CVE-2026-18145 (8.6, administrator-authenticated spamd overflow) and CVE-2026-13046 (7.5, deserialization in the SAML samld service for an attacker who can already write files; also fixed in 12.11.10 for EUCC) are code-execution items with preconditions; CVE-2026-86134 (8.7), CVE-2026-86104 (8.7), CVE-2026-86132 and CVE-2026-86133 (8.2) and CVE-2026-86128 (8.2) are remote DoS flaws (pre-auth in the login interface, the IKEv2 daemon and NetFlow IPv6 handling); CVE-2026-86101 (7.2) lets a SAML Access Portal user obtain Mobile VPN with SSL access; CVE-2026-13224 (8.2, administrator path traversal read), CVE-2026-86105, CVE-2026-90441, CVE-2026-86136 and CVE-2026-18105 are authenticated flaws. CVE-2026-13043 (9.3, 2026-10-01) is a local authenticated bypass of the access-control handshake of the PSKMAD kernel memory access driver in WatchGuard Endpoint Security (fixed in 8.00.26.0012), not network-reachable. The earlier Fireware 2026.3.1 batch (iked pre-auth RCEs) was covered separately.
+    region_nexus: "global; NCSC Switzerland relayed the AP flaws on 2026-09-29 (advisory 13007); Firebox is a common perimeter firewall in Swiss communal and cantonal networks (profile context, not stated by the vendor)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-101891, CVE-2026-86102, CVE-2026-87969, CVE-2026-86131, CVE-2026-81433, CVE-2026-18145, CVE-2026-13046, CVE-2026-86134, CVE-2026-86104, CVE-2026-86132, CVE-2026-86133, CVE-2026-86128, CVE-2026-86101, CVE-2026-13224, CVE-2026-13043, CVE-2026-95676]
+    techniques: [T1190, T1059, T1068]
+    affected_products: ["WatchGuard Fireware OS (Firebox)", "WatchGuard Access Points", "WatchGuard Endpoint Security", "WatchGuard AuthPoint Gateway"]
+    entity_keys: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "many advisories but none exploited, no pre-auth RCE on the Firebox itself; the 9.3 unauthenticated AP chain is the only network-reachable critical (NCSC-CH relayed it, which raises relevance), on a less widespread product"
+    evidence:
+      - quote: "allows an unauthenticated attacker with network access to the AP to obtain a valid API session."
+        attribution: "WatchGuard PSIRT (CVE-2026-101891)"
+        source_url: "https://psirt.watchguard.com/CVE-2026-101891/"
+      - quote: "allows an attacker with network access to the AP to execute arbitrary shell commands on the underlying operating system."
+        attribution: "WatchGuard PSIRT (CVE-2026-86102)"
+        source_url: "https://psirt.watchguard.com/CVE-2026-86102/"
+      - quote: "allows an attacker who controls the remote VPN server to execute arbitrary commands as root on the connecting Firebox."
+        attribution: "WatchGuard PSIRT (CVE-2026-86131)"
+        source_url: "https://psirt.watchguard.com/CVE-2026-86131/"
+      - quote: "Successful exploitation allows unauthenticated attackers with network access to obtain valid API sessions and execute arbitrary OS commands on affected access points."
+        attribution: "NCSC Switzerland (advisory 13007)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13007"
+      - quote: "WatchGuard is not aware of any exploitation of this vulnerability in the wild."
+        attribution: "WatchGuard PSIRT (CVE-2026-86131)"
+        source_url: "https://psirt.watchguard.com/CVE-2026-86131/"
+  - title: "IBM Verify Identity Access / Security Verify Access: unauthenticated deserialization RCE CVE-2026-78401 (CVSS 9.8), no workaround, fixed in 11.0.3.1 and 10.0.9.3"
+    source_record: ibm-support-security-bulletins
+    published: "2026-10-07"
+    sources:
+      - { url: "https://ibm.com/support/pages/node/7291628", publisher: "IBM Support (security bulletin, node 7291628)", date: "2026-10-07", role: "primary" }
+    discovery_trace: "first seen at: WebSearch ('IBM security bulletin critical unauthenticated remote code execution October 2026 ibm.com/support/pages') -> OpenCVE echo https://app.opencve.io/cve/CVE-2026-78401 (lead only, not cited) -> WebSearch ('Security Bulletin IBM Security Verify Access deserialization of untrusted data CVE-2026-78401 remote code execution 10.0.9.3') surfaced the IBM node -> primary: https://ibm.com/support/pages/node/7291628 (fetched with `url`). Slice record ibm-support-security-bulletins has no listing; its recipe fetches slug-form bulletin URLs, so in-window IBM bulletins are findable only by search."
+    summary: |
+      IBM's bulletin of 2026-10-07 (initial publication, no revision) addresses ten CVEs in IBM Verify Identity Access 11.0 to 11.0.3 and IBM Security Verify Access 10.0 to 10.0.9.2, appliance and container editions. CVE-2026-78401 (CVSS 3.1 9.8, AV:N/AC:L/PR:N/UI:N) lets a remote unauthenticated attacker execute arbitrary code through deserialization of untrusted data (CWE-502); IBM names no vulnerable component or endpoint. CVE-2026-16916 (9.1, scope changed) is an authenticated remote code execution through a protection mechanism failure in the Security Verify Access Appliance (PR:H); CVE-2026-17189 (8.2) is a reflected XSS requiring a local attacker; the other items are medium or low (DoS via crafted HTTP query CVE-2026-78399, uncontrolled recursion CVE-2026-19498, authentication-workflow bypass CVE-2026-19878 for an authenticated attacker, stored XSS and audit-log forgery). IBM lists the workarounds and mitigations as None. Fixes: IBM Verify Identity Access v11.0.3.1 and IBM Security Verify Access v10.0.9.3 for the appliances, plus container updates. IBM's text states no exploitation and no public proof of concept; a secondary tracker reports the CVE is not in CISA KEV (not verified against KEV by this agent).
+    region_nexus: "global; access-management gateway used by large administrations (not stated by the source)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-78401, CVE-2026-16916, CVE-2026-17189, CVE-2026-78399, CVE-2026-19498, CVE-2026-19878]
+    techniques: [T1190]
+    affected_products: ["IBM Verify Identity Access", "IBM Security Verify Access"]
+    entity_keys: []
+    verification: SINGLE-SOURCE-VENDOR-PSIRT
+    confidence: HIGH
+    novelty: new
+    borderline: false
+    evidence:
+      - quote: "IBM Verify Identity Access could allow a remote unauthenticated attacker to execute arbitrary code on the system due to the deserialization of untrusted data."
+        attribution: "IBM Support"
+        source_url: "https://ibm.com/support/pages/node/7291628"
+      - quote: "Workarounds and Mitigations None"
+        attribution: "IBM Support"
+        source_url: "https://ibm.com/support/pages/node/7291628"
+      - quote: "IBM Verify Identity Access v11.0.3.1"
+        attribution: "IBM Support"
+        source_url: "https://ibm.com/support/pages/node/7291628"
+  - title: "Splunk Enterprise SVD-2026-1001: unauthenticated OS command execution through the Patroni REST API on search head cluster members (CVE-2026-76268, CVSS 9.8), fixed in 10.4.3 and 10.2.7"
+    source_record: splunk-advisories
+    published: "2026-10-07"
+    sources:
+      - { url: "https://advisory.splunk.com/advisories/SVD-2026-1001", publisher: "Splunk Vulnerability Disclosure (SVD-2026-1001)", date: "2026-10-07", role: "primary" }
+    discovery_trace: "first seen at: splunk-advisories record, listing URL https://advisory.splunk.com/advisories (extract: SVD-2026-1001 to -1005 dated 2026-10-07, SVD-2026-1001 marked Critical) -> primary: https://advisory.splunk.com/advisories/SVD-2026-1001 (per-CVE table and CVE Details read in full)"
+    summary: |
+      Splunk's 2026-10-07 release SVD-2026-1001 fixes 17 CVEs in Splunk Enterprise 10.4.3, 10.2.7, 10.0.10 and 9.4.15 (affected: 10.4.0 to 10.4.2, 10.2.0 to 10.2.6, 10.0.0 to 10.0.9, 9.4.0 to 9.4.14). One is critical: CVE-2026-76268 (CWE-306, CVSS 3.1 9.8, AV:N/AC:L/PR:N/UI:N), where an unauthenticated user with network access to the Patroni REST API on a search head cluster member can execute attacker-controlled operating-system commands because the interface requires no authentication for critical configuration operations. Only Splunk Enterprise below 10.4.3 and below 10.2.7 is affected; 10.0.x and 9.4.x are not. Splunk's mitigation is to disable the PostgreSQL sidecar (`disabled = true` in the `[postgres]` stanza of server.conf under $SPLUNK_HOME/etc/system/local, then restart) if Edge Processor, OpAmp or SPL2 data pipelines are not used. Splunk credits an internal finder (Gabriel Nitu) and states no exploitation. The rest of the release is authenticated: local privilege escalation through Linux package upgrades (CVE-2026-76266, 7.7), and medium access-control, injection and SSRF items in the REST API, Secure Gateway and the Observability Cloud apps; four CVEs (CVE-2026-76264, -76265, -76272, -76280) need additional configuration steps after the upgrade (for CVE-2026-76264, `scripted_lookup_raw_write_enforcement = block` in limits.conf under [lookup]). The same day Splunk published third-party package updates for Enterprise and the AWS add-on (SVD-2026-1003, -1005, rated Critical for the bundled components), a hardening release (SVD-2026-1002) and a medium MCP Server flaw (SVD-2026-1004, CVE-2026-76286).
+    region_nexus: "global; Splunk is a common SIEM platform in SOCs"
+    primary_sector_nexus: "indirect (security tooling in SOCs)"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-76268, CVE-2026-76266, CVE-2026-76265, CVE-2026-76264, CVE-2026-76272, CVE-2026-76280]
+    techniques: [T1190, T1059]
+    affected_products: ["Splunk Enterprise"]
+    entity_keys: []
+    verification: SINGLE-SOURCE-VENDOR-PSIRT
+    confidence: HIGH
+    novelty: new
+    borderline: false
+    evidence:
+      - quote: "an unauthenticated user with network access to the Patroni Representational State Transfer (REST) Application Programming Interface (API) on a search head cluster member could execute attacker-controlled operating-system commands"
+        attribution: "Splunk Vulnerability Disclosure (SVD-2026-1001)"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1001"
+      - quote: "Splunk Enterprise versions 10.0.x and 9.4.x are not affected."
+        attribution: "Splunk Vulnerability Disclosure (SVD-2026-1001)"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1001"
+  - title: "Bricksforge (WordPress) CVE-2026-85097: unauthenticated arbitrary file upload to PHP code execution (CVSS 10.0) under active exploitation since 2026-10-07, fixed in 3.1.8.10"
+    source_record: patchstack
+    published: "2026-10-08"
+    sources:
+      - { url: "https://patchstack.com/articles/critical-unauthenticated-arbitrary-file-upload-vulnerability-exploited-in-bricksforge-plugin/", publisher: "Patchstack", date: "2026-10-08", role: "primary" }
+    discovery_trace: "first seen at: patchstack record, feed URL https://patchstack.com/feed/ (item dated 2026-10-08) -> extract of https://patchstack.com/articles/critical-unauthenticated-arbitrary-file-upload-vulnerability-exploited-in-bricksforge-plugin/ (primary: Patchstack's own exploitation telemetry; the article links the Bricksforge changelog as the vendor advisory, not fetched). Single source: no independent corroboration found in this run."
+    summary: |
+      Patchstack reports that CVE-2026-85097 in the Bricksforge plugin for WordPress (an extension for the Bricks Builder theme; the article's card shows 6K, apparently installations) is exploited in the wild: its telemetry saw exploitation attempts from 2026-10-07 21:47 UTC. The flaw is an unauthenticated arbitrary file upload (CVSS 10.0): the plugin validates a file's MIME type at first upload but, when a form is submitted, trusts the client-sent `temporaryFileUploads` metadata and does not validate its `url` field. The sequence is: request a nonce from the unauthenticated `bricksforge_regenerate_nonce` AJAX endpoint, upload a GIF/PHP polyglot that passes the MIME check into the plugin's temporary upload directory, submit a form whose `file` path points at the image but whose `url` ends in a PHP extension, and request the resulting file to execute the code. Affected: versions up to and including 3.1.8.9; fixed in 3.1.8.10. Patchstack observed all but one request on the REST route `/wp-json/bricksforge/v1/form_submit` (the other on `admin-ajax.php` with the `bricksforge_form_submit` action), 63 source addresses on mixed datacenter, proxy and residential infrastructure, evasion attempts with alternative PHP extensions, case changes and URL-encoded extensions, and says the pattern points to automation without attributing an actor. The detection hook is the mismatch between an image-typed server-side path and a PHP-typed destination URL in the submitted parameter, plus unexpected PHP files under the plugin's temporary upload directory or the dated uploads directories. Patchstack states it deployed a mitigation rule for its customers.
+    region_nexus: "global; WordPress sites including communal and regional sites"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-85097]
+    techniques: [T1190, T1505.003]
+    affected_products: ["Bricksforge (WordPress plugin)"]
+    entity_keys: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "exploited unauthenticated RCE at CVSS 10, but a niche plugin (about 6K installs per the card) and a single vendor-telemetry source; the duty names widely installed components only"
+    evidence:
+      - quote: "This vulnerability is currently being targeted in the wild."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/critical-unauthenticated-arbitrary-file-upload-vulnerability-exploited-in-bricksforge-plugin/"
+      - quote: "It affects Bricksforge versions up to and including 3.1.8.9. A fix is available in version 3.1.8.10"
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/critical-unauthenticated-arbitrary-file-upload-vulnerability-exploited-in-bricksforge-plugin/"
+  - title: "Veeam Backup & Replication 12.3.2 P4 (KB4934): Backup Viewer role to SYSTEM RCE via Mount Service deserialization (CVSS 4.0 9.4, CVE-2025-64393 per NCSC-CH); version 13 not affected"
+    source_record: off-slice (found via NCSC-CH `ncsc-csh recent 60`; vendor is not in the G1b slice)
+    published: "2026-10-06 (NCSC-CH relay 2026-10-09)"
+    sources:
+      - { url: "https://www.veeam.com/kb4934", publisher: "Veeam (KB4934)", date: "2026-10-06", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13043", publisher: "NCSC Switzerland (Cyber Security Hub advisory 13043)", date: "2026-10-09", role: "corroborating" }
+    discovery_trace: "first seen at: `python3 tools/fetch_source.py ncsc-csh recent 60` (post 13043, 2026-10-09: Veeam Backup & Replication Critical RCE CVE-2025-64393; the post's primary reference is https://www.veeam.com/kb4934) -> primary: https://www.veeam.com/kb4934 (extract). The Veeam KB extract carries no CVE identifier; the id comes from NCSC-CH only (not verified on a per-CVE authority by this agent)."
+    summary: |
+      Veeam's KB4934 (published 2026-10-06) lists three flaws fixed in Veeam Backup & Replication 12.3.2 P4 (build 12.3.2.4934): a Critical remote code execution (CVSS 4.0 9.4, AV:N/AC:L/PR:L) in which a low-privileged user with the Backup Viewer role achieves RCE on the Veeam Backup Server through insecure deserialization of untrusted data received via the Mount Service; a Medium (6.1) flaw letting a Backup Viewer modify or delete the Enterprise Manager master key and read or overwrite stored antivirus-update credentials; and a Medium (4.8) reflected XSS in Veeam Backup Enterprise Manager. All affect 12.3.2 P3 (build 12.3.2.4854) and older version 12 builds; version 13 builds are not affected, and Veeam reminds customers that version 12 reaches end of support on 2027-02-28. NCSC Switzerland's advisory 13043 (2026-10-09) relays the first flaw as CVE-2025-64393, with prerequisites of a low-privileged role (Backup Viewer or an authenticated Cloud Connect tenant) and network access to the service, and lists the exploitation status as unknown. Veeam states the issues came through HackerOne; no exploitation is stated by Veeam.
+    region_nexus: "global; backup servers are a ransomware priority target; NCSC-CH relayed the advisory"
+    primary_sector_nexus: "indirect (backup infrastructure)"
+    sector: "public-sector, technology"
+    cves: [CVE-2025-64393]
+    techniques: [T1190, T1078, T1068]
+    affected_products: ["Veeam Backup & Replication 12", "Veeam Backup Enterprise Manager"]
+    entity_keys: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "9.4 but requires a low-privileged Backup Viewer role (PR:L); no exploitation; NCSC-CH relayed it, and Veeam servers are prime ransomware targets"
+    evidence:
+      - quote: "A vulnerability allowing a low-privileged user with the Backup Viewer role to perform remote code execution (RCE) on the Veeam Backup Server through insecure deserialization of untrusted data received via the Mount Service."
+        attribution: "Veeam (KB4934)"
+        source_url: "https://www.veeam.com/kb4934"
+      - quote: "Prerequisites:** Low-privileged access (e.g., Backup Viewer role or authenticated Cloud Connect tenant) and network access to the affected service."
+        attribution: "NCSC Switzerland (advisory 13043)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13043"
+  - title: "ILIAS learning management system: October 2026 security release fixes several remote code execution flaws (test, CmiXapi and question imports) and an anonymous protected-file download, per NCSC Switzerland"
+    source_record: off-slice (found via NCSC-CH `ncsc-csh recent 60`; ILIAS is not in the G1b slice)
+    published: "2026-10-07"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13035", publisher: "NCSC Switzerland (Cyber Security Hub advisory 13035)", date: "2026-10-07", role: "primary" }
+    discovery_trace: "first seen at: `python3 tools/fetch_source.py ncsc-csh recent 60` (post 13035, 2026-10-07) -> post body read with `ncsc-csh post 13035`; its primary reference, the ILIAS security blog advisory at docu.ilias.de, is behind a session/captcha wall (extract returned a 404 page and a captcha page) and could not be read. WebSearch ('ILIAS Sicherheitslücken Oktober 2026 ...') surfaced an OpenCVE echo of CVE-2026-107639 (image-map question upload, branches 9.x before 9.24, 10.x before 10.12, 11.x before 11.5) that was not fetched and is not cited."
+    summary: |
+      NCSC Switzerland's advisory 13035 of 2026-10-07 reports that multiple vulnerabilities were fixed in the open-source learning management system ILIAS, including several remote code execution flaws reachable through test, CmiXapi (xAPI content) and question imports, and a flaw that lets anonymous users download protected file objects when the public area is enabled; further fixes cover stored XSS, broken access control, path traversal file deletion and unauthenticated user enumeration. NCSC-CH states that the RCE flaws generally require an authenticated user while the file disclosure requires the public area feature, lists the exploitation status as unknown and the mitigation as vendor patches; it names no CVE ids, fixed versions or CVSS scores, and the vendor advisory could not be read. The store already tracks ILIAS (two earlier entries: 2026-05-28 nine fixes, 2026-06-23 unpatched PoC SQL injection in 11.0); NCSC-CH's issuing of a dedicated advisory marks it as relevant to the Swiss constituency.
+    region_nexus: "Switzerland: NCSC-CH issued the advisory (ILIAS is a learning management system used in education; deployment extent in Swiss bodies not stated by the source)"
+    primary_sector_nexus: "possible (public education and training platforms)"
+    sector: "public-sector, education"
+    cves: []
+    techniques: [T1190, T1078]
+    affected_products: ["ILIAS"]
+    entity_keys: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "single source (NCSC-CH carve-out), no CVE ids, versions or exploitation known, authenticated RCE; but a Swiss-relevant platform with two earlier store entries"
+    evidence:
+      - quote: "RCE flaws generally require authenticated user access, while file disclosure requires the public area feature to be enabled."
+        attribution: "NCSC Switzerland (advisory 13035)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13035"
+      - quote: "Attackers can achieve remote code execution through test, CmiXapi, or question imports, or exfiltrate files without permission."
+        attribution: "NCSC Switzerland (advisory 13035)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13035"
+# One-line dispositions for the coordinator's scope-addendum items (window start extended to 2026-09-27T13:08Z)
+addendum_dispositions:
+  - { item: "GitLab CVE-2026-89078 and CVE-2026-93577 (CVSS 9.9, 2026-09-23)", disposition: "new item (borderline: true)", fragment: "05-gitlab-regex-rce-9-9", primary: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/", source_record: "gitlab-security (feed https://about.gitlab.com/security-releases.xml listed it 2026-09-23)", why: "authenticated (PR:L) RCE through CI/CD regex handling; no exploitation, PoC or KEV found; not pre-auth, so borderline against the duty bar" }
+  - { item: "GitLab 2026-09-23 backport releases 19.0.9 / 18.11.12 of the CVE-2026-85706 and CVE-2026-87719 fixes", disposition: "update-of:2026-09-12/cve-2026-85706-gitlab-unauth-path-traversal-file-read", fragment: "06-gitlab-85706-backport-update", primary: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-9-released/", why: "the entry's affected and fixed fields name only 19.1.8 / 19.2.6 / 19.3.2; GitLab now lists 18.11.12 and 19.0.9 as fixed builds for the 18.7 to 19.0 branches (KEV-listed unauthenticated file read, so material for operators on those branches)" }
+  - { item: "GitLab AI Gateway CVE-2026-90970 (2026-10-02, CVSS 9.9)", disposition: "folded into the new GitLab item (05)", primary: "https://docs.gitlab.com/releases/patches/other-patches/patch-release-gitlab-ai-gateway-19-4-1-released/", why: "authenticated Duo Agent Platform user, sandbox escape on the AI Gateway" }
+  - { item: "OpenBao / HashiCorp Vault authentication-bypass flaws (2026-09-23)", disposition: "dropped", primary: "https://discuss.hashicorp.com/t/hcsec-2026-43-vault-inconsistent-acl-policy-evaluation-may-allow-bypass-of-deny-restrictions/77815", why: "every flaw needs an authenticated or privileged principal and none is exploited: OpenBao advisories of 2026-09-23 (GHSA-j6wc-jpvg-xfxq CVE-2026-104090 critical RCE via sys/storage/raft/snapshot-force needs a highly privileged operator and Raft storage; GHSA-x8fg-h69x-p28f CVE-2026-104092 ACME SANs; GHSA-mjch-vcw3-hhmf policy-cache namespace traversal, fixed in 2.6.3 and 2.7.0, all 'original to HashiCorp Vault') and the matching Vault bulletins of 2026-10-07 (HCSEC-2026-40 CVE-2026-105818 ACME identities, -41 CVE-2026-105816 plugin catalog RCE via Raft snapshot restore with Shamir seals, -42 CVE-2026-105820 Enterprise cross-namespace policy cache, -43 CVE-2026-89322 ACL deny bypass for delegated users; fixed in Vault 2.1.2, Enterprise 2.1.2 / 1.21.12 / 1.20.17 / 1.19.23). No pre-auth path, CVSS 9+ unauthenticated item or exploitation exists in the set" }
+  - { item: "HPE Aruba Instant On CVE-2026-76723 / 76724 / 76725 (CVSS 9.6, 2026-09-29)", disposition: "new item (borderline: true)", fragment: "04-hpe-instant-on-hpesbnw05150", primary: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05150.txt", source_record: "hpe-networking-psirt", why: "the three ids are adjacent-network (AV:A), not internet-reachable; the same advisory also carries two unauthenticated network 9.8 flaws (CVE-2026-76721/76722); fix is cloud-applied. The same listing also surfaced two larger HPE advisories of 2026-10-06 that the store lacks: ClearPass (item 02, not borderline) and AOS-S (item 03)" }
+  - { item: "Zimbra CVE-2026-66912 / CVE-2026-66911 (NCSC-CH advisory 13022, 2026-10-01)", disposition: "covered:2026-08-20/cve-2026-73570-zimbra-snmp-command-injection-exploited", primary: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories", why: "the entry's 2026-10-02 update already carries the 10.1.21 release (2026-09-24), the unauthenticated password-recovery code prediction, WebDAV pre-MFA token and OnlyOffice fixes and NCSC-CH's advisory; only the two stored-XSS CVE ids (66911 Content-Location, 66912 sender display name, both CERT.PL reports, no CVSS yet) are not named in its cves[] (they are absent from state/cves_seen.json), a possible metadata-only improvement" }
+  - { item: "WatchGuard advisory bundle 2026-09-28 to 2026-10-01 (about 15 CVEs; 20 by the vendor listing)", disposition: "new item (borderline: true)", fragment: "07-watchguard-bundle-0928-1001", primary: "https://psirt.watchguard.com/CVE-2026-101891/", source_record: "watchguard-psirt (candidate record; listing URL https://psirt.watchguard.com/)", why: "none exploited per WatchGuard; the 9.3 unauthenticated AP API session plus AP command injection pair was relayed by NCSC-CH (advisory 13007, 2026-09-29); Firebox items are pre-auth DoS or need preconditions" }
+
+# One-line `covered` records (novelty: covered:<entry-id>), no new development found
+covered:
+  - { title: "Fortinet FortiMail CVE-2026-104286 (FG-IR-26-175): the only in-window Fortinet advisory; CSAF current_release_date 2026-10-05 matches the revision the entry already carries, no later revision", novelty: "covered:2026-10-02/cve-2026-104286-fortimail-path-traversal-zero-day-kev", primary: "https://filestore.fortinet.com/fortiguard/psirt/csaf_improper-limitation-of-a-pathname-to-a-restricted-directory_fg-ir-26-175.json", source_record: fortinet-psirt, published: "2026-10-01" }
+  - { title: "Citrix NetScaler CVE-2026-88771 to -88778 (CTX697096)", novelty: "covered:2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev", primary: "https://support.citrix.com/external/article/CTX697096/citrix-netscaler-adc-and-citrix-netscale.html", source_record: citrix-netscaler-security-bulletins, published: "2026-09-27" }
+  - { title: "Citrix NetScaler CVE-2026-88779 (CTX697174) and the 2026-10-02 SAML guidance post", novelty: "covered:2026-10-04/cve-2026-88779-citrix-netscaler-saml-overflow-exploited", primary: "https://support.citrix.com/external/article/CTX697174/citrix-netscaler-adc-and-citrix-netscale.html", source_record: citrix-netscaler-security-bulletins, published: "2026-10-03" }
+  - { title: "Citrix NetScaler CVE-2026-107406 (CTX697191; revision history shows only 2026-10-08 initial publication and the blog-link addition, no exploitation statement)", novelty: "covered:2026-10-09/cve-2026-107406-citrix-netscaler-saml-idp-overflow", primary: "https://support.citrix.com/external/article/CTX697191/citrix-netscaler-adc-and-citrix-netscale.html", source_record: citrix-netscaler-security-bulletins, published: "2026-10-08" }
+  - { title: "Atlassian Data Center CVE-2026-21589 (advisory 2026-10-05, CVSS 4.0 9.3)", novelty: "covered:2026-10-06/cve-2026-21589-atlassian-data-center-arbitrary-file-access", primary: "https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html", source_record: atlassian-security-advisories, published: "2026-10-05" }
+  - { title: "SonicWall SMA1000 SNWLID-2026-0017 (CVE-2026-102255 to -102258): the only in-window SonicWall advisory", novelty: "covered:2026-10-08/cve-2026-102255-sonicwall-sma1000-workplace-ssrf", primary: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0017", source_record: sonicwall-psirt, published: "2026-10-06" }
+  - { title: "Cisco Catalyst SD-WAN Manager CVE-2026-76504 (CSAF v1.1 of 2026-10-02 = the Live Protect revision the entry already added)", novelty: "covered:2026-10-02/cve-2026-76504-cisco-catalyst-sd-wan-manager-auth-bypass-kev", primary: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-webauth-xr8beuuU", source_record: cisco-psirt, published: "2026-09-30" }
+  - { title: "Apple CVE-2026-86950 CoreGraphics (iOS/iPadOS 26.7.1, macOS Tahoe 26.7.1, Sequoia 15.8.1 of 2026-09-28): the only CVE in the window's Apple releases; iOS 27.0.1 and the other 27.0.1 updates list no CVEs", novelty: "covered:2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev", primary: "https://support.apple.com/en-us/149226", source_record: apple-security, published: "2026-09-28" }
+  - { title: "Zammad: 2026-10-06 advisories (GHSA-f3qr-94c2-7mx2 MFA bypass CVSS 4.0 9.1, 7.2.1) and 2026-10-08 CVE-2026-102490 are in the entry", novelty: "covered:2026-10-02/zammad-cve-2026-102489-102490-exploited-divd-breach", primary: "https://github.com/zammad/zammad/security/advisories/GHSA-f3qr-94c2-7mx2", source_record: zammad-github-advisories, published: "2026-10-06" }
+  - { title: "MikroTik RouterOS CVE-2026-84411 notice (2026-10-06; fixed in 7.24, long-term v7 and v6 releases pending at fetch time)", novelty: "covered:2026-10-10/cve-2026-84411-mikrotik-routeros-web-management-preauth-rce", primary: "https://mikrotik.com/supportsec/cve-2026-84411", source_record: mikrotik-routeros-changelog, published: "2026-10-06" }
+  - { title: "Check Point sk1000171 CVE-2026-93616 (lastModified 2026-09-22; no in-window revision); sk185222 CVE-2026-18574 is the 2026-08-01 advisory", novelty: "covered:2026-09-23/cve-2026-93616-check-point-security-mgmt-path-traversal", primary: "https://support.checkpoint.com/results/sk/sk1000171", source_record: checkpoint-support, published: "2026-09-20" }
+  - { title: "Zimbra 10.1.21 (2026-09-24) incl. unauthenticated password-recovery prediction; NCSC-CH 13022", novelty: "covered:2026-08-20/cve-2026-73570-zimbra-snmp-command-injection-exploited", primary: "https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories", source_record: zimbra-security-advisories, published: "2026-09-24" }
+  - { title: "CISA KEV additions 2026-09-27 to 2026-10-11: 13, all COVERED (tools/kev_window_diff.py, output in work/2026-10-11T1307Z-audit/kev-window.txt)", novelty: "covered", primary: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", source_record: "cisa-kev (not in slice; run for the cross-check)", published: "2026-10-11" }
+
+# Qualifying-gate candidates examined and dropped, one line each (borderline: true = the main agent may revisit)
+dropped:
+  - { what: "Microsoft early October 2026 release (CVRF 2026-Oct, initial 2026-10-02, revised daily to 2026-10-11): 8 Microsoft CVEs and about 300 third-party (Linux kernel, CUPS, Apache) records. Azure SRE Agent CVE-2026-69435 (9.6), Azure App Service CVE-2026-77900 (9.8), Dataverse CVE-2026-88131 (9.8), Bookings CVE-2026-94510 (9.9), Partner Center CVE-2026-96207 (10.0), API Center CVE-2026-83943 (8.7), Event Grid CVE-2026-83947 (7.7)", reason: "cloud services 'already fully mitigated by Microsoft', Customer Action Required: No, Exploited:No, Publicly Disclosed:No in the CVRF Threats record", url: "https://api.msrc.microsoft.com/cvrf/v3.0/cvrf/2026-Oct" }
+  - { what: "Microsoft Exchange Server CVE-2026-96940 (September 2026 V2 security updates, published 2026-10-02)", reason: "authenticated OWA/mailbox-access EoP, CVSS 8.8, 'Exploitation More Likely' but Exploited:No and Publicly Disclosed:No; needs a user click; no PoC; Exchange prevalence makes it a possible one-line mention", borderline: true, url: "https://api.msrc.microsoft.com/cvrf/v3.0/cvrf/2026-Oct" }
+  - { what: "Microsoft October 2026 Patch Tuesday", reason: "2026-10-13, after the window (MSRC lists 2026-Oct as 'Early Security Updates'); next in the following audit", url: "https://api.msrc.microsoft.com/cvrf/v3.0/cvrf/2026-Oct" }
+  - { what: "Apache HTTP Server 2.4.69 (2026-10-01): 20 CVEs incl. CVE-2026-57941 mod_http2 use-after-free, CVE-2026-56154 mod_rewrite use-after-free, CVE-2026-93546 mod_dav_fs overflow (the 9.8 CVSS values appear on Microsoft's third-party records of the Azure Linux feed, not on Apache's page)", reason: "Apache's own ratings are 5 moderate and 15 low, no exploitation; borderline only because httpd is ubiquitous", borderline: true, url: "https://httpd.apache.org/security/vulnerabilities_24.html" }
+  - { what: "Chrome 154.0.8037.92 (2026-09-29, 32 fixes, critical CVE-2026-102331 ANGLE), 154.0.8037.97 (2026-10-01, 11 fixes, critical CVE-2026-103628 WebGL), 155.0.8059.39 (2026-10-06, critical use-after-free CVE-2026-106382 Chromecast, CVE-2026-106197 Browser, CVE-2026-106358 Navigation, CVE-2026-106347 Track), ChromeOS 154.0.8037.151 (2026-10-09)", reason: "no 'exploit exists in the wild' statement in any post; browser memory-safety needs a user visit", url: "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_086471744.html" }
+  - { what: "Mozilla MFSA 2026-97 (Firefox 157, 76 CVEs: 38 high, 29 moderate, 9 low, none critical), 2026-98 to 2026-100 (ESR 115.42, 140.17, 153.4), 2026-101 to 2026-103 (Thunderbird, 2026-09-30), 2026-104 (Firefox 157.0.1, 2026-10-06, one moderate)", reason: "no exploitation statement, no critical rating", url: "https://www.mozilla.org/en-US/security/advisories/mfsa2026-97/" }
+  - { what: "Palo Alto CVE-2026-0250 (GlobalProtect App buffer overflow, 2026-10-02) and CVE-2026-0307 (GlobalProtect App LPE, 2026-09-30)", reason: "both rated Medium by Palo Alto; client-side", url: "https://security.paloaltonetworks.com/CVE-2026-0250" }
+  - { what: "Siemens SSA-627195 V1.2 (2026-09-28, Mendix Studio Pro zip path traversal); no other SSA in the window", reason: "developer-workstation, local module install; not exploited", url: "https://cert-portal.siemens.com/productcert/html/ssa-627195.html" }
+  - { what: "Keycloak 26.7.5 (2026-09-30) and 26.8.0 (2026-10-01): authorization and logic CVEs (e.g. CVE-2026-12388 IdP mapper admin role escalation, CVE-2026-89298 client secret disclosure to view-clients, CVE-2026-19608 group policy matching)", reason: "no CVSS 9+, no pre-auth RCE, no exploitation; identity infrastructure, so borderline", borderline: true, url: "https://www.keycloak.org/2026/10/keycloak-2680-released" }
+  - { what: "WordPress 7.1.3 (2026-10-06): 7 security fixes (admin-comments stored XSS, WXR export second-order SQL injection, unauthenticated disclosure of comments on private posts, Imgur embed XSS, others)", reason: "no critical or unauthenticated RCE; 7.1.1 (2026-09-17) and 7.1.2 (2026-09-22, LFI to RCE) predate the window and the latter is covered by the 2026-09-24 entry", url: "https://wordpress.org/news/2026/10/wordpress-7-1-3-maintenance-and-security-release/" }
+  - { what: "Joomla core 5.4.9 / 6.1.4 (fixed 2026-09-25: MFA bypass via rememberme cookie CVE-2026-92227 moderate, InputFilter XSS bypasses, ACL checks)", reason: "published 2026-09-25, before the extended window start; Joomla's own severity is moderate", url: "https://developer.joomla.org/security-centre/1094-20260914-core-mfa-authentication-bypass-through-rememberme-cookies.html" }
+  - { what: "TP-Link Omada bulletins 133722 (CVE-2026-84941 XXE, listing date 09-10-2026) and 133567 (CVE-2026-81531 unauthenticated account information disclosure, 09-21-2026)", reason: "both before the window; newest bulletin in the listing is 09-21", url: "https://support.omadanetworks.com/en/bulletin/?bulletinsResourceTypeIdList=1111" }
+  - { what: "Wordfence weekly vulnerability reports (2026-09-21 to 09-27 and 09-28 to 10-04: 501 vulnerabilities in 367 plugins and 9 themes in the latter, 14 and 20 rated Critical)", reason: "extract drops the per-vulnerability table (software names, installs), so individual widely-installed flaws cannot be told apart; no Wordfence post in the window reports exploitation; the Events Calendar 9.8 pair (CVE-2026-78006 / 78159) was disclosed 2026-09-16, before the window", borderline: true, url: "https://www.wordfence.com/blog/2026/10/wordfence-intelligence-weekly-wordpress-vulnerability-report-september-28-2026-to-october-4-2026/" }
+  - { what: "GitHub Advisory Database critical reviewed advisories 2026-09-27 to 2026-10-09 (library level): Next.js next/og ImageResponse RCE GHSA-vcvr-r3jv-pc5j (2026-09-30, no CVE, 16.2.0 to before 16.3.6, requires attacker-controlled values in SVG content), Langflow CVE-2026-8505 (unauthenticated webhook flow execution when WEBHOOK_AUTH_ENABLE is false, 1.7.0 to 1.9.0, fixed 1.9.1), Payload CMS CVE-2026-105857 / 105845, vm2 sandbox-escape wave (about 25 advisories), Handlebars, fast-jwt, PyJWT, Nginx UI, Hazelcast", reason: "conditional code patterns, authenticated or sandbox-library issues, no exploitation; outside the enterprise/edge product class", borderline: true, url: "https://github.com/advisories/GHSA-vcvr-r3jv-pc5j" }
+  - { what: "SAP Security Patch Day, Oracle Critical Patch Update, Ivanti monthly, Atlassian monthly bulletin, Adobe monthly bulletins", reason: "no release in the window: SAP and Microsoft/Adobe/Ivanti/Siemens 2026-10-13, Oracle CPU 2026-10-20, Atlassian monthly 2026-10-20; Adobe's newest bulletins are 2026-09-22 (APSB26-151 AEM Forms CVE-2026-75745 9.8 unauthenticated, not exploited, pre-window and absent from the store: pre-window note for the main agent) and Oracle's newest CSPU is 2026-09-15", url: "https://www.oracle.com/security-alerts/" }
+  - { what: "IBM Db2 CVE-2026-10109 (bulletin June 2026) and IBM MQ CVE-2026-10747 / CVE-2026-10027 (CVSS 10 pre-auth RCE, bulletins 2026-09-14)", reason: "published before the window; not in the store (CVE-2026-10747 absent from state/cves_seen.json), pre-window note", borderline: true, url: "https://www.ibm.com/support/pages/security-bulletin-ibm-mq-vulnerable-unauthenticated-remote-code-execution-cve-2026-10747" }
+  - { what: "Splunk SVD-2026-1002 to -1005 (2026-10-07: hardening, third-party package updates rated Critical for the bundled components, MCP Server CVE-2026-76286 medium)", reason: "folded into the Splunk item (09); no standalone qualifying finding" , url: "https://advisory.splunk.com/advisories" }
+  - { what: "Cisco Finesse SSRF CVE-2026-20362 (7.2, public announcement exists, no malicious use) and the medium NX-OS/ACI/APIC items of the 2026-10-07 bundle", reason: "below the bar; mentioned inside the Cisco item (01)", url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-finesse-ssrf-mmSuyugS" }
+
+cve_table:
+  - cve: CVE-2026-76471
+    product: Cisco NX-OS Nexus 3000 / 9000 (standalone NX-OS mode) NX-API (and UCS 6300 FI)
+    cvss: 9.8
+    epss: 0.00523
+    kev: false
+    exploited: false
+    affected: NX-API enabled (off by default) on vulnerable NX-OS; UCS 6300 UCS Software 4.2 and earlier migrate, 4.3 before 4.3(6j)
+    fixed: 'NX-OS: per Cisco Software Checker (fixed-release table not captured by extract); NX-OS Live Protect shield for 10.6(3) available; UCS 6300: 4.3(6j)'
+    type: rce
+    vector: network
+    auth: pre-auth
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-napi-rce-r2shwu2j
+  - cve: CVE-2026-76465
+    product: Cisco NX-OS Nexus 3000 / 9000 (standalone NX-OS mode) MPLS OAM
+    cvss: 9.8
+    epss: 0.00448
+    kev: false
+    exploited: false
+    affected: MPLS OAM enabled (off by default); Nexus 9000 Silicon One not affected
+    fixed: per Cisco Software Checker (fixed-release table not captured by extract); NX-OS Live Protect shield for 10.6(3) available
+    type: rce
+    vector: network
+    auth: pre-auth
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-moam-rce-uBTzYV7
+  - cve: CVE-2026-76485
+    product: Cisco NX-OS Nexus 3000 / 9000 (standalone NX-OS mode) NGOAM
+    cvss: 9.8
+    epss: 0.00509
+    kev: false
+    exploited: false
+    affected: NGOAM enabled
+    fixed: per Cisco Software Checker (fixed-release table not captured by extract); NX-OS Live Protect shield for 10.6(3) available
+    type: rce
+    vector: network
+    auth: pre-auth
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ngoam-rce-LWKQ4BU
+  - cve: CVE-2026-76486
+    product: Cisco NX-OS Nexus 3000 / 9000 (standalone NX-OS mode) NGOAM
+    cvss: 9.8
+    epss: 0.00509
+    kev: false
+    exploited: false
+    affected: NGOAM + (SRv6 or NV Overlay with learned VXLAN EVPN peer)
+    fixed: per Cisco Software Checker (fixed-release table not captured by extract); NX-OS Live Protect shield for 10.6(3) available
+    type: rce
+    vector: network
+    auth: pre-auth
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ngoam-rce-LWKQ4BU
+  - cve: CVE-2026-76501
+    product: Cisco NX-OS Nexus 3000 / 9000 (standalone NX-OS mode) NGOAM
+    cvss: 9.8
+    epss: 0.00509
+    kev: false
+    exploited: false
+    affected: NGOAM + SRv6
+    fixed: per Cisco Software Checker (fixed-release table not captured by extract); NX-OS Live Protect shield for 10.6(3) available
+    type: rce
+    vector: network
+    auth: pre-auth
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ngoam-rce-LWKQ4BU
+  - cve: CVE-2026-20328
+    product: Cisco License (Smart Software Manager) On-Prem
+    cvss: 9.1
+    epss: 0.00518
+    kev: false
+    exploited: false
+    affected: all releases regardless of configuration; 9-202601 and earlier must migrate
+    fixed: 10-202608 (10-202609 not vulnerable)
+    type: account-takeover
+    vector: network
+    auth: pre-auth
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ssm-access-nttb2dhE
+  - cve: CVE-2026-76454
+    product: Cisco License (Smart Software Manager) On-Prem
+    cvss: 9.1
+    epss: 0.00582
+    kev: false
+    exploited: false
+    affected: all releases regardless of configuration
+    fixed: 10-202608 (10-202609 not vulnerable)
+    type: file-write / dos
+    vector: network
+    auth: pre-auth
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ssm-access-nttb2dhE
+  - cve: CVE-2026-76482
+    product: Cisco License (Smart Software Manager) On-Prem (hardening release)
+    cvss: 10.0
+    epss: 0.00201
+    kev: false
+    exploited: false
+    affected: 10-202608 and earlier; 9-202601 and earlier migrate
+    fixed: 10-202609
+    type: improper signature verification (CWE-347)
+    vector: network
+    auth: unspecified by vendor (CVSS PR:N for the 10.0 group)
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-ssm-Ph77wdhf
+  - cve: CVE-2026-76480
+    product: Cisco License (Smart Software Manager) On-Prem (hardening release)
+    cvss: 9.8
+    epss: 0.00333
+    kev: false
+    exploited: false
+    affected: 10-202608 and earlier; 9-202601 and earlier migrate
+    fixed: 10-202609
+    type: missing authentication for critical function (CWE-306)
+    vector: network
+    auth: unspecified by vendor (CVSS PR:N for the 10.0 group)
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-ssm-Ph77wdhf
+  - cve: CVE-2026-76483
+    product: Cisco License (Smart Software Manager) On-Prem (hardening release)
+    cvss: 9.1
+    epss: 0.00222
+    kev: false
+    exploited: false
+    affected: 10-202608 and earlier; 9-202601 and earlier migrate
+    fixed: 10-202609
+    type: insufficiently protected credentials (CWE-522)
+    vector: network
+    auth: unspecified by vendor (CVSS PR:N for the 10.0 group)
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-ssm-Ph77wdhf
+  - cve: CVE-2026-76455
+    product: Cisco NX-OS (hardening release)
+    cvss: 9.8
+    epss: 0.00284
+    kev: false
+    exploited: false
+    affected: vulnerable NX-OS regardless of configuration
+    fixed: per Cisco Software Checker
+    type: improper access control (CWE-284)
+    vector: network
+    auth: unspecified
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-nxosw1-cWzSbtR
+  - cve: CVE-2026-76459
+    product: Cisco NX-OS (hardening release)
+    cvss: 9.8
+    epss: 0.00307
+    kev: false
+    exploited: false
+    affected: vulnerable NX-OS regardless of configuration
+    fixed: per Cisco Software Checker
+    type: out-of-bounds write (CWE-787)
+    vector: network
+    auth: unspecified
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-nxosw1-cWzSbtR
+  - cve: CVE-2026-76498
+    product: Cisco APIC (hardening release)
+    cvss: 9.8
+    epss: 0.003
+    kev: false
+    exploited: false
+    affected: vulnerable APIC regardless of configuration
+    fixed: per Cisco Software Checker
+    type: improper access control (CWE-284)
+    vector: network
+    auth: unspecified
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-apic-UOXWtfh
+  - cve: CVE-2026-76499
+    product: Cisco APIC (hardening release)
+    cvss: 9.8
+    epss: 0.00307
+    kev: false
+    exploited: false
+    affected: vulnerable APIC regardless of configuration
+    fixed: per Cisco Software Checker
+    type: improper neutralization / command injection (CWE-707)
+    vector: network
+    auth: unspecified
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-apic-UOXWtfh
+  - cve: CVE-2026-76500
+    product: Cisco APIC (hardening release)
+    cvss: 9.8
+    epss: 0.00325
+    kev: false
+    exploited: false
+    affected: vulnerable APIC regardless of configuration
+    fixed: per Cisco Software Checker
+    type: improper resource lifetime control (CWE-664)
+    vector: network
+    auth: unspecified
+    source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-apic-UOXWtfh
+  - cve: CVE-2026-76750
+    product: HPE Networking ClearPass Policy Manager
+    cvss: 9.8
+    epss: 0.00537
+    kev: false
+    exploited: false
+    affected: CPPM 6.14.0 and below; 6.11.15 and below
+    fixed: CPPM 6.14.1 and above; 6.11.16 and above
+    type: insecure deserialization -> RCE (web interface)
+    vector: network
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt
+  - cve: CVE-2026-76752
+    product: HPE Networking ClearPass Policy Manager
+    cvss: 9.8
+    epss: 0.0047
+    kev: false
+    exploited: false
+    affected: CPPM 6.14.0 and below; 6.11.15 and below
+    fixed: CPPM 6.14.1 and above; 6.11.16 and above
+    type: authentication bypass, admin access (web and API)
+    vector: network
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt
+  - cve: CVE-2026-79796
+    product: HPE Networking ClearPass Policy Manager
+    cvss: 9.8
+    epss: 0.00465
+    kev: false
+    exploited: false
+    affected: CPPM 6.14.0 and below; 6.11.15 and below
+    fixed: CPPM 6.14.1 and above; 6.11.16 and above
+    type: authentication bypass
+    vector: network
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt
+  - cve: CVE-2026-76753
+    product: HPE Networking ClearPass Policy Manager
+    cvss: 9.8
+    epss: 0.00525
+    kev: false
+    exploited: false
+    affected: CPPM 6.14.0 and below; 6.11.15 and below
+    fixed: CPPM 6.14.1 and above; 6.11.16 and above
+    type: format string -> code execution
+    vector: network
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt
+  - cve: CVE-2026-76754
+    product: HPE Networking ClearPass Policy Manager
+    cvss: 9.8
+    epss: 0.00384
+    kev: false
+    exploited: false
+    affected: CPPM 6.14.0 and below; 6.11.15 and below
+    fixed: CPPM 6.14.1 and above; 6.11.16 and above
+    type: SQL injection -> RCE
+    vector: network
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt
+  - cve: CVE-2026-76751
+    product: HPE Networking ClearPass Policy Manager
+    cvss: 9.8
+    epss: 0.003
+    kev: false
+    exploited: false
+    affected: CPPM 6.14.0 and below; 6.11.15 and below
+    fixed: CPPM 6.14.1 and above; 6.11.16 and above
+    type: missing integrity verification in OnGuard agent -> RCE on endpoint
+    vector: network
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt
+  - cve: CVE-2026-79801
+    product: HPE Networking ClearPass Policy Manager
+    cvss: 9.8
+    epss: 0.00323
+    kev: false
+    exploited: false
+    affected: CPPM 6.14.0 and below; 6.11.15 and below
+    fixed: CPPM 6.14.1 and above; 6.11.16 and above
+    type: missing integrity verification in client -> RCE
+    vector: network
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt
+  - cve: CVE-2026-79805
+    product: HPE Networking ClearPass Policy Manager
+    cvss: 9.8
+    epss: 0.00431
+    kev: false
+    exploited: false
+    affected: CPPM 6.14.0 and below; 6.11.15 and below
+    fixed: CPPM 6.14.1 and above; 6.11.16 and above
+    type: path traversal, file access and modification (titled authenticated, vector PR:N)
+    vector: network
+    auth: 'unclear (title: authenticated; vector PR:N)'
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt
+  - cve: CVE-2026-79798
+    product: HPE Networking ClearPass Policy Manager
+    cvss: 9.9
+    epss: 0.00343
+    kev: false
+    exploited: false
+    affected: CPPM 6.14.0 and below; 6.11.15 and below
+    fixed: CPPM 6.14.1 and above; 6.11.16 and above
+    type: SQL injection (web management interface)
+    vector: network
+    auth: post-auth (low privilege)
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt
+  - cve: CVE-2026-79794
+    product: HPE Networking ClearPass Policy Manager
+    cvss: 9.1
+    epss: 0.00297
+    kev: false
+    exploited: false
+    affected: CPPM 6.14.0 and below; 6.11.15 and below
+    fixed: CPPM 6.14.1 and above; 6.11.16 and above
+    type: SQL injection (web management interface)
+    vector: network
+    auth: post-auth (high privilege)
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05158.txt
+  - cve: CVE-2026-76742
+    product: HPE Networking AOS-Switch (AOS-S)
+    cvss: 9.8
+    epss: 0.00586
+    kev: false
+    exploited: false
+    affected: AOS-S 16.11.0031 and below
+    fixed: AOS-S 16.11.0032 and above
+    type: authentication bypass (web management)
+    vector: network
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05156.txt
+  - cve: CVE-2026-76743
+    product: HPE Networking AOS-Switch (AOS-S)
+    cvss: 9.8
+    epss: 0.00549
+    kev: false
+    exploited: false
+    affected: AOS-S 16.11.0031 and below
+    fixed: AOS-S 16.11.0032 and above
+    type: authentication bypass (management interface)
+    vector: network
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05156.txt
+  - cve: CVE-2026-76744
+    product: HPE Networking AOS-Switch (AOS-S)
+    cvss: 9.8
+    epss: 0.0051
+    kev: false
+    exploited: false
+    affected: AOS-S 16.11.0031 and below
+    fixed: AOS-S 16.11.0032 and above
+    type: buffer overflows -> RCE
+    vector: network
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05156.txt
+  - cve: CVE-2026-76745
+    product: HPE Networking AOS-Switch (AOS-S)
+    cvss: 9.6
+    epss: 0.00235
+    kev: false
+    exploited: false
+    affected: AOS-S 16.11.0031 and below
+    fixed: AOS-S 16.11.0032 and above
+    type: memory corruption -> RCE
+    vector: adjacent
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05156.txt
+  - cve: CVE-2026-76746
+    product: HPE Networking AOS-Switch (AOS-S)
+    cvss: 9.3
+    epss: 0.00199
+    kev: false
+    exploited: false
+    affected: AOS-S 16.11.0031 and below
+    fixed: AOS-S 16.11.0032 and above
+    type: buffer overflow -> information disclosure
+    vector: adjacent
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05156.txt
+  - cve: CVE-2026-76721
+    product: HPE Networking Instant ON access points
+    cvss: 9.8
+    epss: 0.00556
+    kev: false
+    exploited: false
+    affected: Instant ON 3.4.1.0 and below
+    fixed: Instant ON 3.4.2.0 and above (cloud-applied)
+    type: buffer overflow -> RCE
+    vector: network
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05150.txt
+  - cve: CVE-2026-76722
+    product: HPE Networking Instant ON access points
+    cvss: 9.8
+    epss: 0.0054
+    kev: false
+    exploited: false
+    affected: Instant ON 3.4.1.0 and below
+    fixed: Instant ON 3.4.2.0 and above (cloud-applied)
+    type: format string -> RCE/DoS
+    vector: network
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05150.txt
+  - cve: CVE-2026-76723
+    product: HPE Networking Instant ON access points
+    cvss: 9.6
+    epss: 0.0031
+    kev: false
+    exploited: false
+    affected: Instant ON 3.4.1.0 and below
+    fixed: Instant ON 3.4.2.0 and above (cloud-applied)
+    type: buffer overflows -> RCE
+    vector: adjacent
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05150.txt
+  - cve: CVE-2026-76724
+    product: HPE Networking Instant ON access points
+    cvss: 9.6
+    epss: 0.01024
+    kev: false
+    exploited: false
+    affected: Instant ON 3.4.1.0 and below
+    fixed: Instant ON 3.4.2.0 and above (cloud-applied)
+    type: CLI command injection via PAPI
+    vector: adjacent
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05150.txt
+  - cve: CVE-2026-76725
+    product: HPE Networking Instant ON access points
+    cvss: 9.6
+    epss: 0.00316
+    kev: false
+    exploited: false
+    affected: Instant ON 3.4.1.0 and below
+    fixed: Instant ON 3.4.2.0 and above (cloud-applied)
+    type: management-protocol authentication bypass -> RCE
+    vector: adjacent
+    auth: pre-auth
+    source: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05150.txt
+  - cve: CVE-2026-89078
+    product: GitLab CE/EE
+    cvss: 9.9
+    epss: 0.0044
+    kev: false
+    exploited: false
+    affected: 19.2 before 19.2.7, 19.3 before 19.3.3, 19.4 before 19.4.1
+    fixed: 19.2.7, 19.3.3, 19.4.1
+    type: rce (double free, CI/CD regex)
+    vector: network
+    auth: post-auth (low privilege)
+    source: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/
+  - cve: CVE-2026-93577
+    product: GitLab CE/EE
+    cvss: 9.9
+    epss: 0.0055
+    kev: false
+    exploited: false
+    affected: 19.2 before 19.2.7, 19.3 before 19.3.3, 19.4 before 19.4.1
+    fixed: 19.2.7, 19.3.3, 19.4.1
+    type: rce (integer overflow, CI/CD regex)
+    vector: network
+    auth: post-auth (low privilege)
+    source: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-4-1-released/
+  - cve: CVE-2026-90970
+    product: GitLab AI Gateway
+    cvss: 9.9
+    epss: 0.00943
+    kev: false
+    exploited: false
+    affected: 18.1.6 before 19.2.4, 19.3 before 19.3.2, 19.4 before 19.4.1
+    fixed: 19.2.4, 19.3.2, 19.4.1
+    type: sandbox escape -> command execution
+    vector: network
+    auth: post-auth (Duo Agent Platform user)
+    source: https://docs.gitlab.com/releases/patches/other-patches/patch-release-gitlab-ai-gateway-19-4-1-released/
+  - cve: CVE-2026-76268
+    product: Splunk Enterprise (search head cluster member, Patroni REST API)
+    cvss: 9.8
+    epss: 0.004
+    kev: false
+    exploited: false
+    affected: 10.4.0 to 10.4.2; 10.2.0 to 10.2.6 (10.0.x and 9.4.x not affected)
+    fixed: 10.4.3; 10.2.7
+    type: missing authentication -> OS command execution
+    vector: network
+    auth: pre-auth
+    source: https://advisory.splunk.com/advisories/SVD-2026-1001
+  - cve: CVE-2026-78401
+    product: IBM Verify Identity Access / Security Verify Access
+    cvss: 9.8
+    epss: 0.00567
+    kev: false
+    exploited: false
+    affected: Verify Identity Access 11.0 to 11.0.3; Security Verify Access 10.0 to 10.0.9.2 (appliance and container)
+    fixed: 11.0.3.1; 10.0.9.3
+    type: rce (deserialization, CWE-502)
+    vector: network
+    auth: pre-auth
+    source: https://ibm.com/support/pages/node/7291628
+  - cve: CVE-2026-16916
+    product: IBM Security Verify Access Appliance
+    cvss: 9.1
+    epss: 0.00421
+    kev: false
+    exploited: false
+    affected: 10.0 to 10.0.9.2 (per bulletin)
+    fixed: 10.0.9.3
+    type: rce (protection mechanism failure)
+    vector: network
+    auth: post-auth (high privilege)
+    source: https://ibm.com/support/pages/node/7291628
+  - cve: CVE-2026-101891
+    product: WatchGuard Access Points
+    cvss: 9.3
+    epss: 0.00273
+    kev: false
+    exploited: false
+    affected: 1.0 to before 3.4.8
+    fixed: 3.4.8
+    type: improper access control (unauthenticated API session)
+    vector: network
+    auth: pre-auth
+    source: https://psirt.watchguard.com/CVE-2026-101891/
+  - cve: CVE-2026-86102
+    product: WatchGuard Access Points
+    cvss: 9.3
+    epss: 0.0198
+    kev: false
+    exploited: false
+    affected: 1.0 to before 3.4.8
+    fixed: 3.4.8
+    type: os command injection (internal API)
+    vector: network
+    auth: pre-auth (per vendor, attacker with network access)
+    source: https://psirt.watchguard.com/CVE-2026-86102/
+  - cve: CVE-2026-86131
+    product: WatchGuard Fireware OS (BOVPN over TLS client)
+    cvss: 9.2
+    epss: 0.0042
+    kev: false
+    exploited: false
+    affected: 'Default: 2026.3 before 2026.3.2, 2025.0 before 2026.2.3, 12.0 before 12.12.3; T15/T35: 12.0 before 12.5.21'
+    fixed: 2026.3.2, 2026.2.3, 12.12.3, 12.5.21
+    type: code injection -> root commands (attacker controls remote VPN server)
+    vector: network
+    auth: requires attacker-controlled VPN server
+    source: https://psirt.watchguard.com/CVE-2026-86131/
+  - cve: CVE-2026-13043
+    product: WatchGuard Endpoint Security (PSKMAD driver)
+    cvss: 9.3
+    epss: 0.00135
+    kev: false
+    exploited: false
+    affected: before 8.00.26.0012
+    fixed: 8.00.26.0012
+    type: missing authentication in kernel memory access driver
+    vector: local
+    auth: post-auth (local)
+    source: https://psirt.watchguard.com/CVE-2026-13043/
+  - cve: CVE-2026-85097
+    product: Bricksforge (WordPress plugin)
+    cvss: 10.0
+    epss: 0.00312
+    kev: false
+    exploited: true
+    affected: up to and including 3.1.8.9
+    fixed: 3.1.8.10
+    type: arbitrary file upload -> PHP RCE
+    vector: network
+    auth: pre-auth
+    source: https://patchstack.com/articles/critical-unauthenticated-arbitrary-file-upload-vulnerability-exploited-in-bricksforge-plugin/
+  - cve: CVE-2025-64393
+    product: Veeam Backup & Replication 12
+    cvss: 9.4
+    epss: 0.0036
+    kev: false
+    exploited: false
+    affected: 12.3.2 P3 (12.3.2.4854) and older v12 builds; v13 not affected
+    fixed: 12.3.2 P4 (12.3.2.4934)
+    type: rce (insecure deserialization, Mount Service)
+    vector: network
+    auth: post-auth (low privilege, Backup Viewer role); CVSS 4.0
+    source: https://www.veeam.com/kb4934
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist is configured in the org profile; the sweep is a no-op (ledger line sent as instructed)"
+
+candidate_sources:
+  - { id: veeam-kb, publisher: "Veeam Knowledge Base security articles (KB4934 class)", url: "https://www.veeam.com/kb4934", category: "vendor-psirt", why: "first-party per-flaw tables with CVSS 4.0 and fixed builds for the backup product most ransomware actors target; the 2026-10-06 KB (Backup Viewer RCE) was missed by the store and was found only through NCSC-CH advisory 13043; extract reads the KB cleanly; no RSS or listing URL located in this run" }
+  - { id: hashicorp-security-bulletins, publisher: "HashiCorp security bulletins (HCSEC-2026-NN, discuss.hashicorp.com security category)", url: "https://discuss.hashicorp.com/c/security/52", category: "vendor-psirt", why: "first-party bulletins for Vault, Consul, Terraform and Go libraries with affected/fixed versions; WebFetch of the category lists titles and dates (HCSEC-2026-44 to -30), `extract` reads each bulletin with CVE ids; secrets managers are common in public-sector platform teams" }
+  - { id: apache-httpd-vulnerabilities, publisher: "Apache HTTP Server 2.4 vulnerabilities page", url: "https://httpd.apache.org/security/vulnerabilities_24.html", category: "vendor-psirt", why: "Apache's own severity ratings and release dates per CVE (2.4.69 of 2026-10-01 fixed 20 CVEs rated moderate or lower); separates vendor severity from the 9.8 third-party scores that appear on aggregator feeds; `extract` reads it cleanly" }
+
+coverage_gaps:
+  - { source_id: chrome-releases, reason: "recipe change: the record's note says no working command found for desktop stable posts. Working: `python3 tools/fetch_source.py feed \"https://chromereleases.googleblog.com/feeds/posts/default/-/Stable%20updates?alt=rss&max-results=20\" 30` (direct, returns Desktop, Android, iOS and ChromeOS posts with dates), then `extract` per post. The plain /feeds/posts/default, /atom.xml and /rss.xml URLs answer 302 and fail." }
+  - { source_id: hpe-networking-psirt, reason: "recipe change: listing URL located. `python3 tools/fetch_source.py url --direct https://csaf.arubanetworking.hpe.com/2026/` returns an nginx autoindex with file modification times; filter .txt entries by date, then `url --direct https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw<NNNNN>.txt` (signed advisory text; older Aruba-era files are named hpe_aruba_networking_-_hpesbnw<NNNNN>.txt; matching .json CSAF files exist). `extract` works only on the .txt and returns the raw signed text. Hard line breaks in the text mean multi-line quotes do not verify. Three advisories since 2026-09-25: hpesbnw05150 (2026-09-29), 05156 and 05158 (2026-10-06)." }
+  - { source_id: cisco-psirt, reason: "recipe notes: (1) the advisory page extract omits CVE ids; the CSAF is at /security/center/content/CiscoSecurityAdvisory/<id>/csaf/<id>.json (the /contentxml/ path guess returns an HTML 404 page) via `url --direct`, with CVE, CVSS vector, workaround and 'Exploitation and Public Announcements' notes; (2) the feed carries 'Security Hardening Release' advisories (cisco-sa-hardening-*) that group internally found flaws by CWE with CVSS up to 10.0 and are easy to skip (NX-OS, APIC and License On-Prem ones of 2026-10-07 hold 9.8 and 10.0 CVEs; the same applies to NCSC-CH advisory 13044); (3) the per-product fixed-release tables are dynamic and absent from extract." }
+  - { source_id: checkpoint-support, reason: "no listing recipe: the SK pages return a Next.js shell via extract (direct-raw); `url https://support.checkpoint.com/results/sk/<id>` returns the shell whose `__NEXT_DATA__` JSON (props.pageProps.data: title, symptoms HTML, solution HTML, dateCreated, lastModified, versions) holds the full advisory. There is no feed or index to enumerate new SK advisories in a window; coverage came only from the store's known ids (sk1000171, sk185222) and a WebSearch that found nothing newer than 2026-09-22. The 504 outage noted 2026-10-07 did not recur." }
+  - { source_id: mozilla-mfsa, reason: "`extract` of a single advisory page returns CVE ids but drops the Impact ratings and titles; `WebFetch` of the advisory URL returns the per-CVE impact table (used here). The index page via WebFetch lists title and date only." }
+  - { source_id: watchguard-psirt, reason: "recipe confirmed and extended: `extract https://psirt.watchguard.com/` lists every advisory with severity, summary and affected/fixed ranges but no dates; `extract https://psirt.watchguard.com/<CVE-ID>/` returns the page with `date:` metadata, Summary, Product status, Exploitation Status and Solution sections (used for dating the 2026-09-28 to 2026-10-01 batch). The `cvss` shown in the listing is the CVSS 4.0 value for most rows." }
+  - { source_id: msrc-update-guide, reason: "`msrc recent N` returned the 200 newest records, all in the 2026-Oct release (initial 2026-10-02, titled 'October 2026 Early Security Updates', revised to 2026-10-11); `msrc cvrf 2026-Oct` (950 KB JSON) holds 312 vulnerabilities including third-party Linux kernel, CUPS and Apache records; exploitation status is in Threats Type 1 text ('Publicly Disclosed:No;Exploited:No;Latest Software Release:<exploitability>') and customer action in the Notes entry titled 'Customer Action Required'. Patch Tuesday of October is 2026-10-13." }
+  - { source_id: msrc-blog, reason: "no recipe works for in-window posts: the listing is a SPA shell and no MSRC blog post surfaced through `msft-secblog recent` (Microsoft security blog, not MSRC) or WebSearch; no out-of-band Exchange or SharePoint advisory was found. Not logged as a transport failure." }
+  - { source_id: ibm-support-security-bulletins, reason: "the record has no listing; in-window IBM bulletins are findable only by WebSearch. `url https://ibm.com/support/pages/node/<id>` returns the full bulletin (HTML, strip tags); found 7291628 (2026-10-07 Verify Access, CVSS 9.8). The record's example URL is the 2026-09-14 IBM MQ bulletin." }
+  - { source_id: adobe-psirt, reason: "the chimera-api JSON `modifiedDate` was bulk-touched on 2026-09-30 for every card; use `cardDate`/`createdDate` for the publication date. Newest bulletin by cardDate is 2026-09-22, so there was no new Adobe bulletin in the window." }
+  - { source_id: wordfence, reason: "the weekly vulnerability report's per-vulnerability table (affected software, installs) is dropped by `extract` (only CVSS rating, patch status and publication date survive), so the weekly reports cannot be triaged for widely installed components; use the Wordfence Intelligence database or WebFetch if per-plugin detail is needed." }
+  - { source_id: sonicwall-psirt, reason: "`extract https://psirt.global.sonicwall.com/vuln-list` was served by the jina reader (metered credit) and returned the listing with advisory ids, CVEs and dates; the record already pins fetch_method jina, so no change needed." }
+  - { source_id: ncsc-csh, reason: "audit cross-check worth institutionalising (not in this slice): `python3 tools/fetch_source.py ncsc-csh recent 100` returns JSON under the key `posts` (not `items`); of the 12 NCSC-CH advisories published 2026-09-26 to 2026-10-09, four were missing from the store at 2026-10-11 (Cisco Nexus/License On-Prem 13044, Veeam 13043, ILIAS 13035, WatchGuard AP 13007) and are returned here." }
+  - { source_id: docu.ilias.de, reason: "off-slice: ILIAS security blog advisories (NCSC-CH 13035 links ilias.php ... blpg=951 and docu.ilias.de/go/blog/...) return a captcha or an ilCtrl 404 to extract, url and the reader; the vendor primary for the ILIAS October release is unreadable, so the item rests on NCSC-CH alone." }
+
+source_ledger:
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc recent 400 + msrc cvrf 2026-Oct", horizon_hours: 336, newest_in_window_item: "2026-10-11 (CVRF revision; Exchange CVE-2026-96940 initial 2026-10-02, Azure CVEs 2026-10-08)", in_horizon_items: 8, returned: 0, note: "7 cloud-service CVEs with no customer action and one authenticated Exchange EoP (Exploitation More Likely, not exploited): all dropped with reasons; Patch Tuesday is 2026-10-13" }
+  - { id: msrc-blog, tier: standard, attempted: true, transport: "WebSearch + msft-secblog recent (listing is an SPA shell)", horizon_hours: 336, in_horizon_items: 0, returned: 0, note: "no MSRC blog post or out-of-band advisory found" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed + CSAF url --direct", horizon_hours: 336, newest_in_window_item: "2026-10-01 FG-IR-26-175 (CSAF current_release_date 2026-10-05)", in_horizon_items: 1, returned: 0, note: "covered by 2026-10-02/cve-2026-104286-fortimail-path-traversal-zero-day-kev, revision included" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed (direct)", horizon_hours: 336, newest_in_window_item: "2026-10-02 CVE-2026-0250", in_horizon_items: 2, returned: 0, note: "both Medium (GlobalProtect App)" }
+  - { id: cisco-psirt, tier: standard, attempted: true, transport: "feed + extract + CSAF url --direct", horizon_hours: 336, newest_in_window_item: "2026-10-08 cisco-sa-napi-rce (rev 1.1)", in_horizon_items: 15, returned: 1, note: "2026-10-07 bundle (NX-OS RCEs, License On-Prem, hardening releases) new to the store; SD-WAN 2026-10-02 covered" }
+  - { id: citrix-netscaler-security-bulletins, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 336, newest_in_window_item: "2026-10-08 CVE-2026-107406 guidance", in_horizon_items: 5, returned: 0, note: "all three NetScaler bulletins covered; CTX697191 revision history has no post-publication exploitation statement; the 2026-10-08 blog post reads only through the jina fallback (direct 403) and says nothing newer than the entry already cites" }
+  - { id: ivanti-psirt, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 336, in_horizon_items: 0, returned: 0, note: "newest post is the 2026-09-08 monthly update; October monthly is 2026-10-13; WebSearch found no out-of-band advisory" }
+  - { id: sap-security-notes, tier: standard, attempted: true, transport: "extract", horizon_hours: 336, in_horizon_items: 0, returned: 0, note: "next Patch Day 2026-10-13" }
+  - { id: oracle-cpu, tier: standard, attempted: true, transport: "extract", horizon_hours: 336, in_horizon_items: 0, returned: 0, note: "newest release CSPU September 2026 (2026-09-15, Rev 1); next CPU 2026-10-20; CSPU 2026-11-17" }
+  - { id: adobe-psirt, tier: standard, attempted: true, transport: "bridge url (chimera-api JSON) + bulletin pages", horizon_hours: 336, in_horizon_items: 0, returned: 0, note: "newest cardDate 2026-09-22; APSB26-151 AEM Forms CVE-2026-75745 (9.8) is pre-window" }
+  - { id: atlassian-security-advisories, tier: standard, attempted: true, transport: "extract", horizon_hours: 336, newest_in_window_item: "2026-10-05 CVE-2026-21589", in_horizon_items: 1, returned: 0, note: "covered; monthly bulletin 2026-10-20" }
+  - { id: sonicwall-psirt, tier: standard, attempted: true, transport: "extract (served via jina)", horizon_hours: 336, newest_in_window_item: "2026-10-06 SNWLID-2026-0017", in_horizon_items: 1, returned: 0, note: "covered" }
+  - { id: checkpoint-support, tier: standard, attempted: true, transport: "extract (direct-raw shell) + url (__NEXT_DATA__) + WebSearch", horizon_hours: 336, in_horizon_items: 0, returned: 0, note: "no listing to enumerate; nothing newer than sk1000171 (2026-09-20/22) found; recipe gap logged" }
+  - { id: ibm-support-security-bulletins, tier: standard, attempted: true, transport: "WebSearch + url (node page)", horizon_hours: 336, newest_in_window_item: "2026-10-07 Verify Access bulletin", in_horizon_items: 1, returned: 1, note: "no listing in the record; found only through search" }
+  - { id: hpe-networking-psirt, tier: standard, attempted: true, transport: "url --direct (autoindex listing + signed .txt advisories)", horizon_hours: 336, newest_in_window_item: "2026-10-06 HPESBNW05156 / 05158", in_horizon_items: 3, returned: 3, note: "listing URL located; ClearPass and AOS-S not in store" }
+  - { id: apple-security, tier: standard, attempted: true, transport: "extract", horizon_hours: 336, newest_in_window_item: "2026-09-28 iOS 26.7.1 / macOS 26.7.1 / 15.8.1", in_horizon_items: 3, returned: 0, note: "one CVE (CVE-2026-86950), covered; the 27.0.1 releases list no CVEs" }
+  - { id: chrome-releases, tier: standard, attempted: true, transport: "feed (label feed URL) + extract", horizon_hours: 336, newest_in_window_item: "2026-10-09 ChromeOS 154.0.8037.151; desktop 2026-10-06 155.0.8059.39", in_horizon_items: 4, returned: 0, note: "recipe fixed (see coverage_gaps); no in-the-wild statement in any post" }
+  - { id: mozilla-mfsa, tier: standard, attempted: true, transport: "WebFetch (index and two advisories) + extract", horizon_hours: 336, newest_in_window_item: "2026-10-06 MFSA 2026-104", in_horizon_items: 8, returned: 0, note: "no critical ratings or exploitation" }
+  - { id: gitlab-security, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 336, newest_in_window_item: "2026-10-02 AI Gateway 19.4.1 critical patch", in_horizon_items: 3, returned: 2, note: "2026-09-23 releases fall in the addendum window; one new item and one update-of" }
+  - { id: splunk-advisories, tier: standard, attempted: true, transport: "extract (listing + SVD page)", horizon_hours: 336, newest_in_window_item: "2026-10-07 SVD-2026-1001 to 1005", in_horizon_items: 5, returned: 1, note: "CVE-2026-76268 Patroni REST API pre-auth OS command execution" }
+  - { id: watchguard-psirt, tier: standard, attempted: true, transport: "extract (listing + per-CVE pages)", horizon_hours: 336, newest_in_window_item: "2026-10-01 CVE-2026-13043", in_horizon_items: 20, returned: 1, note: "bundle not in store; NCSC-CH relayed the AP pair" }
+  - { id: zimbra-security-advisories, tier: standard, attempted: true, transport: "extract", horizon_hours: 336, newest_in_window_item: "2026-09-24 10.1.21", in_horizon_items: 1, returned: 0, note: "covered by the Zimbra entry's 2026-10-02 update" }
+  - { id: mikrotik-routeros-changelog, tier: standard, attempted: true, transport: "extract (supportsec notice) + url", horizon_hours: 336, newest_in_window_item: "2026-10-06 CVE-2026-84411", in_horizon_items: 1, returned: 0, note: "covered" }
+  - { id: tp-link-omada-psirt, tier: standard, attempted: true, transport: "bridge url (listing + bulletin pages)", horizon_hours: 336, in_horizon_items: 0, returned: 0, note: "newest bulletins 2026-09-10 and 2026-09-21; both pre-window" }
+  - { id: siemens-productcert, tier: standard, attempted: true, transport: "feed (atom)", horizon_hours: 336, newest_in_window_item: "2026-09-28 SSA-627195 V1.2", in_horizon_items: 1, returned: 0, note: "Mendix Studio Pro local issue; October Patch Day is 2026-10-13" }
+  - { id: keycloak, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 336, newest_in_window_item: "2026-10-01 26.8.0", in_horizon_items: 2, returned: 0, note: "authorization and logic CVEs, no CVSS 9+" }
+  - { id: wordpress-org-news, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 336, newest_in_window_item: "2026-10-06 WordPress 7.1.3", in_horizon_items: 1, returned: 0, note: "7 fixes, none critical" }
+  - { id: joomla-security-centre, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 336, in_horizon_items: 0, returned: 0, note: "newest items 2026-09-25 (before the extended window); moderate severity" }
+  - { id: wordfence, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 336, newest_in_window_item: "2026-10-09 weekly report", in_horizon_items: 3, returned: 0, note: "per-vulnerability table dropped by extract; no exploitation post in window" }
+  - { id: patchstack, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 336, newest_in_window_item: "2026-10-08 Bricksforge", in_horizon_items: 3, returned: 1, note: "WordPress 7.1.3 post and the 10-06 XSS campaign (covered by 2026-10-07 entry) are the others" }
+  - { id: github-advisory, tier: standard, attempted: true, transport: "bridge url (api.github.com advisories critical reviewed)", horizon_hours: 336, newest_in_window_item: "2026-10-09 GHSA-x34j-47hf-4xg7", in_horizon_items: 78, returned: 0, note: "library-level advisories only; the OpenBao advisories were read via the repo security-advisories API" }
+  - { id: zammad-github-advisories, tier: standard, attempted: true, transport: "bridge url (api.github.com repo security-advisories)", horizon_hours: 336, newest_in_window_item: "2026-10-08 CVE-2026-102490", in_horizon_items: 8, returned: 0, note: "covered" }

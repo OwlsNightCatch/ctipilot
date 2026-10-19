@@ -1,0 +1,177 @@
+# Findings summary (machine-readable) — slice s5, iteration 1
+- code: F4
+  category: hallucinated-fact
+  entry: entries/2026-05-09/german-court-finds-bank-liable-for-sophisticated-phishing-lo.md
+  where: "headline, summary, body paragraph 1 (claims 382633b226, 594b7c32ce, bb1bf892de)"
+  summary: "The customer is described as male ('led him to enrol', 'a caller ... guided him'); the cited heise article identifies the claimant as a woman, and Borncity is gender-neutral."
+  ground_truth: "heise: 'Die Kundin schöpfte nach ihrer Aussage keinen Verdacht ... Im Weiteren fotografierte die Klägerin lediglich Codes vom Bildschirm ab'"
+  ground_truth_url: "https://www.heise.de/news/Urteil-gegen-die-Apobank-Finanzinstitut-haftet-fuer-Phishing-Schaden-11288231.html"
+  fix: "Use 'the customer' / 'her' (or avoid the pronoun) in headline, summary and body."
+- code: F4
+  category: hallucinated-fact
+  entry: entries/2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea.md
+  where: "body paragraph 1: 'Exploitation status: no in-the-wild confirmed; NCSC-CH rates \"UNKNOWN, PoC Available.\"' (claim 9df1bf0519); cves[].status lacks exploited"
+  summary: "Supersession: this fire added VulnCheck's honeypot exploitation attempts (summary and a body paragraph) but left the earlier sentence asserting no in-the-wild exploitation; the cited THN article is headlined 'Exploited in the Wild' and says the flaw 'has come under active exploitation in the wild' per VulnCheck, and cves[].status was not updated."
+  ground_truth: "THN 2026-05-17: 'A newly disclosed security flaw ... has come under active exploitation in the wild, days after its public disclosure, according to VulnCheck' ... 'exploitation attempts detected against its honeypot networks. The nature of the attack activity and the end goals are presently unknown.'"
+  ground_truth_url: "https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html"
+  fix: "Replace the sentence with the current status (NCSC-CH 2026-05-15: unknown; VulnCheck 2026-05-17: exploitation attempts against honeypots, purpose unknown) and add exploited (or an explicit qualifier) to cves[].status."
+- code: F4
+  category: hallucinated-fact
+  entry: entries/2026-09-21/the-gentlemen-open-directory-vhdx-backup-ntds-theft.md
+  where: "Defender takeaway line 2 and Triage line (claims 55ac8f980b, 1e0969254a)"
+  summary: "(low confidence) The detection advice (monitor for libguestfs-tools/qemu-utils/nbd-client installs and CIFS mounts of backup shares on non-backup hosts; treat rclone to cloud storage after such a mount as an exfil signal) and the Triage discriminator assume these commands run on defender-owned hosts. Talos recovered them from the operator's own .bash_history on its attack server; the entry never says so and gives no victim-observable telemetry."
+  ground_truth: "Talos: 'Figure 8 illustrates the attack flow inferred from the commands recorded in .bash_history. In Phase 1, the actor uses VPN software and tools such as Chisel and Ligolo to establish network routes and turn its server into an attack platform.' Phase 6: 'the threat actor mounted a backup share via CIFS at /mnt/Backup ... installation of libguestfs-tools, qemu-utils, and nbd-client ... transferred to cloud storage services such as Wasabi using rclone.'"
+  ground_truth_url: "https://blog.talosintelligence.com/ransomware-incidents-in-japan-in-the-first-half-of-2026/"
+  fix: "State that the commands ran on the operator's own server, and reframe detection on what a victim can see (SMB sessions to backup shares from unexpected or tunnelled sources, bulk reads of VHDX files, anomalous backup-server access, egress) or mark the host-side items as a hypothesis."
+- code: F4
+  category: hallucinated-fact
+  entry: entries/2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce.md
+  where: "frontmatter summary: 'can execute code as root or crash the device'"
+  summary: "(low confidence) The summary still says the attacker can 'crash the device'. This fire's correction fixed the same overstatement in the body ('the text had said it forces a reload') but left the summary stronger than Cisco's wording."
+  ground_truth: "Cisco: 'The exploitation of this vulnerability could also cause the S1HAL process to crash, which could cause the device to reload.'"
+  ground_truth_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr"
+  fix: "Summary: 'execute code as root or crash the S1HAL process, which could reload the device'."
+- code: F4
+  category: hallucinated-fact
+  entry: entries/2026-06-11/shinyhunters-oracle-peoplesoft-campaign-gadget-chain-access.md
+  where: "main analysis 'Access and exploitation' and 'Hardening / mitigation' paragraphs; frontmatter summary/headline"
+  summary: "(low confidence, legacy text, supersession per check 4c(h); this fire's internal record is itself correct) The main analysis still says 'Oracle has not published a CVE for the specific flaws in this campaign ... treat the \"zero-day\" framing with appropriate caution' and 'the campaign's specific CVEs are undisclosed', while the entry's own newest sections state CVE-2026-35273 is vendor-confirmed, KEV-listed and re-exploited in September. Summary/headline never mention CVE-2026-35273 or the September wave although priority is critical. The 06-13 section also ends mid-sentence ('P1 (.')."
+  ground_truth: "Oracle Security Alert 2026-06-10: 'This vulnerability is remotely exploitable without authentication ... may result in remote code execution'; CISA KEV dateAdded 2026-06-12 (CVE-2026-35273)."
+  ground_truth_url: "https://www.oracle.com/security-alerts/alert-cve-2026-35273.html"
+  fix: "Correct the main analysis where it stands (CVE-2026-35273 confirmed zero-day, KEV, September resumption), refresh summary/headline, and repair the truncated sentence in the 2026-06-13 section."
+- code: F3
+  category: claim-not-supported
+  entry: entries/2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom.md
+  where: "Defender takeaway: 'these two fixes have been available since February' cited to the Microsoft blog (claim ef822ffa7e)"
+  summary: "(low confidence) The cited Microsoft post says only that the flaws 'have since been fixed'; the February dates are on the two GitHub advisories, not on the cited page."
+  ground_truth: "Microsoft: 'These flaws, which have since been fixed, could allow an attacker...' (no February date); GHSA-2ww3-72rp-wpp4 dated 2026-02-06, GHSA-xjw9-4gw8-4rqx dated 2026-02-19."
+  ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+  fix: "Cite the two GHSA pages for the February availability (or drop the date)."
+- code: F3
+  category: claim-not-supported
+  entry: entries/2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom.md
+  where: "Detection line: 'the agent process writing files into a Startup folder, are the behaviours Microsoft's hunting queries target' (claim 199e077bb2)"
+  summary: "(low confidence) Microsoft's two advanced-hunting queries are DeviceProcessEvents child-process queries only; Startup-folder drops are named in prose as something endpoint defence should detect, not in a query."
+  ground_truth: "Microsoft prose: 'detect anomalous behavior, such as an AI agent process suddenly spawning command lines or dropping scripts into Startup folders'; the two published queries filter process creation (cmd.exe, powershell.exe, ... from semantic-kernel hosts / dotnet.exe)."
+  ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/"
+  fix: "Say the queries target child processes spawned by agent hosts, and attribute Startup-folder drops to Microsoft's endpoint-defence guidance."
+- code: F3
+  category: claim-not-supported
+  entry: entries/2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea.md
+  where: "Opening sentence: 'CVSS 4.0: 9.2 / CVSS 3.1: 8.1, CWE-122' cited to depthfirst and NCSC-CH (claim f633416435)"
+  summary: "(low confidence) Neither cited page carries CVSS 3.1 8.1 or CWE-122 (depthfirst: 'Critical, CVSS 9.2'; NCSC-CH: 'CVSS 4.0: 9.2'). The facts are true (NVD/F5 CNA 8.1, GHSA page CWE-122) but belong to other pages."
+  ground_truth: "NVD CVE-2026-42945: cvssMetricV31 f5sirt@f5.com 8.1 CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H; GitHub advisory GHSA-gcgv-v5gf-c543 lists CWE-122."
+  ground_truth_url: "https://github.com/advisories/GHSA-gcgv-v5gf-c543"
+  fix: "Cite the GHSA page (CWE, CVSS 4.0 vector) and the F5/vendor source for 3.1 8.1, or drop the unsourced figure."
+- code: F3
+  category: claim-not-supported
+  entry: entries/2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea.md
+  where: "Contradiction line: 'F5, NCSC-CH and depthfirst give a CVSS 4.0 score of 9.2' cited only to the NCSC-CH post (claim 964f4332f4)"
+  summary: "(low confidence) The NCSC-CH post carries its own CVSS 4.0 9.2 only; it states no F5 or depthfirst score (depthfirst's page says 'CVSS 9.2' without a version)."
+  ground_truth: "NCSC-CH #12575: 'CVE-2026-42945 CVSS 4.0: 9.2 (CRITICAL)'; Source Advisory is F5 K000161019."
+  ground_truth_url: "https://security-hub.ncsc.admin.ch/#/posts/12575"
+  fix: "Cite the depthfirst page and a page carrying F5's own score (GHSA/NVD F5 CNA), or attribute the score to NCSC-CH alone."
+- code: F14
+  category: quantifier-without-source
+  entry: entries/2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed.md
+  where: "headline 'a backdoor on about a dozen organizations'; summary 'a backdoor reached about a dozen government, scientific, manufacturing and retail organizations'; Correction section and record summary 'about a dozen organizations' (claims 8cc541359f, 1e236735d6, 265cc4dbc5, 6679b15681)"
+  summary: "(low confidence) Kaspersky counts a dozen machines, not organizations; the entry's own body line correctly says 'about a dozen machines of government, ... organizations'. The number of organizations is not stated."
+  ground_truth: "Securelist: 'the other backdoor payload ... has been observed only on a dozen machines of government, scientific, manufacturing, and retail organizations located in Russia, Belarus, and Thailand.'"
+  ground_truth_url: "https://securelist.com/tr/daemon-tools-backdoor/119654/"
+  fix: "Say 'about a dozen machines at government, scientific, manufacturing and retail organizations' in headline, summary and the correction text."
+- code: F8
+  category: needs-more-research
+  entry: entries/2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary.md
+  where: "missing **Detection:** line"
+  summary: "(low confidence) BleepingComputer (cited) describes the observed exploitation as HTTP requests carrying properly constructed file:// payloads from a single IP that write files on the appliance; the takeaway says only 'check the appliance for files written outside normal administration'. A telemetry-class Detection line is supportable without IOCs."
+  ground_truth: "BleepingComputer: 'Defused says the attacks are originating from a single IP address and use properly constructed file:// payloads to create files on the device.'"
+  ground_truth_url: "https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/"
+  fix: "Add a Detection line: WebDialer web-tier access logs for requests with file:// URL parameters from external sources, plus unexpected file writes by the Unified CM web service."
+- code: F9
+  category: surface-contradiction
+  entry: entries/2026-10-06/denmark-cpr-population-register-third-party-access-breach.md
+  where: "Update 2026-10-11, TT/TV4 citation"
+  summary: "(low confidence) TT (cited) reports the hacker got in with the leaked former-employee password '123456'; Ritzau via the Copenhagen Post (cited) reports 123456 on at least three Pays accounts and the former-employee leaked password separately. The entry cites TT for another claim and does not surface that the two reports differ."
+  ground_truth: "TV4/TT: 'Tillgången till registret ska ha kommit via ett läckt lösenord – i det här fallet ”123456” – tillhörande en tidigare medarbetare i ett mindre danskt företag.' Copenhagen Post: 'At least three user accounts at the Funen-based IT company Pays used the password “123456”' and 'access was initially obtained using a leaked password belonging to a former employee of a small Danish company'."
+  ground_truth_url: "https://www.tv4.se/artikel/tt-261008-danmarkintrang1-2cc02852/hackare-sa-gick-danska-jatteintranget-till"
+  fix: "Add a Contradiction line or drop the TT cite for that sentence."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio.md
+  where: "title, headline, summary: '36 hours after the advisory'"
+  summary: "(low confidence) Sysdig measures 36 h 07 min from the advisory's listing in the global GitHub Advisory Database (2026-04-24 16:17 UTC), while the entry's own body dates LiteLLM's advisory 2026-04-20; a reader computes the wrong exploitation date. The body wording ('reached the global database') is accurate, the headline/summary are not."
+  ground_truth: "Sysdig: 'The advisory was indexed in the GitHub Advisory Database on April 24, 2026, at 16:17 UTC ... The maintainer-side repository advisory was published earlier on April 20' and 'first exploitation attempt 36 hours and seven minutes after the advisory was published to the global database.'"
+  ground_truth_url: "https://www.sysdig.com/blog/cve-2026-42208-targeted-sql-injection-against-litellms-authentication-path-discovered-36-hours-following-vulnerability-disclosure"
+  fix: "Headline/summary: '36 hours after the advisory reached GitHub's global advisory database'."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed.md
+  where: "sources[].date and inline cite 'The Record, 2026-05-07'; Detection and first body paragraph"
+  summary: "(low confidence) The Record's own datePublished is 2026-05-06T16:52Z (cited as 2026-05-07). Detection calls the helper-to-cmd-to-PowerShell chain 'the earliest signal' and the body says the binaries run cmd.exe at startup, omitting that the implant first beacons by GET to the typosquatted C2 and cmd.exe runs only on a server-returned command."
+  ground_truth: "The Record JSON-LD datePublished 2026-05-06T16:52:21Z; Securelist: 'a backdoor gets activated ... send GET requests to the following URL ... the server may return a shell command to be executed through the cmd.exe process.'"
+  ground_truth_url: "https://therecord.media/hackers-compromise-daemon-tools-global-supply-chain-attack"
+  fix: "Date the cite 2026-05-06; add the C2 beacon step and drop 'earliest signal'."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-05-09/german-court-finds-bank-liable-for-sophisticated-phishing-lo.md
+  where: "relevance"
+  summary: "(low confidence) A civil refund ruling about a private customer of a German bank has no constituency nexus and the entry states no ground for its place; it is kept at routine with a transferable enrolment-hold lesson. Consider two sentences or drop."
+  ground_truth: "Entry kind incident, region dach, sector finance, priority routine; org profile: Swiss public sector."
+  ground_truth_url: "n/a"
+  fix: "Shorten to the transferable lesson or drop."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom.md
+  where: "Exposure line"
+  summary: "Exposure omits that CVE-2026-25592 also lists pip semantic-kernel before 1.39.3 (GHSA-2ww3 affected versions; the cves[] record carries it)."
+  ground_truth: "GHSA-2ww3-72rp-wpp4 package pip semantic-kernel affected < 1.39.3 patched 1.39.3."
+  ground_truth_url: "https://github.com/microsoft/semantic-kernel/security/advisories/GHSA-2ww3-72rp-wpp4"
+  fix: "Add the Python SDK upload_file read path and pip < 1.39.3 to Exposure."
+- code: F11
+  category: editorial-advisory
+  entry: "several: cve-2026-42945-nginx (title, headline, 3 body), cve-2026-20212-cisco-nexus (title), jfrog-artifactory (title, summary, immediate_action), shinyhunters-oracle-peoplesoft (summary, 14 body), sekoia-gamaredon (3 body), the-gentlemen (1 body), virtualizor (2 body)"
+  where: "reader-facing text"
+  summary: "Em dashes in reader-facing title/headline/summary/body (only the '## Type — at' heading is exempt). Also legacy workflow phrasing: sekoia 'Why it matters to us', 'covered yesterday', '(§ 4)' in the action, and a frontmatter summary truncated mid-sentence with an ellipsis; shinyhunters 'see the FBI PeopleSoft entry', 'the § 0 callout'; nginx cites 'Security Affairs, 2026-05' (page date 2026-05-14)."
+  ground_truth: "Style rule 12 of the verifier definition."
+  ground_truth_url: "n/a"
+  fix: "Replace em dashes with commas, colons or periods; reword the internal references; complete the truncated summary; use the full page date."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-09-19/waterplum-contagious-interview-joint-advisory-scale.md
+  where: "Defender takeaway, claim 0a3b15e4b9"
+  summary: "(low confidence) The takeaway tells HR and recruiting never to 'let a candidate run unreviewed take-home-assignment code'. In the advisory's WaterPlum chain the victim is the job seeker told by a fake recruiter to run code; the hiring-side risk is North Korean IT workers (IP and identity checks, least privilege, revoking access). The sentence blends the two paths and the advisory states neither the control nor a cantonal angle."
+  ground_truth: "Advisory sec. 1: 'WaterPlum actors pose as prospective employers ... instruct job seekers to download and execute malicious files'; sec. 2(3) mitigations for hiring organisations: limit information and access rights, revoke accounts and sessions."
+  ground_truth_url: "https://www.ic3.gov/CSA/2026/260918.pdf"
+  fix: "Separate the two controls: developers must not run recruiter-supplied code on work machines; HR vets contractors per the advisory's IT-worker mitigations."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-09-23/virtualizor-billing-hook-unauth-root-rce.md
+  where: "body length vs priority"
+  summary: "(low confidence) Priority is routine (this fire), and the correction records 'a product outside the typical public-administration estate', no exploitation, fix since 2026-09-01, yet the body runs four dense paragraphs of exploit internals. By the entry's own reasoning it earns a short entry or none (v4.2 soundness)."
+  ground_truth: "Record 2026-10-11 summary: 'Priority lowers to routine: no exploitation, a vendor fix since 2026-09-01, a root path that needs an existing suspended billing account, and a product outside the typical public-administration estate.'"
+  ground_truth_url: "n/a"
+  fix: "Trim to the exposure, fix and port-allowlist decision, or drop."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-10-06/denmark-cpr-population-register-third-party-access-breach.md
+  where: "record 2026-10-11T13:52:44Z summary"
+  summary: "(low confidence) The record says the entry cites Datatilsynet, DR, Politiken and TV 2 as independent reporting; Politiken and TV 2 are cited only through Ritzau/Copenhagen Post and TT, so the company name, the 123456 finding and the hacker claims share one origin (as the sourcing_note says). multi-source stays defensible through ministry, Datatilsynet and DR."
+  ground_truth: "Entry sources[]: ministry release, Faglig Senior (Ritzau), Datatilsynet, DR, The Copenhagen Post (Ritzau), TV4 (TT)."
+  ground_truth_url: "https://cphpost.dk/2026-10-10/news/round-up/123456-password-used-in-massive-danish-cpr-data-breach/"
+  fix: "Reword the record summary to name the sources the entry actually cites."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev.md
+  where: "Correction 2026-10-11 (claims 7ef7417c3a, fcf83582ac, e830d7e706)"
+  summary: "(low confidence) The correction says the listing 'carries only the catalog's standard required action' and 'withdraws' the forensic-triage statement. The flag forensicTriage is indeed 'No', but the standard required action text (identical on flagged and unflagged BOD 26-04 listings) itself names CISA's Forensics Triage Requirements and the Notes carry the link; the precise statement is that the record's forensicTriage flag is No."
+  ground_truth: "KEV CVE-2026-86950: forensicTriage 'No'; requiredAction '... ensuring compliance with CISA’s BOD 26-04 ... and CISA’s “Forensics Triage Requirements” (see URL in Notes) ...' (same text on the 78 records flagged Yes)."
+  ground_truth_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+  fix: "Word it as 'the record's forensic-triage flag is No'."
+- code: F11
+  category: editorial-advisory
+  entry: "entries/2026-09-23/virtualizor-billing-hook-unauth-root-rce.md; entries/2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce.md; entries/2026-09-26/kiteworks-precautionary-shutdown-imminent-zero-day-warning.md"
+  where: "this fire's internal: true correction records"
+  summary: "(low confidence) Three internal records change substantive reader-visible content with no section: Virtualizor (priority notable to routine, plus 'no working exploitation gadget chain exists in the stock code today' reworded to VulnCheck's narrower statement), Nexus ('forces the device to reload' to 'could cause'), Kiteworks (BleepingComputer sentence re-attributed from 'quoting the advisory' to 'reporting Kiteworks' explanation'). The contract reserves internal for metadata-only fixes with nothing to tell the reader; a priority change and the removal of an overstated claim are reader-facing."
+  ground_truth: "CLAUDE.md / docs/pipeline.md changelog contract: 'A metadata-only fix with nothing to tell the reader is internal: true: no body section, never rendered on the site.'"
+  ground_truth_url: "n/a"
+  fix: "Either leave as is (gate-clean) or record these as non-internal corrections with a one-line section."

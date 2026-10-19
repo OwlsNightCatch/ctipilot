@@ -100,10 +100,11 @@ The two master prompts (intel run, quality audit) plus the runtime-policy / temp
   files plus exactly one run record per fire.
 - [`prompts/quality-audit.md`](../prompts/quality-audit.md) — the
   *quality-audit* run, fired on an operator-chosen cadence (weekly is
-  typical; the window is always the gap since the previous audit record).
+  typical; the window is always the gap since the previous full audit, the
+  last one that ran coverage re-sweeps).
   **Builds on `cti-run.md`** — it instructs a runtime `Read` of the
   intel-run prompt and defines only the audit lens over the window since
-  the previous audit record, so shared machinery lives in exactly one file
+  the previous full audit, so shared machinery lives in exactly one file
   and cannot copy-drift: retrospective
   truth verification of every published entry against its primary sources
   (batched cold-reader passes on the verifier sub-agents), independent

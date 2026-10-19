@@ -1,0 +1,1125 @@
+- entry: entries/2026-05-08/amazon-ses-weaponised-for-authenticated-phishing-and-bec-kas.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'Core mechanism (leaked IAM keys, SPF/DKIM/DMARC pass, finance-targeted BEC, AWS-hosted phishing pages) is supported by the Kaspersky report, but the cited primary URL is a dead invented link and one targeting claim is not in any source. Entry can be repaired in place. Source-supported facts for a rewrite (https://securelist.com/amazon-ses-phishing-and-bec-attacks/119623/, Kaspersky/Roman Dedenok, 2026-05-04): uptick in SES-abuse phishing since January 2026, steady through Q1; attackers get leaked IAM access keys from public GitHub repos, ENV files, Docker images, config backups and public S3 buckets using TruffleHog-based bots, then verify permissions and sending limits; mail passes SPF/DKIM/DMARC and carries .amazonses.com in Message-ID headers; sender IPs are not on reputation blocklists; early-2026 lure was a fake e-signature (DocuSign-style) notification leading to a sign-in form on amazonaws.com; BEC case was a fabricated invoice email thread to a company''s finance
+    department with PDF attachments holding only payment details; mitigations: least-privilege IAM, roles instead of static keys, MFA, IP restrictions, key rotation/audits. Corroboration: https://www.bleepingcomputer.com/news/security/researchers-report-amazon-ses-abused-in-phishing-to-evade-detection/ (2026-05-04) and Kaspersky press release https://me-en.kaspersky.com/about/press-releases/kaspersky-warns-of-phishing-attacks-via-compromised-amazon-simple-email-service-accounts (2026-05-11).'
+  defects:
+  - code: F1
+    where: sources[0].url
+    claim: https://securelist.com/amazon-ses-bec-campaign-2026/
+    ground_truth: URL returns 'Page not found | Securelist' (fetched this pass). The real Kaspersky report is 'Phishing campaigns and BEC attacks through Amazon SES', author Roman Dedenok, dated 2026-05-04.
+    ground_truth_url: https://securelist.com/amazon-ses-phishing-and-bec-attacks/119623/
+    fix: Replace the primary URL with https://securelist.com/amazon-ses-phishing-and-bec-attacks/119623/ (and add the BleepingComputer 2026-05-04 article as corroboration).
+  - code: F4
+    where: 'body ¶1 (and regions: europe)'
+    claim: Kaspersky observed targeting of finance departments at European manufacturing firms.
+    ground_truth: The report names no sector, country or manufacturing victim; its only targeting statement is that one BEC email was sent 'to the company's finance department, requesting urgent payment'. 'European' and 'manufacturing' appear in neither the Securelist report, BleepingComputer nor the Kaspersky press release.
+    ground_truth_url: https://securelist.com/amazon-ses-phishing-and-bec-attacks/119623/
+    fix: Delete the sentence; say only that the BEC lure was addressed to a victim organisation's finance department. Drop 'europe' from regions unless a source supports it.
+  - code: F4
+    where: body ¶1
+    claim: Attackers obtain SES API credentials from publicly exposed AWS configuration files (S3 bucket misconfigurations, leaked GitHub repositories).
+    ground_truth: 'Report: attackers use leaked IAM access keys found in ''public GitHub repositories, ENV files, Docker images, configuration backups, or even in publicly accessible S3 buckets'', hunted with TruffleHog-based bots; they are IAM keys, not ''SES API credentials'' found in ''AWS configuration files''. Direction is right, wording imprecise.'
+    ground_truth_url: https://securelist.com/amazon-ses-phishing-and-bec-attacks/119623/
+    fix: '''Attackers abuse leaked AWS IAM access keys harvested from public GitHub repositories, ENV files, Docker images, configuration backups and open S3 buckets, then verify key permissions and SES sending limits.'''
+  - code: F11
+    where: title / body ¶1
+    claim: (Kaspersky, 2026-05-04, ~96 h) ... This report is approximately 96 hours old at publication; first coverage in this brief series.
+    ground_truth: Pipeline-internal staleness/series narration, not reader information; the Kaspersky report date (2026-05-04) is correct.
+    ground_truth_url: https://securelist.com/amazon-ses-phishing-and-bec-attacks/119623/
+    fix: Remove '~96 h' from title/headline and the 'first coverage in this brief series' sentence.
+  - code: F17
+    where: classification
+    claim: (no classification block on the entry)
+    ground_truth: Organisation profile requires classification {reliability, credibility} on every entry; none present.
+    ground_truth_url: https://securelist.com/amazon-ses-phishing-and-bec-attacks/119623/
+    fix: 'Add classification: reliability B (vendor research lab), credibility 2 (primary report corroborated by BleepingComputer''s independent coverage).'
+  - code: F8
+    where: techniques / labelled lines
+    claim: (no techniques[], no Exposure/Detection/Defender takeaway lines)
+    ground_truth: 'Report describes mappable behaviour: leaked-key harvesting from public repos, abuse of cloud accounts to send mail, link-based credential phishing, fabricated-thread BEC. Source-supported detection hooks: ''.amazonses.com'' in Message-ID headers, sign-in pages hosted on amazonaws.com; mitigations listed (least privilege, roles, MFA, IP restriction, rotation). None of this reaches the entry.'
+    ground_truth_url: https://securelist.com/amazon-ses-phishing-and-bec-attacks/119623/
+    fix: Add techniques (e.g. T1552.001, T1078.004, T1566.002, T1684.001 - all active in the pinned dataset) and a Detection / Defender takeaway line built from the report's own indicators and mitigations.
+- entry: entries/2026-05-08/cert-fr-certfr-2026-act-016-agentic-ai-tools-introduce-promp.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'The advisory is real and the URL resolves, but the entry describes a different document: it invents MCP-server supply-chain risk, ''guardrails'', ''tool-call allowlisting'' and an untrusted-output rule, and names products the advisory does not mention, while omitting the advisory''s actual headline recommendation (do not deploy such assistants on workstations; confine to isolated sandboxes). Rewrite on the following source-supported facts (https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/, CERT-FR, 2026-04-13, title ''Vulnérabilités et risques des produits d''automatisation par IA agentique sur les postes de travail''): since early 2026 autonomous personal assistants such as OpenClaw and Claude Cowork see strong adoption; they can run commands, control the browser, read/write files, manage calendar and send mail, triggered by chat messages (Slack, WhatsApp, Discord); plugins can be loaded dynamically and run as trusted code with the application''s privileges, widening
+    the software supply chain; prompt injection is an intrinsic LLM weakness; ANSSI/CERT-FR says tools like OpenClaw must not be deployed on workstations and use should be prohibited until the product is stabilised and proven; they must not be used in production, only in isolated test sandboxes without sensitive data; hardening levers: limit tools/actions to the strict minimum, mandatory human validation for any system command or side-effect action, sandbox execution, allowlists for the channels and interlocutors permitted to trigger the agent, activation only on explicit @mention; the advisory also applies to mobile.'
+  defects:
+  - code: F4
+    where: body ¶1
+    claim: 'warning that deploying agentic AI orchestration platforms (LLM-driven workflows with tool-calling, MCP server integration, or autonomous execution capabilities) introduces novel attack vectors. The advisory identifies three risk classes: ... **MCP server supply-chain compromise** (a malicious or compromised Model Context Protocol server can issue instructions to all connected agents)'
+    ground_truth: 'The advisory never mentions MCP / Model Context Protocol (grep of the full text: no match). It addresses autonomous personal-assistant products (OpenClaw, Claude Cowork) on user workstations, with a plugin/extension supply-chain risk (''des greffons (plugins) peuvent être chargés dynamiquement ... exécutés comme du code de confiance''). It is not an ''orchestration platform / MCP'' advisory.'
+    ground_truth_url: https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+    fix: Replace the MCP risk class with the advisory's plugin-loaded-as-trusted-code supply-chain risk; scope the advisory to autonomous desktop assistants.
+  - code: F4
+    where: body ¶1
+    claim: CERT-FR recommends input/output guardrails, strict allowlisting of permitted tool calls, human-in-the-loop gates for high-impact actions, and treating all AI agent outputs as untrusted until validated.
+    ground_truth: Advisory says prompt-level defensive wording can be bypassed by injection; recommends limiting actions/tools to the strict necessary, MANDATORY human validation for any system command or side-effect action, sandbox isolation, and allowlists for the communication channels / interlocutors (DM/groups) that may trigger the agent, activation only on explicit @agent mention. 'Input/output guardrails', 'allowlisting of permitted tool calls' and 'treat all outputs as untrusted' are not stated (only the human-validation point matches).
+    ground_truth_url: https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+    fix: 'Restate the recommendations as the advisory gives them: restrict tools/actions, mandatory human validation for system/side-effect commands, sandbox, channel/interlocutor allowlists, mention-only activation.'
+  - code: F4
+    where: body ¶1 (last sentence)
+    claim: Relevant for organisations deploying Claude Agents, Microsoft Copilot Studio, AutoGen, or similar agentic frameworks for workflow automation.
+    ground_truth: The advisory names OpenClaw and Claude Cowork (and 'other open-source solutions'); Microsoft Copilot Studio and AutoGen do not appear. Its scope is workstation assistants, not workflow frameworks.
+    ground_truth_url: https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+    fix: Name OpenClaw and Claude Cowork as the advisory does, or drop the product list.
+  - code: F8
+    where: body (omission)
+    claim: (entry omits the advisory's primary directive)
+    ground_truth: '''En l''état, les assistants personnels autonomes tels qu''OpenClaw ne doivent pas être déployés sur des postes de travail et leur usage doit être proscrit, tant que le produit n''est pas stabilisé'' and they ''ne doivent en aucun cas être déployés en environnements de production''; use restricted to isolated sandboxes with no sensitive data. This is the decision a defender needs and is missing.'
+    ground_truth_url: https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+    fix: Lead with the prohibit-on-workstations / sandbox-only position and the Shadow-IT control (block unvalidated installs).
+  - code: F11
+    where: body / metadata
+    claim: 'entities: campaign:certfr-2026-act-016, report:certfr-2026-act-016; event_date: null'
+    ground_truth: An advisory is not a campaign. The advisory is dated 2026-04-13 (first and last version), i.e. ~25 days before the entry; entry gives no date, so a reader cannot see it is not new.
+    ground_truth_url: https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+    fix: 'Drop the campaign: entity, set event_date 2026-04-13, state the advisory date in the body.'
+  - code: F17
+    where: classification
+    claim: (no classification block)
+    ground_truth: Required on every entry; absent. Single national-CERT primary read directly.
+    ground_truth_url: https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+    fix: 'classification: reliability A (CERT-FR is an A-tier national CERT, owns the advisory), credibility 2.'
+  - code: F16
+    where: priority
+    claim: 'priority: notable'
+    ground_truth: A 3-week-old general hardening advisory with no vulnerability, exploitation or actor; no concrete decision beyond 'do not deploy' guidance. Closer to routine; borderline relevance gate.
+    ground_truth_url: https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/
+    fix: (low confidence) routine, or keep notable only if rewritten around the do-not-deploy-on-workstations decision.
+- entry: entries/2026-05-08/cve-2026-0300-pan-os-captive-portal-unauthenticated-root-rce.md
+  verdict: factual-error
+  duplicate_of: entries/2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s.md
+  unique_material:
+  - fact: Threat ID 510019 needs PAN-OS 11.1 or later (decoder capability) and Applications and Threats content 9097-10022; the survivor mentions 510019 but not the version prerequisite or content version.
+    source: https://security.paloaltonetworks.com/CVE-2026-0300
+  - fact: CISA KEV federal due date 2026-05-09 (KEV dateAdded 2026-05-06); survivor already states the 2026-05-09 deadline, so no unique value beyond the add date.
+    source: 'https://www.cisa.gov/known-exploited-vulnerabilities-catalog (cisa-kev recipe: dateAdded 2026-05-06, dueDate 2026-05-09)'
+  ground_truth: 'Same finding as the later CVE-2026-0300 entries (2026-05-09, 2026-05-12, 2026-05-14, 2026-05-18); it carries nothing the 2026-05-12 survivor lacks except the Threat ID 510019 PAN-OS 11.1+ prerequisite. The ''no patch until 2026-05-13'' framing is a simplification (the PSIRT lists per-build ETAs of 05/13 and 05/28), and the mitigation is mis-scoped to GlobalProtect. Source-supported facts (https://security.paloaltonetworks.com/CVE-2026-0300; https://unit42.paloaltonetworks.com/captive-portal-zero-day/): buffer overflow (CWE-787) in the User-ID Authentication Portal (Captive Portal) on PA-Series and VM-Series; unauthenticated root RCE; CVSS-B/BT 9.3 (CVSS 4.0), 8.7 when portal restricted to trusted internal IPs; Prisma Access, Cloud NGFW and Panorama unaffected; exposure requires Authentication Portal enabled AND an interface management profile with response pages on an L3 interface where untrusted traffic ingresses; limited exploitation in the wild since 2026-04-09 attributed
+    by Unit 42 to CL-STA-1132 (likely state-sponsored); CISA KEV 2026-05-06, due 2026-05-09; mitigations: restrict portal to trusted zones and disable response pages on untrusted L3 interfaces, or disable the portal if unused; Threat ID 510019 (content 9097-10022, PAN-OS 11.1+).'
+  defects:
+  - code: F4
+    where: body ¶1
+    claim: disable the Captive Portal / Authentication Portal feature on internet-facing GlobalProtect gateway interfaces, or restrict access exclusively to trusted internal management IP ranges.
+    ground_truth: 'PSIRT mitigation: ''Restrict User-ID Authentication Portal access to only trusted zones and in addition, disable Response Pages in the Interface Management Profile attached to every L3 interface in any zone where untrusted/internet traffic can ingress'' or ''Disable User-ID Authentication Portal if not required''. GlobalProtect is not mentioned; the portal is a separate service, and the condition is response pages on untrusted-facing L3 interfaces, not ''management IP ranges''.'
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: State the PSIRT mitigation verbatim in substance (trusted zones + response pages disabled on untrusted L3 interfaces, or disable the portal); drop GlobalProtect.
+  - code: F4
+    where: title / headline / summary / body
+    claim: CISA KEV deadline is today (2026-05-09); no patch until 2026-05-13
+    ground_truth: 'Entry is dated 2026-05-08 yet says the deadline is ''today (2026-05-09)''. Rapid7''s table of the PSIRT shows fix ETAs per build: first wave 05/13 (e.g. 12.1.4-h5, 11.2.7-h13, 11.2.10-h6, 11.1.4-h33, 11.1.6-h32, 11.1.10-h25, 11.1.13-h5, 10.2.10-h36, 10.2.18-h6) and second wave 05/28 (12.1.7, 11.2.4-h17, 11.2.12, 11.1.7-h6, 11.1.15, 10.2.7-h34, 10.2.13-h21, 10.2.16-h7). ''No patch until 05-13'' is true only for the first wave. Also a KEV due date is used as the reason to act (style rule).'
+    ground_truth_url: https://www.rapid7.com/blog/post/etr-critical-buffer-overflow-in-palo-alto-networks-pan-os-user-id-authentication-portal-cve-2026-0300
+    fix: Headline the exploited unauthenticated root RCE and the mitigation; state 'first fixed builds 2026-05-13, remaining builds 2026-05-28' and drop the KEV-deadline framing.
+  - code: F8
+    where: cves[] / body
+    claim: 'cves: [] ; sourcing_note: ''migration: CVE fields incomplete in v2 footer (CVE-2026-0300)'''
+    ground_truth: Per-CVE authority gives CVE-2026-0300, CVSS 9.3 (4.0), CWE-787, exploited, KEV 2026-05-06. cves[] is empty, no CVSS, no exploitation narrative (body never says it is exploited in the wild, since 2026-04-09, nor names CL-STA-1132) although tags say actively-exploited / cisa-kev; no techniques[].
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: 'Populate cves[CVE-2026-0300] (cvss 9.3, status exploited/cisa-kev/mitigation-only), techniques (T1190 etc.), and state the exploitation; better: fold into the 2026-05-12 survivor.'
+  - code: F5
+    where: body ¶1
+    claim: (whole body has no inline citation)
+    ground_truth: KEV deadline, patch ETA, 'permanent patch' and Threat ID claims carry no inline link; only the PSIRT is in sources[] and KEV is uncited.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: Inline-cite PSIRT for fixes/mitigation/Threat ID and the KEV catalogue entry for the due date.
+  - code: F11
+    where: body ¶1
+    claim: (First covered and deep-dived 2026-05-07.)
+    ground_truth: Pipeline-internal narration; no entry for 2026-05-07 exists in the store ('update target unresolved').
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: Delete; also 'P0 action today before business opens' is non-factual urgency text.
+  - code: F17
+    where: classification
+    claim: (no classification block)
+    ground_truth: Required for every entry including kind vulnerability (no triage scheme configured); absent.
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: 'classification: reliability A (vendor PSIRT), credibility 2 (vendor-confirmed exploitation, corroborated by Unit 42/KEV).'
+- entry: entries/2026-05-08/glpi-certfr-2026-avi-0551-seven-cves-including-ssrf-and-xss.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'The CVE ids, the fix versions (10.0.25 / 11.0.7) and the ''no CVSS in the CERT-FR advisory'' statement are right, but five of the seven per-CVE vulnerability classes in the body are wrong against GLPI''s own release notes and GitHub advisories, the advisory date is mis-attributed, and the entry is a routine patch-cycle item. Source-supported facts for a rewrite (GLPI releases https://github.com/glpi-project/glpi/releases/tag/11.0.7 and https://github.com/glpi-project/glpi/releases/tag/10.0.25, both 2026-04-29; GHSA via https://api.github.com/repos/glpi-project/glpi/security-advisories): CVE-2026-32312 unauthorized export of form structure (Medium, CWE-862, 11.x only); CVE-2026-42320 arbitrary files access (Medium, <10.0.25 / <11.0.7); CVE-2026-42317 arbitrary files deletion by a technician (High, fixed 10.0.25/11.0.7); CVE-2026-42318 arbitrary item deletion via planning (High, CWE-862, fixed 10.0.25/11.0.7); CVE-2026-42321 stored XSS in asset locks (High, CWE-79, 10.x only,
+    fixed 10.0.25); CVE-2026-5385 stored XSS in knowledge base (High, CWE-79); CVE-2026-40108 stored XSS in ITIL Costs (High, CWE-79, 11.x only, fixed 11.0.7). CERT-FR AVI-0551 (https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0551/) was published 2026-05-07 and cites the vendor bulletin of 2026-04-29; affected: GLPI < 10.0.25 and < 11.0.7.'
+  defects:
+  - code: F4
+    where: body ¶1
+    claim: Vulnerability types include SSRF (CVE-2026-32312), stored and reflected XSS (CVE-2026-42317, CVE-2026-42318, CVE-2026-42320, CVE-2026-42321), security policy bypass (CVE-2026-5385), and data integrity compromise (CVE-2026-40108).
+    ground_truth: 'GLPI 11.0.7 / 10.0.25 release notes and GHSA: CVE-2026-32312 = ''Unauthorized export of form structure'' (Medium, CWE-862), not SSRF; CVE-2026-42317 = ''Arbitrary files deletion by technician'' (High); CVE-2026-42318 = ''Arbitrary item deletion via planning'' (High, CWE-862); CVE-2026-42320 = ''Arbitrary files access'' (Medium); only CVE-2026-42321 = ''Stored XSS in asset locks'' (High, CWE-79) is XSS of that group; CVE-2026-5385 = ''Stored XSS in knowledge base'' (High), not a policy bypass; CVE-2026-40108 = ''Stored XSS in ITIL Costs'' (High), not data integrity. No reflected XSS is in this set. (The SSRF in the 11.0.7 notes is ''Unauthorized Webhook CRA Validation SSRF'', Low, with no CVE id listed.) The classes were mapped from CERT-FR''s generic risk list onto CVE ids without a source for the mapping.'
+    ground_truth_url: https://github.com/glpi-project/glpi/releases/tag/11.0.7
+    fix: 'Rewrite per-CVE: 32312 missing authorization/form-structure export (Medium); 42320 arbitrary file access (Medium); 42317 arbitrary file deletion by technician (High); 42318 arbitrary item deletion via planning (High); 42321, 5385, 40108 stored XSS (High); fix 10.0.25 / 11.0.7.'
+  - code: F4
+    where: title / summary / body ¶1
+    claim: GLPI CERTFR-2026-AVI-0551 — Seven CVEs ... (advisory 2026-04-29) ; France's CERT-FR published CERTFR-2026-AVI-0551 (April 29, 2026)
+    ground_truth: CERT-FR AVI-0551 is dated 'Paris, le 07 mai 2026' (first and last version 07 mai 2026); 29 avril 2026 is the date of the GLPI vendor security bulletin/releases it references.
+    ground_truth_url: https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0551/
+    fix: '''GLPI released 10.0.25 and 11.0.7 on 2026-04-29; CERT-FR relayed them in CERTFR-2026-AVI-0551 on 2026-05-07.'''
+  - code: F4
+    where: cves[] (all seven)
+    claim: 'vector: user-interaction, auth: post-auth, type: null, cvss: n/a on every record'
+    ground_truth: 'Uniform template values, not per-CVE facts: the arbitrary file/item deletion and file-access flaws (42317, 42318, 42320) and the form-structure export (32312) are missing-authorization bugs, not user-interaction vectors; only the three stored-XSS CVEs (42321, 5385, 40108) need a victim to view content. Branch scope differs per CVE: CVE-2026-40108 is 11.x only (GHSA >= 11.0.0, patched 11.0.7; absent from the 10.0.25 notes), CVE-2026-42321 is 10.x only (>= 10.0.4 < 11.0.0, patched 10.0.25), CVE-2026-32312 is 11.x only (GHSA >= 11.0.0); CVE-2026-5385 is listed in both the 10.0.25 and 11.0.7 notes (GHSA range >= 11.0.0). Vendor severity (Medium/High) is published and omitted.'
+    ground_truth_url: https://api.github.com/repos/glpi-project/glpi/security-advisories?per_page=100
+    fix: (low confidence on vector) Set type per CVE (xss / authz-bypass / file-deletion), vector user-interaction only for XSS, record affected branches and vendor severity.
+  - code: F5
+    where: body ¶1
+    claim: the open-source IT Service Management platform widely deployed in European public-sector organisations and healthcare networks
+    ground_truth: Neither CERT-FR nor the GLPI notes state deployment breadth or sector; no source cited for it.
+    ground_truth_url: https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0551/
+    fix: Delete or source it.
+  - code: F6
+    where: sources[]
+    claim: 'url: https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0551/ (only source, role primary)'
+    ground_truth: 'Only a national-CERT relay is cited; the vendor primary exists: GLPI release pages 11.0.7 and 10.0.25 (2026-04-29) list each CVE with title and severity, and are the per-CVE authority.'
+    ground_truth_url: https://github.com/glpi-project/glpi/releases/tag/11.0.7
+    fix: Make the GLPI release notes the primary source and CERT-FR corroborating.
+  - code: F16
+    where: priority
+    claim: 'priority: notable; ''advised to schedule patching within the standard change window'''
+    ground_truth: No exploitation, no pre-auth RCE, no exposure-driven urgency (the body itself says standard change window); a routine patch-cycle item for the vulnerability inclusion gate.
+    ground_truth_url: https://github.com/glpi-project/glpi/releases/tag/11.0.7
+    fix: routine, or drop.
+  - code: F17
+    where: classification
+    claim: (no classification block)
+    ground_truth: Required on every entry; absent. techniques[] also absent on a vulnerability entry.
+    ground_truth_url: https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0551/
+    fix: 'classification: reliability A once the GLPI primary is cited (B if left on CERT-FR relay only), credibility 2; add techniques (e.g. T1190 / T1059.007 as supported).'
+- entry: entries/2026-05-08/instructure-canvas-extortion-330-institutions-across-six-cou.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'Headline numbers and the whole 2026-05-09 update contain claims no fetched source supports (330 institutions / six countries / 16 million records; SURF-confirmed 44 Dutch institutions; ''WorldLeaks'', EUR 3.2M, 3 GB sample, LTI service-account vector; German DPA inquiry), the cited primary (SURF) is a 404, and the main analysis is superseded by the later sections. The 2026-05-10, 2026-05-12 and 2026-05-13 sections are largely supported with the fixes listed. Source-supported facts for a rewrite: Instructure disclosed an incident on 2026-05-01 (status page), detected unauthorised activity 2026-04-29, exploited via a vulnerability in Free-for-Teacher; stolen: names, emails, student IDs, messages; no evidence of passwords/DOB/gov IDs/financial data (BleepingComputer 2026-05-03 https://www.bleepingcomputer.com/news/security/instructure-confirms-data-breach-shinyhunters-claims-attack/); ShinyHunters claims ~9,000 schools / 275M individuals / 3.65 TB (BleepingComputer; The Register
+    https://www.theregister.com/security/2026/05/12/double-canvas-intrusion-confirmed-as-shinyhunters-resets-leak-deadline/5238361); second intrusion 2026-05-07: ~330 school login portals defaced with an extortion note via the same Free-for-Teacher flaw, Canvas taken into maintenance mode (Register; Infosecurity https://www.infosecurity-magazine.com/news/shinyhunters-escalates-canvas/); seven Dutch universities named by UNL (VU, UvA, Erasmus, Tilburg, TU/e, Maastricht, Twente) disconnected Canvas and notified the Dutch AP (Techzine https://www.techzine.eu/news/security/141149/dutch-university-disconnects-canvas-systems-after-instructure-hack/; UNL https://www.universiteitenvannederland.nl/actueel/nieuws/update-19-mei-stand-van-zaken-hack-leverancier-onderwijsplatform-canvas); deadline 2026-05-12; Instructure announced an agreement with the actor on Monday 2026-05-11 with ''shred logs'' and said no customers will be extorted (Inside Higher Ed https://www.insidehighered.com/news/tech-innovation/administrative-tech/2026/05/11/instructure-pays-ransom-canvas-hackers;
+    The Record https://therecord.media/instructure-pays-ransom-canvas-incident-congress-investigation); House Homeland Security Committee chairman Garbarino letter late 2026-05-11 requesting a briefing before 2026-05-21 (The Record; Register https://www.theregister.com/cyber-crime/2026/05/12/congress-investigates-canvas-breach-after-instructure-cuts-deal-with-shinyhunters/5238927); CrowdStrike retained.'
+  defects:
+  - code: F1
+    where: sources[0].url
+    claim: 'https://www.surf.nl/actualiteiten/2026/canvas-security-update (role: primary, ''SURF Security Advisory — Canvas Extortion Update'')'
+    ground_truth: Returns 'Pagina niet gevonden | SURF.nl' (HTTP 404). The SURF advisory the entry attributes the '44 Dutch institutions' to does not exist at this URL.
+    ground_truth_url: https://www.surf.nl/actualiteiten/2026/canvas-security-update
+    fix: Remove the source; cite UNL / VU / UvA pages instead.
+  - code: F4
+    where: title / headline / body ¶1
+    claim: 'Instructure/Canvas extortion: 330 institutions across six countries; ... The threat actor now claims access affecting **330 institutions** across six countries, threatening to publish 16 million student and staff records.'
+    ground_truth: ShinyHunters' claims are 'nearly 9,000 schools worldwide' / '275 million individuals' (BleepingComputer 2026-05-03), 8,800 schools / 3.65 TB (Register). 'About 330' is the number of login portals defaced on 2026-05-07 (Register, Infosecurity), not institutions with stolen data. 'Six countries' and '16 million records' appear in no fetched source.
+    ground_truth_url: https://www.bleepingcomputer.com/news/security/instructure-confirms-data-breach-shinyhunters-claims-attack/
+    fix: '''ShinyHunters claims ~275M individuals at ~8,800-9,000 institutions; a second intrusion on 2026-05-07 defaced ~330 school login portals.'''
+  - code: F4
+    where: title / body ¶1 / update 2026-05-09
+    claim: 44 Dutch institutions confirmed ; **SURF** (the Dutch National Research and Education Network) has confirmed **44 Dutch institutions** among the victims ; **Universiteiten van Nederland (UNL)** confirmed that 44 member institutions are potentially affected, representing all Dutch research universities and applied science universities
+    ground_truth: The 44 figure is a BNR report ('may have been affected'), which TU/e's Cursor says 'appears inaccurate, as some listed institutions do not use Canvas'. UNL named seven universities (VU, UvA, Erasmus, Tilburg, TU/e, Maastricht, Twente) and UNL's 2026-05-19 update refers to 'de zeven universiteiten'. No SURF or UNL confirmation of 44 exists in any fetched source.
+    ground_truth_url: https://www.cursor.tue.nl/en/news/2026/mei/week-1/student-data-of-millions-stolen-in-canvas-hack
+    fix: '''Seven Dutch universities (named by UNL) disconnected Canvas; a press report of 44 Dutch institutions was disputed.'''
+  - code: F4
+    where: body ¶1
+    claim: European DPAs in the Netherlands and Germany have opened preliminary inquiries into notification timing.
+    ground_truth: 'Sources show only that Dutch universities filed (preliminary) breach notifications with the Dutch Autoriteit Persoonsgegevens (VU: Techzine; UvA/UNL: ''a preliminary notification has already been submitted to the AP''). No DPA inquiry into notification timing and nothing about a German DPA appears in any source.'
+    ground_truth_url: https://www.uva.nl/shared-content/uva/en/news/news/2026/05/update-on-the-data-breach-at-the-canvas-provider.html
+    fix: '''Dutch universities filed preliminary notifications with the Dutch AP.'' Delete the German claim.'
+  - code: F4
+    where: update 2026-05-09 ¶2
+    claim: The threat actor (WorldLeaks) set a **2026-05-12 payment deadline**; the extortion amount was stated as €3.2 million. WorldLeaks previously published a 3 GB sample dataset on 2026-05-07 containing course-IDs, student email addresses, assignment metadata, and grade records across four UK institutions. No passwords, payment data, or national identification numbers were present in the sample.
+    ground_truth: Every fetched source names ShinyHunters (also this entry's own entities and later sections); none mentions WorldLeaks, a EUR 3.2 million demand, a 3 GB sample or a four-UK-institution sample. The only published deadline is 2026-05-12 set by ShinyHunters; the Instructure payment amount was never disclosed.
+    ground_truth_url: https://www.insidehighered.com/news/tech-innovation/administrative-tech/2026/05/11/instructure-pays-ransom-canvas-hackers
+    fix: Delete the paragraph; actor is ShinyHunters.
+  - code: F4
+    where: update 2026-05-09 ¶2
+    claim: Instructure issued a public statement on 2026-05-08 confirming the breach vector was a compromised integration service account for a third-party LTI tool provider (not Canvas core infrastructure), and that the issue was isolated. Instructure stated it notified affected institutions on 2026-05-01
+    ground_truth: 'Instructure''s disclosed vector is a vulnerability in its Free-for-Teacher offering (Register: ''criminals exploited a security vulnerability in its Free-for-Teacher learning system''; Infosecurity: ''exploiting a vulnerability in the Free-For-Teacher version of Canvas''); the Register also says core learning data was not compromised. No LTI service-account vector is stated; it also contradicts the entry''s own 2026-05-12 section. Instructure detected activity on 2026-04-29 and disclosed on 2026-05-01 on its status page; ''notified affected institutions on 2026-05-01'' is unsourced.'
+    ground_truth_url: https://www.theregister.com/security/2026/05/12/double-canvas-intrusion-confirmed-as-shinyhunters-resets-leak-deadline/5238361
+    fix: Replace with the Free-for-Teacher vulnerability root cause; delete the LTI service-account claim.
+  - code: F4
+    where: update 2026-05-09 ¶1
+    claim: '**University of Oxford** confirmed it is working with Instructure and the NCSC-UK; **University of Cambridge** issued a statement ... ; **University of Liverpool** confirmed it had notified the Information Commissioner''s Office under Article 33 GDPR and is conducting a forensic investigation.'
+    ground_truth: (low confidence) Oxford's own statement (Cherwell 2026-05-08) says it suspended Canvas access and is 'working closely with the supplier'; no NCSC-UK mention found. Cambridge and Liverpool statements/ICO notification were not found in any fetched source and the entry cites none.
+    ground_truth_url: https://www.cherwell.org/2026/05/08/canvas-suspended-following-cyberattack/
+    fix: Source each statement or delete; keep Oxford's suspension of Canvas access.
+  - code: F4
+    where: update 2026-05-10 ¶1
+    claim: Instructure confirmed the second breach, rotated application keys, increased monitoring, and required API-client re-authorisation across its customer base. ; ShinyHunters posted a second intrusion notice around 2026-05-08
+    ground_truth: Patches, monitoring, application-key rotation and API re-authorisation were Instructure's response to the FIRST incident (BleepingComputer 2026-05-03). The defacement message appeared on Thursday evening 2026-05-07 (Techzine, DutchNews), not 2026-05-08.
+    ground_truth_url: https://www.bleepingcomputer.com/news/security/instructure-confirms-data-breach-shinyhunters-claims-attack/
+    fix: Attribute key rotation/re-authorisation to the first incident response; date the second notice 2026-05-07.
+  - code: F4
+    where: update 2026-05-12 ¶2 (b)
+    claim: ShinyHunters has now **reset a per-institution payment deadline to end-of-day 2026-05-12** (today), positioning the central settlement as covering only the bulk dataset while leaving individual institutions exposed to targeted publication
+    ground_truth: The Register reports the final end-of-day 05-12 deadline for individual institutions but no 'bulk-only' positioning; Instructure's statement, relayed by Inside Higher Ed and The Record, is that the agreement 'covers all impacted Instructure customers' and 'no Instructure customers will be extorted'. The entry's reading is unsourced and inverts the vendor statement.
+    ground_truth_url: https://therecord.media/instructure-pays-ransom-canvas-incident-congress-investigation
+    fix: Report the per-institution deadline and Instructure's statement that the agreement covers all customers; drop the 'exposed to targeted publication' inference or mark it as the entry's analysis.
+  - code: F5
+    where: update 2026-05-12 ¶3
+    claim: by ransomware-actor practice, the artefact provided is typically a hash list or a video, not a forensically meaningful proof of deletion
+    ground_truth: No cited source says what 'shred logs' consist of; Inside Higher Ed quotes an expert only that there is 'no reliable way to verify' deletion claims.
+    ground_truth_url: https://www.insidehighered.com/news/tech-innovation/administrative-tech/2026/05/11/instructure-pays-ransom-canvas-hackers
+    fix: Delete the hash-list/video assertion or attribute it to a source.
+  - code: F4
+    where: update 2026-05-13 ¶2
+    claim: On 2026-05-12 — before the deadline expired — Instructure confirmed it had 'reached an agreement with the unauthorized actor'
+    ground_truth: 'Instructure''s update was published Monday 2026-05-11 (Inside Higher Ed: ''update published ... Monday night''; The Record: ''Late on Monday evening''); the entry''s own 2026-05-12 section dates it 2026-05-11, so the sections contradict each other.'
+    ground_truth_url: https://www.insidehighered.com/news/tech-innovation/administrative-tech/2026/05/11/instructure-pays-ransom-canvas-hackers
+    fix: 2026-05-11.
+  - code: F4
+    where: update 2026-05-13 ¶2
+    claim: the operational reliability of which the committee letter explicitly questions. ShinyHunters claims the agreement covers up to 275 million records across roughly 8,800 colleges
+    ground_truth: The letter (as quoted by The Record and The Register) asks for a briefing on both intrusions, data volume, containment, notification and coordination with law enforcement/CISA, and was sent late Monday at about the time of the agreement; it does not question the shred logs. The 275M / ~8,800-school figure is ShinyHunters' claim about the stolen data; it is Instructure that said the agreement covers all customers.
+    ground_truth_url: https://www.theregister.com/cyber-crime/2026/05/12/congress-investigates-canvas-breach-after-instructure-cuts-deal-with-shinyhunters/5238927
+    fix: Delete 'explicitly questions' clause; attribute the coverage statement to Instructure.
+  - code: F5
+    where: update 2026-05-13 ¶3
+    claim: The congressional investigation will likely prompt CISA guidance for higher-education SaaS incident response
+    ground_truth: Speculation; no source states or implies it.
+    ground_truth_url: https://therecord.media/instructure-pays-ransom-canvas-incident-congress-investigation
+    fix: Delete.
+  - code: F9
+    where: body ¶1 vs sections 2026-05-12/13 (supersession)
+    claim: establish a 2026-05-12 extortion deadline ... Institutions using Canvas should assess GDPR Article 33/34 breach notification obligations before the May 12 deadline. ; Canvas services were taken offline again on 2026-05-07 for emergency patching.
+    ground_truth: The main analysis still presents the deadline as pending and the 330-institution claim as ShinyHunters' reach, while the newest sections report Instructure's agreement (2026-05-11) and that ~330 was the number of defaced portals. The 05-07 outage was 'maintenance mode to contain the activity' (Register).
+    ground_truth_url: https://www.theregister.com/security/2026/05/12/double-canvas-intrusion-confirmed-as-shinyhunters-resets-leak-deadline/5238361
+    fix: Rewrite the main analysis to the current state (two intrusions, agreement 2026-05-11, residual risk) and move the pre-deadline text out.
+  - code: F6
+    where: sources[]
+    claim: 'role: primary on BleepingComputer, Techzine, The Register, The Record'
+    ground_truth: All are press; the vendor primary, Instructure's incident update page (https://www.instructure.com/incident_update, with the CEO letters and the 2026-05-11 agreement statement), is not cited.
+    ground_truth_url: https://www.instructure.com/incident_update
+    fix: Cite the Instructure incident page as primary; mark press as corroborating.
+  - code: F17
+    where: classification
+    claim: 'classification: null'
+    ground_truth: Key present but null; every entry must carry {reliability, credibility}.
+    ground_truth_url: https://www.insidehighered.com/news/tech-innovation/administrative-tech/2026/05/11/instructure-pays-ransom-canvas-hackers
+    fix: 'classification: reliability B, credibility 2 (multiple independent outlets plus vendor statement) once unsupported claims are removed.'
+  - code: F11
+    where: title / summary / techniques / updates[] summaries
+    claim: 'summary: ''(First covered 2026-05-06.) ...''; techniques: []; updates[0].summary: ''UPDATE (originally covered 2026-05-08):'''
+    ground_truth: Pipeline narration in the reader-facing summary; an incident entry with empty techniques[] though the sources support exploitation of a web flaw (T1190), portal defacement (T1491.002) and extortion; record summary for 2026-05-09 is an empty stub, 2026-05-13 ends in an ellipsis.
+    ground_truth_url: https://www.theregister.com/security/2026/05/12/double-canvas-intrusion-confirmed-as-shinyhunters-resets-leak-deadline/5238361
+    fix: Reword summary; add techniques T1190, T1491.002, T1657 (all active); fill record summaries.
+  - code: F16
+    where: priority
+    claim: 'priority: high'
+    ground_truth: (low confidence) US SaaS vendor breach framed on record counts; constituency exposure shown is Dutch/UK universities, none Swiss; the extortion settled 2026-05-11. 'high' bar needs plausible exposure of this constituency plus a decision within 7 days beyond the cycle.
+    ground_truth_url: https://therecord.media/instructure-pays-ransom-canvas-incident-congress-investigation
+    fix: notable unless a Swiss Canvas customer nexus is sourced.
+- entry: entries/2026-05-08/kaspersky-q1-2026-exploits-and-vulnerabilities-report-docume.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'Mostly unsupported. The cited URL is a 404 and the body''s five substantive findings (PDF-reader share, ''Protected View chains most exploited'', 34% V8 growth, RaaS buying zero-days from brokers, Excel macros via cloud storage) are absent from the real Kaspersky Q1 2026 report (''The vulnerability landscape in Q1 2026'', Alexander Kolesnikov, 2026-05-07, https://securelist.com/vulnerabilities-and-exploits-in-q1-2026/119733/). It is also a vendor statistics report (priority bar: vendor statistics) and should be routine or dropped. Source-supported facts a rewrite can stand on: exploit kits expanded in Q1 2026 with new exploits for Microsoft Office, Windows and Linux; critical-CVE volume (CVSS > 8.9) slightly decreased year on year but the upward trend remains, attributed to React2Shell, mobile exploit frameworks and secondary vulns; AI-assisted discovery expected to raise CVE volume; veteran flaws still dominate detections (CVE-2018-0802, CVE-2017-11882, CVE-2017-0199, CVE-2023-38831,
+    CVE-2025-6218, CVE-2025-8088); new chain CVE-2026-21509 + CVE-2026-21514 (Protected View bypass) + CVE-2026-21513 (MSHTML) used together in attacks; Linux detections led by Dirty Pipe CVE-2022-0847 and others; Metasploit back on top of APT C2 frameworks, Sliver and Havoc tied second; notable Q1 vulns: CVE-2026-21519 (DWM), CVE-2026-21533 RegPwn, CVE-2026-25253 OpenClaw, CVE-2026-34070 LangChain, CVE-2026-22812 OpenCode.'
+  defects:
+  - code: F1
+    where: sources[0].url
+    claim: https://securelist.com/exploits-vulnerabilities-q1-2026/
+    ground_truth: Returns 'Page not found | Securelist'. The real report is at /vulnerabilities-and-exploits-in-q1-2026/119733/ (dated 2026-05-07).
+    ground_truth_url: https://securelist.com/vulnerabilities-and-exploits-in-q1-2026/119733/
+    fix: Replace with the real URL; title of report is 'The vulnerability landscape in Q1 2026'.
+  - code: F4
+    where: title / headline / summary / body
+    claim: document-based exploits resurge; RaaS acquires zero-days ; with Microsoft Office and PDF readers accounting for the largest share of initial-access exploit deployments
+    ground_truth: Report says exploit kits 'expanded once again, incorporating new exploits for the Microsoft Office platform, as well as Windows and Linux'. It never mentions PDF readers, a 'resurgence', or a 'largest share of initial-access deployments'; the share statement it makes is that veteran vulnerabilities (Equation Editor, WinRAR etc.) 'consistently account for the largest share of detections'.
+    ground_truth_url: https://securelist.com/vulnerabilities-and-exploits-in-q1-2026/119733/
+    fix: Rewrite from the report's actual findings (see ground_truth).
+  - code: F4
+    where: body ¶1
+    claim: The most exploited CVE class involved Office Protected View bypass chains (multiple CVEs published in January 2026 Patch Tuesday).
+    ground_truth: 'Report: CVE-2026-21509 and CVE-2026-21514 (Protected View bypass) plus CVE-2026-21513 (MSHTML) ''were utilized together in a single chain''; it says nothing about them being ''most exploited'' (the veterans lead detections) or a January Patch Tuesday.'
+    ground_truth_url: https://securelist.com/vulnerabilities-and-exploits-in-q1-2026/119733/
+    fix: Name the three CVEs and the chain, drop 'most exploited' and the Patch Tuesday date.
+  - code: F14
+    where: body ¶1
+    claim: Browser exploitation via V8 memory corruption grew 34% quarter-on-quarter.
+    ground_truth: No V8, browser-exploit or 34% figure anywhere in the report (full text read).
+    ground_truth_url: https://securelist.com/vulnerabilities-and-exploits-in-q1-2026/119733/
+    fix: Delete.
+  - code: F4
+    where: body ¶1
+    claim: ransomware-as-a-service operators are increasingly acquiring zero-day exploits directly from private brokers rather than relying on publicly available PoC code, shortening the detection window between disclosure and mass exploitation.
+    ground_truth: Not in the report; it covers published-exploit statistics, APT exploitation and C2 frameworks, not RaaS or exploit brokers. Tags 'ransomware' and 'zero-day' are unsupported.
+    ground_truth_url: https://securelist.com/vulnerabilities-and-exploits-in-q1-2026/119733/
+    fix: Delete; remove ransomware/zero-day tags.
+  - code: F4
+    where: body ¶1
+    claim: The report includes Excel macro delivery via cloud storage abuse as an emerging initial-access technique.
+    ground_truth: Not in the report.
+    ground_truth_url: https://securelist.com/vulnerabilities-and-exploits-in-q1-2026/119733/
+    fix: Delete.
+  - code: F16
+    where: priority
+    claim: 'priority: notable'
+    ground_truth: Vendor quarterly statistics report with no defender decision; 'vendor statistics' is a disqualifier for high and the entry is long relative to its value.
+    ground_truth_url: https://securelist.com/vulnerabilities-and-exploits-in-q1-2026/119733/
+    fix: routine (two sentences) or drop.
+  - code: F17
+    where: classification
+    claim: (no classification block); techniques absent
+    ground_truth: Required block missing; research kind should carry techniques where sources support (Protected View/MSHTML chain).
+    ground_truth_url: https://securelist.com/vulnerabilities-and-exploits-in-q1-2026/119733/
+    fix: 'classification: reliability B, credibility 2 after rewrite.'
+- entry: entries/2026-05-08/muddywater-iran-mois-deploys-chaos-ransomware-as-false-flag.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'The cited source (Deep Instinct) does not exist (404); the real disclosure is Rapid7''s 2026-05-06 report. The entry''s targeting claim, ransomware-payload claim and ATT&CK ids contradict Rapid7. Source-supported facts for a rewrite (Rapid7 ''Muddying the Tracks: The State-Sponsored Shadow Behind Chaos Ransomware'', 2026-05-06, https://www.rapid7.com/blog/post/tr-muddying-tracks-state-sponsored-shadow-behind-chaos-ransomware/; corroborated by https://thehackernews.com/2026/05/muddywater-uses-microsoft-teams-to.html): an early-2026 intrusion that looked like a Chaos RaaS attack was assessed, with MODERATE confidence, as linked to MuddyWater (MOIS) based on a code-signing certificate and C2 infrastructure; initial access through external Microsoft Teams one-on-one chats with screen sharing, where the actor harvested credentials (typed into local text files) and changed MFA settings to add attacker devices; persistence via DWAgent and AnyDesk, RDP lateral movement incl. a domain
+    controller, a custom RAT (Game.exe) delivered by ms_upd.exe; data exfiltrated and the victim emailed for ransom, but NO files were encrypted; Chaos RaaS (active since Feb 2025, ex-BlackSuit/Royal, 36 claimed victims by late March 2026, mostly US construction/manufacturing/business services) is the cover brand; Rapid7 frames MuddyWater as prepositioning ''particularly in the US''.'
+  defects:
+  - code: F1
+    where: sources[0].url
+    claim: https://www.deepinstinct.com/blog/muddywater-2026 (Deep Instinct Threat Intelligence — MuddyWater 2026 Campaign)
+    ground_truth: Returns 'Page Not Found | Deep Instinct'. The disclosure is by Rapid7, not Deep Instinct.
+    ground_truth_url: https://www.rapid7.com/blog/post/tr-muddying-tracks-state-sponsored-shadow-behind-chaos-ransomware/
+    fix: Replace with the Rapid7 report URL and publisher; add The Hacker News 2026-05-06 as corroboration.
+  - code: F4
+    where: body ¶1
+    claim: targeting government contractors and defence-adjacent organisations in Europe and the Middle East.
+    ground_truth: 'Rapid7 names no government/defence or European/Middle-East targeting; Chaos victims ''predominantly'' in the United States (construction, manufacturing, business services) and MuddyWater activity is described as prepositioning ''particularly in the US''. regions: europe/middle-east are unsupported.'
+    ground_truth_url: https://www.rapid7.com/blog/post/tr-muddying-tracks-state-sponsored-shadow-behind-chaos-ransomware/
+    fix: 'Delete targeting claim; regions: global/us if kept.'
+  - code: F4
+    where: title / headline / body ¶1
+    claim: deploys Chaos ransomware as false flag ; The campaign deploys **Chaos** ransomware payloads with branding designed to mimic criminal ransomware groups
+    ground_truth: 'Rapid7: the actor ''forgo[ed] file encryption in favor of data exfiltration and long-term persistence''; no encryption occurred; the Chaos RaaS banner was used for extortion/negotiation by email and ''Chaos ransomware artifacts'' were present. The actor masqueraded as Chaos; it did not deploy encrypting payloads.'
+    ground_truth_url: https://www.rapid7.com/blog/post/tr-muddying-tracks-state-sponsored-shadow-behind-chaos-ransomware/
+    fix: '''Operated under the Chaos RaaS brand without encrypting files''.'
+  - code: F13
+    where: title / body ¶1
+    claim: MuddyWater (Iran/MOIS) deploys Chaos ransomware as false flag ; (attributed to Iran's Ministry of Intelligence and Security, MOIS)
+    ground_truth: 'Rapid7 attributes only ''with moderate confidence'' (''suggest with moderate confidence that this activity is linked to MuddyWater (Seedworm)'') on a code-signing certificate and C2 infrastructure; the entry states it flatly (confidence: high) and attributes it to ''security researchers'' unnamed.'
+    ground_truth_url: https://www.rapid7.com/blog/post/tr-muddying-tracks-state-sponsored-shadow-behind-chaos-ransomware/
+    fix: Attribute to Rapid7 and state 'moderate confidence'; set confidence accordingly.
+  - code: F4
+    where: body ¶1 (technique list) / techniques
+    claim: 'Observed ATT&CK techniques: T1566.004 (Spearphishing via Teams), T1649 (Steal or Forge Authentication Certificates), T1486 (Data Encrypted for Impact).'
+    ground_truth: 'Pinned ATT&CK v19.2: T1566.004 is ''Spearphishing Voice'' (Teams chat is T1566.003 Spearphishing via Service); T1649 is not supported (the code-signing certificate is attribution evidence, nothing was stolen or forged); T1486 is contradicted (no encryption). Source-supported behaviours: Teams chat + screen sharing credential harvesting, MFA device registration (T1098.005), DWAgent/AnyDesk (T1219), RDP lateral movement (T1021.001), custom RAT, exfiltration, extortion email. frontmatter techniques[] is absent.'
+    ground_truth_url: https://www.rapid7.com/blog/post/tr-muddying-tracks-state-sponsored-shadow-behind-chaos-ransomware/
+    fix: 'techniques: T1566.003, T1098.005, T1219, T1021.001, T1078 (active ids); drop T1649 and T1486; remove the id list from prose.'
+  - code: F4
+    where: body ¶1
+    claim: A parallel social-engineering vector uses Microsoft Teams external-access invitations to gain remote-assistance sessions under a helpdesk pretext, after which credentials are harvested and used for further access via legitimate cloud services.
+    ground_truth: 'Rapid7: Teams external one-on-one chat requests, screen-sharing sessions, victims told to type credentials into local text files and to add attacker-controlled MFA devices; further access via RDP incl. a domain controller and DWAgent/AnyDesk remote tools. It is the main intrusion path, not ''parallel''; ''via legitimate cloud services'' is not stated; IT-helpdesk impersonation is described for Chaos generally (THN) and a Quick Assist-themed phishing page, not clearly this chat.'
+    ground_truth_url: https://www.rapid7.com/blog/post/tr-muddying-tracks-state-sponsored-shadow-behind-chaos-ransomware/
+    fix: Describe the Teams -> screen share -> credential/MFA harvesting -> DWAgent/AnyDesk/RDP chain.
+  - code: F11
+    where: body ¶1 last sentence
+    claim: This is a single-source threat-intelligence vendor disclosure.
+    ground_truth: Pipeline-style provenance commentary in the body; the correct provenance is Rapid7 (named) with THN corroboration.
+    ground_truth_url: https://thehackernews.com/2026/05/muddywater-uses-microsoft-teams-to.html
+    fix: Delete; put provenance in sourcing_note (two sentences).
+  - code: F8
+    where: labelled lines
+    claim: (no Exposure / Detection / Defender takeaway)
+    ground_truth: 'Rapid7 supports a detection/triage set: external-tenant Teams chats that move to screen sharing, remote-management tools (DWAgent, AnyDesk) installed outside change control, MFA device additions after a support chat, RDP to domain controllers from user accounts; ransom email with no encryption as an attribution tell. Absent from entry.'
+    ground_truth_url: https://www.rapid7.com/blog/post/tr-muddying-tracks-state-sponsored-shadow-behind-chaos-ransomware/
+    fix: Add Exposure/Detection/Defender takeaway lines (e.g. restrict external Teams chat/screen share).
+  - code: F17
+    where: classification
+    claim: (no classification block)
+    ground_truth: Required; absent.
+    ground_truth_url: https://www.rapid7.com/blog/post/tr-muddying-tracks-state-sponsored-shadow-behind-chaos-ransomware/
+    fix: 'classification: reliability B, credibility 3 (single vendor, moderate-confidence attribution; THN is a relay of the same report).'
+- entry: entries/2026-05-09/cve-2025-68670-xrdp-pre-authentication-stack-overflow-arbitr.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'Technical core (function, 512-byte to 256-byte stack copy, fix 0.10.5 with backports 0.9.27 / 0.10.4.1, reporter timeline) is supported by the Securelist write-up, but the entry presents a flaw that was publicly advisory-disclosed and fixed on 2026-01-27 as a 2026-05-08 disclosure, omits the project''s CVSS 9.1, and ends with an unrelated eight-row CVE table that republishes wrong values from other entries. Source-supported facts: xrdp GHSA-rwvg-gp87-gh6f (published 2026-01-27; critical; CVSS 3.1 9.1 AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H; CWE-121; affects < 0.10.5; fixed 0.10.5; impact lessened if built with stack-canary protection, a second vulnerability would be needed to leak the canary; check `xrdp -v` for -fstack-protector*/-fhardened) https://github.com/neutrinolabs/xrdp/security/advisories/GHSA-rwvg-gp87-gh6f (read via the GitHub API); Kaspersky Securelist technical analysis dated 2026-05-08 https://securelist.com/cve-2025-68670/119742/ (report 2025-12-05, CVE assigned
+    2025-12-24, patch merged 2026-01-27, backports 0.9.27 and 0.10.4.1, crash-only PoC stops at the stack-canary check).'
+  defects:
+  - code: F4
+    where: summary / body ¶1 / event_date
+    claim: disclosed by Kaspersky researchers Denis Skvortsov and Dmitry Shmoylov on 2026-05-08 ... public disclosure followed on 2026-05-08
+    ground_truth: The xrdp project published its security advisory GHSA-rwvg-gp87-gh6f on 2026-01-27 (patch merged the same day, severity critical, CVSS 9.1); Securelist's 2026-05-08 article is the researchers' technical write-up ~3.5 months later, and credits the maintainers' bulletin. The flaw was not newly disclosed on 2026-05-08, so event_date and 'disclosure' framing misstate its age.
+    ground_truth_url: https://securelist.com/cve-2025-68670/119742/
+    fix: '''xrdp fixed the flaw on 2026-01-27 (advisory GHSA-rwvg-gp87-gh6f); Kaspersky published its technical analysis on 2026-05-08.'' event_date 2026-01-27 or note both.'
+  - code: F4
+    where: cves[CVE-2025-68670]
+    claim: 'cvss: n/a'
+    ground_truth: The project advisory carries CVSS 3.1 base score 9.1 (AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H), severity critical, CWE-121, vulnerable range '< v0.10.5'.
+    ground_truth_url: https://api.github.com/repos/neutrinolabs/xrdp/security-advisories/GHSA-rwvg-gp87-gh6f
+    fix: 'cvss: "9.1"; cite the xrdp GHSA as primary (it is the per-CVE authority; only the Kaspersky blog is cited).'
+  - code: F4
+    where: body ¶1
+    claim: Stack canaries are present but bypassable via canary leakage.
+    ground_truth: 'Securelist: the vulnerable function is protected by a stack canary on most compilers by default, ''an attacker would first need to obtain the canary value'' and ''could potentially leak or guess'' it; the published PoC ends in ''stack smashing detected''. GHSA: ''a second vulnerability would need to be used to leak the stack canary value''. The entry drops the precondition that makes reliable exploitation depend on a second primitive.'
+    ground_truth_url: https://api.github.com/repos/neutrinolabs/xrdp/security-advisories/GHSA-rwvg-gp87-gh6f
+    fix: State that canary-protected builds need a separate leak primitive and give the exposure check (`xrdp -v` shows whether -fstack-protector / -fstack-protector-strong / -fhardened was used).
+  - code: F5
+    where: body ¶1
+    claim: xrdp is widely deployed in Linux remote-access and thin-client environments, including public-sector Linux desktops.
+    ground_truth: Neither Securelist nor the xrdp advisory says anything about deployment breadth or public-sector use (Securelist only mentions Kaspersky Thin Client / USB Redirector).
+    ground_truth_url: https://securelist.com/cve-2025-68670/119742/
+    fix: Delete or source.
+  - code: F4
+    where: body (CVE Summary Table)
+    claim: '| CVE-2026-40982 | Spring Cloud Config Server | 9.8 | ... | CVE-2026-42208 | LiteLLM Proxy | 9.3 | ... Yes — ITW ~26 h post-advisory ... | CVE-2026-44128 ... patch 15.0.4.1 | CVE-2025-68670 | xrdp | n/a'
+    ground_truth: 'The xrdp entry ends with an eight-row table for seven unrelated findings with values that contradict their primaries: CVE-2026-40982 CNA CVSS 9.1 not 9.8 (cveawg record, HeroDevs page); LiteLLM first exploitation 36 h after advisory (Sysdig/Bishop Fox) not ~26 h; SEPPmail fixes shipped in 15.0.4 on 2026-04-24 (CVE-2026-44128 in 15.0.2.1), 15.0.4.1 is an unrelated hotfix (vendor release notes); CVE-2025-68670 CVSS is 9.1 not n/a; Dirty Frag CVSS 8.8 (CNA)/7.8 not n/a.'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-40982
+    fix: Delete the table (it belongs to no single finding and duplicates data held in each CVE's own entry); a rendered digest should never be pasted into one entry's body.
+  - code: F18
+    where: actions[1]
+    claim: If Linux RDP endpoints are internet-accessible, restrict to VPN-only access. RDP on internet-facing Linux hosts is an unnecessary attack surface in virtually all enterprise configurations.
+    ground_truth: Generic exposure-reduction advice with an opinion clause, not derived from the cited mechanics (which are fixed by the patch); would be equally true without this entry. Keep only actions[0] (patch to 0.10.5 / distro backport).
+    ground_truth_url: https://securelist.com/cve-2025-68670/119742/
+    fix: Drop actions[1].
+  - code: F16
+    where: priority
+    claim: 'priority: notable'
+    ground_truth: '(low confidence) Pre-auth RCE but patched since 2026-01-27, no exploitation, PoC only crashes at the canary check, canary protection on by default in most builds: a routine patch-cycle item for the vulnerability gate.'
+    ground_truth_url: https://api.github.com/repos/neutrinolabs/xrdp/security-advisories/GHSA-rwvg-gp87-gh6f
+    fix: routine.
+  - code: F17
+    where: classification / techniques
+    claim: (no classification block; techniques[] absent on a vulnerability entry)
+    ground_truth: Required fields missing; the pre-auth network exploit maps to T1190 (and T1210 for the RDP service).
+    ground_truth_url: https://securelist.com/cve-2025-68670/119742/
+    fix: 'classification: reliability B (Kaspersky research) or A once the project GHSA is primary, credibility 2; techniques [T1190].'
+- entry: entries/2026-05-09/cve-2026-0300-palo-alto-pan-os-captive-portal-kev-deadline-t.md
+  verdict: factual-error
+  duplicate_of: entries/2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s.md
+  unique_material: []
+  ground_truth: 'Same finding as the 2026-05-08 entry and the 2026-05-12/-14/-18 entries; it contains no verified fact absent from the survivor, and its entire ''post-exploitation detail'' and signature/patch-version content is unsupported by the Unit 42 bulletin and PSIRT it cites. Do not salvage the body. Source-supported facts (https://unit42.paloaltonetworks.com/captive-portal-zero-day/; https://security.paloaltonetworks.com/CVE-2026-0300): Unit 42 tracks CL-STA-1132, ''a cluster of likely state-sponsored threat activity''; failed exploitation attempts from 2026-04-09, RCE a week later with shellcode injected into an nginx worker process; log cleanup (crash kernel messages, nginx crash entries, core dumps); EarthWorm and ReverseSocks5 tunnelling; AD enumeration using the firewall''s service account credentials; ptrace-injection evidence deleted from the audit log and SUID binary deleted; 2026-04-29 SAML flood promoted a second device that was then compromised; Threat ID 510019 (content
+    9097-10022, PAN-OS 11.1+) blocks it; mitigations per PSIRT; fixed builds 05/13 and 05/28.'
+  defects:
+  - code: F4
+    where: body ¶3
+    claim: 'Unit 42 observed this cluster: creating rogue admin accounts via the GlobalProtect daemon (bypassing normal `admin-role` RBAC), exporting full running configurations including pre-shared keys, installing Python-based tunnelling implants under `/tmp/.update-service`, and performing internal reconnaissance via OSPF route table queries. The cluster''s dwell time before detection was 4–17 days across confirmed victims. The rogue admin account naming pattern (`svc-health-check-[6-digit-numeric]`) has been observed consistently and can be used as a hunting indicator.'
+    ground_truth: 'None of this appears in the Unit 42 threat brief (full text read). Unit 42 describes: shellcode injection into an nginx worker, log cleanup, EarthWorm and ReverseSocks5, AD enumeration with the firewall service-account credentials, deletion of ptrace-injection evidence and a SUID binary, and an SAML flood on 2026-04-29. No rogue admin accounts, config export, OSPF queries, /tmp/.update-service, dwell-time range or account-naming pattern. The ''hunting indicator'' is fabricated and would misdirect a hunt.'
+    ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+    fix: Delete; replace with the Unit 42 behaviours above.
+  - code: F13
+    where: body ¶3
+    claim: CL-STA-1132 (a China-nexus cluster it tracks separately from previous PAN-OS attackers) as the primary exploitation actor
+    ground_truth: 'Unit 42: ''CL-STA-1132, a cluster of likely state-sponsored threat activity''. No nation is named and nothing about being ''separate from previous PAN-OS attackers''. (BleepingComputer notes EarthWorm has been used by Chinese-speaking groups, which is not an attribution of this cluster.)'
+    ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+    fix: '''likely state-sponsored cluster tracked by Unit 42 as CL-STA-1132''.'
+  - code: F4
+    where: body ¶1
+    claim: the earliest expected maintenance release containing a code fix is **PAN-OS 10.1.14 / 10.2.12 / 11.0.5 / 11.1.4**, expected 2026-05-13.
+    ground_truth: 'PSIRT fixed-version table lists hotfix/maintenance builds for 12.1, 11.2, 11.1 and 10.2 only (12.1.4-h5, 12.1.7; 11.2.4-h17, 11.2.7-h13, 11.2.10-h6, 11.2.12; 11.1.4-h33, 11.1.6-h32, 11.1.7-h6, 11.1.10-h25, 11.1.13-h5, 11.1.15; 10.2.7-h34, 10.2.10-h36, 10.2.13-h21, 10.2.16-h7, 10.2.18-h6) with ETAs 05/13 (first wave) and 05/28 (second wave); 10.1.14 and 11.0.5 are not listed (older versions: ''upgrade to a supported fixed version'').'
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: List the actual builds and the two ETA waves, or link the PSIRT table.
+  - code: F4
+    where: body ¶2
+    claim: Threat Prevention signatures 95817/95818/95820 block the known exploitation chain. PA-Series hardware appliances running content update < 8765-9032 are not covered by the signatures.
+    ground_truth: 'PSIRT/Unit 42: Threat ID 510019 from Applications and Threats content version 9097-10022 (Unit 42 later updated to 9098), requires PAN-OS 11.1 or later and an (Advanced) Threat Prevention subscription. The three signature ids and the ''8765-9032'' content range appear nowhere.'
+    ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+    fix: Threat ID 510019, content 9097-10022, PAN-OS 11.1+.
+  - code: F4
+    where: body ¶2
+    claim: disable Captive Portal (`Device > User Identification > Captive Portal Settings > uncheck Enable Captive Portal`) or disable GlobalProtect and Captive Portal if not operationally needed.
+    ground_truth: 'PSIRT mitigation: restrict User-ID Authentication Portal to trusted zones AND disable Response Pages in the Interface Management Profile of every L3 interface where untrusted traffic ingresses, or disable the User-ID Authentication Portal; menu path per BleepingComputer/Rapid7: Device > User Identification > Authentication Portal Settings > Enable Authentication Portal. GlobalProtect is not part of the mitigation.'
+    ground_truth_url: https://www.rapid7.com/blog/post/etr-critical-buffer-overflow-in-palo-alto-networks-pan-os-user-id-authentication-portal-cve-2026-0300
+    fix: Use the PSIRT wording; drop GlobalProtect.
+  - code: F4
+    where: body ¶1
+    claim: Organisations in US federal scope that cannot meet the KEV deadline through mitigating action face a compliance gap until that release.
+    ground_truth: 'KEV catalogue (fetched via cisa-kev): requiredAction ''Apply mitigations per vendor instructions ... Until the vendor releases an official fix, the following workaround should be implemented: Restrict User-ID Authentication Portal access to only trusted zones; Disable User-ID Authentication Portal if not required'' - the workaround satisfies the due date (2026-05-09, added 2026-05-06); no compliance gap. Using a KEV due date as the reason to act is also against house style.'
+    ground_truth_url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+    fix: Delete the compliance sentence and the KEV-deadline headline framing.
+  - code: F4
+    where: body ¶3
+    claim: Palo Alto Unit 42 published a threat bulletin on 2026-05-08
+    ground_truth: Unit 42's brief appeared on 2026-05-06/07 (BleepingComputer cites it on 2026-05-07; Rapid7 update 2026-05-07); the 2026-05-08 date is only an update note ('Updated May 8, 2026 ... product protections section, adding Cortex AgentiX and updating the Applications and Threats content version').
+    ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+    fix: 2026-05-06/07 (updated 2026-05-08).
+  - code: F2
+    where: sources[1].url
+    claim: 'https://www.cisa.gov/known-exploited-vulnerabilities-catalog (role: corroborating, ''CISA KEV entry CVE-2026-0300'')'
+    ground_truth: A catalogue landing page (hard-blocked pattern), not a per-CVE page.
+    ground_truth_url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+    fix: Drop it; use the PSIRT, Unit 42 and https://www.rapid7.com/blog/post/etr-critical-buffer-overflow-in-palo-alto-networks-pan-os-user-id-authentication-portal-cve-2026-0300 (read this pass) as corroboration.
+  - code: F4
+    where: cves[] / sectors / classification / techniques
+    claim: 'cves: []; sectors: public-sector, defense; (no classification, no techniques)'
+    ground_truth: cves[] empty for a CVE-titled entry; no source names victim sectors (Unit 42 gives none); classification and techniques missing.
+    ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+    fix: Fold into the survivor entry; do not keep as a separate record.
+- entry: entries/2026-05-09/cve-2026-31431-copy-fail-cisa-kev-deadline-2026-05-15-approa.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'A bare ''UPDATE (originally covered 2026-05-06)'' with no base entry in the store: it is the store''s only Copy Fail entry yet never says what the flaw is. Its two substantive paragraphs contain a wrong KEV date, invented distro kernel versions, and a Microsoft attribution the post does not make. Source-supported facts for a rewrite: Copy Fail CVE-2026-31431, local privilege escalation in the kernel''s algif_aead (AF_ALG crypto interface), CVSS 3.1 7.8 (kernel CNA / Red Hat), in-place optimisation introduced 2017 (commit 72548b093ee3), reverted by mainline a664bf3d603d (2026-04-01); AF_ALG + splice() gives a controlled 4-byte page-cache write to a setuid binary such as /usr/bin/su, works on Ubuntu 24.04, Amazon Linux 2023, RHEL 10.1, SUSE 16; disclosed publicly 2026-04-29 by Xint/Theori, public PoC (https://xint.io/blog/copy-fail-linux-distributions); CERT-EU advisory 2026-005 v1.0 dated 2026-04-29 (https://cert.europa.eu/publications/security-advisories/2026-005/); CISA
+    KEV dateAdded 2026-05-01, due 2026-05-15 (cisa-kev recipe); Ubuntu fixed kernels: 22.04 5.15.0-179.189, 24.04 6.8.0-117.117 (https://ubuntu.com/security/CVE-2026-31431); mitigation: block AF_ALG or blacklist algif_aead (Xint).'
+  defects:
+  - code: F4
+    where: body ¶1 / title / summary
+    claim: CISA added CVE-2026-31431 to KEV on 2026-05-06 with a federal remediation deadline of **2026-05-15**
+    ground_truth: 'CISA KEV record (fetched via cisa-kev): dateAdded 2026-05-01, dueDate 2026-05-15. ''Six days from today'' is arithmetic on the due date; the add date is wrong by five days. Framing the entry (title) on the KEV deadline is also a house-style defect.'
+    ground_truth_url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+    fix: '''Added to KEV 2026-05-01''; retitle on the vulnerability and its exploitation, not the deadline.'
+  - code: F4
+    where: body ¶1
+    claim: 'Downstream distribution patches: Ubuntu 22.04/24.04 (linux-image 6.1.98-1ubuntu1); RHEL 8/9 (kernel-5.14.0-503.14.1); Debian 12 (pending as of 2026-05-09 06:00 UTC).'
+    ground_truth: Ubuntu's tracker lists jammy (22.04) fixed in 5.15.0-179.189 and noble (24.04) fixed in 6.8.0-117.117; '6.1.98-1ubuntu1' is not an Ubuntu kernel for either release (6.1.x is Debian 12's line). RHEL 8 ships 4.18 kernels, so a single 5.14.0 version cannot cover 'RHEL 8/9', and Red Hat's CVE page gives no such build (low confidence on RHEL); the Debian 'pending as of 06:00 UTC' timestamp has no source.
+    ground_truth_url: https://ubuntu.com/security/CVE-2026-31431
+    fix: Cite the vendor trackers for fixed versions or drop the version list.
+  - code: F13
+    where: body ¶2
+    claim: Microsoft observes that threat actors are using CVE-2026-31431 and CVE-2026-43284/43500 (Dirty Frag) as **complementary techniques** in post-compromise Linux privilege escalation operations — deploying CVE-2026-31431 on hosts where the `algif_aead` module is available and `rxrpc`/`esp*` are not, and Dirty Frag on hosts where user namespaces are enabled without `algif_aead`. The same initial access vector (SSH-based credential stuffing with exposed management ports) is used across both chains. This operationalises the two LPE vulnerabilities as a "pair"
+    ground_truth: 'The Microsoft post says only: ''Microsoft Defender is currently seeing limited in-the-wild activity where privilege escalation involving su is observed, and which may be indicative of techniques associated with either Dirty Frag or Copy Fail'', with an external connection gaining SSH access, an ELF (./update) triggering su escalation, then GLPI LDAP-file edits and PHP session-file deletion/reads. No complementary-use finding, no module-availability logic, no credential stuffing. The only ''complementary'' pairing in the sources is the V4bel write-up''s ESP + RxRPC variants of Dirty Frag covering each other''s blind spots.'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/08/active-attack-dirty-frag-linux-vulnerability-expands-post-compromise-risk/
+    fix: State Microsoft's hedged observation (activity may be Dirty Frag or Copy Fail) and drop the pairing/credential-stuffing claims.
+  - code: F3
+    where: sources[1] / evidence of CERT-EU
+    claim: 'publisher: CERT-EUROPA advisory 2026-005 update, 2026-05-08'
+    ground_truth: CERT-EU 2026-005 is v1.0 dated 29/04/2026 (page dated 2026-04-30) with no later history; it reports 'no distribution has shipped a fixed kernel package' as of 30 April and contains nothing dated 2026-05-08 or about distribution patches.
+    ground_truth_url: https://cert.europa.eu/publications/security-advisories/2026-005/
+    fix: Date it 2026-04-29 and cite it only for the disclosure, CVSS 7.8 and interim mitigation.
+  - code: F4
+    where: body ¶1
+    claim: the `algif_aead` module (present by default on most distributions unless FIPS mode is active)
+    ground_truth: (low confidence) No fetched source mentions FIPS; Xint says AF_ALG is available to unprivileged users by default and the mitigation is blocking AF_ALG socket creation or blacklisting algif_aead.
+    ground_truth_url: https://xint.io/blog/copy-fail-linux-distributions
+    fix: Delete the FIPS clause.
+  - code: F8
+    where: body / cves[] / techniques / primary source
+    claim: 'cves: []; (no description of the flaw, no CVSS, no mitigation, no techniques); primary = Microsoft Dirty Frag blog'
+    ground_truth: Entry never states what Copy Fail is, that it is a page-cache write via AF_ALG/splice, the CVSS (7.8), affected scope (kernels since 2017), public PoC, or the blacklist mitigation; the first source is a blog about a different vulnerability. The discloser's post (Xint/Theori) and CERT-EU are the primaries.
+    ground_truth_url: https://xint.io/blog/copy-fail-linux-distributions
+    fix: Rewrite as a stand-alone entry with cves[CVE-2026-31431] (cvss 7.8, exploited/cisa-kev), techniques (T1068, T1611), Exposure/Detection/Defender takeaway lines.
+  - code: F11
+    where: title / summary / body
+    claim: 'summary: "UPDATE (originally covered 2026-05-06):" ; **UPDATE (originally covered 2026-05-06):**'
+    ground_truth: Pipeline narration from the migration; there is no 2026-05-06 entry for it to update.
+    ground_truth_url: https://cert.europa.eu/publications/security-advisories/2026-005/
+    fix: Delete the narration.
+  - code: F2
+    where: sources[2].url
+    claim: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+    ground_truth: Catalogue landing page (hard-blocked pattern).
+    ground_truth_url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+    fix: Drop; cite Ubuntu/Red Hat trackers and the Xint disclosure.
+  - code: F17
+    where: classification
+    claim: (no classification block)
+    ground_truth: Required on every entry; absent.
+    ground_truth_url: https://cert.europa.eu/publications/security-advisories/2026-005/
+    fix: 'classification: reliability A/B, credibility 2 once re-sourced.'
+- entry: entries/2026-05-09/cve-2026-40982-spring-cloud-config-server-pre-authentication.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'The CVSS (9.8 in title, summary, cves[] and the xrdp-entry table) is wrong against the owning CNA record (9.1), ''all actively-maintained branches'' is wrong (only 4.3.x and 5.0.x have OSS fixes; 3.1/4.1/4.2 are enterprise-only/EOL), and ''rce'' is not what the advisory describes. Supported facts: Spring advisory https://spring.io/security/cve-2026-40982 (2026-05-06): crafted URL causes directory traversal in spring-cloud-config-server; affected 5.0.0-5.0.2, 4.3.0-4.3.2, 4.2.0-4.2.6, 4.1.0-4.1.9, 3.1.13 and earlier; fixed 5.0.3 and 4.3.3 (OSS), 4.2.7, 4.1.10, 3.1.14 (Enterprise Support only); CVE record (CNA VMware): CVSS 3.1 9.1 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N, CWE-22; CISA-ADP SSVC: exploitation none, automatable yes, technical impact total; companions CVE-2026-40981 (7.5 High, CWE-639, GCP Secret Manager backend), CVE-2026-41002 (7.4 High, CWE-367 TOCTOU on git basedir), CVE-2026-41004 (4.4 Medium, CWE-532 sensitive data in logs); CERT-FR AVI-0543 (2026-05-07); HeroDevs
+    analysis (2026-05-08) notes the Config Server resource endpoints are read-only (information disclosure) and 3.1/4.1/4.2 are EOL branches.'
+  defects:
+  - code: F4
+    where: title / summary / cves[CVE-2026-40982].cvss / body ¶1
+    claim: CVE-2026-40982 (CWE-22, CVSS 9.8) ... pre-authentication path traversal, CVSS 9.8
+    ground_truth: The CNA (VMware/Spring) CVE record gives CVSS 3.1 9.1 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N). The HeroDevs page cited inline now reads 'CVSS 9.1' (only its URL slug retains '9.8'). 9.8 is in no authoritative source.
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-40982
+    fix: cvss "9.1" in title, summary, cves[] (and wherever copied).
+  - code: F4
+    where: title / body ¶1
+    claim: 'all actively-maintained branches affected ; All actively-maintained branches are affected: 3.1.x, 4.1.x, 4.2.x, 4.3.x, and 5.0.x, plus all unsupported versions. Open-source patches: 4.3.3 and 5.0.3'
+    ground_truth: Only 4.3.x and 5.0.x have open-source fixes; 4.2.7, 4.1.10 and 3.1.14 are 'Enterprise Support Only' per the Spring advisory, and HeroDevs describes 3.1.x, 4.1.x and 4.2.x as end-of-life (tied to EOL Spring Boot 3.1/3.3/3.4). So 3.1/4.1/4.2 are not 'actively maintained'.
+    ground_truth_url: https://spring.io/security/cve-2026-40982
+    fix: '''Affects 3.1.x-5.0.x and older; OSS fixes only for 4.3.3 and 5.0.3; 4.2.7/4.1.10/3.1.14 are enterprise-support only.'''
+  - code: F4
+    where: tags / cves[].type
+    claim: 'tags: rce; type: rce; ''read or write arbitrary files accessible to the server process'''
+    ground_truth: 'Spring advisory: ''directory traversal attack'' on a module that serves files; the CVSS vector is C:H/I:H/A:N (no availability or code-execution component) and HeroDevs states the Config Server resource endpoints are read-only so the direct impact is information disclosure. No source describes code execution.'
+    ground_truth_url: https://www.herodevs.com/blog-posts/cve-2026-40982-critical-spring-cloud-config-server-directory-traversal-cvss-9-8
+    fix: 'type: path-traversal / info-disclosure; drop ''rce'' tag; say ''read arbitrary files'' (write only if the Spring advisory is cited for it).'
+  - code: F8
+    where: actions[1]
+    claim: Patch to 4.3.3 (for 4.3.x branch) or 5.0.3 (for 5.0.x branch) per Spring.io advisory.
+    ground_truth: Operators on 4.2.x, 4.1.x and 3.1.x have no OSS fix (enterprise-support builds 4.2.7/4.1.10/3.1.14 or HeroDevs NES) - the action leaves them with no path. The advisory also says no further mitigation steps exist.
+    ground_truth_url: https://spring.io/security/cve-2026-40982
+    fix: 'Add: branches below 4.3 need the enterprise-support fix versions or migration.'
+  - code: F18
+    where: actions[]
+    claim: 'four actions: Identify all Spring Cloud Config Server deployments... / Patch ... / Verify that Config Server is not exposed to the internet directly... / Review config repo files for credentials...'
+    ground_truth: '4 actions on one entry (over the ~3 guide); #1 (inventory) and #3 (verify not exposed) are generic hardening restating the body; the unique tasks are the patch and, for any instance that was reachable, rotating secrets served from it.'
+    ground_truth_url: https://spring.io/security/cve-2026-40982
+    fix: 'Keep the patch action and a conditional secret-rotation action; drop #1 and #3.'
+  - code: F5
+    where: body ¶2
+    claim: Spring Cloud Config is pervasive in Java-based enterprise and government digital-transformation projects across the EU
+    ground_truth: No cited source says this.
+    ground_truth_url: https://www.herodevs.com/blog-posts/cve-2026-40982-critical-spring-cloud-config-server-directory-traversal-cvss-9-8
+    fix: Delete or source.
+  - code: F4
+    where: event_date
+    claim: 'event_date: 2026-05-08'
+    ground_truth: Primary source (Spring advisory) is dated 2026-05-06 ('Initial vulnerability report published'); CVE record published 2026-05-07; 05-08 is the HeroDevs write-up.
+    ground_truth_url: https://spring.io/security/cve-2026-40982
+    fix: 2026-05-06.
+  - code: F16
+    where: priority
+    claim: 'priority: notable'
+    ground_truth: '(low confidence) No exploitation (CISA-ADP SSVC: none), usually an internal service; a CVSS 9.1 alone does not clear the vulnerability gate; routine patch-cycle unless an internet-exposed Config Server population is shown.'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-40982
+    fix: routine.
+  - code: F17
+    where: classification / techniques
+    claim: (no classification block; techniques[] absent)
+    ground_truth: Required; absent. Primary (Spring advisory) is vendor-grade.
+    ground_truth_url: https://spring.io/security/cve-2026-40982
+    fix: 'classification: reliability A, credibility 2; techniques [T1190].'
+- entry: entries/2026-05-09/cve-2026-42208-litellm-proxy-pre-authentication-sql-injectio.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'Core facts verified: pre-auth SQL injection in LiteLLM proxy key verification, 1.81.16-1.83.6 affected, fixed in 1.83.7, GHSA GHSA-r75f-5x8p-qvmc CVSS 4.0 9.3 (CWE-89), CISA KEV added 2026-05-08 due 2026-05-11, exploitation observed ~36 h after advisory. Defects are source-adjacency and dating errors, a self-quoted evidence record, a mislabelled vulnerability type, and missing exposure/detection detail. Supported facts: Bishop Fox post dated 2026-05-06 https://bishopfox.com/blog/cve-2026-42208-pre-authentication-sql-injection-in-litellm-proxy (versions 1.81.16-1.83.6, time-based blind via pg_sleep through two paths, workaround disable_error_logs covers only the error-callback path, patch 1.83.7); LiteLLM advisory 2026-04-29 https://docs.litellm.ai/blog/cve-2026-42208-litellm-proxy-sql-injection (recommends v1.83.10-stable; Postgres query-history review helper); Sysdig 2026-04-27 https://www.sysdig.com/blog/cve-2026-42208-targeted-sql-injection-against-litellms-authentication-path-discovered-36-hours-following-vulnerability-disclosure
+    (first exploitation 36 h 7 min after advisory, UNION queries against LiteLLM_VerificationToken, litellm_credentials and litellm_config, no follow-through observed); GHSA via https://api.github.com/repos/BerriAI/litellm/security-advisories/GHSA-r75f-5x8p-qvmc (published 2026-04-20, CVSS v4 9.3).'
+  defects:
+  - code: F3
+    where: sources[0].publisher / event_date
+    claim: 'Bishop Fox — CVE-2026-42208 technical analysis, 2026-04-30 ; event_date: 2026-04-30'
+    ground_truth: The Bishop Fox post is dated 2026-05-06 (page metadata). 2026-04-30 matches no cited source (LiteLLM blog 2026-04-29; GHSA published 2026-04-20; Sysdig 2026-04-27).
+    ground_truth_url: https://bishopfox.com/blog/cve-2026-42208-pre-authentication-sql-injection-in-litellm-proxy
+    fix: Correct to 2026-05-06; event_date should follow the vendor GHSA (2026-04-20) or the LiteLLM blog (2026-04-29).
+  - code: F3
+    where: body ¶1
+    claim: targeting `LiteLLM_VerificationToken`, `litellm_credentials`, and `litellm_config` tables — which collectively hold every virtual API key, upstream provider credential, team binding, and rate-limit configuration in the proxy ([Bishop Fox, 2026-04-30] · [LiteLLM vendor advisory, 2026-04-29])
+    ground_truth: 'Neither cited page names litellm_credentials or litellm_config: Bishop Fox names the LiteLLM_VerificationToken lookup (virtual keys are stored as SHA-256 hashes) and the joined team/budget/organization tables; the LiteLLM advisory names no tables. The three tables are the ones Sysdig observed attackers querying, which the entry does not cite.'
+    ground_truth_url: https://www.sysdig.com/blog/cve-2026-42208-targeted-sql-injection-against-litellms-authentication-path-discovered-36-hours-following-vulnerability-disclosure
+    fix: Cite Sysdig for the three observed target tables and say virtual keys are stored hashed.
+  - code: F14
+    where: body ¶1
+    claim: In-the-wild exploitation began within approximately 26–36 hours of the GitHub Security Advisory (GHSA-r75f-5x8p-qvmc) publication.
+    ground_truth: 'Sources give 36 h: Sysdig ''first exploitation attempt 36 hours and seven minutes after the advisory was published to the global database''; Bishop Fox ''roughly 36 hours after the GitHub advisory was published''. No source supports 26 h (the same wrong ''~26 h'' is copied into the table appended to the xrdp entry).'
+    ground_truth_url: https://www.sysdig.com/blog/cve-2026-42208-targeted-sql-injection-against-litellms-authentication-path-discovered-36-hours-following-vulnerability-disclosure
+    fix: '''about 36 hours''; cite Sysdig; note no follow-through (key reuse) was observed.'
+  - code: F4
+    where: cves[CVE-2026-42208].type / tags
+    claim: 'type: auth-bypass ; tags: auth-bypass'
+    ground_truth: The flaw is SQL injection (CWE-89) in the API-key lookup query; GHSA title 'SQL injection in Proxy API key verification'. The taxonomy has an `sqli` CVE type.
+    ground_truth_url: https://api.github.com/repos/BerriAI/litellm/security-advisories/GHSA-r75f-5x8p-qvmc
+    fix: 'type: sqli; drop auth-bypass tag.'
+  - code: F4
+    where: evidence[0]
+    claim: 'quote: "CVE-2026-42208 (CWE-89, CVSS 9.3) is a pre-authentication f-string SQL injection in the PrismaClient.get_data() method of LiteLLM Proxy..." publisher: ctipilot v2 brief (migrated)'
+    ground_truth: The 'evidence' is the entry's own opening sentence attributed to the pipeline, not a source. It is not a substring of the Bishop Fox or LiteLLM pages (Bishop Fox gives no CVSS 9.3; GHSA gives CVSS v4 9.3 and CWE-89 in structured fields).
+    ground_truth_url: https://bishopfox.com/blog/cve-2026-42208-pre-authentication-sql-injection-in-litellm-proxy
+    fix: Replace with a verbatim sentence from the GHSA or Bishop Fox post, or delete evidence[].
+  - code: F5
+    where: body ¶1
+    claim: CISA added the CVE to KEV on 2026-05-08 with a federal remediation deadline of **2026-05-11**. Fixed in LiteLLM v1.83.7+. Patching does not remediate credential compromise ...
+    ground_truth: KEV membership is true (dateAdded 2026-05-08, dueDate 2026-05-11, per cisa-kev) but no KEV source is cited (the hard-blocked catalogue page is correctly absent); the rotate-credentials advice follows Sysdig ('treat any internet-facing instance during the exposure window as compromised') which is uncited. KEV deadline is also not a reason to act.
+    ground_truth_url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+    fix: Cite Sysdig for exploitation and rotation; mention KEV membership without the deadline framing.
+  - code: F8
+    where: labelled lines (Exposure / Detection)
+    claim: (no Exposure or Detection line; affected range and workaround omitted)
+    ground_truth: 'Supported content missing: affected 1.81.16 through 1.83.6, PostgreSQL backend (default) with `disable_error_logs` at default false, LiteLLM-recommended 1.83.10-stable; workaround `general_settings.disable_error_logs: true` (covers only the failure-callback path, not -O/assert-stripped builds); detection: 401 responses with multi-second latency on non-`sk-` bearers, ''expected to start with sk-'' assertion stack traces in proxy logs (Bishop Fox) and the LiteLLM Postgres query-history review helper; Sysdig''s observed UNION enumeration pattern.'
+    ground_truth_url: https://bishopfox.com/blog/cve-2026-42208-pre-authentication-sql-injection-in-litellm-proxy
+    fix: Add Exposure/Detection lines from these facts.
+  - code: F6
+    where: sources[0]
+    claim: 'role: primary = Bishop Fox blog'
+    ground_truth: Per-CVE authority is the LiteLLM GitHub Security Advisory GHSA-r75f-5x8p-qvmc (published 2026-04-20, CVSS v4 9.3, CWE-89, patched >=1.83.7); a pentest-vendor write-up is not the primary.
+    ground_truth_url: https://github.com/BerriAI/litellm/security/advisories/GHSA-r75f-5x8p-qvmc
+    fix: Cite the GHSA as primary, Bishop Fox/Sysdig/LiteLLM blog as corroborating.
+  - code: F17
+    where: classification / techniques
+    claim: (no classification block; techniques[] absent)
+    ground_truth: Required; absent.
+    ground_truth_url: https://bishopfox.com/blog/cve-2026-42208-pre-authentication-sql-injection-in-litellm-proxy
+    fix: 'classification: reliability A (vendor GHSA + KEV), credibility 1/2; techniques [T1190, T1552].'
+- entry: entries/2026-05-09/cve-2026-43284-cve-2026-43500-linux-dirty-frag-deterministic.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'CVE ids, EPSS (0.9324 / 0.9286 on 2026-09-04, FIRST API), the Sept-2026 Fragnesia update, Red Hat''s applicability split and the technique ids are supported. The migrated main analysis and 2026-05-11 section contain several wrong or over-claimed items: exploitation ''confirmed'' for Dirty Frag (Microsoft hedges between Dirty Frag and Copy Fail), a wrong root-cause mechanism (''DMA remapping''), a detection suggestion that cannot fire, a wrong Red Hat sysctl, a wrong ''covering both CVEs'' Red Hat claim, and stale patch status in the summary. Supported facts: V4bel write-up/README (https://github.com/V4bel/dirtyfrag/blob/master/assets/write-up.md; README): splice()-planted page-cache page in an skb frag + in-place crypto STORE (esp_input skip_cow path; rxkad_verify_packet_1), ESP variant needs the ability to create a user namespace (CAP_NET_ADMIN via unshare(CLONE_NEWUSER)), RxRPC variant needs none but rxrpc.ko is absent from most distros (loaded by default on Ubuntu), mainline
+    fixes f4c50a4034e6 (ESP, 2026-05-05) and aa54b1d27fe0 (RxRPC, 2026-05-10), embargo broken 2026-05-07 by an unrelated third party; Red Hat RHSB-2026-003 (https://access.redhat.com/security/vulnerabilities/RHSB-2026-003): three CVEs, CVE-2026-43500 does not affect Red Hat products, mitigation user.max_user_namespaces=0 or blocking esp4/esp6; Ubuntu fixes table (https://ubuntu.com/blog/dirty-frag-linux-vulnerability-fixes-available); CNA CVSS 3.1 8.8 for CVE-2026-43284, 7.8 for CVE-2026-43500.'
+  defects:
+  - code: F4
+    where: title / headline / summary / body ¶1 / cves[].status
+    claim: active exploitation confirmed ; Microsoft Defender telemetry confirms limited active campaigns in which threat actors escalated from SSH-compromised user accounts, modified LDAP authentication files, exfiltrated PHP session contents, and disrupted active sessions
+    ground_truth: 'Microsoft: ''limited in-the-wild activity where privilege escalation involving su is observed, and which may be indicative of techniques associated with either Dirty Frag or Copy Fail''; the actor then ''modifies a GLPI LDAP authentication file'', and ''deleting multiple session files and then forcefully wiping additional ones — before reading remaining session data''. Exploitation of Dirty Frag specifically is not confirmed, and nothing is ''exfiltrated''. Aikido repeats the hedge. cves[].status ''exploited'' on both CVEs and the actively-exploited tag/title rest on this.'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/08/active-attack-dirty-frag-linux-vulnerability-expands-post-compromise-risk/
+    fix: '''Microsoft reports limited in-the-wild su-based privilege escalation that may be Dirty Frag or Copy Fail''; downgrade exploited status or qualify it.'
+  - code: F4
+    where: update 2026-05-11 ¶1 and evidence[1]
+    claim: 'reporting "limited in-the-wild activity where privilege escalation involving `su` is observed." The attack chain observed: SSH initial access → shell spawn → execution of an ELF binary that triggers the LPE primitive in either CVE-2026-43284 (xfrm-ESP page-cache write) or CVE-2026-43500 (RxRPC page-cache write).'
+    ground_truth: The quoted sentence is truncated before its hedge ('and which may be indicative of techniques associated with either "Dirty Frag" or "Copy Fail"'). Microsoft does not say which CVE the ELF triggers, nor that it is xfrm-ESP or RxRPC. evidence[1] is likewise an ellipsised self-quote ('ctipilot v2 brief (migrated)'), not a verbatim page substring; evidence[0] ('Researcher Hyunwoo Kim disclosed ... on 2026-05-07/08 after a third party inadvertently broke embargo') also appears on no fetched page in those words.
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/08/active-attack-dirty-frag-linux-vulnerability-expands-post-compromise-risk/
+    fix: Quote the full sentence; replace evidence[] with verbatim substrings or delete.
+  - code: F4
+    where: body ¶1
+    claim: both primitives allow userland code to write arbitrary values into read-only page-cache pages ... via memory aliasing caused by DMA remapping.
+    ground_truth: 'Root cause per the discoverer: a splice()-planted page-cache page sits in the frag slot of an skb and the receiving code (esp_input skipping skb_cow_data; rxkad_verify_packet_1 doing in-place pcbc(fcrypt)) performs in-place crypto on it, so a 4-byte STORE lands in the page cache. DMA remapping is not part of it.'
+    ground_truth_url: https://github.com/V4bel/dirtyfrag/blob/master/assets/write-up.md
+    fix: Replace with the splice-to-skb-frag / in-place-crypto explanation.
+  - code: F4
+    where: body ¶1
+    claim: Exploitation requires `CAP_NET_ADMIN` — available by default in Linux user namespaces on Ubuntu, Fedora, and most Arch-based distributions; restricted on RHEL 8/9 and some hardened configs.
+    ground_truth: Only the xfrm-ESP variant needs the privilege to create a user namespace (CAP_NET_ADMIN via unshare(CLONE_NEWUSER)); Ubuntu 'sometimes blocks' that through AppArmor. The RxRPC variant needs no namespace but rxrpc.ko is absent from most distributions (not shipped in RHEL 10.1) and loaded by default on Ubuntu. Nothing says Arch/Fedora allow it or that RHEL 8/9 restrict it; Red Hat's own targeted mitigation is to set user.max_user_namespaces=0, i.e. RHEL permits unprivileged userns by default.
+    ground_truth_url: https://github.com/V4bel/dirtyfrag/blob/master/README.md
+    fix: Per-variant prerequisites as above; drop the distro-by-distro claims.
+  - code: F4
+    where: body ¶2
+    claim: 'Affected distributions with confirmed exposure: Ubuntu 22.04/24.04/24.10, RHEL 8/9/10, Fedora, CentOS Stream, AlmaLinux, openSUSE Tumbleweed.'
+    ground_truth: 'Discoverer''s tested list: Ubuntu 24.04.4, RHEL 10.1, openSUSE Tumbleweed, CentOS Stream 10, AlmaLinux 10, Fedora 44. Ubuntu''s own table covers 18.04, 20.04, 22.04, 24.04, 25.10 and 26.04 (24.10 is not a listed release); Red Hat lists RHEL 8/9/10 for CVE-2026-43284/46300 only.'
+    ground_truth_url: https://ubuntu.com/blog/dirty-frag-linux-vulnerability-fixes-available
+    fix: Cite the vendor tables; drop 24.10.
+  - code: F4
+    where: update 2026-05-11 ¶2 and ¶4
+    claim: Red Hat published RHSB-2026-003 covering both CVEs on 2026-05-07 ..., with backported errata rolling out to RHEL 8/9/10 and OpenShift 4 ; Where IPsec is in use, Red Hat suggests `kernel.unprivileged_userns_clone=0` (sysctl) as a less disruptive mitigation
+    ground_truth: RHSB-2026-003 covers three CVEs and states CVE-2026-43500 (rxrpc) 'does not affect Red Hat products and requires no mitigation'. Red Hat's targeted mitigation is `user.max_user_namespaces=0` (the unprivileged_userns_clone sysctl is a Debian/Ubuntu knob); the entry's own actions[] gives both correctly, so the section contradicts it.
+    ground_truth_url: https://access.redhat.com/security/vulnerabilities/RHSB-2026-003
+    fix: '''RHSB-2026-003 covers CVE-2026-43284 and CVE-2026-46300 for RHEL; CVE-2026-43500 does not affect Red Hat''; sysctl user.max_user_namespaces=0.'
+  - code: F4
+    where: labelled line Detection
+    claim: unexpected writes to `/etc/passwd` or `/etc/shadow` detected via `auditctl -w /etc/passwd -p w`.
+    ground_truth: The primitive modifies the file's page cache in RAM; 'the file on disk never changes' (Aikido), 'every subsequent read sees the modified copy' (write-up), so an auditd write watch on the file will not fire. The entry's own 2026-05-11 section says the primitive bypasses auditd watch rules.
+    ground_truth_url: https://github.com/V4bel/dirtyfrag/blob/master/assets/write-up.md
+    fix: Detect the setuid-binary execve/anomalous su chain, esp4/esp6/rxrpc module load and splice+AF_XFRM/UDP-encap activity; verify with in-memory vs on-disk checks (drop_caches / re-read from disk).
+  - code: F3
+    where: update 2026-05-11 ¶3
+    claim: The Microsoft post emphasises that the page-cache write primitive bypasses on-disk file integrity monitoring (AIDE / IMA-EVM / auditd watch rules) — post-incident forensics must compare in-memory page contents against on-disk checksums, not just `md5sum` of the file.
+    ground_truth: The Microsoft post says only that modifications 'may persist in memory or cached file content even after vulnerable modules are disabled', advising integrity validation of critical files and considering `echo 3 > /proc/sys/vm/drop_caches`. It does not mention AIDE, IMA-EVM, auditd or md5sum.
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/08/active-attack-dirty-frag-linux-vulnerability-expands-post-compromise-risk/
+    fix: Attribute only the persistence/drop_caches statement to Microsoft.
+  - code: F9
+    where: summary / body ¶1 / update 2026-05-11 ¶3 (supersession)
+    claim: kernel patch for the rxrpc component still pending on all major distros ; kernel mainline patch merged 2026-05-08 ; The upstream xfrm-ESP fix merged on 2026-05-07 ... the RxRPC fix was still pending
+    ground_truth: 'Current state: the discoverer''s README lists mainline fixes f4c50a4034e6 (ESP, 2026-05-05) and aa54b1d27fe0 (RxRPC, 2026-05-10); Ubuntu publishes fixed kernels for all affected releases; Red Hat: ''Fixes have been released for all affected products'' (CVE-2026-43500 does not affect it). The frontmatter summary and status ''mitigation-only'' are superseded, and the entry gives two different ESP merge dates (05-08 vs 05-07).'
+    ground_truth_url: https://github.com/V4bel/dirtyfrag/blob/master/README.md
+    fix: Update summary/status to patches available; reconcile the ESP fix date.
+  - code: F4
+    where: cves[CVE-2026-43284].cvss
+    claim: 'cvss: "7.8" (both CVEs)'
+    ground_truth: (low confidence) The kernel CNA record for CVE-2026-43284 gives CVSS 3.1 8.8 (AV:L/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H); 7.8 is the CISA-ADP/Red Hat score. CVE-2026-43500 CNA = 7.8. Ubuntu states 8.8 (kernel.org CNA) vs 7.8 (NVD/CISA) for the two.
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-43284
+    fix: cvss 8.8 for CVE-2026-43284 (note 7.8 CISA-ADP) and 7.8 for CVE-2026-43500.
+  - code: F11
+    where: sources[] / evidence[]
+    claim: RHSB-2026-003 listed twice (updated 2026-05-09 and 2026-07-03); evidence publisher 'ctipilot v2 brief (migrated)'
+    ground_truth: Duplicate source record for one URL; pipeline self-quotes are not evidence.
+    ground_truth_url: https://access.redhat.com/security/vulnerabilities/RHSB-2026-003
+    fix: Merge the duplicate source; remove self-quotes.
+- entry: entries/2026-05-09/cve-2026-44128-et-al-seppmail-secure-email-gateway-cvss-9-3.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'CVSS values (CVSS v4.0 from the NCSC.ch CNA records), CVE ids and the InfoGuard CVE-2026-2743 mechanics are supported. Errors: the fix version label (''patch 15.0.4.1''), company location, CVE-2026-2743 presented as ''new'' in May, wrong per-CVE type fields, and unsourced customer-base claims. Source-supported facts for any SEPPmail rewrite: NCSC-CH advisory post 12551 (2026-05-08; https://security-hub.ncsc.admin.ch/api/posts/12551/details via the ncsc-csh recipe) lists CVE-2026-7864 (6.9), -44125 (9.3), -44126 (9.2), -44127 (8.8), -44128 (9.3, ''Fixed in v15.0.2.1''), -44129 (8.3), exploitation status UNKNOWN, ''Vendor patches available since April 24th, 2026''. CNA (NCSC.ch) records (https://cveawg.mitre.org/api/cve/CVE-2026-44128 etc., CVSS v4.0): 44128 unauthenticated RCE, an endpoint passes a parameter to Perl eval() in the new GINA UI (affects < 15.0.2.1); 44125 missing authorization on multiple GINA UI endpoints, unauthenticated; 44126 insecure deserialization reachable
+    from the GINA UI, unauthenticated RCE (AT:P); 44127 unauthenticated path traversal in /api.app/attachment/preview identifier parameter (file read, deletion of files in the target directory); 44129 SSTI, attacker-controlled template, unauthenticated (AT:P), potential RCE depending on template plugins; 7864 unauthenticated exposure of environment variables via the new GINA UI; all affect < 15.0.4 except 44128. SEPPmail release notes https://downloads.seppmail.com/extrelnotes/150/ERN15.0.html: 15.0.4 (2026-04-24) closes six ''Vuln:'' tickets (insecure deserialization, missing authorization in GINAv2, SSTI, unauthenticated RCE, LFI/arbitrary file deletion, exposure of sensitive information) stemming from test endpoints active in the beta GINAv2; 15.0.4.1 (2026-04-28) is an unrelated hotfix (missing waitpid() PID exhaustion). InfoGuard Labs https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/ (2026-05-18):
+    appliance is OpenBSD-based with Perl web apps; GINA v2.x must be explicitly enabled; self-registration enabled by default gives an authenticated session; fix versions 15.0.2.1 (44128), 15.0.3 (44126), 15.0.4 (2743, 44125, 44127, 44129, 7864); CVE-2026-2743 (CVSS 4.0 10.0, published 2026-03-05) is a pre-auth path traversal in LFT /v1/file.app writing as ''nobody'', chained via /etc/syslog.conf + newsyslog to RCE, affects only LFT-licensed instances (404 = not affected). SEPPmail AG is at Industriestrasse 7, 5432 Neuenhof (https://www.seppmail.com/about-us/contact/).'
+  defects:
+  - code: F4
+    where: body ¶1
+    claim: six CVEs in SEPPmail Secure Email Gateway patched in version 15.0.4 (patch 15.0.4.1).
+    ground_truth: 'Vendor release notes: 15.0.4 (2026-04-24) closes the six ''Vuln:'' tickets; 15.0.4.1 (2026-04-28) is a hotfix for an unrelated waitpid()/PID-exhaustion bug. NCSC-CH''s post says ''CVE-2026-44128 ... Fixed in v15.0.2.1''; InfoGuard''s overview maps 44128 to 15.0.2.1 and 44126 to 15.0.3. The label ''15.0.4.1'' is wrong (and is copied into the xrdp entry''s table).'
+    ground_truth_url: https://downloads.seppmail.com/extrelnotes/150/ERN15.0.html
+    fix: '''Fixed in 15.0.4 (2026-04-24); CVE-2026-44128 already in 15.0.2.1 and CVE-2026-44126 in 15.0.3.'''
+  - code: F4
+    where: body ¶1
+    claim: SEPPmail is a Swiss company (Steinach SG)
+    ground_truth: 'SEPPmail''s contact page: SEPPmail AG, Industriestrasse 7, 5432 Neuenhof, Switzerland (canton Aargau). Steinach appears in no source.'
+    ground_truth_url: https://www.seppmail.com/about-us/contact/
+    fix: Neuenhof AG.
+  - code: F5
+    where: body ¶1
+    claim: whose gateway handles S/MIME, PGP, and TLS email encryption for Swiss federal agencies, cantonal administrations, healthcare providers, and DACH-region enterprises
+    ground_truth: No cited source names SEPPmail customers. InfoGuard says only that it is 'widely used ... in the DACH region' with 'several thousand public instances on Censys'.
+    ground_truth_url: https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/
+    fix: Use InfoGuard's wording or delete.
+  - code: F4
+    where: body ¶1 / cves[]
+    claim: 'CVE-2026-44128 ... unauthenticated RCE via test/development HTTP endpoints left active in the GINAv2 component; CVE-2026-44125 ... enabling unauthenticated administrative access and file manipulation ; cves[CVE-2026-7864] and cves[CVE-2026-44127] type: rce, vector: zero-click'
+    ground_truth: 'CNA/InfoGuard: 44128 is Perl eval() injection of the upldd parameter at /api.app/template in the new GINA UI; 44125 is missing authorization on multiple GINA UI endpoints (no ''administrative access / file manipulation'' wording); CVE-2026-7864 is an unauthenticated environment-variable disclosure (/api.app/hello?op=env), CVE-2026-44127 an unauthenticated file read/delete via /api.app/attachment/preview - neither is RCE.'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-7864
+    fix: 'type: info-disclosure for 7864, lfi/file-delete for 44127; reword 44125/44128 per the CNA text.'
+  - code: F4
+    where: section 2026-05-20 ¶1-2 / summary of update
+    claim: The principal new finding is **CVE-2026-2743 (CVSS 10.0)** ... **CVE-2026-2743 is also addressed by v15.0.4**
+    ground_truth: 'CVE-2026-2743 was published by NCSC.ch on 2026-03-05 (affects 15.0.2.1 and before) and SEPPmail''s 15.0.3 notes (2026-03-03) already say ''we are closing a security vulnerability CVE-2026-2743 found by Infoguard''; it is not new in May - InfoGuard''s technical write-up (2026-05-18) is. Fix version is 15.0.3 per the vendor and CNA scope (InfoGuard''s own table says 15.0.4: sources disagree).'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-2743
+    fix: '''InfoGuard''s write-up details CVE-2026-2743 (published March 2026, fixed in 15.0.3 per SEPPmail)''; surface the 15.0.3 vs 15.0.4 discrepancy.'
+  - code: F9
+    where: section 2026-05-20 / body ¶1
+    claim: all patched in v15.0.4 ; CVE-2026-2743 is also addressed by v15.0.4
+    ground_truth: 'Fix-version contradictions between sources: NCSC-CH (44128 ''Fixed in v15.0.2.1''), vendor notes (2743 in 15.0.3; six GINAv2 tickets in 15.0.4), InfoGuard table (44128 15.0.2.1, 44126 15.0.3, 2743 and the rest 15.0.4). The entry picks ''15.0.4'' for all without a Contradiction line.'
+    ground_truth_url: https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/
+    fix: Add a Contradiction line listing the per-CVE fix versions.
+  - code: F4
+    where: section 2026-05-20 ¶1
+    claim: InfoGuard Labs — the Baar-based Swiss security firm that performed the original SEPPmail review
+    ground_truth: (low confidence) SEPPmail's notes credit the earlier 'very comprehensive security review' (CVE-2026-27441 ff.) to ETH Zurich researchers; InfoGuard says an ETH research project prompted its own audit. InfoGuard found CVE-2026-2743 and the GINA V2 flaws but did not perform 'the original review'.
+    ground_truth_url: https://downloads.seppmail.com/extrelnotes/150/ERN15.0.html
+    fix: '''InfoGuard Labs, which found CVE-2026-2743 and the GINA V2 flaws''.'
+  - code: F11
+    where: summary
+    claim: Full technical breakdown in § 6.
+    ground_truth: Dangling reference to a section of the original v2 brief that does not exist in this entry.
+    ground_truth_url: https://security-hub.ncsc.admin.ch/api/posts/12551/details
+    fix: Delete.
+  - code: F18
+    where: actions[0]
+    claim: Apply SEPPmail v15.0.4 to any DACH-region deployment still on an earlier build. CVE-2026-2743 (CVSS 10.0 ...) is also addressed by v15.0.4 — but if you delayed updating on the assumption disabled LFT limited exposure, re-evaluate now (InfoGuard's scan finds the majority of customer instances have LFT enabled)
+    ground_truth: Hedged ('if you delayed ... re-evaluate'), restates the body, and mixes a patch task with commentary; SEPPmail has since shipped 15.0.4.x-15.0.7 with further security fixes (release notes), so 'apply 15.0.4' is not the end state.
+    ground_truth_url: https://downloads.seppmail.com/extrelnotes/150/ERN15.0.html
+    fix: '''Upgrade every SEPPmail appliance to the current 15.0.x release; where LFT is licensed confirm /v1/file.app is patched.'''
+  - code: F12
+    where: verification
+    claim: 'verification: single-source-national-cert'
+    ground_truth: Five sources are listed (NCSC-CH, SEPPmail release notes, InfoGuard, The Hacker News, CybersecurityNews); the single-source value understates the corroboration and conflicts with sources[].
+    ground_truth_url: https://thehackernews.com/2026/05/seppmail-secure-e-mail-gateway.html
+    fix: 'verification: multi-source.'
+  - code: F17
+    where: classification / techniques
+    claim: 'classification: null; techniques: []'
+    ground_truth: Key present but null; techniques[] empty on a vulnerability entry although pre-auth exploitation of an internet-facing service is described (T1190).
+    ground_truth_url: https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/
+    fix: 'classification: reliability A (NCSC.ch is the CNA/national CERT; vendor notes corroborate), credibility 2; techniques [T1190, T1059, T1005].'
+- entry: entries/2026-05-09/daemon-tools-lite-supply-chain-quic-rat-deployed-via-signed.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'The supply-chain facts (versions 12.5.0.2421-12.5.0.2434 from 2026-04-08, signed with AVB Disc Soft certificates, info collector envchk.exe, QUIC RAT injects notepad.exe/conhost.exe, clean 12.6.0.2445, Chinese-speaking artefacts, no attribution) are supported. The headline victimology and the QUIC RAT description are not. Source-supported facts: Kaspersky Securelist 2026-05-05 https://securelist.com/tr/daemon-tools-backdoor/119654/ and blog https://www.kaspersky.com/blog/daemon-tools-supply-chain-attack/55691/: several thousand infection attempts in 100+ countries (most victims Russia, Brazil, Turkey, Spain, Germany, France, Italy, China); 10% of affected systems belong to organisations; most got only the information collector; the minimalistic backdoor reached about a dozen machines of government, scientific, manufacturing and retail organisations in Russia, Belarus and Thailand; QUIC RAT was seen against one organisation, an educational institution in Russia; QUIC RAT
+    (C++, WolfSSL, embedded msquic.dll) supports HTTP, UDP, TCP, WSS, QUIC, DNS and HTTP/3 C2 and injects into notepad.exe and conhost.exe; the trojanised files are DTHelper.exe, DiscSoftBusServiceLite.exe, DTShellHlp.exe, which at startup beacon to a typosquatted domain and then run cmd.exe -> powershell WebClient.DownloadFile into C:\Windows\Temp; intent (espionage vs big-game hunting) is ''currently unclear''; Disc Soft says only the free Lite edition was affected (https://therecord.media/hackers-compromise-daemon-tools-global-supply-chain-attack).'
+  defects:
+  - code: F4
+    where: title / summary / body ¶1
+    claim: EU governments among targeted victims ; Germany, France, Spain, and Italy among top victim countries; ~10% of infections on enterprise systems with government/scientific sector specifically targeted ; Targeted QUIC RAT deployment was limited to approximately a dozen machines in government, scientific, manufacturing, and retail sectors
+    ground_truth: 'Kaspersky: the ~dozen machines that received further payloads (the minimalistic backdoor, not QUIC RAT) were organisations ''located in Russia, Belarus, and Thailand''; QUIC RAT ''against only one organization, an educational institution located in Russia''. EU countries appear only in the list of countries with infection attempts (mostly information-collector only); no EU government victim is reported.'
+    ground_truth_url: https://securelist.com/tr/daemon-tools-backdoor/119654/
+    fix: 'Retitle: ''DAEMON Tools Lite trojanised installers deliver profiler, backdoor and QUIC RAT; targeted payloads seen in Russia, Belarus, Thailand''; correct the QUIC RAT scope.'
+  - code: F4
+    where: body ¶1
+    claim: QUIC RAT, an advanced implant that injects into `notepad.exe` and `conhost.exe`, supports C2 over QUIC (evading proxy inspection), and implements shell execution, file management, process injection, keylogging, SOCKS proxy, and TCP tunnelling
+    ground_truth: 'Securelist (analysis ''still ongoing'') states only: supports HTTP, UDP, TCP, WSS, QUIC, DNS and HTTP/3 C2 and can inject payloads into notepad.exe and conhost.exe. Shell execution is a capability of the earlier minimalistic backdoor. Keylogging, SOCKS proxy, TCP tunnelling and ''evading proxy inspection'' are not in Securelist, the Kaspersky blog, Help Net Security or The Record.'
+    ground_truth_url: https://securelist.com/tr/daemon-tools-backdoor/119654/
+    fix: Limit to the sourced capabilities.
+  - code: F4
+    where: body ¶2 (technique list)
+    claim: T1036.004 Masquerade Task or Service (kworker/ksoftirqd masquerade); T1573.002 Asymmetric Cryptography / QUIC
+    ground_truth: kworker/ksoftirqd are Linux kernel threads; DAEMON Tools Lite is a Windows product and no source mentions a Linux masquerade. QUIC is not 'Asymmetric Cryptography' (T1573.002); the report cites no encryption detail.
+    ground_truth_url: https://securelist.com/tr/daemon-tools-backdoor/119654/
+    fix: Delete the masquerade mapping; map only supported behaviour (T1195.002, T1055 process injection, T1071/T1095 for the C2 protocols) in techniques[].
+  - code: F4
+    where: body ¶1 / tags
+    claim: 'selective activation consistent with intelligence-collection objectives ; tags: espionage, china-nexus'
+    ground_truth: 'Kaspersky: ''their intent — whether it is cyberespionage or big game hunting — is currently unclear''; artefacts only ''suggest'' a Chinese-speaking actor and ''we do not currently attribute the DAEMON Tools compromise to any particular actor''.'
+    ground_truth_url: https://securelist.com/tr/daemon-tools-backdoor/119654/
+    fix: Remove the intelligence-collection inference and the espionage/china-nexus tags (or qualify as 'Chinese-speaking artefacts').
+  - code: F6
+    where: sources[0]
+    claim: Kaspersky blog — DAEMON Tools supply chain attack, 2026-05-05/08 (cited as 'Kaspersky Securelist' inline)
+    ground_truth: The URL is Kaspersky's consumer blog summary, mislabelled 'Securelist' inline; the technical primary is the Securelist Threat Response report (2026-05-05, updated 5/6 and 5/8).
+    ground_truth_url: https://securelist.com/tr/daemon-tools-backdoor/119654/
+    fix: Add the Securelist URL as primary and fix the inline label.
+  - code: F8
+    where: labelled line Detection
+    claim: check for `envchk.exe`, unsigned processes injected into `notepad.exe` or `conhost.exe`, and outbound QUIC (UDP 443)
+    ground_truth: 'The earliest, most reliable behaviour is omitted: the trojanised DTHelper.exe / DiscSoftBusServiceLite.exe / DTShellHlp.exe (validly signed) make HTTPS GET beacons at startup and spawn cmd.exe /c powershell WebClient.DownloadFile to C:\Windows\Temp followed by execution and self-deletion; the information collector posts host name, MAC, process and software lists. Also: backdoor shellcode loader run via rundll32/ cdg.exe with RC4-decrypted shellcode. ''Unsigned processes injected'' is not source-based (injected host processes notepad.exe/conhost.exe are Microsoft-signed).'
+    ground_truth_url: https://securelist.com/tr/daemon-tools-backdoor/119654/
+    fix: Add the DAEMON Tools helper -> cmd.exe -> powershell DownloadFile -> %TEMP% exe chain as the primary hunt.
+  - code: F17
+    where: classification / techniques
+    claim: (no classification block; techniques[] absent on a threat entry)
+    ground_truth: Required; absent.
+    ground_truth_url: https://securelist.com/tr/daemon-tools-backdoor/119654/
+    fix: 'classification: reliability B, credibility 2 (Kaspersky primary + independent press relays, vendor acknowledgement); techniques T1195.002, T1055, T1071, T1059.001 (PowerShell).'
+  - code: F16
+    where: priority
+    claim: 'priority: high'
+    ground_truth: (low confidence) Kaspersky's own data show targeted payloads outside the constituency's regions; exposure for Swiss public sector is generic (a consumer disk-image tool on endpoints). Hunt/uninstall decision within 7 days is plausible, so only a mild downgrade question.
+    ground_truth_url: https://securelist.com/tr/daemon-tools-backdoor/119654/
+    fix: notable unless Swiss endpoint exposure is sourced.
+- entry: entries/2026-05-09/denic-de-dnssec-outage-faulty-key-rollover-3-5-h-disruption.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'Mostly supported but with wrong time-zone labels, a wrong Cloudflare mitigation claim, uncited ''18 million''/''.ch unaffected'', and a root-cause description that DENIC itself corrected on 2026-05-11. Supported facts: DENIC 2026-05-06 https://blog.denic.de/en/technical-issue-with-de-domains-resolved/ (incident from 21:57 local time on 5 May, correct zone distributed 00:08, full restoration 01:15, tied to a routine scheduled key rollover); DENIC analysis 2026-05-08 (updated 11 May) https://blog.denic.de/analyse-des-dns-ausfalls-vom-5-mai-2026/ (third-generation signing system commissioned April 2026 with Knot plus in-house code and HSMs; faulty code generated three different key pairs under one key tag, only one public key published; NSEC3 signatures also non-validatable so even non-DNSSEC .de domains failed; the three validation tools detected it but the messages were not processed correctly; 11 May addendum: no key-tag collision - the software generated one key pair per
+    HSM instead of one pair stored on three HSMs); Cloudflare https://blog.cloudflare.com/de-tld-outage-dnssec/ (started ~19:30 UTC, mitigation 22:17 UTC via an override equivalent to a negative trust anchor, serve-stale cushioned impact); heise 2026-05-08 (times in local time, 21:43, fixed after 01:00).'
+  defects:
+  - code: F4
+    where: summary / body ¶1
+    claim: On 2026-05-05 at 21:43 UTC, DENIC ... began distributing invalid DNSSEC signatures ... DENIC restored service by 01:15 UTC on 2026-05-06.
+    ground_truth: The 21:43 / 21:57 and 01:15 times in DENIC and heise are local (CEST) times; Cloudflare puts the start at ~19:30 UTC and its own mitigation at 22:17 UTC. Labelled 'UTC' the entry's window is two hours off (21:43 CEST = 19:43 UTC; 01:15 CEST = 23:15 UTC). DENIC's own start time is 21:57, heise's 21:43; DENIC says the impact lasted 'ca. drei Stunden'.
+    ground_truth_url: https://blog.cloudflare.com/de-tld-outage-dnssec/
+    fix: '''from about 19:30-19:57 UTC (21:43-21:57 CEST) on 2026-05-05 until 23:15 UTC (01:15 CEST); roughly three hours''.'
+  - code: F4
+    where: body ¶1
+    claim: Cloudflare deployed a Negative Trust Anchor under RFC 7646 for its resolvers within ~90 minutes
+    ground_truth: 'Cloudflare: impact began ~19:30 UTC and the mitigation rolled out at 22:17 UTC (about 2 h 47 min); it ''has not implemented a native NTA mechanism'' and used an existing override rule marking .de insecure, ''functionally equivalent to an NTA, though not formally defined in any RFC''.'
+    ground_truth_url: https://blog.cloudflare.com/de-tld-outage-dnssec/
+    fix: '''about 2 h 45 min after onset, via an override equivalent to an NTA''.'
+  - code: F3
+    where: summary / body ¶1 / sources
+    claim: approximately 18 million .de domains ; Crucially, .ch was unaffected ([heise online, 2026-05-08] · [Cloudflare blog])
+    ground_truth: 'Neither the cited DENIC pages, heise nor Cloudflare gives an ''18 million'' figure (Cloudflare: ''millions of domains'') or says anything about .ch.'
+    ground_truth_url: https://www.heise.de/news/DNS-Probleme-mit-de-Domains-DENIC-liefert-erste-Erklaerung-11288197.html
+    fix: Delete or source both; .ch independence is the entry's inference.
+  - code: F4
+    where: body ¶1 / update 2026-05-10 ¶2
+    claim: a software defect in DENIC's HSM integration code introduced during a March 2026 migration to Knot DNS generated three key pairs sharing keytag 33834 ; the code generated **three private key pairs all assigned the same Key Tag (33834)** rather than a unique tag per key
+    ground_truth: 'DENIC: third-generation system commissioned in April 2026 (Knot is existing standard software; the defect is in in-house code around the HSMs; no ''migration to Knot''); DENIC''s addendum of 11 May 2026 corrects the mechanism: ''A key-tag collision did not occur. Rather, the software generated three different key pairs - one per HSM - instead of one key pair stored on three HSMs; all three HSMs were used for signing but only one matched the pre-published DNSKEY.'' The entry''s own two sections also disagree (March vs April).'
+    ground_truth_url: https://blog.denic.de/analyse-des-dns-ausfalls-vom-5-mai-2026/
+    fix: Rewrite per DENIC's corrected account (one key pair per HSM, only one matching the published DNSKEY) and add an improvement/correction record.
+  - code: F4
+    where: title
+    claim: 3.5 h disruption for German government and public-sector .de domains
+    ground_truth: DENIC and Cloudflare describe all .de domains (for validating resolvers); no source singles out government or public-sector domains.
+    ground_truth_url: https://blog.denic.de/en/technical-issue-with-de-domains-resolved/
+    fix: '''all .de domains behind validating resolvers''.'
+  - code: F11
+    where: kind / tags / techniques
+    claim: 'kind: threat; tags: vulnerabilities, eu-nexus; techniques: []; classification: null; ''(the SIEM-rule equivalent of a fire-but-don''t-page failure)'''
+    ground_truth: An operational registry outage with no adversary is typed `threat` and tagged `vulnerabilities`; classification key present but null; editorial aside in the 05-10 section. DENIC says the three validation tools detected the anomaly but their messages were not processed correctly (not 'resolver behaviour' monitoring).
+    ground_truth_url: https://blog.denic.de/analyse-des-dns-ausfalls-vom-5-mai-2026/
+    fix: 'kind incident, drop vulnerabilities tag, set classification (reliability A, credibility 1/2: registry primary + Cloudflare).'
+  - code: F7
+    where: priority / relevance
+    claim: 'priority: notable'
+    ground_truth: (low confidence) German registry outage that ended 2026-05-06 with no Swiss exposure (entry itself says .ch unaffected); the transferable point (keep an NTA/serve-stale procedure for TLD DNSSEC failures) is a two-sentence takeaway.
+    ground_truth_url: https://blog.cloudflare.com/de-tld-outage-dnssec/
+    fix: routine.
+- entry: entries/2026-05-09/enisa-expands-cve-root-four-new-european-organisations-onboa.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'The counts are right (four new CNAs plus seven moved from MITRE Root = eleven; over 90 European CNAs can transfer), but the entry invents a CRA causal link and a speculative defender consequence, and has no defender action. ENISA page (2026-05-06, https://www.enisa.europa.eu/news/new-cve-numbering-authorities-under-enisa-root): four organisations newly joined as CNAs under ENISA Root, seven CNAs have moved from MITRE Root in addition; ENISA became CVE Root for European entities in November 2025; over 90 European CNAs can transfer voluntarily out of 510 CNAs from 42 countries; ENISA cites frontier-AI-accelerated vulnerability discovery and the proposed Cybersecurity Act 2 for added capacity. No CRA mention.'
+  defects:
+  - code: F13
+    where: body ¶1 / entities
+    claim: 'This is part of the EU Cyber Resilience Act (CRA) implementation framework: the CRA designates ENISA as the EU-level coordination body for harmonised vulnerability reporting, and the CVE Root transfer is the operational mechanism. ; entities: campaign:eu-cyber-resilience-act'
+    ground_truth: The ENISA press release never mentions the Cyber Resilience Act; it states ENISA became CVE Root in November 2025 and links added capacity to the proposed Cybersecurity Act 2. The CRA / CVE-Root 'operational mechanism' link is asserted without a source, and a regulation is registered as a campaign entity.
+    ground_truth_url: https://www.enisa.europa.eu/news/new-cve-numbering-authorities-under-enisa-root
+    fix: Delete the CRA sentence and the entity.
+  - code: F5
+    where: body ¶1
+    claim: 'For defenders: an increasing proportion of EU-discovered CVEs will be assigned and initially coordinated through ENISA-supervised channels, which may affect advisory publication timing and format compared to MITRE Root coordination — particularly for products made by EU software vendors.'
+    ground_truth: Speculation; ENISA states the opposite aim ('more consistent, timely, and coordinated vulnerability identification') and no source discusses advisory timing/format effects.
+    ground_truth_url: https://www.enisa.europa.eu/news/new-cve-numbering-authorities-under-enisa-root
+    fix: Delete.
+  - code: F7
+    where: priority / relevance
+    claim: 'priority: notable; kind: research'
+    ground_truth: Programme-administration news (which root a CNA sits under) with no vulnerability, exploitation, actor or defender decision; Switzerland is not an EU/ENISA-Root member state. Fails the relevance/actionability gate for a Tier 2/3 SOC.
+    ground_truth_url: https://www.enisa.europa.eu/news/new-cve-numbering-authorities-under-enisa-root
+    fix: Drop (or routine, two sentences).
+  - code: F17
+    where: classification
+    claim: (no classification block)
+    ground_truth: Required; absent.
+    ground_truth_url: https://www.enisa.europa.eu/news/new-cve-numbering-authorities-under-enisa-root
+    fix: 'If kept: reliability A (ENISA owns the announcement), credibility 2.'
+- entry: entries/2026-05-09/german-court-finds-bank-liable-for-sophisticated-phishing-lo.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: 'Court, case number, date, EUR 218,000 and the log-discrepancy remark are supported, but the entry converts an obiter remark into a PSD2/SCA ''obligation'' and the legal basis is misstated; relevance to a Swiss public-sector SOC is thin. Supported facts: LG Berlin II, Zivilkammer 38, Az. 38 O 293/25, judgment 2026-04-22, Apobank must reimburse about EUR 218,000 (customer bears EUR 50) because the customer was not grossly negligent in a staged fraud (bank-branded letter with QR code to a manipulated site, a call from a purported bank employee from the bank''s official number, customer photographed a QR code allowing the attackers to register their own device); basis § 675u BGB (bank carries the burden of proof for gross negligence); not yet final (https://borncity.com/news/landgericht-berlin-ii-verurteilt-apobank-zu-218-000-euro-rueckzahlung/); heise (https://www.heise.de/news/Urteil-gegen-die-Apobank-Finanzinstitut-haftet-fuer-Phishing-Schaden-11288231.html): the chamber
+    remarked beyond the holding that the login and the new-device registration came from entirely different IP addresses/providers and the bank did not block it; the claimant''s lawyer calls the court''s technical assessment ''still amateurish''.'
+  defects:
+  - code: F4
+    where: body ¶1
+    claim: The court treated this as an obligation under Germany's PSD2 implementation — specifically, a duty to apply IP-based behavioural analytics and trigger a strong-customer-authentication challenge when registration and first-use IPs diverge.
+    ground_truth: 'heise: the chamber ''deutet ... Ansätze für notwendige Früherkennungssysteme an'' in remarks ''über die Entscheidung hinaus'' (beyond the holding); the claimant''s lawyer calls them technically ''laienhaft''. Neither heise nor Borncity mentions PSD2, SCA or a duty; the liability rests on the customer not being grossly negligent (§ 675u BGB).'
+    ground_truth_url: https://www.heise.de/news/Urteil-gegen-die-Apobank-Finanzinstitut-haftet-fuer-Phishing-Schaden-11288231.html
+    fix: '''The court held the customer not grossly negligent; in passing it noted the bank could have blocked the new-device registration given the IP/provider mismatch.'''
+  - code: F4
+    where: body ¶1
+    claim: 'not yet final pending appeal ... For EU/Swiss financial-sector and public-sector digital-service providers: this reinforces the trend of courts placing authentication-failure liability on service providers'
+    ground_truth: 'Borncity: ''noch nicht rechtskräftig'' (no appeal reported). The Swiss extrapolation is unsourced: PSD2/§ 675u BGB are German/EU payment-services law; nothing cited concerns Swiss law or public-sector providers.'
+    ground_truth_url: https://borncity.com/news/landgericht-berlin-ii-verurteilt-apobank-zu-218-000-euro-rueckzahlung/
+    fix: '''not yet final''; delete the Swiss/public-sector generalisation.'
+  - code: F3
+    where: sources[1] / inline cite
+    claim: '[ilex Rechtsanwälte — case summary, 2026-05](https://www.anwalt.de/rechtstipps/phishing-ilex-rechtsanwaelte-erwirkt-haftung-der-apobank-269786.html)'
+    ground_truth: 'unreadable: every rung (extract, WebFetch, jina) hit a 403/anti-bot block for this URL, so claims attributed to it (EUR 218,000+, details) could not be confirmed from it; the figure 218,000 is confirmed from Borncity instead.'
+    ground_truth_url: https://borncity.com/news/landgericht-berlin-ii-verurteilt-apobank-zu-218-000-euro-rueckzahlung/
+    fix: Cite Borncity for the amount and the 'not final' status or keep heise only.
+  - code: F8
+    where: body ¶1 (attack description)
+    claim: forged physical bank letters, manipulated online banking interfaces, and spoofed-number phone calls
+    ground_truth: 'Borncity adds the observable mechanism: the letter''s QR code led to a manipulated look-alike portal (''Quishing''), the caller walked the victim through the process, and the victim photographed a QR code that let the attackers enrol their own device. The device-registration step is the defender-relevant TTP and is missing.'
+    ground_truth_url: https://borncity.com/news/landgericht-berlin-ii-verurteilt-apobank-zu-218-000-euro-rueckzahlung/
+    fix: State the QR-code device-enrolment step.
+  - code: F7
+    where: priority / relevance
+    claim: 'priority: notable; tags: law-enforcement'
+    ground_truth: Single non-final German civil judgment against a private bank with no Swiss or public-sector nexus and no new TTP beyond known vishing/quishing; it is a civil, not law-enforcement, matter. Fails the incident/research relevance bar.
+    ground_truth_url: https://www.heise.de/news/Urteil-gegen-die-Apobank-Finanzinstitut-haftet-fuer-Phishing-Schaden-11288231.html
+    fix: Drop (or routine, two sentences); remove law-enforcement tag.
+  - code: F17
+    where: classification / techniques
+    claim: (no classification block; techniques[] absent)
+    ground_truth: 'Required; absent (phishing/vishing behaviour is mappable: T1566.002, T1566.004).'
+    ground_truth_url: https://borncity.com/news/landgericht-berlin-ii-verurteilt-apobank-zu-218-000-euro-rueckzahlung/
+    fix: 'classification: reliability B, credibility 2.'
+- entry: entries/2026-05-09/inditex-zara-shinyhunters-publishes-140-gb-197-400-eu-custom.md
+  verdict: factual-error
+  duplicate_of: null
+  ground_truth: '197,400 emails (HIBP), the Inditex data-categories-out-of-scope list, the ''started notifying the relevant authorities'' quote and the ShinyHunters/Anodot claim are supported, but the headline asserts as confirmed what is only ShinyHunters'' claim and invents ''EU customer records'', and the entry attributes HIBP''s findings to Inditex. Supported facts: Security Affairs (2026-05-08 https://securityaffairs.com/191859/cyber-crime/zara-data-breach-197000-customers-exposed-in-third-party-security-incident.html) and BleepingComputer (2026-05-08 https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/): Inditex said a former technology provider''s databases were accessed, no names, phone numbers, addresses, credentials or payment data; HIBP (https://haveibeenpwned.com/Breach/Zara) found 197,400 unique emails with order IDs, product SKUs, support-ticket market and purchase history; ShinyHunters claimed the breach via Anodot
+    tokens against BigQuery and published a 140 GB archive (HIBP says ''a terabyte ... 95M support ticket records''); Inditex has not named the provider or an actor.'
+  defects:
+  - code: F4
+    where: title / headline
+    claim: Inditex (Zara) — ShinyHunters publishes 140 GB; 197,400 EU customer records confirmed via third-party analytics compromise
+    ground_truth: 'HIBP: 197k emails with ''the market the support ticket originated in'' (''international markets''); nothing limits them to EU customers. ''Via third-party analytics compromise'' is ShinyHunters'' claim (''The group claimed the breach was related to a compromise of the Anodot analytics platform''); Inditex only says ''a former technology provider'' and has not named it. The body itself says the claim ''has not been independently verified'', contradicting the headline.'
+    ground_truth_url: https://haveibeenpwned.com/Breach/Zara
+    fix: '''197,400 Zara customer emails exposed via a former Inditex technology provider; ShinyHunters claims Anodot token abuse and leaked 140 GB''.'
+  - code: F3
+    where: body ¶1
+    claim: Inditex confirmed attackers accessed customer relationship data — email addresses, geographic locations, purchase history (order IDs and product SKUs), and support ticket content — across international markets
+    ground_truth: Inditex's statement says the databases held 'information about business relationships with customers in different markets' and that names, phone numbers, addresses, credentials and payment data were not accessed; the email/SKU/order-ID/support-ticket composition comes from Have I Been Pwned's analysis, not from Inditex.
+    ground_truth_url: https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/
+    fix: Attribute the data categories to HIBP.
+  - code: F4
+    where: summary / body ¶1
+    claim: following a breach of a former third-party analytics provider
+    ground_truth: Inditex says 'former technology provider'; 'analytics' is ShinyHunters' (and HIBP's repetition of the group's) claim about Anodot.
+    ground_truth_url: https://securityaffairs.com/191859/cyber-crime/zara-data-breach-197000-customers-exposed-in-third-party-security-incident.html
+    fix: '''former technology provider''.'
+  - code: F9
+    where: body ¶1
+    claim: Data publication (approximately 140 GB) followed after Inditex declined to engage.
+    ground_truth: 'Sources disagree on size: Security Affairs / BleepingComputer ''a 140GB archive''; HIBP ''published a terabyte of data allegedly including 95M support ticket records''. ''Declined to engage'' is ShinyHunters'' own claim (''failed to reach an agreement with us despite our incredible patience''), stated as fact. Neither a Contradiction line nor attribution is given.'
+    ground_truth_url: https://haveibeenpwned.com/Breach/Zara
+    fix: Attribute to ShinyHunters and note the 140 GB vs ~1 TB discrepancy.
+  - code: F5
+    where: body ¶1
+    claim: as a Spanish company the lead supervisory authority is the AEPD
+    ground_truth: Legal inference with no cited source (and Inditex's statement names no authority).
+    ground_truth_url: https://securityaffairs.com/191859/cyber-crime/zara-data-breach-197000-customers-exposed-in-third-party-security-incident.html
+    fix: Delete.
+  - code: F7
+    where: priority / relevance
+    claim: 'priority: notable; kind: incident'
+    ground_truth: (low confidence) Spanish retail breach with no Swiss or public-sector nexus; record-count and brand framing in the title. The transferable lesson (OAuth/service tokens of analytics SaaS reaching a cloud data warehouse; ShinyHunters' Anodot campaign) is sound but belongs in two sentences, not a victim-named incident.
+    ground_truth_url: https://www.bleepingcomputer.com/news/security/zara-data-breach-exposed-personal-information-of-197-000-people/
+    fix: routine, framed on the Anodot token-abuse TTP.
+  - code: F17
+    where: classification / techniques
+    claim: (no classification block; techniques[] absent)
+    ground_truth: 'Required; absent (stolen SaaS tokens: T1528 / T1530 are mappable from the ShinyHunters claim).'
+    ground_truth_url: https://securityaffairs.com/191859/cyber-crime/zara-data-breach-197000-customers-exposed-in-third-party-security-incident.html
+    fix: 'classification: reliability B, credibility 3 (actor claim only partly corroborated by HIBP).'
+- entry: entries/2026-05-09/seppmail-secure-email-gateway-cvss-9-3-unauthenticated-rce-c.md
+  verdict: factual-error
+  duplicate_of: entries/2026-05-09/cve-2026-44128-et-al-seppmail-secure-email-gateway-cvss-9-3.md
+  unique_material: []
+  ground_truth: 'Duplicate of the CVE-2026-44128 SEPPmail entry (same NCSC-CH 12551 advisory, same six CVEs) and almost entirely unsupported: every technical mechanism, endpoint, file path, product-stack claim and the compliance paragraphs are absent from NCSC-CH 12551, the SEPPmail release notes and InfoGuard, and contradict the CNA records (the GINA UI is Perl on an OpenBSD-based appliance, not Java EE/Tomcat). The CVE/CVSS table values are right (CVSS v4.0), the ''exploitation none confirmed'' framing is right. It carries no verified fact the survivor lacks. Do not salvage the body; fold into the survivor. Source-supported facts for any SEPPmail rewrite: NCSC-CH advisory post 12551 (2026-05-08; https://security-hub.ncsc.admin.ch/api/posts/12551/details via the ncsc-csh recipe) lists CVE-2026-7864 (6.9), -44125 (9.3), -44126 (9.2), -44127 (8.8), -44128 (9.3, ''Fixed in v15.0.2.1''), -44129 (8.3), exploitation status UNKNOWN, ''Vendor patches available since April 24th, 2026''. CNA (NCSC.ch)
+    records (https://cveawg.mitre.org/api/cve/CVE-2026-44128 etc., CVSS v4.0): 44128 unauthenticated RCE, an endpoint passes a parameter to Perl eval() in the new GINA UI (affects < 15.0.2.1); 44125 missing authorization on multiple GINA UI endpoints, unauthenticated; 44126 insecure deserialization reachable from the GINA UI, unauthenticated RCE (AT:P); 44127 unauthenticated path traversal in /api.app/attachment/preview identifier parameter (file read, deletion of files in the target directory); 44129 SSTI, attacker-controlled template, unauthenticated (AT:P), potential RCE depending on template plugins; 7864 unauthenticated exposure of environment variables via the new GINA UI; all affect < 15.0.4 except 44128. SEPPmail release notes https://downloads.seppmail.com/extrelnotes/150/ERN15.0.html: 15.0.4 (2026-04-24) closes six ''Vuln:'' tickets (insecure deserialization, missing authorization in GINAv2, SSTI, unauthenticated RCE, LFI/arbitrary file deletion, exposure of sensitive information)
+    stemming from test endpoints active in the beta GINAv2; 15.0.4.1 (2026-04-28) is an unrelated hotfix (missing waitpid() PID exhaustion). InfoGuard Labs https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/ (2026-05-18): appliance is OpenBSD-based with Perl web apps; GINA v2.x must be explicitly enabled; self-registration enabled by default gives an authenticated session; fix versions 15.0.2.1 (44128), 15.0.3 (44126), 15.0.4 (2743, 44125, 44127, 44129, 7864); CVE-2026-2743 (CVSS 4.0 10.0, published 2026-03-05) is a pre-auth path traversal in LFT /v1/file.app writing as ''nobody'', chained via /etc/syslog.conf + newsyslog to RCE, affects only LFT-licensed instances (404 = not affected). SEPPmail AG is at Industriestrasse 7, 5432 Neuenhof (https://www.seppmail.com/about-us/contact/).'
+  defects:
+  - code: F4
+    where: 'body: ''CVE-2026-44128 - Unauthenticated RCE via Active Test Endpoints'', ''Exploitation path'', ''CVE-2026-44125/44126/44127/44129'' sections'
+    claim: GINAv2 is a Java EE–based web application deployed on a Tomcat servlet container ... a test/diagnostic HTTP servlet (`/gina/diag/exec`) ... invoke `Runtime.exec()` as the Tomcat application user ... `gina.properties` ... `/gina/api/v1/admin/` ... `GINA_SESSION=../../uploads/<filename>` ... Apache Commons Collections gadget ... `/admin/logs/view?file=` on port 8443 ... Freemarker ... `${Runtime.exec("id")}`
+    ground_truth: 'None of these paths, classes, files, ports, the Tomcat/Java stack, the Commons Collections PoC or the Freemarker engine appears in NCSC-CH 12551, the SEPPmail release notes or InfoGuard. The real components are Perl web apps on an OpenBSD-based appliance: CVE-2026-44128 = unauthenticated Perl eval() of the `upldd` parameter at /api.app/template; CVE-2026-44127 = unauthenticated path traversal in /api.app/attachment/preview (`identifier`); CVE-2026-7864 = unauthenticated env dump at /api.app/hello?op=env; CVE-2026-44125 = missing authorization on multiple GINA UI endpoints; CVE-2026-44126 = insecure deserialization (unauthenticated); CVE-2026-44129 = SSTI via attacker-controlled template. The invented paths would send a hunter to artefacts that do not exist.'
+    ground_truth_url: https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/
+    fix: Delete; rebuild from the CNA records and InfoGuard (see ground_truth).
+  - code: F4
+    where: 'body: patch statements and ''Hardening and Remediation'''
+    claim: all patched in SEPPmail 15.0.4 (patch 15.0.4.1) ... Upgrade to SEPPmail **15.0.4 (patch 15.0.4.1)** — addresses all six CVEs.
+    ground_truth: 15.0.4 is the 2026-04-24 release; 15.0.4.1 (2026-04-28) is an unrelated hotfix; CVE-2026-44128 was already fixed in 15.0.2.1 (NCSC-CH, CNA, InfoGuard) and CVE-2026-44126 in 15.0.3 (InfoGuard). 'Available via the standard SEPPmail update mechanism and the downloads portal for accounts under valid support' and 'security@seppmail.com' have no source.
+    ground_truth_url: https://downloads.seppmail.com/extrelnotes/150/ERN15.0.html
+    fix: As in the survivor entry's corrected fix-version statement.
+  - code: F4
+    where: vulnerability table 'Auth Required' column
+    claim: CVE-2026-44127 ... Low-privilege auth ; CVE-2026-44129 ... Low-privilege auth ; CVE-2026-7864 ... Appliance management | Information disclosure | Low-privilege auth ; CVE-2026-44126 ... None (cookie-supplied)
+    ground_truth: 'CNA records: 44127 and 7864 are unauthenticated (PR:N); 44129 is PR:N with AT:P; 44126 reachable by unauthenticated attackers. ''Any valid admin console account'' / ''appliance management on 8443'' is invented. CVSS values themselves (9.3/9.3/9.2/8.8/8.3/6.9) match the CNA records.'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-44127
+    fix: Correct the auth column.
+  - code: F4
+    where: body 'Background and Deployment Context'
+    claim: 'SEPPmail AG (Steinach, Canton of St. Gallen, Switzerland) ... SEPPmail is the dominant email encryption gateway in the Swiss public sector: cantonal administrations, Swiss federal bodies (EJPD/DFJP, SECO, cantonal courts), university hospitals'
+    ground_truth: SEPPmail AG is at Industriestrasse 7, 5432 Neuenhof (AG). No cited source names SEPPmail's customers or its market share; 'GINA (Gateway Integrated Network Application)' expansion is also unsourced.
+    ground_truth_url: https://www.seppmail.com/about-us/contact/
+    fix: Neuenhof AG; delete customer/market-share claims.
+  - code: F4
+    where: body 'Swiss and DACH Deployment Context'
+    claim: The Swiss Federal Chancellery's ICT security baseline for federal agencies (Sicherheitsstandard IKT des Bundes, ISBB) classifies email gateway compromise as a Level 3 incident requiring escalation to NCSC-CH within 24 hours. ; BSI IT-Grundschutz includes email encryption gateways in the APP.4.4 component scope; ... qualifies for an extraordinary IT-Grundschutz gap notification under ISMS procedures.
+    ground_truth: No cited source contains these regulatory statements (the only cited sources are NCSC-CH 12551 and the SEPPmail release notes). (low confidence on the id) APP.4.4 in IT-Grundschutz is the Kubernetes building block, e-mail servers fall under APP.5.x; 'extraordinary gap notification' is not a BSI procedure the entry sources.
+    ground_truth_url: https://security-hub.ncsc.admin.ch/api/posts/12551/details
+    fix: Delete the paragraph.
+  - code: F4
+    where: body 'MITRE ATT&CK Mapping' table
+    claim: 'T1078.001 Valid Accounts: Default Accounts (CVE-2026-44125 missing auth); T1059.007 Server-Side Template Injection; T1083 Path Traversal / File and Directory Discovery; T1070.002 Indicator Removal: Clear Linux or Mac System Logs'
+    ground_truth: 'Pinned ATT&CK v19.2: T1059.007 is JavaScript (not SSTI); T1078.001 (default accounts) is unsupported for a missing-authorization flaw; T1070.002 is revoked (superseded by T1685.006); T1083 is File and Directory Discovery (no path-traversal technique). techniques[] frontmatter is absent while ids sit in prose.'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-44125
+    fix: Remove the table; techniques [T1190] (+ T1552.001/T1114 only if sourced).
+  - code: F8
+    where: cves[] / kind / classification
+    claim: 'cves: []; kind: threat; deep_dive: true; (no classification, no techniques)'
+    ground_truth: Six CVEs in a table but cves[] empty; typed `threat` though it is a vulnerability advisory; classification and techniques missing; a 'deep dive' whose depth is fabricated.
+    ground_truth_url: https://security-hub.ncsc.admin.ch/api/posts/12551/details
+    fix: Fold into the survivor and delete.

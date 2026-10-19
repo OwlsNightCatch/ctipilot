@@ -2,7 +2,7 @@
 schema: 1
 kind: incident
 title: "Unauthorized users read unencrypted Social Security numbers on a Pentagon DMDC personnel file server for nine months; a defense official counts about 3 million people affected"
-headline: "A vulnerable Pentagon HR file server sat unencrypted and reachable for nine months before anyone noticed"
+headline: "Unauthorized users accessed unencrypted personal data on a Pentagon HR file-sharing server for nine months before discovery"
 summary: >
   Unauthorized users accessed an unencrypted file-sharing server of the Defense Manpower Data Center
   (DMDC), the Pentagon's central personnel-data repository, between October 2025 and 16 July 2026,
@@ -94,6 +94,12 @@ updates:
       2026-09-30 update section are trimmed to routine-incident length, and the sourcing note is
       plain provenance. The exposed data is now described as the letter recipient's rather than every affected person's, and the takeaway drops an access-logging recommendation no source makes.
     fields: [priority, sourcing_note, title, summary, body]
+  - at: "2026-10-11T14:11:38Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    summary: >
+      The headline said the server was unencrypted and reachable; the reporting says unauthorized users accessed files holding unencrypted personal data through a vulnerability in a file-sharing system, and no report says whether the server was reachable from outside DMDC's network.
+    fields: [headline]
 migrated_from: null
 ---
 
@@ -108,3 +114,7 @@ A U.S. defense official told ABC News the breach affected 2.76 million living an
 ## Correction — 2026-09-30T07:31:59Z
 
 Military Times quotes the notification letter as exposing its recipient's Social Security number and at least one further identifying field ([Military Times, 2026-09-24](https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/)). The entry previously generalised this to every affected person and advised access logging, which no cited report discusses. CNN reports that the data was not encrypted and that encrypting sensitive data is a standard security practice ([CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)).
+
+## Correction — 2026-10-11T14:11:38Z
+
+Military Times reports that unauthorized users reached files "on a server containing unencrypted personally identifiable information" through a vulnerability in a file-sharing system ([Military Times, 2026-09-24](https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/)). The data was unencrypted; no report says whether the server was reachable from outside DMDC's network.

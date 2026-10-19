@@ -4,6 +4,44 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.20 — 2026-10-11 (the audit window anchors on the last full audit, and two gate false positives go)
+
+### Why
+
+The 2026-10-11 audit found a stretch of the store no audit had checked. `quality-audit.md` anchored its window on the most recent audit record of any kind, and the operator-directed partial audits of 2026-09-29 and 2026-09-30 (source repairs and a correction run, with no coverage re-sweep) each moved that anchor. As a result, 2026-09-27T13:08Z to 2026-09-30T06:39Z was never re-swept. Five entries published in that stretch were never truth-checked, and Microsoft's NeedyMantis report of 2026-09-28 sat dropped as "out of window" by three fires until this audit recovered it. A partial audit could also trip the 72-hour duplicate guard and cancel the scheduled full one.
+
+Step 5b's one-time backfill clause looked for the literal string `--page-checks-since` in the audit reports. The 2026-09-29 report records the backfill in prose, so every audit since would have re-run it.
+
+The cited-page pre-pass produced two classes of false positive:
+- A Mastodon post (CERT-Bund on social.bund.de) carries its text only in the description meta tags, which the tag strip deleted, so two verbatim quotes were flagged.
+- An image-only ANSSI PDF came back from `tools/fetch_source.py pdf` as 467 KB of JPEG bytes "extracted" as prose, because an uncompressed image stream happened to hold the bytes `BT` and `Tj`. The CVE-citation check then searched those bytes.
+
+### What changed
+
+- **`prompts/quality-audit.md` Phase 0.**
+  - `LAST_AUDIT` is now the most recent full audit: the newest audit record whose `sub_agents` carries a `G…` re-sweep key.
+  - The block also lists any later partial audits. Their reports are carry-forward, and the entries they changed are in the window through their records.
+  - Step 1 explains the anchor and the gap it closes.
+  - Step 2's duplicate guard measures from the last full audit, so a partial audit can no longer cancel the scheduled one.
+  - Step 5b drops the one-time backfill clause and records that the backfill is done.
+- **`docs/architecture.md`.** The audit row says "since the previous full audit".
+- **`tools/check_run.py` `_page_skeletons`.** The text of `description`, `og:description` and `twitter:description` meta tags is kept as page text, so a JS-shell page that carries its text only there (a Mastodon post) is quote-checkable.
+- **`tools/fetch_source.py` `_pdf_streams`.** An uncompressed stream is skipped when its dictionary names an image filter (`DCTDecode`, `JPXDecode`, `CCITTFaxDecode`, `JBIG2Decode`) or `/Subtype /Image`, or when fewer than 85 % of its first 64 KB are printable. An image-only PDF no longer comes back as image bytes: on ANSSI's report the reader now returns a few stray characters and flags them as suspiciously little text, so the page is read by hand. New test: `test_uncompressed_image_stream_is_not_content` in `tools/test_fetch_source_pdf.py`.
+
+### What stays
+
+- The window reach guide (about 21 days, the most recent part in depth).
+- Carry-forward of every audit report, partial ones included.
+- The cited-page pre-pass on every audit.
+- Legacy re-verification batches and duplicate folding (v4.19).
+- An image-only PDF stays "not extractable", never "says nothing": the verifier reads the rendered pages by hand.
+
+### Entries corrected in the 2026-10-11 audit run
+
+117 existing entries received a record from this fire: 102 corrections, 13 improvements and two updates, of which 24 are internal. 27 duplicates were folded into their survivors, among them four into the PAN-OS CVE-2026-0300 survivor, two into the Exchange CVE-2026-42897 survivor, 13 same-finding duplicates from May to July in 12 groups, the PAN-OS CVE-2026-0257 twin and the CVE-2026-50751 twin. 21 legacy entries were re-verified (the batch of 20, all carrying factual errors, and the polyfill entry), and every CVE-sharing pair left unlinked now carries a reference except one pair of legacy entries held for re-verification. One entry was recovered (NeedyMantis). Details are in `docs/audits/2026-10-11-quality-audit.md`.
+
+---
+
 ## 4.19 — 2026-09-30 (the legacy corpus gets a repair queue, duplicates get folded, KEV ransomware flips get noticed, and the site serves agents directly)
 
 ### Why

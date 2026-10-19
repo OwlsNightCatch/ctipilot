@@ -1,0 +1,113 @@
+# Findings summary (machine-readable), run 2026-10-11T1307Z-audit, iteration 5, slice s2
+- code: F3
+  category: claim-not-supported
+  entry: entries/2026-05-08/amazon-ses-weaponised-for-authenticated-phishing-and-bec-kas.md
+  where: "body, **Detection:** line (claim dd1f067aaa)"
+  summary: "(low confidence) The Detection line states 'SES-sent messages carry `.amazonses.com` in the Message-ID header' as an unhedged detection premise and cites Kaspersky; Kaspersky says the header 'almost always' carries it, and the entry's own first paragraph keeps the hedge. A mail-gateway rule keyed on the unhedged version would miss messages without it."
+  ground_truth: "Securelist: 'These emails utilize SPF, DKIM, and DMARC authentication protocols, passing all standard provider checks, and almost always contain `.amazonses.com` in the Message-ID headers.'"
+  ground_truth_url: https://securelist.com/amazon-ses-phishing-and-bec-attacks/119623/
+  fix: "Write 'SES-sent messages almost always carry `.amazonses.com` in the Message-ID header' in the Detection line."
+- code: F3
+  category: claim-not-supported
+  entry: entries/2026-08-06/chaindrop-shai-hulud-npm-worm-onchain-c2-resolver.md
+  where: "body paragraph 1, last sentence (claim a5740f68fc)"
+  summary: "(low confidence) 'Elastic ... points to the Dune-derived naming the payload reuses as the similarity to previous Shai-Hulud campaigns' binds two separate Elastic statements together. Elastic says the payload has Dune-themed strings and, in the same sentence, has similarities to previous campaigns; it never says the Dune naming is the similarity (a link to its earlier post stands in for the similarities). The 'rather than a new family' framing is also the entry's reading of 'the return of Shai-Hulud'."
+  ground_truth: "Elastic: 'The payload contains strings with Dune-themed references and has similarities to previous Shai-Hulud campaigns.' and 'Elastic Security Labs identified the return of Shai-Hulud.'"
+  ground_truth_url: https://www.elastic.co/security-labs/shai-hulud-chaindrop-npm-supply-chain
+  fix: "Say Elastic calls the wave the return of Shai-Hulud and notes Dune-themed strings in the payload and similarities to earlier campaigns, without naming the Dune strings as the similarity."
+- code: F4
+  category: hallucinated-fact
+  entry: entries/2026-09-19/cisa-kev-linux-kernel-ktls-af-alg-ebtables-snat.md
+  where: "cves[CVE-2026-53266].affected: 'kernels from 5.10 before the branch fix (...)' (claim 686c76ba9a)"
+  summary: "(low confidence) The CVE record (kernel CNA) lists stable series 5.4.73 (<5.5), 5.8.17 (<5.9) and 5.9.2 (<5.10) as affected as well as 5.10 onward, with no fix in any of them (all end of life). The affected range starts at 5.10 and so omits 5.4.73 and later 5.4.x hosts."
+  ground_truth: "cveawg CVE-2026-53266 cna.affected: {'version':'5.4.73','lessThan':'5.5','status':'affected'}, {'version':'5.8.17','lessThan':'5.9'}, {'version':'5.9.2','lessThan':'5.10'}, {'version':'5.10','status':'affected'}"
+  ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-53266
+  fix: "Add 'and the end-of-life 5.4.73+ series, which has no fix' to the affected range, or state that the range follows the supported fixed branches."
+- code: F7
+  category: drop
+  entry: entries/2026-09-23/virtualizor-billing-hook-unauth-root-rce.md
+  where: "whole entry: routine priority, about 900 words of decoded code-path detail (iteration 2/3/4 finding re-raised; the decline rationale answers only the length half)"
+  summary: "(low confidence) This fire's own Correction says 'no exploitation is reported, a vendor fix has existed since 2026-09-01, the root path needs an existing suspended billing account, and Virtualizor sits outside the typical public-administration estate'. Per check 11 a routine patch-cycle CVE with no exploitation, no nexus and no exposure-driven urgency does not qualify, and per the v4.2 rule a long borderline entry should be short or absent. The decline ('the length carries VulnCheck's code-path research that the detection rests on') does not answer inclusion; the Detection and Triage lines rest on three facts (act=login with from_billing_module and billing_data; ports 4084/4085; root php-fpm pool). A published entry cannot be dropped except by folding, so the actionable remedy is to cut."
+  ground_truth: "Entry Correction 2026-10-11T14:10:01Z; VulnCheck post states no exploitation and a vendor fix on 2026-09-01"
+  ground_truth_url: https://www.vulncheck.com/blog/virtualizor-billing-hook-unauthenticated-root-rce
+  fix: "Cut the main analysis to exposure, fixed builds, exploitation status, the detection signature and the takeaway (about 150 words), or leave it and accept the residual."
+- code: F8
+  category: needs-more-research
+  entry: entries/2026-08-12/shieldbreak-defender-rogueplanet-patch-bypass-no-fix.md
+  where: "cves[CVE-2026-69414].affected (frontmatter)"
+  summary: "(low confidence) The affected field names OS platforms and 'fully patched as of the August 2026 updates', the LevelBlue test environment. Microsoft's record scopes the flaw to Malware Protection Engine 1.26070.7 and earlier, which the new Exposure line uses. A reader or triage agent matching on cves[].affected gets the disclosure-day picture, not the engine range, and a host with an OS patched in August but the engine at 1.1.26080.3 or later is not affected."
+  ground_truth: "MSRC: 'Last version of the Microsoft Malware Protection Engine affected by this vulnerability: 1.26070.7'; 'First version ... addressed: 1.1.26080.3'"
+  ground_truth_url: https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69414
+  fix: "Set affected to 'Microsoft Malware Protection Engine 1.26070.7 and earlier (Windows 11 24H2 and Windows Server 2025 with Defender in default configuration)'."
+- code: F11
+  category: editorial-advisory
+  entry: "entries/2026-09-17/mandiant-ai-risk-resilience-report-2026.md (title this fire; 17 body); entries/2026-08-12/shieldbreak-defender-rogueplanet-patch-bypass-no-fix.md (title, headline, 46 body); entries/2026-08-06/chaindrop-shai-hulud-npm-worm-onchain-c2-resolver.md (title, 9 body); entries/2026-09-10/sap-september-2026-overpass-s4get-preauth-rce.md (title, Defender takeaway); entries/2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce.md (title)"
+  where: "reader-facing title, headline and body"
+  summary: "Advisory. Em dashes in reader-facing text (rule 12, only the '## Type — at' heading is exempt). Mandiant's title ('ANNUAL REPORT — ...') and its case-study headings were edited by this fire and kept the dash."
+  ground_truth: "Verifier definition check 12"
+  ground_truth_url: ""
+  fix: "Replace with colons, commas or periods where the entry is next edited."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-05-09/denic-de-dnssec-outage-faulty-key-rollover-3-5-h-disruption.md
+  where: "body: the '## Update — 2026-05-10T05:00:11Z' section and the three statements of the one-key-pair-per-HSM finding"
+  summary: "Advisory (low confidence). The 2026-05-10 Update section now reports 'DENIC's later addendum of 11 May 2026', a date after the section's own heading, and the same HSM finding appears in the main analysis, the Update section and the Correction section. Corrected in place as permitted, but the log reads out of order and the third repetition adds nothing."
+  ground_truth: "DENIC analysis page: 'Nachtrag vom 11. Mai 2026: ... eines pro HSM'"
+  ground_truth_url: https://blog.denic.de/analyse-des-dns-ausfalls-vom-5-mai-2026/
+  fix: "Drop the repeated HSM sentence from the Correction section (the record summary carries it), or word the Update section as 'DENIC's analysis, as later amended on 11 May'."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-08-06/chaindrop-shai-hulud-npm-worm-onchain-c2-resolver.md
+  where: "body, 'Containment sequencing' paragraph and '## Correction — 2026-10-11T13:55:57Z'"
+  summary: "Advisory (low confidence). The containment paragraph now states OX's dead man's switch, Elastic's revoke guidance, and then repeats both inside a bold '**Dead man's switch:**' sentence; the Correction section states the Elastic and OX contrast a third time."
+  ground_truth: "OX (cached body): 'The malware has a dead man's switch trigger' and 'the extortion string'; Elastic: 'The wording is an attempt to intimidate developers not to revoke the GitHub token.'"
+  ground_truth_url: https://www.ox.security/blog/a-new-infostealer-worm-hits-npm-affecting-keyv-and-cacheable/
+  fix: "Fold the two OX/Elastic sentences into one and shorten the Correction section to the Unit 42 gate wording."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-09-21/conference-phishing-rogue-root-ca-mitm-persistence.md
+  where: "title and sourcing_note"
+  summary: "Advisory (low confidence). The Correction says 'the entry no longer presents the campaign as conference-targeted', but the title now reads 'A phishing chain reported against conference attendees' and the summary says 'targeted post-conference'; the contradiction paragraph attributes the framing to the write-up while the recap calls it a volume play. The sourcing_note runs three sentences and carries composition rationale ('where the fuller write-up is followed', 'which the text states as a contradiction'), not two sentences of provenance."
+  ground_truth: "Huntress recap: 'Ryan refers to this as a \"volume play\" instead of specific targeting of DEFCON attendees'"
+  ground_truth_url: https://www.huntress.com/blog/google-doc-sidebar-malware-mac-windows
+  fix: "Title: 'A phishing chain that began as post-conference outreach on X installs ...'; sourcing_note: two sentences (Huntress is sole publisher; recap corroborates and carries the spoken quotes; no attribution beyond Russian-language comments)."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-09-23/virtualizor-billing-hook-unauth-root-rce.md
+  where: "'## Correction — 2026-10-11T14:10:01Z', second sentence"
+  summary: "Advisory. 'The entry moves to routine priority: no exploitation is reported, ... and Virtualizor sits outside the typical public-administration estate' narrates a metadata change as reader text (rule 12 / 4c-i) and asserts the estate fact with no source. The first sentence of the section is the reader-facing delta."
+  ground_truth: "Check 4c(i), check 12"
+  ground_truth_url: ""
+  fix: "Delete the priority sentence from the section (the priority is visible in the entry header)."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-09-23/cve-2026-93616-check-point-security-mgmt-path-traversal.md
+  where: "body main analysis and Correction: 'sk1000171 lists no fix for the end-of-support R80 through R81 lines'"
+  summary: "Advisory (low confidence). 'R80 through R81' spans R81.10, which sk1000171 marks end of support but does list a fix for (Jumbo Hotfix Take 192+), and which the same sentence lists as fixed. The sk lists no fix for R80, R80.10 to R80.40 and R81 only."
+  ground_truth: "sk1000171 Affected Versions: 'R81.10 Jumbo Hotfix Take 190 or lower (EoS)' and 'R80, R80.10, R80.20, R80.30, R80.40, R81 (all EoS)'; fixed list includes 'R81.10 starting from Take 192'"
+  ground_truth_url: https://support.checkpoint.com/results/sk/sk1000171/
+  fix: "Write 'no fix for R80, R80.10 to R80.40 and R81'."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-09-03/cve-2026-83548-83549-sonicwall-sma1000-ssrf-cmd-injection.md
+  where: "summary: 'Fixed in hotfix 12.4.3-03526 / 12.5.0-02952; no fix exists short of upgrading'"
+  summary: "Advisory. The hotfix is the fix, so 'no fix exists short of upgrading' is tautological, and the cited pages neither state nor refute that no workaround exists for these two CVEs (the 'no workaround' statement in The Hacker News belongs to the later advisory SNWLID-2026-0017). Say what the sources say."
+  ground_truth: "SonicWall PSIRT (rendered text): 'Customers are strongly urged to upgrade to the hotfix release as soon as possible to remediate this vulnerability.'"
+  ground_truth_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0016
+  fix: "Replace with 'SonicWall urges upgrading to the hotfix' or drop the clause."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-05-11/cve-2026-6722-php-soap-use-after-free-in-soap-global-ref-map.md
+  where: "cves[CVE-2026-7262].cvss: '6.3 (CVSS 4.0, PHP advisory)'"
+  summary: "Advisory (low confidence). PHP's GitHub advisory scores CVE-2026-7262 at 6.3, but PHP's own CVE record (CNA) scores it 2.9 (CVSS 4.0, E:P). The entry states the advisory/CVE-record difference for CVE-2026-6722 and labels this one 'PHP advisory', but does not carry the CNA figure."
+  ground_truth: "cveawg CVE-2026-7262: baseScore 2.9, CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N/E:P; GHSA-hmxp-6pc4-f3vv: 6.3"
+  ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-7262
+  fix: "Write '6.3 (PHP advisory) / 2.9 (CVE record)' or follow the CNA figure."
+- code: F11
+  category: editorial-advisory
+  entry: entries/2026-09-27/pentagon-dmdc-military-personnel-data-breach-unencrypted-ssn.md
+  where: "whole entry (iteration 4 F7 carried; decline did not address check 5b)"
+  summary: "Advisory (low confidence). Routine incident with no vector, class or actor (the body says so), no constituency nexus and one generic lesson ('encrypt at rest', supported only by CNN's 'standard security practice' line). Check 5b: such an incident is two sentences at most; the body runs three sentences, a takeaway and three dated sections, and does not say which out-of-nexus ground it clears (global significance would be the candidate)."
+  ground_truth: "CNN: 'The stolen data wasn't encrypted, according to the letter. Encrypting sensitive data is a standard security practice.'"
+  ground_truth_url: https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach
+  fix: "Trim to two sentences naming the ground, or leave as a residual."

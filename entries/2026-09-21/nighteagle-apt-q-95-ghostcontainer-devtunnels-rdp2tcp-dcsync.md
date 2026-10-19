@@ -6,8 +6,8 @@ headline: "Kaspersky: an APT group that abused Microsoft's own developer-tunnel 
 summary: >
   Kaspersky's Global Emergency Response Team documents NightEagle (also tracked as APT-Q-95), active
   since at least 2023 and previously focused on Asia, now confirmed against Russian organizations. The
-  group deploys a VIEWSTATE-injected Exchange backdoor (GhostContainer) that carries a CVE-2020-0688
-  exploit, abuses Microsoft's legitimate dev-tunnels service plus the rdp2tcp tool to expose RDP outward through legitimate services without opening additional suspicious ports, exploited CVE-2019-0708 (BlueKeep) in one incident to
+  group deploys an Exchange backdoor (GhostContainer) that Kaspersky assesses, with high confidence, was
+  delivered through VIEWSTATE injection and that carries a CVE-2020-0688 exploit component, abuses Microsoft's legitimate dev-tunnels service plus the rdp2tcp tool to expose RDP outward through legitimate services without opening additional suspicious ports, exploited CVE-2019-0708 (BlueKeep) in one incident to
   create a local administrator, and attempted DCSync after obtaining a sufficiently privileged account.
 discovered_at: "2026-09-21T04:42:00Z"
 updated_at: null
@@ -29,7 +29,6 @@ techniques:
   - T1078
   - T1190
   - T1505.003
-  - T1027
   - T1685
   - T1572
   - T1090.001
@@ -38,6 +37,8 @@ techniques:
   - T1053.005
   - T1558
   - T1003.006
+  - T1021.001
+  - T1136.001
 affected_products: ["Microsoft Exchange Server", "Microsoft Windows"]
 cves:
   - id: CVE-2020-0688
@@ -110,6 +111,12 @@ updates:
       backdoor carries a CVE-2020-0688 exploit. Scheduled-task creation through atexec is remapped
       to Scheduled Task, payload file names are removed, and the KEV listing is cited in the text.
     fields: [cves, priority, sources, title, headline, summary, techniques, body]
+  - at: "2026-10-11T14:07:49Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    summary: >
+      The summary stated VIEWSTATE injection as the observed delivery method; Kaspersky could not determine how the backdoor reached Exchange and gives VIEWSTATE injection as a high-confidence assessment, as the body already said. The obfuscation technique, which no passage supports, is dropped, and the RDP lateral movement and local account creation Kaspersky describes are mapped.
+    fields: [summary, techniques, body]
 migrated_from: null
 ---
 
@@ -119,8 +126,12 @@ For network access, NightEagle abuses Microsoft's own legitimate dev-tunnels fea
 
 **Defender takeaway:** any environment permitting outbound access to `*.devtunnels.ms` should treat an unexpected dev-tunnels connection from a server or workstation as equivalent to an unauthorized reverse-tunnel opening; rdp2tcp's presence inside an RDP session is detectable via Windows event IDs 132 and 148 in `Microsoft-Windows-RemoteDesktopServices-RdpCoreTS/Operational.evtx`, where the RemoteFX virtual-channel name reads "rdp2tcp" or a random string in place of a legitimate RDS channel name. Confirm Exchange servers are current on CVE-2020-0688 and RDP-exposed legacy Windows builds are patched against CVE-2019-0708, both long listed as exploited in CISA's catalog ([CISA KEV catalog, 2021-11-03](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)); a Kerberos ticket request combining `Forwardable`, `Proxiable` and `Renewable` flags together is an anomalous pattern worth a dedicated detection rule ahead of any DCSync attempt.
 
-**Triage:** Microsoft dev-tunnels traffic to `*.devtunnels.ms` is legitimate on developer workstations running Visual Studio or the Dev Tunnels CLI — the discriminator is the host class: a production server, domain controller, or non-developer endpoint establishing an outbound dev-tunnels connection has no legitimate reason to do so.
+**Triage:** Microsoft dev-tunnels traffic to `*.devtunnels.ms` is legitimate on developer workstations running Visual Studio or the Dev Tunnels CLI: the discriminator is the host class: a production server, domain controller, or non-developer endpoint establishing an outbound dev-tunnels connection has no legitimate reason to do so.
 
 ## Correction — 2026-09-30T07:00:33Z
 
 Kaspersky reports that NightEagle attempted DCSync, replicating the `Domain-Password` object after it obtained a sufficiently privileged account, and exploited BlueKeep in one incident to create a local administrator ([Kaspersky Securelist, 2026-09-16](https://securelist.com/tr/nighteagle-apt-ghostcontainer-and-tunneling/121323/)). It does not describe BlueKeep leading to the DCSync attempt. For CVE-2020-0688 it says only that the GhostContainer backdoor carries an exploit for it, and it could not determine how the backdoor was delivered ([Kaspersky Securelist, 2026-09-16](https://securelist.com/tr/nighteagle-apt-ghostcontainer-and-tunneling/121323/)).
+
+## Correction — 2026-10-11T14:07:49Z
+
+Kaspersky could not determine how GhostContainer reached the Exchange servers; it assesses "with a high degree of confidence" that the attackers overwrote the VIEWSTATE framework parameter, so VIEWSTATE injection is an assessment, not an observed delivery ([Kaspersky Securelist, 2026-09-16](https://securelist.com/tr/nighteagle-apt-ghostcontainer-and-tunneling/121323/)).

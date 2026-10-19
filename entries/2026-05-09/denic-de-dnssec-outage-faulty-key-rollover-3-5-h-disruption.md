@@ -1,31 +1,26 @@
 ---
 schema: 1
-kind: threat
-title: >
-  DENIC .de DNSSEC outage — faulty key rollover; 3.5 h disruption for German government and
-  public-sector .de domains
-headline: >
-  DENIC .de DNSSEC outage — faulty key rollover; 3.5 h disruption for German government and
-  public-sector .de domains
+kind: policy
+title: "DENIC .de DNSSEC outage: a faulty key rollover made all .de domains unresolvable for validating resolvers for about three hours on 5 May 2026"
+headline: "DENIC's new signing system generated one key pair per HSM, so most .de signatures failed validation until DENIC redistributed the zone"
 summary: >
-  On 2026-05-05 at 21:43 UTC, DENIC (the .de domain registry) began distributing invalid DNSSEC
-  signatures for the .de TLD, making approximately 18 million .de domains unreachable for
-  DNSSEC-validating resolvers for roughly 3.5 hours (DENIC blog post-incident report, 2026-05-08 ·
-  DENIC initial report, 2026-05-05).
+  A routine DNSSEC key rollover on 2026-05-05 left the .de zone with signatures validating resolvers could
+  not verify, from an onset the sources place between about 19:30 and 19:57 UTC until DENIC restored normal
+  operation at 23:15 UTC. DENIC's new
+  signing system generated one key pair per HSM instead of one shared pair, so only one matched the
+  published DNSKEY; unverifiable NSEC3 signatures broke even unsigned .de domains.
 discovered_at: "2026-05-09T05:00:02Z"
 updated_at: "2026-05-10T05:00:11Z"
 event_date: 2026-05-08
 run_id: 2026-05-09-migrated
-priority: notable
+priority: routine
 immediate_action: null
 tags:
-  - vulnerabilities
   - eu-nexus
 regions:
   - europe
   - dach
-sectors:
-  - public-sector
+sectors: []
 entities:
   - "incident:denic-dnssec-outage-2026"
 techniques: []
@@ -33,19 +28,24 @@ affected_products: []
 cves: []
 sources:
   - url: "https://blog.denic.de/en/technical-issue-with-de-domains-resolved/"
-    publisher: "DENIC post-incident report, 2026-05-08"
+    publisher: "DENIC"
+    date: "2026-05-06"
     role: primary
   - url: "https://blog.denic.de/en/denic-reports-dnssec-disruption-affecting-de-domains/"
-    publisher: "DENIC initial report, 2026-05-05"
+    publisher: "DENIC"
+    date: "2026-05-05"
     role: corroborating
   - url: "https://blog.cloudflare.com/de-tld-outage-dnssec/"
-    publisher: Cloudflare blog — .de TLD outage
+    publisher: "Cloudflare"
+    date: "2026-05"
     role: corroborating
   - url: "https://blog.denic.de/analyse-des-dns-ausfalls-vom-5-mai-2026/"
-    publisher: "DENIC analysis blog (German), 2026-05-08"
+    publisher: "DENIC analysis"
+    date: "2026-05-08"
     role: primary
   - url: "https://www.heise.de/news/DNS-Probleme-mit-de-Domains-DENIC-liefert-erste-Erklaerung-11288197.html"
-    publisher: "heise online, 2026-05-08"
+    publisher: "heise online"
+    date: "2026-05-08"
     role: corroborating
 closed_sources: []
 evidence: []
@@ -56,7 +56,9 @@ references: []
 deep_dive: false
 deep_dive_category: null
 org_triage: null
-classification: null
+classification:
+  reliability: A
+  credibility: 2
 watchlist_hit: false
 actions: []
 updates:
@@ -70,19 +72,23 @@ updates:
       - sources
       - body
     merged_from: 2026-05-10/denic-de-dnssec-outage-post-mortem-three-private-keys-genera
+  - at: "2026-10-11T14:30:46Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: correction
+    summary: >
+      The times were local time labelled UTC: the outage began between about 19:30 and 19:57 UTC, depending on the source, and ended at 23:15 UTC, about three and a half hours. Cloudflare's mitigation came about 2 hours 45 minutes after onset through an override rule, not an RFC 7646 negative trust anchor within 90 minutes; the 18 million domains, the government focus and the statement that .ch was unaffected had no source. DENIC's later addendum of 11 May replaces the key-tag collision account: one key pair per HSM instead of a shared pair. The signing system went live in April, not March. The entry is recorded as a non-adversarial resilience item with a rating and priority routine, and both sections are corrected in place.
+    fields: [kind, title, headline, summary, priority, tags, techniques, sources, classification, body, sectors]
 migrated_from: briefs/2026-05-09.md
 ---
 
-On 2026-05-05 at 21:43 UTC, DENIC (the .de domain registry) began distributing invalid DNSSEC signatures for the .de TLD, making approximately 18 million .de domains unreachable for DNSSEC-validating resolvers for roughly 3.5 hours ([DENIC blog post-incident report, 2026-05-08](https://blog.denic.de/en/technical-issue-with-de-domains-resolved/) · [DENIC initial report, 2026-05-05](https://blog.denic.de/en/denic-reports-dnssec-disruption-affecting-de-domains/)). Root cause: a software defect in DENIC's HSM integration code introduced during a March 2026 migration to Knot DNS generated three key pairs sharing keytag 33834, but only one public key was published in the zone; inconsistent signing across name servers followed. Cloudflare deployed a Negative Trust Anchor under RFC 7646 for its resolvers within ~90 minutes; DENIC restored service by 01:15 UTC on 2026-05-06. Crucially, .ch was unaffected ([heise online, 2026-05-08](https://www.heise.de/news/DNS-Probleme-mit-de-Domains-DENIC-liefert-erste-Erklaerung-11288197.html) · [Cloudflare blog](https://blog.cloudflare.com/de-tld-outage-dnssec/)). This is an operational misconfiguration, not an attacker action.
+During a routine, scheduled DNSSEC key rollover on the evening of 2026-05-05, DENIC distributed signatures for the `.de` zone that validating resolvers could not verify, so they treated responses for all `.de` domains as bogus ([DENIC, 2026-05-06](https://blog.denic.de/en/technical-issue-with-de-domains-resolved/)). DENIC dates the incident from 21:57, began distributing a correct zone at 00:08 and had fully restored normal operation by 01:15 on 2026-05-06, giving no time zone; read as CEST, that is 19:57 to 23:15 UTC ([DENIC, 2026-05-06](https://blog.denic.de/en/technical-issue-with-de-domains-resolved/)); Cloudflare saw SERVFAILs from about 19:30 UTC and rolled out its own mitigation at 22:17 UTC through an existing override rule, having no native negative trust anchor mechanism ([Cloudflare, 2026-05](https://blog.cloudflare.com/de-tld-outage-dnssec/)); heise gives 21:43 for the first disruption, which read as CEST is 19:43 UTC ([heise online, 2026-05-08](https://www.heise.de/news/DNS-Probleme-mit-de-Domains-DENIC-liefert-erste-Erklaerung-11288197.html)), so the three sources give three onsets. DENIC's analysis traces the fault to in-house code around its hardware security modules in the third-generation signing system it put into operation in April 2026: instead of one key pair stored on three HSMs, the software generated three different key pairs, one per HSM, and only one of them matched the pre-published DNSKEY ([DENIC analysis, 2026-05-08](https://blog.denic.de/analyse-des-dns-ausfalls-vom-5-mai-2026/)). Because signatures over NSEC3 records were also unverifiable, even second-level domains without DNSSEC failed to resolve, and DENIC's three permanent validation tools detected the anomaly but their alerts were not processed correctly ([DENIC analysis, 2026-05-08](https://blog.denic.de/analyse-des-dns-ausfalls-vom-5-mai-2026/)).
 
-**Defender takeaway:** DNSSEC registry-side errors are indistinguishable from attacker-induced validation failures from the resolver's perspective. Defenders should maintain RFC 7646 Negative Trust Anchor capability in their validating resolvers for continuity during registry incidents. German public-sector operators relying on .de-hosted services (government portals, MX records, API endpoints) should review their incident runbooks for DNSSEC-induced availability events to separate "registry outage" from "zone-level attack."
+**Defender takeaway:** a TLD-side DNSSEC failure looks the same as an attack to a validating resolver; operators of validating resolvers should have a tested way to mark a broken TLD as insecure and should rely on serve-stale to absorb the first hours, as Cloudflare did ([Cloudflare, 2026-05](https://blog.cloudflare.com/de-tld-outage-dnssec/)).
 
 ## Update — 2026-05-10T05:00:11Z
 
-DENIC published its formal technical post-mortem on 2026-05-08 ([DENIC analysis blog (German), 2026-05-08](https://blog.denic.de/analyse-des-dns-ausfalls-vom-5-mai-2026/) · [heise online, 2026-05-08](https://www.heise.de/news/DNS-Probleme-mit-de-Domains-DENIC-liefert-erste-Erklaerung-11288197.html)).
+DENIC published its technical analysis on 2026-05-08 ([DENIC analysis, 2026-05-08](https://blog.denic.de/analyse-des-dns-ausfalls-vom-5-mai-2026/)) ([heise online, 2026-05-08](https://www.heise.de/news/DNS-Probleme-mit-de-Domains-DENIC-liefert-erste-Erklaerung-11288197.html)). DENIC's later addendum of 11 May 2026 states that no key-tag collision occurred: the software generated one key pair per HSM instead of a single pair held on all three, all three HSMs signed, and only one key matched the published DNSKEY ([DENIC analysis, 2026-05-08](https://blog.denic.de/analyse-des-dns-ausfalls-vom-5-mai-2026/)). Knot itself is standard software in the process; the defect was in DENIC's own code ([DENIC analysis, 2026-05-08](https://blog.denic.de/analyse-des-dns-ausfalls-vom-5-mai-2026/)). DENIC's validation tools detected the faulty signatures as designed, but their alerts were not processed correctly ([DENIC analysis, 2026-05-08](https://blog.denic.de/analyse-des-dns-ausfalls-vom-5-mai-2026/)).
 
-Confirmed root cause: a code defect in DENIC's third-generation custom signing infrastructure (deployed April 2026 atop Knot DNS). During a routine Zone-Signing-Key rotation the code generated **three private key pairs all assigned the same Key Tag (33834)** rather than a unique tag per key — and only one corresponding public DNSKEY record was published to the zone. The RRSIG records signed by the two unpublished keys were therefore unvalidatable; DNSSEC-validating resolvers marked all .de delegations as "Bogus", which through the bogus NSEC3 trust path also took down resolution for non-DNSSEC-signed .de domains.
+## Correction — 2026-10-11T14:30:46Z
 
-The outage ran 2026-05-05 21:43 UTC → 2026-05-06 ~01:15 UTC (~3.5 h). Critically, DENIC notes the monitoring pipeline detected anomalous resolver behaviour but **the alerting layer did not correctly forward the alerts** — the SIEM-rule equivalent of a fire-but-don't-page failure. Knot DNS itself is not implicated; the bug was in DENIC's automation layer atop Knot.
-
-Defender takeaway: DNSSEC registry-side errors are indistinguishable from attacker-induced trust failures from a resolver's perspective. Validating-resolver operators in DACH and EU public-sector environments should keep RFC 7646 Negative Trust Anchor capability live for continuity during registry incidents and ensure runbooks separate "registry KSK/ZSK rollover defect" from "zone-level attack on a downstream domain".
+DENIC gives 21:57 and 01:15 without a time zone; read as CEST, the incident ran from 19:57 UTC until normal operation returned at 23:15 UTC ([DENIC, 2026-05-06](https://blog.denic.de/en/technical-issue-with-de-domains-resolved/)), and Cloudflare dates the onset to about 19:30 UTC and its own mitigation, an override rule rather than a native negative trust anchor, to 22:17 UTC ([Cloudflare, 2026-05](https://blog.cloudflare.com/de-tld-outage-dnssec/)). DENIC's addendum of 11 May 2026 says no key-tag collision occurred; the software generated one key pair per HSM, and only one matched the published DNSKEY ([DENIC analysis, 2026-05-08](https://blog.denic.de/analyse-des-dns-ausfalls-vom-5-mai-2026/)). No source gives 18 million affected domains, singles out government domains, or mentions `.ch`.

@@ -76,6 +76,12 @@ updates:
       which heise does not specify. The sector list is cited to the ministry's release, and every
       citation carries its link.
     fields: [priority, body, sources, summary, evidence]
+  - at: "2026-10-11T14:08:56Z"
+    run_id: 2026-10-11T1307Z-audit
+    type: improvement
+    summary: >
+      Adds the missing defender takeaway: entities covered by the Austrian law meet the 24-hour and 72-hour reporting clock from 1 October 2026, and essential entities must tolerate the BCS active scans of their internet-facing systems. The earlier correction section loses a sentence that only narrated removed text.
+    fields: [body]
 migrated_from: null
 ---
 
@@ -83,8 +89,14 @@ Austria's Netz- und Informationssystemsicherheitsgesetz 2026 (NISG 2026), its NI
 
 For Swiss cantonal authorities, a nearer reference point is Canton Bern: its information- and cybersecurity law (ICSG) and implementing ordinance (IDSV) enter into force on 1 November 2026, and with the IDSV the canton is introducing its own platform for reporting security incidents, vulnerabilities and cyberattacks ([Kanton Bern KAIO](https://www.kaio.fin.be.ch/de/start/themen/rechtliche-grundlagen/ICSG.html)).
 
+**Defender takeaway:** an organization with an Austrian subsidiary or service that falls under the law must meet the 24-hour early warning and 72-hour notification clock from 1 October 2026 ([heise online, 2026-09-22](https://www.heise.de/news/Ab-1-10-Meldepflicht-fuer-IT-Vorfaelle-in-Oesterreich-11462442.html); [Austrian BMI, via OTS, 2026-09-22](https://www.ots.at/presseaussendung/OTS_20260922_OTS0129/bundesamt-fuer-cybersicherheit-oesterreich-buendelt-schutz-vor-digitalen-bedrohungen)). An essential entity should also expect the BCS's active scans of its internet-facing systems, which it may not block, so it should exclude those scan sources from automatic blocking rather than treat them as hostile reconnaissance ([heise online, 2026-09-22](https://www.heise.de/news/Ab-1-10-Meldepflicht-fuer-IT-Vorfaelle-in-Oesterreich-11462442.html)).
+
 ## Correction — 2026-09-30T06:56:06Z
 
-Canton Bern's information- and cybersecurity law (ICSG) and its implementing ordinance (IDSV) enter into force on 1 November 2026, and the canton's incident-reporting platform comes with the IDSV ([Kanton Bern KAIO](https://www.kaio.fin.be.ch/de/start/themen/rechtliche-grundlagen/ICSG.html)). An earlier closing sentence credited the ICSG with a 24h/72h reporting clock and compared the Austrian law with a Finnish reporting checklist without sources, and both claims are removed.
+Canton Bern's information- and cybersecurity law (ICSG) and its implementing ordinance (IDSV) enter into force on 1 November 2026, and the canton's incident-reporting platform comes with the IDSV ([Kanton Bern KAIO](https://www.kaio.fin.be.ch/de/start/themen/rechtliche-grundlagen/ICSG.html)).
 
 heise's word for obstructing the BCS scans is "strafbar" (punishable), and it does not say whether that makes obstruction a criminal offence. It adds that penalties are imposed not by the BCS itself but by the competent district administrative authority at the BCS's suggestion ([heise online, 2026-09-22](https://www.heise.de/news/Ab-1-10-Meldepflicht-fuer-IT-Vorfaelle-in-Oesterreich-11462442.html)).
+
+## Improvement — 2026-10-11T14:08:56Z
+
+For an organization with an Austrian subsidiary or service under the law, significant incidents run on a 24-hour early warning and 72-hour notification clock from 1 October 2026, and an essential entity should also expect the BCS's active scans of its internet-facing systems, which it may not block ([heise online, 2026-09-22](https://www.heise.de/news/Ab-1-10-Meldepflicht-fuer-IT-Vorfaelle-in-Oesterreich-11462442.html)).
