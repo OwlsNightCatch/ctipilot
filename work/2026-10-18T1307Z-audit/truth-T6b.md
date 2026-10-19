@@ -1,0 +1,176 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-10-18T13:27:19Z · ended_at=2026-10-18T13:55:42Z · duration_seconds=1703
+
+## Retrospective truth pass T6b (run 2026-10-18T1307Z-audit)
+
+### 2026-08-28/claroty-copeland-xweb-pro-refrigeration-unauth-root-rce (imprecision)
+
+1. **sourcing_note; cves[]; body paragraph 3 ('The 17 further CVEs (all listed above)')** [imprecision]
+   - Claim: a CISA ICS advisory reported elsewhere as ICSA-26-057-10 could not be located or fetched as of 2026-08-30 for a second corroborating source ... The remaining three of the 23 are referenced only in the article's aggregate "23 vulnerabilities" count with no individually published identifier or per-flaw detail located as of 2026-08-30, and are therefore not listed individually.
+   - Defect: CISA advisory ICSA-26-057-10 (initial release 2026-02-26, status final) exists, is readable through the CSAF recipe, and names all 23 ids: besides the 20 recorded it lists CVE-2026-3037 (authenticated OS command injection via the MBird SMS service URL/code, utility route, CVSS 3.1 8.0), CVE-2026-22877 (unauthenticated arbitrary file read, 3.7) and CVE-2026-20797 (unauthenticated stack buffer overflow, 4.3); so the 'not individually published' and 'could not be located' statements are false as written, the 18 authenticated command-injection flaws are 17 recorded + CVE-2026-3037, and the entry is not single-source for the CVE facts.
+   - Ground truth: CISA CSAF ICSA-26-057-10 'Copeland XWEB and XWEB Pro': 23 vulnerabilities incl. CVE-2026-3037 CWE-78 CVSS:3.1 8.0, CVE-2026-22877 CWE-22 3.7, CVE-2026-20797 CWE-121 4.3; 'No known public exploitation specifically targeting these vulnerabilities has been reported to CISA at this time.' (https://www.cisa.gov/news-events/ics-advisories/icsa-26-057-10 (read via tools/fetch_source.py cisa csaf ICSA-26-057-10))
+   - Fix: Cite ICSA-26-057-10 as a corroborating source, add the three missing ids (or state that CISA lists them with their scores), drop the 'could not be located' sentence and the 'not individually published' sentence.
+
+2. **body paragraph 2 (deterministic admin-password generator)** [imprecision]
+   - Claim: letting an attacker reconstruct valid admin credentials fully offline with zero interaction with the target
+   - Defect: Claroty says the derivation chain can be rebuilt offline once the MAC address and date are obtained 'via unauthenticated public endpoints' (the device itself must be asked for its MAC); it never says zero interaction with the target.
+   - Ground truth: "Because the seed values are identical across the product line and the variables (MAC address and date) can be obtained via unauthenticated public endpoints, an adversary can reconstruct the entire derivation chain offline." (https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)
+   - Fix: Say the credentials are derived offline from the MAC address and date, which the device exposes at unauthenticated endpoints; drop 'zero interaction with the target'.
+
+3. **cves[CVE-2026-21718].type** [imprecision]
+   - Claim: type: logic-flaw (CVE-2026-21718)
+   - Defect: No source calls CVE-2026-21718 a logic flaw: Claroty's per-CVE page says 'authentication bypass vulnerability', and CISA's CSAF assigns CWE-327 (Use of a Broken or Risky Cryptographic Algorithm); 'logic flaw' is Claroty's wording for the Lua auth_mode bug (CVE-2026-25085) only.
+   - Ground truth: "An authentication bypass vulnerability exists in Copeland XWEB Pro version 1.12.1 and prior, enabling any attackers to bypass the authentication requirement and achieve pre-authenticated code execution on the system." (CISA CWE-327) (https://claroty.com/team82/disclosure-dashboard/cve-2026-21718)
+   - Fix: Set type to auth-bypass (matching the source's own wording).
+
+4. **body paragraph 1 and 3 (field-controller links)** [imprecision]
+   - Claim: which manage field devices such as the XR60CX controller over Modbus RS-485 and Ethernet (paragraph 1); reverse-engineers the connected field controller's undocumented Modbus register map (paragraph 3)
+   - Defect: Claroty has field controllers on an RS485 serial network (Modbus); Ethernet is the supervisory controller's operator/network connection, not a field-device link. It also says register addresses for 'many functions' are not publicly documented and that it used the XR60CX datasheet plus protocol analysis, not that the map is undocumented.
+   - Ground truth: "The supervisory controller communicates with field controllers over an RS485 serial network, typically using the Modbus protocol." / "we first needed to reverse engineer its Modbus register map, because the register addresses for many functions are not publicly documented." (https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)
+   - Fix: Say field devices are managed over Modbus RS-485 and the register addresses for many functions are not publicly documented.
+
+5. **frontmatter sectors** [imprecision]
+   - Claim: sectors: [healthcare, energy]
+   - Defect: (low confidence) No cited source ties the product to the energy sector: Claroty names food cold chain, supermarkets, distribution centers and healthcare facilities; CISA lists Commercial Facilities.
+   - Ground truth: CISA CSAF: 'Critical infrastructure sectors: Commercial Facilities'; Claroty: 'large distribution centers ... supermarkets ... healthcare facilities' (https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)
+   - Fix: Replace energy with the sector the sources name (retail / food, commercial facilities) or drop it.
+
+### 2026-08-29/papercut-ng-mf-tapestry-request-confusion-preauth-rce (factual-error)
+
+1. **Update 2026-09-03T05:05:00Z paragraph 2; updates[2026-09-03T05:05:00Z].summary** [factual-error]
+   - Claim: Release 3 fixes two regressions Release 2 had itself introduced, broken SAML login flows, and lost support for legacy Microsoft SQL Server drivers used for external card lookup
+   - Defect: The cited bulletin (and Huntress) say only that Release 3 'addresses two known regressions' (SAML login, legacy SQL Server driver support); no source says Release 2 introduced them, and the bulletin's own update log shows card-lookup guidance added on 28 Aug 10:43am AEST, before Release 2 (8:42pm AEST), so at least the card-lookup breakage may date from Release 1.
+   - Ground truth: "Emergency Patch (Release 3) ... supersedes Release 2 ... This release addresses two known regressions and adds additional hardening and mitigation against potential attack chains. Regressions include: Addresses broken SAML login flows; Restored support for using legacy Microsoft SQL Server drivers for external card lookup" (https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)
+   - Fix: Say Release 3 'addresses two known regressions' (broken SAML login; legacy Microsoft SQL Server driver support for external card lookup) without attributing them to Release 2, in the section and in the record summary.
+
+2. **body, Detection paragraph (web-access log pattern)** [imprecision]
+   - Claim: POST requests to `/app?service=direct/*/{Error,Exception,Home}/ConfigEditor/*` or `.../UserList/$QuickFind.$Form` from unauthenticated or external sources, this URL shape is not a pattern ordinary PaperCut administration produces.
+   - Defect: Uncited, and overbroad: UserList/$QuickFind.$Form is PaperCut's normal admin user-search form (only the rendered-page prefix is anomalous), Hunt.io says the exploit's request sequence 'matches what an administrator's browser would send', and the pattern omits the LogonMessage root page that watchTowr documents as the original bypass (service=direct/1/LogonMessage/ConfigEditor/quickFindForm), so a hunt on {Error,Exception,Home} alone misses it.
+   - Ground truth: watchTowr: "service=direct/1/LogonMessage/ConfigEditor/quickFindForm" ('Define an unauthenticated page (like LogonMessage) in the service parameter, which becomes the root page'); Hunt.io: "The sequence matches what an administrator's browser would send, but here it is generated by the script." (https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/)
+   - Fix: Add LogonMessage to the rendered-page set (or say 'any non-admin page before the component'), qualify that the signal is the page prefix before ConfigEditor/UserList from an unauthenticated session, and cite watchTowr/Rapid7.
+
+3. **body paragraph 4 and summary (Huntress 47%)** [imprecision]
+   - Claim: Huntress estimates 47% of the roughly 2,500 PaperCut installations it tracks still run v23 or older
+   - Defect: (low confidence) The figure is Huntress's reading as of its 2026-08-28 publication ('for which no patch is currently available'); 'still' in a brief read in mid-October carries it forward with no as-of date.
+   - Ground truth: "47% of the approximately 2,500 PaperCut installations Huntress tracks are running v23 or older, for which no patch is currently available." (Huntress, dated 2026-08-28) (https://www.huntress.com/blog/papercut-actively-exploited)
+   - Fix: Add 'as of 28 August' to the figure.
+
+4. **Update 2026-09-10T05:00:00Z paragraph 1** [imprecision]
+   - Claim: Domain admin was ultimately reached against only twelve of the 395 compromised organizations
+   - Defect: (low confidence) GreyNoise gives 12 victim organizations at 'GreyNoise's time of last observation' and says other real victims could not be attributed to a named organization; it does not state a final tally or that the 12 are a subset of the 395.
+   - Ground truth: "GreyNoise observed the adversary achieved domain admin against only 12 victim organizations." / "At GreyNoise's time of last observation, the adversary had not achieved domain admin against the other victims." (https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf)
+   - Fix: Write 'GreyNoise observed domain admin against only 12 victim organizations as of its last observation' and drop 'ultimately' and 'of the 395'.
+
+5. **body Detection paragraph; actions[1]** [imprecision]
+   - Claim: a `server.log` line reading `DB URL: jdbc:derby:memory:pwn` ... a Derby boot line naming an in-memory database directory ending in "pwn"
+   - Defect: (low confidence) The attacker-chosen database name 'pwn' and the exact log string are indicator values (file/string indicators) that the no-IOC policy keeps out of entries; the behaviour (a Derby in-memory database booted under an attacker-chosen name, a card-lookup JDBC URL pointing at Derby/H2) carries the detection without the literal.
+   - Ground truth: Huntress: "The `server.log` file recorded the execution of this code in a log line that contains the string `DB URL: jdbc:derby:memory:pwn`"; PaperCut lists the same string as an indicator of compromise. (https://www.huntress.com/blog/papercut-actively-exploited)
+   - Fix: Describe the artifact as an in-memory Derby database with an attacker-chosen name logged in server.log and derby.log, without the literal string.
+
+### 2026-08-31/france-sdis-fire-rescue-data-leak-campaign (imprecision)
+
+1. **body paragraph 1** [imprecision]
+   - Claim: no source names an actor for the Somme or Essonne claims, or ties Cybernox or AplaGroup to this wave
+   - Defect: (low confidence) The cited ZATAZ article treats the August wave as one 'cybercriminel' hitting all seven SDIS and says 'le même pirate de cette fin août' had claimed the Pompiers.fr base on 16 July, which the 2026-07-26 ZATAZ article attributes to ChimeraZ; so ZATAZ implies ChimeraZ for the whole wave, and the entry's own opening sentence already says one actor published all seven.
+   - Ground truth: ZATAZ 2026-08-30: "Le 16 juillet, le même pirate de cette fin août avait également revendiqué une base issue de Pompiers.fr"; ZATAZ 2026-07-26: "Le 16 juillet 2026, ChimeraZ a également revendiqué une base provenant de Pompiers.fr" (https://www.zataz.com/un-pirate-cible-a-nouveau-les-sdis-francais/)
+   - Fix: Say Objectif Gard names ChimeraZ for five of the seven and that ZATAZ's wording implies the same actor for the wave without naming a handle for Somme and Essonne.
+
+2. **body paragraph 2, last sentence** [imprecision]
+   - Claim: Each publication in the campaign otherwise appears to be a distinct claim rather than evidence of one coordinated technical compromise.
+   - Defect: (low confidence) Uncited inference; ZATAZ's own reading of the July postings is a coordinated diffusion ('Cette concentration temporelle donne l'image d'une diffusion coordonnée'), which the entry neither cites nor distinguishes from a coordinated technical compromise.
+   - Ground truth: "Cette concentration temporelle donne l'image d'une diffusion coordonnée, préparée autour de plusieurs organisations partageant le même secteur d'activité." (https://www.zataz.com/des-donnees-de-pompiers-francais-exposees-en-serie/)
+   - Fix: Attribute the statement to the absence of any stated common vector in the sources, or cite ZATAZ's 'coordinated diffusion' wording and say it does not establish a shared intrusion.
+
+### 2026-08-31/microsoft-terminalfix-clickfix-reverse-tunnel-campaign (imprecision)
+
+1. **Update 2026-09-08T04:50:00Z and body Defender takeaway (omitted BSI statement)** [imprecision]
+   - Claim: Microsoft states it did not observe the downstream hands-on-keyboard actions this access typically enables (privilege escalation, security-control tampering, data exfiltration, ransomware deployment) in the analyzed chain ... Sophos ... has not observed encryption in the campaign
+   - Defect: The cited BSI advisory states the opposite for the cases reported to it (ransomware installation attempts and double-extortion data exfiltration, and attacker-prepared cloud storage with azcopy), but the entry reports only Microsoft's and Sophos's 'not observed' statements and carries no Contradiction line, so the reader sees ransomware only as an 'expected next step'.
+   - Ground truth: BSI BITS-2026-287419-1032: "Beim BSI eingegangene Meldungen weisen zusätzlich darauf hin, dass im Rahmen dieser Angriffe versucht wurde, Ransomware zu installieren und im Rahmen von Double Extortion auch Daten auszuleiten bzw. die Opfer im Anschluss mit der Veröffentlichung zu erpressen." (https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile)
+   - Fix: Add BSI's report of attempted ransomware installation and double extortion to the 2026-09-08 section and a Contradiction line against Microsoft's and Sophos's 'not observed' statements.
+
+2. **updates[2026-09-08T04:50:00Z].summary** [imprecision]
+   - Claim: Germany's BSI independently confirms this campaign's technique against a real-world case it investigated (the Berlin Landesnetz compromise)
+   - Defect: The BSI advisory describes only 'a state institution' and never names Berlin; the Berlin link comes from heise's reading of BSI's Mastodon post (which says BSI is involved in the Berlin incident and links the notice), as the section itself states ('the advisory itself never names Berlin'), so the record summary asserts as BSI's confirmation what is heise's inference.
+   - Ground truth: BSI: "Im August 2026 wurde das Bundesamt für Sicherheit in der Informationstechnik (BSI) über die Kompromittierung des Netzwerks einer staatlichen Institution informiert."; heise: "Diese Information findet sich zwar nicht in der BSI-Sicherheitsmitteilung ... Damit steht fest: Die Senatsverwaltungen ... wurden per TerminalFix attackiert." (https://www.heise.de/news/BSI-erklaert-ersten-Angriffsvektor-auf-Berliner-Behoerden-11444072.html)
+   - Fix: Reword the record summary to say BSI confirms the technique against a state institution's network and that heise ties it to the Berlin Senate administrations.
+
+3. **Update 2026-09-08T04:50:00Z paragraph 2** [imprecision]
+   - Claim: notes the CAPTCHA lure's own JavaScript has been observed on several hundred historical websites, evidence of a reusable watering-hole kit rather than one-off, victim-specific infrastructure
+   - Defect: BSI states only that the lure JavaScript was found on several hundred websites in historical data; 'evidence of a reusable watering-hole kit' is the entry's inference placed under BSI's citation.
+   - Ground truth: "Das für das Captcha verwendete Javascript konnte in historischen Daten auf mehreren Hundert Webseiten festgestellt werden." (https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-287419-1032.pdf?__blob=publicationFile)
+   - Fix: End the sentence at 'historical websites' or mark the kit reading as the entry's own inference.
+
+4. **body Defender takeaway, first sentence** [imprecision]
+   - Claim: any host found running `LockScreenContentServer.exe` from a path other than `C:\Windows\SystemApps` has been compromised by this technique
+   - Defect: (low confidence) Microsoft's guidance is to alert on the binary running from non-standard paths (anything other than C:\Windows\SystemApps), and its own sideloading query treats System32, WinSxS and Program Files folders as benign; 'has been compromised' states as certain what the source offers as an alert condition.
+   - Ground truth: "Alert on LockScreenContentServer.exe executing from non-standard paths (anything other than C:\Windows\SystemApps)." (https://www.microsoft.com/en-us/security/blog/2026/08/28/terminalfix-campaign-deploys-reverse-tunnel-through-multistage-intrusion/)
+   - Fix: Write 'should be treated as likely compromised' (alert condition) and keep the credential-rotation advice.
+
+5. **body paragraph 1** [imprecision]
+   - Claim: a console runs complex, multi-line scripts far more reliably
+   - Defect: (low confidence) Microsoft says only that directing users to Terminal or PowerShell increases 'the likelihood that complex, multi-line scripts execute successfully'; 'far more reliably' amplifies it.
+   - Ground truth: "increasing the likelihood that complex, multi-line scripts execute successfully" (https://www.microsoft.com/en-us/security/blog/2026/08/28/terminalfix-campaign-deploys-reverse-tunnel-through-multistage-intrusion/)
+   - Fix: Use Microsoft's wording ('increases the likelihood that multi-line scripts execute successfully').
+
+6. **body Defender takeaway (detection concepts)** [imprecision]
+   - Claim: process lineage showing `pythonw.exe` or `python.exe` invoking a script with `client.py` and `--uuid` arguments
+   - Defect: (low confidence) `client.py` and `--uuid` are the attacker's own script name and argument, i.e. file-name/command-line indicators of the kind the no-IOC policy excludes; the behaviour (an embeddable Python runtime launched windowless from a user-writable directory with a script that dials out over TLS/443) is already described without them.
+   - Ground truth: Microsoft advanced-hunting query: ProcessCommandLine has_all ("client.py", "--server", "--uuid", "cert.pem", "gitnow.dev") (https://www.microsoft.com/en-us/security/blog/2026/08/28/terminalfix-campaign-deploys-reverse-tunnel-through-multistage-intrusion/)
+   - Fix: Drop the literal script name and argument; keep the lineage description.
+
+### 2026-09-03/cve-2026-83548-83549-sonicwall-sma1000-ssrf-cmd-injection (imprecision)
+
+1. **cves[CVE-2026-83548].affected; cves[CVE-2026-83549].affected; body 'Affected:' sentence** [imprecision]
+   - Claim: SMA1000 6210, 7210, 8200v: all releases prior to the fixed hotfixes below
+   - Defect: SonicWall's structured table lists the affected builds as 12.4.3-03453 and older and 12.5.0-02835 and older (platform hotfixes) and the fixed builds as 12.4.3-03526 / 12.5.0-02952 and higher; 'all releases prior to the fixed hotfixes' is the entry's widening (builds 12.4.3-03454 to -03525 and 12.5.0-02836 to -02951 are in neither of the vendor's lists), and the entry never states the vendor's affected builds because it cites SecurityWeek rather than SonicWall's table; the sourcing_note's statement that the advisory 'does not itself state the affected hotfix versions or model names' is also wrong, since the advisory's own Affected/Fixed table (served by SonicWall's PSIRT API behind the JavaScript portal) names models 6210, 7210, 8200v and both build lists.
+   - Ground truth: SNWLID-2026-0016 API record: Affected Version(s): "12.4.3-03453 (platform-hotfix) and older versions. 12.5.0-02835 (platform-hotfix) and older versions." Fixed Version(s): "12.4.3-03526 (platform-hotfix) and higher versions. 12.5.0-02952 (platform-hotfix) and higher versions." (https://psirtapi.global.sonicwall.com/api/v1/vulndetail/?advisory_id=SNWLID-2026-0016)
+   - Fix: Cite SonicWall's advisory table: affected 12.4.3-03453 and older / 12.5.0-02835 and older, fixed 12.4.3-03526 / 12.5.0-02952 and higher (and state that the interim builds are not listed either way).
+
+2. **Improvement 2026-10-08T05:30:28Z; summary; actions[0]; updates[2026-10-08T05:30:28Z].summary** [imprecision]
+   - Claim: SonicWall's advisory SNWLID-2026-0017 of 2026-10-06 fixes CVE-2026-102255 ... because the first pair is itself affected by CVE-2026-102255
+   - Defect: SNWLID-2026-0017 fixes four flaws, and all four affect the same builds (12.4.3-03526 and older, 12.5.0-02952 and older): besides the SSRF, CVE-2026-102256 (administrator OS command injection, CVSS 7.8), CVE-2026-102257 (AMC Zip Slip to RCE, 7.2) and CVE-2026-102258 (stored XSS, 5.5); the entry names only the SSRF, so a reader tracking the hotfix builds does not learn the pair is exposed to three further flaws.
+   - Ground truth: SNWLID-2026-0017 lists 1) CVE-2026-102255, 2) CVE-2026-102256, 3) CVE-2026-102257, 4) CVE-2026-102258; THN: "All four flaws affect SMA1000 models 6210, 7210 and 8200v on these platform-hotfix versions: 12.4.3-03526 and older versions are affected ... 12.5.0-02952 and older versions are affected." (https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0017)
+   - Fix: Say SNWLID-2026-0017 fixes four flaws, name the other three in one clause, and keep the hotfix instruction.
+
+3. **cves[].epss** [imprecision]
+   - Claim: epss: "0.0027" (CVE-2026-83548), "0.0092" (CVE-2026-83549)
+   - Defect: (low confidence) The values match FIRST's EPSS for 2026-09-02 (0.00266 / 0.00917) but carry no as-of date; FIRST's score on 2026-10-16 is 0.0804 / 0.0989, roughly 30x and 11x higher, so the field misstates current exploit likelihood for two KEV-listed, exploited flaws.
+   - Ground truth: FIRST EPSS 2026-10-16: CVE-2026-83549 0.098890000, CVE-2026-83548 0.080430000; 2026-09-02: 0.009170000 / 0.002660000 (https://api.first.org/data/v1/epss?cve=CVE-2026-83548,CVE-2026-83549)
+   - Fix: Refresh the EPSS values (or add the as-of date) through a changelog record.
+
+4. **frontmatter sectors** [imprecision]
+   - Claim: sectors: [public-sector, finance, energy, healthcare, telco]
+   - Defect: (low confidence) No cited source names finance, energy, healthcare or telco; BleepingComputer says the SMA1000 is used by 'large enterprises, government, and critical infrastructure organizations'.
+   - Ground truth: "the SMA1000 is a secure remote access appliance used by large enterprises, government, and critical infrastructure organizations." (https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-actively-exploited-sma1000-zero-day-flaws/)
+   - Fix: Reduce sectors to public-sector (and any sector a source names).
+
+### 2026-09-04/cve-2026-20212-cisco-nexus-9000-s1hal-unauth-root-rce (imprecision)
+
+1. **body paragraph 1; cves[].affected; actions[0]** [imprecision]
+   - Claim: Only switches carrying a Silicon One ASIC are affected. Cisco names ten specific product IDs ... Run `show module` on every Nexus 9000 switch to identify units carrying a Silicon One ASIC
+   - Defect: Omits a scope qualifier Cisco states: 'Nexus 9000 Series Fabric Switches in ACI mode' are listed under Products Confirmed Not Vulnerable, so a Silicon One PID running in ACI mode is not affected; the entry's exposure text and action make every listed PID in scope regardless of operating mode.
+   - Ground truth: "Cisco has confirmed that this vulnerability does not affect the following Cisco products: ... Nexus 9000 Series Switches other than the models listed in the Vulnerable Products section; Nexus 9000 Series Fabric Switches in ACI mode ..." (https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr)
+   - Fix: Add that Nexus 9000 fabric switches in ACI mode are listed as not vulnerable, so the check applies to the ten PIDs running NX-OS standalone mode.
+
+2. **body paragraph 1** [imprecision]
+   - Claim: sends crafted input that executes as root, or crashes the S1HAL process and forces the device to reload
+   - Defect: (low confidence) Cisco says the S1HAL crash 'could cause the device to reload', not that it forces a reload.
+   - Ground truth: "The exploitation of this vulnerability could also cause the S1HAL process to crash, which could cause the device to reload." (https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n9k-s1-rce-EH8dEtr)
+   - Fix: Write 'can crash the S1HAL process, which can reload the device'.
+
+### 2026-09-04/hpe-aruba-fabric-composer-arubaos-cx-cvss10-bundle (imprecision)
+
+1. **headline; title ('fabric-management plane'); summary** [imprecision]
+   - Claim: HPE patches unauthenticated administrative-takeover flaws in the controller that manages Aruba switch fabrics
+   - Defect: Neither HPE bulletin describes Fabric Composer's role (they only name 'HPE Networking Fabric Composer'), and NCSC-NL 0339 speaks only of the 'datacenter-netwerk' behind the SSH interface; the 2026-09-30 correction and earlier passes dropped the same 'controller that manages Aruba CX switch fabrics' descriptor from the main text and takeaway as uncited, but the headline and the title's 'fabric-management plane' still carry it uncited.
+   - Ground truth: HPESBNW05133: "HPE Networking has released updates for HPE Networking Fabric Composer that address multiple vulnerabilities" (no role description); NCSC-NL: "volledige overname van het achterliggende datacenter-netwerk" (https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05133.txt)
+   - Fix: Cite a page that states the product's role (HPE's product documentation) or reword the headline and title to what the bulletins say ('HPE Networking Fabric Composer').
+
+2. **body, Defender takeaway, last sentence** [imprecision]
+   - Claim: For AOS-CX, diffing live fabric configuration (VLANs, ACLs, routes) against an approved baseline is the most likely way to catch exploitation after the fact, since a successful buffer-overflow exploit against a compiled daemon leaves little application-layer telemetry beyond a crash-restart cycle.
+   - Defect: Uncited inference stated as fact: neither HPE bulletin nor the other cited sources say what telemetry exploitation leaves or that configuration diffing is the most likely detection; HPE says only that the daemon processes malformed input.
+   - Ground truth: HPESBNW05134: "Multiple vulnerabilities exist in a daemon of ArubaOS-CX that may allow for improper processing of malformed input ... Successful exploitation could result in remote code execution with elevated privileges." (nothing on telemetry or detection) (https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05134.txt)
+   - Fix: Mark it as the author's reasoning ('likely') without 'the most likely way', or cite a source, or drop it.
+
+Entries with no defect: 2026-09-04/cve-2026-85046-chrome-v8-type-confusion-exploited

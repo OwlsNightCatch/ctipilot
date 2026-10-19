@@ -1,0 +1,1308 @@
+batch: D2
+run_id: 2026-10-18T1307Z-audit
+entries:
+- entry: 2026-05-11/cve-2026-6722-php-soap-extension-use-after-free-in-soap-glob
+  verdict: factual-error
+  defects:
+  - where: summary
+    claim: PHP SOAP extension use-after-free patched in all 8.x branches
+    defect: Only the 8.2, 8.3, 8.4 and 8.5 branches received fixes; PHP 8.0/8.1 are end-of-life and unpatched, so 'all 8.x branches' overstates coverage
+    ground_truth: php.net ChangeLog lists the SOAP fix only in 8.2.31, 8.3.31, 8.4.21 and 8.5.6 (each dated 07 May 2026); CVE record (CNA PHP Group) affected = PHP 8.2.*, 8.3.*, 8.4.*, 8.5.* below those versions
+    ground_truth_url: https://www.php.net/ChangeLog-8.php
+    fix: Say 'fixed in the supported 8.2-8.5 branches (8.2.31 / 8.3.31 / 8.4.21 / 8.5.6)'
+    class: factual-error
+  - where: cves[CVE-2026-7262]
+    claim: 'cvss: "6.3"; type: rce'
+    defect: The CVE record scores CVE-2026-7262 as CVSS 4.0 2.9 LOW and the flaw is a NULL-dereference crash (DoS), not RCE; 6.3 is the figure shown on the GHSA page, and the conflict between the two PHP-authored records is not surfaced
+    ground_truth: 'CVE record (CNA PHP Group, updated 2026-07-15): baseScore 2.9 LOW, CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N/E:P; description "This allows a remote unauthenticated attacker to crash the PHP SOAP serv[er]"; GHSA page still shows "Moderate 6.3"'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-7262
+    fix: cvss 2.9 (note GHSA shows 6.3), type dos; same in the body line 'CVSS 4.0 6.3 Moderate' and table row
+    class: factual-error
+  - where: body paragraph 1 and paragraph 2
+    claim: No public proof-of-concept and no in-the-wild exploitation are reported as of this run
+    defect: The primary advisory itself embeds a working trigger reproducer and the fix commit adds a regression test with the trigger envelope; 'no public proof-of-concept' is wrong (no ITW report found, no KEV entry is correct)
+    ground_truth: GHSA-85c2-q967-79q5 body contains a Handler/SoapServer script with the apache:Map duplicate-key envelope and says 'The attacker has high control over this memory segment ... leading to Remote Code Execution'; commit 8f228a35cb adds ext/soap/tests/GHSA-85c2-q967-79q5.phpt
+    ground_truth_url: https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5
+    fix: Replace with 'no in-the-wild exploitation reported; the advisory publishes a trigger reproducer'
+    class: factual-error
+  - where: body paragraph 1
+    claim: Affected versions are PHP 8.2.0 through 8.5.5
+    defect: Range spans branches and wrongly implies e.g. 8.2.31-8.4.20 are affected-and-unfixed in a single span; cited ChangeLog lists fixes only, not affected ranges
+    ground_truth: 'CVE record affected: 8.2.0-<8.2.31, 8.3.0-<8.3.31, 8.4.0-<8.4.21, 8.5.0-<8.5.6'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-6722
+    fix: State affected as 'below 8.2.31 / 8.3.31 / 8.4.21 / 8.5.6 in their respective branches'
+    class: imprecision
+  - where: CVE Summary Table, CVE-2026-6722 row
+    claim: 9.5 (CVSS 4.0)
+    defect: The cited GHSA shows only 'Severity High', no numeric score; 9.5 is the CNA's CVE-record score, cited elsewhere as 'NVD'
+    ground_truth: 'GHSA-85c2 page: ''Severity High CVE ID CVE-2026-6722'' (no CVSS number); CVE record CNA CVSS 4.0 9.5 CRITICAL'
+    ground_truth_url: https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5
+    fix: Cite the CVE record/CNA for 9.5 and the GHSA for 'High'
+    class: imprecision
+  - where: body paragraph 2
+    claim: a runtime present in essentially every Internet-exposed PHP application
+    defect: ext-soap is an optional extension and only SoapServer endpoints are reachable; no source supports 'essentially every'
+    ground_truth: 'GHSA-85c2: bug is in ext-soap; trigger requires SoapServer::handle() on attacker input'
+    ground_truth_url: https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5
+    fix: Drop the quantifier; say 'any PHP application that exposes a SoapServer'
+    class: imprecision
+  - where: frontmatter classification / techniques[]
+    claim: (absent)
+    defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+    ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+    ground_truth_url: docs/pipeline.md
+    fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+    class: imprecision
+- entry: 2026-05-11/cve-2026-6722-php-soap-use-after-free-in-soap-global-ref-map
+  verdict: factual-error
+  defects:
+  - where: summary
+    claim: '#### Vulnerability class and primitive'
+    defect: Summary is a markdown heading and states nothing; event_date is null although all sources date the disclosure 2026-05-07
+    ground_truth: GHSA-85c2-q967-79q5 published May 7, 2026
+    ground_truth_url: https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5
+    fix: Write a real one-sentence summary and set event_date 2026-05-07
+    class: imprecision
+  - where: cves[CVE-2026-7262]
+    claim: 'cvss: "6.3"; type: rce'
+    defect: 'CNA CVE record: CVSS 4.0 2.9 LOW (GHSA page shows 6.3; conflict not surfaced); the flaw is a segfault DoS (body itself says ''NULL deref rather than UAF''), so type rce is wrong'
+    ground_truth: 'CVE record: baseScore 2.9 LOW; "This allows a remote unauthenticated attacker to crash the PHP SOAP serv[er]"; GHSA-hmxp: "the process will segfault with a NULL pointer violation ... DoS becomes trivial"'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-7262
+    fix: cvss 2.9, type dos; body '(both Moderate, CVSS 4.0 6.3)' should say 7261 only
+    class: factual-error
+  - where: body, companion CVE paragraph
+    claim: suggesting the upstream review pass that produced GHSA-85c2-q967-79q5 covered the whole apache-map handling surface
+    defect: The ChangeLog only lists the three GHSAs in the same releases; CVE-2026-7261 is in SOAP_PERSISTENCE_SESSION header handling, not apache-map; 7262 also needs a typemap configured (omitted)
+    ground_truth: 'ChangeLog: three separate GHSA entries under SOAP; GHSA-m33r: SOAP_PERSISTENCE_SESSION header fault; GHSA-hmxp: reachable ''when the SOAP server has a typemap configured'''
+    ground_truth_url: https://www.php.net/ChangeLog-8.php
+    fix: Delete the inference; add that 7262 needs SOAP typemap configured
+    class: imprecision
+  - where: body, Exploitation prerequisites
+    claim: the SoapClient/Server pair used for reverse-direction RPC
+    defect: No source says SoapClient is affected; the sentence also contradicts the preceding 'SoapServer ... is sufficient' (a SoapServer must be instantiated)
+    ground_truth: GHSA-85c2 and CVE description reference only SoapServer decoding of an attacker-supplied envelope
+    ground_truth_url: https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5
+    fix: Remove SoapClient mention; keep 'any application that instantiates a SoapServer on untrusted input'
+    class: imprecision
+  - where: body, Detection concepts
+    claim: 'increased `Notice: Trying to access array offset on null` or `Fatal error: Uncaught Error: Call to a member function ... on null` clustered around SOAP request handlers — failed exploitation attempts'
+    defect: No source ties these PHP log messages to this bug; the documented failure symptom is a worker segfault (7262) or none
+    ground_truth: 'GHSA-hmxp: ''the process will segfault with a NULL pointer dereference violation'''
+    ground_truth_url: https://github.com/php/php-src/security/advisories/GHSA-hmxp-6pc4-f3vv
+    fix: Remove the unsourced log signature
+    class: imprecision
+  - where: body, MITRE ATT&CK mapping
+    claim: likely follow-on persistence path observed in prior PHP RCE incidents
+    defect: No source describes post-exploitation behaviour (web shell or Unix shell) for this CVE; 'observed in prior PHP RCE incidents' is uncited. Only T1190 is source-supported
+    ground_truth: GHSA-85c2 ends at 'leading to Remote Code Execution'
+    ground_truth_url: https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5
+    fix: Keep T1190 only or mark T1059.004/T1505.003 as analyst inference
+    class: imprecision
+  - where: body, Where SOAP commonly lingers
+    claim: Where SOAP commonly lingers in EU public-sector estates
+    defect: Uncited generalisation about EU public-sector SOAP prevalence
+    ground_truth: none of the cited pages mention public-sector SOAP usage
+    ground_truth_url: https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5
+    fix: Cite or drop
+    class: imprecision
+  - where: frontmatter classification / techniques[]
+    claim: (absent)
+    defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+    ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+    ground_truth_url: docs/pipeline.md
+    fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+    class: imprecision
+- entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+  verdict: factual-error
+  defects:
+  - where: headline; body 'Kill chain (UAT-8616 post-exploitation TTPs)' steps 6-9
+    claim: Godzilla, Behinder, and XenShell webshells deployed for persistent access
+    defect: Steps 6-9 (Godzilla/Behinder/XenShell webshells, AdaptixC2/Sliver/Nimplant C2, XMRig) are attributed to UAT-8616, but Talos attributes them to other clusters exploiting CVE-2026-20133/20128/20122
+    ground_truth: 'Talos: "a series of threat actors, distinct from UAT-8616, that have been observed to be exploiting a different, previously disclosed set of vulnerabilities ... CVE-2026-20133, CVE-2026-20128 and CVE-2026-20122"; for UAT-8616 on 20182: "attempted to add SSH keys, modify NETCONF configurations, and escalate to root privileges"'
+    ground_truth_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+    fix: Limit the UAT-8616 kill chain to SSH key injection, NETCONF, root escalation and ORB-network overlap; present Clusters 1-10 separately
+    class: factual-error
+  - where: body, Vulnerability mechanics
+    claim: checks whether the device type is `VBOND` (0) or `VEDGE` (1) before requiring certificate validation
+    defect: Device-type values are wrong; Rapid7's table is vEdge=1, vHub=2, vSmart=3, vBond=4, vManage=5, and the cert checks cover types 3/5 and 1. The authenticated flag is set but a Hello is still required to reach UP, contrary to 'immediately ... transitions the peering state to UP'
+    ground_truth: 'Rapid7: "| 1 | vEdge ... | 2 | vHub ... | 3 | vSmart ... | 4 | vBond ... | 5 | vManage"; "the attacker must send a Hello message (Message type 5) to transition the peer to the UP state"'
+    ground_truth_url: https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/
+    fix: 'Use Rapid7''s enumeration: checks for vSmart (3), vManage (5), vEdge (1); none for vHub (2)'
+    class: factual-error
+  - where: body, Kill chain step 6
+    claim: XenShell is a lightweight Python-based variant targeting Linux
+    defect: Talos describes XenShell as a JSP-based webshell
+    ground_truth: 'Talos: "ZeroZenX Labs'' proof-of-concept and accompanying JSP-based webshell which we track as \"XenShell.\""'
+    ground_truth_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+    fix: Say 'JSP-based webshell (XenShell)'; and drop 'dynamic key exchange'/'AES-128-CBC' details unless sourced
+    class: factual-error
+  - where: body, Background
+    claim: CVE-2026-20127 (pre-auth RCE in SD-WAN Manager)
+    defect: CVE-2026-20127 is a peering authentication bypass in the Controller (vSmart); Cisco's advisory is titled 'Controller Authentication Bypass' (affects Controller/Manager/Validator), not an RCE in Manager. 'joint advisory from ACSC, NCSC-UK, and Cisco Talos' is also not what the cited Talos post is
+    ground_truth: 'Talos: "CVE-2026-20127, a vulnerability in Cisco Catalyst SD-WAN Controller, formerly vSmart, that allows an unauthenticated remote attacker to bypass authentication"; CISA KEV: "Cisco Catalyst SD-WAN Controller and Manager Authentication Bypass Vulnerability"'
+    ground_truth_url: https://blog.talosintelligence.com/uat-8616-sd-wan/
+    fix: Describe 20127 as an authentication bypass in the Controller (and Manager); cite Talos blog and ACSC hunt guide separately
+    class: factual-error
+  - where: body, Background
+    claim: CVE-2026-20182 is that actor's sixth exploited Cisco SD-WAN vulnerability in the ongoing campaign
+    defect: No source counts six; Talos ties UAT-8616 to CVE-2026-20127, CVE-2026-20182 and the (reported) CVE-2022-20775 chain
+    ground_truth: 'Talos (20182 post): "UAT-8616 previously exploited a similar vulnerability in Cisco Catalyst SD-WAN Controller, CVE-2026-20127"'
+    ground_truth_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+    fix: Delete the count
+    class: factual-error
+  - where: body, Background
+    claim: Cisco and CISA have published five previous SD-WAN vulnerability advisories with confirmed in-the-wild exploitation this year alone
+    defect: Quantifier not in the cited Talos Feb post; KEV shows five earlier 2026 SD-WAN CVEs (20127, 20122, 20128, 20133 plus 2022-20775) across three Cisco advisories, not five advisories
+    ground_truth: 'KEV: CVE-2022-20775 and CVE-2026-20127 added 2026-02-25; CVE-2026-20122/20128/20133 added 2026-04-20'
+    ground_truth_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    fix: Cite KEV and state 'five earlier SD-WAN CVEs'
+    class: imprecision
+  - where: body, Kill chain closing paragraph
+    claim: The 10+ additional clusters (#1–#10 in Talos's taxonomy)
+    defect: 'Talos lists exactly Clusters #1 to #10; they also run C2 implants and a credential stealer, and ''skip the version-downgrade chain'' is not stated'
+    ground_truth: 'Talos: "So far, Talos has observed the following clusters of malicious activity ...: Cluster #1 to Cluster #10."'
+    ground_truth_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+    fix: Say 'ten clusters'
+    class: imprecision
+  - where: body, Hunt and detection concepts
+    claim: SD-WAN Controller-to-Controller peering shows as VHUB-type — flag unexpected vHub entries
+    defect: 'Wrong: vSmart peers are type 3 (vManage 5); vHub is the type claimed by the exploit. Cisco''s own check is ''state:up'' with ''challenge-ack 0'' in `show control connections detail`, not `show sdwan control connections`'
+    ground_truth: 'Cisco rpa2: "To check ... the presence of state:up and no challenge-ack ... use the commands show control connections detail or show control connections-history detail"'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+    fix: Use Cisco's documented command and discriminator
+    class: factual-error
+  - where: body, Kill chain items 4 and 8; ATT&CK ids
+    claim: 'T1562.001 Impair Defenses: Disable or Modify Tools ... T1070.002 Indicator Removal: Clear Linux or Mac System Logs'
+    defect: T1562, T1562.001 and T1070.002 are revoked in ATT&CK v20 (-> T1685 / T1685.006); a software version downgrade is not 'disable or modify tools'
+    ground_truth: 'attack/enterprise-attack.json: T1562.001 revoked_by T1685; T1070.002 revoked_by T1685.006'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+    fix: Map to active ids (T1685 / T1685.006) or drop the version-downgrade mapping
+    class: imprecision
+  - where: body, Hardening
+    claim: the authentication-bypass function is in the control-plane peering path that cannot be disabled without breaking SD-WAN functionality
+    defect: Rationale is in no source; Cisco only says there are no workarounds
+    ground_truth: 'Cisco rpa2: "There are no workarounds that address this vulnerability."'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+    fix: Delete the rationale
+    class: imprecision
+  - where: evidence[0]; summary
+    claim: Background.
+    defect: evidence quote is the single word 'Background.' (publisher 'ctipilot v2 brief (migrated)'), not a passage of any cited page; summary is a stub 'Background. Cisco SD-WAN has been a sustained exploitation target since 2023.'
+    ground_truth: no cited page contains this quote
+    ground_truth_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+    fix: Replace evidence with a verbatim Talos/Cisco quote and write a real summary
+    class: imprecision
+  - where: frontmatter classification / techniques[]
+    claim: (absent)
+    defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+    ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+    ground_truth_url: docs/pipeline.md
+    fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+    class: imprecision
+- entry: 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+  verdict: factual-error
+  defects:
+  - where: summary; sources[2].publisher
+    claim: CISA Emergency Directive ED-26-03 issued 2026-05-14
+    defect: ED 26-03 was issued 2026-02-25 (updated 2026-03-11) and names CVE-2026-20127 and CVE-2022-20775; CVE-2026-20182 reached it through the 2026-05-14 KEV listing, not a new directive
+    ground_truth: 'CISA ED 26-03 page: "Original Issuance Date: February 25, 2026"; "Updated March 11, 2026"; "involves the following known exploited vulnerabilities identified by Cisco:" CVE-2026-20127, CVE-2022-20775'
+    ground_truth_url: https://www.cisa.gov/news-events/directives/ed-26-03-mitigate-vulnerabilities-cisco-sd-wan-systems
+    fix: Say 'added to KEV 2026-05-14 under the existing ED 26-03 (issued 2026-02-25)'
+    class: factual-error
+  - where: body
+    claim: achieving persistent SSH access to the SD-WAN Manager on NETCONF port TCP/830
+    defect: Rapid7 demonstrates the key injection against the Controller (vSmart) NETCONF service, not the Manager
+    ground_truth: 'Rapid7: "target a Cisco Catalyst SD-WAN Controller ... SSH into the NETCONF service over TCP port 830"'
+    ground_truth_url: https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/
+    fix: Say 'Controller (vSmart); Cisco lists Controller, Manager and Validator as affected'
+    class: imprecision
+  - where: body
+    claim: network segmentation of the UDP/12346 interface is the only partial mitigation where upgrading is not immediately possible
+    defect: Cisco states no workarounds or mitigations for CVE-2026-20182; the segmentation claim is uncited
+    ground_truth: 'Cisco rpa2: "There are no workarounds that address this vulnerability."'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+    fix: Delete or attribute to analyst judgement
+    class: imprecision
+  - where: title/headline/body
+    claim: Controller/Manager
+    defect: Cisco advisory v2.0 (2026-06-16) lists Validator (vBond) as affected too
+    ground_truth: 'Cisco rpa2 summary: "peering authentication in Cisco Catalyst SD-WAN Controller ..., Manager ..., and Validator ... could allow an unauthenticated, remote attacker"'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+    fix: Add Validator to affected products
+    class: imprecision
+  - where: evidence[0]
+    claim: CVE-2026-20182 (CVSS 10.0, CWE-287) is a complete authentication bypass in the vdaemon service's DTLS control-plane peering on UDP/12346 (Cisco PSIRT cisco-sa-sdwan-rpa2-v69WY2SW, 2026-05-14 · Rapid7, 2026-05-14).
+    defect: Evidence quote is the entry's own sentence (publisher 'ctipilot v2 brief (migrated)'), not a contiguous passage of any cited page
+    ground_truth: Neither the Cisco page nor Rapid7 contains this sentence
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+    fix: Replace with a verbatim Cisco/Rapid7 quote
+    class: imprecision
+  - where: frontmatter classification / techniques[]
+    claim: (absent)
+    defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+    ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+    ground_truth_url: docs/pipeline.md
+    fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+    class: imprecision
+- entry: 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+  verdict: factual-error
+  defects:
+  - where: title; headline; summary; actions[0]; main analysis
+    claim: actively-exploited command-injection to root (no patch)
+    defect: '''No patch'' is false today: Cisco published fixed releases (final table 2026-06-12) and a Live Protect shield; the 2026-06-26/27 sections add Mandiant detail but never correct the headline, summary, action or ''No fixed release is available''. Cisco''s advisory guidance was also to upgrade, not ''restrict management-plane access'''
+    ground_truth: 'Cisco privesc advisory Fixed Releases: 20.9.9.2, 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1, 26.1.1.2 (v1.8 2026-JUN-12 "Changed advisory status from interim to final"); v1.9 2026-JUL-15 "Live Protect shield availability"'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+    fix: Correct title/headline/summary/action/analysis to 'fixed in 20.9.9.2 / 20.12.7.2 / 20.15.4.5 / 20.15.5.3 / 20.18.3.1 / 26.1.1.2; Live Protect shield is temporary partial protection'
+    class: factual-error
+  - where: cves[CVE-2026-20245]
+    claim: 'type: auth-bypass; vector: zero-click; auth: pre-auth; cvss: n/a'
+    defect: CVE-2026-20245 is an authenticated local command injection requiring netadmin (CVSS 7.8, AV:L/PR:L); the entry's own body says netadmin is required. It was added to KEV 2026-06-09 (CWE-116) but status omits cisa-kev
+    ground_truth: 'Cisco: "authenticated, local attacker to execute arbitrary commands as root ... the attacker must have netadmin privileges"; Base 7.8 CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H; KEV dateAdded 2026-06-09'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+    fix: type priv-esc, vector local, auth post-auth, cvss 7.8, add cisa-kev
+    class: factual-error
+  - where: cves[CVE-2026-20127], cves[CVE-2026-20182]
+    claim: 'cvss: n/a'
+    defect: Both are scored by Cisco at 10.0 and both are in KEV (2026-02-25 and 2026-05-14) but statuses omit cisa-kev
+    ground_truth: 'Cisco rpa / rpa2: "Base 10.0"; KEV dateAdded 2026-02-25 (20127), 2026-05-14 (20182)'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+    fix: cvss 10.0, add cisa-kev
+    class: imprecision
+  - where: body; summary
+    claim: a second actively-exploited zero-day in Catalyst SD-WAN Manager
+    defect: '''Second'' is unsupported: Cisco''s own advisory names CVE-2026-20182 and CVE-2026-20127 as earlier exploited flaws and NCSC-CH says ''a new actively exploited zero-day'''
+    ground_truth: 'NCSC-CH update 05.06.2026: "A new actively exploited zero-day (CVE-2026-20245, HIGH)"'
+    ground_truth_url: https://security-hub.ncsc.admin.ch/#/posts/12579
+    fix: Drop 'second'
+    class: imprecision
+  - where: Update 2026-06-26 and record summary
+    claim: zero-day at a communications service provider from late 2025 through March 2026 — months before the patch
+    defect: Mandiant dates the CVE-2026-20245 exploit to April 2026; late 2025-January and March 2026 are rogue peering events; the victim is 'a service provider', not 'communications'; Cisco's advisory is 2026-06-04
+    ground_truth: 'Mandiant: "in April 2026, after establishing an SSH session with the admin account, the threat actor exploited CVE-2026-20245"; "multiple unauthorized peering connections ... From late 2025 to January 2026"; "a threat actor targeting SD-WAN infrastructure at a service provider"'
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: Say 'exploited as a zero-day in April 2026 after rogue peering access from late 2025'; delete 'communications'
+    class: factual-error
+  - where: Update 2026-06-26 / 2026-06-27 (chain)
+    claim: a peering-authentication-bypass foothold (CVE-2026-20127 / CVE-2026-20182) into SSH as `vmanage-admin`
+    defect: Mandiant says the peering connections only 'possibly' used 20127/20182 and that March connections hit a device unaffected by 20127 that Cisco confirmed did not use 20182 (stolen certificate material possible); the entry states the link as fact. NCSC-CH asserts it but Mandiant does not
+    ground_truth: 'Mandiant: "It is possible that these connections occurred due to the exploitation of CVE-2026-20127 or CVE-2026-20182"; "Cisco confirmed that these connections did not leverage CVE-2026-20182 either, and could instead be using stolen certificate material"'
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: 'Hedge: ''possibly 20127/20182 for late-2025 activity; March access not via 20182 per Cisco'''
+    class: factual-error
+  - where: Update 2026-06-26
+    claim: with anti-forensic clean-up (admin-password change-then-revert, history/syslog deletion)
+    defect: Mandiant does not report history or syslog deletion; it reports deletion of the actor's own files, config restoration and a validation script
+    ground_truth: 'Mandiant: "the threat actor deleted all files they created, including evil_tenant.csv, and restored any system configurations they modified"'
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: Replace with 'file deletion, config restoration, password revert'
+    class: factual-error
+  - where: Update 2026-06-27 and record summary
+    claim: the first complete TTP chain
+    defect: '''First complete'' is not claimed by Mandiant'
+    ground_truth: Mandiant post makes no such claim
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: Delete 'first complete'
+    class: imprecision
+  - where: frontmatter evidence[]; techniques; classification
+    claim: 'techniques: []'
+    defect: Vulnerability entry with empty techniques[], classification null and affected_products []; evidence[] quotes are entry sentences ('ctipilot v2 brief (migrated)'), not page passages; attacker-chosen artefact names (`evil_tenant.csv`, `troot`) are file/account indicators
+    ground_truth: 'org profile: every entry carries classification; vulnerability entries need non-empty techniques[]'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+    fix: Populate techniques (T1190, T1068, T1136.001), affected_products (Cisco Catalyst SD-WAN Controller/Manager/Validator), classification
+    class: imprecision
+- entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+  verdict: factual-error
+  defects:
+  - where: summary; body para 1
+    claim: exploited at a communications service provider from late 2025 through March 2026, months before Cisco's advisory
+    defect: 'Mandiant: the CVE-2026-20245 exploit was observed in April 2026 (rogue peering from late 2025/March); the victim is ''a service provider''; Cisco published 2026-06-04'
+    ground_truth: 'Mandiant: "in April 2026 ... the threat actor exploited CVE-2026-20245 by executing the following command to upload a file named evil_tenant.csv"'
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: Say 'exploited as a zero-day in April 2026 at a service provider, about two months before Cisco's 2026-06-04 advisory'
+    class: factual-error
+  - where: body, Kill chain, Initial access
+    claim: the actor reached an authenticated position by abusing peering-authentication-bypass flaws CVE-2026-20127 / CVE-2026-20182 to enrol unauthorised peering and obtain SSH as the `vmanage-admin` account
+    defect: Presented as established; Mandiant says 'possible' and records Cisco's confirmation that March connections did not use 20182 on a device unaffected by 20127
+    ground_truth: 'Mandiant: "It is possible that these connections occurred due to the exploitation of CVE-2026-20127 or CVE-2026-20182"'
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: Hedge as Mandiant does
+    class: factual-error
+  - where: body, Kill chain, Defense evasion
+    claim: and deleted command history, syslog entries, and the uploaded files after use
+    defect: Mandiant reports deleted files and restored configurations, not history or syslog deletion; T1070.003 (Clear Command History) is therefore unsupported
+    ground_truth: 'Mandiant: "deleted all files they created, including evil_tenant.csv, and restored any system configurations they modified"'
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: Replace with file deletion/config restoration (T1070.004)
+    class: factual-error
+  - where: body, The vulnerability
+    claim: the feature that ingests a tenant-list CSV fails to sanitise file content before it reaches a shell context
+    defect: Cisco's page (cited) says 'a crafted file' via the CLI of Controller, Manager and Validator; the tenant-list CSV detail is Mandiant's, and Cisco's IOC examples show other upload handlers (vsmart serial numbers, chassis numbers)
+    ground_truth: 'Cisco: "A vulnerability in the CLI of Cisco Catalyst SD-WAN Controller ..., Manager ..., and Validator ... could allow an authenticated, local attacker to execute arbitrary commands as root by supplying a crafted file"'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+    fix: Cite Mandiant for the tenant CSV; state all three components affected
+    class: imprecision
+  - where: cves[CVE-2026-20245].status; body Hardening
+    claim: as there is no workaround
+    defect: KEV listing (dateAdded 2026-06-09) missing from status; Cisco added a Live Protect shield (2026-07-15) offering temporary partial protection
+    ground_truth: 'Cisco: "Cisco has released a Live Protect shield for CVE-2026-20245 ... This shield offers only temporary partial protection."'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+    fix: Add cisa-kev; mention the shield
+    class: imprecision
+  - where: body, Hunt and detection concepts
+    claim: vManage's own health dashboards do not surface OS-level account creation
+    defect: Uncited claim about vManage dashboards
+    ground_truth: Mandiant and Cisco do not discuss dashboards
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: Cite or delete
+    class: imprecision
+  - where: ATT&CK ids in prose
+    claim: T1078.004
+    defect: T1078.004 is 'Cloud Accounts'; the account is the on-box vmanage-admin default account
+    ground_truth: 'attack/enterprise-attack.json: T1078.004 Cloud Accounts'
+    ground_truth_url: docs/pipeline.md
+    fix: Use T1078 / T1078.001
+    class: imprecision
+  - where: evidence[0]
+    claim: Mandiant's Google Threat Intelligence Group published a forensic reconstruction of an intrusion in which Cisco Catalyst SD-WAN Manager (formerly vManage) was compromised through CVE-2026-20245 as a zero-day
+    defect: evidence is the entry's own sentence (publisher 'ctipilot v2 brief (migrated)'), not a page passage; no classification/techniques
+    ground_truth: Mandiant page does not contain this sentence
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+    fix: Replace with a verbatim Mandiant quote
+    class: imprecision
+  - where: frontmatter classification / techniques[]
+    claim: (absent)
+    defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+    ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+    ground_truth_url: docs/pipeline.md
+    fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+    class: imprecision
+- entry: 2026-05-19/cve-2026-42231-42232-44789-44790-44791-n8n-self-hosted-autom
+  verdict: factual-error
+  defects:
+  - where: body paragraph 1; summary
+    claim: n8n published five Critical security advisories on 2026-05-18, two on 2026-05-18 (`-42231`, `-42232`)
+    defect: 'Wrong dates: the GHSAs for -42231/-42232 were published 2026-04-22 (CVE records 2026-05-04) and for -44789/-44790/-44791 on 2026-05-13 (CVE records 2026-06-23); 2026-05-18 is only The Hacker News'' roundup date. The cited GHSA-q5f4 carries ''Apr 22, 2026'''
+    ground_truth: 'GHSA-q5f4-99jv-pgg5: ''published GHSA-q5f4-99jv-pgg5 Apr 22, 2026''; GHSA-c8xv/57g9/wrwr: ''May 13, 2026''; THN article date 2026-05-18'
+    ground_truth_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5
+    fix: Give per-advisory dates (Apr 22 and May 13, 2026) and keep 2026-05-18 only as the THN roundup date
+    class: factual-error
+  - where: cves[] (all five)
+    claim: 'vector: user-interaction'
+    defect: 'Taxonomy: vector encodes victim interaction only (authenticated, no-interaction bug = zero-click + post-auth); every GHSA vector has UI:N, so user-interaction is wrong. CVE-2026-44790 is an arbitrary file read (CWE-88), not type rce (the body says so itself)'
+    ground_truth: 'GHSA vectors CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/...; GHSA-57g9: ''inject CLI flags on the Git node''s Push operation allowing an attacker to read arbitrary files''; CVE record CWE-88'
+    ground_truth_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-57g9-58c2-xjg3
+    fix: vector zero-click, auth post-auth for all; 44790 type info-disclosure/arg-injection
+    class: factual-error
+  - where: evidence[0]
+    claim: n8n addresses five critical prototype pollution and injection flaws (CVE-2026-42231/42232/44791/44789/44790, all CVSS 9.4)
+    defect: Quote is not on the cited THN page (paraphrase); the page says 'Round off the list is a set of five critical vulnerabilities impacting n8n -' followed by a bullet list
+    ground_truth: 'THN: "Round off the list is a set of five critical vulnerabilities impacting n8n -"'
+    ground_truth_url: https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html
+    fix: Replace with a verbatim THN sentence
+    class: factual-error
+  - where: summary; headline
+    claim: five chained critical CVEs ... chained prototype-pollution and injection flaws
+    defect: The five GHSAs are independent; only 42231 names a chain (Git node SSH ops); 42232/44789/44791 need 'other nodes'; 44790 is a standalone file read. The summary itself then calls 44790 'separate'
+    ground_truth: 'GHSA-hqr4: "leading to RCE when combined with other nodes"; GHSA-57g9: standalone arbitrary file read'
+    ground_truth_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-hqr4-h3xv-9m3r
+    fix: Say 'five separate critical advisories'
+    class: imprecision
+  - where: body paragraph 1
+    claim: 'CVE-2026-42231 (CVSS 4.0: 9.4, CWE-1321) is the root cause'
+    defect: 42231 is one independent flaw; 44791 bypasses the 42232 fix, not 42231; CWE-1321 is from the CVE record (GHSA page shows 'No CWEs')
+    ground_truth: 'THN: ''CVE-2026-44791 ... A bypass for CVE-2026-42232'''
+    ground_truth_url: https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html
+    fix: Drop 'root cause'
+    class: imprecision
+  - where: affected/fixed versions for -44789/-44790/-44791
+    claim: 1.123.43 / 2.20.7 / 2.22.1
+    defect: CVE records list the 2.21 branch fixed in 2.21.1 (affected '>= 2.21.0, < 2.21.1'), GHSAs say 2.22.1; the discrepancy is not surfaced
+    ground_truth: 'CVE-2026-44789 record affected: ''< 1.123.43'', ''>= 2.0.0-rc.0, < 2.20.7'', ''>= 2.21.0, < 2.21.1''; GHSA-c8xv patched ''>= 1.123.43, >= 2.22.1, >= 2.20.7'''
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-44789
+    fix: Add a Contradiction line or verify on the n8n release page
+    class: imprecision
+  - where: body; GHSA workarounds
+    claim: (absent)
+    defect: GHSAs publish temporary mitigations (limit workflow permissions; disable the node via NODES_EXCLUDE) that the entry omits
+    ground_truth: 'GHSA-q5f4: ''Limit workflow creation and editing permissions to fully trusted users only''; GHSA-57g9: ''Disable the Git node by adding n8n-nodes-base.git to the NODES_EXCLUDE environment variable'''
+    ground_truth_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-57g9-58c2-xjg3
+    fix: Add the vendor workarounds as interim measures
+    class: imprecision
+  - where: frontmatter classification / techniques[]
+    claim: (absent)
+    defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+    ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+    ground_truth_url: docs/pipeline.md
+    fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+    class: imprecision
+- entry: 2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic
+  verdict: factual-error
+  defects:
+  - where: body paragraph 1; summary
+    claim: n8n disclosed five Critical CVEs at CVSS 9.4 each on 2026-05-18
+    defect: 'Wrong dates: the GHSAs for -42231/-42232 were published 2026-04-22 (CVE records 2026-05-04) and for -44789/-44790/-44791 on 2026-05-13 (CVE records 2026-06-23); 2026-05-18 is only The Hacker News'' roundup date. The cited GHSA-q5f4 carries ''Apr 22, 2026'''
+    ground_truth: 'GHSA-q5f4-99jv-pgg5: ''published GHSA-q5f4-99jv-pgg5 Apr 22, 2026''; GHSA-c8xv/57g9/wrwr: ''May 13, 2026''; THN article date 2026-05-18'
+    ground_truth_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5
+    fix: Give per-advisory dates (Apr 22 and May 13, 2026) and keep 2026-05-18 only as the THN roundup date
+    class: factual-error
+  - where: cves[] (all five)
+    claim: 'vector: user-interaction'
+    defect: 'Taxonomy: vector encodes victim interaction only (authenticated, no-interaction bug = zero-click + post-auth); every GHSA vector has UI:N, so user-interaction is wrong. CVE-2026-44790 is an arbitrary file read (CWE-88), not type rce (the body says so itself)'
+    ground_truth: 'GHSA vectors CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/...; GHSA-57g9: ''inject CLI flags on the Git node''s Push operation allowing an attacker to read arbitrary files''; CVE record CWE-88'
+    ground_truth_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-57g9-58c2-xjg3
+    fix: vector zero-click, auth post-auth for all; 44790 type info-disclosure/arg-injection
+    class: factual-error
+  - where: evidence[0]; evidence[1]
+    claim: n8n addresses five critical prototype pollution and injection flaws (CVE-2026-42231/42232/44791/44789/44790, all CVSS 9.4)
+    defect: Evidence[0] is not on the THN page; evidence[1] appends 'CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H = 9.4' to the GHSA sentence, a splice (the sentence ends with a period; the vector and score are elsewhere on the page)
+    ground_truth: 'THN: "Round off the list is a set of five critical vulnerabilities impacting n8n -"; GHSA-q5f4 sentence ends "...achieve remote code execution on the n8n host."'
+    ground_truth_url: https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html
+    fix: Use verbatim, contiguous quotes
+    class: factual-error
+  - where: body, Exploitation prerequisites and Hardening
+    claim: Upgrade is the only remediation; no workaround.
+    defect: GHSAs list temporary mitigations (limit workflow permissions, disable XML/HTTP Request/Git node via NODES_EXCLUDE)
+    ground_truth: 'GHSA-hqr4: ''Disable the XML node by adding n8n-nodes-base.xml to the NODES_EXCLUDE environment variable. These workarounds do not fully remediate the risk'''
+    ground_truth_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-hqr4-h3xv-9m3r
+    fix: State the vendor workarounds and that they are partial
+    class: factual-error
+  - where: body, Hardening
+    claim: Apply the vendor patch (n8n `1.123.32` / `2.17.4` / `2.18.1`) — that is the only remediation.
+    defect: Contradicts the entry's own 'Operators must apply the later branch train' and the GHSAs for -44789/-44790/-44791 (fixed in 1.123.43 / 2.20.7 / 2.22.1)
+    ground_truth: 'GHSA-c8xv/57g9/wrwr: ''The issue has been fixed in n8n versions 1.123.43, 2.20.7, and 2.22.1.'''
+    ground_truth_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-c8xv-5998-g76h
+    fix: Tell operators to apply 1.123.43 / 2.20.7 / 2.22.1 or later
+    class: factual-error
+  - where: body paragraph 2
+    claim: CVE-2026-44791 (GHSA-wrwr-h859-xh2r) is "XML Node Prototype Pollution Patch Bypass" — a regression / bypass of the initial xml2js fix
+    defect: 44791 bypasses the patch for GHSA-hqr4-h3xv-9m3r (CVE-2026-42232, XML node), not the xml2js webhook fix of CVE-2026-42231
+    ground_truth: 'GHSA-wrwr: "bypass the patch for GHSA-hqr4-h3xv-9m3r in the XML node"; THN: "A bypass for CVE-2026-42232"'
+    ground_truth_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-wrwr-h859-xh2r
+    fix: Say 'bypass of the CVE-2026-42232 XML-node fix'
+    class: factual-error
+  - where: headline; summary; body paragraph 1; 'Why this matters' section
+    claim: increasingly deployed by Swiss/EU public-sector teams as a low-code integration bus, by federal data offices for pipeline orchestration
+    defect: No source supports adoption by Swiss/EU agencies or federal data offices; 'fast-growing automation substrate inside agencies that have replaced bespoke ETL' and 'typically a federated SSO account' are likewise uncited; 'Expect downstream national-CERT advisories (ANSSI / BSI / NCSC-CH)' is speculation
+    ground_truth: GHSA-q5f4 and THN say nothing about public-sector use
+    ground_truth_url: https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html
+    fix: Remove or cite a source for the constituency exposure claims
+    class: factual-error
+  - where: body, ATT&CK / prerequisites
+    claim: webhook handler as the initial-access exposure for the prototype pollution
+    defect: The exploit requires an authenticated user with permission to create or modify workflows; 'commonly expose webhook endpoints to the public internet' and the `__proto__` / `constructor.prototype` payload tokens are uncited elaboration
+    ground_truth: 'GHSA-q5f4: "An authenticated user with permission to create or modify workflows could exploit this ... "'
+    ground_truth_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5
+    fix: Map initial access as valid account (T1078) and drop the uncited payload detail
+    class: imprecision
+  - where: body paragraph 2
+    claim: The root flaw, CVE-2026-42231
+    defect: Framed as the root of the cluster although the five CVEs are independent
+    ground_truth: GHSA titles show five separate flaws
+    ground_truth_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5
+    fix: Drop 'root flaw'
+    class: imprecision
+  - where: affected/fixed versions for -44789/-44790/-44791
+    claim: '`1.123.43` / `2.20.7` / `2.22.1`'
+    defect: CVE records give 2.21.1 for the 2.21 branch; GHSA says 2.22.1 (not surfaced)
+    ground_truth: CVE-2026-44790 record affected '>= 2.21.0, < 2.21.1'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-44790
+    fix: Verify on the release page; add Contradiction line
+    class: imprecision
+  - where: frontmatter classification / techniques[]
+    claim: (absent)
+    defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+    ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+    ground_truth_url: docs/pipeline.md
+    fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+    class: imprecision
+- entry: 2026-05-29/forticlient-ems-cve-2026-35616-actively-exploited-to-push-ek
+  verdict: factual-error
+  defects:
+  - where: frontmatter cves[].cvss; summary
+    claim: CVSS 9.1
+    defect: 9.1 is Fortinet's temporal score; the vendor base score is 9.8 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)
+    ground_truth: 'Fortinet PSIRT: ''CVSSv3 Score 9.8 CVSSv3 Temporal Score 9.1''; NVD (Fortinet CNA): 9.8 CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'
+    ground_truth_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-099
+    fix: cvss 9.8 (temporal 9.1)
+    class: imprecision
+  - where: body paragraph 1
+    claim: The vulnerable code path trusts the `X-SSL-CLIENT-VERIFY` HTTP header set by a fronting reverse proxy or load balancer instead of validating client-certificate state itself
+    defect: 'No fronting proxy is involved: EMS''s own Apache mod_ssl sets the trusted WSGI variables; the Django middleware also accepts user-supplied X-SSL-CLIENT-VERIFY / X-SSL-CLIENT-CERT headers and checks the chain by DN strings only'
+    ground_truth: 'Bishop Fox: "The Django authentication middleware accepts client certificate information from both trusted WSGI environment variables (set by Apache mod_ssl) and user-controllable HTTP request headers, and Apache was never configured to strip the user-controllable variants."'
+    ground_truth_url: https://bishopfox.com/blog/api-authentication-bypass-in-forticlient-ems-7-4-5-7-4-6-cve-2026-35616
+    fix: Describe the Django/Apache header-trust and DN-only chain validation per Bishop Fox
+    class: factual-error
+  - where: summary; body paragraph 1
+    claim: as a fake FortiEndpoint_Patch.exe signed under the legitimate fortitray.exe parent
+    defect: 'Nothing is described as signed; the payload is launched on VPN tunnel establishment via a Remote Access Profile on_connect script: fortitray.exe or ipsec.exe -> cmd.exe -> powershell.exe -> FortiEndpoint_Patch.exe'
+    ground_truth: 'AW: "fortitray.exe or ipsec.exe └── cmd.exe └── powershell.exe (download script) └── FortiEndpoint_Patch.exe (credential stealer)"'
+    ground_truth_url: https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/
+    fix: Replace 'signed under' with the process lineage
+    class: factual-error
+  - where: summary; body paragraph 1
+    claim: EKZ copies itself into Chromium/Gecko browser-profile directories ... to clear elevation-validation checks, then dumps encrypted credential and cookie stores via `nss3.dll`; managed endpoints need browser-profile-write hunts
+    defect: For Chromium EKZ copies itself into the browser's Application\ directory (install path) to pass Elevation Service path validation; nss3.dll is used for Firefox/Gecko stores only; the log goes to ProgramData; profile-directory write hunts would miss it
+    ground_truth: 'AW: "copies itself into the browser''s Application\ directory, and relaunches from that path to pass Chromium Elevation Service path validation"; "For Firefox and Gecko-family browsers, the stealer locates nss3.dll"'
+    ground_truth_url: https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/
+    fix: Hunt for executables created in browser Application\ directories and ProgramData staging
+    class: factual-error
+  - where: body, Why it matters to us
+    claim: FortiClient EMS is widely deployed across Swiss federal and cantonal network-security estates and across EU public-sector networks.
+    defect: No source supports deployment prevalence in Swiss federal/cantonal or EU public-sector estates
+    ground_truth: AW, Fortinet PSIRT and Bishop Fox say nothing about deployment
+    ground_truth_url: https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/
+    fix: Remove or cite
+    class: factual-error
+  - where: event_date
+    claim: 'event_date: 2026-04-06'
+    defect: event_date is the KEV listing date; the primary source (Arctic Wolf campaign report) is dated 2026-05-27, the entry's own subject
+    ground_truth: Arctic Wolf post date 2026-05-27
+    ground_truth_url: https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/
+    fix: event_date 2026-05-27
+    class: imprecision
+  - where: body paragraph 1; CISA KEV link
+    claim: '[CISA KEV since 2026-04-06](https://nvd.nist.gov/vuln/detail/CVE-2026-35616)'
+    defect: Cites a hard-blocked NVD per-CVE page for the KEV date and the 9.1 score; NVD shows 9.8. KEV date itself is correct
+    ground_truth: 'KEV: CVE-2026-35616 dateAdded 2026-04-06'
+    ground_truth_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    fix: Cite the KEV JSON/ Fortinet PSIRT
+    class: imprecision
+  - where: body; summary
+    claim: Patch is FortiClient EMS 7.4.7
+    defect: Fortinet also published hotfixes for 7.4.5 and 7.4.6 that are 'sufficient to prevent it entirely' until 7.4.7
+    ground_truth: 'PSIRT: "urges vulnerable customers to install the hotfix for FortiClient EMS 7.4.5 and 7.4.6 ... In the meantime the hotfix above is sufficient"'
+    ground_truth_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-099
+    fix: Mention the hotfix
+    class: imprecision
+  - where: evidence[0]
+    claim: Arctic Wolf Labs published technical evidence on 2026-05-27 of an in-the-wild campaign abusing CVE-2026-35616
+    defect: evidence is the entry's own sentence ('ctipilot v2 brief (migrated)'), not a page passage
+    ground_truth: AW page does not contain this sentence
+    ground_truth_url: https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/
+    fix: Replace with a verbatim AW quote
+    class: imprecision
+  - where: frontmatter classification / techniques[]
+    claim: (absent)
+    defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+    ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+    ground_truth_url: docs/pipeline.md
+    fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+    class: imprecision
+- entry: 2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain
+  verdict: factual-error
+  defects:
+  - where: body, Vulnerable component
+    claim: CVSS:3.1 base 9.1 (`AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N`)
+    defect: 'Wrong base score and vector: vendor base is 9.8 with A:H; 9.1 is the temporal score; the vector with A:N is in no source'
+    ground_truth: 'NVD (Fortinet CNA): baseScore 9.8, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H; PSIRT ''CVSSv3 Score 9.8 ... Temporal Score 9.1'''
+    ground_truth_url: https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-35616
+    fix: CVSS 3.1 base 9.8 (temporal 9.1)
+    class: factual-error
+  - where: body, Background
+    claim: (separate product, same `X-Forwarded-*` trust pattern)
+    defect: CVE-2026-45659 is a SharePoint deserialization RCE (CWE-502), not a header-trust flaw
+    ground_truth: 'MSRC: "Microsoft SharePoint Remote Code Execution Vulnerability ... Deserialization of untrusted data in Microsoft Office SharePoint allows an authorized attacker to execute code over a network."'
+    ground_truth_url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45659
+    fix: Delete the comparison
+    class: factual-error
+  - where: body, Vulnerable component and Detection concepts
+    claim: The intended deployment model is that a fronting reverse proxy or load balancer performs the mutual-TLS handshake and stamps that header into the upstream request before forwarding to EMS ... sends exactly that header with value `SUCCESS` as the entire exploit payload
+    defect: 'No fronting proxy: Apache mod_ssl on EMS sets trusted variables and the Django middleware also trusts user-supplied headers; the Nuclei template is a detection check, and the full bypass also needs a forged chain in X-SSL-CLIENT-CERT. Detection bullets built on ''EMS logs X-SSL-CLIENT-VERIFY with peer-certificate fingerprint'' and ''reverse proxy in front of EMS'' are unsupported; AW''s EMS log signals are ''Certificate not found in request header.'' then ''Certificate user: fortinet-ca2 ... successfully updated'''
+    ground_truth: 'Bishop Fox: "An attacker who sends both X-SSL-CLIENT-VERIFY: SUCCESS and a forged certificate chain in X-SSL-CLIENT-CERT passes the authentication gate"; Nuclei: "Detects whether Fortinet hotfix FG-IR-26-099 ... is missing by comparing behavioral responses"'
+    ground_truth_url: https://bishopfox.com/blog/api-authentication-bypass-in-forticlient-ems-7-4-5-7-4-6-cve-2026-35616
+    fix: Rewrite mechanism and EMS-side detections per Bishop Fox / AW
+    class: factual-error
+  - where: body, Exploitation chain; Detection concepts
+    claim: EKZ copies itself into per-browser profile directories under each user's `AppData\Local\Google\Chrome\User Data\<profile>`, `AppData\Roaming\Mozilla\Firefox\Profiles\<profile>`
+    defect: 'Chromium: self-copy goes to the browser''s Application\ directory; Gecko: no self-copy, loads nss3.dll; the Sysmon EID 11 profile-directory detection would miss the real behaviour'
+    ground_truth: 'AW: "copies itself into the browser''s Application\ directory, and relaunches from that path"'
+    ground_truth_url: https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/
+    fix: Correct directory and detection
+    class: factual-error
+  - where: body, Exploitation chain; Detection concepts
+    claim: push an *Update task* to managed FortiClient endpoints — the malicious PowerShell payload is delivered through the EMS update channel under the trusted `fortitray.exe` parent process and is therefore signed in the operational sense; `fortitray.exe` spawning PowerShell with `-EncodedCommand` / `-enc`
+    defect: Delivery is a Remote Access Profile on_connect script on VPN tunnel establishment (fortitray.exe/ipsec.exe -> cmd.exe -> base64 PowerShell); no Update task or update channel; PowerShell's parent is cmd.exe; '-enc' is not stated; 'unsigned binary with --silent install flags' is invented
+    ground_truth: 'AW: "users can define scripts that automatically run on those endpoint devices upon establishing a tunnel using the on_connect and script directives in the XML-based Remote Access Profile"; "fortitray.exe was observed launching .cmd script files via cmd.exe ... the cmd script launched a malicious base64-encoded PowerShell script"'
+    ground_truth_url: https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/
+    fix: Describe the on_connect path and the cmd.exe -> powershell.exe lineage
+    class: factual-error
+  - where: evidence[0]; evidence[1]
+    claim: Arctic Wolf has observed threat actors actively exploiting CVE-2026-35616 in the FortiClient EMS management API to deliver a novel infostealer payload
+    defect: Neither quote is on the cited Arctic Wolf pages (paraphrases of the AW summary)
+    ground_truth: 'AW page: ''Arctic Wolf observed evidence of CVE-2026-35616 being exploited against FortiClient EMS deployments''; ''Threat actors disguised the credential stealer payload as a Fortinet endpoint update'''
+    ground_truth_url: https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/
+    fix: Use verbatim AW sentences
+    class: factual-error
+  - where: body, Background
+    claim: being the first public exploitation-chain narrative tying the bypass to a downstream credential-theft payload
+    defect: '''First'' and ''vendor coverage at disclosure focused on the auth-bypass primitive'' are not stated by Arctic Wolf or Fortinet'
+    ground_truth: AW page makes no priority claim
+    ground_truth_url: https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/
+    fix: Delete 'first public'
+    class: imprecision
+  - where: body, Vulnerable component
+    claim: EPSS 43.2 % at the 97.6th percentile.
+    defect: Point-in-time figure uncited; EPSS was 0.432 / 97.6th on 2026-05-28 but is 0.091 / 95.3rd on 2026-10-16
+    ground_truth: 'FIRST EPSS API: 2026-05-28 epss 0.43209 percentile 0.97559; 2026-10-16 epss 0.09098 percentile 0.95252'
+    ground_truth_url: https://api.first.org/data/v1/epss?cve=CVE-2026-35616
+    fix: Date-stamp or drop EPSS
+    class: imprecision
+  - where: body, Exploitation chain; sources
+    claim: Compromise Software Supply Chain — EMS as distribution vector ... System Binary Proxy Execution via the trusted FortiTray binary
+    defect: ATT&CK mapping is inferential (pushing scripts via the management server fits T1072 Software Deployment Tools); the KEV and NVD links are hard-blocked generic/per-CVE pages
+    ground_truth: 'attack/enterprise-attack.json: T1072 Software Deployment Tools active'
+    ground_truth_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    fix: Map T1072; cite KEV JSON / PSIRT
+    class: imprecision
+  - where: body, Exploitation prerequisites
+    claim: AD-joined EMS, MFA-protected EMS console accounts, and other authentication controls applied to interactive logons are **not** in the request path the spoofed header bypasses.
+    defect: Uncited analytic claim
+    ground_truth: Bishop Fox/AW do not discuss these controls
+    ground_truth_url: https://bishopfox.com/blog/api-authentication-bypass-in-forticlient-ems-7-4-5-7-4-6-cve-2026-35616
+    fix: Cite or delete
+    class: imprecision
+  - where: frontmatter classification / techniques[]
+    claim: (absent)
+    defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+    ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+    ground_truth_url: docs/pipeline.md
+    fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+    class: imprecision
+- entry: 2026-06-13/cve-2026-48558-simplehelp-rmm-unauthenticated-oidc-authentic
+  verdict: factual-error
+  defects:
+  - where: summary; actions[0]; body
+    claim: bypasses IdP MFA
+    defect: 'Wrong MFA claim: Horizon3 says the SimpleHelp MFA requirement is bypassed because a technician can self-register an MFA method on first login; nothing says IdP-enforced MFA is bypassed'
+    ground_truth: 'Horizon3: "Even when the SimpleHelp server is configured to enforce MFA for technicians, this issue allows the attacker to bypass this mechanism because on first login, technicians can self-register their own MFA method."'
+    ground_truth_url: https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/
+    fix: Say 'bypasses SimpleHelp-enforced MFA via first-login MFA self-registration'
+    class: factual-error
+  - where: body paragraph 1
+    claim: fails to verify the cryptographic signature of OIDC identity tokens presented at login when OIDC authentication is enabled ([Horizon3.ai, 2026-06-12]
+    defect: Horizon3 withholds technical detail and does not mention signatures; the signature-verification flaw is stated by the CVE record (CWE-347) and KEV. 'forged, unsigned token' is also not what the CVE says ('accepted without verifying their cryptographic signature')
+    ground_truth: 'Horizon3: "At this time, we will not be releasing any more technical details surrounding the vulnerability"; CVE record: "identity tokens submitted during login are accepted without verifying their cryptographic signature"'
+    ground_truth_url: https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/
+    fix: Cite the CVE record/KEV for the signature clause
+    class: imprecision
+  - where: cves[CVE-2026-48558]; tags
+    claim: poc-public
+    defect: poc-public is unsupported by the cited sources (Horizon3 withholds details); the CVE record (CNA VulnCheck, published 2026-06-12) already carried CVSS 3.1 10.0 / 4.0 9.5; the finding is now KEV-listed (2026-06-29) and exploited (Blackpoint/BleepingComputer), so the table's 'KEV No / Exploited No (research PoC)' is superseded
+    ground_truth: 'CVE record metrics: cvssV3_1 10 CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H; cvssV4_0 9.5; KEV dateAdded 2026-06-29'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-48558
+    fix: cvss 10.0 (3.1), add exploited + cisa-kev, drop poc-public unless a primary shows a PoC
+    class: imprecision
+  - where: body paragraph 1
+    claim: SimpleHelp patched it in versions 5.5.16 and the 6.0 RC2 prerelease (Security Notice 2026-05); servers running 5.5.15 and earlier are affected ([SimpleHelp, 2026-06-12]
+    defect: 'Date is wrong: the vendor notice is the May 2026 notice, 5.5.16 is build 20260526, and the page does not name the CVE or OIDC; the vendor''s guide says only some 6.0 pre-releases are affected'
+    ground_truth: 'SimpleHelp release news: "5.5.16 20260526-203544 ... This release closes a critical vulnerability"; guide: "Some 6.0 beta and release candidate builds are affected"'
+    ground_truth_url: https://simple-help.com/security/simplehelp-security-update-2026-05
+    fix: Date the fix 2026-05-26 and cite the vendor guide for scope
+    class: imprecision
+  - where: frontmatter entities; CVE Summary Table
+    claim: actor:shinyhunters ... CVE-2026-35273 | Oracle PeopleSoft PeopleTools (PSEMHUB)
+    defect: The actor entity and the PeopleSoft row belong to a different finding (Mandiant ties UNC6240/ShinyHunters to CVE-2026-35273); no source links ShinyHunters to SimpleHelp
+    ground_truth: 'GTIG: ''attributed to UNC6240 (ShinyHunters) targeting Oracle PeopleSoft'''
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-targets-education-sector-oracle-exploit/
+    fix: Remove the entity link and the PeopleSoft row
+    class: factual-error
+  - where: body, Detection; actions[0]
+    claim: review SimpleHelp access logs for successful Technician authentications preceded by malformed/no-signature OIDC token exchanges
+    defect: No source says SimpleHelp logs expose token signature state; Horizon3's IOCs are unfamiliar technician names/emails and server.log lines ('Registering technician login ...', 'Configuration save requested (Forged Attacker ...)'). 'SAML' is in no source; vendor advice is IP restrictions and OIDC avoidance. Action text is truncated '(.'
+    ground_truth: 'Horizon3: "Review the listed technicians for any unfamiliar technician names or email addresses."'
+    ground_truth_url: https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/
+    fix: Use Horizon3's IOCs and the vendor's login-IP restriction
+    class: imprecision
+  - where: body paragraph 1; ATT&CK
+    claim: SimpleHelp, a self-hosted remote-support/RMM platform common in European MSP estates ... T1078.004 (Valid Accounts)
+    defect: '''Common in European MSP estates'' is uncited; T1078.004 is ''Cloud Accounts'', not a fit for a self-hosted RMM technician account'
+    ground_truth: 'attack/enterprise-attack.json: T1078.004 Cloud Accounts'
+    ground_truth_url: https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-simplehelp-flaw-deploy-new-djinn-infostealer-taskweaver-malware/
+    fix: Use T1078 and drop the European claim
+    class: imprecision
+  - where: frontmatter classification / techniques[]
+    claim: (absent)
+    defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+    ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+    ground_truth_url: docs/pipeline.md
+    fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+    class: imprecision
+- entry: 2026-06-30/cve-2026-48558-simplehelp-rmm-oidc-sso-authentication-bypass
+  verdict: factual-error
+  defects:
+  - where: body; immediate_action
+    claim: a "TaskWeaver" loader persisting through scheduled tasks (`schtasks.exe`) / launchd plists
+    defect: Neither the cited BleepingComputer article nor Blackpoint's report describes scheduled-task or launchd persistence; TaskWeaver is a Node.js loader (jquery.js run via node.exe) that fetches Djinn Stealer
+    ground_truth: 'Blackpoint: "TaskWeaver is a heavily obfuscated Node.js loader, delivered as jquery.js and executed through node.exe"'
+    ground_truth_url: https://blackpointcyber.com/blog/a-djinn-in-the-machine-taskweavers-node-js-intrusion-chain/
+    fix: Delete the persistence claim
+    class: factual-error
+  - where: evidence[0]; evidence[1]
+    claim: nearly 14,000 SimpleHelp servers exposed, with roughly 7.2% configured to use the vulnerable OIDC authentication method
+    defect: 'Not a contiguous passage: Horizon3 says ''that number has increased to nearly 14,000'' and, separately, ''A random sampling of these servers indicated that roughly 7.2% of them were configured to use the vulnerable OIDC authentication method''. evidence[0] (a headline) reads ''Critical SimpleHelp flaw exploited to deploy new stealer malware'' on the live page'
+    ground_truth: 'Horizon3: "A random sampling of these servers indicated that roughly 7.2% of them were configured to use the vulnerable OIDC authentication method."'
+    ground_truth_url: https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/
+    fix: Quote the two Horizon3 sentences verbatim; update the BC headline
+    class: factual-error
+  - where: summary; body
+    claim: Horizon3.ai measured ~14,000 internet-exposed instances with ~1,000 carrying a vulnerable OIDC configuration
+    defect: ~1,000 is an extrapolation of a 7.2% random sample (BleepingComputer's 'around 1,000'), not a measurement
+    ground_truth: 'Horizon3: "A random sampling of these servers indicated that roughly 7.2%"'
+    ground_truth_url: https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/
+    fix: Say 'roughly 7.2% of a random sample (about 1,000 of nearly 14,000)'
+    class: imprecision
+  - where: body paragraph 1
+    claim: The OIDC callback handler accepts an identity token without verifying its cryptographic signature (CWE-347) ... ([Horizon3.ai, 2026-06-12]
+    defect: The signature/CWE-347 clause is on the CVE record and KEV, not on the cited Horizon3 page
+    ground_truth: 'CVE record: "identity tokens submitted during login are accepted without verifying their cryptographic signature"; CWE-347'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-48558
+    fix: Cite the CVE record / KEV
+    class: imprecision
+  - where: body, Hunt
+    claim: '`SimpleHelpServer.exe`/`SimpleHelp.exe` spawning `powershell.exe`/`cmd.exe`/`wscript.exe` (Sysmon EID 1, parent-image filter)'
+    defect: 'Parent/child process names are uncited and omit what was observed: the RMM session launched node.exe to run TaskWeaver'
+    ground_truth: 'Blackpoint: "Alert when RMM software launches Node.js, PowerShell, Python, Deno, or Bun"'
+    ground_truth_url: https://blackpointcyber.com/blog/a-djinn-in-the-machine-taskweavers-node-js-intrusion-chain/
+    fix: Use Blackpoint's hunt guidance
+    class: imprecision
+  - where: cves[].cvss; summary; immediate_action
+    claim: CVSS 10.0
+    defect: 10.0 is the CVSS v3.1 score from the CNA (VulnCheck); the CVSS 4.0 score is 9.5; version unlabeled
+    ground_truth: 'CVE record: cvssV3_1 10; cvssV4_0 9.5'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-48558
+    fix: 'Label ''CVSS 3.1 10.0 (4.0: 9.5)'''
+    class: imprecision
+  - where: frontmatter classification / techniques[]
+    claim: (absent)
+    defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+    ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+    ground_truth_url: docs/pipeline.md
+    fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+    class: imprecision
+- entry: 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+  verdict: factual-error
+  defects:
+  - where: title; headline; 'Why the chain matters more than either CVE'; 'The two primitives'
+    claim: 'CVE-2026-20190 removes that barrier: it hands an unauthenticated attacker the hashed admin credentials, which can then be cracked offline ... or ... replayed'
+    defect: 'The chain is the entry''s own construction: Cisco states the two vulnerabilities are independent, says only ''hashed credentials'', and CVE-2026-20190 does not affect ISE 3.3 and earlier where CVE-2026-20181 does'
+    ground_truth: 'Cisco: "The vulnerabilities are not dependent on one another. Exploitation of one of the vulnerabilities is not required to exploit the other vulnerability."'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    fix: Describe two independent flaws; if a chain is discussed, label it analyst speculation
+    class: factual-error
+  - where: body, The two primitives
+    claim: explicitly including hashed administrator credentials
+    defect: Cisco says 'hashed credentials that could be used in future attacks' via 'crafted traffic'; 'administrator', 'HTTP' and 'specific ISE/ISE-PIC APIs' are not stated, and the administrator link is what the chain relies on
+    ground_truth: 'Cisco: "gain access to sensitive information, including hashed credentials that could be used in future attacks"'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    fix: Use Cisco's wording
+    class: factual-error
+  - where: cves[CVE-2026-20181], cves[CVE-2026-20190]
+    claim: 'auth: pre-auth; type: rce'
+    defect: CVE-2026-20181 needs valid administrative credentials (PR:H); CVE-2026-20190 is an information-disclosure flaw (CWE-285)
+    ground_truth: 'Cisco: "To exploit this vulnerability, the attacker must have valid administrative credentials."; "CVE-2026-20190: Cisco ISE and ISE-PIC Information Disclosure Vulnerability"'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    fix: 20181 auth admin-required; 20190 type info-disclosure
+    class: factual-error
+  - where: body, Exposure and prerequisites
+    claim: 'ISE 3.5 is the gap: Patch 3 closes only the unauthenticated read (CVE-2026-20190), and the full fix (Patch 4) is not scheduled until August 2026 — so 3.5 operators carry the authenticated-RCE half for roughly two months'
+    defect: Cisco's table gives '3.5 Patch 4 (Aug 2026) or hot patch' for CVE-2026-20181 (hot patch for 3.5 Patch 3 on request via TAC); SecurityWeek (cited) says a 3.5 hotfix is available. The entry also omits ISE 3.1 and 3.2, which are affected by 20181 (Patch 12 / Patch 11, Sep 2026 per advisory v1.2); 20190 affects only 3.4/3.5
+    ground_truth: 'SecurityWeek: "A hotfix for ISE version 3.5 is also available and will be included in version 3.5 Patch 4 in August."; Cisco: "A hot patch for Cisco ISE Release 3.5 Patch 3 is available upon request."'
+    ground_truth_url: https://www.securityweek.com/critical-command-execution-vulnerability-patched-in-cisco-ise/
+    fix: State the 3.5 hot patch, add 3.1/3.2 fixes, and that 20190 is 3.4/3.5 only
+    class: factual-error
+  - where: body, The two primitives
+    claim: CVE-2026-20181 (CVSS 9.1, path traversal / CWE-22) ... escapes the intended directory and executes arbitrary operating-system commands
+    defect: SecurityWeek (cited) says improper input validation; Cisco shows CWE-22 as the weakness label but describes command execution via insufficient validation; 'escapes the intended directory' is the entry's inference
+    ground_truth: 'SecurityWeek: "the issue exists because user-supplied input is improperly validated, allowing an attacker to send a crafted HTTP request and obtain user-level access to the underlying operating system"'
+    ground_truth_url: https://www.securityweek.com/critical-command-execution-vulnerability-patched-in-cisco-ise/
+    fix: Drop the directory-escape mechanism
+    class: imprecision
+  - where: summary; body paragraph 1
+    claim: the policy brain of network access control in most large Swiss and European public-sector estates
+    defect: '''Most'' is an unsourced quantifier about Swiss/European public-sector deployments'
+    ground_truth: no cited page discusses deployment prevalence
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    fix: Remove or cite
+    class: imprecision
+  - where: sources[2]
+    claim: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1989
+    defect: (low confidence) The cited CERT-Bund WID-SEC-2026-1989 page is a JavaScript shell no transport could render; nothing in the entry rests on it, but it is not verifiable
+    ground_truth: fetch returned only the WID portal Angular shell
+    ground_truth_url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1989
+    fix: Drop or replace with a readable BSI/CERT-Bund record
+    class: imprecision
+  - where: frontmatter classification / techniques[]
+    claim: (absent)
+    defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+    ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+    ground_truth_url: docs/pipeline.md
+    fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+    class: imprecision
+- entry: 2026-06-19/cve-2026-20181-cve-2026-20190-cisco-identity-services-engine
+  verdict: factual-error
+  defects:
+  - where: title; headline; summary
+    claim: unauthenticated credential read chaining to authenticated root command execution
+    defect: 'Chain asserted as fact: Cisco says the two vulnerabilities are not dependent on one another; the summary also says the attacker ''reuse[s] them to reach'' 20181'
+    ground_truth: 'Cisco: "Exploitation of one of the vulnerabilities is not required to exploit the other vulnerability."'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    fix: Describe as two independent flaws
+    class: factual-error
+  - where: body paragraph 1
+    claim: including hashed administrator credentials — via crafted HTTP requests to specific APIs
+    defect: Cisco says 'hashed credentials' via 'crafted traffic'; 'administrator', 'HTTP requests' and 'specific APIs' are not in the advisory
+    ground_truth: 'Cisco: "view sensitive information on an affected device ... including hashed credentials that could be used in future attacks"'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    fix: Use Cisco's wording
+    class: factual-error
+  - where: cves[CVE-2026-20181], cves[CVE-2026-20190]
+    claim: 'auth: pre-auth; type: rce'
+    defect: 20181 requires valid administrative credentials; 20190 is information disclosure
+    ground_truth: 'Cisco: "the attacker must have valid administrative credentials"; "Information Disclosure Vulnerability"'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    fix: auth admin-required; type info-disclosure
+    class: factual-error
+  - where: summary; body; actions[0]
+    claim: ISE 3.5's full fix slips to August; with 3.5 Patch 3 closing only CVE-2026-20190 in the interim
+    defect: A hot patch for 3.5 Patch 3 fixing 20181 is available on request; the action tells 3.5 users to wait for Patch 4; 3.1/3.2 (affected by 20181, fixes Sep 2026) are omitted
+    ground_truth: 'Cisco table: "3.5 ... 3.5 Patch 4 (Aug 2026) or hot patch"; footnote "A hot patch for Cisco ISE Release 3.5 Patch 3 is available upon request."'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    fix: State the hot patch and the 3.1/3.2 fixes
+    class: factual-error
+  - where: summary
+    claim: 'A dense critical-patch cycle landed in widely-deployed CH/EU public-sector infrastructure within 36 h: Cisco ISE, pgAdmin 4, NGINX, and Drupal core ... No in-the-wild exploitation is reported for any of these four advisories.'
+    defect: pgAdmin 4, NGINX and Drupal are not discussed or cited anywhere in the entry or its sources; the 36 h window and the no-exploitation statement for them are unsupported
+    ground_truth: Cited sources (Cisco, SecurityWeek, CERT-Bund WID-SEC-2026-1989) cover only Cisco ISE
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    fix: Drop the other three products and the claim
+    class: imprecision
+  - where: sources[2]
+    claim: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1989
+    defect: (low confidence) The cited CERT-Bund WID-SEC-2026-1989 page is a JavaScript shell no transport could render; nothing in the entry rests on it, but it is not verifiable
+    ground_truth: fetch returned only the WID portal Angular shell
+    ground_truth_url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1989
+    fix: Drop or replace with a readable BSI/CERT-Bund record
+    class: imprecision
+  - where: frontmatter classification / techniques[]
+    claim: (absent)
+    defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+    ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+    ground_truth_url: docs/pipeline.md
+    fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+    class: imprecision
+- entry: 2026-07-21/hugging-face-autonomous-ai-agent-production-breach
+  scope: lead-only
+  verdict: clean
+  defects: []
+  lead:
+    quote: To gain Internet access, the models identified and exploited a previously unknown zero-day vulnerability in Artifactory, a package registry cache proxy.
+    result: verbatim (extraction artefact, not a real mismatch)
+    page_actual_wording: The ExploitGym evaluation environment did not provide the models with direct Internet access. To gain Internet access, the models identified and exploited a previously unknown zero-day vulnerability in [Artifactory⁠(opens in a new window)](https://jfrog.com/blog/jfrog-and-openai-collaboration-on-zero-day-security-findings/), a package registry cache proxy.
+    cause: The reader/markdown rendering turns the hyperlink 'Artifactory' into '[Artifactory<U+2060>(opens in a new window)](url)' (hidden accessibility label plus a word-joiner), so the rendered visible sentence 'zero-day vulnerability in Artifactory, a package registry cache proxy.' is not contiguous in the extracted text. The sentence is only on the first page (hugging-face-model-evaluation-security-incident), under 'Update on July 28, 2026'; the page carries later banners (July 29, August 26) so it has been edited since 2026-07-21, but the entry's 2026-07-30 update post-dates the July 28 text. The second OpenAI page describes the same access as an SSRF through Artifactory, not as a zero-day.
+    source_url: https://openai.com/index/hugging-face-model-evaluation-security-incident/
+- entry: 2026-08-29/exchange-mrsproxy-auth-bypass-cve-2026-62911-poc
+  scope: lead-only
+  verdict: clean
+  defects: []
+  lead:
+    quote: Für die kritische Schwachstelle CVE-2026-62911 in Microsoft Exchange wurde ein PoC-Exploit veröffentlicht ... / Aktuell sind jedoch noch rund 85% der on-premises Exchange-Server in Deutschland für diese ...
+    result: 'verbatim (both original: strings); the pre-pass missed them because the Mastodon page is a JS shell whose post text is only in the og:description/description meta tags'
+    page_actual_wording: 🚨 Für die kritische Schwachstelle CVE-2026-62911 in Microsoft Exchange wurde ein PoC-Exploit veröffentlicht, der die vollständige Übernahme von Systemen aus der Ferne ohne Authentifizierung ermöglicht. Der Hersteller veröffentlichte am 11.08. einen Patch. Aktuell sind jedoch noch rund 85% der on-premises Exchange-Server in Deutschland für diese Schwachstelle verwundbar. CERT-Bund benachrichtigt deutsche Netzbetreiber seit dem 14.08. regelmäßig zu noch verwundbaren Systemen in ihren Netzen.
+    cause: 'Text sits in <meta name="description"> / og:description of https://social.bund.de/@certbund/117171896801475447 (og:published_time 2026-08-28T07:14:17Z); a body-text search of the extracted page finds nothing. Re-fetched live today: unchanged. The English translations in quote: are faithful to the original: strings.'
+    source_url: https://social.bund.de/@certbund/117171896801475447
+- entry: 2026-09-03/kimsuky-seafood-invoice-lnk-backblaze-b2-c2
+  scope: lead-only
+  verdict: clean
+  defects: []
+  lead:
+    quote: it is configured to execute ping_<FIRST 4 digits of UUID>.Js approximately every 14 minutes via wscript.Exe
+    result: verbatim (markdown escaping artefact)
+    page_actual_wording: The task name is formatted as MicrosoftOffice2016\_<FIRST 4 digits of UUID>, and it is configured to execute ping\_<FIRST 4 digits of UUID>.Js approximately every 14 minutes via wscript.Exe.
+    cause: The reader's markdown escapes the underscore as 'ping\_' (a backslash that is not on the rendered page); the rendered words equal the entry's quote. Page published 2026-09-01T15:00Z, text unchanged.
+    source_url: https://asec.ahnlab.com/en/95217/
+- entry: 2026-09-12/japan-digital-agency-gss-vpn-breach-maintenance-account
+  scope: lead-only
+  verdict: imprecision
+  defects:
+  - where: sources[] Jiji Press (via Nippon.com) URL
+    claim: https://www.nippon.com/en/news/yjj2026091100453/
+    defect: Both Jiji quotes are verbatim, but the cited nippon.com article now returns HTTP 404 (the pre-pass cached only the site navigation shell), so the evidence can no longer be re-verified from the cited URL
+    ground_truth: 'Direct GET and WebFetch: HTTP 404; the quotes are verbatim in the Wayback snapshot of the same URL (title ''Personal Info Possibly Compromised at Japan''s Digital Agency'', published 2026-09-11T19:06+0900)'
+    ground_truth_url: https://web.archive.org/web/2026/https://www.nippon.com/en/news/yjj2026091100453/
+    fix: Add the archive URL or a Digital Agency/other readable primary as a second source
+    class: imprecision
+  lead:
+    quote: The agency said it detected suspicious access from the account of a system maintenance administrator on June 25. ... / "We take it seriously that the incident occurred despite our operations under multi-layered security measures and a 24-hour-a-day, 365-day-a-year surveillance system," Chief Cabinet Secretary Minoru Kihara said at a press conference
+    result: verbatim on the archived page; live page removed (404)
+    page_actual_wording: The agency said it detected suspicious access from the account of a system maintenance administrator on June 25. It then began investigating the incident and found on July 9 that an external third party had repeated unauthorized access since around late May. / "We take it seriously that the incident occurred despite our operations under multi-layered security measures and a 24-hour-a-day, 365-day-a-year surveillance system," Chief Cabinet Secretary Minoru Kihara said at a press conference, adding that the agency would work to prevent a recurrence.
+    cause: The cached body is the nippon.com navigation shell only; the article has since been taken down (404, soft-404 serving the homepage). Page was not edited; it was removed.
+    source_url: https://web.archive.org/web/2026/https://www.nippon.com/en/news/yjj2026091100453/
+groups:
+- group: 1
+  members:
+  - 2026-05-11/cve-2026-6722-php-soap-extension-use-after-free-in-soap-glob
+  - 2026-05-11/cve-2026-6722-php-soap-use-after-free-in-soap-global-ref-map
+  same_finding: true
+  survivor: 2026-05-11/cve-2026-6722-php-soap-extension-use-after-free-in-soap-glob
+  current_state: 'PHP ext-soap, three flaws fixed together on 2026-05-07. CVE-2026-6722: use-after-free (CWE-416) of a stale SOAP_GLOBAL(ref_map) pointer when an apache:Map has duplicate keys; GHSA-85c2-q967-79q5 (vendor, published 2026-05-07) severity High; CVE record (CNA PHP Group, updated 2026-07-23) CVSS 4.0 9.5 CRITICAL (CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H); advisory says attacker control of the freed memory leads to RCE [https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5, https://cveawg.mitre.org/api/cve/CVE-2026-6722]. CVE-2026-7261: UAF in SoapServer SOAP_PERSISTENCE_SESSION handling when a header handler returns false or throws; GHSA-m33r-qmcv-p97q Moderate 6.3, CVE record CVSS 4.0 6.3 MEDIUM; ''unlikely that the attacker will be able to control the freed memory segment, though it is not impossible'' [https://github.com/php/php-src/security/advisories/GHSA-m33r-qmcv-p97q, https://cveawg.mitre.org/api/cve/CVE-2026-7261]. CVE-2026-7262: NULL dereference in the apache:Map decoder with a missing <value>, reachable when the SOAP server has a typemap configured; segfault/DoS only; the CVE record (updated 2026-07-15) scores CVSS 4.0 2.9 LOW (E:P) while the GHSA page still shows Moderate 6.3 [https://github.com/php/php-src/security/advisories/GHSA-hmxp-6pc4-f3vv, https://cveawg.mitre.org/api/cve/CVE-2026-7262]. Affected/fixed per branch (all three CVEs): PHP 8.2.* below 8.2.31, 8.3.* below 8.3.31, 8.4.* below 8.4.21, 8.5.* below 8.5.6; fixed 8.2.31 / 8.3.31 / 8.4.21 / 8.5.6, each released 07 May 2026 [https://www.php.net/ChangeLog-8.php]; 8.0/8.1 not listed (end of life). Exploitation: not in CISA KEV (catalogue 2026.10.16); no in-the-wild report found; GHSA-85c2 embeds a trigger reproducer and the fix commit adds a regression test [https://github.com/php/php-src/commit/8f228a35cb].'
+  facts_only_in_duplicates:
+  - fact: Fix is Z_TRY_ADDREF_P(data) before zend_hash_index_update in soap_add_xml_ref() plus ZVAL_PTR_DTOR on the ref_map hash (duplicate 1b)
+    entry: 2026-05-11/cve-2026-6722-php-soap-use-after-free-in-soap-global-ref-map
+    verified: true
+    source_url: https://github.com/php/php-src/commit/8f228a35cb
+    passage: "+\t\tZ_TRY_ADDREF_P(data); ... zend_hash_init(SOAP_GLOBAL(ref_map), 0, NULL, ZVAL_PTR_DTOR, 0);"
+  - fact: CVE-2026-7261 needs a SoapServer using SOAP_PERSISTENCE_SESSION (less common) (1b)
+    entry: 2026-05-11/cve-2026-6722-php-soap-use-after-free-in-soap-global-ref-map
+    verified: true
+    source_url: https://github.com/php/php-src/security/advisories/GHSA-m33r-qmcv-p97q
+    passage: SOAP_PERSISTENCE_SESSION allows to persist the SOAP handler object between requests using the session storage.
+  - fact: CVE-2026-7262 reaches a NULL dereference rather than a UAF (1b)
+    entry: 2026-05-11/cve-2026-6722-php-soap-use-after-free-in-soap-global-ref-map
+    verified: true
+    source_url: https://github.com/php/php-src/security/advisories/GHSA-hmxp-6pc4-f3vv
+    passage: the process will segfault with a NULL pointer dereference violation. Under the described circumstances, DoS becomes trivial
+  - fact: ATT&CK T1190 initial access via SOAP POST (1b)
+    entry: 2026-05-11/cve-2026-6722-php-soap-use-after-free-in-soap-global-ref-map
+    verified: true
+    source_url: https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5
+    passage: leading to Remote Code Execution (SoapServer::handle on attacker envelope)
+  - fact: ATT&CK T1059.004 / T1505.003 post-exploitation shell / web shell 'observed in prior PHP RCE incidents' (1b)
+    entry: 2026-05-11/cve-2026-6722-php-soap-use-after-free-in-soap-global-ref-map
+    verified: false
+    source_url: https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5
+    passage: advisory ends at 'leading to Remote Code Execution'; no post-exploitation behaviour is described
+  - fact: Affected versions 'PHP 8.2.0 through 8.5.5' (1a; same wording in both table rows)
+    entry: 2026-05-11/cve-2026-6722-php-soap-extension-use-after-free-in-soap-glob
+    verified: false
+    source_url: https://cveawg.mitre.org/api/cve/CVE-2026-6722
+    passage: affected 8.2.* lessThan 8.2.31; 8.3.* lessThan 8.3.31; 8.4.* lessThan 8.4.21; 8.5.* lessThan 8.5.6
+  - fact: 'Detection concepts: duplicate-key apache:Map WAF rule, php-fpm child-process hunting, SIGSEGV monitoring; PHP notice-log signature (1b)'
+    entry: 2026-05-11/cve-2026-6722-php-soap-use-after-free-in-soap-global-ref-map
+    verified: false
+    source_url: https://github.com/php/php-src/security/advisories/GHSA-hmxp-6pc4-f3vv
+    passage: 'analyst guidance derived from the public envelope; the ''Notice: Trying to access array offset on null'' failed-exploit signal has no source'
+  - fact: '''No public proof-of-concept has been released'' (1a, twice)'
+    entry: 2026-05-11/cve-2026-6722-php-soap-extension-use-after-free-in-soap-glob
+    verified: false
+    source_url: https://github.com/php/php-src/security/advisories/GHSA-85c2-q967-79q5
+    passage: GHSA-85c2 contains a full Handler/SoapServer reproducer; fix commit adds ext/soap/tests/GHSA-85c2-q967-79q5.phpt
+  note: Same finding (identical CVE set, sources and dates). Survivor 1a has a real summary and event_date; carry 1b's verified mechanism/detection content. Both mis-state affected range, CVE-2026-7262 score/type, and 'no PoC'. Neither carries classification or techniques[].
+- group: 2
+  members:
+  - 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+  - 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+  - 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+  - 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+  same_finding: false
+  survivor: null
+  current_state: 'TWO DISTINCT FINDINGS sharing CVE mentions. (A) CVE-2026-20182 finding = entries 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a and 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre (same finding, survivor 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre). (B) CVE-2026-20245 finding = entries 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi and 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245 (same finding, survivor 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi). 20245 builds on 20182 (Cisco: netadmin obtained via 20182/20127) but is a separate CVE/advisory/KEV listing. States: (A) CVE-2026-20182: peering-authentication bypass in the vdaemon DTLS control plane (UDP/12346); Cisco advisory cisco-sa-sdwan-rpa2-v69WY2SW first published 2026-05-14, v2.0 2026-06-16; affects Cisco Catalyst SD-WAN Controller (vSmart), Manager (vManage) and Validator (vBond) regardless of configuration; CVSS 3.1 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H), CWE-287; no workarounds; Cisco aware of limited exploitation in May 2026 [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW]. Fixed releases (first fixed): 20.9 -> 20.9.9.1; 20.10/20.11 -> 20.12.7.1; 20.12 -> 20.12.5.4 / 20.12.6.2 / 20.12.7.1; 20.13/20.14 -> 20.15.5.2; 20.15 -> 20.15.4.4 / 20.15.5.2; 20.16/20.18 -> 20.18.2.2; 26.1 -> 26.1.1.1; earlier than 20.9 migrate [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW]. KEV: added 2026-05-14 (CWE-287; ED 26-03 referenced) [https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json]; CISA ED 26-03 itself was issued 2026-02-25 (updated 2026-03-11) [https://www.cisa.gov/news-events/directives/ed-26-03-mitigate-vulnerabilities-cisco-sd-wan-systems]. Talos (2026-05-14) clusters the exploitation under UAT-8616 with high confidence: SSH key injection, NETCONF changes, root escalation, infrastructure overlapping ORB networks [https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/]. Rapid7 (discoverer) shows the vHub (device type 2) CHALLENGE_ACK bypass, MSG_VMANAGE_TO_PEER key injection into vmanage-admin authorized_keys and NETCONF on TCP/830 against a Controller [https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/]. Separate actors (''distinct from UAT-8616'') exploit CVE-2026-20133/20128/20122 (KEV 2026-04-20) since March 2026 in Clusters #1-#10 using the ZeroZenX PoC [https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/]. (B) CVE-2026-20245: authenticated local privilege escalation / command injection to root in the CLI of Cisco Catalyst SD-WAN Controller, Manager and Validator (needs netadmin: valid credentials or exploitation of CVE-2026-20182 / CVE-2026-20127); CVSS 3.1 7.8 (AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H), CWE-116; advisory cisco-sa-sdwan-privesc-4uxFrdzx first published 2026-06-04, last updated 2026-07-21; Cisco observed limited cases of configuration pushes to edge devices; exploitation known from June 2026 per Cisco [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx]. Fixed (first fixed, final table 2026-06-12, 1.10 on 2026-07-21): 20.9.9.2, 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1, 26.1.1.2; no workaround, Live Protect shield (2026-07-15) gives temporary partial protection [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx]. KEV: added 2026-06-09, CWE-116 [https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json]. Mandiant (2026-06-24): zero-day at a service provider, exploit via ''request tenant-upload tenant-list ... evil_tenant.csv'' in April 2026 after rogue peering/SSH as vmanage-admin (late 2025-January and March 2026; connection to CVE-2026-20127/20182 only ''possible'', Cisco confirmed March connections did not use 20182), troot UID-0 account, deletion of own files/config restore, no actor named [https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager]. NCSC-CH advisory 12579 (edited 2026-06-05 and 2026-06-25) [https://security-hub.ncsc.admin.ch/#/posts/12579].'
+  sub_groups:
+  - members:
+    - 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+    - 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+    same_finding: true
+    survivor: 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+    current_state: 'CVE-2026-20182: peering-authentication bypass in the vdaemon DTLS control plane (UDP/12346); Cisco advisory cisco-sa-sdwan-rpa2-v69WY2SW first published 2026-05-14, v2.0 2026-06-16; affects Cisco Catalyst SD-WAN Controller (vSmart), Manager (vManage) and Validator (vBond) regardless of configuration; CVSS 3.1 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H), CWE-287; no workarounds; Cisco aware of limited exploitation in May 2026 [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW]. Fixed releases (first fixed): 20.9 -> 20.9.9.1; 20.10/20.11 -> 20.12.7.1; 20.12 -> 20.12.5.4 / 20.12.6.2 / 20.12.7.1; 20.13/20.14 -> 20.15.5.2; 20.15 -> 20.15.4.4 / 20.15.5.2; 20.16/20.18 -> 20.18.2.2; 26.1 -> 26.1.1.1; earlier than 20.9 migrate [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW]. KEV: added 2026-05-14 (CWE-287; ED 26-03 referenced) [https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json]; CISA ED 26-03 itself was issued 2026-02-25 (updated 2026-03-11) [https://www.cisa.gov/news-events/directives/ed-26-03-mitigate-vulnerabilities-cisco-sd-wan-systems]. Talos (2026-05-14) clusters the exploitation under UAT-8616 with high confidence: SSH key injection, NETCONF changes, root escalation, infrastructure overlapping ORB networks [https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/]. Rapid7 (discoverer) shows the vHub (device type 2) CHALLENGE_ACK bypass, MSG_VMANAGE_TO_PEER key injection into vmanage-admin authorized_keys and NETCONF on TCP/830 against a Controller [https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/]. Separate actors (''distinct from UAT-8616'') exploit CVE-2026-20133/20128/20122 (KEV 2026-04-20) since March 2026 in Clusters #1-#10 using the ZeroZenX PoC [https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/].'
+    facts_only_in_duplicates:
+    - fact: Talos attributes exploitation of CVE-2026-20182 to UAT-8616 with high confidence (2a)
+      entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+      verified: true
+      source_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+      passage: Talos clusters this activity under UAT-8616 with high confidence.
+    - fact: UAT-8616 attempted to add SSH keys, modify NETCONF configurations, and escalate to root; infrastructure overlaps ORB networks (2a)
+      entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+      verified: true
+      source_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+      passage: UAT-8616 attempted to add SSH keys, modify NETCONF configurations, and escalate to root privileges.
+    - fact: UAT-8616 earlier exploited CVE-2026-20127 and reportedly used a version downgrade to reach CVE-2022-20775 root (2a)
+      entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+      verified: true
+      source_url: https://blog.talosintelligence.com/uat-8616-sd-wan/
+      passage: the actor likely escalated to root user via a software version downgrade. The actor then reportedly exploited CVE-2022-20775 before restoring back to the original software version
+    - fact: Companion CVE-2026-20133/20128/20122 exploited by separate clusters since March 2026 with ZeroZenX PoC and XenShell (2a, 2b summary)
+      entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+      verified: true
+      source_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+      passage: a series of threat actors, distinct from UAT-8616 ... beginning March 2026 - specifically CVE-2026-20133, CVE-2026-20128 and CVE-2026-20122
+    - fact: Snort SIDs 66482-66483 (20182), 66468-66469 (20133/20128), 66461-66462 (20122) (2a)
+      entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+      verified: true
+      source_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+      passage: 'Snorts SIDs for CVE-2026-20182 are: 66482 - 66483 ... Snort SIDs for CVE-2026-20133: 66468 - 66469 ... CVE-2026-20122: 66461 - 66462'
+    - fact: 'Rapid7 Metasploit module chain: vHub bypass, MSG_VMANAGE_TO_PEER (type 14) key injection, NETCONF on TCP/830 (2a)'
+      entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+      verified: true
+      source_url: https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/
+      passage: inject an attacker controlled public key into the vmanage-admin user account's authorized SSH keys file ... login to the NETCONF service (SSH over TCP port 830)
+    - fact: 'Kill-chain steps 6-9: Godzilla/Behinder/XenShell webshells, AdaptixC2/Sliver/Nimplant C2, syslog/wtmp wipe, XMRig attributed to UAT-8616 (2a)'
+      entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+      verified: false
+      source_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+      passage: webshells/implants/miners belong to Clusters 1-10 'distinct from UAT-8616'; log clearing appears only as a UAT-8616 hunt indicator in the Feb Talos post
+    - fact: Device types VBOND(0)/VEDGE(1) checked; Controller-to-Controller peering shows as VHUB-type (2a)
+      entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+      verified: false
+      source_url: https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/
+      passage: vEdge 1, vHub 2, vSmart 3, vBond 4, vManage 5; checks cover types 3/5 and 1
+    - fact: CVE-2026-20182 is UAT-8616's 'sixth' exploited SD-WAN CVE (2a)
+      entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+      verified: false
+      source_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+      passage: no source states a count
+    - fact: Cisco hardening guide URL sec.cloudapps.cisco.com/.../Cisco-Catalyst-SD-WAN-HardeningGuide (2a)
+      entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+      verified: true
+      source_url: https://blog.talosintelligence.com/uat-8616-sd-wan/
+      passage: hardening guide for Cisco Catalyst SD-WAN deployments located at https://sec.cloudapps.cisco.com/security/center/resources/Cisco-Catalyst-SD-WAN-HardeningGuide
+    - fact: ED 26-03 'issued 2026-05-14' (2b)
+      entry: 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+      verified: false
+      source_url: https://www.cisa.gov/news-events/directives/ed-26-03-mitigate-vulnerabilities-cisco-sd-wan-systems
+      passage: 'Original Issuance Date: February 25, 2026'
+  - members:
+    - 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+    - 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+    same_finding: true
+    survivor: 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+    current_state: 'CVE-2026-20245: authenticated local privilege escalation / command injection to root in the CLI of Cisco Catalyst SD-WAN Controller, Manager and Validator (needs netadmin: valid credentials or exploitation of CVE-2026-20182 / CVE-2026-20127); CVSS 3.1 7.8 (AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H), CWE-116; advisory cisco-sa-sdwan-privesc-4uxFrdzx first published 2026-06-04, last updated 2026-07-21; Cisco observed limited cases of configuration pushes to edge devices; exploitation known from June 2026 per Cisco [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx]. Fixed (first fixed, final table 2026-06-12, 1.10 on 2026-07-21): 20.9.9.2, 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1, 26.1.1.2; no workaround, Live Protect shield (2026-07-15) gives temporary partial protection [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx]. KEV: added 2026-06-09, CWE-116 [https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json]. Mandiant (2026-06-24): zero-day at a service provider, exploit via ''request tenant-upload tenant-list ... evil_tenant.csv'' in April 2026 after rogue peering/SSH as vmanage-admin (late 2025-January and March 2026; connection to CVE-2026-20127/20182 only ''possible'', Cisco confirmed March connections did not use 20182), troot UID-0 account, deletion of own files/config restore, no actor named [https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager]. NCSC-CH advisory 12579 (edited 2026-06-05 and 2026-06-25) [https://security-hub.ncsc.admin.ch/#/posts/12579].'
+    facts_only_in_duplicates:
+    - fact: CVSS 7.8, post-auth, local vector, command injection in CLI via crafted file (2d)
+      entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+      verified: true
+      source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+      passage: Base 7.8 CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H; authenticated, local attacker
+    - fact: Fixed trains 20.9.9.2, 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1, 26.1.1.2 (2d)
+      entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+      verified: true
+      source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+      passage: Cisco Catalyst SD-WAN Release First Fixed Release ... 20.9.9.2 ... 20.12.7.2 ... 20.15.4.5 ... 20.15.5.3 ... 20.18.3.1 ... 26.1.1.2
+    - fact: evil_tenant.csv via request tenant-upload; troot UID-0 account appended to /etc/passwd and /etc/shadow; su from admin (2d, also 2c section)
+      entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+      verified: true
+      source_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      passage: Created a user account named troot with full root privileges ... accessing this new troot account from the admin account via the su
+    - fact: Admin password changed then reverted (2d)
+      entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+      verified: true
+      source_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      passage: used their active vmanage-admin session to change the password of the admin account back to its original state
+    - fact: Actor deleted command history and syslog entries (2d, 2c section)
+      entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+      verified: false
+      source_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      passage: the threat actor deleted all files they created, including evil_tenant.csv, and restored any system configurations they modified
+    - fact: Foothold via CVE-2026-20127/20182 stated as the intrusion's initial access (2d, 2c section)
+      entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+      verified: false
+      source_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      passage: It is possible that these connections occurred due to the exploitation of CVE-2026-20127 or CVE-2026-20182 ... Cisco confirmed that these connections did not leverage CVE-2026-20182
+    - fact: Exploited from late 2025 through March 2026 at a communications service provider (2d, 2c section)
+      entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+      verified: false
+      source_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      passage: in April 2026 ... the threat actor exploited CVE-2026-20245
+    - fact: '''No patch'' / ''No fixed release is available'' (2c)'
+      entry: 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+      verified: false
+      source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+      passage: fixed table 20.9.9.2 ... 26.1.1.2; v1.8 2026-JUN-12 'Changed advisory status from interim to final'
+    - fact: KEV listing 2026-06-09 (missing from both)
+      entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+      verified: true
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      passage: CVE-2026-20245 ... dateAdded 2026-06-09 ... CWE-116
+  note: Group mixes two findings. 20245's Cisco advisory names 20182/20127 as ways to obtain netadmin, so 2c correctly references them; 2c already folded 2026-06-26/mandiant-publishes-... and 2026-06-27/mandiant-documents-... (merged_from). 2d duplicates the 2c update content.
+- group: 3
+  members:
+  - 2026-05-19/cve-2026-42231-42232-44789-44790-44791-n8n-self-hosted-autom
+  - 2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic
+  same_finding: true
+  survivor: 2026-05-19/cve-2026-42231-42232-44789-44790-44791-n8n-self-hosted-autom
+  current_state: 'n8n (npm) five separate Critical advisories, each CVSS 4.0 9.4 (vector AV:N/AC:L/AT:N/PR:L/UI:N, i.e. authenticated workflow editor, no user interaction); all need a user with permission to create or modify workflows. CVE-2026-42231 (GHSA-q5f4-99jv-pgg5, published 2026-04-22; CVE record 2026-05-04; CWE-1321): xml2js prototype pollution in the webhook XML body parser, chains with the Git node SSH operations to RCE; affected <1.123.32, <2.17.4 (2.17.x), <2.18.1; fixed 1.123.32 / 2.17.4 / 2.18.1 [https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5]. CVE-2026-42232 (GHSA-hqr4-h3xv-9m3r, 2026-04-22; vector SA:L, still 9.4): XML node prototype pollution to RCE when combined with other nodes; same fixed versions; workaround: disable n8n-nodes-base.xml via NODES_EXCLUDE [https://github.com/n8n-io/n8n/security/advisories/GHSA-hqr4-h3xv-9m3r]. CVE-2026-44789 (GHSA-c8xv-5998-g76h, published 2026-05-13; CVE record 2026-06-23): HTTP Request node pagination prototype pollution; affected <1.123.43, <2.22.1, <2.20.7 per GHSA (CVE record: 2.0.0-rc.0 to <2.20.7 and 2.21.0 to <2.21.1); fixed 1.123.43 / 2.20.7 / 2.22.1 [https://github.com/n8n-io/n8n/security/advisories/GHSA-c8xv-5998-g76h]. CVE-2026-44790 (GHSA-57g9-58c2-xjg3, 2026-05-13; CWE-88): Git node Push CLI-flag injection allowing arbitrary file read (not RCE) [https://github.com/n8n-io/n8n/security/advisories/GHSA-57g9-58c2-xjg3]. CVE-2026-44791 (GHSA-wrwr-h859-xh2r, 2026-05-13): bypass of the CVE-2026-42232 XML-node fix [https://github.com/n8n-io/n8n/security/advisories/GHSA-wrwr-h859-xh2r]. Workarounds in each GHSA (partial): limit workflow create/edit to trusted users; disable the affected node via NODES_EXCLUDE. Exploitation: none in CISA KEV (2026.10.16); no vendor/publisher report of in-the-wild exploitation found. The Hacker News roundup is dated 2026-05-18 [https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html].'
+  facts_only_in_duplicates:
+  - fact: CVSS 4.0 vector for CVE-2026-42231 CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H = 9.4 (3b)
+    entry: 2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic
+    verified: true
+    source_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5
+    passage: CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H (score 9.4 displayed)
+  - fact: 'Exploitation prerequisite: authenticated user with workflow create/modify permission (3b)'
+    entry: 2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic
+    verified: true
+    source_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5
+    passage: An authenticated user with permission to create or modify workflows could exploit this
+  - fact: Apply the later train (1.123.43 / 2.20.7 / 2.22.1) to cover the full set (3b, 3a)
+    entry: 2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic
+    verified: true
+    source_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-c8xv-5998-g76h
+    passage: The issue has been fixed in n8n versions 1.123.43, 2.20.7, and 2.22.1.
+  - fact: '''Upgrade is the only remediation; no workaround'' (3b)'
+    entry: 2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic
+    verified: false
+    source_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-hqr4-h3xv-9m3r
+    passage: 'Workarounds: Limit workflow creation and editing permissions to fully trusted users only. Disable the XML node by adding n8n-nodes-base.xml to the NODES_EXCLUDE environment variable.'
+  - fact: CVE-2026-44791 is a bypass of the initial xml2js fix (3b)
+    entry: 2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic
+    verified: false
+    source_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-wrwr-h859-xh2r
+    passage: bypass the patch for GHSA-hqr4-h3xv-9m3r in the XML node
+  - fact: Swiss/EU public-sector adoption of n8n; national-CERT advisories expected (3b)
+    entry: 2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic
+    verified: false
+    source_url: https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html
+    passage: no cited page mentions public-sector use
+  - fact: Advisory publication 2026-05-18 (both)
+    entry: 2026-05-19/cve-2026-42231-42232-44789-44790-44791-n8n-self-hosted-autom
+    verified: false
+    source_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5
+    passage: GHSA-q5f4-99jv-pgg5 published Apr 22, 2026; GHSA-c8xv-5998-g76h May 13, 2026
+  - fact: ATT&CK T1190/T1059.007/T1068/T1611 mapping (3b)
+    entry: 2026-05-19/n8n-prototype-pollution-chain-cve-2026-42231-et-al-authentic
+    verified: false
+    source_url: https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5
+    passage: GHSA requires authentication; T1190 initial-access framing and T1611 are inference
+  note: Same finding (identical five CVEs, sources). Both entries carry the wrong advisory date, vector user-interaction, and a non-verbatim THN quote. Survivor 3a is the shorter entry without the unsupported Swiss/EU adoption narrative; 3b's verified items are the CVSS vector and prerequisites.
+- group: 4
+  members:
+  - 2026-05-29/forticlient-ems-cve-2026-35616-actively-exploited-to-push-ek
+  - 2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain
+  same_finding: true
+  survivor: 2026-05-29/forticlient-ems-cve-2026-35616-actively-exploited-to-push-ek
+  current_state: 'Fortinet FortiClient EMS CVE-2026-35616: improper access control (CWE-284), API authentication and authorization bypass; Fortinet PSIRT FG-IR-26-099 published 2026-04-04, ''Known Exploited: Yes'', CVSSv3 9.8 base / 9.1 temporal (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H); affected FortiClientEMS 7.4.5 through 7.4.6; 7.2 and 8.0 not affected; hotfixes for 7.4.5 and 7.4.6 and fix in 7.4.7 or above [https://fortiguard.fortinet.com/psirt/FG-IR-26-099, https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-35616]. KEV: added 2026-04-06 (CWE-284) [https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json]. Root cause (Bishop Fox, 2026-04-07): EMS''s Django middleware trusts user-controllable X-SSL-CLIENT-VERIFY (and X-SSL-CLIENT-CERT) headers that Apache was never configured to strip, and validates the certificate chain by DN string matching only [https://bishopfox.com/blog/api-authentication-bypass-in-forticlient-ems-7-4-5-7-4-6-cve-2026-35616]. Campaign (Arctic Wolf, 2026-05-27): exploitation of EMS in May 2026 (reported to Fortinet 2026-03-31), Remote Access Profile/endpoint policy edited to insert an on_connect script; on VPN tunnel establishment fortitray.exe or ipsec.exe -> cmd.exe -> base64 PowerShell -> FortiEndpoint_Patch.exe (EKZ Infostealer, MinGW-compiled, Chromium and Gecko credential/cookie theft; Chromium copy goes to the browser Application\ directory; PowerShell exfiltrates over HTTP POST) [https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/]. EPSS 0.432 on 2026-05-28, 0.091 on 2026-10-16.'
+  facts_only_in_duplicates:
+  - fact: Disclosure 2026-04-04 and KEV 2026-04-06 (4b)
+    entry: 2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain
+    verified: true
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-099
+    passage: Published Date Apr 4, 2026; KEV dateAdded 2026-04-06
+  - fact: 'Affected: 7.4.5 and 7.4.6 only; 7.4.7 fixed; hotfix references (4b)'
+    entry: 2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain
+    verified: true
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-099
+    passage: FortiClientEMS 7.4 | 7.4.5 through 7.4.6 | Upgrade to 7.4.7 or above
+  - fact: EPSS 43.2% at 97.6th percentile (4b)
+    entry: 2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain
+    verified: true
+    source_url: https://api.first.org/data/v1/epss?cve=CVE-2026-35616&date=2026-05-28
+    passage: epss 0.432090000 percentile 0.975590000 date 2026-05-28 (now 0.09098 / 0.95252)
+  - fact: Cascade from one EMS server to every managed endpoint (4a, 4b)
+    entry: 2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain
+    verified: true
+    source_url: https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/
+    passage: every managed endpoint became a potential execution target without requiring a separate intrusion path to each device
+  - fact: Spoofed header set by a fronting reverse proxy; Nuclei sends the 'entire exploit payload' (4a, 4b)
+    entry: 2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain
+    verified: false
+    source_url: https://bishopfox.com/blog/api-authentication-bypass-in-forticlient-ems-7-4-5-7-4-6-cve-2026-35616
+    passage: Django middleware accepts client certificate information from both trusted WSGI environment variables (set by Apache mod_ssl) and user-controllable HTTP request headers
+  - fact: CVSS:3.1 base 9.1 with A:N (4b)
+    entry: 2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain
+    verified: false
+    source_url: https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-35616
+    passage: baseScore 9.8 CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  - fact: Same shape as Microsoft CVE-2026-45659 X-Forwarded-* trust (4b)
+    entry: 2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain
+    verified: false
+    source_url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45659
+    passage: Microsoft SharePoint Remote Code Execution Vulnerability (CWE-502)
+  - fact: EKZ self-copy into browser profile dirs; Update task via EMS update channel; fortitray.exe spawning PowerShell -enc (4a, 4b)
+    entry: 2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain
+    verified: false
+    source_url: https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/
+    passage: copies itself into the browser's Application\ directory ... fortitray.exe or ipsec.exe -> cmd.exe -> powershell.exe
+  - fact: '''Widely deployed across Swiss federal and cantonal ... estates'' (4a)'
+    entry: 2026-05-29/forticlient-ems-cve-2026-35616-actively-exploited-to-push-ek
+    verified: false
+    source_url: https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/
+    passage: no cited page says this
+  note: Same finding (same CVE, sources, date). Both mis-describe the exploit mechanism (reverse-proxy model), the EKZ self-copy location and the delivery lineage; 4b adds a wrong CVSS vector and a false CVE-2026-45659 comparison. Survivor 4a, rewritten from AW + Bishop Fox + PSIRT; 4b's verified items are the PSIRT/KEV dates and EPSS. 4b's two evidence quotes are not on the Arctic Wolf pages.
+- group: 5
+  members:
+  - 2026-06-13/cve-2026-48558-simplehelp-rmm-unauthenticated-oidc-authentic
+  - 2026-06-30/cve-2026-48558-simplehelp-rmm-oidc-sso-authentication-bypass
+  same_finding: true
+  survivor: 2026-06-30/cve-2026-48558-simplehelp-rmm-oidc-sso-authentication-bypass
+  current_state: 'SimpleHelp CVE-2026-48558 (CNA VulnCheck, record published 2026-06-12, discoverer Horizon3.ai 2026-06-12): OIDC authentication bypass, identity tokens accepted without verifying their cryptographic signature (CWE-347); remote unauthenticated attacker obtains a technician session, ''in some configurations ... may also allow bypass of MFA''; CVSS 3.1 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H), CVSS 4.0 9.5 [https://cveawg.mitre.org/api/cve/CVE-2026-48558]. Vendor: affects 5.5.15 and earlier and some 6.0 pre-releases; needs an OIDC Authentication Service plus a Technician Group with it and ''Allow group authenticated logins'' (disabled by default for new Groups); fixed in 5.5.16 (build 20260526) and the latest 6.0 release candidate (6.0 RC2); servers without OIDC groups cannot be exploited; IP-restrict technician logins [https://guides.simple-help.com/kb---security-vulnerabilities-05-2026, https://simple-help.com/security/simplehelp-security-update-2026-05]. Horizon3: attacker creates a new Technician; SimpleHelp-enforced MFA bypassed because on first login technicians self-register an MFA method; nearly 14,000 exposed servers, roughly 7.2% of a random sample use the vulnerable OIDC method; IOCs = unfamiliar technician names/emails and server.log lines [https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/]. Exploitation: CISA KEV added 2026-06-29 (CWE-347, due 2026-07-02, ransomware use Unknown) [https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json]; Blackpoint (via BleepingComputer 2026-06-29) observed a technician session on an internet-facing server followed by the TaskWeaver Node.js loader (jquery.js via node.exe) and Djinn Stealer, no persistence claim [https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-simplehelp-flaw-deploy-new-djinn-infostealer-taskweaver-malware/, https://blackpointcyber.com/blog/a-djinn-in-the-machine-taskweavers-node-js-intrusion-chain/].'
+  facts_only_in_duplicates:
+  - fact: 'Horizon3 IOC guidance: Administration -> Technicians -> Show Group Authenticated Users; server.log lines (5a)'
+    entry: 2026-06-13/cve-2026-48558-simplehelp-rmm-unauthenticated-oidc-authentic
+    verified: true
+    source_url: https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/
+    passage: Review the listed technicians for any unfamiliar technician names or email addresses.
+  - fact: Fix versions 5.5.16 / 6.0 RC2, 5.5.15 and earlier affected (5a)
+    entry: 2026-06-13/cve-2026-48558-simplehelp-rmm-unauthenticated-oidc-authentic
+    verified: true
+    source_url: https://simple-help.com/security/simplehelp-security-update-2026-05
+    passage: SimpleHelp servers running versions 5.5.15 and earlier ... SimpleHelp 5.5.16 ... SimpleHelp 6.0 RC2
+  - fact: Horizon3 states no CVSS (5a); CVE record already carried CVSS 10.0/9.5 on 2026-06-12
+    entry: 2026-06-13/cve-2026-48558-simplehelp-rmm-unauthenticated-oidc-authentic
+    verified: true
+    source_url: https://cveawg.mitre.org/api/cve/CVE-2026-48558
+    passage: cvssV3_1 10 ... cvssV4_0 9.5 (published 2026-06-12T17:07Z)
+  - fact: IdP-enforced MFA bypassed; forged unsigned token (5a)
+    entry: 2026-06-13/cve-2026-48558-simplehelp-rmm-unauthenticated-oidc-authentic
+    verified: false
+    source_url: https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/
+    passage: Even when the SimpleHelp server is configured to enforce MFA for technicians, this issue allows the attacker to bypass this mechanism because on first login, technicians can self-register their own MFA method.
+  - fact: poc-public status (5a)
+    entry: 2026-06-13/cve-2026-48558-simplehelp-rmm-unauthenticated-oidc-authentic
+    verified: false
+    source_url: https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/
+    passage: At this time, we will not be releasing any more technical details surrounding the vulnerability
+  - fact: actor:shinyhunters and CVE-2026-35273 PeopleSoft row (5a)
+    entry: 2026-06-13/cve-2026-48558-simplehelp-rmm-unauthenticated-oidc-authentic
+    verified: false
+    source_url: https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-targets-education-sector-oracle-exploit/
+    passage: UNC6240 (ShinyHunters) targeting Oracle PeopleSoft - unrelated to SimpleHelp
+  - fact: TaskWeaver persists via scheduled tasks / launchd (5b)
+    entry: 2026-06-30/cve-2026-48558-simplehelp-rmm-oidc-sso-authentication-bypass
+    verified: false
+    source_url: https://blackpointcyber.com/blog/a-djinn-in-the-machine-taskweavers-node-js-intrusion-chain/
+    passage: TaskWeaver is a heavily obfuscated Node.js loader, delivered as jquery.js and executed through node.exe
+  - fact: ~1,000 vulnerable-OIDC servers 'measured' (5b)
+    entry: 2026-06-30/cve-2026-48558-simplehelp-rmm-oidc-sso-authentication-bypass
+    verified: false
+    source_url: https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/
+    passage: A random sampling of these servers indicated that roughly 7.2% of them were configured to use the vulnerable OIDC authentication method.
+  note: Same finding; 5b supersedes 5a (KEV 2026-06-29 and exploitation after 5a's 'KEV No / Exploited No'). Keep 5a's June 12-13 coverage as the original delta; correct 5a's IdP-MFA, poc-public, shinyhunters and PeopleSoft content rather than carrying them.
+- group: 6
+  members:
+  - 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+  - 2026-06-19/cve-2026-20181-cve-2026-20190-cisco-identity-services-engine
+  same_finding: true
+  survivor: 2026-06-19/cve-2026-20181-cve-2026-20190-cisco-identity-services-engine
+  current_state: 'Cisco ISE / ISE-PIC advisory cisco-sa-ise-multi-G5WP8vv, first published 2026-06-17 (v1.2 2026-07-06), two independent flaws (''not dependent on one another''), no workarounds, PSIRT not aware of malicious use [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv]. CVE-2026-20181: authenticated (valid administrative credentials) remote command execution to root via crafted HTTP request, insufficient input validation, CWE-22, CVSS 3.1 9.1 (AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H); single-node DoS; affects ISE 3.1-3.5; first fixed: 3.1 Patch 12 (Sep 2026), 3.2 Patch 11 (Sep 2026), 3.3 Patch 11, 3.4 Patch 6, 3.5 Patch 4 (Aug 2026) or hot patch for 3.5 Patch 3 (via TAC) [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv, https://cveawg.mitre.org/api/cve/CVE-2026-20181]. CVE-2026-20190: unauthenticated remote information disclosure incl. hashed credentials, improper authorization, CWE-285, CVSS 3.1 7.5 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N); affects only 3.4 and 3.5; first fixed 3.4 Patch 6, 3.5 Patch 3; 3.3 and earlier not vulnerable [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv, https://cveawg.mitre.org/api/cve/CVE-2026-20190]. Exploitation: none in CISA KEV (2026.10.16); no in-the-wild report found. SecurityWeek 2026-06-18 confirms the 3.5 hotfix [https://www.securityweek.com/critical-command-execution-vulnerability-patched-in-cisco-ise/].'
+  facts_only_in_duplicates:
+  - fact: 'CVE-2026-20181: improper-input-validation command execution to root, single-node DoS (6a, 6b)'
+    entry: 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+    verified: true
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    passage: In single-node deployments, successful exploitation of this vulnerability could cause the affected ISE node to become unavailable, resulting in a denial of service (DoS) condition.
+  - fact: Fixed in 3.3 Patch 11 and 3.4 Patch 6 (6a, 6b)
+    entry: 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+    verified: true
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    passage: 3.3 | 3.3 Patch 11 | Not vulnerable. 3.4 | 3.4 Patch 6 | 3.4 Patch 6
+  - fact: 'Chain: 20190 hands over hashed admin credentials enabling 20181 (6a title/body, 6b headline/summary)'
+    entry: 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+    verified: false
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    passage: The vulnerabilities are not dependent on one another. Exploitation of one of the vulnerabilities is not required to exploit the other vulnerability.
+  - fact: 3.5 operators carry 20181 until August (6a, 6b, action)
+    entry: 2026-06-19/cve-2026-20181-cve-2026-20190-cisco-identity-services-engine
+    verified: false
+    source_url: https://www.securityweek.com/critical-command-execution-vulnerability-patched-in-cisco-ise/
+    passage: A hotfix for ISE version 3.5 is also available and will be included in version 3.5 Patch 4 in August.
+  - fact: 'Dense patch cycle: pgAdmin 4, NGINX, Drupal core within 36 h; no ITW for any of the four (6b)'
+    entry: 2026-06-19/cve-2026-20181-cve-2026-20190-cisco-identity-services-engine
+    verified: false
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    passage: not covered by any cited source; unverified (secondary reports date pgAdmin 9.16 to June 19-22, Drupal AV26-615 to June 17)
+  - fact: ATT&CK chain T1190 -> T1212 -> T1110.002 -> T1078 -> T1059/T1068 -> T1556 (6a)
+    entry: 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+    verified: false
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+    passage: mapping rests on the unsupported chain
+  note: Same finding. Both build on a chain the vendor expressly denies, record 20181 as pre-auth and 20190 as rce, omit the 3.5 hot patch and ISE 3.1/3.2, and say 'hashed administrator credentials'. Survivor 6b; fold in 6a's detection concepts only after removing chain-dependent content.
+global_notes:
+- '13 of 14 batch entries (all except 2026-06-06/cve-2026-20245-...) carry neither classification nor techniques[] (migrated schema-1 records); 2026-06-06/... has techniques: [] and classification: null. ATT&CK ids appear only in prose; T1562, T1562.001 and T1070.002 (entry 2a) are revoked in v20.'
+- None of the batch CVEs except CVE-2026-20182, CVE-2026-20245, CVE-2026-20127, CVE-2026-35616 and CVE-2026-48558 is in CISA KEV (catalogue 2026.10.16); CVE-2026-20245 and CVE-2026-20127 are KEV-listed but the entries' status omits cisa-kev.

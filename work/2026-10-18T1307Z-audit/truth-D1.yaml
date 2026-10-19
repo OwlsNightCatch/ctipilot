@@ -1,0 +1,1411 @@
+entries:
+- entry: 2026-05-10/cve-2026-26030-cve-2026-25592-microsoft-semantic-kernel-prom
+  verdict: factual-error
+  defects:
+  - where: summary
+    claim: prompt-injection-to-RCE in the AI agent orchestration framework that backs Azure AI Foundry, Copilot Studio and many self-hosted agents
+    defect: No cited source says Semantic Kernel backs Azure AI Foundry or Copilot Studio.
+    ground_truth: 'Microsoft blog: "Semantic Kernel is Microsoft''s open-source framework for building AI agents and integrating AI models into applications." (no Foundry / Copilot Studio statement anywhere
+      in the post or the GHSAs)'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    fix: Drop "that backs Azure AI Foundry, Copilot Studio and many self-hosted agents"; say "Microsoft's open-source AI agent framework".
+    class: factual-error
+  - where: summary / body paragraph 1
+    claim: '`SessionsPythonPlugin.DownloadFileAsync` and `SessionsPythonPlugin.UploadFileAsync` carry a `[KernelFunction]` attribute that should not have been applied'
+    defect: Only DownloadFileAsync was wrongly exposed as a kernel function; UploadFileAsync is intentionally a kernel function (it received path validation, not attribute removal).
+    ground_truth: 'Blog: "DownloadFileAsync was accidentally marked with a [KernelFunction] attribute". Fix PR #13478 diff removes `[KernelFunction, Description("Downloads a file ...")]` from DownloadFileAsync
+      only; the UploadFileAsync `[KernelFunction, Description("Uploads a file ...")]` line is retained; its unit test asserts "Only ExecuteCode, UploadFile, and ListFiles should be exposed".'
+    ground_truth_url: https://api.github.com/repos/microsoft/semantic-kernel/pulls/13478/files
+    fix: State that the unintended [KernelFunction] was on DownloadFileAsync (host-side file write via localFilePath); upload_file lacked path validation (host-file read into the sandbox).
+    class: factual-error
+  - where: body paragraph 1
+    claim: An f-string composes the LINQ-like filter expression directly from an LLM-controlled parameter ... bypasses with the well-known `__class__.__bases__[0].__subclasses__()` class-hierarchy traversal
+      pattern ... `os.system`-equivalent execution
+    defect: 'Mechanism misdescribed: the filter is a Python lambda string executed via eval(); bypass traversed the type system from tuple() to BuiltinImporter and used load_module/system; no f-string,
+      LINQ, or __bases__[0] chain in the source.'
+    ground_truth: 'Blog: "The default filter function ... is implemented as a Python lambda expression executed using eval()"; "kwargs[param.name] is AI model-controlled and not sanitized"; payload "traversed
+      Python''s class hierarchy to locate BuiltinImporter, and used it to dynamically load os and call system()"; blocklist missed __name__, load_module, system, BuiltinImporter.'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    fix: 'Rewrite: unsanitised model-controlled parameter interpolated into a lambda filter evaluated with eval(); AST blocklist bypassed via class-hierarchy traversal to BuiltinImporter.'
+    class: factual-error
+  - where: body paragraph 2
+    claim: Microsoft characterises both flaws as systemic of agentic-AI patterns that "trust LLM-controlled parameters without explicit validation"
+    defect: The quoted phrase is not on the cited page (invented quote); AutoGen is also not named by Microsoft as likely affected.
+    ground_truth: 'Blog: "The vulnerability lies in how the framework and tools trust the parsed data."; "frameworks like Semantic Kernel, LangChain, and CrewAI ... a single vulnerability in how they map
+      AI model outputs to system tools carries systemic risk." No "without explicit validation" string; AutoGen not mentioned.'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    fix: Remove the quotation marks or quote the blog sentence verbatim; name only LangChain and CrewAI as the blog does, and label wider spread as analyst inference.
+    class: factual-error
+  - where: cves[] CVE-2026-26030 / CVE-2026-25592 auth
+    claim: 'auth: pre-auth; affected: null; fixed: null'
+    defect: CVSS vectors of both GHSAs carry PR:L (low privileges required), so "pre-auth" contradicts the authority; affected/fixed left null although the GHSAs give them.
+    ground_truth: 'GHSA-xjw9-4gw8-4rqx: CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H (9.9), vulnerable "< 1.39.4", first patched 1.39.4; GHSA-2ww3-72rp-wpp4: same vector, nuget "< 1.71.0" first patched
+      1.71.0, pip "< 1.39.3" first patched 1.39.3.'
+    ground_truth_url: https://api.github.com/advisories/GHSA-xjw9-4gw8-4rqx
+    fix: 'Set affected/fixed per GHSA; drop or qualify auth: pre-auth (attack needs a prompt-injection channel into the agent, not an unauthenticated network exploit of the SDK).'
+    class: imprecision
+  - where: sources[] publisher labels / body citation labels
+    claim: GitHub Security Advisory GHSA-xjw9-4gw8-4rqx, 2026-05-07 ; GitHub Security Advisory GHSA-2ww3-72rp-wpp4, 2026-05-07
+    defect: The GHSAs were published 2026-02-19 and 2026-02-06; 2026-05-07 is the Microsoft blog date.
+    ground_truth: 'API: GHSA-xjw9-4gw8-4rqx published_at 2026-02-19T19:34:14Z (NVD 2026-02-19); GHSA-2ww3-72rp-wpp4 published_at 2026-02-06T18:37:24Z (NVD 2026-02-06).'
+    ground_truth_url: https://api.github.com/advisories/GHSA-2ww3-72rp-wpp4
+    fix: Correct the dates in the sources[] publisher strings and the body link labels; note the CVEs predate the May blog by 2-3 months.
+    class: imprecision
+  - where: summary / body last sentence
+    claim: Full breakdown in § 5. / Full deep dive in § 5.
+    defect: Dangling pointer to a section of the migrated brief that does not exist in this entry.
+    ground_truth: Entry body has no section 5; the deep dive is a separate entry.
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    fix: Remove the "§ 5" references.
+    class: imprecision
+  - where: priority
+    claim: 'priority: high'
+    defect: No in-the-wild exploitation, not in CISA KEV (catalog 2026.10.16), exploitation needs a prompt-injection vector plus a specific default-config component; research disclosure, a high-bar disqualifier.
+    ground_truth: Blog frames both as researcher-found, "have since been fixed"; no exploitation statement; neither CVE in KEV.
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    fix: 'Context only: priority should be notable/routine unless a constituency product exposure is shown.'
+    class: imprecision
+- entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  verdict: factual-error
+  defects:
+  - where: body "Why this matters"
+    claim: Semantic Kernel is the open-source orchestration SDK behind Azure AI Foundry, Copilot Studio, and a growing fraction of self-hosted enterprise AI agents in EU government modernisation pilots.
+    defect: 'Unsupported: no cited source links Semantic Kernel to Foundry/Copilot Studio or to EU government pilots.'
+    ground_truth: 'Blog: "Semantic Kernel is Microsoft''s open-source framework for building AI agents ... With over 27,000 stars on GitHub".'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    fix: Delete the Foundry/Copilot Studio/EU-pilot claims.
+    class: factual-error
+  - where: body CVE-2026-26030 section
+    claim: composes its LINQ-like filter expression by f-string interpolation ... The SDK applies a string-blocklist validator ... the validator is a denylist on the *literal text*
+    defect: Validator is AST-based (parses filter string into an AST, rejects dangerous Name/Attribute nodes, runs eval with empty __builtins__); not a literal-text scan; no f-string/LINQ.
+    ground_truth: 'Blog: "implemented a validator that parses the filter string into an Abstract Syntax Tree (AST) before execution"; "scans every element in the code for dangerous identifiers and attributes
+      (for example, strings like eval, exec, open, __import__ ...)"; "If the code passes both checks, it is executed in a restricted environment where Python''s built-in functions ... are deliberately removed."'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    fix: Describe it as an AST identifier/attribute blocklist; bypass worked because __name__, load_module, system, BuiltinImporter were not blocked and ast.Subscript was unchecked.
+    class: factual-error
+  - where: body CVE-2026-26030 section
+    claim: '"".__class__.__bases__[0].__subclasses__()[<index>]("...") — walking `object`''s subclass list to reach an arbitrary class ... (typically `subprocess.Popen` or a `os` reference reached via reflection)'
+    defect: 'Not the cited payload: it started from tuple(), located BuiltinImporter and called load_module/system; subprocess.Popen is not mentioned.'
+    ground_truth: 'Blog: "it started with tuple() ... and crawled through Python''s type system"; "traversed Python''s class hierarchy to locate BuiltinImporter, and used it to dynamically load os and call
+      system()".'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    fix: Replace the generic idiom and the subprocess.Popen aside with the blog's BuiltinImporter/load_module/system chain, or drop the snippet.
+    class: factual-error
+  - where: body CVE-2026-26030 prerequisites
+    claim: default for self-hosted Semantic Kernel agents until a customer wires in a different vector backend ; indirect prompt injection via retrieved documents or tool output is sufficient; a direct
+      user-input vector is not required
+    defect: Source states the condition as "Search Plugin backed by In-Memory Vector Store functionality using the default configuration"; the "default for self-hosted agents" and indirect-vs-direct statements
+      are uncited.
+    ground_truth: 'Blog: "The targeted agent must have the Search Plugin backed by In-Memory Vector Store functionality using the default configuration"; "The attacker must have a prompt injection vector,
+      allowing influence over the agent''s inputs".'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    fix: Use the blog wording; drop the unsupported default-for-self-hosted aside.
+    class: factual-error
+  - where: body CVE-2026-25592 section
+    claim: Two of its methods — `DownloadFileAsync` and `UploadFileAsync` — were mistakenly annotated with `[KernelFunction]`
+    defect: Only DownloadFileAsync was mistakenly annotated.
+    ground_truth: 'Blog: "DownloadFileAsync was accidentally marked with a [KernelFunction] attribute"; PR #13478 removes [KernelFunction] from DownloadFileAsync only (UploadFileAsync keeps it, gains path
+      validation).'
+    ground_truth_url: https://api.github.com/repos/microsoft/semantic-kernel/pulls/13478/files
+    fix: Say only DownloadFileAsync was mis-annotated.
+    class: factual-error
+  - where: body CVE-2026-25592 section
+    claim: (a) call `UploadFileAsync` to write attacker-chosen bytes to an attacker-chosen path *on the host* ... and (b) call `DownloadFileAsync` symmetrically to read host-side files back into the agent
+      context.
+    defect: 'Directions are reversed: DownloadFileAsync is the host-side file-write primitive; upload_file is the host-file-read/exfiltration primitive into the sandbox.'
+    ground_truth: 'Blog: DownloadFileAsync''s "localFilePath parameter, which dictates exactly where File.WriteAllBytes() saves data on the host device, was now entirely AI controlled"; "upload_file() ...
+      accepted any local file path without validation, allowing prompt injections to exfiltrate sensitive host files ... directly into the sandbox"; chain writes the script to the host Windows Startup folder.'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    fix: 'Swap: DownloadFileAsync = arbitrary host file write (Startup-folder code execution on next sign-in); upload_file = arbitrary host file read into the sandbox (Python and .NET).'
+    class: factual-error
+  - where: body hardening
+    claim: implement a Function Invocation Filter (the SDK-supported hook documented in the Microsoft research post) ... reduces the Python-side blast radius even if the validator is bypassed
+    defect: The Function Invocation Filter workaround is documented in GHSA-2ww3-72rp-wpp4 for the .NET flaw, not in the Microsoft post; no source offers it as a Python-side mitigation. Python GHSA workaround
+      is "Avoid using InMemoryVectorStore for production scenarios". "patched releases also include the upstream test additions" is uncited.
+    ground_truth: 'GHSA-xjw9: "Workarounds: Avoid using InMemoryVectorStore for production scenarios."; GHSA-2ww3: "Users can create a Function Invocation Filter which checks the arguments being passed
+      to any calls to DownloadFileAsync or UploadFileAsync and ensures the provided localFilePath is allow listed."'
+    ground_truth_url: https://api.github.com/advisories/GHSA-xjw9-4gw8-4rqx
+    fix: Attribute the filter workaround to the .NET GHSA only and add the Python GHSA workaround (avoid InMemoryVectorStore in production); drop the Python-blast-radius and test-additions sentences.
+    class: factual-error
+  - where: cves[] / ATT&CK mapping
+    claim: T1565.001 Stored Data Manipulation (write primitive)
+    defect: 'The documented write primitive drops a script in the Windows Startup folder for code execution at next sign-in; stored-data manipulation for integrity impact is not what the source describes.
+      Also auth: pre-auth contradicts PR:L; affected/fixed null.'
+    ground_truth: 'Blog: "writes it directly to the host''s Windows\Start Menu\Programs\Startup folder"; "On the next user sign-in, the script runs, granting full host compromise." GHSA vectors PR:L.'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    fix: Map to Startup-folder autostart persistence/execution instead of T1565.001; qualify auth; fill affected/fixed.
+    class: imprecision
+  - where: body (analysis paragraphs)
+    claim: EDR vendors classify this under hunt-pack categories ...; Many self-hosted agent deployments do not log plugin-method calls ...; The same class of bug is highly likely to exist in LangChain,
+      CrewAI, AutoGen, Haystack, LlamaIndex; Both bypass any of the existing prompt-side mitigations ...; The deployment surface inside an EU public-sector tenant ...
+    defect: Uncited generalisations stated as fact; the Microsoft post names only LangChain and CrewAI and says prompt-layer guardrail bypass needs host-level detection, not that all prompt-side mitigations
+      are bypassed.
+    ground_truth: 'Blog: "frameworks like Semantic Kernel, LangChain, and CrewAI"; "If an attacker bypasses the AI model guardrails, traditional endpoint defense must be in place".'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    fix: Mark as analyst inference or remove.
+    class: imprecision
+  - where: sources[] publisher labels / header links
+    claim: GitHub GHSA ... 2026-05-07
+    defect: GHSA publication dates are 2026-02-19 and 2026-02-06 (not 2026-05-07).
+    ground_truth: GHSA-xjw9 published_at 2026-02-19T19:34:14Z; GHSA-2ww3 published_at 2026-02-06T18:37:24Z.
+    ground_truth_url: https://api.github.com/advisories/GHSA-xjw9-4gw8-4rqx
+    fix: Correct dates.
+    class: imprecision
+- entry: 2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898
+  verdict: factual-error
+  defects:
+  - where: 'immediate_action; ## Update 2026-06-02 section; updates[0].summary'
+    claim: On 1 June, Belgium's Centre for Cybersecurity (CCB) and multiple outlets reported active in-the-wild exploitation ; Belgium's Centre for Cybersecurity (CCB) confirmed active exploitation on 1
+      June
+    defect: The CCB warning is dated 29 May 2026 (a Friday); 1 June is the date BleepingComputer, Help Net Security and SecurityWeek reported it.
+    ground_truth: 'CCB advisory: "Last Update: 29/05/2026 ... Updated on May 29, 2026 CVE-2026-41089 (Windows Netlogon) is now actively exploited in the wild." BleepingComputer (2026-06-01): CCB "warned
+      on Friday"; CCB tweet id 2060392708259131674 decodes to 2026-05-29T16:07Z.'
+    ground_truth_url: https://ccb.belgium.be/advisories/warning-microsoft-patch-tuesday-may-2026-patches-118-vulnerabilities-16-critical-102
+    fix: Say CCB warned on 29 May 2026 and outlets reported it on 1 June.
+    class: factual-error
+  - where: cves[CVE-2026-41103].type / cves[CVE-2026-42898].auth
+    claim: 'CVE-2026-41103 type: rce, vector: zero-click, auth: pre-auth ; CVE-2026-42898 auth: pre-auth, vector: zero-click'
+    defect: MSRC classifies CVE-2026-41103 as Elevation of Privilege (authentication forgery), not RCE; CVE-2026-42898 requires an authorized (low-privilege) attacker (PR:L), the body itself says "authenticated
+      code injection".
+    ground_truth: 'MSRC CVE-2026-41103: impact "Elevation of Privilege", CWE-303, CVSS 9.1 AV:N/AC:L/PR:N/UI:N/C:H/I:H/A:N. MSRC CVE-2026-42898: "allows an authorized attacker to execute code over a network",
+      CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H (9.9); ZDI: "any authenticated user".'
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-41103
+    fix: Set CVE-2026-41103 type to privilege escalation/auth-bypass and CVE-2026-42898 auth to authenticated (low privilege); fill affected/fixed from MSRC.
+    class: factual-error
+  - where: body, CVE-2026-41089
+    claim: unauthenticated remote attacker over the network reaches the domain-controller Netlogon RPC endpoint
+    defect: No cited source says RPC; independent root-cause analyses place the flaw in the CLDAP DC-locator ping handler on UDP/389 of the Netlogon service, and exploitability depends on long DNS domain/host
+      names.
+    ground_truth: 'Aretiq: "An unauthenticated remote attacker can send a single crafted CLDAP packet to a domain controller''s UDP port 389 ... domain controllers with longer DNS domain names and hostnames
+      are vulnerable"; BuildSamLogonResponse 528-byte stack buffer; GS stack cookie. Securonix (2026-06-03) same.'
+    ground_truth_url: https://aretiq.ai/research/vul260513-cve-2026-41089-microsoft-windows-netlogon-buildsamlogonresponse-stack-based-buffer-overflow-rce/
+    fix: Replace "Netlogon RPC endpoint" with "a crafted network request to a domain controller (CLDAP DC-locator ping on UDP/389 per public root-cause analyses)".
+    class: factual-error
+  - where: body, CVE-2026-41096
+    claim: 'heap overflow in `dnsapi.dll`: a crafted DNS response ... yields code execution as `NetworkService` on every Windows host'
+    defect: dnsapi.dll and the NetworkService context appear in no cited source; Microsoft says exploitation is only possible "in certain configurations".
+    ground_truth: 'ZDI: "heap-based buffer overflow in the DNS Client triggered by a malicious DNS response ... An attacker with a position to influence DNS responses (MitM, rogue server)"; Help Net Security
+      quoting Microsoft: "In certain configurations, this could allow the attacker to run code remotely".'
+    ground_truth_url: https://www.thezdi.com/blog/2026/5/12/the-may-2026-security-update-review
+    fix: Remove dnsapi.dll/NetworkService; add the "certain configurations" qualifier.
+    class: factual-error
+  - where: body, ATT&CK / Detection
+    claim: '`T1071.004 Application Layer Protocol: DNS` (DNS Client) ; monitor Netlogon authentication-pattern anomalies (`4624 Logon Type 3` ... paired with `4769`)'
+    defect: T1071.004 is C2-over-DNS, not exploitation of a DNS Client memory-corruption flaw; 4624/4769 are not indicators of a CLDAP stack overflow. Sources name Netlogon crashes/restarts, anomalous Netlogon
+      traffic from non-DC addresses, UDP/389 CLDAP anomalies, lsass.exe faults.
+    ground_truth: 'Help Net Security (Automox): "The Netlogon service unexpectedly crashing or restarting; Anomalous Netlogon traffic patterns from non-DC source addresses; Authentication failures or domain
+      trust errors immediately after suspicious network activity hits a domain controller". Securonix: Application Event ID 1000 lsass.exe/netlogon.dll, exception 0xC0000409.'
+    ground_truth_url: https://www.helpnetsecurity.com/2026/06/01/windows-netlogon-rce-exploited-cve-2026-41089/
+    fix: Drop T1071.004 (T1210 stands); use the source-supported Netlogon-crash / non-DC-source traffic detections.
+    class: imprecision
+  - where: cves[CVE-2026-41089].status; immediate_action; body
+    claim: 'status: exploited, patch-available ; Microsoft had not yet updated its advisory to reflect exploitation'
+    defect: 'Exploitation rests on the CCB statement alone (sourced from "trusted partners", no details); Microsoft told BleepingComputer and SecurityWeek it has no evidence supporting it, the MSRC record
+      still says Exploited: No (revision 1 only), and the CVE is not in CISA KEV (catalogue 2026.10.16). The entry omits the vendor denial.'
+    ground_truth: 'BleepingComputer (update 2 June 08:51 EDT): "A Microsoft spokesperson also told BleepingComputer that the company does not currently have any evidence to support the CBC''s claims"; SecurityWeek:
+      "Microsoft said it has found no evidence to support CCB''s claims." MSRC: "exploited":"No","latestSoftwareRelease":"Exploitation Less Likely".'
+    ground_truth_url: https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/
+    fix: 'Qualify: reported exploited by CCB (29 May); disputed by Microsoft; not in KEV; add Contradiction line; reconsider priority critical.'
+    class: imprecision
+  - where: immediate_action
+    claim: grants remote code execution as SYSTEM on a domain controller with no credentials and no user interaction (Microsoft MSRC)
+    defect: The MSRC advisory text does not mention SYSTEM; SYSTEM comes from CCB/CERT-EU/Krebs.
+    ground_truth: 'MSRC: "Stack-based buffer overflow in Windows Netlogon allows an unauthorized attacker to execute code over a network." CCB: "run code on the affected system with SYSTEM privileges".'
+    ground_truth_url: https://ccb.belgium.be/advisories/warning-microsoft-patch-tuesday-may-2026-patches-118-vulnerabilities-16-critical-102
+    fix: Attribute SYSTEM to CCB/CERT-EU, not MSRC.
+    class: imprecision
+  - where: summary / actions[0]
+    claim: Netlogon (CVE-2026-41089) and DNS Client (CVE-2026-41096) are the wormable-candidate pre-auth RCEs ; 16 of the CVEs were discovered by Microsoft's new MDASH AI scanning harness
+    defect: Only Netlogon is called wormable by a cited source (ZDI); the DNS Client flaw needs attacker influence over DNS responses and MSRC rates it Exploitation Unlikely. The MDASH sentence is true
+      but no cited source carries it.
+    ground_truth: 'ZDI: Netlogon "Yup - that makes it wormable"; DNS Client "An attacker with a position to influence DNS responses". CSO Online 2026-05-13: "MDASH ... identified 16 previously unknown Windows
+      vulnerabilities".'
+    ground_truth_url: https://www.csoonline.com/article/4170785/microsofts-new-ai-system-finds-16-windows-flaws-including-four-critical-rces.html
+    fix: Drop "wormable-candidate" for DNS Client; cite the Microsoft/CSO MDASH source.
+    class: imprecision
+  - where: actions[] / record summary
+    claim: See § 2 ; (. ; see the Immediate Action below and the §4 update
+    defect: Dangling references to brief sections that do not exist; action[1] ends in a truncated "(.".
+    ground_truth: n/a (editing artefacts)
+    ground_truth_url: https://ccb.belgium.be/advisories/warning-microsoft-patch-tuesday-may-2026-patches-118-vulnerabilities-16-critical-102
+    fix: Remove the dangling references and the truncated fragment.
+    class: imprecision
+- entry: 2026-06-11/windows-netlogon-rce-cve-2026-41089-now-confirmed-exploited
+  verdict: factual-error
+  defects:
+  - where: title / headline / summary / actions[0]
+    claim: now confirmed exploited in the wild in the EU by Belgium's CCB ; CERT-EU published advisory 2026-007 ... confirming that CVE-2026-41089 ... is being actively exploited
+    defect: 'CERT-EU does not confirm exploitation: it relays the CCB statement. CCB gave no details; Microsoft says it has no evidence; MSRC still marks Exploited: No; not in CISA KEV.'
+    ground_truth: 'CERT-EU 2026-007: "According to The Centre for Cybersecurity Belgium (CCB), this vulnerability is currently exploited by threat actors." BleepingComputer: Microsoft "does not currently
+      have any evidence to support the CBC''s claims".'
+    ground_truth_url: https://cert.europa.eu/publications/security-advisories/2026-007/
+    fix: Say "reported exploited by CCB (relayed by CERT-EU advisory 2026-007); Microsoft disputes"; drop "confirmed".
+    class: factual-error
+  - where: evidence[0].quote
+    claim: 'UPDATE (originally covered 2026-W23 weekly): CERT-EU published advisory 2026-007 on 10 June 2026 confirming that CVE-2026-41089 ... citing Belgium''s Centre for Cybersecurity …'
+    defect: The quote is the entry's own migrated prose (publisher "ctipilot v2 brief (migrated)"), not a passage of any cited page; it also contains an ellipsis.
+    ground_truth: 'CERT-EU page carries: "According to The Centre for Cybersecurity Belgium (CCB), this vulnerability is currently exploited by threat actors \[2\]. It is strongly recommended updating affected
+      Windows servers as soon as possible."'
+    ground_truth_url: https://cert.europa.eu/publications/security-advisories/2026-007/
+    fix: Replace with the CERT-EU sentence above.
+    class: factual-error
+  - where: body paragraph 1
+    claim: roughly 20 days after the May 2026 Patch Tuesday fix
+    defect: CERT-EU advisory (2026-06-10) came 29 days after Patch Tuesday (2026-05-12); the CCB warning (29 May) came 17 days after.
+    ground_truth: 'CERT-EU history: "10/06/2026 --- v1.0 -- Initial publication"; "On 12 May 2026, Microsoft published a security advisory".'
+    ground_truth_url: https://cert.europa.eu/publications/security-advisories/2026-007/
+    fix: Say 29 days (CERT-EU) or 17 days (CCB).
+    class: factual-error
+  - where: body paragraph 2
+    claim: sends a crafted Netlogon RPC packet ... functionally a full Active Directory forest compromise, in the ZeroLogon lineage of Netlogon-channel attacks (BleepingComputer, 2026-06-01)
+    defect: The cited BleepingComputer article says only "a specially crafted network request" to a DC and carries no forest-compromise or ZeroLogon statement; independent analyses put the vector at CLDAP
+      UDP/389, not RPC.
+    ground_truth: 'BleepingComputer: "An attacker could send a specially crafted network request to a Windows server that is acting as a domain controller". Securonix (2026-06-03): CLDAP DC Locator ping
+      on UDP 389; compares blast radius to Zerologon.'
+    ground_truth_url: https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/
+    fix: Say "crafted network request to a DC"; attribute forest-takeover to Automox/ZDI/Securonix commentary or drop; drop the ZeroLogon lineage or cite it.
+    class: factual-error
+  - where: actions[0]
+    claim: legacy Server 2012/2012 R2 past ESU
+    defect: '"Past ESU" is in no cited source; CERT-EU lists 2012/2012 R2 as affected and CCB/Krebs say patches exist for all Windows Server from 2012 onward; MSRC lists fixed builds 6.2.9200.26079 and
+      6.3.9600.23181.'
+    ground_truth: 'CCB: "Patches are available for all versions of Windows Server from 2012 onwards." MSRC CVRF fixed builds for 2012 / 2012 R2.'
+    ground_truth_url: https://ccb.belgium.be/advisories/warning-microsoft-patch-tuesday-may-2026-patches-118-vulnerabilities-16-critical-102
+    fix: Drop "past ESU" or cite it.
+    class: imprecision
+  - where: cves[CVE-2026-41089].status
+    claim: 'status: exploited, patch-available; affected: null; fixed: null'
+    defect: Vendor record does not mark exploited, CISA KEV does not list it; per-branch fixed builds are available but not recorded.
+    ground_truth: MSRC "exploited":"No"; CERT-EU build table; MSRC CVRF KB5087537/38/24/41/23 fixed builds.
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-41089
+    fix: Qualify the exploited status; fill fixed per branch.
+    class: imprecision
+  - where: body first sentence; sourcing_note
+    claim: 'UPDATE (originally covered 2026-W23 weekly) ; migration: evidence backfilled from v2 brief body ... update target unresolved'
+    defect: Workflow-internal text in reader-facing fields; the entry duplicates a finding already carried (with its exploitation update) by the 2026-05-13 entry.
+    ground_truth: n/a
+    ground_truth_url: https://cert.europa.eu/publications/security-advisories/2026-007/
+    fix: Rewrite as a plain-prose changelog section on the survivor.
+    class: imprecision
+- entry: 2026-05-15/windows-bitlocker-yellowkey-and-ctfmon-greenplasma-zero-days
+  verdict: factual-error
+  defects:
+  - where: title / headline / summary / actions[] / body
+    claim: public PoC, no patch ; YellowKey (no CVE) ... no patch available ; Neither vulnerability has been assigned a CVE nor received a Microsoft patch as of 2026-05-15 ; Public PoC, no patch
+    defect: 'Superseded: CVE-2026-45585 was assigned 2026-05-19 (the entry''s own update and cves[] say so while the headline, summary and action 1 still say "no CVE"), and Microsoft shipped fixes for YellowKey
+      (CVE-2026-45585) and GreenPlasma (CVE-2026-45586) in the 2026-06-09 June Patch Tuesday.'
+    ground_truth: 'BleepingComputer 2026-06-10: "On Tuesday, Microsoft fixed the GreenPlasma, MiniPlasma, and YellowKey security vulnerabilities as part of its June 2026 Patch Tuesday updates". MSRC CVE-2026-45585
+      revision 2 (2026-06-09): "Added links to June 2026 Windows security updates. Microsoft recommends installing this updates as soon as possible."'
+    ground_truth_url: https://www.bleepingcomputer.com/news/microsoft/microsoft-patches-yellowkey-greenplasma-miniplasma-zero-days/
+    fix: 'Bring the headline, summary, labelled lines and actions to the current state: CVE-2026-45585 (YellowKey) and CVE-2026-45586 (GreenPlasma, CTFMON EoP CWE-59, CVSS 7.8) fixed in the June 2026 updates;
+      record fixed builds from the vendor table.'
+    class: factual-error
+  - where: cves[CVE-2026-45585].status
+    claim: 'status: poc-public, mitigation-only; fixed: null'
+    defect: A security update has been available since 2026-06-09; MSRC also states TPM+PIN is not exploitable.
+    ground_truth: 'MSRC: "Added links to June 2026 Windows security updates"; FAQ: "I am using TPM+PIN, am I at risk ... No, if you are using TPM+PIN the vulnerability is not exploitable."'
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-45585
+    fix: Set status to patch-available, fill fixed from MSRC software update table; exploited remains No; not in CISA KEV (2026.10.16).
+    class: factual-error
+  - where: body (YellowKey / TPM+PIN)
+    claim: the researcher asserts the full bypass also defeats TPM+PIN but the unpublished variant is unconfirmed
+    defect: True to the BleepingComputer text but omits the vendor's direct statement that TPM+PIN is not exploitable and Dormann's finding that the current exploit does not work against TPM+PIN (a standing
+      contradiction the entry never surfaces).
+    ground_truth: 'MSRC: "No, if you are using TPM+PIN the vulnerability is not exploitable."; BleepingComputer: Dormann "the current YellowKey exploit does not work in a TMP+PIN environment".'
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-45585
+    fix: 'Add a Contradiction line: researcher claims TPM+PIN bypass (unpublished), Microsoft says not exploitable.'
+    class: imprecision
+  - where: body (YellowKey mechanism)
+    claim: crafted `FsTx` folder contents placed on a USB drive or the EFI partition are replayed by WinRE
+    defect: Omits that Dormann could reproduce only with the USB drive, not with files on the EFI partition.
+    ground_truth: 'BleepingComputer: Dormann "could not reproduce the bug using the EFI partition".'
+    ground_truth_url: https://www.bleepingcomputer.com/news/security/windows-bitlocker-zero-day-gives-access-to-protected-drives-poc-released/
+    fix: Say USB confirmed; EFI-partition variant claimed by researcher but not reproduced by Dormann.
+    class: imprecision
+  - where: body (ATT&CK)
+    claim: 'T1542.001 (Pre-OS Boot: System Firmware)'
+    defect: YellowKey replays NTFS transaction logs in WinRE to spawn a shell; no firmware is modified, T1542.001 is System Firmware.
+    ground_truth: 'BleepingComputer/Dormann: "Windows looks for \System Volume Information\FsTx directories on attached drives, and will replay any NTFS logs ... winpeshl.ini is deleted ... it pops up a
+      CMD.EXE".'
+    ground_truth_url: https://www.bleepingcomputer.com/news/security/windows-bitlocker-zero-day-gives-access-to-protected-drives-poc-released/
+    fix: Drop T1542.001 (T1006 may stay) or map to a source-supported technique.
+    class: imprecision
+  - where: body ("Microsoft states")
+    claim: Microsoft states it is "actively investigating."
+    defect: The quoted phrase appears in none of the cited sources; the Microsoft statement in BleepingComputer is that it is "committed to investigating reported security issues".
+    ground_truth: 'BleepingComputer: a spokesperson stated the company is committed to investigating reported security issues, "and update impacted devices to protect customers as soon as possible."'
+    ground_truth_url: https://www.bleepingcomputer.com/news/security/windows-bitlocker-zero-day-gives-access-to-protected-drives-poc-released/
+    fix: Replace with the verbatim statement or drop the quotation marks.
+    class: factual-error
+  - where: body (total)
+    claim: bringing the total of unpatched Nightmare Eclipse Windows zero-days to four
+    defect: The cited BleepingComputer article says two unpatched vulnerabilities and does not count four; BleepingComputer says RedSun was silently patched while The Register says RedSun and UnDefend remain
+      unfixed and counts five zero-days this year.
+    ground_truth: 'The Register: "a series of five Microsoft zero-day bugs the researcher has exposed this year ... Both RedSun and UnDefend remain unfixed"; BleepingComputer: "Microsoft silently patched
+      the RedSun vulnerability".'
+    ground_truth_url: https://www.theregister.com/security/2026/05/13/disgruntled-researcher-releases-two-more-microsoft-zero-days/5239758
+    fix: Drop the total or attribute it and flag the BC/Register disagreement (Contradiction line).
+    class: imprecision
+  - where: 'actions[1]; ## Update body'
+    claim: Microsoft's WinRE `BootExecute` registry mitigation is per-device and fragile under Windows feature updates ; The WinRE registry edit is fragile and breaks on Windows feature updates
+    defect: No source states the mitigation breaks on feature updates; MSRC revision 1.2 (2026-05-21) replaced the manual steps with a script.
+    ground_truth: 'MSRC: "removed the manual mitigations ... The script is for WinRE and removes autofstx.exe from the BootExecute registry value ... re-sealing WinRE so BitLocker trust remains intact."'
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-45585
+    fix: Remove the fragility claim or cite it; describe the MSRC script.
+    class: imprecision
+  - where: actions[0] / body (mitigations)
+    claim: disable USB/external-media boot ; disable WinRE where operationally viable (`reagentc /disable`)
+    defect: Not in any cited source (sources give BitLocker PIN and BIOS password).
+    ground_truth: 'BleepingComputer (Beaumont): "recommended using a BitLocker PIN and a BIOS password"; NCSC-CH #12574: "Implement BIOS passwords and setting a BitLocker PIN".'
+    ground_truth_url: https://security-hub.ncsc.admin.ch/#/posts/12574
+    fix: Cite or drop the reagentc and USB-boot items.
+    class: imprecision
+  - where: priority
+    claim: 'priority: high'
+    defect: Physical-access-only BitLocker bypass (CVSS 6.8, AV:P) for TPM-only devices; no exploitation reported; vendor patch exists since 2026-06-09.
+    ground_truth: 'MSRC: "exploited":"No"; "bypass a security feature with a physical attack".'
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-45585
+    fix: 'Context only: high is hard to defend on today''s facts.'
+    class: imprecision
+- entry: 2026-05-30/nightmare-eclipse-chaotic-eclipse-microsoft-s-digital-crimes
+  verdict: factual-error
+  defects:
+  - where: cves[CVE-2026-45585]
+    claim: 'cvss: n/a; type: lpe; vector: local; auth: post-auth; status: poc-public, no-patch'
+    defect: CVE-2026-45585 is the YellowKey BitLocker security-feature bypass (physical attack, CVSS 6.8, PR:N), not a local privilege escalation; and it has been patched since 2026-06-09.
+    ground_truth: 'MSRC: "Windows BitLocker Security Feature Bypass Vulnerability", CVSS:3.1/AV:P/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, "bypass a security feature with a physical attack"; rev 2 2026-06-09 links
+      June 2026 security updates.'
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-45585
+    fix: 'Correct the record (SFB, physical, 6.8, patched) or drop the cves[] record: this entry is about Microsoft''s disclosure-dispute statement, not a single CVE.'
+    class: factual-error
+  - where: summary / body paragraph 1
+    claim: Microsoft's Digital Crimes Unit issued a formal public statement on 28–29 May 2026
+    defect: The statement is an MSRC blog post dated 2026-05-27 (Wednesday); The Record reported it 2026-05-29. It also was a Microsoft Security Response Center post, with the DCU named in one sentence.
+    ground_truth: 'MSRC blog "A shared responsibility: Protecting customers through Coordinated Vulnerability Disclosure", date 2026-05-27; The Record: "In a blogpost on Wednesday, Microsoft said".'
+    ground_truth_url: https://www.microsoft.com/en-us/msrc/blog/2026/05/a-shared-responsibility-protecting-customers-through-coordinated-vulnerability-disclosure
+    fix: Say Microsoft (MSRC) published it on 27 May 2026.
+    class: factual-error
+  - where: title / headline
+    claim: Microsoft's Digital Crimes Unit threatens criminal action
+    defect: 'Overstates: The Record reports Microsoft "stopped short of directly threatening legal action" (heise.de reads it as threatening lawsuits), a source disagreement the entry resolves silently.'
+    ground_truth: 'The Record: "The company stopped short of directly threatening legal action, but said: ''Our Digital Crimes Unit will continue bringing cases against these actors and those that enable
+      their criminal activity''". heise: "Microsoft is threatening lawsuits and the police."'
+    ground_truth_url: https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more
+    fix: Say "warns its Digital Crimes Unit will keep bringing cases" and add a Contradiction line.
+    class: factual-error
+  - where: body paragraph 1
+    claim: responded by threatening a new vulnerability release on 14 July 2026 (the next Patch Tuesday)
+    defect: 14 July is the Patch Tuesday after next (the next one after 29 May was 9 June 2026); the sources do not say the threat was a response to Microsoft's statement.
+    ground_truth: 'The Record: "The researcher threatened a further release on July 14 — the date scheduled for Microsoft''s Patch Tuesday"; June Patch Tuesday was 2026-06-09 (BleepingComputer 2026-06-10).'
+    ground_truth_url: https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more
+    fix: Drop "responded" and "the next"; say "the July Patch Tuesday".
+    class: factual-error
+  - where: body (final sentence)
+    claim: 'Next Patch Tuesday: 10 June 2026.'
+    defect: June 2026 Patch Tuesday was 9 June.
+    ground_truth: 'BleepingComputer 2026-06-10: "On Tuesday, Microsoft fixed the GreenPlasma, MiniPlasma, and YellowKey security vulnerabilities as part of its June 2026 Patch Tuesday updates".'
+    ground_truth_url: https://www.bleepingcomputer.com/news/microsoft/microsoft-patches-yellowkey-greenplasma-miniplasma-zero-days/
+    fix: 'Change to 9 June 2026 (and bring the entry current: all three were patched that day).'
+    class: factual-error
+  - where: title / body paragraph 2
+    claim: GreenPlasma and MiniPlasma remain unpatched as of 30 May 2026 ; no CVE yet assigned to MiniPlasma itself ; root cause is assessed as an incomplete remediation of CVE-2020-17103
+    defect: 'Accurate for 30 May but superseded: on 2026-06-09 Microsoft fixed YellowKey (CVE-2026-45585), GreenPlasma (CVE-2026-45586, CTFMON EoP) and MiniPlasma (via re-release of CVE-2020-17103). The
+      incomplete-fix statement is the researcher''s claim (BleepingComputer) and is uncited here.'
+    ground_truth: 'MSRC CVE-2020-17103 rev 2 (2026-06-09): "This CVE has been re-released to comprehensively address the vulnerability identified by CVE-2020-17103". MSRC CVE-2026-45586 released 2026-06-09,
+      CVSS 7.8, CWE-59, "Exploitation More Likely". BleepingComputer 2026-06-10.'
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2020-17103
+    fix: Add the June 2026 fix state and the CVE mappings; cite BleepingComputer 2026-05-17 for the MiniPlasma facts and attribute the incomplete-fix claim to the researcher.
+    class: imprecision
+  - where: headline
+    claim: GreenPlasma and MiniPlasma (cldflt.sys SYSTEM escalation)
+    defect: cldflt.sys is the MiniPlasma component; GreenPlasma is a CTFMON flaw (heise conflates the two via CVE-2020-17103).
+    ground_truth: 'BleepingComputer: GreenPlasma = "Windows CTFMON Arbitrary Section Creation Elevation of Privileges Vulnerability"; MiniPlasma = cldflt.sys HsmOsBlockPlaceholderAccess.'
+    ground_truth_url: https://www.bleepingcomputer.com/news/microsoft/new-windows-miniplasma-zero-day-exploit-gives-system-access-poc-released/
+    fix: Reword the headline so cldflt.sys is tied to MiniPlasma only.
+    class: imprecision
+  - where: body / summary / sourcing_note
+    claim: 'UPDATE (originally covered 2026-W21) ; migration: update target unresolved'
+    defect: Workflow-internal text in reader-facing fields.
+    ground_truth: n/a
+    ground_truth_url: https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more
+    fix: Rewrite in plain prose.
+    class: imprecision
+- entry: 2026-05-16/cve-2026-42897-microsoft-exchange-server-2016-2019-se-stored
+  verdict: factual-error
+  defects:
+  - &id001
+    where: title / headline / summary / immediate_action / actions[] / cves[].status / body
+    claim: no permanent patch ; Active Exploitation Without a Patch ; Permanent fixes are forthcoming ; mitigation-only
+    defect: 'Superseded: Microsoft released the CVE-2026-42897 fix in the June 2026 Exchange Security Updates on 2026-06-09 (SE RTM publicly; 2019 CU14/CU15 and 2016 CU23 only for Period 2 ESU customers);
+      the July 2026 SUs (2026-07-14) are also recommended by MSRC.'
+    ground_truth: 'Exchange Team 2026-06-09: "The June 2026 SUs address ... CVE-2026-42897"; FAQ: "When CVE-2026-42897 mitigations were released ... Are those solved in the CVE-2026-42897 fix (June 2026
+      SU)? Yes". MSRC rev 2 2026-06-09 "Added links to June 2026 Exchange Server security updates"; Learn M2 "Highest version applicable ... June 2026 SU".'
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+    fix: 'Rewrite headline, summary, labelled lines and actions for the current state: fix available since 2026-06-09, mitigation removable after the July SU, exploitation by TA488 documented 2026-07-28.'
+    class: factual-error
+  - where: title / headline / immediate_action / body
+    claim: stored XSS in OWA ; a stored / reflected cross-site scripting flaw
+    defect: No source characterises the flaw as stored (or reflected); Microsoft says "cross-site scripting" with spoofing impact.
+    ground_truth: 'MSRC: "Microsoft Exchange Server Spoofing Vulnerability ... Improper neutralization of input during web page generation (''cross-site scripting'')"; Proofpoint: "the server does not adequately
+      sanitize HTML in the message body".'
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+    fix: Say "cross-site scripting (spoofing) in OWA".
+    class: factual-error
+  - where: body (mitigation / EEMS)
+    claim: enabled by default on Exchange 2016 SP1 and later and auto-applies without requiring a service restart ; EEMS Mitigation M2
+    defect: The EM service applies from the September 2021 CU (2016 CU22 / 2019 CU11) and can only fetch new mitigations on builds from March 2023 or later; "2016 SP1" does not exist as a threshold; the
+      no-restart statement and the "M2" (rule M2.1.x) naming are not as sourced.
+    ground_truth: 'Exchange Team: "EM Service will not be able to check for new mitigations if your server is running Exchange Server version older than March 2023"; Learn: M2 lowest version "Exchange 2016:
+      RTM" but EM service from "September 2021 CU"; mitigation ID "M2.1.x".'
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+    fix: State the real prerequisites (September 2021 CU or later; build from March 2023 or later for new mitigations; officeclient.microsoft.com:443) and drop the restart claim.
+    class: factual-error
+  - where: actions[0]; body (verification)
+    claim: Run `Get-ExchangeDiagnosticInfo -Server <name> -Process MSExchangeHMWorker -Component EemsMitigation -SettingName MitigationsApplied` ; look back to 2026-05-09
+    defect: The command appears in no cited source (Microsoft documents Get-ExchangeServer | fl Name,MitigationsApplied, Get-Mitigations.ps1 and the Health Checker); the 2026-05-09 lookback has no basis
+      (Proofpoint dates the actor infrastructure to March 2026).
+    ground_truth: 'Learn: "Get-ExchangeServer -Identity <ServerName> | Format-List Name,MitigationsApplied"; Exchange Team: run Exchange Health Checker.'
+    ground_truth_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: Use the Microsoft-documented checks; drop or justify the lookback date.
+    class: factual-error
+  - where: body (Detection)
+    claim: IIS access logs ... `/owa/` URLs containing `<script>` fragments ... in query strings; Exchange Application Event Log EID 4 ...; EDR alerts on browser processes spawning unexpected children from
+      OWA sessions
+    defect: 'Does not fit the documented mechanism: the payload is JavaScript in the email body run in the browser with no host footprint; no source supports these log fields.'
+    ground_truth: 'Proofpoint: "OWAReaper runs inside the OWA browser context, operating as a stealthy implant with no host footprint"; detections: Default-user folder grants, EWS add-in tokens, IndexedDB/localStorage.'
+    ground_truth_url: https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+    fix: Replace with source-supported detections (mailbox folder-permission grants to Default, add-in token abuse, GetClientAccessToken, OWA localStorage/IndexedDB artefacts).
+    class: imprecision
+  - where: body ("three tiers")
+    claim: Exploitation Detected (the highest of its three exploitation-status tiers)
+    defect: Microsoft's exploitability assessments are Exploitation Detected / More Likely / Less Likely / Unlikely (four).
+    ground_truth: MSRC records show "Exploitation Detected", "Exploitation More Likely", "Exploitation Less Likely", "Exploitation Unlikely".
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+    fix: Drop the tier count.
+    class: imprecision
+  - where: body (first paragraph)
+    claim: disclosed by Microsoft on 2026-05-14 alongside the May 2026 Patch Tuesday cycle
+    defect: 'Patch Tuesday was 2026-05-12; the CVE was an out-of-band disclosure on Thursday 2026-05-14 (NCSC-NL: "out-of-band update").'
+    ground_truth: 'MSRC release 2026-05-14T07:00-07:00; NCSC-NL NCSC-2026-0159: mitigations "middels een out-of-band update".'
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+    fix: Say out-of-band disclosure on 2026-05-14, two days after Patch Tuesday.
+    class: imprecision
+  - where: evidence[1]
+    claim: Microsoft is supplying a temporary mitigation for this vulnerability through the Exchange Emergency Mitigation Service. We are working on developing and testing a more permanent fix.
+    defect: (low confidence) The sentence is on neither the current MSRC page nor the Exchange blog (both revised since); cannot be verified verbatim today.
+    ground_truth: MSRC record revised 2026-05-18, 2026-06-09, 2026-07-14; current FAQ has no such sentence.
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+    fix: Replace with a quote verifiable on the current page, or drop.
+    class: imprecision
+  - where: body / actions[1]
+    claim: See § 5 (Deep Dive, "Permanent-patch availability" paragraph)
+    defect: Dangling pointer to a section of the migrated brief that does not exist in this entry.
+    ground_truth: n/a
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+    fix: Remove.
+    class: imprecision
+- entry: 2026-05-16/microsoft-exchange-cve-2026-42897-active-exploitation-withou
+  verdict: factual-error
+  defects:
+  - *id001
+  - where: body, Mitigation M2 mechanism
+    claim: Mitigation M2, which rewrites the specific request format the in-the-wild exploit uses to deliver the XSS payload — the mitigation does not require an Exchange restart
+    defect: M2 is a URL Rewrite outbound rule adding a Content-Security-Policy (CSP) to OWA responses (which is why IE / IE-mode clients are not protected); the blog says nothing about request-format rewriting
+      or restart.
+    ground_truth: 'Learn: rollback removes the "EEMS M2.1 OWA CSP - outbound" outbound rule and "EEMS M2.1 OWA SPA HTML shell - precondition"; MSRC FAQ: "No, because Content Security Policy (CSP) is not
+      supported by Internet Explorer nor Microsoft Edge using Internet Explorer Mode".'
+    ground_truth_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: Describe M2 as a CSP-injecting URL Rewrite rule; drop the restart claim.
+    class: factual-error
+  - where: body, EEMS paragraph
+    claim: '`Set-Server -MitigationsEnabled $false` ; `Get-Server <server> | Select-Object MitigationsEnabled` ; via Group Policy ; hardened with custom IIS rewrite rules that conflict ; For all four cases
+      ... EOMT'
+    defect: Non-existent cmdlets (Set-Server / Get-Server); Group Policy and the custom-rewrite-rule case are in no source; Exchange 2013 is not an affected version, so (a) does not describe an exposed
+      state.
+    ground_truth: 'Learn: "Set-OrganizationConfig -MitigationsEnabled $false" and "Set-ExchangeServer -Identity <ServerName> -MitigationsEnabled $false"; Exchange blog: affected 2016, 2019, SE.'
+    ground_truth_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: Use Set-ExchangeServer / Get-ExchangeServer and drop unsupported cases.
+    class: factual-error
+  - where: body, EEMS verification and hunt
+    claim: Get-ExchangeDiagnosticInfo ... EemsMitigation ... ; w3wp.exe spawning unexpected children ... post-exploitation tell of XSS-to-execution chains ; Exchange Application Event Log EID 4 ; query
+      strings
+    defect: Unsupported command; detections do not fit a browser-side JavaScript implant with no host footprint.
+    ground_truth: 'Proofpoint: "no host footprint"; Learn: Get-ExchangeServer | Format-List Name,MitigationsApplied.'
+    ground_truth_url: https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+    fix: Use Microsoft-documented verification and Proofpoint-sourced detections.
+    class: imprecision
+  - where: body, exploitation and attribution
+    claim: Microsoft notes the scale and identity of the exploitation activity are not yet detailed publicly (The Hacker News) ; No named threat-actor attribution has been published
+    defect: 'The statement is The Hacker News''s, not Microsoft''s; and attribution is now published (Proofpoint 2026-07-28: TA488 / Void Blizzard / LAUNDRY BEAR).'
+    ground_truth: 'THN: "There are currently no details on how the vulnerability is being exploited, the identity of the threat actor behind the activity, or the scale of such efforts." Proofpoint: "Proofpoint
+      attributes this activity to TA488".'
+    ground_truth_url: https://thehackernews.com/2026/05/on-prem-microsoft-exchange-server-cve.html
+    fix: Attribute to THN with date, and add the TA488 attribution.
+    class: factual-error
+  - where: body, attack chain
+    claim: 'T1566.001 Phishing: Spearphishing Attachment ... T1078 ... T1534 Internal Spearphishing ... payload reads OWA session cookies / auth tokens'
+    defect: 'The delivery is an email body with no attachment or URL; the chain steps (cookie theft, valid-account reuse, internal spearphishing) are analyst conjecture that later primary reporting does
+      not confirm (observed: autofill credential harvest, add-in OAuth token theft via GetClientAccessToken, Default-user folder grants).'
+    ground_truth: 'Proofpoint: "no suspicious URLs or attachments present"; "creates two invisible input elements ... waits for the browser''s autofill"; "uses those add-ins to call GetClientAccessToken
+      to steal OAuth tokens".'
+    ground_truth_url: https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+    fix: Replace with the Proofpoint-observed behaviour; drop T1566.001.
+    class: imprecision
+  - where: body, quantifiers
+    claim: CVE-2026-42897 is the first 2026 case where EEMS ... is the line of defence ; repeated EEMS-only mitigations across the 2021-2026 Exchange CVE history ; Hafnium and dozens of follow-on clusters
+    defect: 'Unsupported quantifiers: Learn lists only two CVE mitigations (M1 in 2022, M2 in 2026); "dozens of clusters" is not in the cited Microsoft post.'
+    ground_truth: 'Learn mitigation list: PING1, M1 (CVE-2022-41040), M2 (CVE-2026-42897).'
+    ground_truth_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: Remove the superlative and counts or cite them.
+    class: imprecision
+  - where: body, patch details
+    claim: a security update for Exchange 2016 CU23 and Exchange 2019 CU14 / CU15 (cited to the May Exchange blog)
+    defect: The May blog gives no CU numbers (they appear in the June 2026 SU blog); the September 2021 blog cited for the EEMS introduction could not be read by any transport in this audit, so that adjacency
+      is unverified (the Learn doc confirms the September 2021 CU).
+    ground_truth: 'June SU blog: "Exchange Server 2019 CU14 and CU15 ... Exchange Server 2016 CU23 (... Period 2 ESU program)".'
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+    fix: Cite the June SU blog.
+    class: imprecision
+  - where: body ("PD-13"), sourcing_note, evidence[0]
+    claim: 'per PD-13 in this brief series ; migration: evidence backfilled ; quote "Background."'
+    defect: Workflow-internal text in reader-facing fields; evidence[0] quote is just the word "Background." with publisher "ctipilot v2 brief (migrated)", not a source passage.
+    ground_truth: n/a
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+    fix: Replace the evidence quote with a verbatim source passage; strip workflow text.
+    class: imprecision
+- entry: 2026-05-17/exchange-cve-2026-42897-pwn2own-devcore-three-bug-system-rce
+  verdict: factual-error
+  defects:
+  - where: summary / body paragraph 1 / body paragraph 2
+    claim: achieve unauthenticated remote code execution at SYSTEM privilege level ; a fresh unauthenticated SYSTEM RCE class
+    defect: '"Unauthenticated" is in neither ZDI nor BleepingComputer.'
+    ground_truth: 'ZDI: "chained 3 bugs to achieve Remote Code Execution as SYSTEM on Microsoft Exchange"; BleepingComputer: "chaining three bugs to gain remote code execution with SYSTEM privileges on
+      Microsoft Exchange".'
+    ground_truth_url: https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results
+    fix: Drop "unauthenticated" or cite a source.
+    class: factual-error
+  - where: body (ZDI verbatim)
+    claim: 'ZDI verbatim: "Orange Tsai (DEVCORE Research Team) earned $200,000 after chaining three bugs to gain remote code execution with SYSTEM privileges on Microsoft Exchange."'
+    defect: The quoted sentence is not ZDI's; it is BleepingComputer's wording. ZDI's text differs.
+    ground_truth: 'ZDI: "Orange Tsai (@orange_8361) of DEVCORE Research Team chained 3 bugs to achieve Remote Code Execution as SYSTEM on Microsoft Exchange, earning $200,000 and 20 Master of Pwn points."'
+    ground_truth_url: https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results
+    fix: Quote ZDI verbatim or attribute to BleepingComputer.
+    class: factual-error
+  - where: cves[CVE-2026-42897]
+    claim: 'type: rce; status: exploited, cisa-kev, mitigation-only'
+    defect: This entry is about a different, CVE-less Pwn2Own Exchange chain; tagging CVE-2026-42897 as RCE is wrong (XSS/spoofing) and the mitigation-only status is superseded by the 2026-06-09 SUs.
+    ground_truth: 'MSRC: "Microsoft Exchange Server Spoofing Vulnerability", Impact Spoofing.'
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+    fix: Drop the cves[] record (reference the CVE entry instead) or correct type and status.
+    class: factual-error
+  - where: body (blog 502 note)
+    claim: the Microsoft Exchange blog post ... linked from the MSRC advisory returns 502 on direct fetch and the MSRC entry itself is the operational primary
+    defect: 'Process narration that is false today: the post is reachable and is the primary mitigation guidance.'
+    ground_truth: Exchange Team post fetched 2026-10-18 (full text, last updated 2026-07-14).
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+    fix: Remove.
+    class: imprecision
+  - where: actions[0]; body (stale state)
+    claim: through August Patch Tuesday 2026 ; CVE-2026-42897 active XSS, no permanent patch ; until Microsoft ships permanent fixes for both ; Exchange Online tenants are not in scope for either
+    defect: The CVE-2026-42897 fix shipped 2026-06-09; Microsoft's "Exchange Online is not impacted" statement covers CVE-2026-42897 only, not the Pwn2Own chain; Get-ExchangeDiagnosticInfo command unsupported;
+      "§ 4 UPDATE" dangling.
+    ground_truth: 'Exchange Team June 2026: SUs address CVE-2026-42897; May blog: "Exchange Online is not impacted by this vulnerability".'
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+    fix: Bring to current state; scope the Exchange Online statement to the CVE.
+    class: factual-error
+  - where: body (KEV link)
+    claim: CISA KEV (added 2026-05-15)
+    defect: Cited URL is the generic KEV catalogue landing page (not a per-CVE page); the fact itself is correct (dateAdded 2026-05-15).
+    ground_truth: 'KEV 2026.10.16: CVE-2026-42897 dateAdded 2026-05-15, dueDate 2026-05-29.'
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+    fix: Cite MSRC or the CISA alert instead of the catalogue landing page.
+    class: imprecision
+  - where: evidence[0]; sourcing_note
+    claim: 'UPDATE (originally covered ...) quote ; migration: ...'
+    defect: evidence[0] is entry prose from the migrated brief (publisher "ctipilot v2 brief (migrated)"), with an ellipsis, not a passage of any cited page.
+    ground_truth: n/a
+    ground_truth_url: https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results
+    fix: Replace with a verbatim ZDI passage.
+    class: imprecision
+- entry: 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+  verdict: factual-error
+  defects:
+  - where: title / headline / summary / immediate_action / body paragraph 1
+    claim: Exchange Team Blog update confirms the EM Service auto-mitigation requires outbound HTTPS connectivity ... to officemitigations.microsoft.com ; The Microsoft Exchange Team Blog post ... was last
+      modified 2026-05-17 to clarify an operational dependency
+    defect: The cited blog carries no connectivity-dependency statement (its 2026-05-17 update added only an OWACalendar.Proxy known issue) and the host name appears in no source; Microsoft documents the
+      Office Config Service endpoint as officeclient.microsoft.com on port 443 in the EM-service doc. The dependency itself is real but the title, summary, immediate action and body bind it to the wrong
+      host and the wrong source.
+    ground_truth: 'Learn: "Office Config Service | officeclient.microsoft.com/* | 443 | Required endpoint for the Exchange EM service"; Exchange blog update log: "5/17/2026: Added a known issue with OWACalendar.Proxy
+      healthset showing unhelathy".'
+    ground_truth_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: Use officeclient.microsoft.com and cite the Learn doc; drop "last modified 2026-05-17 to clarify".
+    class: factual-error
+  - where: actions[0]; body paragraph 2
+    claim: 'Run `Get-ExchangeDiagnosticInfo -Server <server> -Process EdgeTransport -Component EmergencyMitigation` ... confirm `Status: Active`'
+    defect: The command and output field appear in no source; Microsoft documents Get-ExchangeServer | Format-List Name,MitigationsApplied and the Health Checker.
+    ground_truth: 'Learn: "Get-ExchangeServer -Identity <ServerName> | Format-List Name,MitigationsApplied".'
+    ground_truth_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    fix: Use the documented commands.
+    class: factual-error
+  - where: summary / immediate_action / actions[0] / body paragraphs 1-2
+    claim: no permanent patch is available yet ; No permanent patch yet ; no permanent cumulative-update fix as of 2026-05-18
+    defect: The entry was updated on 2026-07-31 with a section stating the July SU is the fix, yet summary, immediate_action and actions[0] still say no permanent patch exists (self-contradiction), and
+      the fix actually shipped 2026-06-09.
+    ground_truth: 'Exchange Team 2026-06-09: "The June 2026 SUs address ... CVE-2026-42897".'
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+    fix: Rewrite summary / immediate_action / actions[0] to the current state; keep the May text only as dated history.
+    class: factual-error
+  - where: 'cves[CVE-2026-42897].affected / fixed; ## Update 2026-07-31 Patching'
+    claim: all update levels prior to the July 2026 Security Update ; The permanent fix is the July 2026 Security Update ; May shipped a mitigation, July shipped the fix
+    defect: The first fix shipped in the June 2026 SUs (2026-06-09); the July SUs are cumulative and also fix sibling CVE-2026-55008. "Prior to the July 2026 SU" misstates the affected range.
+    ground_truth: 'Learn M2: "Highest version applicable: Exchange SE: June 2026 SU - Exchange 2019: June 2026 SU - Exchange 2016: June 2026 SU"; June blog FAQ: "the CVE-2026-42897 fix (June 2026 SU)";
+      MSRC FAQ 7/14: install July SUs "to be protected from this vulnerability and related CVE-2026-55008".'
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+    fix: Set fixed to the June 2026 SU (SE RTM public; 2019 CU14/15 and 2016 CU23 via Period 2 ESU) and note the July SU and CVE-2026-55008; affected = versions before the June 2026 SU.
+    class: factual-error
+  - where: body paragraph 2 / evidence[1]
+    claim: Microsoft states verbatim "We are working on developing and testing a more permanent fix which we will provide when it meets our quality standards."
+    defect: (low confidence) The quoted sentence is not on the current Exchange blog or MSRC page (both revised); it cannot be verified verbatim today.
+    ground_truth: 'Exchange blog current text: "Microsoft is working on and will release and announce a security update for impacted versions of Exchange Server in the future."'
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+    fix: Quote a sentence verifiable on the current page or drop.
+    class: imprecision
+  - where: tags
+    claim: no-patch together with patch-available
+    defect: Contradictory tags on one entry.
+    ground_truth: n/a (June 2026 SU exists)
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+    fix: Drop no-patch.
+    class: imprecision
+  - where: evidence[0] attribution; sources[] dates
+    claim: publisher Microsoft Exchange Team Blog for "The Exchange Emergency Mitigation Service will provide mitigation automatically ... " ; Proofpoint 2026-07-29
+    defect: The sentence is the MSRC FAQ, not the Exchange blog; Proofpoint's post is dated 2026-07-28 on the page.
+    ground_truth: 'MSRC FAQ: "The Exchange Emergency Mitigation Service will provide mitigation automatically, and is on by default."; Proofpoint page date 2026-07-28.'
+    ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+    fix: Attribute to MSRC; use 2026-07-28 (or note timezone).
+    class: imprecision
+  - where: techniques[]
+    claim: T1552 Unsecured Credentials
+    defect: Autofill harvesting is Credentials from Web Browsers and the GetClientAccessToken abuse is Application Access Token theft; T1552 fits neither; T1528 and T1555.003 are not mapped.
+    ground_truth: 'Proofpoint: "waits for the browser''s autofill to enter the username and password"; "call GetClientAccessToken to steal OAuth tokens".'
+    ground_truth_url: https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+    fix: Map T1555.003 and T1528 (both active in the pinned dataset) instead of T1552.
+    class: imprecision
+  - where: '## Update 2026-07-31 / ## Improvement 2026-08-30 (reader-facing wording)'
+    claim: The May entry tracked ... ; which this pipeline registers as LAUNDRY BEAR ; **A1** on the NATO Admiralty scale
+    defect: Workflow-internal wording and Admiralty letters in reader-facing sections; the Improvement section is metadata-only and should have been internal.
+    ground_truth: n/a
+    ground_truth_url: https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+    fix: Strip internal wording; make the metadata-only record internal.
+    class: imprecision
+  - where: priority
+    claim: 'priority: critical'
+    defect: On 2026-07-31 a vendor fix had existed for seven weeks; the new element is an actor campaign (TA488) against government targets in the US and Europe.
+    ground_truth: Exchange Team 2026-06-09 SUs; Proofpoint 2026-07-28.
+    ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+    fix: 'Context only: critical is hard to defend for a patched flaw; high may fit given on-prem Exchange exposure.'
+    class: imprecision
+- entry: 2026-06-08/cve-2026-3300-everest-forms-pro-wordpress-unauthenticated-ev
+  verdict: factual-error
+  defects:
+  - &id002
+    where: body / summary
+    claim: mass exploitation running since 13 April (29,300+ blocked attempts, a single-day spike of 17,900 on 16 May, still active as of 6 June) ; sustained mass exploitation from 13 April through at least
+      6 June
+    defect: Wordfence says exploitation began 13 April and "mass exploitation" occurred on 16 May; nothing says it was sustained mass exploitation through 6 June; 26,300 of the 29,300 blocked requests came
+      from one IP and The Hacker News (2026-06-05) counts 16 attempts in the last 24 hours.
+    ground_truth: 'Wordfence: "attackers started targeting websites on April 13th, 2026 ... mass exploitation occurring on May 16th, 2026"; "Over 26,300 blocked requests" from the top IP; THN: "16 attack
+      attempts occurred in the last 24 hours".'
+    ground_truth_url: https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/
+    fix: Say exploitation observed from 13 April with a 17,900-attempt spike on 16 May, most volume from one source; drop "still active as of 6 June".
+    class: factual-error
+  - where: body (inclusion gate)
+    claim: 'Inclusion gate: vendor-confirmed in-the-wild exploitation at scale.'
+    defect: Exploitation is reported by Wordfence (a security vendor, from its firewall telemetry); the plugin vendor (WPEverest) made no confirmation in any source; the sentence is also pipeline-internal
+      language.
+    ground_truth: Wordfence / BleepingComputer / THN report Wordfence telemetry only.
+    ground_truth_url: https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/
+    fix: Delete the sentence.
+    class: factual-error
+  - where: evidence[0]
+    claim: A pre-authentication PHP code-injection (CVSS 9.8) in the Calculation Addon ... lets an unauthenticated visitor break out of a calculated form field ...
+    defect: The quote is the entry's own prose from the migrated brief (publisher "ctipilot v2 brief (migrated)") with an ellipsis; it is not a passage of any cited page.
+    ground_truth: 'Wordfence: "This is due to the Calculation Addon''s process_filter() function concatenating user-submitted form field values into a PHP code string without proper escaping before passing
+      it to eval()."'
+    ground_truth_url: https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/
+    fix: Replace with a verbatim Wordfence passage.
+    class: factual-error
+  - &id003
+    where: summary / body citation labels
+    claim: '[Wordfence, 2026-06-06]'
+    defect: The Wordfence post is dated 2026-06-03 (16:59Z); 2026-06-06 is the BleepingComputer date.
+    ground_truth: 'Wordfence post "Published Time: 2026-06-03T16:59:22+00:00"; BleepingComputer date 2026-06-06; THN 2026-06-05.'
+    ground_truth_url: https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/
+    fix: Label the Wordfence source 2026-06-03.
+    class: imprecision
+  - &id004
+    where: body (prerequisite)
+    claim: the form must include the Calculation Addon ; submits a form containing a calculation field
+    defect: Prerequisite is a form using the "Complex Calculation" feature; the payload goes in any string-type field (text, email, URL, select, radio), not a calculation field.
+    ground_truth: 'Wordfence: "by submitting a crafted value in any string-type form field (text, email, URL, select, radio) when a form uses the ''Complex Calculation'' feature".'
+    ground_truth_url: https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/
+    fix: Use the Wordfence wording.
+    class: imprecision
+  - where: summary / body
+    claim: full technical analysis in § 5 ; Full mechanics, detection and hardening in § 5
+    defect: Dangling references to a section that does not exist in the entry.
+    ground_truth: n/a
+    ground_truth_url: https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/
+    fix: Remove.
+    class: imprecision
+  - where: cves[CVE-2026-3300]; priority
+    claim: 'affected: null; fixed: null; priority: high'
+    defect: Affected (<= 1.9.12) and fixed (1.9.13) are known and not recorded; the plugin has about 4,000 active installations and the entry shows no exposure of the constituency (a high with no exposure
+      evidence).
+    ground_truth: 'CVE record (CNA Wordfence): affected lessThanOrEqual 1.9.12, CVSS 9.8; Wordfence/THN: "estimated 4,000 active installations".'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-3300
+    fix: 'Fill affected/fixed; context only: priority high is weak.'
+    class: imprecision
+- entry: 2026-06-08/cve-2026-3300-unauthenticated-eval-injection-in-a-commercial
+  verdict: factual-error
+  defects:
+  - *id002
+  - where: headline
+    claim: the patch-lag that turned a March fix into a June mass-exploitation campaign
+    defect: 'No June mass-exploitation campaign in the sources: exploitation began 13 April, the mass spike was 16 May, the reports appeared 3-6 June.'
+    ground_truth: 'Wordfence: attackers started 13 April; "mass exploitation occurring on May 16th".'
+    ground_truth_url: https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/
+    fix: Reword to "mass exploitation from mid-May".
+    class: factual-error
+  - where: evidence[0]
+    claim: Why this is the deep dive now.
+    defect: Not a quote from any source; it is the entry's own opening sentence (publisher "ctipilot v2 brief (migrated)").
+    ground_truth: n/a
+    ground_truth_url: https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/
+    fix: Replace with a verbatim Wordfence passage.
+    class: factual-error
+  - where: body (The bug)
+    claim: builds a PHP expression string ... with eval() ([BleepingComputer, 2026-06-06]) ... `process_filter()` function of the plugin's Calculation Addon
+    defect: The cited BleepingComputer article names the "Complex Calculation feature" and eval() but not process_filter() or the Calculation Addon; those are in the Wordfence post.
+    ground_truth: 'BleepingComputer: "The CVE-2026-3300 vulnerability is in the plugin''s Complex Calculation feature ... executes the resulting code using PHP''s ''eval ()'' function."'
+    ground_truth_url: https://www.bleepingcomputer.com/news/security/critical-everest-forms-pro-flaw-exploited-to-take-over-wordpress-sites/
+    fix: Cite Wordfence for process_filter() and the addon name.
+    class: imprecision
+  - *id003
+  - *id004
+  - where: body (relevance)
+    claim: WordPress underpins a large share of cantonal, municipal and agency web estates, so any public-sector site still running Everest Forms Pro ≤ 1.9.12 is exposed
+    defect: Uncited; omits that the plugin has about 4,000 active installations and that Wordfence/THN show no public-sector victims.
+    ground_truth: 'THN: "a WordPress plugin with about 4,000 active installations".'
+    ground_truth_url: https://thehackernews.com/2026/06/hackers-exploit-critical-everest-forms.html
+    fix: Add the install base; keep the exposure statement conditional.
+    class: imprecision
+  - where: body (observed chain)
+    claim: from which attackers typically install webshells, SEO-spam injectors or redirect malware
+    defect: Wordfence names webshells, theme/plugin modification and backdoors; SEO-spam and redirect malware are not stated.
+    ground_truth: 'Wordfence: "uploading webshells, modifying themes or plugins, or installing further backdoors for persistent access".'
+    ground_truth_url: https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/
+    fix: Match the source or drop the extras.
+    class: imprecision
+  - where: summary / body / sourcing_note
+    claim: 'Why this is the deep dive now ; migration: evidence backfilled'
+    defect: Workflow-internal wording in reader-facing fields; actions[0] contains a truncated "(." artefact.
+    ground_truth: n/a
+    ground_truth_url: https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/
+    fix: Rewrite in plain prose and fix the action.
+    class: imprecision
+- entry: 2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a
+  verdict: factual-error
+  defects:
+  - &id005
+    where: body (exploitation / detection / hardening) and actions[0]
+    claim: write a `.jsp`/`.war` artefact into the Tomcat deployment directory ; newly written files in the Tomcat webapps/deploy directories ; validate the integrity of the Tomcat deploy directory ; the
+      Tomcat deploy directory for planted `.jsp`/`.war` web shells ; Writing a JSP/WAR into the Tomcat deploy path
+    defect: 'Cisco''s own indicators show a WildFly application server: the malicious WAR is written to /var/lib/wildfly/standalone/deployments/ and deployed by the WildFly DeploymentScanner (WFLYSRV0010).
+      "Tomcat" appears in no source.'
+    ground_truth: 'Cisco PSIRT: vmanage-server.log "SdraAnyConnectFileUploadHandler ... uploaded Remote Access Anyconnect profile file: ../../../../var/lib/wildfly/standalone/deployments/suspicious.war";
+      vmanage-appserver.log "WFLYSRV0010: Deployed \"suspicious.war\""; serviceproxy-access.log "POST /suspicious/index.jsp".'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+    fix: Replace Tomcat with the WildFly deployments directory and cite Cisco's three log indicators (vmanage-server.log AnyConnect profile-upload handler with ../ path, appserver deployment, service-proxy
+      POST to index.jsp).
+    class: factual-error
+  - &id006
+    where: body (KEV citation)
+    claim: CISA added CVE-2026-20262 to the Known Exploited Vulnerabilities catalog on 2026-06-15 ([BleepingComputer, 2026-06-15]) ; Cisco confirms active exploitation and CISA added it to the KEV catalog
+      on 2026-06-15 (BleepingComputer)
+    defect: The fact is true (KEV dateAdded 2026-06-15) but the cited BleepingComputer article does not mention a KEV listing for this CVE; The Register and the KEV record carry it. Cisco says "limited
+      exploitation".
+    ground_truth: 'The Register 2026-06-15: CISA "added CVE-2026-20262 to its Known Exploited Vulnerabilities catalog, citing ''evidence of active exploitation''"; Cisco: "In June 2026, the Cisco PSIRT
+      became aware of limited exploitation of this vulnerability."'
+    ground_truth_url: https://www.theregister.com/patches/2026/06/15/cisco-sd-wan-make-me-root-bug-under-attack/5255916
+    fix: Cite The Register or the KEV record for the listing; say Cisco reports limited exploitation.
+    class: imprecision
+  - &id007
+    where: body (vulnerability description)
+    claim: does not validate the user-supplied filename, so an authenticated request can traverse out of the intended directory ; the file-upload handler fails to validate the supplied filename
+    defect: The Cisco advisory says "user-supplied input during a file upload process"; filename and directory traversal appear only in Cisco's log sample; the entry cites the NVD per-CVE page as a source.
+    ground_truth: 'Cisco: "the affected software does not properly validate user-supplied input during a file upload process"; Cisco CNA CWE-22 Path Traversal.'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+    fix: Use Cisco's wording, cite the CNA record for CWE-22, drop the NVD link.
+    class: imprecision
+  - &id008
+    where: cves[CVE-2026-20262]
+    claim: 'affected: null; fixed: null'
+    defect: Cisco's table gives the first fixed release per train and the affected status is "regardless of device configuration"; neither is recorded.
+    ground_truth: 'Cisco: 20.9.9.1 and earlier -> 20.9.9.2; 20.12.7.1 and earlier -> 20.12.7.2; 20.15.4.4 and earlier -> 20.15.4.5; 20.15.5.2 and earlier -> 20.15.5.3; 20.18.3 -> 20.18.3.1; 26.1.1.1 and
+      earlier -> 26.1.1.2.'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+    fix: Fill affected/fixed from the Cisco table. (CVSS 6.5, KEV 2026-06-15 and exploited status are correct.)
+    class: imprecision
+  - &id009
+    where: evidence[0]
+    claim: 'quote of entry prose (A: "Vulnerable component."; B: "A path-traversal weakness in the web UI ... (NVD CVSS 6.5; Cisco PSIRT, 2026-06-15).")'
+    defect: The evidence quote is the entry's own migrated prose (publisher "ctipilot v2 brief (migrated)"), not a passage of a cited page.
+    ground_truth: 'Cisco PSIRT: "A vulnerability in the web UI of Cisco Catalyst SD-WAN Manager, formerly SD-WAN vManage, could allow an authenticated, remote attacker to create a file or overwrite any
+      file on the filesystem of an affected system."'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+    fix: Replace with a verbatim Cisco passage.
+    class: factual-error
+  - where: body (exploitation chain)
+    claim: 'Reporting describes the practical path as: (1) Initial access with valid low-privilege SD-WAN Manager credentials — obtained through prior phishing, credential reuse, or chaining an earlier
+      auth-affecting SD-WAN bug ... (3) ... because the SD-WAN Manager application services run with high privilege, the web shell yields root-equivalent control'
+    defect: 'No cited source describes this chain: Cisco says only that the written file "could later be used to elevate to root"; the credential-acquisition routes and the "application services run with
+      high privilege" rationale are the entry''s conjecture attributed to "Reporting"; T1078.004 (Cloud Accounts) does not fit appliance credentials.'
+    ground_truth: 'Cisco: "A successful exploit could allow the attacker to create or overwrite any file on the underlying operating system. This file could later be used to elevate to root."; BleepingComputer:
+      "execute arbitrary commands as root".'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+    fix: Attribute only what Cisco/BC state; label the rest analyst inference; use T1078 not .004.
+    class: factual-error
+  - where: body (privilege requirement)
+    claim: a low-privilege/single-task account ; prune low-privilege/single-task accounts
+    defect: Cisco's advisory (v1.1) says valid credentials with at least write access; "single-task" is The Register's wording; the entry picks one silently.
+    ground_truth: 'Cisco v1.1: "Specified write access privilege in Summary"; "the attacker must have valid credentials with at least write access"; The Register: "at least a lower-privileged, single-task
+      user account".'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+    fix: Use Cisco's wording and add a Contradiction line.
+    class: imprecision
+  - where: entities / body (Talos paragraph)
+    claim: 'entities: actor:uat-8616 ; Cisco Talos tracks a highly capable cluster it designates UAT-8616 behind a 2026 wave of Cisco Catalyst SD-WAN exploitation'
+    defect: No source ties UAT-8616 to CVE-2026-20262 (Talos covers CVE-2026-20127 on the SD-WAN Controller, published 2026-02-25); the body hedges but the actor entity link on the entry asserts an association.
+    ground_truth: 'Talos: "Talos is tracking the active exploitation of CVE-2026-20127, a vulnerability in Cisco Catalyst SD-WAN Controller, formerly vSmart".'
+    ground_truth_url: https://blog.talosintelligence.com/uat-8616-sd-wan/
+    fix: Drop the actor entity link or reference the Talos item instead.
+    class: imprecision
+  - where: summary / body
+    claim: Vulnerable component. (summary field is the first body sentence)
+    defect: Summary field carries the label "Vulnerable component." sentence rather than a finding summary; no mention of exploitation/KEV.
+    ground_truth: n/a
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+    fix: Write a real summary.
+    class: imprecision
+- entry: 2026-06-16/cve-2026-20262-cisco-catalyst-sd-wan-manager-authenticated-a
+  verdict: factual-error
+  defects:
+  - *id005
+  - *id006
+  - *id007
+  - *id008
+  - *id009
+  - where: summary / body
+    claim: Full deep dive in § 5 ; Full kill-chain, hunt and hardening detail in § 5
+    defect: Dangling references to a section that does not exist in the entry (the deep dive is a separate entry).
+    ground_truth: n/a
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+    fix: Remove.
+    class: imprecision
+  - where: actions[0]
+    claim: take the management UI off the internet, enforce MFA
+    defect: Cisco's advisory says internet-exposed Managers are at risk; MFA is not a sourced control for this flaw (exploit needs valid credentials; MFA does not stop an authenticated upload).
+    ground_truth: 'Cisco: "Cisco Catalyst SD-WAN Manager systems that are exposed to the internet and that have ports exposed to the internet are at risk"; "There are no workarounds".'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+    fix: Keep the exposure advice; drop or justify MFA.
+    class: imprecision
+- entry: 2026-07-01/cve-2026-46817-oracle-e-business-suite-oracle-payments-pre-a
+  verdict: factual-error
+  defects:
+  - &id010
+    where: title / headline / summary / body
+    claim: pre-auth RCE ; unauthenticated remote-code-execution flaw ; unauthenticated RCE in the File Transmission component
+    defect: 'No source calls CVE-2026-46817 an RCE: Oracle/BleepingComputer/SecurityAffairs say an unauthenticated attacker can "take over Oracle Payments"; CISA names it "Improper Privilege Management";
+      the only observed exploitation was an unauthenticated file read.'
+    ground_truth: 'BleepingComputer: "enables unauthenticated malicious actors with HTTP network access to take over vulnerable systems through low-complexity attacks"; Help Net Security (Defused): "a single
+      source running an unauthenticated file-read against the Payments component".'
+    ground_truth_url: https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/
+    fix: 'Say "unauthenticated takeover of Oracle Payments (observed: unauthenticated file read)"; drop "RCE".'
+    class: factual-error
+  - &id011
+    where: summary / body
+    claim: roughly six weeks post-patch ; six weeks after the fix ; Patch-adoption six weeks after the May CPU
+    defect: 'The cited BleepingComputer/SecurityAffairs pages do not say "six weeks" (only Defused via Help Net Security does) and it conflicts with Oracle''s release date: Oracle published the May 2026
+      update on 2026-05-28, first exploitation was 2026-06-27 (30 days).'
+    ground_truth: 'Oracle: "2026-May-28 | Rev 1. Initial Release."; Help Net Security quoting Defused: "roughly six weeks after Oracle''s May 2026 patch"; BleepingComputer: "Over the weekend, we observed
+      an actor exploiting the vulnerability".'
+    ground_truth_url: https://www.oracle.com/security-alerts/cspumay2026.html
+    fix: Say about four weeks (Oracle 2026-05-28 to Defused 2026-06-27) or attribute "six weeks" to Defused and flag the discrepancy.
+    class: factual-error
+  - &id012
+    where: body (exploitation status)
+    claim: Defused did not publicly disclose the technical mechanics ; Because the exploit mechanics are not public
+    defect: 'Help Net Security (2026-06-30), quoting Defused''s own post, gives the mechanics: unauthenticated file read through the ibytransmit endpoint of the Payments File Transmission component; the
+      2026-07-16 CISA/KEV follow-up repeats them. (SecurityAffairs'' earlier statement was superseded the same day.)'
+    ground_truth: 'Help Net Security: "The exploit targets the ibytransmit endpoint in Oracle Payments'' File Transmission component, and calls an internal Oracle Java function directly, redirecting it
+      to read a file (/etc/passwd) from the server."'
+    ground_truth_url: https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/
+    fix: State the file-read mechanics and the POST /OA_HTML/ibytransmit detection; drop the "exploit mechanics are not public" reasoning.
+    class: factual-error
+  - &id013
+    where: summary / body / actions / cves[].fixed / sources[] label
+    claim: May 2026 CPU ; May 2026 Critical Patch Update ; Oracle (Critical Patch Update Advisory, May 2026)
+    defect: Oracle's advisory is the "Critical Security Patch Update (CSPU) - May 2026", a distinct program from the quarterly Critical Patch Update.
+    ground_truth: 'Oracle: "Oracle Critical Security Patch Update Advisory - May 2026"; "Critical Security Patch Updates complement Oracle''s existing quarterly cumulative Critical Patch Updates (CPUs)";
+      next dates "16 June 2026 (CSPU), 21 July 2026 (CPU)".'
+    ground_truth_url: https://www.oracle.com/security-alerts/cspumay2026.html
+    fix: Name it the May 2026 Critical Security Patch Update.
+    class: imprecision
+  - &id014
+    where: cves[CVE-2026-46817].status / affected / fixed
+    claim: 'status: exploited, patch-available; affected: null; fixed: null'
+    defect: CISA added the CVE to KEV on 2026-07-15 (status lacks cisa-kev); affected 12.2.3-12.2.15 and the fixing update are not recorded.
+    ground_truth: 'CISA 2026-07-15: "CVE-2026-46817: Oracle E-Business Suite Improper Privilege Management Vulnerability"; Oracle matrix: Oracle Payments / File Transmission / 12.2.3-12.2.15.'
+    ground_truth_url: https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog
+    fix: Add cisa-kev, affected and fixed.
+    class: imprecision
+  - where: evidence[0]
+    claim: Critical (CVSS 9.8) unauthenticated RCE in the File Transmission component of Oracle Payments ... patched in the May 2026 Critical Patch Update.
+    defect: The quote is the entry's own migrated prose (publisher "ctipilot v2 brief (migrated)"), not a passage of any cited page.
+    ground_truth: 'BleepingComputer: "This security flaw was found in the File Transmission component of EBS''s Oracle Payments product and enables unauthenticated malicious actors with HTTP network access
+      to take over vulnerable systems through low-complexity attacks."'
+    ground_truth_url: https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/
+    fix: Replace with a verbatim source passage.
+    class: factual-error
+  - where: summary / actions[0] / body
+    claim: Details in § 5 ; (§ 5) ; Exposure and defender guidance in § 5
+    defect: Dangling references to a section that does not exist in the entry.
+    ground_truth: n/a
+    ground_truth_url: https://www.oracle.com/security-alerts/cspumay2026.html
+    fix: Remove.
+    class: imprecision
+- entry: 2026-07-01/oracle-e-business-suite-cve-2026-46817-pre-auth-rce-in-the-p
+  verdict: factual-error
+  defects:
+  - *id010
+  - *id011
+  - *id012
+  - *id013
+  - *id014
+  - where: evidence[0]
+    claim: What it is.
+    defect: The quote is the entry's own migrated prose (publisher "ctipilot v2 brief (migrated)"), not a passage of any cited page.
+    ground_truth: 'BleepingComputer: "This security flaw was found in the File Transmission component of EBS''s Oracle Payments product and enables unauthenticated malicious actors with HTTP network access
+      to take over vulnerable systems through low-complexity attacks."'
+    ground_truth_url: https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/
+    fix: Replace with a verbatim source passage.
+    class: factual-error
+  - where: entities / body ("Why this product line")
+    claim: 'entities: actor:shinyhunters ; the separate, still-active ShinyHunters Oracle PeopleSoft campaign (CVE-2026-35273) continues to acquire named victims'
+    defect: The body says no named cluster is attributed, yet the frontmatter links actor:shinyhunters; SecurityAffairs only reports a Mandiant/GTIG ShinyHunters PeopleSoft campaign (27 May-9 June) and
+      nothing about continuing victims or any link to CVE-2026-46817.
+    ground_truth: 'SecurityAffairs: "the activity ran from May 27 to June 9"; "Defused Cyber did not disclose technical details about the attacks ... or the motivation of the attackers."'
+    ground_truth_url: https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html
+    fix: Drop the actor entity link and the "continues to acquire named victims" claim.
+    class: imprecision
+  - where: body (exposure)
+    claim: EBS Payments/financial modules are common in government, higher-education and large-enterprise finance back offices
+    defect: Uncited usage-profile claim.
+    ground_truth: 'BleepingComputer cites only Shadowserver: "over 450 Oracle EBS instances exposed online, with nearly 200 in the United States and in Europe".'
+    ground_truth_url: https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/
+    fix: Cite or drop.
+    class: imprecision
+  - where: headline
+    claim: Payments File Transmission servlet
+    defect: '"Servlet" appears in no source (sources say component / ibytransmit endpoint).'
+    ground_truth: 'Oracle risk matrix: component "File Transmission"; Help Net Security: "ibytransmit endpoint".'
+    ground_truth_url: https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/
+    fix: Say component/endpoint.
+    class: imprecision
+- entry: 2026-07-16/cve-2026-46817-oracle-ebs-payments-preauth-rce-kev-listed
+  verdict: factual-error
+  defects:
+  - where: body paragraph 2
+    claim: This is the same EBS product family already under sustained ShinyHunters/UNC6240 extortion pressure
+    defect: 'No cited source places ShinyHunters/UNC6240 on Oracle EBS: SecurityAffairs ties ShinyHunters to a PeopleSoft campaign and BleepingComputer ties Clop to EBS CVE-2025-61882 in 2025.'
+    ground_truth: 'SecurityAffairs: "ShinyHunters campaign" against "Oracle PeopleSoft"; BleepingComputer: "The Clop extortion gang exploited another Oracle EBS security flaw (CVE-2025-61882)".'
+    ground_truth_url: https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html
+    fix: Drop the ShinyHunters/UNC6240 claim or cite it; the sourced EBS history is the 2025 Clop campaign.
+    class: factual-error
+  - where: body paragraph 1
+    claim: Oracle characterises it as improper privilege management, improper authentication and missing authentication for a critical function ... (CVSS 9.8; Oracle CPU, 2026-05-28)
+    defect: The CWE-style labels are in Help Net Security and the KEV record, not in Oracle's advisory (the risk matrix lists component, protocol, auth, CVSS only).
+    ground_truth: 'Help Net Security: "caused by improper privilege management, improper authentication, and missing authentication for a critical function"; Oracle matrix row: "CVE-2026-46817 | Oracle
+      Payments | File Transmission | HTTP | Yes | 9.8".'
+    ground_truth_url: https://www.oracle.com/security-alerts/cspumay2026.html
+    fix: Attribute the labels to Help Net Security/CISA.
+    class: imprecision
+  - where: summary / body paragraph 2
+    claim: roughly six weeks after the patch
+    defect: Oracle published the update on 2026-05-28; first exploitation 2026-06-27 is 30 days later; "six weeks" is Defused's wording only.
+    ground_truth: 'Oracle: "2026-May-28 | Rev 1. Initial Release."'
+    ground_truth_url: https://www.oracle.com/security-alerts/cspumay2026.html
+    fix: Say about four weeks or attribute to Defused.
+    class: imprecision
+  - where: summary / actions[0] / cves[].fixed / sources[] label
+    claim: May 2026 Critical Patch Update ; Oracle (Critical Patch Update Advisory, May 2026)
+    defect: The advisory is the "Critical Security Patch Update - May 2026" (CSPU).
+    ground_truth: 'Oracle: "Oracle Critical Security Patch Update Advisory - May 2026".'
+    ground_truth_url: https://www.oracle.com/security-alerts/cspumay2026.html
+    fix: Use the correct program name.
+    class: imprecision
+  - where: cves[CVE-2026-46817].type
+    claim: 'type: rce'
+    defect: No source states remote code execution; Oracle/CISA say takeover / improper privilege management and the observed activity was an unauthenticated file read.
+    ground_truth: 'CISA: "Oracle E-Business Suite Improper Privilege Management Vulnerability".'
+    ground_truth_url: https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog
+    fix: Use a type matching the sources (auth bypass / privilege management / file read).
+    class: imprecision
+  - where: evidence[2]
+    claim: CISA has added two new vulnerabilities to its Known Exploited Vulnerabilities (KEV) Catalog, based on evidence of active exploitation.
+    defect: (low confidence) Page read only through the summarising reader (cisa.gov is walled out); the alert text quoted is consistent but the final words could not be matched verbatim.
+    ground_truth: 'CISA alert 2026-07-15 (via WebFetch): "CISA has added two new vulnerabilities to its Known Exploited Vulnerabilities (KEV) Catalog, based on evidence of active ..." (truncated by the
+      reader); KEV record agrees.'
+    ground_truth_url: https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog
+    fix: None unless a verbatim check fails.
+    class: imprecision
+groups:
+- members:
+  - 2026-05-10/cve-2026-26030-cve-2026-25592-microsoft-semantic-kernel-prom
+  - 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  same_finding: true
+  survivor: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  current_state: 'Microsoft Semantic Kernel (open-source AI agent framework), two flaws disclosed by the Microsoft Defender Security Research Team blog 2026-05-07 (MS blog: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    ; discoverers Uri Oren, Amit Eliahu, Dor Edry). (1) CVE-2026-26030 = Python SDK (PyPI semantic-kernel) InMemoryVectorStore filter RCE, CWE-94, CVSS 3.1 9.9 (AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H), vulnerable
+    < 1.39.4, fixed 1.39.4, GHSA-xjw9-4gw8-4rqx published 2026-02-19 (https://api.github.com/advisories/GHSA-xjw9-4gw8-4rqx); fix PR #13505; workaround ''Avoid using InMemoryVectorStore for production scenarios'';
+    exploitation needs a prompt-injection vector plus a Search Plugin backed by the In-Memory Vector Store in default configuration; mechanism per blog: default filter is a Python lambda executed with eval()
+    with an unsanitised model-controlled parameter, AST blocklist bypassed (names __name__, load_module, system, BuiltinImporter not blocked) -> BuiltinImporter -> os.system. (2) CVE-2026-25592 = .NET SDK
+    SessionsPythonPlugin arbitrary file write, CWE-22, CVSS 9.9 same vector, nuget Microsoft.SemanticKernel.Core/Plugins.Core vulnerable < 1.71.0 fixed 1.71.0 (GHSA structured data also lists pip semantic-kernel
+    < 1.39.3 first patched 1.39.3), GHSA-2ww3-72rp-wpp4 published 2026-02-06 (https://api.github.com/advisories/GHSA-2ww3-72rp-wpp4); DownloadFileAsync was accidentally marked [KernelFunction] so the localFilePath
+    passed to File.WriteAllBytes() on the host became model-controlled; chain: ExecuteCode creates a script in the Container Apps sandbox, DownloadFileAsync writes it to the Windows Startup folder, runs
+    at next sign-in; separately upload_file() (Python and .NET) accepted any local path (host-file read into the sandbox); fix PR #13478 removed [KernelFunction] from DownloadFileAsync and added path validation
+    (UploadFileAsync keeps the attribute with validation); workaround: Function Invocation Filter allow-listing localFilePath for DownloadFileAsync/UploadFileAsync. Exploitation/KEV: neither CVE is in CISA
+    KEV (catalog 2026.10.16, https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json); no source reports in-the-wild exploitation. Public CTF challenge reproducing CVE-2026-26030:
+    https://github.com/amiteliahu/AIAgentCTF/tree/main/CVE-2026-26030.'
+  facts_only_in_duplicates:
+  - fact: '.NET flaw workaround: Function Invocation Filter allow-listing localFilePath for DownloadFileAsync/UploadFileAsync (present in B only, wrongly attributed to the Microsoft post)'
+    entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+    verified: true
+    source_url: https://api.github.com/advisories/GHSA-2ww3-72rp-wpp4
+    passage: Users can create a Function Invocation Filter which checks the arguments being passed to any calls to DownloadFileAsync or UploadFileAsync and ensures the provided localFilePath is allow listed.
+  - fact: 'Python flaw workaround: avoid InMemoryVectorStore for production (in neither entry)'
+    entry: (neither)
+    verified: true
+    source_url: https://api.github.com/advisories/GHSA-xjw9-4gw8-4rqx
+    passage: Avoid using InMemoryVectorStore for production scenarios.
+  - fact: CVE-2026-25592 GHSA also lists Python semantic-kernel first patched 1.39.3 (both entries)
+    entry: both
+    verified: true
+    source_url: https://api.github.com/advisories/GHSA-2ww3-72rp-wpp4
+    passage: 'API vulnerabilities[0]: ecosystem pip, name semantic-kernel, vulnerable_version_range "< 1.39.3", first_patched_version "1.39.3"'
+  - fact: B detection/hunting concepts (process ancestry, file creation outside sandbox, dispatcher logging) are analyst suggestions; Microsoft supplies Defender hunting queries for child processes of Semantic
+      Kernel hosts (dotnet.exe/semantic-kernel command line spawning shells) and mentions scripts dropped in Startup folders
+    entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+    verified: true
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+    passage: detect anomalous behavior, such as an AI agent process suddenly spawning command lines or dropping scripts into Startup folders.
+  note: Same finding (identical CVEs, sources, run 2026-05-10-001); B (deep dive) is the better carrier but both carry the same uncited/incorrect statements (Foundry/Copilot Studio backing, [KernelFunction]
+    on both methods, reversed upload/download roles, fabricated quote). GHSA publication dates are 2026-02-19/2026-02-06, so the finding is a May write-up of Feb-disclosed CVEs. No KEV listing, no ITW exploitation
+    reported; priority high (A) vs notable (B) disagree; high fails the bar (research, no ITW).
+- members:
+  - 2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898
+  - 2026-06-11/windows-netlogon-rce-cve-2026-41089-now-confirmed-exploited
+  same_finding: true
+  survivor: 2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898
+  current_state: 'CVE-2026-41089, Windows Netlogon stack-based buffer overflow (CWE-121) on domain controllers; MSRC ''Windows Netlogon Remote Code Execution Vulnerability'', released 2026-05-12, CVSS 3.1
+    9.8 (temporal 8.5) CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, severity Critical, ''Exploitation Less Likely'', ''Exploited: No'', single revision (v1, 2026-05-12) (https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-41089);
+    reported by Microsoft''s WARP team (BleepingComputer https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/). Fixed builds per
+    MSRC CVRF 2026-May: Server 2016 10.0.14393.9140 (KB5087537), 2019 10.0.17763.8755 (KB5087538), 2022 10.0.20348.5074 (KB5087424) and 10.0.20348.5139 (KB5087545), 2022 23H2 10.0.25398.2330 (KB5087541),
+    2025 10.0.26100.32772 (KB5087423) and 10.0.26100.32860 (KB5087539), 2012 6.2.9200.26079 (KB5087470), 2012 R2 6.3.9600.23181 (KB5087471); CERT-EU 2026-007 (2026-06-10, https://cert.europa.eu/publications/security-advisories/2026-007/)
+    lists the same ''prior to'' builds (2012/2012 R2 also affected). Exploitation: CCB advisory updated 2026-05-29 ''now actively exploited in the wild'' (https://ccb.belgium.be/advisories/warning-microsoft-patch-tuesday-may-2026-patches-118-vulnerabilities-16-critical-102),
+    no attack details (information from ''trusted partners'' per BleepingComputer); CERT-EU advisory 2026-007 on 2026-06-10 relays ''According to ... CCB, this vulnerability is currently exploited''; Microsoft
+    told BleepingComputer (update 2026-06-02) and SecurityWeek it has no evidence supporting CCB''s claims; not in CISA KEV (catalogue 2026.10.16). Mechanism per public root-cause analysis (Aretiq 2026-05-13,
+    https://aretiq.ai/research/vul260513-cve-2026-41089-microsoft-windows-netlogon-buildsamlogonresponse-stack-based-buffer-overflow-rce/; Securonix 2026-06-03): CLDAP DC-locator ping to UDP/389, BuildSamLogonResponse
+    528-byte stack buffer, needs ~50+ character DNS names, GS cookie limits the public PoC to an LSASS crash and DC reboot; a public PoC exists (Securonix claim). The May 2026 Patch Tuesday roundup also
+    covers CVE-2026-41096 (Windows DNS Client RCE, CWE-122, 9.8 AV:N/PR:N, Exploitation Unlikely), CVE-2026-41103 (Microsoft SSO Plugin for Jira & Confluence, Elevation of Privilege, CWE-303, 9.1, Exploitation
+    More Likely) and CVE-2026-42898 (Dynamics 365 on-premises RCE, CWE-94, 9.9 PR:L authorized attacker, Exploitation Unlikely); Patch Tuesday counts: Tenable/Krebs/CCB 118, BleepingComputer 120, Help Net
+    Security 120+, ZDI 138, SecurityWeek 137; no zero-days at release (Tenable https://www.tenable.com/blog/microsofts-may-2026-patch-tuesday-addresses-118-cves-cve-2026-41103, ZDI https://www.thezdi.com/blog/2026/5/12/the-may-2026-security-update-review).'
+  facts_only_in_duplicates:
+  - fact: CERT-EU security advisory 2026-007 published 2026-06-10 (v1.0) listing affected Windows Server builds and relaying the CCB exploitation report
+    entry: 2026-06-11/windows-netlogon-rce-cve-2026-41089-now-confirmed-exploited
+    verified: true
+    source_url: https://cert.europa.eu/publications/security-advisories/2026-007/
+    passage: According to The Centre for Cybersecurity Belgium (CCB), this vulnerability is currently exploited by threat actors
+  - fact: 'Per-version affected builds: 2016 prior to 10.0.14393.9140, 2019 prior to 10.0.17763.8755, 2022 prior to 10.0.20348.5074, 2022 23H2 prior to 10.0.25398.2330, 2025 prior to 10.0.26100.32772, 2012/2012
+      R2 affected'
+    entry: 2026-06-11/windows-netlogon-rce-cve-2026-41089-now-confirmed-exploited
+    verified: true
+    source_url: https://cert.europa.eu/publications/security-advisories/2026-007/
+    passage: Windows Server 2025 (prior to 10.0.26100.32772)
+  - fact: '"confirmed exploited ... by CCB" / "roughly 20 days after" (entry 2 only)'
+    entry: 2026-06-11/windows-netlogon-rce-cve-2026-41089-now-confirmed-exploited
+    verified: false
+    source_url: https://cert.europa.eu/publications/security-advisories/2026-007/
+    passage: CERT-EU relays CCB ("According to ... CCB"); advisory came 29 days after Patch Tuesday; Microsoft disputes
+  - fact: Microsoft statement that it has no evidence for CCB claims (in neither entry)
+    entry: (neither)
+    verified: true
+    source_url: https://securityweek.com/critical-windows-netlogon-vulnerability-in-attackers-crosshairs
+    passage: Responding to a SecurityWeek inquiry, Microsoft said it has found no evidence to support CCB's claims.
+  note: Same finding for CVE-2026-41089 (Netlogon exploitation thread). The 2026-05-13 entry is a Patch Tuesday roundup (CVE-2026-41096/41103/42898 and Word RCEs are distinct and stay on it) that already
+    carries the Netlogon exploitation update (merged from a 2026-06-02 entry); the 2026-06-11 entry adds only the CERT-EU advisory and build table and should fold into it as a changelog record. Both overstate
+    or mis-date the exploitation (CCB warning is 29 May, vendor denies, no KEV).
+- members:
+  - 2026-05-15/windows-bitlocker-yellowkey-and-ctfmon-greenplasma-zero-days
+  - 2026-05-30/nightmare-eclipse-chaotic-eclipse-microsoft-s-digital-crimes
+  same_finding: false
+  survivor: 2026-05-15/windows-bitlocker-yellowkey-and-ctfmon-greenplasma-zero-days
+  current_state: 'YellowKey = CVE-2026-45585, MSRC ''Windows BitLocker Security Feature Bypass Vulnerability'', published 2026-05-19 (CWE-77, CVSS 3.1 6.8 AV:P/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, E:P/RL:W at
+    publication), publicly disclosed Yes, exploited No, ''Exploitation More Likely'', mitigation script from 2026-05-21 (rev 1.2: mounts the WinRE image, removes autofstx.exe from BootExecute, re-seals
+    WinRE) and links to the June 2026 Windows security updates added in revision 2 on 2026-06-09 (https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-45585); MSRC FAQ: with
+    TPM+PIN ''the vulnerability is not exploitable''; researcher claims an unpublished TPM+PIN variant, Dormann says the public exploit does not work with TPM+PIN and could only be reproduced with the USB
+    drive, not the EFI partition (https://www.bleepingcomputer.com/news/security/windows-bitlocker-zero-day-gives-access-to-protected-drives-poc-released/). GreenPlasma = CVE-2026-45586, Windows Collaborative
+    Translation Framework (CTFMON) EoP, CWE-59, CVSS 7.8 AV:L/PR:L, SYSTEM, publicly disclosed Yes, exploited No, Exploitation More Likely, released 2026-06-09 with fixed builds (e.g. Server 2019 10.0.17763.8880
+    KB5094123, Server 2022 10.0.20348.5256 KB5094128, Server 2016 10.0.14393.9234 KB5094122) (https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-45586). MiniPlasma (cldflt.sys
+    / Cloud Files Mini Filter Driver) is addressed by the 2026-06-09 re-release of CVE-2020-17103 (CVSS 7.0, AV:L/AC:H, ''comprehensively address'') (https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2020-17103).
+    BleepingComputer 2026-06-10 reports Microsoft fixed all three on Patch Tuesday 2026-06-09 (https://www.bleepingcomputer.com/news/microsoft/microsoft-patches-yellowkey-greenplasma-miniplasma-zero-days/).
+    None of the three CVEs is in CISA KEV (catalogue 2026.10.16); the researcher''s earlier drops BlueHammer CVE-2026-33825 (KEV 2026-04-22), RedSun CVE-2026-41091 and UnDefend CVE-2026-45498 (KEV 2026-05-20)
+    are KEV-listed. Disclosure dispute: MSRC blog 2026-05-27 says uncoordinated disclosures ''are never justifiable'' and ''Our Digital Crimes Unit will continue bringing cases against these actors and
+    those that enable their criminal activity'' (https://www.microsoft.com/en-us/msrc/blog/2026/05/a-shared-responsibility-protecting-customers-through-coordinated-vulnerability-disclosure); The Record
+    2026-05-29: Microsoft ''stopped short of directly threatening legal action''; researcher threatened a further drop on 2026-07-14 (https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more).
+    Huntress reported BlueHammer exploited since 2026-04-10 (BleepingComputer 2026-04-17, https://www.bleepingcomputer.com/news/security/recently-leaked-windows-zero-days-now-exploited-in-attacks/).'
+  facts_only_in_duplicates:
+  - fact: 'Microsoft MSRC blog 2026-05-27: uncoordinated disclosures "are never justifiable"; DCU "will continue bringing cases" (entry B only; date wrong in entry)'
+    entry: 2026-05-30/nightmare-eclipse-chaotic-eclipse-microsoft-s-digital-crimes
+    verified: true
+    source_url: https://www.microsoft.com/en-us/msrc/blog/2026/05/a-shared-responsibility-protecting-customers-through-coordinated-vulnerability-disclosure
+    passage: Our Digital Crimes Unit will continue bringing cases against these actors and those that enable their criminal activity – coordinating as needed with law enforcement around the world.
+  - fact: Researcher threatened a further release on 2026-07-14 (entry B only)
+    entry: 2026-05-30/nightmare-eclipse-chaotic-eclipse-microsoft-s-digital-crimes
+    verified: true
+    source_url: https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more
+    passage: The researcher threatened a further release on July 14 — the date scheduled for Microsoft's Patch Tuesday
+  - fact: BlueHammer, UnDefend, RedSun exploited in live intrusions and on CISA KEV (entry B only)
+    entry: 2026-05-30/nightmare-eclipse-chaotic-eclipse-microsoft-s-digital-crimes
+    verified: true
+    source_url: https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more
+    passage: have been exploited in live intrusions, according to Microsoft's own patch advisories. All three appear on the U.S. Cybersecurity and Infrastructure Security Agency's (CISA) catalog of known
+      exploited vulnerabilities.
+  - fact: 'MiniPlasma: cldflt.sys, fully patched Windows 11 gives SYSTEM shell; claimed incomplete 2020 fix CVE-2020-17103 (entry B only, uncited there)'
+    entry: 2026-05-30/nightmare-eclipse-chaotic-eclipse-microsoft-s-digital-crimes
+    verified: true
+    source_url: https://www.bleepingcomputer.com/news/microsoft/new-windows-miniplasma-zero-day-exploit-gives-system-access-poc-released/
+    passage: the flaw impacts the 'cldflt.sys' Cloud Filter driver and its 'HsmOsBlockPlaceholderAccess' routine ... CVE-2020-17103
+  note: 'Not the same finding: A is the technical disclosure of YellowKey (CVE-2026-45585) and GreenPlasma (CVE-2026-45586) on 12-13 May; B is Microsoft''s 27 May disclosure-dispute statement and the researcher''s
+    July threat, with a roll-up of the six drops. They share the researcher entity and CVE-2026-45585 (wrongly modelled in B as an LPE with cvss n/a). Recommend B drop the cves[] record and reference A,
+    or fold B''s status roll-up into A as an update; A is the survivor for the CVE thread and needs the 2026-06-09 patch state added.'
+- members:
+  - 2026-05-16/cve-2026-42897-microsoft-exchange-server-2016-2019-se-stored
+  - 2026-05-16/microsoft-exchange-cve-2026-42897-active-exploitation-withou
+  - 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+  same_finding: true
+  survivor: 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+  current_state: 'CVE-2026-42897, Microsoft Exchange Server OWA cross-site scripting with spoofing impact (CWE-79); MSRC ''Microsoft Exchange Server Spoofing Vulnerability'', released 2026-05-14 (out-of-band,
+    Patch Tuesday was 2026-05-12), Critical, CVSS 3.1 8.1 (temporal 7.5) CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N/E:F/RL:O/RC:C, Exploited: Yes, ''Exploitation Detected'' since release; revisions 1.1
+    2026-05-18 (FAQ: IE/IE-mode not protected because CSP unsupported), 2 2026-06-09 (links to June 2026 Exchange SUs), 2.1 2026-07-14 (install July 2026 SUs to be protected from this CVE and CVE-2026-55008;
+    mitigations can be removed after the July SU) (https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897). Affected: Exchange Server 2016, 2019 and Subscription Edition
+    at any update level at disclosure; Exchange Online not impacted (Exchange Team post 2026-05-14, https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498).
+    CISA KEV: added 2026-05-15, due 2026-05-29 (catalogue 2026.10.16). Mitigation: Exchange Emergency Mitigation Service applies M2 (rule IDs M2.1.x, URL Rewrite outbound rule ''EEMS M2.1 OWA CSP - outbound'')
+    automatically, needs outbound HTTPS 443 to officeclient.microsoft.com and an Exchange build from March 2023 or later to fetch new mitigations; disconnected servers run EOMT (aka.ms/UnifiedEOMT, .\EOMT.ps1
+    -CVE "CVE-2026-42897"); known issues: OWA Print Calendar, inline images, OWA light, OWACalendar.Proxy healthset unhealthy, published calendars error 500 (https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service).
+    Fix: June 2026 Exchange Security Updates released 2026-06-09 (Exchange SE RTM public; Exchange 2019 CU14/CU15 and 2016 CU23 only for Period 2 ESU customers; Period 1 ESU ended April 2026) (https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491),
+    Microsoft then recommended keeping the mitigation; July 2026 SUs (2026-07-14) are recommended by MSRC and, once installed, the M2.1.0 IIS rules (EM service) or the EOMT rollback should be removed manually
+    (https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146); sibling OWA XSS CVE-2026-55008 (MSRC ''Exchange Server Spoofing Vulnerability'', CVSS
+    9.6, released 2026-07-14, Exploitation More Likely, exploited No) is fixed by the July SU and also mitigated by the M2 mitigation. In-the-wild: Proofpoint 2026-07-28 attributes a campaign that began
+    2026-07-22 to TA488 (Void Blizzard / LAUNDRY BEAR; US and European government, telecommunications, finance, hospitality, aerospace), loader JavaScript in the message body triggers the ''OWAReaper''
+    implant (rewrites the message server-side, harvests browser autofill credentials, steals OAuth tokens via add-ins with ReadWriteMailbox calling GetClientAccessToken, persists in OWA localStorage under
+    PageDataPayload.OwaUserDefaultSettings and in the IndexedDB message cache, grants the ''Default'' user Owner permission on every mail folder via UpdateFolder, C2 via GitHub commit search every 24 h
+    and inbound emails every 5 min, exfil over HTTPS via image CDNs with DNS-label fallback; no mass mail exfiltration); earliest infrastructure March 2026 so zero-day use is ''feasible'' (inference); Proofpoint
+    recommends revoking/auditing EWS tokens, removing Default-user folder grants, clearing owa_offline_db and the localStorage key (https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit);
+    NCSC-CH advisory #12577 (published 2026-05-15, edited 2026-07-30 with the Proofpoint link) (https://security-hub.ncsc.admin.ch/#/posts/12577); joint CSA on the same actor''s Zimbra campaign (16 countries,
+    2026-07-23) (https://media.defense.gov/2026/Jul/22/2003965244/-1/-1/0/CSA_RUSSIA_PHISHING_TARGET_ZIMBRA.PDF).'
+  facts_only_in_duplicates:
+  - fact: EM service endpoint is officeclient.microsoft.com:443 and it checks hourly (entries 1 and 2 only; entry 4 uses a non-existent host)
+    entry: 2026-05-16/microsoft-exchange-cve-2026-42897-active-exploitation-withou
+    verified: true
+    source_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    passage: Office Config Service | officeclient.microsoft.com/* | 443 | Required endpoint for the Exchange EM service
+  - fact: EM service cannot fetch new mitigations on Exchange builds older than March 2023 (in no entry)
+    entry: (none)
+    verified: true
+    source_url: https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+    passage: EM Service will not be able to check for new mitigations if your server is running Exchange Server version older than March 2023
+  - fact: CISA KEV addition 2026-05-15 with due date 2026-05-29 (entries 1 and 2)
+    entry: 2026-05-16/cve-2026-42897-microsoft-exchange-server-2016-2019-se-stored
+    verified: true
+    source_url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+    passage: 'KEV catalogue 2026.10.16: CVE-2026-42897 dateAdded 2026-05-15, dueDate 2026-05-29'
+  - fact: NCSC-NL NCSC-2026-0159 (2026-05-15) and BSI WID-SEC-2026-1536 (2026-05-14/15) advisories on the CVE (entries 1 and 2)
+    entry: 2026-05-16/cve-2026-42897-microsoft-exchange-server-2016-2019-se-stored
+    verified: true
+    source_url: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0159
+    passage: Publicatie 15-05-2026 ... Microsoft heeft ... mitigerende maatregelen geimplementeerd in de Exchange Emergency Mitigation Service middels een out-of-band update
+  - fact: M2 is a CSP-injecting URL Rewrite outbound rule (not a request-format rewrite) and IE/IE-mode clients are not protected (entry 2 wrong; MSRC FAQ)
+    entry: 2026-05-16/microsoft-exchange-cve-2026-42897-active-exploitation-withou
+    verified: false
+    source_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    passage: Remove the M2 URL Rewrite outbound rule ... "EEMS M2.1 OWA CSP - outbound"
+  - fact: '"Exchange 2016 SP1 and later", Get-ExchangeDiagnosticInfo verification command, 2026-05-09 lookback, officemitigations.microsoft.com (entries 1, 2, 4)'
+    entry: 1,2,4
+    verified: false
+    source_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+    passage: no such statement in Learn, the Exchange Team posts or MSRC
+  - fact: TA488 / OWAReaper campaign details and actions (entry 4 only)
+    entry: 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+    verified: true
+    source_url: https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+    passage: Proofpoint attributes this activity to TA488 based on the use of half-click XSS exploits against webmail viewers
+  note: Entries 1, 2 and 4 are the same finding (CVE-2026-42897, same MSRC/Exchange Team primaries) written on 2026-05-16 (x2) and 2026-05-18; entry 4 is the survivor (already has a changelog, newest, Proofpoint/NCSC-CH
+    sources). All three carry the stale 'no permanent patch' state (fix shipped 2026-06-09) and unsupported commands/hostnames. Entry 3 (Pwn2Own chain) is a distinct finding - see the second group record.
+- members:
+  - 2026-05-17/exchange-cve-2026-42897-pwn2own-devcore-three-bug-system-rce
+  - 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+  same_finding: false
+  survivor: 2026-05-17/exchange-cve-2026-42897-pwn2own-devcore-three-bug-system-rce
+  current_state: 'Pwn2Own Berlin 2026 (14-16 May) Day 2 (ZDI 2026-05-15, https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results): ''Orange Tsai (@orange_8361) of DEVCORE Research
+    Team chained 3 bugs to achieve Remote Code Execution as SYSTEM on Microsoft Exchange, earning $200,000 and 20 Master of Pwn points''; BleepingComputer 2026-05-15 (https://www.bleepingcomputer.com/news/security/pwn2own-day-two-hackers-demo-microsoft-exchange-windows-11-red-had-enterprise-linux-zero-days/):
+    vendors have 90 days to patch after zero-days are disclosed at Pwn2Own. Neither source gives a CVE id, authentication level, or ties the chain to CVE-2026-42897. A later Exchange CVE (CVE-2026-62911,
+    MSRC 2026-08-11, Exchange EoP / authentication bypass by capture-replay, CVSS 8.0) has been linked to Orange Tsai''s demo only by a low-reliability aggregator and is unverified.'
+  facts_only_in_duplicates:
+  - fact: DEVCORE Orange Tsai $200,000 three-bug SYSTEM RCE chain on Exchange (entry 3 only)
+    entry: 2026-05-17/exchange-cve-2026-42897-pwn2own-devcore-three-bug-system-rce
+    verified: true
+    source_url: https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results
+    passage: chained 3 bugs to achieve Remote Code Execution as SYSTEM on Microsoft Exchange, earning $200,000 and 20 Master of Pwn points
+  - fact: '"unauthenticated" SYSTEM RCE (entry 3)'
+    entry: 2026-05-17/exchange-cve-2026-42897-pwn2own-devcore-three-bug-system-rce
+    verified: false
+    source_url: https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results
+    passage: no "unauthenticated" in ZDI or BleepingComputer
+  note: 'Distinct finding: the Pwn2Own Exchange chain has no CVE in the cited sources and no stated relation to the exploited OWA XSS CVE-2026-42897; entry 3 only references the CVE and wrongly carries
+    it in cves[] as ''rce''. Keep it separate (drop the cves[] record) and carry the cross-reference in references[].'
+- members:
+  - 2026-06-08/cve-2026-3300-everest-forms-pro-wordpress-unauthenticated-ev
+  - 2026-06-08/cve-2026-3300-unauthenticated-eval-injection-in-a-commercial
+  same_finding: true
+  survivor: 2026-06-08/cve-2026-3300-unauthenticated-eval-injection-in-a-commercial
+  current_state: 'CVE-2026-3300, Everest Forms Pro (WPEverest, commercial WordPress add-on, about 4,000 active installations) unauthenticated PHP code injection / RCE via the Calculation Addon''s process_filter()
+    concatenating submitted field values into a PHP string passed to eval(); sanitize_text_field() does not escape single quotes; exploitable by submitting a crafted value in any string-type field (text,
+    email, URL, select, radio) of a form that uses the ''Complex Calculation'' feature; affected <= 1.9.12, fixed 1.9.13 (released 2026-03-18); CNA Wordfence, CVE published 2026-03-31, CVSS 3.1 9.8 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+    (https://cveawg.mitre.org/api/cve/CVE-2026-3300); credited researcher h0xilo (BleepingComputer https://www.bleepingcomputer.com/news/security/critical-everest-forms-pro-flaw-exploited-to-take-over-wordpress-sites/);
+    Wordfence published 2026-03-30 (disclosure) and its exploitation post 2026-06-03: exploitation started 2026-04-13, mass exploitation 2026-05-16 (17,900+ blocked attempts in a day), 29,300+ blocked attempts
+    in total (26,300+ from one IP), most common payload creates an administrator account via wp_insert_user() through POST /wp-admin/admin-ajax.php (action everest_forms_ajax_form_submission) (https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/);
+    The Hacker News 2026-06-05 counts 16 attempts in the preceding 24 hours (https://thehackernews.com/2026/06/hackers-exploit-critical-everest-forms.html). Not in CISA KEV (catalogue 2026.10.16). Wordfence
+    Premium got a firewall rule on 2026-02-27 and free users on 2026-03-29.'
+  facts_only_in_duplicates:
+  - fact: process_filter()/sanitize_text_field() mechanics and the ATT&CK mapping with detection concepts (entry B only)
+    entry: 2026-06-08/cve-2026-3300-unauthenticated-eval-injection-in-a-commercial
+    verified: true
+    source_url: https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/
+    passage: This is due to the Calculation Addon's process_filter() function concatenating user-submitted form field values into a PHP code string without proper escaping before passing it to eval().
+  - fact: Researcher h0xilo credited (entry B only)
+    entry: 2026-06-08/cve-2026-3300-unauthenticated-eval-injection-in-a-commercial
+    verified: true
+    source_url: https://www.bleepingcomputer.com/news/security/critical-everest-forms-pro-flaw-exploited-to-take-over-wordpress-sites/
+    passage: Researcher h0xilo submitted the CVE-2026-3300 vulnerability through Wordfence in February
+  - fact: 17,900 blocked attempts on 2026-05-16 and 13 April start (both entries)
+    entry: both
+    verified: true
+    source_url: https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/
+    passage: We also detected and blocked a large number of exploit attempts on May 16th, 2026, when over 17,900 exploit attempts were blocked in a single day.
+  - fact: '"still active as of 6 June" / "sustained mass exploitation from 13 April" (both entries)'
+    entry: both
+    verified: false
+    source_url: https://thehackernews.com/2026/06/hackers-exploit-critical-everest-forms.html
+    passage: Of these, 16 attack attempts occurred in the last 24 hours.
+  - fact: '"vendor-confirmed in-the-wild exploitation" (entry A only)'
+    entry: 2026-06-08/cve-2026-3300-everest-forms-pro-wordpress-unauthenticated-ev
+    verified: false
+    source_url: https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/
+    passage: exploitation figures are Wordfence firewall telemetry; no WPEverest statement
+  note: 'Same finding (identical CVE, sources and run); B (deep dive) is the better carrier. Both over-state ''sustained mass exploitation through 6 June'' (Wordfence: started 13 April, mass event 16 May;
+    THN: 16 attempts in 24 h on 5 June), cite Wordfence with the wrong date (2026-06-03, not 06-06) and carry a self-authored evidence quote. Plugin install base is only about 4,000; A''s priority high
+    has no constituency-exposure support.'
+- members:
+  - 2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a
+  - 2026-06-16/cve-2026-20262-cisco-catalyst-sd-wan-manager-authenticated-a
+  same_finding: true
+  survivor: 2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a
+  current_state: 'CVE-2026-20262, Cisco Catalyst SD-WAN Manager (formerly SD-WAN vManage) ''Arbitrary File Write Vulnerability'' (advisory cisco-sa-sdwan-arbfw-c2rZvQ, published 2026-06-15, revision 1.1
+    same day): web UI file-upload handling does not properly validate user-supplied input, an authenticated remote attacker with credentials of at least write access can create or overwrite any file on
+    the underlying OS, which ''could later be used to elevate to root''; CVSS 3.1 6.5 CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N; CWE-22 Path Traversal per the Cisco CNA record (https://cveawg.mitre.org/api/cve/CVE-2026-20262);
+    affects all deployment types (On-Prem, Cloud-Pro, Cloud Cisco Managed, FedRAMP) regardless of configuration; no workarounds; first fixed releases 20.9.9.2 (from 20.9.9.1 and earlier), 20.12.7.2 (20.12.7.1
+    and earlier), 20.15.4.5 (20.15.4.4 and earlier), 20.15.5.3 (20.15.5.2 and earlier), 20.18.3.1 (20.18.3), 26.1.1.2 (26.1.1.1 and earlier); found during internal security testing; ''In June 2026, the
+    Cisco PSIRT became aware of limited exploitation'' (https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ). CISA KEV: added 2026-06-15, due 2026-06-29
+    (catalogue 2026.10.16); The Register 2026-06-15 and BleepingComputer 2026-06-15 report root escalation and that it is the second Catalyst SD-WAN Manager zero-day of the month after CVE-2026-20245 (advisory
+    2026-06-04, patched 2026-06-12) (https://www.theregister.com/patches/2026/06/15/cisco-sd-wan-make-me-root-bug-under-attack/5255916, https://www.bleepingcomputer.com/news/security/cisco-fixes-sd-wan-vmanage-flaw-exploited-in-zero-day-attacks/).
+    Cisco''s indicators (patterns, not IOCs): vmanage-server.log (/var/log/nms) SdraAnyConnectFileUploadHandler entry ''uploaded Remote Access Anyconnect profile file'' with a ../ path into /var/lib/wildfly/standalone/deployments/
+    ending .war; vmanage-appserver.log WFLYSRV0010 ''Deployed'' for that WAR; serviceproxy-access.log POST to <name>/index.jsp; Cisco advises request admin-tech and a TAC case. No source ties UAT-8616 (Talos,
+    CVE-2026-20127 on the Controller, 2026-02-25) to this CVE.'
+  facts_only_in_duplicates:
+  - fact: Fix table with six first-fixed releases (both entries)
+    entry: both
+    verified: true
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+    passage: 20.9.9.1 and earlier 20.9.9.2 20.12.7.1 and earlier 20.12.7.2 20.15.4.4 and earlier 20.15.4.5 20.15.5.2 and earlier 20.15.5.3 20.18.3 20.18.3.1 26.1.1.1 and earlier 26.1.1.2
+  - fact: UAT-8616 / Talos context and detailed hunt/hardening paragraphs (entry A only)
+    entry: 2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a
+    verified: false
+    source_url: https://blog.talosintelligence.com/uat-8616-sd-wan/
+    passage: Talos covers CVE-2026-20127 on the SD-WAN Controller; no link to CVE-2026-20262; hunt text names Tomcat instead of WildFly
+  - fact: CISA KEV listing 2026-06-15 (both entries, cited to BleepingComputer which lacks it)
+    entry: both
+    verified: true
+    source_url: https://www.theregister.com/patches/2026/06/15/cisco-sd-wan-make-me-root-bug-under-attack/5255916
+    passage: CISA added CVE-2026-20262 to its Known Exploited Vulnerabilities catalog, citing "evidence of active exploitation"
+  note: Same finding (identical CVE, sources and run). Both share the 'Tomcat' error (Cisco's own indicators show WildFly), a self-authored evidence quote, and the KEV claim cited to a page that does not
+    carry it. A is the more complete carrier (exposure, detection, hardening) but also asserts an unsourced exploitation chain and an actor entity link; B is short but has a dangling section pointer and
+    priority high; rewrite the survivor from the Cisco advisory and KEV facts above.
+- members:
+  - 2026-07-01/cve-2026-46817-oracle-e-business-suite-oracle-payments-pre-a
+  - 2026-07-01/oracle-e-business-suite-cve-2026-46817-pre-auth-rce-in-the-p
+  - 2026-07-16/cve-2026-46817-oracle-ebs-payments-preauth-rce-kev-listed
+  same_finding: true
+  survivor: 2026-07-16/cve-2026-46817-oracle-ebs-payments-preauth-rce-kev-listed
+  current_state: 'CVE-2026-46817, Oracle E-Business Suite, Oracle Payments, File Transmission component (HTTP): unauthenticated attacker with network access can compromise and take over Oracle Payments;
+    Oracle risk matrix: remote exploit without authentication Yes, CVSS 3.1 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H), supported versions affected 12.2.3-12.2.15; fixed in Oracle''s May 2026 Critical Security
+    Patch Update (CSPU), Rev 1 initial release 2026-05-28 (https://www.oracle.com/security-alerts/cspumay2026.html); same CSPU also carries sibling CVE-2026-46818 (Oracle Payments / File Transmission, HTTPS,
+    7.4) and CVE-2026-46819 (Oracle Internet Procurement Connector, 9.1). Weakness labels (via Help Net Security and CISA KEV): improper privilege management, improper authentication, missing authentication
+    for a critical function (CWE-269/287/306). Exploitation: Defused honeypots recorded the first in-the-wild exploitation on 2026-06-27 (single source, unauthenticated file read through the ibytransmit
+    endpoint of the Payments File Transmission component reading /etc/passwd; Defused: ''a targeted proof-of-concept, not broad scanning''; no public PoC; reported on X 2026-06-29 (BleepingComputer https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/),
+    Help Net Security 2026-06-30 (https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/) and SecurityAffairs 2026-06-30 (https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html));
+    the ''six weeks after the patch'' wording is Defused''s, whereas Oracle''s release was 30 days earlier; Shadowserver counted over 450 internet-exposed EBS instances (nearly 200 in the US and Europe)
+    on 2026-06-29. CISA KEV: added 2026-07-15 (due 2026-07-18, forensic triage flagged, ransomware use Unknown; catalogue 2026.10.16) (https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog).
+    No threat-actor attribution in any source. Guidance in sources: apply the May CSPU, keep EBS web interfaces off the public internet, treat internet-facing instances unpatched past 2026-05-28 as potentially
+    compromised, review logs for POST /OA_HTML/ibytransmit, rotate credentials/keys on the host after forensic review.'
+  facts_only_in_duplicates:
+  - fact: 'Shadowserver: over 450 internet-exposed Oracle EBS instances, nearly 200 in the US and Europe (entry 2 only)'
+    entry: 2026-07-01/oracle-e-business-suite-cve-2026-46817-pre-auth-rce-in-the-p
+    verified: true
+    source_url: https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/
+    passage: Internet security watchdog group Shadowserver now tracks over 450 Oracle EBS instances exposed online, with nearly 200 in the United States and in Europe.
+  - fact: Oracle statement "continues to periodically receive reports of attempts to maliciously exploit vulnerabilities for which Oracle has already released security patches" (entry 2 only)
+    entry: 2026-07-01/oracle-e-business-suite-cve-2026-46817-pre-auth-rce-in-the-p
+    verified: true
+    source_url: https://www.oracle.com/security-alerts/cspumay2026.html
+    passage: Oracle continues to periodically receive reports of attempts to maliciously exploit vulnerabilities for which Oracle has already released security patches.
+  - fact: Defused first-activity "weekend of 27-28 June", no known prior exploitation, no public PoC (entries 1 and 2)
+    entry: 1,2
+    verified: true
+    source_url: https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/
+    passage: Over the weekend, we observed an actor exploiting the vulnerability on our Oracle E-Business honeypots. This vulnerability has no known previous exploitation and no public POC code exists.
+  - fact: '"RCE", "servlet", "six weeks" (cited to BC/SA), "Defused did not disclose mechanics" (entries 1 and 2)'
+    entry: 1,2
+    verified: false
+    source_url: https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/
+    passage: 'Help Net Security: unauthenticated file-read via ibytransmit; Oracle release 2026-05-28 vs first exploitation 2026-06-27'
+  - fact: ShinyHunters PeopleSoft campaign CVE-2026-35273 context (entry 2) and "ShinyHunters/UNC6240 pressure on EBS" (entry 3)
+    entry: 2,3
+    verified: false
+    source_url: https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html
+    passage: SecurityAffairs ties ShinyHunters to a PeopleSoft campaign (27 May to 9 June), not to EBS
+  note: 'Same finding (CVE-2026-46817 first exploitation 2026-06-27 and the later KEV listing). Entry 3 (2026-07-16) is the survivor: Oracle CSPU + CISA + Help Net Security primaries, affected/fixed, classification,
+    techniques, mechanics. Entries 1 and 2 call it RCE and say mechanics were undisclosed, both contradicted by Help Net Security/CISA; entry 3 repeats the ''six weeks'' and ''Critical Patch Update'' naming
+    and adds an unsupported ShinyHunters/UNC6240 EBS claim.'

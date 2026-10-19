@@ -8,8 +8,9 @@ summary: >
   supervisory refrigeration controllers. Three chain to unauthenticated root RCE: an auth-bypass
   logic flaw in the Lua authentication handler, a deterministic admin-password generator
   derivable offline from the device's MAC address and current date, and an unauthenticated OS
-  command injection via the libraries installation route. 17 further, authenticated-only
-  command-injection flaws are individually CVE-mapped by the source at CVSS 8.0 each. Copeland
+  command injection via the libraries installation route. 18 further, authenticated-only
+  command-injection flaws score CVSS 8.0 each, and CISA's advisory adds two low-severity
+  unauthenticated flaws. Copeland
   fixed all 23 in firmware v1.13; no source read reports exploitation of these flaws, but CERT-FR's alert of 2026-10-13 now
   reports numerous compromises of Copeland xweb refrigeration controllers without naming models, flaws or the entry vector.
 discovered_at: "2026-08-28T06:52:00Z"
@@ -20,7 +21,7 @@ priority: high
 immediate_action: null
 tags: [vulnerabilities, rce, auth-bypass, pre-auth, patch-available, ot-ics]
 regions: [global, europe]
-sectors: [healthcare, energy]
+sectors: [retail, healthcare]
 entities: ["product:copeland-xweb300d-pro", "product:copeland-xweb500d-pro", "product:copeland-xweb500b-pro", "product:copeland-xweb"]
 techniques: [T1190, T1078.001, T1059]
 affected_products: ["Copeland XWEB300D PRO", "Copeland XWEB500D PRO", "Copeland XWEB500B PRO"]
@@ -37,7 +38,7 @@ cves:
   - id: CVE-2026-21718
     cvss: "10.0"
     epss: null
-    type: logic-flaw
+    type: auth-bypass
     vector: zero-click
     auth: pre-auth
     status: [patch-available]
@@ -205,6 +206,33 @@ cves:
     status: [patch-available]
     affected: "Copeland XWEB300D/500D/500B PRO firmware ≤1.12.1 — system setup (device hostname configuration)"
     fixed: "Firmware 1.13"
+  - id: CVE-2026-3037
+    cvss: "8.0"
+    epss: null
+    type: rce
+    vector: zero-click
+    auth: post-auth
+    status: [patch-available]
+    affected: "Copeland XWEB Pro 1.12.1 and prior: MBird SMS service URL/code set via the utility route, executed during system setup (CISA ICSA-26-057-10)"
+    fixed: "Firmware 1.13"
+  - id: CVE-2026-22877
+    cvss: "3.7"
+    epss: null
+    type: path-traversal
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "Copeland XWEB Pro 1.12.1 and prior: unauthenticated arbitrary file read (CISA ICSA-26-057-10)"
+    fixed: "Firmware 1.13"
+  - id: CVE-2026-20797
+    cvss: "4.3"
+    epss: null
+    type: memory-corruption
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "Copeland XWEB Pro 1.12.1 and prior: unauthenticated stack-based buffer overflow in an API route that terminates the program (CISA ICSA-26-057-10)"
+    fixed: "Firmware 1.13"
 sources:
   - url: "https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers"
     publisher: "Claroty Team82"
@@ -213,6 +241,10 @@ sources:
   - url: "https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/"
     publisher: "CERT-FR (alert CERTFR-2026-ALE-012, revised version)"
     date: "2026-10-13"
+    role: corroborating
+  - url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-057-10"
+    publisher: "CISA (ICS advisory ICSA-26-057-10)"
+    date: "2026-02-26"
     role: corroborating
 closed_sources: []
 evidence:
@@ -228,17 +260,15 @@ evidence:
     original: "Le CERT-FR a connaissance de nombreuses compromissions des controleurs à distance d'installation de réfrigération Danfoss série AK-SM, AK-SC ainsi que Copeland xweb et Dixell xweb."
     publisher: "CERT-FR (alert CERTFR-2026-ALE-012, revised version)"
     source_url: "https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/"
-verification: single-source
+verification: multi-source
 sourcing_note: >
-  Claroty Team82 is the sole source for the vulnerabilities (a research lab publishing coordinated-disclosure
-  OT research); CERT-FR's alert is a second source only for compromises of the Copeland xweb product family, and it names no models, flaws or entry vector; a CISA ICS advisory reported elsewhere as ICSA-26-057-10 could not be located or
-  fetched as of 2026-08-30 for a second corroborating source. Claroty's own article publishes a full 1:1
-  identifier-to-endpoint-to-CVSS table for 20 of the 23 disclosed CVEs, each with its own
-  per-endpoint description — all 20 are recorded individually here. The remaining three of the 23
-  are referenced only in the article's aggregate "23 vulnerabilities" count with no individually
-  published identifier or per-flaw detail located as of 2026-08-30, and are therefore not listed
-  individually. Claroty describes the deterministic-password mechanism in narrative form without
-  attaching a CVE id to it, and its table text for CVE-2026-21718 says only "an authentication
+  Claroty Team82 found the vulnerabilities, and CISA's ICS advisory ICSA-26-057-10 of 2026-02-26 lists all 23
+  identifiers with a summary and CVSS score each, so the flaws rest on two sources; CERT-FR's alert is a source only for
+  compromises of the Copeland xweb product family, and it names no models, flaws or entry vector. Claroty's article
+  documents 20 of the 23 with an endpoint each; the other three (CVE-2026-3037, CVE-2026-22877, CVE-2026-20797) are
+  recorded from CISA's advisory. Claroty describes the deterministic-password mechanism in narrative form without
+  attaching a CVE id to it (CISA maps CVE-2026-21718 to CWE-327, use of a broken or risky cryptographic algorithm,
+  which fits that mechanism without binding the id to it), and its table text for CVE-2026-21718 says only "an authentication
   bypass vulnerability... enabling any attackers to bypass the authentication requirement and
   achieve pre-authenticated code execution", so which identifier covers that mechanism is not
   stated by the vendor and is not asserted here.
@@ -284,14 +314,25 @@ updates:
     summary: >
       CERT-FR revised its refrigeration-controller alert on 2026-10-13 to say it knows of numerous compromises of Copeland xweb controllers, in addition to Danfoss and Dixell units; it names no models, flaws or entry vector, so the earlier 'no exploitation reported' no longer describes the product family.
     fields: [summary, entities, sources, evidence, sourcing_note, references, body]
+  - at: "2026-10-19T21:06:23Z"
+    run_id: 2026-10-18T1307Z-audit
+    type: correction
+    summary: >
+      CISA's ICS advisory ICSA-26-057-10, which this entry said could not be located, lists all 23
+      identifiers: three missing ones are added (CVE-2026-3037, CVE-2026-22877, CVE-2026-20797),
+      CVE-2026-21718 is typed as the authentication bypass both sources call it, the field-controller link
+      and the register-map wording follow Claroty, the 'zero interaction' claim and the energy sector,
+      which no source supports, are removed, the sourcing note records CISA's CWE for CVE-2026-21718, and
+      the entry is now two-source.
+    fields: [summary, sectors, cves, sources, verification, sourcing_note, body]
 migrated_from: null
 ---
 
-Claroty Team82 disclosed 23 vulnerabilities (21 rated high) in Copeland XWEB300D/500D/500B PRO supervisory refrigeration controllers (firmware ≤1.12.1), which manage field devices such as the XR60CX controller over Modbus RS-485 and Ethernet in commercial refrigeration and cold-chain deployments. Two named flaws chain to unauthenticated root RCE. CVE-2026-25085 is a logic flaw in the Lua `user_authenticate` handler: when an attacker supplies an unrecognized `auth_mode` value in the HTTP `Authorization: Basic` header, the function does not return `nil`/`false` but an unpopulated yet "truthy" table — "if an attacker supplied an unrecognized auth_mode, the user_authenticate function did not explicitly reject the request by returning nil or false. Instead, it returned an unpopulated table: { user = nil, role = nil, recovery = nil }" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)) — and the router downstream checks only that something was returned, not its contents, so the malformed request slips through unauthenticated.
+Claroty Team82 disclosed 23 vulnerabilities (21 rated high) in Copeland XWEB300D/500D/500B PRO supervisory refrigeration controllers (firmware ≤1.12.1), which manage field devices such as the XR60CX controller over Modbus on an RS-485 serial network in commercial refrigeration and cold-chain deployments. Two named flaws chain to unauthenticated root RCE. CVE-2026-25085 is a logic flaw in the Lua `user_authenticate` handler: when an attacker supplies an unrecognized `auth_mode` value in the HTTP `Authorization: Basic` header, the function does not return `nil`/`false` but an unpopulated yet "truthy" table — "if an attacker supplied an unrecognized auth_mode, the user_authenticate function did not explicitly reject the request by returning nil or false. Instead, it returned an unpopulated table: { user = nil, role = nil, recovery = nil }" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)) — and the router downstream checks only that something was returned, not its contents, so the malformed request slips through unauthenticated.
 
-One of the three pre-auth paths is a deterministic admin-password generator: the credential is derived via a key-derivation function from a hardcoded firmware seed identical across the product line, plus the device's MAC address and the current date — both obtainable from unauthenticated public endpoints — letting an attacker reconstruct valid admin credentials fully offline with zero interaction with the target: "because the seed values are identical across the product line and the variables (MAC address and date) can be obtained via unauthenticated public endpoints, an adversary can reconstruct the entire derivation chain offline" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)). A third pre-auth path, CVE-2026-24663 (CVSS 9.0), is an unauthenticated OS command injection reachable by sending a crafted request to the libraries installation route, with no authentication step to bypass at all.
+One of the three pre-auth paths is a deterministic admin-password generator: the credential is derived via a key-derivation function from a hardcoded firmware seed identical across the product line, plus the device's MAC address and the current date, both obtainable via unauthenticated public endpoints, so once an attacker has those two values, valid admin credentials can be computed offline: "because the seed values are identical across the product line and the variables (MAC address and date) can be obtained via unauthenticated public endpoints, an adversary can reconstruct the entire derivation chain offline" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)). A third pre-auth path, CVE-2026-24663 (CVSS 9.0), is an unauthenticated OS command injection reachable by sending a crafted request to the libraries installation route, with no authentication step to bypass at all.
 
-The 17 further CVEs (all listed above) are individually documented OS command-injection flaws across API/CGI endpoints (contacts import, firmware update, device templates, network/Wi-Fi configuration, the Modbus debug tool, and others), each requiring prior authentication and each scored CVSS 8.0. All are served by an embedded lighttpd instance where unsanitized user input reaches Lua system-execution calls running with elevated privileges — any of the three pre-auth primitives above chains directly to root: "since these services run with elevated privileges, successful exploitation results in immediate root-level code execution on the controller" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)). Claroty built a live physical demonstration: from an internet-exposed XWEB controller, an attacker reverse-engineers the connected field controller's undocumented Modbus register map and can set the temperature shown on the XR60CX display to any value while silently disabling cooling — spoiled food, or compromised temperature-sensitive medical supplies for pharmaceutical cold-chain. Copeland shipped firmware v1.13 through coordinated disclosure, fixing all 23 issues: "Copeland worked closely and collaboratively with us to develop a comprehensive remediation strategy. The vendor successfully patched these vulnerabilities and has uploaded firmware update version 1.13" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)); no source read reports exploitation of these flaws in the wild, but CERT-FR's alert of 2026-10-13 reports numerous compromises of Copeland xweb controllers without naming models, flaws or the entry vector ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)).
+Eighteen further CVEs (all listed above) are OS command-injection flaws across API/CGI endpoints (contacts import, firmware update, device templates, network/Wi-Fi configuration, the Modbus debug tool, the SMS service settings and others), each requiring prior authentication and each scored CVSS 8.0; Claroty documents seventeen of them ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)), and CISA's advisory adds CVE-2026-3037, injected through the MBird SMS service URL or code on the utility route ([CISA, 2026-02-26](https://www.cisa.gov/news-events/ics-advisories/icsa-26-057-10)). CISA also lists two low-severity flaws reachable without authentication: an arbitrary file read (CVE-2026-22877, CVSS 3.7) and a stack-based buffer overflow in an API route that terminates the program (CVE-2026-20797, CVSS 4.3) ([CISA, 2026-02-26](https://www.cisa.gov/news-events/ics-advisories/icsa-26-057-10)). All are served by an embedded lighttpd instance where unsanitized user input reaches Lua system-execution calls running with elevated privileges — any of the three pre-auth primitives above chains directly to root: "since these services run with elevated privileges, successful exploitation results in immediate root-level code execution on the controller" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)). Claroty built a live physical demonstration: from an internet-exposed XWEB controller, an attacker works out the connected field controller's Modbus register addresses, many of which are not publicly documented, from the XR60CX datasheet and protocol analysis, and can set the temperature shown on the XR60CX display to any value while silently disabling cooling — spoiled food, or compromised temperature-sensitive medical supplies for pharmaceutical cold-chain. Copeland shipped firmware v1.13 through coordinated disclosure, fixing all 23 issues: "Copeland worked closely and collaboratively with us to develop a comprehensive remediation strategy. The vendor successfully patched these vulnerabilities and has uploaded firmware update version 1.13" ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)); no source read reports exploitation of these flaws in the wild, but CERT-FR's alert of 2026-10-13 reports numerous compromises of Copeland xweb controllers without naming models, flaws or the entry vector ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)).
 
 An anonymous, single-request path to full administrative control of internet-exposed cold-chain infrastructure demands action beyond a routine patch cycle, independent of confirmed exploitation: absence of exploitation is not evidence of safety when the exploit is a MAC address. Internet-exposed commercial refrigeration and cold-storage deployments are directly relevant to healthcare and food-safety cold-chain operations. **Triage:** the falsified display is itself the detection challenge: Claroty shows the temperature on the XR60CX field controller's display can be set to any value, so a normal reading on the display does not show that cooling is running; any authentication attempt using an `auth_mode` value the deployment does not use is a probe worth alerting on.
 
@@ -302,3 +343,9 @@ Which CVE identifier covers the deterministic admin-password path is **not** som
 ## Update — 2026-10-14T03:45:00Z
 
 CERT-FR revised its alert on refrigeration-controller compromises on 2026-10-13: it now says it knows of numerous compromises of the remote controllers Danfoss AK-SM and AK-SC as well as Copeland xweb and Dixell xweb, that attack campaigns are probably still ongoing, and that access should come back only through a secure VPN or protected network, with filtering to the refrigeration contractors' source addresses accepted only as an emergency measure ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). The alert names no Copeland models, no vulnerability and no entry vector, and does not tie the compromises to Claroty's findings, so it is not established that CVE-2026-25085 or any other flaw above was used.
+
+## Correction — 2026-10-19T21:06:23Z
+
+CISA published an ICS advisory for these flaws on 2026-02-26, ICSA-26-057-10, contrary to the earlier statement that it could not be located; it lists all 23 identifiers with a summary and score each ([CISA, 2026-02-26](https://www.cisa.gov/news-events/ics-advisories/icsa-26-057-10)). The three not recorded before are CVE-2026-3037, an authenticated OS command injection through the MBird SMS service URL or code on the utility route (CVSS 8.0), so the authenticated command-injection flaws number eighteen, not seventeen; CVE-2026-22877, an arbitrary file read without authentication (CVSS 3.7); and CVE-2026-20797, a stack-based buffer overflow in an API route, reachable without authentication, that terminates the program (CVSS 4.3) ([CISA, 2026-02-26](https://www.cisa.gov/news-events/ics-advisories/icsa-26-057-10)). CVE-2026-21718 is an authentication bypass, as both Claroty and CISA call it, not a logic flaw ([CISA, 2026-02-26](https://www.cisa.gov/news-events/ics-advisories/icsa-26-057-10)).
+
+Three descriptions above are corrected. The admin password is computed offline once the attacker has the MAC address and the date, which Claroty says can be obtained via unauthenticated public endpoints; the earlier "zero interaction with the target" overstated that ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)). The supervisory controller reaches its field controllers over an RS485 serial network using Modbus, and Ethernet is its own network connection, not a field-device link ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)). Claroty says the register addresses for many functions are not publicly documented and that it built the map from the XR60CX datasheet and protocol analysis ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)). The sectors now read retail and healthcare, which Claroty names through supermarkets, food distribution and healthcare facilities, in place of energy, which no source supports ([Claroty Team82, 2026-08-09](https://claroty.com/team82/research/chilling-discoveries-unpacking-vulnerabilities-in-copeland-xweb-pro-controllers)); with CISA's advisory the flaws rest on two sources. The remediation is unchanged.

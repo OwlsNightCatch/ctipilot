@@ -178,6 +178,14 @@ updates:
     summary: >
       The Dixell France guide that CERT-FR links was replaced on 2026-10-18 and now carries Copeland's own bulletin of 14 October 2026, which acknowledges the vulnerability on a discontinued, end-of-life generation of XWEB EVO controllers, says to remove every XWEB EVO from the public internet at once, gives a restore procedure and says to check product temperatures in the cabinets directly; the earlier statements about XWEB PRO firmware 1.12.1, a CISA advisory and a March 2024 bulletin are no longer on that page and are removed. Le Monde's report that the defrost operation was lengthened from one hour to eight so that alarms trigger late, and SecurityWeek's figure of about 700 supermarkets, the prosecutor's report of fires and the absence of a claim or ransom demand, are added, with Cybersecurity Dive's report that Copeland confirmed the flaw was found in discontinued controllers.
     fields: [summary, sources, evidence, sourcing_note, body]
+  - at: "2026-10-19T21:00:14Z"
+    run_id: 2026-10-18T1307Z-audit
+    type: correction
+    internal: true
+    summary: >
+      The Defender takeaway says, as CERT-FR does, that a factory reset removes the compromised instance's
+      persistence, instead of 'the implant'.
+    fields: [body]
 migrated_from: null
 ---
 
@@ -189,7 +197,7 @@ Coopérative U, Intermarché and E. Leclerc confirmed to AFP a cyberattack on th
 
 **Triage:** a defrost cycle is normal; BFMTV reports, citing sector professionals, that installations can be programmed for two hours of defrost per 24 hours, whereas the reported attack is said to be a continuous forced defrost at a 50-degree setpoint held for hours (translated from French) ([BFMTV, 2026-10-12](https://www.bfmtv.com/economie/consommation/la-temperature-est-montee-jusqu-a-50-degres-une-cyberattaque-contre-les-systemes-frigorifiques-provoque-la-destruction-de-produits-frais-dans-des-centaines-d-intermarche-et-de-super-u_AN-202610120327.html)).
 
-**Defender takeaway:** take any Danfoss AK-SM or AK-SC, Copeland xweb or Dixell xweb management interface off the internet now and restore access only through a secure VPN or protected network, as CERT-FR advises ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)), and ask the contractor whether its own remote access was affected; for the AK-SM800 and AK-SC355, replacement is the lever, since Danfoss says it had long advised supermarkets to move off those models ([AFP, 2026-10-12](https://www.afp.com/en/french-supermarket-chains-say-cyberattack-forced-refrigerator-shutdown)), no fix exists for them according to NCSC Switzerland ([NCSC Switzerland, 2026-10-13](https://security-hub.ncsc.admin.ch/#/posts/13054)), and CERT-FR says a factory reset on an unpatched end-of-life unit removes the implant but leaves the device vulnerable and almost certainly compromised again ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)).
+**Defender takeaway:** take any Danfoss AK-SM or AK-SC, Copeland xweb or Dixell xweb management interface off the internet now and restore access only through a secure VPN or protected network, as CERT-FR advises ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)), and ask the contractor whether its own remote access was affected; for the AK-SM800 and AK-SC355, replacement is the lever, since Danfoss says it had long advised supermarkets to move off those models ([AFP, 2026-10-12](https://www.afp.com/en/french-supermarket-chains-say-cyberattack-forced-refrigerator-shutdown)), no fix exists for them according to NCSC Switzerland ([NCSC Switzerland, 2026-10-13](https://security-hub.ncsc.admin.ch/#/posts/13054)), and CERT-FR says a factory reset on an unpatched end-of-life unit removes the compromised instance's persistence but leaves the device vulnerable and almost certainly compromised again ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)).
 
 ## Update — 2026-10-14T03:44:00Z
 

@@ -8,7 +8,7 @@ summary: >
   (auth bypass, CVSS4.0 8.8) and CVE-2026-82078 (unsafe dynamic class loading, CVSS4.0 9.4), that PaperCut confirmed
   under active exploitation on 2026-08-27, before any CVE or patch existed. Fully tested maintenance releases 26.0.5,
   25.0.13 and 24.1.10 (10 September 2026) replace the emergency patches and are the vendor's recommended build (the September bulletin, revised 2026-10-13, now names 24.1.11 for v24);
-  servers still on Emergency Patch Release 1 or 2 need to upgrade now. There is no fix for v23 and earlier, and Huntress estimates 47% of the PaperCut installs it tracks run v23 or older.
+  servers still on Emergency Patch Release 1 or 2 need to upgrade now. There is no fix for v23 and earlier, and Huntress estimated on 28 August that 47% of the PaperCut installs it tracks ran v23 or older.
   GreyNoise now documents an AI-agent-orchestrated mass-exploitation campaign against this same chain, compromising at least
   440 instances across 395 identified organizations since 31 August 2026, reaching full domain admin in as little as five
   minutes via legacy Active Directory escalation paths. watchTowr's write-up of 2026-10-09 shows the 28 August emergency build could
@@ -163,7 +163,7 @@ classification:
 watchlist_hit: false
 actions:
   - "Upgrade every PaperCut NG/MF Application Server, Site Server and secondary/print server to the security maintenance release for its line (26.0.5, 25.0.13 or 24.1.11, the v24 build the September bulletin now names), starting with any still on Emergency Patch Release 1 or 2, because the emergency builds do not carry the fix for CVE-2026-82077, an administrator-only Scan-to-Fax code-execution flaw that the vendor's September bulletin lists as fixed in 26.0.5, 25.0.13 and 24.1.10; for v23 and earlier, immediately restrict the Application Server's web interface to trusted/internal IP addresses only; no patch exists for that line. On every server, patched or not, set the advanced config key auth.webservices.auth-token to a long random secret and limit auth.webservices.allowed-addresses to the hosts that call the XML-RPC API, because Hunt.io says an instance hardened against the Tapestry bypass is not necessarily protected against the XML-RPC route it recovered, which works when the allowlist is too permissive or no token is set."
-  - "Before patching or restarting an internet-facing server, preserve the server/logs directory and process tree; check server.log for the two vendor-documented error strings and for an unexplained gap or truncation, check derby.log for a Derby boot line naming an in-memory database directory ending in \"pwn\", and hunt for a Windows service named \"Remote Access Service\" running SimpleService.exe (SimpleHelp) or an unexpected AnyDesk install, as PaperCut's own published incident data names both as an observed post-compromise access method."
+  - "Before patching or restarting an internet-facing server, preserve the server/logs directory and process tree; check server.log for the two vendor-documented error strings and for an unexplained gap or truncation, check server.log and derby.log for an in-memory Derby database booted under an attacker-chosen name, and hunt for a Windows service named \"Remote Access Service\" running SimpleService.exe (SimpleHelp) or an unexpected AnyDesk install, as PaperCut's own published incident data names both as an observed post-compromise access method."
   - "Given GreyNoise's confirmed domain-admin escalation paths, verify no PaperCut Application Server is domain-joined with a privileged service account or hosted on a domain controller, and confirm domain controllers reachable from any PaperCut host are patched against the 2021 noPac flaws (CVE-2021-42278/CVE-2021-42287); GreyNoise reports the AI-orchestrated campaign reaching full domain admin through these paths in as little as five minutes after initial access."
 updates:
   - at: "2026-09-03T05:05:00Z"
@@ -210,6 +210,17 @@ updates:
     summary: >
       Hunt.io recovered the attacker's open directories (2026-10-15) and reports a second route to code execution through PaperCut's XML-RPC API that does not use the Tapestry bypass and works when the API allowlist is too permissive or no explicit token is set, a cron-kept reverse SOCKS tunnel, an offline LSA-secret playbook and 45 victims with live internal pivots, Switzerland among the countries listed. Hunt.io does not report the XML-RPC route used against a victim; PaperCut's documentation names the token and allowlist settings that close it. PaperCut's September bulletin, revised 2026-10-13, now lists CVE-2026-82077 as fixed in 24.1.10 and names 24.1.11 as the v24 build.
     fields: [title, summary, regions, techniques, cves, sources, evidence, sourcing_note, actions, body]
+  - at: "2026-10-19T21:07:41Z"
+    run_id: 2026-10-18T1307Z-audit
+    type: correction
+    summary: >
+      Corrects four statements: PaperCut says only that Emergency Patch Release 3 addresses two known
+      regressions, not that Release 2 introduced them (the record of 2026-09-03 says it did); the web-log
+      hunt now covers the LogonMessage route watchTowr documents and is cited; Huntress's 47% figure is
+      dated to 28 August; and GreyNoise's twelve domain-admin victims are its count at last observation,
+      not a final tally out of 395. The attacker-chosen Derby database name is removed from the detection
+      text and the action as an indicator value.
+    fields: [summary, actions, body]
 migrated_from: null
 ---
 
@@ -250,16 +261,17 @@ observable `charmap.exe` process running as SYSTEM, spawned under the PaperCut A
 process
 ([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)). PaperCut released an initial emergency patch for v25 and v26 on 28 August and patches for v24 later the same day, and Rapid7 says the first patch could be bypassed by using the Home page for display while the newest version of the vendor patch remediates that bypass ([Rapid7, 2026-08-28](https://www.rapid7.com/blog/post/etr-papercut-ng-mf-critical-zero-day-exploited-in-the-wild/)). PaperCut then superseded the earlier emergency patches with Emergency Patch Release 3 on 1 September 2026 and replaced all three emergency patches on 10 September with fully tested maintenance releases (see the updates below) ([PaperCut Software, 2026-09-10](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
 There is no fix for v23 and earlier; PaperCut's guidance for that line is to upgrade to a supported version ([PaperCut Software, 2026-09-10](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)), and
-Huntress estimates 47% of the roughly 2,500 PaperCut installations it tracks still run v23 or older
+Huntress estimated on 28 August that 47% of the roughly 2,500 PaperCut installations it tracks ran v23 or older
 ([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)).
 
 Detection, telemetry class first: alert on any child process spawned from `pc-app.exe` or the PaperCut Application
 Server's Java process, the lineage under which the observed exploitation ran its discovery commands. Web-access logs for the PaperCut Application Server should
-be checked for POST requests to `/app?service=direct/*/{Error,Exception,Home}/ConfigEditor/*` or
-`.../UserList/$QuickFind.$Form` from unauthenticated or external sources, this URL shape is not a pattern ordinary
-PaperCut administration produces. Two log artifacts are near-unique indicators: a `server.log` line reading
-`DB URL: jdbc:derby:memory:pwn`, and a corresponding `derby.log` entry recording Derby booting an in-memory database
-directory whose name ends in the literal string `pwn`
+be checked for POST requests from an unauthenticated session whose `service` parameter puts a non-administrative page
+in front of the `ConfigEditor` or `UserList` component, such as `/app?service=direct/1/LogonMessage/ConfigEditor/quickFindForm`,
+because PaperCut checks authorization only for that first page ([watchTowr, 2026-10-09](https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/)); the `Error` and `Home`
+variants described above follow the same shape, so the signal is the page in front of the component, not the component.
+Two log artifacts are near-unique indicators: a `server.log` `DB URL:` line pointing at an in-memory Derby database, and a
+corresponding `derby.log` entry recording Derby booting an in-memory database under an attacker-chosen name
 ([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)). PaperCut stresses that the absence of its file artifacts does not rule out compromise because the attacker may clean them up ([PaperCut Software, 2026-09-10](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)), and Huntress observed the payload deleting the server's own `server.log` ([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)).
 Requests to `/rpc/api/xmlrpc` that call `api.setConfigValue` or `api.lookUpUserNameByCardNo` from addresses outside the allowlist match the XML-RPC route, and Hunt.io advises disabling the endpoint where it is not needed ([Hunt.io, 2026-10-15](https://hunt.io/blog/papercut-attacker-ai-toolkit-exploit-code-second-rce)). Hunt.io's recovered kit also adds changes to the `user-lookup.*` settings, unexpected files under `custom/web/`, and chisel or cron entries calling out to non-standard ports ([Hunt.io, 2026-10-15](https://hunt.io/blog/papercut-attacker-ai-toolkit-exploit-code-second-rce)).
 The later authentication bypass that watchTowr documents reaches the Setup Wizard pages through the `Home` page, so requests whose `service` parameter routes through `Home` to a setup page such as `SetupAdmin` on a server whose setup is long complete are the matching pattern ([watchTowr, 2026-10-09](https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/)).
@@ -274,7 +286,7 @@ entirely rather than relying on detection alone. Set an explicit XML-RPC API tok
 PaperCut's Emergency Patch Release 3, published 1 September 2026, supersedes Release 2 and is cumulative, customers
 do not need to install the earlier releases first
 ([PaperCut Software, 2026-09-02](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
-Release 3 fixes two regressions Release 2 had itself introduced, broken SAML login flows, and lost support for
+Release 3 addresses two known regressions, fixing broken SAML login flows and restoring support for
 legacy Microsoft SQL Server drivers used for external card lookup, and adds further, undisclosed hardening against
 the exploitation chain
 ([PaperCut Software, 2026-09-02](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)).
@@ -307,8 +319,8 @@ reports the adversary "went from an empty workspace to first achieving RCE again
 four hours, first domain admin in an additional two hours, and once the full campaign launched, compromised at
 least 11 organizations in 26 seconds"
 ([GreyNoise, 2026-09-09](https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf)), with one
-US high school reaching full domain admin in seven minutes from initial access. Domain admin was ultimately reached
-against only twelve of the 395 compromised organizations, "GreyNoise observed the adversary achieved domain admin
+US high school reaching full domain admin in seven minutes from initial access. At its last observation, GreyNoise
+had seen domain admin reached against only twelve victim organizations, "GreyNoise observed the adversary achieved domain admin
 against only 12 victim organizations"
 ([GreyNoise, 2026-09-09](https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf)), via three
 paths: LSASS credential harvesting for pass-the-hash against the domain controller when the PaperCut host was
@@ -337,3 +349,7 @@ Hunt.io found three open directories on one attacker host and reconstructs the o
 The files also show what follows a compromise. A Linux kit keeps a chisel reverse SOCKS5 client alive through cron entries (periodic and at reboot) and a watchdog script that checks the process ([Hunt.io, 2026-10-15](https://hunt.io/blog/papercut-attacker-ai-toolkit-exploit-code-second-rce)). The Windows playbook exports the SECURITY and SYSTEM registry hives from a compromised host to recover LSA secrets, the domain machine account's password among them, offline ([Hunt.io, 2026-10-15](https://hunt.io/blog/papercut-attacker-ai-toolkit-exploit-code-second-rce)). The scale comes from the actor's own files: a reconnaissance pool of 1,005 hosts in at least 45 countries (800 confirmed vulnerable and 205 flagged from version fingerprinting), 2,165 logged attempts, 46 Active Directory domains packaged as victim data and 45 targets with a live reverse SOCKS5 pivot at the time of capture ([Hunt.io, 2026-10-15](https://hunt.io/blog/papercut-attacker-ai-toolkit-exploit-code-second-rce)). Switzerland is among the countries listed for those 45 targets, with no sector or organisation named, and Hunt.io says it shared its findings and the victim data with the national CERTs of the affected countries ([Hunt.io, 2026-10-15](https://hunt.io/blog/papercut-attacker-ai-toolkit-exploit-code-second-rce)).
 
 PaperCut's September security bulletin, last updated 2026-10-13, now lists CVE-2026-82077 as fixed in 24.1.10 on the 24.x branch as well as in 26.0.5 and 25.0.13, and recommends 26.0.5, 25.0.13 or 24.1.11 or later ([PaperCut Software, 2026-09-24](https://www.papercut.com/kb/Main/security-bulletin-sep-2026/)).
+
+## Correction — 2026-10-19T21:07:41Z
+
+Four statements above are corrected. PaperCut's bulletin says Emergency Patch Release 3 "addresses two known regressions", broken SAML login and support for legacy Microsoft SQL Server drivers for external card lookup, without saying Release 2 introduced them, as the update of 2026-09-03 stated ([PaperCut Software, 2026-09-10](https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/)). The web-log hunt now covers requests that put a non-administrative page such as `LogonMessage` in front of the `ConfigEditor` component, the route watchTowr documents, since PaperCut checks authorization only for that first page; the earlier pattern listed only `Error`, `Exception` and `Home` and missed it ([watchTowr, 2026-10-09](https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578/)). Huntress's estimate that 47% of the installations it tracks run v23 or older dates from 28 August ([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)). GreyNoise counts twelve victim organizations where domain admin was reached as of its last observation, not as a final tally out of the 395 ([GreyNoise, 2026-09-09](https://www.greynoise.io/blog/ai-orchestrated-campaign-against-papercut-ng-mf)). The detection text and the second action now describe the Derby artifact as an in-memory database under an attacker-chosen name, without printing the name itself, which is an indicator value ([Huntress, 2026-08-28](https://www.huntress.com/blog/papercut-actively-exploited)).
