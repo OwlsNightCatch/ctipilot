@@ -1,0 +1,179 @@
+# work/2026-10-19T0256Z-intel/findings.S4.yaml
+domain: S4
+run_id: 2026-10-19T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-19T02:58:13Z
+ended_at: 2026-10-19T03:21:27Z
+duration_seconds: 1394
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 30
+  bridge_fetches: 80
+summary_note: >
+  Thin window for incidents and disclosures. Every one of the 14 slice records was attempted; none yielded a new
+  in-window incident that clears the S4 gate (Swiss/public-sector nexus, a new or evolved TTP, same-actor read onto the
+  constituency, or an imminent shared threat). Two covered incidents had in-window source updates (ConnectWise Cloud Backup,
+  IDC Frontier); both are returned as update-of items flagged borderline because the delta is small. Everything else that
+  surfaced is listed under dropped_leads with its reason so nothing is silently dropped.
+items:
+  - title: "ConnectWise Cloud Backup (SkyKick): vendor advisory updates of 2026-10-18 18:45 UTC and 2026-10-19 01:15 UTC (service suspension scope, no restoration time, no new findings)"
+    sources:
+      - { url: "https://www.connectwise.com/company/trust/advisories", publisher: "ConnectWise Trust Center (advisory)", date: "2026-10-19", role: "primary" }
+      - { url: "https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access", publisher: "Huntress", date: "2026-10-17", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hackers-breach-microsoft-365-tenants-via-connectwise-supply-chain-attack/", publisher: "BleepingComputer", date: "2026-10-17", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/news/security/hackers-breach-microsoft-365-tenants-via-connectwise-supply-chain-attack/ (feed https://www.bleepingcomputer.com/feed/) -> primary: ConnectWise Trust Center advisory, URL https://www.connectwise.com/company/trust/advisories (fetched with extract; carries the dated updates through 2026-10-19 01:15 UTC) -> corroborating: Huntress living post, URL https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access (update of 2026-10-17 17:15 ET). The advisory's technical remediation guide PDF returned HTTP 403 on both the pdf subcommand and WebFetch, but the advisory page reproduces the same technical workflow in HTML."
+    summary: |
+      Delta against entry 2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse (composed on the advisory state of
+      2026-10-18 01:00 UTC). Facts, all from the vendor's own advisory page: (1) the 2026-10-18 01:00 UTC update, already public when
+      the entry was written but absent from it, says ConnectWise temporarily took SaaS Security and Cloud Management offline, so
+      SaaS Security monitoring and alerting and Cloud Management user and license management are unavailable, which means a
+      customer or MSP that relied on ConnectWise SaaS Security for Microsoft 365 alerting has lost that monitoring until restoration.
+      (2) The 2026-10-18 18:45 UTC update adds two more source addresses shared by downstream monitoring (indicators, not entry content)
+      and points to a Cloud Backup technical investigation and remediation guide. (3) The 2026-10-19 01:15 UTC update says containment
+      measures remain in place, that Cloud Backup, SaaS Security and Cloud Management remain suspended, that scheduled backups, archive
+      access and restores are unavailable, that there is still no confirmed restoration time, and that since mitigations ConnectWise has
+      not observed successful threat activity in the environments it monitors; the next vendor update was promised by 13:00 UTC on
+      2026-10-19. ConnectWise separately states that existing backup archives are encrypted, isolated and preserved and that it has no
+      evidence they were accessed; it also says those findings concern stored archives and do not establish whether live Microsoft 365
+      environments were affected. No new victim, actor, vector or credential-theft explanation is published. The Huntress counts already in
+      the entry (162 confirmed tenants, almost 1,000 tenants with sign-in activity) are unchanged.
+    region_nexus: "global; Swiss MSPs and public bodies that consented a ConnectWise or SkyKick app in Entra are in scope, but no Swiss victim or Swiss authority statement was found"
+    primary_sector_nexus: "indirect (managed-service-provider supply chain into Microsoft 365 tenants)"
+    sector: "technology"
+    cves: []
+    techniques: [T1199, T1078.004, T1098.003, T1098.001]
+    affected_products: ["ConnectWise Cloud Backup", "ConnectWise Cloud Management", "Microsoft Entra ID"]
+    entity_keys: ["incident:connectwise-cloud-backup-skykick-app-credential-abuse-2026-10", "product:connectwise-cloud-backup", "product:connectwise-cloud-management"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse"
+    evidence:
+      - quote: "During this pause, SaaS Security monitoring and alerting and Cloud Management user and license management are unavailable."
+        attribution: "ConnectWise Trust Center (advisory)"
+        source_url: "https://www.connectwise.com/company/trust/advisories"
+      - quote: "Cloud Backup, SaaS Security, and Cloud Management remain suspended while remediation and security validation continue."
+        attribution: "ConnectWise Trust Center (advisory)"
+        source_url: "https://www.connectwise.com/company/trust/advisories"
+      - quote: "Since implementing our mitigations, we have not observed successful threat activity in the environments we monitor."
+        attribution: "ConnectWise Trust Center (advisory)"
+        source_url: "https://www.connectwise.com/company/trust/advisories"
+      - quote: "We do not have a restoration time to share yet."
+        attribution: "ConnectWise Trust Center (advisory)"
+        source_url: "https://www.connectwise.com/company/trust/advisories"
+    extended_notes: |
+      Recommended handling: at most an `improvement` record (the SaaS Security / Cloud Management suspension is a detection-coverage
+      fact for customers of those services) or no record at all; the delta does not change the entry's actions or priority. The vendor
+      page is a living advisory (next update due 2026-10-19 13:00 UTC), so a later fire may find a restoration notice or
+      re-authorisation instructions, which would be the next material development. Sourcing: the vendor is first-party for its own
+      incident; Huntress and BleepingComputer predate the 2026-10-18 updates and corroborate only the earlier state.
+    borderline: true
+    borderline_reason: "update-of with a small delta: one fact missing from the entry (SaaS Security and Cloud Management offline, so monitoring and alerting unavailable) plus 'no new findings'; no change to actions, priority or the entry's picture of the incident"
+
+  - title: "IDC Frontier: sixth report of 2026-10-18 resumes the IDCF Cloud backup service for customers whose virtual servers still run; snapshot function stays suspended"
+    sources:
+      - { url: "https://idcf.jp/news/topics/20261018001/", publisher: "IDC Frontier (sixth report, Japanese)", date: "2026-10-18", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"IDC Frontier IDCFクラウド ランサムウェア 復旧 続報\") -> pivot: WebFetch of https://www.idcf.jp/ (latest-notice banner names the sixth report, updated 2026-10-19 12:00 JST) -> primary: IDC Frontier sixth report, URL https://idcf.jp/news/topics/20261018001/ (read with extract)"
+    summary: |
+      Delta against entry 2026-10-11/idc-frontier-idcf-cloud-ransomware-495-customers-backups (last updated on the fifth report of
+      2026-10-14). IDC Frontier's sixth report of 2026-10-18 says the IDCF Cloud Backup service, which it had suspended after the
+      unauthorized access, is available again because its safety check is complete. For customers whose virtual servers still run
+      (East Japan Region 1 radian and newton zones, East Japan Regions 2 and 3, West Japan Region 1), whom it had earlier asked to take
+      preventive backups, the resumed service lets them retrieve backup data quickly and restore it to other cloud environments or on-premises.
+      The snapshot function remains suspended pending safety checks, and IDCF Cloud TypeS (formerly White Cloud ASPIRE) and IDCF private
+      cloud are outside the incident. The company's status banner of 2026-10-19 12:00 JST says response is continuing and that there are no
+      new material facts since the previous notice. No intrusion route, actor or data-exfiltration finding changed.
+    region_nexus: "APAC (Japan); no Swiss nexus; transferable lesson (a cloud provider's ransomware outage reaching public-sector customer sites) is already in the entry"
+    primary_sector_nexus: "indirect"
+    sector: "technology / public-sector customers (Japanese local governments)"
+    cves: []
+    techniques: [T1486]
+    affected_products: ["IDC Frontier IDCF Cloud"]
+    entity_keys: ["incident:idc-frontier-idcf-cloud-ransomware-2026-10", "product:idc-frontier-idcf-cloud"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-10-11/idc-frontier-idcf-cloud-ransomware-495-customers-backups"
+    evidence:
+      - quote: "安全性の確認が完了したことからサービスの提供を再開します。"
+        attribution: "IDC Frontier (sixth report, Japanese)"
+        source_url: "https://idcf.jp/news/topics/20261018001/"
+      - quote: "データを復元することができます。"
+        attribution: "IDC Frontier (sixth report, Japanese)"
+        source_url: "https://idcf.jp/news/topics/20261018001/"
+      - quote: "なお、「スナップショット機能」※2は、安全性の確認のために現在も提供を停止しています。"
+        attribution: "IDC Frontier (sixth report, Japanese)"
+        source_url: "https://idcf.jp/news/topics/20261018001/"
+    extended_notes: |
+      The sixth report body was read through `extract` on https://idcf.jp/news/topics/20261018001/ (the page's canonical host is
+      www.idcf.jp). The banner sentence "前回のお知らせ以降、新たに公表すべき重要な事実はありません。" came from a WebFetch summary of the
+      home page and was not literal-checked against the page body, so it is not offered as an evidence quote. Single first-party source
+      (the victim's own notice), acceptable for a delta on a covered incident.
+    borderline: true
+    borderline_reason: "update-of with a small delta (backup service resumed, snapshot function still suspended); Japanese incident with no Swiss nexus, already a routine-priority entry"
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no supplier watchlist configured; general coverage rules applied. Supplier-chain incidents in the window were handled as normal items (ConnectWise, IDC Frontier, PK Softech re-checked)."
+dropped_leads:
+  - lead: "Brenner Base Tunnel (BBT SE, Austria/Italy rail tunnel): Everest leak-site claim"
+    seen: "ransomware.live api.ransomware.live/v2/countryvictims/AT: Everest post published 2026-10-17 00:57 UTC"
+    reason: "claim only; no victim statement and no A/B reporting found in English, German or Italian searches; already borderline-dropped by the 2026-10-18 run; no new fact"
+  - lead: "Swiss leak-site claims in the lookback: cloak '********rta.ch' (2026-10-18 19:06 UTC, 87 GB, domain masked), thegentlemen MAP SA (2026-10-16), Camandona SA (2026-10-10)"
+    reason: "leak-site claims with no victim disclosure; the cloak listing is masked so the victim cannot be identified; all private-sector; Manno commune (2026-09-28) was already covered on 2026-09-30"
+  - lead: "Educational Testing Service (ETS) SFTP breach affecting California public-school student records (CDE notice 2026-10-16; DataBreaches relays Politico's 7 million figure)"
+    reason: "already borderline-dropped by the 2026-10-18 run, no new fact; US, no Swiss nexus, no new technique (compromised login credential on an SFTP exchange site, copying between 2026-05-22 and 2026-09-18, found 2026-09-25); the supplier-held-government-data lesson is already carried by the PK Softech entry. The Politico body was not readable (paywall shell), so the 7 million figure rests on DataBreaches quoting Politico."
+  - lead: "BAE Systems / US federal Bankruptcy Noticing Center outage (AOUSC notice 2026-10-15; BleepingComputer 2026-10-16)"
+    reason: "already borderline-dropped by the 2026-10-18 run; the AOUSC page is unchanged, nature of the incident undisclosed (incident floor), US, no Swiss nexus"
+  - lead: "Loxone (Austrian building-automation vendor) security incident, unauthorised access to IT systems detected 2026-10-18"
+    reason: "single relay (Borns IT- und Windows-Blog, 2026-10-19, citing a Facebook post by the company that could not be fetched); no vector, actor or data class; Loxone is widely installed in Swiss buildings so worth one re-check next fire for a vendor statement or heise/derStandard coverage"
+    url: "https://borncity.com/blog/2026/10/19/sicherheitsvorfall-bei-loxone/"
+  - lead: "CDU Heilbronn mailbox hijacked to send phishing to about 6,500 contacts including ministries and the Chancellor (heise/dpa 2026-10-17)"
+    reason: "single secondary source, police say only 'phishing attempt', no TTP detail, no Swiss nexus"
+    url: "https://www.heise.de/news/Phishing-Angriff-auf-Merz-und-viele-andere-CDU-Mailkonto-in-Heilbronn-gehackt-11491677.html"
+  - lead: "Piyolog 2026-10-19 roll-ups: Hyogo police arrest over a PC hidden behind a hotel-room fridge used to send about 480,000 phishing mails through the hotel Wi-Fi; Elastic REF8801 'Apex Accelerator' fake-accelerator npm lures"
+    reason: "Japan / crypto-founder targeting, no Swiss public-sector nexus; the Elastic research of 2026-10-12 is outside the window and an S3 lead; the hotel case is a criminal-arrest roll-up of Japanese press"
+    url: "https://piyolog.hatenadiary.jp/entry/2026/10/19/033010"
+  - lead: "Denmark CPR (Pays ApS): CPR administration's letter to 1,039 firms with register access (Ritzau via sn.dk, 2026-10-10)"
+    reason: "older than the 72 h developing window and not in the entry, but no in-window fact; the covered entry's updates (to 2026-10-11) otherwise match all newer reporting found"
+  - lead: "ShinyHunters arrests (Dutch suspect 2026-09-15, Jordan custody 2026-10-03, further FBI arrest 2026-10-09; new leak site afterwards)"
+    reason: "all older than the window; the covered entry 2026-09-24/shinyhunters-fbi-peoplesoft-breach-claim last updated 2026-10-07 does not carry the arrests, so an audit improvement record is possible; no in-window ShinyHunters development found"
+  - lead: "Ahold Delhaize outage, Danfoss/Copeland/Dixell refrigeration attacks, Rank Math PRO, PK Softech, Tangerhutte, Beyond Gravity"
+    reason: "re-checked against primaries this run, nothing new since the covered entries or earlier borderline-drops: Ahold Delhaize no vector or actor (dropped 2026-10-13); CERT-FR alert CERTFR-2026-ALE-012 latest version 2026-10-16 already in the entry; Rank Math KB unchanged (2026-10-16); Publica (2026-10-14), PKZH (2026-10-15), Pensionskasse Post (2026-10-15) and PK Softech (2026-10-08) pages show nothing past the entry's 2026-10-17 update; Beyond Gravity newest facts still SRF/SwissCybersecurity.net of 2026-10-15 (backlog row expires 2026-10-20, condition unmet)"
+candidate_sources: []
+coverage_gaps:
+  - source_id: ransomware-live
+    reason: "recipe divergence worth recording: https://www.ransomware.live/api/countryvictims/CH returns 404 and the bridge then falls back to the metered jina reader (credit burnt for nothing). Working recipe: `python3 tools/fetch_source.py url --direct https://api.ransomware.live/v2/countryvictims/CH` (also DE 1129 items, AT 147 items, CH 255) and `url --direct https://api.ransomware.live/v2/recentvictims` (100 items spanning about 3.4 days, 2026-10-15 13:02 UTC to 2026-10-18 22:24 UTC). Fields: countryvictims group_name/post_title/website/discovered/description; recentvictims group/victim/domain/country/activity/discovered."
+  - source_id: ico-uk
+    reason: "recipe note: `url --direct https://ico.org.uk/sitemap.xml` (5.2 MB, works) filtered on /news-and-blogs/2026/10/ returned no URLs; October lastmods are bulk re-indexing of FOI regulatory-action pages (2026-10-16), so the sitemap shows no new breach or enforcement item; treat as a quiet fetch, not a failure"
+  - source_id: cyberinsider
+    reason: "recipe note: the homepage lists undated items in non-chronological order including July and September stories, so listing position is not recency; the article `extract` carries the date. Nothing in the window."
+  - source_id: databreaches-net
+    reason: "re-confirmed: `extract` of a databreaches.net post is served through the metered jina reader, and `extract` of politico.com also fell to jina and returned only the navigation shell (no article body). The feed summary carries enough for triage; avoid extract on both hosts."
+  - source_id: connectwise-guide-pdf
+    reason: "ConnectWise's Cloud Backup technical investigation and remediation guide PDF (https://www.connectwise.com/contentassets/10777cd3364d440c86ed5270a94a5f24/connectwise-cloud-backup-technical-investigation-and-remediation-guide-1.pdf) returned HTTP 403 on the pdf subcommand and on WebFetch; the Trust Center advisory page reproduces the same workflow in HTML, so covered. Not logged as a fetch failure."
+  - source_id: venarix
+    reason: "quiet: the listing carries ISO dates in the HTML (newest 2026-08-24, six weeks old), so it is a low-cadence source; `url https://venarix.com/blog` works"
+  - source_id: sec-disclosures-edgar
+    reason: "quiet: `sec-edgar 8k 2026-10-12 2026-10-19 1.05` returns one filing (Park Dental Partners, 2026-10-13, outside the window, US dental); the efts full-text query for 'cybersecurity incident' over 2026-10-14 to 2026-10-19 returned three filings (Conduent, Asure Software; none a cyber disclosure)"
+source_ledger:
+  - { id: ransom-isac, tier: standard, attempted: true, transport: "feed (direct, feed.xml)", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-05" }
+  - { id: ransomware-live, tier: standard, attempted: true, transport: "url --direct api.ransomware.live/v2 (countryvictims CH/DE/AT, recentvictims)", horizon_hours: 50, in_horizon_items: 4, returned: 0, note: "4 DACH claims in lookback (cloak CH masked, cloak DE masked, Qilin Pergande DE, Everest Brenner Base Tunnel AT); none victim-confirmed; see dropped_leads" }
+  - { id: sec-disclosures-edgar, tier: standard, attempted: true, transport: "bridge:sec-edgar 8k + url --direct efts full-text", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "no Item 1.05 filing 2026-10-12..2026-10-19 beyond Park Dental Partners (2026-10-13)" }
+  - { id: troyhunt, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest Weekly Update 525 of 2026-10-13" }
+  - { id: venarix, tier: standard, attempted: true, transport: "bridge:url", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "undated slugs; HTML dates newest 2026-08-24" }
+  - { id: zaufana-trzecia-strona, tier: standard, attempted: true, transport: "bridge:url + extract", horizon_hours: 50, in_horizon_items: 1, returned: 0, note: "only the weekend reading roll-up of 2026-10-17; the FELG dental-software leak lead is 2026-10-01, Poland, out of window and nexus" }
+  - { id: piyolog, tier: standard, attempted: true, transport: "bridge:url homepage + extract per entry", horizon_hours: 50, in_horizon_items: 2, returned: 0, note: "both entries (JST 2026-10-19) dropped: Hyogo hotel-room PC phishing arrest, Elastic REF8801 fake accelerator roll-up" }
+  - { id: next-ink, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 50, in_horizon_items: 1, returned: 0, note: "single in-lookback item (2026-10-17) is non-security" }
+  - { id: bitdefender-threat-debrief, tier: standard, attempted: true, transport: "webfetch (listing)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-15 (AhsayCBS technical advisory, already covered); listing carries no bodies" }
+  - { id: bleepingcomputer, tier: standard, attempted: true, transport: "feed (direct) + extract", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "one in-window item (SiteGuard WAF exploitation, 2026-10-18, S1 domain); ConnectWise story of 2026-10-17 is covered and fed the update-of item from the vendor primary; BAE Systems (2026-10-16) already borderline-dropped" }
+  - { id: cnil-fr, tier: standard, attempted: true, transport: "extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-16, no breach or sanction item" }
+  - { id: cyberinsider, tier: standard, attempted: true, transport: "bridge:url + extract per article", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "undated, non-chronological listing; article dates 2026-07-24 to 2026-10-16" }
+  - { id: databreaches-net, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "in-window posts are a job-postings story and a UK NHS staff-discipline story; California students (ETS) post of 2026-10-17 is already borderline-dropped" }
+  - { id: ico-uk, tier: standard, attempted: true, transport: "bridge:ico-uk enforcement + url --direct sitemap.xml", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "no October news-and-blogs URLs; enforcement newest Metropolitan Police Service (2026-09, lastmod 2026-10-14)" }
+supplementary_sweeps:
+  - "Swiss/DACH feeds read for the lookback: inside-it.ch, ictjournal.ch, srf.ch, netzwoche.ch, swisscybersecurity.net, blick.ch, rts.ch regions, cybercrimepolice.ch, dcod.ch, borncity.com, heise security, golem security, zataz.com, kommunaler-notbetrieb.de, ncsc-csh recent 8; nothing Swiss-public-sector and in-window beyond the covered incidents (newest NCSC Security Hub advisory 2026-10-16; kommunaler-notbetrieb newest 2026-10-16 Eichstaett update)."
+  - "English wire sweep for the window: The Hacker News, CyberScoop, The Register, TechNadu, NL Times, Krebs: only ConnectWise (covered) and a Linux KVM flaw (S1) in-window."

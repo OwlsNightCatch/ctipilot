@@ -1,0 +1,1113 @@
+domain: S1
+run_id: 2026-10-19T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-10-19T02:58:13Z'
+ended_at: '2026-10-19T03:37:28Z'
+duration_seconds: 2355
+self_telemetry:
+  webfetch_calls: 7
+  websearch_calls: 22
+  bridge_fetches: 120
+window_note: >-
+  Window 26 h = 2026-10-18T00:56Z to 2026-10-19T02:56Z (a weekend: Sat/Sun). Authority feeds are empty in the window: NCSC-NL newest 2026-10-16 08:59Z, BSI newest 2026-10-16 11:45Z, CERT-EU newest 2026-10-15, NCSC-CH CSH newest post 13068 of 2026-10-16 08:02Z, CISA newest items 2026-10-16, CISA KEV catalogue 2026.10.16 (1748 entries) with 0 additions (second fetch at 03:25Z identical version and count; kev_window_diff reported no RANSOMWARE rows), Fortinet PSIRT newest 2026-10-13, Palo Alto newest 2026-10-17 00:55Z (CVE-2026-0307 GlobalProtect App local LPE, medium, just outside), watchTowr newest 2026-10-09, Mozilla newest 2026-10-13. In-window signal found: PwnEscape technical write-up (2026-10-19), SiteGuard English pickup (2026-10-18), ConnectWise status updates (2026-10-18/19), Broadcom WPS pickup (2026-10-19). The Juniper, Next.js, Fortinet, Oracle pre-release, Broadcom and ConnectWise items are out-of-window, lookback or low-delta and flagged borderline so the main agent can drop
+  them without losing the in-window picture; S3 and S4 also returned ConnectWise update-of items for the same entry (merge, prefer the richer one).
+items:
+- title: >-
+    PwnEscape (CVE-2026-99999): guest-controlled virtio-net checksum metadata corrupts the host Linux kernel IPv4 path, a KVM/Firecracker guest-to-host escape with lab-demonstrated host root; mainline fix 2026-10-14, RHEL/Ubuntu/SUSE fixes still pending
+  sources:
+  - url: https://pwn.ai/blog/pwnescape
+    publisher: PWNAI Research (pwn.ai) technical write-up
+    date: '2026-10-19'
+    role: primary
+  - url: https://vercel.com/blog/findings-from-the-1-million-dollar-vercel-sandbox-challenge
+    publisher: Vercel (challenge findings; first public disclosure of the bug)
+    date: '2026-10-14'
+    role: primary
+  - url: https://thehackernews.com/2026/10/critical-pwnescape-linux-kernel.html
+    publisher: The Hacker News
+    date: '2026-10-16'
+    role: corroborating
+  - url: >-
+      https://www.theregister.com/virtualization/2026/10/19/linux-kvm-guest-host-escape-rated-critical-may-represent-a-new-way-to-attack-penguin-powered-networking/5303744
+    publisher: The Register
+    date: '2026-10-19'
+    role: corroborating
+  - url: https://access.redhat.com/security/cve/CVE-2026-99999
+    publisher: Red Hat CVE page
+    date: '2026-10-15'
+    role: corroborating
+  - url: https://security-tracker.debian.org/tracker/CVE-2026-99999
+    publisher: Debian Security Tracker
+    date: '2026-10-19'
+    role: corroborating
+  - url: https://www.suse.com/security/cve/CVE-2026-99999.html
+    publisher: SUSE CVE page
+    date: '2026-10-19'
+    role: corroborating
+  - url: https://ubuntu.com/security/CVE-2026-99999
+    publisher: Ubuntu Security
+    date: '2026-10-15'
+    role: corroborating
+  discovery_trace: >-
+    first seen at: WebSearch ("unauthenticated remote code execution proof-of-concept released this weekend CVE-2026 patch now") -> news feed sweep: theregister.com security feed (fetch_source.py feed https://www.theregister.com/security/headlines.atom) item of 2026-10-19 02:33 CEST, URL https://www.theregister.com/virtualization/2026/10/19/linux-kvm-guest-host-escape-rated-critical-may-represent-a-new-way-to-attack-penguin-powered-networking/5303744 -> pivot: The Hacker News, URL https://thehackernews.com/2026/10/critical-pwnescape-linux-kernel.html -> primary: pwn.ai write-up, URL https://pwn.ai/blog/pwnescape (dated 2026-10-19) and Vercel, URL https://vercel.com/blog/findings-from-the-1-million-dollar-vercel-sandbox-challenge -> distro status: Red Hat https://access.redhat.com/security/cve/CVE-2026-99999, Debian https://security-tracker.debian.org/tracker/CVE-2026-99999, SUSE https://www.suse.com/security/cve/CVE-2026-99999.html, Ubuntu https://ubuntu.com/security/CVE-2026-99999; CVE
+    record read via https://cveawg.mitre.org/api/cve/CVE-2026-99999 (data only, not cited)
+  summary: >-
+    The researcher (Paulos Yibelo, pwn.ai) who found the flaw in Vercel's $1 million Sandbox challenge published the full technical write-up on 2026-10-19; the Linux kernel CNA record (published 2026-10-15) rates CVE-2026-99999 CVSS 3.1 9.3 (AV:L/AC:L/PR:N/UI:N/S:C), Red Hat 8.8 (PR:L). The bug is in the host's IPv4 stack, not in KVM or one VMM: a guest sends an outbound virtio-net frame with crafted checksum metadata (checksum start and offset), the VMM writes it to the host TAP, tun_get_user() hands the skb to IPv4, and skb_checksum_help(), reached from ip_do_fragment() and four other consumers, writes at the guest-chosen offset inside an already-validated IPv4 header; ip_frag_next() then trusts the changed header length and copies beyond the linear head into transmitted IPv4 options. Vercel and pwn.ai demonstrated a repeatable host-memory disclosure (about 32 bytes per guest packet) against Vercel production sandboxes and, on researcher-owned KVM and Firecracker hosts built to match Vercel's,
+    a two-packet host crash and command execution as host root; Vercel says no report in the challenge showed access to customer data. The upstream fix (commit 6785011f8b16, mainline 2026-10-14, 7.3-rc7) adds an IPv4 check that the checksum start cannot point into the header before completion at five consumers; its author calls it defence in depth with fuller input validation still to come. Stable kernels fixed: 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.57, 7.2.11. Distro state at fetch (2026-10-19): Debian lists fixed kernels (bookworm 6.1.190-1, trixie 6.12.113-1, unstable 7.2.11-1); Red Hat marks every tracked stream affected, fixes pending, no mitigation, severity Important; SUSE state 'Pending' (important); Ubuntu 'Needs evaluation' on all releases (page dated 2026-10-15). Exploitation: no source reports in-the-wild use and CISA's KEV catalogue (2026.10.16) does not list it, but Red Hat's own CVE page says it 'tracks this flaw as a KEV active-exploit case' without explanation
+    (unresolved contradiction; treat exploitation as unconfirmed). pwn.ai states it expects exploits for weaker configurations within weeks and for default hypervisor configurations within a month (researcher forecast, not telemetry).
+  region_nexus: >-
+    global; any Swiss organisation running Linux/KVM virtualisation, microVM or sandbox hosts (private cloud, hosting, CI runners, shared platforms) that carry untrusted or semi-trusted guests
+  primary_sector_nexus: indirect
+  sector: technology
+  cves:
+  - CVE-2026-99999
+  techniques:
+  - T1611
+  - T1068
+  affected_products:
+  - Linux kernel
+  - Red Hat Enterprise Linux (kernel, kernel-rt)
+  - SUSE Linux Enterprise (kernel)
+  - Ubuntu (linux)
+  - Debian (linux)
+  entity_keys:
+  - product:linux-kernel
+  - product:linux-kernel-kvm-x86
+  - product:vercel
+  new_entities:
+  - key: trend:pwnescape-linux-kernel-ipv4-checksum-kvm-escape
+    type: trend
+    name: PwnEscape (CVE-2026-99999)
+    aliases:
+    - PwnEscape
+    - CVE-2026-99999
+    summary: >-
+      pwn.ai's name for a Linux kernel IPv4 checksum-metadata flaw (CVE-2026-99999) that lets a guest VM read host memory, crash the host and, in lab tests, run commands as host root; fixed upstream 2026-10-14 (pwn.ai, 2026-10-19; Vercel, 2026-10-14).
+  relation_suggestions:
+  - subject: trend:pwnescape-linux-kernel-ipv4-checksum-kvm-escape
+    object: product:linux-kernel
+    basis: 'pwn.ai and the Linux kernel CNA record: the flaw is in the Linux kernel IPv4/networking stack (pwn.ai, 2026-10-19)'
+  - subject: trend:pwnescape-linux-kernel-ipv4-checksum-kvm-escape
+    object: product:vercel
+    basis: 'Vercel: found in its Sandbox challenge and demonstrated against Vercel production sandboxes (Vercel, 2026-10-14)'
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  evidence:
+  - quote: we expect exploits in weaker configurations to arrive in weeks, and exploits working in default hypervisor configurations to arrive in under a month
+    attribution: PWNAI Research (pwn.ai) technical write-up
+    source_url: https://pwn.ai/blog/pwnescape
+  - quote: untrusted checksum metadata can rewrite security-sensitive packet fields after the kernel has already validated and acted on them
+    attribution: PWNAI Research (pwn.ai) technical write-up
+    source_url: https://pwn.ai/blog/pwnescape
+  - quote: by sending two packets, the researcher crashed the host machine, shutting down every sandbox running on it
+    attribution: Vercel (challenge findings; first public disclosure of the bug)
+    source_url: https://vercel.com/blog/findings-from-the-1-million-dollar-vercel-sandbox-challenge
+  - quote: It is not in CISA's catalog of actively exploited vulnerabilities, and no real-world use has been reported.
+    attribution: The Hacker News
+    source_url: https://thehackernews.com/2026/10/critical-pwnescape-linux-kernel.html
+  - quote: Updating only a guest's kernel does not fix the host.
+    attribution: The Hacker News
+    source_url: https://thehackernews.com/2026/10/critical-pwnescape-linux-kernel.html
+  - quote: Red Hat tracks this flaw as a KEV active-exploit case.
+    attribution: Red Hat CVE page
+    source_url: https://access.redhat.com/security/cve/CVE-2026-99999
+  - quote: >-
+      All currently tracked Red Hat product streams are marked affected, and fixes are being pursued by the responsible Red Hat product teams under delegated resolution.
+    attribution: Red Hat CVE page
+    source_url: https://access.redhat.com/security/cve/CVE-2026-99999
+  - quote: a guest-host escape possible with a few malformed IPv4 packets
+    attribution: The Register
+    source_url: >-
+      https://www.theregister.com/virtualization/2026/10/19/linux-kvm-guest-host-escape-rated-critical-may-represent-a-new-way-to-attack-penguin-powered-networking/5303744
+  extended_notes: >-
+    Exposure (what a source states): host kernels that forward guest virtio-net traffic through a TAP device (CNA scenario: VMM writes the guest frame to the host TAP, tun_get_user() feeds the skb to IPv4); pwn.ai says the same primitive reaches 'many many other Hypervisor environments' and that TUN/AF_PACKET cases without a VM were discussed upstream. Other attach paths (vhost-net, macvtap, Open vSwitch) are not itemised in anything I read. Vector is local/guest: not reachable from the internet, so exposure is a function of who can run code in a guest. Fixed-version check: read the HOST kernel (uname -r is not enough on distro kernels that backport; use the distro advisory), and reboot into it; patching only the guest kernel does nothing (THN). Red Hat says no mitigation meets its criteria; Vercel's hardening (nested virtualisation off, Firecracker jailer) narrows blast radius only. Detection concepts (derived from the CNA scenario text, not vendor guidance): host kernel log WARN/panic
+    output from skb_checksum_help on virtualisation hosts and unexplained host crashes (the CNA text says malformed offsets can trip WARN_ONCE/panic paths); packet capture on guest TAP/vnet egress for IPv4 packets with abnormal header length/options, since Vercel says host memory appears in packets the guest sends. Post-patch check: none stated by any source. Severity discrepancy to carry: CNA 9.3 (PR:N) vs Red Hat 8.8 (PR:L); NVD analysis pending. Dates: Vercel's 2026-10-14 post disclosed existence before the CVE; CVE published 2026-10-15; pwn.ai write-up and Register article are 2026-10-19.
+- title: >-
+    Juniper Junos October 2026 bundle (17 advisories, 150+ defects): unauthenticated root-level J-Web and MX IKE flaws at CVSS 9.8, patched, no exploitation reported
+  sources:
+  - url: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0430
+    publisher: NCSC-NL advisory NCSC-2026-0430 (national CERT; carries Juniper CNA CVE data)
+    date: '2026-10-16'
+    role: primary
+  - url: https://cyber.gc.ca/en/alerts-advisories/juniper-networks-security-advisory-av26-1043
+    publisher: Canadian Centre for Cyber Security AV26-1043 (affected Junos trains)
+    date: '2026-10-15'
+    role: corroborating
+  - url: https://www.securityweek.com/f5-juniper-networks-patch-critical-vulnerabilities/
+    publisher: SecurityWeek
+    date: '2026-10-16'
+    role: corroborating
+  discovery_trace: >-
+    first seen at: news feed sweep securityweek.com feed (fetch_source.py feed https://www.securityweek.com/feed/), item "F5, Juniper Networks Patch Critical Vulnerabilities" 2026-10-16, URL https://www.securityweek.com/f5-juniper-networks-patch-critical-vulnerabilities/ -> cross-check: advisories-ncsc-nl listing (fetch_source.py ncsc-nl recent 30) NCSC-2026-0430 -> primary data: fetch_source.py ncsc-nl csaf NCSC-2026-0430 (page https://advisories.ncsc.nl/advisory?id=NCSC-2026-0430) -> affected trains: CCCS https://cyber.gc.ca/en/alerts-advisories/juniper-networks-security-advisory-av26-1043; Juniper support-portal bulletins (https://supportportal.juniper.net/s/article/2026-10-Security-Bulletin-Junos-OS-Multiple-vulnerabilities-resolved) are a JS app, unreadable on direct, extract and jina
+  summary: >-
+    Juniper published 17 advisories this week covering more than 150 defects in Junos OS and Junos OS Evolved plus four in Cloud-Native Router; SecurityWeek counts about two dozen critical-severity issues and says Juniper makes no mention of in-the-wild exploitation. NCSC-NL's advisory NCSC-2026-0430 (2026-10-16, probability medium, damage high) lists three CVSS 3.1 9.8 flaws reachable over the network without authentication: CVE-2026-101956, improper authentication in the J-Web management interface that lets an unauthenticated remote attacker run arbitrary commands as root; CVE-2026-102182, a stack-based buffer overflow in kmd on MX Series reachable with crafted certificate-based IKE packets (unauthenticated root code execution); and CVE-2026-101980, an Extended Echo integer underflow in the kernel that reboots the Routing Engine (description names DoS only). An aggregator (OpenCVE; Juniper's bulletin text could not be read) lists two more J-Web flaws from the same bulletin at CVSS 4.0
+    9.3: CVE-2026-101954 (NETCONF session handling, root-level control) and CVE-2026-101986 (pre-auth CGI execution through a crafted HTTP request). The Canadian Cyber Centre gives the affected Junos OS trains as those before 23.2R2-S7.7, 23.4R2-S8.13, 24.2R2-S5.5, 24.4R2-S5, 25.2R2-S2, 25.4R1-S3 and 26.2R1-S2 (Evolved: the same trains with -EVO fixed builds). Other NCSC-NL entries: CVE-2026-103994 (vgd, OVSDB messages, RCE, 8.8 adjacent), CVE-2026-102062 (ipfd on SRX, 8.1, needs a compromised HTTPS feed server) and CVE-2026-101955 (UTM Anti-Spam on SRX, 8.1, malformed DNS packets, unauthenticated RCE). The release is dated 2026-10-14, outside the 26 h window, and Juniper has no prior coverage in the store.
+  region_nexus: global; Junos routers, switches and SRX firewalls are common in carrier, campus and government networks
+  primary_sector_nexus: indirect
+  sector: technology
+  cves:
+  - CVE-2026-101956
+  - CVE-2026-102182
+  - CVE-2026-101980
+  - CVE-2026-101954
+  - CVE-2026-101986
+  - CVE-2026-103994
+  - CVE-2026-102062
+  - CVE-2026-101955
+  techniques:
+  - T1190
+  affected_products:
+  - Juniper Junos OS
+  - Juniper Junos OS Evolved
+  entity_keys: []
+  new_entities:
+  - key: product:juniper-junos-os
+    type: product
+    name: Juniper Junos OS
+    aliases:
+    - Junos OS
+    - Junos OS Evolved
+    - Junos
+    summary: >-
+      Juniper Networks' network operating system for MX/SRX/EX/QFX/PTX platforms; 17 advisories with 150+ defects were published in October 2026 (SecurityWeek, 2026-10-16).
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  borderline: true
+  borderline_reason: >-
+    Not exploited and published 2026-10-14 (outside the 26 h window, no earlier coverage in the store), but four pre-auth network-reachable CVSS 9.3-9.8 flaws on routing/security infrastructure; returned for the completeness duty on multi-product bundles, main agent decides. Juniper vendor page unreadable; two of five J-Web/IKE CVEs rest on an aggregator.
+  evidence:
+  - quote: >-
+      Junos OS contains an improper authentication vulnerability in its J-Web management interface that permits unauthenticated remote attackers to execute arbitrary commands with root privileges.
+    attribution: NCSC-NL advisory NCSC-2026-0430 (national CERT; carries Juniper CNA CVE data)
+    source_url: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0430
+  - quote: >-
+      A stack-based buffer overflow in Juniper Networks Junos OS kmd component on MX Series allows unauthenticated attackers to execute root code via crafted IKE certificate-based packets.
+    attribution: NCSC-NL advisory NCSC-2026-0430 (national CERT; carries Juniper CNA CVE data)
+    source_url: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0430
+  - quote: Approximately two dozen of these flaws are critical-severity issues that lead to code/command execution with root privileges
+    attribution: SecurityWeek
+    source_url: https://www.securityweek.com/f5-juniper-networks-patch-critical-vulnerabilities/
+  - quote: F5 and Juniper Networks make no mention of any of these vulnerabilities being exploited in the wild.
+    attribution: SecurityWeek
+    source_url: https://www.securityweek.com/f5-juniper-networks-patch-critical-vulnerabilities/
+  - quote: Version 26.2 prior to 26.2R1-S2
+    attribution: Canadian Centre for Cyber Security AV26-1043 (affected Junos trains)
+    source_url: https://cyber.gc.ca/en/alerts-advisories/juniper-networks-security-advisory-av26-1043
+  extended_notes: >-
+    Exposure: J-Web enabled and reachable (CVE-2026-101956, -101954, -101986); MX Series with certificate-based IKE/IPsec terminating on the box (CVE-2026-102182); Extended Echo enabled (CVE-2026-101980). Management-plane reachability is the discriminator: an interface restricted to a management VRF/jump host is a very different exposure from J-Web on an Internet-facing address. NCSC-NL's CSAF product tree is unversioned, so per-CVE fixed releases were not read; the CCCS list is bundle-wide (the vendor's affected-train cutoffs). Detection concepts (derived from mechanism): HTTP(S) requests to the J-Web service from non-administrative sources; unexpected root-level command execution or configuration commits not tied to an administrator login; kmd/IKE process crashes or core files on MX; Routing Engine reboots. No post-patch compromise guidance exists because nothing is reported exploited. Sources disagree on scoring style (3.1 9.8 in the NCSC-NL CSAF vs 4.0 9.3 on the aggregator for the same
+    flaws); both are Juniper CNA values.
+- title: >-
+    SiteGuard Server Edition WAF (CVE-2026-106931): OS command injection in the default-on statistics function runs commands as root/SYSTEM, exploitation confirmed by the vendor and JPCERT/CC
+  sources:
+  - url: https://www.eg-secure.co.jp/siteguard/news/alert-202610-1
+    publisher: EG Secure Solutions (SiteGuard vendor alert, Japanese)
+    date: '2026-10-14'
+    role: primary
+  - url: https://jvn.jp/en/jp/JVN88474777/index.html
+    publisher: JVN#88474777 (JPCERT/CC, English)
+    date: '2026-10-14'
+    role: primary
+  - url: https://www.jpcert.or.jp/at/2026/at260032.html
+    publisher: JPCERT-AT-2026-0032 (Japanese)
+    date: '2026-10-14'
+    role: corroborating
+  - url: https://www.bleepingcomputer.com/news/security/hackers-exploit-siteguard-waf-flaw-to-run-commands-as-system-root/
+    publisher: BleepingComputer
+    date: '2026-10-18'
+    role: corroborating
+  discovery_trace: >-
+    first seen at: news feed sweep bleepingcomputer.com feed (fetch_source.py feed https://www.bleepingcomputer.com/feed/), item of 2026-10-18 10:23, URL https://www.bleepingcomputer.com/news/security/hackers-exploit-siteguard-waf-flaw-to-run-commands-as-system-root/ -> primary: vendor alert URL https://www.eg-secure.co.jp/siteguard/news/alert-202610-1 -> JVN URL https://jvn.jp/en/jp/JVN88474777/index.html -> JPCERT alert URL https://www.jpcert.or.jp/at/2026/at260032.html; EUVD record EUVD-2026-100814 read via euvdservices.enisa.europa.eu API (not cited)
+  summary: >-
+    EG Secure Solutions disclosed on 2026-10-14 an OS command injection (CWE-78) in the statistics function of SiteGuard Server Edition, a host-based WAF that runs inside Apache httpd, Nginx and IIS, and says abuse has already been confirmed; JPCERT/CC's JVN#88474777 and alert JPCERT-AT-2026-0032 repeat it and note the product is widely used in Japan. Exploitation executes arbitrary OS commands as root or SYSTEM on the host; the statistics function is enabled by default. Affected: Apache/Nginx/IIS editions from Ver2.20 before Ver8.00 Update 5 (IIS Ver3.10 to Ver4.00 Update 4 not affected) and the FreeBSD Apache/Nginx editions before Ver7.00 Update 6; fixes are those updates, plus a file-replacement patch that also covers end-of-life versions, and disabling the statistics function avoids the flaw (JPCERT/CC). The vendor warns that patching can erase attack traces and tells administrators to download the diagnostic information from the web management screen first; customers with support contracts
+    were told individually on 2026-09-29, so the exploitation window predates the public notice (first-exploitation date not published). Scoring is lower than the 'critical' label: vendor and JVN give CVSS 4.0 8.5 / 3.0 7.8 with AV:L/PR:L, while the vendor alert is headed 'urgent/critical'; BleepingComputer (2026-10-18) gave the first widely read English report and says attacker, victims, scale and methods are unknown. BleepingComputer's '500,000 sites' figure is the separate SiteGuard WordPress plugin's install count, not this product. Not in CISA KEV (catalogue 2026.10.16). Primary sources are four days old; the in-window item is the English-language pickup.
+  region_nexus: 'Japan-centric (JPCERT/CC: widely used domestically); no Swiss deployment or nexus identified'
+  primary_sector_nexus: none identified
+  sector: technology
+  cves:
+  - CVE-2026-106931
+  techniques:
+  - T1190
+  affected_products:
+  - SiteGuard Server Edition (Apache httpd, Nginx, IIS, FreeBSD editions)
+  entity_keys: []
+  new_entities:
+  - key: product:siteguard-server-edition
+    type: product
+    name: SiteGuard Server Edition
+    aliases:
+    - SiteGuard Server Edition WAF
+    - EG Secure Solutions SiteGuard
+    summary: >-
+      Host-based web application firewall by EG Secure Solutions (Japan) deployed inside Apache httpd, Nginx and IIS; CVE-2026-106931 command injection exploited in the wild (EG Secure Solutions / JPCERT/CC, 2026-10-14).
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  borderline: true
+  borderline_reason: >-
+    Confirmed in-the-wild exploitation (vendor + JPCERT/CC) of a root/SYSTEM RCE in a WAF, but a Japan-market product with no identified Swiss nexus, CVSS rated local (AV:L/PR:L) by vendor and JVN, and primaries dated 2026-10-14 (only the English press pickup, 2026-10-18, is in window).
+  evidence:
+  - quote: Note that the vulnerability has been confirmed to be exploited in the wild.
+    attribution: JVN#88474777 (JPCERT/CC, English)
+    source_url: https://jvn.jp/en/jp/JVN88474777/index.html
+  - quote: An attacker may be able to execute arbitrary OS commands with root or SYSTEM privileges on the system running the affected product.
+    attribution: JVN#88474777 (JPCERT/CC, English)
+    source_url: https://jvn.jp/en/jp/JVN88474777/index.html
+  - quote: The product is affected by this vulnerability when the statistics feature is enabled. The feature is enabled by default.
+    attribution: JVN#88474777 (JPCERT/CC, English)
+    source_url: https://jvn.jp/en/jp/JVN88474777/index.html
+  - quote: EGセキュアソリューションズ株式会社は、本脆弱性の悪用を確認しているとのことです。
+    attribution: JPCERT-AT-2026-0032 (Japanese)
+    source_url: https://www.jpcert.or.jp/at/2026/at260032.html
+  - quote: すでに悪用が確認されています。
+    attribution: EG Secure Solutions (SiteGuard vendor alert, Japanese)
+    source_url: https://www.eg-secure.co.jp/siteguard/news/alert-202610-1
+  - quote: the victims, the scale of the attacks, and the methods used remain unclear, as neither security advisory provides these details
+    attribution: BleepingComputer
+    source_url: https://www.bleepingcomputer.com/news/security/hackers-exploit-siteguard-waf-flaw-to-run-commands-as-system-root/
+  extended_notes: >-
+    Exposure: any host running SiteGuard Server Edition Ver2.20+ below the fixed update with the statistics function on; read the version and statistics setting in the web management screen (vendor). Prerequisites per CVSS: local vector, low privileges; how the exploited requests reach the function is not described by any source, so the mapping to T1190 (public-facing application) is an assumption pending vendor detail. Detection concept (derived from the mechanism): child-process creation by the web server or SiteGuard statistics component (httpd/nginx/w3wp parent) running shells or interpreters at root/SYSTEM, plus new outbound connections from the WAF host. Post-patch check: the vendor says patching can wipe traces, so preserve the diagnostic bundle before updating and review for persistence created as root/SYSTEM. Contradictions: BleepingComputer 'critical' / '500,000 sites' conflates the WordPress plugin; vendor/JVN numeric score is 8.5/7.8.
+- title: >-
+    Next.js out-of-band security update (2026-10-14): two critical unauthenticated RCE flaws, in App Router "use cache" typed arrays and in SVG image optimisation (CVE-2026-96889), fixed in 16.4.1 and 15.5.28
+  sources:
+  - url: https://nextjs.org/blog/nextjs-security-update-october-14-2026
+    publisher: Next.js security blog
+    date: '2026-10-14'
+    role: primary
+  - url: https://thehackernews.com/2026/10/nextjs-ships-out-of-band-patch-for-two.html
+    publisher: The Hacker News
+    date: '2026-10-15'
+    role: corroborating
+  - url: https://github.com/vercel/next.js/security/advisories/GHSA-2464-fhr4-w9xw
+    publisher: GitHub Security Advisory (vercel/next.js)
+    date: '2026-10-14'
+    role: primary
+  discovery_trace: >-
+    first seen at: news feed sweep thehackernews.com feed (fetch_source.py feed https://feeds.feedburner.com/TheHackersNews), item of 2026-10-15 17:58, URL https://thehackernews.com/2026/10/nextjs-ships-out-of-band-patch-for-two.html -> primary: Next.js blog URL https://nextjs.org/blog/nextjs-security-update-october-14-2026 (feed https://nextjs.org/feed.xml) -> GHSA URL https://github.com/vercel/next.js/security/advisories/GHSA-2464-fhr4-w9xw
+  summary: >-
+    Next.js shipped an out-of-band security update on 2026-10-14, versions 16.4.1 (Active LTS) and 15.5.28 (Maintenance LTS), covering two fixes postponed from the September release because of upstream dependency delays. (1) GHSA-673q-mjm6-r5xr: unauthenticated RCE in App Router applications with Cache Components when a `use cache` function returns more than one typed array (Next.js 16.0.0 to 16.4.0; the upstream React advisory GHSA-xqc2-xf4c-x3h3 covers react-server-dom-webpack, -parcel and -turbopack 19.0.0 to 19.3.0); the vendor says there is no known workaround and to upgrade even if no such function exists. (2) CVE-2026-96889 / GHSA-2464-fhr4-w9xw: a memory-safety flaw in librsvg, reached through the sharp package in the Image Optimization API, gives unauthenticated RCE when Next.js runs on glibc-based Linux and processes attacker-supplied SVG (Next.js 10.0.0 to 15.5.27 and 16.0.0 to 16.4.0; exposure needs dangerouslyAllowSVG or next/og on the Node.js runtime; sharp 0.35.5 or later
+    is the workaround). Vercel rates both critical at CVSS 9.5 (as relayed by The Hacker News) and adds a high-severity DoS in Server Actions (GHSA-p3m5-59mp-jv5r, 13.0.0 to 15.5.27 and 16.0.0 to 16.4.0). Netlify says its platform does not run the image-optimiser path. No exploitation or public PoC is reported in the sources read; EPSS for CVE-2026-96889 is 0.15 % (FIRST, 2026-10-18). Outside the 26 h window (2026-10-14); no earlier coverage in the store.
+  region_nexus: global; Next.js is a common framework for public web portals, including government sites
+  primary_sector_nexus: indirect
+  sector: technology
+  cves:
+  - CVE-2026-96889
+  techniques:
+  - T1190
+  affected_products:
+  - Next.js
+  - React Server Components (react-server-dom-webpack, react-server-dom-parcel, react-server-dom-turbopack)
+  - sharp (librsvg)
+  entity_keys:
+  - product:vercel
+  new_entities:
+  - key: product:nextjs
+    type: product
+    name: Next.js
+    aliases:
+    - NextJS
+    summary: Vercel's React web framework; an out-of-band update on 2026-10-14 fixed two critical unauthenticated RCE flaws in 16.x and 15.x (Next.js blog, 2026-10-14).
+  relation_suggestions:
+  - subject: product:nextjs
+    object: product:vercel
+    basis: Vercel develops Next.js (The Hacker News relaying the Next.js advisory, 2026-10-15)
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  borderline: true
+  borderline_reason: >-
+    Two critical unauthenticated RCE fixes in a widely used framework, but no exploitation or PoC reported, narrow trigger conditions (Cache Components typed arrays; SVG optimisation on glibc Linux with SVG enabled), and published 2026-10-14, outside the 26 h window.
+  evidence:
+  - quote: There is no known workaround for affected applications.
+    attribution: Next.js security blog
+    source_url: https://nextjs.org/blog/nextjs-security-update-october-14-2026
+  - quote: can lead to remote code execution when Next.js runs on glibc-based Linux
+    attribution: Next.js security blog
+    source_url: https://nextjs.org/blog/nextjs-security-update-october-14-2026
+  - quote: including two fixes postponed from the September security release due to upstream dependency delays
+    attribution: Next.js security blog
+    source_url: https://nextjs.org/blog/nextjs-security-update-october-14-2026
+  - quote: rated both code-execution flaws critical, each with a CVSS score of 9.5
+    attribution: The Hacker News
+    source_url: https://thehackernews.com/2026/10/nextjs-ships-out-of-band-patch-for-two.html
+  extended_notes: >-
+    Exposure check: package.json/lockfile versions of next (16.0.0 to 16.4.0 for the use-cache flaw; 10.0.0 to 15.5.27 or 16.0.0 to 16.4.0 for the SVG flaw), whether Cache Components/use cache is enabled, whether images.dangerouslyAllowSVG is set or next/og runs on the Node.js runtime, and the sharp version in the lockfile. The Pages Router and apps without Server Actions are not affected by the DoS. Detection concept: image-optimizer endpoint requests carrying SVG content, and server-process crashes or unexpected child processes from the Node.js process; none of this is vendor guidance.
+- title: >-
+    Fortinet October PSIRT: unauthenticated critical flaws in FortiSandbox GUI (CVE-2026-107656, CVSS 9.6) and FortiSIEM 7.5.0 (CVE-2026-106173, CVSS 9.4), patched, not known exploited
+  sources:
+  - url: https://fortiguard.fortinet.com/psirt/FG-IR-26-185
+    publisher: Fortinet PSIRT FG-IR-26-185 (FortiSandbox)
+    date: '2026-10-13'
+    role: primary
+  - url: https://fortiguard.fortinet.com/psirt/FG-IR-26-180
+    publisher: Fortinet PSIRT FG-IR-26-180 (FortiSIEM)
+    date: '2026-10-13'
+    role: primary
+  discovery_trace: >-
+    first seen at: fortinet-psirt, fetch_source.py feed https://filestore.fortinet.com/fortiguard/rss/ir.xml (10 advisories dated 2026-10-13, outside the 26 h horizon) -> primary: raw advisory pages via url --direct, URLs https://fortiguard.fortinet.com/psirt/FG-IR-26-185 and https://fortiguard.fortinet.com/psirt/FG-IR-26-180 (Known Exploited and CVE fields appear only in the raw page)
+  summary: >-
+    Fortinet's 2026-10-13 monthly batch (FG-IR-26-176 to -185) holds two critical, unauthenticated flaws, both internally discovered and both marked 'Known Exploited: No'. FG-IR-26-185, CVE-2026-107656 (CVSS 9.6): an authentication bypass using an alternate path or channel (CWE-288) in the FortiSandbox GUI lets a remote unauthenticated attacker bypass authentication through crafted HTTP requests; affected FortiSandbox 5.0.0 to 5.0.6 (fix 5.0.7) and 4.4.0 to 4.4.9 (fix 4.4.10), FortiSandbox PaaS 5.0.0 to 5.0.6 (fix 5.0.7) and PaaS 4.4, all versions (migrate to a fixed release); 5.2 is not affected; TrendAI Research is also credited. FG-IR-26-180, CVE-2026-106173 (CVSS 9.4): path traversal (CWE-22) in the FortiSIEM gRPC phQueryMaster component lets an unauthenticated attacker execute code or commands through crafted packets; the advisory table lists FortiSIEM 7.6 as not affected and 7.5.0 as affected (fix 7.5.1), FortiSIEM Cloud is not affected, and restricting access to TCP port 27918 prevents
+    the issue. The other eight advisories in the batch are High or lower (for example FG-IR-26-178, SQL injection leading to arbitrary file read/write in a GUI, 7.9, authenticated; FG-IR-26-184, SQL command injection in webmail, 7.7, authenticated). No PoC or exploitation is reported; EPSS is 0.43 % for CVE-2026-106173 (FIRST, 2026-10-18) and not yet scored for CVE-2026-107656. The store already tracks in-the-wild FortiSandbox exploitation from June 2026 (campaign:fortisandbox-triple-active-exploitation) and has no coverage of these two advisories; published 2026-10-13, outside the 26 h window.
+  region_nexus: global; Fortinet security tooling is common in EU public-sector networks
+  primary_sector_nexus: indirect
+  sector: technology
+  cves:
+  - CVE-2026-107656
+  - CVE-2026-106173
+  techniques:
+  - T1190
+  affected_products:
+  - Fortinet FortiSandbox
+  - Fortinet FortiSandbox PaaS
+  - Fortinet FortiSIEM
+  entity_keys:
+  - product:fortinet-fortisandbox
+  - campaign:fortisandbox-triple-active-exploitation
+  new_entities:
+  - key: product:fortinet-fortisiem
+    type: product
+    name: Fortinet FortiSIEM
+    aliases:
+    - FortiSIEM
+    summary: Fortinet's SIEM and analytics appliance/software; CVE-2026-106173 (CVSS 9.4, FortiSIEM 7.5.0) was fixed in 7.5.1 on 2026-10-13 (Fortinet PSIRT FG-IR-26-180).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: HIGH
+  novelty: new
+  borderline: true
+  borderline_reason: >-
+    Two pre-auth critical (9.4 / 9.6) flaws in security tooling with prior FortiSandbox exploitation history in the store, but not known exploited, no PoC, FortiSIEM affects only 7.5.0 and the advisory dates are 2026-10-13 (outside the 26 h window). Single first-party source (vendor PSIRT).
+  evidence:
+  - quote: may allow a remote unauthenticated attacker to bypass authentication via crafted HTTP requests
+    attribution: Fortinet PSIRT FG-IR-26-185 (FortiSandbox)
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-185
+  - quote: Known Exploited No
+    attribution: Fortinet PSIRT FG-IR-26-185 (FortiSandbox)
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-185
+  - quote: FortiSandbox 5.0 5.0.0 through 5.0.6 Upgrade to 5.0.7 or above
+    attribution: Fortinet PSIRT FG-IR-26-185 (FortiSandbox)
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-185
+  - quote: may allow an unauthenticated attacker to execute unauthorized code or commands via specially crafted packets
+    attribution: Fortinet PSIRT FG-IR-26-180 (FortiSIEM)
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-180
+  - quote: Restricting access on tcp port 27918 prevents the issue.
+    attribution: Fortinet PSIRT FG-IR-26-180 (FortiSIEM)
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-180
+  extended_notes: >-
+    Exposure: FortiSandbox GUI/management address reachable from untrusted networks; FortiSIEM 7.5.0 supervisor/worker nodes where TCP/27918 is reachable (the advisory says restricting that port prevents the issue; the port's role is not described). Detection concept: authentication-log gaps or sessions on the FortiSandbox GUI without a login event, unexpected configuration or account changes; on FortiSIEM, connections to TCP/27918 from non-collector sources and unexpected file writes by the phQueryMaster service. Derived, not vendor guidance.
+- title: >-
+    Oracle October 2026 Critical Patch Update pre-release (release Tuesday 2026-10-20): 1,283 patches, unauthenticated network-reachable flaws up to CVSS 10.0 across Fusion Middleware, E-Business Suite, JD Edwards, PeopleSoft, MySQL and others
+  sources:
+  - url: https://www.oracle.com/security-alerts/cpuoct2026.html
+    publisher: Oracle CPU pre-release announcement
+    date: '2026-10-15'
+    role: primary
+  discovery_trace: >-
+    first seen at: oracle-cpu, URL https://www.oracle.com/security-alerts/ (extract; the page states the next CPU date 20 October 2026 and a pre-announcement on the preceding Thursday) -> primary: pre-release page URL https://www.oracle.com/security-alerts/cpuoct2026.html (extract, direct)
+  summary: >-
+    Oracle's pre-release announcement for the October 2026 Critical Patch Update (published 2026-10-15; the CPU itself lands Tuesday 2026-10-20, so the next daily fire before the release will not see it) states it addresses 1,283 new security patches, with no CVE ids yet. Products with a highest CVSS 3.1 base score of 9.0 or above, patches / remotely exploitable without authentication / max score, per the page: Fusion Middleware 196 / 132 / 10.0; E-Business Suite 196 / 34 / 10.0; JD Edwards 102 / 44 / 10.0; Siebel CRM 123 / 67 / 9.9; Communications 124 / 87 / 9.8; PeopleSoft 109 / 41 / 9.8; MySQL 98 / 29 / 9.8; Supply Chain 50 / 19 / 9.3; Analytics 33 / 14 / 9.1; Essbase 38 / 14 / 9.9; Oracle Systems (Solaris, ZFS Storage Appliance Kit) 16 / 6 / 9.8; Secure Backup 7 / 4 / 9.8; Trusted Answer Search 8 / 1 / 9.9; APEX 2 / 2 / 9.8; Autonomous Health Framework 6 / 2 / 9.8; Enterprise Manager 12 / 0 / 9.9. Oracle Database Server has 13 patches, 3 remotely exploitable without authentication, highest
+    8.8 (Database 19.3 to 19.32, 21.3 to 21.23, 23.4.0 to 23.26.3). Oracle warns that the pre-release may change before the advisory. This is a heads-up, not a finding: per-CVE detail, exploitation status and fixed versions arrive with the 2026-10-20 release.
+  region_nexus: global; Oracle Database, Fusion Middleware (WebLogic), E-Business Suite, PeopleSoft and MySQL are widespread in public-sector back offices
+  primary_sector_nexus: indirect
+  sector: technology
+  cves: []
+  techniques: []
+  affected_products:
+  - Oracle Fusion Middleware
+  - Oracle E-Business Suite
+  - Oracle JD Edwards
+  - Oracle PeopleSoft
+  - Oracle MySQL
+  - Oracle Siebel CRM
+  - Oracle Communications
+  - Oracle Database Server
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  lookback: true
+  borderline: true
+  borderline_reason: >-
+    Pre-release with no CVE ids, versions or exploitation data; the actual CPU is released 2026-10-20 and will carry the actionable content. Returned because the pre-release is the only public signal before the release and no earlier fire covered it.
+  evidence:
+  - quote: This Critical Patch Update addresses 1283 new security patches.
+    attribution: Oracle CPU pre-release announcement
+    source_url: https://www.oracle.com/security-alerts/cpuoct2026.html
+  - quote: which will be released on Tuesday, October 20, 2026
+    attribution: Oracle CPU pre-release announcement
+    source_url: https://www.oracle.com/security-alerts/cpuoct2026.html
+  - quote: >-
+      This Critical Patch Update contains 196 new security patches for Oracle Fusion Middleware. 132 of these vulnerabilities may be remotely exploitable without authentication
+    attribution: Oracle CPU pre-release announcement
+    source_url: https://www.oracle.com/security-alerts/cpuoct2026.html
+  - quote: The highest CVSS v3.1 Base Score of vulnerabilities affecting Oracle Fusion Middleware is 10.0.
+    attribution: Oracle CPU pre-release announcement
+    source_url: https://www.oracle.com/security-alerts/cpuoct2026.html
+  extended_notes: >-
+    Composer note: do not publish an entry from the pre-release alone unless the main agent wants a heads-up; the useful moment is the 2026-10-20 release (Oracle publishes cpuoct2026.html and the risk matrices, typically in the late-UTC afternoon). Oracle's cadence note in sources.json (CPU on the third Tuesday of Jan/Apr/Jul/Oct, CSPU in other months) holds: the page lists 20 October 2026 and the next CSPU as 17 November 2026.
+- title: >-
+    ConnectWise Cloud Backup (SkyKick) incident: advisory updates of 2026-10-18 16:00 and 18:45 UTC and 2026-10-19 01:15 UTC; three services stay suspended, no restoration time, no new confirmed findings
+  sources:
+  - url: https://www.connectwise.com/company/trust/advisories
+    publisher: ConnectWise Trust Center (advisory, updated 2026-10-19 01:15 UTC)
+    date: '2026-10-19'
+    role: primary
+  - url: https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access
+    publisher: Huntress
+    date: '2026-10-17'
+    role: corroborating
+  discovery_trace: >-
+    first seen at: connectwise-trust-center, URL https://www.connectwise.com/company/trust/advisories (WebFetch and url --direct returned 403; extract served through the reader and returned the full page) -> Huntress living post URL https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access checked for later updates (latest update 2026-10-17 17:15 ET, already in the entry)
+  summary: >-
+    Since the entry (which read the advisory update of 2026-10-18 01:00 UTC), ConnectWise added three updates. 2026-10-18 16:00 UTC: no new confirmed findings; it is contacting its entire partner base; Cloud Backup, SaaS Security and Cloud Management stay suspended (backup jobs, archive access and restores unavailable, SaaS Security monitoring and Cloud Management user and licence management unavailable); existing archives remain encrypted and isolated with no indication of compromise, which it says does not establish whether live Microsoft 365 tenants were affected. 2026-10-18 18:45 UTC: guidance unchanged, and further source-address indicators (not reproduced here) were added from downstream partner monitoring. 2026-10-19 01:15 UTC: containment in place, and 'since implementing mitigations we have not observed successful threat activity in the environments we monitor'; services remain suspended with no confirmed restoration time; next update promised by 13:00 UTC on 2026-10-19. Huntress's
+    living post (last updated 2026-10-17 17:15 ET: almost 1,000 tenants with sign-in activity, over 300 successful, a failed second wave against 16 tenants) is already reflected in the entry. Net delta is operational status, not new attack facts.
+  region_nexus: global; MSP supply chain into Microsoft 365 tenants, the Swiss nexus is any MSP-managed public-sector tenant
+  primary_sector_nexus: indirect
+  sector: technology
+  cves: []
+  techniques:
+  - T1199
+  - T1078.004
+  affected_products:
+  - ConnectWise Cloud Backup
+  - ConnectWise Cloud Management
+  - Microsoft Entra ID
+  entity_keys:
+  - incident:connectwise-cloud-backup-skykick-app-credential-abuse-2026-10
+  - product:connectwise-cloud-backup
+  - product:connectwise-cloud-management
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: update-of:2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse
+  borderline: true
+  borderline_reason: >-
+    Duplicate of the S3 and S4 update-of items on the same entry (merge). Low delta: status-only updates (services still suspended, no restoration time, no new confirmed findings, one claim that no successful threat activity has been seen since mitigation); the only new technical content is extra source addresses, which the entry must not carry (no IOCs).
+  evidence:
+  - quote: We do not yet have a confirmed restoration time and will share a timeline as soon as we can do so reliably.
+    attribution: ConnectWise Trust Center (advisory, updated 2026-10-19 01:15 UTC)
+    source_url: https://www.connectwise.com/company/trust/advisories
+  - quote: Existing backup archives remain encrypted and isolated, and we have no indication that those archives have been compromised.
+    attribution: ConnectWise Trust Center (advisory, updated 2026-10-19 01:15 UTC)
+    source_url: https://www.connectwise.com/company/trust/advisories
+  - quote: Since implementing mitigations, we have not observed successful threat activity in the environments we monitor.
+    attribution: ConnectWise Trust Center (advisory, updated 2026-10-19 01:15 UTC)
+    source_url: https://www.connectwise.com/company/trust/advisories
+  extended_notes: >-
+    Fields that would move on the entry: sourcing_note (latest advisory update now 2026-10-19 01:15 UTC), summary/body status line. Do not carry the additional IP indicators.
+- title: >-
+    Broadcom 802.11/WPS EAP reassembly overflow in router SDK, no CVE assigned: unauthenticated over-the-air RCE on ISP gateways, "forever day" on eCos platforms, disclosed at Hexacon 2026-10-16
+  sources:
+  - url: https://quentinkaiser.be/security/2026/10/16/one-parser-two-bugs/
+    publisher: Quentin Kaiser (researcher write-up, Hexacon talk)
+    date: '2026-10-16'
+    role: primary
+  - url: https://securityaffairs.com/201268/iot/16-year-old-broadcom-wi-fi-bug-lets-attackers-take-over-routers-without-a-password.html
+    publisher: Security Affairs
+    date: '2026-10-19'
+    role: corroborating
+  discovery_trace: >-
+    first seen at: news feed sweep securityaffairs.com feed (fetch_source.py feed https://securityaffairs.com/feed), item of 2026-10-19 00:36, URL https://securityaffairs.com/201268/iot/16-year-old-broadcom-wi-fi-bug-lets-attackers-take-over-routers-without-a-password.html -> primary: researcher blog, URL https://quentinkaiser.be/security/2026/10/16/one-parser-two-bugs/
+  summary: >-
+    Researcher Quentin Kaiser disclosed at Hexacon on 2026-10-16 a flaw in Broadcom's proprietary 802.11/WPS EAP reassembly code, present in its SDK since at least 2010 and only partly patched in 2018, that gives an attacker within Wi-Fi range unauthenticated information disclosure and arbitrary code execution on the access point without the network key or a completed WPS enrollment. He demonstrated working exploits on an Orange Belgium ASKEY TCG3000 and a Proximus Sagemcom F@st/BBOX3V+ (credential theft from NVRAM and a reverse shell carried over 802.11 frames) and says the bug is exploitable on three of four Belgian ISPs' fleets (Proximus BBOX 3/3V+, VOO Netgear CG3100/CG3700, Technicolor TC7210 and CGA4233, Orange ASKEY TCG3000); chipsets named are BCM3380, BCM3383 and BCM33834 (eCos, an unfixable 'forever day') and BCM3390, BCM65xx and BCM68xx (Linux, dependent on OEM migration to hostapd). Broadcom answered in July that a patch exists, told him to ask the manufacturers to contact it,
+    and refused to assign a CVE or share the OEM notification; CERT/CC opened and closed a VINCE case the same day. As of 2026-10-15 none of the tested devices were patched, and the researcher publishes a fingerprinting script and a YARA rule to map affected devices. His estimate of more than 1.5 million Belgian gateways is a medium-confidence napkin figure. No source shows exploitation in the wild; Swiss exposure is unknown (the affected Belgian cable devices share chipset families with cable gateways sold elsewhere, which no source confirms for Switzerland).
+  region_nexus: Belgium demonstrated; vendor SDK is global; Swiss exposure unconfirmed (consumer/ISP CPE, proximity attack)
+  primary_sector_nexus: none identified
+  sector: telecommunications
+  cves: []
+  techniques:
+  - T1190
+  affected_products:
+  - Broadcom 802.11 WPS SDK (BCM3380, BCM3383, BCM33834, BCM3390, BCM65xx, BCM68xx based gateways)
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  borderline: true
+  borderline_reason: >-
+    No CVE and no patch path, demonstrated unauthenticated RCE, but consumer/ISP gateway, Wi-Fi-proximity attack, Belgian demonstration, no Swiss nexus established; single researcher primary (Security Affairs rewrites it). ATT&CK mapping T1190 is the nearest fit for an over-the-air network-service exploit, not an exact one.
+  evidence:
+  - quote: As of October 15th, 2026, none of these affected devices have been patched.
+    attribution: Quentin Kaiser (researcher write-up, Hexacon talk)
+    source_url: https://quentinkaiser.be/security/2026/10/16/one-parser-two-bugs/
+  - quote: they refused to assign a CVE to this vulnerability or to communicate publicly about it
+    attribution: Quentin Kaiser (researcher write-up, Hexacon talk)
+    source_url: https://quentinkaiser.be/security/2026/10/16/one-parser-two-bugs/
+  - quote: The company refused to assign a CVE or share the notification it had sent through its customer portal.
+    attribution: Security Affairs
+    source_url: https://securityaffairs.com/201268/iot/16-year-old-broadcom-wi-fi-bug-lets-attackers-take-over-routers-without-a-password.html
+  extended_notes: >-
+    Exposure is a function of CPE model and chipset, not of a version string; the researcher's fingerprinting script and YARA rule (GitHub qkaiser/broadcom-wps, linked from the post) are the stated way to map devices. Hunt/hardening angle for defenders: staff and branch routers supplied by ISPs sit outside asset management, and Wi-Fi proximity attackers (hotel, neighbour) are the realistic scenario the researcher names (nearest-neighbour style). Detection is limited by the lack of visibility into ISP-managed devices.
+cve_table:
+- cve: CVE-2026-99999
+  product: Linux kernel (IPv4 stack; virtio-net/TAP host path)
+  cvss: 9.3 (CNA, 3.1 AV:L/AC:L/PR:N/S:C); Red Hat 8.8 (PR:L)
+  epss: 0.0021
+  kev: false
+  exploited: no in-the-wild report; Red Hat page says "tracks as a KEV active-exploit case" (unexplained), CISA KEV absent
+  affected: Linux kernel from 2.6.27 (introducing commit f43798c27684) until the fixed stable releases
+  fixed: >-
+    5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.57, 7.2.11, mainline 7.3-rc7 (commit 6785011f8b16, 2026-10-14); Debian bookworm 6.1.190-1, trixie 6.12.113-1; RHEL/SUSE/Ubuntu pending at fetch
+  type: missing validation of checksum_start before skb_checksum_help (OOB write, header corruption); guest-to-host escape
+  vector: local (guest-controlled virtio-net frame via host TAP)
+  auth: none (guest tenant workload)
+  source: https://pwn.ai/blog/pwnescape
+- cve: CVE-2026-106931
+  product: SiteGuard Server Edition
+  cvss: 4.0 8.5 / 3.0 7.8 (AV:L/PR:L, vendor and JVN)
+  epss: 0.0066
+  kev: false
+  exploited: yes (vendor and JPCERT/CC; actor and scale unknown)
+  affected: Apache/Nginx/IIS editions Ver2.20 to before Ver8.00 Update 5 (IIS Ver3.10-4.00 Update 4 not affected); FreeBSD Apache/Nginx before Ver7.00 Update 6
+  fixed: 'Ver8.00 Update 5; Ver7.00 Update 6 (FreeBSD); file-replacement patch also for EOL versions; workaround: disable the statistics function'
+  type: OS command injection (CWE-78) in statistics function
+  vector: rated local; delivery path not described
+  auth: low privileges per CVSS
+  source: https://jvn.jp/en/jp/JVN88474777/index.html
+- cve: CVE-2026-101956
+  product: Juniper Junos OS (J-Web)
+  cvss: 3.1 9.8 (NCSC-NL CSAF) / 4.0 9.3
+  epss: 0.0075
+  kev: false
+  exploited: no (Juniper makes no mention, SecurityWeek)
+  affected: Junos OS trains before 23.2R2-S7.7, 23.4R2-S8.13, 24.2R2-S5.5, 24.4R2-S5, 25.2R2-S2, 25.4R1-S3, 26.2R1-S2 (bundle-wide, CCCS)
+  fixed: those builds or later (per-CVE table not readable)
+  type: improper authentication, unauthenticated root command execution
+  vector: network (J-Web)
+  auth: none
+  source: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0430
+- cve: CVE-2026-102182
+  product: Juniper Junos OS (kmd, MX Series)
+  cvss: 3.1 9.8 / 4.0 9.3
+  epss: 0.0041
+  kev: false
+  exploited: 'no'
+  affected: MX Series, same train cutoffs
+  fixed: same
+  type: stack-based buffer overflow, root code execution via crafted certificate-based IKE packets
+  vector: network (IKE)
+  auth: none
+  source: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0430
+- cve: CVE-2026-101980
+  product: Juniper Junos OS (kernel, Extended Echo)
+  cvss: 3.1 9.8
+  epss: 0.0047
+  kev: false
+  exploited: 'no'
+  affected: Junos OS with Extended Echo enabled, same train cutoffs
+  fixed: same
+  type: integer underflow, Routing Engine reboot (DoS per description)
+  vector: network
+  auth: none
+  source: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0430
+- cve: CVE-2026-101954
+  product: Juniper Junos OS / Evolved (J-Web NETCONF)
+  cvss: 4.0 9.3 (aggregator OpenCVE)
+  epss: 0.0049
+  kev: false
+  exploited: 'no'
+  affected: J-Web enabled; vendor bulletin unread
+  fixed: unread
+  type: improper authentication, root-level control
+  vector: network
+  auth: none
+  source: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0430 (not listed there; aggregator only)
+- cve: CVE-2026-101986
+  product: Juniper Junos OS / Evolved (J-Web)
+  cvss: 4.0 9.3 (aggregator OpenCVE)
+  epss: 0.0058
+  kev: false
+  exploited: 'no'
+  affected: J-Web enabled; vendor bulletin unread
+  fixed: unread
+  type: pre-authentication CGI execution via crafted HTTP request
+  vector: network
+  auth: none
+  source: aggregator only (vendor bulletin unreadable)
+- cve: CVE-2026-96889
+  product: Next.js (Image Optimization / sharp-librsvg)
+  cvss: 9.5 (Vercel, via THN)
+  epss: 0.0015
+  kev: false
+  exploited: 'no'
+  affected: Next.js 10.0.0-15.5.27 and 16.0.0-16.4.0 on glibc Linux with SVG processing
+  fixed: 16.4.1; 15.5.28 with sharp >= 0.35.5
+  type: memory-safety flaw in librsvg, RCE
+  vector: network
+  auth: none
+  source: https://nextjs.org/blog/nextjs-security-update-october-14-2026
+- cve: CVE-2026-107656
+  product: Fortinet FortiSandbox / FortiSandbox PaaS (GUI)
+  cvss: 9.6 (Fortinet, CVSSv3)
+  epss: null
+  kev: false
+  exploited: 'no (Known Exploited: No)'
+  affected: FortiSandbox 5.0.0-5.0.6, 4.4.0-4.4.9; PaaS 5.0.0-5.0.6 and PaaS 4.4 all
+  fixed: 5.0.7; 4.4.10; PaaS 4.4 migrate
+  type: authentication bypass via alternate path (CWE-288)
+  vector: network (GUI)
+  auth: none
+  source: https://fortiguard.fortinet.com/psirt/FG-IR-26-185
+- cve: CVE-2026-106173
+  product: Fortinet FortiSIEM (gRPC phQueryMaster)
+  cvss: 9.4 (Fortinet, CVSSv3)
+  epss: 0.0043
+  kev: false
+  exploited: 'no (Known Exploited: No)'
+  affected: FortiSIEM 7.5.0 (7.6 not affected, Cloud not affected)
+  fixed: '7.5.1; workaround: restrict TCP/27918'
+  type: path traversal (CWE-22), code/command execution
+  vector: network (crafted packets)
+  auth: none
+  source: https://fortiguard.fortinet.com/psirt/FG-IR-26-180
+bundle_dispositions:
+- bundle: Microsoft October 2026 Patch Tuesday (2026-10-13; CVRF 2026-Oct revision 858 of 2026-10-18T01:46:50, 2,135 CVE records incl. Azure Linux/third-party imports)
+  source: fetch_source.py msrc cvrf 2026-Oct and msrc cve (data); citation pages already in the store entries
+  rows:
+  - cve: CVE-2026-96951
+    disposition: covered
+    reason: only Exploited:Yes record in the CVRF; entry 2026-10-14/cve-2026-96951-windows-shell-motw-bypass-zero-day-kev
+  - cve: CVE-2026-108398
+    disposition: drop
+    reason: publicly disclosed, not exploited (.NET Framework security feature bypass, CVSS 8.8, Exploitation Less Likely)
+  - cve: CVE-2026-92707
+    disposition: drop
+    reason: publicly disclosed, not exploited (MessagePack-CSharp DoS, CVSS 5.3)
+  - cve: CVE-2026-70279 / CVE-2026-70571
+    disposition: covered
+    reason: >-
+      Exchange, Exploitation More Likely; entry 2026-10-14/exchange-oct-2026-su-cve-2026-70571-last-2016-2019-update (CVE-2026-96940 Exchange EoP 8.8, More Likely, is not in that entry)
+  - cve: >-
+      CVE-2026-100202, -100219, -105016, -96934, -96320, -97814, -102210, -70147, -70153, -85792, -85809, -83869, -96113, -96219, -83910, -97816 and other 9.0-9.8 network RCE/spoofing rows (MSMQ, QUIC, DHCP Server, Text Shaping, PostScript driver, RRAS, DNS, LSASS, RPC, OpenSSH for Windows)
+    disposition: drop as a class
+    reason: >-
+      CVSS 9.0-9.8 and network-reachable on paper, but every one carries Exploited:No, Publicly Disclosed:No and Exploitation Less Likely/Unlikely in the CVRF; no exploitation, PoC or scanning evidence
+  - cve: CVE-2026-102322 and about 25 Chromium rows (9.1-9.6)
+    disposition: drop
+    reason: Chromium imports for Edge, no exploitation flag
+  - cve: CVE-2026-99999 (9.3, ipv4 checksum_start)
+    disposition: item
+    reason: Azure Linux import of the Linux kernel flaw, returned as the PwnEscape item
+- bundle: SAP Security Patch Day 2026-10-13 (16 notes + 4 GitHub advisories, 2 updates)
+  source: https://support.sap.com/en/my-support/knowledge-base/security-notes-news/october-2026.html
+  rows:
+  - cve: CVE-2026-89111
+    disposition: drop
+    reason: >-
+      CVSS 10.0 pre-auth (PR:N, S:C) but a library flaw: SAP Cloud SDK for Python < 0.45.2 OAuth2 SSRF, affects multi-tenant BTP applications where tenant_subdomain is attacker-controlled; not exploited; fix 0.45.2 or allowlist tenant_subdomain (GHSA-4mv3-jxxm-9cx2)
+  - cve: CVE-2026-89110
+    disposition: drop
+    reason: Visual Composer VC70RUNTIME 7.50 broken access control, CVSS 9.9, PR:L (authenticated), not exploited
+  - cve: CVE-2026-89107
+    disposition: drop
+    reason: S/4HANA Manage Substitution/Validation Rules code injection, CVSS 9.9, PR:L, S4CORE 105-109, not exploited
+  - cve: CVE-2026-89108
+    disposition: drop
+    reason: MII Configuration Service missing authorization, CVSS 9.1, PR:H, XMII 15.4/15.5
+  - cve: CVE-2026-58249
+    disposition: drop
+    reason: ICM/Web Dispatcher HTTP/2 memory corruption, CVSS 7.5 unauthenticated DoS, below the 9.0 bar
+- bundle: Fortinet monthly PSIRT 2026-10-13 (FG-IR-26-176 to -185)
+  source: https://fortiguard.fortinet.com/psirt/FG-IR-26-185 and -180 (raw pages read for all ten)
+  rows:
+  - cve: CVE-2026-107656, CVE-2026-106173
+    disposition: item (borderline)
+    reason: two unauthenticated criticals, see Fortinet item
+  - cve: other eight advisories
+    disposition: drop
+    reason: >-
+      all Known Exploited: No; max CVSS 7.9 (FG-IR-26-178, authenticated, CVE-2025-46773 and CVE-2026-23705/23706/23707); FG-IR-26-179, a Fabric API authentication bypass, is unauthenticated but CVSS 4.9 (CVE-2026-106172); products of these eight were not read
+- bundle: Ivanti October 2026 (Patch Tuesday 2026-10-13)
+  source: https://www.ivanti.com/blog/october-2026-security-update
+  rows:
+  - cve: CVE-2026-104935, CVE-2026-111357
+    disposition: covered
+    reason: 'entry 2026-10-14/cve-2026-104935-ivanti-connect-secure-zero-day-chain-kev (Volexity page and CCCS AV26-1035 re-checked: no change since the 2026-10-17 record)'
+  - cve: Neurons Patch for Intune, Xtraction patches
+    disposition: unread
+    reason: Ivanti says it is not aware of exploitation for the Patch Tuesday group; the advisory hub is JS-only on every transport so the CVE table could not be read
+- bundle: Juniper Junos October 2026
+  source: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0430
+  rows:
+  - cve: CVE-2026-101956, -102182, -101980 (+ -101954, -101986 aggregator)
+    disposition: item (borderline)
+    reason: see Juniper item
+- bundle: F5 / NGINX 2026-10-14 (F5 K000163408; 11 NGINX defects)
+  source: https://nginx.org/en/security_advisories.html
+  rows:
+  - cve: CVE-2026-93479, CVE-2026-15176, CVE-2026-97205
+    disposition: drop
+    reason: >-
+      unauthenticated crafted-request buffer overflows / AIO use-after-free; RCE only if ASLR is disabled or bypassed (SecurityWeek); nginx.org rates all three "medium", F5 CVSS 3.1 is 8.1 (AC:H, MSRC import) while a 4.0 score of 9.2 is quoted by aggregators and SecurityWeek calls them critical; no exploitation. Fixed in open source 1.31.7 / 1.30.6 (CVE-2026-93479 affects 1.31.2-1.31.6 and 1.30.0-1.30.5; CVE-2026-15176 0.1.29-1.31.6; CVE-2026-97205 0.8.11-1.31.6); CCCS AV26-1049 lists NGINX Plus before 37.0.5.1 / 37.1.0.1, Ingress Controller before 5.7.0, Gateway Fabric before 2.8.0
+- bundle: Oracle CPU October 2026 (due 2026-10-20) and CSPU
+  source: https://www.oracle.com/security-alerts/cpuoct2026.html
+  rows:
+  - cve: none yet
+    disposition: item (borderline, lookback)
+    reason: pre-release only; real CPU on 2026-10-20
+- bundle: Adobe October 2026 (2026-10-13)
+  source: store
+  rows:
+  - cve: ColdFusion/AEM/Commerce set
+    disposition: covered
+    reason: entry 2026-10-14/adobe-october-2026-coldfusion-aem-commerce-unauth-critical (1 update 2026-10-16)
+- bundle: Cisco
+  source: Cisco PSIRT feed
+  rows:
+  - cve: CVE-2026-76519
+    disposition: covered
+    reason: ESA advisory still "Final 2026-OCT-14", no revision; entry 2026-10-15/cve-2026-76519-cisco-secure-email-gateway-file-write-root
+  - cve: preview
+    disposition: note
+    reason: >-
+      Cisco Advance Notification: advisories will be published 2026-10-21 for Expressway (hardening release), IOS XR for ASR 9000, Secure Client, Snort (hardening) and Unified Communications (hardening)
+- bundle: Chrome 155.0.8059.84/.85 (2026-10-15)
+  source: https://chromereleases.googleblog.com/
+  rows:
+  - cve: CVE-2026-110922 (Critical, Prerender UAF) and 9 others
+    disposition: drop
+    reason: 10 security fixes, none flagged as exploited in the wild
+- bundle: Mozilla 2026-10-13 (Firefox 158, ESR 153.5 / 115.43, Thunderbird 158 / 153.5)
+  source: https://www.mozilla.org/en-US/security/advisories/
+  rows:
+  - cve: MFSA 2026-106 to -110
+    disposition: drop
+    reason: listing carries no exploitation flag or severity; no source reports exploitation
+- bundle: SonicWall SNWLID-2026-0018 (NSM On-Prem, High, 2026-10-14)
+  source: https://psirt.global.sonicwall.com/vuln-list
+  rows:
+  - cve: CVE-2026-96540, CVE-2026-100232
+    disposition: drop
+    reason: High severity, no exploitation indicated; CCCS AV26-1048 lists NSM On-Prem 4.3.1 and prior; details not read
+- bundle: Progress MOVEit Transfer (CCCS AV26-1058, 2026-10-16)
+  source: https://cyber.gc.ca/en/alerts-advisories/progress-security-advisory-av26-1058
+  rows:
+  - cve: September 2026 critical bulletin, CVE-2026-89075 and others
+    disposition: drop
+    reason: affected before 2025.1.6 / 2026.0.4; aggregator rates the batch Severe CVSS 8.8, exploit maturity unproven; Progress page not read
+- bundle: JetBrains 2026-10-15 (TeamCity 2026.2 / 2026.1.4 / 2025.11.8, Datalore, YouTrack, Junie CLI)
+  source: https://www.jetbrains.com/privacy-security/issues-fixed/ (reader)
+  rows:
+  - cve: TeamCity RCE via build-messages whitelist bypass (CWE-502, High), Datalore unauthenticated path traversal (High)
+    disposition: drop
+    reason: High, not Critical; no exploitation; TeamCity gets frequent fixes and the 2026-07 critical was already covered
+- bundle: Langflow CVE-2026-105740 (CVSS 9.9, authenticated MCP stdio RCE; Previdian honeypots 1,423 attempts since 2026-09-19)
+  source: https://thehackernews.com/2026/10/langflows-critical-authenticated-rce.html
+  rows:
+  - cve: CVE-2026-105740
+    disposition: drop
+    reason: authenticated flaw, honeypot attempts rely on weak credentials, 2026-10-15, no Swiss nexus; EPSS 0.59 %
+- bundle: ENISA EUVD critical (>= 9.0) published 2026-10-17 to 2026-10-19 (9 records)
+  source: euvdservices.enisa.europa.eu API search
+  rows:
+  - cve: >-
+      CVE-2026-108983 (GeoVision GV-ASManager 6.3.0, 9.8), CVE-2026-111911 (phpMyFAQ before 4.1.9 WebAuthn auth bypass, 9.3), CVE-2026-110372 (OttoKit/SureTriggers through 1.1.40, 9.8), CVE-2026-104736 (LearnPress), CVE-2026-110886, CVE-2026-109894, CVE-2026-110653 (WordPress plugins), CVE-2026-111998 (Vanus default token), CVE-2026-112005 (WhoDB path traversal)
+    disposition: drop
+    reason: none flagged exploited, EPSS ~0, niche products; phpMyFAQ and GeoVision are the only ones with plausible public-sector deployment
+- bundle: ENISA EUVD exploited=true list (4 records)
+  source: enisa-euvd recent exploited
+  rows:
+  - cve: CVE-2026-102764, CVE-2025-61624, CVE-2026-21589, CVE-2026-76519
+    disposition: covered
+    reason: >-
+      all four already carry entries; EUVD mirrors the Atlassian CVE rejection of 2026-10-16 already recorded in the entry (cveawg record state REJECTED re-checked, no replacement id found)
+- bundle: Advisory revisions checked for update-of (duty 2)
+  source: vendor/CERT pages re-read
+  rows:
+  - cve: CVE-2026-102764 BeyondTrust
+    disposition: no delta
+    reason: CCCS AV26-1054 Update 1 (KEV) already in entry; BT26-05 unchanged
+  - cve: CVE-2026-76519 Cisco ESA
+    disposition: no delta
+    reason: advisory Final 2026-OCT-14
+  - cve: CVE-2026-104935 / CVE-2026-111357 Ivanti
+    disposition: no delta
+    reason: CCCS Update 1 (2026-10-16) and Volexity unchanged since the 2026-10-17 record; no fix for the root step found
+  - cve: CVE-2026-21589 Atlassian
+    disposition: no delta
+    reason: CCCS Update 2 = KEV; CVE record REJECTED 2026-10-16 already in entry
+  - cve: CVE-2026-97229 GitLab
+    disposition: no delta
+    reason: no exploitation reported as of 2026-10-15; PoC (Rapid7) already in entry
+  - cve: CVE-2026-108097 Drupal
+    disposition: no delta
+    reason: no public exploit or attacks reported in coverage found; entry stands
+  - cve: PaperCut CVE-2026-82078 / -81578
+    disposition: no delta
+    reason: nothing newer than the late-August second emergency patch found
+  - cve: ConnectWise Cloud Backup
+    disposition: update-of item
+    reason: status updates of 2026-10-18/19
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: no product watchlist configured in the org profile; sweep is a no-op
+candidate_sources:
+- id: nextjs-blog
+  publisher: Next.js (Vercel) blog / security updates
+  url: https://nextjs.org/blog
+  rss_url: https://nextjs.org/feed.xml
+  category: vendor-psirt
+  why: >-
+    First-party disclosure channel for Next.js security releases (2026-10-14 out-of-band update with two critical RCE fixes; preceded by an announcement on 2026-10-08); feed.xml reads direct and is dated.
+- id: nginx-security-advisories
+  publisher: nginx.org security advisories (F5/NGINX)
+  url: https://nginx.org/en/security_advisories.html
+  rss_url: null
+  category: vendor-psirt
+  why: >-
+    Plain server-rendered list with severity, vulnerable and fixed versions per CVE; `extract` reads it direct with no reader credit; useful because F5 / nginx.org severities disagree (medium vs critical).
+coverage_gaps:
+- source_id: ibm-support-security-bulletins
+  reason: >-
+    No listing transport: https://www.ibm.com/blogs/psirt/feed/ returns the Security Bulletins HTML page (not RSS) and WebSearch finds only August bulletins; nothing in horizon. IBM changes only surfaced via NCSC-NL relays (NCSC-2026-0431 DataPower, -0433 Guardium, 2026-10-16, probability medium). Recipe gap: a discoverable IBM bulletin listing.
+- source_id: connectwise-trust-center
+  reason: >-
+    Recipe: WebFetch 403, url --direct 403; `extract https://www.connectwise.com/company/trust/advisories` is served through the metered reader and returns the full stacked page (116 KB) with the dated updates. Keep `extract`; WebFetch no longer works.
+- source_id: sonicwall-psirt
+  reason: >-
+    Recipe confirmed: url --direct returns a 729-byte JS shell; `jina https://psirt.global.sonicwall.com/vuln-list` returns all 218 rows (severity, id, title, CVEs, published, updated) parseable by regex; rows are ordered by severity, so sort by date.
+- source_id: oracle-cpu
+  reason: >-
+    Recipe: WebFetch 403; `extract https://www.oracle.com/security-alerts/` and `extract https://www.oracle.com/security-alerts/cpuoct2026.html` read direct with trafilatura (the pre-release page exists from the Thursday before the CPU). Do not probe `cpuoct2026verbose.html` (404, burns reader credit).
+- source_id: fortinet-psirt
+  reason: >-
+    Recipe: `url --direct https://fortiguard.fortinet.com/psirt/FG-IR-26-NNN` fails (connection errors) when ten are fetched in parallel (5 of 10 failed); serial with a 4 s pause worked. Fields "Known Exploited", "Attack Type", "CVSSv3 Score" parse from the stripped HTML.
+- source_id: ivanti-psirt
+  reason: >-
+    Rotation-priority record named in the spawn message as ivanti-advisory-hub (that id is not in sources.json and not in the slice). RSS https://www.ivanti.com/blog/topics/security-advisory/rss and `extract` of the October post work; the post lists no CVEs (links dropped) and the advisory hub stays JS-only, so Neurons Patch for Intune and Xtraction tables were not read.
+- source_id: juniper support portal
+  reason: >-
+    supportportal.juniper.net bulletins are a JS app (direct and extract return the community shell, jina returns "Loading ... CSS Error"). Working route: `python3 tools/fetch_source.py ncsc-nl csaf NCSC-2026-0430` (per-CVE descriptions and scores; product tree unversioned) plus CCCS AV26-1043 for affected trains. Juniper is absent from sources.json and from the whole entry store; a record for it would help.
+- source_id: cisa-advisories
+  reason: >-
+    Recipe note: `feed https://www.cisa.gov/cybersecurity-advisories/all.xml` falls through to the metered reader (method jina) from the container; the listing https://www.cisa.gov/news-events/cybersecurity-advisories?f%5B0%5D=advisory_type%3A93 reads with WebFetch (10 items, titles, dates and hrefs).
+- source_id: chrome releases
+  reason: >-
+    https://chromereleases.googleblog.com/feeds/posts/default answers 302 and fails as a feed; `extract https://chromereleases.googleblog.com/` returns the current posts with the security-fix lists.
+- source_id: mikrotik-routeros-changelog
+  reason: >-
+    Recipe: NEWESTa7.stable works (7.24.5, 2026-09-29); the NEWEST7.* channels return stale 2023 values (7.12.1); the 7.24 CHANGELOG at https://upgrade.mikrotik.com/routeros/7.24/CHANGELOG reads direct.
+- source_id: znuny-advisories
+  reason: >-
+    Recovered: `url --direct https://www.znuny.org/en/advisories` returned 19 KB (the 2026-10-18 HTTP 503 has cleared); newest ZSA-2026-16 (2026-10-14, medium); ZSA-2026-13/-14 (SQL injection in agent login, unauthenticated login via HTTP Basic modules, both high) date from 2026-09-16.
+- source_id: jpcert
+  reason: >-
+    Recipe: https://www.jpcert.or.jp/rss/jpcert.rdf (Japanese) reads direct; alerts at https://www.jpcert.or.jp/at/2026/atNNNNNN.html and JVN (https://jvn.jp/en/jp/JVNnnnnnnnn/index.html, feed https://jvn.jp/en/rss/jvn.rdf) read with extract; JPCERT-AT-2026-0032 and JVN#88474777 were the SiteGuard primaries.
+- source_id: jetbrains issues-fixed
+  reason: https://www.jetbrains.com/privacy-security/issues-fixed/ is JS-rendered on extract; `jina` reads it (254 KB) with per-fix severity, fixed builds and CVE ids.
+source_ledger:
+- id: advisories-ncsc-nl
+  tier: essential
+  attempted: true
+  transport: bridge:ncsc-nl recent 30 + csaf
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest NCSC-2026-0437 BeyondTrust 2026-10-16 08:59Z; NCSC-2026-0430 (Junos) used as primary data for the Juniper item (published 2026-10-16, outside horizon)
+- id: bsi-de
+  tier: essential
+  attempted: true
+  transport: bridge:bsi-rss
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: 250 items back to 2026-10-15 13:13Z; newest [NEU] 2026-10-16 11:45Z (Mattermost); nothing at the weekend
+- id: cert-eu
+  tier: essential
+  attempted: true
+  transport: bridge:cert-eu recent 15
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest 2026-017 (Cisco ESA) 2026-10-15
+- id: cisa-advisories
+  tier: essential
+  attempted: true
+  transport: WebFetch listing + bridge:cisa csaf-recent 12
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest alerts 2026-10-16; ICS CSAF newest 2026-10-15; no AA-series advisory since AA26-281A (2026-10-08)
+- id: cisa-kev
+  tier: essential
+  attempted: true
+  transport: bridge:cisa-kev
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: >-
+    catalogue 2026.10.16 (1748), latest additions 2026-10-16 (BeyondTrust, Fortinet CVE-2025-61624), 0 in window; CVE-2026-99999 not listed; kev_window_diff reports no ransomware-flag rows
+- id: enisa-euvd
+  tier: essential
+  attempted: true
+  transport: bridge:enisa-euvd recent exploited + url --direct search API
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: exploited list = 4 records, all covered; 9 critical records published 2026-10-17..19, none exploited (dispositions)
+- id: ncsc-ch-security-hub
+  tier: essential
+  attempted: true
+  transport: bridge:ncsc-csh recent 25 (re-run at 03:25Z)
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 13068 (Drupal) 2026-10-16 08:02Z
+- id: watchtowr
+  tier: essential
+  attempted: true
+  transport: feed
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-10-09 (PaperCut)
+- id: fortinet-psirt
+  tier: essential
+  attempted: true
+  transport: feed + url --direct
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 1
+  note: newest advisories 2026-10-13 (outside horizon); returned two criticals as a borderline completeness item
+- id: msrc-update-guide
+  tier: essential
+  attempted: true
+  transport: bridge:msrc recent 15 + cvrf 2026-Oct + cve
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: >-
+    CVRF revision 858 of 2026-10-18 01:46Z is an import batch; exploited/disclosed flags unchanged; dispositions listed; CVE-2026-99999 surfaced via the Azure Linux import
+- id: paloalto-psirt
+  tier: essential
+  attempted: true
+  transport: feed
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: CVE-2026-0307 GlobalProtect App LPE (medium) published 2026-10-17 00:55Z, 2 h outside the window, dropped; CVE-2026-0322 already covered
+- id: connectwise-trust-center
+  tier: standard
+  attempted: true
+  transport: extract (reader)
+  horizon_hours: 168
+  in_horizon_items: 3
+  returned: 1
+  note: three advisory updates -> one update-of item (low delta)
+- id: ibm-support-security-bulletins
+  tier: standard
+  attempted: true
+  transport: url --direct feed probe + WebSearch
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: no listing transport; see coverage_gaps
+- id: flatt-security
+  tier: standard
+  attempted: true
+  transport: feed (jina fallback) + extract
+  horizon_hours: 122
+  in_horizon_items: 0
+  returned: 0
+  note: newest posts 2026-10-08 (tensorlake npm) and 2026-10-06 (@subql/common), outside lookback
+- id: mozilla-mfsa
+  tier: standard
+  attempted: true
+  transport: WebFetch
+  horizon_hours: 122
+  in_horizon_items: 5
+  returned: 0
+  note: MFSA 2026-106..110 (2026-10-13), no exploitation flag; dropped
+- id: oracle-cpu
+  tier: standard
+  attempted: true
+  transport: extract
+  horizon_hours: 122
+  in_horizon_items: 1
+  returned: 1
+  note: October CPU pre-release (2026-10-15) -> borderline lookback item
+- id: shadowserver
+  tier: standard
+  attempted: true
+  transport: WebFetch
+  horizon_hours: 122
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-09-07
+- id: snyk-research
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 122
+  in_horizon_items: 0
+  returned: 0
+  note: only product/marketing posts (2026-10-15)
+- id: wiz-blog
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 122
+  in_horizon_items: 0
+  returned: 0
+  note: newest 2026-09-26
+- id: yeswehack
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 122
+  in_horizon_items: 0
+  returned: 0
+  note: bug-bounty commentary only
+- id: mikrotik-routeros-changelog
+  tier: standard
+  attempted: true
+  transport: url --direct
+  horizon_hours: 122
+  in_horizon_items: 0
+  returned: 0
+  note: stable 7.24.5 (2026-09-29); nothing new
+- id: citrix-netscaler-security-bulletins
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 122
+  in_horizon_items: 0
+  returned: 0
+  note: newest security posts 2026-10-08 (CVE-2026-107406) and 2026-10-04 (CVE-2026-88779), both covered
+- id: cccs-alerts
+  tier: standard
+  attempted: true
+  transport: feed (50 items) + extract of 14 advisories
+  horizon_hours: 124
+  in_horizon_items: 35
+  returned: 0
+  note: >-
+    lookback sweep back to 2026-10-13: leads checked against primaries (F5/NGINX, Juniper, SonicWall NSM, MOVEit, JetBrains, n8n, Chrome, Mozilla, HPE iLO, Commvault); Ivanti Update 1, BeyondTrust Update 1 and Atlassian Update 2 are already in entries; Juniper became an item via NCSC-NL data
+- id: sonicwall-psirt
+  tier: standard
+  attempted: true
+  transport: jina
+  horizon_hours: 122
+  in_horizon_items: 1
+  returned: 0
+  note: SNWLID-2026-0018 (NSM On-Prem, High, 2026-10-14) dropped
+- id: znuny-advisories
+  tier: standard
+  attempted: true
+  transport: url --direct
+  horizon_hours: 122
+  in_horizon_items: 1
+  returned: 0
+  note: ZSA-2026-16 (medium, 2026-10-14) dropped; host reachable again
