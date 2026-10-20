@@ -161,9 +161,8 @@ Plus `.nojekyll`, `404.html`, `sitemap.xml`, `robots.txt`, `llms.txt`,
 (rolling — the landing page), `/daily/` (completed days) and `/changes/`
 (the store-wide changelog); the design refresh renamed the
 earlier `/brief/` and `/briefs/` routes and keeps no legacy redirects for
-them, and v4.0 retired `/weekly/` with the weekly routine (the historical
-`horizon: strategic` entries stay reachable by permalink, entity, CVE, tag,
-region and search).
+them, and v4.0 retired `/weekly/` with the weekly routine (its
+`horizon: strategic` entries were deleted on 2026-08-29).
 
 ## STIX 2.1 export (`stix_model.py` → `/stix/`)
 
