@@ -10,7 +10,7 @@ Usage:
     python3 tools/check_run.py                     # check the LATEST run (by `started`)
     python3 tools/check_run.py 2026-07-03T0412Z-intel   # check a specific run
     python3 tools/check_run.py --all               # validate the whole content store
-    python3 tools/check_run.py --no-build-tests    # skip site/test_build.py
+    python3 tools/check_run.py --no-build-tests    # skip site/test_build.py and tools/test_*.py
     python3 tools/check_run.py --no-link-check     # skip the live URL check (offline runs)
     python3 tools/check_run.py --root PATH         # resolve entries/runs/registry under PATH
                                                    # (state/sources/taxonomy stay in the repo;
@@ -3574,6 +3574,38 @@ def check_test_build(skip: bool) -> None:
          "\n        ".join(tail))
 
 
+def check_tool_tests(skip: bool) -> None:
+    """Run every offline tool suite, tools/test_*.py (the record tool, the
+    page checks, the source-health probe, the PDF reader). Until 2026-10-20
+    no workflow and no gate ran them, so a regression in a tool surfaced only
+    when a fire hit it. Each suite is stdlib-only and network-free and takes
+    well under a second; a failing suite is a FAIL like a failing
+    site/test_build.py."""
+    if skip:
+        warn("tool-tests", "skipped (--no-build-tests)")
+        return
+    suites = sorted((ROOT / "tools").glob("test_*.py"))
+    if not suites:
+        ok("tool-tests", "no tools/test_*.py suites present")
+        return
+    failed: list[str] = []
+    for suite in suites:
+        try:
+            proc = subprocess.run([sys.executable, str(suite)], cwd=str(ROOT),
+                                  capture_output=True, text=True, timeout=120)
+        except subprocess.TimeoutExpired:
+            failed.append(f"{suite.name}: timed out after 120s")
+            continue
+        if proc.returncode != 0:
+            tail = ((proc.stdout or "") + (proc.stderr or "")).strip().splitlines()[-6:]
+            failed.append(f"{suite.name}:\n        " + "\n        ".join(tail))
+    for f in failed:
+        fail("tool-tests", f)
+    if not failed:
+        ok("tool-tests", f"{len(suites)} offline tool suite(s) passed: "
+           + ", ".join(s.name for s in suites))
+
+
 # --- --all mode (whole-store validation) -------------------------------------
 
 
@@ -4560,6 +4592,7 @@ def run_all_checks(entries: list[dict], runs: list[dict], taxonomy: dict,
 
     print("\n== build-side smoke tests ==")
     check_test_build(skip_build_tests)
+    check_tool_tests(skip_build_tests)
 
 
 # --- Driver ------------------------------------------------------------------
@@ -4783,6 +4816,7 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
 
     print("\n== build-side smoke tests ==")
     check_test_build(skip_build_tests)
+    check_tool_tests(skip_build_tests)
 
     return _summary()
 
