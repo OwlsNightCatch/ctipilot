@@ -36,9 +36,7 @@ ENTRIES_DIR = ROOT / "entries"
 SOURCES_JSON = ROOT / "sources" / "sources.json"
 
 # News-aggregator hosts the routine never wants to promote to a primary.
-# Mirrors the NEWS_AGGREGATOR_HOSTS list in tools/check_brief.py —
-# kept as its own constant here so this script doesn't need to import a
-# private name from check_brief.py.
+# Its own constant: the v2 tools/check_brief.py list it once mirrored is gone.
 AGGREGATOR_HOSTS: tuple[str, ...] = (
     "bleepingcomputer.com",
     "thehackernews.com",

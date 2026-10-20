@@ -62,6 +62,8 @@ runs/README.md                 # run-record contract pointer
 state/cves_seen.json           # flat fast-lookup CVE index (kept from v2)
 state/source_health.json       # source accessibility snapshots (kept from v2)
 state/warning_acknowledgments.json  # audit-reviewed ledger of settled-history check_run.py WARNs (v3.28)
+state/coverage_backlog.md      # verified-but-unpublished items every fire re-gates (v3.31)
+state/legacy_review.json       # legacy re-verification queue (v4.19; retired with the cleanup program)
 sources/sources.json           # curated source list (kept from v2)
 work/<run-id>/                 # per-run forensic artefacts (kept from v2)
 site/content_model.py          # THE shared parser/loader/validator for entries, registry, runs

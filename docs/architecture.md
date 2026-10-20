@@ -351,7 +351,7 @@ v3 retired most of `state/`: coverage is now derived by scanning
 with `deep_dive: true` (was `deep_dive_history.json`), and run telemetry
 lives in `runs/**` (was `run_log.json`). The one-shot conversion tool,
 `tools/migrate_briefs.py`, was removed on 2026-10-20 and lives on in git
-history. Two files remain:
+history. These remain:
 
 - [`state/cves_seen.json`](../state/cves_seen.json) — flat fast-lookup CVE
   index (`{id, title, primary_source_url, first_seen, last_seen}`) for
@@ -373,6 +373,14 @@ history. Two files remain:
   every routine run; rendered on `/ops/`. Lets
   demotion logic key off a stable failing pattern instead of one fire's
   luck.
+- [`state/coverage_backlog.md`](../state/coverage_backlog.md): the queue of
+  verified-but-unpublished items (an overtaken fire's findings, a held
+  leak-site claim) that every fire re-gates in Phase 0 step 5b; rows are
+  published, struck with a reason, or held on a named, dated condition.
+- [`state/legacy_review.json`](../state/legacy_review.json): the legacy
+  re-verification queue `tools/legacy_review.py` keeps for the v2-migrated
+  entries; the store cleanup program (`prompts/cleanup-coordinator.md`)
+  works it down and removes both when it retires.
 
 ### `sources/` — the curated source list
 

@@ -64,6 +64,7 @@ The site deploys automatically on every push to `main` that touches the content 
 ├── prompts/                   # Everything the routines load at runtime
 │   ├── cti-run.md             # The intel-run master prompt (fired on the operator's cadence)
 │   ├── quality-audit.md       # The quality-audit run (builds on cti-run.md)
+│   ├── cleanup-coordinator.md # One-time store cleanup program (tracker: docs/cleanup/STATUS.md)
 │   ├── CHANGELOG.md           # Editorial-policy audit trail
 │   ├── verification.md        # Fake-news / two-source verification policy
 │   ├── entry-template.md      # Canonical entry + run-record skeletons
@@ -77,18 +78,32 @@ The site deploys automatically on every push to `main` that touches the content 
 │   └── sources.json           # Curated, dynamic CTI source list (~150 sources, tiered)
 ├── state/
 │   ├── cves_seen.json         # Flat fast-lookup CVE index (dedup)
-│   └── source_health.json     # Bounded source-accessibility history
+│   ├── source_health.json     # Bounded source-accessibility history
+│   ├── coverage_backlog.md    # Verified-but-unpublished items every fire re-gates
+│   ├── legacy_review.json     # Legacy re-verification queue (until the cleanup program retires it)
+│   └── warning_acknowledgments.json # Audit-reviewed ledger of settled-history gate warnings
 ├── tools/
 │   ├── check_run.py           # Phase 5.5 mechanical gate (must exit 0 before commit)
 │   ├── build_prior_coverage.py# Per-run dedup index from the entry store
-│   ├── run_summary.py         # Compact state digest + rolling-24 h budget snapshot
+│   ├── run_summary.py         # Compact state digest + source rotation ranking
+│   ├── claim_ledger.py        # The claim ledger each verifier pass walks
+│   ├── kev_window_diff.py     # Every KEV addition in the window and its coverage state
+│   ├── entry_record.py        # Appends / amends one fire's changelog record on an entry
+│   ├── fold_entries.py        # Folds duplicate entries of one finding into the survivor
+│   ├── sync_products.py       # affected_products[] to product entities in the registry
+│   ├── legacy_review.py       # Legacy re-verification queue (until the cleanup program retires it)
+│   ├── merge_state.py         # Structural three-way merge of the shared state files
+│   ├── attack_data.py         # ATT&CK pin: freshness check, update, invariants
 │   ├── compose_prompts.py     # Renders org-profile.yaml into the ORG-PROFILE managed blocks
-│   ├── fetch_source.py        # Bridge fetcher for hosts that 403 the routine UA
+│   ├── fetch_source.py        # Bridge fetcher: extract, structured recipes, PDF text, reader
 │   ├── source_candidates.py   # Cited-but-untracked publisher surfacing
-│   └── source_health.py       # Recipe-level source accessibility probe
+│   ├── source_health.py       # Recipe-level source accessibility and content probe
+│   └── test_*.py              # Offline suites (entry_record, check_run page checks, source_health, PDF reader)
 ├── site/                      # GitHub Pages reader (static-site generator, stdlib-only)
-│   ├── build.py               # SSG entrypoint — dynamic /live/, day pages, entry pages, feeds, ops
+│   ├── build.py               # SSG entrypoint: the live brief at /, day pages, entry pages, feeds, ops
 │   ├── content_model.py       # THE shared parser/validator for entries, registry, runs
+│   ├── stix_model.py          # STIX 2.1 export of the whole store (/stix/)
+│   ├── branding_config.py     # Loader for config/branding.yaml (site identity)
 │   ├── taxonomy.yaml          # Controlled vocabulary for entry frontmatter
 │   ├── test_build.py          # Stdlib-only smoke tests
 │   └── assets/                # CSS, JS (brief.js window renderer), vendored libs
@@ -98,6 +113,7 @@ The site deploys automatically on every push to `main` that touches the content 
 │   ├── operating.md           # Operator runbook: setup, ops dashboard, troubleshooting
 │   ├── routines.md            # Catalog of every routine + in-repo prompt
 │   ├── audits/                # Quality-audit reports (one per audit fire)
+│   ├── cleanup/               # Store cleanup program tracker (STATUS.md)
 │   ├── customization.md       # Downstream fork / rebrand guide
 │   ├── private-deployment.md  # Host the whole stack org-internally
 │   └── analytics.md           # What we measure, what we don't
