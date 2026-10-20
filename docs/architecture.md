@@ -506,6 +506,15 @@ every edit is recorded in the run record's `sources_changed[]`.
   not) and derives an `action` (`none | needs-bridge | needs-demote |
   needs-content-fix | stale-content`) the Ops Health panel floats. Offline
   suite: [`tools/test_source_health.py`](../tools/test_source_health.py).
+- [`tools/entry_record.py`](../tools/entry_record.py): appends one fire's
+  changelog record to a published entry (`add`: strictly later `at`, the
+  `## <Type> — <at>` section for a non-internal record and none for an
+  internal one, `updated_at` moved only by a non-internal `update`, one
+  record per fire per entry), rewrites that record's summary or `fields`
+  before it is published (`amend`), and lists the fields a record must name
+  (`diff`, the `changelog-fields` rule). Edits the frontmatter as text and
+  re-parses the result. Offline suite:
+  [`tools/test_entry_record.py`](../tools/test_entry_record.py).
 - [`tools/compose_prompts.py`](../tools/compose_prompts.py) — see
   § `config/org-profile.yaml` above.
 
