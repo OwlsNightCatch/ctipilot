@@ -1,0 +1,42 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-10-20T09:02:27Z · ended_at=2026-10-20T09:20:51Z · duration_seconds=1104
+
+## Verification report — 2026-10-20T0835Z-audit (iteration 1)
+
+Scope: 13 updated entries (no new entries), run record, wave report docs/audits/2026-10-20-cleanup-wave-01.md, registry diff, state diffs, the wave's standalone commits. Ledger: 152 claims, 152 rows in `verification.iter1.claims.yaml` (149 ok, 2 F3, 1 F5; `claim_ledger.py --coverage 1`: 152/152 answered). Every cited page of every changed claim was fetched this iteration (extract, `url`, `cisa-kev`, `ncsc-csh`; no WebFetch, no WebSearch). Coverage re-sweep: not assessed (partial audit ran none); no missed-angle finding.
+
+Checked and holding (no finding): THORChain loss/vault/mechanism text against both THORChain reports, The Record, TRM; actions-cool timeline against Socket and THN (re-enable window 09:09 to 16:16 UTC, 15,000 dependents, SafeDep six, hooks); TeamCity JetBrains advisory and follow-up (exploitation since the 07-27 announcement, restrict external access); VWBP NZZ attribution split (the 'wie ... Fabian Schmid ... sagte' clause sits on the several-hours sentence, the access-mechanism paragraph is unattributed); Mandiant report case 1 text and all seven hardening/hunt lines; Acronis KEV description and advisory JSON (DirectAdmin named only by Acronis; HNS and BleepingComputer name only cPanel & WHM and Plesk); Unbound NLnet vectors and scores (EUVD and CNA record: 9.1 and 8.4); Check Point sk1000171 (R82.20 Take 10, indicators 1, 2a to 2c, lastModified 2026-10-13) and Bishop Fox statements; ClosedQuorum Talos text ('fully deterministic' only for the tie-break); SolarWinds advisory pages and release notes (no workaround on either advisory, AV:N/AV:A vectors); UNCTAD SiliconANGLE and swarmcha statements; Zammad 6.5.5 release notes, DIVD records, GitHub advisories (27 on 2026-10-06, <= 7.2.0); GhostAction GitGuardian update, Socket update line. Registry: THORChain summary and the actions-cool `part-of` edge to `campaign:mini-shai-hulud` match their sources; key exists. State: `cves_seen` last_seen moves and the 408 to 406 legacy count match disk; the new acknowledgment matches the 2026-10-18 record's own pause note (14:12Z to 2026-10-19 16:15Z). Wave report: all nine standalone commit descriptions match `git show --stat`; 9 corrections / 3 updates / 1 improvement counted from the records; W7-05 count (654) and W1-B/C/E counts (57/5/32) match disk. `check_run.py --all`: 56 pass, 0 fail, one WARN (the pending verification block).
+
+### Claim does not support / unsupported (truth)
+
+**F3 #1 (low confidence) — THORChain, Exposure and Defender takeaway.** Quote: "ECDSA threshold-signing and MPC-custody deployments running GG18 or GG20 code derived from Binance's tss-lib from before its v2.0.0 and v3.0.0 fixes" cited to https://blog.thorchain.org/thorchain-exploit-report-2; takeaway "for any GG18 or GG20 threshold-signing deployment". The post-mortem discusses GG20 and THORChain's fork (v0.1.6) only; GG18 and "MPC-custody deployments" are not on the page (GG18 is on the Fireblocks page, about the separate Paillier-modulus disclosure). Scope to GG20 or source the GG18 extension.
+
+**F4 #2 (low confidence) — SolarWinds, Detection line and actions[0] (pre-existing text; the fire's own W1-A finding targeted it).** Quote: "it names neither the vulnerable configuration nor the communication mode" / "while the vendor withholds which configuration and communication mode are vulnerable". True of the two trust-center advisories and the release notes. SolarWinds' CVE record for CVE-2026-28324 (https://cveawg.mitre.org/api/cve/CVE-2026-28324, read this iteration) carries workaround "Configure Player Password to secure communication between WPM Player agent and Observability Self-Hosted server", solution "If unable to update immediately, apply the recommended workaround", and a reference tagged 'mitigation' (the WPM add-a-location guide); ENISA EUVD-2026-84807 lists the same SolarWinds references (its WPM guide page documents the Player Password option). The new Correction section is correctly scoped to the advisories; the unscoped sentences are not. Scope them to the advisories and release notes (the CVE record cannot be cited).
+
+### Claims missing inline citation
+
+**F5 #3 — TeamCity CVSS 9.8.** Quote (Correction 2026-10-20T08:51:34Z): "the CVE record JetBrains published as numbering authority on 2026-07-27 scores it CVSS 3.1 9.8, for a network attack that needs no privileges and no user interaction"; same figure in cves[].cvss and sourcing_note, no link. The value is true (CNA record: baseScore 9.8, vector CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H) but the 2026-09-30 record removed this score from the entry because no citable source published it. A citable page exists: ENISA EUVD-2026-49369 (https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-49369, assigner JetBrains, carries the CVSS 3.1 vector; the EUVD API record carries baseScore 9.8). Cite it inline and add it to sources[].
+
+### Surface contradiction
+
+**F9 #4 — UNCTAD, Defender takeaway, Correction 2026-10-20T08:48:35Z, evidence row, record summary.** Quote: "Howard-Jones, asked whether this was hacking, answers \"I don't think I'd call it that\"". The cited FAQ (https://swarmcha.se/posts/openai-unctad) continues: "when you bypass restrictions such as the 400 on GETs to `Facts`, you don't really know what the server will return. And from a site admin perspective, if I see someone sending those sorts of carefully-contrived queries such as double-encoding, man, that sure looks like the actions of a hacker. ... these look like the actions of someone, or something, that won't take \"no\" for an answer, and I think that behaviour is worth investigation", with 82 rate-limited requests ignored. The cited SiliconANGLE page quotes Alex Stamos: "borderline for what I would call hacking". The entry carries only the reassuring half. State the caveat or drop the 'not hacking' framing.
+
+### Editorial / less-is-more flags (advisory)
+
+- **F11 #5 (low confidence), actions-cool, record type.** The delta (re-enable 2026-09-16, SafeDep 09-20 to 09-24, second disable by 09-25) is 25 to 34 days old, contained, and predates the entry's own 2026-09-30 correction; typed `update` it re-floats a month-old story in today's brief. Consider `improvement`, or confirm the float. The incident's registry summary also lacks the re-enable (optional).
+- **F11 #6, Acronis, Improvement section.** Largely restates the changed main-body sentence and the quoted cPanel & WHM-only exploitation statement; net additions are DirectAdmin named only in Acronis' advisory and one sentence of advice.
+- **F11 #7, VWBP (pre-existing) and wave report.** Summary (lines 12 to 13) and sourcing_note (line 141) still contain em dashes; the wave report says em dashes were removed from the VWBP reader text.
+- **F11 #8, TeamCity and Zammad dated sections.** The 'Update — 2026-08-06T04:11:48Z' section now states "on 2026-08-07 JetBrains added a pointer" (after its own timestamp; the 10-20 Correction repeats it); Zammad's 2026-10-10 section says "(6.5 later got one emergency fix, 6.5.5)". (pre-existing) TeamCity's 'Hardening:' sentence sits inside the **Triage:** line.
+- **F11 #9, Mandiant.** Case 1 lead-in still reads "a hijacked AI coding-assistant session spreads the Shai-Hulud worm" against the corrected headline. Wave report "hardening and hunt lines of all eight cases" is seven lines (cases 1 to 7) plus case 8's narrative sentence.
+- **F11 #10, Check Point.** Indicator 2a is "Suspicious version path" in sk1000171 (an 'Invoking method ... in version: ...' line whose version argument carries separators or traversal); "a suspicious method invocation" drops the discriminating element.
+- **F11 #11, wave report.** "carries the description and three SolarWinds references": EUVD-2026-84807 lists four.
+- **F11 #12 (low confidence), THORChain.** techniques is [T1657] only; T1212 (active, pinned v20) fits the key-share extraction. First sources[] record is The Record while THORChain's own reports (role primary) are last.
+- Nit: ClosedQuorum quotes the system prompt as "provide ONLY executable decisions"; Talos has "Provide".
+
+### Verdict
+
+NEEDS_FIXES (truth: 2, editorial: 2, advisory: 8)
+
+### Findings summary (machine-readable)
+
+See work/2026-10-20T0835Z-audit/verification.iter1.findings.yaml (12 records).

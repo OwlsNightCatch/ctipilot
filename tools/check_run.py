@@ -1065,6 +1065,14 @@ def check_run_clock(run: dict[str, Any], store_mode: bool = False) -> bool:
     return True
 
 
+def _iter_no(it: dict | None):
+    """An iteration's number as records write it: `iteration:` (current shape)
+    or `n:` (older records); None only when neither is present."""
+    if not isinstance(it, dict):
+        return None
+    return it.get("iteration", it.get("n"))
+
+
 def check_verification_confirmation(run: dict[str, Any], pre_verify: bool = False,
                                     store_mode: bool = False) -> None:
     """v3.23 double-CLEAN gate: a run whose final verifier verdict is CLEAN
@@ -1174,7 +1182,7 @@ def check_verification_confirmation(run: dict[str, Any], pre_verify: bool = Fals
             emit = warn if store_mode else fail
             emit("verification-confirmation",
                  f"{rid}: final verdict CLEAN is unconfirmed — iteration "
-                 f"{final.get('n')} is the only CLEAN in the chain. A CLEAN publish "
+                 f"{_iter_no(final)} is the only CLEAN in the chain. A CLEAN publish "
                  "requires two consecutive CLEAN verdicts (Phase 5.7 decision rules "
                  "1–2): spawn the confirmation pass, or record why it was impossible "
                  "in verification.confirmation_waived")
@@ -1183,13 +1191,13 @@ def check_verification_confirmation(run: dict[str, Any], pre_verify: bool = Fals
     ia, ib = _ident(prev), _ident(final)
     if ia and ib and ia == ib and not single_verifier_era:
         warn("verification-confirmation",
-             f"{rid}: confirming iterations {prev.get('n')} + {final.get('n')} both ran "
+             f"{rid}: confirming iterations {_iter_no(prev)} + {_iter_no(final)} both ran "
              f"{ia} — the confirmation pass must run on a different model (rotation); "
              "acceptable only as a recorded exception (other-model spawn blocked after "
              "a retry) noted in the run record")
     elif not store_mode:
         ok("verification-confirmation",
-           f"confirmed CLEAN — iterations {prev.get('n')} + {final.get('n')} both CLEAN "
+           f"confirmed CLEAN — iterations {_iter_no(prev)} + {_iter_no(final)} both CLEAN "
            f"on {ia or '?'} + {ib or '?'}")
 
 
